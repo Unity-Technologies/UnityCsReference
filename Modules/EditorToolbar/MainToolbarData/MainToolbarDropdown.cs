@@ -8,6 +8,7 @@ using UnityEngine.UIElements;
 
 namespace UnityEditor.Toolbars
 {
+    [Icon("UIToolkit/Icons/DropdownField.png")]
     public sealed class MainToolbarDropdown : MainToolbarElement
     {
         readonly Action<Rect> m_OpenDropdown;

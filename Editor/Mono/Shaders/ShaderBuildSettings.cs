@@ -44,6 +44,13 @@ namespace UnityEditor.Shaders
             High
         }
 
+        [UsedByNativeCode]
+        internal enum FastBuildMode
+        {
+            Off,
+            On
+        }
+
         internal static bool IsEmptyKeyword(string keyword)
         {
             if (keyword.Length == 0)
@@ -211,17 +218,22 @@ namespace UnityEditor.Shaders
 
             internal bool EqualKeywords(KeywordDeclarationOverride other)
             {
-                if (keywords == null || other.keywords == null)
-                {
-                    return keywords == other.keywords;
-                }
+                var keywordsStrings = Array.ConvertAll(other.keywords, x => x.name);
 
-                if (keywords.Length != other.keywords.Length)
+                return EqualKeywords(keywordsStrings);
+            }
+
+            internal bool EqualKeywords(string[] other)
+            {
+                if (keywords == null || other == null)
                     return false;
 
-                for (int i = 0, n = keywords.Length; i < n; ++i)
+                if (keywords.Length != other.Length)
+                    return false;
+
+                foreach (var declarationKeyword in other)
                 {
-                    if (!other.FindMatchingKeyword(keywords[i].name, out _))
+                    if (!FindMatchingKeyword(declarationKeyword, out _))
                         return false;
                 }
 
@@ -234,6 +246,16 @@ namespace UnityEditor.Shaders
                     return false;
 
                 return ArrayValuesEqual(keywords, other.keywords, static (a, b) => a.ValueEquals(b));
+            }
+
+            // Copying the struct alone still shares the keywords array. This does a deep copy instead.
+            internal KeywordDeclarationOverride DeepCopy()
+            {
+                return new KeywordDeclarationOverride
+                {
+                    keywords = keywords == null ? null : (KeywordOverrideInfo[])keywords.Clone(),
+                    variantGenerationMode = variantGenerationMode,
+                };
             }
 
             [SerializeField] public KeywordOverrideInfo[] keywords = Array.Empty<KeywordOverrideInfo>();
@@ -328,6 +350,49 @@ namespace UnityEditor.Shaders
             return true;
         }
 
+        // An override applies only to a declaration with the *exact* same keywords.
+        internal static bool HasMatchingKeywordDeclaration(KeywordDeclarationOverride keywordOverride, ShaderKeywordDeclarationInfo[] keywordDeclarations)
+        {
+            if (keywordDeclarations == null || keywordOverride.keywords == null)
+                return false;
+
+            foreach (var declaration in keywordDeclarations)
+            {
+                if (keywordOverride.EqualKeywords(declaration.keywords))
+                    return true;
+            }
+
+            return false;
+        }
+
+        internal static void CheckKeywordDeclarationOverridesHaveMatches(KeywordDeclarationOverride[] overrides)
+        {
+            if (overrides == null || overrides.Length == 0)
+                return;
+
+            CheckKeywordDeclarationOverridesHaveMatches(overrides, ShaderKeywordDeclarations.GatherFromProject());
+        }
+
+        internal static void CheckKeywordDeclarationOverridesHaveMatches(KeywordDeclarationOverride[] overrides, ShaderKeywordDeclarationInfo[] keywordDeclarations)
+        {
+            if (overrides == null || keywordDeclarations == null)
+                return;
+
+            foreach (var keywordOverride in overrides)
+            {
+                if (keywordOverride.keywords == null || keywordOverride.keywords.Length == 0)
+                    continue;
+
+                if (HasMatchingKeywordDeclaration(keywordOverride, keywordDeclarations))
+                    continue;
+
+                string keywordList = string.Join(" ", Array.ConvertAll(keywordOverride.keywords, kw => kw.name));
+                Debug.LogWarning("Keyword declaration override '"+ keywordList
+                                                                  +"' does not match any keyword declaration in the project and has no effect." +
+                                                                  " The keywords must match a declaration exactly, including the empty keyword '_'.");
+            }
+        }
+
         public ShaderBuildSettings() {}
 
         [SerializeField] internal KeywordDeclarationOverride[] keywordDeclarationOverrides = Array.Empty<KeywordDeclarationOverride>();
@@ -348,8 +413,10 @@ namespace UnityEditor.Shaders
             return (KeywordDeclarationOverride[])keywordDeclarationOverrides.Clone();
         }
 
+        [SerializeField] internal FastBuildMode fastBuildMode = FastBuildMode.Off;
+
         [SerializeField] internal string[] defines = Array.Empty<string>();
-        [SerializeField] private uint numInternalDefines = 0;
+        [SerializeField] internal uint numInternalDefines = 0;
 
         internal string[] GetAllDefinesCopy()
         {
@@ -364,6 +431,9 @@ namespace UnityEditor.Shaders
         internal bool ValueEquals(ShaderBuildSettings other)
         {
             if (numInternalDefines != other.numInternalDefines)
+                return false;
+
+            if (fastBuildMode != other.fastBuildMode)
                 return false;
 
             if (!ArrayValuesEqual(defines, other.defines, static (a, b) => a == b))
@@ -387,6 +457,47 @@ namespace UnityEditor.Shaders
                 defineList.AddRange(defines);
             defines = defineList.ToArray();
             numInternalDefines++;
+        }
+
+        internal bool HasInternalDefine(string identifier)
+        {
+            for (int i = 0; i < numInternalDefines; ++i)
+            {
+                if (DefineHasIdentifier(defines[i], identifier))
+                    return true;
+            }
+
+            return false;
+        }
+
+        // Returns true when a define was removed.
+        internal bool RemoveInternalDefine(string identifier)
+        {
+            for (int i = 0; i < numInternalDefines; ++i)
+            {
+                if (!DefineHasIdentifier(defines[i], identifier))
+                    continue;
+
+                // Internal defines stay at the start of the array, which GetDefinesCopy and the setter both rely on.
+                var remaining = new string[defines.Length - 1];
+                Array.Copy(defines, 0, remaining, 0, i);
+                Array.Copy(defines, i + 1, remaining, i, defines.Length - i - 1);
+
+                defines = remaining;
+                numInternalDefines--;
+                return true;
+            }
+
+            return false;
+        }
+
+        static bool DefineHasIdentifier(string define, string identifier)
+        {
+            if (define == null)
+                return false;
+
+            var sections = define.Split((char[])null, StringSplitOptions.RemoveEmptyEntries);
+            return sections.Length > 0 && sections[0] == identifier;
         }
 
         internal static bool SplitAndValidateDefine(string define, out string identifier, out string value, out string msg)

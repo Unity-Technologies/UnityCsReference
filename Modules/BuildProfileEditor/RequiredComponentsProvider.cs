@@ -2,9 +2,9 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: BuildSettingsWindow not yet converted
 using System;
 using System.Collections.Generic;
+using Unity.Scripting.LifecycleManagement;
 using UnityEditor;
 using UnityEditor.Build.Profile.Handlers;
 using UnityEngine;
@@ -15,10 +15,10 @@ namespace UnityEditor.Build.Profile
     /// Build profile provider for required components. Syncs required components
     /// on a build profile by removing stale entries and adding missing ones.
     /// </summary>
-    [InitializeOnLoad]
-    internal class RequiredComponentsProvider
+    internal partial class RequiredComponentsProvider
     {
-        static RequiredComponentsProvider()
+        [OnCodeLoaded]
+        static void Initialize()
         {
             BuildProfile.AddOnBuildProfileEnable(SyncComponents);
         }
@@ -76,4 +76,3 @@ namespace UnityEditor.Build.Profile
         }
     }
 }
-#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

@@ -2,7 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: ShortcutManagement not yet converted
 using System.Collections.Generic;
 using UnityEditor.IMGUI.Controls;
 using UnityEngine;
@@ -27,9 +26,6 @@ namespace UnityEditor.ShortcutManagement
 
     class ConflictResolverWindow : EditorWindow
     {
-        #pragma warning disable UAL0015 // this side effect does not outlive the current call (global trigger / lazily-loaded asset re-fetched on next access); a stale reference is harmlessly replaced
-        internal ConflictResolverWindow() { }
-        #pragma warning restore UAL0015
 
         internal const string performButtonControlName = "PerformButton";
         internal const string cancelButtonControlName = "CancelButton";
@@ -70,19 +66,19 @@ namespace UnityEditor.ShortcutManagement
 
         static class Contents
         {
-            public static readonly GUIContent description = EditorGUIUtility.TrTextContent("You can choose to perform a single command, rebind the shortcut to the selected command, or resolve the conflict in the Shortcut Manager.");
-            public static readonly GUIContent cancel = EditorGUIUtility.TrTextContent("Cancel");
-            public static readonly GUIContent perform = EditorGUIUtility.TrTextContent("Perform Selected");
-            public static readonly GUIContent rebind = EditorGUIUtility.TrTextContent("Rebind Selected");
+            public static readonly GUIContent description = L10n.TextContent("You can choose to perform a single command, rebind the shortcut to the selected command, or resolve the conflict in the Shortcut Manager.", null, null, null);
+            public static readonly GUIContent cancel = L10n.TextContent("Cancel", null, null, null);
+            public static readonly GUIContent perform = L10n.TextContent("Perform Selected", null, null, null);
+            public static readonly GUIContent rebind = L10n.TextContent("Rebind Selected", null, null, null);
 
-            public static readonly GUIContent itemName = EditorGUIUtility.TrTextContent("Name");
-            public static readonly GUIContent itemType = EditorGUIUtility.TrTextContent("Type");
-            public static readonly GUIContent itemBindings = EditorGUIUtility.TrTextContent("Shortcut");
+            public static readonly GUIContent itemName = L10n.TextContent("Name", null, null, null);
+            public static readonly GUIContent itemType = L10n.TextContent("Type", null, null, null);
+            public static readonly GUIContent itemBindings = L10n.TextContent("Shortcut", null, null, null);
 
-            public static readonly GUIContent windowTitle = EditorGUIUtility.TrTextContent("Shortcut Conflict");
-            public static readonly GUIContent rebindToSelectedCommand = EditorGUIUtility.TrTextContent("Rebind to selected command");
-            public static readonly GUIContent SelectCommandHeading = EditorGUIUtility.TrTextContent("Select a command to perform:");
-            public static readonly GUIContent OpenShortcutManager = EditorGUIUtility.TrTextContent("Resolve Conflict...");
+            public static readonly GUIContent windowTitle = L10n.TextContent("Shortcut Conflict", null, null, null);
+            public static readonly GUIContent rebindToSelectedCommand = L10n.TextContent("Rebind to selected command", null, null, null);
+            public static readonly GUIContent SelectCommandHeading = L10n.TextContent("Select a command to perform:", null, null, null);
+            public static readonly GUIContent OpenShortcutManager = L10n.TextContent("Resolve Conflict...", null, null, null);
 
             public static readonly Texture2D warningIcon = (Texture2D)EditorGUIUtility.LoadRequired("Icons/ShortcutManager/alertDialog.png");
         }
@@ -365,4 +361,3 @@ namespace UnityEditor.ShortcutManagement
         }
     }
 }
-#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

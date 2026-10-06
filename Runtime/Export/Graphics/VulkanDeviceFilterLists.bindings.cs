@@ -146,7 +146,8 @@ namespace UnityEngine
     [NativeClass("VulkanDeviceFilterLists", PersistentTypeId = 0x67BAF230)]
     public sealed class VulkanDeviceFilterLists : UnityEngine.Object
     {
-        private static extern void Internal_CreateVulkanDeviceFilterLists([Writable] VulkanDeviceFilterLists obj, string name);
+        internal VulkanDeviceFilterLists(global::UnityEngine.EntityId id) : base(id) {}
+        private static extern EntityId Internal_CreateVulkanDeviceFilterLists(string name);
         private static extern void Internal_ConvertPlayerSettingsToAsset(VulkanDeviceFilterLists obj);
 
         // Used in PlayerSettingsEditorExtensions.cs
@@ -164,7 +165,7 @@ namespace UnityEngine
 
         public VulkanDeviceFilterLists(string name = "VulkanDeviceFilterLists")
         {
-            Internal_CreateVulkanDeviceFilterLists(this, name);
+            SetEntityIdFromConstructor(Internal_CreateVulkanDeviceFilterLists(name));
         }
 
         public void EnsureValidOrThrow()

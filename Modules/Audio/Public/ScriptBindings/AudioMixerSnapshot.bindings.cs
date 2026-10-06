@@ -13,6 +13,7 @@ namespace UnityEngine.Audio
     [NativeHeader("Modules/Audio/Public/AudioMixerSnapshot.h")]
     public partial class AudioMixerSnapshot : Object, ISubAssetNotDuplicatable
     {
+        protected internal AudioMixerSnapshot(global::UnityEngine.EntityId id) : base(id) {}
         internal AudioMixerSnapshot() {}
 
         ///<exclude />

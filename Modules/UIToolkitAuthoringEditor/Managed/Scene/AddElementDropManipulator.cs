@@ -31,9 +31,11 @@ sealed class AddElementDropManipulator : Manipulator
         public bool IsEdgeDrop => NearLeft || NearRight || NearTop || NearBottom;
 
         /// <summary>
-        /// The live element the dropped content becomes a child of: the hovered element when the drop lands on
-        /// it, its parent for an edge drop, which inserts beside it instead. It is what tells one instance of a
-        /// repeated document from another, which <see cref="ParentVea"/> alone cannot.
+        /// The element on the canvas the dropped content becomes a child of: the hovered element when the drop
+        /// lands on it, its parent for an edge drop, which inserts beside it instead. It is what tells one
+        /// instance of a repeated document from another, which <see cref="ParentVea"/> alone cannot — though
+        /// outside the UI Stage it names the canvas's own clone, so anything reported elsewhere has to go
+        /// through <see cref="ICanvasDropContext.ResolveAuthoritativeElement"/> first.
         /// </summary>
         public VisualElement ParentElement => IsEdgeDrop ? HoveredElement?.parent : HoveredElement;
 
@@ -129,7 +131,12 @@ sealed class AddElementDropManipulator : Manipulator
             AddElementCommand.Execute(CommandSources.Scene, libraryItem.libraryType.type, EditedVisualTreeAsset, placement.ParentVea, placement.Index, libraryItem.libraryType.variantName);
 
             // The command filed its selection request by asset alone; narrow it to the instance dropped into.
-            UIToolkitStageUtility.ScopePendingSelectionRequestsTo(placement.ParentElement);
+            // Resolved out of the canvas first: the Hierarchy scopes against the live tree, not this clone.
+            UIToolkitStageUtility.ScopePendingSelectionRequestsTo(
+                m_DropContext.ResolveAuthoritativeElement(placement.ParentElement));
+
+            // A create the user asked for, so the new element opens its rename field.
+            UIToolkitStageUtility.RequestRenameOfPendingSelection();
 
             RequestRefresh?.Invoke();
             evt.StopPropagation();
@@ -156,7 +163,8 @@ sealed class AddElementDropManipulator : Manipulator
             // Same for the templates just added: the command's request names the assets it created, not the
             // instance they landed in. It is the command's own list rather than one rebuilt from the insert
             // index here, which does not survive a multi-document drop landing anywhere but the end.
-            UIToolkitStageUtility.ScopePendingSelectionRequestsTo(placement.ParentElement);
+            UIToolkitStageUtility.ScopePendingSelectionRequestsTo(
+                m_DropContext.ResolveAuthoritativeElement(placement.ParentElement));
 
             RequestRefresh?.Invoke();
             evt.StopPropagation();

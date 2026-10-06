@@ -500,6 +500,7 @@ namespace UnityEngine
     [UsedByNativeCode]
     public sealed partial class TerrainData : Object
     {
+        internal TerrainData(global::UnityEngine.EntityId id) : base(id) {}
         private const string k_ScriptingInterfaceName = "TerrainDataScriptingInterface";
         private const string k_ScriptingInterfacePrefix = k_ScriptingInterfaceName + "::";
         private const string k_HeightmapPrefix = "GetHeightmap().";
@@ -537,11 +538,11 @@ namespace UnityEngine
         ///<exclude />
         public TerrainData()
         {
-            Internal_Create(this);
+            SetEntityIdFromConstructor(Internal_Create());
         }
 
         [FreeFunction(k_ScriptingInterfacePrefix + "Create")]
-        extern private static void Internal_Create([Writable] TerrainData terrainData);
+        extern private static EntityId Internal_Create();
 
         ///<summary>Triggers an update to integrate modifications done to the heightmap outside of unity.</summary>
         ///<remarks>This function is obsolete. Use either <see cref="CopyActiveRenderTextureToHeightmap" /> or <see cref="DirtyHeightmapRegion" /> instead.

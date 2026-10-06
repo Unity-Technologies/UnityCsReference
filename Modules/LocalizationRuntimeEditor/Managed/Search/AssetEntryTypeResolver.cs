@@ -13,7 +13,10 @@ namespace Unity.Localization.Editor.Search;
 static partial class AssetEntryTypeResolver
 {
     [AutoStaticsCleanup] // caches Type handles a reload invalidates
-    static Dictionary<string, Type> s_ByResourcesPath;
+    // Lazy index of Resources paths to asset Types: FromResourcesPath rebuilds it with
+    // BuildResourcesIndex whenever it is null, so nothing is lost by dropping it.
+    [IgnoreForUAL0015("Lazy Resources index rebuilt by BuildResourcesIndex on the next lookup")]
+    static Dictionary<string, (Type Type, string AssetPath)> s_ByResourcesPath;
 
     // Dropped when the picker opens: an asset added, moved or reimported since the last open would be missed.
     internal static void InvalidateResourcesIndex() => s_ByResourcesPath = null;
@@ -42,12 +45,19 @@ static partial class AssetEntryTypeResolver
         if (string.IsNullOrEmpty(resourcesPath))
             return null;
         s_ByResourcesPath ??= BuildResourcesIndex();
-        return s_ByResourcesPath.TryGetValue(resourcesPath, out var type) ? type : null;
+        if (SubAssetAddress.IsSubAsset(resourcesPath) && s_ByResourcesPath.TryGetValue(SubAssetAddress.GetPath(resourcesPath), out var container))
+        {
+            var sub = SubAssetAddress.Select(AssetDatabase.LoadAllAssetsAtPath(container.AssetPath), SubAssetAddress.GetSubAssetName(resourcesPath));
+            if (sub != null)
+                return sub.GetType();
+        }
+        // A literal path with brackets is not a sub-asset; resolve it whole.
+        return s_ByResourcesPath.TryGetValue(resourcesPath, out var entry) ? entry.Type : null;
     }
 
-    static Dictionary<string, Type> BuildResourcesIndex()
+    static Dictionary<string, (Type Type, string AssetPath)> BuildResourcesIndex()
     {
-        var index = new Dictionary<string, Type>(StringComparer.Ordinal);
+        var index = new Dictionary<string, (Type, string)>(StringComparer.Ordinal);
         foreach (var guid in AssetDatabase.FindAssets(string.Empty))
         {
             var path = AssetDatabase.GUIDToAssetPath(guid);
@@ -58,7 +68,7 @@ static partial class AssetEntryTypeResolver
                 continue;
             var type = AssetDatabase.GetMainAssetTypeAtPath(path);
             if (type != null)
-                index[relative] = type;
+                index[relative] = (type, path);
         }
         return index;
     }

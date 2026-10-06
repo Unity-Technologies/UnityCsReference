@@ -21,7 +21,7 @@ namespace Unity.Localization;
 /// object rather than a <c>ScriptableObject</c> asset, so it is stored inline in the localization settings.
 /// </remarks>
 /// <example>
-/// <para>Create a locale, then read its identifier, display name, and formatting culture.</para>
+/// Create a locale, then read its identifier, display name, and formatting culture.
 /// <code source="../../../Modules/LocalizationRuntime/Tests/UTFTests/Localization.Samples/Locales/LocaleOverviewExample.cs"/>
 /// </example>
 /// <seealso cref="LocaleIdentifier"/>
@@ -47,7 +47,7 @@ public class Locale
     /// <see cref="LocaleName"/> after construction.
     /// </remarks>
     /// <example>
-    /// <para>Create an empty locale and set its fallback.</para>
+    /// Create an empty locale and set its fallback.
     /// <code source="../../../Modules/LocalizationRuntime/Tests/UTFTests/Localization.Samples/Locales/LocaleConstructorEmptyExample.cs"/>
     /// </example>
     public Locale() { }
@@ -63,7 +63,7 @@ public class Locale
     /// <param name="code">The culture code, for example "en" or "fr-CA".</param>
     /// <param name="localeName">The display name to show for this locale, or null to derive one from the culture.</param>
     /// <example>
-    /// <para>Create a locale for a culture code with an explicit display name.</para>
+    /// Create a locale for a culture code with an explicit display name.
     /// <code source="../../../Modules/LocalizationRuntime/Tests/UTFTests/Localization.Samples/Locales/LocaleConstructorExample.cs"/>
     /// </example>
     public Locale(string code, string localeName = null)

@@ -9,7 +9,7 @@ using UnityEditor;
 using UnityEngine;
 using Unity.Scripting.LifecycleManagement;
 using UnityEngine.Rendering;
-using System.Collections.Generic;
+using Unity.ProjectAuditor.Editor.Modules;
 
 namespace Unity.ProjectAuditor.Editor.Core
 {
@@ -163,51 +163,20 @@ namespace Unity.ProjectAuditor.Editor.Core
                 {
                     // With no Quality Levels, Unity uses the global Render Pipeline Asset.
                     if (QualitySettings.names.Length == 0)
-                        return ShouldMigrateRenderPipelineAsset(GraphicsSettings.defaultRenderPipeline);
-
-                    var qualityLevelsToMigrate = FindQualitySettingsToMigrate();
-                    s_MigrationToURPSupported = qualityLevelsToMigrate.Count > 0;
+                    {
+                        s_MigrationToURPSupported = MigrationToURPUtilities.ShouldMigrateRenderPipelineAsset(GraphicsSettings.defaultRenderPipeline);
+                    }
+                    else
+                    {
+                        var qualityLevelsToMigrate = MigrationToURPUtilities.FindQualitySettingsToMigrate();
+                        s_MigrationToURPSupported = qualityLevelsToMigrate.Count > 0;
+                    }
                 }
 
                 return s_MigrationToURPSupported.Value;
             }
 
             return true;
-        }
-
-        static List<int> FindQualitySettingsToMigrate()
-        {
-            var defaultRenderPipeline = GraphicsSettings.defaultRenderPipeline;
-            int qualityLevelCount = QualitySettings.names.Length;
-
-            var qualityLevelsToMigrate = new List<int>();
-            QualitySettings.ForEach((index, name) =>
-            {
-                var effectiveRenderPipeline = QualitySettings.GetRenderPipelineAssetAt(index);
-                if (effectiveRenderPipeline == null)
-                    effectiveRenderPipeline = defaultRenderPipeline;
-
-                if (ShouldMigrateRenderPipelineAsset(effectiveRenderPipeline))
-                    qualityLevelsToMigrate.Add(index);
-            });
-
-            return qualityLevelsToMigrate;
-        }
-
-        static bool ShouldMigrateRenderPipelineAsset(RenderPipelineAsset asset)
-        {
-            // BiRP
-            if (asset == null)
-                return true;
-
-            // URP
-            for (var type = asset.GetType(); type != null; type = type.BaseType)
-            {
-                if (type.FullName == "UnityEngine.Rendering.Universal.UniversalRenderPipelineAsset")
-                    return true;
-            }
-            // Other SRP
-            return false;
         }
     }
 }

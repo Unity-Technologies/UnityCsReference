@@ -2,7 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: UIToolkitAuthoringFramework not yet converted
 using System;
 using System.Collections.Generic;
 using Unity.Hierarchy;
@@ -333,9 +332,10 @@ internal partial class VisualElementNodeHandler
         // The re-clone that follows the command group replaces every live element the drag moved, and an element
         // that changed parent no longer matches the identity its selection was filed under, so asking for it back
         // is what keeps the dropped elements selected — narrowed to the instance they were dropped into, which is
-        // the one the user is looking at.
+        // the one the user is looking at. The dragged elements themselves are what the re-clone replaces.
         RequestSelectionOnNextUpdate(childrenAssets);
         ScopePendingSelectionRequestsTo(parentElement);
+        ExcludeReplacedElementsFromPendingSelectionRequests(draggedVisualElements);
 
         return DragVisualMode.Move;
     }
@@ -632,6 +632,9 @@ internal partial class VisualElementNodeHandler
         // The command asked for what it created by asset alone; point that at the instance dropped into.
         ScopePendingSelectionRequestsTo(parentElement);
 
+        // A new element has no name to identify it by until the user gives it one.
+        RequestRenameOfPendingSelection();
+
         StageStrategy.RequestRefresh(parentElement);
         return DragVisualMode.Copy;
     }
@@ -675,4 +678,3 @@ internal partial class VisualElementNodeHandler
         }
     }
 }
-#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

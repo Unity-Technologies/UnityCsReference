@@ -18,7 +18,7 @@ namespace Unity.Localization;
 /// <see cref="LocalizationSettings.StartupSelectors"/> runs.
 /// </remarks>
 /// <example>
-/// <para>Selects French when it is one of the available locales.</para>
+/// Selects French when it is one of the available locales.
 /// <code source="../../../../Modules/LocalizationRuntime/Tests/UTFTests/Localization.Samples/Settings/SpecificLocaleSelectorExample.cs"/>
 /// </example>
 /// <seealso cref="IStartupLocaleSelector"/>
@@ -54,7 +54,7 @@ public class SpecificLocaleSelector : IStartupLocaleSelector
 /// ahead of <see cref="SystemLocaleSelector"/>.
 /// </remarks>
 /// <example>
-/// <para>Reads the locale from the command line when the player starts.</para>
+/// Reads the locale from the command line when the player starts.
 /// <code source="../../../../Modules/LocalizationRuntime/Tests/UTFTests/Localization.Samples/Settings/CommandLineLocaleSelectorExample.cs"/>
 /// </example>
 /// <seealso cref="IStartupLocaleSelector"/>
@@ -89,17 +89,23 @@ public class CommandLineLocaleSelector : IStartupLocaleSelector
 }
 
 /// <summary>
-/// Detects the locale from the device's current UI culture and matches the closest available locale.
+/// Detects the language the device is set to and matches the closest available locale.
 /// </summary>
 /// <remarks>
-/// This selector reads the system UI culture (<see cref="CultureInfo.CurrentUICulture"/>) and walks up the culture
-/// parent chain, returning the first available locale whose <see cref="LocaleIdentifier"/> matches. For example, if
-/// the device culture is <c>fr-FR</c> but only <c>fr</c> is available, it selects <c>fr</c>. If no ancestor culture
-/// matches, <see cref="GetStartupLocale"/> returns null. This selector is part of the default selector chain.
+/// This selector first tries <see cref="GetSystemCulture"/>, which reports the language the user asked the operating
+/// system for. Apple platforms, Android and WebGL give that as a language tag carrying the region and the script,
+/// such as <c>pt-BR</c> or <c>zh-Hant-TW</c>; elsewhere it falls back to <see cref="CultureInfo.CurrentUICulture"/>.
+/// When no locale matches it tries <see cref="UnityEngine.Application.systemLanguage"/>, which every platform
+/// reports but which carries the language alone.
+/// Each answer is matched against <see cref="LocaleIdentifier"/> and then up the culture parent chain, so a device
+/// set to <c>fr-FR</c> selects <c>fr</c> when only <c>fr</c> is available. Disabled locales are passed over, so a
+/// disabled match does not stop the search. If nothing matches,
+/// <see cref="GetStartupLocale"/> returns null and the next selector in
+/// <see cref="LocalizationSettings.StartupSelectors"/> runs. This selector is part of the default selector chain.
 /// Override <see cref="GetSystemCulture"/> to supply a fixed culture in tests.
 /// </remarks>
 /// <example>
-/// <para>Selects the locale that best matches the device language.</para>
+/// Selects the locale that best matches the device language.
 /// <code source="../../../../Modules/LocalizationRuntime/Tests/UTFTests/Localization.Samples/Settings/SystemLocaleSelectorExample.cs"/>
 /// </example>
 /// <seealso cref="IStartupLocaleSelector"/>
@@ -112,11 +118,34 @@ public class SystemLocaleSelector : IStartupLocaleSelector
     {
         if (settings == null)
             return null;
-        var culture = GetSystemCulture();
+        return FindLocale(settings, GetSystemCulture())
+            ?? FindLocale(settings, SystemLocale.GetLanguageCultureCode((int)GetApplicationSystemLanguage()));
+    }
+
+    static Locale FindLocale(LocalizationSettings settings, string code)
+    {
+        if (string.IsNullOrEmpty(code))
+            return null;
+        var locale = settings.GetLocale(new LocaleIdentifier(code));
+        if (locale is { Enabled: true })
+            return locale;
+        try
+        {
+            return FindLocale(settings, CultureInfo.GetCultureInfo(code));
+        }
+        catch (CultureNotFoundException)
+        {
+            return null;
+        }
+    }
+
+    // A disabled match must not end the search, or it would hide the remaining sources from GetStartupLocale.
+    static Locale FindLocale(LocalizationSettings settings, CultureInfo culture)
+    {
         while (culture != null && !string.IsNullOrEmpty(culture.Name))
         {
             var locale = settings.GetLocale(new LocaleIdentifier(culture.Name));
-            if (locale != null)
+            if (locale is { Enabled: true })
                 return locale;
             culture = culture.Parent;
         }
@@ -124,18 +153,48 @@ public class SystemLocaleSelector : IStartupLocaleSelector
     }
 
     /// <summary>
-    /// Returns the system culture used to detect the startup locale.
+    /// Returns the culture used to detect the startup locale.
     /// </summary>
     /// <remarks>
-    /// By default this returns <see cref="CultureInfo.CurrentUICulture"/>. Override it in a derived selector to supply
-    /// a fixed culture, which is useful for testing locale detection without changing the device settings.
+    /// By default this returns the language the user asked the operating system for, which Apple platforms, Android
+    /// and WebGL report as a language tag carrying the region and the script. On platforms that cannot report one it
+    /// returns <see cref="CultureInfo.CurrentUICulture"/> instead. Override it in a derived selector to supply a fixed
+    /// culture, which replaces both and is useful for testing locale detection without changing the device settings.
     /// </remarks>
-    /// <returns>The culture used to detect the locale; by default the device's current UI culture.</returns>
+    /// <returns>The culture used to detect the locale; by default the language the device is set to.</returns>
     /// <example>
-    /// <para>Overrides the detected culture to always report German.</para>
+    /// Overrides the detected culture to always report German.
     /// <code source="../../../../Modules/LocalizationRuntime/Tests/UTFTests/Localization.Samples/Settings/SystemCultureOverrideExample.cs"/>
     /// </example>
-    protected virtual CultureInfo GetSystemCulture() => CultureInfo.CurrentUICulture;
+    protected virtual CultureInfo GetSystemCulture()
+    {
+        // A tag can carry subtags the culture database does not know, such as the -u- extensions Android reports,
+        // so drop them one at a time rather than abandoning the whole tag.
+        for (var tag = GetPlatformLanguageCode(); !string.IsNullOrEmpty(tag); tag = TrimLastSubtag(tag))
+        {
+            try
+            {
+                return CultureInfo.GetCultureInfo(tag);
+            }
+            catch (CultureNotFoundException)
+            {
+            }
+        }
+        return GetCurrentUICulture();
+    }
+
+    static string TrimLastSubtag(string tag)
+    {
+        var separator = tag.LastIndexOf('-');
+        return separator > 0 ? tag.Substring(0, separator) : string.Empty;
+    }
+
+    // Empty on platforms with no native implementation, which falls GetSystemCulture back to the managed culture.
+    internal virtual string GetPlatformLanguageCode() => SystemLocale.GetPreferredLanguageTag();
+
+    internal virtual CultureInfo GetCurrentUICulture() => CultureInfo.CurrentUICulture;
+
+    internal virtual SystemLanguage GetApplicationSystemLanguage() => Application.systemLanguage;
 }
 
 /// <summary>
@@ -150,7 +209,7 @@ public class SystemLocaleSelector : IStartupLocaleSelector
 /// selector runs. Add it to <see cref="LocalizationSettings.StartupSelectors"/> to enable persistence.
 /// </remarks>
 /// <example>
-/// <para>Reads the previously saved locale when the game starts.</para>
+/// Reads the previously saved locale when the game starts.
 /// <code source="../../../../Modules/LocalizationRuntime/Tests/UTFTests/Localization.Samples/Settings/PlayerPrefLocaleSelectorExample.cs"/>
 /// </example>
 /// <seealso cref="IStartupLocaleSelector"/>

@@ -19,6 +19,8 @@ namespace UnityEngine.UIElements
     [NativeClass("UIRenderer", PersistentTypeId = 0x731E9095)]
     public sealed class UIRenderer : Renderer
     {
+        internal UIRenderer(global::UnityEngine.EntityId id) : base(id) {}
+        public UIRenderer() {}
         internal volatile List<CommandList>[] commandLists;
 
         internal extern void AddDrawCallData(int safeFrameIndex, Material mat, uint textureSlotCount, uint forceRenderType, IntPtr serializedCommandsPtr, int commandCount, CommandListState state);

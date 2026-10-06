@@ -4,7 +4,7 @@
 
 using System;
 using System.Collections.Generic;
-using Unity.GraphToolkit.CSO;
+using Unity.CSO;
 using UnityEngine.Pool;
 
 namespace Unity.GraphToolkit.Editor

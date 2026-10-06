@@ -133,7 +133,7 @@ namespace UnityEngine.UIElements
         /// </summary>
         public DefaultFocusOrder defaultFocusOrder { get; set; }
 
-        class FocusRingRecord
+        internal class FocusRingRecord
         {
             public int m_AutoIndex;
             public Focusable m_Focusable;
@@ -141,7 +141,7 @@ namespace UnityEngine.UIElements
             public List<FocusRingRecord> m_ScopeNavigationOrder;
         }
 
-        List<FocusRingRecord> m_FocusRing;
+        internal List<FocusRingRecord> m_FocusRing;
 
         int FocusRingAutoIndexSort(FocusRingRecord a, FocusRingRecord b)
         {
@@ -407,65 +407,74 @@ namespace UnityEngine.UIElements
 
         internal Focusable GetNextFocusableInSequence(Focusable currentFocusable, FocusChangeDirection direction)
         {
-            DoUpdate();
-
-            if (m_FocusRing.Count == 0)
+            try
             {
-                return null;
-            }
+                DoUpdate();
 
-            int previousIndex = GetFocusableInternalIndex(currentFocusable);
-
-            if (currentFocusable != null && previousIndex == -1)
-            {
-                // currentFocusable was not found in the ring. Use the element tree to find the next focusable.
-                if (direction == VisualElementFocusChangeDirection.right)
-                    return GetNextFocusableInTree(currentFocusable as VisualElement);
-                if (direction == VisualElementFocusChangeDirection.left)
-                    return GetPreviousFocusableInTree(currentFocusable as VisualElement);
-            }
-
-            int index = 0;
-            if (direction == VisualElementFocusChangeDirection.right)
-            {
-                index = previousIndex + 1;
-
-                if (index == m_FocusRing.Count)
+                if (m_FocusRing.Count == 0)
                 {
-                    index = 0;
+                    return null;
                 }
 
-                // FIXME: Element could be unrelated to delegator; should we detect this case and return null?
-                // Spec is not very clear on this.
-                while (m_FocusRing[index].m_Focusable.delegatesFocus)
+                int previousIndex = GetFocusableInternalIndex(currentFocusable);
+
+                if (currentFocusable != null && previousIndex == -1)
                 {
-                    index++;
+                    // currentFocusable was not found in the ring. Use the element tree to find the next focusable.
+                    if (direction == VisualElementFocusChangeDirection.right)
+                        return GetNextFocusableInTree(currentFocusable as VisualElement);
+                    if (direction == VisualElementFocusChangeDirection.left)
+                        return GetPreviousFocusableInTree(currentFocusable as VisualElement);
+                }
+
+                int index = 0;
+                if (direction == VisualElementFocusChangeDirection.right)
+                {
+                    index = previousIndex + 1;
+
                     if (index == m_FocusRing.Count)
                     {
-                        return null;
+                        index = 0;
                     }
-                }
-            }
-            else if (direction == VisualElementFocusChangeDirection.left)
-            {
-                index = previousIndex - 1;
 
-                if (index < 0)
-                {
-                    index = m_FocusRing.Count - 1;
-                }
-
-                while (m_FocusRing[index].m_Focusable.delegatesFocus)
-                {
-                    index--;
-                    if (index == -1)
+                    // FIXME: Element could be unrelated to delegator; should we detect this case and return null?
+                    // Spec is not very clear on this.
+                    while (m_FocusRing[index].m_Focusable.delegatesFocus)
                     {
-                        return null;
+                        index++;
+                        if (index == m_FocusRing.Count)
+                        {
+                            return null;
+                        }
                     }
                 }
-            }
+                else if (direction == VisualElementFocusChangeDirection.left)
+                {
+                    index = previousIndex - 1;
 
-            return m_FocusRing[index].m_Focusable;
+                    if (index < 0)
+                    {
+                        index = m_FocusRing.Count - 1;
+                    }
+
+                    while (m_FocusRing[index].m_Focusable.delegatesFocus)
+                    {
+                        index--;
+                        if (index == -1)
+                        {
+                            return null;
+                        }
+                    }
+                }
+
+                return m_FocusRing[index].m_Focusable;
+            }
+            finally
+            {
+                // The ring is rebuilt on every query, so records left here would only pin elements
+                // that may since have left the panel.
+                m_FocusRing.Clear();
+            }
         }
 
         internal VisualElement GetNextFocusableInTree(VisualElement currentFocusable)

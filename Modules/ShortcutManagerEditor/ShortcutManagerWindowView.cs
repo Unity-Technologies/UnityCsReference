@@ -327,11 +327,11 @@ namespace UnityEditor.ShortcutManagement
             m_SearchTextField.style.flexGrow = 0;
             m_SearchTextField.Q("unity-text-input").style.paddingRight = 0;
 
-            m_SearchTextField.menu.AppendAction(EditorGUIUtility.TrTextContent("Command").text,
+            m_SearchTextField.menu.AppendAction(L10n.TextContent("Command", null, null, null).text,
                 a => SearchOptionSelected(SearchOption.Name),
                 a => m_ViewController.searchMode == SearchOption.Name ? DropdownMenuAction.Status.Checked : DropdownMenuAction.Status.Normal);
 
-            m_SearchTextField.menu.AppendAction(EditorGUIUtility.TrTextContent("Shortcut").text,
+            m_SearchTextField.menu.AppendAction(L10n.TextContent("Shortcut", null, null, null).text,
                 a => SearchOptionSelected(SearchOption.Binding),
                 a => m_ViewController.searchMode == SearchOption.Binding ? DropdownMenuAction.Status.Checked : DropdownMenuAction.Status.Normal);
 
@@ -341,11 +341,11 @@ namespace UnityEditor.ShortcutManagement
             m_KeyBindingSearchField.style.flexGrow = 0;
             m_KeyBindingSearchField.Q("unity-text-input").style.paddingRight = 0;
 
-            m_KeyBindingSearchField.menu.AppendAction(EditorGUIUtility.TrTextContent("Command").text,
+            m_KeyBindingSearchField.menu.AppendAction(L10n.TextContent("Command", null, null, null).text,
                 a => SearchOptionSelected(SearchOption.Name),
                 a => m_ViewController.searchMode == SearchOption.Name ? DropdownMenuAction.Status.Checked : DropdownMenuAction.Status.Normal);
 
-            m_KeyBindingSearchField.menu.AppendAction(EditorGUIUtility.TrTextContent("Shortcut").text,
+            m_KeyBindingSearchField.menu.AppendAction(L10n.TextContent("Shortcut", null, null, null).text,
                 a => SearchOptionSelected(SearchOption.Binding),
                 a => m_ViewController.searchMode == SearchOption.Binding ? DropdownMenuAction.Status.Checked : DropdownMenuAction.Status.Normal);
 
@@ -461,17 +461,17 @@ namespace UnityEditor.ShortcutManagement
 
             genericMenu.AddSeparator("");
 
-            genericMenu.AddItem(EditorGUIUtility.TrTextContent("Create new profile..."), false, OnCreateProfileClicked);
+            genericMenu.AddItem(L10n.TextContent("Create new profile...", null, null, null), false, OnCreateProfileClicked);
 
             if (m_ViewController.CanRenameActiveProfile())
-                genericMenu.AddItem(EditorGUIUtility.TrTextContent("Rename profile..."), false, OnRenameProfileClicked);
+                genericMenu.AddItem(L10n.TextContent("Rename profile...", null, null, null), false, OnRenameProfileClicked);
             else
-                genericMenu.AddDisabledItem(EditorGUIUtility.TrTextContent("Rename profile..."));
+                genericMenu.AddDisabledItem(L10n.TextContent("Rename profile...", null, null, null));
 
             if (m_ViewController.CanDeleteActiveProfile())
-                genericMenu.AddItem(EditorGUIUtility.TrTextContent("Delete profile..."), false, OnDeleteProfileClicked);
+                genericMenu.AddItem(L10n.TextContent("Delete profile...", null, null, null), false, OnDeleteProfileClicked);
             else
-                genericMenu.AddDisabledItem(EditorGUIUtility.TrTextContent("Delete profile..."));
+                genericMenu.AddDisabledItem(L10n.TextContent("Delete profile...", null, null, null));
 
             genericMenu.DropDown(targetElement.worldBound);
         }

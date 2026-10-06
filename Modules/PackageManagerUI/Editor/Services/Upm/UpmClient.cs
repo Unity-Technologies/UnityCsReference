@@ -16,14 +16,14 @@ namespace UnityEditor.PackageManager.UI.Internal
         event Action<string, string> onSpecialInstallFinalize;
         event Action<IEnumerable<(string packageIdOrName, PackageProgress progress)>> onPackagesProgressChange;
         event Action<string, UIError> onPackageOperationError;
-        event Action<IReadOnlyCollection<string>> onPackagesReadyToReevaluate;
+        event Action<IReadOnlyList<string>> onPackagesReadyToReevaluate;
         event Action<IOperation> onListOperation;
         event Action<IOperation> onSearchAllOperation;
         event Action<IOperation> onPackOperation;
 
         bool isAddOrRemoveInProgress { get; }
         bool isEmbedInProgress { get; }
-        IReadOnlyCollection<string> packageIdsOrNamesInstalling { get; }
+        IReadOnlyList<string> packageIdsOrNamesInstalling { get; }
 
         void OnRegisteredPackages();
         bool IsAnyExperimentalPackagesInUse();
@@ -59,7 +59,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         public event Action<IEnumerable<(string packageIdOrName, PackageProgress progress)>> onPackagesProgressChange = delegate { };
         public event Action<string, UIError> onPackageOperationError = delegate { };
-        public event Action<IReadOnlyCollection<string>> onPackagesReadyToReevaluate = delegate {};
+        public event Action<IReadOnlyList<string>> onPackagesReadyToReevaluate = delegate {};
 
         public event Action<IOperation> onListOperation = delegate {};
         public event Action<IOperation> onSearchAllOperation = delegate {};
@@ -168,7 +168,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         public bool isEmbedInProgress => m_EmbedOperation?.isInProgress == true;
 
-        public IReadOnlyCollection<string> packageIdsOrNamesInstalling => m_AddAndRemoveOperation is not { isInProgress: true } ? Array.Empty<string>() : m_AddAndRemoveOperation.packageIdsToAdd;
+        public IReadOnlyList<string> packageIdsOrNamesInstalling => m_AddAndRemoveOperation is not { isInProgress: true } ? Array.Empty<string>() : m_AddAndRemoveOperation.packageIdsToAdd;
 
         public bool IsRemoveInProgress(string packageName)
         {
@@ -305,9 +305,9 @@ namespace UnityEditor.PackageManager.UI.Internal
 
        private bool FindTrustIssuePackagesAndShowPopUp(PackageCollection requestResult)
        {
-            var viewData = ActiveTrustWindow.CreateViewData(m_UpmCache, requestResult, addAndRemoveOperation.operationType, m_Application.shortUnityVersion, m_SettingsProxy.trustPolicyLevel);
+            var viewData = TrustWindow.CreateViewData(m_UpmCache, requestResult, addAndRemoveOperation.operationType, m_Application.shortUnityVersion, m_SettingsProxy.trustPolicyLevel);
             if (viewData != null)
-                return ActiveTrustWindow.Show(viewData) == ActiveTrustReturnValue.ProceedAnyway;
+                return TrustWindow.Show(viewData) == TrustWindowReturnValue.ProceedAnyway;
             return true;
        }
 

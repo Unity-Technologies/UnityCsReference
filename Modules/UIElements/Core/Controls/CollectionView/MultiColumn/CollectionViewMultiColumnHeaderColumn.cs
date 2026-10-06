@@ -2,7 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: UIToolkitFramework not yet converted
 using System;
 using UnityEngine.UIElements.Internal;
 
@@ -197,12 +196,7 @@ class CollectionViewMultiColumnHeaderColumn : VisualElement
         this.AddManipulator(clickable = new Clickable((Action)null));
         clickable.activators.Add(new ManipulatorActivationFilter { button = MouseButton.LeftMouse, modifiers = EventModifiers.Shift });
 
-        EventModifiers multiSortingModifier = EventModifiers.Control;
-
-        if (Application.platform is RuntimePlatform.OSXEditor or RuntimePlatform.OSXPlayer)
-        {
-            multiSortingModifier = EventModifiers.Command;
-        }
+        var multiSortingModifier = UIElementsUtility.isCommandActionKeyPlatform ? EventModifiers.Command : EventModifiers.Control;
         clickable.activators.Add(new ManipulatorActivationFilter { button = MouseButton.LeftMouse, modifiers = multiSortingModifier });
     }
 
@@ -361,4 +355,3 @@ class CollectionViewMultiColumnHeaderColumn : VisualElement
         content = null;
     }
 }
-#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

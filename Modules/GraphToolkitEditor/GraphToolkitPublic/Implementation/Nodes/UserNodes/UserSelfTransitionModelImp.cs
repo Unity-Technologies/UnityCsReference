@@ -27,6 +27,9 @@ namespace Unity.GraphToolkit.Editor.Implementation
         Color m_CustomDefaultColor;
 
         [NonSerialized]
+        Color m_CustomLineColor;
+
+        [NonSerialized]
         string m_CustomTooltip;
 
         public SelfTransition Transition => m_Transition;
@@ -60,6 +63,20 @@ namespace Unity.GraphToolkit.Editor.Implementation
                     return;
 
                 m_CustomDefaultColor = value;
+                using var assetDirtyScope = GraphModel?.BlockAssetDirtyScope();
+                GraphModel?.CurrentGraphChangeDescription.AddChangedModel(this, ChangeHint.Style);
+            }
+        }
+
+        public override Color LineColor
+        {
+            get => m_CustomLineColor;
+            set
+            {
+                if (m_CustomLineColor == value)
+                    return;
+
+                m_CustomLineColor = value;
                 using var assetDirtyScope = GraphModel?.BlockAssetDirtyScope();
                 GraphModel?.CurrentGraphChangeDescription.AddChangedModel(this, ChangeHint.Style);
             }

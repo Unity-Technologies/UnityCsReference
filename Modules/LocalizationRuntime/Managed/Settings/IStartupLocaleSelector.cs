@@ -20,7 +20,7 @@ namespace Unity.Localization;
 /// <see cref="PlayerPrefLocaleSelector"/>.
 /// </remarks>
 /// <example>
-/// <para>A selector that picks a locale from a value read at startup.</para>
+/// A selector that picks a locale from a value read at startup.
 /// <code source="../../../../Modules/LocalizationRuntime/Tests/UTFTests/Localization.Samples/Settings/SaveFileLocaleSelectorExample.cs"/>
 /// </example>
 /// <seealso cref="LocalizationSettings"/>
@@ -53,7 +53,7 @@ public interface IStartupLocaleSelector
 /// <see cref="IStartupLocaleInitialize.PostInitialize"/>.
 /// </remarks>
 /// <example>
-/// <para>A selector that awaits a value before choosing a locale.</para>
+/// A selector that awaits a value before choosing a locale.
 /// <code source="../../../../Modules/LocalizationRuntime/Tests/UTFTests/Localization.Samples/Settings/AsyncLocaleSelectorExample.cs"/>
 /// </example>
 /// <seealso cref="IStartupLocaleSelector"/>
@@ -67,6 +67,9 @@ public interface IStartupLocalePrepare
     /// <remarks>
     /// Runs once per initialization. An exception thrown here is logged and the run continues, so the selector should
     /// leave itself in a state where <see cref="IStartupLocaleSelector.GetStartupLocale"/> can return null.
+    /// Initialization waits for this method, so nothing inside it can wait for initialization. Awaiting
+    /// <see cref="LocalizationSettings.InitializeAsync"/>, or a value in the selected locale, waits for this method to
+    /// return, so it never finishes. To read a value here, pass the locale to read it in.
     /// </remarks>
     /// <param name="settings">The localization settings that are initializing.</param>
     /// <param name="cancellationToken">The token that signals the preparation should be canceled.</param>
@@ -85,7 +88,7 @@ public interface IStartupLocalePrepare
 /// <see cref="PlayerPrefLocaleSelector"/> uses this hook to save the selected locale.
 /// </remarks>
 /// <example>
-/// <para>A selector that logs the chosen locale after startup.</para>
+/// A selector that logs the chosen locale after startup.
 /// <code source="../../../../Modules/LocalizationRuntime/Tests/UTFTests/Localization.Samples/Settings/LoggingLocaleSelectorExample.cs"/>
 /// </example>
 /// <seealso cref="IStartupLocaleSelector"/>

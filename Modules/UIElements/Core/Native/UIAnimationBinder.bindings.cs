@@ -38,6 +38,8 @@ namespace UnityEngine.UIElements
     [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
     internal sealed partial class UIAnimationBinder : Object, IValueAnimationUpdate
     {
+        internal UIAnimationBinder(global::UnityEngine.EntityId id) : base(id) {}
+        internal UIAnimationBinder() {}
         [FreeFunction("UIAnimationBinder::Create")]
         internal static extern UIAnimationBinder Create();
 

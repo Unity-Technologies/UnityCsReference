@@ -32,11 +32,11 @@ namespace UnityEditor.Audio
     {
         public AudioMixerController()
         {
-            Internal_CreateAudioMixerController(this);
+            SetEntityIdFromConstructor(Internal_CreateAudioMixerController());
         }
 
         [FreeFunction("AudioMixerControllerBindings::Internal_CreateAudioMixerController")]
-        private static extern void Internal_CreateAudioMixerController([Writable] AudioMixerController mono);
+        private static extern EntityId Internal_CreateAudioMixerController();
 
         public extern int numExposedParameters { [NativeMethod("AudioMixerControllerBindings::GetNumExposedParameters", HasExplicitThis = true, IsFreeFunction = true)] get; }
 

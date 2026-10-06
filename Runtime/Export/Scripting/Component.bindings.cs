@@ -19,6 +19,8 @@ namespace UnityEngine
     [NativeHeader("Runtime/Export/Scripting/Component.bindings.h")]
     public partial class Component : UnityEngine.Object
     {
+        public Component() {}
+        protected internal Component(global::UnityEngine.EntityId id) : base(id) {}
         public extern Transform transform
         {
             [FreeFunction("GetTransform", HasExplicitThis = true, ThrowsException = true)]
@@ -180,7 +182,7 @@ namespace UnityEngine
         }
 
         [FreeFunction(HasExplicitThis = true, ThrowsException = true)]
-        private extern void GetComponentsForListInternal(Type searchType, object resultList);
+        private extern void GetComponentsForListInternal(Type searchType, [Out] List<Component> resultList);
 
         public void GetComponents(Type type, List<Component> results)
         {

@@ -2,7 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: Terrain not yet converted
 using System.IO;
 using System.Collections.Generic;
 using System.Linq;
@@ -29,7 +28,7 @@ namespace UnityEditor
         internal static class Styles
         {
             public static readonly GUIStyle gridList = "GridList";
-            public static readonly GUIContent brushes = EditorGUIUtility.TrTextContent("Brushes");
+            public static readonly GUIContent brushes = L10n.TextContent("Brushes", null, null, null);
         }
 
         public BrushList()
@@ -182,7 +181,7 @@ namespace UnityEditor
 
                     bool dummy;
                     m_ScrollPos = EditorGUILayout.BeginScrollView(m_ScrollPos, GUILayout.Height(128));
-                    var missingBrush = EditorGUIUtility.TrTextContent("No brushes defined.");
+                    var missingBrush = L10n.TextContent("No brushes defined.", null, null, null);
                     int newBrush = BrushSelectionGrid(m_SelectedBrush, m_BrushList, 32, Styles.gridList, missingBrush, out dummy);
                     if (newBrush != m_SelectedBrush)
                     {
@@ -301,4 +300,3 @@ namespace UnityEditor
         }
     }
 } //namespace
-#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

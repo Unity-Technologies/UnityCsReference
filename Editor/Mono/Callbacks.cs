@@ -51,6 +51,7 @@ namespace UnityEditor
         }
 
         [RequiredByNativeCode]
+        [Obsolete("Use AssetPostprocessor.OnProcessScene callback instead.")]
         public sealed partial class PostProcessSceneAttribute : CallbackOrderAttribute
         {
             private int m_version;

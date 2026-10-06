@@ -78,8 +78,14 @@ namespace Unity.Multiplayer.PlayMode.Editor
         internal delegate VirtualProjectIdentifier CreateVirtualProjectIdentifierFunc(string prefix);
 
         [AutoStaticsCleanupOnCodeReload] // init data struct; stale after reload
+        // Re-supplied by Initialize, which the main editor context constructor calls from the editor contexts
+        // [OnCodeLoaded] initializer on every code load.
+        [IgnoreForUAL0015("Re-supplied by Initialize from the [OnCodeLoaded] editor context initializer")]
         static InitData s_InitData;
         [AutoStaticsCleanupOnCodeReload] // init gate; must reset so Initialize() re-runs after reload
+        // Set again by Initialize on the same [OnCodeLoaded] path that re-supplies the init data; resetting it
+        // to false is required so the initialization asserts stay in step with that data.
+        [IgnoreForUAL0015("Set again by Initialize on the [OnCodeLoaded] path that re-supplies the init data")]
         static bool s_Initialized;
 
         [NoAutoStaticsCleanup] // delegates point only to local static methods in this long-living module assembly; MultiplayerEditorModule isn't torn down by ordinary user-code CodeReload, so these never go stale

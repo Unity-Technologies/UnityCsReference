@@ -59,6 +59,9 @@ namespace Unity.GraphToolkit.Editor
         float m_LastZoom;
         bool m_ErrorMarkerVisualContentAlreadyDrawn;
 
+        // Track transition to mirror its visibility onto the error marker. Transitions are hidden when dragged, error markers should also be hidden.
+        VisualElement m_MarkedTransition;
+
         float ErrorTextSize { get; set; } = 12;
         float ErrorTextMaxWidth { get; set; } = 240;
 
@@ -337,19 +340,7 @@ namespace Unity.GraphToolkit.Editor
                         AttachTo(contextNodeUI, SpriteAlignment.TopRight);
                     break;
                 case WireModel wireModel:
-                    if (wireModel.GetView(RootView) is GraphElement wireUI)
-                    {
-                        if (wireModel is TransitionSupportModel transModel && transModel.IsSelfTransition)
-                        {
-                            m_Offset = new Vector2(0, -1);
-                            AttachTo(wireUI.SizeElement, SpriteAlignment.TopCenter);
-                        }
-                        else
-                        {
-                            m_Offset = new Vector2(0, -20);
-                            AttachTo(wireUI.SizeElement, SpriteAlignment.Center);
-                        }
-                    }
+                    AttachToWire(wireModel);
                     break;
                 case PortModel portModel:
                     m_Distance = Vector2.zero;
@@ -389,10 +380,55 @@ namespace Unity.GraphToolkit.Editor
             }
         }
 
+        void AttachToWire(WireModel wireModel)
+        {
+            if (wireModel.GetView(RootView) is not GraphElement wireUI)
+                return;
+
+            if (wireModel is not TransitionSupportModel transModel)
+            {
+                m_Offset = new Vector2(0, -20);
+                AttachTo(wireUI.SizeElement, SpriteAlignment.Center);
+                return;
+            }
+
+            if (transModel.IsSelfTransition)
+            {
+                m_Offset = new Vector2(0, -1);
+                AttachTo(wireUI.SizeElement, SpriteAlignment.TopCenter);
+                return;
+            }
+
+            // Transition with arrow: attach to the arrow's forward tip (GTF-2315).
+            var transitionArrow = (wireUI as TransitionView)?.TransitionControl?.TransitionArrow;
+            if (transitionArrow != null)
+            {
+                m_Offset = new Vector2(0, -5);
+                AttachTo(transitionArrow.ForwardTipElement, SpriteAlignment.TopCenter);
+
+                // While the user drags a transition, the original transition is hidden (display:none) and a temporary ghost transition is drawn and dragged in its place,
+                // which leaves the error marker floating in place. To prevent this, we track the visibility of the transition and mirror its display state onto the marker.
+                TrackTransitionVisibility(wireUI);
+                return;
+            }
+
+            // Defensive fallback: transition unexpectedly has no arrow.
+            m_Offset = new Vector2(0, -20);
+            AttachTo(wireUI.SizeElement, SpriteAlignment.Center);
+        }
+
+        /// <inheritdoc />
+        public override void RemoveFromRootView()
+        {
+            UntrackTransitionVisibility();
+            base.RemoveFromRootView();
+        }
+
         /// <inheritdoc />
         protected override void Detach()
         {
             m_Target?.RemoveFromClassList(k_HasErrorClassName);
+            UntrackTransitionVisibility();
             base.Detach();
         }
 
@@ -544,6 +580,34 @@ namespace Unity.GraphToolkit.Editor
             p2d.ArcTo(new Vector2(rect.xMin, rect.yMax), new Vector2(rect.xMin, rect.yMax - rectRadius), rectRadius);
 
             p2d.ClosePath();
+        }
+
+        void TrackTransitionVisibility(VisualElement transition)
+        {
+            UntrackTransitionVisibility();
+            m_MarkedTransition = transition;
+            transition.RegisterCallback<GeometryChangedEvent>(OnTrackedTransitionGeometryChanged);
+            SyncVisibilityToTrackedTransition();
+        }
+
+        void UntrackTransitionVisibility()
+        {
+            m_MarkedTransition?.UnregisterCallback<GeometryChangedEvent>(OnTrackedTransitionGeometryChanged);
+            m_MarkedTransition = null;
+            style.display = StyleKeyword.Null;
+        }
+
+        void OnTrackedTransitionGeometryChanged(GeometryChangedEvent evt)
+        {
+            SyncVisibilityToTrackedTransition();
+        }
+
+        void SyncVisibilityToTrackedTransition()
+        {
+            // If the transition is not shown, do not show the error marker.
+            style.display = m_MarkedTransition?.resolvedStyle.display == DisplayStyle.None
+                ? DisplayStyle.None
+                : StyleKeyword.Null;
         }
     }
 }

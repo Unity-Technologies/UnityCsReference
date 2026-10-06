@@ -2,7 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: Search not yet converted
 using System;
 using System.Linq;
 using System.Collections.Generic;
@@ -93,6 +92,9 @@ namespace UnityEditor.Search
         }
 
         [AutoStaticsCleanupOnCodeReload]
+        // Drag payload for the gesture in progress: StartDrag assigns it from its caller at the start of
+        // every drag, and a code reload ends any drag, so nothing is left to lose.
+        [IgnoreForUAL0015("Per-gesture drag payload, reassigned at the start of every drag")]
         private static UnityEngine.Object[] s_LastDraggedObjects;
 
 
@@ -728,7 +730,9 @@ namespace UnityEditor.Search
             if (s_LastDraggedObjects == null)
                 return;
             DragAndDrop.PrepareStartDrag();
+#pragma warning disable UAL0018 // the drag payload lives only for this drag gesture, which a reload ends, and the array was just supplied by the caller on the line above
             DragAndDrop.objectReferences = s_LastDraggedObjects;
+#pragma warning restore UAL0018
             DragAndDrop.StartDrag(label);
         }
 
@@ -738,7 +742,9 @@ namespace UnityEditor.Search
             if (paths == null || paths.Length == 0)
                 return;
             DragAndDrop.PrepareStartDrag();
+#pragma warning disable UAL0018 // the drag payload lives only for this drag gesture, which a reload ends, and the array was just supplied by the caller on the line above
             DragAndDrop.objectReferences = s_LastDraggedObjects;
+#pragma warning restore UAL0018
             DragAndDrop.paths = paths;
             DragAndDrop.StartDrag(label);
         }
@@ -1792,8 +1798,14 @@ namespace UnityEditor.Search
         }
 
         [AutoStaticsCleanupOnCodeReload]
+        // Resolved Type from the current scope; re-resolved by scanning the loaded assemblies on the next
+        // property lookup after cleanup nulls it.
+        [IgnoreForUAL0015("Reflection Type cache re-resolved on demand after cleanup nulls it")]
         static Type s_NativePropertyAttributeType;
         [AutoStaticsCleanupOnCodeReload]
+        // Holds MemberInfo and Type values from the current scope, so it must be cleared on reload;
+        // GetManagedType refills an entry on the next miss.
+        [IgnoreForUAL0015("Per-property-path reflection memo, refilled on demand by GetManagedType")]
         static Dictionary<Cache, MemberInfoCache> s_MemberInfoFromPropertyPathCache = new Dictionary<Cache, MemberInfoCache>();
 
         public static Type GetManagedType(this SerializedProperty property)
@@ -1882,4 +1894,3 @@ namespace UnityEditor.Search
     }
 
 }
-#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

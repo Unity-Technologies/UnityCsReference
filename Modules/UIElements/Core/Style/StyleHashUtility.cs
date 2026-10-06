@@ -11,8 +11,16 @@ namespace UnityEngine.UIElements.StyleSheets
     /// plus an optional trailing 4-byte chunk.
     internal static unsafe class StyleHashUtility
     {
-        const ulong k_Prime = 1099511628211UL;       // 0x100000001B3
-        const ulong k_OffsetBasis = 0xcbf29ce484222325UL;
+        internal const ulong k_Prime = 1099511628211UL;       // 0x100000001B3
+        internal const ulong k_OffsetBasis = 0xcbf29ce484222325UL;
+
+        /// Mix one 32-bit value into a running hash started from <see cref="k_OffsetBasis"/>.
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static ulong Mix(ulong hash, int value) => unchecked((hash ^ (uint)value) * k_Prime);
+
+        /// Fold a running 64-bit hash down to its 32-bit result.
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static int Fold(ulong hash) => unchecked((int)(hash ^ (hash >> 32)));
 
         /// Hash `intCount` 4-byte chunks starting at `data` to a 32-bit value.
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -22,14 +30,6 @@ namespace UnityEngine.UIElements.StyleSheets
             {
                 // Two parallel accumulators in the unrolled loop so the CPU can issue
                 // both FNV mixes in the same cycle (no h-to-h dependency chain).
-                //
-                // h2 uses a distinct seed (~k_OffsetBasis) so the final h1 ^ h2 combine
-                // doesn't collapse to 0 when both lanes evolve identically. The clearest
-                // case is an all-zero input: with the same seed both lanes would compute
-                // h = basis * prime^N forever and XOR to 0. Same applies to any input
-                // where even/odd longs are pairwise equal. Distinct seeds break that
-                // symmetry — multiplication by the FNV prime is bijective mod 2^64, so
-                // h1[i] != h2[i] at every step.
                 ulong h1 = k_OffsetBasis;
                 ulong h2 = ~k_OffsetBasis;
                 var lp = (ulong*)data;
@@ -42,12 +42,15 @@ namespace UnityEngine.UIElements.StyleSheets
                     h2 = (h2 ^ lp[1]) * k_Prime;
                     lp += 2;
                 }
-                ulong h = h1 ^ h2;
+                // The shift and the multiply both matter: a symmetric combine collapses when the even and
+                // odd longs are pairwise equal, and multiplying alone leaves bit 63 a fixed point.
+                h1 ^= h1 >> 29;
+                ulong h = (h1 * k_Prime) ^ h2;
                 for (; i < longCount; i++)
                     h = (h ^ *lp++) * k_Prime;
                 if ((intCount & 1) != 0)
                     h = (h ^ ((uint*)data)[intCount - 1]) * k_Prime;
-                return (int)(h ^ (h >> 32));
+                return Fold(h);
             }
         }
     }

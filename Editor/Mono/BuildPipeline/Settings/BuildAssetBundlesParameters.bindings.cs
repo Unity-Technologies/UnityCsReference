@@ -50,7 +50,6 @@ namespace UnityEditor
         ///<seealso cref="EditorUserBuildSettings.standaloneBuildSubtarget" />
         ///<seealso cref="EditorUserBuildSettings.androidBuildSubtarget" />
         ///<seealso cref="EditorUserBuildSettings.webGLBuildSubtarget" />
-        ///<seealso cref="EditorUserBuildSettings.ps4BuildSubtarget" />
         public int subtarget { get; set; }
         ///<summary>User-specified preprocessor defines used while compiling assemblies during the AssetBundle build. (optional)</summary>
         ///<remarks>Preprocessor defines may be used to exclude serialized fields from class definitions, so this can be have an influence on how objects are serialized during the build process.

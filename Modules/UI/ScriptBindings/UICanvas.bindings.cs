@@ -317,6 +317,8 @@ namespace UnityEngine
     [UIModuleHelpURL("class-Canvas")]
     public sealed partial class Canvas : Behaviour
     {
+        internal Canvas(global::UnityEngine.EntityId id) : base(id) {}
+        public Canvas() {}
         // Controls gating of PlayerUpdateCanvases by OnDemandRendering in Player.cpp
         // In sync with CanvasManager::s_BatchingInterval
         ///<summary>Options for when Unity updates canvases for batching.</summary>

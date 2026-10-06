@@ -2,7 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: HeadlessRuntime not yet converted
 using UnityEditor;
 using UnityEditor.PackageManager.UI.Internal;
 using UnityEngine;
@@ -30,13 +29,13 @@ internal class InstanceStatusElement : VisualElement
     internal const string k_InstanceFoldoutTitleDriftIconClass = "unity-instance-status__title-drift-icon";
     internal const string k_DriftToolTip = "This instance might be drifting. This is caused by running an instance for a long time while possible changes were detected in the Main Editor. Consider exiting and restarting the instance.";
 
-    Instance m_Instance;
+    ControllerRuntime m_Instance;
     VisualElement m_FreeRunIcon;
     VisualElement m_StatusIcon;
     Label m_StatusLabel;
     VisualElement m_DriftIcon;
 
-    internal InstanceStatusElement(Instance instance)
+    internal InstanceStatusElement(ControllerRuntime instance)
     {
         m_Instance = instance;
 
@@ -70,7 +69,7 @@ internal class InstanceStatusElement : VisualElement
         m_Instance.StatusRefreshed -= RefreshStatus;
     }
 
-    VisualElement CreateTitleContent(Instance instance)
+    VisualElement CreateTitleContent(ControllerRuntime instance)
     {
         var titleContent = new VisualElement();
         titleContent.AddToClassList(k_InstanceFoldoutTitleContentClass);
@@ -90,7 +89,7 @@ internal class InstanceStatusElement : VisualElement
         return titleContent;
     }
 
-    static Texture2D GetIconTextureForInstance(Instance instance)
+    static Texture2D GetIconTextureForInstance(ControllerRuntime instance)
     {
         // var instanceDescription = instance.GetInstanceDescription();
         Texture2D iconTexture = null;
@@ -128,7 +127,7 @@ internal class InstanceStatusElement : VisualElement
         return container;
     }
 
-    VisualElement CreateTitleBarCustomUI(Instance instance)
+    VisualElement CreateTitleBarCustomUI(ControllerRuntime instance)
     {
         var container = new VisualElement();
         container.AddToClassList(k_InstanceFoldoutTitleCustomClass);
@@ -142,14 +141,19 @@ internal class InstanceStatusElement : VisualElement
         return container;
     }
 
-    void RefreshStatus(Instance instance, InstanceStatusData status)
+    void RefreshStatus(ControllerRuntime instance, InstanceStatusData status)
     {
         ComputeStatusValues(status, out var state, out var stage, out var stageProgress, out var totalProgress);
+
+        var runStageCompleted = stage is ExecutionStage.Run &&
+            status.StageStatuses[(int)ExecutionStage.Run].State is ExecutionState.Completed;
 
         m_StatusIcon.style.backgroundImage = Icons.GetImage(state switch
         {
             ExecutionState.Idle => Icons.ImageName.Idle,
-            ExecutionState.Running => status.IsExecutingRunningStage() ? Icons.ImageName.CompletedTask : Icons.ImageName.Loading,
+            ExecutionState.Running when status.IsExecutingRunningStage() => Icons.ImageName.CompletedTask,
+            ExecutionState.Running when runStageCompleted => Icons.ImageName.Idle,
+            ExecutionState.Running => Icons.ImageName.Loading,
             ExecutionState.Completed => Icons.ImageName.Idle,
             ExecutionState.Aborted => Icons.ImageName.Idle,
             ExecutionState.Failed => Icons.ImageName.Error,
@@ -160,7 +164,7 @@ internal class InstanceStatusElement : VisualElement
         m_FreeRunIcon.EnableClassToggle(k_InstanceFoldoutTitleFreeRunIconActiveClass, k_InstanceFoldoutTitleFreeRunIconInactiveClass, m_Instance.IsFreeRunMode());
         m_DriftIcon.visible = instance.Drifted;
 
-        if (state is ExecutionState.Idle or ExecutionState.Completed or ExecutionState.Aborted)
+        if (state is ExecutionState.Idle or ExecutionState.Completed or ExecutionState.Aborted || runStageCompleted)
         {
             m_StatusLabel.text = "Idle";
             return;
@@ -192,7 +196,7 @@ internal class InstanceStatusElement : VisualElement
         stageProgress = status.StageStatuses[(int)stage].ProgressSum / Mathf.Max(1, status.StageStatuses[(int)stage].NodesCount);
     }
 
-    VisualElement CreateContent(Instance instance)
+    VisualElement CreateContent(ControllerRuntime instance)
     {
         var container = new VisualElement();
         container.AddToClassList(k_InstanceInspectorClass);
@@ -205,4 +209,3 @@ internal class InstanceStatusElement : VisualElement
         return container;
     }
 }
-#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

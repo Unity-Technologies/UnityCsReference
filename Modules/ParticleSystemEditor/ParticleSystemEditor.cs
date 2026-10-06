@@ -16,11 +16,11 @@ namespace UnityEditor
     internal class ParticleSystemInspector : Editor, ParticleEffectUIOwner, ICoupledEditor
     {
         ParticleEffectUI m_ParticleEffectUI;
-        GUIContent m_PreviewTitle = EditorGUIUtility.TrTextContent("Particle System Curves");
-        GUIContent showWindowText = EditorGUIUtility.TrTextContent("Open Editor...");
-        GUIContent closeWindowText = EditorGUIUtility.TrTextContent("Close Editor");
-        GUIContent hideWindowText = EditorGUIUtility.TrTextContent("Hide Editor");
-        GUIContent selectSubEmitterOwner = EditorGUIUtility.TrTextContent("Select Sub-Emitter Owner");
+        GUIContent m_PreviewTitle = L10n.TextContent("Particle System Curves", null, null, null);
+        GUIContent showWindowText = L10n.TextContent("Open Editor...", null, null, null);
+        GUIContent closeWindowText = L10n.TextContent("Close Editor", null, null, null);
+        GUIContent hideWindowText = L10n.TextContent("Hide Editor", null, null, null);
+        GUIContent selectSubEmitterOwner = L10n.TextContent("Select Sub-Emitter Owner", null, null, null);
 
         [NoAutoStaticsCleanup] // cached UI label
         static GUIContent m_PlayBackTitle;
@@ -37,7 +37,7 @@ namespace UnityEditor
             get
             {
                 if (m_PlayBackTitle == null)
-                    m_PlayBackTitle = EditorGUIUtility.TrTextContent("Particle Effect");
+                    m_PlayBackTitle = L10n.TextContent("Particle Effect", null, null, null);
                 return m_PlayBackTitle;
             }
         }

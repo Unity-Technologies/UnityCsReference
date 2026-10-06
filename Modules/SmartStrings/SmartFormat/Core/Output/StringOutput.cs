@@ -83,7 +83,7 @@ public class StringOutput : IOutput
 
     /// <summary>
     /// Clears the <see cref="StringBuilder"/> used to create the output.
-    /// <para>This method gets called by <see cref="StringOutputPool"/> when it releases an instance.</para>
+    /// This method gets called by <see cref="StringOutputPool"/> when it releases an instance.
     /// </summary>
     public void Clear()
     {

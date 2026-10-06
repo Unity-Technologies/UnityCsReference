@@ -6,7 +6,7 @@ using UnityEngine;
 
 namespace UnityEditor;
 
-sealed partial class EditorGUILayout
+public sealed partial class EditorGUILayout
 {
      // Rendering Layers
     public static uint RenderingLayerMaskField(string label, uint layers, params GUILayoutOption[] options)

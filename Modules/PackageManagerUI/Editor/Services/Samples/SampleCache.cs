@@ -85,13 +85,13 @@ namespace UnityEditor.PackageManager.UI.Internal
 
     internal interface ISampleCache : IService
     {
-        event Action<IReadOnlyCollection<string> /* packageTechnicalNames */> onSamplesChanged;
-        event Action<IReadOnlyCollection<string> /* sanitizedPackageDisplayNames */> onImportedSamplesChanged;
+        event Action<IReadOnlyList<string> /* packageTechnicalNames */> onSamplesChanged;
+        event Action<IReadOnlyList<string> /* sanitizedPackageDisplayNames */> onImportedSamplesChanged;
 
         IReadOnlyCollection<SampleInfoCollection> sampleInfoCollections { get; }
 
         void FullScanImportedSamples();
-        IReadOnlyCollection<string> ScanImportedSampleVersions(string sanitizedPackageDisplayName, string sanitizedSampleDisplayName);
+        IReadOnlyList<string> ScanImportedSampleVersions(string sanitizedPackageDisplayName, string sanitizedSampleDisplayName);
 
         void UpdateImportedSamplesOnAssetChanged(string[] importedAssets, string[] deletedAssets, string[] movedAssets, string[] movedFromAssetPaths);
 
@@ -103,8 +103,8 @@ namespace UnityEditor.PackageManager.UI.Internal
     [Serializable]
     internal class SampleCache : BaseService<ISampleCache>, ISampleCache
     {
-        public event Action<IReadOnlyCollection<string> /* packageTechnicalNames */> onSamplesChanged;
-        public event Action<IReadOnlyCollection<string> /* sanitizedPackageDisplayNames */> onImportedSamplesChanged;
+        public event Action<IReadOnlyList<string> /* packageTechnicalNames */> onSamplesChanged;
+        public event Action<IReadOnlyList<string> /* sanitizedPackageDisplayNames */> onImportedSamplesChanged;
 
         [SerializeField]
         private Dictionary<string, SampleInfoCollection> m_SampleInfoCollections = new();
@@ -134,7 +134,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_UpmCache.onPackageInfosUpdated -= OnPackageInfosUpdated;
         }
 
-        private void OnPackageInfosUpdated(IReadOnlyCollection<(PackageInfo oldInfo, PackageInfo newInfo)> updateInfos, PackagesChangedSource changedSource)
+        private void OnPackageInfosUpdated(IReadOnlyList<(PackageInfo oldInfo, PackageInfo newInfo)> updateInfos, PackagesChangedSource changedSource)
         {
             if (changedSource != PackagesChangedSource.UpmList && changedSource != PackagesChangedSource.AddAndRemove)
                 return;
@@ -202,7 +202,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                 onImportedSamplesChanged?.Invoke(sanitizedPackageNames);
         }
 
-        public IReadOnlyCollection<string> ScanImportedSampleVersions(string sanitizedPackageDisplayName, string sanitizedSampleDisplayName)
+        public IReadOnlyList<string> ScanImportedSampleVersions(string sanitizedPackageDisplayName, string sanitizedSampleDisplayName)
         {
             if (string.IsNullOrEmpty(sanitizedPackageDisplayName) || string.IsNullOrEmpty(sanitizedSampleDisplayName))
                 return Array.Empty<string>();
@@ -227,7 +227,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             FullScanImportedSamples();
         }
 
-        private static IReadOnlyCollection<string> FindUpdatedSamplePackageNames(Dictionary<string, ImportedSampleCollection> oldCollections, Dictionary<string, ImportedSampleCollection> newCollections)
+        private static IReadOnlyList<string> FindUpdatedSamplePackageNames(Dictionary<string, ImportedSampleCollection> oldCollections, Dictionary<string, ImportedSampleCollection> newCollections)
         {
             var sanitizedPackageNames = new List<string>();
             foreach (var oldCollection in oldCollections.Values)

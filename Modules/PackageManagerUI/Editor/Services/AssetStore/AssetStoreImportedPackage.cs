@@ -10,7 +10,7 @@ using UnityEngine;
 namespace UnityEditor.PackageManager.UI.Internal
 {
     [Serializable]
-    internal class AssetStoreImportedPackage : IReadOnlyCollection<Asset>
+    internal class AssetStoreImportedPackage : IReadOnlyList<Asset>
     {
         public long productId => latestAssetOrigin?.productId ?? 0;
         public string displayName => latestAssetOrigin?.packageName ?? "";
@@ -48,14 +48,8 @@ namespace UnityEditor.PackageManager.UI.Internal
                 m_LatestAssetOrigin = importedAsset.origin;
         }
 
-        public IEnumerator<Asset> GetEnumerator()
-        {
-            return m_ImportedAssets.GetEnumerator();
-        }
-
-        IEnumerator IEnumerable.GetEnumerator()
-        {
-            return m_ImportedAssets.GetEnumerator();
-        }
+        public IEnumerator<Asset> GetEnumerator() => m_ImportedAssets.GetEnumerator();
+        IEnumerator IEnumerable.GetEnumerator() => m_ImportedAssets.GetEnumerator();
+        public Asset this[int index] => m_ImportedAssets[index];
     }
 }

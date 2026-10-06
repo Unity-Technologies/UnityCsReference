@@ -60,6 +60,8 @@ namespace UnityEditor
     // Audio importer lets you modify [[AudioClip]] import settings from editor scripts.
     public sealed partial class AudioImporter : AssetImporter
     {
+        internal AudioImporter(global::UnityEngine.EntityId id) : base(id) {}
+        public AudioImporter() {}
         public extern AudioImporterSampleSettings defaultSampleSettings { get; set; }
 
         public bool ContainsSampleSettingsOverride(string platform)

@@ -20,7 +20,7 @@ internal class DeselectSampleAction : SampleAction
         return true;
     }
 
-    protected override bool TriggerActionImplementation(IReadOnlyCollection<Sample> samples)
+    protected override bool TriggerActionImplementation(IReadOnlyList<Sample> samples)
     {
         var samplesUniqueIds = samples.SelectToNewArray(s => s.uniqueId);
         m_PageManager.activePage.RemoveSelection(samplesUniqueIds, false);

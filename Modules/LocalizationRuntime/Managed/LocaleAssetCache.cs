@@ -6,6 +6,7 @@ using System;
 using System.Collections.Generic;
 using System.Threading;
 using UnityEngine;
+using UnityEngine.Pool;
 using Object = UnityEngine.Object;
 
 namespace Unity.Localization;
@@ -17,15 +18,18 @@ namespace Unity.Localization;
 /// </summary>
 /// <remarks>
 /// Concurrent requests for the same key share a single underlying load. Cached assets are released per locale
-/// through <see cref="ReleaseAssetsForLocale"/>, or all at once through <see cref="ReleaseAll"/>, using the
-/// releaser captured at load time. All members must be called from the main thread.
+/// through <see cref="ReleaseAssetsForLocale"/>, or all at once through <see cref="ReleaseAll"/>. Each load is
+/// handed back exactly once, through the releaser captured for it, and a release waits while another entry still
+/// serves the same asset. All members must be called from the main thread.
 /// </remarks>
 sealed class LocaleAssetCache
 {
     readonly Dictionary<CacheKey, CacheEntry> m_Cache = new();
     readonly Dictionary<CacheKey, PendingLoad> m_PendingLoads = new();
     readonly Dictionary<LocaleIdentifier, HashSet<CacheKey>> m_ByLocale = new();
-    readonly Dictionary<EntityId, int> m_AssetUseCounts = new();
+    readonly Dictionary<EntityId, AssetUses> m_AssetUses = new();
+    // Keys whose wrong-typed load could not be released yet, mapped to the asset that holds it back.
+    Dictionary<CacheKey, EntityId> m_DeferredMismatches;
     // Keys already warned about a type mismatch, so a per-frame retry does not flood the console.
     HashSet<CacheKey> m_TypeMismatchWarned;
 
@@ -61,12 +65,15 @@ sealed class LocaleAssetCache
         // Defer to an async load already in flight for this key rather than racing it and caching a duplicate.
         if (m_PendingLoads.ContainsKey(cacheKey))
             return null;
+        if (MismatchDeferred(cacheKey))
+            return null;
         var asset = syncLoader();
         if (asset == null)
             return null;
         if (asset is not T typed)
         {
             WarnTypeMismatch(cacheKey, asset);
+            RecordMismatch(cacheKey, asset, releaser);
             return null;
         }
         Insert(cacheKey, asset, releaser);
@@ -81,19 +88,22 @@ sealed class LocaleAssetCache
         if (m_ByLocale.TryGetValue(locale, out var keys))
         {
             // Snapshot: a releaser can re-enter and insert into the very collections being walked.
-            var snapshot = new List<CacheKey>(keys);
+            using var pooled = ListPool<CacheKey>.Get(out var snapshot);
+            snapshot.AddRange(keys);
             m_ByLocale.Remove(locale);
             for (var i = 0; i < snapshot.Count; i++)
             {
                 if (m_Cache.TryGetValue(snapshot[i], out var entry))
                 {
                     m_Cache.Remove(snapshot[i]);
-                    ReleaseIfLastUse(entry);
+                    DropUse(entry);
                 }
             }
         }
         // Always cancel in-flight loads for the locale, even when nothing is cached yet.
         CancelPendingLoads(locale);
+        // The held-back releases stay with the asset; only this locale's licence to skip the reload goes.
+        ForgetMismatches(locale);
     }
 
     /// <summary>
@@ -102,40 +112,104 @@ sealed class LocaleAssetCache
     public void ReleaseAll()
     {
         // Snapshot: a releaser can re-enter and insert into the very collections being walked.
-        var entries = new List<CacheEntry>(m_Cache.Values);
+        using var pooled = ListPool<CacheEntry>.Get(out var entries);
+        entries.AddRange(m_Cache.Values);
         m_Cache.Clear();
         m_ByLocale.Clear();
-        m_AssetUseCounts.Clear();
-        // Several entries can serve one asset, so release each distinct asset once.
-        var released = new HashSet<EntityId>();
+        m_DeferredMismatches?.Clear();
         for (var i = 0; i < entries.Count; i++)
         {
-            if (entries[i].Asset != null && released.Add(entries[i].EntityId))
-                SafeRelease(entries[i].Releaser, entries[i].Asset);
+            DropUse(entries[i]);
         }
         CancelPendingLoads(null);
     }
 
-    void ReleaseIfLastUse(CacheEntry entry)
+    void DropUse(CacheEntry entry)
     {
-        if (m_AssetUseCounts.TryGetValue(entry.EntityId, out var count))
+        if (!m_AssetUses.TryGetValue(entry.EntityId, out var uses))
         {
-            if (count > 1)
-            {
-                m_AssetUseCounts[entry.EntityId] = count - 1;
-                return;
-            }
-            m_AssetUseCounts.Remove(entry.EntityId);
-        }
-        if (entry.Asset != null)
             SafeRelease(entry.Releaser, entry.Asset);
+            return;
+        }
+        if (!uses.Release())
+        {
+            uses.Defer(entry.Releaser);
+            return;
+        }
+        m_AssetUses.Remove(entry.EntityId);
+        ForgetMismatches(entry.EntityId);
+        SafeRelease(entry.Releaser, entry.Asset);
+        var deferred = uses.Deferred;
+        if (deferred == null)
+            return;
+        for (var i = 0; i < deferred.Count; i++)
+        {
+            ReleaseUnkept(entry.EntityId, entry.Asset, deferred[i]);
+        }
+    }
+
+    // A load the cache is not keeping took a reference, so hand it back unless a live entry still serves the asset.
+    bool ReleaseUnkept(EntityId entityId, Object asset, Action<Object> releaser)
+    {
+        if (m_AssetUses.TryGetValue(entityId, out var uses))
+        {
+            uses.Defer(releaser);
+            return true;
+        }
+        SafeRelease(releaser, asset);
+        return false;
+    }
+
+    // A mismatch that had to hold its release back repeats the load on every retry, so stop reloading while it stands.
+    bool MismatchDeferred(CacheKey cacheKey)
+    {
+        if (m_DeferredMismatches == null || !m_DeferredMismatches.TryGetValue(cacheKey, out var entityId))
+            return false;
+        if (m_AssetUses.ContainsKey(entityId))
+            return true;
+        m_DeferredMismatches.Remove(cacheKey);
+        return false;
+    }
+
+    void RecordMismatch(CacheKey cacheKey, Object asset, Action<Object> releaser)
+    {
+        var entityId = asset.GetEntityId();
+        if (ReleaseUnkept(entityId, asset, releaser))
+            (m_DeferredMismatches ??= new Dictionary<CacheKey, EntityId>())[cacheKey] = entityId;
+    }
+
+    void ForgetMismatches(LocaleIdentifier locale)
+    {
+        if (m_DeferredMismatches == null || m_DeferredMismatches.Count == 0)
+            return;
+        using var pooled = ListPool<CacheKey>.Get(out var keys);
+        keys.AddRange(m_DeferredMismatches.Keys);
+        for (var i = 0; i < keys.Count; i++)
+        {
+            if (keys[i].Locale.Equals(locale))
+                m_DeferredMismatches.Remove(keys[i]);
+        }
+    }
+
+    void ForgetMismatches(EntityId entityId)
+    {
+        if (m_DeferredMismatches == null || m_DeferredMismatches.Count == 0)
+            return;
+        using var pooled = ListPool<CacheKey>.Get(out var keys);
+        keys.AddRange(m_DeferredMismatches.Keys);
+        for (var i = 0; i < keys.Count; i++)
+        {
+            if (m_DeferredMismatches[keys[i]].Equals(entityId))
+                m_DeferredMismatches.Remove(keys[i]);
+        }
     }
 
     void CancelPendingLoads(LocaleIdentifier? locale)
     {
         if (m_PendingLoads.Count == 0)
             return;
-        var keys = new List<CacheKey>(m_PendingLoads.Keys);
+        using var pooled = ListPool<CacheKey>.Get(out var keys);
+        keys.AddRange(m_PendingLoads.Keys);
         for (var i = 0; i < keys.Count; i++)
         {
             if (locale.HasValue && !keys[i].Locale.Equals(locale.Value))
@@ -158,11 +232,14 @@ sealed class LocaleAssetCache
             // The asset was destroyed or unloaded out from under us; drop it and reload.
             m_Cache.Remove(cacheKey);
             RemoveFromLocaleIndex(cacheKey);
-            ReleaseIfLastUse(cached);
+            DropUse(cached);
         }
 
         if (m_PendingLoads.TryGetValue(cacheKey, out var load))
             return AddWaiter(load, cacheKey, cancellationToken);
+
+        if (MismatchDeferred(cacheKey))
+            return AwaitableUtility.FromResult<Object>(null);
 
         load = new PendingLoad { Loader = loader, Releaser = releaser };
         m_PendingLoads.Add(cacheKey, load);
@@ -248,10 +325,11 @@ sealed class LocaleAssetCache
         {
             if (error == null && result != null)
             {
-                // A wrong-typed result is neither cached nor released, as in TryGet.
+                // A wrong-typed result is not cached, as in TryGet.
                 if (!cacheKey.Type.IsInstanceOfType(result))
                 {
                     WarnTypeMismatch(cacheKey, result);
+                    RecordMismatch(cacheKey, result, load.Releaser);
                     result = null;
                 }
                 else if (stillCurrent)
@@ -260,9 +338,7 @@ sealed class LocaleAssetCache
                 }
                 else
                 {
-                    // A stale load delivers a miss, and releases its asset only when no live entry serves the same one.
-                    if (!m_AssetUseCounts.ContainsKey(result.GetEntityId()))
-                        SafeRelease(load.Releaser, result);
+                    ReleaseUnkept(result.GetEntityId(), result, load.Releaser);
                     result = null;
                 }
             }
@@ -318,11 +394,15 @@ sealed class LocaleAssetCache
     {
         // Superseding an entry drops its use first, so the counts track live entries exactly.
         if (m_Cache.TryGetValue(cacheKey, out var superseded))
-            ReleaseIfLastUse(superseded);
+        {
+            m_Cache.Remove(cacheKey);
+            DropUse(superseded);
+        }
         var entityId = asset.GetEntityId();
         m_Cache[cacheKey] = new CacheEntry(asset, releaser, entityId);
-        m_AssetUseCounts.TryGetValue(entityId, out var uses);
-        m_AssetUseCounts[entityId] = uses + 1;
+        if (!m_AssetUses.TryGetValue(entityId, out var uses))
+            m_AssetUses[entityId] = uses = new AssetUses();
+        uses.Acquire();
         if (!m_ByLocale.TryGetValue(cacheKey.Locale, out var keys))
         {
             keys = new HashSet<CacheKey>();
@@ -375,11 +455,25 @@ sealed class LocaleAssetCache
     internal int CachedCount => m_Cache.Count;
     internal int PendingLoadCount => m_PendingLoads.Count;
 
+    sealed class AssetUses
+    {
+        int m_LiveEntries;
+
+        // Releases held back while a live entry hands the asset out; a releaser that unloads would destroy it.
+        public List<Action<Object>> Deferred { get; private set; }
+
+        public void Acquire() => m_LiveEntries++;
+
+        public bool Release() => --m_LiveEntries <= 0;
+
+        public void Defer(Action<Object> releaser) => (Deferred ??= new List<Action<Object>>()).Add(releaser);
+    }
+
     readonly struct CacheEntry
     {
         public readonly Object Asset;
         public readonly Action<Object> Releaser;
-        // Captured at insert time so eviction can still find the use count after the asset is destroyed.
+        // Captured at insert time so eviction can still find the asset's uses after it is destroyed.
         public readonly EntityId EntityId;
 
         public CacheEntry(Object asset, Action<Object> releaser, EntityId entityId)

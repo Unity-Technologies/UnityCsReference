@@ -35,6 +35,9 @@ namespace UnityEditor
     public sealed partial class Menu
     {
         [AutoStaticsCleanupOnCodeReload]
+        // Subscribers attach through their own lifecycle and re-subscribe after a code reload, so the
+        // cleared invocation list refills itself.
+        [IgnoreForUAL0015("Event whose subscribers re-register through their own lifecycle after a code reload")]
         internal static event Action menuChanged;
 
         [NativeMethod("MenuController::SetChecked", true)]

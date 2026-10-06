@@ -40,31 +40,31 @@ namespace UnityEditor
 
         class Texts
         {
-            public GUIContent separateAxes = EditorGUIUtility.TrTextContent("Separate Axes", "If enabled, you can control the noise separately for each axis.");
-            public GUIContent strength = EditorGUIUtility.TrTextContent("Strength", "How strong the overall noise effect is. If you use a curve to set this value, the Particle System applies the curve over the lifetime of each particle.");
-            public GUIContent frequency = EditorGUIUtility.TrTextContent("Frequency", "Low values create soft, smooth noise, and high values create rapidly changing noise.");
-            public GUIContent damping = EditorGUIUtility.TrTextContent("Damping", "If enabled, strength is proportional to frequency.");
-            public GUIContent octaves = EditorGUIUtility.TrTextContent("Octaves", "Layers of noise that combine to produce final noise (Adding octaves increases the performance cost substantially!)");
-            public GUIContent octaveMultiplier = EditorGUIUtility.TrTextContent("Octave Multiplier", "When combining each octave, scale the intensity by this amount.");
-            public GUIContent octaveScale = EditorGUIUtility.TrTextContent("Octave Scale", "When combining each octave, zoom in by this amount.");
-            public GUIContent quality = EditorGUIUtility.TrTextContent("Quality", "Generate 1D, 2D or 3D noise.");
-            public GUIContent scrollSpeed = EditorGUIUtility.TrTextContent("Scroll Speed", "Scroll the noise map over the particle system. If you use a curve to set this value, the Particle System applies the curve over the lifetime of each particle.");
-            public GUIContent remap = EditorGUIUtility.TrTextContent("Remap", "Remap the final noise values into a new range. If you use a curve to set this value, the Particle System applies the curve over the lifetime of each particle.");
-            public GUIContent remapCurve = EditorGUIUtility.TrTextContent("Remap Curve");
-            public GUIContent positionAmount = EditorGUIUtility.TrTextContent("Position Amount", "What proportion of the noise is applied to the particle positions. If you use a curve to set this value, the Particle System applies the curve over the lifetime of each particle.");
-            public GUIContent rotationAmount = EditorGUIUtility.TrTextContent("Rotation Amount", "What proportion of the noise is applied to the particle rotations, in degrees per second. If you use a curve to set this value, the Particle System applies the curve over the lifetime of each particle.");
-            public GUIContent sizeAmount = EditorGUIUtility.TrTextContent("Size Amount", "Multiply the size of the particle by a proportion of the noise. If you use a curve to set this value, the Particle System applies the curve over the lifetime of each particle.");
+            public GUIContent separateAxes = L10n.TextContent("Separate Axes", "If enabled, you can control the noise separately for each axis.", null, null);
+            public GUIContent strength = L10n.TextContent("Strength", "How strong the overall noise effect is. If you use a curve to set this value, the Particle System applies the curve over the lifetime of each particle.", null, null);
+            public GUIContent frequency = L10n.TextContent("Frequency", "Low values create soft, smooth noise, and high values create rapidly changing noise.", null, null);
+            public GUIContent damping = L10n.TextContent("Damping", "If enabled, strength is proportional to frequency.", null, null);
+            public GUIContent octaves = L10n.TextContent("Octaves", "Layers of noise that combine to produce final noise (Adding octaves increases the performance cost substantially!)", null, null);
+            public GUIContent octaveMultiplier = L10n.TextContent("Octave Multiplier", "When combining each octave, scale the intensity by this amount.", null, null);
+            public GUIContent octaveScale = L10n.TextContent("Octave Scale", "When combining each octave, zoom in by this amount.", null, null);
+            public GUIContent quality = L10n.TextContent("Quality", "Generate 1D, 2D or 3D noise.", null, null);
+            public GUIContent scrollSpeed = L10n.TextContent("Scroll Speed", "Scroll the noise map over the particle system. If you use a curve to set this value, the Particle System applies the curve over the lifetime of each particle.", null, null);
+            public GUIContent remap = L10n.TextContent("Remap", "Remap the final noise values into a new range. If you use a curve to set this value, the Particle System applies the curve over the lifetime of each particle.", null, null);
+            public GUIContent remapCurve = L10n.TextContent("Remap Curve", null, null, null);
+            public GUIContent positionAmount = L10n.TextContent("Position Amount", "What proportion of the noise is applied to the particle positions. If you use a curve to set this value, the Particle System applies the curve over the lifetime of each particle.", null, null);
+            public GUIContent rotationAmount = L10n.TextContent("Rotation Amount", "What proportion of the noise is applied to the particle rotations, in degrees per second. If you use a curve to set this value, the Particle System applies the curve over the lifetime of each particle.", null, null);
+            public GUIContent sizeAmount = L10n.TextContent("Size Amount", "Multiply the size of the particle by a proportion of the noise. If you use a curve to set this value, the Particle System applies the curve over the lifetime of each particle.", null, null);
             public GUIContent x = EditorGUIUtility.TextContent("X");
             public GUIContent y = EditorGUIUtility.TextContent("Y");
             public GUIContent z = EditorGUIUtility.TextContent("Z");
-            public GUIContent previewTexture = EditorGUIUtility.TrTextContent("Preview", "Preview the noise as a texture.");
-            public GUIContent previewTextureMultiEdit = EditorGUIUtility.TrTextContent("Preview (Disabled)", "Preview is disabled in multi-object editing mode.");
+            public GUIContent previewTexture = L10n.TextContent("Preview", "Preview the noise as a texture.", null, null);
+            public GUIContent previewTextureMultiEdit = L10n.TextContent("Preview (Disabled)", "Preview is disabled in multi-object editing mode.", null, null);
 
             public GUIContent[] qualityDropdown = new GUIContent[]
             {
-                EditorGUIUtility.TrTextContent("Low (1D)"),
-                EditorGUIUtility.TrTextContent("Medium (2D)"),
-                EditorGUIUtility.TrTextContent("High (3D)")
+                L10n.TextContent("Low (1D)", null, null, null),
+                L10n.TextContent("Medium (2D)", null, null, null),
+                L10n.TextContent("High (3D)", null, null, null)
             };
         }
         [NoAutoStaticsCleanup] // lazy-initialized UI text cache

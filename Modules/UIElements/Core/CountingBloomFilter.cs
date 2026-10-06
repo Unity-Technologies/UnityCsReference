@@ -108,5 +108,14 @@ namespace UnityEngine.UIElements
                 elemCount--;
             }
         }
+
+        public void Clear()
+        {
+            if (m_HashStack.Count == 0)
+                return;
+
+            m_HashStack.Clear();
+            m_CountingBloomFilter = default;
+        }
     }
 }

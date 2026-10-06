@@ -2,7 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: SceneTooling not yet converted
 using System;
 using UnityEngine;
 using Unity.Scripting.LifecycleManagement;
@@ -12,6 +11,9 @@ namespace UnityEditor.Toolbars;
 partial class AIDropdown : EditorToolbarDropdown
 {
     [AutoStaticsCleanupOnCodeReload]
+    // The main toolbar element factory Create() is called again when the toolbar is rebuilt after a code
+    // reload and lazily recreates the dropdown, which re-assigns this slot from its constructor.
+    [IgnoreForUAL0015("Toolbar element slot recreated by the main toolbar element factory on rebuild")]
     internal static AIDropdown instance;
 
     [UnityOnlyMainToolbarPreset]
@@ -55,4 +57,3 @@ partial class AIDropdown : EditorToolbarDropdown
         m_Content = AIDropdownConfig.instance.config?.content;
     }
 }
-#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

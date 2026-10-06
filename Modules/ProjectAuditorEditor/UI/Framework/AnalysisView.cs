@@ -2,7 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: Profiling not yet converted
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -11,6 +10,7 @@ using Unity.ProjectAuditor.Editor.Core;
 using Unity.ProjectAuditor.Editor.Utils;
 using UnityEditor;
 using UnityEditor.IMGUI.Controls;
+using UnityEditor.Search;
 using UnityEngine;
 using TreeViewState = UnityEditor.IMGUI.Controls.TreeViewState<int>;
 
@@ -41,7 +41,7 @@ namespace Unity.ProjectAuditor.Editor.UI.Framework
         protected ViewDescriptor m_Desc;
         protected List<ReportItem> m_Issues = new List<ReportItem>();
         protected IssueLayout m_Layout;
-        protected IssueTable m_Table;
+        protected internal IssueTable m_Table;
         protected TextFilter m_TextFilter;
         protected ViewManager m_ViewManager;
         protected ProjectAuditorWindow m_Window;
@@ -104,7 +104,7 @@ namespace Unity.ProjectAuditor.Editor.UI.Framework
             m_ViewManager = viewManager;
         }
 
-        public virtual void Create(ViewDescriptor descriptor, IssueLayout layout, SeverityRules rules, ViewStates viewStates, ProjectAuditorWindow window)
+        public virtual void Create(ViewDescriptor descriptor, IssueLayout layout, SeverityRules rules, ViewStates viewStates, ProjectAuditorWindow window, TreeViewState treeViewState)
         {
             m_Desc = descriptor;
             m_Rules = rules;
@@ -129,7 +129,7 @@ namespace Unity.ProjectAuditor.Editor.UI.Framework
             if (m_Table != null)
                 return;
 
-            var state = new TreeViewState();
+            var state = treeViewState ?? new TreeViewState();
             var columns = new MultiColumnHeaderState.Column[layout.Properties.Length];
             for (var i = 0; i < layout.Properties.Length; i++)
             {
@@ -219,7 +219,7 @@ namespace Unity.ProjectAuditor.Editor.UI.Framework
 
             var rows = m_Table.GetRows();
 
-            if (rows == null || rows.Count == 0 || (rows.Count == 1 && rows[0].displayName == "No items"))
+            if (rows == null || rows.Count == 0 || m_Table.GetNumMatchingIssues() == 0)
                 return;
 
             var header = m_Table.multiColumnHeader;
@@ -415,6 +415,16 @@ namespace Unity.ProjectAuditor.Editor.UI.Framework
         {
         }
 
+        public virtual bool IsPageOutOfScope()
+        {
+            return false;
+        }
+
+        // Drawn in place of the content when IsPageOutOfScope() returns true.
+        public virtual void DrawOutOfScopePage()
+        {
+        }
+
         public virtual void DrawContent()
         {
             using (new EditorGUILayout.HorizontalScope(GUI.skin.box, GUILayout.ExpandHeight(true)))
@@ -511,13 +521,15 @@ namespace Unity.ProjectAuditor.Editor.UI.Framework
 
             EditorGUI.BeginChangeCheck();
 
-            m_PendingSearchString = EditorGUILayout.ToolbarSearchField(m_PendingSearchString ?? m_TextFilter.searchString, GUILayout.Width(280));
+            m_PendingSearchString = EditorGUILayout.ToolbarSearchField(SearchString, GUILayout.Width(280));
             m_Table.searchString = m_TextFilter.searchString;
 
             if (EditorGUI.EndChangeCheck())
             {
                 m_NextSearchOffDelegate?.Invoke();
+#pragma warning disable UAL0018 // holds only the cancel token for the pending debounce; a reload drops the pending callback with the tick subscribers, and the next keystroke invokes and replaces the token, so a stale one cancels nothing
                 m_NextSearchOffDelegate = EditorApplication.CallDelayed(UpdateSearchDelayed, UnityEditor.SearchUtils.debounceThresholdMs / 1000f);
+#pragma warning restore UAL0018
             }
             else if (m_PendingSearchString == m_TextFilter.searchString)
             {
@@ -525,12 +537,21 @@ namespace Unity.ProjectAuditor.Editor.UI.Framework
             }
 
             if (GUILayout.Button(Contents.SearchJumpButton, SharedStyles.OpenSearchWindowButton, GUILayout.Height(18), GUILayout.Width(18)))
-                Utility.SearchWindow(IssueSearchProvider.kProviderId, "Project Auditor Report");
+                OpenIssuesInSearchWindow();
 
 
             GUILayout.FlexibleSpace();
 
             EditorGUILayout.EndHorizontal();
+        }
+
+        // the pending string is the text typed since the last debounce, so it is what the field shows
+        string SearchString => m_PendingSearchString ?? m_TextFilter.searchString;
+
+        // internal for testing
+        internal ISearchView OpenIssuesInSearchWindow()
+        {
+            return Utility.SearchWindow(IssueSearchProvider.kProviderId, "Project Auditor Report", SearchString);
         }
 
         void UpdateSearchDelayed()
@@ -827,6 +848,11 @@ namespace Unity.ProjectAuditor.Editor.UI.Framework
             return m_BaseFilter.Match(issue) && m_TextFilter.Match(issue);
         }
 
+        internal bool MatchesPage(ReportItem issue)
+        {
+            return m_Window == null || m_Window.MatchesPage(issue);
+        }
+
         internal void OnEnable()
         {
             LoadSettings();
@@ -847,7 +873,7 @@ namespace Unity.ProjectAuditor.Editor.UI.Framework
             var defaultGroupPropertyIndex = m_Layout.DefaultGroupPropertyIndex;
             m_Table.flatView = EditorPrefs.GetBool(GetPrefKey(k_FlatModeKey), defaultGroupPropertyIndex == -1);
             m_Table.showIgnoredIssues = EditorPrefs.GetBool(GetPrefKey(k_ShowIgnoredIssuesKey), false);
-            m_Table.groupPropertyIndex = EditorPrefs.GetInt(GetPrefKey(k_GroupPropertyIndexKey), defaultGroupPropertyIndex);
+            m_Table.groupPropertyIndex = FindGroupPropertyIndex(EditorPrefs.GetString(GetGroupPrefKey()), defaultGroupPropertyIndex);
             m_SortPropertyIndex = EditorPrefs.GetInt(GetPrefKey(k_SortPropertyIndexKey), 0);
             m_SortAscending = EditorPrefs.GetBool(GetPrefKey(k_SortAscendingKey), true);
             m_Table.multiColumnHeader.SetSorting(m_SortPropertyIndex, m_SortAscending);
@@ -855,6 +881,17 @@ namespace Unity.ProjectAuditor.Editor.UI.Framework
             m_TextFilter.searchDependencies = EditorPrefs.GetBool(GetPrefKey(k_SearchDepsKey), false);
             m_TextFilter.ignoreCase = EditorPrefs.GetBool(GetPrefKey(k_SearchIgnoreCaseKey), true);
             m_TextFilter.searchString = EditorPrefs.GetString(GetPrefKey(k_SearchStringKey));
+        }
+
+        // Grouping is persisted by name because EditorPrefs are shared by every project and every installed Editor,
+        // where an index would resolve to a different property in a differently ordered layout. UUM-154765
+        int FindGroupPropertyIndex(string propertyName, int defaultGroupPropertyIndex)
+        {
+            if (string.IsNullOrEmpty(propertyName))
+                return defaultGroupPropertyIndex;
+
+            var propertyIndex = Array.FindIndex(m_Layout.Properties, p => p.Name == propertyName);
+            return propertyIndex != -1 ? propertyIndex : defaultGroupPropertyIndex;
         }
 
         public virtual void SaveSettings()
@@ -869,7 +906,7 @@ namespace Unity.ProjectAuditor.Editor.UI.Framework
             }
             EditorPrefs.SetBool(GetPrefKey(k_FlatModeKey), m_Table.flatView);
             EditorPrefs.SetBool(GetPrefKey(k_ShowIgnoredIssuesKey), m_Table.showIgnoredIssues);
-            EditorPrefs.SetInt(GetPrefKey(k_GroupPropertyIndexKey), m_Table.groupPropertyIndex);
+            EditorPrefs.SetString(GetGroupPrefKey(), m_Layout.Properties[m_Table.groupPropertyIndex].Name);
 
             EditorPrefs.SetInt(GetPrefKey(k_SortPropertyIndexKey), m_SortPropertyIndex);
             EditorPrefs.SetBool(GetPrefKey(k_SortAscendingKey), m_SortAscending);
@@ -882,6 +919,12 @@ namespace Unity.ProjectAuditor.Editor.UI.Framework
         string GetPrefKey(string key)
         {
             return $"{k_PrefKeyPrefix}.{m_Desc.DisplayName}.{key}";
+        }
+
+        // Keyed by category rather than by display name, which two views can share. UUM-154765
+        string GetGroupPrefKey()
+        {
+            return $"{k_PrefKeyPrefix}.{ProjectAuditor.GetCategoryName(m_Desc.Category)}.{k_GroupPropertyKey}";
         }
 
         public static void DrawActionButton(GUIContent guiContent, Action onClick)
@@ -1001,7 +1044,7 @@ namespace Unity.ProjectAuditor.Editor.UI.Framework
         const string k_ColumnSizeKey = "ColumnSize";
         const string k_FlatModeKey = "FlatMode";
         const string k_ShowIgnoredIssuesKey = "ShowIgnoredIssues";
-        const string k_GroupPropertyIndexKey = "GroupPropertyIndex";
+        const string k_GroupPropertyKey = "GroupProperty";
         const string k_SortPropertyIndexKey = "SortPropertyIndex";
         const string k_SortAscendingKey = "SortAscending";
         const string k_SearchDepsKey = "SearchDeps";
@@ -1053,7 +1096,7 @@ namespace Unity.ProjectAuditor.Editor.UI.Framework
             public static readonly GUIContent SearchStringLabel = new GUIContent("Search:", "Text search options");
             public static readonly GUIContent Dependencies = new GUIContent("Dependencies");
 
-            public static readonly GUIContent SearchJumpButton = EditorGUIUtility.TrIconContent("SearchJump Icon", "Open in Search");
+            public static readonly GUIContent SearchJumpButton = L10n.IconContent("SearchJump Icon", "Open in Search", null);
 
             public static readonly string DiscardTitle = L10n.Tr("Analyze Now", null);
             public static readonly string DiscardQuestion = L10n.Tr("If you analyze this section, your currently ignored items will be discarded.", null);
@@ -1095,14 +1138,14 @@ namespace Unity.ProjectAuditor.Editor.UI.Framework
         {
             public static readonly GUIContent Details = new GUIContent("Details", "Issue Details");
             public static readonly GUIContent Recommendation = new GUIContent("Recommendation", "Recommendation on how to solve the issue");
-            public static readonly GUIContent CopyToClipboard = EditorGUIUtility.TrTextContent(string.Empty, "Copy to Clipboard");
+            public static readonly GUIContent CopyToClipboard = L10n.TextContent(string.Empty, "Copy to Clipboard", null, null);
             public static readonly GUIContent QuickFix = new GUIContent("Quick Fix", "Automatically fix the issue");
             public static readonly GUIContent QuickFixDone = new GUIContent("Fixed", "Quick fix applied");
-            public static readonly GUIContent DocumentationInternal = EditorGUIUtility.TrTextContent(string.Empty, "Open the Unity documentation");
+            public static readonly GUIContent DocumentationInternal = L10n.TextContent(string.Empty, "Open the Unity documentation", null, null);
             public static readonly GUIContent DocumentationExternal = new GUIContent("Learn More", "Open external documentation");
             public static readonly GUIContent Show = new GUIContent("Show:");
             public static readonly GUIContent ShowIgnoredIssues = new GUIContent("Show Ignored Issues");
+            public static readonly GUIContent Summary = L10n.TextContent("Summary", null, null, null);
         }
     }
 }
-#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

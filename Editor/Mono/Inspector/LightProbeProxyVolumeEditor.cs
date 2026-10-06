@@ -2,7 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: Lighting not yet converted
 using System;
 using System.Collections.Generic;
 using UnityEditor.AnimatedValues;
@@ -49,39 +48,44 @@ namespace UnityEditor
             }
 
             public static readonly GUIStyle richTextMiniLabel = new GUIStyle(EditorStyles.miniLabel);
-            public static readonly GUIContent volumeResolutionText = EditorGUIUtility.TrTextContent("Proxy Volume Resolution", "Specifies the resolution of the 3D grid of interpolated light probes. Higher resolution/density means better lighting, but the CPU cost will increase.");
-            public static readonly GUIContent resolutionXText = EditorGUIUtility.TrTextContent("X", "The 3D grid resolution on the X axis.");
-            public static readonly GUIContent resolutionYText = EditorGUIUtility.TrTextContent("Y", "The 3D grid resolution on the Y axis.");
-            public static readonly GUIContent resolutionZText = EditorGUIUtility.TrTextContent("Z", "The 3D grid resolution on the Z axis.");
-            public static readonly GUIContent sizeText = EditorGUIUtility.TrTextContent("Size", "The size of the Bounding Box relative to the Game Object.");
-            public static readonly GUIContent bbSettingsText = EditorGUIUtility.TrTextContent("Bounding Box Settings");
-            public static readonly GUIContent originText = EditorGUIUtility.TrTextContent("Origin", "The origin of the Bounding Box relative to the Game Object.");
-            public static readonly GUIContent bbModeText = EditorGUIUtility.TrTextContent("Bounding Box Mode", "The mode in which the bounding box is computed. A 3D grid of interpolated light probes will be generated inside this bounding box.\n\nAutomatic Local - the local-space bounding box of the Renderer is used.\n\nAutomatic Global - a bounding box is computed which encloses the current Renderer and all the Renderers down the hierarchy that have the Light Probes property set to Use Proxy Volume. The bounding box will be world-space aligned.\n\nCustom - a custom bounding box is used. The bounding box is specified in the local-space of the game object.");
-            public static readonly GUIContent resModeText = EditorGUIUtility.TrTextContent("Resolution Mode", "The mode in which the resolution of the 3D grid of interpolated light probes is specified:\n\nAutomatic - the resolution on each axis is computed using a user-specified number of interpolated light probes per unit area (Density).\n\nCustom - the user can specify a different resolution on each axis.");
-            public static readonly GUIContent probePositionText = EditorGUIUtility.TrTextContent("Probe Position Mode", "The mode in which the interpolated probe positions are generated.\n\nCellCorner - divide the volume in cells and generate interpolated probe positions in the corner/edge of the cells.\n\nCellCenter - divide the volume in cells and generate interpolated probe positions in the center of the cells.");
-            public static readonly GUIContent refreshModeText = EditorGUIUtility.TrTextContent("Refresh Mode", "An enum describing the way a Light Probe Proxy Volume refreshes in the Player.");
-            public static readonly GUIContent qualityText = EditorGUIUtility.TrTextContent("Quality", "Affects the total number of evaluated Spherical Harmonics(SH) bands for Renderers that use a Light Probe Proxy Volume:\n\nLow Quality - uses only 2 bands (L0 and L1) sampled from a LPPV texture. This option might improve the performance by not breaking batching.\n\nNormal Quality - uses all the bands to evaluate the SH. L0 and L1 are sampled from a LPPV texture and L2 is constant per Renderer.");
-            public static readonly GUIContent dataFormatText = EditorGUIUtility.TrTextContent("Data Format", "Affects the format of the LPPV texture.");
+            public static readonly GUIContent volumeResolutionText = L10n.TextContent("Proxy Volume Resolution", "Specifies the resolution of the 3D grid of interpolated light probes. Higher resolution/density means better lighting, but the CPU cost will increase.", null, null);
+            public static readonly GUIContent resolutionXText = L10n.TextContent("X", "The 3D grid resolution on the X axis.", null, null);
+            public static readonly GUIContent resolutionYText = L10n.TextContent("Y", "The 3D grid resolution on the Y axis.", null, null);
+            public static readonly GUIContent resolutionZText = L10n.TextContent("Z", "The 3D grid resolution on the Z axis.", null, null);
+            public static readonly GUIContent sizeText = L10n.TextContent("Size", "The size of the Bounding Box relative to the Game Object.", null, null);
+            public static readonly GUIContent bbSettingsText = L10n.TextContent("Bounding Box Settings", null, null, null);
+            public static readonly GUIContent originText = L10n.TextContent("Origin", "The origin of the Bounding Box relative to the Game Object.", null, null);
+            public static readonly GUIContent bbModeText = L10n.TextContent("Bounding Box Mode", "The mode in which the bounding box is computed. A 3D grid of interpolated light probes will be generated inside this bounding box.\n\nAutomatic Local - the local-space bounding box of the Renderer is used.\n\nAutomatic Global - a bounding box is computed which encloses the current Renderer and all the Renderers down the hierarchy that have the Light Probes property set to Use Proxy Volume. The bounding box will be world-space aligned.\n\nCustom - a custom bounding box is used. The bounding box is specified in the local-space of the game object.", null, null);
+            public static readonly GUIContent resModeText = L10n.TextContent("Resolution Mode", "The mode in which the resolution of the 3D grid of interpolated light probes is specified:\n\nAutomatic - the resolution on each axis is computed using a user-specified number of interpolated light probes per unit area (Density).\n\nCustom - the user can specify a different resolution on each axis.", null, null);
+            public static readonly GUIContent probePositionText = L10n.TextContent("Probe Position Mode", "The mode in which the interpolated probe positions are generated.\n\nCellCorner - divide the volume in cells and generate interpolated probe positions in the corner/edge of the cells.\n\nCellCenter - divide the volume in cells and generate interpolated probe positions in the center of the cells.", null, null);
+            public static readonly GUIContent refreshModeText = L10n.TextContent("Refresh Mode", "An enum describing the way a Light Probe Proxy Volume refreshes in the Player.", null, null);
+            public static readonly GUIContent qualityText = L10n.TextContent("Quality", "Affects the total number of evaluated Spherical Harmonics(SH) bands for Renderers that use a Light Probe Proxy Volume:\n\nLow Quality - uses only 2 bands (L0 and L1) sampled from a LPPV texture. This option might improve the performance by not breaking batching.\n\nNormal Quality - uses all the bands to evaluate the SH. L0 and L1 are sampled from a LPPV texture and L2 is constant per Renderer.", null, null);
+            public static readonly GUIContent dataFormatText = L10n.TextContent("Data Format", "Affects the format of the LPPV texture.", null, null);
             public static readonly GUIContent[] bbMode = Array.ConvertAll(Enum.GetNames(typeof(LightProbeProxyVolume.BoundingBoxMode)), x => new GUIContent(ObjectNames.NicifyVariableName(x)));
             public static readonly GUIContent[] resMode = Array.ConvertAll(Enum.GetNames(typeof(LightProbeProxyVolume.ResolutionMode)), x => new GUIContent(ObjectNames.NicifyVariableName(x)));
             public static readonly GUIContent[] probePositionMode = Array.ConvertAll(Enum.GetNames(typeof(LightProbeProxyVolume.ProbePositionMode)), x => new GUIContent(ObjectNames.NicifyVariableName(x)));
             public static readonly GUIContent[] refreshMode = Array.ConvertAll(Enum.GetNames(typeof(LightProbeProxyVolume.RefreshMode)), x => new GUIContent(ObjectNames.NicifyVariableName(x)));
             public static readonly GUIContent[] qualityMode = Array.ConvertAll(Enum.GetNames(typeof(LightProbeProxyVolume.QualityMode)), x => new GUIContent(ObjectNames.NicifyVariableName(x)));
             public static readonly GUIContent[] dataFormat = Array.ConvertAll(Enum.GetNames(typeof(LightProbeProxyVolume.DataFormat)), x => new GUIContent(ObjectNames.NicifyVariableName(x)));
-            public static readonly GUIContent resProbesPerUnit = EditorGUIUtility.TrTextContent("Density", "Density in probes per world unit.");
-            public static readonly GUIContent componentUnusedNote = EditorGUIUtility.TrTextContent("In order to use the component on this game object, the Light Probes property should be set to 'Use Proxy Volume' in Renderer.");
-            public static readonly GUIContent noRendererNode = EditorGUIUtility.TrTextContent("The component is unused by this game object because there is no Renderer component attached.");
-            public static readonly GUIContent noLightProbes = EditorGUIUtility.TrTextContent("The scene doesn't contain any light probes. Add light probes using Light Probe Group components (menu: Component->Rendering->Light Probe Group).");
-            public static readonly GUIContent componentUnsuportedOnTreesNote = EditorGUIUtility.TrTextContent("Tree rendering doesn't support Light Probe Proxy Volume components.");
+            public static readonly GUIContent resProbesPerUnit = L10n.TextContent("Density", "Density in probes per world unit.", null, null);
+            public static readonly GUIContent componentUnusedNote = L10n.TextContent("In order to use the component on this game object, the Light Probes property should be set to 'Use Proxy Volume' in Renderer.", null, null, null);
+            public static readonly GUIContent noRendererNode = L10n.TextContent("The component is unused by this game object because there is no Renderer component attached.", null, null, null);
+            public static readonly GUIContent noLightProbes = L10n.TextContent("The scene doesn't contain any light probes. Add light probes using Light Probe Group components (menu: Component->Rendering->Light Probe Group).", null, null, null);
+            public static readonly GUIContent componentUnsuportedOnTreesNote = L10n.TextContent("Tree rendering doesn't support Light Probe Proxy Volume components.", null, null, null);
 
             public static readonly int[] volTextureSizesValues = { 1, 2, 4, 8, 16, 32 };
             public static readonly GUIContent[] volTextureSizes = Array.ConvertAll(volTextureSizesValues, n => new GUIContent(n.ToString()));
 
+            // The captured GUIContent wraps the built-in "EditCollider" icon and a literal tooltip,
+            // neither of which a code reload affects, so this copy keeps behaving identically even after
+            // the shared instance it was taken from is replaced.
+#pragma warning disable UAL0018 // captured content is reload-independent (built-in icon + literal tooltip)
             public static readonly GUIContent[] toolContents =
             {
                 PrimitiveBoundsHandle.editModeButton,
-                EditorGUIUtility.TrIconContent("MoveTool", "Move the selected objects.")
+                L10n.IconContent("MoveTool", "Move the selected objects.", null)
             };
+#pragma warning restore UAL0018
             public static readonly EditMode.SceneViewEditMode[] sceneViewEditModes = new[]
             {
                 EditMode.SceneViewEditMode.LightProbeProxyVolumeBox,
@@ -434,8 +438,7 @@ namespace UnityEditor
         void OnEnable()
         {
             SetHidden(s_HideAll);
-            m_IconContent = EditorGUIUtility.TrIconContent(m_IconName, m_Description);
+            m_IconContent = L10n.IconContent(m_IconName, m_Description, null);
         }
     }
 }
-#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

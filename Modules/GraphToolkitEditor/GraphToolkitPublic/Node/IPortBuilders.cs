@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using System.Collections.Generic;
 using UnityEngine;
 
 namespace Unity.GraphToolkit.Editor
@@ -91,7 +92,7 @@ namespace Unity.GraphToolkit.Editor
         /// <remarks>
         /// Use this method to place the port at the top (as an input) or bottom (as an output) of the node. This allows your graph to flow vertically, from top to bottom.
         /// Vertical ports can connect to horizontal ports of the same type and vice versa. The name label for the ports is not displayed on the node. The name labels are only displayed via the port tooltip.
-        /// Ports are built as horizontal (i.e. left to right) by default. Call this method before <see cref="IPortBuilder{T}.Build"/> to ensure a port is built as a vertical port. 
+        /// Ports are built as horizontal (i.e. left to right) by default. Call this method before <see cref="IPortBuilder{T}.Build"/> to ensure a port is built as a vertical port.
         /// However, this method is not supported for ports on a Block node, which are always displayed horizontally.
         /// </remarks>
         T AsVertical();
@@ -165,6 +166,26 @@ namespace Unity.GraphToolkit.Editor
         /// <typeparam name="TData">The data type of the output port.</typeparam>
         /// <returns>An output port builder with the specified data type.</returns>
         IOutputPortBuilder<TData> WithDataType<TData>();
+
+        /// <summary>
+        /// Configures the port as polymorphic, accepting any of the given types. The user picks the active type from a dropdown on the port.
+        /// </summary>
+        /// <param name="types">The types the port supports. The first entry is used as the initial data type. Must contain at least one entry.</param>
+        /// <returns>An output port builder configured as polymorphic.</returns>
+        IOutputPortBuilder WithDataTypes(params Type[] types)
+        {
+            throw new NotSupportedException();
+        }
+
+        /// <summary>
+        /// Configures the port as polymorphic, accepting any of the given types. The user picks the active type from a dropdown on the port.
+        /// </summary>
+        /// <param name="types">The types the port supports. The first entry is used as the initial data type. Must contain at least one entry.</param>
+        /// <returns>An output port builder configured as polymorphic.</returns>
+        IOutputPortBuilder WithDataTypes(IEnumerable<Type> types)
+        {
+            throw new NotSupportedException();
+        }
     }
 
     /// <summary>
@@ -186,6 +207,25 @@ namespace Unity.GraphToolkit.Editor
         /// <returns>An input port builder with the specified data type.</returns>
         IInputPortBuilder<TData> WithDataType<TData>();
 
+        /// <summary>
+        /// Configures the port as polymorphic, accepting any of the given types. The user picks the active type from a dropdown on the port.
+        /// </summary>
+        /// <param name="types">The types the port supports. The first entry is used as the initial data type. Must contain at least one entry.</param>
+        /// <returns>An input port builder configured as polymorphic.</returns>
+        IInputPortBuilder WithDataTypes(params Type[] types)
+        {
+            throw new NotSupportedException();
+        }
+
+        /// <summary>
+        /// Configures the port as polymorphic, accepting any of the given types. The user picks the active type from a dropdown on the port.
+        /// </summary>
+        /// <param name="types">The types the port supports. The first entry is used as the initial data type. Must contain at least one entry.</param>
+        /// <returns>An input port builder configured as polymorphic.</returns>
+        IInputPortBuilder WithDataTypes(IEnumerable<Type> types)
+        {
+            throw new NotSupportedException();
+        }
     }
 
     /// <summary>

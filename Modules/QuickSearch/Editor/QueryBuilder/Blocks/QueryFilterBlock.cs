@@ -2,7 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: Search not yet converted
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -350,16 +349,16 @@ namespace UnityEditor.Search
 
         internal override void AddContextualMenuItems(GenericMenu menu)
         {
-            menu.AddItem(EditorGUIUtility.TrTextContent($"Operator/Equal (=)"), string.Equals(op, "=", StringComparison.Ordinal), () => SetOperator("="));
-            menu.AddItem(EditorGUIUtility.TrTextContent($"Operator/Not Equal (!=)"), string.Equals(op, "!=", StringComparison.Ordinal), () => SetOperator("!="));
-            menu.AddItem(EditorGUIUtility.TrTextContent($"Operator/Contains (:)"), string.Equals(op, ":", StringComparison.Ordinal), () => SetOperator(":"));
-            menu.AddItem(EditorGUIUtility.TrTextContent($"Operator/Less Than or Equal (<=)"), string.Equals(op, "<=", StringComparison.Ordinal), () => SetOperator("<="));
-            menu.AddItem(EditorGUIUtility.TrTextContent($"Operator/Greater Than or Equal (>=)"), string.Equals(op, ">=", StringComparison.Ordinal), () => SetOperator(">="));
-            menu.AddItem(EditorGUIUtility.TrTextContent($"Operator/Less Than (<)"), string.Equals(op, "<", StringComparison.Ordinal), () => SetOperator("<"));
-            menu.AddItem(EditorGUIUtility.TrTextContent($"Operator/Greater Than (>)"), string.Equals(op, ">", StringComparison.Ordinal), () => SetOperator(">"));
+            menu.AddItem(L10n.TextContent($"Operator/Equal (=)", null, null, null), string.Equals(op, "=", StringComparison.Ordinal), () => SetOperator("="));
+            menu.AddItem(L10n.TextContent($"Operator/Not Equal (!=)", null, null, null), string.Equals(op, "!=", StringComparison.Ordinal), () => SetOperator("!="));
+            menu.AddItem(L10n.TextContent($"Operator/Contains (:)", null, null, null), string.Equals(op, ":", StringComparison.Ordinal), () => SetOperator(":"));
+            menu.AddItem(L10n.TextContent($"Operator/Less Than or Equal (<=)", null, null, null), string.Equals(op, "<=", StringComparison.Ordinal), () => SetOperator("<="));
+            menu.AddItem(L10n.TextContent($"Operator/Greater Than or Equal (>=)", null, null, null), string.Equals(op, ">=", StringComparison.Ordinal), () => SetOperator(">="));
+            menu.AddItem(L10n.TextContent($"Operator/Less Than (<)", null, null, null), string.Equals(op, "<", StringComparison.Ordinal), () => SetOperator("<"));
+            menu.AddItem(L10n.TextContent($"Operator/Greater Than (>)", null, null, null), string.Equals(op, ">", StringComparison.Ordinal), () => SetOperator(">"));
 
             if (formatParam != null)
-                menu.AddItem(EditorGUIUtility.TrTextContent($"Edit Parameter..."), false, () => EditParameter());
+                menu.AddItem(L10n.TextContent($"Edit Parameter...", null, null, null), false, () => EditParameter());
         }
 
         private void EditParameter()
@@ -414,7 +413,14 @@ namespace UnityEditor.Search
             if (end == -1)
                 return false;
 
-            expression = SearchExpression.Parse(text, SearchExpressionParserFlags.None);
+            try
+            {
+                expression = SearchExpression.Parse(text, SearchExpressionParserFlags.None);
+            }
+            catch (SearchExpressionParseException)
+            {
+                return false;
+            }
             if (expression == null)
                 return false;
 
@@ -687,4 +693,3 @@ namespace UnityEditor.Search
         }
     }
 }
-#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

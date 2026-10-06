@@ -102,9 +102,8 @@ namespace UnityEditor
                 RegisterCompleteObjectUndoMultiple(objectsToUndo[0], objectsToUndo, name, 0);
         }
 
-        [NativeMethod(ThrowsException = true)]
         [StaticAccessor("UndoBindings", StaticAccessorType.DoubleColon)]
-        private static extern void RegisterCompleteObjectUndoMultiple([NotNull] Object identifier, [UnityMarshalAs(NativeType.ScriptingObjectPtr)] Object[] objectsToUndo, string name, int namePriority);
+        private static extern void RegisterCompleteObjectUndoMultiple([NotNull] Object identifier, Object[] objectsToUndo, string name, int namePriority);
 
         public static void SetTransformParent(Transform transform, Transform newParent, string name)
         {
@@ -188,9 +187,8 @@ namespace UnityEditor
             RecordObjectsInternal(objectsToUndo, objectsToUndo.Length, name);
         }
 
-        [NativeMethod(ThrowsException = true)]
         [StaticAccessor("UndoBindings", StaticAccessorType.DoubleColon)]
-        private static extern void RecordObjectsInternal([UnityMarshalAs(NativeType.ScriptingObjectPtr)] Object[] objectToUndo, int size, string name);
+        private static extern void RecordObjectsInternal(Object[] objectToUndo, int size, string name);
 
         [StaticAccessor("GetUndoManager()", StaticAccessorType.Dot)]
         [NativeMethod("ClearUndoIdentifier")]
@@ -268,6 +266,9 @@ namespace UnityEditor
            This can't be properly deprecated until all packages being tested through Katana that use the old callback have been updated to use the new callback.
         [Obsolete("Use Undo.undoRedoEvent instead which provides Undo Event information", false)] */
         [AutoStaticsCleanupOnCodeReload]
+        // Subscribers attach through their own lifecycle and re-subscribe after a code reload, so the
+        // cleared invocation list refills itself.
+        [IgnoreForUAL0015("Event whose subscribers re-register through their own lifecycle after a code reload")]
         public static UndoRedoCallback undoRedoPerformed;
         [AutoStaticsCleanupOnCodeReload]
         [Obsolete("Use m_UndoRedoEvent instead", false)]
@@ -277,6 +278,9 @@ namespace UnityEditor
         public delegate void UndoRedoEventCallback(in UndoRedoInfo undo);
 
         [AutoStaticsCleanupOnCodeReload]
+        // Subscribers attach through their own lifecycle and re-subscribe after a code reload, so the
+        // cleared invocation list refills itself.
+        [IgnoreForUAL0015("Event whose subscribers re-register through their own lifecycle after a code reload")]
         public static UndoRedoEventCallback undoRedoEvent;
         [AutoStaticsCleanupOnCodeReload]
         private static DelegateWithPerformanceTracker<UndoRedoEventCallback> m_UndoRedoEvent = new DelegateWithPerformanceTracker<UndoRedoEventCallback>($"{nameof(Undo)}.{nameof(undoRedoEvent)}");
@@ -284,7 +288,9 @@ namespace UnityEditor
         // Called when about to flush undo recording
         public delegate void WillFlushUndoRecord();
 
+        // Re-subscribed on every code load by DrivenRectTransformUndo.Initialize().
         [AutoStaticsCleanupOnCodeReload]
+        [IgnoreForUAL0015("Event re-subscribed on every code load by DrivenRectTransformUndo.Initialize()")]
         public static WillFlushUndoRecord willFlushUndoRecord;
         [AutoStaticsCleanupOnCodeReload]
         private static DelegateWithPerformanceTracker<WillFlushUndoRecord> m_WillFlushUndoRecordEvent = new DelegateWithPerformanceTracker<WillFlushUndoRecord>($"{nameof(Undo)}.{nameof(willFlushUndoRecord)}");
@@ -300,6 +306,9 @@ namespace UnityEditor
         public delegate UndoPropertyModification[] PostprocessModifications(UndoPropertyModification[] modifications);
 
         [AutoStaticsCleanupOnCodeReload]
+        // Subscribers attach through their own lifecycle and re-subscribe after a code reload, so the
+        // cleared invocation list refills itself.
+        [IgnoreForUAL0015("Event whose subscribers re-register through their own lifecycle after a code reload")]
         public static PostprocessModifications postprocessModifications;
         [AutoStaticsCleanupOnCodeReload]
         private static DelegateWithPerformanceTracker<PostprocessModifications> m_PostprocessModificationsEvent = new DelegateWithPerformanceTracker<PostprocessModifications>($"{nameof(Undo)}.{nameof(postprocessModifications)}");
@@ -317,9 +326,9 @@ namespace UnityEditor
             var modifications = GetPropertyModificationForInvokePostprocessModifications(modificationsNativePtr);
             var remainingModifications = InvokePostprocessModifications(modifications);
             // Only update the native vector if a callback returned a different array.
-            // The native UndoPropertyModification struct has fields (modificationDriver, keepDuplicate)
-            // not present in the managed struct. Unconditionally round-tripping would destroy those
-            // native-only field values.
+            // The native UndoPropertyModification struct has a field (keepDuplicate) not present in
+            // the managed struct. Unconditionally round-tripping would destroy that native-only
+            // field value.
             if (remainingModifications != modifications)
                 UpdatePropertyModificationFromInvokePostprocessModifications(modificationsNativePtr, remainingModifications);
         }

@@ -64,6 +64,13 @@ namespace UnityEngine
 
         [NativeMethod(IsThreadSafe = true)]
         internal static extern void SetHasManagedHandlers(bool value);
+
+        /// <summary>
+        /// Drops every cached open file handle. Must be called when a managed handler is unregistered
+        /// to remove handles cached in native for a unregistered handler.
+        /// </summary>
+        [NativeMethod(IsThreadSafe = true)]
+        internal static extern void InvalidateManagedFileHandles();
     }
 
 }

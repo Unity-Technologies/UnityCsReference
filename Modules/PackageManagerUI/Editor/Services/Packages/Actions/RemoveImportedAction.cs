@@ -23,7 +23,7 @@ internal class RemoveImportedAction : PackageAction
         return true;
     }
 
-    protected override bool TriggerActionImplementation(IReadOnlyCollection<IPackage> packages)
+    protected override bool TriggerActionImplementation(IReadOnlyList<IPackage> packages)
     {
         if (!m_Application.DisplayDialog("removeMultiImported", L10n.Tr("Removing imported packages", null),
                 L10n.Tr("Remove all assets from these packages?\nAny changes you made to the assets will be lost.", null),

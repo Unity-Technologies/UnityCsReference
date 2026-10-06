@@ -21,6 +21,9 @@ internal class SidebarRow : VisualElement
         tooltip = rowTitle;
         this.pageId = pageId;
 
+        focusable = true;
+        tabIndex = -1;
+
         m_RowIcon = new VisualElement();
         UpdateIcon(icon);
         Add(m_RowIcon);
@@ -32,6 +35,7 @@ internal class SidebarRow : VisualElement
     public void SetSelected(bool select)
     {
         EnableInClassList(k_SelectedClassName, select);
+        tabIndex = select ? 0 : -1;
     }
 
     public void UpdateIcon(Icon icon)

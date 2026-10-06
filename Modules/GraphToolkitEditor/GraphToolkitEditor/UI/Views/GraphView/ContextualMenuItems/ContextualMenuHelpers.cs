@@ -151,6 +151,8 @@ namespace Unity.GraphToolkit.Editor.ContextualMenuItems
         internal static ContextualMenuItem createTransitionMenuItem = new(ContextualMenuCategory.FunctionalElements, "Create Transition");
         [NoAutoStaticsCleanup] // fixed menu item descriptor; category and label are compile-time constants
         internal static ContextualMenuItem createSelfTransitionMenuItem = new(ContextualMenuCategory.FunctionalElements, "Create Self Transition");
+        [NoAutoStaticsCleanup] // fixed menu item descriptor; category and label are compile-time constants
+        internal static ContextualMenuItem disconnectAllTransitionsItem = new(ContextualMenuCategory.Modifications, "Disconnect All Transitions");
 
         // Subgraph menu items:
         [NoAutoStaticsCleanup] // fixed menu item descriptor; category and label are compile-time constants

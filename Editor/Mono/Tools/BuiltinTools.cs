@@ -179,7 +179,7 @@ namespace UnityEditor
 
         public override GUIContent toolbarIcon
         {
-            get { return EditorGUIUtility.TrTextContentWithIcon("Transform Tool", "Transform Tool", "TransformTool"); }
+            get { return L10n.TextContentWithIcon("Transform Tool", "Transform Tool", "TransformTool", null); }
         }
 
         public override bool gridSnapEnabled
@@ -250,30 +250,11 @@ namespace UnityEditor
                     TransformManipulator.SetPositionDelta(endPosition, TransformManipulator.mouseDownHandlePosition);
                 }
 
-                Quaternion deltaRotation = Quaternion.Inverse(startRotation) * endRotation;
-                float angle;
-                Vector3 axis;
-                deltaRotation.ToAngleAxis(out angle, out axis);
-                if (!Mathf.Approximately(angle, 0))
+                if (ids.rotation.Has(GUIUtility.hotControl))
                 {
-                    foreach (Transform t in Selection.transforms)
-                    {
-                        // Rotate around handlePosition (Global or Local axis).
-                        if (Tools.pivotMode != PivotMode.Pivot)
-                            t.RotateAround(handlePosition, startRotation * axis, angle);
-                        // Local rotation (Pivot mode with Local axis). PivotMode: Pivot PivotRotation: Local
-                        else if (TransformManipulator.individualSpace) 
-                            t.Rotate(t.rotation * axis, angle, Space.World);
-                        // Pivot mode with Global axis. PivotMode: Pivot PivotRotation: Global
-                        else
-                            t.Rotate(startRotation * axis, angle, Space.World); 
-
-                        // sync euler hints after a rotate tool update tyo fake continuous rotation
-                        t.SetLocalEulerHint(t.GetLocalEulerAngles(t.rotationOrder));
-
-                        if (t.parent != null)
-                            t.SendTransformChangedScale(); // force scale update, needed if tr has non-uniformly scaled parent.
-                    }
+                    Quaternion deltaRotation = Quaternion.Inverse(TransformManipulator.mouseDownHandleRotation) * endRotation;
+                    deltaRotation.ToAngleAxis(out var angle, out var axis);
+                    TransformManipulator.SetRotateDelta(angle, axis);
                     Tools.handleRotation = endRotation;
                 }
 
@@ -288,7 +269,7 @@ namespace UnityEditor
     {
         public override GUIContent toolbarIcon
         {
-            get { return EditorGUIUtility.TrTextContentWithIcon("Move Tool", "Move Tool", "MoveTool"); }
+            get { return L10n.TextContentWithIcon("Move Tool", "Move Tool", "MoveTool", null); }
         }
 
         public override bool gridSnapEnabled
@@ -368,7 +349,7 @@ namespace UnityEditor
     {
         public override GUIContent toolbarIcon
         {
-            get { return EditorGUIUtility.TrTextContentWithIcon("Rotate Tool", "Rotate Tool", "RotateTool"); }
+            get { return L10n.TextContentWithIcon("Rotate Tool", "Rotate Tool", "RotateTool", null); }
         }
         
         protected override bool ShouldToolGUIBeDisabled(out GUIContent disabledLabel)
@@ -394,6 +375,7 @@ namespace UnityEditor
                 EditorPivotManager.activeRotationTracker.RecordHotControl();
             }
 
+            TransformManipulator.BeginManipulationHandling(false);
             EditorGUI.BeginChangeCheck();
             Quaternion after = Handles.RotationHandle(before, handlePosition);
 
@@ -402,36 +384,14 @@ namespace UnityEditor
 
             if (EditorGUI.EndChangeCheck() && !isStatic)
             {
-                Quaternion delta = Quaternion.Inverse(before) * after;
+                Quaternion delta = Quaternion.Inverse(TransformManipulator.mouseDownHandleRotation) * after;
                 delta.ToAngleAxis(out var angle, out var axis);
+                TransformManipulator.SetRotateDelta(angle, axis);
 
-                Undo.RecordObjects(Selection.transforms, "Rotate");
-                foreach (Transform t in Selection.transforms)
-                {
-                    // Rotate around handlePosition (Global or Local axis).
-                    if (Tools.pivotMode != PivotMode.Pivot)
-                    {
-                        t.RotateAround(handlePosition, before * axis, angle);
-                    }
-                    // Local rotation (Pivot mode with Local axis). PivotMode: Pivot PivotRotation: Local
-                    else if (TransformManipulator.individualSpace)
-                    {
-                        t.Rotate(t.rotation * axis, angle, Space.World);
-                    }
-                    // Pivot mode with Global axis. PivotMode: Pivot PivotRotation: Global
-                    else
-                    {
-                        t.Rotate(before * axis, angle, Space.World);
-                    }
-
-                    // sync euler hints after a rotate tool update tyo fake continuous rotation
-                    t.SetLocalEulerHint(t.GetLocalEulerAngles(t.rotationOrder));
-
-                    if (t.parent != null)
-                        t.SendTransformChangedScale(); // force scale update, needed if tr has non-uniformly scaled parent.
-                }
                 Tools.handleRotation = after;
             }
+
+            TransformManipulator.EndManipulationHandling();
         }
     }
 
@@ -439,7 +399,7 @@ namespace UnityEditor
     {
         public override GUIContent toolbarIcon
         {
-            get { return EditorGUIUtility.TrTextContentWithIcon("Scale Tool", "Scale Tool", "ScaleTool"); }
+            get { return L10n.TextContentWithIcon("Scale Tool", "Scale Tool", "ScaleTool", null); }
         }
 
         [NoAutoStaticsCleanup] // Transient per-drag scale accumulator, reset to one on MouseDown; safe to persist.
@@ -492,9 +452,12 @@ namespace UnityEditor
 
         const float kMinVisibleSize = 0.2f;
 
+        const EventModifiers kIgnoredDragModifiers =
+            EventModifiers.CapsLock | EventModifiers.Numeric | EventModifiers.FunctionKey;
+
         public override GUIContent toolbarIcon
         {
-            get { return EditorGUIUtility.TrTextContentWithIcon("Rect Tool", "Rect Tool", "RectTool"); }
+            get { return L10n.TextContentWithIcon("Rect Tool", "Rect Tool", "RectTool", null); }
         }
 
         public static Vector2 GetLocalRectPoint(Rect rect, int index)
@@ -887,7 +850,8 @@ namespace UnityEditor
                     {
                         acceptClick =
                             evt.button == 0 &&
-                            evt.modifiers == 0 &&
+                            // Test against the flipped mask of modifiers to ignore.
+                            (evt.modifiers & ~kIgnoredDragModifiers) == 0 &&
                             RectHandles.RaycastGUIPointToWorldHit(evt.mousePosition, guiPlane, out s_StartMouseWorldPos) &&
                             (
                                 SceneViewDistanceToRectangle(corners, evt.mousePosition) == 0f ||

@@ -28,9 +28,10 @@ namespace UnityEditor.TextCore.Text
 
                 FontAsset fontAsset = AssetDatabase.LoadAssetAtPath<FontAsset>(assetPath);
 
-                if (fontAsset != null && (fontAsset.atlasPopulationMode == AtlasPopulationMode.Dynamic || fontAsset.atlasPopulationMode == AtlasPopulationMode.DynamicOS) && fontAsset.clearDynamicDataOnBuild && fontAsset.atlasTexture != null && fontAsset.atlasTexture.width != 0)
+                if (fontAsset != null && fontAsset.hasSessionOnlyDynamicData && fontAsset.atlasTexture != null && fontAsset.atlasTexture.width != 0)
                 {
                     fontAsset.ClearCharacterAndGlyphTablesInternal();
+                    fontAsset.m_ClearedForBuild = true;
                 }
             }
         }

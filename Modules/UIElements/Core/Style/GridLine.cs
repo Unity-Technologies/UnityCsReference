@@ -32,11 +32,11 @@ namespace UnityEngine.UIElements
     /// <c>0</c> = auto, <c>&gt; 0</c> = line, <c>&lt; 0</c> = span(-value). This mirrors how
     /// aspect-ratio uses a sentinel value rather than a separate flag.
     /// </remarks>
-    [Serializable, StructLayout(LayoutKind.Sequential)]
+    [StructLayout(LayoutKind.Sequential)]
     public readonly partial struct GridLine : IEquatable<GridLine>
     {
         // 0 = auto | > 0 = line n | < 0 = span(-n). Layout matches the native `int` field.
-        [SerializeField] readonly int m_Value;
+        readonly int m_Value;
 
         GridLine(int rawValue) { m_Value = rawValue; }
 

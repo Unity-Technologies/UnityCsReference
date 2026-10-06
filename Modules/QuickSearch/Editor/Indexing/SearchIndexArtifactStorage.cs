@@ -134,8 +134,10 @@ namespace UnityEditor.Search
         public int Score;
     }
 
+    // Equality is hand-written because Pack under-aligns Value and the reflection path that
+    // ValueType.Equals falls back to crashes on arm64 CoreCLR (dotnet/runtime#133236, UUM-151498)
     [StructLayout(LayoutKind.Sequential, Pack = 4)]
-    struct SearchIndexArtifactPropertyDoubleEntry
+    struct SearchIndexArtifactPropertyDoubleEntry : IEquatable<SearchIndexArtifactPropertyDoubleEntry>
     {
         public const int ByteSize = sizeof(int) * 3 + sizeof(double); // NameId, DocumentIndex, Score, Value
 
@@ -143,6 +145,24 @@ namespace UnityEditor.Search
         public int DocumentIndex;
         public int Score;
         public double Value;
+
+        public bool Equals(SearchIndexArtifactPropertyDoubleEntry other)
+        {
+            return NameId == other.NameId
+                && DocumentIndex == other.DocumentIndex
+                && Score == other.Score
+                && Value.Equals(other.Value);
+        }
+
+        public override bool Equals(object obj)
+        {
+            return obj is SearchIndexArtifactPropertyDoubleEntry other && Equals(other);
+        }
+
+        public override int GetHashCode()
+        {
+            return HashCode.Combine(NameId, DocumentIndex, Score, Value);
+        }
     }
 
     [StructLayout(LayoutKind.Sequential)]

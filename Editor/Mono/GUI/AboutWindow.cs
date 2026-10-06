@@ -2,11 +2,12 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: EditorWindowManagement not yet converted
 using System;
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Scripting;
 using UnityEditor.Experimental;
+using UnityEditor.Licensing;
 using UnityEditorInternal;
 using UnityEngine.UIElements;
 using Unity.Scripting.LifecycleManagement;
@@ -15,10 +16,6 @@ namespace UnityEditor
 {
     internal partial class AboutWindow : EditorWindow
     {
-        #pragma warning disable UAL0015 // this side effect does not outlive the current call (global trigger / lazily-loaded asset re-fetched on next access); a stale reference is harmlessly replaced
-        public AboutWindow() { }
-        #pragma warning restore UAL0015
-
         // s_Instance is nulled when the window is closed (OnDestroy)
         [AutoStaticsCleanupOnCodeReload]
         static AboutWindow s_Instance;
@@ -100,8 +97,8 @@ namespace UnityEditor
                 SetLabelValue("build-date", $"{dt.AddSeconds(t):r}");
 
 
-                SetLabelValue("license-type", InternalEditorUtility.GetLicenseInfoType());
-                SetLabelValue("serial-number", InternalEditorUtility.GetLicenseInfoSerial());
+                SetLabelValue("license-type", GetLicenseTypeString());
+                SetLabelValue("serial-number", LicensingUtility.GetEditorLicenseIdentifier(true));
                 SetLabelValue("unity-copyright", InternalEditorUtility.GetUnityCopyright());
             }
 
@@ -207,7 +204,75 @@ namespace UnityEditor
 
         private void CopyLicenseInfoToClipboard()
         {
-            Clipboard.stringValue = InternalEditorUtility.GetLicenseInfo().Replace("(c)", "\u00A9");
+            Clipboard.stringValue = $"License type: {GetLicenseTypeString()}\n" +
+                                    $"Serial number: {LicensingUtility.GetEditorLicenseIdentifier(true)}";
+        }
+
+        static string GetLicenseTypeString()
+        {
+            // BuildForNintendo3DS is never read, but is queried to keep the request identical to the native one
+            var entitlements = new[]
+            {
+                CommonEntitlements.UseEditorUI,
+                CommonEntitlements.DisableSplashScreen,
+                CommonEntitlements.UseLegacyProFlag,
+                CommonEntitlements.UseLegacyEmbeddedFlag,
+                CommonEntitlements.UseTrialWatermark,
+                CommonEntitlements.BuildForiOS,
+                CommonEntitlements.BuildForiOSPro,
+                CommonEntitlements.BuildForAndroid,
+                CommonEntitlements.BuildForAndroidPro,
+                CommonEntitlements.BuildForUWP,
+                CommonEntitlements.BuildForWinRTPro,
+                CommonEntitlements.BuildForNintendo3DS,
+                CommonEntitlements.UsePrototypingWatermark,
+                CommonEntitlements.UseEduWatermark,
+            };
+
+            var granted = new HashSet<string>(LicensingUtility.HasEntitlements(entitlements));
+
+            string licenseType;
+            if (granted.Contains(CommonEntitlements.UseLegacyProFlag))
+                licenseType = "Unity Pro";
+            else if (granted.Contains(CommonEntitlements.UseEditorUI) && !granted.Contains(CommonEntitlements.DisableSplashScreen))
+                licenseType = "Unity Personal";
+            else
+                licenseType = "(Unlicensed)";
+
+            if (granted.Contains(CommonEntitlements.UseLegacyEmbeddedFlag))
+                licenseType = "Unity for Embedded Systems";
+
+            if (granted.Contains(CommonEntitlements.UseTrialWatermark))
+                licenseType += " (Trial)";
+
+            if (granted.Contains(CommonEntitlements.BuildForiOS))
+            {
+                licenseType += ", iOS";
+                if (granted.Contains(CommonEntitlements.BuildForiOSPro))
+                    licenseType += " Pro";
+            }
+
+            if (granted.Contains(CommonEntitlements.BuildForAndroid))
+            {
+                licenseType += ", Android";
+                if (granted.Contains(CommonEntitlements.BuildForAndroidPro))
+                    licenseType += " Pro";
+            }
+
+            if (granted.Contains(CommonEntitlements.BuildForUWP))
+            {
+                licenseType += ", Windows Store";
+                if (granted.Contains(CommonEntitlements.BuildForWinRTPro))
+                    licenseType += " Pro";
+            }
+
+            if (granted.Contains(CommonEntitlements.UsePrototypingWatermark))
+                licenseType += "\nNot for release";
+
+            if (granted.Contains(CommonEntitlements.UseEduWatermark))
+                licenseType += "\nFor educational use only";
+
+            return licenseType;
         }
 
         void UpdateVersionLabel()
@@ -272,6 +337,9 @@ namespace UnityEditor
 
             // Repaint all views to show/hide debug repaint indicator
             InternalEditorUtility.RepaintAllViews();
+
+            EditorApplication.DisplayRestartRequiredDialog(L10n.Tr("Developer Mode", null),
+                L10n.Tr("Modules keep their current JIT optimization until you restart.", null));
         }
 
         private string FormatExtensionVersionString()
@@ -286,4 +354,3 @@ namespace UnityEditor
         }
     }
 }
-#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

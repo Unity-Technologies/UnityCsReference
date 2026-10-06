@@ -18,13 +18,14 @@ namespace UnityEditor.Presets
     [ExcludeFromPreset]
     public sealed class Preset : Object
     {
+        internal Preset(global::UnityEngine.EntityId id) : base(id) {}
         public Preset(Object source)
         {
-            Internal_Create(this, source);
+            SetEntityIdFromConstructor(Internal_Create(source));
         }
 
         [NativeMethod(ThrowsException = true)]
-        static extern void Internal_Create([Writable] Preset notSelf, [NotNull] Object source);
+        static extern EntityId Internal_Create([NotNull] Object source);
 
         public extern PropertyModification[] PropertyModifications
         {

@@ -75,6 +75,24 @@ namespace UnityEngine.UIElements
             }
         }
 
+        // A clip that starts adds bound properties without leaving stale values to restore, so its
+        // elements are flagged for the authoring inspector without a style re-resolution.
+        internal void NotifyBoundElementsChanged()
+        {
+            if (m_Elements == null)
+                return;
+
+            for (int i = 0; i < m_Elements.Count; i++)
+            {
+                var element = m_Elements[i].Value;
+                if (element == null)
+                    continue;
+
+                element.IncrementVersion(VersionChangeType.Styles);
+                boundElementsStyleVersionChanged?.Invoke(element);
+            }
+        }
+
         [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
         internal static AnimationChannelKind GetChannelKind(StylePropertyId id, int channel)
         {
@@ -98,6 +116,12 @@ namespace UnityEngine.UIElements
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         int GetElementCount() => m_Elements?.Count ?? -1;
+
+        [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
+        internal VisualElement GetElementAt(int elementIndex)
+        {
+            return elementIndex >= 0 && elementIndex < GetElementCount() ? m_Elements[elementIndex].Value : null;
+        }
 
         [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
         internal void SetFloatValue(int elementIndex, int propertyId, int channel, float value)
@@ -406,6 +430,12 @@ namespace UnityEngine.UIElements
             switch (GetPropertyTypeMapping(id))
             {
                 case PropertyType.Font:
+                {
+                    var fontId = Resources.EntityIdToObject(value) is Font ? value : EntityId.None;
+                    e.computedStyle.ApplyPropertyAnimation(e, id, fontId);
+                    break;
+                }
+
                 case PropertyType.FontDefinition:
                     e.computedStyle.ApplyPropertyAnimation(e, id, value);
                     break;
@@ -427,8 +457,7 @@ namespace UnityEngine.UIElements
                 {
                     // The EntityId overload stores into UnmanagedMaterialDefinition, which needs
                     // a managed Material to repopulate property values; go through the typed overload.
-                    var mat = (Material)Resources.EntityIdToObject(value);
-                    e.computedStyle.ApplyPropertyAnimation(e, id, new MaterialDefinition(mat));
+                    e.computedStyle.ApplyPropertyAnimation(e, id, MaterialDefinition.FromObject(Resources.EntityIdToObject(value)));
                     break;
                 }
 
@@ -436,7 +465,7 @@ namespace UnityEngine.UIElements
                 {
                     // Only the `.image` (channel 0) PPtr arrives here; hotspot floats go through SetFloatValue.
                     var cursor = e.computedStyle.ReadPropertyAnimationCursor(id);
-                    cursor.textureId = value;
+                    cursor.texture = Resources.EntityIdToObject(value) as Texture2D;
                     e.computedStyle.ApplyPropertyAnimation(e, id, cursor);
                     break;
                 }

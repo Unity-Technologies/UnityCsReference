@@ -19,6 +19,7 @@ namespace UnityEngine
     [NativeHeader("Runtime/Shaders/ComputeShader.h")]
     public sealed partial class ComputeShader : Object
     {
+        internal ComputeShader(global::UnityEngine.EntityId id) : base(id) {}
         // skinning/blend-shapes are implemented with compute shaders so we must be able to load them from builtins
         // alas marking ONLY class as used might not work if we actually use it only in cpp land, so mark "random" method too
         [RequiredByNativeCode]

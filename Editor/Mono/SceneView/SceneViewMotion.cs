@@ -564,10 +564,7 @@ namespace UnityEditor
                 case ViewTool.Orbit:
                     {
                         if (!view.in2DMode && !view.isRotationLocked)
-                        {
                             OrbitCameraBehavior(view);
-                            view.UpdateOrientationGizmos();
-                        }
                     }
                     break;
                 case ViewTool.FPS:
@@ -599,8 +596,6 @@ namespace UnityEditor
                                 // We want orbit behavior in orthograpic when using FPS
                                 OrbitCameraBehavior(view);
                             }
-
-                            view.UpdateOrientationGizmos();
                         }
                     }
                     break;

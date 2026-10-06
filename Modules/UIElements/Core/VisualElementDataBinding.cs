@@ -4,6 +4,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Runtime.CompilerServices;
 using Unity.Properties;
 using UnityEngine.Assertions;
 using UnityEngine.Bindings;
@@ -189,8 +190,26 @@ namespace UnityEngine.UIElements
 
     public partial class VisualElement
     {
-        private object m_DataSource;
-        private PathRef m_DataSourcePath;
+        // Absent until the element takes part in data binding; a null ref then reads as "no source, no path".
+        ref VisualElementDataBindingComponent dataBindingData
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get
+            {
+                if ((m_Flags & VisualElementFlags.HasDataBindingComponent) == 0)
+                    return ref NullComponentRef<VisualElementDataBindingComponent>();
+
+                return ref GetComponentRefOrNullRef<VisualElementDataBindingComponent>();
+            }
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        ref VisualElementDataBindingComponent GetOrAddDataBindingData()
+        {
+            ref var data = ref GetOrAddComponent<VisualElementDataBindingComponent>();
+            m_Flags |= VisualElementFlags.HasDataBindingComponent;
+            return ref data;
+        }
 
         /// <summary>
         /// Assigns a data source to this VisualElement which overrides any inherited data source. This data source is
@@ -199,15 +218,28 @@ namespace UnityEngine.UIElements
         [CreateProperty]
         public object dataSource
         {
-            get => m_DataSource;
+            get
+            {
+                ref var data = ref dataBindingData;
+                return Unsafe.IsNullRef(ref data) ? null : data.dataSource;
+            }
             set
             {
-                if (m_DataSource == value)
+                ref var data = ref dataBindingData;
+                if (Unsafe.IsNullRef(ref data))
+                {
+                    if (value == null)
+                        return;
+
+                    data = ref GetOrAddDataBindingData();
+                }
+
+                var previous = data.dataSource;
+                if (previous == value)
                     return;
 
-                var previous = m_DataSource;
-                m_DataSource = value;
-                TrackSource(previous, m_DataSource);
+                data.dataSource = value;
+                TrackSource(previous, value);
                 IncrementVersion(VersionChangeType.DataSource);
                 NotifyPropertyChanged(dataSourceProperty);
             }
@@ -219,13 +251,20 @@ namespace UnityEngine.UIElements
         [CreateProperty]
         public PropertyPath dataSourcePath
         {
-            get => m_DataSourcePath?.path ?? default;
+            get
+            {
+                ref var data = ref dataBindingData;
+                return Unsafe.IsNullRef(ref data) ? default : data.dataSourcePath?.path ?? default;
+            }
             set
             {
-                if (m_DataSourcePath == null && value.IsEmpty)
+                ref var data = ref dataBindingData;
+                var hasPath = !Unsafe.IsNullRef(ref data) && data.dataSourcePath != null;
+                if (!hasPath && value.IsEmpty)
                     return;
 
-                ref var path = ref (m_DataSourcePath ??= new PathRef()).path;
+                ref var storage = ref GetOrAddDataBindingData();
+                ref var path = ref (storage.dataSourcePath ??= new PathRef()).path;
 
                 if (path == value)
                     return;
@@ -235,10 +274,25 @@ namespace UnityEngine.UIElements
             }
         }
 
-        internal bool isDataSourcePathEmpty => m_DataSourcePath == null || m_DataSourcePath.IsEmpty;
+        // The authored binding list as it stands, without creating it: the clear paths have nothing to
+        // remove when the element never had one.
+        List<Binding> bindingsOrNull
+        {
+            get
+            {
+                ref var data = ref dataBindingData;
+                return Unsafe.IsNullRef(ref data) ? null : data.bindings;
+            }
+        }
 
-        // Used for uxml serialization authoring only.
-        List<Binding> m_Bindings;
+        internal bool isDataSourcePathEmpty
+        {
+            get
+            {
+                ref var data = ref dataBindingData;
+                return Unsafe.IsNullRef(ref data) || data.dataSourcePath == null || data.dataSourcePath.IsEmpty;
+            }
+        }
 
         /// <summary>
         /// Assigns a binding between a target and a source.
@@ -326,7 +380,7 @@ namespace UnityEngine.UIElements
         public void ClearBinding(BindingId bindingId)
         {
             SetBinding(bindingId, null);
-            bindings?.RemoveAll(b => b.property == bindingId);
+            bindingsOrNull?.RemoveAll(b => b.property == bindingId);
         }
 
         /// <summary>
@@ -335,7 +389,7 @@ namespace UnityEngine.UIElements
         public void ClearBindings()
         {
             DataBindingManager.CreateClearAllBindingsRequest(this);
-            bindings?.Clear();
+            bindingsOrNull?.Clear();
 
             if (panel != null)
                 ProcessBindingRequests();

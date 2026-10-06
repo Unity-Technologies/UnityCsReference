@@ -205,6 +205,13 @@ namespace UnityEditor.Scripting.ScriptCompilation
 
         public void RequestScriptCompilation(string reason = null, RequestScriptCompilationOptions options = RequestScriptCompilationOptions.None)
         {
+            // Secondary UMPE processes (e.g. the standalone Profiler) share Library/Bee with the main process and must never compile.
+            if (UnityEditor.MPE.ProcessService.level == UnityEditor.MPE.ProcessLevel.Secondary)
+            {
+                Console.WriteLine($"[ScriptCompilation] NOT recompiling scripts because this is a secondary process. Reason to compile was: {reason}");
+                return;
+            }
+
             if (reason != null)
             {
                 Console.WriteLine($"[ScriptCompilation] Requested script compilation because: {reason}");
@@ -275,7 +282,8 @@ namespace UnityEditor.Scripting.ScriptCompilation
             referencesWithMissingAssemblies = new List<CustomScriptAssemblyReference>();
             foreach (var asmref in loadingAssemblyDefinition.CustomScriptAssemblyReferences)
             {
-                if (!nameLookup.ContainsKey(asmref.Reference))
+                // An asmref whose JSON omits the reference field produces asmref.Reference == null, and Dictionary<string, ...>.ContainsKey(null) throws ArgumentNullException. Short-circuit null/empty so the null asmref is reported through the existing missing-reference warning path in EditorCompilationInterface, which already has a dedicated message for this case.
+                if (string.IsNullOrEmpty(asmref.Reference) || !nameLookup.ContainsKey(asmref.Reference))
                 {
                     referencesWithMissingAssemblies.Add(asmref);
                 }
@@ -1624,7 +1632,19 @@ namespace UnityEditor.Scripting.ScriptCompilation
             var editorOnlyCompatibleDefines = InternalEditorUtility.GetCompilationDefines(settings.CompilationOptions, settings.BuildTarget, settings.Subtarget, editorApiCompatibility, settings.ExtraGeneralDefines);
             var playerAssembliesDefines = InternalEditorUtility.GetCompilationDefines(settings.CompilationOptions, settings.BuildTarget, settings.Subtarget, settings.PredefinedAssembliesCompilerOptions.ApiCompatibilityLevel, settings.ExtraGeneralDefines);
 
-            return GetTargetAssemblyDefines(targetAssembly, versionMetaDatas, editorOnlyCompatibleDefines, playerAssembliesDefines, settings);
+            return GetTargetAssemblyDefines(targetAssembly, versionMetaDatas, editorOnlyCompatibleDefines, playerAssembliesDefines, GetCompilationExtensionDefines(settings), settings);
+        }
+
+        // Derived platforms share their base platform's BuildTarget, so the compilation extension is the only
+        // source for their defines. They must be part of the define set that define constraints are evaluated against.
+        static string[] GetCompilationExtensionDefines(ScriptAssemblySettings settings)
+        {
+            if (settings.CompilationExtension == null)
+                return Array.Empty<string>();
+
+            return settings.BuildingForEditor
+                ? settings.CompilationExtension.GetAdditionalEditorDefines()
+                : settings.CompilationExtension.GetAdditionalDefines();
         }
 
         // TODO: Get rid of calls to this method and ensure that the defines are always setup correctly at all times.
@@ -1643,18 +1663,20 @@ namespace UnityEditor.Scripting.ScriptCompilation
 
             var playerAssembliesDefines = InternalEditorUtility.GetCompilationDefines(settings.CompilationOptions, settings.BuildTarget, settings.Subtarget, settings.PredefinedAssembliesCompilerOptions.ApiCompatibilityLevel, settings.ExtraGeneralDefines);
 
+            var compilationExtensionDefines = GetCompilationExtensionDefines(settings);
+
             foreach (var targetAssembly in allTargetAssemblies)
             {
-                SetTargetAssemblyDefines(targetAssembly, versionMetaDatas, editorOnlyCompatibleDefines, playerAssembliesDefines, settings);
+                SetTargetAssemblyDefines(targetAssembly, versionMetaDatas, editorOnlyCompatibleDefines, playerAssembliesDefines, compilationExtensionDefines, settings);
             }
         }
 
-        void SetTargetAssemblyDefines(TargetAssembly targetAssembly, Dictionary<string, VersionMetaData> versionMetaDatas, string[] editorOnlyCompatibleDefines, string[] playerAssembliesDefines, ScriptAssemblySettings settings)
+        void SetTargetAssemblyDefines(TargetAssembly targetAssembly, Dictionary<string, VersionMetaData> versionMetaDatas, string[] editorOnlyCompatibleDefines, string[] playerAssembliesDefines, string[] compilationExtensionDefines, ScriptAssemblySettings settings)
         {
-            targetAssembly.Defines = GetTargetAssemblyDefines(targetAssembly, versionMetaDatas, editorOnlyCompatibleDefines, playerAssembliesDefines, settings);
+            targetAssembly.Defines = GetTargetAssemblyDefines(targetAssembly, versionMetaDatas, editorOnlyCompatibleDefines, playerAssembliesDefines, compilationExtensionDefines, settings);
         }
 
-        string[] GetTargetAssemblyDefines(TargetAssembly targetAssembly, Dictionary<string, VersionMetaData> versionMetaDatas, string[] editorOnlyCompatibleDefines, string[] playerAssembliesDefines, ScriptAssemblySettings settings)
+        string[] GetTargetAssemblyDefines(TargetAssembly targetAssembly, Dictionary<string, VersionMetaData> versionMetaDatas, string[] editorOnlyCompatibleDefines, string[] playerAssembliesDefines, string[] compilationExtensionDefines, ScriptAssemblySettings settings)
         {
             string[] settingsExtraGeneralDefines = settings.ExtraGeneralDefines;
             int populatedVersionDefinesCount = 0;
@@ -1664,10 +1686,12 @@ namespace UnityEditor.Scripting.ScriptCompilation
                 ? editorOnlyCompatibleDefines
                 : playerAssembliesDefines;
 
-            string[] defines = new string[compilationDefines.Length + targetAssembly.VersionDefines.Count + settingsExtraGeneralDefines.Length];
+            string[] defines = new string[compilationDefines.Length + targetAssembly.VersionDefines.Count + settingsExtraGeneralDefines.Length + compilationExtensionDefines.Length];
 
             Array.Copy(settingsExtraGeneralDefines, defines, settingsExtraGeneralDefines.Length);
             populatedVersionDefinesCount += settingsExtraGeneralDefines.Length;
+            Array.Copy(compilationExtensionDefines, 0, defines, populatedVersionDefinesCount, compilationExtensionDefines.Length);
+            populatedVersionDefinesCount += compilationExtensionDefines.Length;
             Array.Copy(compilationDefines, 0, defines, populatedVersionDefinesCount, compilationDefines.Length);
             populatedVersionDefinesCount += compilationDefines.Length;
 

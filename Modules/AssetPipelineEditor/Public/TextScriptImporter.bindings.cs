@@ -11,6 +11,7 @@ namespace UnityEditor
     [NativeHeader("Modules/AssetPipelineEditor/Public/TextScriptImporter.h")]
     internal class TextScriptImporter : AssetImporter
     {
+        internal TextScriptImporter(global::UnityEngine.EntityId id) : base(id) {}
     }
 
     [CustomEditor(typeof(TextScriptImporter))]

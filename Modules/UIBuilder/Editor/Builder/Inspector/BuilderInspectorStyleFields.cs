@@ -6,12 +6,10 @@ using Object = UnityEngine.Object;
 using System;
 using System.Collections.Generic;
 using System.Globalization;
-using System.IO;
 using System.Linq;
 using Unity.Profiling;
 using UnityEditor;
 using UnityEditor.UIElements;
-using UnityEditorInternal;
 using UnityEngine;
 using UnityEngine.Assertions;
 using UnityEngine.TextCore.Text;
@@ -437,6 +435,11 @@ namespace Unity.UI.Builder
                 {
                     textAlignStripField.userData = enumValue.GetType();
                     textAlignStripField.RegisterValueChangedCallback(e => OnFieldToggleButtonGroupChange(e, styleName));
+                }
+                else if (fieldElement is ToggleButtonGroup displayStrip && IsDisplayStrip(styleName))
+                {
+                    // Grid-aware strip bound by button name, so it bypasses the generic enum path.
+                    SetupDisplayStrip(displayStrip);
                 }
                 else if (fieldElement is ToggleButtonGroup)
                 {
@@ -1162,6 +1165,11 @@ namespace Unity.UI.Builder
                 {
                     // Gradient mode: push the struct and flip the popup, no asset touch.
                     imageStyleField.SetGradientWithoutNotify(value.gradient);
+                    imageStyleField.gradientField.SetVarBindings(ReadGradientVarBindings(styleProperty, value.gradient));
+                    imageStyleField.gradientField.resolveVariableSheet = ResolveGradientVariableSheet;
+                    imageStyleField.gradientField.resolveVariableColor = ResolveGradientVariableColor;
+                    imageStyleField.gradientField.getCurrentVisualElement = () => currentVisualElement;
+                    imageStyleField.gradientField.getEditorExtensionMode = () => m_Inspector.document.fileSettings.editorExtensionMode;
                 }
                 else
                 {
@@ -1200,7 +1208,13 @@ namespace Unity.UI.Builder
             if (IsComputedStyleBackground(val) && fieldElement is BackgroundGradientField bgGradientField)
             {
                 // Compound storage keeps the gradient struct alongside the baked VI — round-trips losslessly.
-                bgGradientField.SetValueWithoutNotify(GetComputedStyleBackgroundValue(val).gradient);
+                var gradient = GetComputedStyleBackgroundValue(val).gradient;
+                bgGradientField.SetValueWithoutNotify(gradient);
+                bgGradientField.SetVarBindings(ReadGradientVarBindings(styleProperty, gradient));
+                bgGradientField.resolveVariableSheet = ResolveGradientVariableSheet;
+                bgGradientField.resolveVariableColor = ResolveGradientVariableColor;
+                bgGradientField.getCurrentVisualElement = () => currentVisualElement;
+                bgGradientField.getEditorExtensionMode = () => m_Inspector.document.fileSettings.editorExtensionMode;
                 return true;
             }
 
@@ -1344,6 +1358,11 @@ namespace Unity.UI.Builder
                     }
                     case ToggleButtonGroup group:
                     {
+                        if (IsDisplayStrip(styleName))
+                        {
+                            RefreshDisplayStrip(group, (DisplayStyle)enumValue);
+                            break;
+                        }
                         var uiField = group;
                         var options = new ToggleButtonGroupState(0, 64);
                         options[Convert.ToInt32(enumValue)] = true;
@@ -2323,14 +2342,20 @@ namespace Unity.UI.Builder
         void OpenSelectorInIDE(DropdownMenuAction action)
         {
             var matchedRule = (MatchedRule) action.userData;
-            bool opened = false;
+            var styleSheet = matchedRule.matchRecord.sheet;
 
-            if (!string.IsNullOrEmpty(matchedRule.displayPath) && File.Exists(matchedRule.fullPath))
+            // A selector edited in this session only exists in memory, so the file on disk would not contain it.
+            var wasUnsaved = UIAssetRegistry.LiveInstance?.CanSettleSingleAsset(styleSheet) == true;
+            if (wasUnsaved && !UIAssetRegistry.instance.SaveSingleAsset(styleSheet, CommandSources.Builder))
             {
-                opened = InternalEditorUtility.OpenFileAtLineExternal(matchedRule.fullPath, matchedRule.lineNumber, -1);
+                Builder.ShowWarning(BuilderConstants.CouldNotOpenSelectorMessage);
+                return;
             }
 
-            if (!opened)
+            // Settling the sheet rewrites the whole file, so the line read before it can point anywhere.
+            var lineNumber = wasUnsaved ? -1 : matchedRule.lineNumber;
+
+            if (!StyleSheetExternalEditor.TryOpen(matchedRule.fullPath, lineNumber))
             {
                 Builder.ShowWarning(BuilderConstants.CouldNotOpenSelectorMessage);
             }
@@ -2368,6 +2393,8 @@ namespace Unity.UI.Builder
 
             var selectorString = BuilderConstants.UssSelectorClassNameSymbol + className;
             var newSelector = BuilderSharedStyles.CreateNewSelector(builder.viewport.styleSelectorElementContainer, styleSheet, selectorString);
+            if (newSelector == null)
+                return;
 
             currentVisualElement.AddToClassList(className);
             BuilderAssetUtilities.AddStyleClassToElementInAsset(m_Inspector.document, currentVisualElement, className);
@@ -2510,7 +2537,14 @@ namespace Unity.UI.Builder
 
             s_StyleChangeList.Clear();
             s_StyleChangeList.Add(styleName);
-            NotifyStyleChanges(s_StyleChangeList, isVariable, notifyType, ignoreUnsavedChanges);
+
+            // A shorthand sets its longhands, and their rows only show the new values after the style update.
+            var longhandNames = StyleDebug.GetLonghandPropertyNames(styleName);
+            var isShorthand = longhandNames != null;
+            if (isShorthand)
+                s_StyleChangeList.AddRange(longhandNames);
+
+            NotifyStyleChanges(s_StyleChangeList, isVariable || isShorthand, notifyType, ignoreUnsavedChanges);
 
             if (isNewValue && updateStyleCategoryFoldoutOverrides != null)
                 updateStyleCategoryFoldoutOverrides();
@@ -2858,14 +2892,55 @@ namespace Unity.UI.Builder
             OnGradientFieldValueChange(e, styleName, e.elementTarget as VisualElement);
         }
 
+        UnityEngine.UIElements.StyleProperty.GradientVarBindings ReadGradientVarBindings(
+            UnityEngine.UIElements.StyleProperty styleProperty, in BackgroundGradient gradient)
+        {
+            if (styleProperty != null && styleProperty.HasValue()
+                && styleProperty.TryReadGradientVarBindings(styleSheet, gradient, out var bindings))
+                return bindings;
+            return UnityEngine.UIElements.StyleProperty.GradientVarBindings.none;
+        }
+
+        StyleSheet ResolveGradientVariableSheet(string varName)
+        {
+            if (currentVisualElement == null)
+                return null;
+            var varInfo = StyleVariableUtility.FindVariable(currentVisualElement, varName,
+                m_Inspector.document.fileSettings.editorExtensionMode);
+            return varInfo.Sheet;
+        }
+
+        Color? ResolveGradientVariableColor(string varName)
+        {
+            if (currentVisualElement == null)
+                return null;
+            var varInfo = StyleVariableUtility.FindVariable(currentVisualElement, varName,
+                m_Inspector.document.fileSettings.editorExtensionMode);
+            var handles = varInfo.StyleVariable.handles;
+            if (varInfo.Sheet == null || handles == null || handles.Length == 0)
+                return null;
+
+            if (handles[0].valueType == StyleValueType.Color)
+                return varInfo.Sheet.ReadColor(handles[0]);
+            if (handles[0].valueType == StyleValueType.Enum
+                && StyleSheetColor.TryGetColor(varInfo.Sheet.ReadAsString(handles[0]).ToLowerInvariant(), out var namedColor))
+                return namedColor;
+            return null;
+        }
+
         // refreshTarget overrides which field drives PostStyleFieldSteps (used when the
         // edit fires from an embedded sub-field and we want the row-level field to refresh).
         void OnGradientFieldValueChange(ChangeEvent<BackgroundGradient> e, string styleName, VisualElement refreshTarget)
         {
             var styleProperty = GetOrCreateStylePropertyByStyleName(styleName);
             var isNewValue = !styleProperty.HasValue();
+            // The field owns the var bindings: it decodes them from the style property on
+            // read and clears exactly the slots the user's edit overrides.
+            var bindings = e.target is BackgroundGradientField gradientField
+                ? gradientField.BuildVarBindings()
+                : UnityEngine.UIElements.StyleProperty.GradientVarBindings.none;
             Undo.RegisterCompleteObjectUndo(styleSheet, BuilderConstants.ChangeUIStyleValueUndoMessage);
-            styleProperty.SetBackgroundGradient(styleSheet, e.newValue);
+            styleProperty.SetBackgroundGradient(styleSheet, e.newValue, bindings);
             PostStyleFieldSteps(refreshTarget ?? (e.elementTarget as VisualElement), styleProperty, styleName, isNewValue);
         }
 

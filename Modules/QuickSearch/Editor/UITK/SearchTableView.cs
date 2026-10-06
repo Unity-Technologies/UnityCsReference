@@ -2,7 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: Search not yet converted
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -168,8 +167,8 @@ namespace UnityEditor.Search
         public override void AddSaveQueryMenuItems(SearchContext context, GenericMenu menu)
         {
             menu.AddSeparator("");
-            menu.AddItem(EditorGUIUtility.TrTextContent("Export Report..."), false, () => ExportJson(context));
-            menu.AddItem(EditorGUIUtility.TrTextContent("Export CSV..."), false, () => ExportCsv(context));
+            menu.AddItem(L10n.TextContent("Export Report...", null, null, null), false, () => ExportJson(context));
+            menu.AddItem(L10n.TextContent("Export CSV...", null, null, null), false, () => ExportCsv(context));
         }
 
         private void ExportJson(SearchContext context)
@@ -823,7 +822,9 @@ namespace UnityEditor.Search
         private void OnSortColumn()
         {
             m_DeferredSortColumnOff?.Invoke();
+#pragma warning disable UAL0018 // the stored handle only cancels the pending call against the live tick list; it snapshots nothing, so a reload that drops the pending call leaves it a no-op
             m_DeferredSortColumnOff = Utils.CallDelayed(SortColumns);
+#pragma warning restore UAL0018
         }
 
         private void SortColumns()
@@ -914,17 +915,17 @@ namespace UnityEditor.Search
             var mp = evt.mousePosition;
             var activeColumnIndex = columnUnderMouse != null ? FindColumnIndex(columnUnderMouse) : -1;
             evt.menu.AppendSeparator();
-            evt.menu.AppendAction(EditorGUIUtility.TrTextContent("Add Column...").text, (a) => AddColumn(mp, activeColumnIndex));
+            evt.menu.AppendAction(L10n.TextContent("Add Column...", null, null, null).text, (a) => AddColumn(mp, activeColumnIndex));
 
             if (columnUnderMouse != null)
             {
                 var colName = (columnUnderMouse as SearchTableViewColumn)?.title ?? columnUnderMouse.title;
-                evt.menu.AppendAction(EditorGUIUtility.TrTextContent($"Edit {colName}...").text, (a) => EditColumn(activeColumnIndex));
-                evt.menu.AppendAction(EditorGUIUtility.TrTextContent($"Remove {colName}").text, (a) => RemoveColumn(activeColumnIndex));
+                evt.menu.AppendAction(L10n.TextContent($"Edit {colName}...", null, null, null).text, (a) => EditColumn(activeColumnIndex));
+                evt.menu.AppendAction(L10n.TextContent($"Remove {colName}", null, null, null).text, (a) => RemoveColumn(activeColumnIndex));
             }
 
             evt.menu.AppendSeparator();
-            evt.menu.AppendAction(EditorGUIUtility.TrTextContent("Reset Columns").text, (a) => ResetColumnLayout());
+            evt.menu.AppendAction(L10n.TextContent("Reset Columns", null, null, null).text, (a) => ResetColumnLayout());
         }
 
         private static string GetDisplayLabel(Column col)
@@ -1316,4 +1317,3 @@ namespace UnityEditor.Search
         }
     }
 }
-#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

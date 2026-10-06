@@ -24,16 +24,16 @@ namespace UnityEditor
 
         class Styles
         {
-            public static readonly GUIContent spriteLabel = EditorGUIUtility.TrTextContent("Sprite", "The Sprite defining the mask");
-            public static readonly GUIContent alphaCutoffLabel = EditorGUIUtility.TrTextContent("Alpha Cutoff", "The minimum alpha value used by the mask to select the area of influence defined over the mask's sprite.");
-            public static readonly GUIContent isCustomRangeActive = EditorGUIUtility.TrTextContent("Custom Range", "Mask sprites from front to back sorting values only.");
-            public static readonly GUIContent createSpriteMaskUndoString = EditorGUIUtility.TrTextContent("Create Sprite Mask");
-            public static readonly GUIContent newSpriteMaskName = EditorGUIUtility.TrTextContent("New Sprite Mask");
-            public static readonly GUIContent frontLabel = EditorGUIUtility.TrTextContent("Front");
-            public static readonly GUIContent backLabel = EditorGUIUtility.TrTextContent("Back");
-            public static readonly GUIContent spriteSortPointLabel = EditorGUIUtility.TrTextContent("Sprite Sort Point", "Determines which position of the Sprite which is used for sorting");
-            public static readonly GUIContent maskSourceLabel = EditorGUIUtility.TrTextContent("Mask Source", "Determines which source will be used for the mask");
-            public static readonly GUIContent supportedRendererlabel = EditorGUIUtility.TrTextContent("Supported Renderer", "The supported renderer used as the source for the mask");
+            public static readonly GUIContent spriteLabel = L10n.TextContent("Sprite", "The Sprite defining the mask", null, null);
+            public static readonly GUIContent alphaCutoffLabel = L10n.TextContent("Alpha Cutoff", "The minimum alpha value used by the mask to select the area of influence defined over the mask's sprite.", null, null);
+            public static readonly GUIContent isCustomRangeActive = L10n.TextContent("Custom Range", "Mask sprites from front to back sorting values only.", null, null);
+            public static readonly GUIContent createSpriteMaskUndoString = L10n.TextContent("Create Sprite Mask", null, null, null);
+            public static readonly GUIContent newSpriteMaskName = L10n.TextContent("New Sprite Mask", null, null, null);
+            public static readonly GUIContent frontLabel = L10n.TextContent("Front", null, null, null);
+            public static readonly GUIContent backLabel = L10n.TextContent("Back", null, null, null);
+            public static readonly GUIContent spriteSortPointLabel = L10n.TextContent("Sprite Sort Point", "Determines which position of the Sprite which is used for sorting", null, null);
+            public static readonly GUIContent maskSourceLabel = L10n.TextContent("Mask Source", "Determines which source will be used for the mask", null, null);
+            public static readonly GUIContent supportedRendererlabel = L10n.TextContent("Supported Renderer", "The supported renderer used as the source for the mask", null, null);
         }
 
         private SpriteMask spriteMask => target as SpriteMask;

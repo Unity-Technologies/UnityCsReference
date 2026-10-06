@@ -19,12 +19,21 @@ using Unity.Scripting.LifecycleManagement;
 
 namespace Unity.Collections
 {
+    ///<summary>Options for controlling how memory is cleared.</summary>
+    ///<remarks>You can either clear memory on allocation or leave it uninitialized. <see cref="NativeArrayOptions.ClearMemory" /> is the default.</remarks>
     public enum NativeArrayOptions
     {
+        ///<summary>Leaves <see cref="Unity.Collections.NativeArray{T}" /> memory uninitialized.</summary>
+        ///<remarks>Uninitialized memory can improve performance, but means that the contents of the NativeArray elements are undefined.
+        ///In performance sensitive code you might use NativeArrayOptions.Uninitialized if you want to write to the entire array right after 
+        ///creating it without reading any of the elements first.</remarks>
         UninitializedMemory            = 0,
+        ///<summary>Clears <see cref="Unity.Collections.NativeArray{T}" /> memory on allocation.</summary>
         ClearMemory                    = 1
     }
 
+    ///<summary>Provides a buffer of native memory to managed code, making it possible to share data between managed and native code without marshalling costs.</summary>
+    ///<remarks>NativeArray is a fixed-size block of unmanaged memory which you can directly access from managed code. You can use NativeArray instances in jobs and Burst-compiled code, with optional safety checks for bounds, access, and dependencies. You explicitly control allocation and disposal via an allocator, and Unity tracks allocations to help detect memory leaks. You can use the &lt;a href="https://docs.unity3d.com/Packages/com.unity.collections@latest" &gt;Unity Collections package&lt;/a&gt; to further extend its functionality.</remarks>
     [StructLayout(LayoutKind.Sequential)]
     [NativeContainer]
     [NativeContainerSupportsMinMaxWriteRestriction]
@@ -70,6 +79,10 @@ namespace Unity.Collections
         [VisibleToOtherModules("UnityEngine.CoreModule", "UnityEditor.CoreModule")]
         internal Allocator                m_AllocatorLabel;
 
+        ///<summary>Creates a new NativeArray and allocates enough memory to fit the provided amount of elements.</summary>
+        ///<param name="length">Number of elements to allocate.</param>
+        ///<param name="allocator">The <see cref="Unity.Collections.Allocator" /> to use for the data.</param>
+        ///<param name="options">The <see cref="Unity.Collections.NativeArrayOptions" /> to use for the data.</param>
         public NativeArray(int length, Allocator allocator, NativeArrayOptions options = NativeArrayOptions.ClearMemory)
         {
             Allocate(length, allocator, default, out this);
@@ -77,6 +90,10 @@ namespace Unity.Collections
                 UnsafeUtility.MemClear(m_Buffer, (long)Length * UnsafeUtility.SizeOf<T>());
         }
 
+        ///<summary>Creates a new NativeArray and allocates enough memory to fit the provided number of elements, using the specified memory label.</summary>
+        ///<param name="length">Number of elements to allocate.</param>
+        ///<param name="label">The <see cref="Unity.Collections.MemoryLabel" /> to allocate under.</param>
+        ///<param name="options">The <see cref="Unity.Collections.NativeArrayOptions" /> to use for the data.</param>
         public NativeArray(int length, MemoryLabel label, NativeArrayOptions options = NativeArrayOptions.ClearMemory)
         {
             label.CheckArgument();
@@ -85,6 +102,9 @@ namespace Unity.Collections
                 UnsafeUtility.MemClear(m_Buffer, (long)Length * UnsafeUtility.SizeOf<T>());
         }
 
+        ///<summary>Creates a NativeArray from an array of elements.</summary>
+        ///<param name="array">An array to copy the data from.</param>
+        ///<param name="allocator">The <see cref="Unity.Collections.Allocator" /> to use for the data.</param>
         public NativeArray(T[] array, Allocator allocator)
         {
             if (array == null)
@@ -94,6 +114,9 @@ namespace Unity.Collections
             Copy(array, this);
         }
 
+        ///<summary>Creates a NativeArray from an array of elements, using the specified memory label.</summary>
+        ///<param name="array">An array to copy the data from.</param>
+        ///<param name="label">The <see cref="Unity.Collections.MemoryLabel" /> to allocate under.</param>
         public NativeArray(T[] array, MemoryLabel label)
         {
             if (array == null)
@@ -105,6 +128,9 @@ namespace Unity.Collections
             Copy(array, this);
         }
 
+        ///<summary>Creates a NativeArray from an existing NativeArray.</summary>
+        ///<param name="array">The <see cref="Unity.Collections.NativeArray{T}" /> to copy the data from.</param>
+        ///<param name="allocator">The <see cref="Unity.Collections.Allocator" /> to use for the data.</param>
         public NativeArray(NativeArray<T> array, Allocator allocator)
         {
             AtomicSafetyHandle.CheckReadAndThrow(array.m_Safety);
@@ -112,6 +138,9 @@ namespace Unity.Collections
             Copy(array, 0, this, 0, array.Length);
         }
 
+        ///<summary>Creates a NativeArray from an existing NativeArray, using the specified memory label.</summary>
+        ///<param name="array">The <see cref="Unity.Collections.NativeArray{T}" /> to copy the data from.</param>
+        ///<param name="label">The <see cref="Unity.Collections.MemoryLabel" /> to allocate under.</param>
         public NativeArray(NativeArray<T> array, MemoryLabel label)
         {
             AtomicSafetyHandle.CheckReadAndThrow(array.m_Safety);
@@ -156,6 +185,7 @@ namespace Unity.Collections
             InitNestedNativeContainer(array.m_Safety);
         }
 
+        ///<summary>Number of elements in a <see cref="Unity.Collections.NativeArray{T}" />.</summary>
         public int Length
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -205,6 +235,8 @@ namespace Unity.Collections
             AtomicSafetyHandle.CheckWriteAndThrow(m_Safety);
         }
 
+        ///<summary>Access <see cref="Unity.Collections.NativeArray{T}" /> elements by index.</summary>
+        ///<remarks>Structs are returned by value and not by reference.</remarks>
         public T this[int index]
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -223,12 +255,16 @@ namespace Unity.Collections
             }
         }
 
+        ///<summary>Indicates that a <see cref="Unity.Collections.NativeArray{T}" /> has an allocated memory buffer.</summary>
         public bool IsCreated
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             get => m_Buffer != null;
         }
 
+        ///<summary>Disposes a <see cref="Unity.Collections.NativeArray{T}" />.</summary>
+        ///<remarks>This methods disposes the memory owned by a <see cref="Unity.Collections.NativeArray{T}" />. The behavior of this methods depends on the 
+        ///<see cref="Allocator" /> used when the NativeArray was created.</remarks>
         [WriteAccessRequired]
         public void Dispose()
         {
@@ -262,6 +298,10 @@ namespace Unity.Collections
             m_Buffer = null;
         }
 
+        ///<summary>Creates and schedules a job that releases all resources (memory and safety handles) of a <see cref="Unity.Collections.NativeArray{T}" />.</summary>
+        ///<param name="inputDeps">The dependency of the new job.</param>
+        ///<returns>The <see cref="Unity.Jobs.JobHandle" />] of the new job. The job depends upon <c>inputDeps</c> and releases all resources (memory and safety handles) 
+        ///of the <see cref="Unity.Collections.NativeArray{T}" />.</returns>
         public JobHandle Dispose(JobHandle inputDeps)
         {
             if (m_AllocatorLabel != Allocator.None
@@ -301,28 +341,38 @@ namespace Unity.Collections
             return inputDeps;
         }
 
+        ///<summary>Copies all the elements from a <see cref="Unity.Collections.NativeArray{T}" /> or a managed array of the same length.</summary>
+        ///<param name="array">The array to copy elements from.</param>
         [WriteAccessRequired]
         public void CopyFrom(T[] array)
         {
             Copy(array, this);
         }
 
+        ///<summary>Copies all the elements from a <see cref="Unity.Collections.NativeArray{T}" /> or a managed array of the same length.</summary>
+        ///<param name="array">The array to copy elements from.</param>
         [WriteAccessRequired]
         public void CopyFrom(NativeArray<T> array)
         {
             Copy(array, this);
         }
 
+        ///<summary>Copies all the elements to another <see cref="Unity.Collections.NativeArray{T}" /> or a managed array of the same length.</summary>
+        ///<param name="array">The array to copy elements to.</param>
         public void CopyTo(T[] array)
         {
             Copy(this, array);
         }
 
+        ///<summary>Copies all the elements to another <see cref="Unity.Collections.NativeArray{T}" /> or a managed array of the same length.</summary>
+        ///<param name="array">The array to copy elements to.</param>
         public void CopyTo(NativeArray<T> array)
         {
             Copy(this, array);
         }
 
+        ///<summary>Convert a <see cref="Unity.Collections.NativeArray{T}" /> to an array.</summary>
+        ///<returns>The converted array.</returns>
         public T[] ToArray()
         {
             var array = new T[Length];
@@ -344,6 +394,8 @@ namespace Unity.Collections
         }
 
 
+        ///<summary>Gets an enumerator.</summary>
+        ///<returns>An enumerator.</returns>
         public Enumerator GetEnumerator()
         {
             return new Enumerator(ref this);
@@ -416,17 +468,28 @@ namespace Unity.Collections
             }
         }
 
+        ///<summary>Compares two <see cref="Unity.Collections.NativeArray{T}" /> instances.</summary>
+        ///<remarks>Two <see cref="Unity.Collections.NativeArray{T}" /> instances are considered the same if they point to the same underlying memory buffer, and 
+        ///have the same length.</remarks>
+        ///<param name="other">The NativeArray to compare against.</param>
+        ///<returns>True if the two NativeArray instances are the same, false otherwise.</returns>
         public bool Equals(NativeArray<T> other)
         {
             return m_Buffer == other.m_Buffer && m_Length == other.m_Length;
         }
 
+        ///<summary>Compares a <see cref="Unity.Collections.NativeArray{T}" /> instance and an object.</summary>
+        ///<remarks>A NativeArray and an object are considered the same if they point to the same underlying memory buffer, and have the same length.</remarks>
+        ///<param name="obj">The object to compare against.</param>
+        ///<returns>True if the NativeArray and the object are the same, false otherwise.</returns>
         public override bool Equals(object obj)
         {
             if (ReferenceEquals(null, obj)) return false;
             return obj is NativeArray<T> && Equals((NativeArray<T>)obj);
         }
 
+        ///<summary>Gets a hash code for the current instance.</summary>
+        ///<returns>A hash code.</returns>
         public override int GetHashCode()
         {
             unchecked
@@ -435,16 +498,21 @@ namespace Unity.Collections
             }
         }
 
+        ///<exclude />
         public static bool operator==(NativeArray<T> left, NativeArray<T> right)
         {
             return left.Equals(right);
         }
 
+        ///<exclude />
         public static bool operator!=(NativeArray<T> left, NativeArray<T> right)
         {
             return !left.Equals(right);
         }
 
+        ///<summary>Copies a range of elements from a source array to a destination array, starting from the source index and copying them to the destination index.</summary>
+        ///<param name="src">The data to copy.</param>
+        ///<param name="dst">The array that receives the data.</param>
         public static void Copy(NativeArray<T> src, NativeArray<T> dst)
         {
             CheckCopyLengths(src.Length, dst.Length);
@@ -452,6 +520,9 @@ namespace Unity.Collections
             CopySafe(src, 0, dst, 0, src.Length);
         }
 
+        ///<summary>Copies a range of elements from a source array to a destination array, starting from the source index and copying them to the destination index.</summary>
+        ///<param name="src">The data to copy.</param>
+        ///<param name="dst">The array that receives the data.</param>
         public static void Copy(ReadOnly src, NativeArray<T> dst)
         {
             CheckCopyLengths(src.Length, dst.Length);
@@ -459,6 +530,9 @@ namespace Unity.Collections
             CopySafe(src, 0, dst, 0, src.Length);
         }
 
+        ///<summary>Copies a range of elements from a source array to a destination array, starting from the source index and copying them to the destination index.</summary>
+        ///<param name="src">The data to copy.</param>
+        ///<param name="dst">The array that receives the data.</param>
         public static void Copy(T[] src, NativeArray<T> dst)
         {
             CheckCopyLengths(src.Length, dst.Length);
@@ -466,6 +540,9 @@ namespace Unity.Collections
             CopySafe(src, 0, dst, 0, src.Length);
         }
 
+        ///<summary>Copies a range of elements from a source array to a destination array, starting from the source index and copying them to the destination index.</summary>
+        ///<param name="src">The data to copy.</param>
+        ///<param name="dst">The array that receives the data.</param>
         public static void Copy(NativeArray<T> src, T[] dst)
         {
             CheckCopyLengths(src.Length, dst.Length);
@@ -473,6 +550,9 @@ namespace Unity.Collections
             CopySafe(src, 0, dst, 0, src.Length);
         }
 
+        ///<summary>Copies a range of elements from a source array to a destination array, starting from the source index and copying them to the destination index.</summary>
+        ///<param name="src">The data to copy.</param>
+        ///<param name="dst">The array that receives the data.</param>
         public static void Copy(ReadOnly src, T[] dst)
         {
             CheckCopyLengths(src.Length, dst.Length);
@@ -480,51 +560,101 @@ namespace Unity.Collections
             CopySafe(src, 0, dst, 0, src.Length);
         }
 
+        ///<summary>Copies a range of elements from a source array to a destination array, starting from the source index and copying them to the destination index.</summary>
+        ///<param name="src">The data to copy.</param>
+        ///<param name="dst">The array that receives the data.</param>
+        ///<param name="length">A 32-bit integer that represents the number of elements to copy. The integer must be equal to or greater than zero.</param>
         public static void Copy(NativeArray<T> src, NativeArray<T> dst, int length)
         {
             CopySafe(src, 0, dst, 0, length);
         }
 
+        ///<summary>Copies a range of elements from a source array to a destination array, starting from the source index and copying them to the destination index.</summary>
+        ///<param name="src">The data to copy.</param>
+        ///<param name="dst">The array that receives the data.</param>
+        ///<param name="length">A 32-bit integer that represents the number of elements to copy. The integer must be equal to or greater than zero.</param>
         public static void Copy(ReadOnly src, NativeArray<T> dst, int length)
         {
             CopySafe(src, 0, dst, 0, length);
         }
 
+        ///<summary>Copies a range of elements from a source array to a destination array, starting from the source index and copying them to the destination index.</summary>
+        ///<param name="src">The data to copy.</param>
+        ///<param name="dst">The array that receives the data.</param>
+        ///<param name="length">A 32-bit integer that represents the number of elements to copy. The integer must be equal to or greater than zero.</param>
         public static void Copy(T[] src, NativeArray<T> dst, int length)
         {
             CopySafe(src, 0, dst, 0, length);
         }
 
+        ///<summary>Copies a range of elements from a source array to a destination array, starting from the source index and copying them to the destination index.</summary>
+        ///<param name="src">The data to copy.</param>
+        ///<param name="dst">The array that receives the data.</param>
+        ///<param name="length">A 32-bit integer that represents the number of elements to copy. The integer must be equal to or greater than zero.</param>
         public static void Copy(NativeArray<T> src, T[] dst, int length)
         {
             CopySafe(src, 0, dst, 0, length);
         }
 
+        ///<summary>Copies a range of elements from a source array to a destination array, starting from the source index and copying them to the destination index.</summary>
+        ///<param name="src">The data to copy.</param>
+        ///<param name="dst">The array that receives the data.</param>
+        ///<param name="length">A 32-bit integer that represents the number of elements to copy. The integer must be equal to or greater than zero.</param>
         public static void Copy(ReadOnly src, T[] dst, int length)
         {
             CopySafe(src, 0, dst, 0, length);
         }
 
+        ///<summary>Copies a range of elements from a source array to a destination array, starting from the source index and copying them to the destination index.</summary>
+        ///<param name="src">The data to copy.</param>
+        ///<param name="dst">The array that receives the data.</param>
+        ///<param name="length">A 32-bit integer that represents the number of elements to copy. The integer must be equal to or greater than zero.</param>
+        ///<param name="srcIndex">A 32-bit integer that represents the index in the <c>src</c> array where copying begins.</param>
+        ///<param name="dstIndex">A 32-bit integer that represents the index in the <c>dst</c> array where storing begins.</param>
         public static void Copy(NativeArray<T> src, int srcIndex, NativeArray<T> dst, int dstIndex, int length)
         {
             CopySafe(src, srcIndex, dst, dstIndex, length);
         }
 
+        ///<summary>Copies a range of elements from a source array to a destination array, starting from the source index and copying them to the destination index.</summary>
+        ///<param name="src">The data to copy.</param>
+        ///<param name="dst">The array that receives the data.</param>
+        ///<param name="length">A 32-bit integer that represents the number of elements to copy. The integer must be equal to or greater than zero.</param>
+        ///<param name="srcIndex">A 32-bit integer that represents the index in the <c>src</c> array where copying begins.</param>
+        ///<param name="dstIndex">A 32-bit integer that represents the index in the <c>dst</c> array where storing begins.</param>
         public static void Copy(ReadOnly src, int srcIndex, NativeArray<T> dst, int dstIndex, int length)
         {
             CopySafe(src, srcIndex, dst, dstIndex, length);
         }
 
+        ///<summary>Copies a range of elements from a source array to a destination array, starting from the source index and copying them to the destination index.</summary>
+        ///<param name="src">The data to copy.</param>
+        ///<param name="dst">The array that receives the data.</param>
+        ///<param name="length">A 32-bit integer that represents the number of elements to copy. The integer must be equal to or greater than zero.</param>
+        ///<param name="srcIndex">A 32-bit integer that represents the index in the <c>src</c> array where copying begins.</param>
+        ///<param name="dstIndex">A 32-bit integer that represents the index in the <c>dst</c> array where storing begins.</param>
         public static void Copy(T[] src, int srcIndex, NativeArray<T> dst, int dstIndex, int length)
         {
             CopySafe(src, srcIndex, dst, dstIndex, length);
         }
 
+        ///<summary>Copies a range of elements from a source array to a destination array, starting from the source index and copying them to the destination index.</summary>
+        ///<param name="src">The data to copy.</param>
+        ///<param name="dst">The array that receives the data.</param>
+        ///<param name="length">A 32-bit integer that represents the number of elements to copy. The integer must be equal to or greater than zero.</param>
+        ///<param name="srcIndex">A 32-bit integer that represents the index in the <c>src</c> array where copying begins.</param>
+        ///<param name="dstIndex">A 32-bit integer that represents the index in the <c>dst</c> array where storing begins.</param>
         public static void Copy(NativeArray<T> src, int srcIndex, T[] dst, int dstIndex, int length)
         {
             CopySafe(src, srcIndex, dst, dstIndex, length);
         }
 
+        ///<summary>Copies a range of elements from a source array to a destination array, starting from the source index and copying them to the destination index.</summary>
+        ///<param name="src">The data to copy.</param>
+        ///<param name="dst">The array that receives the data.</param>
+        ///<param name="length">A 32-bit integer that represents the number of elements to copy. The integer must be equal to or greater than zero.</param>
+        ///<param name="srcIndex">A 32-bit integer that represents the index in the <c>src</c> array where copying begins.</param>
+        ///<param name="dstIndex">A 32-bit integer that represents the index in the <c>dst</c> array where storing begins.</param>
         public static void Copy(ReadOnly src, int srcIndex, T[] dst, int dstIndex, int length)
         {
             CopySafe(src, srcIndex, dst, dstIndex, length);
@@ -675,6 +805,9 @@ namespace Unity.Collections
                 throw new ArgumentOutOfRangeException(nameof(destIndex), "stored byte range must fall inside container bounds");
         }
 
+        ///<summary>Reinterpret and load data starting at underlying index as a different type.</summary>
+        ///<param name="sourceIndex">Index in the underlying array where the load should start.</param>
+        ///<returns>The loaded data.</returns>
         public U ReinterpretLoad<U>(int sourceIndex) where U : struct
         {
             CheckReinterpretLoadRange<U>(sourceIndex);
@@ -682,6 +815,9 @@ namespace Unity.Collections
             return UnsafeUtility.ReadArrayElement<U>(src_ptr, 0);
         }
 
+        ///<summary>Reinterpret and store data starting at underlying index as a different type.</summary>
+        ///<param name="destIndex">Index in the underlying array where the data is to be stored.</param>
+        ///<param name="data">The data to store.</param>
         public void ReinterpretStore<U>(int destIndex, U data) where U : struct
         {
             CheckReinterpretStoreRange<U>(destIndex);
@@ -706,6 +842,11 @@ namespace Unity.Collections
             }
         }
 
+        ///<summary>Reinterpret a <see cref="Unity.Collections.NativeArray{T}" /> with a different data type (type punning).</summary>
+        ///<remarks>If an expected element size isn't given, the sizes of <c>T</c> and <c>U</c> must match.
+        ///
+        ///When an expected element size is given, this method allows you to create a view into memory that has a different element size and length compared to the source array. For example, you can reinterpret an array of float triples as an array of 3D vector structs. The expected element size serves as a checkpoint so that the underlying element size in the source array doesn't change size, which would otherwise make all future uses of the reinterpreted array invalid.</remarks>
+        ///<returns>An alias of the same array, reinterpreted as the target type.</returns>
         public NativeArray<U> Reinterpret<U>() where U : struct
         {
             CheckReinterpretSize<U>();
@@ -726,6 +867,12 @@ namespace Unity.Collections
             }
         }
 
+        ///<summary>Reinterpret a <see cref="Unity.Collections.NativeArray{T}" /> with a different data type (type punning).</summary>
+        ///<remarks>If an expected element size isn't given, the sizes of <c>T</c> and <c>U</c> must match.
+        ///
+        ///When an expected element size is given, this method allows you to create a view into memory that has a different element size and length compared to the source array. For example, you can reinterpret an array of float triples as an array of 3D vector structs. The expected element size serves as a checkpoint so that the underlying element size in the source array doesn't change size, which would otherwise make all future uses of the reinterpreted array invalid.</remarks>
+        ///<param name="expectedTypeSize">The expected size (in bytes, as given by sizeof) of the current element type of the array.</param>
+        ///<returns>An alias of the same array, reinterpreted as the target type.</returns>
         public NativeArray<U> Reinterpret<U>(int expectedTypeSize) where U : struct
         {
             long tSize = UnsafeUtility.SizeOf<T>();
@@ -757,6 +904,10 @@ namespace Unity.Collections
             }
         }
 
+        ///<summary>Gets a view into an array starting at the specified index.</summary>
+        ///<param name="start">The start index of the sub array.</param>
+        ///<param name="length">The length of the sub array.</param>
+        ///<returns>A view into the array that aliases the original array, which can't be disposed.</returns>
         public NativeArray<T> GetSubArray(int start, int length)
         {
             CheckGetSubArrayArguments(start, length);
@@ -766,11 +917,14 @@ namespace Unity.Collections
             return result;
         }
 
+        ///<summary>Casts a <see cref="Unity.Collections.NativeArray{T}" /> to read-only array.</summary>
+        ///<returns>A read-only array.</returns>
         public ReadOnly AsReadOnly()
         {
             return new ReadOnly(m_Buffer, m_Length, ref m_Safety);
         }
 
+        ///<summary>Represents a <see cref="Unity.Collections.NativeArray{T}" /> interface constrained to read-only operations.</summary>
         [StructLayout(LayoutKind.Sequential)]
         [NativeContainer]
         [NativeContainerIsReadOnly]
@@ -795,6 +949,7 @@ namespace Unity.Collections
             }
 
 
+            ///<summary>Provides the number of elements in the <see cref="Unity.Collections.NativeArray{T}.ReadOnly" />.</summary>
             public int Length
             {
                 [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -804,10 +959,16 @@ namespace Unity.Collections
                 }
             }
 
+            ///<summary>Copies all elements to a <see cref="Unity.Collections.NativeArray{T}.ReadOnly" /> or managed array of the same length.</summary>
+            ///<param name="array">The destination array to copy to.</param>
             public void CopyTo(T[] array) => Copy(this, array);
 
+            ///<summary>Copies all elements to a <see cref="Unity.Collections.NativeArray{T}.ReadOnly" /> or managed array of the same length.</summary>
+            ///<param name="array">The destination array to copy to.</param>
             public void CopyTo(NativeArray<T> array) => Copy(this, array);
 
+            ///<summary>Convert the data in a <see cref="Unity.Collections.NativeArray{T}.ReadOnly" /> to a managed array.</summary>
+            ///<returns>A new managed array with the same contents as the given <see cref="Unity.Collections.NativeArray{T}.ReadOnly" />.</returns>
             public T[] ToArray()
             {
                 var array = new T[m_Length];
@@ -815,12 +976,19 @@ namespace Unity.Collections
                 return array;
             }
 
+            ///<summary>Reinterpret a <see cref="Unity.Collections.NativeArray{T}.ReadOnly" /> with a different data type (type punning).</summary>
+            ///<remarks>The sizes of <c>T</c> and <c>U</c> must match. You can use this method to create a view into memory that has a different element size 
+            ///and length compared to the source array. For example, an array of float triples can be reinterpreted as an array of 3D vector structs.</remarks>
+            ///<returns>An alias of the <see cref="Unity.Collections.NativeArray{T}.ReadOnly" />, but reinterpreted as the target type.</returns>
             public NativeArray<U>.ReadOnly Reinterpret<U>() where U : struct
             {
                 CheckReinterpretSize<U>();
                 return new NativeArray<U>.ReadOnly(m_Buffer, m_Length, ref m_Safety);
             }
 
+            ///<summary>Provides read-only access to <see cref="Unity.Collections.NativeArray{T}.ReadOnly" /> elements by index.</summary>
+            ///<remarks>The elements of the array are returned by value, not by reference. If you need the reference, use the <see cref="NativeArray{T}.ReadOnly.UnsafeElementAt(int)" /> method.</remarks>
+            ///<seealso cref="ReadOnly.UnsafeElementAt" />
             public T this[int index]
             {
                 [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -833,6 +1001,66 @@ namespace Unity.Collections
 
             // This method does not copy T, but returns a readonly T.
             // It is marked as unsafe because the value returned by this method can become invalid at any time, for example, if the container was disposed.
+            ///<summary>Provides read-only access to <see cref="Unity.Collections.NativeArray{T}.ReadOnly" /> elements by index.</summary>
+            ///<remarks>This method is dangerous because it returns reference to the memory that can be destroyed (with <see cref="Dispose" />, for instance) and 
+            ///if the <c>ref local</c> is accessed that might lead to undefined results including crashes.</remarks>
+            ///<param name="index">The index of the element.</param>
+            ///<returns>A <c>ref readonly</c> to a value of type <c>T</c>.</returns>
+            ///<example nocheck="true">
+            ///  <code><![CDATA[public readonly struct BigStruct
+            ///{
+            ///    public readonly long a;
+            ///    public readonly long b;
+            ///    public readonly long c;
+            ///    public readonly long d;
+            ///}
+            ///
+            ///static void ProcessByte(byte b)
+            ///{
+            ///    ...
+            ///}
+            ///
+            ///static void ProcessBigStructWithoutCopy(in BigStruct bigStruct) // see 'in' modificator
+            ///{
+            ///    ...
+            ///}
+            ///
+            ///static void Example()
+            ///{
+            ///    const int n = 32;
+            ///
+            ///    var nativeArrayOfBytes = new NativeArray<byte>(n, Allocator.Temp);
+            ///    var nativeArrayOfBigStructures = new NativeArray<FixedString4096Bytes>(n, Allocator.Temp);
+            ///
+            ///    // ... fill the arrays with some data ...
+            ///
+            ///    var readOnlyBytes = nativeArrayOfBytes.AsReadOnly();
+            ///    for (var i = 0; i < n; ++i)
+            ///    {
+            ///        ProcessByte(readOnlyBytes[i]);
+            ///        //ProcessByte(readOnlyBytes.UnsafeElementAt(i)); is more expensive, since pointer on x64 platforms is 8 times bigger than a byte
+            ///    }
+            ///
+            ///    var readOnlyBigStructures = nativeArrayOfBigStructures.AsReadOnly();
+            ///    for (var i = 0; i < n; ++i)
+            ///    {
+            ///        //ProcessBigStructWithoutCopy(readOnlyBigStructures[i]); copy - expensive in this case
+            ///        ProcessBigStructWithoutCopy(readOnlyBigStructures.UnsafeElementAt(i));
+            ///    }
+            ///
+            ///    // dangerous part
+            ///    ref var element = ref readOnlyBigStructures.UnsafeElementAt(4);
+            ///
+            ///    // element is valid here
+            ///    ProcessBigStructWithoutCopy(element);
+            ///
+            ///    nativeArrayOfBigStructures.Dispose();
+            ///
+            ///    // access to element here is undefined, can lead to a crash or wrong results
+            ///    // ProcessBigStructWithoutCopy(element); <-- do not do this!
+            ///}
+            ///]]></code>
+            ///</example>
             public ref readonly T UnsafeElementAt(int index)
             {
                 CheckElementReadAccess(index);
@@ -851,6 +1079,7 @@ namespace Unity.Collections
                 AtomicSafetyHandle.CheckReadAndThrow(m_Safety);
             }
 
+            ///<summary>Indicates that a <see cref="Unity.Collections.NativeArray{T}.ReadOnly" /> has an allocated memory buffer.</summary>
             public bool IsCreated
             {
                 [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -904,6 +1133,8 @@ namespace Unity.Collections
                 object IEnumerator.Current => Current;
             }
 
+            ///<summary>Gets an enumerator.</summary>
+            ///<returns>The enumerator.</returns>
             public Enumerator GetEnumerator()
             {
                 return new Enumerator(this);
@@ -919,18 +1150,23 @@ namespace Unity.Collections
                 return GetEnumerator();
             }
 
+            ///<summary>Exposes <see cref="Unity.Collections.NativeArray{T}.ReadOnly" /> data as a <c>System.ReadOnlySpan&lt;T&gt;</c>.</summary>
+            ///<returns>A <c>System.ReadOnlySpan&lt;T&gt;</c>.</returns>
             public readonly ReadOnlySpan<T> AsReadOnlySpan()
             {
                 AtomicSafetyHandle.CheckReadAndThrow(m_Safety);
                 return new ReadOnlySpan<T>(m_Buffer, m_Length);
             }
 
+            ///<exclude />
             public static implicit operator ReadOnlySpan<T>(in ReadOnly source)
             {
                 return source.AsReadOnlySpan();
             }
         }
 
+        ///<summary>Exposes <see cref="Unity.Collections.NativeArray{T}" /> data as a <c>System.Span&lt;T&gt;</c>.</summary>
+        ///<returns>A read-write <c>System.Span&lt;T&gt;</c>.</returns>
         [WriteAccessRequired]
         public readonly Span<T> AsSpan()
         {
@@ -938,17 +1174,21 @@ namespace Unity.Collections
             return new Span<T>(m_Buffer, m_Length);
         }
 
+        ///<summary>Exposes <see cref="Unity.Collections.NativeArray{T}" /> data as a <c>System.ReadOnlySpan&lt;T&gt;</c>.</summary>
+        ///<returns>A <c>System.ReadOnlySpan&lt;T&gt;</c>.</returns>
         public readonly ReadOnlySpan<T> AsReadOnlySpan()
         {
             AtomicSafetyHandle.CheckReadAndThrow(m_Safety);
             return new ReadOnlySpan<T>(m_Buffer, m_Length);
         }
 
+        ///<exclude />
         public static implicit operator Span<T>(in NativeArray<T> source)
         {
             return source.AsSpan();
         }
 
+        ///<exclude />
         public static implicit operator ReadOnlySpan<T>(in NativeArray<T> source)
         {
             return source.AsReadOnlySpan();
@@ -1056,13 +1296,25 @@ namespace Unity.Collections
 }
 namespace Unity.Collections.LowLevel.Unsafe
 {
+    ///<summary>Contains &lt;a href="https://learn.microsoft.com/en-us/dotnet/csharp/language-reference/keywords/unsafe"&gt;unsafe&lt;/a&gt; methods for 
+    ///working with <see cref="Unity.Collections.NativeArray{T}"> NativeArray</see> instances.</summary>
+    ///<remarks>This class contains methods that you can use to perform unsafe operations that ignore the job safety system. For example, if you are
+    ///implementing your own [custom native container](xref:job-system-custom-nativecontainer), you might want to call <c>NativeArray</c> methods that cause the safety 
+    ///system to produce errors, even though you're implementing these methods safely. <c>NativeArrayUnsafeUtility</c> allows you to perform these operations without 
+    ///triggering errors in the safety system.</remarks>
     public static class NativeArrayUnsafeUtility
     {
+        ///<summary>Gets the <see cref="AtomicSafetyHandle" /> that is used for safety control on a NativeArray.</summary>
+        ///<param name="array">The NativeArray to check.</param>
+        ///<returns>The <see cref="AtomicSafetyHandle" /> of the given NativeArray.</returns>
         public static AtomicSafetyHandle GetAtomicSafetyHandle<T>(NativeArray<T> array) where T : struct
         {
             return array.m_Safety;
         }
 
+        ///<summary>Sets a new <see cref="AtomicSafetyHandle" /> on a <see cref="NativeArray{T}" />.</summary>
+        ///<param name="array">The NativeArray to set a new handle on.</param>
+        ///<param name="safety">The new AtomicSafetyHandle to set.</param>
         public static void SetAtomicSafetyHandle<T>(ref NativeArray<T> array, AtomicSafetyHandle safety) where T : struct
         {
             array.m_Safety = safety;
@@ -1077,8 +1329,14 @@ namespace Unity.Collections.LowLevel.Unsafe
             NativeArray<T>.IsUnmanagedAndThrow();
         }
 
-        /// Internal method used typically by other systems to provide a view on them.
-        /// The caller is still the owner of the data.
+        ///<summary>Converts a buffer to a NativeArray.</summary>
+        ///<remarks>You can use this method to turn an existing buffer into a NativeArray. Ownership of the data is controlled via the allocation 
+        ///strategy that the allocator argument provides. Use <see cref="Allocator.None" /> if the data is owned externally, and the other arguments to transfer control to the 
+        ///NativeArray.</remarks>
+        ///<param name="dataPointer">Pointer to the preallocated data.</param>
+        ///<param name="length">Number of elements. The length of the data in bytes is computed automatically from this.</param>
+        ///<param name="allocator">The <see cref="Unity.Collections.Allocator" /> type to use.</param>
+        ///<returns>A new NativeArray, allocated with the given <c>allocator</c> strategy and wrapping the provided data.</returns>
         public static unsafe NativeArray<T> ConvertExistingDataToNativeArray<T>(void* dataPointer, int length, Allocator allocator) where T : struct
         {
             CheckConvertArguments<T>(length);
@@ -1096,7 +1354,13 @@ namespace Unity.Collections.LowLevel.Unsafe
             return newArray;
         }
 
-        /// The caller is still the owner of the data.
+        ///<summary>Converts a buffer to a NativeArray.</summary>
+        ///<remarks>You can use this method to turn an existing buffer into a NativeArray. Ownership of the data is controlled via the allocation 
+        ///strategy that the allocator argument provides. Use <see cref="Allocator.None" /> if the data is owned externally, and the other arguments to transfer control to the 
+        ///NativeArray.</remarks>
+        ///<param name="data">Span of the preallocated data.</param>
+        ///<param name="allocator">The <see cref="Unity.Collections.Allocator" /> type to use.</param>
+        ///<returns>A new NativeArray, allocated with the given <c>allocator</c> strategy and wrapping the provided data.</returns>
         public static unsafe NativeArray<T> ConvertExistingDataToNativeArray<T>(Span<T> data, Allocator allocator) where T : unmanaged
         {
             CheckConvertArguments<T>(data.Length);
@@ -1116,24 +1380,45 @@ namespace Unity.Collections.LowLevel.Unsafe
             }
         }
 
+        ///<summary>Gets the pointer to the memory buffer owner of a <see cref="NativeArray{T}" />, and checks whether there is write access to the NativeArray. If there is no write access to the NativeArray, an 
+        ///InvalidOperationException is thrown.</summary>
+        ///<param name="nativeArray">The NativeArray to check.</param>
+        ///<returns>The memory buffer pointer of the NativeArray.</returns>
         public static unsafe void* GetUnsafePtr<T>(this NativeArray<T> nativeArray) where T : struct
         {
             AtomicSafetyHandle.CheckWriteAndThrow(nativeArray.m_Safety);
             return nativeArray.m_Buffer;
         }
 
+        ///<summary>Gets a pointer to the memory buffer of a <see cref="NativeArray{T}" /> or <see cref="NativeArray{T}.ReadOnly" />.</summary>
+        ///<remarks>When ENABLE_UNITY_COLLECTIONS_CHECKS is set (which is always the case in the Editor, but never in a built player), this method 
+        ///checks that the <c>AtomicSafetyHandle</c> associated with the NativeContainer can be read from and isn't written to from another thread. If it can't be read, 
+        ///a <see cref="System.InvalidOperationException" /> is raised. While you can write to the returned pointer, this is generally unsafe. When this method call succeeds, you're 
+        ///only guaranteed that reading from this pointer is safe. Writing to this pointer might lead to race conditions and crashes later during program execution.</remarks>
+        ///<param name="nativeArray">The NativeArray to check.</param>
+        ///<returns>The memory buffer pointer of the NativeArray.</returns>
         public static unsafe void* GetUnsafeReadOnlyPtr<T>(this NativeArray<T> nativeArray) where T : struct
         {
             AtomicSafetyHandle.CheckReadAndThrow(nativeArray.m_Safety);
             return nativeArray.m_Buffer;
         }
 
+        ///<summary>Gets a pointer to the memory buffer of a <see cref="NativeArray{T}" /> or <see cref="NativeArray{T}.ReadOnly" />.</summary>
+        ///<remarks>When ENABLE_UNITY_COLLECTIONS_CHECKS is set (which is always the case in the Editor, but never in a built player), this method 
+        ///checks that the <c>AtomicSafetyHandle</c> associated with the NativeContainer can be read from and isn't written to from another thread. If it can't be read, 
+        ///a <see cref="System.InvalidOperationException" /> is raised. While you can write to the returned pointer, this is generally unsafe. When this method call succeeds, you're 
+        ///only guaranteed that reading from this pointer is safe. Writing to this pointer might lead to race conditions and crashes later during program execution.</remarks>
+        ///<param name="nativeArray">The NativeArray to check.</param>
+        ///<returns>The memory buffer pointer of the NativeArray.</returns>
         public static unsafe void* GetUnsafeReadOnlyPtr<T>(this NativeArray<T>.ReadOnly nativeArray) where T : struct
         {
             AtomicSafetyHandle.CheckReadAndThrow(nativeArray.m_Safety);
             return nativeArray.m_Buffer;
         }
 
+        ///<summary>Gets the pointer to the data owner of a <see cref="NativeArray{T}" />, without performing checks.</summary>
+        ///<param name="nativeArray">The NativeArray to check.</param>
+        ///<returns>The memory buffer pointer of the NativeArray.</returns>
         public static unsafe void* GetUnsafeBufferPointerWithoutChecks<T>(NativeArray<T> nativeArray) where T : struct
         {
             return nativeArray.m_Buffer;

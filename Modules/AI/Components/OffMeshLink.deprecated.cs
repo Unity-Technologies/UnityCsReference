@@ -28,6 +28,9 @@ namespace UnityEngine.AI
     [NativeClass("OffMeshLink", PersistentTypeId = 191)]
     public sealed class OffMeshLink : Behaviour
     {
+        internal OffMeshLink(global::UnityEngine.EntityId id) : base(id) {}
+        public OffMeshLink() {}
+
         ///<summary>Is link active.</summary>
         [Obsolete("activated has been deprecated together with the class. Declare the object as NavMeshLink and use activated as before.")]
         public extern bool activated { get; set; }

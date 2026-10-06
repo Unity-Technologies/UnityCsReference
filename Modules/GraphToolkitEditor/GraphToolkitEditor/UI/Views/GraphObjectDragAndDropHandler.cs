@@ -5,7 +5,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
-using Unity.GraphToolkit.CSO;
+using Unity.CSO;
 using UnityEditor;
 using UnityEngine.UIElements;
 using Object = UnityEngine.Object;

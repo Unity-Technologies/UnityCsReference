@@ -26,6 +26,7 @@ internal static class StageContextMenuUtility
     internal static readonly string Rename = L10n.Tr("Rename", null);
     internal static readonly string Duplicate = L10n.Tr("Duplicate", null);
     internal static readonly string Delete = L10n.Tr("Delete", null);
+    internal static readonly string EditInPlace = L10n.Tr("Edit", null);
     static readonly string k_SelectAll = L10n.Tr("Select All", null);
     static readonly string k_DeselectAll = L10n.Tr("Deselect All", null);
     static readonly string k_InvertSelection = L10n.Tr("Invert Selection", null);
@@ -39,6 +40,68 @@ internal static class StageContextMenuUtility
     internal static readonly string UnpackTemplateCompletely = L10n.Tr("Unpack Template Completely", null);
     internal static readonly string CreateTemplate = L10n.Tr("Create Template...", null);
     internal static readonly string ShowInProject = L10n.Tr("Show in Project", null);
+    internal static readonly string GenerateSelector = L10n.Tr("Generate Selector From Element...", null);
+    internal static readonly string SaveUxml = L10n.Tr("Save UXML", null);
+    internal static readonly string SaveUxmlFormat = L10n.Tr("Save {0}", null);
+    internal static readonly string DiscardUxml = L10n.Tr("Discard UXML", null);
+    internal static readonly string OpenAsset = L10n.Tr("Open Asset", null);
+    internal static readonly string SelectUxmlAsset = L10n.Tr("Select UXML Asset", null);
+    internal static readonly string FindReferencesInScene = L10n.Tr("Find References In Scene", null);
+    internal static readonly string FrameSelection = L10n.Tr("Frame Selection", null);
+    internal static readonly string FrameAndAlignToView = L10n.Tr("Frame and Align to View", null);
+
+    /// <summary>
+    /// Appends "Open Asset" and "Find References In Scene" for the main-stage context menu.
+    /// Both actions are skipped when called from inside an editing stage.
+    /// </summary>
+    public static void AppendMainStageActions(VisualElement element, DropdownMenu menu)
+    {
+        if (StageUtility.GetCurrentStage() is not MainStage)
+            return;
+
+        VisualTreeAsset vtaSource;
+        VisualElementAsset vea;
+        if (element is IPanelComponentRootElement rootEl)
+        {
+            vtaSource = rootEl.panelComponent.visualTreeAsset;
+            vea = vtaSource?.visualTree;
+        }
+        else
+        {
+            vtaSource = element.visualTreeAssetSource
+                ? element.visualTreeAssetSource
+                : element.GetFirstAncestorWhere(ve => ve.visualTreeAssetSource)?.visualTreeAssetSource;
+            vea = element.visualElementAsset
+                ?? element.GetFirstAncestorWhere(ve => ve.visualElementAsset != null)?.visualElementAsset;
+        }
+        if (vtaSource == null)
+            return;
+        using var ancestorsHandle = ListPool<TemplateAsset>.Get(out var ancestorInstances);
+        element.GenerateSubDocumentPath(ancestorInstances);
+
+        if (ancestorInstances.Count == 0)
+        {
+            menu.AppendAction(OpenAsset, _ =>
+            {
+                UIStageNavigation.Navigate(new VisualTreeAssetEditingContext(vtaSource, element.GetPanelSettings()),
+                    BreadcrumbBar.SeparatorStyle.Arrow);
+                if (vea != null)
+                    UIToolkitStageUtility.RequestSelectionOnNextUpdate(new[] { vea });
+            });
+        }
+
+        var canBeReferenced = VisualElementReferenceTools.TryCreateReference(element, out var pr, out var authoringIdPath, false, true)
+            && authoringIdPath.path.Length > 0;
+        menu.AppendAction(FindReferencesInScene,
+            _ =>
+            {
+                var prId = pr.GetEntityId().GetHashCode();
+                var pathString = authoringIdPath.PathToCsvString(VisualElementReferenceSceneQueryEngineFilter.PathSeperatorToken);
+                var filter = $"ref={prId} {VisualElementReferenceSceneQueryEngineFilter.FilterId}=[{pathString}]";
+                SearchableEditorWindow.SetSearchText(filter, HierarchyType.GameObjects);
+            },
+            canBeReferenced ? DropdownMenuAction.Status.Normal : DropdownMenuAction.Status.Disabled);
+    }
 
     /// <summary>
     /// The operations <see cref="PopulateEditOperations"/> appends, in order, for the tests that assert on them.
@@ -56,9 +119,10 @@ internal static class StageContextMenuUtility
         menu.AppendSeparator();
         PopulateSelectionOperations(view, menu);
         menu.AppendSeparator();
-        PopulateOpenActions(element, menu);
+        PopulateOpenActions(element, menu, CommandSources.Hierarchy);
         menu.AppendSeparator();
         PopulateTemplateOperations(menu, element, CommandSources.Hierarchy);
+        AppendGenerateSelectorAction(menu, element, view.ViewModel.HasFlagsCount(HierarchyNodeFlags.Selected));
         menu.AppendSeparator();
         PopulateElementOperations(menu);
     }
@@ -77,8 +141,7 @@ internal static class StageContextMenuUtility
     }
 
     /// <summary>
-    /// The Main Stage menu. Its edit operations are only offered while Main Stage authoring is enabled: with the
-    /// setting off the scene documents are shown read-only, and are edited by opening them in a stage instead.
+    /// The Main Stage menu.
     /// </summary>
     /// <remarks>
     /// Unlike the UI Stage, the rows here can belong to several documents at once, and some of them — the
@@ -89,34 +152,30 @@ internal static class StageContextMenuUtility
     public static void PopulateMainStageMenu(HierarchyView view, in HierarchyNode node, VisualElement element,
         DropdownMenu menu, IHierarchyEditorNodeTypeHandler handler)
     {
-        if (UIToolkitStageUtility.IsAuthoringEnabledInMainStage)
-        {
-            PopulateEditOperations(view, in node, menu, handler);
-            menu.AppendSeparator();
-        }
+        PopulateEditOperations(view, in node, menu, handler);
+        menu.AppendSeparator();
 
         PopulateFrameOperations(element, menu);
         menu.AppendSeparator();
 
-        IPanelComponent panelComponent;
         VisualTreeAsset vtaSource;
         VisualElementAsset vea;
 
         if (element is IPanelComponentRootElement rootElement)
         {
-            panelComponent = rootElement.panelComponent;
-            vtaSource = panelComponent.visualTreeAsset;
+            var panelComponent = rootElement.panelComponent;
+            vtaSource = panelComponent.IsAlive() ? panelComponent.visualTreeAsset : null;
             vea = vtaSource?.visualTree;
         }
         else
         {
-            panelComponent = element.GetFirstAncestorOfType<IPanelComponentRootElement>().panelComponent;
-            vtaSource = panelComponent.visualTreeAsset;
+            var panelComponent = element.GetFirstAncestorOfType<IPanelComponentRootElement>()?.panelComponent;
+            vtaSource = panelComponent.IsAlive() ? panelComponent.visualTreeAsset : null;
             vea = element.visualElementAsset;
 
             if (vea == null)
             {
-                vea = element.GetFirstAncestorWhere(ve => ve.visualElementAsset != null).visualElementAsset;
+                vea = element.GetFirstAncestorWhere(ve => ve.visualElementAsset != null)?.visualElementAsset;
             }
         }
 
@@ -129,7 +188,7 @@ internal static class StageContextMenuUtility
         if (isPanelComponentRootElement)
         {
             menu.AppendAction(
-                "Select VisualTreeAsset Asset",
+                SelectUxmlAsset,
                 ma => { EditorGUIUtility.PingObject(ma.userData as VisualTreeAsset); },
                 ma => (ma.userData as VisualTreeAsset) ? DropdownMenuAction.Status.Normal : DropdownMenuAction.Status.Disabled,
                 vtaSource);
@@ -159,40 +218,20 @@ internal static class StageContextMenuUtility
                 openInBuilderSelectedId = vea?.id ?? -1;
             }
 
-            PopulateOpenActions(menu, element, openInBuilderVta, openInBuilderSelectedId, vea?.visualTreeAsset, ancestorInstances);
+            PopulateOpenActions(menu, element, openInBuilderVta, openInBuilderSelectedId, vea?.visualTreeAsset, ancestorInstances, CommandSources.Hierarchy);
 
-            if (ancestorInstances.Count == 0)
-            {
-                menu.AppendAction(
-                    "Open Asset",
-                    _ =>
-                    {
-                        VisualElementEditingStage.GoToStage(new VisualTreeAssetEditingContext(
-                            vtaSource,
-                            element.GetPanelSettings()
-                        ), BreadcrumbBar.SeparatorStyle.Arrow);
-                        UIToolkitStageUtility.RequestSelectionOnNextUpdate(new[] { vea });
-                    });
-            }
-
-            var canBeReferenced = VisualElementReferenceTools.TryCreateReference(element, out var pr, out var authoringIdPath, false, true) && authoringIdPath.path.Length > 0;
-            menu.AppendAction(
-                "Find References In Scene",
-                a =>
-                {
-                    var prId = pr.GetEntityId().GetHashCode();
-                    var pathString = authoringIdPath.PathToCsvString(VisualElementReferenceSceneQueryEngineFilter.PathSeperatorToken);
-                    var filter = $"ref={prId} {VisualElementReferenceSceneQueryEngineFilter.FilterId}=[{pathString}]";
-                    SearchableEditorWindow.SetSearchText(filter, HierarchyType.GameObjects);
-                },
-                canBeReferenced ? DropdownMenuAction.Status.Normal : DropdownMenuAction.Status.Disabled);
+            AppendMainStageActions(element, menu);
             AppendShowInProject(menu, element);
+
+            menu.AppendSeparator();
+            AppendSettleUxml(menu, openInBuilderVta);
         }
 
-        if (UIToolkitStageUtility.IsAuthoringEnabledInMainStage && element != null)
+        if (element != null)
         {
             menu.AppendSeparator();
             PopulateTemplateOperations(menu, element, CommandSources.Hierarchy);
+            AppendGenerateSelectorAction(menu, element, view.ViewModel.HasFlagsCount(HierarchyNodeFlags.Selected));
         }
 
         menu.AppendSeparator();
@@ -201,11 +240,29 @@ internal static class StageContextMenuUtility
 
     static void PopulateFrameOperations(VisualElement element, DropdownMenu menu)
     {
-        menu.AppendAction("Frame Selection", _ => RequestFramingCommand.Execute(CommandSources.Hierarchy, element, orientToFace: false));
-        menu.AppendAction("Frame and Align to View", _ => RequestFramingCommand.Execute(CommandSources.Hierarchy, element, orientToFace: true));
+        AppendAction(menu, FrameSelection, Menu.GetHotkey("Edit/Frame Selected in Window under Cursor"),
+            () => RequestFramingCommand.Execute(CommandSources.Hierarchy, element, orientToFace: false));
+        AppendAction(menu, FrameAndAlignToView, GetShortcutHotkey(FrameAndFaceShortcut.ShortcutId),
+            () => RequestFramingCommand.Execute(CommandSources.Hierarchy, element, orientToFace: true));
     }
 
-    internal static void PopulateOpenActions(VisualElement element, DropdownMenu menu)
+    // The native menu right-aligns hotkeys only in the encoded form Menu.GetHotkey uses (e.g. "&f"),
+    // not the human-readable ShortcutBinding.ToString().
+    internal static string GetShortcutHotkey(string shortcutId)
+    {
+        try
+        {
+            var binding = UnityEditor.ShortcutManagement.ShortcutManager.instance.GetShortcutBinding(shortcutId);
+            return UnityEditor.ShortcutManagement.KeyCombination.SequenceToMenuString(binding.keyCombinationSequence);
+        }
+        catch (ArgumentException)
+        {
+            // The shortcut registry may not know the id yet, e.g. before its delayed registration ran.
+            return null;
+        }
+    }
+
+    internal static void PopulateOpenActions(VisualElement element, DropdownMenu menu, CommandSources.CommandSource source)
     {
         var vtaSource = element.visualTreeAssetSource
             ? element.visualTreeAssetSource
@@ -234,7 +291,7 @@ internal static class StageContextMenuUtility
         var ancestorInstances = new List<TemplateAsset>();
         element.GenerateSubDocumentPath(ancestorInstances);
 
-        PopulateOpenActions(menu, element, openInBuilderVta, openInBuilderSelectedId, vea?.visualTreeAsset, ancestorInstances);
+        PopulateOpenActions(menu, element, openInBuilderVta, openInBuilderSelectedId, vea?.visualTreeAsset, ancestorInstances, source);
         AppendShowInProject(menu, element);
     }
 
@@ -251,7 +308,8 @@ internal static class StageContextMenuUtility
         VisualTreeAsset openInBuilderVta,
         int openInBuilderSelectedId,
         VisualTreeAsset openInBuilderSelectedSource,
-        List<TemplateAsset> ancestorInstances)
+        List<TemplateAsset> ancestorInstances,
+        CommandSources.CommandSource source)
     {
         menu.AppendAction(
             OpenInUIBuilder,
@@ -259,11 +317,12 @@ internal static class StageContextMenuUtility
             {
                 if (openInBuilderVta == null)
                     return;
-                new LoadUIDocumentCommand
-                {
-                    selectedId = openInBuilderSelectedId,
-                    selectedSourceDocument = openInBuilderSelectedSource,
-                }.OpenInBuilder(openInBuilderVta);
+                LoadUIDocumentCommand.Execute(source, openInBuilderVta,
+                    selectedId: openInBuilderSelectedId,
+                    selectedInstanceIds: openInBuilderSelectedId != -1
+                        ? LoadUIDocumentCommand.GetInstanceIds(element, openInBuilderVta)
+                        : null,
+                    selectedSourceDocument: openInBuilderSelectedSource);
             });
 
         if (ancestorInstances.Count == 0)
@@ -284,10 +343,9 @@ internal static class StageContextMenuUtility
             OpenInstanceInUIBuilderInIsolation,
             _ =>
             {
-                new LoadUIDocumentCommand
-                {
-                    subDocumentOptions = SubDocumentOptions.Isolation, subDocuments = ancestorVTAs
-                }.OpenInBuilder(rootVisualTreeAsset);
+                LoadUIDocumentCommand.Execute(source, rootVisualTreeAsset,
+                    subDocumentOptions: SubDocumentOptions.Isolation,
+                    subDocuments: ancestorVTAs);
             });
 
         // ancestorInstances is outermost-first and ends at the instance being selected, so its
@@ -300,22 +358,20 @@ internal static class StageContextMenuUtility
             OpenInstanceInUIBuilderInContext,
             _ =>
             {
-                new LoadUIDocumentCommand
-                {
-                    selectedId = ancestorInstances[^1].id,
-                    selectedInstanceIds = selectedInstanceIds,
-                    selectedSourceDocument = ancestorInstances[^1].visualTreeAsset,
-                    subDocumentOptions = SubDocumentOptions.InContext,
-                    subDocuments = ancestorVTAs,
-                    contextInstances = ancestorInstances
-                }.OpenInBuilder(rootVisualTreeAsset);
+                LoadUIDocumentCommand.Execute(source, rootVisualTreeAsset,
+                    selectedId: ancestorInstances[^1].id,
+                    selectedInstanceIds: selectedInstanceIds,
+                    selectedSourceDocument: ancestorInstances[^1].visualTreeAsset,
+                    subDocumentOptions: SubDocumentOptions.InContext,
+                    subDocuments: ancestorVTAs,
+                    contextInstances: ancestorInstances);
             });
 
         GetOpenOptions(element, ancestorInstances, out _, out var canOpenInContext);
 
         menu.AppendAction(
             OpenInstanceInIsolation,
-            _ => VisualElementEditingStage.GoToStage(new VisualTreeAssetEditingContext(
+            _ => UIStageNavigation.Navigate(new VisualTreeAssetEditingContext(
                 rootVisualTreeAsset,
                 ancestorInstances.ToArray(),
                 SubDocumentOptions.Isolation,
@@ -324,7 +380,7 @@ internal static class StageContextMenuUtility
 
         menu.AppendAction(
             OpenInstanceInContext,
-            _ => VisualElementEditingStage.GoToStage(new VisualTreeAssetEditingContext(
+            _ => UIStageNavigation.Navigate(new VisualTreeAssetEditingContext(
                 rootVisualTreeAsset,
                 ancestorInstances.ToArray(),
                 SubDocumentOptions.InContext,
@@ -526,6 +582,12 @@ internal static class StageContextMenuUtility
             return;
         }
 
+        if (VisualElementEditingUtility.WouldCauseCircularDependency(vea, relativePath))
+        {
+            EditorUtility.DisplayDialog("Invalid Path", "Cannot overwrite a UXML file that the selected element instantiates.", "OK");
+            return;
+        }
+
         var parentVea = vea.parentAsset as VisualElementAsset ?? originalVta.visualTree;
 
         using (ListPool<UxmlAsset>.Get(out var roots))
@@ -547,6 +609,86 @@ internal static class StageContextMenuUtility
         var parent = element.parent;
         CreateTemplateFromElementCommand.Execute(source, vea, parentVea, templateVta);
         UIToolkitStageUtility.ScopePendingSelectionRequestsTo(parent);
+    }
+
+    internal static void AppendGenerateSelectorAction(DropdownMenu menu, VisualElement element, int selectionCount)
+    {
+        // A selector targets one element, so a multi-element selection has no unambiguous subject.
+        if (selectionCount != 1 || !CanGenerateSelector(element))
+            return;
+        menu.AppendSeparator();
+        menu.AppendAction(GenerateSelector, _ => DoGenerateSelector(element));
+    }
+
+    // The rule lands in a stylesheet of the document being edited, which styles only that document's own
+    // subtree — so an element outside it, such as an in-context ancestor row from a parent document, cannot
+    // be targeted from here.
+    internal static bool CanGenerateSelector(VisualElement element)
+    {
+        if (element == null)
+            return false;
+
+        if (StageUtility.GetCurrentStage() is VisualElementEditingStage stage)
+        {
+            var localRoot = stage.ResolveLocalRoot();
+            return localRoot != null && (element == localRoot || localRoot.Contains(element));
+        }
+
+        if (element is IPanelComponentRootElement)
+            return false;
+
+        // An element built in code carries no asset and can still be targeted by name, class or type, but the
+        // rule needs a document to land in: the Style Sheets window resolves one from the panel component, and
+        // keeps showing the previous one when the panel has none.
+        var panelComponent = element.GetFirstAncestorOfType<IPanelComponentRootElement>()?.panelComponent;
+        return (panelComponent as UnityEngine.Object) != null && panelComponent.visualTreeAsset != null;
+    }
+
+    // The chain stops at the root of the document being edited: in context, everything above it belongs to a
+    // parent document, which the rule being written cannot reach.
+    internal static string GenerateSelectorForElement(VisualElement element)
+    {
+        var localRoot = (StageUtility.GetCurrentStage() as VisualElementEditingStage)?.ResolveLocalRoot();
+        if (localRoot == null)
+            return VisualElementSelectorUtility.GenerateTargetedSelector(element, e => e is IPanelComponentRootElement);
+
+        return VisualElementSelectorUtility.GenerateTargetedSelector(element,
+            e => e == localRoot || !localRoot.Contains(e));
+    }
+
+    static void DoGenerateSelector(VisualElement element)
+    {
+        var selector = GenerateSelectorForElement(element);
+        var window = EditorWindow.GetWindow<StyleSheetsWindow>();
+        window.rootVisualElement.schedule.Execute(() => window.FocusNewSelectorField(selector)).ExecuteLater(0);
+    }
+
+    internal static string GetSaveUxmlLabel(VisualTreeAsset vta)
+    {
+        var fileName = vta ? Path.GetFileName(AssetDatabase.GetAssetPath(vta.GetEntityId())) : null;
+        return string.IsNullOrEmpty(fileName) ? SaveUxml : string.Format(SaveUxmlFormat, fileName);
+    }
+
+    /// <summary>
+    /// Appends "Save UXML" and "Discard UXML", which settle <paramref name="vta"/>'s file and nothing else:
+    /// the style sheets it references, and any document that instantiates it, keep whatever they have unsaved.
+    /// </summary>
+    static void AppendSettleUxml(DropdownMenu menu, VisualTreeAsset vta)
+    {
+        var registry = UIAssetRegistry.LiveInstance;
+        var status = vta != null && registry != null && registry.CanSettleSingleAsset(vta)
+            ? DropdownMenuAction.Status.Normal
+            : DropdownMenuAction.Status.Disabled;
+
+        menu.AppendAction(
+            GetSaveUxmlLabel(vta),
+            _ => UIAssetRegistry.instance.SaveSingleAsset(vta, CommandSources.Hierarchy),
+            status);
+
+        menu.AppendAction(
+            DiscardUxml,
+            _ => UIAssetSavePrompt.ConfirmAndDiscardSingleAsset(vta, CommandSources.Hierarchy),
+            status);
     }
 
     static void AppendShowInProject(DropdownMenu menu, VisualElement element)
@@ -577,7 +719,11 @@ internal static class StageContextMenuUtility
     static void GetOpenOptions(VisualElement element, List<TemplateAsset> templateAssetPath, out bool showTemplateOptions, out bool canOpenInContext)
     {
         var stage = StageUtility.GetCurrentStage() as VisualElementEditingStage;
-        var subDocPath = stage?.Context.SubDocumentPath;
+        // An isolation stage's panel is rooted at the document it isolates, so the element's path never shares
+        // a frame with the stage's own path into it; every instance in the panel is below the edited document.
+        var subDocPath = stage != null && stage.Context.SubDocumentOptions == SubDocumentOptions.InContext
+            ? stage.Context.SubDocumentPath
+            : null;
         var isTemplateContainer = element is TemplateContainer;
 
         showTemplateOptions = isTemplateContainer || templateAssetPath.Count > 0;

@@ -2,7 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: Video not yet converted
 using System;
 using System.Collections.Generic;
 using System.Globalization;
@@ -44,7 +43,7 @@ namespace UnityEditor
         public override GUIContent GetPreviewTitle()
         {
             if (m_Title == null)
-                m_Title = EditorGUIUtility.TrTextContent("Source Info");
+                m_Title = L10n.TextContent("Source Info", null, null, null);
             return m_Title;
         }
 
@@ -169,47 +168,47 @@ namespace UnityEditor
         {
             public static readonly GUIContent[] playIcons =
             {
-                EditorGUIUtility.TrIconContent("preAudioPlayOff"),
-                EditorGUIUtility.TrIconContent("preAudioPlayOn")
+                L10n.IconContent("preAudioPlayOff", null, null),
+                L10n.IconContent("preAudioPlayOn", null, null)
             };
-            public static readonly GUIContent globalTranscodeOptionsContent = EditorGUIUtility.TrTextContent(
-                "* Shared setting between multiple platforms.");
-            public static readonly GUIContent keepAlphaContent = EditorGUIUtility.TrTextContent(
-                "Keep Alpha*", "If the source clip has alpha, it will be preserved during transcoding so that transparency is usable during render.");
-            public static readonly GUIContent deinterlaceContent = EditorGUIUtility.TrTextContent(
-                "Deinterlace*", "Remove interlacing on this video during transcoding.");
-            public static readonly GUIContent flipHorizontalContent = EditorGUIUtility.TrTextContent(
-                "Flip Horizontally*", "Flip the video horizontally during transcoding.");
-            public static readonly GUIContent flipVerticalContent = EditorGUIUtility.TrTextContent(
-                "Flip Vertically*", "Flip the video vertically during transcoding.");
-            public static readonly GUIContent importAudioContent = EditorGUIUtility.TrTextContent(
-                "Import Audio*", "Defines if the audio tracks will be imported during transcoding.");
-            public static readonly GUIContent transcodeContent = EditorGUIUtility.TrTextContent(
-                "Transcode", "Transcoding a clip gives more flexibility through the options below, but takes more time.");
-            public static readonly GUIContent dimensionsContent = EditorGUIUtility.TrTextContent(
-                "Dimensions", "Pixel size of the resulting video.");
-            public static readonly GUIContent widthContent = EditorGUIUtility.TrTextContent(
-                "Width", "Width in pixels of the resulting video.");
-            public static readonly GUIContent heightContent = EditorGUIUtility.TrTextContent(
-                "Height", "Height in pixels of the resulting video.");
-            public static readonly GUIContent aspectRatioContent = EditorGUIUtility.TrTextContent(
-                "Aspect Ratio", "How the original video is mapped into the target dimensions.");
-            public static readonly GUIContent codecContent = EditorGUIUtility.TrTextContent(
-                "Codec", "Codec for the resulting clip. Automatic will make the best choice for the target platform.");
-            public static readonly GUIContent bitrateContent = EditorGUIUtility.TrTextContent(
-                "Bitrate Mode", "Higher bit rates give a better quality, but impose higher load on network connections or storage.");
-            public static readonly GUIContent spatialQualityContent = EditorGUIUtility.TrTextContent(
-                "Spatial Quality", "Adds a downsize during import to reduce bitrate using resolution.");
-            public static readonly GUIContent transcodeWarning = EditorGUIUtility.TrTextContent(
-                "Not all platforms transcoded. Clip is not guaranteed to be compatible on platforms without transcoding.");
-            public static readonly GUIContent transcodeOptionsWarning = EditorGUIUtility.TrTextContent(
-                "Global transcode options are not applied on all platforms. You must enable \"Transcode\" for these to take effect.");
-            public static readonly GUIContent transcodeSkippedWarning = EditorGUIUtility.TrTextContent(
-                "Transcode was skipped. Current clip does not match import settings. Reimport to resolve.");
-            public static readonly GUIContent multipleTranscodeSkippedWarning = EditorGUIUtility.TrTextContent(
-                "Transcode was skipped for some clips and they don't match import settings. Reimport to resolve.");
-            public static readonly GUIContent sRGBTextureContent = EditorGUIUtility.TrTextContent(
-                "sRGB (Color Texture)", "Texture content is stored in gamma space.");
+            public static readonly GUIContent globalTranscodeOptionsContent = L10n.TextContent(
+                "* Shared setting between multiple platforms.", null, null, null);
+            public static readonly GUIContent keepAlphaContent = L10n.TextContent(
+                "Keep Alpha*", "If the source clip has alpha, it will be preserved during transcoding so that transparency is usable during render.", null, null);
+            public static readonly GUIContent deinterlaceContent = L10n.TextContent(
+                "Deinterlace*", "Remove interlacing on this video during transcoding.", null, null);
+            public static readonly GUIContent flipHorizontalContent = L10n.TextContent(
+                "Flip Horizontally*", "Flip the video horizontally during transcoding.", null, null);
+            public static readonly GUIContent flipVerticalContent = L10n.TextContent(
+                "Flip Vertically*", "Flip the video vertically during transcoding.", null, null);
+            public static readonly GUIContent importAudioContent = L10n.TextContent(
+                "Import Audio*", "Defines if the audio tracks will be imported during transcoding.", null, null);
+            public static readonly GUIContent transcodeContent = L10n.TextContent(
+                "Transcode", "Transcoding a clip gives more flexibility through the options below, but takes more time.", null, null);
+            public static readonly GUIContent dimensionsContent = L10n.TextContent(
+                "Dimensions", "Pixel size of the resulting video.", null, null);
+            public static readonly GUIContent widthContent = L10n.TextContent(
+                "Width", "Width in pixels of the resulting video.", null, null);
+            public static readonly GUIContent heightContent = L10n.TextContent(
+                "Height", "Height in pixels of the resulting video.", null, null);
+            public static readonly GUIContent aspectRatioContent = L10n.TextContent(
+                "Aspect Ratio", "How the original video is mapped into the target dimensions.", null, null);
+            public static readonly GUIContent codecContent = L10n.TextContent(
+                "Codec", "Codec for the resulting clip. Automatic will make the best choice for the target platform.", null, null);
+            public static readonly GUIContent bitrateContent = L10n.TextContent(
+                "Bitrate Mode", "Higher bit rates give a better quality, but impose higher load on network connections or storage.", null, null);
+            public static readonly GUIContent spatialQualityContent = L10n.TextContent(
+                "Spatial Quality", "Adds a downsize during import to reduce bitrate using resolution.", null, null);
+            public static readonly GUIContent transcodeWarning = L10n.TextContent(
+                "Not all platforms transcoded. Clip is not guaranteed to be compatible on platforms without transcoding.", null, null, null);
+            public static readonly GUIContent transcodeOptionsWarning = L10n.TextContent(
+                "Global transcode options are not applied on all platforms. You must enable \"Transcode\" for these to take effect.", null, null, null);
+            public static readonly GUIContent transcodeSkippedWarning = L10n.TextContent(
+                "Transcode was skipped. Current clip does not match import settings. Reimport to resolve.", null, null, null);
+            public static readonly GUIContent multipleTranscodeSkippedWarning = L10n.TextContent(
+                "Transcode was skipped for some clips and they don't match import settings. Reimport to resolve.", null, null, null);
+            public static readonly GUIContent sRGBTextureContent = L10n.TextContent(
+                "sRGB (Color Texture)", "Texture content is stored in gamma space.", null, null);
         }
 
         // Don't show the imported movie as a separate editor
@@ -733,4 +732,3 @@ namespace UnityEditor
     }
 }
 
-#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

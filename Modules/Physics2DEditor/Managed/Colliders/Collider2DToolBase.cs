@@ -20,7 +20,7 @@ namespace UnityEditor
                 {
                     m_EditModeButton = new GUIContent(
                         EditorGUIUtility.IconContent("EditCollider").image,
-                        EditorGUIUtility.TrTextContent("Edit the collider geometry.").text
+                        L10n.TextContent("Edit the collider geometry.", null, null, null).text
                     );
                 }
 

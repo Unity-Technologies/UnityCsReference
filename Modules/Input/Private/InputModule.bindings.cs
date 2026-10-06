@@ -42,10 +42,10 @@ namespace UnityEngineInternal.Input
         /// Sets the frequency at which platforms that poll input devices in the background do so.
         /// </summary>
         /// <param name="hertz">
-        /// Frequency in hertz. Must be zero or positive. Both ends of that range carry meaning:
-        /// zero disables polling, and <see cref="float.PositiveInfinity"/> polls continuously,
-        /// which leaves the polling thread nothing to wait on and so occupies a core. A negative
-        /// or NaN frequency is rejected and leaves the current frequency in place.
+        /// Frequency in hertz. Must be positive. <see cref="float.PositiveInfinity"/> polls
+        /// continuously, which leaves the polling thread nothing to wait on and so occupies a
+        /// core. Zero, negative and NaN are rejected and leave the current frequency in place.
+        /// To stop polling, do not register a polled device.
         /// </param>
         public static extern void SetPollingFrequency(float hertz);
 

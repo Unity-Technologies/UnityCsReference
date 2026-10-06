@@ -41,6 +41,9 @@ namespace UnityEngine.UIElements
         void UpdateAnimation(VisualElement owner, StylePropertyId id);
         void GetAllAnimations(VisualElement owner, List<StylePropertyId> propertyIds);
 
+        // The instant transitions started in the same pass are anchored to.
+        double currentTimeSeconds { get; }
+
         void UpdateElementClipAnimation(VisualElement owner, double currentTime);
         void CancelElementClipAnimation(VisualElement owner);
 
@@ -2118,6 +2121,8 @@ namespace UnityEngine.UIElements
             }
         }
 
+        public double currentTimeSeconds => m_CurrentTime;
+
         double CurrentTimeSeconds()
         {
             return m_CurrentTime;
@@ -2180,6 +2185,10 @@ namespace UnityEngine.UIElements
                 if (existed)
                     reused[existingIndex] = true;
                 player.binder = binder;
+                player.durationOverride = durationOverride;
+                player.delay = delay;
+                player.iterationCount = iterationCount;
+                player.direction = direction;
 
                 if (playState == AnimationPlayState.Running)
                 {
@@ -2198,7 +2207,12 @@ namespace UnityEngine.UIElements
                         player.startTime = currentTime;
                         player.clipLength = clip.animationClip.length;
                         player.isPaused = false;
-                        binder.IncrementBoundElementsStyleVersion();
+
+                        // Update() may already have sampled for this tick, which would leave the
+                        // element on its un-animated value until the next one.
+                        if (!playbackSuspended)
+                            player.Sample(currentTime);
+                        binder.NotifyBoundElementsChanged();
                     }
                 }
                 else
@@ -2209,11 +2223,6 @@ namespace UnityEngine.UIElements
                         player.pausedElapsed = (float)(currentTime - player.startTime);
                     }
                 }
-
-                player.durationOverride = durationOverride;
-                player.delay = delay;
-                player.iterationCount = iterationCount;
-                player.direction = direction;
 
                 (result ??= new List<ClipPlayer>()).Add(player);
             }
@@ -2490,6 +2499,8 @@ namespace UnityEngine.UIElements
         public void GetAllAnimations(VisualElement owner, List<StylePropertyId> propertyIds)
         {
         }
+
+        public double currentTimeSeconds => 0;
 
         public void UpdateElementClipAnimation(VisualElement owner, double currentTime)
         {

@@ -641,6 +641,8 @@ namespace UnityEngine.Video
     [NativeHeader("Modules/Video/Public/VideoPlayer.h")]
     public sealed partial class VideoPlayer : Behaviour
     {
+        internal VideoPlayer(global::UnityEngine.EntityId id) : base(id) {}
+        public VideoPlayer() {}
         ///<summary>The source that the <see cref="VideoPlayer" /> uses for playback.</summary>
         ///<remarks>It is valid to set both a <see cref="VideoClip" /> and a URL in the <see cref="VideoPlayer" />. This property controls which one will get used for playback.
         ///When setting a new clip or URL, the source will automatically change to make the associated type current.

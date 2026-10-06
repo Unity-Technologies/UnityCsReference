@@ -21,7 +21,7 @@ using Unity.Scripting.LifecycleManagement;
 namespace UnityEditor.Build
 {
     ///<summary>Interface that provides control over callback order.</summary>
-    ///<remarks>This is the base class for build callback interfaces, for example <see cref="Build.IPreprocessBuildWithContext" />, <see cref="Build.IPreprocessShaders" />, <see cref="Build.IProcessSceneWithReport" />, <see cref="Build.IPostprocessBuildWithContext" />, and <see cref="Build.IUnityLinkerProcessor" />.
+    ///<remarks>This is the base class for build callback interfaces, for example <see cref="Build.IPreprocessBuildWithContext" />, <see cref="Build.IPreprocessShaders" />, <see cref="Build.IPostprocessBuildWithContext" />, and <see cref="Build.IUnityLinkerProcessor" />.
     ///
     ///Every class that implements these interfaces must define the callbackOrder property with a "get" accessor.
     ///
@@ -439,8 +439,8 @@ namespace UnityEditor.Build
     }
 
     ///<summary>Implement this interface to receive a callback for each Scene during the build.</summary>
-    ///<remarks>This interface is obsolete. Use <see cref="Build.IProcessSceneWithReport" /> instead.</remarks>
-    [Obsolete("Use IProcessSceneWithReport instead")]
+    ///<remarks>This interface is obsolete. Use <see cref="AssetPostprocessor.OnProcessScene" /> instead.</remarks>
+    [Obsolete("Use AssetPostprocessor.OnProcessScene instead")]
     public interface IProcessScene : IOrderedCallback
     {
         ///<summary>Implement this method to receive a callback for each scene during the build.</summary>
@@ -450,6 +450,8 @@ namespace UnityEditor.Build
 
     ///<summary>Implement this interface to receive a callback for each scene during the build.</summary>
     ///<remarks>If the scene or related content in the project is unchanged from the previous Player build, Unity doesn't build the scene and instead uses cached Player build data. In this case, the callback isn't called. For more information about build callbacks, refer to [Use build callbacks](xref:um-build-callbacks)</remarks>
+    ///<remarks>This interface is obsolete. Use <see cref="AssetPostprocessor.OnProcessScene" /> instead.</remarks>
+    [Obsolete("Use AssetPostprocessor.OnProcessScene instead")]
     public interface IProcessSceneWithReport : IOrderedCallback
     {
         /// <summary>
@@ -762,6 +764,7 @@ namespace UnityEditor.Build
             public List<IPreprocessBuild> buildPreprocessors;
             public List<IPostprocessBuild> buildPostprocessors;
             public List<IProcessScene> sceneProcessors;
+            public List<IProcessSceneWithReport> sceneProcessorsWithReport;
 #pragma warning restore 618
 
             public List<BuildPlayerProcessor> buildPlayerProcessors;
@@ -771,7 +774,6 @@ namespace UnityEditor.Build
             public List<IPreprocessBuildWithContext> buildPreprocessorsWithContext;
             public List<IPostprocessBuildWithContext> buildPostprocessorsWithContext;
             public List<IPostprocessLaunch> launchPostprocessors;
-            public List<IProcessSceneWithReport> sceneProcessorsWithReport;
 
             public List<IFilterBuildAssemblies> filterBuildAssembliesProcessor;
             public List<IActiveBuildTargetChanged> buildTargetProcessors;
@@ -836,7 +838,11 @@ namespace UnityEditor.Build
             AddToList(o, ref list);
         }
 
-        private class AttributeCallbackWrapper : IPostprocessBuildWithReport, IProcessSceneWithReport, IActiveBuildTargetChanged
+        private class AttributeCallbackWrapper : IPostprocessBuildWithReport
+            , IActiveBuildTargetChanged
+#pragma warning disable CS0618 // Type or member is obsolete
+            , IProcessSceneWithReport
+#pragma warning restore CS0618 // Type or member is obsolete
         {
             internal int m_callbackOrder;
             internal MethodInfo m_method;
@@ -967,9 +973,11 @@ namespace UnityEditor.Build
 
             if (findSceneProcessors)
             {
+#pragma warning disable CS0618 // Type or member is obsolete
                 foreach (var m in EditorAssemblies.GetAllMethodsWithAttribute<Callbacks.PostProcessSceneAttribute>())
                     if (ValidateMethod<Callbacks.PostProcessSceneAttribute>(m, Type.EmptyTypes))
                         AddToList(new AttributeCallbackWrapper(m), ref processors.sceneProcessorsWithReport);
+#pragma warning restore CS0618 // Type or member is obsolete
             }
 
             processors.buildPlayerProcessors?.Sort(CompareICallbackOrder);
@@ -1181,9 +1189,9 @@ namespace UnityEditor.Build
         // callbackThrew reports whether any scene processor threw. The ContentDirectory build worker uses it
         // to fail the build on a thrown callback regardless of strict mode; Player builds ignore it.
         [RequiredByNativeCode]
+        [Obsolete("This API is being replaced with AssetPostprocessor.OnProcessScene")]
         internal static void OnSceneProcess(UnityEngine.SceneManagement.Scene scene, BuildReport report, out bool callbackThrew)
         {
-#pragma warning disable 618
             InvokeCallbackInterfacesPair(
                 processors.sceneProcessors, spp =>
                 {
@@ -1199,10 +1207,10 @@ namespace UnityEditor.Build
                 },
                 report && ((report.summary.options & BuildOptions.StrictMode) != 0 || (report.summary.assetBundleOptions & BuildAssetBundleOptions.StrictMode) != 0),
                 out callbackThrew);
-#pragma warning restore 618
         }
 
         [RequiredByNativeCode]
+        [Obsolete("This API is being replaced with AssetPostprocessor.OnProcessScene")]
         internal static void OnSceneProcess_HashVersion(out Hash128 hashVersion)
         {
             hashVersion = new Hash128();

@@ -45,6 +45,9 @@ namespace UnityEditor.Rendering
             set { SetAlbedoSwatches(value); }
         }
 
+        // Returns true when no Render Pipeline Asset is assigned, so rendering is blocked and the Scene and Game views are black
+        extern internal static bool IsRenderingBlockedWithoutRenderPipelineAsset();
+
         extern public static BatchRendererGroupStrippingMode batchRendererGroupShaderStrippingMode { get; }
         extern internal static bool activeProfileHasGraphicsSettings { get; set; }
 
@@ -108,7 +111,7 @@ namespace UnityEditor.Rendering
         public static RenderPipelineGlobalSettings GetRenderPipelineGlobalSettingsAsset<T>()
             where T : RenderPipeline
         {
-            return GetRenderPipelineGlobalSettingsAsset(typeof(T));
+            return Internal_GetSettingsForRenderPipeline(RenderPipelineTypeName<T>.fullName) as RenderPipelineGlobalSettings;
         }
 
         public static bool TryGetRenderPipelineSettingsForPipeline<TSettings, TPipeline>(out TSettings settings)
@@ -244,6 +247,8 @@ namespace UnityEditor.Rendering
             if (!ReferenceEquals(sanitized, original))
                 Debug.LogWarning("SetShaderBuildSettings: dropped invalid or duplicate shader compiler settings rows.");
             settings.compilerSettings = sanitized;
+
+            ShaderBuildSettings.CheckKeywordDeclarationOverridesHaveMatches(settings.keywordDeclarationOverrides);
 
             SetShaderBuildSettingsImpl(settings);
         }

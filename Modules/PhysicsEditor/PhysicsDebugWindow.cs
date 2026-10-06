@@ -2,7 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: _3DPhysics not yet converted
 using UnityEditorInternal;
 using UnityEngine;
 
@@ -16,9 +15,6 @@ namespace UnityEditor
 {
     public partial class PhysicsDebugWindow : EditorWindow
     {
-        #pragma warning disable UAL0015 // this side effect does not outlive the current call (global trigger / lazily-loaded asset re-fetched on next access); a stale reference is harmlessly replaced
-        public PhysicsDebugWindow() { }
-        #pragma warning restore UAL0015
 
         private enum VisualisationState
         {
@@ -77,119 +73,119 @@ namespace UnityEditor
         private static class Style
         {
             #region Info
-            public static readonly GUIContent numOfItems = EditorGUIUtility.TrTextContent("Number of items per row:");
-            public static readonly GUIContent clearLocked = EditorGUIUtility.TrTextContent("Clear locked objects");
-            public static readonly GUIContent drawGizmosFor = EditorGUIUtility.TrTextContent("Draw Gizmos for:");
-            public static readonly GUIContent gameObjectField = EditorGUIUtility.TrTextContent("GameObject:");
+            public static readonly GUIContent numOfItems = L10n.TextContent("Number of items per row:", null, null, null);
+            public static readonly GUIContent clearLocked = L10n.TextContent("Clear locked objects", null, null, null);
+            public static readonly GUIContent drawGizmosFor = L10n.TextContent("Draw Gizmos for:", null, null, null);
+            public static readonly GUIContent gameObjectField = L10n.TextContent("GameObject:", null, null, null);
             public static readonly GUILayoutOption notExpandWidth = GUILayout.ExpandWidth(false);
             public static readonly GUILayoutOption maxWidth50 = GUILayout.MaxWidth(50f);
             public static readonly GUILayoutOption maxWidth75 = GUILayout.MaxWidth(75f);
             public static readonly GUILayoutOption maxWidth150 = GUILayout.MaxWidth(150f);
-            public static readonly GUIContent lockToggle = EditorGUIUtility.TrTextContent("Lock");
+            public static readonly GUIContent lockToggle = L10n.TextContent("Lock", null, null, null);
             #endregion
 
             #region Filtering
-            public static readonly GUIContent showLayers = EditorGUIUtility.TrTextContent("Show Layers", "Show selected layers");
-            public static readonly GUIContent showPhysicsScenes = EditorGUIUtility.TrTextContent("Show Physics Scene", "Show selected physics scenes");
-            public static readonly GUIContent showUnityScenes = EditorGUIUtility.TrTextContent("Show Unity Scene", "Show selected Unity scenes");
-            public static readonly GUIContent showStaticCollider = EditorGUIUtility.TrTextContent("Show Static Colliders", "Show collision geometry from Colliders that do not have a Rigidbody");
-            public static readonly GUIContent showTriggers = EditorGUIUtility.TrTextContent("Show Triggers", "Show collision geometry from Colliders that have 'isTrigger' enabled");
-            public static readonly GUIContent showRigibodies = EditorGUIUtility.TrTextContent("Show Rigidbodies", "Show collision geometry from Rigidbodies");
-            public static readonly GUIContent showKinematicBodies = EditorGUIUtility.TrTextContent("Show Kinematic Bodies", "Show collision geometry from Kinematic Rigidbodies");
-            public static readonly GUIContent showArticulationBodies = EditorGUIUtility.TrTextContent("Show Articulation Bodies", "Show collision geometry from Articulation Bodies");
-            public static readonly GUIContent showSleepingBodies = EditorGUIUtility.TrTextContent("Show Sleeping Bodies", "Show collision geometry from Sleeping Rigidbodies");
-            public static readonly GUIContent colliderTypes = EditorGUIUtility.TrTextContent("Collider Types");
-            public static readonly GUIContent showBoxCollider = EditorGUIUtility.TrTextContent("Show BoxColliders", "Show collision geometry that is BoxCollider");
-            public static readonly GUIContent showSphereCollider = EditorGUIUtility.TrTextContent("Show SphereColliders", "Show collision geometry that is SphereCollider");
-            public static readonly GUIContent showCapsuleCollider = EditorGUIUtility.TrTextContent("Show CapsuleColliders", "Show collision geometry that is CapsuleCollider");
-            public static readonly GUIContent showConvexMeshCollider = EditorGUIUtility.TrTextContent("Show MeshColliders (convex)", "Show collision geometry that is Convex MeshCollider");
-            public static readonly GUIContent showConcaveMeshCollider = EditorGUIUtility.TrTextContent("Show MeshColliders (concave)", "Show collision geometry that is Concave MeshCollider");
-            public static readonly GUIContent showTerrainCollider = EditorGUIUtility.TrTextContent("Show TerrainColliders", "Show collision geometry that is TerrainCollider");
+            public static readonly GUIContent showLayers = L10n.TextContent("Show Layers", "Show selected layers", null, null);
+            public static readonly GUIContent showPhysicsScenes = L10n.TextContent("Show Physics Scene", "Show selected physics scenes", null, null);
+            public static readonly GUIContent showUnityScenes = L10n.TextContent("Show Unity Scene", "Show selected Unity scenes", null, null);
+            public static readonly GUIContent showStaticCollider = L10n.TextContent("Show Static Colliders", "Show collision geometry from Colliders that do not have a Rigidbody", null, null);
+            public static readonly GUIContent showTriggers = L10n.TextContent("Show Triggers", "Show collision geometry from Colliders that have 'isTrigger' enabled", null, null);
+            public static readonly GUIContent showRigibodies = L10n.TextContent("Show Rigidbodies", "Show collision geometry from Rigidbodies", null, null);
+            public static readonly GUIContent showKinematicBodies = L10n.TextContent("Show Kinematic Bodies", "Show collision geometry from Kinematic Rigidbodies", null, null);
+            public static readonly GUIContent showArticulationBodies = L10n.TextContent("Show Articulation Bodies", "Show collision geometry from Articulation Bodies", null, null);
+            public static readonly GUIContent showSleepingBodies = L10n.TextContent("Show Sleeping Bodies", "Show collision geometry from Sleeping Rigidbodies", null, null);
+            public static readonly GUIContent colliderTypes = L10n.TextContent("Collider Types", null, null, null);
+            public static readonly GUIContent showBoxCollider = L10n.TextContent("Show BoxColliders", "Show collision geometry that is BoxCollider", null, null);
+            public static readonly GUIContent showSphereCollider = L10n.TextContent("Show SphereColliders", "Show collision geometry that is SphereCollider", null, null);
+            public static readonly GUIContent showCapsuleCollider = L10n.TextContent("Show CapsuleColliders", "Show collision geometry that is CapsuleCollider", null, null);
+            public static readonly GUIContent showConvexMeshCollider = L10n.TextContent("Show MeshColliders (convex)", "Show collision geometry that is Convex MeshCollider", null, null);
+            public static readonly GUIContent showConcaveMeshCollider = L10n.TextContent("Show MeshColliders (concave)", "Show collision geometry that is Concave MeshCollider", null, null);
+            public static readonly GUIContent showTerrainCollider = L10n.TextContent("Show TerrainColliders", "Show collision geometry that is TerrainCollider", null, null);
             #endregion
 
             #region Rendering
-            public static readonly GUIContent staticColor = EditorGUIUtility.TrTextContent("Static Colliders");
-            public static readonly GUIContent triggerColor = EditorGUIUtility.TrTextContent("Triggers");
-            public static readonly GUIContent rigidbodyColor = EditorGUIUtility.TrTextContent("Rigidbodies");
-            public static readonly GUIContent kinematicColor = EditorGUIUtility.TrTextContent("Kinematic Bodies");
-            public static readonly GUIContent articulationBodyColor = EditorGUIUtility.TrTextContent("Articulation Bodies");
-            public static readonly GUIContent sleepingBodyColor = EditorGUIUtility.TrTextContent("Sleeping Bodies");
-            public static readonly GUIContent colorVariaition = EditorGUIUtility.TrTextContent("Variation", "Random color variation that is added on top of the base color");
-            public static readonly GUIContent centerOfMassUseScreenSize = EditorGUIUtility.TrTextContent("Constant screen size", "Use constant screen size for the center of mass gizmos");
-            public static readonly GUIContent inertiaTensorScale = EditorGUIUtility.TrTextContent("Inertia Tensor scale", "Scale by which the original inertia tensor is multiplied before drawing");
-            public static readonly GUIContent useSceneCam = EditorGUIUtility.TrTextContent("Use Scene View Camera", "Draws Collider geometry onto the scene view if enabled. If disabled the geometry will be drawn onto the game view using the main camera.");
-            public static readonly GUIContent forceOverdraw = EditorGUIUtility.TrTextContent("Force Overdraw", "Draws Collider geometry on top of render geometry");
-            public static readonly GUIContent transparency = EditorGUIUtility.TrTextContent("Transparency");
-            public static readonly GUIContent viewDistance = EditorGUIUtility.TrTextContent("View Distance", "Lower bound on distance from camera to physics geometry.");
-            public static readonly GUIContent terrainTilesMax = EditorGUIUtility.TrTextContent("Terrain Tiles Max", "Number of terrain mesh tiles to draw.");
-            public static readonly GUIContent gizmosSection = EditorGUIUtility.TrTextContent("Gizmos settings:");
+            public static readonly GUIContent staticColor = L10n.TextContent("Static Colliders", null, null, null);
+            public static readonly GUIContent triggerColor = L10n.TextContent("Triggers", null, null, null);
+            public static readonly GUIContent rigidbodyColor = L10n.TextContent("Rigidbodies", null, null, null);
+            public static readonly GUIContent kinematicColor = L10n.TextContent("Kinematic Bodies", null, null, null);
+            public static readonly GUIContent articulationBodyColor = L10n.TextContent("Articulation Bodies", null, null, null);
+            public static readonly GUIContent sleepingBodyColor = L10n.TextContent("Sleeping Bodies", null, null, null);
+            public static readonly GUIContent colorVariaition = L10n.TextContent("Variation", "Random color variation that is added on top of the base color", null, null);
+            public static readonly GUIContent centerOfMassUseScreenSize = L10n.TextContent("Constant screen size", "Use constant screen size for the center of mass gizmos", null, null);
+            public static readonly GUIContent inertiaTensorScale = L10n.TextContent("Inertia Tensor scale", "Scale by which the original inertia tensor is multiplied before drawing", null, null);
+            public static readonly GUIContent useSceneCam = L10n.TextContent("Use Scene View Camera", "Draws Collider geometry onto the scene view if enabled. If disabled the geometry will be drawn onto the game view using the main camera.", null, null);
+            public static readonly GUIContent forceOverdraw = L10n.TextContent("Force Overdraw", "Draws Collider geometry on top of render geometry", null, null);
+            public static readonly GUIContent transparency = L10n.TextContent("Transparency", null, null, null);
+            public static readonly GUIContent viewDistance = L10n.TextContent("View Distance", "Lower bound on distance from camera to physics geometry.", null, null);
+            public static readonly GUIContent terrainTilesMax = L10n.TextContent("Terrain Tiles Max", "Number of terrain mesh tiles to draw.", null, null);
+            public static readonly GUIContent gizmosSection = L10n.TextContent("Gizmos settings:", null, null, null);
             #endregion
 
             #region Contacts
-            public static readonly GUIContent contactColors = EditorGUIUtility.TrTextContent("Contact colors");
-            public static readonly GUIContent contactColor = EditorGUIUtility.TrTextContent("Contact color");
-            public static readonly GUIContent contactSeparationColor = EditorGUIUtility.TrTextContent("Contact separation color");
-            public static readonly GUIContent contactImpulseColor = EditorGUIUtility.TrTextContent("Contact impulse color");
-            public static readonly GUIContent showContacts = EditorGUIUtility.TrTextContent("Show Contacts", "Should contacts be shown? Enabling this at runtime won't have an effect");
-            public static readonly GUIContent showAllContacts = EditorGUIUtility.TrTextContent("Show All Contacts", "Should all physics objects report contacts or only the ones that were requested by MonoBehaviour scripts");
-            public static readonly GUIContent showImpulse = EditorGUIUtility.TrTextContent("Show Impulse", "Show per contact point impulse");
-            public static readonly GUIContent showSeparation = EditorGUIUtility.TrTextContent("Show Separation", "Show contact separation");
-            public static readonly GUIContent useContactFiltering = EditorGUIUtility.TrTextContent("Use Filtering settings", "Should Filtering settings be taken into account when displaying contacts?");
-            public static readonly GUIContent useVariedColors = EditorGUIUtility.TrTextContent("Use varied colors", "Uses collider instance ID to hash it into a color");
+            public static readonly GUIContent contactColors = L10n.TextContent("Contact colors", null, null, null);
+            public static readonly GUIContent contactColor = L10n.TextContent("Contact color", null, null, null);
+            public static readonly GUIContent contactSeparationColor = L10n.TextContent("Contact separation color", null, null, null);
+            public static readonly GUIContent contactImpulseColor = L10n.TextContent("Contact impulse color", null, null, null);
+            public static readonly GUIContent showContacts = L10n.TextContent("Show Contacts", "Should contacts be shown? Enabling this at runtime won't have an effect", null, null);
+            public static readonly GUIContent showAllContacts = L10n.TextContent("Show All Contacts", "Should all physics objects report contacts or only the ones that were requested by MonoBehaviour scripts", null, null);
+            public static readonly GUIContent showImpulse = L10n.TextContent("Show Impulse", "Show per contact point impulse", null, null);
+            public static readonly GUIContent showSeparation = L10n.TextContent("Show Separation", "Show contact separation", null, null);
+            public static readonly GUIContent useContactFiltering = L10n.TextContent("Use Filtering settings", "Should Filtering settings be taken into account when displaying contacts?", null, null);
+            public static readonly GUIContent useVariedColors = L10n.TextContent("Use varied colors", "Uses collider instance ID to hash it into a color", null, null);
             #endregion
 
             #region Queries
-            public static readonly GUIContent showQueries = EditorGUIUtility.TrTextContent("Show queries", "Should queries be visualized?");
-            public static readonly GUIContent queryDuration = EditorGUIUtility.TrTextContent("Query duration", "How longs should the query be visible after it is performed?");
-            public static readonly GUIContent queryColor = EditorGUIUtility.TrTextContent("Query color", "Color used for query visualization");
-            public static readonly GUIContent sphereQueries = EditorGUIUtility.TrTextContent("Sphere", "Should sphere shaped queries be visualized?");
-            public static readonly GUIContent boxQueries = EditorGUIUtility.TrTextContent("Box", "Should box shaped queries be visualized?");
-            public static readonly GUIContent capsuleQueries = EditorGUIUtility.TrTextContent("Capsule", "Should capsule shaped queries be visualized?");
-            public static readonly GUIContent rayQueries = EditorGUIUtility.TrTextContent("Ray", "Should ray shaped queries be visualized?");
-            public static readonly GUIContent overlapQueries = EditorGUIUtility.TrTextContent("Overlap", "Should overlap type queries be visualized?");
-            public static readonly GUIContent checkQueries = EditorGUIUtility.TrTextContent("Check", "Should check type queries be visualized?");
-            public static readonly GUIContent castQueries = EditorGUIUtility.TrTextContent("Cast", "Should cast type queries be visualized?");
-            public static readonly GUIContent showTypes = EditorGUIUtility.TrTextContent("Show types:");
-            public static readonly GUIContent showShapes = EditorGUIUtility.TrTextContent("Show shapes:");
-            public static readonly GUIContent maxNumberOfQueries = EditorGUIUtility.TrTextContent("Max Queries", "Maximum number of queries that will be visualized");
+            public static readonly GUIContent showQueries = L10n.TextContent("Show queries", "Should queries be visualized?", null, null);
+            public static readonly GUIContent queryDuration = L10n.TextContent("Query duration", "How longs should the query be visible after it is performed?", null, null);
+            public static readonly GUIContent queryColor = L10n.TextContent("Query color", "Color used for query visualization", null, null);
+            public static readonly GUIContent sphereQueries = L10n.TextContent("Sphere", "Should sphere shaped queries be visualized?", null, null);
+            public static readonly GUIContent boxQueries = L10n.TextContent("Box", "Should box shaped queries be visualized?", null, null);
+            public static readonly GUIContent capsuleQueries = L10n.TextContent("Capsule", "Should capsule shaped queries be visualized?", null, null);
+            public static readonly GUIContent rayQueries = L10n.TextContent("Ray", "Should ray shaped queries be visualized?", null, null);
+            public static readonly GUIContent overlapQueries = L10n.TextContent("Overlap", "Should overlap type queries be visualized?", null, null);
+            public static readonly GUIContent checkQueries = L10n.TextContent("Check", "Should check type queries be visualized?", null, null);
+            public static readonly GUIContent castQueries = L10n.TextContent("Cast", "Should cast type queries be visualized?", null, null);
+            public static readonly GUIContent showTypes = L10n.TextContent("Show types:", null, null, null);
+            public static readonly GUIContent showShapes = L10n.TextContent("Show shapes:", null, null, null);
+            public static readonly GUIContent maxNumberOfQueries = L10n.TextContent("Max Queries", "Maximum number of queries that will be visualized", null, null);
             #endregion
 
             #region Overlay
-            public static readonly GUIContent showCollisionGeometry = EditorGUIUtility.TrTextContent("Collision Geometry");
-            public static readonly GUIContent enableMouseSelect = EditorGUIUtility.TrTextContent("Mouse Select");
+            public static readonly GUIContent showCollisionGeometry = L10n.TextContent("Collision Geometry", null, null, null);
+            public static readonly GUIContent enableMouseSelect = L10n.TextContent("Mouse Select", null, null, null);
             #endregion
 
             #region Buttons
-            public static readonly GUIContent showAll               = EditorGUIUtility.TrTextContent("Show All");
-            public static readonly GUIContent showNone              = EditorGUIUtility.TrTextContent("Show None");
-            public static readonly GUIContent resetButton           = EditorGUIUtility.TrTextContent("Reset", "Reset visualization settings and locked objects");
-            public static readonly GUIContent connectSDKVisualDebugger = EditorGUIUtility.TrTextContent("Connect SDK Debugger","Only available with SDK debug builds.");
-            public static readonly GUIContent disconnectSDKVisualDebugger = EditorGUIUtility.TrTextContent("Disconnect SDK Debugger", "Only available with SDK debug builds.");
+            public static readonly GUIContent showAll               = L10n.TextContent("Show All", null, null, null);
+            public static readonly GUIContent showNone              = L10n.TextContent("Show None", null, null, null);
+            public static readonly GUIContent resetButton           = L10n.TextContent("Reset", "Reset visualization settings and locked objects", null, null);
+            public static readonly GUIContent connectSDKVisualDebugger = L10n.TextContent("Connect SDK Debugger","Only available with SDK debug builds.", null, null);
+            public static readonly GUIContent disconnectSDKVisualDebugger = L10n.TextContent("Disconnect SDK Debugger", "Only available with SDK debug builds.", null, null);
             #endregion
 
             #region Info tables
-            public static readonly GUIContent infoSpeed             = EditorGUIUtility.TrTextContent("Speed");
-            public static readonly GUIContent infoVel               = EditorGUIUtility.TrTextContent("Velocity");
-            public static readonly GUIContent infoAngVel            = EditorGUIUtility.TrTextContent("Angular Velocity");
-            public static readonly GUIContent infoInertiaTensor     = EditorGUIUtility.TrTextContent("Inertia Tensor");
-            public static readonly GUIContent infoInertiaTensorRotation = EditorGUIUtility.TrTextContent("Inertia Tensor Rotation");
-            public static readonly GUIContent infoLocalCenterOfMass = EditorGUIUtility.TrTextContent("Local Center of Mass");
-            public static readonly GUIContent infoWorldCenterOfMass = EditorGUIUtility.TrTextContent("World Center of Mass");
-            public static readonly GUIContent infoSleepState        = EditorGUIUtility.TrTextContent("Sleep State");
-            public static readonly GUIContent infoSleepThreshold    = EditorGUIUtility.TrTextContent("Sleep Threshold");
-            public static readonly GUIContent infoMaxLinVel         = EditorGUIUtility.TrTextContent("Max Linear Velocity");
-            public static readonly GUIContent infoMaxAngVel         = EditorGUIUtility.TrTextContent("Max Angular Velocity");
-            public static readonly GUIContent infoSolverIterations  = EditorGUIUtility.TrTextContent("Solver Iterations");
-            public static readonly GUIContent infoSolverVelIterations = EditorGUIUtility.TrTextContent("Solver Velocity Iterations");
-            public static readonly GUIContent sleep = EditorGUIUtility.TrTextContent("Asleep");
-            public static readonly GUIContent awake = EditorGUIUtility.TrTextContent("Awake");
+            public static readonly GUIContent infoSpeed             = L10n.TextContent("Speed", null, null, null);
+            public static readonly GUIContent infoVel               = L10n.TextContent("Velocity", null, null, null);
+            public static readonly GUIContent infoAngVel            = L10n.TextContent("Angular Velocity", null, null, null);
+            public static readonly GUIContent infoInertiaTensor     = L10n.TextContent("Inertia Tensor", null, null, null);
+            public static readonly GUIContent infoInertiaTensorRotation = L10n.TextContent("Inertia Tensor Rotation", null, null, null);
+            public static readonly GUIContent infoLocalCenterOfMass = L10n.TextContent("Local Center of Mass", null, null, null);
+            public static readonly GUIContent infoWorldCenterOfMass = L10n.TextContent("World Center of Mass", null, null, null);
+            public static readonly GUIContent infoSleepState        = L10n.TextContent("Sleep State", null, null, null);
+            public static readonly GUIContent infoSleepThreshold    = L10n.TextContent("Sleep Threshold", null, null, null);
+            public static readonly GUIContent infoMaxLinVel         = L10n.TextContent("Max Linear Velocity", null, null, null);
+            public static readonly GUIContent infoMaxAngVel         = L10n.TextContent("Max Angular Velocity", null, null, null);
+            public static readonly GUIContent infoSolverIterations  = L10n.TextContent("Solver Iterations", null, null, null);
+            public static readonly GUIContent infoSolverVelIterations = L10n.TextContent("Solver Velocity Iterations", null, null, null);
+            public static readonly GUIContent sleep = L10n.TextContent("Asleep", null, null, null);
+            public static readonly GUIContent awake = L10n.TextContent("Awake", null, null, null);
 
-            public static readonly GUIContent infoBodyIndex         = EditorGUIUtility.TrTextContent("Body Index");
-            public static readonly GUIContent infoJointInfo         = EditorGUIUtility.TrTextContent("Joint Info");
-            public static readonly GUIContent infoJointPosition     = EditorGUIUtility.TrTextContent("Position");
-            public static readonly GUIContent infoJointVelocity     = EditorGUIUtility.TrTextContent("Velocity");
-            public static readonly GUIContent infoJointForce        = EditorGUIUtility.TrTextContent("Force");
-            public static readonly GUIContent infoJointAcceleration = EditorGUIUtility.TrTextContent("Acceleration");
+            public static readonly GUIContent infoBodyIndex         = L10n.TextContent("Body Index", null, null, null);
+            public static readonly GUIContent infoJointInfo         = L10n.TextContent("Joint Info", null, null, null);
+            public static readonly GUIContent infoJointPosition     = L10n.TextContent("Position", null, null, null);
+            public static readonly GUIContent infoJointVelocity     = L10n.TextContent("Velocity", null, null, null);
+            public static readonly GUIContent infoJointForce        = L10n.TextContent("Force", null, null, null);
+            public static readonly GUIContent infoJointAcceleration = L10n.TextContent("Acceleration", null, null, null);
             #endregion
 
             public static readonly GUIStyle tabBarStyle             = GUI.skin.button;
@@ -703,4 +699,3 @@ namespace UnityEditor
         }
     }
 }
-#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

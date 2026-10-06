@@ -68,7 +68,13 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_ListView.horizontalScrollingEnabled = false;
             var scrollView = m_ListView.Q<ScrollView>();
             if (scrollView != null)
+            {
                 scrollView.horizontalScrollerVisibility = ScrollerVisibility.Hidden;
+                // BaseVerticalCollectionView marks the inner contentContainer focusable — a silent tab stop we don't want.
+                scrollView.contentContainer.tabIndex = -1;
+                scrollView.horizontalScroller.slider.tabIndex = -1;
+                scrollView.verticalScroller.slider.tabIndex = -1;
+            }
 
             Add(m_ListView);
 
@@ -81,8 +87,9 @@ namespace UnityEditor.PackageManager.UI.Internal
         private void OnAttachToPanel(AttachToPanelEvent evt)
         {
             RegisterCallback<KeyDownEvent>(OnKeyDownShortcut);
-            RegisterCallback<KeyDownEvent>(IgnoreEscapeKeyDown, TrickleDown.TrickleDown);
-            RegisterCallback<NavigationMoveEvent>(OnNavigationMoveShortcut);
+            RegisterCallback<NavigationMoveEvent>(OnNavigationMoveShortcut, TrickleDown.TrickleDown);
+            RegisterCallback<NavigationCancelEvent>(OnNavigationCancel, TrickleDown.TrickleDown);
+            evt.destinationPanel.visualTree.RegisterCallback<FocusInEvent>(OnPanelFocusIn);
 
             m_ListView.selectionChanged += SyncListViewSelectionToPageManager;
             m_PageManager.onSelectionChanged += OnSelectionChanged;
@@ -91,11 +98,24 @@ namespace UnityEditor.PackageManager.UI.Internal
         private void OnDetachFromPanel(DetachFromPanelEvent evt)
         {
             UnregisterCallback<KeyDownEvent>(OnKeyDownShortcut);
-            UnregisterCallback<KeyDownEvent>(IgnoreEscapeKeyDown, TrickleDown.TrickleDown);
-            UnregisterCallback<NavigationMoveEvent>(OnNavigationMoveShortcut);
+            UnregisterCallback<NavigationMoveEvent>(OnNavigationMoveShortcut, TrickleDown.TrickleDown);
+            UnregisterCallback<NavigationCancelEvent>(OnNavigationCancel, TrickleDown.TrickleDown);
+            evt.originPanel.visualTree.UnregisterCallback<FocusInEvent>(OnPanelFocusIn);
 
             m_ListView.selectionChanged -= SyncListViewSelectionToPageManager;
             m_PageManager.onSelectionChanged -= OnSelectionChanged;
+        }
+
+        private void OnPanelFocusIn(FocusInEvent evt)
+        {
+            var itemHasFocus = evt.target is IListItem item && Contains(item.element);
+            EnableInClassList("list-focused", itemHasFocus);
+        }
+
+        // The default ListView escape behavior clears the selection, but we always want something selected.
+        private void OnNavigationCancel(NavigationCancelEvent evt)
+        {
+            evt.StopImmediatePropagation();
         }
 
         private void SyncListViewSelectionToPageManager(IEnumerable<object> items)
@@ -272,18 +292,9 @@ namespace UnityEditor.PackageManager.UI.Internal
                 ScrollToSelection();
         }
 
-        private int FindMaxSelectedIndex()
-        {
-            var result = -1;
-            foreach (var index in m_ListView.selectedIndices)
-                if (index > result)
-                    result = index;
-            return result;
-        }
-
         private void OnKeyDownShortcut(KeyDownEvent evt)
         {
-            if (!UIUtils.IsElementVisible(this))
+            if (!UIUtils.IsElementVisible(this) || m_ListView.itemsSource.Count == 0)
                 return;
 
             // We use keyboard events for ctrl, shift, A, and esc because UIToolkit does not
@@ -294,22 +305,6 @@ namespace UnityEditor.PackageManager.UI.Internal
                     m_ListView.SelectAll();
                     evt.StopPropagation();
                     break;
-                case KeyCode.PageUp:
-                    var maxSelectedIndex = FindMaxSelectedIndex();
-                    if (maxSelectedIndex < 0)
-                        return;
-                    var index = Math.Max(0, maxSelectedIndex - (m_ListView.virtualizationController.visibleItemCount - 1));
-                    HandleSelectionAndScroll(index, evt.shiftKey);
-                    evt.StopPropagation();
-                    break;
-                case KeyCode.PageDown:
-                    maxSelectedIndex = FindMaxSelectedIndex();
-                    if (maxSelectedIndex < 0)
-                        return;
-                    index = Math.Min(m_ListView.viewController.itemsSource.Count - 1, maxSelectedIndex + (m_ListView.virtualizationController.visibleItemCount - 1));
-                    HandleSelectionAndScroll(index, evt.shiftKey);
-                    evt.StopPropagation();
-                    break;
                 // On macOS moving up and down will trigger the sound of an incorrect key being pressed
                 // This should be fixed in UUM-26264 by the UIToolkit team
                 case KeyCode.DownArrow:
@@ -317,14 +312,6 @@ namespace UnityEditor.PackageManager.UI.Internal
                     evt.StopPropagation();
                     break;
             }
-        }
-
-        // The default ListView escape key behaviour is to clear all selections, however, we want to always have something selected
-        // therefore we register a TrickleDown callback handler to intercept escape key events to make it do nothing.
-        private void IgnoreEscapeKeyDown(KeyDownEvent evt)
-        {
-            if (evt.keyCode == KeyCode.Escape)
-                evt.StopImmediatePropagation();
         }
 
         public void OnNavigationMoveShortcut(NavigationMoveEvent evt)
@@ -346,7 +333,6 @@ namespace UnityEditor.PackageManager.UI.Internal
             if (newSelectedIndex < 0 || newSelectedIndex >= m_ListView.itemsSource.Count)
                 return;
             HandleSelectionAndScroll(newSelectedIndex, evt.shiftKey);
-            Focus();
             evt.StopPropagation();
         }
 
@@ -357,6 +343,16 @@ namespace UnityEditor.PackageManager.UI.Internal
             else
                 m_ListView.selectedIndex = index;
             m_ListView.ScrollToItem(index);
+            var uniqueId = GetVisualStateByIndex(index)?.itemUniqueId;
+            if (uniqueId == null)
+                return;
+            // Focus immediately if the target is already rendered; otherwise defer so the ListView virtualization has a
+            // chance to bind it before we look it up (e.g., PageDown/Home into an off-screen row).
+            var packageItem = GetPackageItem(uniqueId);
+            if (packageItem != null)
+                packageItem.Focus();
+            else
+                schedule.Execute(() => GetPackageItem(uniqueId)?.Focus());
         }
     }
 }

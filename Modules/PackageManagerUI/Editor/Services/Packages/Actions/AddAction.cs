@@ -24,7 +24,7 @@ internal class AddAction : PackageAction
         m_PackageDatabase = packageDatabase;
     }
 
-    protected override bool TriggerActionImplementation(IReadOnlyCollection<IPackage> packages)
+    protected override bool TriggerActionImplementation(IReadOnlyList<IPackage> packages)
     {
         var primaryVersions = packages.SelectToNewArray(p => p.versions.primary);
         if(!m_OperationDispatcher.Install(primaryVersions, OperationType.Install))
@@ -37,7 +37,7 @@ internal class AddAction : PackageAction
 
     protected override bool TriggerActionImplementation(IPackageVersion version)
     {
-        IReadOnlyCollection<IPackage> packagesToUninstall = null;
+        IReadOnlyList<IPackage> packagesToUninstall = null;
         if (version.HasTag(PackageTag.Feature))
         {
             var customizedDependencies = m_PackageDatabase.GetCustomizedDependencies(version, CustomizedDependencyType.Resettable);

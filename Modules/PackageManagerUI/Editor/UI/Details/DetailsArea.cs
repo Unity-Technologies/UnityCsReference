@@ -94,6 +94,8 @@ namespace UnityEditor.PackageManager.UI.Internal
             // We set the style here programatically instead of in the uss so that our style doesn't depend on a class or name that could change in the future
             m_ScrollView.contentContainer.style.minHeight = new Length(100.0f, LengthUnit.Percent);
             m_ScrollView.verticalScroller.valueChanged += OnDetailScroll;
+            m_ScrollView.horizontalScroller.slider.tabIndex = -1;
+            m_ScrollView.verticalScroller.slider.tabIndex = -1;
             Add(m_ScrollView);
 
             // PackageDetails is the only details view we create by default, because it is needed by the extension mechanism on Window creation time

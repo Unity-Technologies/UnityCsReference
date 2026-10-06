@@ -14,7 +14,7 @@ namespace UnityEditor.Build.Profile
     /// which must be a subclass of <see cref="ScriptableObject"/>.
     /// </summary>
     /// <remarks>
-    /// Only methods in assemblies from Unity package registry sources are supported.
+    /// Only implementations from Unity registry packages are supported.
     /// </remarks>
     /// <example>
     /// <code>

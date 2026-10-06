@@ -22,6 +22,7 @@ sealed class UICanvasZoomManipulator : PointerManipulator
     List<float> m_ZoomScaleValues;
     const float DefaultScale = 1;
     const float ZoomStepDistance = 10;
+    const float MovementThreshold = 3f;
 
     // Full zoom scale list available with the Zoomer manipulator
     public List<float> zoomScaleValues
@@ -46,11 +47,15 @@ sealed class UICanvasZoomManipulator : PointerManipulator
     [NoAutoStaticsCleanup] // zoom-scale presets, safe to persist
     public static List<float> ZoomMenuScaleValues { get; } = new() { 0.25f, 0.5f, 0.75f, 1f, 1.25f, 1.5f, 1.75f, 2f, 2.5f, 4f, 5f, 10f, 25f, 50f, 75f, 100f };
 
+    bool m_Tracking;
     bool m_Zooming;
+    int m_ActivatingButton = -1;
     Vector2 m_PressPos;
     Vector2 m_LastZoomPos;
     UIViewport m_Viewport;
     UICanvas m_Canvas;
+
+    public bool IsZooming => m_Zooming;
 
     public UICanvasZoomManipulator(UIViewport viewport)
     {
@@ -65,6 +70,7 @@ sealed class UICanvasZoomManipulator : PointerManipulator
         target.RegisterCallback<PointerDownEvent>(OnPointerDown);
         target.RegisterCallback<PointerMoveEvent>(OnPointerMove);
         target.RegisterCallback<PointerUpEvent>(OnPointerUp);
+        target.RegisterCallback<PointerCaptureOutEvent>(OnPointerCaptureOut);
         target.RegisterCallback<WheelEvent>(OnWheel);
     }
 
@@ -73,6 +79,7 @@ sealed class UICanvasZoomManipulator : PointerManipulator
         target.UnregisterCallback<PointerDownEvent>(OnPointerDown);
         target.UnregisterCallback<PointerMoveEvent>(OnPointerMove);
         target.UnregisterCallback<PointerUpEvent>(OnPointerUp);
+        target.UnregisterCallback<PointerCaptureOutEvent>(OnPointerCaptureOut);
         target.UnregisterCallback<WheelEvent>(OnWheel);
     }
 
@@ -107,7 +114,9 @@ sealed class UICanvasZoomManipulator : PointerManipulator
     {
         if (CanStartManipulation(evt))
         {
-            m_Zooming = true;
+            m_Tracking = true;
+            m_Zooming = false;
+            m_ActivatingButton = evt.button;
             m_PressPos = evt.localPosition;
             m_LastZoomPos = m_PressPos;
             target.CaptureMouse();
@@ -117,17 +126,44 @@ sealed class UICanvasZoomManipulator : PointerManipulator
 
     void OnPointerUp(PointerUpEvent evt)
     {
-        if (!m_Zooming || !CanStopManipulation(evt))
+        if (evt.button != m_ActivatingButton)
             return;
 
+        // Cleared before the tracking check so the flag never outlives the release it suppresses,
+        // even when the capture was lost and the drag already ended.
         m_Zooming = false;
+
+        if (!m_Tracking)
+            return;
+
+        m_Tracking = false;
         target.ReleaseMouse();
         evt.StopImmediatePropagation();
     }
 
+    // Losing the capture ends the drag, but not the suppression: the release is still this gesture's,
+    // and UIViewport must not turn it into a context menu.
+    void OnPointerCaptureOut(PointerCaptureOutEvent evt)
+    {
+        m_Tracking = false;
+    }
+
     void OnPointerMove(PointerMoveEvent evt)
     {
-        if (!m_Zooming || Mathf.Abs(evt.localPosition.y - m_LastZoomPos.y) < ZoomStepDistance)
+        if (!m_Tracking)
+        {
+            // The drag died with the capture, so a release off the surface never reached OnPointerUp.
+            // Drop the suppression as soon as the activating button is seen up again, which always
+            // happens before the pointer can reach a context menu here.
+            if (m_ActivatingButton >= 0 && (evt.pressedButtons & (1 << m_ActivatingButton)) == 0)
+                m_Zooming = false;
+            return;
+        }
+
+        // Below the threshold the gesture is still a click, which UIViewport turns into a context menu.
+        m_Zooming |= Vector2.Distance(evt.localPosition, m_PressPos) >= MovementThreshold;
+
+        if (Mathf.Abs(evt.localPosition.y - m_LastZoomPos.y) < ZoomStepDistance)
             return;
 
         Zoom(evt.deltaPosition.y, m_PressPos);

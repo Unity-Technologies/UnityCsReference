@@ -31,6 +31,8 @@ readonly struct LayoutConfig
     /// </summary>
     public UnmanagedDataHandle Handle => m_Handle;
 
+    internal int ManagerIndex => m_Access.ManagerIndex;
+
     /// <summary>
     /// Gets or sets the shared point scale factor for configured nodes.
     /// </summary>

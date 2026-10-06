@@ -181,7 +181,7 @@ namespace UnityEngine.UIElements.UIR
             // propagation stays correct without a per-rd stamp.
             bool RebuildEffectiveModifiers(RenderData rd, List<MeshModifierRegistration> inheritedRecursive)
             {
-                var own = rd.owner.m_MeshModifiers;
+                var own = rd.owner.meshModifiers;
                 int ownCount = own?.Count ?? 0;
                 int inheritedCount = inheritedRecursive?.Count ?? 0;
                 var oldChain = rd.m_EffectiveModifiers;
@@ -220,7 +220,7 @@ namespace UnityEngine.UIElements.UIR
 
             List<MeshModifierRegistration> DeriveChildModifiers(RenderData rd)
             {
-                var own = rd.owner.m_MeshModifiers;
+                var own = rd.owner.meshModifiers;
                 int ownCount = own?.Count ?? 0;
                 if (ownCount == 0)
                     return rd.m_EffectiveModifiers;
@@ -248,7 +248,7 @@ namespace UnityEngine.UIElements.UIR
             // back out, otherwise Q.own.recursive ends up double-counted when the nested root rebuilds.
             List<MeshModifierRegistration> DeriveOuterInherited(RenderData outerRd)
             {
-                var own = outerRd.owner.m_MeshModifiers;
+                var own = outerRd.owner.meshModifiers;
                 if (own == null || own.Count == 0)
                     return outerRd.m_EffectiveModifiers;
                 SubtractOwnIntoScratch(outerRd.m_EffectiveModifiers, own, includeRecursiveOwn: false);

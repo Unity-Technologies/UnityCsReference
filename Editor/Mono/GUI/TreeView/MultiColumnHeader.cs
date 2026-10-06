@@ -525,7 +525,7 @@ namespace UnityEditor.IMGUI.Controls
 
         protected virtual void AddColumnHeaderContextMenuItems(GenericMenu menu)
         {
-            menu.AddItem(EditorGUIUtility.TrTextContent("Resize to Fit"), false, ResizeToFit);
+            menu.AddItem(L10n.TextContent("Resize to Fit", null, null, null), false, ResizeToFit);
 
             menu.AddSeparator("");
 

@@ -244,10 +244,10 @@ namespace UnityEditor.AI
 
         static class Content
         {
-            public static readonly GUIContent InstallPackage = EditorGUIUtility.TrTextContent(
+            public static readonly GUIContent InstallPackage = L10n.TextContent(
                 "Install AI Navigation Package",
                 "Install the AI Navigation package in order to access all navigation components and workflows."
-            );
+, null, null            );
         }
     }
 }

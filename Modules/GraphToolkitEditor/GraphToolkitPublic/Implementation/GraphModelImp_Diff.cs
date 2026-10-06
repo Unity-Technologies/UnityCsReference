@@ -5,6 +5,7 @@
 using System;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.Pool;
 
 namespace Unity.GraphToolkit.Editor.Implementation;
 
@@ -36,7 +37,7 @@ partial class GraphModelImp
             Node = node;
             Guid = guid;
             Kinds = ChangeKind.None;
-            Ports = new Dictionary<Hash128, ChangedPortBuilder>();
+            Ports = DictionaryPool<Hash128, ChangedPortBuilder>.Get();
         }
 
         public void AddChange(ChangeKind kind)
@@ -289,28 +290,47 @@ partial class GraphModelImp
 
         m_DeletedPortToNodeGuid.Clear();
 
-        var changedNodes = new List<ChangedNode>(m_NodeBuilders.Count);
-        foreach (var nb in m_NodeBuilders.Values)
+        List<ChangedNode> changedNodes = null;
+        if (m_NodeBuilders.Count > 0)
         {
-            if (nb.Node == null)
-                continue;
+            changedNodes = new List<ChangedNode>(m_NodeBuilders.Count);
+            foreach (var nb in m_NodeBuilders.Values)
+            {
+                if (nb.Node == null)
+                    continue;
 
-            changedNodes.Add(nb.Build());
+                changedNodes.Add(nb.Build());
+            }
         }
 
-        var changedVariables = new List<ChangedVariable>(m_VariableBuilders.Count);
-        foreach (var vb in m_VariableBuilders.Values)
-            changedVariables.Add(vb.Build());
+        List<ChangedVariable> changedVariables = null;
+        if (m_VariableBuilders.Count > 0)
+        {
+            changedVariables = new List<ChangedVariable>(m_VariableBuilders.Count);
+            foreach (var vb in m_VariableBuilders.Values)
+                changedVariables.Add(vb.Build());
+        }
 
-        var changedConstantNodes = new List<ChangedConstantNode>(m_ConstantNodeBuilders.Count);
-        foreach (var cb in m_ConstantNodeBuilders.Values)
-            changedConstantNodes.Add(cb.Build());
+        List<ChangedConstantNode> changedConstantNodes = null;
+        if (m_ConstantNodeBuilders.Count > 0)
+        {
+            changedConstantNodes = new List<ChangedConstantNode>(m_ConstantNodeBuilders.Count);
+            foreach (var cb in m_ConstantNodeBuilders.Values)
+                changedConstantNodes.Add(cb.Build());
+        }
 
-        var changedSubgraphNodes = new List<ChangedSubgraphNode>(m_SubgraphNodeBuilders.Count);
-        foreach (var sb in m_SubgraphNodeBuilders.Values)
-            changedSubgraphNodes.Add(sb.Build());
+        List<ChangedSubgraphNode> changedSubgraphNodes = null;
+        if (m_SubgraphNodeBuilders.Count > 0)
+        {
+            changedSubgraphNodes = new List<ChangedSubgraphNode>(m_SubgraphNodeBuilders.Count);
+            foreach (var sb in m_SubgraphNodeBuilders.Values)
+                changedSubgraphNodes.Add(sb.Build());
+        }
 
         graphLogger?.SetChangeData(changedNodes, changedVariables, changedConstantNodes, changedSubgraphNodes);
+
+        foreach (var nb in m_NodeBuilders.Values)
+            DictionaryPool<Hash128, ChangedPortBuilder>.Release(nb.Ports);
 
         m_NodeBuilders.Clear();
         m_VariableBuilders.Clear();

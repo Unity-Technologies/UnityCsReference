@@ -64,7 +64,7 @@ namespace UnityEngine.Android
     public class AndroidWindowInsets
     {
         /// <summary>Options for specifying different types of system UI elements that generate window insets.</summary>
-        /// <remarks>Use this enum with <see cref="AndroidWindowInsets.Hide" />, <see cref="AndroidWindowInsets.IsVisible" />, and <see cref="AndroidWindowInsets.Show" /> methods to retrieve and modify the current state of the status bar, navigation bar, or both at runtime.</remarks>
+        /// <remarks>Use this enum with <see cref="AndroidWindowInsets.Hide" />, <see cref="AndroidWindowInsets.IsVisible" />, and <see cref="AndroidWindowInsets.Show" /> methods to retrieve and modify the current state of the status bar, navigation bar and caption bar at runtime.</remarks>
         /// <example>
         ///  <code><![CDATA[using UnityEngine;
         ///using UnityEngine.Android;
@@ -90,8 +90,15 @@ namespace UnityEngine.Android
             /// <summary>Represents the area of the screen the system navigation elements occupy.</summary>
             /// <remarks>This area includes the gesture bar or the traditional navigation buttons.</remarks>
             NavigationBars = 1 << 1,
-            /*
+
+            /// <summary>Represents the area of the screen the window caption bar occupies at the top of the application window.</summary>
+            /// <remarks>The caption bar contains the window title and the window controls. It only appears when the application window is displayed in a freeform or desktop windowing environment, and is empty otherwise.
+            ///
+            /// The system controls the visibility of the caption bar, so <see cref="AndroidWindowInsets.Show" /> and <see cref="AndroidWindowInsets.Hide" /> have no effect on it. To control whether your application window extends behind the caption bar, use <see cref="AndroidWindowInsets.SetOverlapping" /> instead.
+            ///
+            /// Unlike the status and navigation bars, the caption bar requires Android 15 (API 35) or later for <see cref="AndroidWindowInsets.SetAppearance" /> and for a transparent <see cref="AndroidWindowInsets.SetSystemBarsBackground" />.</remarks>
             CaptionBar = 1 << 2,
+            /*
             IME = 1 << 3,
             SystemGestures = 1 << 4,
             MandatorySystemGestures = 1 << 5,
@@ -101,7 +108,7 @@ namespace UnityEngine.Android
         }
 
         /// <summary>Controls the foreground appearance of system bar icons and text.</summary>
-        /// <remarks>Use this enum with <see cref="AndroidWindowInsets.SetAppearance" /> and <see cref="AndroidWindowInsets.GetAppearance" /> to control the appearance of system bar icons per inset type at runtime. Requires Android 11 (API 30) and later.</remarks>
+        /// <remarks>Use this enum with <see cref="AndroidWindowInsets.SetAppearance" /> and <see cref="AndroidWindowInsets.GetAppearance" /> to control the appearance of system bar icons per inset type at runtime. Requires Android 11 (API 30) and later for the status and navigation bars, and Android 15 (API 35) and later for the caption bar.</remarks>
         /// <example>
         ///  <code><![CDATA[using UnityEngine;
         ///using UnityEngine.Android;
@@ -155,7 +162,7 @@ namespace UnityEngine.Android
         }
 
         /// <summary>Controls whether system bars have an opaque or transparent background.</summary>
-        /// <remarks>Use this enum with <see cref="AndroidWindowInsets.SetSystemBarsBackground" /> and <see cref="AndroidWindowInsets.GetSystemBarsBackground" /> to control the system bars background at runtime. Set to <c>Transparent</c> when insets are overlapping with the application window to allow game content to show through. Requires Android 11 (API 30) and later.</remarks>
+        /// <remarks>Use this enum with <see cref="AndroidWindowInsets.SetSystemBarsBackground" /> and <see cref="AndroidWindowInsets.GetSystemBarsBackground" /> to control the system bars background at runtime. Set to <c>Transparent</c> when insets are overlapping with the application window to allow game content to show through. Requires Android 11 (API 30) and later for the status and navigation bars, and Android 15 (API 35) and later for the caption bar.</remarks>
         /// <example>
         ///  <code><![CDATA[using UnityEngine;
         ///using UnityEngine.Android;
@@ -194,13 +201,12 @@ namespace UnityEngine.Android
         private static int[] GetSupportedInsets()
         {
             // For internal purposes, remove if is exposed in Type
-            const Type CaptionBar = (Type)(1 << 2);
             const Type Ime = (Type)(1 << 3);
             return new[]
             {
                 (int)Type.StatusBars,
                 (int)Type.NavigationBars,
-                (int)CaptionBar,
+                (int)Type.CaptionBar,
                 (int)Ime
             };
         }
@@ -208,7 +214,9 @@ namespace UnityEngine.Android
         private static extern void InternalShow(Type type);
 
         /// <summary>Displays a set of windows that generate insets on screen.</summary>
-        /// <remarks>Use this method to display the system bars, such as the status and navigation bars at runtime.</remarks>
+        /// <remarks>Use this method to display the system bars, such as the status and navigation bars at runtime.
+        ///
+        /// This method has no effect on <see cref="Android.AndroidWindowInsets.Type.CaptionBar" />, because the system controls the visibility of the caption bar.</remarks>
         /// <example>
         ///  <code><![CDATA[using UnityEngine;
         ///using UnityEngine.Android;
@@ -232,7 +240,9 @@ namespace UnityEngine.Android
         private static extern void InternalHide(Type type);
 
         /// <summary>Hides a set of windows that generate insets.</summary>
-        /// <remarks>Use this method to hide the system bars, allowing your application to use the available screen space when in full-screen mode.</remarks>
+        /// <remarks>Use this method to hide the system bars, allowing your application to use the available screen space when in full-screen mode.
+        ///
+        /// This method has no effect on <see cref="Android.AndroidWindowInsets.Type.CaptionBar" />, because the system controls the visibility of the caption bar.</remarks>
         /// <example>
         ///  <code><![CDATA[using UnityEngine;
         ///using UnityEngine.Android;
@@ -436,7 +446,7 @@ namespace UnityEngine.Android
         /// <summary>Sets the system bars background to opaque or transparent.</summary>
         /// <remarks>Set to Transparent when insets are overlapping with the application window to allow game content to show through the system bars. This applies to all system bars and cannot be set per inset.
         ///
-        ///**Note:** Only supported on Android 11 (API 30) or later.</remarks>
+        ///**Note:** Only supported on Android 11 (API 30) or later. A transparent background reaches the caption bar only on Android 15 (API 35) or later.</remarks>
         /// <example>
         ///  <code><![CDATA[using UnityEngine;
         ///using UnityEngine.Android;
@@ -483,7 +493,7 @@ namespace UnityEngine.Android
         /// <summary>Sets the foreground appearance of the specified inset types at runtime.</summary>
         /// <remarks>Controls whether system bar icons appear light or dark for individual inset types. Multiple inset types can be combined to set the same appearance for all of them.
         ///
-        ///**Note:** Only supported on Android 11 (API 30) or later.</remarks>
+        ///**Note:** Only supported on Android 11 (API 30) or later. For <see cref="Android.AndroidWindowInsets.Type.CaptionBar" />, appearance requires Android 15 (API 35) or later. On Android 11 to 14 (API 30 to 34) setting it has no effect and <see cref="AndroidWindowInsets.GetAppearance" /> reports <c>Light</c>.</remarks>
         /// <example>
         ///  <code><![CDATA[using UnityEngine;
         ///using UnityEngine.Android;
@@ -512,7 +522,7 @@ namespace UnityEngine.Android
         /// <summary>Returns the current foreground appearance of the specified inset type.</summary>
         /// <remarks>Returns whether the specified inset type currently has light or dark icons. Only a single inset type may be passed; passing combined flags throws an <see cref="ArgumentException" />. Returns <c>Light</c> for <see cref="Type.None" />.
         ///
-        ///**Note:** Only supported on Android 11 (API 30) or later.</remarks>
+        ///**Note:** Only supported on Android 11 (API 30) or later. Reports <c>Light</c> for <see cref="Android.AndroidWindowInsets.Type.CaptionBar" /> on Android 11 to 14 (API 30 to 34), because caption bar appearance requires Android 15 (API 35) or later.</remarks>
         /// <example>
         ///  <code><![CDATA[using UnityEngine;
         ///using UnityEngine.Android;

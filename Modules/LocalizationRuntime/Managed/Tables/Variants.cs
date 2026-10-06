@@ -11,26 +11,53 @@ using UnityEngine.Bindings;
 namespace Unity.Localization;
 
 /// <summary>
-/// Picks which variant key applies right now (for example the current platform, day of week, or gender).
-/// Custom selectors are a single class implementing this interface; they appear automatically in the
-/// <c>[SerializeReference]</c> picker on a variant entry.
+/// Picks which variant key applies right now, for example the current platform, storefront, or gender.
 /// </summary>
-[VisibleToOtherModules("UnityEditor.LocalizationRuntimeModule")]
-internal interface IVariantSelector
+/// <remarks>
+/// A variant-driven key holds one value per key the selector can report, and resolution returns the value
+/// whose key equals <see cref="CurrentKey"/>. Keys are free-form strings, so a selector can model anything:
+/// the built-in platform selector reports the current <see cref="Application.platform"/>, and a custom
+/// selector can report a storefront, a day of the week, or a player choice instead. Implement the interface
+/// on one serializable class with a public parameterless constructor; the Localization Tables window's
+/// selector picker skips types without one, and loading file-based tables recreates selectors with it. The
+/// implementation appears in the picker automatically, and its <see cref="AvailableKeys"/> fill the window's
+/// Add Variant menu.
+/// </remarks>
+/// <example>
+/// A selector that varies text by storefront, for builds that ship on more than one store per platform.
+/// <code source="../../../../Modules/LocalizationRuntime/Tests/UTFTests/Localization.Samples/Tables/StorefrontVariantSelectorExample.cs"/>
+/// </example>
+/// <example>
+/// A selector that combines the two: storefront keys where a storefront is known, platform keys everywhere else.
+/// <code source="../../../../Modules/LocalizationRuntime/Tests/UTFTests/Localization.Samples/Tables/PlatformOrStorefrontSelectorExample.cs"/>
+/// </example>
+/// <seealso cref="ResourceTable"/>
+/// <seealso cref="SharedTableData"/>
+public interface IVariantSelector
 {
     /// <summary>
-    /// Stable identifier for this selector kind, used in serialized data and search tokens.
+    /// Stable identifier for this selector kind.
     /// </summary>
+    /// <remarks>
+    /// Stored in serialized table data and search tokens, so it must not change once content uses the selector.
+    /// </remarks>
     string SelectorId { get; }
 
     /// <summary>
-    /// The variant key that applies to the current runtime context, for example <c>"iOS"</c> or <c>"Monday"</c>.
+    /// The variant key that applies to the current runtime context.
     /// </summary>
+    /// <remarks>
+    /// Resolution compares this against each variant's key, for example <c>"iOS"</c> or <c>"Steam"</c>, and
+    /// falls back to the entry's default value when nothing matches.
+    /// </remarks>
     string CurrentKey { get; }
 
     /// <summary>
-    /// Every key this selector knows about, used by the editor to populate "add variant" menus.
+    /// Every key this selector can report.
     /// </summary>
+    /// <remarks>
+    /// The editor uses this to populate the Add Variant menu; resolution itself only uses <see cref="CurrentKey"/>.
+    /// </remarks>
     IEnumerable<string> AvailableKeys { get; }
 }
 
@@ -68,15 +95,24 @@ internal struct Variant<T>
 }
 
 /// <summary>
-/// Makes a key variant-driven by attaching the <see cref="IVariantSelector"/> that chooses its current variant.
-/// Attach it to a shared key for a per-key selector, or to the <see cref="SharedTableData"/> for a default that
-/// every key in the collection inherits. The selector lives on the shared data (not the per-locale entry) so it
-/// stays the same across locales.
+/// Makes a key variant-driven by attaching the selector that chooses its current variant.
 /// </summary>
+/// <remarks>
+/// Attach it to a shared key's metadata for a per-key <see cref="IVariantSelector"/>, or to the
+/// <see cref="SharedTableData"/> for a default that every key in the collection inherits. The selector lives on
+/// the shared data, not the per-locale entry, so it stays the same across locales. Variant values themselves
+/// are stored per locale; add them with <see cref="ResourceTable.AddStringVariant(string, string, string)"/>,
+/// which registers the variant keys here.
+/// </remarks>
+/// <example>
+/// Attach a selector and add a variant value from script.
+/// <code source="../../../../Modules/LocalizationRuntime/Tests/UTFTests/Localization.Samples/Tables/AddVariantByScriptExample.cs"/>
+/// </example>
+/// <seealso cref="IVariantSelector"/>
+/// <seealso cref="SharedTableData"/>
 [Serializable]
 [Metadata(AllowedTypes = MetadataType.SharedTableEntry | MetadataType.SharedTableData, AllowMultiple = false, MenuItem = "Variant Selector")]
-[VisibleToOtherModules("UnityEditor.LocalizationRuntimeModule")]
-internal class VariantSelectorMetadata : IMetadata
+public class VariantSelectorMetadata : IMetadata
 {
     [SerializeReference] IVariantSelector m_Selector;
     [SerializeField] List<string> m_Keys = new();

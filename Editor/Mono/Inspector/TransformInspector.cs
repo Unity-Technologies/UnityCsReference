@@ -20,8 +20,8 @@ namespace UnityEditor
 
         class Contents
         {
-            public GUIContent positionContent = EditorGUIUtility.TrTextContent("Position", "The local position of this GameObject relative to the parent.");
-            public GUIContent scaleContent = EditorGUIUtility.TrTextContent("Scale", "The local scaling of this GameObject relative to the parent.");
+            public GUIContent positionContent = L10n.TextContent("Position", "The local position of this GameObject relative to the parent.", null, null);
+            public GUIContent scaleContent = L10n.TextContent("Scale", "The local scaling of this GameObject relative to the parent.", null, null);
             public string floatingPointWarning = LocalizationDatabase.GetLocalizedString("Due to floating-point precision limitations, it is recommended to bring the world coordinates of the GameObject within a smaller range.");
         }
         [NoAutoStaticsCleanup] // GUIContent/string-only lazy Contents cache; contents survive code reload
@@ -35,7 +35,7 @@ namespace UnityEditor
 
             if (m_RotationGUI == null)
                 m_RotationGUI = new TransformRotationGUI();
-            m_RotationGUI.OnEnable(serializedObject.FindProperty("m_LocalRotation"), EditorGUIUtility.TrTextContent("Rotation", "The local rotation of this GameObject relative to the parent."));
+            m_RotationGUI.OnEnable(serializedObject.FindProperty("m_LocalRotation"), L10n.TextContent("Rotation", "The local rotation of this GameObject relative to the parent.", null, null));
             m_ConstrainProportionsScale = new ConstrainProportionsTransformScale(m_Scale.vector3Value);
         }
 

@@ -372,7 +372,7 @@ namespace UnityEngine.XR
         [NoAutoStaticsCleanup]
         public static InputFeatureUsage<bool> menuButton = new InputFeatureUsage<bool>("MenuButton");
         ///<summary>Represents the primary 2D axis being clicked or otherwise depressed.</summary>
-        ///<remarks>The primary 2D axis is the <see cref="Vector2" /> input feature tagged with <see cref="CommonUsages.primary2DAxis" />.</remarks>
+        ///<remarks>The primary 2D axis is the <see cref="Vector2" /> input feature tagged with <see cref="CommonUsages.primary2DAxis" />. A click means that the user presses the thumbstick or touchpad inward, toward the body of the controller. Moving the thumbstick or touchpad to one side changes the value of <see cref="CommonUsages.primary2DAxis" />, but doesn't set this feature to true.</remarks>
         [NoAutoStaticsCleanup]
         public static InputFeatureUsage<bool> primary2DAxisClick = new InputFeatureUsage<bool>("Primary2DAxisClick");
         ///<summary>Represents the primary 2D axis being touched.</summary>
@@ -380,7 +380,7 @@ namespace UnityEngine.XR
         [NoAutoStaticsCleanup]
         public static InputFeatureUsage<bool> primary2DAxisTouch = new InputFeatureUsage<bool>("Primary2DAxisTouch");
         ///<summary>Represents the secondary 2D axis being clicked or otherwise depressed.</summary>
-        ///<remarks>The secondary 2D axis is the <see cref="Vector2" /> input feature tagged with <see cref="CommonUsages.secondary2DAxis" />.</remarks>
+        ///<remarks>The secondary 2D axis is the <see cref="Vector2" /> input feature tagged with <see cref="CommonUsages.secondary2DAxis" />. A click means that the user presses the joystick or touchpad inward, toward the body of the controller. Moving the joystick or touchpad to one side changes the value of <see cref="CommonUsages.secondary2DAxis" />, but doesn't set this feature to true.</remarks>
         [NoAutoStaticsCleanup]
         public static InputFeatureUsage<bool> secondary2DAxisClick = new InputFeatureUsage<bool>("Secondary2DAxisClick");
         ///<summary>Represents the secondary 2D axis being touched.</summary>

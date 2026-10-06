@@ -79,7 +79,7 @@ internal class SplitList : IList<Format>
 
     /// <summary>
     /// Clears the <see cref="SplitList"/> item.
-    /// <para>This method gets called by <see cref="SplitListPool"/> when it releases an instance.</para>
+    /// This method gets called by <see cref="SplitListPool"/> when it releases an instance.
     /// </summary>
     public void Clear()
     {

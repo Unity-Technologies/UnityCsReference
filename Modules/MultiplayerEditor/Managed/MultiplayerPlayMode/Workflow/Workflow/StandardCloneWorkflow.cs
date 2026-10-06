@@ -24,6 +24,9 @@ namespace Unity.Multiplayer.PlayMode.Editor
         const string k_ClonedPlayerStateKey = "Unity.Multiplayer.Playmode.Workflow.Editor.StandardCloneWorkflow_ClonedPlayerState";
 
         [AutoStaticsCleanupOnCodeReload] // last write time for change detection; must reset so changes during reload are detected
+        // Change-detection cursor for the clone data store: a cleared value simply differs from the value
+        // on disk, so the next UI poll runs one extra role-mask refresh and stores the timestamp again.
+        [IgnoreForUAL0015("Change-detection cursor; a cleared value forces one extra refresh that stores it again")]
         static string s_LastWriteTime;
 
         private CloneState m_ClonedPlayerState;

@@ -16,7 +16,7 @@ namespace Unity.Localization;
 /// this type allows it on every target and limits each target to a single comment.
 /// </remarks>
 /// <example>
-/// <para>Attach a comment to a metadata collection.</para>
+/// Attach a comment to a metadata collection.
 /// <code source="../../../../Modules/LocalizationRuntime/Tests/UTFTests/Localization.Samples/Metadata/CommentExample.cs"/>
 /// </example>
 /// <seealso cref="IMetadata"/>

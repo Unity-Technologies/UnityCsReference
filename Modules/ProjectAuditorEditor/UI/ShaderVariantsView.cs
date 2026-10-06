@@ -14,6 +14,8 @@ using UnityEditor;
 using UnityEngine;
 using UnityEngine.Rendering;
 
+using TreeViewState = UnityEditor.IMGUI.Controls.TreeViewState<int>;
+
 namespace Unity.ProjectAuditor.Editor.UI
 {
     class ShaderVariantsView : AnalysisView
@@ -72,7 +74,7 @@ namespace Unity.ProjectAuditor.Editor.UI
 
         PropertyFoldout[] m_PropertyFoldouts;
 
-        public override void Create(ViewDescriptor descriptor, IssueLayout layout, SeverityRules rules, ViewStates viewStates, ProjectAuditorWindow window)
+        public override void Create(ViewDescriptor descriptor, IssueLayout layout, SeverityRules rules, ViewStates viewStates, ProjectAuditorWindow window, TreeViewState treeViewState)
         {
             var propertyFoldouts = new List<PropertyFoldout>();
 
@@ -98,7 +100,7 @@ namespace Unity.ProjectAuditor.Editor.UI
                 });
             m_PropertyFoldouts = propertyFoldouts.ToArray();
 
-            base.Create(descriptor, layout, rules, viewStates, window);
+            base.Create(descriptor, layout, rules, viewStates, window, treeViewState);
         }
 
         void ParsePlayerLog(string logFilename)

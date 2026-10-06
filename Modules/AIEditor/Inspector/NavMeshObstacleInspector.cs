@@ -21,12 +21,12 @@ namespace UnityEditor
 
         static class Styles
         {
-            public static readonly GUIContent Shape = EditorGUIUtility.TrTextContent("Shape", "The shape of the obstacle, applied to both carving and avoidance.");
-            public static readonly GUIContent Center = EditorGUIUtility.TrTextContent("Center", "The center of the obstacle, specified in the object's local space.");
-            public static readonly GUIContent Size = EditorGUIUtility.TrTextContent("Size", "The size of the obstacle, measured in the object's local space.");
-            public static readonly GUIContent Carve = EditorGUIUtility.TrTextContent("Carve", "This obstacle cuts a hole in the NavMesh around it.");
-            public static readonly GUIContent Radius = EditorGUIUtility.TrTextContent("Radius", "Radius of the obstacle's capsule shape.");
-            public static readonly GUIContent Height = EditorGUIUtility.TrTextContent("Height", "Height of the obstacle's capsule shape.");
+            public static readonly GUIContent Shape = L10n.TextContent("Shape", "The shape of the obstacle, applied to both carving and avoidance.", null, null);
+            public static readonly GUIContent Center = L10n.TextContent("Center", "The center of the obstacle, specified in the object's local space.", null, null);
+            public static readonly GUIContent Size = L10n.TextContent("Size", "The size of the obstacle, measured in the object's local space.", null, null);
+            public static readonly GUIContent Carve = L10n.TextContent("Carve", "This obstacle cuts a hole in the NavMesh around it.", null, null);
+            public static readonly GUIContent Radius = L10n.TextContent("Radius", "Radius of the obstacle's capsule shape.", null, null);
+            public static readonly GUIContent Height = L10n.TextContent("Height", "Height of the obstacle's capsule shape.", null, null);
             public static readonly float RadiusAndHeightLabelsWidth = 45f;
         }
 

@@ -162,7 +162,7 @@ namespace Unity.Multiplayer.Editor
 
             if (!validRoles.HasFlag(MultiplayerRoleFlags.Client))
             {
-                menu.AddDisabledItem(EditorGUIUtility.TrTextContent("Client", k_AutomaticSelectedMessage), false);
+                menu.AddDisabledItem(L10n.TextContent("Client", k_AutomaticSelectedMessage, null, null), false);
             }
             else
             {
@@ -176,7 +176,7 @@ namespace Unity.Multiplayer.Editor
 
             if (!validRoles.HasFlag(MultiplayerRoleFlags.Server))
             {
-                menu.AddDisabledItem(EditorGUIUtility.TrTextContent("Server", k_AutomaticSelectedMessage), false);
+                menu.AddDisabledItem(L10n.TextContent("Server", k_AutomaticSelectedMessage, null, null), false);
             }
             else
             {

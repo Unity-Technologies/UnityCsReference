@@ -53,6 +53,8 @@ namespace UnityEngine
     [NativeClass("Unity::ConfigurableJoint", PersistentTypeId = 153)]
     public class ConfigurableJoint : Joint
     {
+        internal ConfigurableJoint(global::UnityEngine.EntityId id) : base(id) {}
+        public ConfigurableJoint() {}
         ///<summary>The joint's secondary axis.</summary>
         ///<remarks>Together, secondary and primary axes define the joint's coordinate space.</remarks>
         extern public Vector3 secondaryAxis { get; set; }

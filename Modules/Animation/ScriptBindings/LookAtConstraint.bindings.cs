@@ -29,12 +29,13 @@ namespace UnityEngine.Animations
     [NativeClass("LookAtConstraint", PersistentTypeId = 0x4683850F)]
     public sealed partial class LookAtConstraint : Behaviour, IConstraint, IConstraintInternal
     {
+        internal LookAtConstraint(global::UnityEngine.EntityId id) : base(id) {}
         LookAtConstraint()
         {
-            Internal_Create(this);
+            SetEntityIdFromConstructor(Internal_Create());
         }
 
-        private static extern void Internal_Create([Writable] LookAtConstraint self);
+        private static extern EntityId Internal_Create();
 
         ///<summary>The weight of the constraint component.</summary>
         public extern float weight { get; set; }

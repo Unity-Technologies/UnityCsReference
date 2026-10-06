@@ -70,6 +70,9 @@ namespace UnityEngine.TextCore.Text
 
         [AutoStaticsCleanupOnCodeReload]
         [VisibleToOtherModules("UnityEngine.UIElementsModule")]
+        // Transient guard set and cleared around one generation pass; false is the correct resting value,
+        // so the reset applied on reload matches what the next pass expects.
+        [IgnoreForUAL0015("Transient per-pass guard whose false default is the correct resting value")]
         internal static bool IsExecutingJob { get; set; }
 
         [VisibleToOtherModules("UnityEngine.UIElementsModule")]

@@ -10,6 +10,9 @@ namespace UnityEditor
     public static partial class ConsoleWindowUtility
     {
         [AutoStaticsCleanupOnCodeReload]
+        // Subscribers attach through their own lifecycle and re-subscribe after a code reload, so the
+        // cleared invocation list refills itself.
+        [IgnoreForUAL0015("Event whose subscribers re-register through their own lifecycle after a code reload")]
         public static event Action consoleLogsChanged;
 
         public static void GetConsoleLogCounts(out int error, out int warn, out int log)

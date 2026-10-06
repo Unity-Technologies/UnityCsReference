@@ -616,9 +616,9 @@ namespace Unity.UIToolkit.Editor
                 return false;
 
             s_MissingElementContent ??= new GUIContent(
-                L10n.Tr("Missing"),
+                L10n.Tr("Missing", null),
                 EditorGUIUtility.IconContent("console.warnicon.sml").image,
-                L10n.Tr("The element this curve animates no longer exists. Right-click the row to remap the curve to another element."));
+                L10n.Tr("The element this curve animates no longer exists. Right-click the row to remap the curve to another element.", null));
 
             EditorGUI.LabelField(valueFieldRect, s_MissingElementContent);
             return true;
@@ -639,7 +639,7 @@ namespace Unity.UIToolkit.Editor
 
             if (options.IsReadOnly)
             {
-                menu.AddDisabledItem(new GUIContent(L10n.Tr("Remap to (clip is read-only)")));
+                menu.AddDisabledItem(new GUIContent(L10n.Tr("Remap to (clip is read-only)", null)));
                 return true;
             }
 
@@ -649,7 +649,7 @@ namespace Unity.UIToolkit.Editor
             var binding = curveBinding;
 
             menu.AddItem(
-                new GUIContent(L10n.Tr("Remap to...")),
+                new GUIContent(L10n.Tr("Remap to...", null)),
                 false,
                 () => ShowRemapPicker(state, binding, activator));
 
@@ -846,10 +846,21 @@ namespace Unity.UIToolkit.Editor
             new GUIContent("%"),
         };
 
+        // Length.unit casts the internal 4-value LayoutUnit straight through, so a row can carry
+        // Auto (2) or Undefined (3) - the computed-style defaults of every layout Length except
+        // margin/padding. Neither is animatable, and EditorGUI.Popup renders an empty button for
+        // an out-of-range index instead of clamping, so both display as px.
+        private static int ResolveLengthUnitIndex(int rawUnit)
+        {
+            return (uint)rawUnit < (uint)k_LengthUnitOptions.Length ? rawUnit : 0;
+        }
+
+        internal static string GetLengthUnitLabel(int rawUnit) => k_LengthUnitOptions[ResolveLengthUnitIndex(rawUnit)].text;
+
         private void HandleLengthUnitProperty(Rect rect, ref object value)
         {
             Rect valueFieldRect = new Rect(rect.xMax - k_ValueLengthUnitFieldWidth - k_ValueFieldOffsetFromRightSide, rect.y, k_ValueLengthUnitFieldWidth, rect.height);
-            value = EditorGUI.Popup(valueFieldRect, GUIContent.none, Convert.ToInt32(value), k_LengthUnitOptions, EditorStyles.popup);
+            value = EditorGUI.Popup(valueFieldRect, GUIContent.none, ResolveLengthUnitIndex(Convert.ToInt32(value)), k_LengthUnitOptions, EditorStyles.popup);
         }
     }
 }

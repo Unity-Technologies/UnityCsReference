@@ -4,7 +4,7 @@
 
 using System;
 using System.Diagnostics;
-using Unity.GraphToolkit.CSO;
+using Unity.CSO;
 using UnityEditor;
 using UnityEngine;
 using UnityEngine.UIElements;

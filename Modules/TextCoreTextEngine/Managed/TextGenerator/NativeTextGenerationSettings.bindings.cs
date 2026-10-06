@@ -46,6 +46,7 @@ namespace UnityEngine.TextCore
         public int characterSpacing;        // Encoded in Fixed Point.
         public int wordSpacing;             // Encoded in Fixed Point.
         public int paragraphSpacing;        // Encoded in Fixed Point.
+        public int lineSpacing;             // Encoded in Fixed Point.
 
         public Color32 color;
 
@@ -63,6 +64,9 @@ namespace UnityEngine.TextCore
         // Measure the intrinsic min-content inline size (see native TextGenerationSettings.minContentMeasure).
         [VisibleToOtherModules("UnityEngine.UIElementsModule")]
         internal bool minContentMeasure;
+
+        // Emit vertex positions with Y up (Y negated) instead of the default Y-down UI convention.
+        public bool flipYAxis;
 
         [VisibleToOtherModules("UnityEngine.UIElementsModule", "UnityEngine.IMGUIModule")]
         internal unsafe void SetTextBuffer(Unity.Collections.NativeArray<char> buffer, int length)
@@ -107,12 +111,14 @@ namespace UnityEngine.TextCore
             characterSpacing = tgs.characterSpacing;
             wordSpacing = tgs.wordSpacing;
             paragraphSpacing = tgs.paragraphSpacing;
+            lineSpacing = tgs.lineSpacing;
             preProcessFlags = tgs.preProcessFlags;
             disableAdvancedFontFeatures = tgs.disableAdvancedFontFeatures;
             richTextEnabled = tgs.richTextEnabled;
             hoveredTag = tgs.hoveredTag;
             pixelsPerPointFixed64 = tgs.pixelsPerPointFixed64;
             minContentMeasure = tgs.minContentMeasure;
+            flipYAxis = tgs.flipYAxis;
         }
 
         public override string ToString()
@@ -138,10 +144,12 @@ namespace UnityEngine.TextCore
                 $"{nameof(characterSpacing)}: {characterSpacing}\n" +
                 $"{nameof(paragraphSpacing)}: {paragraphSpacing}\n" +
                 $"{nameof(wordSpacing)}: {wordSpacing}\n" +
+                $"{nameof(lineSpacing)}: {lineSpacing}\n" +
                 $"{nameof(preProcessFlags)}: {preProcessFlags}\n" +
                 $"{nameof(disableAdvancedFontFeatures)}: {disableAdvancedFontFeatures}\n" +
                 $"{nameof(richTextEnabled)}: {richTextEnabled}\n" +
-                $"{nameof(minContentMeasure)}: {minContentMeasure}\n";
+                $"{nameof(minContentMeasure)}: {minContentMeasure}\n" +
+                $"{nameof(flipYAxis)}: {flipYAxis}\n";
         }
 
         // TODO : It's not ideal to have GetHashCode both in C# and C++. We would ideally keep only C++, but because of the string marshalling involved this is too costly for IMGUI.
@@ -176,26 +184,35 @@ namespace UnityEngine.TextCore
                 hash = hash * 23 + color.GetHashCode();
                 hash = hash * 23 + richTextEnabled.GetHashCode();
                 hash = hash * 23 + minContentMeasure.GetHashCode();
+                hash = hash * 23 + flipYAxis.GetHashCode();
                 return hash;
             }
         }
     }
 
-    [VisibleToOtherModules("UnityEngine.UIElementsModule", "UnityEngine.IMGUIModule")]
-    internal enum HorizontalAlignment
+    ///<summary>How text is horizontally aligned within its layout area.</summary>
+    public enum HorizontalAlignment
     {
+        ///<summary>Text is aligned to the left of the layout area.</summary>
         Left,
+        ///<summary>Text is centered within the layout area.</summary>
         Center,
+        ///<summary>Text is aligned to the right of the layout area.</summary>
         Right,
+        ///<summary>Spaces are stretched so lines fill the layout area; the last line stays left-aligned.</summary>
         Justified,
+        ///<summary>Spaces are stretched so every line, including the last, fills the layout area.</summary>
         Flush
     }
 
-    [VisibleToOtherModules("UnityEngine.UIElementsModule", "UnityEngine.IMGUIModule")]
-    internal enum VerticalAlignment
+    ///<summary>How text is vertically aligned within its layout area.</summary>
+    public enum VerticalAlignment
     {
+        ///<summary>Text is aligned to the top of the layout area.</summary>
         Top,
+        ///<summary>Text is centered vertically within the layout area.</summary>
         Middle,
+        ///<summary>Text is aligned to the bottom of the layout area.</summary>
         Bottom
     }
 

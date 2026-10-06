@@ -2,7 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: IMGUIControls not yet converted
 using UnityEngine;
 using UnityEditor;
 using UnityEditorInternal;
@@ -21,10 +20,10 @@ namespace UnityEditor
             public GUIStyle box = "OL Box";
             public GUIStyle button = "LargeButton";
             public GUIStyle labelHeight = "Label";
-            public GUIContent saveSelected = EditorGUIUtility.TrTextContent("Save Selected");
-            public GUIContent saveAll = EditorGUIUtility.TrTextContent("Save All");
-            public GUIContent dontSave = EditorGUIUtility.TrTextContent("Don't Save");
-            public GUIContent close = EditorGUIUtility.TrTextContent("Close");
+            public GUIContent saveSelected = L10n.TextContent("Save Selected", null, null, null);
+            public GUIContent saveAll = L10n.TextContent("Save All", null, null, null);
+            public GUIContent dontSave = L10n.TextContent("Don't Save", null, null, null);
+            public GUIContent close = L10n.TextContent("Close", null, null, null);
             public float buttonWidth;
             public Styles()
             {
@@ -81,7 +80,7 @@ namespace UnityEditor
             }
 
             AssetSaveDialog win = EditorWindow.GetWindowDontShow<AssetSaveDialog>();
-            win.titleContent = EditorGUIUtility.TrTextContent("Save Assets");
+            win.titleContent = L10n.TextContent("Save Assets", null, null, null);
             win.SetAssets(assets);
 
             win.minSize = new Vector2(400, 100);
@@ -248,4 +247,3 @@ namespace UnityEditor
         }
     }
 }
-#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

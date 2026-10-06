@@ -48,13 +48,14 @@ namespace UnityEditor.Animations
     [NativeHeader("Editor/Src/Animation/BlendTree.h")]
     public partial class BlendTree : Motion
     {
+        internal BlendTree(global::UnityEngine.EntityId id) : base(id) {}
         public BlendTree()
         {
-            Internal_Create(this);
+            SetEntityIdFromConstructor(Internal_Create());
         }
 
         [FreeFunction("BlendTreeBindings::Internal_Create")]
-        extern private static void Internal_Create([Writable] BlendTree self);
+        extern private static EntityId Internal_Create();
 
         extern public string          blendParameter
         {

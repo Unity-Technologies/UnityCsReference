@@ -2,7 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0010,UAL0011,UAL0012,UAL0013,UAL0014 // AutoStaticsCleanup: Burst not yet converted
 using System;
 using System.ComponentModel;
 using System.IO;
@@ -12,6 +11,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Runtime.InteropServices;
+using Unity.Scripting.LifecycleManagement;
 using Unity.Burst;
 
 using UnityEngine.Bindings;
@@ -99,7 +99,6 @@ namespace Unity.Burst
         internal const string OptionLinkerOptions = "linker-options=";
         internal const string OptionEnableAutoLayoutFallbackCheck = "enable-autolayout-fallback-check";
         internal const string OptionGenerateLinkXml = "generate-link-xml=";
-        internal const string OptionMetaDataGeneration = "meta-data-generation";
         internal const string OptionDisableStringInterpolationInExceptionMessages = "disable-string-interpolation-in-exception-messages";
         [VisibleToOtherModules("UnityEditor.BurstModule")]
         internal const string OptionPlatformConfiguration = "platform-configuration=";
@@ -186,8 +185,6 @@ namespace Unity.Burst
         internal const string CompilerCommandNotifyCompilationFinished = "$notify_compilation_finished";
         internal const string CompilerCommandDirtyAllAssemblies = "$dirty_all_assemblies";
         internal const string CompilerCommandAotCompilation = "$aot_compilation";
-        internal const string CompilerCommandRequestInitialiseDebuggerCommmand = "$request_debug_command";
-        internal const string CompilerCommandInitialiseDebuggerCommmand = "$load_debugger_interface";
         internal const string CompilerCommandGetInspectorEntryPoints = "$get_inspector_entry_points";
         internal const string CompilerCommandGetInspectorDisassembly = "$get_inspector_disassembly";
 
@@ -249,6 +246,7 @@ namespace Unity.Burst
         private static readonly bool ForceBurstCompilationSynchronously;
 
         [VisibleToOtherModules("UnityEditor.BurstModule")]
+        [NoAutoStaticsCleanup] // recomputed unconditionally from process level in BurstLoader.InitBurstLoader on every domain reload
         internal static bool IsSecondaryUnityProcess;
 
         internal static bool ForceDisableBurstCompilation
@@ -704,7 +702,7 @@ namespace Unity.Burst
                 AddOption(flagsBuilderOut, GetOption(OptionBackend, BackendNameOverride));
             }
 
-            AddOption(flagsBuilderOut, GetOption(OptionTargetFramework, "NetFramework"));
+            AddOption(flagsBuilderOut, GetOption(OptionTargetFramework, "CoreClr"));
 
             AddOption(flagsBuilderOut, GetOption(OptionTempDirectory, Path.Combine(Environment.CurrentDirectory, "Temp", "Burst")));
 
@@ -813,7 +811,6 @@ namespace Unity.Burst
 
     /// <summary>
     /// Flags used by NativeCompiler.CompileMethod to dump intermediate compiler results.
-    /// Note please ensure MonoDebuggerHandling/Constants.h is updated if you change this enum
     /// </summary>
     [Flags]
         [VisibleToOtherModules("UnityEditor.BurstModule")]
@@ -889,10 +886,11 @@ namespace Unity.Burst
     internal static class RequiresRestartUtility
     {
         [ThreadStatic]
+        [NoAutoStaticsCleanup] // set true then reset to false in a finally block (BurstMenu.ChangeOptionSafely); never observed true otherwise
         public static bool CalledFromUI;
 
         [ThreadStatic]
+        [NoAutoStaticsCleanup] // see CalledFromUI above
         public static bool RequiresRestart;
     }
 }
-#pragma warning restore UAL0010,UAL0011,UAL0012,UAL0013,UAL0014

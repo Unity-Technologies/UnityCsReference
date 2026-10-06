@@ -2,7 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: SceneManagement not yet converted
 using System;
 using Unity.Scripting.LifecycleManagement;
 using UnityEngine;
@@ -109,7 +108,9 @@ namespace UnityEditor
                 }
             }
 
+#pragma warning disable UAL0018 // hands the cut selection back to the user's selection, which owns objects that exist independently of the cut board; the cut board's own copy is dropped by Reset() on the next line
             Selection.objects = m_SelectedObjects;
+#pragma warning restore UAL0018
             // Reset cutBoard and greyed out gameObject list after paste
             Reset();
         }
@@ -127,7 +128,9 @@ namespace UnityEditor
                 }
             }
 
+#pragma warning disable UAL0018 // hands the cut selection back to the user's selection, which owns objects that exist independently of the cut board; the cut board's own copy is dropped by Reset() on the next line
             Selection.objects = m_SelectedObjects;
+#pragma warning restore UAL0018
             // Reset cutBoard and greyed out gameObject list after paste
             Reset();
         }
@@ -142,7 +145,9 @@ namespace UnityEditor
                 }
             }
 
+#pragma warning disable UAL0018 // hands the cut selection back to the user's selection, which owns objects that exist independently of the cut board; the cut board's own copy is dropped by Reset() on the next line
             Selection.objects = m_SelectedObjects;
+#pragma warning restore UAL0018
             // Reset cutBoard and greyed out gameObject list after paste
             Reset();
         }
@@ -223,4 +228,3 @@ namespace UnityEditor
         }
     }
 }
-#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

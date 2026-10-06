@@ -34,18 +34,18 @@ namespace UnityEditor
 
         private class Styles : ConstraintStyleBase
         {
-            GUIContent m_RestTranslation = EditorGUIUtility.TrTextContent("Position At Rest");
-            GUIContent m_TranslationOffset = EditorGUIUtility.TrTextContent("Position Offset");
+            GUIContent m_RestTranslation = L10n.TextContent("Position At Rest", null, null, null);
+            GUIContent m_TranslationOffset = L10n.TextContent("Position Offset", null, null, null);
 
-            GUIContent m_RestRotation = EditorGUIUtility.TrTextContent("Rotation At Rest");
-            GUIContent m_RotationOffset = EditorGUIUtility.TrTextContent("Rotation Offset");
+            GUIContent m_RestRotation = L10n.TextContent("Rotation At Rest", null, null, null);
+            GUIContent m_RotationOffset = L10n.TextContent("Rotation Offset", null, null, null);
 
-            GUIContent m_TranslationAxes = EditorGUIUtility.TrTextContent("Freeze Position Axes");
-            GUIContent m_RotationAxes = EditorGUIUtility.TrTextContent("Freeze Rotation Axes");
+            GUIContent m_TranslationAxes = L10n.TextContent("Freeze Position Axes", null, null, null);
+            GUIContent m_RotationAxes = L10n.TextContent("Freeze Rotation Axes", null, null, null);
 
-            GUIContent m_DefaultSourceName = EditorGUIUtility.TrTextContent("None");
+            GUIContent m_DefaultSourceName = L10n.TextContent("None", null, null, null);
 
-            GUIContent m_SourceOffsets = EditorGUIUtility.TrTextContent("Source Offsets");
+            GUIContent m_SourceOffsets = L10n.TextContent("Source Offsets", null, null, null);
 
             public override GUIContent AtRest { get { throw new NotImplementedException(); } }
             public override GUIContent Offset { get { throw new NotImplementedException(); } }

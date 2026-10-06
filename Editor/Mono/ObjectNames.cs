@@ -137,6 +137,23 @@ namespace UnityEditor
             return GetInspectorTitle(obj, false);
         }
 
+        // Type-based inspector title. Used for editors whose target isn't a live Object
+        // (e.g., data-component editors that carry only a System.Type). Does not preserve
+        // the " (Script)" special case that only applies to fake-null MonoBehaviours.
+        internal static string GetInspectorTitle(Type type)
+        {
+            if (type == null)
+                return L10n.Tr("Nothing Selected", null);
+
+            if (!InspectorTitles.TryGet(type, out var title))
+                title = NicifyVariableName(type.Name);
+
+            if (Attribute.IsDefined(type, typeof(ObsoleteAttribute)))
+                title += L10n.Tr(" (Deprecated)", null);
+
+            return title;
+        }
+
         // Like GetClassName but handles folders, scenes, GUISkins, and other default assets as separate types.
         internal static string GetTypeName(Object obj)
         {

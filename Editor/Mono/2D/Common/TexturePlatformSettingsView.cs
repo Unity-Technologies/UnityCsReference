@@ -13,23 +13,23 @@ namespace UnityEditor.U2D.Common
     {
         class Styles
         {
-            public readonly GUIContent textureFormatLabel = EditorGUIUtility.TrTextContent("Format");
-            public readonly GUIContent maxTextureSizeLabel = EditorGUIUtility.TrTextContent("Max Texture Size", "Maximum size of the packed texture.");
-            public readonly GUIContent compressionLabel = EditorGUIUtility.TrTextContent("Compression", "How will this texture be compressed?");
-            public readonly GUIContent useCrunchedCompressionLabel = EditorGUIUtility.TrTextContent("Use Crunch Compression", "Texture is crunch-compressed to save space on disk when applicable.");
-            public readonly GUIContent useAlphaSplitLabel = EditorGUIUtility.TrTextContent("Split Alpha Channel", "Alpha for this texture will be preserved by splitting the alpha channel to another texture, and both resulting textures will be compressed using ETC1.");
-            public readonly GUIContent compressionQualityLabel = EditorGUIUtility.TrTextContent("Compressor Quality");
-            public readonly GUIContent compressionQualitySliderLabel = EditorGUIUtility.TrTextContent("Compressor Quality", "Use the slider to adjust compression quality from 0 (Fastest) to 100 (Best)");
+            public readonly GUIContent textureFormatLabel = L10n.TextContent("Format", null, null, null);
+            public readonly GUIContent maxTextureSizeLabel = L10n.TextContent("Max Texture Size", "Maximum size of the packed texture.", null, null);
+            public readonly GUIContent compressionLabel = L10n.TextContent("Compression", "How will this texture be compressed?", null, null);
+            public readonly GUIContent useCrunchedCompressionLabel = L10n.TextContent("Use Crunch Compression", "Texture is crunch-compressed to save space on disk when applicable.", null, null);
+            public readonly GUIContent useAlphaSplitLabel = L10n.TextContent("Split Alpha Channel", "Alpha for this texture will be preserved by splitting the alpha channel to another texture, and both resulting textures will be compressed using ETC1.", null, null);
+            public readonly GUIContent compressionQualityLabel = L10n.TextContent("Compressor Quality", null, null, null);
+            public readonly GUIContent compressionQualitySliderLabel = L10n.TextContent("Compressor Quality", "Use the slider to adjust compression quality from 0 (Fastest) to 100 (Best)", null, null);
 
             public readonly int[] kMaxTextureSizeValues = { 32, 64, 128, 256, 512, 1024, 2048, 4096, 8192, 16384 };
             public readonly GUIContent[] kMaxTextureSizeStrings;
 
             public readonly GUIContent[] kTextureCompressionOptions =
             {
-                EditorGUIUtility.TrTextContent("None", "Texture is not compressed."),
-                EditorGUIUtility.TrTextContent("Low Quality", "Texture compressed with low quality but high performance, high compression format."),
-                EditorGUIUtility.TrTextContent("Normal Quality", "Texture is compressed with a standard format."),
-                EditorGUIUtility.TrTextContent("High Quality", "Texture compressed with a high quality format."),
+                L10n.TextContent("None", "Texture is not compressed.", null, null),
+                L10n.TextContent("Low Quality", "Texture compressed with low quality but high performance, high compression format.", null, null),
+                L10n.TextContent("Normal Quality", "Texture is compressed with a standard format.", null, null),
+                L10n.TextContent("High Quality", "Texture compressed with a high quality format.", null, null),
             };
 
             public readonly int[] kTextureCompressionValues =
@@ -42,9 +42,9 @@ namespace UnityEditor.U2D.Common
 
             public readonly GUIContent[] kMobileCompressionQualityOptions =
             {
-                EditorGUIUtility.TrTextContent("Fast"),
-                EditorGUIUtility.TrTextContent("Normal"),
-                EditorGUIUtility.TrTextContent("Best")
+                L10n.TextContent("Fast", null, null, null),
+                L10n.TextContent("Normal", null, null, null),
+                L10n.TextContent("Best", null, null, null)
             };
 
             public Styles()

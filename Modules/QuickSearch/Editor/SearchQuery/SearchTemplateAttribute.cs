@@ -13,6 +13,9 @@ namespace UnityEditor.Search
     partial class SearchTemplateAttribute : Attribute
     {
         [AutoStaticsCleanupOnCodeReload]
+        // Rebuilt by RefreshQueryProviders from the attributed methods of the current scope on the next
+        // providers access, which is required anyway because it holds delegates to those methods.
+        [IgnoreForUAL0015("Provider list rebuilt by RefreshQueryProviders on the next providers access")]
         static List<SearchTemplateAttribute> s_QueryProviders;
 
         public string providerId { get; set; }

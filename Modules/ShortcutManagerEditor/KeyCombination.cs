@@ -342,7 +342,7 @@ namespace UnityEditor.ShortcutManagement
             return Enum.IsDefined(typeof(KeyCode), keyCode);
         }
 
-        [VisibleToOtherModules("UnityEditor.GraphToolkitModule")]
+        [VisibleToOtherModules("UnityEditor.GraphToolkitModule", "UnityEditor.UIToolkitAuthoringModule")]
         internal static string SequenceToMenuString(IEnumerable<KeyCombination> keyCombinations)
         {
 #pragma warning disable UAC2002 // Avoid Linq

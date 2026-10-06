@@ -2,7 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: Lighting not yet converted
 using System;
 using System.Collections.Generic;
 using System.Text.RegularExpressions;
@@ -22,16 +21,18 @@ namespace UnityEditor.Lighting.LightingSearch
     {
         static string GetQueryDisplayName(ISearchQuery query)
         {
-            return FormatEditorResourcesFileName(query.displayName);
+            return StripRenderPipelinePrefix(query.displayName);
         }
 
         static string GetFolderDisplayName(SearchQueryTreeViewItem item)
         {
-            return FormatEditorResourcesFileName(item.Data.Name);
+            return FormatEditorResourcesFolderName(item.Data.Name);
         }
 
         const string k_OnlyHdrpLabel = "OnlyHDRP";
         const string k_OnlyUrpBirpLabel = "OnlyURP&BIRP";
+        const string k_OnlyUrpLabel = "OnlyURP";
+        const string k_OnlyBirpLabel = "OnlyBIRP";
         const string k_OnlySrpLabel = "OnlySRP";
         const string k_OnlyApvLabel = "OnlyAPV";
         const string k_OnlyLightProbeGroupsLabel = "OnlyLightProbeGroups";
@@ -82,6 +83,7 @@ namespace UnityEditor.Lighting.LightingSearch
             { "hdrp lights", s_LightIcon },
             { "emissive materials", s_MaterialIcon },
             { "hdrp emissive materials", s_MaterialIcon },
+            { "urp emissive materials", s_MaterialIcon },
             { "mesh renderers", s_MeshRendererIcon },
             { "hdrp mesh renderers", s_MeshRendererIcon },
             { "planar reflection probes", s_PlanarReflectionProbeIcon },
@@ -159,6 +161,8 @@ namespace UnityEditor.Lighting.LightingSearch
             {
                 case k_OnlyHdrpLabel when srpName != LightingSearchWindow.k_HDRPAssetTypeName:
                 case k_OnlyUrpBirpLabel when srpName != null && srpName != LightingSearchWindow.k_URPAssetTypeName:
+                case k_OnlyUrpLabel when srpName != LightingSearchWindow.k_URPAssetTypeName:
+                case k_OnlyBirpLabel when srpName != null: // anything other than Built-in RP
                 case k_OnlySrpLabel when srpName == null: // Built-in RP
                     return false;
                 case k_OnlyApvLabel:
@@ -169,20 +173,31 @@ namespace UnityEditor.Lighting.LightingSearch
             return true;
         }
 
+        const string k_HdrpPrefixLower = "hdrp ";
+        const string k_UrpPrefixLower = "urp ";
+
+        // Strips the "hdrp "/"urp " folder prefix from a display name.
+        internal static string StripRenderPipelinePrefix(string s)
+        {
+            if (string.IsNullOrEmpty(s))
+                return s;
+            if (s.StartsWith(k_HdrpPrefixLower, StringComparison.Ordinal))
+                return s[k_HdrpPrefixLower.Length..];
+            if (s.StartsWith(k_UrpPrefixLower, StringComparison.Ordinal))
+                return s[k_UrpPrefixLower.Length..];
+            return s;
+        }
+
         private static readonly Regex WordBoundaryRegex = new(@"\b\w+\b", RegexOptions.Compiled);
-        public static string FormatEditorResourcesFileName(string s)
+
+        // Folder names from AssetBundle paths are lowercase, capitalize them
+        internal static string FormatEditorResourcesFolderName(string s)
         {
             if (string.IsNullOrEmpty(s))
                 return s;
 
-            // Remove underscores used to escape decimal points in filenames
-            var processed = s.Replace("._", ".");
+            var processed = StripRenderPipelinePrefix(s);
 
-            const string hdrpPrefixLower = "hdrp ";
-            if (processed.StartsWith(hdrpPrefixLower, StringComparison.Ordinal))
-                processed = processed[hdrpPrefixLower.Length..];
-
-            // Input filenames from Editor Resources is all lowercase, so we capitalize the first letter of each word
             var formatted = WordBoundaryRegex.Replace(processed, match =>
             {
                 var word = match.Value;
@@ -200,4 +215,3 @@ namespace UnityEditor.Lighting.LightingSearch
     }
 }
 
-#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

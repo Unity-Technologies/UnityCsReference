@@ -295,6 +295,18 @@ namespace Unity.GraphToolkit.Editor
         public virtual void OnDisable() { }
 
         /// <summary>
+        /// Called when the data type of one of this node's ports changes.
+        /// </summary>
+        /// <param name="port">The port whose data type changed.</param>
+        /// <param name="previousType">The port's previous data type.</param>
+        /// <param name="newType">The port's new data type.</param>
+        /// <remarks>
+        /// Override this method to react to type changes on polymorphic ports (when the user picks a different type from the dropdown, or when connection propagation changes the port's <see cref="IPort.DataType"/>).
+        /// This is also invoked if code directly assigns a new data type to any port.
+        /// </remarks>
+        protected virtual void OnPortDataTypeChanged(IPort port, Type previousType, Type newType) { }
+
+        /// <summary>
         /// Defines the structure of the node by building its ports and options.
         /// </summary>
         /// <remarks>

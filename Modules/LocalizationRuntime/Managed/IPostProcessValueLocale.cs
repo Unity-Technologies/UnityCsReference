@@ -17,7 +17,7 @@ namespace Unity.Localization;
 /// reference and a type without it deserializes as null.
 /// </remarks>
 /// <example>
-/// <para>A pseudo-locale that brackets every resolved string.</para>
+/// A pseudo-locale that brackets every resolved string.
 /// <code source="../../../Modules/LocalizationRuntime/Tests/UTFTests/Localization.Samples/Locales/PostProcessValueLocaleExample.cs"/>
 /// </example>
 /// <seealso cref="Locale"/>
@@ -36,7 +36,7 @@ public interface IPostProcessValueLocale
     /// <param name="value">The resolved value.</param>
     /// <returns>The transformed value, or <paramref name="value"/> when the implementation leaves it alone.</returns>
     /// <example>
-    /// <para>Run a locale's transform over a resolved value.</para>
+    /// Run a locale's transform over a resolved value.
     /// <code source="../../../Modules/LocalizationRuntime/Tests/UTFTests/Localization.Samples/Locales/PostProcessValueExample.cs"/>
     /// </example>
     /// <seealso cref="Locale"/>

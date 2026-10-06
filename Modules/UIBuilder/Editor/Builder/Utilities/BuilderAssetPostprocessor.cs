@@ -31,6 +31,9 @@ namespace Unity.UI.Builder
             new HashSet<IBuilderPerFileAssetPostprocessor>();
 
         [AutoStaticsCleanupOnCodeReload]
+        // Registry of live one-time postprocessors: each owner registers itself from its own
+        // initialization, so the cleared set refills as those owners come back.
+        [IgnoreForUAL0015("Processor registry refilled as owners re-register from their own initialization")]
         private static readonly HashSet<IBuilderOneTimeAssetPostprocessor> m_OneTimeProcessors =
             new HashSet<IBuilderOneTimeAssetPostprocessor>();
 

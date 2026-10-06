@@ -41,8 +41,15 @@ namespace UnityEditor.Build.Analysis
             var builds = new List<BuildEntry>(guids.Length);
             foreach (var guid in guids)
             {
-                var summary = m_BuildHistory.GetBuildSummary(guid);
-                builds.Add(BuildEntryFromSummary(summary, guid));
+                try
+                {
+                    var summary = m_BuildHistory.GetBuildSummary(guid);
+                    builds.Add(BuildEntryFromSummary(summary, guid));
+                }
+                catch (Exception e) when (e is ArgumentException || e is FormatException)
+                {
+                    Debug.LogWarning($"{BuildAnalysisConstants.k_ConsoleLogPrefix} Skipping build '{guid}': {e.Message}");
+                }
             }
             return builds.ToArray();
         }
@@ -63,7 +70,7 @@ namespace UnityEditor.Build.Analysis
                 entry = BuildEntryFromSummary(summary, buildSessionGUID);
                 return true;
             }
-            catch (ArgumentException)
+            catch (Exception e) when (e is ArgumentException || e is FormatException)
             {
                 return false;
             }

@@ -2,13 +2,13 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: UIToolkitAuthoringFramework not yet converted
 using System;
 using System.Collections.Generic;
 using System.IO;
 using UnityEditor;
 using UnityEditor.Search;
 using UnityEditor.UIElements;
+using UnityEditor.Utils;
 using UnityEngine;
 using UnityEngine.Search;
 using UnityEngine.UIElements;
@@ -206,7 +206,9 @@ namespace Unity.UIToolkit.Editor
             })
             {
                 fetchLabel = FetchElementLabel,
+#pragma warning disable UAL0018 // FetchElementThumbnail reaches the FolderIcon lazy cache, which re-loads itself on next access after reload
                 fetchThumbnail = FetchElementThumbnail,
+#pragma warning restore UAL0018
                 startDrag = StartElementDrag,
                 toObject = ToObject,
                 showDetails = true,
@@ -304,6 +306,8 @@ namespace Unity.UIToolkit.Editor
                 {
                     vea.serializedData = description.CreateDefaultSerializedData();
                 }
+
+                ElementConfiguratorRegistry.Configure(elementType, libItem.libraryType.variantName, vta, vea);
 
                 return vta;
             }
@@ -403,7 +407,7 @@ namespace Unity.UIToolkit.Editor
 
                 var name = Path.GetFileName(assetPath);
                 var folder = Path.GetDirectoryName(assetPath);
-                folder = string.IsNullOrEmpty(folder) ? string.Empty : folder.Replace('\\', '/');
+                folder = string.IsNullOrEmpty(folder) ? string.Empty : folder.ConvertSeparatorsToUnity();
 
                 yield return new LibraryItem(name, assetPath, folder);
             }
@@ -576,4 +580,3 @@ namespace Unity.UIToolkit.Editor
         }
     }
 }
-#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

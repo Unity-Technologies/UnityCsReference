@@ -753,7 +753,11 @@ namespace UnityEditor.AssetImporters
                     Apply(); // user may have extra data that needs to be applied back to the target.
             }
 
-            DrawAssetPostprocessors();
+            // On the Blocks tab the pipeline view already lists AssetPostprocessors (Early/Late boxes around the
+            // blocks), so the standalone foldout is suppressed there to avoid showing them twice. With blocks
+            // disabled there is no pipeline view, so the foldout always draws regardless of the active tab.
+            if (!UnityEditor.Experimental.AssetImporters.ImportBlocks.ImportBlocksToggle.IsEnabled || showAssetPostprocessorsFoldout)
+                DrawAssetPostprocessors();
         }
     }
 
@@ -778,6 +782,11 @@ namespace UnityEditor.AssetImporters
             public string Name;
             public string[] Methods;
             public bool Expanded;
+            // GetPostprocessOrder() of the postprocessor, used to split it into the Early or Late phase
+            // (relative to Import Blocks) in the pipeline inspector.
+            public int Priority;
+            // The postprocessor type, used by the pipeline inspector to resolve its MonoScript.
+            public Type PostprocessorType;
         }
         List<PostprocessorInfo> m_Postprocessors;
         ReorderableList m_PostprocessorUI;
@@ -801,7 +810,9 @@ namespace UnityEditor.AssetImporters
                 {
                     Expanded = false,
                     Methods = processor.Methods,
-                    Name = processor.Type.FullName
+                    Name = processor.Type.FullName,
+                    Priority = processor.Priority,
+                    PostprocessorType = processor.Type,
                 });
             }
 
@@ -861,6 +872,10 @@ namespace UnityEditor.AssetImporters
             EditorGUIUtility.systemCopyBuffer = (string)userdata;
         }
 
+        // Whether to draw the standalone "Asset PostProcessors" foldout. Importer editors that surface the
+        // postprocessors inline in the Blocks-tab pipeline view override this to hide it on that tab.
+        private protected virtual bool showAssetPostprocessorsFoldout => true;
+
         private void DrawAssetPostprocessors()
         {
             if (m_Postprocessors.Count > 0)
@@ -875,6 +890,442 @@ namespace UnityEditor.AssetImporters
                 }
             }
         }
+
+        SavedInt m_CombinedViewMode;
+        SavedBool m_ShowPostprocessorsInBlockList;
+        VisualElement m_EarlyContainer;
+        VisualElement m_LateContainer;
+
+        VisualElement CreateImportBlocksSection()
+        {
+            var blocksProp = serializedObject.FindProperty("m_BlockCollection");
+            if (blocksProp == null)
+                return null;
+
+            var container = new VisualElement();
+            container.style.marginTop = 8;
+            container.AddToClassList(UnityEditor.Experimental.AssetImporters.ImportBlocks.UiHelpers.k_ExpandFoldoutClassName);
+
+            var blocksField = new UnityEditor.UIElements.PropertyField(blocksProp);
+            blocksField.BindProperty(blocksProp);
+            container.Add(blocksField);
+
+            return container;
+        }
+
+        internal VisualElement CreateCombinedImportCustomizationSection()
+        {
+            var blocksUI = CreateImportBlocksSection();
+            if (blocksUI == null)
+                return null;
+
+            if (m_CombinedViewMode == null)
+                m_CombinedViewMode = new SavedInt("AssetImporterEditor_CombinedViewMode", 0);
+            if (m_ShowPostprocessorsInBlockList == null)
+                m_ShowPostprocessorsInBlockList = new SavedBool("AssetImporterEditor_ShowPostprocessorsInBlockList", true);
+
+            var container = new VisualElement();
+            container.AddToClassList("pipeline-root");
+            var blockItemStyleSheet = UnityEditor.Experimental.AssetImporters.ImportBlocks.UiHelpers.GetBlockItemStyleSheet();
+            if (blockItemStyleSheet != null)
+                container.styleSheets.Add(blockItemStyleSheet);
+            var pipelineStyleSheet = UnityEditor.Experimental.AssetImporters.ImportBlocks.UiHelpers.GetPipelineInspectorStyleSheet();
+            if (pipelineStyleSheet != null)
+                container.styleSheets.Add(pipelineStyleSheet);
+
+            var pipelineView = new VisualElement();
+            var callbacksView = new VisualElement();
+
+            int initialMode = m_CombinedViewMode.value;
+
+            var toolbar = new VisualElement();
+            toolbar.AddToClassList("pipeline-toolbar");
+
+            var modeGroup = new ToggleButtonGroup
+            {
+                isMultipleSelection = false,
+                allowEmptySelection = false
+            };
+            modeGroup.Add(new UnityEngine.UIElements.Button { text = "Pipeline", tooltip = "Import blocks and AssetPostprocessors assigned to this asset." });
+            modeGroup.Add(new UnityEngine.UIElements.Button { text = "Execution", tooltip = "The actual invocation order for each callback: Early AssetPostprocessors, then blocks, then Late AssetPostprocessors." });
+
+            modeGroup.SetValueWithoutNotify(new ToggleButtonGroupState(1UL << initialMode, 2));
+            toolbar.Add(modeGroup);
+
+            var spacer = new VisualElement();
+            spacer.AddToClassList("pipeline-toolbar-spacer");
+            toolbar.Add(spacer);
+
+            var showAppToggle = new Toggle("Show asset postprocessors")
+            {
+                value = m_ShowPostprocessorsInBlockList.value,
+                tooltip = "Toggle the visibility of asset postprocessors in the blocks list."
+            };
+            toolbar.Add(showAppToggle);
+
+            container.Add(toolbar);
+
+            // Rebuilt on every entry: the pipeline view edits the collection, so the entries (and a
+            // circular-reference error) go stale between visits.
+            void RebuildExecutionView()
+            {
+                callbacksView.Clear();
+                callbacksView.Add(CreateExecutionView());
+            }
+
+            void ApplyMode(int mode)
+            {
+                if (mode == 1)
+                    RebuildExecutionView();
+                pipelineView.style.display = mode == 0 ? DisplayStyle.Flex : DisplayStyle.None;
+                callbacksView.style.display = mode == 1 ? DisplayStyle.Flex : DisplayStyle.None;
+                showAppToggle.style.display = mode == 0 ? DisplayStyle.Flex : DisplayStyle.None;
+            }
+
+            // Index 0 is "Pipeline"; single-selection with no empty state means exactly one option is set.
+            modeGroup.RegisterValueChangedCallback(evt =>
+            {
+                int mode = evt.newValue[0] ? 0 : 1;
+                m_CombinedViewMode.value = mode;
+                ApplyMode(mode);
+            });
+
+            showAppToggle.RegisterValueChangedCallback(evt =>
+            {
+                m_ShowPostprocessorsInBlockList.value = evt.newValue;
+                UpdatePostprocessorContainersVisibility();
+            });
+
+            InjectPostprocessorsIntoBlocksUI(blocksUI);
+            pipelineView.Add(blocksUI);
+            container.Add(pipelineView);
+
+            container.Add(callbacksView);
+
+            ApplyMode(initialMode);
+
+            return container;
+        }
+
+        void UpdatePostprocessorContainersVisibility()
+        {
+            bool show = m_ShowPostprocessorsInBlockList != null && m_ShowPostprocessorsInBlockList.value;
+            if (m_EarlyContainer != null)
+                m_EarlyContainer.style.display = show ? DisplayStyle.Flex : DisplayStyle.None;
+            if (m_LateContainer != null)
+                m_LateContainer.style.display = show ? DisplayStyle.Flex : DisplayStyle.None;
+        }
+
+        void InjectPostprocessorsIntoBlocksUI(VisualElement blocksUI)
+        {
+            int threshold = AssetImportCallbackDispatch.k_PostprocessOrderThreshold;
+            var scriptIcon = EditorGUIUtility.IconContent("cs Script Icon").image as Texture2D;
+
+            var earlyPostprocessors = new List<PostprocessorInfo>();
+            var latePostprocessors = new List<PostprocessorInfo>();
+
+            foreach (var p in m_Postprocessors)
+            {
+                if (p.Priority < threshold)
+                    earlyPostprocessors.Add(p);
+                else
+                    latePostprocessors.Add(p);
+            }
+
+            blocksUI.RegisterCallback<GeometryChangedEvent>(OnLayout);
+
+            void OnLayout(GeometryChangedEvent _)
+            {
+                var blockListView = blocksUI.Q<ListView>();
+                if (blockListView == null)
+                    return;
+
+                blocksUI.UnregisterCallback<GeometryChangedEvent>(OnLayout);
+
+                var addButton = blocksUI.Q<UnityEngine.UIElements.Button>(className: UnityEditor.Experimental.AssetImporters.ImportBlocks.UiHelpers.k_AddButtonClassName);
+                // The missing-types warning is a sibling of the ListView; preserve it across the Clear() below so
+                // it is re-parented into the blocks section rather than dropped (which would silently hide the
+                // warning about broken serialized block data on the Blocks tab).
+                var missingTypesHelpBox = blocksUI.Q<UnityEngine.UIElements.HelpBox>(UnityEditor.Experimental.AssetImporters.ImportBlocks.UiHelpers.k_MissingTypesHelpBoxName);
+
+                var wrapper = blocksUI.Q(className: UnityEditor.Experimental.AssetImporters.ImportBlocks.UiHelpers.k_ExpandFoldoutClassName) ?? blocksUI;
+                wrapper.Clear();
+
+                if (earlyPostprocessors.Count > 0)
+                {
+                    m_EarlyContainer = CreateSectionContainer();
+                    var earlyFoldoutState = new SavedBool("AssetImporterEditor_EarlyAPPFoldout", true);
+                    m_EarlyContainer.Add(CreatePostprocessorListView("Asset postprocessors (early)", earlyFoldoutState, earlyPostprocessors, scriptIcon));
+                    m_EarlyContainer.style.display = m_ShowPostprocessorsInBlockList ? DisplayStyle.Flex : DisplayStyle.None;
+                    wrapper.Add(m_EarlyContainer);
+                }
+
+                var blocksContainer = CreateSectionContainer();
+                if (missingTypesHelpBox != null)
+                    blocksContainer.Add(missingTypesHelpBox);
+                blocksContainer.Add(blockListView);
+                if (addButton != null)
+                {
+                    addButton.style.display = DisplayStyle.Flex;
+                    addButton.style.marginTop = 4;
+                    addButton.style.marginBottom = 2;
+                    blocksContainer.Add(addButton);
+                }
+                wrapper.Add(blocksContainer);
+
+                if (latePostprocessors.Count > 0)
+                {
+                    m_LateContainer = CreateSectionContainer();
+                    var lateFoldoutState = new SavedBool("AssetImporterEditor_LateAPPFoldout", true);
+                    m_LateContainer.Add(CreatePostprocessorListView("Asset postprocessors (late)", lateFoldoutState, latePostprocessors, scriptIcon));
+                    m_LateContainer.style.display = m_ShowPostprocessorsInBlockList ? DisplayStyle.Flex : DisplayStyle.None;
+                    wrapper.Add(m_LateContainer);
+                }
+            }
+        }
+
+        static ListView CreatePostprocessorListView(string title, SavedBool foldoutState, List<PostprocessorInfo> postprocessors, Texture2D scriptIcon)
+        {
+            var listView = new ListView();
+            listView.itemsSource = postprocessors;
+            listView.makeItem = () => new VisualElement();
+            listView.bindItem = (element, index) =>
+            {
+                element.Clear();
+                var p = postprocessors[index];
+                element.Add(CreatePostprocessorElement(p.Name, p.Priority, scriptIcon, p.PostprocessorType, p.Methods));
+            };
+            listView.virtualizationMethod = CollectionVirtualizationMethod.DynamicHeight;
+            listView.showFoldoutHeader = true;
+            listView.showBoundCollectionSize = false;
+            listView.headerTitle = title;
+            listView.reorderable = false;
+            listView.showAddRemoveFooter = false;
+            listView.selectionType = SelectionType.None;
+            listView.AddToClassList("pipeline-postprocessor-list");
+
+            listView.RegisterCallback<GeometryChangedEvent>(OnFirstLayout);
+            void OnFirstLayout(GeometryChangedEvent _)
+            {
+                var foldout = listView.Q<Foldout>();
+                if (foldout == null)
+                    return;
+                listView.UnregisterCallback<GeometryChangedEvent>(OnFirstLayout);
+
+                foldout.value = foldoutState.value;
+                foldout.RegisterValueChangedCallback(evt =>
+                {
+                    if (evt.target == foldout)
+                        foldoutState.value = evt.newValue;
+                });
+            }
+
+            return listView;
+        }
+
+        static VisualElement CreateSectionContainer()
+        {
+            var container = new VisualElement();
+            container.AddToClassList("block-section-container");
+            return container;
+        }
+
+        static VisualElement CreatePostprocessorElement(string fullName, int order, Texture2D scriptIcon, Type postprocessorType, string[] methods)
+        {
+            var shortName = fullName;
+            int lastDot = fullName.LastIndexOf('.');
+            if (lastDot >= 0)
+                shortName = fullName.Substring(lastDot + 1);
+
+            var template = UnityEditor.Experimental.AssetImporters.ImportBlocks.UiHelpers.GetPostprocessorElementTemplate();
+            if (template == null)
+                return new Label(shortName);
+
+            var item = template.Instantiate();
+
+            var icon = item.Q("script-icon");
+            if (icon != null && scriptIcon != null)
+                icon.style.backgroundImage = new StyleBackground(scriptIcon);
+
+            var nameLabel = item.Q<Label>("name-label");
+            if (nameLabel != null)
+                nameLabel.text = shortName;
+
+            var contentContainer = item.Q("content-container");
+            if (contentContainer != null)
+                contentContainer.style.display = DisplayStyle.None;
+
+            var script = postprocessorType != null ? UnityEditor.Experimental.AssetImporters.ImportBlocks.UiHelpers.FindScriptForType(postprocessorType) : null;
+            var scriptField = item.Q<UnityEditor.UIElements.ObjectField>("script-field");
+            if (scriptField != null)
+            {
+                scriptField.objectType = typeof(MonoScript);
+                scriptField.value = script;
+                scriptField.SetEnabled(false);
+            }
+
+            var foldoutToggle = item.Q<Toggle>("foldout-toggle");
+            if (foldoutToggle != null)
+            {
+                foldoutToggle.value = false;
+                foldoutToggle.RegisterValueChangedCallback(evt =>
+                {
+                    if (contentContainer != null)
+                        contentContainer.style.display = evt.newValue ? DisplayStyle.Flex : DisplayStyle.None;
+                });
+            }
+
+            var tooltipBuilder = new System.Text.StringBuilder();
+            tooltipBuilder.AppendLine($"<b>{shortName}</b>");
+            tooltipBuilder.AppendLine();
+            tooltipBuilder.Append("<b>Full name:</b>");
+            tooltipBuilder.AppendLine($"  {fullName}");
+            tooltipBuilder.AppendLine();
+            tooltipBuilder.Append("<b>Postprocess order:</b>");
+            tooltipBuilder.AppendLine($"  {order}");
+            if (methods != null && methods.Length > 0)
+            {
+                tooltipBuilder.AppendLine();
+                tooltipBuilder.AppendLine("<b>Callbacks:</b>");
+                foreach (var method in methods)
+                    tooltipBuilder.AppendLine($"  - {method}");
+            }
+
+            item.tooltip = tooltipBuilder.ToString().TrimEnd();
+            return item;
+        }
+
+        struct ExecutionEntry
+        {
+            public string Name;
+            public string Type;
+            public int Order;
+            public bool IsHeader;
+        }
+
+        VisualElement CreateExecutionView()
+        {
+            // The schedule is built from a single importer, unlike the bound block UI next to it.
+            if (targets.Length > 1)
+                return new UnityEngine.UIElements.HelpBox(
+                    "The execution order is not available when multiple assets are selected. " +
+                    "Select a single asset to see its execution order.",
+                    UnityEngine.UIElements.HelpBoxMessageType.Info);
+
+            var importer = target as AssetImporter;
+            if (importer == null)
+                return new VisualElement();
+
+            var callbacks = ImportPipelineOrderUtility.GetCallbacksForImporter(importer);
+            if (callbacks == null)
+                return new VisualElement();
+
+            List<UnityEditor.Experimental.AssetImporters.ImportBlocks.IBlock> blocks;
+            try
+            {
+                blocks = ImportPipelineOrderUtility.CollectBlocks(importer);
+            }
+            catch (InvalidOperationException e)
+            {
+                Debug.LogException(e);
+                return new UnityEngine.UIElements.HelpBox(
+                    "Cannot show the execution order because the block graph contains a circular reference. " +
+                    "Switch to the Pipeline view to locate and remove the offending block reference. " +
+                    "See the Console for details.",
+                    UnityEngine.UIElements.HelpBoxMessageType.Error);
+            }
+            int threshold = AssetImportCallbackDispatch.k_PostprocessOrderThreshold;
+
+            var entries = new List<ExecutionEntry>();
+
+            foreach (var callbackName in callbacks)
+            {
+                var earlyBuf = new List<PostprocessorInfo>();
+                var lateBuf = new List<PostprocessorInfo>();
+                var blockBuf = new List<UnityEditor.Experimental.AssetImporters.ImportBlocks.IBlock>();
+
+                foreach (var p in m_Postprocessors)
+                {
+                    if (Array.IndexOf(p.Methods, callbackName) < 0)
+                        continue;
+                    if (p.Priority < threshold)
+                        earlyBuf.Add(p);
+                    else
+                        lateBuf.Add(p);
+                }
+
+                Type blockInterface = ImportPipelineOrderUtility.GetBlockInterfaceForCallback(callbackName);
+                if (blockInterface != null)
+                {
+                    foreach (var b in blocks)
+                    {
+                        if (blockInterface.IsAssignableFrom(b.GetType()))
+                            blockBuf.Add(b);
+                    }
+                }
+
+                if (earlyBuf.Count == 0 && blockBuf.Count == 0 && lateBuf.Count == 0)
+                    continue;
+
+                entries.Add(new ExecutionEntry { Name = callbackName, IsHeader = true });
+
+                foreach (var p in earlyBuf)
+                    entries.Add(new ExecutionEntry { Name = p.Name, Type = "AssetPostprocessor", Order = p.Priority });
+                foreach (var b in blockBuf)
+                    entries.Add(new ExecutionEntry { Name = b.Name, Type = "Block", Order = 0 });
+                foreach (var p in lateBuf)
+                    entries.Add(new ExecutionEntry { Name = p.Name, Type = "AssetPostprocessor", Order = p.Priority });
+            }
+
+            var scriptIcon = EditorGUIUtility.IconContent("cs Script Icon").image as Texture2D;
+            var blockIcon = UnityEditor.Experimental.AssetImporters.ImportBlocks.UiHelpers.GetBlockIcon();
+
+            var viewTemplate = UnityEditor.Experimental.AssetImporters.ImportBlocks.UiHelpers.GetExecutionViewTemplate();
+            var rowTemplate = UnityEditor.Experimental.AssetImporters.ImportBlocks.UiHelpers.GetExecutionRowTemplate();
+            if (viewTemplate == null || rowTemplate == null)
+                return new VisualElement();
+
+            var listView = viewTemplate.Instantiate().Q<MultiColumnListView>("execution-list");
+            listView.itemsSource = entries;
+
+            // The row is what the cell styles select on, so hand it out without the template container.
+            listView.columns["name"].makeCell = () => rowTemplate.Instantiate().Q<VisualElement>("execution-row");
+            listView.columns["name"].bindCell = (element, index) =>
+            {
+                var entry = entries[index];
+                var icon = element.Q("entry-icon");
+                var label = element.Q<Label>("entry-label");
+
+                var shortName = entry.Name;
+                int lastDot = shortName.LastIndexOf('.');
+                if (lastDot >= 0)
+                    shortName = shortName.Substring(lastDot + 1);
+
+                label.text = shortName;
+                element.EnableInClassList("pipeline-execution-row--header", entry.IsHeader);
+
+                if (!entry.IsHeader)
+                {
+                    var tex = entry.Type == "Block" ? blockIcon : scriptIcon;
+                    icon.style.backgroundImage = tex != null ? new StyleBackground(tex) : new StyleBackground();
+                }
+            };
+
+            listView.columns["order"].makeCell = () =>
+            {
+                var label = new Label();
+                label.AddToClassList("pipeline-execution-order");
+                return label;
+            };
+            listView.columns["order"].bindCell = (element, index) =>
+            {
+                var label = (Label)element;
+                var entry = entries[index];
+                label.text = entry.IsHeader ? "" : entry.Order.ToString();
+            };
+
+            return listView;
+        }
     }
 
     // Part of the class handling the ImporterSelection
@@ -882,7 +1333,7 @@ namespace UnityEditor.AssetImporters
     {
         static partial class Styles
         {
-            public static readonly GUIContent ImporterSelection = EditorGUIUtility.TrTextContent("Importer");
+            public static readonly GUIContent ImporterSelection = L10n.TextContent("Importer", null, null, null);
             public static readonly string defaultImporterName = L10n.Tr("{0} (Default)", null);
         }
 

@@ -17,6 +17,7 @@ namespace UnityEditor
     [NativeHeader("Runtime/BaseClasses/TagManager.h")]
     internal sealed class TagManager : ProjectSettingsBase
     {
+        internal TagManager(global::UnityEngine.EntityId id) : base(id) {}
         private TagManager() {}
 
         [StaticAccessor("GetTagManager()", StaticAccessorType.Dot)]

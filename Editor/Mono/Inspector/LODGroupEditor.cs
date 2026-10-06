@@ -35,6 +35,8 @@ namespace UnityEditor
         private SerializedProperty m_LODs;
         private SerializedProperty m_LODSize;
         private SerializedProperty m_GlobalIlluminationLOD;
+        private int[] m_GlobalIlluminationLODValues;
+        private GUIContent[] m_GlobalIlluminationLODStrings;
 
         private AnimBool m_ShowAnimateCrossFading = new AnimBool();
         private AnimBool m_ShowFadeTransitionWidth = new AnimBool();
@@ -692,45 +694,57 @@ namespace UnityEditor
             if (m_SelectedLOD >= m_NumberOfLODs)
                 m_SelectedLOD = m_NumberOfLODs - 1;
 
-            // Shows a combo box in the UI specifying which LOD level is used for baking (GFXFEAT-865)
-            // This is disabled for now as the feature is only supported by the Unified Baker
-            var usingComputeLightBaker = UnityEditor.Rendering.EditorGraphicsSettings.defaultLightBaker == UnityEditor.Rendering.LightBaker.UnityComputeLightBaker;
-            if (usingComputeLightBaker)
+            if (m_GlobalIlluminationLODValues == null || m_GlobalIlluminationLODValues.Length != m_NumberOfLODs + 1)
             {
-                int[] lodContributeGIValues = new Span<int>(LODGUI.Styles.lodContributeGIValues, 0, m_NumberOfLODs + 1).ToArray();
-                GUIContent[] lodContributeGIStrings = new Span<GUIContent>(LODGUI.Styles.lodContributeGIStrings, 0, m_NumberOfLODs + 1).ToArray();
+                m_GlobalIlluminationLODValues = new Span<int>(LODGUI.Styles.lodContributeGIValues, 0, m_NumberOfLODs + 1).ToArray();
+                m_GlobalIlluminationLODStrings = new Span<GUIContent>(LODGUI.Styles.lodContributeGIStrings, 0, m_NumberOfLODs + 1).ToArray();
+            }
 
-                int lodGroupContributeGI = m_GlobalIlluminationLOD.intValue;
-                if (lodGroupContributeGI < -1 || lodGroupContributeGI >= m_NumberOfLODs)
-                    lodGroupContributeGI = -2; // This is outside the range and will result in a blank selection for LOD, a warning will be shown prompting the user to select an entry
+            int lodGroupContributeGI = m_GlobalIlluminationLOD.intValue;
+            if (lodGroupContributeGI < -1 || lodGroupContributeGI >= m_NumberOfLODs)
+                lodGroupContributeGI = -2; // This is outside the range and will result in a blank selection for LOD, a warning will be shown prompting the user to select an entry
 
-                var rect = EditorGUILayout.GetControlRect();
-                EditorGUI.BeginProperty(rect, LODGUI.Styles.m_LodContributeGITitle, m_GlobalIlluminationLOD);
-                EditorGUI.BeginChangeCheck();
-                // Draw the possible LOD group indices the user can select a global illumination contributor from
-                lodGroupContributeGI = EditorGUI.IntPopup(rect, LODGUI.Styles.m_LodContributeGITitle, lodGroupContributeGI, lodContributeGIStrings, lodContributeGIValues);
-                if (EditorGUI.EndChangeCheck())
-                    m_GlobalIlluminationLOD.intValue = lodGroupContributeGI;
-                EditorGUI.EndProperty();
+            var rect = EditorGUILayout.GetControlRect();
+            EditorGUI.BeginProperty(rect, LODGUI.Styles.m_LodContributeGITitle, m_GlobalIlluminationLOD);
+            EditorGUI.BeginChangeCheck();
+            // Draw the possible LOD group indices the user can select a global illumination contributor from
+            lodGroupContributeGI = EditorGUI.IntPopup(rect, LODGUI.Styles.m_LodContributeGITitle, lodGroupContributeGI, m_GlobalIlluminationLODStrings, m_GlobalIlluminationLODValues);
+            if (EditorGUI.EndChangeCheck())
+                m_GlobalIlluminationLOD.intValue = lodGroupContributeGI;
+            EditorGUI.EndProperty();
 
-                if (m_GlobalIlluminationLOD.intValue != -1)
+            var usingComputeLightBaker = UnityEditor.Rendering.EditorGraphicsSettings.defaultLightBaker == UnityEditor.Rendering.LightBaker.UnityComputeLightBaker;
+
+            // The Progressive Lightmapper does not read the selection and always bakes LOD 0.
+            if (!usingComputeLightBaker && m_GlobalIlluminationLOD.intValue != 0)
+                EditorGUILayout.HelpBox("The Progressive Lightmapper does not support the Global Illumination LOD selection and always bakes LOD 0.", MessageType.Warning);
+
+            if (m_GlobalIlluminationLOD.intValue != -1)
+            {
+                // Check if the selected lod level has any active renderers, and any renderers contributing to baked GI
+                var renderersProperty = serializedObject.FindProperty(string.Format(kRenderRootPath, m_GlobalIlluminationLOD.intValue));
+                bool levelHasActiveRenderer = false;
+                bool levelHasBakeContributor = false;
+                if (renderersProperty != null)
                 {
-                    // Check if the selected lod level has any contributing renderers
-                    var renderersProperty = serializedObject.FindProperty(string.Format(kRenderRootPath, m_GlobalIlluminationLOD.intValue));
-                    bool levelHasContributor = false;
-                    if (renderersProperty != null)
+                    for (int i = 0; i < renderersProperty.arraySize && !levelHasBakeContributor; ++i)
                     {
-                        for (int i = 0; i < renderersProperty.arraySize && !levelHasContributor; ++i)
+                        var rendererRef = renderersProperty.GetArrayElementAtIndex(i).FindPropertyRelative("renderer");
+                        var renderer = rendererRef.objectReferenceValue as Renderer;
+                        if (renderer != null && renderer.gameObject != null && renderer.enabled && renderer.gameObject.activeInHierarchy)
                         {
-                            var rendererRef = renderersProperty.GetArrayElementAtIndex(i).FindPropertyRelative("renderer");
-                            var renderer = rendererRef.objectReferenceValue as Renderer;
-                            if (renderer != null && renderer.gameObject != null && renderer.enabled && renderer.gameObject.activeInHierarchy)
-                                levelHasContributor |= GameObjectUtility.AreStaticEditorFlagsSet(renderer.gameObject, StaticEditorFlags.ContributeGI);
+                            levelHasActiveRenderer = true;
+                            levelHasBakeContributor |= GameObjectUtility.AnyStaticEditorFlagsSet(renderer.gameObject, StaticEditorFlags.ContributeGI);
                         }
                     }
-                    if (!levelHasContributor)
-                        EditorGUILayout.HelpBox("The selected global illumination LOD has no renderers contributing to global illumination. If the LODGroup should not contribute to global illumination select 'None'.", MessageType.Warning);
                 }
+
+                // Surface Cache contribution depends on Volume overrides and rendering layer masks, not on the
+                // ContributeGI static flag, so the ContributeGI-based warning only applies to light baking.
+                if (!levelHasActiveRenderer)
+                    EditorGUILayout.HelpBox("The selected global illumination LOD has no active renderers. If the LODGroup should not contribute to global illumination select 'None'.", MessageType.Warning);
+                else if (usingComputeLightBaker && !levelHasBakeContributor)
+                    EditorGUILayout.HelpBox("The selected global illumination LOD has no renderers marked as Contribute GI. Baked global illumination will not include this LODGroup. This does not affect Surface Cache global illumination.", MessageType.Warning);
             }
 
             if (targets.Length > 1)
@@ -1307,11 +1321,11 @@ namespace UnityEditor
                         var pm = new GenericMenu();
                         if (lods.Count >= 8)
                         {
-                            pm.AddDisabledItem(EditorGUIUtility.TrTextContent("Insert Before"));
+                            pm.AddDisabledItem(L10n.TextContent("Insert Before", null, null, null));
                         }
                         else
                         {
-                            pm.AddItem(EditorGUIUtility.TrTextContent("Insert Before"), false,
+                            pm.AddItem(L10n.TextContent("Insert Before", null, null, null), false,
                                 new LODAction(lods, cameraPercent, evt.mousePosition, m_LODs, OnInsertLOD).
                                 InsertLOD);
                         }
@@ -1322,9 +1336,9 @@ namespace UnityEditor
                             disabledRegion = false;
 
                         if (disabledRegion)
-                            pm.AddDisabledItem(EditorGUIUtility.TrTextContent("Delete"));
+                            pm.AddDisabledItem(L10n.TextContent("Delete", null, null, null));
                         else
-                            pm.AddItem(EditorGUIUtility.TrTextContent("Delete"), false,
+                            pm.AddItem(L10n.TextContent("Delete", null, null, null), false,
                                 new LODAction(lods, cameraPercent, evt.mousePosition, m_LODs, OnDeleteLOD).
                                 DeleteLOD);
                         pm.ShowAsContext();

@@ -53,6 +53,10 @@ namespace Unity.Hierarchy.Editor
             if (currentStage is MainStage)
                 return;
 
+            var newText = currentStage.CreateHeaderContent().text;
+            if (m_Label.text != newText)
+                m_Label.text = newText;
+
             UpdateStyles(currentStage);
         }
 

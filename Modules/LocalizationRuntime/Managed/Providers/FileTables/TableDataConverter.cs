@@ -99,12 +99,14 @@ internal static partial class TableDataConverter
         // Counted, not logged per row: a corrupt file can hold millions of clashing rows, and the key text is untrusted.
         var skipped = 0;
         string firstSkippedKey = null;
+        var repeated = 0;
+        string firstRepeatedKey = null;
         foreach (var row in data.Entries)
         {
             if (row == null)
                 continue;
             // An id of 0 means the file omitted it; match by key and let the shared data assign a new id.
-            var keyEntry = row.Id != 0 ? shared.AddKey(row.Key, row.Id) : shared.AddKey(row.Key);
+            var keyEntry = shared.AddKeyQuiet(row.Key, row.Id);
             if (keyEntry == null)
             {
                 if (!string.IsNullOrEmpty(row.Key))
@@ -113,6 +115,12 @@ internal static partial class TableDataConverter
                     firstSkippedKey ??= row.Key;
                 }
                 continue;
+            }
+            // The shared data starts empty, so a key already holding a different id was named by an earlier row.
+            if (row.Id != 0 && keyEntry.Id != row.Id)
+            {
+                repeated++;
+                firstRepeatedKey ??= row.Key;
             }
             keyEntry.IsSmart = row.IsSmart;
             ApplyVariantMetadata(keyEntry, RebuildSelector(row.Selector), row.VariantKeys);
@@ -124,6 +132,8 @@ internal static partial class TableDataConverter
 
         if (skipped > 0)
             Debug.LogWarning($"Skipped {skipped} localization key(s) whose id was already used by another key, starting with \"{firstSkippedKey}\".");
+        if (repeated > 0)
+            Debug.LogWarning($"Kept the first id for {repeated} localization key(s) the file names more than once, starting with \"{firstRepeatedKey}\".");
     }
 
     /// <summary>
@@ -202,7 +212,7 @@ internal static partial class TableDataConverter
         var source = donor.GetEntry(keyId);
         if (source == null)
             return;
-        var added = target.AddKey(source.Key, source.Id);
+        var added = target.AddKeyQuiet(source.Key, source.Id);
         if (added == null)
             return;
         added.Flags = source.Flags;

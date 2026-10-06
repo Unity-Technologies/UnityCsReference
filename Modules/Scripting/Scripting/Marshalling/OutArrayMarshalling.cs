@@ -36,6 +36,8 @@ namespace UnityEngine.Bindings
                 return new OutArrayNativeData
                 {
                     arrayRef = (IntPtr)Unsafe.AsPointer(ref marshalled.array),
+                    createAndCallback = (IntPtr)(delegate* unmanaged[Cdecl]<IntPtr, IntPtr, int, delegate* unmanaged[Cdecl]<byte*, IntPtr, void>, IntPtr, void>)&CreateAndFillCalbacks.CreateAndCallbackPinned1,
+                    createArray = (IntPtr)(delegate* <int, Array>)&CreateArray
                 };
             }
 
@@ -70,6 +72,8 @@ namespace UnityEngine.Bindings
                 return new OutArrayNativeData
                 {
                     arrayRef = (IntPtr)Unsafe.AsPointer(ref marshalled.array),
+                    createAndCallback = (IntPtr)(delegate* unmanaged[Cdecl]<IntPtr, IntPtr, int, int, delegate* unmanaged[Cdecl]<byte*, IntPtr, void>, IntPtr, void>)&CreateAndFillCalbacks.CreateAndCallbackPinned2,
+                    createArray = (IntPtr)(delegate* <int, int, Array>)&CreateArray
                 };
             }
 
@@ -104,6 +108,8 @@ namespace UnityEngine.Bindings
                 return new OutArrayNativeData
                 {
                     arrayRef = (IntPtr)Unsafe.AsPointer(ref marshalled.array),
+                    createAndCallback = (IntPtr)(delegate* unmanaged[Cdecl]<IntPtr, IntPtr, int, int, int, delegate* unmanaged[Cdecl]<byte*, IntPtr, void>, IntPtr, void>)&CreateAndFillCalbacks.CreateAndCallbackPinned3,
+                    createArray = (IntPtr)(delegate*<int, int, int, Array>)&CreateArray
                 };
             }
 
@@ -123,6 +129,8 @@ namespace UnityEngine.Bindings
     unsafe ref struct OutArrayNativeData
     {
         public IntPtr arrayRef;             // Pointer to an Array& on the stack
+        public IntPtr createAndCallback;    // Pointer to [UnmanagedCallersOnly] function that will be called from native code
+        public IntPtr createArray;          // Managed function pointer to allocate the array
     }
 
     static class CreateAndFillCalbacks

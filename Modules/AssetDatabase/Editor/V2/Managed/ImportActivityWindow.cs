@@ -2,7 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: AssetDatabase not yet converted
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -26,10 +25,6 @@ namespace UnityEditor
     //13905 in ResourceManager.cpp for RegisterBuiltinEditorScript
     internal partial class ImportActivityWindow : EditorWindow
     {
-        #pragma warning disable UAL0015 // this side effect does not outlive the current call (global trigger / lazily-loaded asset re-fetched on next access); a stale reference is harmlessly replaced
-        internal ImportActivityWindow() { }
-        #pragma warning restore UAL0015
-
         public static readonly string kTimeStampFormat = "dd-MM-yyyy hh:mm:ss";
         [AutoStaticsCleanupOnCodeReload]
         public static ImportActivityWindow m_Instance = null;
@@ -62,6 +57,7 @@ namespace UnityEditor
             var window = GetWindow<ImportActivityWindow>();
             m_Instance = window;
             window.titleContent.text = "Import Activity";
+            window.minSize = CalculateWindowMinSize(Screen.currentResolution);
             if (window.IsInitialized)
             {
                 window.RefreshAllLists(m_Instance.m_ImportActivityState.rightContentState);
@@ -69,7 +65,6 @@ namespace UnityEditor
             }
             else
             {
-                window.minSize = CalculateWindowMinSize(Screen.currentResolution);
                 window.InitWithDimensions(window.position, selectedObjectGuid, openViaRightClick);
             }
         }
@@ -279,7 +274,11 @@ namespace UnityEditor
         private VisualElement m_LeftContent;
         internal VisualElement m_RightContent;
 
-        internal string m_SelectedAssetGuid;
+        // Serialized: OnEnable feeds this to InitWithDimensions, and FocusOnSelectedItem returns
+        // immediately on an empty guid. Without it a maximize/restore round-trip (which keeps only
+        // SerializeField/public fields) rebuilds the window with an unresolvable selection, leaving
+        // the right-hand detail pane showing headers with no values.
+        [SerializeField] internal string m_SelectedAssetGuid;
         private ArtifactInfo m_SelectedArtifactInfo;
 
         // Data lists
@@ -1130,8 +1129,9 @@ namespace UnityEditor
 
         public void OnEnable()
         {
-            if (m_DesiredDimensions != default(Rect))
-                InitWithDimensions(m_DesiredDimensions, m_SelectedAssetGuid);
+            // IsInitialized survives independently of the UI fields it's meant to describe, so check one of those fields directly.
+            if (m_AllAssetsListView == null)
+                InitWithDimensions(m_DesiredDimensions != default(Rect) ? m_DesiredDimensions : position, m_SelectedAssetGuid);
             if (s_OpenFolderIcon == null)
                 s_OpenFolderIcon = new ScalableGUIContent(null, null, EditorResources.openedFolderIconName);
             if (s_EmptyFolderIcon == null)
@@ -1143,6 +1143,9 @@ namespace UnityEditor
 
         public void StoreTreeViewToState<T>(ImportActivityTreeViewState state, ArtifactBrowserTreeView<T> treeView)
         {
+            if (treeView == null)
+                return;
+
             state.sortedColumnIndex = treeView.multiColumnHeader.sortedColumnIndex;
             state.sortAscending = treeView.multiColumnHeader.sortedColumnIndex != -1 && treeView.multiColumnHeader.IsSortedAscending(state.sortedColumnIndex);
             state.selectedItem = treeView.state.lastClickedID;
@@ -1861,7 +1864,7 @@ namespace UnityEditor
             {
                 return new MultiColumnHeaderState.Column
                 {
-                    headerContent = EditorGUIUtility.TrTextContent(col.Name),
+                    headerContent = L10n.TextContent(col.Name, null, null, null),
                     headerTextAlignment = TextAlignment.Left,
                     sortingArrowAlignment = TextAlignment.Center,
                     autoResize = col.AutoResize,
@@ -2358,8 +2361,8 @@ namespace UnityEditor
 
         internal class ArtifactBrowserToolbar
         {
-            public GUIContent ShowOverviewText = EditorGUIUtility.TrTextContent("Show Overview");
-            public GUIContent Options = EditorGUIUtility.TrTextContent("Options");
+            public GUIContent ShowOverviewText = L10n.TextContent("Show Overview", null, null, null);
+            public GUIContent Options = L10n.TextContent("Options", null, null, null);
 
             public string[] m_DropDownOptions;
 
@@ -3049,4 +3052,3 @@ namespace UnityEditor
         }
     }
 }
-#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

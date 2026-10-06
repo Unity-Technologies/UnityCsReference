@@ -20,6 +20,13 @@ namespace UnityEditor.Search.Providers
             public string[] words;
         }
 
+        // Finder always lists everything on an empty query, even with other active providers; set via context.userData.
+        internal enum ProviderMode
+        {
+            Searcher,
+            Finder,
+        }
+
         internal const string type = "menu";
         private const string displayName = "Menus";
         private const string disabledMenuExecutionWarning = "The menu you are trying to execute is disabled. It will not be executed.";
@@ -58,7 +65,7 @@ namespace UnityEditor.Search.Providers
             {
                 priority = 80,
                 filterId = "m:",
-                showDetailsOptions = ShowDetailsOptions.ListView | ShowDetailsOptions.Actions,
+                showDetailsOptions = ShowDetailsOptions.ListView | ShowDetailsOptions.Actions | ShowDetailsOptions.DefaultGroup,
 
                 #pragma warning disable UAC2001 // Avoid Linq
                 onEnable = () => shortcutIds = ShortcutManager.instance.GetAvailableShortcutIds().ToArray(),
@@ -75,6 +82,10 @@ namespace UnityEditor.Search.Providers
                         var enabled = Menu.GetEnabled(item.id);
                         var @checked = Menu.GetChecked(item.id);
                         item.label = $"{menuName}{(enabled ? "" : " (disabled)")} {(@checked ? "\u2611" : "")}";
+
+                        // Only in Finder mode: a menu item can be on the toolbar too, marked active like elements.
+                        if (GetProviderMode(context) == ProviderMode.Finder)
+                            item.label = MainToolbarElementProvider.FormatElementLabel(item.label, MainToolbarElementProvider.IsMenuItemActive(item.id));
                     }
                     return item.label;
                 },
@@ -86,7 +97,13 @@ namespace UnityEditor.Search.Providers
                     return item.description;
                 },
 
-                fetchThumbnail = (item, context) => Icons.shortcut,
+                fetchThumbnail = (item, context) =>
+                {
+                    // Only in Finder mode: a menu item can be on the toolbar too, dimmed like elements.
+                    if (GetProviderMode(context) == ProviderMode.Finder)
+                        item.thumbnailAlpha = MainToolbarElementProvider.IsMenuItemActive(item.id) ? 1f : MainToolbarElementProvider.inactiveThumbnailAlpha;
+                    return Icons.shortcut;
+                },
                 fetchPropositions = (context, options) => FetchPropositions(context, options),
                 fetchParentDescriptor = FetchParentDescriptor
             };
@@ -132,11 +149,16 @@ namespace UnityEditor.Search.Providers
             menus = localMenus;
         }
 
+        static ProviderMode GetProviderMode(SearchContext context) =>
+            context.userData is ProviderMode userDataMode ? userDataMode : ProviderMode.Searcher;
+
         private static IEnumerable<SearchItem> FetchItems(SearchContext context, List<SearchItem> items, SearchProvider provider)
         {
+            var mode = GetProviderMode(context);
             #pragma warning disable UAC2005 // Avoid Linq
-            var query = (string.IsNullOrEmpty(context.searchQuery) && context.providers.Count() == 1) ? null : queryEngine.ParseQuery(context.searchQuery);
+            var showAllOnEmptyQuery = (mode == ProviderMode.Searcher && context.providers.Count() == 1) || mode == ProviderMode.Finder;
 #pragma warning restore UAC2005
+            var query = (string.IsNullOrEmpty(context.searchQuery) && showAllOnEmptyQuery) ? null : queryEngine.ParseQuery(context.searchQuery);
             if (query != null && !query.valid)
             {
                 #pragma warning disable UAC2001 // Avoid Linq
@@ -221,6 +243,7 @@ namespace UnityEditor.Search.Providers
         internal static void OpenQuickSearch()
         {
             var qs = SearchUtils.OpenWithContextualProviders(type, Settings.type);
+            qs.context.userData = ProviderMode.Searcher;
             qs.itemIconSize = 1; // Open in list view by default.
         }
 

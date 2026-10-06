@@ -2,12 +2,9 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: UIToolkitFramework not yet converted
 using System.Collections.Generic;
-using System.IO;
 using System.Text;
 using Unity.Properties;
-using UnityEditorInternal;
 using UnityEngine;
 using UnityEngine.UIElements;
 using UnityEngine.UIElements.StyleSheets;
@@ -35,7 +32,7 @@ namespace UnityEditor.UIElements.Debugger
             set
             {
                 // Do this before the early return as the selected element is null for the first callback
-                style.display = value == null ? DisplayStyle.None : DisplayStyle.Flex;
+                style.display = value.IsLive() ? DisplayStyle.Flex : DisplayStyle.None;
 
                 if (m_SelectedElement == value)
                     return;
@@ -45,7 +42,6 @@ namespace UnityEditor.UIElements.Debugger
 
 
                 m_BoxModelView.selectedElement = m_SelectedElement;
-                m_attributeSection.RefreshIfNeeded();
                 m_LayoutInfo.Update(m_PanelDebug, selectedElement);
 
                 this.Query<IMGUIContainer>().ForEach( i => i.IncrementVersion(VersionChangeType.Layout));
@@ -161,7 +157,7 @@ namespace UnityEditor.UIElements.Debugger
             {
                 m_PickingBoundingBox.style.display = UIToolkitProjectSettings.EnableLowLevelDebugger? DisplayStyle.Flex:DisplayStyle.None;
 
-                if (panel == null || selectedElement == null)
+                if (panel == null || !selectedElement.IsLive())
                 {
                     m_WorldBound.text = "";
                     m_WorldClip.text = "";
@@ -186,9 +182,11 @@ namespace UnityEditor.UIElements.Debugger
         {
             private const string k_NewClassName = "newStyle";
 
-            // The element's [UxmlAttribute] set, rendered generically (name, tooltip, picking-mode, …) and
-            // rebuilt per selection since the attribute set depends on the element type.
+            // The element's [UxmlAttribute] set, rendered generically (name, tooltip, picking-mode, …). The
+            // view is kept across refreshes and rebuilt only when the element it was built for changes.
             readonly VisualElement m_ElementAttributes;
+            UxmlAttributesDebugView m_AttributesView;
+            VisualElement m_BuiltElement;
             readonly IntegerField m_IdField;
             readonly ObjectField m_VisualTreeAsset;
             readonly TextField m_dataSource;
@@ -218,11 +216,11 @@ namespace UnityEditor.UIElements.Debugger
                 Add(m_dataSource = new TextField("Data Source") { isReadOnly = true });
 
                 Add(m_pseudoStyles = new EnumFlagsField("Pseudo States", PseudoStates.None) { tooltip = "This pseudo style only represent the visual state of the element." });
-                m_pseudoStyles.RegisterValueChangedCallback((v) => { if (m_SelectedElement != null) { m_SelectedElement.pseudoStates = (PseudoStates)v.newValue; } });
+                m_pseudoStyles.RegisterValueChangedCallback((v) => { if (m_SelectedElement.IsLive()) { m_SelectedElement.pseudoStates = (PseudoStates)v.newValue; } });
 
                 Add(m_enabled = new("Enabled"));
                 m_enabled.Add(new Label() { name = k_enabledLabelName });
-                m_enabled.RegisterValueChangedCallback((v) => { if (m_SelectedElement != null) { m_SelectedElement.SetEnabled(v.newValue); } });
+                m_enabled.RegisterValueChangedCallback((v) => { if (m_SelectedElement.IsLive()) { m_SelectedElement.SetEnabled(v.newValue); } });
 
                 Add(m_ClassList = new ListView() {
                     showFoldoutHeader = true,
@@ -235,6 +233,9 @@ namespace UnityEditor.UIElements.Debugger
                         var item = new TextField();
                         item.RegisterValueChangedCallback(t =>
                         {
+                            if (!m_SelectedElement.IsLive())
+                                return;
+
                             m_SelectedElement.RemoveFromClassList(t.previousValue);
                             m_SelectedElement.AddToClassList(t.newValue);
                             SyncClassList();
@@ -288,7 +289,7 @@ namespace UnityEditor.UIElements.Debugger
                 if (m_SelectedElement == null)
                     return;
 
-                RebuildElementAttributes();
+                RefreshElementAttributes();
 
                 if (selectedElement.visualElementAsset?.hasAuthoringId == true)
                     m_IdField.value = selectedElement.visualElementAsset.id;
@@ -306,21 +307,35 @@ namespace UnityEditor.UIElements.Debugger
                 m_ClassList.RefreshItems();
             }
 
-            // Rebuilds the generic [UxmlAttribute] editor for the selected element. Rebuilt rather than
-            // value-updated because the attribute set depends on the element type, which changes per selection.
-            void RebuildElementAttributes()
+            // Value-refreshes the generic [UxmlAttribute] editor, rebuilding only when the selection changes.
+            // This runs off the inspected panel's repaint, which is every frame for a runtime panel in play
+            // mode, and a rebuild there drops focus and discards a half-typed value. The view is built for one
+            // element and its callbacks capture it, so a value still pending on a delayed field commits to the
+            // element it was typed for rather than to whatever is selected by the time it lands.
+            void RefreshElementAttributes()
             {
+                var element = m_SelectedElement;
+                if (ReferenceEquals(element, m_BuiltElement))
+                {
+                    m_AttributesView?.Refresh();
+                    return;
+                }
+
+                m_BuiltElement = element;
+                m_AttributesView = null;
                 m_ElementAttributes.Clear();
-                var description = GetDescriptionForType(m_SelectedElement.GetType());
+
+                var description = GetDescriptionForType(element.GetType());
                 if (description == null)
                     return;
 
-                m_ElementAttributes.Add(new UxmlAttributesDebugView(
+                m_AttributesView = new UxmlAttributesDebugView(
                     description,
-                    () => m_SelectedElement,
-                    (attribute, value) => attribute.SetValueToObject(m_SelectedElement, value),
+                    () => element,
+                    (attribute, value) => { if (element.IsLive()) attribute.SetValueToObject(element, value); },
                     readOnly: false,
-                    excludedAttributeNames: m_ExcludedElementAttributes));
+                    excludedAttributeNames: m_ExcludedElementAttributes);
+                m_ElementAttributes.Add(m_AttributesView);
             }
 
             // The exact type may not be UXML-registered (a code-only custom element); fall back to the nearest
@@ -344,6 +359,9 @@ namespace UnityEditor.UIElements.Debugger
 
             private void AddNewClass()
             {
+                if (!m_SelectedElement.IsLive())
+                    return;
+
                 // Attempt to add a new unique class name using a simple suffix
                 // - newStyle
                 // - newStyle1
@@ -363,6 +381,9 @@ namespace UnityEditor.UIElements.Debugger
 
             private void RemoveLastClass()
             {
+                if (!m_SelectedElement.IsLive())
+                    return;
+
                 var classes = m_SelectedElement.GetClassesForIteration();
                 m_SelectedElement.RemoveFromClassList(classes[^1]);
             }
@@ -387,7 +408,7 @@ namespace UnityEditor.UIElements.Debugger
                         using (new EditorGUI.DisabledScope(!canOpen))
                         {
                             if (GUILayout.Button(new GUIContent(sheet, canOpen ? null : k_noAssetText)))
-                                InternalEditorUtility.OpenFileAtLineExternal(sheet, 0, 0);
+                                StyleSheetExternalEditor.TryOpen(sheet, 0);
                         }
                     }
 
@@ -400,6 +421,13 @@ namespace UnityEditor.UIElements.Debugger
         {
             if (m_PanelDebug == null || m_SelectedElement == null)
                 return;
+
+            if (UIToolkitProjectSettings.enableLegacyThemePriority)
+            {
+                EditorGUILayout.HelpBox(
+                    L10n.Tr("'Legacy theme priority' is enabled: theme style sheets do not take priority over Unity's built-in styles; overrides depend on selector specificity. See Project Settings > UI Toolkit.", null),
+                    MessageType.Warning);
+            }
 
             if (m_MatchedRulesExtractor.selectedElementRules != null && m_MatchedRulesExtractor.selectedElementRules.Count > 0)
             {
@@ -453,7 +481,7 @@ namespace UnityEditor.UIElements.Debugger
                         using (new EditorGUI.DisabledScope(!canOpen))
                         {
                             if (rule.displayPath != null && GUILayout.Button(new GUIContent(rule.displayPath, canOpen ? null : k_noAssetText), EditorStyles.miniButton, GUILayout.MaxWidth(250)) )
-                                InternalEditorUtility.OpenFileAtLineExternal(rule.fullPath, rule.lineNumber, -1);
+                                StyleSheetExternalEditor.TryOpen(rule.fullPath, rule.lineNumber);
                         }
                         EditorGUILayout.EndHorizontal();
 
@@ -489,9 +517,8 @@ namespace UnityEditor.UIElements.Debugger
             }
         }
 
-        static bool CanOpenStyleSheet(string path) => File.Exists(path);
+        static bool CanOpenStyleSheet(string path) => StyleSheetExternalEditor.CanOpen(path);
     }
 
 
 }
-#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

@@ -68,7 +68,7 @@ namespace Unity.UIToolkit.Editor
         internal static string DescribeLastSegment(string elementPath)
         {
             if (string.IsNullOrEmpty(elementPath))
-                return L10n.Tr("(animation root)");
+                return L10n.Tr("(animation root)", null);
 
             return UIAnimationPath.LastSegment(elementPath);
         }

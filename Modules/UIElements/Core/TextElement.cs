@@ -2,17 +2,18 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: UIToolkitFramework not yet converted
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Text;
 using Unity.Collections;
 using Unity.Properties;
+using Unity.Scripting.LifecycleManagement;
 using UnityEngine.Bindings;
 using UnityEngine.Serialization;
 using UnityEngine.TextCore;
 using UnityEngine.TextCore.Text;
+using UnityEngine.UIElements.Unmanaged;
 
 namespace UnityEngine.UIElements
 {
@@ -64,7 +65,7 @@ namespace UnityEngine.UIElements
 
             AddToClassList(ussClassNameUnique);
 
-            generateVisualContent += OnGenerateVisualContent;
+            m_Flags |= VisualElementFlags.UseDefaultTextGenerateContent;
             edition.GetDefaultValueType = GetDefaultValueType;
         }
 
@@ -154,7 +155,7 @@ namespace UnityEngine.UIElements
             (attachEvent.destinationPanel as BaseVisualElementPanel)?.textElementRegistry.Value.Add(this);
 
             if (m_Text != null)
-                m_TextBuffer.CopyFrom(m_Text);
+                textBuffer.CopyFrom(m_Text);
 
             uitkTextHandle.ReleaseResourcesIfPossible();
         }
@@ -171,17 +172,63 @@ namespace UnityEngine.UIElements
 
         private protected override void ReleaseNativeResources(bool fromFinalizer)
         {
-            if (fromFinalizer)
-                NativeTextBufferReclaimer.EnqueueForDisposal(ref m_TextBuffer);
-            else
-                m_TextBuffer.Dispose();
+            if (m_TextDataHandle.IsUndefined)
+                return;
+
+            // A handle from before a code reload can alias a live slot of the new store.
+            if (TextBufferStore.TryGetSharedManager(out var store) && ReferenceEquals(store, m_TextDataStore))
+            {
+                if (fromFinalizer)
+                    store.EnqueueForDisposal(m_TextDataHandle);
+                else
+                    store.FreeSlot(m_TextDataHandle);
+            }
+
+            m_TextDataHandle = UnmanagedDataHandle.Undefined;
+            m_TextDataStore = null;
         }
 
         private string m_Text = String.Empty;
-        NativeTextBuffer m_TextBuffer = NativeTextBuffer.CreateDomainScoped();
+        UnmanagedDataHandle m_TextDataHandle;
+        TextBufferStore m_TextDataStore;
         bool m_IsTextBufferDirty;
 
-        internal ref NativeTextBuffer textBuffer => ref m_TextBuffer;
+        ref TextBufferData textBufferData
+        {
+            get
+            {
+                if (resourcesReleased)
+                    throw new InvalidOperationException(k_ElementReleaseExceptionMessage);
+
+                var store = TextBufferStore.SharedManager;
+                if (store == null || (m_TextDataStore != null && !ReferenceEquals(store, m_TextDataStore)))
+                    throw new InvalidOperationException("UI Toolkit has already been shutdown. Operation refused");
+
+                if (!store.Exists(m_TextDataHandle))
+                {
+                    m_TextDataHandle = store.Allocate();
+                    m_TextDataStore = store;
+                }
+
+                return ref store.GetRef(m_TextDataHandle);
+            }
+        }
+
+        internal ref NativeTextBuffer textBuffer => ref textBufferData.buffer;
+
+        internal ref NativeTextBuffer processedTextBuffer => ref textBufferData.processedBuffer;
+
+        // Frees the processed buffer early (it is only needed while generating masked, placeholder
+        // or elided text); unlike the accessors, never allocates a slot just to dispose nothing.
+        internal void DisposeProcessedTextBuffer()
+        {
+            if (m_TextDataHandle.IsUndefined || !TextBufferStore.TryGetSharedManager(out var store)
+                || !ReferenceEquals(store, m_TextDataStore))
+                return;
+
+            if (store.Exists(m_TextDataHandle))
+                store.GetRef(m_TextDataHandle).processedBuffer.Dispose();
+        }
 
         /// <summary>
         /// The text to be displayed.
@@ -231,7 +278,7 @@ namespace UnityEngine.UIElements
             if (IsBufferEqualTo(text, length))
                 return;
 
-            m_TextBuffer.CopyFrom(text, length);
+            textBuffer.CopyFrom(text, length);
 
             ApplyBufferChange(length);
         }
@@ -254,10 +301,10 @@ namespace UnityEngine.UIElements
 
             int maxLen = edition.maxLength;
 
-            if (m_TextBuffer.MatchesUtf8(utf8, maxLen))
+            if (textBuffer.MatchesUtf8(utf8, maxLen))
                 return;
 
-            int length = m_TextBuffer.CopyFromUtf8(utf8, maxLen);
+            int length = textBuffer.CopyFromUtf8(utf8, maxLen);
 
             ApplyBufferChange(length);
         }
@@ -309,9 +356,10 @@ namespace UnityEngine.UIElements
             if (IsBufferEqualTo(sb, length))
                 return;
 
-            m_TextBuffer.EnsureCapacity(length);
+            ref var buffer = ref textBuffer;
+            buffer.EnsureCapacity(length);
             for (int i = 0; i < length; i++)
-                m_TextBuffer[i] = sb[i];
+                buffer[i] = sb[i];
 
             ApplyBufferChange(length);
         }
@@ -366,29 +414,31 @@ namespace UnityEngine.UIElements
             if (capacity == 0)
                 return;
 
-            m_TextBuffer.EnsureCapacity(capacity, preserveContent: true);
+            textBuffer.EnsureCapacity(capacity, preserveContent: true);
         }
 
         bool IsBufferEqualTo(ReadOnlySpan<char> span, int length)
         {
-            if (!m_TextBuffer.isCreated)
-                return length == 0 && m_TextBuffer.length == 0;
-            if (m_TextBuffer.length != length)
+            ref var buffer = ref textBuffer;
+            if (!buffer.isCreated)
+                return length == 0 && buffer.length == 0;
+            if (buffer.length != length)
                 return false;
             for (int i = 0; i < length; i++)
-                if (m_TextBuffer[i] != span[i])
+                if (buffer[i] != span[i])
                     return false;
             return true;
         }
 
         bool IsBufferEqualTo(StringBuilder sb, int length)
         {
-            if (!m_TextBuffer.isCreated)
-                return length == 0 && m_TextBuffer.length == 0;
-            if (m_TextBuffer.length != length)
+            ref var buffer = ref textBuffer;
+            if (!buffer.isCreated)
+                return length == 0 && buffer.length == 0;
+            if (buffer.length != length)
                 return false;
             for (int i = 0; i < length; i++)
-                if (m_TextBuffer[i] != sb[i])
+                if (buffer[i] != sb[i])
                     return false;
             return true;
         }
@@ -397,7 +447,7 @@ namespace UnityEngine.UIElements
         {
             string previousText = m_Text;
 
-            m_TextBuffer.length = newLength;
+            textBuffer.length = newLength;
             m_IsTextBufferDirty = true;
             m_Text = null;
             isElided = false;
@@ -412,7 +462,7 @@ namespace UnityEngine.UIElements
 
             if (panel != null && HasParentEventInterests(EventCategory.ChangeValue))
             {
-                m_Text = m_TextBuffer.Materialize();
+                m_Text = textBuffer.Materialize();
                 SetRenderedText(m_Text);
                 m_IsTextBufferDirty = false;
                 using (var evt = ChangeEvent<string>.GetPooled(previousText ?? string.Empty, m_Text))
@@ -789,7 +839,7 @@ namespace UnityEngine.UIElements
             {
                 if (m_IsTextBufferDirty)
                 {
-                    m_Text = m_TextBuffer.Materialize();
+                    m_Text = textBuffer.Materialize();
                     m_IsTextBufferDirty = false;
                 }
                 return m_Text ?? string.Empty;
@@ -799,7 +849,7 @@ namespace UnityEngine.UIElements
             {
                 if (m_IsTextBufferDirty)
                 {
-                    m_Text = m_TextBuffer.Materialize();
+                    m_Text = textBuffer.Materialize();
                     m_IsTextBufferDirty = false;
                 }
                 if (m_Text != value)
@@ -841,7 +891,7 @@ namespace UnityEngine.UIElements
             newValue = ((ITextEdition)this).CullString(newValue);
             if (m_IsTextBufferDirty)
             {
-                m_Text = m_TextBuffer.Materialize();
+                m_Text = textBuffer.Materialize();
                 m_IsTextBufferDirty = false;
             }
             if (m_Text != newValue)
@@ -850,7 +900,7 @@ namespace UnityEngine.UIElements
                 m_Text = newValue;
                 isElided = false;
                 if (panel != null)
-                    m_TextBuffer.CopyFrom(newValue);
+                    textBuffer.CopyFrom(newValue);
 
                 //No need to dirty the layout if the element's size is not affected by the text change
                 if (AnySizeAutoOrNone(ref computedStyle))
@@ -889,4 +939,3 @@ namespace UnityEngine.UIElements
         }
     }
 }
-#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

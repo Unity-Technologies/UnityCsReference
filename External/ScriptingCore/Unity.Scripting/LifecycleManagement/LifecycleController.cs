@@ -114,11 +114,6 @@ namespace Unity.Scripting.LifecycleManagement
             }
         }
 
-        internal static void InitializeForIl2Cpp(IScriptingCoreDebug depDebug)
-        {
-            Debug.ScriptingCoreDebug = depDebug;
-            _instance = new LifecycleController();
-        }
 
         [Obsolete("This overload will be deprecated once this becomes Net8, use the strongly typed overloads instead")]
         public bool IsScopePresent(string scopeName)

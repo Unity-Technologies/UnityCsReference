@@ -35,6 +35,7 @@ namespace UnityEngine
     [StaticAccessor("GetRenderSettings()", StaticAccessorType.Dot)]
     public sealed partial class RenderSettings : Object
     {
+        internal RenderSettings(global::UnityEngine.EntityId id) : base(id) {}
         private RenderSettings() {}
 
         [NativeProperty("UseFog")]         extern public static bool  fog              { get; set; }
@@ -126,6 +127,7 @@ namespace UnityEngine
     [StaticAccessor("GetQualitySettings()", StaticAccessorType.Dot)]
     public sealed partial class QualitySettings : Object
     {
+        internal QualitySettings(global::UnityEngine.EntityId id) : base(id) {}
         public static void ForEach(Action callback)
         {
             if (callback == null)

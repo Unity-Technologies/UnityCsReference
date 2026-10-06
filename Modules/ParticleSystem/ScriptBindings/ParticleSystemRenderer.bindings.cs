@@ -16,6 +16,8 @@ namespace UnityEngine
     [RequireComponent(typeof(Transform))]
     public sealed partial class ParticleSystemRenderer : Renderer
     {
+        internal ParticleSystemRenderer(global::UnityEngine.EntityId id) : base(id) {}
+        public ParticleSystemRenderer() {}
         ///<summary>Control the direction that particles face.</summary>
         ///<remarks>For many applications, it is beneficial for particles to always face the Camera. This property allows you to change whether particles in the system face the Camera or not.
         ///

@@ -11,6 +11,8 @@ namespace UnityEditor
     [NativeHeader("Editor/Src/AssetPipeline/ShaderImporter.h")]
     public sealed partial class ShaderImporter : AssetImporter
     {
+        internal ShaderImporter(global::UnityEngine.EntityId id) : base(id) {}
+        public ShaderImporter() {}
         public extern Shader GetShader();
 
         public extern void SetDefaultTextures(string[] name, Texture[] textures);

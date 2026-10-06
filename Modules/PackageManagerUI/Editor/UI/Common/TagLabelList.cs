@@ -36,7 +36,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_ShowLessButton.clickable.clicked += ShowLessClicked;
         }
 
-        public void Refresh(string listName, IReadOnlyCollection<string> tagNames)
+        public void Refresh(string listName, IReadOnlyList<string> tagNames)
         {
             m_ListNameLabel.text = listName;
 

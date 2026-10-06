@@ -19,16 +19,17 @@ namespace UnityEditor
         public enum Lightmapper
         {
             [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
-            [Obsolete("Use Lightmapper.ProgressiveCPU instead. (UnityUpgradable) -> UnityEditor.LightmapEditorSettings/Lightmapper.ProgressiveCPU", true)]
+            [Obsolete("Use Lightmapper.ProgressiveGPU instead. (UnityUpgradable) -> UnityEditor.LightmapEditorSettings/Lightmapper.ProgressiveGPU", true)]
             Radiosity = 0,
             [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
-            [Obsolete("Use Lightmapper.ProgressiveCPU instead. (UnityUpgradable) -> UnityEditor.LightmapEditorSettings/Lightmapper.ProgressiveCPU", true)]
+            [Obsolete("Use Lightmapper.ProgressiveGPU instead. (UnityUpgradable) -> UnityEditor.LightmapEditorSettings/Lightmapper.ProgressiveGPU", true)]
             Enlighten = 0,
             [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
-            [Obsolete("Use Lightmapper.ProgressiveCPU instead. (UnityUpgradable) -> UnityEditor.LightmapEditorSettings/Lightmapper.ProgressiveCPU", true)]
+            [Obsolete("Use Lightmapper.ProgressiveGPU instead. (UnityUpgradable) -> UnityEditor.LightmapEditorSettings/Lightmapper.ProgressiveGPU", true)]
             PathTracer = 1,
 
-            // Lightmaps are baked by the CPU Progressive lightmapper (Wintermute + OpenRL based).
+            [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
+            [Obsolete("The Progressive CPU lightmapper has been removed. Use Lightmapper.ProgressiveGPU instead. #from(7000.0) (UnityUpgradable) -> UnityEditor.LightmapEditorSettings/Lightmapper.ProgressiveGPU", true)]
             ProgressiveCPU = 1,
 
             // Lightmaps are baked by the GPU Progressive lightmapper (RadeonRays + OpenCL based).
@@ -81,9 +82,6 @@ namespace UnityEditor
         {
             switch (lightmapper)
             {
-                case LightingSettings.Lightmapper.ProgressiveCPU:
-                    return Lightmapper.ProgressiveCPU;
-
                 case LightingSettings.Lightmapper.ProgressiveGPU:
                     return Lightmapper.ProgressiveGPU;
 
@@ -94,7 +92,7 @@ namespace UnityEditor
                 default:
                 {
                     Debug.LogError("Unsupported Lightmapper type was added and not handled correctly. ");
-                    return Lightmapper.ProgressiveCPU;
+                    return Lightmapper.ProgressiveGPU;
                 }
             }
         }
@@ -103,9 +101,6 @@ namespace UnityEditor
         {
             switch (lightmapper)
             {
-                case Lightmapper.ProgressiveCPU:
-                    return LightingSettings.Lightmapper.ProgressiveCPU;
-
                 // In Unity Compute projects the GPU lightmapper means the compute baker, matching the Lighting window.
                 case Lightmapper.ProgressiveGPU:
                     return UnityEditor.Rendering.EditorGraphicsSettings.defaultLightBaker == UnityEditor.Rendering.LightBaker.UnityComputeLightBaker
@@ -115,7 +110,7 @@ namespace UnityEditor
                 default:
                 {
                     Debug.LogError("Unsupported Lightmapper type was added and not handled correctly. ");
-                    return LightingSettings.Lightmapper.ProgressiveCPU;
+                    return LightingSettings.Lightmapper.ProgressiveGPU;
                 }
             }
         }

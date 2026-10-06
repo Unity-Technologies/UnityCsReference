@@ -3,7 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
-using Unity.GraphToolkit.CSO;
+using Unity.CSO.Editor;
 using UnityEngine;
 
 namespace Unity.GraphToolkit.Editor
@@ -19,14 +19,16 @@ namespace Unity.GraphToolkit.Editor
         /// </summary>
         /// <param name="registrar">The command handler registrar.</param>
         /// <param name="graphView">The graph view for which to register command handlers.</param>
-        public static void RegisterCommands(CommandHandlerRegistrar registrar, GraphView graphView)
+        public static void RegisterCommands(CSO.CommandHandlerRegistrar registrar, GraphView graphView)
         {
             RegisterCommands(registrar, graphView.GraphViewModel.GraphViewState,
-                graphView.GraphViewModel.GraphModelState, graphView.GraphViewModel.SelectionState, graphView.GraphViewModel.AutoPlacementState, graphView.GraphTool);
+                graphView.GraphViewModel.GraphModelState, graphView.GraphViewModel.SelectionState,
+                graphView.GraphViewModel.AutoPlacementState, graphView.GraphTool);
         }
 
-        public static void RegisterCommands(CommandHandlerRegistrar registrar, GraphViewStateComponent graphViewState,
-            GraphModelStateComponent graphModelState, SelectionStateComponent selectionState, AutoPlacementStateComponent autoPlacementState, GraphTool graphTool)
+        public static void RegisterCommands(CSO.CommandHandlerRegistrar registrar, GraphViewStateComponent graphViewState,
+            GraphModelStateComponent graphModelState, SelectionStateComponent selectionState,
+            AutoPlacementStateComponent autoPlacementState, GraphTool graphTool)
         {
             registrar.AddStateComponent(graphViewState);
             registrar.AddStateComponent(graphModelState);
@@ -34,14 +36,28 @@ namespace Unity.GraphToolkit.Editor
             registrar.AddStateComponent(autoPlacementState);
             registrar.AddStateComponent(graphTool.UndoState);
 
+            if (registrar is CSO.Editor.CommandHandlerRegistrar editorRegistrar)
+                RegisterEditorCommands(editorRegistrar, graphModelState, selectionState, autoPlacementState, graphTool);
+        }
+
+        static void RegisterEditorCommands(CSO.Editor.CommandHandlerRegistrar registrar,
+            GraphModelStateComponent graphModelState, SelectionStateComponent selectionState,
+            AutoPlacementStateComponent autoPlacementState, GraphTool graphTool)
+        {
             // The CommandHandlerRegistrar does not support command handlers having non-IStateComponent parameters.
-            var createWire = new CommandHandlerFunctor<UndoStateComponent, GraphModelStateComponent, SelectionStateComponent, AutoPlacementStateComponent, Preferences, CreateWireCommand>();
-            createWire.Bind(graphTool.UndoState, graphModelState, selectionState, autoPlacementState, graphTool.Preferences);
+            var createWire =
+                new CommandHandlerFunctor<UndoStateComponent, GraphModelStateComponent, SelectionStateComponent,
+                    AutoPlacementStateComponent, Preferences, CreateWireCommand>();
+            createWire.Bind(graphTool.UndoState, graphModelState, selectionState, autoPlacementState,
+                graphTool.Preferences);
             registrar.CommandTarget.RegisterCommandHandler(createWire);
 
             // The CommandHandlerRegistrar does not support command handlers having non-IStateComponent parameters.
-            var createNode = new CommandHandlerFunctor<UndoStateComponent, GraphModelStateComponent, SelectionStateComponent, AutoPlacementStateComponent, Preferences, CreateNodeCommand>();
-            createNode.Bind(graphTool.UndoState, graphModelState, selectionState, autoPlacementState, graphTool.Preferences);
+            var createNode =
+                new CommandHandlerFunctor<UndoStateComponent, GraphModelStateComponent, SelectionStateComponent,
+                    AutoPlacementStateComponent, Preferences, CreateNodeCommand>();
+            createNode.Bind(graphTool.UndoState, graphModelState, selectionState, autoPlacementState,
+                graphTool.Preferences);
             registrar.CommandTarget.RegisterCommandHandler(createNode);
 
             registrar.RegisterDefaultCommandHandler<MoveWireCommand>();

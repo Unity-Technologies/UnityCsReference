@@ -14,7 +14,6 @@ using Module = Unity.ProjectAuditor.Editor.Core.Module;
 
 namespace Unity.ProjectAuditor.Editor.Modules
 {
-    // Run the URP Render Pipeline Converter and report its issues.
     internal class MigrationToURPModule : Module
     {
         const string k_ConvertersTypeName = "UnityEditor.Rendering.Universal.Converters, Unity.RenderPipelines.Universal.Editor";
@@ -24,6 +23,8 @@ namespace Unity.ProjectAuditor.Editor.Modules
         // The asset converters scan through the Search service, which indexes the project over several Editor updates,
         // so a scan can take a while to finish.
         const double k_ScanTimeoutSeconds = 600.0;
+
+        internal const string k_ModuleName = "Migration To URP";
 
         internal const string PAA7000 = nameof(PAA7000);
 
@@ -74,7 +75,7 @@ namespace Unity.ProjectAuditor.Editor.Modules
 
         const BindingFlags k_ConverterApiBindingFlags = BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic;
 
-        public override string Name => "Migration To URP";
+        public override string Name => k_ModuleName;
 
         public override IReadOnlyCollection<IssueLayout> SupportedLayouts => [AssetsModule.k_IssueLayout, SettingsModule.k_IssueLayout];
 
@@ -89,15 +90,14 @@ namespace Unity.ProjectAuditor.Editor.Modules
             var convertersType = Type.GetType(k_ConvertersTypeName);
 
             // Nothing to do if the migration checks aren't needed (eg using custom SRP), or if URP isn't installed
-            if (!k_ConverterItemDescriptor.IsSupported(analysisParams) || convertersType == null)
+            if (!k_ConverterItemDescriptor.IsSupported(analysisParams) || convertersType == null || !MigrationToURPUtilities.IsUrpPackageInstalled())
             {
                 analysisParams.OnModuleCompleted?.Invoke(Name, AnalysisResult.Success, 0);
                 yield break;
             }
 
             // Cancelling a scan is how we stop it when analysis is cancelled, so it's part of the API we need
-            var cancelScanMethod = convertersType.GetMethod("CancelScan", k_ConverterApiBindingFlags, null,
-                Type.EmptyTypes, null);
+            var cancelScanMethod = convertersType.GetMethod("CancelScan", k_ConverterApiBindingFlags, null, Type.EmptyTypes, null);
             if (cancelScanMethod == null)
             {
                 Debug.LogWarning($"[{ProjectAuditor.DisplayName}] Could not find the Render Pipeline Converter scan API on {convertersType.FullName}.");
@@ -261,36 +261,6 @@ namespace Unity.ProjectAuditor.Editor.Modules
             }
 
             return issues;
-        }
-    }
-
-    /// <summary>
-    /// Utilities to help with migration advice to the Universal Render Pipeline.
-    /// </summary>
-    public static class MigrationToURPUtilities
-    {
-        /// <summary>
-        /// Link to the documentation.
-        /// </summary>
-        public static string DocumentationUrl => "https://docs.unity3d.com/Packages/com.unity.render-pipelines.universal@latest/index.html?subfolder=/manual/upgrade-guides.html";
-
-        /// <summary>
-        /// Shows where to install the URP package, and opens the Render Pipeline Converter tool.
-        /// </summary>
-        /// <param name="issue">ReportItem triggering this Quick Fix helper.</param>
-        /// <param name="analysisParams">AnalysisParams for the current analysis.</param>
-        /// <returns>Whether the method fixed the issue. Always false for this fixer.</returns>
-        public static bool OpenRenderPipelineConverter(ReportItem issue, AnalysisParams analysisParams)
-        {
-            // When an SRP package is installed, the Render Pipeline Converter is the migration entry point.
-            if (EditorApplication.ExecuteMenuItem("Window/Rendering/Render Pipeline Converter"))
-                return false;
-
-            // No SRP package is installed yet: open Package Manager so the user can add URP first.
-            UnityEditor.PackageManager.UI.Window.Open("com.unity.render-pipelines.universal");
-
-            // Opening a window doesn't migrate the project, so the issue remains until BiRP is no longer in use.
-            return false;
         }
     }
 }

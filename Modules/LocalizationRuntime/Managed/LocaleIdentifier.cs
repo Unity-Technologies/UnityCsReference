@@ -16,7 +16,7 @@ namespace Unity.Localization;
 /// The default value is the undefined locale, whose <see cref="Code"/> is the empty string.
 /// </remarks>
 /// <example>
-/// <para>Create an identifier from a code, then compare it against another case-insensitively.</para>
+/// Create an identifier from a code, then compare it against another case-insensitively.
 /// <code source="../../../Modules/LocalizationRuntime/Tests/UTFTests/Localization.Samples/Locales/LocaleIdentifierOverviewExample.cs"/>
 /// </example>
 /// <seealso cref="Locale"/>
@@ -35,7 +35,7 @@ public struct LocaleIdentifier : IEquatable<LocaleIdentifier>
     /// </remarks>
     /// <param name="code">The culture code, for example "en" or "fr-CA".</param>
     /// <example>
-    /// <para>Create an identifier from a culture code.</para>
+    /// Create an identifier from a culture code.
     /// <code source="../../../Modules/LocalizationRuntime/Tests/UTFTests/Localization.Samples/Locales/LocaleIdentifierConstructorExample.cs"/>
     /// </example>
     public LocaleIdentifier(string code)
@@ -57,7 +57,7 @@ public struct LocaleIdentifier : IEquatable<LocaleIdentifier>
     /// <param name="other">The identifier to compare with this one.</param>
     /// <returns><c>true</c> if both identifiers have the same culture code, ignoring case; otherwise, <c>false</c>.</returns>
     /// <example>
-    /// <para>Compare two identifiers that differ only by case.</para>
+    /// Compare two identifiers that differ only by case.
     /// <code source="../../../Modules/LocalizationRuntime/Tests/UTFTests/Localization.Samples/Locales/LocaleIdentifierEqualsExample.cs"/>
     /// </example>
     // Compare through Code, not m_Code: serialization round-trips a null code as "", and the two must stay equal.
@@ -73,7 +73,7 @@ public struct LocaleIdentifier : IEquatable<LocaleIdentifier>
     /// <param name="obj">The object to compare with this identifier.</param>
     /// <returns><c>true</c> if <paramref name="obj"/> is an identifier with the same culture code, ignoring case; otherwise, <c>false</c>.</returns>
     /// <example>
-    /// <para>Compare against a boxed identifier.</para>
+    /// Compare against a boxed identifier.
     /// <code source="../../../Modules/LocalizationRuntime/Tests/UTFTests/Localization.Samples/Locales/LocaleIdentifierEqualsObjectExample.cs"/>
     /// </example>
     public override bool Equals(object obj) => obj is LocaleIdentifier other && Equals(other);
@@ -88,7 +88,7 @@ public struct LocaleIdentifier : IEquatable<LocaleIdentifier>
     /// </remarks>
     /// <returns>An integer hash code derived from the culture code.</returns>
     /// <example>
-    /// <para>Use an identifier as a dictionary key.</para>
+    /// Use an identifier as a dictionary key.
     /// <code source="../../../Modules/LocalizationRuntime/Tests/UTFTests/Localization.Samples/Locales/LocaleIdentifierHashCodeExample.cs"/>
     /// </example>
     public override int GetHashCode() => string.IsNullOrEmpty(m_Code) ? 0 : StringComparer.OrdinalIgnoreCase.GetHashCode(m_Code);
@@ -103,7 +103,7 @@ public struct LocaleIdentifier : IEquatable<LocaleIdentifier>
     /// <param name="b">The second identifier to compare.</param>
     /// <returns><c>true</c> if both identifiers have the same culture code, ignoring case; otherwise, <c>false</c>.</returns>
     /// <example>
-    /// <para>Compare two identifiers with the equality operator.</para>
+    /// Compare two identifiers with the equality operator.
     /// <code source="../../../Modules/LocalizationRuntime/Tests/UTFTests/Localization.Samples/Locales/LocaleIdentifierEqualityOperatorExample.cs"/>
     /// </example>
     public static bool operator ==(LocaleIdentifier a, LocaleIdentifier b) => a.Equals(b);
@@ -118,7 +118,7 @@ public struct LocaleIdentifier : IEquatable<LocaleIdentifier>
     /// <param name="b">The second identifier to compare.</param>
     /// <returns><c>true</c> if the identifiers have different culture codes, ignoring case; otherwise, <c>false</c>.</returns>
     /// <example>
-    /// <para>Compare two identifiers with the inequality operator.</para>
+    /// Compare two identifiers with the inequality operator.
     /// <code source="../../../Modules/LocalizationRuntime/Tests/UTFTests/Localization.Samples/Locales/LocaleIdentifierInequalityOperatorExample.cs"/>
     /// </example>
     public static bool operator !=(LocaleIdentifier a, LocaleIdentifier b) => !a.Equals(b);
@@ -133,7 +133,7 @@ public struct LocaleIdentifier : IEquatable<LocaleIdentifier>
     /// <param name="code">The culture code to convert.</param>
     /// <returns>An identifier for the given culture code.</returns>
     /// <example>
-    /// <para>Assign a string to a LocaleIdentifier through the implicit conversion.</para>
+    /// Assign a string to a LocaleIdentifier through the implicit conversion.
     /// <code source="../../../Modules/LocalizationRuntime/Tests/UTFTests/Localization.Samples/Locales/LocaleIdentifierFromCodeExample.cs"/>
     /// </example>
     public static implicit operator LocaleIdentifier(string code) => new(code);
@@ -146,7 +146,7 @@ public struct LocaleIdentifier : IEquatable<LocaleIdentifier>
     /// </remarks>
     /// <returns>The culture code, or the empty string when the identifier is undefined.</returns>
     /// <example>
-    /// <para>Log the identifier's culture code.</para>
+    /// Log the identifier's culture code.
     /// <code source="../../../Modules/LocalizationRuntime/Tests/UTFTests/Localization.Samples/Locales/LocaleIdentifierToStringExample.cs"/>
     /// </example>
     public override string ToString() => Code;

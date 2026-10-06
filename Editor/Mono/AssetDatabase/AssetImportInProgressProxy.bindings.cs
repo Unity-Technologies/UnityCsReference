@@ -11,6 +11,7 @@ namespace UnityEditor
     [NativeClass("AssetImportInProgressProxy", PersistentTypeId = 0x16088076)]
     class AssetImportInProgressProxy : UnityEngine.Object
     {
+        internal AssetImportInProgressProxy(global::UnityEngine.EntityId id) : base(id) {}
         public extern GUID asset
         {
             [NativeMethod("GetAsset")]

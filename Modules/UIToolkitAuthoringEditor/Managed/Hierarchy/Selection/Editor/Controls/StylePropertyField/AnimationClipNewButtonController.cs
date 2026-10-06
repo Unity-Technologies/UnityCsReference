@@ -31,10 +31,10 @@ internal static class AnimationClipNewButtonController
     static readonly string k_SaveDialogMessageFormat = L10n.Tr("Create a new UI animation clip for {0}:", null);
     static readonly string k_DefaultMessageSubject = L10n.Tr("the selected element", null);
 
-    static readonly string k_NewButtonText = L10n.Tr("New...");
-    static readonly string k_EditButtonText = L10n.Tr("Edit...");
-    static readonly string k_NewButtonTooltip = L10n.Tr("Create a new UI Animation Clip asset and assign it to this animation.");
-    static readonly string k_EditButtonTooltip = L10n.Tr("Open the Animation window to edit the assigned clip.");
+    static readonly string k_NewButtonText = L10n.Tr("New...", null);
+    static readonly string k_EditButtonText = L10n.Tr("Edit...", null);
+    static readonly string k_NewButtonTooltip = L10n.Tr("Create a new UI Animation Clip asset and assign it to this animation.", null);
+    static readonly string k_EditButtonTooltip = L10n.Tr("Open the Animation window to edit the assigned clip.", null);
 
     public static Button FindButton(VisualElement content)
     {

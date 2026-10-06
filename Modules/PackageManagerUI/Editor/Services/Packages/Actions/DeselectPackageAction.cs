@@ -17,7 +17,7 @@ internal class DeselectPackageAction : PackageAction
         m_AnalyticsEventName = analyticsEventName;
     }
 
-    protected override bool TriggerActionImplementation(IReadOnlyCollection<IPackage> packages)
+    protected override bool TriggerActionImplementation(IReadOnlyList<IPackage> packages)
     {
         var packageUniqueIds = packages.SelectToNewArray(p => p.uniqueId);
         m_PageManager.activePage.RemoveSelection(packageUniqueIds, false);

@@ -161,6 +161,7 @@ namespace UnityEngine.UIElements
 
 
         [AutoStaticsCleanupOnCodeReload]
+        [IgnoreForUAL0015("Lazily re-created by the editorDispatcher getter on next access after reload")]
         static EventDispatcher s_EditorEventDispatcher;
 
         internal static EventDispatcher editorDispatcher

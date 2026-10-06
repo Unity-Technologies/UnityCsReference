@@ -69,13 +69,17 @@ namespace Unity.ProjectAuditor.Editor.Core
         // empty MaxVersion means "still applies in all later versions").
         internal static bool MatchesTargetVersion(ReportItem issue, string targetVersion)
         {
-            if (!issue.IsUpgradeIssue || !HasAnyUpgradeVersions)
+            if (!issue.IsUpgradeIssue)
                 return true;
 
-            // The selector assigns a default version the first time it's drawn; stats can be computed
-            // before that, so fall back to the newest known version rather than parsing an empty string.
+            // If there are no upgrade versions, fall back to the latest
             if (string.IsNullOrEmpty(targetVersion))
-                targetVersion = UnityVersions[^1];
+            {
+                if (UnityVersions.Length > 0)
+                    targetVersion = UnityVersions[^1];
+                else
+                    targetVersion = Application.unityVersion;
+            }
 
             var targetVersionInt = Utility.VersionToInt(targetVersion);
 

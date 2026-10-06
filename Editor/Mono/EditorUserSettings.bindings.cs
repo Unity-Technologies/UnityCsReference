@@ -20,6 +20,7 @@ namespace UnityEditor
     [StaticAccessor("GetEditorUserSettings()", StaticAccessorType.Dot)]
     public sealed class EditorUserSettings : UnityObject
     {
+        internal EditorUserSettings(global::UnityEngine.EntityId id) : base(id) {}
         EditorUserSettings()
         {
         }

@@ -237,11 +237,7 @@ namespace Unity.U2D.Physics
         /// </summary>
         /// <param name="owner">The object that owns this key. This can be NULL if not required but is recommended as the key is formed in part by the hash-code of the owner object.</param>
         /// <param name="ownerKey">The owner key to be used. If zero then a new owner key is created. You can use <see cref="PhysicsWorld.CreateOwnerKey(UnityEngine.Object)"/> for this value although any non-zero integer will work.</param>
-        public unsafe readonly void SetOwner(UnityEngine.Object owner, int ownerKey)
-        {
-            var chain = this;
-            SetOwner(new ReadOnlySpan<PhysicsChain>(&chain, 1), owner, ownerKey);
-        }
+        public readonly void SetOwner(UnityEngine.Object owner, int ownerKey) => SetOwner(stackalloc PhysicsChain[1] { this }, owner, ownerKey);
 
         /// <summary>
         /// Set the owner object using the specified owner key.
@@ -285,7 +281,8 @@ namespace Unity.U2D.Physics
         /// This includes the following events:
         /// 
         ///- A <see cref="PhysicsEvents.ContactFilterEvent"/> with call <see cref="PhysicsCallbacks.IContactFilterCallback"/>.
-        ///- A <see cref="PhysicsEvents.PreSolveEvent"/> with call <see cref="PhysicsCallbacks.IPreSolveCallback"/>.
+        ///- A <see cref="PhysicsEvents.PreContactEvent"/> with call <see cref="PhysicsCallbacks.IPreContactCallback"/>.
+        ///- A <see cref="PhysicsEvents.PreContinuousEvent"/> with call <see cref="PhysicsCallbacks.IPreContinuousCallback"/>.
         ///- A <see cref="PhysicsEvents.TriggerBeginEvent"/> with call <see cref="PhysicsCallbacks.ITriggerCallback"/>.
         ///- A <see cref="PhysicsEvents.TriggerEndEvent"/> with call <see cref="PhysicsCallbacks.ITriggerCallback"/>.
         ///- A <see cref="PhysicsEvents.ContactBeginEvent"/> with call <see cref="PhysicsCallbacks.IContactCallback"/>.

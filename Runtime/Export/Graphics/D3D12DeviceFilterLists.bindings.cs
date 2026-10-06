@@ -165,7 +165,8 @@ namespace UnityEngine
     [HelpURL("d3d12-device-filter-list-asset-reference")]
     public sealed class D3D12DeviceFilterLists : UnityEngine.Object
     {
-        private static extern void Internal_CreateD3D12DeviceFilterLists([Writable] D3D12DeviceFilterLists obj, string name);
+        internal D3D12DeviceFilterLists(global::UnityEngine.EntityId id) : base(id) {}
+        private static extern EntityId Internal_CreateD3D12DeviceFilterLists(string name);
 
         // The D3D12 Filters
         public extern D3D12DeviceFilterData[] d3D12DeviceAllowFilters { get; set; }
@@ -176,7 +177,7 @@ namespace UnityEngine
 
         public D3D12DeviceFilterLists(string name = "D3D12DeviceFilterLists")
         {
-            Internal_CreateD3D12DeviceFilterLists(this, name);
+            SetEntityIdFromConstructor(Internal_CreateD3D12DeviceFilterLists(name));
         }
 
         public void EnsureValidOrThrow()

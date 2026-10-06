@@ -5,6 +5,7 @@
 using System;
 using System.Collections.Generic;
 using Unity.Hierarchy;
+using Unity.Scripting.LifecycleManagement;
 
 namespace UnityEditor.Search
 {
@@ -22,7 +23,11 @@ namespace UnityEditor.Search
             }
         }
 
-        readonly Dictionary<StringView, HierarchyNode> m_SearchItemToNode = new(new StringViewHierarchyMapEqualityComparer());
+        // Exposed so other structures keyed by StringView (e.g. a provider-scoped node cache) can match this map's equality/hash semantics.
+        [NoAutoStaticsCleanup] // Immutable, stateless comparer; safe to persist across reloads.
+        internal static readonly IEqualityComparer<StringView> StringViewComparer = new StringViewHierarchyMapEqualityComparer();
+
+        readonly Dictionary<StringView, HierarchyNode> m_SearchItemToNode = new(StringViewComparer);
         readonly Dictionary<HierarchyNode, SearchItem> m_NodeToSearchItem = new();
 
         public void Add(SearchItem searchItem, in HierarchyNode node)
@@ -31,14 +36,25 @@ namespace UnityEditor.Search
                 throw new ArgumentNullException(nameof(searchItem));
             if (searchItem.id == null)
                 throw new ArgumentNullException(nameof(SearchItem.id));
-            if (node == HierarchyNode.Null)
-                throw new ArgumentNullException(nameof(node));
 
             // We use the searchItem id StringView as a key because there are cases where we only have the id available,
             // but we still want to know if the corresponding HierarchyNode exists. By using the StringView, we can avoid
             // having to allocate substrings. Furthermore, we use a custom comparer that uses a stable hash code that is identical
             // for strings and StringViews with the same content, so that we can find the node even if we only have a string id instead of a StringView.
-            m_SearchItemToNode[searchItem.id.GetStringView()] = node;
+            Add(searchItem, in node, searchItem.id.GetStringView());
+        }
+
+        // Lets a caller key the entry itself instead of deriving the key from searchItem.id, which stays untouched.
+        public void Add(SearchItem searchItem, in HierarchyNode node, StringView explicitKey)
+        {
+            if (searchItem == null)
+                throw new ArgumentNullException(nameof(searchItem));
+            if (!explicitKey.valid)
+                throw new ArgumentNullException(nameof(explicitKey));
+            if (node == HierarchyNode.Null)
+                throw new ArgumentNullException(nameof(node));
+
+            m_SearchItemToNode[explicitKey] = node;
             m_NodeToSearchItem[node] = searchItem;
         }
 

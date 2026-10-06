@@ -14,15 +14,16 @@ namespace UnityEngine
     [PreventReadOnlyInstanceModificationAttribute]
     public sealed partial class LightingSettings : Object
     {
+        internal LightingSettings(global::UnityEngine.EntityId id) : base(id) {}
         [RequiredByNativeCode]
         internal void LightingSettingsDontStripMe() {}
 
         public LightingSettings()
         {
-            Internal_Create(this);
+            SetEntityIdFromConstructor(Internal_Create());
         }
 
-        private extern static void Internal_Create([Writable] LightingSettings self);
+        private extern static EntityId Internal_Create();
 
         // Returns the active lighting settings for the currently active scene.
         // Note: This doesn't seem to populate until the frame after the scene was loaded.
@@ -47,11 +48,11 @@ namespace UnityEngine
         public enum Lightmapper
         {
             [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
-            [Obsolete("Use Lightmapper.ProgressiveCPU instead. (UnityUpgradable) -> UnityEngine.LightingSettings/Lightmapper.ProgressiveCPU", true)]
+            [Obsolete("Use Lightmapper.ProgressiveGPU instead. (UnityUpgradable) -> UnityEngine.LightingSettings/Lightmapper.ProgressiveGPU", true)]
             Enlighten = 0,
 
-            // Lightmaps are baked by the CPU Progressive lightmapper (Wintermute + OpenRL based).
-            [Obsolete("Lightmapper.ProgressiveCPU is deprecated, use Lightmapper.UnityComputeGPU instead.", false)]
+            [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
+            [Obsolete("The Progressive CPU lightmapper has been removed. Use Lightmapper.ProgressiveGPU or Lightmapper.UnityComputeGPU instead. #from(7000.0) (UnityUpgradable) -> UnityEngine.LightingSettings/Lightmapper.ProgressiveGPU", true)]
             ProgressiveCPU = 1,
 
             // Lightmaps are baked by the GPU Progressive lightmapper (RadeonRays + OpenCL based).
@@ -151,6 +152,7 @@ namespace UnityEngine
         public extern float indirectScale { get; set; }
 
         [NativeName("BakeBackend")]
+        [Obsolete("LightingSettings.lightmapper is deprecated. The lightmapper in use is determined by the Default Light Baker setting in the Graphics settings (UnityEditor.Rendering.EditorGraphicsSettings.defaultLightBaker). #from(7000.0)", false)]
         public extern Lightmapper lightmapper { get; set; }
 
         // The maximum size of an individual lightmap texture.

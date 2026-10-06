@@ -19,10 +19,10 @@ namespace UnityEditor
     {
         [VisibleToOtherModules("UnityEditor.GraphToolkitModule")]
         public static extern GUIView current {[NativeMethod("GetCurrentGUIView")] get; }
-        public static extern GUIView focusedView {[NativeMethod("GetFocusedGUIView")] get; }
+        internal static extern GUIView focusedViewNative {[NativeMethod("GetFocusedGUIView")] get; }
         public static extern GUIView mouseOverView {[NativeMethod("GetMouseOverGUIView")] get; }
 
-        public extern bool hasFocus
+        internal extern bool hasFocusNative
         {
             [NativeMethod("MonoGUIView::IsViewFocused", HasExplicitThis = true)]
             [UnityMarshalThisAs(NativeType.Custom, CustomMarshaller = typeof(NativeHandleMarshaller))]

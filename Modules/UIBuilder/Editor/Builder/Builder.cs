@@ -2,8 +2,8 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: UIBuilder not yet converted
 using System;
+using System.Collections.Generic;
 using Unity.Scripting.LifecycleManagement;
 using Unity.UIToolkit.Editor;
 using UnityEditor;
@@ -15,9 +15,6 @@ namespace Unity.UI.Builder
 {
     sealed partial class Builder : BuilderPaneWindow, IBuilderViewportWindow, IHasCustomMenu, IDisposable
     {
-        #pragma warning disable UAL0015 // this side effect does not outlive the current call (global trigger / lazily-loaded asset re-fetched on next access); a stale reference is harmlessly replaced
-        Builder() {}
-        #pragma warning restore UAL0015
 
         [AutoStaticsCleanupOnCodeReload]
         public static Action<EditorWindow> onActiveBuilderWindowReady;
@@ -88,8 +85,19 @@ namespace Unity.UI.Builder
         internal override bool liveReloadPreferenceDefault => true;
         internal override BindingLogLevel defaultBindingLogLevel => BindingLogLevel.None;
 
-        [NoAutoStaticsCleanup] // Transient selection handoff consumed by the next document open; null is the disarmed state, so a persisted value is harmless across reload.
-        internal static LoadUIDocumentCommand s_NextSelectionFromDocumentCommand;
+        struct PostLoadSelectionRequest
+        {
+            public int? SelectedId;
+            public List<int> SelectedInstanceIds;
+            public VisualTreeAsset SelectedSourceDocument;
+        }
+
+        // Selection handoff from a LoadUIDocumentCommand when the Builder window is newly opened.
+        // Set by OnLoadUIDocumentCommand before ShowWindow(); consumed and cleared in OnEnableAfterAllSerialization.
+        [NoAutoStaticsCleanup]
+        static PostLoadSelectionRequest s_PostLoadSelection;
+
+        internal static bool HasPendingPostLoadSelection => s_PostLoadSelection.SelectedId.HasValue;
 
         readonly Action m_UnregisterBuilderLibraryContentProcessors = BuilderLibraryContent.UnregisterProcessors;
 
@@ -115,6 +123,17 @@ namespace Unity.UI.Builder
             }
         }
 
+        // In StyleSheet Editing Mode the Library pane serves no purpose: hide it (display:none via the
+        // split view; the pane stays in the layout) and restore it for a normal document.
+        internal void UpdateStyleSheetEditingModeLayout()
+        {
+            var leftColumn = rootVisualElement.Q<TwoPaneSplitView>("left-column");
+            if (document.isStyleSheetEditingMode)
+                leftColumn?.CollapseChild(1);
+            else
+                leftColumn?.UnCollapse();
+        }
+
         public HighlightOverlayPainter highlightOverlayPainter => m_HighlightOverlayPainter;
 
         // The primary window plays the singleton role the Builder had before multi-instance: it owns the default
@@ -129,11 +148,17 @@ namespace Unity.UI.Builder
         [SerializeField]
         VisualTreeAsset m_LastOpenedAsset;
 
+        // Same, for a stylesheet opened by itself (its host document is non-persistent).
+        [SerializeField]
+        StyleSheet m_LastOpenedStyleSheet;
+
         internal void RememberRootAssetForLayout()
         {
             var openFiles = document.openUXMLFiles;
-            var rootAsset = openFiles.Count > 0 ? openFiles[0].visualTreeAsset : null;
+            var rootFile = openFiles.Count > 0 ? openFiles[0] : null;
+            var rootAsset = rootFile?.visualTreeAsset;
             m_LastOpenedAsset = rootAsset != null && EditorUtility.IsPersistent(rootAsset) ? rootAsset : null;
+            m_LastOpenedStyleSheet = rootFile?.openedStyleSheet;
         }
 
         [MenuItem(BuilderConstants.BuilderMenuEntry)]
@@ -156,6 +181,75 @@ namespace Unity.UI.Builder
         static void RegisterNewWindowMenuCommand()
         {
             UnityEditor.UIElements.UIToolkitProjectSettings.openNewBuilderWindowMenuCommand = () => ShowNewWindow();
+        }
+
+        [InitializeOnLoadMethod]
+        static void RegisterLoadDocumentCommandHandler()
+        {
+            UICommandQueue.RegisterHandler<LoadUIDocumentCommand>(OnLoadUIDocumentCommand);
+        }
+
+        static void OnLoadUIDocumentCommand(in CommandContext context)
+        {
+            var cmd = (LoadUIDocumentCommand)context.Command;
+
+            if (context.Status != CommandExecutionStatus.Success)
+            {
+                if (context.Status == CommandExecutionStatus.ValidationFailed)
+                {
+                    // Preserve the asset-validation error dialog that previously appeared via OnOpenAsset.
+                    var invalidAsset = cmd.Document != null && cmd.Document.importedWithErrors
+                        ? cmd.Document
+                        : cmd.SubDocuments?.Find(d => d == null || d.importedWithErrors);
+                    if (invalidAsset != null)
+                        BuilderAssetUtilities.ValidateAsset(invalidAsset, null);
+                }
+                return;
+            }
+
+            var builderWindow = ActiveWindow;
+            var windowAlreadyOpen = builderWindow != null;
+
+            if (cmd.SelectedId != -1)
+            {
+                s_PostLoadSelection = new PostLoadSelectionRequest
+                {
+                    SelectedId = cmd.SelectedId,
+                    SelectedInstanceIds = cmd.SelectedInstanceIds,
+                    SelectedSourceDocument = cmd.SelectedSourceDocument,
+                };
+            }
+
+            if (!windowAlreadyOpen)
+                builderWindow = ShowWindow();
+            else
+                builderWindow.Focus();
+
+            if (builderWindow.document.visualTreeAsset != cmd.Document)
+                builderWindow.LoadDocument(cmd.Document);
+            else
+                builderWindow.ReloadDocument();
+
+            if (cmd.Options == SubDocumentOptions.InContext)
+            {
+                for (int i = 0; i < cmd.SubDocuments.Count; i++)
+                    BuilderHierarchyUtilities.OpenAsSubDocument(builderWindow, cmd.SubDocuments[i], cmd.ContextInstances[i]);
+            }
+            else if (cmd.Options == SubDocumentOptions.Isolation)
+            {
+                for (int i = 0; i < cmd.SubDocuments.Count; i++)
+                    BuilderHierarchyUtilities.OpenAsSubDocument(builderWindow, cmd.SubDocuments[i]);
+            }
+
+            if (windowAlreadyOpen && cmd.SelectedId != -1)
+            {
+                var selectedElement = LoadUIDocumentCommand.FindSelectedElement(builderWindow.documentRootElement,
+                    cmd.SelectedId, cmd.SelectedInstanceIds, cmd.SelectedSourceDocument);
+                builderWindow.selection.ClearSelection(null, false);
+                builderWindow.hierarchy.elementHierarchyView.RecursivelyExpandToItem(selectedElement);
+                builderWindow.selection.AddToSelection(null, selectedElement, false, false);
+                s_PostLoadSelection = default;
+            }
         }
 
         public static Builder ShowNewWindow()
@@ -202,6 +296,8 @@ namespace Unity.UI.Builder
             // restart), so reopen the file the layout remembered for it.
             if (m_LastOpenedAsset != null)
                 newDocument.ReopenAsset(m_LastOpenedAsset);
+            else if (m_LastOpenedStyleSheet != null)
+                newDocument.ReopenStyleSheet(m_LastOpenedStyleSheet);
 
             return newDocument;
         }
@@ -264,9 +360,9 @@ namespace Unity.UI.Builder
         {
             // Ensure the fileMenuSaved subscription is established (and re-established after a code
             // reload, which nulls the ScopedLazy value). See s_ScopedLazy above.
-            #pragma warning disable UAL0018 // rebuilt/resubscribed wholesale on the next reload via this object's own lifecycle; a stale value in the interim is never observed
+#pragma warning disable UAL0018 // the value is discarded; the read exists only to force the lazy re-initialization, so nothing retains it past this statement
             _ = s_ScopedLazy.Value;
-            #pragma warning restore UAL0018
+#pragma warning restore UAL0018
 
             var root = rootVisualElement;
             titleContent = GetLocalizedTitleContent();
@@ -408,6 +504,7 @@ namespace Unity.UI.Builder
         void OnFirstDisplay(GeometryChangedEvent evt)
         {
             UpdatePreviewsVisibility();
+            UpdateStyleSheetEditingModeLayout();
 
             m_MiddleSplitView.UnregisterCallback<GeometryChangedEvent>(OnFirstDisplay);
         }
@@ -421,6 +518,7 @@ namespace Unity.UI.Builder
             m_Toolbar.OnAfterBuilderDeserialize();
             m_Library.OnAfterBuilderDeserialize();
             m_Inspector.OnAfterBuilderDeserialize();
+            UpdateStyleSheetEditingModeLayout();
 
             // We claim the change is coming from the Document because we don't
             // want the document hasUnsavedChanges flag to be set at this time.
@@ -429,18 +527,17 @@ namespace Unity.UI.Builder
 
             EditorApplication.delayCall += () =>
             {
-                if (s_NextSelectionFromDocumentCommand == null) return;
+                if (!s_PostLoadSelection.SelectedId.HasValue) return;
 
                 selection.ClearSelection(null, false);
                 var selectedElement = LoadUIDocumentCommand.FindSelectedElement(documentRootElement,
-                    s_NextSelectionFromDocumentCommand.selectedId, s_NextSelectionFromDocumentCommand.selectedInstanceIds,
-                    s_NextSelectionFromDocumentCommand.selectedSourceDocument);
+                    s_PostLoadSelection.SelectedId.Value, s_PostLoadSelection.SelectedInstanceIds, s_PostLoadSelection.SelectedSourceDocument);
                 hierarchy.elementHierarchyView.RecursivelyExpandToItem(selectedElement);
                 selection.AddToSelection(null, selectedElement, false, false);
-                s_NextSelectionFromDocumentCommand = null;
+                s_PostLoadSelection = default;
             };
 
-            if (s_NextSelectionFromDocumentCommand == null)
+            if (!s_PostLoadSelection.SelectedId.HasValue)
                 selection.RestoreSelectionFromDocument(m_Viewport.sharedStylesAndDocumentElement);
         }
 
@@ -454,6 +551,12 @@ namespace Unity.UI.Builder
         public override bool LoadDocument(VisualTreeAsset asset, bool unloadAllSubdocuments = true)
         {
             return m_Toolbar.LoadDocument(asset, unloadAllSubdocuments);
+        }
+
+        // Opens a .uss/.tss by itself in StyleSheet Editing Mode.
+        public bool LoadStyleSheetDocument(StyleSheet styleSheet)
+        {
+            return m_Toolbar.LoadStyleSheetDocument(styleSheet);
         }
 
         /// <summary>
@@ -481,7 +584,12 @@ namespace Unity.UI.Builder
         public override void DiscardChanges()
         {
             // Restore UXML and USS assets from our in-memory backup (their last clean, on-disk state).
-            UIAssetRegistry.instance.DiscardAsset(document.visualTreeAsset, document.activeOpenUXMLFile);
+            // In StyleSheet Editing Mode the registry tracks the opened sheet, not the host copy.
+            UIAssetRegistry.instance.DiscardAsset(
+                document.isStyleSheetEditingMode
+                    ? document.activeOpenUXMLFile.openedStyleSheet
+                    : (UnityEngine.Object)document.visualTreeAsset,
+                document.activeOpenUXMLFile);
 
             // If the asset is not saved yet then reset to blank document
             if (string.IsNullOrEmpty(document.uxmlFileName))
@@ -569,6 +677,18 @@ namespace Unity.UI.Builder
         [OnOpenAsset(0)]
         public static bool OnOpenAsset(EntityId entityId, int line)
         {
+            // Route a .uss/.tss into StyleSheet Editing Mode when the experimental feature is enabled.
+            // The "open in IDE" magic line still falls through to the IDE.
+            if (UnityEditor.UIElements.UIToolkitProjectSettings.enableStyleSheetEditingMode
+                && line != BuilderConstants.OpenInIDELineNumber
+                && EditorUtility.EntityIdToObject(entityId) is StyleSheet openedStyleSheet)
+            {
+                var window = ActiveWindow == null ? ShowWindow() : ActiveWindow;
+                window.Focus();
+                window.LoadStyleSheetDocument(openedStyleSheet);
+                return true;
+            }
+
             var asset = EditorUtility.EntityIdToObject(entityId) as VisualTreeAsset;
             if (asset == null)
                 return false;
@@ -578,70 +698,20 @@ namespace Unity.UI.Builder
             if (line == BuilderConstants.OpenInIDELineNumber)
                 return false;
 
+            // Validate before opening the window so we don't show an empty Builder for an invalid asset.
+            if (!BuilderAssetUtilities.ValidateAsset(asset, null))
+                return true;
+
             var builderWindow = ActiveWindow;
-            bool builderWindowAlreadyOpened = ActiveWindow != null;
-
-            // UIDocument settings from SessionState
-            // Used when opening builder from contextmenu
-            LoadUIDocumentCommand documentCommand = new LoadUIDocumentCommand();
-            var loadCommandStr = SessionState.GetString(LoadUIDocumentCommand.CommandId, string.Empty);
-            EditorJsonUtility.FromJsonOverwrite(loadCommandStr, documentCommand);
-
-            if (documentCommand.selectedId != -1)
-                s_NextSelectionFromDocumentCommand = documentCommand;
-
             if (builderWindow == null)
-            {
                 builderWindow = ShowWindow();
-            }
             else
-            {
                 builderWindow.Focus();
-            }
-
-            var validAsset = BuilderAssetUtilities.ValidateAsset(asset, null);
-
-            if (!validAsset)
-            {
-                s_NextSelectionFromDocumentCommand = null;
-                builderWindow.NewDocument();
-                return false; // Let user open the asset in the IDE.
-            }
 
             if (builderWindow.document.visualTreeAsset != asset)
-            {
                 builderWindow.LoadDocument(asset);
-            }
             else
-            {
                 builderWindow.ReloadDocument();
-            }
-
-            if (documentCommand.subDocumentOptions == SubDocumentOptions.InContext)
-            {
-                for (int i = 0; i < documentCommand.subDocuments.Count - 1; i++)
-                    BuilderHierarchyUtilities.OpenAsSubDocument(ActiveWindow, documentCommand.subDocuments[i], documentCommand.contextInstances[i]);
-
-                BuilderHierarchyUtilities.OpenAsSubDocument(ActiveWindow, documentCommand.subDocuments[^1], documentCommand.contextInstances[^1]);
-            }
-            else if (documentCommand.subDocumentOptions == SubDocumentOptions.Isolation)
-            {
-                for (int i = 0; i < documentCommand.subDocuments.Count - 1; i++)
-                    BuilderHierarchyUtilities.OpenAsSubDocument(ActiveWindow, documentCommand.subDocuments[i]);
-
-                BuilderHierarchyUtilities.OpenAsSubDocument(ActiveWindow, documentCommand.subDocuments[^1]);
-            }
-
-            // If the builder is already open there is no call to OnEnableAfterSerialization
-            if (documentCommand.selectedId != -1 && builderWindowAlreadyOpened)
-            {
-                var selectedElement = LoadUIDocumentCommand.FindSelectedElement(builderWindow.documentRootElement,
-                    documentCommand.selectedId, documentCommand.selectedInstanceIds, documentCommand.selectedSourceDocument);
-                builderWindow.selection.ClearSelection(null, false);
-                builderWindow.selection.AddToSelection(null, selectedElement, false, false);
-
-                s_NextSelectionFromDocumentCommand = null;
-            }
 
             return true;
         }
@@ -660,4 +730,3 @@ namespace Unity.UI.Builder
         }
     }
 }
-#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

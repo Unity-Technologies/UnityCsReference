@@ -2,7 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: SafeMode not yet converted
 using UnityEngine;
 using System;
 using UnityEditor.PackageManager;
@@ -35,12 +34,12 @@ namespace UnityEditor
             public static readonly GUIStyle title = new GUIStyle("LargeLabel") { fontSize = 15, alignment = TextAnchor.MiddleCenter, normal = EditorStyles.wordWrappedLabel.normal };
             public static readonly GUIStyle message = new GUIStyle("WordWrappedLabel") { alignment = TextAnchor.MiddleLeft };
             public static readonly GUIStyle helpBox = new GUIStyle("HelpBox") { alignment = TextAnchor.MiddleLeft, margin = new RectOffset(5, 5, 5, 5) };
-            public static readonly GUIContent messageContent = EditorGUIUtility.TrTextContent("Unity is in Safe Mode because we detected scripts with compilation errors upon opening this project. Use this mode to fix script errors listed in the Console before exiting, which will import any remaining assets.");
+            public static readonly GUIContent messageContent = L10n.TextContent("Unity is in Safe Mode because we detected scripts with compilation errors upon opening this project. Use this mode to fix script errors listed in the Console before exiting, which will import any remaining assets.", null, null, null);
             public static readonly GUIStyle previewPackageInUseDropdown = "PreviewPackageInUse";
-            public static readonly GUIContent previewPackageContent = EditorGUIUtility.TrTextContent("Experimental Packages in Use");
-            public static readonly GUIContent previewPackageIcon = EditorGUIUtility.TrIconContent("PreviewPackageInUse", "Experimental Packages in Use");
-            public static readonly GUIContent learnModeContent = EditorGUIUtility.TrTextContent("Learn More");
-            public static readonly GUIContent safeModeExitContent = EditorGUIUtility.TrTextContent("Exit Safe Mode");
+            public static readonly GUIContent previewPackageContent = L10n.TextContent("Experimental Packages in Use", null, null, null);
+            public static readonly GUIContent previewPackageIcon = L10n.IconContent("PreviewPackageInUse", "Experimental Packages in Use", null);
+            public static readonly GUIContent learnModeContent = L10n.TextContent("Learn More", null, null, null);
+            public static readonly GUIContent safeModeExitContent = L10n.TextContent("Exit Safe Mode", null, null, null);
             public static readonly GUIContent csScriptIcon = EditorGUIUtility.IconContent("cs Script Icon");
 
             public const float helpBoxWidth = 450;
@@ -204,7 +203,7 @@ namespace UnityEditor
             var menu = new GenericMenu();
 
             // Here hide the button : reappear after creating a new unity project.
-            menu.AddItem(EditorGUIUtility.TrTextContent("Dismiss"), false, () =>
+            menu.AddItem(L10n.TextContent("Dismiss", null, null, null), false, () =>
             {
                 m_SettingsProxy.dismissPreviewPackagesInUse = true;
                 m_SettingsProxy.Save();
@@ -212,14 +211,14 @@ namespace UnityEditor
             menu.AddSeparator("");
 
             // Here we open the package manager, In-Project open and search field have experimental.
-            menu.AddItem(EditorGUIUtility.TrTextContent("Show Experimental Packages..."), false, () =>
+            menu.AddItem(L10n.TextContent("Show Experimental Packages...", null, null, null), false, () =>
             {
                 PackageManagerWindow.OpenAndSelectPage(InProjectPage.k_Id, "experimental");
             });
             menu.AddSeparator("");
 
             // Here we go to the link explaining why we see this...
-            menu.AddItem(EditorGUIUtility.TrTextContent("Why am I seeing this?"), false, () =>
+            menu.AddItem(L10n.TextContent("Why am I seeing this?", null, null, null), false, () =>
             {
                 m_ApplicationProxy.OpenURL($"https://docs.unity3d.com/{m_ApplicationProxy.shortUnityVersion}/Documentation/Manual/pack-exp.html");
             });
@@ -228,4 +227,3 @@ namespace UnityEditor
         }
     }
 }
-#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

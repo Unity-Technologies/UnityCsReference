@@ -2,7 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: PlayModeFramework not yet converted
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -31,12 +30,21 @@ namespace UnityEditor
     internal abstract partial class PlayModeView : EditorWindow, ISerializationCallbackReceiver, IGameViewRenderInfo
     {
         [AutoStaticsCleanupOnCodeReload]
+        // Live-window registry: every PlayModeView registers itself from its own constructor, so the list
+        // cleared on reload refills as the views are recreated.
+        [IgnoreForUAL0015("Live-window registry refilled by each PlayModeView constructor")]
         static readonly List<PlayModeView> s_PlayModeViews = new List<PlayModeView>();
 
         [AutoStaticsCleanupOnCodeReload]
+        // Tracks which play mode view was focused last: OnFocus sets it again, and the getter falls back to
+        // the first registered play mode view while it is null.
+        [IgnoreForUAL0015("Last-focused tracker, re-set by OnFocus with a first-view fallback while null")]
         private static PlayModeView s_LastFocused;
 
         [AutoStaticsCleanupOnCodeReload]
+        // Set for the duration of a single game-view render and cleared when it ends, so null is the
+        // correct resting value; the next render sets it again.
+        [IgnoreForUAL0015("Set and cleared around each game-view render, so null is the resting value")]
         static PlayModeView s_RenderingView;
 
         private readonly string m_ViewsCache = Path.GetFullPath(Directory.GetCurrentDirectory() + "/Library/PlayModeViewStates/");
@@ -271,11 +279,28 @@ namespace UnityEditor
             return attributes.Length > 0 ? ((EditorWindowTitleAttribute)attributes[0]).title : type.Name;
         }
 
+        // Reads the title from the same place the window tab does, so the two always agree. It loads
+        // the window icon, so it cannot be called while asset loading is restricted.
+        protected static string GetLocalizedWindowTitle(Type type)
+        {
+            return GetLocalizedTitleContentFromType(type).text;
+        }
+
+        // Ordered by untranslated title, so the order does not shift with the Editor language.
         internal static Dictionary<Type, string> GetAvailableWindowTypes()
         {
-#pragma warning disable UAC2001 // Avoid Linq
-            return s_AvailableWindowTypes ?? (s_AvailableWindowTypes = TypeCache.GetTypesDerivedFrom(typeof(PlayModeView)).OrderBy(GetWindowTitle).ToDictionary(t => t, GetWindowTitle));
-#pragma warning restore UAC2001
+            if (s_AvailableWindowTypes != null)
+                return s_AvailableWindowTypes;
+
+            var types = new List<Type>(TypeCache.GetTypesDerivedFrom(typeof(PlayModeView)));
+            types.Sort((a, b) => string.Compare(GetWindowTitle(a), GetWindowTitle(b), StringComparison.Ordinal));
+
+            var titles = new Dictionary<Type, string>(types.Count);
+            foreach (var type in types)
+                titles[type] = GetWindowTitle(type);
+
+            s_AvailableWindowTypes = titles;
+            return s_AvailableWindowTypes;
         }
 
         private void SetSerializedViews(Dictionary<string, string> serializedViews)
@@ -607,11 +632,13 @@ namespace UnityEditor
             displayIndex = GetValidTargetDisplay(displayIndex);
             EnsureLastInteractedListSize(displayIndex);
 
+#pragma warning disable UAL0018 // the candidate is read from the cleaned registry and written straight back into that same registry, so no copy escapes it; it is validity-checked (including destroyed-window fake-null) first, and after a reload empties the registry the next call re-discovers the view from the live play mode views
             var candidate = s_LastInteractedByDisplay[displayIndex];
             if (!IsValidLastInteractedCandidate(candidate, displayIndex))
                 candidate = FindAnyPlayModeViewForDisplay(displayIndex);
 
             s_LastInteractedByDisplay[displayIndex] = candidate;
+#pragma warning restore UAL0018
             return candidate;
         }
 
@@ -726,4 +753,3 @@ namespace UnityEditor
         float IGameViewRenderInfo.dpi => GetGameViewDpiForPhysicalSize();
     }
 }
-#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

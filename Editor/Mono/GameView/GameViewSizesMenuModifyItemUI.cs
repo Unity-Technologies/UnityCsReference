@@ -12,14 +12,14 @@ namespace UnityEditor
     {
         private static class Styles
         {
-            public static readonly GUIContent headerAdd = EditorGUIUtility.TrTextContent("Add");
-            public static readonly GUIContent headerEdit = EditorGUIUtility.TrTextContent("Edit");
-            public static readonly GUIContent typeName = EditorGUIUtility.TrTextContent("Type");
-            public static readonly GUIContent widthHeightText = EditorGUIUtility.TrTextContent("Width & Height");
-            public static readonly GUIContent optionalText = EditorGUIUtility.TrTextContent("Label");
-            public static readonly GUIContent ok = EditorGUIUtility.TrTextContent("OK");
-            public static readonly GUIContent cancel = EditorGUIUtility.TrTextContent("Cancel");
-            public static readonly GUIContent[] typeNames = new[] {EditorGUIUtility.TrTextContent("Aspect Ratio"), EditorGUIUtility.TrTextContent("Fixed Resolution")};
+            public static readonly GUIContent headerAdd = L10n.TextContent("Add", null, null, null);
+            public static readonly GUIContent headerEdit = L10n.TextContent("Edit", null, null, null);
+            public static readonly GUIContent typeName = L10n.TextContent("Type", null, null, null);
+            public static readonly GUIContent widthHeightText = L10n.TextContent("Width & Height", null, null, null);
+            public static readonly GUIContent optionalText = L10n.TextContent("Label", null, null, null);
+            public static readonly GUIContent ok = L10n.TextContent("OK", null, null, null);
+            public static readonly GUIContent cancel = L10n.TextContent("Cancel", null, null, null);
+            public static readonly GUIContent[] typeNames = new[] {L10n.TextContent("Aspect Ratio", null, null, null), L10n.TextContent("Fixed Resolution", null, null, null)};
 
             [NoAutoStaticsCleanup] // Immutable cache of a style constant (managed float, no user-code refs); safe to persist across code reload.
             public static readonly SVC<float> windowWidth = new SVC<float>("GameView", "--sizes-menu-modify-item-window-width", 230f);

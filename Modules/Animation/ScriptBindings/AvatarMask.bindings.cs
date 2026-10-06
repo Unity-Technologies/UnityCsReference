@@ -62,14 +62,15 @@ namespace UnityEngine
     [UsedByNativeCode]
     public sealed partial class AvatarMask : Object
     {
+        internal AvatarMask(global::UnityEngine.EntityId id) : base(id) {}
         ///<summary>Creates a new AvatarMask.</summary>
         public AvatarMask()
         {
-            Internal_Create(this);
+            SetEntityIdFromConstructor(Internal_Create());
         }
 
         [FreeFunction("AnimationBindings::CreateAvatarMask")]
-        extern private static void Internal_Create([Writable] AvatarMask self);
+        extern private static EntityId Internal_Create();
 
         ///<summary>The number of humanoid body parts.</summary>
         ///<remarks>This member is deprecated, .</remarks>

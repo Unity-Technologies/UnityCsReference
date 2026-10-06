@@ -64,9 +64,9 @@ namespace UnityEditor
 
             var unityAudioDisabled = AudioSettings.unityAudioDisabled;
 
-            s_AutoPlayIcon = EditorGUIUtility.TrIconContent("preAudioAutoPlayOff", unityAudioDisabled ? s_PreviewDisabledMessage : "Turn Auto Play on/off");
-            s_PlayIcon = EditorGUIUtility.TrIconContent("PlayButton", unityAudioDisabled ? s_PreviewDisabledMessage : "Play");
-            s_LoopIcon = EditorGUIUtility.TrIconContent("preAudioLoopOff", unityAudioDisabled ? s_PreviewDisabledMessage : "Loop on/off");
+            s_AutoPlayIcon = L10n.IconContent("preAudioAutoPlayOff", unityAudioDisabled ? s_PreviewDisabledMessage : "Turn Auto Play on/off", null);
+            s_PlayIcon = L10n.IconContent("PlayButton", unityAudioDisabled ? s_PreviewDisabledMessage : "Play", null);
+            s_LoopIcon = L10n.IconContent("preAudioLoopOff", unityAudioDisabled ? s_PreviewDisabledMessage : "Loop on/off", null);
 
             s_DefaultIcon = EditorGUIUtility.LoadIcon("Profiler.Audio");
         }

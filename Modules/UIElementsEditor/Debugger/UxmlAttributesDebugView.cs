@@ -2,7 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: UIToolkitFramework not yet converted
 using System;
 using System.Collections.Generic;
 using UnityEngine;
@@ -63,9 +62,25 @@ namespace UnityEditor.UIElements.Debugger
                 field.AddToClassList(BaseField<int>.alignedFieldUssClassName);
 
                 if (m_ReadOnly)
+                {
                     field.SetEnabled(false);
+                }
                 else
-                    field.RegisterValueChangeCallback(_ => OnMirrorPropertyChanged(attribute));
+                {
+                    var delayedApplied = false;
+#pragma warning disable UAL0015 // this view is rebuilt by its owning debugger window on every code reload, so the instance never outlives the reload that would need the cache cleared
+                    field.RegisterValueChangeCallback(_ =>
+                    {
+                        if (!delayedApplied)
+                        {
+                            delayedApplied = true;
+                            MakeInputsDelayed(field);
+                        }
+
+                        OnMirrorPropertyChanged(attribute);
+                    });
+#pragma warning restore UAL0015
+                }
 
                 Add(field);
             }
@@ -90,13 +105,26 @@ namespace UnityEditor.UIElements.Debugger
             m_SerializedObject.Update();
         }
 
+        // Text-based inputs commit on Enter or focus-out rather than per keystroke: an element is renamed once,
+        // not once per character, and the periodic Refresh cannot fight a half-typed value. PropertyField only
+        // builds its input while binding, so this runs from the first value change rather than at construction.
+        static void MakeInputsDelayed(VisualElement field)
+        {
+            foreach (var child in field.Query<VisualElement>().Build())
+            {
+                if (child is IDelayedField delayedField)
+                    delayedField.isDelayed = true;
+            }
+        }
+
         void CreateMirrorAndBind()
         {
             if (m_Host != null)
                 return;
 
             m_Host = ScriptableObject.CreateInstance<SerializedDataHost>();
-            m_Host.hideFlags = HideFlags.HideAndDontSave;
+            // Not HideAndDontSave: it carries NotEditable, which makes every bound field read-only.
+            m_Host.hideFlags = HideFlags.HideInHierarchy | HideFlags.DontSave;
             m_Host.data = m_Description.CreateDefaultSerializedData();
             SyncFromTarget();
             m_SerializedObject = new SerializedObject(m_Host);
@@ -141,4 +169,3 @@ namespace UnityEditor.UIElements.Debugger
         }
     }
 }
-#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

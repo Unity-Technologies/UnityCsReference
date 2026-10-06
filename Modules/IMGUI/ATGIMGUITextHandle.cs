@@ -26,7 +26,7 @@ namespace UnityEngine
         internal static NativeTextGenerationSettings nativeSettingsIMGUI = new NativeTextGenerationSettings();
         [NoAutoStaticsCleanup] // set to the current text string before each native call; overwritten every use
         static string s_IMGUICurrentText;
-        NativeTextBuffer m_IMGUITextBuffer = NativeTextBuffer.CreateDomainScoped();
+        NativeTextBuffer m_IMGUITextBuffer;
 
         internal NativeTextInfo nativeTextInfo;
 
@@ -423,6 +423,7 @@ namespace UnityEngine
         {
             if (useAdvancedText)
             {
+                RegisterInCache();
                 CacheTextGenerationInfo();
                 bool isCached = false;
                 UpdateNative(ref isCached);
@@ -431,6 +432,38 @@ namespace UnityEngine
             {
                 base.AddToPermanentCacheAndGenerateMesh();
             }
+        }
+
+        // A TextEditor keeps using its handle after ClearUnusedTextHandles evicted it (which disposed the buffer);
+        void RegisterInCache()
+        {
+            if (tuple?.List != null)
+            {
+                tuple.Value.lastTimeUsed = Time.realtimeSinceStartup;
+                return;
+            }
+
+            if (textHandles.TryGetValue(hashCode, out var registered) && registered != this)
+            {
+                // Hijack the other text handle cache
+
+                // Also clear it's native buffer at the same time, since the permanent cache won't point to the previous textHandle
+                // No loss of data as the buffer is rewritten by every UpdateNative
+                registered.m_IMGUITextBuffer.Dispose();
+
+                tuple = registered.tuple;
+                registered.tuple = null;
+            }
+
+            if (tuple?.List != null)
+                tuple.Value.lastTimeUsed = Time.realtimeSinceStartup;
+            else
+            {
+                tuple = new LinkedListNode<TextHandleTuple>(new TextHandleTuple(Time.realtimeSinceStartup, hashCode));
+                textHandlesTuple.AddLast(tuple);
+            }
+
+            textHandles[hashCode] = this;
         }
 
         public override void RemoveFromPermanentCacheATG()

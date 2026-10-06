@@ -22,9 +22,7 @@ namespace Unity.GraphToolkit.Editor
         static readonly CustomStyleProperty<float> s_ArrowWireWidthProperty = new("--wire-width");
 
         [NoAutoStaticsCleanup] // CSS custom property descriptor; value is a fixed CSS property name
-        static readonly CustomStyleProperty<Color> s_ArrowInnerLineColorProperty = new("--inner-line-color");
-        [NoAutoStaticsCleanup] // CSS custom property descriptor; value is a fixed CSS property name
-        static readonly CustomStyleProperty<float> s_ArrowInnerLineWidthProperty = new("--inner-line-width");
+        static readonly CustomStyleProperty<Color> s_ArrowHighlightColorProperty = new("--wire-highlight-color");
 
         [NoAutoStaticsCleanup] // CSS custom property descriptor; value is a fixed CSS property name
         static readonly CustomStyleProperty<Color> s_ArrowFillColorProperty = new("--arrow-fill-color");
@@ -43,126 +41,251 @@ namespace Unity.GraphToolkit.Editor
         static readonly float k_DefaultArrowWireWidth = 2.5f;
         static readonly float k_DefaultArrowTriangleLength = 5f;
 
-        Color m_OuterLineColor = Color.grey;
-        bool m_OuterColorOverridden;
+        const float k_DashLength = 6f;
+        const float k_GapLength = 4f;
 
-        float m_OuterLineWidth = k_DefaultArrowWireWidth;
-        bool m_OuterWidthOverridden;
+        Color? m_OuterLineColorOverride;
+        Color? m_ModelOuterLineColor;
 
-        Color m_InnerLineColor = Color.grey;
-        bool m_InnerLineColorOverridden;
+        float? m_OuterLineWidthOverride;
+        float? m_ModelOuterLineWidth;
 
-        float m_InnerLineWidth;
-        bool m_InnerLineWidthOverridden;
+        bool? m_IsDashedOverride;
+        bool m_ModelIsDashed;
 
-        Color m_FillColor = Color.grey;
-        bool m_FillColorOverridden;
+        Color? m_FillColorOverride;
+        Color? m_ModelFillColor;
+
+        float m_ModelOpacity = 1f;
 
         float m_ArrowWidth = k_DefaultArrowWidth;
         float m_ArrowLength = k_DefaultArrowLength;
         float m_ArrowBorderRadius = k_DefaultArrowBorderRadius;
         float m_ArrowTriangleLength = k_DefaultArrowTriangleLength;
 
+        float m_OpacityMultiplier = 1f;
+
         // The points that will be rendered. Expressed in coordinates local to the element.
         Vector2[] m_RenderPoints;
 
         /// <summary>
-        /// The color of the outer contour of the arrow.
+        /// A zero-size element positioned at the arrow's visual forward tip (including the border)
+        /// in the element's local coordinate space.
+        /// Useful for attaching markers so their tip aligns with the arrowhead tip.
         /// </summary>
-        public Color OuterLineColor
-        {
-            get => m_OuterLineColor;
-            set
-            {
-                m_OuterColorOverridden = true;
-
-                if (m_OuterLineColor != value)
-                {
-                    m_OuterLineColor = value;
-                    MarkDirtyRepaint();
-                }
-            }
-        }
+        internal VisualElement ForwardTipElement { get; }
 
         /// <summary>
-        /// The width of the outer contour of the arrow.
+        /// The color of the outer contour of the arrow: the override when one is set, else the model color, else the
+        /// USS value.
         /// </summary>
-        public float OuterLineWidth
+        public Color OuterLineColor => m_OuterLineColorOverride ?? m_ModelOuterLineColor ?? StyleOuterLineColor;
+
+        /// <summary>
+        /// The outer line color override. Set to null to fall back to <see cref="ModelOuterLineColor"/> or the USS value.
+        /// </summary>
+        public Color? OuterLineColorOverride
         {
-            get => m_OuterLineWidth;
+            get => m_OuterLineColorOverride;
             set
             {
-                m_OuterWidthOverridden = true;
-
-                if (Math.Abs(m_OuterLineWidth - value) < 0.05)
+                if (m_OuterLineColorOverride == value)
                     return;
 
-                m_OuterLineWidth = value;
-                UpdateLayout(); // The layout depends on the wires width
+                m_OuterLineColorOverride = value;
                 MarkDirtyRepaint();
             }
         }
 
         /// <summary>
-        /// The color of the inner contour of the arrow.
+        /// The outer line color read from the model, used when no <see cref="OuterLineColorOverride"/> is set. Set to
+        /// null to fall back to the USS value.
         /// </summary>
-        public Color InnerLineColor
+        public Color? ModelOuterLineColor
         {
-            get => m_InnerLineColor;
+            get => m_ModelOuterLineColor;
             set
             {
-                m_InnerLineColorOverridden = true;
-
-                if (m_InnerLineColor != value)
-                {
-                    m_InnerLineColor = value;
-                    MarkDirtyRepaint();
-                }
-            }
-        }
-
-        /// <summary>
-        /// The width of the inner contour of the arrow.
-        /// </summary>
-        public float InnerLineWidth
-        {
-            get => m_InnerLineWidth;
-            set
-            {
-                m_InnerLineWidthOverridden = true;
-
-                if (Math.Abs(m_InnerLineWidth - value) < 0.05)
+                if (m_ModelOuterLineColor == value)
                     return;
 
-                m_InnerLineWidth = value;
-                UpdateLayout(); // The layout depends on the wires width
+                m_ModelOuterLineColor = value;
                 MarkDirtyRepaint();
             }
         }
 
         /// <summary>
-        /// The fill color of the arrow.
+        /// The width of the outer contour of the arrow: the override when one is set, else the model width, else the
+        /// USS value.
         /// </summary>
-        /// <remarks>Setting this overrides the fill color resolved from the style sheet.</remarks>
-        public Color FillColor
+        public float OuterLineWidth => m_OuterLineWidthOverride ?? m_ModelOuterLineWidth ?? StyleOuterLineWidth;
+
+        /// <summary>
+        /// The outer line width override. Set to null to fall back to <see cref="ModelOuterLineWidth"/> or the USS value.
+        /// </summary>
+        public float? OuterLineWidthOverride
         {
-            get => m_FillColor;
+            get => m_OuterLineWidthOverride;
             set
             {
-                if (m_FillColor != value && value != default)
+                if (m_OuterLineWidthOverride == value)
+                    return;
+
+                m_OuterLineWidthOverride = value;
+                UpdateLayout(); // The layout depends on the line's width
+                MarkDirtyRepaint();
+            }
+        }
+
+        /// <summary>
+        /// The outer line width read from the model, used when no <see cref="OuterLineWidthOverride"/> is set. Set to
+        /// null to fall back to the USS value.
+        /// </summary>
+        public float? ModelOuterLineWidth
+        {
+            get => m_ModelOuterLineWidth;
+            set
+            {
+                if (m_ModelOuterLineWidth == value)
+                    return;
+
+                m_ModelOuterLineWidth = value;
+                UpdateLayout(); // The layout depends on the line's width
+                MarkDirtyRepaint();
+            }
+        }
+
+        /// <summary>
+        /// Whether the outer contour of the arrow is drawn with a dashed pattern: the override when one is set, else
+        /// the model value.
+        /// </summary>
+        public bool IsDashed => m_IsDashedOverride ?? m_ModelIsDashed;
+
+        /// <summary>
+        /// The dashed state override. Set to null to fall back to <see cref="ModelIsDashed"/>.
+        /// </summary>
+        public bool? IsDashedOverride
+        {
+            get => m_IsDashedOverride;
+            set
+            {
+                if (m_IsDashedOverride == value)
+                    return;
+
+                m_IsDashedOverride = value;
+                MarkDirtyRepaint();
+            }
+        }
+
+        /// <summary>
+        /// Whether the outer contour of the arrow is dashed as read from the model, used when no <see cref="IsDashedOverride"/> is set.
+        /// </summary>
+        public bool ModelIsDashed
+        {
+            get => m_ModelIsDashed;
+            set
+            {
+                if (m_ModelIsDashed == value)
+                    return;
+
+                m_ModelIsDashed = value;
+                MarkDirtyRepaint();
+            }
+        }
+
+        /// <summary>
+        /// The fill color of the arrow: the override when one is set, else the model color, else the USS value.
+        /// </summary>
+        public Color FillColor => m_FillColorOverride ?? m_ModelFillColor ?? StyleFillColor;
+
+        /// <summary>
+        /// The fill color override. Set to null to fall back to <see cref="ModelFillColor"/> or the USS value.
+        /// </summary>
+        public Color? FillColorOverride
+        {
+            get => m_FillColorOverride;
+            set
+            {
+                if (m_FillColorOverride == value)
+                    return;
+
+                m_FillColorOverride = value;
+                MarkDirtyRepaint();
+            }
+        }
+
+        /// <summary>
+        /// The fill color read from the model, used when no <see cref="FillColorOverride"/> is set. Set to null to
+        /// fall back to the USS value.
+        /// </summary>
+        public Color? ModelFillColor
+        {
+            get => m_ModelFillColor;
+            set
+            {
+                if (m_ModelFillColor == value)
+                    return;
+
+                m_ModelFillColor = value;
+                MarkDirtyRepaint();
+            }
+        }
+
+        /// <summary>
+        /// The opacity of the arrow as read from the model, used when no <see cref="OpacityMultiplier"/> override is set.
+        /// </summary>
+        /// <remarks>Painted only by a self transition's arrow, and only on its outer line. See <see cref="OpacityMultiplier"/>.</remarks>
+        public float ModelOpacity
+        {
+            get => m_ModelOpacity;
+            set
+            {
+                if (m_ModelOpacity != value)
                 {
-                    m_FillColorOverridden = true;
-                    m_FillColor = value;
+                    m_ModelOpacity = value;
                     MarkDirtyRepaint();
                 }
             }
         }
+
+        /// <summary>
+        /// The opacity multiplier of the arrow.
+        /// </summary>
+        /// <remarks>
+        /// The opacity multiplier is clamped to the [0, 1] range. Only a self transition's arrow paints with it, and
+        /// only on its outer line: the arrow head stays solid, and a state-to-state arrow ignores it entirely because
+        /// its line already carries the fade.
+        /// </remarks>
+        public float OpacityMultiplier
+        {
+            get => m_OpacityMultiplier;
+            set
+            {
+                var clampedValue = Mathf.Clamp01(value);
+                if (Mathf.Approximately(m_OpacityMultiplier, clampedValue))
+                    return;
+
+                m_OpacityMultiplier = clampedValue;
+                MarkDirtyRepaint();
+            }
+        }
+
+        // The highlight color the style sheet resolves under :hover and :checked.
+        Color m_StyleHighlightColor;
+        bool m_StyleHighlightColorSet;
 
         Color StyleOuterLineColor { get; set; } = WireUtilities.DefaultWireColor;
-        Color StyleInnerLineColor { get; set; } = WireUtilities.DefaultWireColor;
         Color StyleFillColor { get; set; } = Color.grey;
         float StyleOuterLineWidth { get; set; } = k_DefaultArrowWireWidth;
-        float StyleInnerLineWidth { get; set; }
+
+        internal GradientFlowAnimator FlowAnimator => parent switch
+        {
+            TransitionControl control => control.FlowAnimator,
+            TransitionView transition => transition.FlowAnimator,
+            _ => null,
+        };
+
+        internal bool IsSelfTransition => parent is TransitionView;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="TransitionArrow"/> class.
@@ -172,44 +295,38 @@ namespace Unity.GraphToolkit.Editor
             generateVisualContent += OnGenerateVisualContent;
             RegisterCallback<CustomStyleResolvedEvent>(OnCustomStyleResolved);
             RegisterCallback<GeometryChangedEvent>(_ => UpdateLayout());
+
+            ForwardTipElement = new VisualElement();
+            ForwardTipElement.style.position = Position.Absolute;
+            ForwardTipElement.style.width = 0;
+            ForwardTipElement.style.height = 0;
+            ForwardTipElement.pickingMode = PickingMode.Ignore;
+            Add(ForwardTipElement);
         }
 
         void OnCustomStyleResolved(CustomStyleResolvedEvent e)
         {
-            bool shouldRepaint = false;
-            bool shouldLayout = false;
+            var shouldRepaint = false;
+            var shouldLayout = false;
+
+            var highlightColorSet = e.customStyle.TryGetValue(s_ArrowHighlightColorProperty, out var highlightColorValue);
+            if (highlightColorSet != m_StyleHighlightColorSet || m_StyleHighlightColor != highlightColorValue)
+            {
+                m_StyleHighlightColorSet = highlightColorSet;
+                m_StyleHighlightColor = highlightColorValue;
+                shouldRepaint = true;
+            }
 
             if (e.customStyle.TryGetValue(s_ArrowWireColorProperty, out var wireColorValue))
             {
                 StyleOuterLineColor = wireColorValue;
-
-                if (!m_OuterColorOverridden)
-                {
-                    m_OuterLineColor = StyleOuterLineColor;
-                    shouldRepaint = true;
-                }
-            }
-
-            if (e.customStyle.TryGetValue(s_ArrowInnerLineColorProperty, out var innerLineColor))
-            {
-                StyleInnerLineColor = innerLineColor;
-
-                if (!m_InnerLineColorOverridden)
-                {
-                    m_InnerLineColor = StyleInnerLineColor;
-                    shouldRepaint = true;
-                }
+                shouldRepaint = true;
             }
 
             if (e.customStyle.TryGetValue(s_ArrowFillColorProperty, out var fillColorValue))
             {
                 StyleFillColor = fillColorValue;
-
-                if (!m_FillColorOverridden)
-                {
-                    m_FillColor = StyleFillColor;
-                    shouldRepaint = true;
-                }
+                shouldRepaint = true;
             }
 
             if (e.customStyle.TryGetValue(s_ArrowWidthProperty, out var arrowWidthValue))
@@ -235,25 +352,8 @@ namespace Unity.GraphToolkit.Editor
             if (e.customStyle.TryGetValue(s_ArrowWireWidthProperty, out var wireWidthValue))
             {
                 StyleOuterLineWidth = wireWidthValue;
-
-                if (!m_OuterWidthOverridden)
-                {
-                    m_OuterLineWidth = StyleOuterLineWidth;
-                    shouldRepaint = true;
-                    shouldLayout = true; // The layout depends on the wires width
-                }
-            }
-
-            if (e.customStyle.TryGetValue(s_ArrowInnerLineWidthProperty, out var innerLineWidth))
-            {
-                StyleInnerLineWidth = innerLineWidth;
-
-                if (!m_InnerLineWidthOverridden)
-                {
-                    m_InnerLineWidth = StyleInnerLineWidth;
-                    shouldRepaint = true;
-                    shouldLayout = true; // The layout depends on the wires width
-                }
+                shouldRepaint = true;
+                shouldLayout = true; // The layout depends on the line's width
             }
 
             if (e.customStyle.TryGetValue(s_ArrowTriangleLengthProperty, out var arrowTriangleLengthValue))
@@ -269,42 +369,6 @@ namespace Unity.GraphToolkit.Editor
                 MarkDirtyRepaint();
         }
 
-        /// <summary>
-        /// Resets the outer line width to the default value.
-        /// </summary>
-        public void ResetOuterLineWidth()
-        {
-            m_OuterWidthOverridden = false;
-            m_OuterLineWidth = StyleOuterLineWidth;
-        }
-
-        /// <summary>
-        /// Resets the inner line width to the default value.
-        /// </summary>
-        public void ResetInnerLineWidth()
-        {
-            m_InnerLineWidthOverridden = false;
-            m_InnerLineWidth = StyleInnerLineWidth;
-        }
-
-        /// <summary>
-        /// Resets the outer line color to the default value.
-        /// </summary>
-        public void ResetOuterLineColor()
-        {
-            m_OuterColorOverridden = false;
-            OuterLineColor = StyleOuterLineColor;
-        }
-
-        /// <summary>
-        /// Resets the inner line color to the default value.
-        /// </summary>
-        public void ResetInnerLineColor()
-        {
-            m_InnerLineColorOverridden = false;
-            InnerLineColor = StyleInnerLineColor;
-        }
-
         void OnGenerateVisualContent(MeshGenerationContext mgc)
         {
             DrawArrow(mgc);
@@ -316,7 +380,7 @@ namespace Unity.GraphToolkit.Editor
             {
                 case TransitionControl control:
                     return control.GetMiddleToLocal();
-                case Transition transition:
+                case TransitionView transition:
                 {
                     // Transition is vertical pointing down:
                     var center = transition.GetTo() + new Vector2(0, -m_ArrowLength / 2);
@@ -327,10 +391,13 @@ namespace Unity.GraphToolkit.Editor
             }
         }
 
-        public void UpdateLayout()
+        /// <summary>
+        /// Computes the arrow's bounding rect in the parent element's coordinate space.
+        /// </summary>
+        public Rect ComputeBounds()
         {
             if (parent == null)
-                return;
+                return Rect.zero;
 
             var halfSize = 0.5f * new Vector2(m_ArrowLength, m_ArrowWidth);
             var tr = GetParentTransform();
@@ -345,14 +412,30 @@ namespace Unity.GraphToolkit.Editor
             bounds.yMin = Mathf.Min(transformedCornerA.y, transformedCornerB.y, transformedCornerC.y, transformedCornerD.y);
             bounds.xMax = Mathf.Max(transformedCornerA.x, transformedCornerB.x, transformedCornerC.x, transformedCornerD.x);
             bounds.yMax = Mathf.Max(transformedCornerA.y, transformedCornerB.y, transformedCornerC.y, transformedCornerD.y);
+            return bounds;
+        }
 
+        public void UpdateLayout()
+        {
+            if (parent == null)
+                return;
+
+            var bounds = ComputeBounds();
             style.left = bounds.x;
             style.top = bounds.y;
             style.width = bounds.width;
             style.height = bounds.height;
 
+            var tr = GetParentTransform();
+
+            // Position ForwardTipElement at the arrowhead's visual forward tip, including the border.
+            var forwardTipOffset = m_ArrowLength / 2 + OuterLineWidth;
+            var forwardTipInParent = MathUtils.Multiply2X3(tr, new Vector3(forwardTipOffset, 0, 1));
+            ForwardTipElement.style.left = forwardTipInParent.x - bounds.x;
+            ForwardTipElement.style.top = forwardTipInParent.y - bounds.y;
+
             var counter = this.Q<TransitionCounter>();
-            counter?.SetCenteringOffset(tr.Item1 * CentroidOffsetAlongWire());
+            counter?.SetCenteringOffset(GetParentTransform().Item1 * CentroidOffsetAlongWire());
         }
 
         float CentroidOffsetAlongWire()
@@ -364,13 +447,38 @@ namespace Unity.GraphToolkit.Editor
             return (body * bodyCenter + tip * tipCenter) / (body + tip);
         }
 
+        Color ResolveOuterLineColor()
+        {
+            return m_StyleHighlightColorSet ? m_StyleHighlightColor : OuterLineColor;
+        }
+
+        float ResolveOpacity()
+        {
+            // A self transition has no line, so the opacity that would normally fade the line fades the arrow's outer
+            // line instead. A state-to-state arrow ignores it: its line already carries that signal.
+            if (!IsSelfTransition)
+                return 1f;
+
+            return m_OpacityMultiplier != 1f ? m_OpacityMultiplier : m_ModelOpacity;
+        }
+
+        Gradient ResolveOuterLineGradient(Color outerLineColor)
+        {
+            if (!IsSelfTransition || !(FlowAnimator?.IsAnimating ?? false))
+                return null;
+
+            // A transition has no start/end color distinction, unlike a wire's two port colors, so both
+            // gradient keys are the same resolved outer line color.
+            return FlowAnimator.BuildStrokeGradient(outerLineColor, outerLineColor, outerLineColor.a);
+        }
+
         /// <inheritdoc />
         public override bool ContainsPoint(Vector2 localPoint)
         {
             if (parent == null)
                 return false;
             UpdateRenderPoints();
-            return IsPointInConvexPolygon(localPoint, m_RenderPoints, m_OuterLineWidth + m_ArrowBorderRadius);
+            return IsPointInConvexPolygon(localPoint, m_RenderPoints, OuterLineWidth + m_ArrowBorderRadius);
         }
 
         static bool IsPointInConvexPolygon(Vector2 point, Vector2[] polygon, float padding)
@@ -413,11 +521,11 @@ namespace Unity.GraphToolkit.Editor
             var tr = GetParentTransform();
 
             m_RenderPoints ??= new Vector2[5];
-            m_RenderPoints[0] = LocalToLine(front);
-            m_RenderPoints[1] = LocalToLine(middleRight);
-            m_RenderPoints[2] = LocalToLine(backRight);
-            m_RenderPoints[3] = LocalToLine(backLeft);
-            m_RenderPoints[4] = LocalToLine(middleLeft);
+            m_RenderPoints[0] = LocalToLine(middleRight);
+            m_RenderPoints[1] = LocalToLine(backRight);
+            m_RenderPoints[2] = LocalToLine(backLeft);
+            m_RenderPoints[3] = LocalToLine(middleLeft);
+            m_RenderPoints[4] = LocalToLine(front);
             return;
 
             Vector2 LocalToLine(Vector2 localPoint) =>
@@ -428,13 +536,13 @@ namespace Unity.GraphToolkit.Editor
         {
             UpdateRenderPoints();
 
-            var color = OuterLineColor;
-            var innerLineColor = InnerLineColor;
-            var fillColor = m_FillColor;
+            var color = ResolveOuterLineColor();
+            var fillColor = FillColor;
 
             color *= this.GetPlayModeTintColor();
-            innerLineColor *= this.GetPlayModeTintColor();
             fillColor *= this.GetPlayModeTintColor();
+
+            color.a *= ResolveOpacity();
 
             if (m_RenderPoints == null)
                 return; // nothing to draw
@@ -443,30 +551,33 @@ namespace Unity.GraphToolkit.Editor
             painter.fillColor = fillColor;
             painter.lineJoin = LineJoin.Round;
 
-            if (OuterLineWidth > 0)
+            var outerLineWidth = OuterLineWidth;
+            if (outerLineWidth > 0)
             {
-                painter.strokeColor = color;
-                painter.lineWidth = 2.0f * (InnerLineWidth + OuterLineWidth + m_ArrowBorderRadius);
+                // Set the dash pattern for self transition arrows
+                var dashed = IsSelfTransition && IsDashed;
+                if (dashed)
+                    painter.SetDashPattern(k_DashLength, k_GapLength);
+
+                // Set the gradient animation for self transition arrows
+                var outerLineGradient = ResolveOuterLineGradient(color);
+                if (outerLineGradient != null)
+                    painter.strokeGradient = outerLineGradient;
+                else
+                    painter.strokeColor = color;
+
+                painter.lineWidth = 2.0f * (outerLineWidth + m_ArrowBorderRadius);
 
                 painter.BeginPath();
-                painter.MoveTo(m_RenderPoints[0]);
-                for (int i = 1; i < 5; ++i)
+                // Reverse draw order to ensure clockwise gradient animation.
+                painter.MoveTo(m_RenderPoints[4]);
+                for (int i = 3; i >= 0; --i)
                     painter.LineTo(m_RenderPoints[i]);
                 painter.ClosePath();
                 painter.Stroke();
-            }
 
-            if (InnerLineWidth > 0)
-            {
-                painter.strokeColor = innerLineColor;
-                painter.lineWidth = 2.0f * (InnerLineWidth + m_ArrowBorderRadius);
-
-                painter.BeginPath();
-                painter.MoveTo(m_RenderPoints[0]);
-                for (int i = 1; i < 5; ++i)
-                    painter.LineTo(m_RenderPoints[i]);
-                painter.ClosePath();
-                painter.Stroke();
+                if (dashed)
+                    painter.SetDashPattern(ReadOnlySpan<float>.Empty);
             }
 
             painter.strokeColor = fillColor;
@@ -485,6 +596,18 @@ namespace Unity.GraphToolkit.Editor
                 painter.LineTo(m_RenderPoints[i]);
             painter.ClosePath();
             painter.Stroke();
+        }
+
+        internal class TestAccess
+        {
+            readonly TransitionArrow m_Arrow;
+            public TestAccess(TransitionArrow arrow) { m_Arrow = arrow; }
+
+            public bool IsFillColorOverridden => m_Arrow.m_FillColorOverride.HasValue;
+            public Color ResolveOuterLineColor() => m_Arrow.ResolveOuterLineColor();
+            public bool IsHighlighted => m_Arrow.m_StyleHighlightColorSet;
+            public float ResolveOpacity() => m_Arrow.ResolveOpacity();
+            public Gradient ResolveOuterLineGradient(Color outerLineColor) => m_Arrow.ResolveOuterLineGradient(outerLineColor);
         }
     }
 }

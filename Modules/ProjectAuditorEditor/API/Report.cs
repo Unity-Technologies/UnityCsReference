@@ -10,6 +10,7 @@ using System.Threading;
 using Unity.ProjectAuditor.Editor.Core;
 using UnityEngine;
 using UnityEditor;
+using UnityEditor.Build;
 
 namespace Unity.ProjectAuditor.Editor
 {
@@ -78,9 +79,9 @@ namespace Unity.ProjectAuditor.Editor
         public string HostPlatform;
 
         /// <summary>
-        /// The analyzed areas from the preferences.
+        /// Scripting backend. For example, CoreCLR or IL2CPP.
         /// </summary>
-        public SerializableEnum<ProjectAreaFlags> ProjectAreas;
+        public SerializableEnum<ScriptingImplementation> ScriptingBackend;
     }
 
     /// <summary>
@@ -89,7 +90,7 @@ namespace Unity.ProjectAuditor.Editor
     [Serializable]
     public sealed class Report : ISerializationCallbackReceiver
     {
-        internal const string k_CurrentVersion = "1.5";
+        internal const string k_CurrentVersion = "1.7";
         internal const string k_SaveFileHeader = "PROJECT_AUDITOR_REPORT";
 
         [SerializeField]
@@ -210,6 +211,9 @@ namespace Unity.ProjectAuditor.Editor
         // for internal use only
         internal Report(AnalysisParams analysisParams)
         {
+            var buildTargetGroup = BuildPipeline.GetBuildTargetGroup(analysisParams.Platform);
+            var namedBuildTarget = NamedBuildTarget.FromBuildTargetGroup(buildTargetGroup);
+
             SessionInfo = new SessionInfo(analysisParams)
             {
                 ProjectAuditorRulesVersion = ProjectAuditorRulesPackage.Version,
@@ -225,7 +229,7 @@ namespace Unity.ProjectAuditor.Editor
                 // It's not 2016 any more, but too many systems depend on operatingSystem thinking it is, so update mac's naming here
                 HostPlatform = SystemInfo.operatingSystem.Replace("Mac OS X", "macOS"),
 
-                ProjectAreas = (ProjectAreaFlags)UserPreferences.ProjectAreasToAnalyze
+                ScriptingBackend = PlayerSettings.GetScriptingBackend(namedBuildTarget)
             };
         }
 
@@ -245,6 +249,22 @@ namespace Unity.ProjectAuditor.Editor
                     if (moduleCategory == category)
                         return true;
 
+            return false;
+        }
+
+        // Can fail if a partial analysis didn't include all modules
+        internal bool TryGetModuleResult(string moduleName, out AnalysisResult result)
+        {
+            foreach (ModuleInfo moduleInfo in moduleMetadata)
+            {
+                if (moduleInfo.name == moduleName)
+                {
+                    result = moduleInfo.result;
+                    return true;
+                }
+            }
+
+            result = AnalysisResult.InProgress;
             return false;
         }
 
@@ -375,7 +395,7 @@ namespace Unity.ProjectAuditor.Editor
 
             foreach (IssueCategory ic in Enum.GetValues(typeof(IssueCategory)))
             {
-                if (ic.IsSummary() || ic == IssueCategory.SpriteAtlas)
+                if (ic.IsSummary() || ic == IssueCategory.SpriteAtlas || ic.IsObsolete())
                     continue;
 
                 if (ic >= IssueCategoryExtensions.FirstCustomCategory)

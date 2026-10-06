@@ -38,7 +38,7 @@ namespace UnityEditor
             m_LightTable = new SerializedPropertyTable(serializationUID, new SerializedPropertyDataStore.GatherDelegate(objects), () => {
                 return Array.ConvertAll(columns(), item => item.internalColumn);
             }, showFilterGUI);
-            m_Title = EditorGUIUtility.TrTextContent(title);
+            m_Title = L10n.TextContent(title, null, null, null);
         }
 
         internal void OnDisable()

@@ -60,6 +60,8 @@ namespace UnityEngine
     [NativeHeader("Modules/Wind/Public/Wind.h")]
     public class WindZone : Component
     {
+        internal WindZone(global::UnityEngine.EntityId id) : base(id) {}
+        public WindZone() {}
         ///<summary>Defines the type of wind zone to be used (Spherical or Directional).</summary>
         ///<example>
         ///  <code><![CDATA[

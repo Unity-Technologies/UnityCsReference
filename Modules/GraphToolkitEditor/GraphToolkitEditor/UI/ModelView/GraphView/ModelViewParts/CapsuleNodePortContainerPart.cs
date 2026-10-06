@@ -127,5 +127,12 @@ namespace Unity.GraphToolkit.Editor
                 }
             }
         }
+
+        /// <inheritdoc />
+        protected override void PartOwnerRemovedFromView()
+        {
+            m_PortHierarchyContainer?.RemovePortsFromRootView();
+            base.PartOwnerRemovedFromView();
+        }
     }
 }

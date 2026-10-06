@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Reflection;
@@ -39,5 +40,11 @@ namespace Unity.Scripting.AssemblyManagement
         /// <param name="assembly">Assembly to check</param>
         /// <returns>Assembly is loaded in user code ALC</returns>
         internal bool IsAssemblyInUserCodeALC(Assembly assembly);
+
+        /// <summary>
+        /// Raised for an assembly no resolution covers, when the load originates from the current contextual
+        /// reflection context. A handler returns the assembly to use, or null to decline.
+        /// </summary>
+        internal event Func<AssemblyName, Assembly?> AssemblyResolve;
     }
 }

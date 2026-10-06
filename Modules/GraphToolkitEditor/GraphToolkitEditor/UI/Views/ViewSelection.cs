@@ -489,7 +489,7 @@ namespace Unity.GraphToolkit.Editor
             if (copyPasteData is { Constants: not null } && copyPasteData.Constants.Count > 0 && portModel.GetConnectedWires().Count == 0)
             {
                 constant = copyPasteData.Constants[0];
-                canPaste = CanPaste() && portModel.EmbeddedValue != null && portModel.EmbeddedValue.IsAssignableFrom(constant.Type);
+                canPaste = portModel.EmbeddedValue != null && portModel.EmbeddedValue.IsAssignableFrom(constant.Type);
             }
 
             evt.menu.AppendAction(L10n.Tr("Paste Value", null), _ =>
@@ -517,12 +517,12 @@ namespace Unity.GraphToolkit.Editor
                 return;
 
             using var copyPasteData = m_ClipboardProvider.DeserializeDataFromClipboard();
-            var enableItemMenu = Transition.CanPasteTransitionsAsNew(copyPasteData);
+            var enableItemMenu = TransitionView.CanPasteTransitionsAsNew(copyPasteData);
 
             Action<DropdownMenuAction> action = null;
             if (transitionSupportModel != null)
             {
-                var transition = transitionSupportModel.GetView<Transition>(View);
+                var transition = transitionSupportModel.GetView<TransitionView>(View);
                 if (transition != null)
                     action = _ => transition.PasteAsNew();
             }

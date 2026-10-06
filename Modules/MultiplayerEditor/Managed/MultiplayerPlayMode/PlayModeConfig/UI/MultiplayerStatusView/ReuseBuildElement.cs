@@ -17,10 +17,19 @@ namespace Unity.Multiplayer.PlayMode.Editor
     partial class ReuseBuildElement
     {
         [AutoStaticsCleanupOnCodeReload] // static event; stale handlers after reload pin old ALC
+        // Subscribers are UI elements that attach through their own lifecycle and re-subscribe after a
+        // code reload, so the cleared invocation list refills itself.
+        [IgnoreForUAL0015("Event whose subscribers re-register through their own lifecycle after a code reload")]
         internal static event Action<BuildProfile> RebuildStateChanged;
         [AutoStaticsCleanupOnCodeReload] // static event; stale handlers after reload pin old ALC
+        // Subscribers are the status view elements themselves: each subscribes while it is built and
+        // unsubscribes on detach, so the invocation list refills when the view is rebuilt.
+        [IgnoreForUAL0015("Event re-subscribed by the status view elements as they are rebuilt and attached")]
         internal static event Action<BuildProfile, bool> UseExistingBuildChanged;
         [AutoStaticsCleanupOnCodeReload] // transient rebuild state; must reset to null on reload
+        // Transient "a rebuild is in flight" marker: null is the steady state that the rebuild itself restores
+        // when it finishes, and the next rebuild sets it again.
+        [IgnoreForUAL0015("Transient in-flight rebuild marker; null is the steady state and the next rebuild sets it")]
         internal static BuildProfile RebuildingBuildProfile { get; private set; }
 
         private const string k_UseExistingBuildLabel = "Use Existing Build";
@@ -36,14 +45,14 @@ namespace Unity.Multiplayer.PlayMode.Editor
         private PropertyField m_UseExistingBuildField;
 
         private BuildProfile m_BuildProfile;
-        private Instance m_Instance;
+        private ControllerRuntime m_Instance;
         private SerializedProperty m_UseExistingBuildProperty;
 
         private DateTime? m_CachedLastBuildTime;
         private DateTime m_CachedReportModifiedTime;
         private bool m_UpdatingFromSharedEvent;
 
-        public ReuseBuildElement(Instance instance, BuildProfile buildProfile, SerializedProperty userSettingsProperty)
+        public ReuseBuildElement(ControllerRuntime instance, BuildProfile buildProfile, SerializedProperty userSettingsProperty)
         {
             m_Instance = instance;
             m_BuildProfile = buildProfile;
@@ -176,7 +185,7 @@ namespace Unity.Multiplayer.PlayMode.Editor
             UpdateButtonStates();
         }
 
-        private void OnInstanceStatusRefreshed(Instance instance, InstanceStatusData status)
+        private void OnInstanceStatusRefreshed(ControllerRuntime instance, InstanceStatusData status)
         {
             UpdateButtonStates();
         }

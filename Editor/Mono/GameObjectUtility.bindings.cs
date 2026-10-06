@@ -14,9 +14,10 @@ namespace UnityEditor
     [NativeHeader("Editor/Src/CommandImplementation.h")]
     public sealed partial class GameObjectUtility
     {
-        public static extern StaticEditorFlags GetStaticEditorFlags(GameObject go);
-        public static extern void SetStaticEditorFlags(GameObject go, StaticEditorFlags flags);
-        public static extern bool AreStaticEditorFlagsSet(GameObject go, StaticEditorFlags flags);
+        public static extern StaticEditorFlags GetStaticEditorFlags([NotNull] GameObject go);
+        public static extern void SetStaticEditorFlags([NotNull] GameObject go, StaticEditorFlags flags);
+        public static extern bool AnyStaticEditorFlagsSet([NotNull] GameObject go, StaticEditorFlags flags);
+        public static extern bool AllStaticEditorFlagsSet([NotNull] GameObject go, StaticEditorFlags flags);
 
         internal static extern string GetFirstItemPathAfterGameObjectCreationMenuItems();
 

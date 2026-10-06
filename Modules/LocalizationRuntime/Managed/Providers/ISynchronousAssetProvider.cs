@@ -19,7 +19,7 @@ namespace Unity.Localization.Providers;
 /// this interface is how a provider opts in to synchronous resolution rather than blocking one.
 /// </remarks>
 /// <example>
-/// <para>A provider that keeps assets in memory and resolves them synchronously.</para>
+/// A provider that keeps assets in memory and resolves them synchronously.
 /// <code source="../../../../Modules/LocalizationRuntime/Tests/UTFTests/Localization.Samples/Providers/SyncAssetProviderExample.cs"/>
 /// </example>
 /// <seealso cref="IAssetProvider"/>

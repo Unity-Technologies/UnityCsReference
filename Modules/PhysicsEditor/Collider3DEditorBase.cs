@@ -22,14 +22,14 @@ namespace UnityEditor
 
         protected static class BaseStyles
         {
-            public static readonly GUIContent materialContent = EditorGUIUtility.TrTextContent("Material", "Reference to the Physics Material that determines how this Collider interacts with others.");
-            public static readonly GUIContent triggerContent = EditorGUIUtility.TrTextContent("Is Trigger", "If enabled, this Collider is used for triggering events and is ignored by the physics engine.");
-            public static readonly GUIContent centerContent = EditorGUIUtility.TrTextContent("Center", "The position of the Collider in the GameObject's local space.");
-            public static readonly GUIContent providesContacts = EditorGUIUtility.TrTextContent("Provides Contacts", "Whether or not this collider provides contacts without any MonoBehaviour listeners");
+            public static readonly GUIContent materialContent = L10n.TextContent("Material", "Reference to the Physics Material that determines how this Collider interacts with others.", null, null);
+            public static readonly GUIContent triggerContent = L10n.TextContent("Is Trigger", "If enabled, this Collider is used for triggering events and is ignored by the physics engine.", null, null);
+            public static readonly GUIContent centerContent = L10n.TextContent("Center", "The position of the Collider in the GameObject's local space.", null, null);
+            public static readonly GUIContent providesContacts = L10n.TextContent("Provides Contacts", "Whether or not this collider provides contacts without any MonoBehaviour listeners", null, null);
 
-            public static readonly GUIContent layerOverridePriority = EditorGUIUtility.TrTextContent("Layer Override Priority", "When 2 colliders have conflicting overrides, the settings of the collider with the higher priority are taken.");
-            public static readonly GUIContent includeLayers = EditorGUIUtility.TrTextContent("Include Layers", "Layers to include when producing collisions");
-            public static readonly GUIContent excludeLayers = EditorGUIUtility.TrTextContent("Exclude Layers", "Layers to exclude when producing collisions");
+            public static readonly GUIContent layerOverridePriority = L10n.TextContent("Layer Override Priority", "When 2 colliders have conflicting overrides, the settings of the collider with the higher priority are taken.", null, null);
+            public static readonly GUIContent includeLayers = L10n.TextContent("Include Layers", "Layers to include when producing collisions", null, null);
+            public static readonly GUIContent excludeLayers = L10n.TextContent("Exclude Layers", "Layers to exclude when producing collisions", null, null);
         }
 
         public override void OnEnable()

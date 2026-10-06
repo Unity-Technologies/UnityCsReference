@@ -2,7 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: AssetImporters not yet converted
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -190,7 +189,7 @@ namespace UnityEditor.Presets
             m_EventObject = eventReceiver;
 
             ShowWithMode(ShowMode.AuxWindow);
-            titleContent = EditorGUIUtility.TrTextContent("Select Preset");
+            titleContent = L10n.TextContent("Select Preset", null, null, null);
 
             // Deal with window size
             Rect rect = m_Parent.window.position;
@@ -631,4 +630,3 @@ namespace UnityEditor.Presets
         }
     }
 }
-#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

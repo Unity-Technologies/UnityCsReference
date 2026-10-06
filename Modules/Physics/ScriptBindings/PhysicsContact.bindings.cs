@@ -47,8 +47,8 @@ namespace UnityEngine
         ///
         ///    private struct JobResultStruct
         ///    {
-        ///        public int thisInstanceID;
-        ///        public int otherInstanceID;
+        ///        public EntityId thisEntityId;
+        ///        public EntityId otherEntityId;
         ///        public Vector3 averageNormal;
         ///    }
         ///
@@ -56,7 +56,7 @@ namespace UnityEngine
         ///    private int m_Count;
         ///    private JobHandle m_JobHandle;
         ///
-        ///    private readonly Dictionary<int, Rigidbody> m_RigidbodyMapping = new Dictionary<int, Rigidbody>();
+        ///    private readonly Dictionary<EntityId, Rigidbody> m_RigidbodyMapping = new Dictionary<EntityId, Rigidbody>();
         ///
         ///    private void OnEnable()
         ///    {
@@ -64,9 +64,9 @@ namespace UnityEngine
         ///
         ///        Physics.ContactEvent += Physics_ContactEvent;
         ///
-        ///        var allRBs = GameObject.FindObjectsOfType<Rigidbody>();
+        ///        var allRBs = FindObjectsByType<Rigidbody>();
         ///        foreach (var rb in allRBs)
-        ///            m_RigidbodyMapping.Add(rb.GetInstanceID(), rb);
+        ///            m_RigidbodyMapping.Add(rb.GetEntityId(), rb);
         ///    }
         ///
         ///    private void OnDisable()
@@ -87,16 +87,16 @@ namespace UnityEngine
         ///        // E.g. Add force based on the average contact normal for that body
         ///        for (int i = 0; i < m_Count; i++)
         ///        {
-        ///            var thisInstanceID = m_ResultsArray[i].thisInstanceID;
-        ///            var otherInstanceID = m_ResultsArray[i].otherInstanceID;
+        ///            var result = m_ResultsArray[i];
         ///
-        ///            var rb0 = thisInstanceID != 0 ? m_RigidbodyMapping[thisInstanceID] : null;
-        ///            var rb1 = otherInstanceID != 0 ? m_RigidbodyMapping[otherInstanceID] : null;
+        ///            // TryGetValue skips bodies that the mapping doesn't contain, either because they were
+        ///            // created after OnEnable or because that side of the pair has no body (EntityId.None).
+        ///            // The bool check then skips any body that has been destroyed since OnEnable.
+        ///            if (m_RigidbodyMapping.TryGetValue(result.thisEntityId, out var rb0) && rb0)
+        ///                rb0.AddForce(result.averageNormal * m_ImpulseMultiplier, ForceMode.Impulse);
         ///
-        ///            if (rb0)
-        ///                rb0.AddForce(m_ResultsArray[i].averageNormal * m_ImpulseMultiplier, ForceMode.Impulse);
-        ///            if (rb1)
-        ///                rb1.AddForce(m_ResultsArray[i].averageNormal * -m_ImpulseMultiplier, ForceMode.Impulse);
+        ///            if (m_RigidbodyMapping.TryGetValue(result.otherEntityId, out var rb1) && rb1)
+        ///                rb1.AddForce(result.averageNormal * -m_ImpulseMultiplier, ForceMode.Impulse);
         ///        }
         ///    }
         ///
@@ -154,8 +154,8 @@ namespace UnityEngine
         ///
         ///            JobResultStruct result = new JobResultStruct()
         ///            {
-        ///                thisInstanceID = pairHeaders[index].bodyInstanceID,
-        ///                otherInstanceID = pairHeaders[index].otherBodyInstanceID,
+        ///                thisEntityId = pairHeaders[index].bodyEntityId,
+        ///                otherEntityId = pairHeaders[index].otherBodyEntityId,
         ///                averageNormal = averageNormal
         ///            };
         ///

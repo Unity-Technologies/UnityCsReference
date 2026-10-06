@@ -2,7 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: GraphToolkit not yet converted
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -25,7 +24,9 @@ namespace Unity.GraphToolkit.Editor
             if (s_ShortcutProviderProxy == null)
             {
                 s_ShortcutProviderProxy = new ShortcutProviderProxy();
+#pragma warning disable UAL0018 // the discovery provider holding the proxy lives in a static that is itself cleaned on code reload, so both are re-created together and the proxy cannot go stale
                 ToolShortcutDiscoveryProvider.GetInstance().Proxy = s_ShortcutProviderProxy;
+#pragma warning restore UAL0018
             }
 
             return s_ShortcutProviderProxy;
@@ -119,4 +120,3 @@ namespace Unity.GraphToolkit.Editor
         }
     }
 }
-#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

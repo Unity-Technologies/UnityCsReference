@@ -76,7 +76,6 @@ namespace Unity.ProjectAuditor.Editor.UI
 
             // Build report
             BuildFiles,
-            BuildSteps,
 
             // Assemblies
             Assemblies,
@@ -255,8 +254,6 @@ namespace Unity.ProjectAuditor.Editor.UI
                 // Build report
                 case UIButton.BuildFiles:
                     return "build_files_tab";
-                case UIButton.BuildSteps:
-                    return "build_steps_tab";
 
                 // Assemblies
                 case UIButton.Assemblies:

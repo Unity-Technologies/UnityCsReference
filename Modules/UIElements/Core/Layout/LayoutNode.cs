@@ -34,6 +34,8 @@ partial struct LayoutNode : IEquatable<LayoutNode>
     /// </summary>
     public UnmanagedDataHandle Handle => m_Handle;
 
+    internal int ManagerIndex => m_Access.ManagerIndex;
+
     /// <summary>
     /// Gets the computed layout struct for this node.
     /// </summary>

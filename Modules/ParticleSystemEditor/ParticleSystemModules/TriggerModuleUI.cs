@@ -26,28 +26,28 @@ namespace UnityEditor
 
         class Texts
         {
-            public GUIContent collisionShapes = EditorGUIUtility.TrTextContent("Colliders", "The list of collision shapes to use for the trigger.");
-            public GUIContent createCollisionShape = EditorGUIUtility.TrTextContent("", "Create a GameObject containing a sphere collider and assign it to the list.");
-            public GUIContent inside = EditorGUIUtility.TrTextContent("Inside", "What to do for particles that are inside the collision volume.");
-            public GUIContent outside = EditorGUIUtility.TrTextContent("Outside", "What to do for particles that are outside the collision volume.");
-            public GUIContent enter = EditorGUIUtility.TrTextContent("Enter", "Triggered once when particles enter the collision volume.");
-            public GUIContent exit = EditorGUIUtility.TrTextContent("Exit", "Triggered once when particles leave the collision volume.");
-            public GUIContent colliderQueryMode = EditorGUIUtility.TrTextContent("Collider Query Mode", "Required in order to get collider information when using the ParticleSystem.GetTriggerParticles script API. Disabled by default because it has a performance cost.\nWhen set to One, the script can retrieve the first collider in the list that the particle interacts with.\nSetting to All will return all colliders that the particle interacts with.");
-            public GUIContent radiusScale = EditorGUIUtility.TrTextContent("Radius Scale", "Scale particle bounds by this amount to get more precise collisions.");
-            public GUIContent visualizeBounds = EditorGUIUtility.TrTextContent("Visualize Bounds", "Render the collision bounds of the particles.");
+            public GUIContent collisionShapes = L10n.TextContent("Colliders", "The list of collision shapes to use for the trigger.", null, null);
+            public GUIContent createCollisionShape = L10n.TextContent("", "Create a GameObject containing a sphere collider and assign it to the list.", null, null);
+            public GUIContent inside = L10n.TextContent("Inside", "What to do for particles that are inside the collision volume.", null, null);
+            public GUIContent outside = L10n.TextContent("Outside", "What to do for particles that are outside the collision volume.", null, null);
+            public GUIContent enter = L10n.TextContent("Enter", "Triggered once when particles enter the collision volume.", null, null);
+            public GUIContent exit = L10n.TextContent("Exit", "Triggered once when particles leave the collision volume.", null, null);
+            public GUIContent colliderQueryMode = L10n.TextContent("Collider Query Mode", "Required in order to get collider information when using the ParticleSystem.GetTriggerParticles script API. Disabled by default because it has a performance cost.\nWhen set to One, the script can retrieve the first collider in the list that the particle interacts with.\nSetting to All will return all colliders that the particle interacts with.", null, null);
+            public GUIContent radiusScale = L10n.TextContent("Radius Scale", "Scale particle bounds by this amount to get more precise collisions.", null, null);
+            public GUIContent visualizeBounds = L10n.TextContent("Visualize Bounds", "Render the collision bounds of the particles.", null, null);
 
             public GUIContent[] overlapOptions = new GUIContent[]
             {
-                EditorGUIUtility.TrTextContent("Ignore"),
-                EditorGUIUtility.TrTextContent("Kill"),
-                EditorGUIUtility.TrTextContent("Callback")
+                L10n.TextContent("Ignore", null, null, null),
+                L10n.TextContent("Kill", null, null, null),
+                L10n.TextContent("Callback", null, null, null)
             };
 
             public GUIContent[] colliderQueryModeOptions = new GUIContent[]
             {
-                EditorGUIUtility.TrTextContent("Disabled"),
-                EditorGUIUtility.TrTextContent("One"),
-                EditorGUIUtility.TrTextContent("All")
+                L10n.TextContent("Disabled", null, null, null),
+                L10n.TextContent("One", null, null, null),
+                L10n.TextContent("All", null, null, null)
             };
         }
         [NoAutoStaticsCleanup] // lazy-initialized UI text cache

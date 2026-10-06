@@ -117,7 +117,7 @@ struct USSStatsStyleProfiler : IStyleProfiler
         var owner = accelerationCacheEntry.ownerStyleSheet;
         if (!m_MatchStatsBuffers.TryGetValue(owner, out var buffer))
         {
-            buffer = (accelerationCacheEntry, new SelectorMatchStatsInfo[accelerationCacheEntry.m_AllDescriptorsCount]);
+            buffer = (accelerationCacheEntry, new SelectorMatchStatsInfo[accelerationCacheEntry.allDescriptors.Length]);
             m_MatchStatsBuffers[owner] = buffer;
         }
         return buffer.stats;

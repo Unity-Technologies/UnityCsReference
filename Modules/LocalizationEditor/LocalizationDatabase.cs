@@ -62,6 +62,8 @@ namespace UnityEditor
         {
             lock (lockObject)
                 s_LocalizedStringCache.Clear();
+
+            ClearContentCache();
         }
 
         internal static string GetGroupName(System.Reflection.Assembly assembly)
@@ -203,15 +205,9 @@ namespace UnityEditor
             return TextContentCore(GetGroupName(Assembly.GetCallingAssembly()), text, tooltip, icon);
         }
 
-        static GUIContent TextContentCore(string groupName, string text, string tooltip, Texture icon)
+        internal static GUIContent TextContentCore(string groupName, string text, string tooltip, Texture icon)
         {
-            if (!LocalizationDatabase.enableEditorLocalization || groupName == null)
-                return EditorGUIUtility.TrTextContent(text, tooltip, icon);
-
-            var gc = new GUIContent(TrWithGroup(text, groupName));
-            gc.tooltip = TrWithGroup(tooltip, groupName);
-            gc.image = icon;
-            return gc;
+            return TextContentByTexture(groupName, text, tooltip, icon);
         }
 
         [ExcludeFromDocs]
@@ -226,6 +222,14 @@ namespace UnityEditor
             return TextContentWithIconNameCore(groupName, text, tooltip, iconName);
         }
 
+        // The caller supplies the cache key, which is the only way to keep one entry for content
+        // whose text changes every frame.
+        [ExcludeFromDocs]
+        public static GUIContent TextContent(string key, string text, string tooltip, Texture icon, string groupName)
+        {
+            return CachedTextContent(groupName, key, text, tooltip, icon);
+        }
+
         static GUIContent TextContentWithIconNameCore(string groupName, string text, string tooltip, string iconName)
         {
             // No icon name means no icon. Without this, LoadIconRequired logs an error for the empty name,
@@ -233,13 +237,7 @@ namespace UnityEditor
             if (string.IsNullOrEmpty(iconName))
                 return TextContentCore(groupName, text, tooltip, null);
 
-            if (!LocalizationDatabase.enableEditorLocalization || groupName == null)
-                return EditorGUIUtility.TrTextContent(text, tooltip, iconName);
-
-            var gc = new GUIContent(TrWithGroup(text, groupName));
-            gc.tooltip = TrWithGroup(tooltip, groupName);
-            gc.image = EditorGUIUtility.LoadIconRequired(iconName);
-            return gc;
+            return TextContentByIconName(groupName, text, tooltip, iconName);
         }
 
         [ExcludeFromDocs]
@@ -256,12 +254,7 @@ namespace UnityEditor
 
         static GUIContent TextContentWithTextureCore(string groupName, string text, Texture icon)
         {
-            if (!LocalizationDatabase.enableEditorLocalization || groupName == null)
-                return EditorGUIUtility.TrTextContentWithIcon(text, icon);
-
-            var gc = new GUIContent(TrWithGroup(text, groupName));
-            gc.image = icon;
-            return gc;
+            return TextContentByTexture(groupName, text, null, icon);
         }
 
         [ExcludeFromDocs]
@@ -278,12 +271,7 @@ namespace UnityEditor
 
         static GUIContent TextContentWithIconTextureCore(string groupName, string text, Texture icon)
         {
-            if (!LocalizationDatabase.enableEditorLocalization || groupName == null)
-                return EditorGUIUtility.TrTextContentWithIcon(text, icon);
-
-            var gc = new GUIContent(TrWithGroup(text, groupName));
-            gc.image = icon;
-            return gc;
+            return TextContentWithTextureCore(groupName, text, icon);
         }
 
         [ExcludeFromDocs]
@@ -298,12 +286,7 @@ namespace UnityEditor
             if (string.IsNullOrEmpty(iconName))
                 return TextContentWithIconTextureCore(groupName, text, null);
 
-            if (!LocalizationDatabase.enableEditorLocalization || groupName == null)
-                return EditorGUIUtility.TextContentWithIcon(text, iconName);
-
-            var gc = new GUIContent(TrWithGroup(text, groupName));
-            gc.image = EditorGUIUtility.LoadIconRequired(iconName);
-            return gc;
+            return TextContentByIconName(groupName, text, null, iconName);
         }
 
         [ExcludeFromDocs]
@@ -323,13 +306,7 @@ namespace UnityEditor
             if (string.IsNullOrEmpty(iconName))
                 return TextContentWithIconTooltipTextureCore(groupName, text, tooltip, null);
 
-            if (!LocalizationDatabase.enableEditorLocalization || groupName == null)
-                return EditorGUIUtility.TrTextContentWithIcon(text, tooltip, iconName);
-
-            var gc = new GUIContent(TrWithGroup(text, groupName));
-            gc.tooltip = TrWithGroup(tooltip, groupName);
-            gc.image = EditorGUIUtility.LoadIconRequired(iconName);
-            return gc;
+            return TextContentByIconName(groupName, text, tooltip, iconName);
         }
 
         [ExcludeFromDocs]
@@ -346,13 +323,7 @@ namespace UnityEditor
 
         static GUIContent TextContentWithIconTooltipTextureCore(string groupName, string text, string tooltip, Texture icon)
         {
-            if (!LocalizationDatabase.enableEditorLocalization || groupName == null)
-                return EditorGUIUtility.TrTextContentWithIcon(text, tooltip, icon);
-
-            var gc = new GUIContent(TrWithGroup(text, groupName));
-            gc.tooltip = TrWithGroup(tooltip, groupName);
-            gc.image = icon;
-            return gc;
+            return TextContentByTexture(groupName, text, tooltip, icon);
         }
 
         [ExcludeFromDocs]
@@ -369,13 +340,7 @@ namespace UnityEditor
 
         static GUIContent TextContentWithIconTooltipMessageCore(string groupName, string text, string tooltip, MessageType messageType)
         {
-            if (!LocalizationDatabase.enableEditorLocalization || groupName == null)
-                return EditorGUIUtility.TrTextContentWithIcon(text, tooltip, messageType);
-
-            var gc = new GUIContent(TrWithGroup(text, groupName));
-            gc.tooltip = TrWithGroup(tooltip, groupName);
-            gc.image = EditorGUIUtility.GetHelpIcon(messageType);
-            return gc;
+            return TextContentWithIconTooltipTextureCore(groupName, text, tooltip, EditorGUIUtility.GetHelpIcon(messageType));
         }
 
         [ExcludeFromDocs]
@@ -392,12 +357,7 @@ namespace UnityEditor
 
         static GUIContent TextContentWithIconMessageCore(string groupName, string text, MessageType messageType)
         {
-            if (!LocalizationDatabase.enableEditorLocalization || groupName == null)
-                return EditorGUIUtility.TrTextContentWithIcon(text, messageType);
-
-            var gc = new GUIContent(TrWithGroup(text, groupName));
-            gc.image = EditorGUIUtility.GetHelpIcon(messageType);
-            return gc;
+            return TextContentWithIconTooltipTextureCore(groupName, text, null, EditorGUIUtility.GetHelpIcon(messageType));
         }
 
         [ExcludeFromDocs]
@@ -414,13 +374,7 @@ namespace UnityEditor
 
         static GUIContent IconContentNamedCore(string groupName, string iconName, string tooltip)
         {
-            if (!LocalizationDatabase.enableEditorLocalization || groupName == null)
-                return EditorGUIUtility.TrIconContent(iconName, tooltip);
-
-            var gc = new GUIContent();
-            gc.tooltip = TrWithGroup(tooltip, groupName);
-            gc.image = EditorGUIUtility.LoadIconRequired(iconName);
-            return gc;
+            return IconContentNamed(groupName, iconName, tooltip, lightenTexture: false);
         }
 
         [ExcludeFromDocs]
@@ -437,13 +391,7 @@ namespace UnityEditor
 
         static GUIContent IconContentTextureCore(string groupName, Texture icon, string tooltip)
         {
-            if (!LocalizationDatabase.enableEditorLocalization || groupName == null)
-                return EditorGUIUtility.TrIconContent(icon, tooltip);
-
-            var gc = new GUIContent();
-            gc.tooltip = TrWithGroup(tooltip, groupName);
-            gc.image = icon;
-            return gc;
+            return IconContentByTexture(groupName, icon, tooltip);
         }
 
         [ExcludeFromDocs]
@@ -458,9 +406,11 @@ namespace UnityEditor
             return TempContentCore(groupName, t);
         }
 
+        // A null group means the Editor's own dictionary, not "do not translate". TrWithGroup
+        // already reads it that way, so the group is passed through rather than tested here.
         static GUIContent TempContentCore(string groupName, string t)
         {
-            if (!LocalizationDatabase.enableEditorLocalization || groupName == null)
+            if (!LocalizationDatabase.enableEditorLocalization)
                 return EditorGUIUtility.TempContent(t);
 
             return EditorGUIUtility.TempContent(TrWithGroup(t, groupName));
@@ -480,7 +430,7 @@ namespace UnityEditor
 
         static GUIContent[] TempContentArrayCore(string groupName, string[] texts)
         {
-            if (!LocalizationDatabase.enableEditorLocalization || groupName == null)
+            if (!LocalizationDatabase.enableEditorLocalization)
                 return EditorGUIUtility.TempContent(texts);
 
             var retval = new GUIContent[texts.Length];
@@ -503,7 +453,7 @@ namespace UnityEditor
 
         static GUIContent[] TempContentTooltipArrayCore(string groupName, string[] texts, string[] tooltips)
         {
-            if (!LocalizationDatabase.enableEditorLocalization || groupName == null)
+            if (!LocalizationDatabase.enableEditorLocalization)
                 return EditorGUIUtility.TempContent(texts, tooltips);
 
             var retval = new GUIContent[texts.Length];

@@ -2,7 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: AssetImporters not yet converted
 using System.Collections.Generic;
 using UnityEditor;
 using UnityEngine;
@@ -211,10 +210,10 @@ namespace UnityEditor
             public readonly GUIStyle headerStyle;
             public readonly GUIStyle toggleStyle;
             public readonly GUIStyle footerStyle;
-            public readonly GUIContent okButton = EditorGUIUtility.TrTextContent("OK");
-            public readonly GUIContent cancelButton = EditorGUIUtility.TrTextContent("Cancel");
-            public readonly GUIContent nodesLabel = EditorGUIUtility.TrTextContent("Select the SketchUp nodes to import", "Nodes in the file hierarchy");
-            public readonly GUIContent windowTitle = EditorGUIUtility.TrTextContent("SketchUp Node Selection Dialog", "SketchUp Node Selection Dialog");
+            public readonly GUIContent okButton = L10n.TextContent("OK", null, null, null);
+            public readonly GUIContent cancelButton = L10n.TextContent("Cancel", null, null, null);
+            public readonly GUIContent nodesLabel = L10n.TextContent("Select the SketchUp nodes to import", "Nodes in the file hierarchy", null, null);
+            public readonly GUIContent windowTitle = L10n.TextContent("SketchUp Node Selection Dialog", "SketchUp Node Selection Dialog", null, null);
 
             public Styles()
             {
@@ -377,4 +376,3 @@ namespace UnityEditor
         }
     }
 }
-#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

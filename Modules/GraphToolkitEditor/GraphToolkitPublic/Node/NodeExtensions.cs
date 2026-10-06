@@ -13,7 +13,7 @@ static class NodeExtensions
             string errorMessage = null;
             foreach (var source in port.GetConnectedPorts())
             {
-                if (source == null || ConnectionTypeValidForPortType(port, source))
+                if (source == null || model.GraphModel.CanAssignTo(port, source))
                     continue;
 
                 if (errorMessage == null)
@@ -29,10 +29,5 @@ static class NodeExtensions
                 res.AddError(errorMessage, port);
             }
         }
-    }
-
-    static bool ConnectionTypeValidForPortType(PortModel port, PortModel source)
-    {
-        return port.DataTypeHandle == source.DataTypeHandle || port.DataTypeHandle.IsAssignableFrom(source.DataTypeHandle);
     }
 }

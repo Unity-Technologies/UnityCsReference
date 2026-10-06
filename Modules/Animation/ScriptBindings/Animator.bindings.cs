@@ -543,6 +543,8 @@ namespace UnityEngine
     [UsedByNativeCode]
     public partial class Animator : Behaviour
     {
+        internal Animator(global::UnityEngine.EntityId id) : base(id) {}
+        public Animator() {}
         // Returns true if the current rig is optimizable
         ///<summary>Returns true if the current rig is optimizable with <see cref="AnimatorUtility.OptimizeTransformHierarchy" />.</summary>
         extern public bool isOptimizable

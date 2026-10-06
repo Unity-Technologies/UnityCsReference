@@ -25,6 +25,7 @@ using System.Runtime.CompilerServices;
 
 [assembly: InternalsVisibleTo("DynamicProxyGenAssembly2")] // for Moq
 
+[assembly: InternalsVisibleTo("UnityEditor.MultiplayerModule")]
 [assembly: InternalsVisibleTo("UnityEditor.StyleSheetsModule")]
 [assembly: InternalsVisibleTo("UnityEditor.UIBuilderModule")]
 [assembly: InternalsVisibleTo("UnityEditor.UIElementsModule")]
@@ -94,6 +95,7 @@ using System.Runtime.CompilerServices;
 [assembly: InternalsVisibleTo("Unity.Hierarchy.Editor.Tests")] // Hierarchy tests
 [assembly: InternalsVisibleTo("Unity.Hierarchy.Editor.PerformanceTests")] // Hierarchy performance tests
 [assembly: InternalsVisibleTo("UnityEditor.VectorGraphicsModule")] // VectorImage
+[assembly: InternalsVisibleTo("UnityEditor.Android.Extensions")] // Android vector drawable previews
 
 
 [assembly: InternalsVisibleTo("Unity.Modules.VectorGraphics.Tests.Editor")]

@@ -18,6 +18,9 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_PageManager = pageManager;
 
             AddToClassList("list-item");
+
+            focusable = true;
+            tabIndex = -1;
         }
 
         public virtual void BindVisualState(VisualState newVisualState)
@@ -29,8 +32,10 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         public void RefreshSelection()
         {
-            selected = !string.IsNullOrEmpty(visualState?.itemUniqueId) && m_PageManager.activePage.GetSelection().Contains(visualState.itemUniqueId);
+            var selection = m_PageManager.activePage.GetSelection();
+            selected = !string.IsNullOrEmpty(visualState?.itemUniqueId) && selection.Contains(visualState.itemUniqueId);
             EnableInClassList("selected", selected);
+            tabIndex = selected && visualState.itemUniqueId == selection.last ? 0 : -1;
         }
     }
 }

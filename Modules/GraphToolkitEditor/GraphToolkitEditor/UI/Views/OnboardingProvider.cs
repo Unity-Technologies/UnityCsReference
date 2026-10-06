@@ -5,7 +5,7 @@
 using System;
 using System.Collections.Generic;
 using System.Text;
-using Unity.GraphToolkit.CSO;
+using Unity.CSO;
 using UnityEditor;
 using UnityEditor.Search;
 using UnityEngine;

@@ -2,7 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: Lighting not yet converted
 using System;
 using System.Collections;
 using Unity.Scripting.LifecycleManagement;
@@ -78,7 +77,7 @@ namespace UnityEditor.Lighting.LightingSearch
             actions = GetActions();
             onEnable = () =>
             {
-                #pragma warning disable UAL0015 // rebuilt/resubscribed wholesale on the next reload via this object's own lifecycle; a stale value in the interim is never observed
+                #pragma warning disable UAL0015 // OnBakeCompleted is static, so this captures no provider instance; the subscription is recreated because SearchService.Providers is a ScopedLazy<LazyInitStatics, CodeLoadedScope> that rebuilds this provider (and re-invokes this onEnable) whenever a SearchContext next activates it after reload
                 Lightmapping.bakeCompleted += OnBakeCompleted;
                 #pragma warning restore UAL0015
             };
@@ -452,4 +451,3 @@ namespace UnityEditor.Lighting.LightingSearch
 
     }
 }
-#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

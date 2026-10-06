@@ -15,6 +15,7 @@ namespace Unity.UI.Builder
         VisualElement m_ReorderZoneAbove;
         VisualElement m_ReorderZoneBelow;
         TextField m_RenameTextField;
+        IVisualElementScheduledItem m_RenameRetry;
         internal List<Label> elidableLabels = new();
 
         public override VisualElement contentContainer => m_Container == null ? this : m_Container;
@@ -38,9 +39,14 @@ namespace Unity.UI.Builder
             m_ReorderZoneBelow.userData = this;
         }
 
-        public void ActivateRenameElementMode()
+        public void ActivateRenameElementMode(bool isCanvasReadOnly = false)
         {
             var documentElement = GetProperty(BuilderConstants.ElementLinkedDocumentVisualElementVEPropertyName) as VisualElement;
+
+            // On a read-only canvas the preview elements can't be renamed; selectors live in the
+            // stylesheet and stay renameable.
+            if (isCanvasReadOnly && !BuilderSharedStyles.IsSelectorElement(documentElement))
+                return;
 
             if ((!documentElement.IsPartOfCurrentDocument() ||
                  BuilderSharedStyles.IsDocumentElement(documentElement)) &&
@@ -97,12 +103,45 @@ namespace Unity.UI.Builder
             m_RenameTextField.SelectAll();
         }
 
-        public void ResetRenamingField()
+        void ResetRenamingField()
         {
             var documentElement =
                 GetProperty(BuilderConstants.ElementLinkedDocumentVisualElementVEPropertyName) as VisualElement;
             SetRenameTextFieldValueFromDocumentElement(documentElement);
             m_RenameTextField.textEdition.SaveValueAndText();
+        }
+
+        public void CancelRenaming()
+        {
+            if (!IsRenamingActive())
+                return;
+
+            ResetRenamingField();
+            HideRenameTextField();
+        }
+
+        void ScheduleRenameRetry(string value)
+        {
+            m_RenameRetry?.Pause();
+            m_RenameRetry = m_RenameTextField.schedule.Execute(() =>
+            {
+                FocusOnRenameTextField();
+                m_RenameTextField.SetValueWithoutNotify(value);
+            });
+        }
+
+        void HideRenameTextField()
+        {
+            var nameLabel = this.Q<Label>(classes: BuilderConstants.ExplorerItemNameLabelClassName.value);
+            var labelContainer = this.Q(classes: BuilderConstants.ExplorerItemSelectorLabelContClassName);
+
+            m_RenameRetry?.Pause();
+            m_RenameTextField.AddToClassList(BuilderConstants.HiddenStyleClassName);
+
+            nameLabel?.RemoveFromClassList(BuilderConstants.HiddenStyleClassName);
+            labelContainer?.RemoveFromClassList(BuilderConstants.HiddenStyleClassName);
+
+            SetReorderingZonesEnabled(true);
         }
 
         private void SetRenameTextFieldValueFromDocumentElement(VisualElement documentElement)
@@ -186,17 +225,15 @@ namespace Unity.UI.Builder
             if (!IsRenameTextValid() && (selection.isEmpty || selection.selectionCount > 1 || selection.GetFirstSelectedElement() != documentElement))
             {
                 // Selection changed while renaming and renaming is invalid. Cancel renaming.
-                m_RenameTextField.AddToClassList(BuilderConstants.HiddenStyleClassName);
+                CancelRenaming();
                 if (documentElement.IsSelector())
                 {
                     Builder.ShowWarning(string.Format(BuilderConstants.StyleSelectorValidationSpacialCharacters, "Name"));
-                    selection.NotifyOfStylingChange();
                 }
                 else
                 {
                     Builder.ShowWarning(string.Format(BuilderConstants.AttributeValidationSpacialCharacters, "Name"));
                 }
-                selection.NotifyOfHierarchyChange(null, null, BuilderHierarchyChangeType.ElementName);
                 return;
             }
 
@@ -204,35 +241,31 @@ namespace Unity.UI.Builder
             {
                 value = value.Trim();
 
-                var stylesheet = documentElement.GetStyleSheet();
-
-                if (!string.IsNullOrEmpty(m_RenameTextField.text))
+                if (value == BuilderSharedStyles.GetSelectorString(documentElement))
                 {
-                    if (!BuilderNameUtilities.styleSelectorRegex.IsMatch(value))
-                    {
-                        Builder.ShowWarning(string.Format(BuilderConstants.StyleSelectorValidationSpacialCharacters, "Name"));
-                        m_RenameTextField.schedule.Execute(() =>
-                        {
-                            FocusOnRenameTextField();
-                            m_RenameTextField.SetValueWithoutNotify(value);
-                        });
-                        return;
-                    }
+                    HideRenameTextField();
+                    return;
+                }
 
-                    var styleSheet = documentElement.GetClosestStyleSheet();
-                    Undo.RegisterCompleteObjectUndo(
-                        styleSheet, BuilderConstants.RenameSelectorUndoMessage);
+                if (string.IsNullOrEmpty(value))
+                {
+                    CancelRenaming();
+                    return;
+                }
 
-                    if (!BuilderSharedStyles.SetSelectorString(documentElement, styleSheet, value, out var error))
-                    {
-                        Builder.ShowWarning(error);
-                        m_RenameTextField.schedule.Execute(() =>
-                        {
-                            FocusOnRenameTextField();
-                            m_RenameTextField.SetValueWithoutNotify(value);
-                        });
-                        return;
-                    }
+                if (!BuilderNameUtilities.styleSelectorRegex.IsMatch(value))
+                {
+                    Builder.ShowWarning(string.Format(BuilderConstants.StyleSelectorValidationSpacialCharacters, "Name"));
+                    ScheduleRenameRetry(value);
+                    return;
+                }
+
+                var styleSheet = documentElement.GetClosestStyleSheet();
+                if (!BuilderSharedStyles.SetSelectorString(documentElement, styleSheet, value, out var error))
+                {
+                    Builder.ShowWarning(error);
+                    ScheduleRenameRetry(value);
+                    return;
                 }
 
                 selection.NotifyOfStylingChange();
@@ -246,11 +279,7 @@ namespace Unity.UI.Builder
                     if (!BuilderNameUtilities.attributeRegex.IsMatch(value))
                     {
                         Builder.ShowWarning(string.Format(BuilderConstants.AttributeValidationSpacialCharacters, "Name"));
-                        m_RenameTextField.schedule.Execute(() =>
-                        {
-                            FocusOnRenameTextField();
-                            m_RenameTextField.SetValueWithoutNotify(value);
-                        });
+                        ScheduleRenameRetry(value);
                         return;
                     }
 
@@ -259,6 +288,12 @@ namespace Unity.UI.Builder
                 else
                 {
                     nameLabel.text = m_RenameTextField.text;
+                }
+
+                if (value == documentElement.name)
+                {
+                    HideRenameTextField();
+                    return;
                 }
 
                 // Record undo on the active document's VTA (the open sub-document when in context mode).
@@ -283,7 +318,7 @@ namespace Unity.UI.Builder
                 selection.NotifyOfHierarchyChange(null, null, BuilderHierarchyChangeType.ElementName);
             }
 
-            m_RenameTextField.AddToClassList(BuilderConstants.HiddenStyleClassName);
+            HideRenameTextField();
         }
 
         public VisualElement row()

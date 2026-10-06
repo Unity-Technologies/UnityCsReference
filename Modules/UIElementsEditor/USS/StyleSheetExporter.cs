@@ -222,13 +222,20 @@ namespace UnityEditor.UIElements
             private readonly StringBuilder m_Builder;
             private readonly StyleSheet m_StyleSheet;
             private readonly UssExportOptions m_Options;
+            private readonly bool m_WriteFloatsAsSeconds;
 
             [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
             internal ExportContext(StyleSheet styleSheet, StringBuilder builder, UssExportOptions options)
+                : this(styleSheet, builder, options, false)
+            {
+            }
+
+            ExportContext(StyleSheet styleSheet, StringBuilder builder, UssExportOptions options, bool writeFloatsAsSeconds)
             {
                 m_StyleSheet = styleSheet;
                 m_Builder = builder;
                 m_Options = options;
+                m_WriteFloatsAsSeconds = writeFloatsAsSeconds;
             }
 
             public StyleSheet styleSheet => m_StyleSheet;
@@ -239,7 +246,14 @@ namespace UnityEditor.UIElements
             {
                 var opts = m_Options;
                 opts.preserveDimensionUnit = PreserveUnitType.All;
-                return new ExportContext(m_StyleSheet, m_Builder, opts);
+                return new ExportContext(m_StyleSheet, m_Builder, opts, m_WriteFloatsAsSeconds);
+            }
+
+            internal bool writeFloatsAsSeconds => m_WriteFloatsAsSeconds;
+
+            internal ExportContext WithFloatsAsSeconds()
+            {
+                return new ExportContext(m_StyleSheet, m_Builder, m_Options, true);
             }
 
             public void Append(char c)
@@ -571,9 +585,20 @@ namespace UnityEditor.UIElements
                 var customCtx = ctx.WithPreserveDimensionUnit();
                 WriteStyleValueHandleBlock(ref customCtx, property.values.AsSpan());
             }
+            else if (IsScalarTimeProperty(property))
+            {
+                var timeCtx = ctx.WithFloatsAsSeconds();
+                WriteStyleValueHandleBlock(ref timeCtx, property.values.AsSpan());
+            }
             else
                 WriteStyleValueHandleBlock(ref ctx, property.values.AsSpan());
             WritePunctuation(ref ctx, ";");
+        }
+
+        // The importer stores these <time># longhands as bare floats in seconds, but USS rejects a unitless time.
+        static bool IsScalarTimeProperty(StyleProperty property)
+        {
+            return property.id is StylePropertyId.AnimationDuration or StylePropertyId.AnimationDelay;
         }
 
         protected void WriteStyleValueHandleBlock(ref ExportContext ctx, Span<StyleValueHandle> handles)
@@ -598,6 +623,9 @@ namespace UnityEditor.UIElements
             {
                 case StyleValueType.Keyword:
                     WriteKeywordValue(ref ctx, ctx.styleSheet.ReadKeyword(handle));
+                    break;
+                case StyleValueType.Float when ctx.writeFloatsAsSeconds:
+                    WriteDimensionValue(ref ctx, new Dimension(ctx.styleSheet.ReadFloat(handle), Dimension.Unit.Second));
                     break;
                 case StyleValueType.Float:
                     WriteFloatValue(ref ctx, ctx.styleSheet.ReadFloat(handle));
@@ -627,7 +655,11 @@ namespace UnityEditor.UIElements
                     var functionName = ctx.styleSheet.ReadFunctionName(handle);
                     var argStart = handleIndex + 2;
                     GetLastFunctionHandleIndex(ref ctx, handles, ref handleIndex);
-                    WriteFunction(ref ctx, functionName, handles.Slice(argStart, handleIndex - argStart));
+                    // A truncated function (no argument-count handle) leaves the walk before argStart.
+                    if (argStart <= handleIndex)
+                        WriteFunction(ref ctx, functionName, handles.Slice(argStart, handleIndex - argStart));
+                    else
+                        WriteFunction(ref ctx, functionName, Span<StyleValueHandle>.Empty);
                     // We need to rollback
                     --handleIndex;
                     break;
@@ -854,6 +886,8 @@ namespace UnityEditor.UIElements
                 return;
 
             ++index;
+            if (index >= handles.Length)
+                return;
             var argCount = ctx.styleSheet.ReadFloat(handles[index]);
 
             if (argCount <= 0)
@@ -863,7 +897,9 @@ namespace UnityEditor.UIElements
             }
 
             ++index;
-            for (var arg = 0; arg < argCount; ++arg)
+            // Serialized data may carry a stale arg count larger than the remaining handles
+            // (repeat() was once written with a flattened count), so clamp instead of throwing.
+            for (var arg = 0; arg < argCount && index < handles.Length; ++arg)
             {
                 if (handles[index].valueType == StyleValueType.Function)
                 {
@@ -888,6 +924,8 @@ namespace UnityEditor.UIElements
         {
             using var builderHandle = StringBuilderPool.Get(out var stringBuilder);
             var context = new ExportContext(styleSheet, stringBuilder, options);
+            if (IsScalarTimeProperty(property))
+                context = context.WithFloatsAsSeconds();
             Default.WriteStyleValueHandleBlock(ref context, property.values.AsSpan());
             return stringBuilder.ToString();
         }
@@ -899,6 +937,8 @@ namespace UnityEditor.UIElements
         {
             using var builderHandle = StringBuilderPool.Get(out var stringBuilder);
             var context = new ExportContext(styleSheet, stringBuilder, options);
+            if (IsScalarTimeProperty(property))
+                context = context.WithFloatsAsSeconds();
             var handles = property.values.AsSpan();
             Default.WriteStyleValueHandle(ref context, handles, ref index);
             return stringBuilder.ToString();

@@ -41,7 +41,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             set => m_UserModifications.selectedScopeIndex = value;
         }
 
-        public IReadOnlyCollection<string> scopes => m_UserModifications.scopes;
+        public IReadOnlyList<string> scopes => m_UserModifications.scopes;
 
         public string[] GetSanitizedScopes()
         {

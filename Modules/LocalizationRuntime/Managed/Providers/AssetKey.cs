@@ -20,7 +20,7 @@ namespace Unity.Localization.Providers;
 /// type are distinct.
 /// </remarks>
 /// <example>
-/// <para>Create a key for a texture and inspect its parts.</para>
+/// Create a key for a texture and inspect its parts.
 /// <code source="../../../../Modules/LocalizationRuntime/Tests/UTFTests/Localization.Samples/Providers/AssetKeyOverviewExample.cs"/>
 /// </example>
 /// <seealso cref="IAssetProvider"/>
@@ -46,7 +46,7 @@ public readonly struct AssetKey : IEquatable<AssetKey>
     /// <param name="type">The expected asset type. Defaults to <see cref="UnityEngine.Object"/>.</param>
     /// <param name="subAssetName">The optional name of a sub-asset at the address.</param>
     /// <example>
-    /// <para>Create a key for a whole asset and a key for a named sub-asset.</para>
+    /// Create a key for a whole asset and a key for a named sub-asset.
     /// <code source="../../../../Modules/LocalizationRuntime/Tests/UTFTests/Localization.Samples/Providers/AssetKeyConstructorExample.cs"/>
     /// </example>
     public AssetKey(string address, Type type = null, string subAssetName = null)
@@ -93,7 +93,7 @@ public readonly struct AssetKey : IEquatable<AssetKey>
     /// <param name="other">The key to compare with this one.</param>
     /// <returns><c>true</c> if both keys identify the same asset; otherwise, <c>false</c>.</returns>
     /// <example>
-    /// <para>Compare two keys built for the same asset.</para>
+    /// Compare two keys built for the same asset.
     /// <code source="../../../../Modules/LocalizationRuntime/Tests/UTFTests/Localization.Samples/Providers/AssetKeyEqualsExample.cs"/>
     /// </example>
     public bool Equals(AssetKey other)
@@ -113,7 +113,7 @@ public readonly struct AssetKey : IEquatable<AssetKey>
     /// <param name="obj">The object to compare with this key.</param>
     /// <returns><c>true</c> if <paramref name="obj"/> is a key that identifies the same asset; otherwise, <c>false</c>.</returns>
     /// <example>
-    /// <para>Compare against a boxed key.</para>
+    /// Compare against a boxed key.
     /// <code source="../../../../Modules/LocalizationRuntime/Tests/UTFTests/Localization.Samples/Providers/AssetKeyEqualsObjectExample.cs"/>
     /// </example>
     public override bool Equals(object obj) => obj is AssetKey other && Equals(other);
@@ -127,7 +127,7 @@ public readonly struct AssetKey : IEquatable<AssetKey>
     /// </remarks>
     /// <returns>An integer hash code derived from the address, sub-asset name, and type.</returns>
     /// <example>
-    /// <para>Use a key as a dictionary key for loaded assets.</para>
+    /// Use a key as a dictionary key for loaded assets.
     /// <code source="../../../../Modules/LocalizationRuntime/Tests/UTFTests/Localization.Samples/Providers/AssetKeyHashCodeExample.cs"/>
     /// </example>
     public override int GetHashCode() => HashCode.Combine(m_Address, m_SubAssetName, Type);
@@ -143,7 +143,7 @@ public readonly struct AssetKey : IEquatable<AssetKey>
     /// <param name="b">The second key.</param>
     /// <returns><c>true</c> if the keys identify the same asset; otherwise, <c>false</c>.</returns>
     /// <example>
-    /// <para>Compare two keys with the equality operator.</para>
+    /// Compare two keys with the equality operator.
     /// <code source="../../../../Modules/LocalizationRuntime/Tests/UTFTests/Localization.Samples/Providers/AssetKeyEqualityOperatorExample.cs"/>
     /// </example>
     public static bool operator ==(AssetKey a, AssetKey b) => a.Equals(b);
@@ -159,7 +159,7 @@ public readonly struct AssetKey : IEquatable<AssetKey>
     /// <param name="b">The second key.</param>
     /// <returns><c>true</c> if the keys identify different assets; otherwise, <c>false</c>.</returns>
     /// <example>
-    /// <para>Distinguish two keys that share an address but differ by type.</para>
+    /// Distinguish two keys that share an address but differ by type.
     /// <code source="../../../../Modules/LocalizationRuntime/Tests/UTFTests/Localization.Samples/Providers/AssetKeyInequalityOperatorExample.cs"/>
     /// </example>
     public static bool operator !=(AssetKey a, AssetKey b) => !a.Equals(b);
@@ -173,7 +173,7 @@ public readonly struct AssetKey : IEquatable<AssetKey>
     /// </remarks>
     /// <returns>A human-readable description of the key.</returns>
     /// <example>
-    /// <para>Log a sub-asset key for debugging.</para>
+    /// Log a sub-asset key for debugging.
     /// <code source="../../../../Modules/LocalizationRuntime/Tests/UTFTests/Localization.Samples/Providers/AssetKeyToStringExample.cs"/>
     /// </example>
     public override string ToString()

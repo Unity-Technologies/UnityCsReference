@@ -13,6 +13,9 @@ namespace UnityEngine
     [SRPReplacementComponentAttribute("UnityEngine.Rendering.ProbeVolume", "Adaptive Probe Volume")]
     public sealed partial class LightProbeProxyVolume : Behaviour
     {
+        internal LightProbeProxyVolume(global::UnityEngine.EntityId id) : base(id) {}
+        public LightProbeProxyVolume() {}
+
         public static extern bool isFeatureSupported {[NativeName("IsFeatureSupported")] get; }
 
         [NativeName("GlobalAABB")]

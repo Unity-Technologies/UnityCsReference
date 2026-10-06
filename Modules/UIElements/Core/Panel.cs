@@ -2,8 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: UIToolkitFramework not yet converted
-#pragma warning disable UAL0010,UAL0011,UAL0012,UAL0013,UAL0014 // AutoStaticsCleanup: UIToolkitFramework not yet converted
 using Unity.Scripting.LifecycleManagement;
 using System;
 using System.Collections.Generic;
@@ -504,6 +502,9 @@ namespace UnityEngine.UIElements
         // Cleared on code reload: the handles die with the LayoutManager node store, and
         // panels re-register on creation.
         [AutoStaticsCleanupOnCodeReload]
+        // Live-panel registry: each panel adds itself here in its constructor and removes itself on
+        // dispose, so the registry cleared on reload refills as panels are recreated.
+        [IgnoreForUAL0015("Live-panel registry, refilled by each panel constructor and pruned on dispose")]
         internal static readonly Dictionary<UnmanagedDataHandle, BaseVisualElementPanel> PanelsByHandle = new(UnmanagedDataHandle.k_EqualityComparer);
 
         // Allows native code to call back into panel methods.
@@ -530,6 +531,7 @@ namespace UnityEngine.UIElements
 
         protected BaseVisualElementPanel()
         {
+            OnCursorPositonChanged = SetCompositionCursorPos;
             layoutConfig = LayoutManager.SharedManager.CreateConfig();
             layoutConfig.Measure = VisualElement.Measure;
             PanelsByHandle[layoutConfig.Handle] = this;
@@ -552,7 +554,15 @@ namespace UnityEngine.UIElements
             {
                 if (panelDebug != null)
                 {
-                    panelDebug.DetachAllDebuggers();
+                    try
+                    {
+                        panelDebug.DetachAllDebuggers();
+                    }
+                    catch (Exception e)
+                    {
+                        Debug.LogException(e);
+                    }
+
                     panelDebug = null;
                 }
                 if (ownerObject != null)
@@ -564,7 +574,11 @@ namespace UnityEngine.UIElements
                 DisposeHelper.NotifyMissingDispose(this);
 
             panelDisposed?.Invoke(this);
-            PanelsByHandle.Remove(layoutConfig.Handle);
+
+            // A config from before a code reload can alias a live panel's handle.
+            if (LayoutManager.SharedManager.OwnsConfig(layoutConfig))
+                PanelsByHandle.Remove(layoutConfig.Handle);
+
             LayoutManager.SharedManager.DestroyConfig(ref layoutConfig);
 
             disposed = true;
@@ -657,6 +671,14 @@ namespace UnityEngine.UIElements
 
         internal LayoutConfig layoutConfig;
 
+        // Used by tests/tooling to drive scaling manually: when true, environment pushes
+        // (editor window backing scale, PanelSettings scale resolution) no longer overwrite it.
+        internal bool overrideScalingForTests { get; set; }
+
+        // Used by tests/tooling to drive the panel size manually: when true, environment pushes
+        // (editor window size, game view/display size) no longer overwrite it.
+        internal bool overrideSizeForTests { get; set; }
+
         private float m_PixelsPerPoint = 1;
         [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
         internal float pixelsPerPoint
@@ -748,6 +770,7 @@ namespace UnityEngine.UIElements
         internal abstract void SetUpdater(IVisualTreeUpdater updater, VisualTreeUpdatePhase phase);
 
         // Need virtual for tests
+        [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
         internal virtual ICursorManager cursorManager { get; set; }
         public ContextualMenuManager contextualMenuManager { get; internal set; }
 
@@ -909,9 +932,6 @@ namespace UnityEngine.UIElements
 
         internal event Action isFlatChanged;
 
-        // Used only for testing. Can be disabled for setting a manual scale
-        internal bool UpdateScalingFromEditorWindow;
-
         public bool isFlat
         {
             get => (transformFlags & PanelTransformFlags.IsFlat) != 0;
@@ -934,6 +954,7 @@ namespace UnityEngine.UIElements
         [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
         internal bool drawsInCameras
         {
+            [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
             get => m_DrawsInCameras;
         }
 
@@ -1083,10 +1104,23 @@ namespace UnityEngine.UIElements
         }
 
         /// <summary>
-        /// The new cursor position in panel coordinates
+        /// Caret position of the focused text input, in panel coordinates. Refreshed on every caret repaint so the OS
+        /// can place IME candidate windows and the character palette before any composition starts.
         /// </summary>
-        internal Action<Vector2> OnCursorPositonChanged =
-            (v2) => Input.compositionCursorPos = v2; // Scaled pixels in the editor (should match the panel postion when not in test). Undefined at runtime.
+        internal Action<Vector2> OnCursorPositonChanged;
+
+        void SetCompositionCursorPos(Vector2 panelPosition)
+        {
+            if (TryGetCompositionCursorPos(panelPosition, out var screenPosition))
+                Input.compositionCursorPos = screenPosition;
+        }
+
+        // Editor panels live in a view whose points are the panel coordinates.
+        internal virtual bool TryGetCompositionCursorPos(Vector2 panelPosition, out Vector2 screenPosition)
+        {
+            screenPosition = panelPosition;
+            return true;
+        }
 
         internal void PointerLeavesPanel(int pointerId, EventBase triggerEvent = null)
         {
@@ -1215,7 +1249,7 @@ namespace UnityEngine.UIElements
                 }
 
                 // Compare the VisualTreeUpdater frames.
-                if (!this.isPanelDirty && this.panelContextType == ContextType.Editor)
+                if (!this.isPanelDirty && !reference.isPanelDirty && this.panelContextType == ContextType.Editor)
                 {
                     // If the context is Editor and the panel is currently not dirty, only check a subset of the updater frames.
                     for (int i = 0; i < updaterSubsetForEditor.Length; i++)
@@ -1335,9 +1369,15 @@ namespace UnityEngine.UIElements
         }
 
         [AutoStaticsCleanupOnCodeReload]
+        // Installed by RetainedMode.Initialize(), which runs on every code load, so the slot cleared by
+        // cleanup is wired again before any editor UI uses it.
+        [IgnoreForUAL0015("Editor IoC slot reinstalled on every code load by RetainedMode.Initialize()")]
         internal static LoadResourceFunction loadResourceFunc { private get; set; }
 
         [AutoStaticsCleanupOnCodeReload]
+        // Installed by RetainedMode.Initialize(), which runs on every code load, so the slot cleared by
+        // cleanup is wired again before any editor UI uses it.
+        [IgnoreForUAL0015("Editor IoC slot reinstalled on every code load by RetainedMode.Initialize()")]
         internal static InitEditorUpdaterFunction initEditorUpdaterFunc { private get; set; }
 
         [NoAutoStaticsCleanup]
@@ -1442,6 +1482,9 @@ namespace UnityEngine.UIElements
         [Obsolete("Use the non-static TimeSinceStartupFunc instead")]
         [VisibleToOtherModules("UnityEditor.GraphToolkitModule")]
         [AutoStaticsCleanupOnCodeReload]
+        // No production code installs a time provider here: null is the normal state and the panel falls back
+        // to the real time since startup. Only test scopes assign it, and they re-assign it per test.
+        [IgnoreForUAL0015("Optional time-provider override; null falls back to real time and only tests assign it")]
         internal static TimeMsFunction TimeSinceStartup { get; set; }
 
         public override IMGUIContainer rootIMGUIContainer { get; set; }
@@ -1814,6 +1857,9 @@ namespace UnityEngine.UIElements
         internal static event Action<Panel> beforeTickingAnyScheduledPanel;
 
         [AutoStaticsCleanupOnCodeReload]
+        // The editor monitor is the only subscriber and it subscribes from its constructor, which cleanup
+        // re-runs on every code load, so the subscription is back before the next repaint.
+        [IgnoreForUAL0015("Repaint hook re-subscribed by the EditorMonitor instance recreated on each code load")]
         internal static event Action<Panel> beforeAnyRepaint;
 
         [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
@@ -1909,7 +1955,7 @@ namespace UnityEngine.UIElements
         }
     }
 
-    [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule", "UnityEditor.VectorGraphicsModule")]
+    [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule", "UnityEditor.VectorGraphicsModule", "UnityEditor.Android.Extensions")]
     internal abstract partial class BaseRuntimePanel : Panel
     {
         private GameObject m_SelectableGameObject;
@@ -2002,6 +2048,13 @@ namespace UnityEngine.UIElements
 
         [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
         internal int targetDisplay { get; set;}
+
+        // Top-left screen pixels, the same convention uGUI writes. Texture, world-space and custom-mapped panels have no inverse.
+        internal override bool TryGetCompositionCursorPos(Vector2 panelPosition, out Vector2 screenPosition)
+        {
+            screenPosition = panelPosition * scale;
+            return targetTexture == null && !drawsInCameras && screenToPanelSpace == DefaultScreenToPanelSpace;
+        }
 
         internal int screenRenderingWidth => getScreenRenderingWidth(targetDisplay);
         internal int screenRenderingHeight => getScreenRenderingHeight(targetDisplay);
@@ -2128,6 +2181,12 @@ namespace UnityEngine.UIElements
         IPanel panel { get; set; }
     }
 
+    // Distinguishes authoring/preview runtime panels from real game panels sharing the same panel list.
+    [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
+    internal interface IAuthoringPanel
+    {
+    }
+
     [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
     internal class PanelRootElement : VisualElement
     {
@@ -2169,5 +2228,3 @@ namespace UnityEngine.UIElements
         }
     }
 }
-#pragma warning restore UAL0010,UAL0011,UAL0012,UAL0013,UAL0014
-#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

@@ -79,6 +79,15 @@ sealed partial class UxmlCodePreview : CodePreview<VisualTreeAsset>
     protected override void UnregisterTracker(ILiveReloadSystem liveReloadSystem, IAuthoringLiveReloadAssetTracker<VisualTreeAsset> tracker, VisualTreeAsset asset)
         => liveReloadSystem.UnregisterAuthoringTrackerForAsset(tracker, asset);
 
+    // The link tag carries the id alone, which only means something inside the document this preview exported.
+    void RequestHighlightsForLink(string linkId)
+    {
+        if (!int.TryParse(linkId, out var id))
+            return;
+
+        HighlightUtility.RequestHighlights(id, Asset, CommandSources.UxmlPreview);
+    }
+
     protected override string GenerateCodePreview()
         => Asset ? Exporter.ToUxmlString(Asset, Options) : string.Empty;
 
@@ -94,17 +103,11 @@ sealed partial class UxmlCodePreview : CodePreview<VisualTreeAsset>
                 UICommandQueue.UnregisterHandlerForCategory(CommandCategory.Highlight, OnHighlight);
                 break;
             case PointerOverLinkTagEvent overTagEvent:
-            {
-                var id = int.Parse(overTagEvent.linkID);
-                HighlightUtility.RequestHighlights(id, CommandSources.UxmlPreview);
+                RequestHighlightsForLink(overTagEvent.linkID);
                 break;
-            }
             case PointerMoveLinkTagEvent overTagEvent:
-            {
-                var id = int.Parse(overTagEvent.linkID);
-                HighlightUtility.RequestHighlights(id, CommandSources.UxmlPreview);
+                RequestHighlightsForLink(overTagEvent.linkID);
                 break;
-            }
             case PointerOutLinkTagEvent:
                 HighlightUtility.ClearHighlights();
                 break;

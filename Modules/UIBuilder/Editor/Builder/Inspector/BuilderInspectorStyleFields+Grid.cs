@@ -4,6 +4,7 @@
 
 using System;
 using System.Collections.Generic;
+using Unity.Scripting.LifecycleManagement;
 using UnityEditor;
 using UnityEngine.UIElements;
 
@@ -211,5 +212,138 @@ namespace Unity.UI.Builder
             NotifyStyleChanges(s_StyleChangeList, true);
         }
 
+        // Display strip buttons, bound by name because their order does not match the DisplayStyle enum.
+        [NoAutoStaticsCleanup]
+        static readonly (string name, DisplayStyle value, string label)[] k_DisplayStripButtons =
+        {
+            ("flex", DisplayStyle.Flex, "Flex"),
+            ("grid", DisplayStyle.Grid, "Grid"),
+            ("none", DisplayStyle.None, "None"),
+        };
+
+        internal static bool IsDisplayStrip(string styleName) => styleName == "display";
+
+        // A rebuild shifts the selection and dispatches a change; that is not a user edit, so ignore it.
+        bool m_RebuildingDisplayStrip;
+
+        void SetupDisplayStrip(ToggleButtonGroup group)
+        {
+            // Empty selection: never auto-select on rebuild (a spurious change), and allow nothing selected
+            // when the value is not in the strip (grid while the flag is off).
+            group.allowEmptySelection = true;
+            RebuildDisplayStrip(group);
+            group.RegisterValueChangedCallback(e => OnDisplayStripChange(e, group));
+
+            void OnFlagChanged(bool _) => RebuildDisplayStrip(group);
+            void Subscribe()
+            {
+                UnityEditor.UIElements.UIToolkitProjectSettings.onEnableGridLayoutChanged -= OnFlagChanged;
+                UnityEditor.UIElements.UIToolkitProjectSettings.onEnableGridLayoutChanged += OnFlagChanged;
+            }
+            group.RegisterCallback<AttachToPanelEvent>(_ =>
+            {
+                Subscribe();
+                // Resync: the flag may have changed while the strip was detached (and unsubscribed).
+                RebuildDisplayStrip(group);
+            });
+            group.RegisterCallback<DetachFromPanelEvent>(_ =>
+                UnityEditor.UIElements.UIToolkitProjectSettings.onEnableGridLayoutChanged -= OnFlagChanged);
+            if (group.panel != null)
+                Subscribe();
+        }
+
+        void RebuildDisplayStrip(ToggleButtonGroup group)
+        {
+            m_RebuildingDisplayStrip = true;
+            try
+            {
+                for (var b = group.GetButton(0); b != null; b = group.GetButton(0))
+                    b.RemoveFromHierarchy();
+
+                bool gridOn = UnityEditor.UIElements.UIToolkitProjectSettings.enableGridLayout;
+                if (gridOn)
+                {
+                    // All-text strip in None / Flex / Grid order; the flex/none icons are suppressed by the modifier class.
+                    foreach (var (name, _, label) in k_DisplayStripButtons)
+                        group.Add(new Button { name = name, text = label, tooltip = DisplayStripTooltip(name) });
+                }
+                else
+                {
+                    // Original icon strip (flex, none); Grid is not shown while the feature is off.
+                    group.Add(new Button { name = "flex", tooltip = DisplayStripTooltip("flex") });
+                    group.Add(new Button { name = "none", tooltip = DisplayStripTooltip("none") });
+                }
+
+                // Text vs icon presentation is driven by a modifier class so the icon USS only applies when off.
+                group.EnableInClassList(BuilderConstants.InspectorDisplayStripTextModifierClassName, gridOn);
+                RefreshDisplayStrip(group);
+            }
+            finally
+            {
+                m_RebuildingDisplayStrip = false;
+            }
+        }
+
+        static string DisplayStripTooltip(string enumAsDash)
+        {
+            return BuilderConstants.InspectorStylePropertiesValuesTooltipsDictionary.TryGetValue(
+                string.Format(BuilderConstants.InputFieldStyleValueTooltipDictionaryKeyFormat, "display", enumAsDash),
+                out var tip)
+                ? string.Format(BuilderConstants.InputFieldStyleValueTooltipWithDescription, enumAsDash, tip)
+                : enumAsDash;
+        }
+
+        void RefreshDisplayStrip(ToggleButtonGroup group, DisplayStyle? value = null)
+        {
+            if (currentVisualElement == null)
+                return;
+
+            var current = value ?? currentVisualElement.computedStyle.display;
+            var state = new ToggleButtonGroupState(0, 64);
+            for (var i = 0; group.GetButton(i) is { } button; ++i)
+            {
+                if (button.name == DisplayStripName(current))
+                {
+                    state[i] = true;
+                    break;
+                }
+            }
+            group.SetValueWithoutNotify(state);
+        }
+
+        static string DisplayStripName(DisplayStyle value)
+        {
+            foreach (var (name, enumValue, _) in k_DisplayStripButtons)
+                if (enumValue == value) return name;
+            return "flex";
+        }
+
+        void OnDisplayStripChange(ChangeEvent<ToggleButtonGroupState> e, ToggleButtonGroup group)
+        {
+            if (m_RebuildingDisplayStrip)
+                return;
+
+            // No valid edit context (inspector still building): a write here would hit a null style sheet.
+            if (currentVisualElement == null || styleSheet == null)
+                return;
+
+            var selected = e.newValue.GetActiveOptions(stackalloc int[e.newValue.length]);
+            if (selected.IsEmpty)
+                return;
+
+            var button = group.GetButton(selected[0]);
+            if (button == null)
+                return;
+
+            DisplayStyle newValue = DisplayStyle.Flex;
+            foreach (var (name, enumValue, _) in k_DisplayStripButtons)
+                if (name == button.name) { newValue = enumValue; break; }
+
+            var styleProperty = GetOrCreateStylePropertyByStyleName("display");
+            var isNewValue = !styleProperty.HasValue();
+            Undo.RegisterCompleteObjectUndo(styleSheet, BuilderConstants.ChangeUIStyleValueUndoMessage);
+            styleProperty.SetEnum(styleSheet, newValue);
+            PostStyleFieldSteps(group, styleProperty, "display", isNewValue);
+        }
     }
 }

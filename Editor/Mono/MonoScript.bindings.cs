@@ -19,6 +19,7 @@ namespace UnityEditor
     [ExcludeFromPreset]
     public class MonoScript : TextAsset
     {
+        internal MonoScript(global::UnityEngine.EntityId id) : base(id) {}
         // Returns the System.Type object of the class implemented by this script
         public extern System.Type GetClass();
 
@@ -59,11 +60,11 @@ namespace UnityEditor
         // We create MonoScript native object instead.
         public MonoScript() : base(TextAsset.CreateOptions.None, (string)null)
         {
-            Init_Internal(this);
+            SetEntityIdFromConstructor(Init_Internal());
         }
 
         [FreeFunction("MonoScript_Init_Internal")]
-        private static extern void Init_Internal([Writable] MonoScript script);
+        private static extern EntityId Init_Internal();
 
         [FreeFunction("MonoScript_Init", HasExplicitThis = true)]
         internal extern void Init(string className, string nameSpace, string assemblyName, bool isEditorScript);

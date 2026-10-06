@@ -116,10 +116,10 @@ namespace UnityEditor.Search
             if (!@readonly)
             {
                 if (canDisable)
-                    menu.AddItem(EditorGUIUtility.TrTextContent("Enable"), !disabled, ToggleDisabled);
+                    menu.AddItem(L10n.TextContent("Enable", null, null, null), !disabled, ToggleDisabled);
 
                 if (canExclude)
-                    menu.AddItem(EditorGUIUtility.TrTextContent("Exclude"), excluded, ToggleExcluded);
+                    menu.AddItem(L10n.TextContent("Exclude", null, null, null), excluded, ToggleExcluded);
             }
 
             if (menu.GetItemCount() > 0)
@@ -130,7 +130,7 @@ namespace UnityEditor.Search
             {
                 if (menu.GetItemCount() != bc)
                     menu.AddSeparator("");
-                menu.AddItem(EditorGUIUtility.TrTextContent("Delete"), false, Delete);
+                menu.AddItem(L10n.TextContent("Delete", null, null, null), false, Delete);
             }
 
             if (menu.GetItemCount() > 0)

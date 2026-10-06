@@ -62,8 +62,6 @@ namespace Unity.GraphToolkit.Editor.GraphVisualization
         /// Setting a new value overwrites any existing dash pattern overrides for that wire. The wire keeps the dashed pattern until you set this property back to <c>false</c> or call <see cref="ClearCustomization"/>.
         /// Setting this property has no effect when the <see cref="WireReference"/> has no associated <see cref="Context"/>, such as when it is <c>default</c>.
         /// Throws <see cref="ObjectDisposedException"/> when you access this method after you call <see cref="Context.Dispose"/> on the context.
-        /// 
-        /// Apply a dashed style to a wire by retrieving its <see cref="WireReference"/> from a visualization <see cref="Context"/> and setting this property.
         /// </remarks>
         /// <example>
         /// <code>
@@ -73,7 +71,7 @@ namespace Unity.GraphToolkit.Editor.GraphVisualization
         /// </example>
         public bool IsDashed
         {
-            get => Context.WireVisuals.TryGet(this, out var data) && data.IsDashed;
+            get => Context.WireVisuals.TryGet(this, out var data) && (data.IsDashed ?? false);
             set => Context.WireVisuals.UpdateVisualData(this, data => data.IsDashed = value);
         }
 

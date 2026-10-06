@@ -2,7 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: UIBuilder not yet converted
 using System;
 using UnityEngine.UIElements;
 using UnityEngine.UIElements.StyleSheets;
@@ -17,12 +16,14 @@ namespace Unity.UI.Builder
     {
         public BuilderAnimationData(StyleSheet styleSheet, StyleRule styleRule, VisualElement element, bool editorExtensionMode)
         {
+#pragma warning disable UAL0015 // Transient struct constructed and disposed within a single call; never persists across a code-reload boundary.
             clip = styleSheet.GetStylePropertyManipulator(element, styleRule, AnimationStyleNames.Clip, editorExtensionMode);
             duration = styleSheet.GetStylePropertyManipulator(element, styleRule, AnimationStyleNames.Duration, editorExtensionMode);
             delay = styleSheet.GetStylePropertyManipulator(element, styleRule, AnimationStyleNames.Delay, editorExtensionMode);
             iterationCount = styleSheet.GetStylePropertyManipulator(element, styleRule, AnimationStyleNames.IterationCount, editorExtensionMode);
             direction = styleSheet.GetStylePropertyManipulator(element, styleRule, AnimationStyleNames.Direction, editorExtensionMode);
             playState = styleSheet.GetStylePropertyManipulator(element, styleRule, AnimationStyleNames.PlayState, editorExtensionMode);
+#pragma warning restore UAL0015
         }
 
         public readonly StylePropertyManipulator clip;
@@ -43,4 +44,3 @@ namespace Unity.UI.Builder
         }
     }
 }
-#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

@@ -6,7 +6,7 @@ using System;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using Unity.Collections.LowLevel.Unsafe;
-using Unity.Scripting.LifecycleManagement;
+using Unity.Scripting.Marshalling;
 
 namespace UnityEngine.Bindings
 {
@@ -68,48 +68,21 @@ namespace UnityEngine.Bindings
         {
             if (handlePtr == IntPtr.Zero)
                 return null;
-
-            var handle = UnmarshalRuntimeTypeHandle(handlePtr);
-            return Type.GetTypeFromHandle(handle);
+            return ReflectionMarshalling.ResolveType(handlePtr);
         }
 
         public static FieldInfo UnmarshalFieldInfo(MarshalledField marshalledField)
         {
             if (marshalledField.field == IntPtr.Zero)
                 return null;
-
-            var declaringClassHandle = UnmarshalRuntimeTypeHandle(marshalledField.declaringType);
-
-            var fieldHandle = Unsafe.As<IntPtr, RuntimeFieldHandle>(ref marshalledField.field);
-            return FieldInfo.GetFieldFromHandle(fieldHandle, declaringClassHandle);
+            return ReflectionMarshalling.ResolveField(marshalledField.field, marshalledField.declaringType);
         }
 
         public static MethodBase UnmarshalMethodBase(MarshalledMethod marshalledMethod)
         {
             if (marshalledMethod.method == IntPtr.Zero)
                 return null;
-
-            var declaringClassHandle = UnmarshalRuntimeTypeHandle(marshalledMethod.declaringType);
-            var methodHandle         = UnmarshalRuntimeMethodHandle(marshalledMethod.method);
-
-            return MethodBase.GetMethodFromHandle(methodHandle, declaringClassHandle);
-        }
-
-        /// <summary>
-        /// Converts native type handle representation of RuntimeMethodHandle to RuntimeMethodHandle object.
-        /// NOTE: The function RuntimeMethodHandle.FromIntPtr allocates on CoreCLR!
-        /// https://github.com/Unity-Technologies/runtime/blob/02255f44de205f944f4a807f8314cc9595c4b552/src/coreclr/System.Private.CoreLib/src/System/RuntimeHandles.cs#L803
-        /// </summary>
-        /// <param name="handlePtr"></param>
-        /// <returns></returns>
-        public static RuntimeMethodHandle UnmarshalRuntimeMethodHandle(IntPtr handlePtr)
-        {
-            return Unsafe.As<IntPtr, RuntimeMethodHandle>(ref handlePtr);
-        }
-
-        public static RuntimeTypeHandle UnmarshalRuntimeTypeHandle(IntPtr handlePtr)
-        {
-            return Unsafe.As<IntPtr, RuntimeTypeHandle>(ref handlePtr);
+            return ReflectionMarshalling.ResolveMethod(marshalledMethod.method, marshalledMethod.declaringType);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]

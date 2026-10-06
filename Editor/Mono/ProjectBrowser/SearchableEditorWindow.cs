@@ -2,7 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: Search not yet converted
 using UnityEngine;
 using System.Collections.Generic;
 using Object = UnityEngine.Object;
@@ -15,10 +14,6 @@ namespace UnityEditor
     [System.Diagnostics.CodeAnalysis.SuppressMessageAttribute("CodeReloadSafety", "UAL0001:Unsealed Public Class", Justification = "Unsealed on purpose")]
     public partial class SearchableEditorWindow : EditorWindow, ISearchableContainer
     {
-        #pragma warning disable UAL0015 // this side effect does not outlive the current call (global trigger / lazily-loaded asset re-fetched on next access); a stale reference is harmlessly replaced
-        public SearchableEditorWindow() { }
-        #pragma warning restore UAL0015
-
         public enum SearchMode { All, Name, Type, Label, AssetBundleName }
         public enum SearchModeHierarchyWindow { All, Name, Type }
 
@@ -392,7 +387,9 @@ namespace UnityEditor
                 m_SearchMode = (SearchMode)searchMode;
                 m_SearchStringDebounced = searchFilter;
                 m_DeregisterDebounceCall?.Invoke();
+#pragma warning disable UAL0018 // the deregistration handle lives on this window, which is recreated on code reload together with the debounced call it cancels
                 m_DeregisterDebounceCall = EditorApplication.CallDelayed(SetSearchFilterDebounced, SearchUtils.debounceThresholdMs / 1000f);
+#pragma warning restore UAL0018
             }
 
             m_HasSearchFilterFocus = GUIUtility.keyboardControl == searchFieldControlId;
@@ -417,4 +414,3 @@ namespace UnityEditor
         }
     }
 }
-#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

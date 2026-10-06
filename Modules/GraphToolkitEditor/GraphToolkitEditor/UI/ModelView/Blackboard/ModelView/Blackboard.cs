@@ -698,10 +698,27 @@ namespace Unity.GraphToolkit.Editor
             if (!blackboardContentModel.HasDefaultButton())
                 return;
 
+            var status = CanCreateVariable(this) ? DropdownMenuAction.Status.Normal : DropdownMenuAction.Status.Disabled;
             evt.menu.AppendAction(L10n.Tr("Create Variable", null), _ =>
             {
                 CreateVariable();
-            });
+            }, status);
+        }
+
+        /// <summary>
+        /// Whether the graph tool declares at least one available variable type.
+        /// </summary>
+        /// <param name="blackboard">The blackboard whose tool is being queried.</param>
+        /// <returns>
+        /// <see langword="true"/> if the tool's <see cref="DefaultDatabaseProvider.AvailableVariableTypes"/>
+        /// is non-empty, or if the tool uses a custom database provider that does not expose the collection
+        /// (in which case we assume creation is allowed).
+        /// </returns>
+        internal static bool CanCreateVariable(Blackboard blackboard)
+        {
+            var provider = blackboard?.BlackboardView?.GetItemLibraryHelper()?.GetItemDatabaseProvider();
+            return provider is not DefaultDatabaseProvider defaultProvider
+                || defaultProvider.AvailableVariableTypes.Count > 0;
         }
 
         void AppendCreateGroupMenuItem(ContextualMenuPopulateEvent evt)
@@ -867,6 +884,9 @@ namespace Unity.GraphToolkit.Editor
         /// </summary>
         public void CreateVariable()
         {
+            if (!CanCreateVariable(this))
+                return;
+
             GroupModel selectedGroupInThisSection =  GetTargetGroupForNewVariable(BlackboardView.BlackboardRootViewModel.GraphModelState.GraphModel.GetSectionModel(GraphModel.DefaultSectionName));
 
             var lastVariableInfos = (Model as BlackboardContentModel)?.LastVariableInfos;

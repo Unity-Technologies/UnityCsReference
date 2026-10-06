@@ -5,11 +5,9 @@
 using System;
 using System.Collections.Generic;
 using System.Globalization;
-using System.IO;
 using Unity.Properties;
 using UnityEditor;
 using UnityEditor.UIElements;
-using UnityEditorInternal;
 using UnityEngine;
 using UnityEngine.Bindings;
 using UnityEngine.Pool;
@@ -50,6 +48,19 @@ internal static class NotifyCompositeStylePropertyChangedExtensions
         evt.target = element;
         element.SendEvent(evt);
     }
+}
+
+// Lets a control take over its sync with StylePropertyBinding instead of adding field- or
+// property-specific branches to the binding itself.
+internal interface IStylePropertyDataField<TInline, TComputed>
+{
+    // Replacement for the generated setter used when writing this control's changes to the style
+    // sheet or inline style; null uses the generated setter.
+    Action<StyleProperty, StyleSheet, TInline> setterOverride { get; }
+
+    // Sets the control's value from the diffed property data; called instead of the generic value
+    // assignment when the binding refreshes the control.
+    void SetValueFromStyleData(in StylePropertyData<TInline, TComputed> data, VisualElement currentTarget, StyleSheet currentStyleSheet);
 }
 
 class CompositeStylePropertyChangeEvent<T> : EventBase<CompositeStylePropertyChangeEvent<T>>, IChangeEvent
@@ -325,19 +336,17 @@ sealed partial class StylePropertyBinding : CustomBinding, ITrackablePropertyPro
         {
             case StyleDiff.ContextType.VisualElement:
             {
+                // A non-null controller means recording is active: record recordable changes and drop the
+                // rest, never writing an inline style while recording.
                 if (authoringContext.AnimationController != null)
                 {
-                    Debug.Assert(AnimationMode.InAnimationRecording(),
-                        "AnimationController is set but AnimationMode.InAnimationRecording() is false.");
                     if (StyleDebug.IsShorthandProperty(binding.stylePropertyId))
                         break;
-                    var inspectedElement = styleDiff.currentTarget;
-                    AnimationRecordingStyleBridge.TryRecordStylePropertyChange(inspectedElement, binding.stylePropertyId, false, in value, in value);
+                    if (!authoringContext.AnimationController.IsPropertyRecordable(binding.stylePropertyId))
+                        break;
+                    AnimationRecordingStyleBridge.TryRecordStylePropertyChange(styleDiff.currentTarget, binding.stylePropertyId, false, in value, in value);
                     break;
                 }
-
-                Debug.Assert(!AnimationMode.InAnimationRecording(),
-                    "AnimationMode is recording but AnimationController is null. Refresh must run before ProcessChange.");
 
                 SetInlineStylePropertyCommand<T>.Execute(CommandSources.Inspector, styleDiff.currentTarget, binding.stylePropertyId, setter, value);
                 break;
@@ -454,8 +463,10 @@ sealed partial class StylePropertyBinding : CustomBinding, ITrackablePropertyPro
         if (ctx.binding.ignoreChanges)
             return;
 
-        if (ShouldProcessChange(evt, ctx))
-            ProcessChange(evt.newValue, ctx.authoringContext, ctx.binding, setter);
+        if (!ShouldProcessChange(evt, ctx))
+            return;
+
+        ProcessChange(evt.newValue, ctx.authoringContext, ctx.binding, setter);
     }
 
     static void ProcessChange<T>(CompositeStylePropertyChangeEvent<T> evt, CallbackContext ctx, Action<StyleProperty, StyleSheet, T> setter)
@@ -667,7 +678,7 @@ sealed partial class StylePropertyBinding : CustomBinding, ITrackablePropertyPro
         var hasLocalSelector = false;
         foreach (var record in matchingSelectors)
         {
-            if (record.sheet != null && !record.sheet.IsUnityEditorStyleSheet() && !record.sheet.isDefaultStyleSheet)
+            if (record.sheet != null && !record.sheet.IsUnityEditorStyleSheet() && record.tier == UnityEngine.UIElements.StyleSheetPriority.Default)
             {
                 hasLocalSelector = true;
                 break;
@@ -684,7 +695,7 @@ sealed partial class StylePropertyBinding : CustomBinding, ITrackablePropertyPro
 
         foreach (var record in matchingSelectors)
         {
-            if (record.sheet == null || record.sheet.IsUnityEditorStyleSheet() || record.sheet.isDefaultStyleSheet)
+            if (record.sheet == null || record.sheet.IsUnityEditorStyleSheet() || record.tier != UnityEngine.UIElements.StyleSheetPriority.Default)
                 continue;
 
             var selectorStr = StyleSheetExporter.Default.ToUssString(record.sheet, record.complexSelector);
@@ -783,7 +794,7 @@ sealed partial class StylePropertyBinding : CustomBinding, ITrackablePropertyPro
 
         // MatchingUSSSelector may resolve from a built-in or theme sheet. Skip navigation
         // actions in that case since the sheet is not user-editable.
-        var isNavigable = isLocalSelector || !selectorRecord.sheet.isDefaultStyleSheet;
+        var isNavigable = isLocalSelector || selectorRecord.tier == UnityEngine.UIElements.StyleSheetPriority.Default;
 
         if (!isNavigable)
             return;
@@ -821,10 +832,17 @@ sealed partial class StylePropertyBinding : CustomBinding, ITrackablePropertyPro
             sheet = authoringContext.StyleDiff.currentStyleSheet;
             line = authoringContext.StyleDiff.currentRule?.line ?? 0;
         }
-        var fullPath = AssetDatabase.GetAssetPath(sheet);
-        var opened = !string.IsNullOrEmpty(fullPath) && File.Exists(fullPath)
-            && InternalEditorUtility.OpenFileAtLineExternal(fullPath, line, -1);
-        if (!opened)
+
+        // A selector edited in this session only exists in memory, so the file on disk would not contain it.
+        var wasUnsaved = UIAssetRegistry.LiveInstance?.CanSettleSingleAsset(sheet) == true;
+        var sheetIsCurrentOnDisk = !wasUnsaved
+            || UIAssetRegistry.instance.SaveSingleAsset(sheet, CommandSources.Inspector);
+
+        // Settling the sheet rewrites the whole file, so the line read before it can point anywhere.
+        if (wasUnsaved)
+            line = -1;
+
+        if (!sheetIsCurrentOnDisk || !StyleSheetExternalEditor.TryOpen(AssetDatabase.GetAssetPath(sheet), line))
             Debug.LogWarning("Could not open the stylesheet containing the selector.");
     }
 
@@ -1006,8 +1024,6 @@ sealed partial class StylePropertyBinding : CustomBinding, ITrackablePropertyPro
         OnTrackedPropertySourceChanged?.Invoke(this, styleProperty, value.uxmlValue.requireVariableResolve, value.binding != null, animationSubState.IsAnimationDriven());
 
         var inRecording = authoringContext.AnimationController != null;
-        Debug.Assert(inRecording == AnimationMode.InAnimationRecording(),
-            $"AnimationController presence ({inRecording}) must match AnimationMode.InAnimationRecording() ({AnimationMode.InAnimationRecording()}).");
         var propertyRecordable = !inRecording || authoringContext.AnimationController.IsPropertyRecordable(stylePropertyId);
         targetEnabled &= propertyRecordable;
         targetEnabled &= !authoringContext.IsReadOnly;
@@ -1039,6 +1055,9 @@ sealed partial class StylePropertyBinding : CustomBinding, ITrackablePropertyPro
         using var _ = new IgnoreChangeScope(this);
         switch (targetElement)
         {
+            case IStylePropertyDataField<TInline, TComputed> dataField:
+                dataField.SetValueFromStyleData(value, authoringContext.StyleDiff.currentTarget, authoringContext.StyleDiff.currentStyleSheet);
+                break;
             case BaseField<TComputed> field when id == BaseField<TComputed>.valueProperty:
                 field.value = computedValue;
                 break;
@@ -1237,6 +1256,31 @@ sealed partial class StylePropertyBinding : CustomBinding, ITrackablePropertyPro
                 targetElement.RegisterCallback<PropertyChangedEvent, CallbackContext>(binding.ProcessChange, new CallbackContext(binding, targetElement, id));
                 break;
         }
+    }
+
+    static void WriteFloat(StyleProperty property, StyleSheet sheet, float value)
+    {
+        var unit = GetFloatUnit(property.id);
+        if (unit == Dimension.Unit.Unitless)
+            property.SetFloat(sheet, value);
+        else
+            property.SetDimension(sheet, new Dimension(value, unit));
+    }
+
+    static void WriteFloatList(StyleProperty property, StyleSheet sheet, List<float> value)
+    {
+        if (GetFloatUnit(property.id) != Dimension.Unit.Second)
+        {
+            property.SetFloatList(sheet, value);
+            return;
+        }
+
+        using var _ = ListPool<TimeValue>.Get(out var times);
+        foreach (var seconds in value)
+        {
+            times.Add(new TimeValue(seconds, TimeUnit.Second));
+        }
+        property.SetTimeValueList(sheet, times);
     }
 
     static void SetStyleValue<TStyleValue, TValue>(StyleProperty property, StyleSheet sheet, TStyleValue styleValue, Action<StyleProperty, StyleSheet, TValue> setterDelegate)

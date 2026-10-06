@@ -172,6 +172,19 @@ namespace Unity.VectorGraphics
             return (min.x != float.MaxValue) ? new Rect(min, max - min) : Rect.zero;
         }
 
+        internal static Rect Bounds(BezierContour[] contours)
+        {
+            var min = new Vector2(float.MaxValue, float.MaxValue);
+            var max = new Vector2(-float.MaxValue, -float.MaxValue);
+            foreach (var contour in contours)
+            {
+                var bbox = Bounds(contour.Segments);
+                min = Vector2.Min(min, bbox.min);
+                max = Vector2.Max(max, bbox.max);
+            }
+            return (min.x != float.MaxValue) ? new Rect(min, max - min) : Rect.zero;
+        }
+
         /// <summary>Builds a line segment.</summary>
         /// <param name="from">The starting position of the line segment</param>
         /// <param name="to">The ending position of the line segment</param>
@@ -517,25 +530,36 @@ namespace Unity.VectorGraphics
         {
             // This adaptive algorithm doesn't behave well at the limit of float precision,
             // so we revert to a dummy iterative approach in this case
+            // (int) of a non-finite or out-of-range float is undefined, so clamp before the cast
+            float requestedSteps = 1.0f/precision;
+            int iterativeSteps = (requestedSteps > 0.0f && requestedSteps < 100.0f) ? (int)requestedSteps : 100;
             if (VectorUtils.HasLargeCoordinates(segment))
-            {
-                int steps = Math.Min(100, (int)(1.0f/precision));
-                return SegmentLengthIterative(segment, steps);
-            }
+                return SegmentLengthIterative(segment, iterativeSteps);
 
+            const int kMaxSplits = 10000;
+
+            var originalSegment = segment;
             float tmax = 0.0f;
             float length = 0.0f;
+            int splits = 0;
             while ((tmax = AdaptiveQuadraticApproxSplitPoint(segment, precision)) < 1.0f)
             {
+                if (++splits > kMaxSplits)
+                    return SegmentLengthIterative(originalSegment, iterativeSteps);
+
                 BezierSegment b1, b2;
                 SplitSegment(segment, tmax, out b1, out b2);
                 float midPointLength = MidPointQuadraticApproxLength(b1);
-                if (float.IsNaN(midPointLength)) // Could happen because of float precision issues
+                if (!float.IsFinite(midPointLength)) // Could happen because of float precision issues
                     midPointLength = SegmentLengthIterative(b1);
                 length += midPointLength;
                 segment = b2;
             }
             length += MidPointQuadraticApproxLength(segment);
+
+            if (!float.IsFinite(length))
+                return SegmentLengthIterative(originalSegment, iterativeSteps);
+
             return length;
         }
 
@@ -560,10 +584,10 @@ namespace Unity.VectorGraphics
         {
             const float kMaxCoord = 10000.0f;
             return
-                segment.P0.x > kMaxCoord || segment.P0.y > kMaxCoord ||
-                segment.P1.x > kMaxCoord || segment.P1.y > kMaxCoord ||
-                segment.P2.x > kMaxCoord || segment.P2.y > kMaxCoord ||
-                segment.P3.x > kMaxCoord || segment.P3.y > kMaxCoord;
+                Mathf.Abs(segment.P0.x) > kMaxCoord || Mathf.Abs(segment.P0.y) > kMaxCoord ||
+                Mathf.Abs(segment.P1.x) > kMaxCoord || Mathf.Abs(segment.P1.y) > kMaxCoord ||
+                Mathf.Abs(segment.P2.x) > kMaxCoord || Mathf.Abs(segment.P2.y) > kMaxCoord ||
+                Mathf.Abs(segment.P3.x) > kMaxCoord || Mathf.Abs(segment.P3.y) > kMaxCoord;
         }
 
         static float AdaptiveQuadraticApproxSplitPoint(BezierSegment segment, float precision)
@@ -595,13 +619,21 @@ namespace Unity.VectorGraphics
                 double q = 4.0f * a * c - b * b;
 
                 double twoCpB = 2.0f * c + b;
-                double sumCBA = c + b + a;
+
+                // c + b + a is 4|C - B|^2, so a negative value here is pure rounding error
+                double sumCBA = Math.Max(c + b + a, 0.0);
 
                 var l0 = (0.25f / c) * (twoCpB * Math.Sqrt(sumCBA) - b * Math.Sqrt(a));
                 if (Math.Abs(q) <= VectorUtils.Epsilon)
                     return (float)l0;
 
-                var l1 = (q / (8.0f * Math.Pow(c, 1.5f))) * (Math.Log(2.0f * Math.Sqrt(c * sumCBA) + twoCpB) - Math.Log(2.0f * Math.Sqrt(c * a) + b));
+                // Either argument is zero when a collinear segment reverses direction, and rounds either side of it
+                double arg1 = 2.0f * Math.Sqrt(c * sumCBA) + twoCpB;
+                double arg2 = 2.0f * Math.Sqrt(c * a) + b;
+                if (arg1 <= 0.0 || arg2 <= 0.0)
+                    return (float)l0;
+
+                var l1 = (q / (8.0f * Math.Pow(c, 1.5f))) * (Math.Log(arg1) - Math.Log(arg2));
                 return (float)(l0 + l1);
             }
             else return 2.0f * A0.magnitude;

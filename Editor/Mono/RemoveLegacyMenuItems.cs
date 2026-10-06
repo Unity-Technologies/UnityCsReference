@@ -2,7 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: SRPSettings not yet converted
 using UnityEngine;
 using UnityEngine.Rendering;
 
@@ -34,5 +33,23 @@ namespace UnityEditor
             Menu.RemoveMenuItem("Component/Effects/Halo");
         }
     }
+
+    [InitializeOnLoad]
+    static class RemoveLegacyUmbraMenuItems
+    {
+        static RemoveLegacyUmbraMenuItems()
+        {
+            EditorApplication.delayCall += RemoveMenuItems;
+        }
+
+        static void RemoveMenuItems()
+        {
+            if (EditorSettings.enableLegacyUmbraCulling)
+                return;
+
+            Menu.RemoveMenuItem("Component/Rendering/Occlusion Area");
+            Menu.RemoveMenuItem("Component/Rendering/Occlusion Portal");
+            Menu.RemoveMenuItem("Window/Rendering/Occlusion Culling");
+        }
+    }
 }
-#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

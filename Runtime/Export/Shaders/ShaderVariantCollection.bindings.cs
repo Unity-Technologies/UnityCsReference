@@ -36,6 +36,6 @@ namespace UnityEngine
         [NativeName("WarmupShaders")] extern public void WarmUp();
         [NativeName("WarmupShadersProgressively")] extern public bool WarmUpProgressively(int variantCount);
 
-        [NativeName("CreateFromScript")] extern private static void Internal_Create([Writable] ShaderVariantCollection svc);
+        [NativeName("CreateFromScript")] extern private static EntityId Internal_Create();
     }
 }

@@ -2,13 +2,13 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0010,UAL0011,UAL0012,UAL0013,UAL0014 // AutoStaticsCleanup: Burst not yet converted
 using UnityEngine;
 using UnityEditor;
+using Unity.Scripting.LifecycleManagement;
 
 namespace Unity.Burst.Editor
 {
-    internal static class LabeledPopup
+    internal static partial class LabeledPopup
     {
         // Because the function given to dropdown menu needs takes its parameter
         // in the form of an object, we need someway to wrap the integer into one.
@@ -25,8 +25,9 @@ namespace Unity.Burst.Editor
         /// <summary>
         /// Enables having several popup menus functioning independently at the same time.
         /// </summary>
-        private class PopperCallBack
+        private partial class PopperCallBack
         {
+            [AutoStaticsCleanupOnCodeReload]
             public static PopperCallBack Instance = null;
 
             /// <summary>
@@ -117,7 +118,7 @@ namespace Unity.Burst.Editor
                 {
                     var size = options[i];
 
-                    menu.AddItem(EditorGUIUtility.TrTextContent(size), i == index, PopperCallBack.Instance.SetSelection, new IntegerWrapper(i));
+                    menu.AddItem(L10n.TextContent(size, null, null, null), i == index, PopperCallBack.Instance.SetSelection, new IntegerWrapper(i));
                 }
                 menu.Popup(pos, index);
             }
@@ -126,4 +127,3 @@ namespace Unity.Burst.Editor
         }
     }
 }
-#pragma warning restore UAL0010,UAL0011,UAL0012,UAL0013,UAL0014

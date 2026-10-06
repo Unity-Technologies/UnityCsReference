@@ -19,7 +19,7 @@ namespace Unity.Localization;
 /// <see cref="LocalizedEntry{TEntry}"/> per entry.
 /// </remarks>
 /// <example>
-/// <para>Resolve a whole table for the selected locale.</para>
+/// Resolve a whole table for the selected locale.
 /// <code source="../../../../Modules/LocalizationRuntime/Tests/UTFTests/Localization.Samples/Reference/LocalizedTableResolveExample.cs"/>
 /// </example>
 /// <seealso cref="ResourceDatabase"/>
@@ -40,15 +40,14 @@ public class LocalizedTable : LocalizedReference
     /// <param name="cancellationToken">A token that cancels the asynchronous load. The default token never cancels.</param>
     /// <returns>An awaitable that produces the resolved table, or null when it cannot be resolved.</returns>
     /// <example>
-    /// <para>Load a table asynchronously.</para>
+    /// Load a table asynchronously.
     /// <code source="../../../../Modules/LocalizationRuntime/Tests/UTFTests/Localization.Samples/Reference/LocalizedTableGetTableAsyncExample.cs"/>
     /// </example>
     public Awaitable<ResourceTable> GetTableAsync(CancellationToken cancellationToken = default)
     {
-        var database = LocalizationSettings.ResourceDatabase;
-        if (database == null || IsEmpty)
+        if (!LocalizationSettings.TryGetDatabaseForResolve(IsEmpty, out var database))
             return AwaitableUtility.FromResult<ResourceTable>(null);
-        if (LocalizationSettings.PreferredLoading == LoadingPreference.Synchronous)
+        if (LocalizationSettings.PreferSyncResolve)
         {
             var table = GetTable();
             if (table != null)
@@ -66,12 +65,13 @@ public class LocalizedTable : LocalizedReference
     /// </remarks>
     /// <returns>The resolved table, or null when it is not available synchronously.</returns>
     /// <example>
-    /// <para>Read an already-loaded table.</para>
+    /// Read an already-loaded table.
     /// <code source="../../../../Modules/LocalizationRuntime/Tests/UTFTests/Localization.Samples/Reference/LocalizedTableGetTableExample.cs"/>
     /// </example>
     public ResourceTable GetTable()
     {
-        var database = LocalizationSettings.ResourceDatabase;
-        return database != null && !IsEmpty ? database.GetTable(TableReference, ResolveOverrideLocale()) : null;
+        return LocalizationSettings.TryGetDatabaseForResolve(IsEmpty, out var database)
+            ? database.GetTable(TableReference, ResolveOverrideLocale())
+            : null;
     }
 }

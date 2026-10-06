@@ -11,6 +11,7 @@ namespace Unity.UIToolkit.Editor;
 sealed class VisualElementMover : VisualElementTransformer
 {
     const string k_UssClass = "unity-ve-canvas-mover";
+    const string k_MovableUssClass = "unity-ve-canvas-mover--movable";
     const string k_StyleSheet = "UIToolkitAuthoring/UIViewportWindow/UIElementMover.uss";
     const string k_CoverLayerName = "drag-hover-cover-layer";
     const string k_CoverLayerUssClass = "unity-ve-canvas-transformer__drag-hover-cover-layer";
@@ -34,27 +35,31 @@ sealed class VisualElementMover : VisualElementTransformer
         InitializeDragHoverCoverLayer();
     }
 
+    // A scaled or rotated target stays movable on purpose, so that starting a drag reports why it cannot move.
+    bool CanMoveTarget =>
+        Target.resolvedStyle.position != Position.Relative &&
+        !IsReadOnly &&
+        !(AreStylesBound(TrackedStyles.Top | TrackedStyles.Bottom) &&
+            AreStylesBound(TrackedStyles.Left | TrackedStyles.Right));
+
     protected override void SetStylesFromTargetStyles()
     {
         if (Target == null) return;
 
-        var isRelative = Target.resolvedStyle.position == Position.Relative;
+        var canMove = CanMoveTarget;
         var isAttached = m_MoveManipulator.target != null;
 
-        if (isRelative && isAttached)
-        {
-            style.cursor = StyleKeyword.None;
-            this.RemoveManipulator(m_MoveManipulator);
-        }
-        else if (!isRelative && !isAttached)
-        {
-            style.cursor = StyleKeyword.Null;
+        EnableInClassList(k_MovableUssClass, canMove);
+
+        if (canMove && !isAttached)
             this.AddManipulator(m_MoveManipulator);
-        }
+        else if (!canMove && isAttached)
+            this.RemoveManipulator(m_MoveManipulator);
     }
 
     protected override void OnDeactivated()
     {
+        RemoveFromClassList(k_MovableUssClass);
         this.RemoveManipulator(m_MoveManipulator);
     }
 

@@ -57,15 +57,24 @@ sealed class JsonCollectionFormat : ITableCollectionExporter, ITableCollectionIm
         if (snapshot?.Locales == null)
             return;
 
+        // This importer does not go through JsonTableReader, so it checks the schema versions itself, for every
+        // locale before any of them is applied, so a bad file cannot half-import.
+        foreach (var data in snapshot.Locales)
+        {
+            if (data != null && data.SchemaVersion != ResourceTableData.CurrentSchemaVersion)
+                throw new FormatException($"The '{data.LocaleCode}' table is schema version '{data.SchemaVersion}', and this Unity reads version '{ResourceTableData.CurrentSchemaVersion}'.");
+        }
+
         reporter?.Start("Import JSON", collection.TableCollectionName);
         try
         {
             if (options.CreateUndo)
                 Undo.RegisterCompleteObjectUndo(CollectionMutation.UndoTargets(collection), "Import JSON");
 
+            var trustIds = CollectionMutation.CameFrom(collection, snapshot.CollectionGuid, ambiguous: true);
             var processed = new HashSet<long>();
             foreach (var data in snapshot.Locales)
-                ApplyLocale(collection, data, options, processed);
+                ApplyLocale(collection, data, options, processed, trustIds);
 
             if (options.RemoveMissingEntries)
             {
@@ -86,7 +95,7 @@ sealed class JsonCollectionFormat : ITableCollectionExporter, ITableCollectionIm
     }
 
     // Rebuilt into throwaway instances to reuse the runtime converter's id, variant and selector handling, then merged.
-    static void ApplyLocale(ResourceTableCollection collection, ResourceTableData data, TableImportOptions options, HashSet<long> processed)
+    static void ApplyLocale(ResourceTableCollection collection, ResourceTableData data, TableImportOptions options, HashSet<long> processed, bool trustIds)
     {
         var temp = TableDataConverter.FromData(data);
         if (temp == null)
@@ -101,7 +110,7 @@ sealed class JsonCollectionFormat : ITableCollectionExporter, ITableCollectionIm
                 {
                     if (tempKey == null)
                         continue;
-                    var keyEntry = CollectionMutation.ResolveKey(collection, tempKey.Key, tempKey.Id, options);
+                    var keyEntry = CollectionMutation.ResolveKey(collection, tempKey.Key, trustIds ? tempKey.Id : 0, options);
                     if (keyEntry == null)
                         continue;
                     keyEntry.Flags = tempKey.Flags;

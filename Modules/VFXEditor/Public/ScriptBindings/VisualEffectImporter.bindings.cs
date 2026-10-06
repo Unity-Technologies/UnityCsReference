@@ -23,6 +23,7 @@ namespace UnityEditor.VFX
     [NativeClass("VisualEffectImporter", PersistentTypeId = 0x7AB43186)]
     internal sealed partial class VisualEffectImporter : AssetImporter
     {
+        internal VisualEffectImporter(global::UnityEngine.EntityId id) : base(id) {}
         public extern VFXTemplate templateProperty { get; set; }
         public extern bool useAsTemplateProperty { get; set; }
     }

@@ -119,6 +119,8 @@ namespace UnityEngine
     [NativeHeader("Modules/Physics/Rigidbody.h")]
     public partial class Rigidbody : Component
     {
+        internal Rigidbody(global::UnityEngine.EntityId id) : base(id) {}
+        public Rigidbody() {}
         ///<summary>The linear velocity vector of the rigidbody. It represents the rate of change of Rigidbody position.</summary>
         ///<remarks>
         ///  <para>In most cases you should not modify the velocity directly, as this can result in unrealistic behaviour - use AddForce instead

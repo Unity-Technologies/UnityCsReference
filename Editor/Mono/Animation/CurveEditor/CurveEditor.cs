@@ -2,7 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: MecanimAnimation not yet converted
 using UnityEngine;
 using UnityEngine.Bindings;
 using UnityEditor;
@@ -2386,9 +2385,9 @@ namespace UnityEditor
                         {
                             GenericMenu menu = new GenericMenu();
                             if (m_AnimationCurves[curveIndex].animationIsEditable)
-                                menu.AddItem(EditorGUIUtility.TrTextContent("Add Key"), false, CreateKeyFromClick, Event.current.mousePosition);
+                                menu.AddItem(L10n.TextContent("Add Key", null, null, null), false, CreateKeyFromClick, Event.current.mousePosition);
                             else
-                                menu.AddDisabledItem(EditorGUIUtility.TrTextContent("Add Key"));
+                                menu.AddDisabledItem(L10n.TextContent("Add Key", null, null, null));
 
                             menu.ShowAsContext();
                             Event.current.Use();
@@ -2770,6 +2769,14 @@ namespace UnityEditor
         const string kPointTimeFieldName = "pointTimeField";
         string m_FocusedPointField = null;
         Vector2 m_PointEditingFieldPosition;
+        Rect m_PointEditingFieldsRect;
+
+        // Keep the keyboard control on an open "Edit Key..." field when it is the thing being clicked,
+        // otherwise the click counts as an initial one and re-selects all of its text. (UUM-140166)
+        protected override bool captureKeyboardControlOnMouseDown
+        {
+            get { return !(m_EditingPoints && m_PointEditingFieldsRect.Contains(Event.current.mousePosition)); }
+        }
 
         Vector2 GetPointEditionFieldPosition()
         {
@@ -2802,6 +2809,7 @@ namespace UnityEditor
         void StartEditingSelectedPoints(Vector2 fieldPosition)
         {
             m_PointEditingFieldPosition = fieldPosition;
+            m_PointEditingFieldsRect = Rect.zero;
             m_FocusedPointField = kPointValueFieldName;
             m_TimeWasEdited = false;
             m_ValueWasEdited = false;
@@ -2870,6 +2878,9 @@ namespace UnityEditor
             var drawAreaInMargins = Rect.MinMaxRect(leftmargin, topmargin, rect.width - rightmargin, rect.height - bottommargin);
             fieldPosition.x = Mathf.Clamp(fieldPosition.x, drawAreaInMargins.xMin, drawAreaInMargins.xMax - kFieldWidth);
             fieldPosition.y = Mathf.Clamp(fieldPosition.y, drawAreaInMargins.yMin, drawAreaInMargins.yMax - kFieldHeight * 2);
+
+            // Covers both fields, in drawRect space, which is also the space the zoomable area handles its events in.
+            m_PointEditingFieldsRect = new Rect(fieldPosition.x, fieldPosition.y, kFieldWidth, kFieldHeight * 2);
 
             EditorGUI.BeginChangeCheck();
             GUI.SetNextControlName(kPointTimeFieldName);
@@ -4225,4 +4236,3 @@ namespace UnityEditor
         }
     }
 } // namespace
-#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

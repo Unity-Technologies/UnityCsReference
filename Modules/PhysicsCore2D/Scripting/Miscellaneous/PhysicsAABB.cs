@@ -12,8 +12,31 @@ using static Unity.U2D.Physics.Scripting2D;
 namespace Unity.U2D.Physics
 {
     /// <summary>
-    /// Represents a 2D axis-aligned bounding-box.
+    /// Represents a 2D axis-aligned bounding box.
     /// </summary>
+    /// <remarks>
+    /// Use a `PhysicsAABB` with <see cref="PhysicsWorld.TestOverlapAABB(PhysicsAABB, PhysicsQuery.QueryFilter)"/> to check if a bounding box overlaps another object in the world, or with <see cref="PhysicsWorld.DrawAABB(PhysicsAABB, Color, float, PhysicsWorld.DrawFillOptions)"/> to draw it for debugging.
+    /// </remarks>
+    /// <example>
+    /// <code lang="cs">
+    /// <![CDATA[
+    /// // Check whether a bounding box overlaps anything in the world.
+    /// using UnityEngine;
+    /// using Unity.U2D.Physics;
+    ///
+    /// public class TestOverlapAABBExample : MonoBehaviour
+    /// {
+    ///     void Start()
+    ///     {
+    ///         PhysicsWorld world = PhysicsWorld.defaultWorld;
+    ///         PhysicsAABB aabb = new PhysicsAABB(new Vector2(-1f, -1f), new Vector2(1f, 1f));
+    ///         bool overlaps = world.TestOverlapAABB(aabb, new PhysicsQuery.QueryFilter());
+    ///     }
+    /// }
+    /// ]]>
+    /// </code>
+    /// </example>
+    /// <seealso cref="PhysicsWorld.TestOverlapAABB(PhysicsAABB, PhysicsQuery.QueryFilter)"/>
     [Serializable]
     [StructLayout(LayoutKind.Sequential)]
     [MovedFrom(autoUpdateAPI: ScriptUpdateConstants.AutoUpdateAPI, sourceNamespace: ScriptUpdateConstants.SourceNamespace, sourceAssembly: ScriptUpdateConstants.SourceAssembly)]

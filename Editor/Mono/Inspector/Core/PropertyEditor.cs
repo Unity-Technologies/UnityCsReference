@@ -2,7 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: InspectorFramework not yet converted
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -41,7 +40,7 @@ namespace UnityEditor
         EditorDragging editorDragging { get; }
 
         IMGUIContainer CreateIMGUIContainer(Action headerOnGUI, string v);
-        bool WasEditorVisible(Editor[] editors, int editorIndex, Object target);
+        bool WasEditorVisible(Editor[] editors, int editorIndex);
         bool ShouldCullEditor(Editor[] editors, int editorIndex);
         void Repaint();
         void UnsavedChangesStateChanged(Editor editor, bool value);
@@ -115,6 +114,9 @@ namespace UnityEditor
         private Object m_InspectedObject;
         private string m_ExpectedTitle;
         [AutoStaticsCleanupOnCodeReload]
+        // Only used to cascade the position of the next property editor window; ShowPropertyEditorWindow
+        // reassigns it every time such a window is opened.
+        [IgnoreForUAL0015("Last-opened window reference, reassigned whenever a property editor window is shown")]
         private static PropertyEditor s_LastPropertyEditor;
         protected EntityId m_LastInitialEditorEntityId;
         protected Component[] m_ComponentsInPrefabSource;
@@ -223,31 +225,31 @@ namespace UnityEditor
             public static readonly GUIStyle dragHandle = "RL DragHandle";
             public static readonly GUIStyle lockButton = "IN LockButton";
             public static readonly GUIStyle insertionMarker = "InsertionMarker";
-            public static readonly GUIContent preTitle = EditorGUIUtility.TrTextContent("Preview");
-            public static readonly GUIContent labelTitle = EditorGUIUtility.TrTextContent("Asset Labels");
-            public static readonly GUIContent addComponentLabel = EditorGUIUtility.TrTextContent("Add Component");
+            public static readonly GUIContent preTitle = L10n.TextContent("Preview", null, null, null);
+            public static readonly GUIContent labelTitle = L10n.TextContent("Asset Labels", null, null, null);
+            public static readonly GUIContent addComponentLabel = L10n.TextContent("Add Component", null, null, null);
             public static readonly GUIStyle preBackground = "preBackground";
             public static readonly GUIStyle footer = "IN Footer";
             public static readonly GUIStyle preMargins = new GUIStyle() {margin = new RectOffset(0, 0, 0, 4)};
             public static readonly GUIStyle preOptionsButton = new GUIStyle(EditorStyles.toolbarButtonRight) { padding = new RectOffset(), contentOffset = new Vector2(1, 0) };
             public static readonly GUIStyle addComponentArea = EditorStyles.inspectorTitlebar;
             public static readonly GUIStyle addComponentButtonStyle = "AC Button";
-            public static readonly GUIContent menuIcon = EditorGUIUtility.TrIconContent("_Menu");
+            public static readonly GUIContent menuIcon = L10n.IconContent("_Menu", null, null);
             public static readonly GUIStyle previewMiniLabel = EditorStyles.whiteMiniLabel;
             public static readonly GUIStyle typeSelection = "IN TypeSelection";
 
-            public static readonly GUIContent vcsCheckoutHint = EditorGUIUtility.TrTextContent("Under Version Control\nCheck out this asset in order to make changes.", EditorGUIUtility.GetHelpIcon(MessageType.Info));
-            public static readonly GUIContent vcsNotConnected = EditorGUIUtility.TrTextContent("VCS ({0}) is not connected");
-            public static readonly GUIContent vcsOffline = EditorGUIUtility.TrTextContent("Work Offline option is active");
-            public static readonly GUIContent vcsSettings = EditorGUIUtility.TrTextContent("Settings");
-            public static readonly GUIContent vcsCheckout = EditorGUIUtility.TrTextContent("Check Out");
-            public static readonly GUIContent vcsCheckoutMeta = EditorGUIUtility.TrTextContent("Check Out Meta");
-            public static readonly GUIContent vcsAdd = EditorGUIUtility.TrTextContent("Add");
-            public static readonly GUIContent vcsLock = EditorGUIUtility.TrTextContent("Lock");
-            public static readonly GUIContent vcsUnlock = EditorGUIUtility.TrTextContent("Unlock");
-            public static readonly GUIContent vcsSubmit = EditorGUIUtility.TrTextContent("Submit");
-            public static readonly GUIContent vcsRevert = EditorGUIUtility.TrTextContent("Revert");
-            public static readonly GUIContent vcsRevertUnchanged = EditorGUIUtility.TrTextContent("Revert Unchanged");
+            public static readonly GUIContent vcsCheckoutHint = L10n.TextContent("Under Version Control\nCheck out this asset in order to make changes.", EditorGUIUtility.GetHelpIcon(MessageType.Info), null);
+            public static readonly GUIContent vcsNotConnected = L10n.TextContent("VCS ({0}) is not connected", null, null, null);
+            public static readonly GUIContent vcsOffline = L10n.TextContent("Work Offline option is active", null, null, null);
+            public static readonly GUIContent vcsSettings = L10n.TextContent("Settings", null, null, null);
+            public static readonly GUIContent vcsCheckout = L10n.TextContent("Check Out", null, null, null);
+            public static readonly GUIContent vcsCheckoutMeta = L10n.TextContent("Check Out Meta", null, null, null);
+            public static readonly GUIContent vcsAdd = L10n.TextContent("Add", null, null, null);
+            public static readonly GUIContent vcsLock = L10n.TextContent("Lock", null, null, null);
+            public static readonly GUIContent vcsUnlock = L10n.TextContent("Unlock", null, null, null);
+            public static readonly GUIContent vcsSubmit = L10n.TextContent("Submit", null, null, null);
+            public static readonly GUIContent vcsRevert = L10n.TextContent("Revert", null, null, null);
+            public static readonly GUIContent vcsRevertUnchanged = L10n.TextContent("Revert Unchanged", null, null, null);
             [NoAutoStaticsCleanup] // array of auto-exempt GUIContent refs, safe to persist
             public static readonly GUIContent[] vcsRevertMenuNames = {vcsRevertUnchanged};
             [NoAutoStaticsCleanup] // ok the static method assigned here is stateless
@@ -347,9 +349,7 @@ namespace UnityEditor
             }
         }
 
-        #pragma warning disable UAL0015 // this side effect does not outlive the current call (global trigger / lazily-loaded asset re-fetched on next access); a stale reference is harmlessly replaced
         internal PropertyEditor()
-        #pragma warning restore UAL0015
         {
             editorDragging = new EditorDragging(this);
             minSize = new Vector2(k_MinimumWindowWidth, minSize.y);
@@ -754,12 +754,12 @@ namespace UnityEditor
 
         public virtual void AddDebugItemsToMenu(GenericMenu menu)
         {
-            menu.AddItem(EditorGUIUtility.TrTextContent("Normal"), m_InspectorMode == InspectorMode.Normal, SetNormal);
-            menu.AddItem(EditorGUIUtility.TrTextContent("Debug"), m_InspectorMode == InspectorMode.Debug, SetDebug);
+            menu.AddItem(L10n.TextContent("Normal", null, null, null), m_InspectorMode == InspectorMode.Normal, SetNormal);
+            menu.AddItem(L10n.TextContent("Debug", null, null, null), m_InspectorMode == InspectorMode.Debug, SetDebug);
 
             if (Unsupported.IsDeveloperMode())
             {
-                menu.AddItem(EditorGUIUtility.TrTextContent("Debug-Internal"), m_InspectorMode == InspectorMode.DebugInternal, SetDebugInternal);
+                menu.AddItem(L10n.TextContent("Debug-Internal", null, null, null), m_InspectorMode == InspectorMode.DebugInternal, SetDebugInternal);
             }
         }
 
@@ -769,14 +769,14 @@ namespace UnityEditor
             menu.AddSeparator(String.Empty);
 
             if (IsAnyComponentCollapsed())
-                menu.AddItem(EditorGUIUtility.TrTextContent("Expand All Components"), false, ExpandAllComponents);
+                menu.AddItem(L10n.TextContent("Expand All Components", null, null, null), false, ExpandAllComponents);
             else
-                menu.AddDisabledItem(EditorGUIUtility.TrTextContent("Expand All Components"));
+                menu.AddDisabledItem(L10n.TextContent("Expand All Components", null, null, null));
 
             if (IsAnyComponentExpanded())
-                menu.AddItem(EditorGUIUtility.TrTextContent("Collapse All Components"), false, CollapseAllComponents);
+                menu.AddItem(L10n.TextContent("Collapse All Components", null, null, null), false, CollapseAllComponents);
             else
-                menu.AddDisabledItem(EditorGUIUtility.TrTextContent("Collapse All Components"));
+                menu.AddDisabledItem(L10n.TextContent("Collapse All Components", null, null, null));
 
             if (m_Tracker != null)
             {
@@ -797,14 +797,16 @@ namespace UnityEditor
             }
 
             menu.AddSeparator("");
-            menu.AddItem(EditorGUIUtility.TrTextContent("Ping"), false, () => EditorGUIUtility.PingObject(GetInspectedObject()));
-            menu.AddItem(EditorGUIUtility.TrTextContent("Open in Import Activity Window"), false, () => ImportActivityWindow.OpenFromPropertyEditor(GetInspectedObject()));
+            menu.AddItem(L10n.TextContent("Ping", null, null, null), false, () => EditorGUIUtility.PingObject(GetInspectedObject()));
+            menu.AddItem(L10n.TextContent("Open in Import Activity Window", null, null, null), false, () => ImportActivityWindow.OpenFromPropertyEditor(GetInspectedObject()));
         }
 
         private void SetTrackerExpandedState(ActiveEditorTracker tracker, int editorIndex, bool expanded)
         {
             tracker.SetVisible(editorIndex, expanded ? 1 : 0);
-            InternalEditorUtility.SetIsInspectorExpanded(tracker.activeEditors[editorIndex].target, expanded);
+            var editor = tracker.activeEditors[editorIndex];
+            if (editor != null)
+                editor.SetInspectorExpanded(expanded);
         }
 
         protected void ExpandAllComponents()
@@ -1228,7 +1230,7 @@ namespace UnityEditor
             // Here we track the last built editor types which is compared during the next undo-redo operation.
             m_EditorTargetTypes.Clear();
             foreach (var editor in editors)
-                m_EditorTargetTypes.Add(editor.target ? editor.target.GetType() : null);
+                m_EditorTargetTypes.Add(editor.targetType);
 
             if (editors.Length > 0 && versionControlElement != null)
             {
@@ -1314,9 +1316,15 @@ namespace UnityEditor
             }
             k_CreateInspectorElements.End();
 
+            // Don't restore while an editor still points at a destroyed target, as happens for a moment when exiting
+            // Play mode. Building to the offset runs a layout pass, and the reused elements of those editors still hold
+            // IMGUI handlers that read the destroyed target (UUM-153587). The tracker rebuilds again once the targets are
+            // valid, and the offset is restored then. Nothing lays out in between, so the live offset is kept until then.
+            var restoreScroll = m_LastVerticalScrollValue > 0f && m_ScrollView != null && !HasEditorWithDestroyedTarget(editors);
+
             // When restoring scroll, build just enough editors for the saved offset to stay reachable, so it can be
             // re-applied below without the scroller clamping it to 0. The remaining editors keep building time-sliced.
-            if (m_LastVerticalScrollValue > 0f && editorsElement != null && m_ScrollView != null)
+            if (restoreScroll && editorsElement != null)
             {
                 m_EditorElementUpdater.CreateInspectorElementsToReachScrollOffset(m_ScrollView, editorsElement, m_LastVerticalScrollValue);
             }
@@ -1328,11 +1336,21 @@ namespace UnityEditor
             EndRebuildContentContainers();
 
             // Re-apply the preserved scroll offset now that the content height is final.
-            if (m_LastVerticalScrollValue > 0f && m_ScrollView != null)
+            if (restoreScroll)
                 m_ScrollView.verticalScroller.value = m_LastVerticalScrollValue;
 
             Repaint();
             RefreshTitle();
+        }
+
+        static bool HasEditorWithDestroyedTarget(Editor[] editors)
+        {
+            foreach (var editor in editors)
+            {
+                if (editor && editor.target == null)
+                    return true;
+            }
+            return false;
         }
 
         void ClearPreview()
@@ -2449,7 +2467,7 @@ namespace UnityEditor
                         // Adds an empty IMGUIContainer to prevent infinite repainting (case 1264833).
                         // EXCEPT for the ParticleSystemRenderer, because it prevents the ParticleSystem inspector
                         // from working correctly when setting the Material for its renderer (case 1308966).
-                        if (!(editor.target is ParticleSystemRenderer) && (mapping == null || !mapping.TryGetValue(editor.target.GetEntityId(),
+                        if (!(editor.target is ParticleSystemRenderer) && (mapping == null || !mapping.TryGetValue(editor.targetEntityId,
                             out var culledEditorContainer)))
                         {
                             culledEditorContainer =
@@ -2463,7 +2481,7 @@ namespace UnityEditor
                         continue;
                     }
 
-                    if (mapping == null || !mapping.TryGetValue(editors[editorIndex].target.GetEntityId(), out var editorContainer))
+                    if (mapping == null || !mapping.TryGetValue(editors[editorIndex].targetEntityId, out var editorContainer))
                     {
                         editorContainer = new UIElements.EditorElement(editorIndex, this, editors);
                         editorsElement.Add(editorContainer as VisualElement);
@@ -2560,7 +2578,7 @@ namespace UnityEditor
             EditorGUI.RemovedComponentTitlebar(rect, go, comp);
         }
 
-        public bool WasEditorVisible(Editor[] editors, int editorIndex, Object target)
+        public bool WasEditorVisible(Editor[] editors, int editorIndex)
         {
             int wasVisibleState = tracker.GetVisible(editorIndex);
             bool wasVisible;
@@ -2576,7 +2594,8 @@ namespace UnityEditor
                 // Init our state with last state
                 // Large headers should always be considered visible
                 // because they need to at least update their Icons when they have a static preview (Material for exemple)
-                wasVisible = InternalEditorUtility.GetIsInspectorExpanded(target) || EditorHasLargeHeader(editorIndex, editors);
+                wasVisible = editors[editorIndex].IsInspectorExpanded()
+                    || EditorHasLargeHeader(editorIndex, editors);
                 tracker.SetVisible(editorIndex, wasVisible ? 1 : 0);
             }
             else
@@ -2588,13 +2607,16 @@ namespace UnityEditor
         }
 
         public static bool IsMultiEditingSupported(Editor editor, Object target, InspectorMode mode)
+            => IsMultiEditingSupported(editor, target?.GetType(), mode);
+
+        internal static bool IsMultiEditingSupported(Editor editor, System.Type type, InspectorMode mode)
         {
             // Culling of editors that can't be properly shown.
             // If the current editor is a GenericInspector even though a custom editor for it exists,
             // then it's either a fallback for a custom editor that doesn't support multi-object editing,
             // or we're in debug mode.
             bool multiEditingSupported = true;
-            if (editor is GenericInspector && CustomEditorAttributes.FindCustomEditorType(target, false) != null)
+            if (editor is GenericInspector && type != null && CustomEditorAttributes.FindCustomEditorTypeByType(type, false) != null)
             {
                 if (mode == InspectorMode.DebugInternal)
                 {
@@ -2606,7 +2628,7 @@ namespace UnityEditor
                     // hide the editor and show a notification.
                     multiEditingSupported = false;
                 }
-                else if (target is AssetImporter)
+                else if (typeof(AssetImporter).IsAssignableFrom(type))
                 {
                     // If we are in debug mode and it's an importer type,
                     // hide the editor and show a notification.
@@ -2845,6 +2867,8 @@ namespace UnityEditor
 
                 if (currentEditor == null)
                 {
+                    currentElement.RemoveFromHierarchy();
+                    m_EditorElementUpdater.Remove(currentElement);
                     ++previousEditorsIndex;
                     continue;
                 }
@@ -2861,6 +2885,7 @@ namespace UnityEditor
                         currentElement.ReinitCulled(newEditorsIndex, editors);
                         if (!InspectorElement.disabledThrottling)
                             m_EditorElementUpdater.Add(currentElement);
+                        editorToElementMap[ed.target.GetEntityId()] = currentElement;
 
                         // We need to move forward as the current element is the culled one, so we're not really
                         // interested in it.
@@ -2872,14 +2897,34 @@ namespace UnityEditor
 
                 if (currentEditor && ed.target != currentEditor.target)
                 {
-                    return null;
+                    if (editorToElementMap.Count == 0)
+                        return null;
+
+                    // Keep the matched elements so their IMGUI control IDs stay stable
+                    var firstStaleChildIndex = editorsElement.IndexOf((VisualElement)currentElement);
+                    for (int i = editorsElement.childCount - 1; i >= firstStaleChildIndex; --i)
+                    {
+                        editorsElement.RemoveAt(i);
+                    }
+
+                    m_EditorElementUpdater.Clear();
+                    if (!InspectorElement.disabledThrottling)
+                    {
+                        foreach (var child in editorsElement.Children())
+                        {
+                            if (child is IEditorElement keptElement)
+                                m_EditorElementUpdater.Add(keptElement);
+                        }
+                    }
+
+                    return editorToElementMap;
                 }
 
                 editors[newEditorsIndex].propertyViewer = this;
                 currentElement.Reinit(newEditorsIndex, editors);
                 if (!InspectorElement.disabledThrottling)
                     m_EditorElementUpdater.Add(currentElement);
-                editorToElementMap[ed.target.GetEntityId()] = currentElement;
+                editorToElementMap[ed.targetEntityId] = currentElement;
                 ++newEditorsIndex;
                 ++previousEditorsIndex;
             }
@@ -3027,4 +3072,3 @@ namespace UnityEditor
         }
     }
 }
-#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

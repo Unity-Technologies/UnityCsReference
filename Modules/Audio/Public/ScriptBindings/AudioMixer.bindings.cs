@@ -31,6 +31,7 @@ namespace UnityEngine.Audio
     [NativeHeader("Modules/Audio/Public/ScriptBindings/AudioMixer.bindings.h")]
     public partial class AudioMixer : Object
     {
+        protected internal AudioMixer(global::UnityEngine.EntityId id) : base(id) {}
         internal AudioMixer() {}
 
         ///<summary>Routing target.</summary>

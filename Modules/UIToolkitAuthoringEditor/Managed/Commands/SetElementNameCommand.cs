@@ -47,13 +47,7 @@ internal sealed class SetElementNameCommand : Command<SetElementNameCommand>
 
     public override CommandExecutionStatus Execute()
     {
-        var uxmlTypeDescription = UxmlDescriptionRegistry.GetDescription(ElementAsset.serializedData.GetType());
-        var nameIndex = uxmlTypeDescription.cSharpNameToIndex[nameof(VisualElement.name)];
-        var nameAttribute = uxmlTypeDescription.attributeDescriptions[nameIndex];
-        nameAttribute.serializedField.SetValue(ElementAsset.serializedData, Name);
-        nameAttribute.serializedFieldAttributeFlags.SetValue(ElementAsset.serializedData, UxmlSerializedData.UxmlAttributeFlags.OverriddenInUxml);
-
-        ElementAsset.SetAttribute(nameof(VisualElement.name), Name);
+        UxmlAssetUtilities.SetAttributeAndSyncSerializedData(ElementAsset, nameof(VisualElement.name), Name);
         return CommandExecutionStatus.Success;
     }
 }

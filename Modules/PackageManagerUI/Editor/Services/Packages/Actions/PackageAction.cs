@@ -17,7 +17,7 @@ internal abstract class PackageAction: ActionBase<IPackageVersion, IPackage>
     public virtual Icon icon => Icon.None;
 
     // By default buttons does not support bulk action
-    protected override bool TriggerActionImplementation(IReadOnlyCollection<IPackage> packages) => false;
+    protected override bool TriggerActionImplementation(IReadOnlyList<IPackage> packages) => false;
     public virtual string GetMultiSelectText(IPackageVersion version, bool isInProgress) => GetText(version, isInProgress);
 
     public override ToolbarButtonBase<IPackageVersion, IPackage> CreateToolbarButton()

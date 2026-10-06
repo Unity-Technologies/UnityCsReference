@@ -411,7 +411,9 @@ namespace UnityEngine.Android
         }
 
         ///<summary>Invokes delegate on Android application's main thread.</summary>
-        ///<remarks>This is useful if you receive a Java callback on the UI thread, but want to process result on Unity's main thread.</remarks>
+        ///<remarks>This is useful if you receive a Java callback on the UI thread, but want to process result on Unity's main thread.
+        ///
+        ///This method blocks the calling thread until the Unity main thread finishes running the delegate. It has no effect in the Editor.</remarks>
         ///<example nocheck="true">
         ///  <code><![CDATA[using System.Threading;
         ///using UnityEngine;

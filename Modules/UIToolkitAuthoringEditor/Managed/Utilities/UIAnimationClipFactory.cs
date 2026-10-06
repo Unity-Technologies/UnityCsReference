@@ -4,6 +4,7 @@
 
 using System;
 using UnityEditor;
+using UnityEditor.Utils;
 using UnityEngine;
 using UnityEngine.Bindings;
 using UnityEngine.UIElements;
@@ -41,15 +42,12 @@ internal static class UIAnimationClipFactory
         return loaded;
     }
 
-    static (UIAnimationClip clip, bool wasNewlyCreated) CreateOrReplaceAsset(string path)
+    static (UIAnimationClip clip, bool wasNewlyCreated) CreateOrReplaceAsset(string rawPath)
     {
-        if (string.IsNullOrEmpty(path))
+        if (string.IsNullOrEmpty(rawPath))
             return (null, false);
 
-        // Normalize once so AssetDatabase APIs (which expect '/') see the same path validation did.
-        path = path.Replace('\\', '/');
-
-        if (!IsValidProjectAssetPath(path))
+        if (!TryGetCanonicalAssetPath(rawPath, out var path))
         {
             Debug.LogWarning($"Cannot create UI Animation Clip at '{path}': path must be under 'Assets/' or 'Packages/'.");
             return (null, false);
@@ -134,10 +132,12 @@ internal static class UIAnimationClipFactory
         return clip;
     }
 
-    static bool IsValidProjectAssetPath(string path)
+    // SaveFilePanelInProject can hand back back-slashed paths on Windows.
+    internal static bool TryGetCanonicalAssetPath(string rawPath, out string canonicalPath)
     {
-        return !string.IsNullOrEmpty(path)
-               && (path.StartsWith("Assets/", StringComparison.Ordinal)
-                   || path.StartsWith("Packages/", StringComparison.Ordinal));
+        canonicalPath = string.IsNullOrEmpty(rawPath) ? null : rawPath.ConvertSeparatorsToUnity();
+        return canonicalPath != null
+               && (canonicalPath.StartsWith("Assets/", StringComparison.Ordinal)
+                   || canonicalPath.StartsWith("Packages/", StringComparison.Ordinal));
     }
 }

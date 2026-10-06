@@ -5,4 +5,5 @@
 using System.Runtime.CompilerServices;
 
 [assembly: InternalsVisibleTo("Unity.TextMeshPro.Editor")]
+[assembly: InternalsVisibleTo("Unity.TextMeshPro.Editor.Tests")]
 [assembly: InternalsVisibleTo("Assembly-CSharp-Editor-testable")] // Integration tests

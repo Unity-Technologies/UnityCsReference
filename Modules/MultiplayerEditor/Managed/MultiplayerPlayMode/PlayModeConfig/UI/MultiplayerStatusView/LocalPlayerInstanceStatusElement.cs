@@ -2,7 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: HeadlessRuntime not yet converted
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -26,7 +25,6 @@ internal class LocalPlayerInstanceStatusElement : VisualElement
     internal const string k_LogInfoIcon = "LogInfoIcon";
     internal const string k_LogWarningIcon = "LogWarningIcon";
     internal const string k_LogErrorIcon = "LogErrorIcon";
-    internal const string k_WarnIcon = "WarnIcon";
 
     private Label m_ConnectedLabel;
     private FreeRunningStatusElement m_FreeRunningElement;
@@ -43,18 +41,14 @@ internal class LocalPlayerInstanceStatusElement : VisualElement
     internal TextField RunDevice;
     internal Label RunDeviceName;
 
-    private Instance m_Instance;
+    private ControllerRuntime m_Instance;
 
-    internal LocalPlayerInstanceStatusElement(Instance instance, LocalPlayerController.InstanceSettings settings, LocalPlayerController.UserSettings userSettings, SerializedProperty userSettingsProperty)
+    internal LocalPlayerInstanceStatusElement(ControllerRuntime instance, LocalPlayerController.InstanceSettings settings, LocalPlayerController.UserSettings userSettings, SerializedProperty userSettingsProperty)
     {
         m_Instance = instance;
 
         RegisterCallback<AttachToPanelEvent>(OnAttachToPanel);
         RegisterCallback<DetachFromPanelEvent>(OnDetachFromPanel);
-
-        var warnIcon = new VisualElement() { name = k_WarnIcon };
-        warnIcon.AddToClassList("icon");
-        warnIcon.style.display = DisplayStyle.None;
 
         var instanceContainer = new VisualElement() { name = k_InstanceContainerName };
         instanceContainer.style.alignItems = Align.FlexStart;
@@ -101,7 +95,6 @@ internal class LocalPlayerInstanceStatusElement : VisualElement
         statusContentContainer.AddToClassList("status-content-container");
         statusContentContainer.style.flexDirection = FlexDirection.Row;
         statusContainer.style.flexDirection = FlexDirection.Column;
-        statusContentContainer.Add(warnIcon);
         statusContentContainer.Add(logInfoIcon);
         statusContentContainer.Add(LogInfoText);
         statusContentContainer.Add(logWarningIcon);
@@ -128,17 +121,30 @@ internal class LocalPlayerInstanceStatusElement : VisualElement
             RunDeviceName = new Label("Run Device");
             RunDevice.SetEnabled(false);
 
-            if (userSettings.DeviceName == "")
+            // On the field itself rather than in the status column, so the warning sits next to the value it
+            // is about - the same placement AdbDeviceField and the instance name field already use.
+            var runDeviceWarningIcon = new FieldIcon<string>(RunDevice, Icons.ImageName.Warning)
             {
-                RunDevice.SetValueWithoutNotify("No Device Selected");
-                warnIcon.style.display = DisplayStyle.Flex;
-                warnIcon.tooltip = "Select a device using the Configuration Window";
-            }
-            else
+                tooltip = AdbDeviceField.k_NoDeviceSelectedTooltip
+            };
+
+            void ShowRunDevice(string deviceName)
             {
-                RunDevice.SetValueWithoutNotify(userSettings.DeviceName);
-                warnIcon.style.display = DisplayStyle.None;
+                // The name is null until a device has been picked for the first time, so this has to be an
+                // emptiness check rather than a comparison against "".
+                var noDeviceSelected = string.IsNullOrEmpty(deviceName);
+                RunDevice.SetValueWithoutNotify(noDeviceSelected ? "No Device Selected" : deviceName);
+                runDeviceWarningIcon.style.display = noDeviceSelected ? DisplayStyle.Flex : DisplayStyle.None;
             }
+
+            ShowRunDevice(userSettings.DeviceName);
+
+            // The run device is stored in OrchestratedScenarioUserSettings rather than on the Scenario asset,
+            // so nothing this element already observes reports a change to it. Track the property directly to
+            // stay in step with the Run Device dropdown (UUM-152807).
+            var deviceNameProperty = userSettingsProperty?.FindPropertyRelative(nameof(LocalPlayerController.UserSettings.DeviceName));
+            if (deviceNameProperty != null)
+                RunDevice.TrackPropertyValue(deviceNameProperty, property => ShowRunDevice(property.stringValue));
             RunDevice.tooltip = "Selected device the instance will run on";
             RunDevice.AddToClassList("unity-base-field__aligned");
             RunDevice.style.top = 15;
@@ -234,4 +240,3 @@ internal class LocalPlayerInstanceStatusElement : VisualElement
         m_ReuseBuildElement?.UpdateButtonStates();
     }
 }
-#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

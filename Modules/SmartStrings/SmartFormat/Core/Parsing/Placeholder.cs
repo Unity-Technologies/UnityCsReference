@@ -75,7 +75,7 @@ public class Placeholder : FormatItem
 
     /// <summary>
     /// Return items we own to the object pools.
-    /// <para>This method gets called by <see cref="LiteralTextPool"/> when it releases an instance.</para>
+    /// This method gets called by <see cref="LiteralTextPool"/> when it releases an instance.
     /// </summary>
     public void ReturnToPool()
     {
@@ -178,18 +178,17 @@ public class Placeholder : FormatItem
         get
         {
             if (m_FormatterOptionsCache != null) return m_FormatterOptionsCache;
-            if (Length == 0) m_FormatterOptionsCache = string.Empty;
+            if (FormatterOptionsLength == 0) return m_FormatterOptionsCache = string.Empty;
 
             // It's enough to have a buffer with the same size as input length.
-            // The default max array length of ArrayPool<char>.Shared is 1,048,576.
-            var pool = ArrayPool<char>.Create(Length > 1024? Length : 1024, 1024);
-            var resultBuffer = pool.Rent(Length);
-            System.Diagnostics.Debug.Assert(resultBuffer.Length >= Length, "ArrayPool buffer size is smaller than it should be");
+            var pool = ArrayPool<char>.Shared;
+            var resultBuffer = pool.Rent(FormatterOptionsLength);
 
             try
             {
                 m_FormatterOptionsCache = EscapedLiteral
-                    .UnEscapeCharLiterals(SmartSettings.Parser.CharLiteralEscapeChar, BaseString.AsSpan(FormatterOptionsStartIndex, FormatterOptionsLength), true, resultBuffer).ToString();
+                    .UnEscapeCharLiterals(SmartSettings.Parser.CharLiteralEscapeChar, BaseString.AsSpan(FormatterOptionsStartIndex, FormatterOptionsLength), true,
+                        SmartSettings.Parser.ConvertCharacterStringLiterals, resultBuffer).ToString();
             }
             finally
             {

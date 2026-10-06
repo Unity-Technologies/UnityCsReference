@@ -46,11 +46,9 @@ namespace UnityEditor.Build.Analysis
         {
             readonly SerializedFileLayout[] m_SerializedFiles;
             readonly BinaryArtifact[] m_BinaryArtifacts;
-            readonly string[] m_RootHashes;
-            readonly Dictionary<string, int> m_ObjectIdHashToSf;
-            readonly Dictionary<string, string> m_ObjectIdHashToAssetPath; // For determining path of RootAsset
+            readonly int[] m_RootAssets; // Indices into m_LoadableObjects
+            readonly LoadableObjectIdLayout[] m_LoadableObjects;
             readonly Dictionary<string, int> m_ScenePathToSf;
-            readonly Dictionary<string, int> m_ContentHashToBinary;
 
             // Reused across every Traverse() call (2 per root) to avoid per-traversal allocations.
             readonly HashSet<int> m_VisitedSf = new();
@@ -62,18 +60,9 @@ namespace UnityEditor.Build.Analysis
             {
                 m_SerializedFiles = layout.SerializedFiles ?? Array.Empty<SerializedFileLayout>();
                 m_BinaryArtifacts = layout.BinaryArtifacts ?? Array.Empty<BinaryArtifact>();
-                m_RootHashes = layout.RootAssets ?? Array.Empty<string>();
-                var loadableObjects = layout.LoadableObjectIds ?? Array.Empty<LoadableObjectIdLayout>();
+                m_RootAssets = layout.RootAssets ?? Array.Empty<int>();
+                m_LoadableObjects = layout.LoadableObjectIds ?? Array.Empty<LoadableObjectIdLayout>();
                 var loadableScenes = layout.LoadableSceneIds ?? Array.Empty<LoadableSceneIdLayout>();
-
-                m_ObjectIdHashToSf = new Dictionary<string, int>(loadableObjects.Length, StringComparer.Ordinal);
-                m_ObjectIdHashToAssetPath = new Dictionary<string, string>(loadableObjects.Length, StringComparer.Ordinal);
-                foreach (var obj in loadableObjects)
-                {
-                    m_ObjectIdHashToAssetPath[obj.ObjectIdHash] = obj.AssetPath;
-                    if (obj.SerializedFile >= 0)
-                        m_ObjectIdHashToSf[obj.ObjectIdHash] = obj.SerializedFile;
-                }
 
                 m_ScenePathToSf = new Dictionary<string, int>(loadableScenes.Length, StringComparer.Ordinal);
                 foreach (var scene in loadableScenes)
@@ -82,26 +71,23 @@ namespace UnityEditor.Build.Analysis
                         m_ScenePathToSf[scene.Path] = scene.SerializedFile;
                 }
 
-                m_ContentHashToBinary = new Dictionary<string, int>(m_BinaryArtifacts.Length, StringComparer.Ordinal);
-                for (int i = 0; i < m_BinaryArtifacts.Length; i++)
-                {
-                    var binary = m_BinaryArtifacts[i];
-                    if (binary.Category == BuildArtifactCategory.ContentFile)
-                        m_ContentHashToBinary[binary.ContentHash] = i;
-                }
             }
 
             public RootAssetStats[] Calculate()
             {
-                var results = new List<RootAssetStats>(m_RootHashes.Length);
-                foreach (var rootHash in m_RootHashes)
+                var results = new List<RootAssetStats>(m_RootAssets.Length);
+                foreach (var rootIndex in m_RootAssets)
                 {
-                    if (!m_ObjectIdHashToSf.TryGetValue(rootHash, out var rootSfIndex))
+                    if (rootIndex < 0 || rootIndex >= m_LoadableObjects.Length)
                         continue;
-                    if (m_SerializedFiles[rootSfIndex].IsBuiltIn)
+                    var rootSfIndex = m_LoadableObjects[rootIndex].SerializedFile;
+                    if (!IsValidSf(rootSfIndex) || m_SerializedFiles[rootSfIndex].IsBuiltIn)
                         continue;
 
-                    m_ObjectIdHashToAssetPath.TryGetValue(rootHash, out var assetPath);
+                    // A root's containing file only holds that asset's objects, so the file's
+                    // SourceAssets identify the root's path.
+                    var rootSources = m_SerializedFiles[rootSfIndex].SourceAssets;
+                    var assetPath = (rootSources != null && rootSources.Length > 0) ? rootSources[0] : null;
 
                     var direct = Traverse(rootSfIndex, includeLoadables: false);
                     var total = Traverse(rootSfIndex, includeLoadables: true);
@@ -151,9 +137,8 @@ namespace UnityEditor.Build.Analysis
                             m_UniqueSources.Add(src);
                     }
 
-                    if (m_ContentHashToBinary.TryGetValue(sf.ContentHash, out var contentBinaryIndex))
-                        // Start with the BinaryArtifact representing the SerializedFile
-                        AddBinaryRecursive(contentBinaryIndex, ref sizeBytes);
+                    // Start with the BinaryArtifact representing the SerializedFile
+                    AddBinaryRecursive(sf.ArtifactIndex, ref sizeBytes);
 
                     foreach (var depIndex in sf.SerializedFileDependencies)
                         TryEnqueue(depIndex);
@@ -161,10 +146,10 @@ namespace UnityEditor.Build.Analysis
                     if (!includeLoadables)
                         continue;
 
-                    foreach (var hash in sf.LoadableDependencies)
+                    foreach (var loadableIndex in sf.LoadableDependencies)
                     {
-                        if (m_ObjectIdHashToSf.TryGetValue(hash, out var loadSf))
-                            TryEnqueue(loadSf);
+                        if (loadableIndex >= 0 && loadableIndex < m_LoadableObjects.Length)
+                            TryEnqueue(m_LoadableObjects[loadableIndex].SerializedFile);
                     }
 
                     foreach (var path in sf.LoadableSceneDependencies)

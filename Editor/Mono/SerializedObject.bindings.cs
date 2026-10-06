@@ -42,6 +42,62 @@ namespace UnityEditor
             m_NativeObjectPtr = InternalCreate(objs, context);
         }
 
+        /// <summary>
+        /// Create a SerializedObject targeting the object identified by <paramref name="id"/>.
+        /// The id may be a Unity object's EntityId (TypeId == 0) or an ECS component EntityId
+        /// (TypeId != 0). Pure entities throw
+        /// <see cref="ArgumentException"/>.
+        ///
+        /// Note: for ECS-component targets, <see cref="UpdateIfRequiredOrScript"/> does not
+        /// auto-detect external chunk mutation until the chunk change-version accessor is wired.
+        /// Callers that need to pick up externally-driven changes must call <see cref="Update"/>
+        /// explicitly.
+        /// </summary>
+        public SerializedObject(EntityId id)
+        {
+            m_NativeObjectPtr = InternalCreateFromEntityIds(new EntityId[] { id }, null);
+        }
+
+        /// <summary>
+        /// Create a SerializedObject targeting the object identified by <paramref name="id"/>,
+        /// with an undo/redo context object. <paramref name="context"/> is the target context
+        /// used for undo bookkeeping, mirroring the Object-based overloads. See
+        /// <see cref="SerializedObject(EntityId)"/> for the TypeId contract and the
+        /// change-version limitation.
+        /// </summary>
+        public SerializedObject(EntityId id, Object context)
+        {
+            m_NativeObjectPtr = InternalCreateFromEntityIds(new EntityId[] { id }, context);
+        }
+
+        /// <summary>
+        /// Create a multi-target SerializedObject over homogeneous targets identified by
+        /// <paramref name="ids"/>. All entries must share the same TypeId; heterogeneous arrays
+        /// (mixed Unity-object and component EntityIds, or two different component types) are
+        /// rejected with <see cref="ArgumentException"/>. Pure entities are also rejected.
+        ///
+        /// Note: for ECS-component targets, <see cref="UpdateIfRequiredOrScript"/> does not
+        /// auto-detect external chunk mutation until the chunk change-version accessor is wired.
+        /// Callers that need to pick up externally-driven changes must call <see cref="Update"/>
+        /// explicitly.
+        /// </summary>
+        public SerializedObject(EntityId[] ids)
+        {
+            m_NativeObjectPtr = InternalCreateFromEntityIds(ids, null);
+        }
+
+        /// <summary>
+        /// Create a multi-target SerializedObject over the objects identified by
+        /// <paramref name="ids"/>, with an undo/redo context object. <paramref name="context"/>
+        /// is the target context used for undo bookkeeping, mirroring the Object-based overloads.
+        /// See <see cref="SerializedObject(EntityId[])"/> for the homogeneity contract and the
+        /// change-version limitation.
+        /// </summary>
+        public SerializedObject(EntityId[] ids, Object context)
+        {
+            m_NativeObjectPtr = InternalCreateFromEntityIds(ids, context);
+        }
+
         internal SerializedObject(IntPtr nativeObjectPtr)
         {
             m_NativeObjectPtr = nativeObjectPtr;
@@ -144,6 +200,23 @@ namespace UnityEditor
         [NativeMethod(Name = "SerializedObjectBindings::InternalCreate", IsFreeFunction = true, ThrowsException = true)]
         extern static IntPtr InternalCreate(Object[] monoObjs, Object context);
 
+        [NativeMethod(Name = "SerializedObjectBindings::InternalCreateFromEntityIds", IsFreeFunction = true, ThrowsException = true)]
+        extern static IntPtr InternalCreateFromEntityIds(EntityId[] ids, Object context);
+
+        // Current dense component TypeId for the managed type, or 0 if the type
+        // isn't registered with TypeManagerV2. Called by Editor's post-reload
+        // repair path to rewrite the stale TypeId slice of m_TargetEntityIds
+        // after TypeManagerV2 reassigns TypeIds across a domain reload.
+        internal static uint LookupDataComponentTypeId(Type componentType)
+        {
+            if (componentType == null)
+                return 0;
+            return LookupDataComponentTypeIdNative(componentType.TypeHandle.Value);
+        }
+
+        [NativeMethod(Name = "SerializedObjectBindings::LookupDataComponentTypeId", IsFreeFunction = true)]
+        extern static uint LookupDataComponentTypeIdNative(IntPtr backendTypePtr);
+
         internal PropertyModification ExtractPropertyModification(string propertyPath)
         {
             return InternalExtractPropertyModification(propertyPath) as PropertyModification;
@@ -152,14 +225,47 @@ namespace UnityEditor
         [FreeFunction("SerializedObjectBindings::ExtractPropertyModification", HasExplicitThis = true)]
         extern private object InternalExtractPropertyModification(string propertyPath);
 
-        // The inspected object (RO).
+        // The inspected object (RO). Returns null when the SerializedObject targets a
+        // component (EntityId with TypeId != 0); use targetEntityId in that case.
         public extern Object targetObject { get; }
 
-        // The inspected objects (RO).
-        public extern Object[] targetObjects { get; }
+        // The inspected objects (RO). Returns an empty array when the SerializedObject
+        // targets components; use targetEntityIds in that case. Mirrors targetObject's
+        // null-for-component behavior at the managed layer so callers see consistent
+        // Object-vs-EntityId projection across the pair.
+        public Object[] targetObjects
+        {
+            get => isTargetDataComponent ? Array.Empty<Object>() : GetTargetObjectsInternal();
+        }
+
+        [NativeMethod("GetTargetObjects")]
+        private extern Object[] GetTargetObjectsInternal();
+
+        // True when this SerializedObject was constructed from an ECS component EntityId
+        internal extern bool isTargetDataComponent
+        {
+            [NativeMethod("IsTargetDataComponent")]
+            get;
+        }
 
         // The inspected objects (RO).
         internal extern int targetObjectsCount { get; }
+
+        /// <summary>
+        /// The first target's [[EntityId]]. Populated for every target kind — Unity objects
+        /// (TypeId == 0) and ECS components (TypeId != 0). Returns <see cref="EntityId.None"/>
+        /// only when the SerializedObject has no targets. Prefer this over
+        /// <see cref="targetObject"/>.GetEntityId() when the target may be a component with
+        /// no backing Object.
+        /// </summary>
+        public extern EntityId targetEntityId { get; }
+
+        /// <summary>
+        /// Per-target EntityIds in declaration order — parallel to <see cref="targetObjects"/>
+        /// for Object targets, or the sole source of target identity for component targets.
+        /// Homogeneity is enforced at construction, so all entries share the same TypeId.
+        /// </summary>
+        public extern EntityId[] targetEntityIds { get; }
 
         // The context object (used to resolve scene references via ExposedReference<>)
         [NativeProperty("ContextObject")]

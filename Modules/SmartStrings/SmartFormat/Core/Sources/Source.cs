@@ -39,22 +39,27 @@ public abstract class Source : ISource, IInitializer
     }
 
     /// <summary>
-    /// Checks if any of the <see cref="Placeholder"/>'s <see cref="Placeholder.Selectors"/> has nullable <c>?</c> as their first operator.
+    /// Checks whether any of the <see cref="Placeholder"/>'s <see cref="Placeholder.Selectors"/>,
+    /// up to and including the selector at <see cref="ISelectorInfo.SelectorIndex"/>,
+    /// has the nullable <c>?</c> as the first character of its operator.
     /// </summary>
-    /// <param name="selectorInfo"></param>
+    /// <param name="selectorInfo">The <see cref="ISelectorInfo"/> for the selector currently being evaluated.</param>
     /// <returns>
-    /// <see langword="true"/>, any of the <see cref="Placeholder"/>'s <see cref="Placeholder.Selectors"/> has nullable <c>?</c> as their first operator.
+    /// <see langword="true"/> if any of those selectors has the nullable <c>?</c> as the first character of its operator.
     /// </returns>
     /// <remarks>
-    /// The nullable operator '?' can be followed by a dot (like '?.') or a square brace (like '.[')
+    /// A nullable operator on a later selector in the same <see cref="Placeholder"/> does not affect earlier selectors.
+    /// The nullable operator '?' can be followed by a dot (like '?.') or a square brace (like '?[')
     /// </remarks>
-    bool HasNullableOperator(ISelectorInfo selectorInfo)
+    internal bool HasNullableOperator(ISelectorInfo selectorInfo)
     {
         if (m_SmartSettings != null && selectorInfo.Placeholder != null)
         {
             foreach (var s in selectorInfo.Placeholder.Selectors)
             {
-                if (s.OperatorLength > 1 && s.BaseString[s.OperatorStartIndex] == m_SmartSettings.Parser.NullableOperator)
+                if (s.SelectorIndex <= selectorInfo.SelectorIndex
+                    && s.OperatorLength > 1
+                    && s.BaseString[s.OperatorStartIndex] == m_SmartSettings.Parser.NullableOperator)
                     return true;
             }
         }

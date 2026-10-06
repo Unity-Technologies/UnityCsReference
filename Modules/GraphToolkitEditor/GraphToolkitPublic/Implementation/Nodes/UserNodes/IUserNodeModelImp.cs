@@ -40,5 +40,20 @@ namespace Unity.GraphToolkit.Editor.Implementation
             OnEnableCalled = false;
             Node?.OnDisable();
         }
+
+        void CallOnPortDataTypeChanged(PortModel portModel, TypeHandle previousType, TypeHandle newType)
+        {
+            if (Node == null)
+                return;
+
+            try
+            {
+                Node.CallOnPortDataTypeChanged(portModel, previousType.Resolve(), newType.Resolve());
+            }
+            catch (Exception e)
+            {
+                Debug.LogException(e, ((AbstractNodeModel)this).GraphModel?.GraphObject);
+            }
+        }
     }
 }

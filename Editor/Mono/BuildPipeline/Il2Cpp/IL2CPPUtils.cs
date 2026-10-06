@@ -357,19 +357,6 @@ namespace UnityEditorInternal
 
         internal static string ApiCompatibilityLevelToDotNetProfileArgument(ApiCompatibilityLevel compatibilityLevel, BuildTarget target, ScriptingBackend scriptingBackend)
         {
-            if (scriptingBackend == ScriptingBackend.Mono)
-            {
-                switch (compatibilityLevel)
-                {
-                    case ApiCompatibilityLevel.NET_Unity_4_8:
-                    case ApiCompatibilityLevel.NET_Standard:
-                        return "unityjit";
-
-                    default:
-                        throw new NotSupportedException(string.Format("ApiCompatibilityLevel.{0} is not supported!", compatibilityLevel));
-                }
-            }
-
             if (scriptingBackend == ScriptingBackend.IL2CPP)
             {
                 switch (compatibilityLevel)

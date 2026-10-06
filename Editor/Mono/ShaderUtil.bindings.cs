@@ -326,10 +326,12 @@ namespace UnityEditor
 
         internal static string[] GetMaterialPropertyNames(UnityEngine.Object[] mats)
         {
-            return GetMaterialPropertyNamesImpl(mats);
+            // Only the first material's shader is consulted natively.
+            var first = mats != null && mats.Length > 0 ? mats[0] as Material : null;
+            return GetMaterialPropertyNamesImpl(first);
         }
 
-        extern private static string[] GetMaterialPropertyNamesImpl(System.Object mats);
+        extern private static string[] GetMaterialPropertyNamesImpl(Material firstMaterial);
 
         internal static MaterialProperty GetMaterialProperty(UnityEngine.Object[] mats, string name)
         {
@@ -493,6 +495,9 @@ namespace UnityEditor
             return Internal_GetCompiledDataForShader(
                 shader, buildUsageTags, globalUsageTag, buildTarget, shouldIncludeAllVariants);
         }
+
+        [FreeFunction("ShaderUtil::GetCompiledDataForShaderWithVariants")] extern internal static byte[] GetCompiledData(
+            [NotNull] Shader shader, BuildTargetSelection buildTarget, [NotNull] GraphicsStateCollection variants);
 
         internal static byte[] GetCompiledData(ComputeShader shader, BuildTargetSelection buildTarget)
         {

@@ -39,7 +39,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         [SerializeField]
         protected List<string> m_Scopes;
-        public IReadOnlyCollection<string> scopes => m_Scopes;
+        public IReadOnlyList<string> scopes => m_Scopes;
         [SerializeField]
         private int m_SelectedScopeIndex;
         public int selectedScopeIndex

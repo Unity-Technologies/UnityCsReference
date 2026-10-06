@@ -68,7 +68,7 @@ namespace UnityEngine.UIElements
                 }
             }
 
-            // Nothing to allocate - leave m_BackingBuffer null and all pointer/count fields zero.
+            // Nothing to allocate - leave m_Core null (the matcher skips coreless entries).
             if (totalParts == 0 && totalSelectors == 0 && totalComplexSelectors == 0)
             {
                 entry.ownerStyleSheet = styleSheet;
@@ -139,7 +139,7 @@ namespace UnityEngine.UIElements
                     SpanSort.Sort(allDescriptors, s_DescriptorRefComparison);
 
                 BuildRangeTables(ref entry, allDescriptors);
-                Debug.Assert(entry.m_KeyIndexCount == keyIndexCount,
+                Debug.Assert(entry.m_Core->keyIndexCount == keyIndexCount,
                     "Key-index pre-count disagrees with the built index; GetTableSlot and BuildRangeTables are out of sync");
             }
             catch (Exception)
@@ -357,7 +357,9 @@ namespace UnityEngine.UIElements
             entry.rootSelectorRange = default;
             entry.wildCardSelectorRange = default;
             entry.nonEmptyTablesMask = 0;
-            entry.m_KeyIndexCount = 0;
+
+            var core = entry.m_Core;
+            core->keyIndexCount = 0;
 
             int descriptorCount = allDescriptors.Length;
             int idx = 0;
@@ -380,7 +382,7 @@ namespace UnityEngine.UIElements
                 }
 
                 // Emit one key-index entry per distinct key of this table's descriptor run.
-                int regionStart = entry.m_KeyIndexCount;
+                int regionStart = core->keyIndexCount;
                 while (idx < descriptorCount && allDescriptors[idx].tableType == tableType)
                 {
                     int key = allDescriptors[idx].tableKey;
@@ -388,14 +390,14 @@ namespace UnityEngine.UIElements
                     while (idx < descriptorCount && allDescriptors[idx].tableType == tableType && allDescriptors[idx].tableKey == key)
                         idx++;
 
-                    entry.m_KeyIndexPtr[entry.m_KeyIndexCount++] = new SelectorKeyIndexEntry
+                    core->keyIndex[core->keyIndexCount++] = new SelectorKeyIndexEntry
                     {
                         key = key,
                         range = new DescriptorRange { start = keyStart, count = idx - keyStart },
                     };
                 }
 
-                var region = new DescriptorRange { start = regionStart, count = entry.m_KeyIndexCount - regionStart };
+                var region = new DescriptorRange { start = regionStart, count = core->keyIndexCount - regionStart };
                 switch (tableType)
                 {
                     case SelectorAccelerationTableType.Name:

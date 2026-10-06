@@ -2,11 +2,10 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: UIToolkitFramework not yet converted
-#pragma warning disable UAL0010,UAL0011,UAL0012,UAL0013,UAL0014 // AutoStaticsCleanup: UIToolkitFramework not yet converted
 using Unity.Scripting.LifecycleManagement;
 using System;
 using System.Collections.Generic;
+using UnityEngine.Animations;
 using UnityEngine.Assertions;
 using UnityEngine.Bindings;
 
@@ -19,7 +18,7 @@ namespace UnityEngine.UIElements
         public readonly UIDocument document;
         internal UIRenderer uiRenderer { get; set; }
 
-        IPanelComponent IPanelComponentRootElement.panelComponent => document;
+        IPanelComponent IPanelComponentRootElement.panelComponent => document.AliveOrNull();
 
         public UIDocumentRootElement(UIDocument document, VisualTreeAsset sourceAsset) : base(sourceAsset?.name,
             sourceAsset)
@@ -123,11 +122,25 @@ namespace UnityEngine.UIElements
         int IPanelComponent.creationIndex => m_UIDocumentCreationIndex;
 
         [AutoStaticsCleanupOnCodeReload]
+        // Editor-side implementation slot: EditorDelegateRegistration.Initialize() runs on every code
+        // load and reinstalls it, so the value cleared on reload is back before anything reads it.
+        [IgnoreForUAL0015("Editor implementation reinstalled on every code load by EditorDelegateRegistration.Initialize()")]
         internal static Func<bool> IsEditorPlaying;
         [AutoStaticsCleanupOnCodeReload]
+        // Editor-side implementation slot: EditorDelegateRegistration.Initialize() runs on every code
+        // load and reinstalls it, so the value cleared on reload is back before anything reads it.
+        [IgnoreForUAL0015("Editor implementation reinstalled on every code load by EditorDelegateRegistration.Initialize()")]
         internal static Func<bool> IsEditorPlayingOrWillChangePlaymode;
         [AutoStaticsCleanupOnCodeReload]
+        // Editor-side implementation slot: EditorDelegateRegistration.Initialize() runs on every code
+        // load and reinstalls it, so the value cleared on reload is back before anything reads it.
+        [IgnoreForUAL0015("Editor implementation reinstalled on every code load by EditorDelegateRegistration.Initialize()")]
         internal static Func<bool> IsEditingPrefab;
+        [AutoStaticsCleanupOnCodeReload]
+        // Editor-side implementation slot: EditorDelegateRegistration.Initialize() runs on every code
+        // load and reinstalls it, so the value cleared on reload is back before anything reads it.
+        [IgnoreForUAL0015("Editor implementation reinstalled on every code load by EditorDelegateRegistration.Initialize()")]
+        internal static Func<GameObject, bool> IsGameObjectInOpenPrefabStage;
 
 
         [AutoStaticsCleanupOnCodeReload]
@@ -328,7 +341,7 @@ namespace UnityEngine.UIElements
             Fixed
         }
 
-        [SerializeField]
+        [SerializeField, NotKeyable]
         private Position m_Position = Position.Relative;
 
         /// <summary>
@@ -346,7 +359,7 @@ namespace UnityEngine.UIElements
             }
         }
 
-        [SerializeField]
+        [SerializeField, NotKeyable]
         private UIElements.WorldSpaceSizeMode m_WorldSpaceSizeMode = UIElements.WorldSpaceSizeMode.Fixed;
 
         /// <summary>
@@ -387,7 +400,7 @@ namespace UnityEngine.UIElements
             }
         }
 
-        [SerializeField]
+        [SerializeField, NotKeyable]
         private PivotReferenceSize m_PivotReferenceSize;
 
         GameObject IPanelComponent.gameObject => this.gameObject;
@@ -403,7 +416,7 @@ namespace UnityEngine.UIElements
             set { m_PivotReferenceSize = value; }
         }
 
-        [SerializeField]
+        [SerializeField, NotKeyable]
         private Pivot m_Pivot;
 
         /// <summary>
@@ -456,6 +469,8 @@ namespace UnityEngine.UIElements
         }
 
         [AutoStaticsCleanupOnCodeReload]
+        // Reinstalled on every code load by LiveReloadTrackerCreator.Initialize().
+        [IgnoreForUAL0015("Factory slot reinstalled on every code load by LiveReloadTrackerCreator.Initialize()")]
         internal static Func<IPanelComponent, ILiveReloadAssetTracker<VisualTreeAsset>> CreateLiveReloadVisualTreeAssetTracker;
         private ILiveReloadAssetTracker<VisualTreeAsset> m_LiveReloadVisualTreeAssetTracker;
 
@@ -518,7 +533,7 @@ namespace UnityEngine.UIElements
         // Serialized opt-out gate for the generated accessibility hierarchy, evaluated before this
         // document's tree is ever walked. Only drawn in the inspector while the experimental
         // accessibility project setting is on.
-        [SerializeField, HideInInspector]
+        [SerializeField, HideInInspector, NotKeyable]
         private bool m_GenerateAccessibilityHierarchy = true;
 
         /// <summary>
@@ -721,6 +736,8 @@ namespace UnityEngine.UIElements
             {
                 m_WorldSpaceCollider = gameObject.AddComponent<BoxCollider>();
                 m_WorldSpaceCollider.isTrigger = panelSettings.colliderIsTrigger;
+                // Keep the generated collider out of saved scenes and prefabs.
+                m_WorldSpaceCollider.hideFlags = HideFlags.DontSave;
             }
 
             // Setting BoxCollider.center or BoxCollider.size triggers some work even if the value doesn't change.
@@ -757,7 +774,7 @@ namespace UnityEngine.UIElements
             if (m_RootVisualElement.isWorldSpaceRootPanelComponent != isWorldSpaceRootUIDocument)
             {
                 m_RootVisualElement.isWorldSpaceRootPanelComponent = isWorldSpaceRootUIDocument;
-                m_RootVisualElement.MarkDirtyRepaint(); // Necessary to insert a CutRenderChain command
+                m_RootVisualElement.MarkDirtyRepaint(); // Necessary to insert a CutRenderChain command and to rebuild the subtree's render data
             }
         }
 
@@ -1066,7 +1083,10 @@ namespace UnityEngine.UIElements
         {
             EnabledDocumentCount--;
             PointerDeviceState.RemovePanelComponentData(this);
-            RemoveWorldSpaceCollider();
+
+            // Outside play mode the removal is a DestroyImmediate, which the engine rejects mid-(de)activation.
+            if (Application.isPlaying || gameObject.activeInHierarchy)
+                RemoveWorldSpaceCollider();
 
             if (m_RootVisualElement != null)
             {
@@ -1318,5 +1338,3 @@ namespace UnityEngine.UIElements
 
     }
 }
-#pragma warning restore UAL0010,UAL0011,UAL0012,UAL0013,UAL0014
-#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

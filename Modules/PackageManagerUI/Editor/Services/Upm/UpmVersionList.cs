@@ -55,7 +55,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         // A "safe" patch is a patch that is not lower in safety level (regarding prerelease) compared to the original version. For example,
         // `1.0.1` is a safe patch for both `1.0.0-pre.0` and `1.0.0`, however
         // `1.0.1-pre.1` is NOT a safe patch for `1.0.0` but can be considered a safe patch for `1.0.0-pre.0`
-        private static UpmPackageVersion GetLatestSafePatch(IReadOnlyCollection<UpmPackageVersion> sortedVersions, UpmPackageVersion version)
+        private static UpmPackageVersion GetLatestSafePatch(IReadOnlyList<UpmPackageVersion> sortedVersions, UpmPackageVersion version)
         {
             var availableVersions = sortedVersions.Filter(i => i != version && !i.HasTag(PackageTag.InstalledFromPath)).ToNewArray(sortedVersions.Count);
             if (availableVersions.Length == 0)
@@ -142,10 +142,8 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_NumUnloadedVersions = numVersionsBeforeUnload - versionsToKeep.Count;
         }
 
-        public override IEnumerator<IPackageVersion> GetEnumerator()
-        {
-            foreach (var version in m_Versions)
-                yield return version;
-        }
+        public override IEnumerator<IPackageVersion> GetEnumerator() => m_Versions.GetEnumerator();
+        public override int Count => m_Versions.Count;
+        public override IPackageVersion this[int index] => m_Versions[index];
     }
 }

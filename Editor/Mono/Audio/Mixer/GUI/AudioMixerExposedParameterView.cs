@@ -71,13 +71,13 @@ namespace UnityEditor
         {
             GenericMenu pm = new GenericMenu();
             pm.AddItem(
-                EditorGUIUtility.TrTextContent("Unexpose"),
+                L10n.TextContent("Unexpose", null, null, null),
                 false,
                 delegate(object data) { Delete((int)data); },
                 itemIndex);
 
             pm.AddItem(
-                EditorGUIUtility.TrTextContent("Rename"),
+                L10n.TextContent("Rename", null, null, null),
                 false,
                 delegate(object data) { m_ReorderableListWithRenameAndScrollView.BeginRename((int)data, 0f); },
                 itemIndex);

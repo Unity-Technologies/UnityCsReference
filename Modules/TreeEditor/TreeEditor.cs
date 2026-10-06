@@ -2,7 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: TreeEditor not yet converted
 using UnityEditor.AnimatedValues;
 using UnityEngine;
 using UnityEngine.Profiling;
@@ -277,6 +276,9 @@ namespace TreeEditor
         private Quaternion m_GlobalToolRotation = Quaternion.identity;
 
 
+
+        [MenuItem("GameObject/3D Object/Tree", true, 3001)]
+        static bool CreateNewTreeValidate() => ModeService.HasCapability(ModeCapability.AssetAuthoring, true);
 
         [MenuItem("GameObject/3D Object/Tree", false, 3001)]
         static void CreateNewTree(MenuCommand menuCommand)
@@ -747,7 +749,9 @@ namespace TreeEditor
                             // After undo: restore the material hash of the materials that were used to create
                             // texture atlases currently stored on disk. That will make sure that performing undo
                             // will regenerate atlases when necessary.
+#pragma warning disable UAL0018 // s_SavedSourceMaterialsHash resets to null on reload, so this just clears the hash rather than leaving a stale value
                             treeData.materialHash = s_SavedSourceMaterialsHash;
+#pragma warning restore UAL0018
 
                             m_StartPointRotationDirty = true;
 
@@ -1753,6 +1757,7 @@ namespace TreeEditor
         //
         // Distribution properties inspector (generic)
         //
+#pragma warning disable UAL0018 // TreeEditorHelper.s_Dictionary self-clears and GetGUIContent repopulates it lazily; only value-typed slider/toggle/popup results flow out, never a stale GUIContent reference
         public void InspectorDistribution(TreeData treeData, TreeGroup group)
         {
             if (group == null) return;
@@ -1846,10 +1851,12 @@ namespace TreeEditor
 
             EditorGUILayout.Space();
         }
+#pragma warning restore UAL0018
 
         //
         // Animation properties inspector (generic)
         //
+#pragma warning disable UAL0018 // TreeEditorHelper.s_Dictionary self-clears and GetGUIContent repopulates it lazily; only value-typed slider/toggle/popup results flow out, never a stale GUIContent reference
         public void InspectorAnimation(TreeData treeData, TreeGroup group)
         {
             if (group == null) return;
@@ -1877,6 +1884,7 @@ namespace TreeEditor
             }
             GUIPropEnd();
         }
+#pragma warning restore UAL0018
 
         private int GUItoolbar(int selection, GUIContent[] names)
         {
@@ -2013,6 +2021,7 @@ namespace TreeEditor
             return hash;
         }
 
+#pragma warning disable UAL0018 // TreeEditorHelper.s_Dictionary self-clears and GetGUIContent repopulates it lazily; only value-typed slider/toggle/popup results flow out, never a stale GUIContent reference
         public void InspectorRoot(TreeData treeData, TreeGroupRoot group)
         {
             GUIContent[] categoryNames = { TreeEditorHelper.GetGUIContent(L10n.Tr("Distribution|", null)),
@@ -2088,7 +2097,9 @@ namespace TreeEditor
 
             EditorGUILayout.Space();
         }
+#pragma warning restore UAL0018
 
+#pragma warning disable UAL0018 // TreeEditorHelper.s_Dictionary self-clears and GetGUIContent repopulates it lazily; only value-typed slider/toggle/popup results flow out, never a stale GUIContent reference
         public void InspectorBranch(TreeData treeData, TreeGroupBranch group)
         {
             InspectorEditTools(target as Tree);
@@ -2259,7 +2270,9 @@ namespace TreeEditor
 
             EditorGUILayout.Space();
         }
+#pragma warning restore UAL0018
 
+#pragma warning disable UAL0018 // TreeEditorHelper.s_Dictionary self-clears and GetGUIContent repopulates it lazily; only value-typed slider/toggle/popup results flow out, never a stale GUIContent reference
         public void InspectorLeaf(TreeData treeData, TreeGroupLeaf group)
         {
             InspectorEditTools(target as Tree);
@@ -2321,6 +2334,7 @@ namespace TreeEditor
 
             EditorGUILayout.Space();
         }
+#pragma warning restore UAL0018
 
         public override bool UseDefaultMargins() { return false; }
 
@@ -2431,11 +2445,11 @@ namespace TreeEditor
 
         public class Styles
         {
-            public GUIContent iconAddLeaves =   EditorGUIUtility.TrIconContent("TreeEditor.AddLeaves", "Add Leaf Group");
-            public GUIContent iconAddBranches = EditorGUIUtility.TrIconContent("TreeEditor.AddBranches", "Add Branch Group");
-            public GUIContent iconTrash =       EditorGUIUtility.TrIconContent("TreeEditor.Trash", "Delete Selected Group");
-            public GUIContent iconDuplicate =   EditorGUIUtility.TrIconContent("TreeEditor.Duplicate", "Duplicate Selected Group");
-            public GUIContent iconRefresh =     EditorGUIUtility.TrIconContent("TreeEditor.Refresh", "Recompute Tree");
+            public GUIContent iconAddLeaves =   L10n.IconContent("TreeEditor.AddLeaves", "Add Leaf Group", null);
+            public GUIContent iconAddBranches = L10n.IconContent("TreeEditor.AddBranches", "Add Branch Group", null);
+            public GUIContent iconTrash =       L10n.IconContent("TreeEditor.Trash", "Delete Selected Group", null);
+            public GUIContent iconDuplicate =   L10n.IconContent("TreeEditor.Duplicate", "Duplicate Selected Group", null);
+            public GUIContent iconRefresh =     L10n.IconContent("TreeEditor.Refresh", "Recompute Tree", null);
             public GUIStyle toolbar = "TE Toolbar";
             public GUIStyle toolbarButton = "TE toolbarbutton";
 
@@ -2956,4 +2970,3 @@ namespace TreeEditor
         }
     }
 }
-#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

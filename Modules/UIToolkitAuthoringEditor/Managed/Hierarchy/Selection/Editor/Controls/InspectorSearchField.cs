@@ -4,6 +4,7 @@
 
 using System;
 using System.Collections.Generic;
+using UnityEditor;
 using UnityEditor.ShortcutManagement;
 using UnityEditor.UIElements;
 using UnityEngine;
@@ -30,20 +31,31 @@ internal sealed partial class InspectorSearchField : VisualElement, IShortcutCon
     public const string FilterContainerUssClass = UssClass + "__filter-container";
     public const string FilterLabelUssClass = UssClass + "__filter-label";
     public const string EmptyStateUssClass = UssClass + "__empty-state";
+    public const string EmptyStateMessageUssClass = UssClass + "__empty-state__message";
     public const string EmptyStateLabelUssClass = UssClass + "__empty-state__label";
+    public const string EmptyStateHelpUssClass = UssClass + "__empty-state__help";
+    internal const string ClearFilterButtonName = "clear-filter-button";
+    internal const string EmptyStateHelpName = "empty-state-help";
     public static readonly UniqueStyleString HiddenClass = new("search-result--hidden");
+
+    private const string k_HelpTooltip = "Looking for a custom property? It may need to be enabled for search.";
 
     private readonly ToolbarSearchField m_SearchField;
     private readonly VisualElement m_FilterContainer;
     private readonly ToggleButtonGroup m_FilterTypeButtons;
     private readonly VisualElement m_EmptyStateContainer;
     private readonly Label m_EmptyStateLabel;
+    private readonly VisualElement m_HelpIcon;
     private readonly Button m_ClearFilterButton;
     private VisualElement m_SearchContainer;
     private SearchFilter m_ActiveFilters = SearchFilter.All;
 
     private static readonly SearchFilter[] k_AllFilters = (SearchFilter[])Enum.GetValues(typeof(SearchFilter));
     private static readonly int k_EnumLength = k_AllFilters.Length;
+
+    // Indexed by the bit position of the matching SearchFilter; the pills read differently from the flags.
+    private static readonly string[] k_FilterLabels = { "None", "Set Values", "Variables", "Bindings", "Animations" };
+    private static readonly string[] k_FilterNouns = { "results", "set values", "variables", "bindings", "animations" };
 
     [NoAutoStaticsCleanup] // persisted search text, safe to persist
     private static string s_PersistentSearch = string.Empty;
@@ -83,9 +95,10 @@ internal sealed partial class InspectorSearchField : VisualElement, IShortcutCon
         m_FilterTypeButtons.RegisterValueChangedCallback(OnFilterTypeChanged);
 
         // Add buttons for each enum value
-        foreach (SearchFilter filter in k_AllFilters)
+        for (var i = 0; i < k_AllFilters.Length; ++i)
         {
-            var button = new Button { text = filter.ToString() };
+            var filter = k_AllFilters[i];
+            var button = new Button { text = k_FilterLabels[i] };
             // Support multi selection with shift
             button.RegisterCallback<PointerDownEvent>(evt =>
             {
@@ -108,12 +121,22 @@ internal sealed partial class InspectorSearchField : VisualElement, IShortcutCon
         // Create empty state container
         m_EmptyStateContainer = new VisualElement() { name = EmptyStateUssClass }.WithClassList(EmptyStateUssClass);
 
+        var emptyStateMessage = new VisualElement().WithClassList(EmptyStateMessageUssClass);
+
         m_EmptyStateLabel = new Label().WithClassList(EmptyStateLabelUssClass);
 
+        m_HelpIcon = new VisualElement { name = EmptyStateHelpName, tooltip = k_HelpTooltip };
+        m_HelpIcon.AddToClassList(EmptyStateHelpUssClass);
+        m_HelpIcon.style.backgroundImage = EditorGUIUtility.IconContent("_Help").image as Texture2D;
+
+        emptyStateMessage.Add(m_EmptyStateLabel);
+        emptyStateMessage.Add(m_HelpIcon);
+
         m_ClearFilterButton = new Button(OnClearFilterClicked);
+        m_ClearFilterButton.name = ClearFilterButtonName;
         m_ClearFilterButton.text = "Clear Filter";
 
-        m_EmptyStateContainer.Add(m_EmptyStateLabel);
+        m_EmptyStateContainer.Add(emptyStateMessage);
         m_EmptyStateContainer.Add(m_ClearFilterButton);
 
         // Restore persisted search state from previous selection
@@ -153,6 +176,9 @@ internal sealed partial class InspectorSearchField : VisualElement, IShortcutCon
         }
         base.HandleEventBubbleUp(evt);
     }
+
+    internal bool IsFiltering =>
+        !string.IsNullOrEmpty(m_SearchField.value) || !m_ActiveFilters.HasFlag(SearchFilter.All);
 
     internal void ResetSearch()
     {
@@ -319,15 +345,15 @@ internal sealed partial class InspectorSearchField : VisualElement, IShortcutCon
         string filterDescription;
         if (m_ActiveFilters == 0 || m_ActiveFilters.HasFlag(SearchFilter.All))
         {
-            filterDescription = "results";
+            filterDescription = NounFor(SearchFilter.All);
         }
         else
         {
           var activeNames = ListPool<string>.Get();
-          if (m_ActiveFilters.HasFlag(SearchFilter.Overrides)) activeNames.Add("overrides");
-          if (m_ActiveFilters.HasFlag(SearchFilter.Variable))  activeNames.Add("variables");
-          if (m_ActiveFilters.HasFlag(SearchFilter.Binding))   activeNames.Add("bindings");
-          if (m_ActiveFilters.HasFlag(SearchFilter.Animation)) activeNames.Add("animations");
+          if (m_ActiveFilters.HasFlag(SearchFilter.Overrides)) activeNames.Add(NounFor(SearchFilter.Overrides));
+          if (m_ActiveFilters.HasFlag(SearchFilter.Variable))  activeNames.Add(NounFor(SearchFilter.Variable));
+          if (m_ActiveFilters.HasFlag(SearchFilter.Binding))   activeNames.Add(NounFor(SearchFilter.Binding));
+          if (m_ActiveFilters.HasFlag(SearchFilter.Animation)) activeNames.Add(NounFor(SearchFilter.Animation));
 
           filterDescription = activeNames.Count switch
           {
@@ -339,11 +365,20 @@ internal sealed partial class InspectorSearchField : VisualElement, IShortcutCon
           ListPool<string>.Release(activeNames);
         }
 
-        var displayText = !string.IsNullOrEmpty(searchTerm)
+        m_EmptyStateLabel.text = !string.IsNullOrEmpty(searchTerm)
             ? $"No {filterDescription} for \"{searchTerm}\"."
             : $"No {filterDescription}.";
+    }
 
-        m_EmptyStateLabel.text = $"{displayText}\n\nLooking for a custom property? It may need to be enabled for search.";
+    private static string NounFor(SearchFilter filter)
+    {
+        for (var i = 0; i < k_AllFilters.Length; ++i)
+        {
+            if (k_AllFilters[i] == filter)
+                return k_FilterNouns[i];
+        }
+
+        return k_FilterNouns[0];
     }
 
     private static bool RowHasVariable(OverrideRow row)

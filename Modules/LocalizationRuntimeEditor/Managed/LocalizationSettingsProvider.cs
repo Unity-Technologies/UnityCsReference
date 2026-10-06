@@ -21,7 +21,16 @@ class LocalizationSettingsProvider : SettingsProvider
     const string k_Card = "LocalizationRuntime/UXML/ReferenceModeCard.uxml";
     const string k_ProvidersPath = "m_ResourceDatabase.m_AssetProvider.m_Providers";
 
+    const string k_CreateSettingsStep = "create-settings";
+    const string k_AddLocalesStep = "add-locales";
+    const string k_ProjectLocaleStep = "project-locale";
+    const string k_ReferenceModeStep = "reference-mode";
+
     const string k_LocalesPath = "m_AvailableLocales";
+
+    const string k_PackageUpgradeStateType = "UnityEditor.Localization.Upgrade.UpgradeState, Unity.Localization.Editor";
+    const string k_PackageProviderType = "UnityEditor.Localization.UI.LocalizationSettingsProvider, Unity.Localization.Editor";
+    const string k_UseModuleProperty = "UseModule";
 
     [NoAutoStaticsCleanup] // loaded asset; outlives a code reload
     static VisualTreeAsset s_Card;
@@ -73,6 +82,16 @@ class LocalizationSettingsProvider : SettingsProvider
         root.Add(page);
 
         page.Q<Label>("title").text = L10n.Tr("Localization", null);
+        page.Q<Label>("locales-title").text = LocLabels.Locales;
+        page.Q<Label>("locales-help").text = LocLabels.LocalesHelp;
+        page.Q<Label>("project-locale-title").text = LocLabels.ProjectLocale;
+        page.Q<Label>("startup-selectors-title").text = LocLabels.StartupSelectors;
+        page.Q<Label>("startup-selectors-help").text = LocLabels.StartupSelectorsHelp;
+        page.Q<Label>("content-sources-title").text = LocLabels.ContentSources;
+        page.Q<Label>("content-sources-help").text = LocLabels.ContentSourcesHelp;
+        page.Q<Label>("app-info-title").text = LocLabels.AppInfo;
+        page.Q<Label>("app-info-help").text = LocLabels.AppInfoHelp;
+        page.Q<Toggle>("defer-initialization-toggle").label = LocLabels.DeferInitialization;
         var summary = page.Q<Label>("summary");
         if (state == SetupState.Complete)
             summary.text = FormatSummary(active);
@@ -102,12 +121,14 @@ class LocalizationSettingsProvider : SettingsProvider
             BuildStartupSelectors(page.Q<VisualElement>("startup-selectors-content"), serialized);
             BuildDeferInitialization(page.Q<Toggle>("defer-initialization-toggle"), serialized);
             BuildContentSources(page.Q<VisualElement>("content-sources-content"), active, serialized);
+            BuildAppInfo(page.Q<VisualElement>("app-info-content"), serialized);
         }
         else
         {
             page.Q<VisualElement>("project-locale-region").style.display = DisplayStyle.None;
             page.Q<VisualElement>("startup-selectors-region").style.display = DisplayStyle.None;
             page.Q<VisualElement>("content-sources-region").style.display = DisplayStyle.None;
+            page.Q<VisualElement>("app-info-region").style.display = DisplayStyle.None;
         }
 
         if (serialized != null)
@@ -118,32 +139,33 @@ class LocalizationSettingsProvider : SettingsProvider
     {
         var wizard = (EditorGUIUtility.Load(k_Wizard) as VisualTreeAsset).Instantiate();
         root.Add(wizard);
+        wizard.Q<Label>("wizard-title").text = LocLabels.SetUpLocalization;
 
-        SetWizardStep(wizard, 1,
+        SetWizardStep(wizard, k_CreateSettingsStep, 1, LocLabels.WizardCreateSettings,
             done: state != SetupState.NoSettings,
             active: state == SetupState.NoSettings,
             control: state == SetupState.NoSettings ? CreateSettingsButton() : null);
 
-        SetWizardStep(wizard, 2,
+        SetWizardStep(wizard, k_AddLocalesStep, 2, LocLabels.WizardAddLocales,
             done: state is SetupState.NeedsProjectLocale or SetupState.NeedsReferenceMode or SetupState.InstallingPackage or SetupState.Complete,
             active: state == SetupState.NoLocales,
             control: state == SetupState.NoLocales
-                ? new Button(() => LocaleGeneratorWindow.ShowWindow(ScheduleRebuild)) { text = L10n.Tr("Add locale", null) }
+                ? new Button(() => LocaleGeneratorWindow.ShowWindow(ScheduleRebuild)) { text = LocLabels.AddLocale }
                 : null);
 
-        VisualElement step3Control = null;
+        VisualElement projectLocaleControl = null;
         if (state == SetupState.NeedsProjectLocale)
         {
             var dropdown = BuildLocaleDropdown(active, active.ProjectLocale, code => { SetProjectLocale(active, code); ScheduleRebuild(); });
             dropdown.AddToClassList(LocClasses.LocDropdownFixed);
-            step3Control = dropdown;
+            projectLocaleControl = dropdown;
         }
-        SetWizardStep(wizard, 3,
+        SetWizardStep(wizard, k_ProjectLocaleStep, 3, LocLabels.WizardProjectLocale,
             done: state is SetupState.NeedsReferenceMode or SetupState.InstallingPackage or SetupState.Complete,
             active: state == SetupState.NeedsProjectLocale,
-            control: step3Control);
+            control: projectLocaleControl);
 
-        SetWizardStep(wizard, 4,
+        SetWizardStep(wizard, k_ReferenceModeStep, 4, LocLabels.WizardReferenceMode,
             done: state == SetupState.Complete,
             active: state is SetupState.NeedsReferenceMode or SetupState.InstallingPackage,
             control: state switch
@@ -167,21 +189,22 @@ class LocalizationSettingsProvider : SettingsProvider
             }
         })
         {
-            text = L10n.Tr("Create localization settings", null)
+            text = LocLabels.CreateLocalizationSettings
         };
     }
 
-    static void SetWizardStep(VisualElement wizard, int number, bool done, bool active, VisualElement control)
+    static void SetWizardStep(VisualElement wizard, string step, int number, string text, bool done, bool active, VisualElement control)
     {
-        var badge = wizard.Q<Label>($"badge-{number}");
+        var badge = wizard.Q<Label>($"{step}-badge");
         badge.text = done ? "✓" : number.ToString();
         badge.AddToClassList(done ? LocClasses.LocWizardBadgeDone : active ? LocClasses.LocWizardBadgeActive : LocClasses.LocWizardBadgePending);
 
-        var label = wizard.Q<Label>($"label-{number}");
+        var label = wizard.Q<Label>($"{step}-label");
+        label.text = text;
         label.AddToClassList(active ? LocClasses.LocWizardStepLabelActive : done ? LocClasses.LocWizardStepLabelDone : LocClasses.LocWizardStepLabelPending);
 
         if (control != null)
-            wizard.Q<VisualElement>($"control-{number}").Add(control);
+            wizard.Q<VisualElement>($"{step}-control").Add(control);
     }
 
     VisualElement BuildReferenceModeCards(LocalizationSettings active)
@@ -190,7 +213,7 @@ class LocalizationSettingsProvider : SettingsProvider
         cards.AddToClassList(LocClasses.LocCards);
 
         cards.Add(ReferenceModeCard(
-            L10n.Tr("Direct references", null),
+            LocLabels.DirectReferences,
             L10n.Tr("Simple and good for small projects. All assets are loaded at start and persist in memory.", null),
             gap: true,
             () => { ApplyDirectReferences(active); ScheduleRebuild(); }));
@@ -280,7 +303,8 @@ class LocalizationSettingsProvider : SettingsProvider
                 active.CompactLocales();
                 EditorUtility.SetDirty(active);
                 ScheduleRebuild();
-            }) { text = L10n.Tr("Remove unresolved locales", null) };
+                LocalizationEditorSettings.RaiseLocalesChanged();
+            }) { text = LocLabels.RemoveUnresolvedLocales };
             repair.AddToClassList(LocClasses.LocRepairButton);
             root.Insert(1, repair);
         }
@@ -292,6 +316,10 @@ class LocalizationSettingsProvider : SettingsProvider
         var list = root.Q<MultiColumnListView>("locales-list");
         if (list == null)
             return;
+        list.columns["enabled"].title = LocLabels.Enabled;
+        list.columns["locale"].title = LocLabels.Locale;
+        list.columns["code"].title = LocLabels.Code;
+        list.columns["fallback"].title = LocLabels.Fallback;
         list.itemsSource = locales;
         // Reordering writes through the serialized array, so without one there is nothing to persist the move to.
         list.reorderable = localesArray != null;
@@ -331,7 +359,7 @@ class LocalizationSettingsProvider : SettingsProvider
         };
         fallback.unbindCell = (element, _) => element.Clear();
 
-        list.overridingAddButtonBehavior = (_, _) => LocaleGeneratorWindow.ShowWindow(ScheduleRebuild);
+        list.overridingAddButtonBehavior = (_, button) => ShowAddLocaleMenu(active, button);
         // The source is a copy, so the default remove would drop the row without touching the settings.
         list.onRemove = view =>
         {
@@ -360,6 +388,7 @@ class LocalizationSettingsProvider : SettingsProvider
         }
         m_Serialized.ApplyModifiedProperties();
         m_Serialized.Update();
+        LocalizationEditorSettings.RaiseLocalesChanged();
     }
 
     static int IndexOfReference(SerializedProperty localesArray, Locale locale, int from)
@@ -380,7 +409,7 @@ class LocalizationSettingsProvider : SettingsProvider
         label.EnableInClassList(LocClasses.LocRowNameDisabled, locale != null && !locale.Enabled);
         if (locale == null)
         {
-            label.text = L10n.Tr("Unresolved locale", null);
+            label.text = LocLabels.UnresolvedLocale;
             label.tooltip = L10n.Tr("The package or script that defines this locale is missing.", null);
             return;
         }
@@ -418,6 +447,7 @@ class LocalizationSettingsProvider : SettingsProvider
         EditorUtility.SetDirty(active);
         AssetProviderEditors.SetLocaleEnabled(locale, enabled);
         ScheduleRebuild();
+        LocalizationEditorSettings.RaiseLocalesChanged();
     }
 
     void RemoveLocaleAt(LocalizationSettings active, int index)
@@ -443,6 +473,7 @@ class LocalizationSettingsProvider : SettingsProvider
         EditorUtility.SetDirty(active);
         AssetProviderEditors.SetLocaleEnabled(locale, false);
         LanguageToolbar.Refresh();
+        LocalizationEditorSettings.RaiseLocalesChanged();
     }
 
     void BuildProjectLocaleRow(VisualElement root, LocalizationSettings active)
@@ -466,6 +497,14 @@ class LocalizationSettingsProvider : SettingsProvider
             "a save file or a platform sign-in is not decided too early. Until then an awaited read waits, and a " +
             "synchronous read throws because it cannot. Play Mode only; the Editor is unaffected.", null);
         toggle.BindProperty(serialized.FindProperty("m_DeferInitialization"));
+    }
+
+    static void BuildAppInfo(VisualElement root, SerializedObject serialized)
+    {
+        if (serialized == null)
+            return;
+        root.Add(new PropertyField(serialized.FindProperty("m_AppleAppInfo"), LocLabels.AppleAppInfo));
+        root.Add(new PropertyField(serialized.FindProperty("m_AndroidAppInfo"), LocLabels.AndroidAppInfo));
     }
 
     void BuildStartupSelectors(VisualElement root, SerializedObject serialized)
@@ -509,6 +548,38 @@ class LocalizationSettingsProvider : SettingsProvider
         listView.BindProperty(array);
         listView.overridingAddButtonBehavior = onAdd;
         return listView;
+    }
+
+    void ShowAddLocaleMenu(LocalizationSettings active, Button button)
+    {
+        var menu = new GenericDropdownMenu();
+        menu.AddItem($"{LocLabels.AddLocales}...", false, () => LocaleGeneratorWindow.ShowWindow(ScheduleRebuild));
+        foreach (var type in AssetProviderEditors.GetInstantiableTypes<Locale>(excludeUnityObjects: true))
+        {
+            if (type == typeof(Locale))
+                continue;
+            var captured = type;
+            menu.AddItem(LocaleTypeTitle(captured), false, () =>
+            {
+                Undo.RegisterCompleteObjectUndo(active, "Add Locale");
+                active.AddLocale((Locale)Activator.CreateInstance(captured));
+                EditorUtility.SetDirty(active);
+                AssetDatabase.SaveAssetIfDirty(active);
+                ScheduleRebuild();
+                LocalizationEditorSettings.RaiseLocalesChanged();
+            });
+        }
+        menu.DropDown(button.worldBound, button, DropdownMenuSizeMode.Auto);
+    }
+
+    static string LocaleTypeTitle(Type type)
+    {
+        return type.Name switch
+        {
+            // The com.unity.localization package's pseudo locale; a string because the type is not visible here.
+            "ModulePseudoLocale" => L10n.Tr("Pseudo locale", null),
+            var name => ObjectNames.NicifyVariableName(name),
+        };
     }
 
     void ShowAddSelectorMenu(SerializedObject serialized, Button button)
@@ -566,8 +637,6 @@ class LocalizationSettingsProvider : SettingsProvider
         }
         if (nonResources.Count > 0)
         {
-            var defaultRow = new VisualElement().WithClass(LocClasses.LocDefaultRow);
-            defaultRow.Add(new Label(L10n.Tr("Default for new collections", null)).WithClass(LocClasses.LocDefaultRowLabel));
             var choices = new List<string>();
             var titleCounts = new Dictionary<string, int>();
             foreach (var provider in nonResources)
@@ -581,11 +650,11 @@ class LocalizationSettingsProvider : SettingsProvider
             var currentIndex = nonResources.IndexOf(active.SelectedProvider);
             if (currentIndex < 0)
                 currentIndex = 0;
-            var defaultDropdown = new DropdownField(choices, currentIndex)
+            var defaultDropdown = new DropdownField(LocLabels.DefaultForNewCollections, choices, currentIndex)
             {
                 tooltip = L10n.Tr("New collections saved outside a Resources folder use this source. Overridable per collection.", null)
             };
-            defaultDropdown.AddToClassList(LocClasses.LocDropdownFixed);
+            defaultDropdown.AddToClassList(BaseField<string>.alignedFieldUssClassName);
             defaultDropdown.RegisterValueChangedCallback(_ =>
             {
                 var index = defaultDropdown.index;
@@ -593,9 +662,37 @@ class LocalizationSettingsProvider : SettingsProvider
                 active.SelectedProvider = index >= 0 && index < nonResources.Count ? nonResources[index] : null;
                 EditorUtility.SetDirty(active);
             });
-            defaultRow.Add(defaultDropdown);
-            root.Add(defaultRow);
+            root.Add(defaultDropdown);
         }
+
+        var smartField = new ObjectField(LocLabels.SmartStringsSettings)
+        {
+            objectType = typeof(Unity.SmartStrings.SmartStringsSettings),
+            allowSceneObjects = false,
+            value = active.SmartStringsSettings,
+            tooltip = L10n.Tr("Formats Smart String entries with these settings. Leave empty to use the project's Smart Strings settings.", null)
+        };
+        smartField.AddToClassList(BaseField<UnityEngine.Object>.alignedFieldUssClassName);
+        smartField.RegisterValueChangedCallback(evt =>
+        {
+            Undo.RegisterCompleteObjectUndo(active, "Change Smart Strings Settings");
+            active.SmartStringsSettings = evt.newValue as Unity.SmartStrings.SmartStringsSettings;
+            EditorUtility.SetDirty(active);
+        });
+        root.Add(smartField);
+
+        var preloadField = new EnumField(LocLabels.PreloadBehavior, active.PreloadBehaviorSetting)
+        {
+            tooltip = L10n.Tr("Which locales the collections flagged with Preload load for, at initialization and on locale change.", null)
+        };
+        preloadField.AddToClassList(BaseField<System.Enum>.alignedFieldUssClassName);
+        preloadField.RegisterValueChangedCallback(evt =>
+        {
+            Undo.RegisterCompleteObjectUndo(active, "Change Preload Behavior");
+            active.PreloadBehaviorSetting = (PreloadBehavior)evt.newValue;
+            EditorUtility.SetDirty(active);
+        });
+        root.Add(preloadField);
     }
 
     void ShowAddSourceMenu(SerializedObject serialized, Button button)
@@ -855,6 +952,22 @@ class LocalizationSettingsProvider : SettingsProvider
         return settings;
     }
 
+    // The com.unity.localization package's page owns Project/Localization until the project upgrades to the module.
+    internal static bool PackageOwnsSettingsPage(Type upgradeState, Type packageProvider)
+    {
+        var useModule = upgradeState?.GetProperty(k_UseModuleProperty);
+        if (useModule != null)
+            return !(bool)useModule.GetValue(null);
+
+        return upgradeState == null && packageProvider != null;
+    }
+
     [SettingsProvider]
-    static SettingsProvider CreateProvider() => new LocalizationSettingsProvider();
+    static SettingsProvider CreateProvider()
+    {
+        if (PackageOwnsSettingsPage(Type.GetType(k_PackageUpgradeStateType), Type.GetType(k_PackageProviderType)))
+            return null;
+
+        return new LocalizationSettingsProvider();
+    }
 }

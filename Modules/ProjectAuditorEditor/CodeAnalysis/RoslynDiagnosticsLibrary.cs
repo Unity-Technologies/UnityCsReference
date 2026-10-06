@@ -23,7 +23,7 @@ namespace Unity.ProjectAuditor.Editor.CodeAnalysis
     /// </summary>
     static partial class RoslynDiagnosticsLibrary
     {
-        // Whitelist of codes to surface from Unity's common analyzer.
+        // Whitelist of codes to surface from Unity's analyzers.
         const string k_UnityFileName = "UnityDiagnostics.json";
 
         sealed class LoadResult
@@ -88,10 +88,10 @@ namespace Unity.ProjectAuditor.Editor.CodeAnalysis
 
             // Call all Unity APIs before starting the loading thread.
             var analyzerDlls = new List<string>(RoslynAnalyzerAssetWatcher.AnalyzerDllPaths);
-            var commonAnalyzerPath = RoslynAnalyzerDiagnosticsExtractor.ResolveUnityCommonAnalyzerPath();
+            var unityAnalyzerPaths = RoslynAnalyzerDiagnosticsExtractor.ResolveUnityAnalyzerPaths();
             var rulesDataPath = ProjectAuditor.s_RulesDataPath;
 
-            var loadThread = new Thread(() => Load(analyzerDlls, commonAnalyzerPath, rulesDataPath))
+            var loadThread = new Thread(() => Load(analyzerDlls, unityAnalyzerPaths, rulesDataPath))
             {
                 Name = "Diagnostics Load",
                 Priority = ThreadPriority.BelowNormal,
@@ -101,12 +101,12 @@ namespace Unity.ProjectAuditor.Editor.CodeAnalysis
         }
 
         // Build the Diagnostic dictionary and publish it for the main thread to pick up in RegisterDiagnostics.
-        static void Load(IReadOnlyCollection<string> analyzerDllPaths, string commonAnalyzerPath, string rulesDataPath)
+        static void Load(IReadOnlyCollection<string> analyzerDllPaths, List<string> unityAnalyzerPaths, string rulesDataPath)
         {
             var result = new LoadResult { Warnings = new List<string>() };
             try
             {
-                result.Diagnostics = Build(analyzerDllPaths, commonAnalyzerPath, rulesDataPath, result.Warnings);
+                result.Diagnostics = Build(analyzerDllPaths, unityAnalyzerPaths, rulesDataPath, result.Warnings);
             }
             catch (Exception e)
             {
@@ -177,6 +177,15 @@ namespace Unity.ProjectAuditor.Editor.CodeAnalysis
         {
             Enum.TryParse(diagnostic.category, out Areas area);
 
+            // Map some areas used in our own analyzers, to areas Project Auditor understands
+            if (area == Areas.None)
+            {
+                if (diagnostic.category == "Optimizations")
+                    area = Areas.CPU;
+                else if (diagnostic.category == "CodeReloadSafety")
+                    area = Areas.IterationTime | Areas.MigrationToCoreCLR;
+            }
+
             var messageParts = diagnostic.messageFormat.Split('\n');
 
             return new Descriptor(
@@ -226,10 +235,10 @@ namespace Unity.ProjectAuditor.Editor.CodeAnalysis
             StartLoad(force: true);
         }
 
-        // Runs the inspector over the labelled analyzers and Unity's common analyzer.
+        // Runs the inspector over the labelled analyzers and Unity's analyzers.
         static Dictionary<string, Descriptor> Build(
             IReadOnlyCollection<string> analyzerDllPaths,
-            string commonAnalyzerPath,
+            List<string> unityAnalyzerPaths,
             string rulesDataPath,
             List<string> warnings)
         {
@@ -251,15 +260,15 @@ namespace Unity.ProjectAuditor.Editor.CodeAnalysis
                 }
             }
 
-            // Unity's common analyzer.
-            if (!string.IsNullOrEmpty(commonAnalyzerPath))
+            // Unity's analyzers.
+            if (unityAnalyzerPaths?.Count > 0)
             {
                 try
                 {
                     var allowList = ReadUnityCodeAllowList(rulesDataPath);
                     if (allowList.Count > 0)
                     {
-                        var result = RoslynAnalyzerDiagnosticsExtractor.Extract([commonAnalyzerPath]);
+                        var result = RoslynAnalyzerDiagnosticsExtractor.Extract(unityAnalyzerPaths);
                         warnings.AddRange(result.Warnings);
                         foreach (var d in result.Diagnostics)
                         {
@@ -270,7 +279,7 @@ namespace Unity.ProjectAuditor.Editor.CodeAnalysis
                 }
                 catch (Exception e)
                 {
-                    warnings.Add($"Failed to introspect Unity common analyzer: {e}");
+                    warnings.Add($"Failed to introspect Unity's analyzers: {e}");
                 }
             }
 

@@ -698,6 +698,11 @@ namespace UnityEngine
             get { return SupportsMachineLearning(); }
         }
 
+        public static bool supportsPrecompiledGraphicsStateStats
+        {
+            get { return SupportsPrecompiledGraphicsStateStats(); }
+        }
+
         public static bool supportsSetConstantBuffer
         {
             get { return SupportsSetConstantBuffer(); }
@@ -781,6 +786,21 @@ namespace UnityEngine
         public static bool supportsIndirectArgumentsBuffer
         {
             get { return SupportsIndirectArgumentsBuffer(); }
+        }
+
+        public static bool supportsMultiDrawIndirect
+        {
+            get { return SupportsMultiDrawIndirect(); }
+        }
+
+        public static bool supportsMultiDrawIndirectCountBuffer
+        {
+            get { return SupportsMultiDrawIndirectCountBuffer(); }
+        }
+
+        public static uint maxDrawIndirectCount
+        {
+            get { return MaxDrawIndirectCount(); }
         }
 
         public static bool supportsDepthFetchInRenderPass
@@ -1095,6 +1115,9 @@ namespace UnityEngine
         [FreeFunction("ScriptingGraphicsCaps::SupportsMachineLearning")]
         static extern bool SupportsMachineLearning();
 
+        [FreeFunction("ScriptingGraphicsCaps::SupportsPrecompiledGraphicsStateStats")]
+        static extern bool SupportsPrecompiledGraphicsStateStats();
+
         [FreeFunction("ScriptingGraphicsCaps::SupportsSetConstantBuffer")]
         static extern bool SupportsSetConstantBuffer();
 
@@ -1165,6 +1188,15 @@ namespace UnityEngine
 
         [FreeFunction("ScriptingGraphicsCaps::SupportsIndirectArgumentsBuffer")]
         static extern bool SupportsIndirectArgumentsBuffer();
+
+        [FreeFunction("ScriptingGraphicsCaps::SupportsMultiDrawIndirect")]
+        static extern bool SupportsMultiDrawIndirect();
+
+        [FreeFunction("ScriptingGraphicsCaps::SupportsMultiDrawIndirectCountBuffer")]
+        static extern bool SupportsMultiDrawIndirectCountBuffer();
+
+        [FreeFunction("ScriptingGraphicsCaps::MaxDrawIndirectCount")]
+        static extern uint MaxDrawIndirectCount();
 
         [FreeFunction("ScriptingGraphicsCaps::SupportsDepthFetchInRenderPass")]
         static extern bool SupportsDepthFetchInRenderPass();

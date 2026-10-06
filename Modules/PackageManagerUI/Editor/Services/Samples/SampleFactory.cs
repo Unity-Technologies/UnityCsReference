@@ -10,7 +10,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 {
     internal interface ISampleFactory : IService
     {
-        IReadOnlyCollection<Sample> ParseSamples(PackageInfo packageInfo);
+        IReadOnlyList<Sample> ParseSamples(PackageInfo packageInfo);
     }
 
     internal class SampleFactory : BaseService<ISampleFactory>, ISampleFactory
@@ -46,12 +46,12 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_PackageDatabase.onPackagesChanged -= OnPackagesChanged;
         }
 
-        private void OnSamplesChanged(IReadOnlyCollection<string> packageTechnicalNames)
+        private void OnSamplesChanged(IReadOnlyList<string> packageTechnicalNames)
         {
             GenerateSamplesAndTriggerChangeEvent(packageTechnicalNames);
         }
 
-        private void OnImportedSamplesChanged(IReadOnlyCollection<string> sanitizedPackageDisplayNames)
+        private void OnImportedSamplesChanged(IReadOnlyList<string> sanitizedPackageDisplayNames)
         {
             if (sanitizedPackageDisplayNames.Count == 0)
                 return;
@@ -72,7 +72,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             GenerateSamplesAndTriggerChangeEvent(packageTechnicalNames);
         }
 
-        public void GenerateSamplesAndTriggerChangeEvent(IReadOnlyCollection<string> packageTechnicalNames)
+        public void GenerateSamplesAndTriggerChangeEvent(IReadOnlyList<string> packageTechnicalNames)
         {
             if (packageTechnicalNames.Count == 0)
                 return;
@@ -93,7 +93,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                 m_PackageDatabase.UpdateSamples(addedOrUpdated, removed);
         }
 
-        public IReadOnlyCollection<Sample> ParseSamples(PackageInfo packageInfo)
+        public IReadOnlyList<Sample> ParseSamples(PackageInfo packageInfo)
         {
             var sampleCollection = m_SampleCache.ParseSamples(packageInfo);
             if (sampleCollection == null)
@@ -152,7 +152,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                 "Samples",
                 sanitizedPackageDisplayName);
 
-            IReadOnlyCollection<string> importedVersions = m_SampleCache.GetImportedSampleCollection(sanitizedPackageDisplayName)?.GetImportedSample(sanitizedSampleDisplayName)?.versions;
+            IReadOnlyList<string> importedVersions = m_SampleCache.GetImportedSampleCollection(sanitizedPackageDisplayName)?.GetImportedSample(sanitizedSampleDisplayName)?.versions;
             importedVersions ??= m_SampleCache.ScanImportedSampleVersions(sanitizedPackageDisplayName, sanitizedSampleDisplayName) ?? Array.Empty<string>();
             return importedVersions.SelectToNewArray(v => IOUtils.PathsCombine(packageDir, v, sanitizedSampleDisplayName));
         }

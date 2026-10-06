@@ -10,6 +10,7 @@ namespace UnityEngine
 {
     public sealed partial class ShaderVariantCollection : Object
     {
+        internal ShaderVariantCollection(global::UnityEngine.EntityId id) : base(id) {}
         public partial struct ShaderVariant
         {
             public Shader shader;
@@ -28,7 +29,7 @@ namespace UnityEngine
 
     public sealed partial class ShaderVariantCollection : Object
     {
-        public ShaderVariantCollection() { Internal_Create(this); }
+        public ShaderVariantCollection() { SetEntityIdFromConstructor(Internal_Create()); }
 
         public bool Add(ShaderVariant variant)      { return AddVariant(variant.shader, variant.passType, variant.keywords); }
         public bool Remove(ShaderVariant variant)   { return RemoveVariant(variant.shader, variant.passType, variant.keywords); }

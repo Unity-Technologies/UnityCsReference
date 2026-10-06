@@ -2,7 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: GraphicsDeviceFeatures not yet converted
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -30,7 +29,7 @@ namespace UnityEditor
         internal static class GraphicsSettingsData
         {
             internal static readonly GUIContent builtInWarningText =
-                EditorGUIUtility.TrTextContent("A Scriptable Render Pipeline is in use. Settings in the Built-In Render Pipeline are not currently in use.");
+                L10n.TextContent("A Scriptable Render Pipeline is in use. Settings in the Built-In Render Pipeline are not currently in use.", null, null, null);
             internal const string builtIn = "Built-In";
             internal const string bodyTemplateBuiltInOnly = "UXML/ProjectSettings/GraphicsSettingsEditor-Builtin.uxml";
             internal const string bodyTemplateSRP = "UXML/ProjectSettings/GraphicsSettingsEditor-SRP.uxml";
@@ -141,8 +140,8 @@ namespace UnityEditor
 
             var lightBakerSection = m_CurrentRoot.Q<VisualElement>("LightBakerSection");
             lightBakerSection.style.display = DisplayStyle.Flex;
-            SetupUnityComputeLightBakerInfoBox(lightBakerSection);
-            BindEnumField<LightBaker>(m_CurrentRoot, "DefaultLightBaker");
+            var updateLightBakerInfoBox = SetupUnityComputeLightBakerInfoBox(lightBakerSection);
+            BindEnumField(m_CurrentRoot, "DefaultLightBaker", updateLightBakerInfoBox);
 
             BindEnumField<DefaultMeshBufferTarget>(m_CurrentRoot, "DefaultMeshBufferTarget");
             m_DefaultMeshBufferTargetField = m_CurrentRoot.MandatoryQ<EnumField>("DefaultMeshBufferTarget");
@@ -205,7 +204,7 @@ namespace UnityEditor
                 shaderPreloadProperty.serializedObject.Update();
                 EditorGUI.BeginChangeCheck();
                 //for some reason, converting the display of this native array to UITK make MacOS crash when domain reload after user add a new script
-                EditorGUILayout.PropertyField(shaderPreloadProperty, EditorGUIUtility.TrTextContent("Preload Shaders"));
+                EditorGUILayout.PropertyField(shaderPreloadProperty, L10n.TextContent("Preload Shaders", null, null, null));
                 if (EditorGUI.EndChangeCheck())
                 {
                     shaderPreloadProperty.serializedObject.ApplyModifiedProperties();
@@ -416,11 +415,11 @@ namespace UnityEditor
         }
 
         // Binds the enum field to access and modify the serialized data on disk directly.
-        void BindEnumField<T>(VisualElement content, string fieldName) where T : struct, Enum
+        void BindEnumField<T>(VisualElement content, string fieldName, Action<T> onValueChange = null) where T : struct, Enum
         {
             var enumField = content.MandatoryQ<EnumField>(fieldName);
             var enumFieldProperty = serializedObject.FindProperty(enumField.bindingPath);
-            UIElementsEditorUtility.BindSerializedProperty<T>(enumField, enumFieldProperty);
+            UIElementsEditorUtility.BindSerializedProperty<T>(enumField, enumFieldProperty, onValueChange);
         }
 
         void UpdateDefaultMeshBufferTargetFieldState(PlayModeStateChange state) => UpdateDefaultMeshBufferTargetFieldState();
@@ -440,13 +439,11 @@ namespace UnityEditor
 
         internal const string k_UnityComputeLightBakerInfoBoxDismissedKey = "GraphicsSettingsInspector.UnityComputeLightBakerInfoBox.Dismissed";
 
-        void SetupUnityComputeLightBakerInfoBox(VisualElement lightBakerSection)
+        Action<LightBaker> SetupUnityComputeLightBakerInfoBox(VisualElement lightBakerSection)
         {
             var infoBox = lightBakerSection.Q<HelpBox>("UnityComputeLightBakerInfoBox");
             if (infoBox == null)
-                return;
-
-            var enumField = lightBakerSection.Q<EnumField>("DefaultLightBaker");
+                return null;
 
             infoBox.buttonText = L10n.Tr("Don't show again", null);
             infoBox.onButtonClicked += () =>
@@ -455,17 +452,12 @@ namespace UnityEditor
                 infoBox.style.display = DisplayStyle.None;
             };
 
-            void UpdateVisibility()
+            return lightBaker =>
             {
-                bool isUnityCompute = enumField != null && (LightBaker)enumField.value == LightBaker.UnityComputeLightBaker;
                 bool dismissed = EditorPrefs.GetBool(k_UnityComputeLightBakerInfoBoxDismissedKey, false);
-                infoBox.style.display = isUnityCompute && !dismissed ? DisplayStyle.Flex : DisplayStyle.None;
-            }
-
-            if (enumField != null)
-                enumField.RegisterValueChangedCallback(_ => UpdateVisibility());
-
-            UpdateVisibility();
+                bool visible = lightBaker == LightBaker.UnityComputeLightBaker && !dismissed;
+                infoBox.style.display = visible ? DisplayStyle.Flex : DisplayStyle.None;
+            };
         }
 
         void UpdateBuildProfileGraphicsSettingsOverrideWarning()
@@ -727,6 +719,7 @@ namespace UnityEditor
         internal GraphicsSettingsProvider(string path, SettingsScope scopes, IEnumerable<string> keywords = null) : base(path, scopes, keywords)
         {
             UpdateKeywords();
+#pragma warning disable UAL0015 // Create subscribes and Dispose unsubscribes OnActiveProfileGraphicsSettingsChanged in a matched pair, driven by this provider's own activate/deactivate lifecycle
             activateHandler = (_, root) =>
             {
                 var (graphicsSettings, globalSettingsExist, globalSettingsContainers) = UpdateKeywords();
@@ -741,6 +734,7 @@ namespace UnityEditor
                     inspector = null;
                 }
             });
+#pragma warning restore UAL0015
         }
 
         public (UnityEngine.Object, bool, List<GraphicsSettingsInspectorUtility.GlobalSettingsContainer>) UpdateKeywords()
@@ -825,4 +819,3 @@ namespace UnityEditor
         }
     }
 }
-#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

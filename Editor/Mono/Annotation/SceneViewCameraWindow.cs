@@ -21,11 +21,11 @@ namespace UnityEditor
             public static readonly string maxTooltips = L10n.Tr($"The maximum speed of the camera in the Scene view. Valid values are between [{SceneView.CameraSettings.kAbsoluteSpeedMin + .0001f}, {SceneView.CameraSettings.kAbsoluteSpeedMax}].", null);
 
             // Menu labels
-            public static readonly GUIContent copyPlacementLabel = EditorGUIUtility.TrTextContent("Copy Placement");
-            public static readonly GUIContent pastePlacementLabel = EditorGUIUtility.TrTextContent("Paste Placement");
-            public static readonly GUIContent copySettingsLabel = EditorGUIUtility.TrTextContent("Copy Settings");
-            public static readonly GUIContent pasteSettingsLabel = EditorGUIUtility.TrTextContent("Paste Settings");
-            public static readonly GUIContent resetSettingsLabel = EditorGUIUtility.TrTextContent("Reset Settings");
+            public static readonly GUIContent copyPlacementLabel = L10n.TextContent("Copy Placement", null, null, null);
+            public static readonly GUIContent pastePlacementLabel = L10n.TextContent("Paste Placement", null, null, null);
+            public static readonly GUIContent copySettingsLabel = L10n.TextContent("Copy Settings", null, null, null);
+            public static readonly GUIContent pasteSettingsLabel = L10n.TextContent("Paste Settings", null, null, null);
+            public static readonly GUIContent resetSettingsLabel = L10n.TextContent("Reset Settings", null, null, null);
 
             // Layout
             public const int windowWidth = 290;
@@ -105,7 +105,13 @@ namespace UnityEditor
             => m_WindowSize;
 
         public SceneViewCameraWindow(SceneView sceneView)
-            => m_SceneView = sceneView;
+        {
+            m_SceneView = sceneView;
+
+            // The Occlusion Culling row is hidden when legacy Umbra is disabled, so the window is one line shorter.
+            if (!EditorSettings.enableLegacyUmbraCulling)
+                m_WindowSize.y -= (int)EditorGUI.kSingleLineHeight;
+        }
         
         public override VisualElement CreateGUI()
         {
@@ -191,9 +197,13 @@ namespace UnityEditor
 
             //    Occlusion culling
             m_OcclusionCulling = m_Root.MandatoryQ<Toggle>("OcclusionCulling");
+            if (!EditorSettings.enableLegacyUmbraCulling)
+                m_OcclusionCulling.style.display = DisplayStyle.None;
             m_OcclusionCulling.RegisterValueChangedCallback(evt =>
             {
+                #pragma warning disable CS0618
                 settings.occlusionCulling = evt.newValue;
+                #pragma warning restore CS0618
                 m_SceneView.Repaint();
             });
 
@@ -305,7 +315,9 @@ namespace UnityEditor
             ShowExtremeClippingIfNeeded();
 
             //    Occlusion culling
+            #pragma warning disable CS0618
             m_OcclusionCulling.SetValueWithoutNotify(settings.occlusionCulling);
+            #pragma warning restore CS0618
 
             // Camera Navigation
             //    Easing

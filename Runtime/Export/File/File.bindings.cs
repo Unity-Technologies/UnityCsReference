@@ -6,14 +6,14 @@ using UnityEngine.Bindings;
 
 namespace UnityEngine.IO
 {
-    [NativeHeader("Runtime/VirtualFileSystem/VirtualFileSystem.h")]
+    [NativeHeader("Runtime/VirtualFileSystem/VirtualFileSystemBindings.h")]
     internal enum ThreadIORestrictionMode
     {
         Allowed = 0,
         TreatAsError = 1,
     }
 
-    [NativeHeader("Runtime/VirtualFileSystem/VirtualFileSystem.h")]
+    [NativeHeader("Runtime/VirtualFileSystem/VirtualFileSystemBindings.h")]
     [NativeConditional("ENABLE_PROFILER")]
     [StaticAccessor("FileAccessor", StaticAccessorType.DoubleColon)]
     internal static class File

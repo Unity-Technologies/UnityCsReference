@@ -2,18 +2,20 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0010,UAL0011,UAL0012,UAL0013,UAL0014 // AutoStaticsCleanup: Burst not yet converted
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.CompilerServices;
+using Unity.Scripting.LifecycleManagement;
 
 [assembly: InternalsVisibleTo("UnityEditor.Modules.Burst.EditModeTests")]
 namespace Unity.Burst.Editor
 {
-    internal static class BurstReflection
+    internal static partial class BurstReflection
     {
+        [NoAutoStaticsCleanup] // plain lock object, no state of its own
         private static readonly object _lockObject = new object();
+        [AutoStaticsCleanupOnCodeReload]
         private static FindExecuteMethodsResult _result;
 
         public static FindExecuteMethodsResult FindExecuteMethods()
@@ -69,4 +71,3 @@ namespace Unity.Burst.Editor
         }
     }
 }
-#pragma warning restore UAL0010,UAL0011,UAL0012,UAL0013,UAL0014

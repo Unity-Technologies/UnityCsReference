@@ -70,7 +70,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             // Do nothing since this button is not available for multi-select
         }
 
-        private void SetupDropdownMenu(IReadOnlyCollection<PackageAction> actions)
+        private void SetupDropdownMenu(IReadOnlyList<PackageAction> actions)
         {
             ClearClickedEvents();
 

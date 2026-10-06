@@ -16,7 +16,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         event Action<IReadOnlyCollection<long>> onUpdateChecked;
 
         void ExtraFetch(long productId);
-        void FetchPurchaseInfos(IReadOnlyCollection<long> productIds, Action doneCallback = null);
+        void FetchPurchaseInfos(IReadOnlyList<long> productIds, Action doneCallback = null);
         void ListPurchases(PurchasesQueryArgs queryArgs);
         void CancelListPurchases();
         void FetchProductInfo(long productId, Action doneCallback = null);
@@ -81,7 +81,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                 FetchUpdateInfos(new[] { productId });
         }
 
-        public void FetchPurchaseInfos(IReadOnlyCollection<long> productIds, Action doneCallback = null)
+        public void FetchPurchaseInfos(IReadOnlyList<long> productIds, Action doneCallback = null)
         {
             FetchPurchaseInfosWithRetry(productIds, false, doneCallback);
         }

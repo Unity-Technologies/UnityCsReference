@@ -158,7 +158,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                 m_PackageDatabase.UpdatePackages(toAddOrUpdate: packagesChanged, toRemove: packagesToRemove, changedSource);
         }
 
-        internal void GeneratePackagesAndTriggerChangeEvent(IReadOnlyCollection<long> productIds, PackagesChangedSource changedSource = PackagesChangedSource.Other)
+        internal void GeneratePackagesAndTriggerChangeEvent(IReadOnlyList<long> productIds, PackagesChangedSource changedSource = PackagesChangedSource.Other)
         {
             if (productIds == null || productIds.Count == 0)
                 return;

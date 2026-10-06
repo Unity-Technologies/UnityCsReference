@@ -34,23 +34,23 @@ namespace UnityEditor
 
         private class Styles : ConstraintStyleBase
         {
-            GUIContent m_RotationAtRest = EditorGUIUtility.TrTextContent("Rotation At Rest", "The orientation of the constrained object when the weights of the sources add up to zero or when all the rotation axes are disabled.");
-            GUIContent m_RotationOffset = EditorGUIUtility.TrTextContent("Rotation Offset", "The offset from the constrained orientation.");
+            GUIContent m_RotationAtRest = L10n.TextContent("Rotation At Rest", "The orientation of the constrained object when the weights of the sources add up to zero or when all the rotation axes are disabled.", null, null);
+            GUIContent m_RotationOffset = L10n.TextContent("Rotation Offset", "The offset from the constrained orientation.", null, null);
 
-            GUIContent m_RotationAxes = EditorGUIUtility.TrTextContent("Freeze Rotation Axes", "The axes along which the constraint is applied.");
+            GUIContent m_RotationAxes = L10n.TextContent("Freeze Rotation Axes", "The axes along which the constraint is applied.", null, null);
 
-            GUIContent m_AimVector = EditorGUIUtility.TrTextContent("Aim Vector", "Specifies which axis of the constrained object should aim at the target.");
-            GUIContent m_UpVector = EditorGUIUtility.TrTextContent("Up Vector", "Specifies the direction of the up vector in local space.");
-            GUIContent m_WorldUpVector = EditorGUIUtility.TrTextContent("World Up Vector", "Specifies the direction of the global up vector.");
-            GUIContent m_WorldUpObject = EditorGUIUtility.TrTextContent("World Up Object", "The reference object when the World Up Type is either Object Up or Object Rotation Up.");
-            GUIContent m_WorldUpType = EditorGUIUtility.TrTextContent("World Up Type", "Specifies how the world up vector should be computed.");
+            GUIContent m_AimVector = L10n.TextContent("Aim Vector", "Specifies which axis of the constrained object should aim at the target.", null, null);
+            GUIContent m_UpVector = L10n.TextContent("Up Vector", "Specifies the direction of the up vector in local space.", null, null);
+            GUIContent m_WorldUpVector = L10n.TextContent("World Up Vector", "Specifies the direction of the global up vector.", null, null);
+            GUIContent m_WorldUpObject = L10n.TextContent("World Up Object", "The reference object when the World Up Type is either Object Up or Object Rotation Up.", null, null);
+            GUIContent m_WorldUpType = L10n.TextContent("World Up Type", "Specifies how the world up vector should be computed.", null, null);
             GUIContent[] m_WorldUpTypes =
             {
-                EditorGUIUtility.TrTextContent("Scene Up", "Use the Y axis as the world up vector."),
-                EditorGUIUtility.TrTextContent("Object Up", "Use a vector that points to the reference object as the world up vector."),
-                EditorGUIUtility.TrTextContent("Object Rotation Up", "Use a vector defined in the reference object's local space as the world up vector."),
-                EditorGUIUtility.TrTextContent("Vector", "The world up vector is user defined."),
-                EditorGUIUtility.TrTextContent("None", "The world up vector is ignored.")
+                L10n.TextContent("Scene Up", "Use the Y axis as the world up vector.", null, null),
+                L10n.TextContent("Object Up", "Use a vector that points to the reference object as the world up vector.", null, null),
+                L10n.TextContent("Object Rotation Up", "Use a vector defined in the reference object's local space as the world up vector.", null, null),
+                L10n.TextContent("Vector", "The world up vector is user defined.", null, null),
+                L10n.TextContent("None", "The world up vector is ignored.", null, null)
             };
             public override GUIContent AtRest { get { return m_RotationAtRest; } }
             public override GUIContent Offset { get { return m_RotationOffset; } }

@@ -15,7 +15,7 @@ using static Unity.U2D.Physics.Scripting2D;
 namespace Unity.U2D.Physics
 {
     /// <undoc/>
-    readonly struct PhysicsTransformWatcher
+    readonly partial struct PhysicsTransformWatcher
     {
         public static void RegisterWatcher(Transform transform, PhysicsCallbacks.ITransformChangedCallback callback)
         {
@@ -47,8 +47,15 @@ namespace Unity.U2D.Physics
 
         public static void UnregisterWatcher(Transform transform, PhysicsCallbacks.ITransformChangedCallback callback)
         {
+            // The watcher store is dropped whole on subsystem teardown, but the native interest lives on the transform itself and survives that.
+            // Clear it here rather than returning early, or a transform that outlives teardown is later destroyed with its interest still set.
             if (s_TransformWatchers == null)
+            {
+                if (transform != null)
+                    PhysicsCore2D_UnregisterTransformWatcher(transform);
+
                 return;
+            }
 
             if (transform == null)
                 throw new NullReferenceException(nameof(transform));
@@ -56,9 +63,12 @@ namespace Unity.U2D.Physics
             if (callback == null)
                 throw new NullReferenceException(nameof(callback));
 
-            // Finish if there's no watcher found.
+            // No tracked watcher remains, so clear the native interest for the same reason as above.
             if (!s_TransformWatchers.TryGetValue(transform, out var watcher))
+            {
+                PhysicsCore2D_UnregisterTransformWatcher(transform);
                 return;
+            }
 
             // Remove the callback.
             watcher.Remove(callback);
@@ -116,12 +126,14 @@ namespace Unity.U2D.Physics
         #region Native Methods
 
         /// <undoc/>
+        [OnCodeUnloading]
         [RequiredByNativeCode]
         static void ClearAllWatchers()
         {
-            // Called from native subsystem teardown (PhysicsWorldManager2D::DestroyScriptObjects).
+            // Runs on code unloading, and from native subsystem teardown (PhysicsWorldManager2D::DestroyScriptObjects) outside a code reload.
             // Drops the watcher store so it does not span a scripting reload.
-            // Native interest is per-transform and dies with the transform, so there is nothing to unregister here.
+            // The native interest is left set on each transform, because a transform can outlive this teardown.
+            // UnregisterWatcher clears it when the owning component disables.
             if (s_TransformWatchers == null)
                 return;
 

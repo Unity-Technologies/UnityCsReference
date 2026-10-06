@@ -21,6 +21,56 @@ namespace Unity.U2D.Physics
     /// The number of worlds allocated up-front is defined by <see cref="PhysicsCoreSettings2D.initialWorldCapacity"/>, after which more are allocated on demand as required.
     /// A world is completely isolated from all other worlds.
     /// </summary>
+    /// <remarks>
+    /// Unity automatically creates a default world (<see cref="PhysicsWorld.defaultWorld"/>) so you don't need to create a world before adding bodies to it, although you can create additional, isolated worlds that run in parallel.
+    /// </remarks>
+    /// <example>
+    /// <code lang="cs">
+    /// <![CDATA[
+    /// // Create a body in the world, with a definition object that sets the position
+    /// // and enables physics, then attach a circle shape to it.
+    /// using UnityEngine;
+    /// using Unity.U2D.Physics;
+    ///
+    /// public class Example2DPhysics : MonoBehaviour
+    /// {
+    ///     void Start()
+    ///     {
+    ///         // Get the default world.
+    ///         PhysicsWorld world = PhysicsWorld.defaultWorld;
+    ///
+    ///         // Create a body in the world, with a definition object that sets the
+    ///         // position and enables physics.
+    ///         PhysicsBody object1 = world.CreateBody(new PhysicsBodyDefinition
+    ///         {
+    ///             position = new Vector2(0.5f, 8f),
+    ///             type = PhysicsBody.BodyType.Dynamic
+    ///         });
+    ///
+    ///         // Attach a circle shape to the first body.
+    ///         PhysicsShape objectShape1 = object1.CreateShape(new CircleGeometry());
+    ///
+    ///         // Create a second body in the world, with a definition object that
+    ///         // sets the position and disables physics.
+    ///         PhysicsBody object2 = world.CreateBody(new PhysicsBodyDefinition
+    ///         {
+    ///             position = new Vector2(0f, 0f),
+    ///             type = PhysicsBody.BodyType.Static
+    ///         });
+    ///
+    ///         // Attach a circle shape to the second body.
+    ///         object2.CreateShape(new CircleGeometry
+    ///         {
+    ///             radius = 3f,
+    ///         });
+    ///     }
+    /// }
+    /// ]]>
+    /// </code>
+    /// </example>
+    /// <seealso cref="PhysicsBody"/>
+    /// <seealso cref="PhysicsShape"/>
+    /// <seealso cref="PhysicsBodyDefinition"/>
     [StructLayout(LayoutKind.Sequential)]
     [MovedFrom(autoUpdateAPI: ScriptUpdateConstants.AutoUpdateAPI, sourceNamespace: ScriptUpdateConstants.SourceNamespace, sourceAssembly: ScriptUpdateConstants.SourceAssembly)]
     public readonly partial struct PhysicsWorld : IEquatable<PhysicsWorld>
@@ -285,7 +335,7 @@ namespace Unity.U2D.Physics
         /// A transformation applied to the transform write if <see cref="PhysicsWorld.transformPlane"/> is set to <see cref="PhysicsWorld.TransformPlane.Custom"/>.
         /// </summary>
         [Serializable]
-        public record struct TransformPlaneCustom : ISerializationCallbackReceiver
+        public partial record struct TransformPlaneCustom : ISerializationCallbackReceiver
         {
             /// <summary>
             /// Create a transform plane custom as identity.
@@ -294,7 +344,6 @@ namespace Unity.U2D.Physics
             {
                 m_Translate = default;
                 m_Rotate = default;
-                m_Scale = 1.0f;
 
                 CalculatePlaneCustom();
             }
@@ -304,12 +353,10 @@ namespace Unity.U2D.Physics
             /// </summary>
             /// <param name="translate">The custom translation.</param>
             /// <param name="rotate">The custom EULER rotation.</param>
-            /// <param name="scale">The custom scale.</param>
-            public TransformPlaneCustom(Vector3 translate, Vector3 rotate, float scale = 1.0f)
+            public TransformPlaneCustom(Vector3 translate, Vector3 rotate)
             {
                 m_Translate = translate;
                 m_Rotate = rotate;
-                m_Scale = Mathf.Clamp(scale, 0.001f, 10f);
 
                 CalculatePlaneCustom();
             }
@@ -323,11 +370,6 @@ namespace Unity.U2D.Physics
             /// Get the custom rotation.
             /// </summary>
             public readonly Vector3 rotate => m_Rotate;
-
-            /// <summary>
-            /// Get the uniform scale.
-            /// </summary>
-            public readonly float scale => m_Scale;
 
             /// <summary>
             /// Get the custom matrix defining how to transform from <see cref="PhysicsWorld"/> space to the custom world-space.
@@ -381,7 +423,7 @@ namespace Unity.U2D.Physics
                 m_CustomRotation = Quaternion.Euler(m_Rotate);
 
                 // Calculate the matrices.
-                m_ToCustom = Matrix4x4.TRS(m_Translate, m_CustomRotation, new Vector3(m_Scale, m_Scale, m_Scale));
+                m_ToCustom = Matrix4x4.TRS(m_Translate, m_CustomRotation, Vector3.one);
                 m_FromCustom = m_ToCustom.inverse;
             }
 
@@ -393,7 +435,6 @@ namespace Unity.U2D.Physics
 
             [SerializeField] internal Vector3 m_Translate;
             [SerializeField] internal Vector3 m_Rotate;
-            [SerializeField][Range(0.001f, 10f)] internal float m_Scale;
             Matrix4x4 m_ToCustom;
             Matrix4x4 m_FromCustom;
             Quaternion m_CustomRotation;
@@ -499,7 +540,7 @@ namespace Unity.U2D.Physics
         public enum DrawContactType
         {
             /// <summary>
-            /// This will draw <see cref="PhysicsShape.ContactManifold.ManifoldPoint.point"/>.
+            /// This will draw <see cref="PhysicsShape.ContactManifold.ManifoldPoint.pointA"/>.
             /// </summary>
             Point = 1,
 
@@ -841,8 +882,36 @@ namespace Unity.U2D.Physics
         /// <summary>
         /// Create a PhysicsWorld.
         /// </summary>
-        /// <param name="definition">The world definition to use.</param>
+        /// <remarks>
+        /// You don't need to create a world before you add physics objects, because Unity automatically creates one you can fetch with <see cref="PhysicsWorld.defaultWorld"/>.
+        /// This method isn't thread-safe. Call it only from the main thread.
+        /// A world starts running as soon as you create it. Set <see cref="PhysicsWorld.paused"/> to `true` to pause its simulation.
+        /// </remarks>
+        /// <param name="definition">The world definition to use when creating the new physics world.</param>
         /// <returns>The created world.</returns>
+        /// <example>
+        /// <code lang="cs">
+        /// <![CDATA[
+        /// // Create a public world definition so its properties display in the
+        /// // Inspector window, then create a world from it.
+        /// using UnityEngine;
+        /// using Unity.U2D.Physics;
+        ///
+        /// public class CreateWorld : MonoBehaviour
+        /// {
+        ///     public PhysicsWorldDefinition worldDefinition = new PhysicsWorldDefinition();
+        ///     public PhysicsWorld world;
+        ///
+        ///     void Awake()
+        ///     {
+        ///         world = PhysicsWorld.Create(worldDefinition);
+        ///     }
+        /// }
+        /// ]]>
+        /// </code>
+        /// </example>
+        /// <seealso cref="PhysicsWorld.defaultWorld"/>
+        /// <seealso cref="PhysicsWorldDefinition"/>
         public static PhysicsWorld Create(PhysicsWorldDefinition definition) => PhysicsWorld_Create(definition);
 
         /// <summary>
@@ -916,7 +985,7 @@ namespace Unity.U2D.Physics
         /// </summary>
         /// <remarks>
         /// A snapshot restores the full simulation configuration, so these <see cref="PhysicsWorldDefinition"/> properties are taken from <paramref name="snapshot"/> and their values in <paramref name="definition"/> are ignored:
-        /// <see cref="PhysicsWorldDefinition.gravity"/>, <see cref="PhysicsWorldDefinition.bounceThreshold"/>, <see cref="PhysicsWorldDefinition.contactHitEventThreshold"/>, <see cref="PhysicsWorldDefinition.contactFrequency"/>, <see cref="PhysicsWorldDefinition.contactDamping"/>, <see cref="PhysicsWorldDefinition.contactSpeed"/>, <see cref="PhysicsWorldDefinition.contactRecycleDistance"/>, <see cref="PhysicsWorldDefinition.maximumLinearSpeed"/>, <see cref="PhysicsWorldDefinition.sleepingAllowed"/>, <see cref="PhysicsWorldDefinition.continuousAllowed"/>, <see cref="PhysicsWorldDefinition.eventGroupingAllowed"/> and <see cref="PhysicsWorldDefinition.capacity"/>.
+        /// <see cref="PhysicsWorldDefinition.gravity"/>, <see cref="PhysicsWorldDefinition.bounceThreshold"/>, <see cref="PhysicsWorldDefinition.bounceIterations"/>, <see cref="PhysicsWorldDefinition.bouncePropagation"/>, <see cref="PhysicsWorldDefinition.contactHitEventThreshold"/>, <see cref="PhysicsWorldDefinition.contactFrequency"/>, <see cref="PhysicsWorldDefinition.contactDamping"/>, <see cref="PhysicsWorldDefinition.contactSpeed"/>, <see cref="PhysicsWorldDefinition.contactRecycleDistance"/>, <see cref="PhysicsWorldDefinition.maximumLinearSpeed"/>, <see cref="PhysicsWorldDefinition.sleepingAllowed"/>, <see cref="PhysicsWorldDefinition.continuousAllowed"/>, <see cref="PhysicsWorldDefinition.eventGroupingAllowed"/> and <see cref="PhysicsWorldDefinition.capacity"/>.
         /// All other <paramref name="definition"/> properties are applied normally, for example <see cref="PhysicsWorldDefinition.simulationWorkers"/> and <see cref="PhysicsWorldDefinition.simulationSubSteps"/>.
         /// To use a value other than the snapshot's, set the matching property on the returned world after this call.
         /// Creating and restoring a world processes the whole image, so this is not intended to be called at high frequency.
@@ -973,12 +1042,19 @@ namespace Unity.U2D.Physics
         public PhysicsWorldDefinition definition { get => PhysicsWorld_ReadDefinition(this); set => PhysicsWorld_WriteDefinition(this, value, false); }
 
         /// <summary>
-        /// An abstract group identity that can be shared by a set of physics objects.
-        /// Each group is globally unique across all worlds.
+        /// An identity shared by a set of shapes on one body so they are treated as a single object when reporting contact and trigger begin and end events.
+        /// Assign a group only to shapes that belong to the same body.
+        /// Two objects made of many shapes produce a begin and end event for every pair of shapes that touch.
+        /// When each object's shapes share a group, the world marks the first begin event and the last end event between the two groups, so a callback can act on those alone and receive a single begin and end for each pair of objects.
+        /// The marking is designed to be cheap, so it only examines the contacts of the two bodies involved, which is why a group cannot span more than one body.
         /// </summary>
         /// <remarks>
         /// Create a group with <see cref="CreateGroup"/> and assign it with <see cref="PhysicsShape.physicsGroup"/>.
-        /// A default group has a <see cref="groupIndex"/> of zero, meaning no group.
+        /// Each group is globally unique across all worlds, and a default group has a <see cref="groupIndex"/> of zero, meaning no group.
+        /// Grouping has these limitations:
+        /// Assigning one group to shapes on more than one body is not supported, and the first and last marking of their events is then unreliable, so several events between the same two groups can each be marked first or last.
+        /// Marking only applies between two groups, so an event between a grouped shape and a shape with no group is always marked both first and last.
+        /// When <see cref="eventGroupingAllowed"/> is disabled, every event is marked both first and last.
         /// </remarks>
         [StructLayout(LayoutKind.Sequential)]
         public readonly struct PhysicsGroup
@@ -1002,6 +1078,7 @@ namespace Unity.U2D.Physics
         /// <summary>
         /// Create a new globally unique group.
         /// Groups are created from a rolling index, so the first group created has a group index of one and a group index of zero always means no group.
+        /// Assign the group only to shapes that belong to the same body.
         /// </summary>
         /// <remarks>
         /// See <see cref="PhysicsGroup"/> and <see cref="PhysicsShape.physicsGroup"/>.
@@ -1035,11 +1112,7 @@ namespace Unity.U2D.Physics
         /// </summary>
         /// <param name="owner">The object that owns this key. This can be NULL if not required but is recommended as the key is formed in part by the hash-code of the owner object.</param>
         /// <param name="ownerKey">The owner key to be used. If zero then a new owner key is created. You can use <see cref="PhysicsWorld.CreateOwnerKey(UnityEngine.Object)"/> for this value although any non-zero integer will work.</param>
-        public unsafe readonly void SetOwner(UnityEngine.Object owner, int ownerKey)
-        {
-            var world = this;
-            SetOwner(new ReadOnlySpan<PhysicsWorld>(&world, 1), owner, ownerKey);
-        }
+        public readonly void SetOwner(UnityEngine.Object owner, int ownerKey) => SetOwner(stackalloc PhysicsWorld[1] { this }, owner, ownerKey);
 
         /// <summary>
         /// Set the owner object using the specified owner key.
@@ -1094,6 +1167,47 @@ namespace Unity.U2D.Physics
         public readonly void SetOwnerUserData(PhysicsUserData physicsUserData, int ownerKey = 0) => PhysicsWorld_SetOwnerUserData(this, physicsUserData, ownerKey);
 
         /// <summary>
+        /// Get the name of the world, or "World #N" where N is the <see cref="index"/> when no name has been set.
+        /// The <see cref="PhysicsWorld.defaultWorld"/> is always named "Default World".
+        /// </summary>
+        /// <remarks>
+        /// A new string is allocated each call, as with any API returning a string such as <see cref="ToString"/>.
+        /// See <see cref="SetName"/>.
+        /// </remarks>
+        /// <returns>The name of the world.</returns>
+        public readonly string GetName()
+        {
+            var name = PhysicsWorld_GetName(this);
+            return string.IsNullOrEmpty(name) ? $"World #{index}" : name;
+        }
+
+        /// <summary>
+        /// Set the name of the world, truncated to <see cref="PhysicsConstants.MaxWorldNameLength"/> characters.
+        /// The name of the <see cref="PhysicsWorld.defaultWorld"/> cannot be set and will always be "Default World".
+        /// </summary>
+        /// <remarks>
+        /// See <see cref="GetName"/>.
+        /// </remarks>
+        /// <param name="name">The name to set.</param>
+        /// <param name="ownerKey">Optional owner key returned when using <see cref="PhysicsWorld.SetOwner(UnityEngine.Object)"/>.</param>
+        public readonly void SetName(string name, int ownerKey = 0)
+        {
+            // Truncate here rather than natively, where the name is encoded as bytes and the limit could not be applied in characters.
+            if (name != null && name.Length > PhysicsConstants.MaxWorldNameLength)
+            {
+                var length = PhysicsConstants.MaxWorldNameLength;
+
+                // Don't split a character that is encoded as a surrogate pair.
+                if (char.IsHighSurrogate(name[length - 1]))
+                    --length;
+
+                name = name.Substring(0, length);
+            }
+
+            PhysicsWorld_SetName(this, name, ownerKey);
+        }
+
+        /// <summary>
         /// Reset the world to a canonical state so that it will reproduce identical results each time. The world must be empty for this to be called otherwise a warning is produced.
         /// </summary>
         public readonly void Reset() => PhysicsWorld_Reset(this);
@@ -1133,11 +1247,22 @@ namespace Unity.U2D.Physics
         public readonly bool continuousAllowed { get => PhysicsWorld_GetContinuousAllowed(this); set => PhysicsWorld_SetContinuousAllowed(this, value); }
 
         /// <summary>
+        /// A hash of the whole simulation state, covering every body's pose and velocity and every contact's manifold.
+        /// Two worlds that have simulated identically produce the same value, so comparing it across runs or machines is a way to check that a simulation is deterministic.
+        /// </summary>
+        /// <remarks>
+        /// This is recomputed from scratch over the entire world every time it is read, and is never cached, so treat it as a diagnostic rather than something to read every frame.
+        /// The value identifies a state, not an object, so it is not stable across engine versions and should not be stored as a persistent identifier.
+        /// </remarks>
+        public readonly ulong stateHash => PhysicsWorld_GetStateHash(this);
+
+        /// <summary>
         /// Controls if contact and trigger begin/end events for shapes assigned a group are marked as being the first or last event between the two groups involved.
-        /// This allows the many events produced between two groups of shapes to be reduced to a single begin and end, such as when treating multiple shapes as a single object.
+        /// This allows the many events produced between two groups of shapes to be reduced to a single begin and end, such as when treating multiple shapes on one body as a single object.
         /// The marking is only calculated for shapes assigned a group and only when a begin or end event is produced, so the cost of leaving this enabled is minor.
         /// </summary>
         /// <remarks>
+        /// Every shape in a group must belong to the same body; see <see cref="PhysicsGroup"/> for the limitations.
         /// See <see cref="PhysicsShape.physicsGroup"/> and <see cref="CreateGroup"/>.
         /// </remarks>
         public readonly bool eventGroupingAllowed { get => PhysicsWorld_GetEventGroupingAllowed(this); set => PhysicsWorld_SetEventGroupingAllowed(this, value); }
@@ -1152,12 +1277,15 @@ namespace Unity.U2D.Physics
         public readonly bool contactFilterCallbacks { get => PhysicsWorld_GetContactFilterCallbacks(this); set => PhysicsWorld_SetContactFilterCallbacks(this, value); }
 
         /// <summary>
-        /// Controls if pre-solve callbacks will be called.
+        /// Controls if pre-contact and pre-continuous callbacks will be called.
         /// This only applies to Dynamic bodies and is ignored for triggers.
         /// These are relatively expensive so disabling them can provide a significant performance benefit.
-        /// A pre-solve callback will call the <see cref="PhysicsShape.callbackTarget"/> for both shapes involved if they implement <see cref="PhysicsCallbacks.IPreSolveCallback"/>.
         /// </summary>
-        public readonly bool preSolveCallbacks { get => PhysicsWorld_GetPreSolveCallbacks(this); set => PhysicsWorld_SetPreSolveCallbacks(this, value); }
+        /// <remarks>
+        /// A shape only produces these callbacks if its own <see cref="PhysicsShape.preContactCallbacks"/> is also set.
+        /// The deprecated <see cref="PhysicsCallbacks.IPreSolveCallback"/> is also driven by this switch, for targets that only implement it.
+        /// </remarks>
+        public readonly bool preContactCallbacks { get => PhysicsWorld_GetPreContactCallbacks(this); set => PhysicsWorld_SetPreContactCallbacks(this, value); }
 
         /// <summary>
         /// Controls if body update callback targets are automatically called.
@@ -1181,6 +1309,33 @@ namespace Unity.U2D.Physics
         /// Adjust the bounce threshold, usually in meters per second. It is recommended not to make this value very small because it will prevent bodies from sleeping.
         /// </summary>
         public readonly float bounceThreshold { get => PhysicsWorld_GetBounceThreshold(this); set => PhysicsWorld_SetBounceThreshold(this, value); }
+
+        /// <summary>
+        /// The number of bounce passes the world runs each simulation step, after contacts and joints have been solved.
+        /// Each pass pushes apart the bodies of every contact that struck with a bounciness above zero, at the speed its bounciness allows, and never adds energy.
+        /// More passes let a bounce settle more accurately, which reduces unwanted spinning of bouncing boxes, and each pass adds work for every bouncy contact in the world.
+        /// The value must be from zero up to the maximum bounce pass count.
+        /// With zero, contacts never bounce whatever their bounciness.
+        /// </summary>
+        /// <remarks>
+        /// The maximum bounce pass count is <see cref="PhysicsConstants.MaxBounceIterations"/>.
+        /// Setting a value outside zero to that maximum logs a warning and leaves the current value unchanged.
+        /// See <see cref="bouncePropagation"/> and <see cref="PhysicsShape.SurfaceMaterial.bounciness"/>.
+        /// </remarks>
+        public readonly int bounceIterations { get => PhysicsWorld_GetBounceIterations(this); set => PhysicsWorld_SetBounceIterations(this, value); }
+
+        /// <summary>
+        /// Controls whether the bounce passes also solve contacts that have no bounciness.
+        /// With this disabled, only contacts with a bounciness above zero take part in the bounce passes.
+        /// A bounce then does not carry through neighboring bodies in the same pass, so a stack of boxes on a bouncy surface bounces from the bottom box up rather than together.
+        /// With this enabled, every contact takes part, so a bounce carries through groups of touching bodies within the same simulation step.
+        /// This visits every contact in the world on every bounce pass, which is significantly more expensive, so only enable it when bodies in contact must bounce together.
+        /// Carrying a bounce through a taller group of bodies needs more bounce passes.
+        /// </summary>
+        /// <remarks>
+        /// See <see cref="bounceIterations"/>.
+        /// </remarks>
+        public readonly bool bouncePropagation { get => PhysicsWorld_GetBouncePropagation(this); set => PhysicsWorld_SetBouncePropagation(this, value); }
 
         /// <summary>
         /// The contact hit event threshold controls the collision speed needed to generate a contact hit event, usually in meters per second.
@@ -1214,8 +1369,13 @@ namespace Unity.U2D.Physics
         public readonly float contactSpeed { get => PhysicsWorld_GetContactSpeed(this); set => PhysicsWorld_SetContactSpeed(this, value); }
 
         /// <summary>
-        /// Get/Set the maximum linear speed.
+        /// The fastest any body in the world can move, in meters per second.
+        /// Each simulation step, a body moving faster than this is slowed to it, which stops a body covering so much distance in one step that the simulation becomes unstable.
         /// </summary>
+        /// <remarks>
+        /// A value from zero up to <see cref="PhysicsConstants.MinMaximumLinearSpeed"/> is raised to that minimum.
+        /// A negative value logs a warning and leaves the current value unchanged.
+        /// </remarks>
         public readonly float maximumLinearSpeed { get => PhysicsWorld_GetMaximumLinearSpeed(this); set => PhysicsWorld_SetMaximumLinearSpeed(this, value); }
 
         /// <summary>
@@ -1258,6 +1418,64 @@ namespace Unity.U2D.Physics
         /// Controls the transform plane that the world uses when writing transforms.
         /// See <see cref="PhysicsWorld.transformWriteMode"/>.
         /// </summary>
+        /// <remarks>
+        /// Set this property to run 2D physics in 3D space, for example to lay a 2D world flat on the ground.
+        /// </remarks>
+        /// <example>
+        /// <code lang="cs">
+        /// <![CDATA[
+        /// using Unity.Collections;
+        /// using UnityEngine;
+        /// using Unity.U2D.Physics;
+        ///
+        /// public class CreateXZPlane : MonoBehaviour
+        /// {
+        ///     public PhysicsWorld world;
+        ///
+        ///     private void Start()
+        ///     {
+        ///         // Create a world with a transform plane of XZ, which is the floor in 3D space.
+        ///         PhysicsWorldDefinition worldProperties = new PhysicsWorldDefinition
+        ///         {
+        ///             transformPlane = PhysicsWorld.TransformPlane.XZ,
+        ///             gravity = Vector2.zero
+        ///         };
+        ///         world = PhysicsWorld.Create(worldProperties);
+        ///
+        ///         // Create a square boundary.
+        ///         PhysicsBody boundary = world.CreateBody();
+        ///         using NativeList<Vector2> extentPoints = new NativeList<Vector2>(Allocator.Temp)
+        ///         {
+        ///             new(-4f, 4f),
+        ///             new(4f, 4f),
+        ///             new(4f, -4f),
+        ///             new(-4f, -4f)
+        ///         };
+        ///         ChainGeometry boundaryWalls = new ChainGeometry(extentPoints.AsArray());
+        ///         boundary.CreateChain(boundaryWalls, PhysicsChainDefinition.defaultDefinition);
+        ///
+        ///         // Create a body and set it moving.
+        ///         PhysicsBodyDefinition bodyDefinition = new PhysicsBodyDefinition();
+        ///         bodyDefinition.type = PhysicsBody.BodyType.Dynamic;
+        ///         bodyDefinition.linearVelocity = new Vector2(7.3f, 5.7f);
+        ///         bodyDefinition.angularVelocity = 0f;
+        ///         PhysicsBody body = world.CreateBody(bodyDefinition);
+        ///
+        ///         // Add a shape with a bouncy material.
+        ///         body.transformObject = transform;
+        ///         PhysicsShapeDefinition shapeDefinition = new PhysicsShapeDefinition();
+        ///         shapeDefinition.surfaceMaterial = new PhysicsShape.SurfaceMaterial { bounciness = 1f, friction = 0f };
+        ///         body.CreateShape(new CircleGeometry { radius = 1f }, shapeDefinition);
+        ///     }
+        ///
+        ///     private void OnDisable()
+        ///     {
+        ///         world.Destroy();
+        ///     }
+        /// }
+        /// ]]>
+        /// </code>
+        /// </example>
         public readonly TransformPlane transformPlane { get => PhysicsWorld_GetTransformPlane(this); set => PhysicsWorld_SetTransformPlane(this, value); }
 
         /// <summary>
@@ -1329,11 +1547,7 @@ namespace Unity.U2D.Physics
         /// If <paramref name="deltaTime"/> is zero then only contact and trigger events will be updated and no velocity or position integration or constraint updates will occur.
         /// </summary>
         /// <param name="deltaTime">The amount of time to forward simulate the world.</param>
-        public unsafe readonly void Simulate(float deltaTime)
-        {
-            var world = this;
-            PhysicsWorld_Simulate(new ReadOnlySpan<PhysicsWorld>(&world, 1), deltaTime);
-        }
+        public readonly void Simulate(float deltaTime) => PhysicsWorld_Simulate(stackalloc PhysicsWorld[1] { this }, deltaTime);
 
         /// <summary>
         /// Simulate a batch of worlds.
@@ -1342,7 +1556,8 @@ namespace Unity.U2D.Physics
         /// </summary>
         /// <param name="worlds">The worlds to forward simulate.</param>
         /// <param name="deltaTime">The amount of time to forward simulate the world.</param>
-        public static void Simulate(ReadOnlySpan<PhysicsWorld> worlds, float deltaTime) => PhysicsWorld_Simulate(worlds, deltaTime);
+        /// <returns>The number of worlds that were ignored (not simulated because the world was invalid). A single warning is logged when any are ignored. If the delta time is invalid, nothing is simulated and every world is counted as ignored.</returns>
+        public static int Simulate(ReadOnlySpan<PhysicsWorld> worlds, float deltaTime) => PhysicsWorld_Simulate(worlds, deltaTime);
 
         #region Explode
 
@@ -1397,6 +1612,14 @@ namespace Unity.U2D.Physics
             /// </summary>
             public float impulsePerLength { readonly get => m_ImpulsePerLength; set => m_ImpulsePerLength = Mathf.Clamp(value, -MaxImpulse, MaxImpulse); }
 
+            /// <summary>
+            /// Whether trigger shapes receive the explosion impulse alongside non-trigger shapes.
+            /// A trigger shape reports overlaps rather than producing a physical response, so it is skipped by default and only a non-trigger shape is pushed by the explosion.
+            /// Set this to true when a trigger shape should be pushed as well, for instance when the same shape is used both to detect an overlap and to be thrown by a blast.
+            /// Defaults to false.
+            /// </summary>
+            public bool useTriggers { readonly get => m_UseTriggers; set => m_UseTriggers = value; }
+
             #region Internal
 
             [SerializeField] PhysicsMask m_HitCategories;
@@ -1404,6 +1627,7 @@ namespace Unity.U2D.Physics
             [SerializeField] [Min(0.0f)] float m_Radius;
             [SerializeField] [Min(0.0f)] float m_Falloff;
             [SerializeField] float m_ImpulsePerLength;
+            [SerializeField] bool m_UseTriggers;
 
             #endregion
         }
@@ -1648,7 +1872,7 @@ namespace Unity.U2D.Physics
         /// <param name="aabb">The AABB used to check overlap. This must be in world-space.</param>
         /// <param name="filter">The filter to control the result returned.</param>
         /// <returns>If the query overlaps anything.</returns>
-        public unsafe readonly bool TestOverlapAABB(PhysicsAABB aabb, PhysicsQuery.QueryFilter filter) => TestOverlapAABB(new ReadOnlySpan<PhysicsAABB>(&aabb, 1), filter);
+        public readonly bool TestOverlapAABB(PhysicsAABB aabb, PhysicsQuery.QueryFilter filter) => TestOverlapAABB(stackalloc PhysicsAABB[1] { aabb }, filter);
 
         /// <summary>
         /// Tests if the provided AABBs potentially overlap any shapes.
@@ -1667,7 +1891,25 @@ namespace Unity.U2D.Physics
         /// <param name="shape">The shape used to check overlap.</param>
         /// <param name="filter">The filter to control the result returned.</param>
         /// <returns>If the query overlaps anything.</returns>
-        public readonly bool TestOverlapShape(PhysicsShape shape, PhysicsQuery.QueryFilter filter) => PhysicsWorld_TestOverlapShape(this, shape.CreateShapeProxy(true), filter, shape);
+        public readonly bool TestOverlapShape(PhysicsShape shape, PhysicsQuery.QueryFilter filter)
+        {
+            ReadOnlySpan<PhysicsShape.ShapeProxy> span = stackalloc PhysicsShape.ShapeProxy[1] { shape.CreateShapeProxy(true) };
+            return PhysicsWorld_TestOverlapShapeProxy(this, span, Vector2.zero, filter, shape);
+        }
+
+        /// <summary>
+        /// Tests if the provided shape overlaps any shapes.
+        /// The selected shape is excluded from any results and must be in this world otherwise a warning will be produced.
+        /// </summary>
+        /// <param name="shape">The shape used to check overlap.</param>
+        /// <param name="origin">The point, in world space, the shape's local geometry is tested at. The shape's body is not moved and its position is not used, so the same shape can be tested anywhere.</param>
+        /// <param name="filter">The filter to control the result returned.</param>
+        /// <returns>If the query overlaps anything.</returns>
+        public readonly bool TestOverlapShape(PhysicsShape shape, Vector2 origin, PhysicsQuery.QueryFilter filter)
+        {
+            ReadOnlySpan<PhysicsShape.ShapeProxy> span = stackalloc PhysicsShape.ShapeProxy[1] { shape.CreateShapeProxy() };
+            return PhysicsWorld_TestOverlapShapeProxy(this, span, origin, filter, shape);
+        }
 
         /// <summary>
         /// Test if the provided shape proxy overlaps any shapes.
@@ -1675,7 +1917,16 @@ namespace Unity.U2D.Physics
         /// <param name="shapeProxy">The shape proxy to use. This must be in world-space.</param>
         /// <param name="filter">The filter to control the result returned.</param>
         /// <returns>If the query overlaps anything.</returns>
-        public unsafe readonly bool TestOverlapShapeProxy(PhysicsShape.ShapeProxy shapeProxy, PhysicsQuery.QueryFilter filter) => TestOverlapShapeProxy(new ReadOnlySpan<PhysicsShape.ShapeProxy>(&shapeProxy, 1), filter);
+        public readonly bool TestOverlapShapeProxy(PhysicsShape.ShapeProxy shapeProxy, PhysicsQuery.QueryFilter filter) => TestOverlapShapeProxy(stackalloc PhysicsShape.ShapeProxy[1] { shapeProxy }, filter);
+
+        /// <summary>
+        /// Test if the provided shape proxy overlaps any shapes.
+        /// </summary>
+        /// <param name="shapeProxy">The shape proxy to use. This must be in local-space, relative to <paramref name="origin"/>.</param>
+        /// <param name="origin">The point, in world space, that the shape proxy is defined relative to. This lets the proxy be authored in a local frame instead of being translated into world space before the query.</param>
+        /// <param name="filter">The filter to control the result returned.</param>
+        /// <returns>If the query overlaps anything.</returns>
+        public readonly bool TestOverlapShapeProxy(PhysicsShape.ShapeProxy shapeProxy, Vector2 origin, PhysicsQuery.QueryFilter filter) => TestOverlapShapeProxy(stackalloc PhysicsShape.ShapeProxy[1] { shapeProxy }, origin, filter);
 
         /// <summary>
         /// Test if the provided shape proxies overlaps any shapes.
@@ -1683,7 +1934,16 @@ namespace Unity.U2D.Physics
         /// <param name="shapeProxies">The shape proxy to use. This must be in world-space.</param>
         /// <param name="filter">The filter to control the result returned.</param>
         /// <returns>If the query overlaps anything.</returns>
-        public readonly bool TestOverlapShapeProxy(ReadOnlySpan<PhysicsShape.ShapeProxy> shapeProxies, PhysicsQuery.QueryFilter filter) => PhysicsWorld_TestOverlapShapeProxy(this, shapeProxies, filter);
+        public readonly bool TestOverlapShapeProxy(ReadOnlySpan<PhysicsShape.ShapeProxy> shapeProxies, PhysicsQuery.QueryFilter filter) => TestOverlapShapeProxy(shapeProxies, Vector2.zero, filter);
+
+        /// <summary>
+        /// Test if the provided shape proxies overlaps any shapes.
+        /// </summary>
+        /// <param name="shapeProxies">The shape proxy to use. These must be in local-space, relative to <paramref name="origin"/>.</param>
+        /// <param name="origin">The point, in world space, that the shape proxies are defined relative to. This lets the proxies be authored in a local frame instead of being translated into world space before the query.</param>
+        /// <param name="filter">The filter to control the result returned.</param>
+        /// <returns>If the query overlaps anything.</returns>
+        public readonly bool TestOverlapShapeProxy(ReadOnlySpan<PhysicsShape.ShapeProxy> shapeProxies, Vector2 origin, PhysicsQuery.QueryFilter filter) => PhysicsWorld_TestOverlapShapeProxy(this, shapeProxies, origin, filter, default);
 
         /// <summary>
         /// Tests if the provided point overlaps any shapes.
@@ -1692,7 +1952,7 @@ namespace Unity.U2D.Physics
         /// <param name="point">The point used to check overlap. This must be in world-space.</param>
         /// <param name="filter">The filter to control the result returned.</param>
         /// <returns>If the query overlaps anything.</returns>
-        public unsafe readonly bool TestOverlapPoint(Vector2 point, PhysicsQuery.QueryFilter filter) => TestOverlapPoint(new ReadOnlySpan<Vector2>(&point, 1), filter);
+        public readonly bool TestOverlapPoint(Vector2 point, PhysicsQuery.QueryFilter filter) => TestOverlapPoint(stackalloc Vector2[1] { point }, filter);
 
         /// <summary>
         /// Tests if the provided point(s) overlap any shapes.
@@ -1711,7 +1971,7 @@ namespace Unity.U2D.Physics
         /// <param name="geometry">The Circle geometry used to check overlap. This must be in world-space.</param>
         /// <param name="filter">The filter to control the result returned.</param>
         /// <returns>If the query overlaps anything.</returns>
-        public unsafe readonly bool TestOverlapGeometry(CircleGeometry geometry, PhysicsQuery.QueryFilter filter) => TestOverlapGeometry(new ReadOnlySpan<CircleGeometry>(&geometry, 1), filter);
+        public readonly bool TestOverlapGeometry(CircleGeometry geometry, PhysicsQuery.QueryFilter filter) => TestOverlapGeometry(stackalloc CircleGeometry[1] { geometry }, filter);
 
         /// <summary>
         /// Tests if the provided Circle geometry overlaps any shapes.
@@ -1721,7 +1981,29 @@ namespace Unity.U2D.Physics
         /// <param name="geometry">The Circle geometry used to check overlap. These must be in world-space.</param>
         /// <param name="filter">The filter to control the result returned.</param>
         /// <returns>If the query overlaps anything.</returns>
-        public readonly bool TestOverlapGeometry(ReadOnlySpan<CircleGeometry> geometry, PhysicsQuery.QueryFilter filter) => PhysicsWorld_TestOverlapCircleGeometry(this, geometry, filter);
+        public readonly bool TestOverlapGeometry(ReadOnlySpan<CircleGeometry> geometry, PhysicsQuery.QueryFilter filter) => PhysicsWorld_TestOverlapCircleGeometry(this, geometry, Vector2.zero, filter);
+
+        /// <summary>
+        /// Tests if the provided Circle geometry overlaps any shapes.
+        /// A circle with a radius of zero is equivalent to <see cref="PhysicsWorld.TestOverlapPoint(Vector2, PhysicsQuery.QueryFilter)"/>.
+        /// See <see cref="CircleGeometry"/> and <see cref="PhysicsQuery.QueryFilter"/>.
+        /// </summary>
+        /// <param name="geometry">The Circle geometry used to check overlap. This must be in local-space, relative to <paramref name="origin"/>.</param>
+        /// <param name="origin">The point, in world space, that the geometry is defined relative to. This lets the geometry be authored in a local frame instead of being translated into world space before the query.</param>
+        /// <param name="filter">The filter to control the result returned.</param>
+        /// <returns>If the query overlaps anything.</returns>
+        public readonly bool TestOverlapGeometry(CircleGeometry geometry, Vector2 origin, PhysicsQuery.QueryFilter filter) => TestOverlapGeometry(stackalloc CircleGeometry[1] { geometry }, origin, filter);
+
+        /// <summary>
+        /// Tests if the provided Circle geometry overlaps any shapes.
+        /// A circle with a radius of zero is equivalent to <see cref="PhysicsWorld.TestOverlapPoint(Vector2, PhysicsQuery.QueryFilter)"/>.
+        /// See <see cref="CircleGeometry"/> and <see cref="PhysicsQuery.QueryFilter"/>.
+        /// </summary>
+        /// <param name="geometry">The Circle geometry used to check overlap. These must be in local-space, relative to <paramref name="origin"/>.</param>
+        /// <param name="origin">The point, in world space, that the geometry is defined relative to. This lets the geometry be authored in a local frame instead of being translated into world space before the query.</param>
+        /// <param name="filter">The filter to control the result returned.</param>
+        /// <returns>If the query overlaps anything.</returns>
+        public readonly bool TestOverlapGeometry(ReadOnlySpan<CircleGeometry> geometry, Vector2 origin, PhysicsQuery.QueryFilter filter) => PhysicsWorld_TestOverlapCircleGeometry(this, geometry, origin, filter);
 
         /// <summary>
         /// Tests if the provided Capsule geometry overlaps any shapes.
@@ -1730,7 +2012,7 @@ namespace Unity.U2D.Physics
         /// <param name="geometry">The Capsule geometry used to check overlap. This must be in world-space.</param>
         /// <param name="filter">The filter to control the result returned.</param>
         /// <returns>If the query overlaps anything.</returns>
-        public unsafe readonly bool TestOverlapGeometry(CapsuleGeometry geometry, PhysicsQuery.QueryFilter filter) => TestOverlapGeometry(new ReadOnlySpan<CapsuleGeometry>(&geometry, 1), filter);
+        public readonly bool TestOverlapGeometry(CapsuleGeometry geometry, PhysicsQuery.QueryFilter filter) => TestOverlapGeometry(stackalloc CapsuleGeometry[1] { geometry }, filter);
 
         /// <summary>
         /// Tests if the provided Capsule geometry overlaps any shapes.
@@ -1739,7 +2021,27 @@ namespace Unity.U2D.Physics
         /// <param name="geometry">The Capsule geometry used to check overlap. These must be in world-space.</param>
         /// <param name="filter">The filter to control the result returned.</param>
         /// <returns>If the query overlaps anything.</returns>
-        public readonly bool TestOverlapGeometry(ReadOnlySpan<CapsuleGeometry> geometry, PhysicsQuery.QueryFilter filter) => PhysicsWorld_TestOverlapCapsuleGeometry(this, geometry, filter);
+        public readonly bool TestOverlapGeometry(ReadOnlySpan<CapsuleGeometry> geometry, PhysicsQuery.QueryFilter filter) => PhysicsWorld_TestOverlapCapsuleGeometry(this, geometry, Vector2.zero, filter);
+
+        /// <summary>
+        /// Tests if the provided Capsule geometry overlaps any shapes.
+        /// See <see cref="CapsuleGeometry"/> and <see cref="PhysicsQuery.QueryFilter"/>.
+        /// </summary>
+        /// <param name="geometry">The Capsule geometry used to check overlap. This must be in local-space, relative to <paramref name="origin"/>.</param>
+        /// <param name="origin">The point, in world space, that the geometry is defined relative to. This lets the geometry be authored in a local frame instead of being translated into world space before the query.</param>
+        /// <param name="filter">The filter to control the result returned.</param>
+        /// <returns>If the query overlaps anything.</returns>
+        public readonly bool TestOverlapGeometry(CapsuleGeometry geometry, Vector2 origin, PhysicsQuery.QueryFilter filter) => TestOverlapGeometry(stackalloc CapsuleGeometry[1] { geometry }, origin, filter);
+
+        /// <summary>
+        /// Tests if the provided Capsule geometry overlaps any shapes.
+        /// See <see cref="CapsuleGeometry"/> and <see cref="PhysicsQuery.QueryFilter"/>.
+        /// </summary>
+        /// <param name="geometry">The Capsule geometry used to check overlap. These must be in local-space, relative to <paramref name="origin"/>.</param>
+        /// <param name="origin">The point, in world space, that the geometry is defined relative to. This lets the geometry be authored in a local frame instead of being translated into world space before the query.</param>
+        /// <param name="filter">The filter to control the result returned.</param>
+        /// <returns>If the query overlaps anything.</returns>
+        public readonly bool TestOverlapGeometry(ReadOnlySpan<CapsuleGeometry> geometry, Vector2 origin, PhysicsQuery.QueryFilter filter) => PhysicsWorld_TestOverlapCapsuleGeometry(this, geometry, origin, filter);
 
         /// <summary>
         /// Tests if the provided Polygon geometry overlaps any shapes.
@@ -1748,7 +2050,7 @@ namespace Unity.U2D.Physics
         /// <param name="geometry">The Polygon geometry used to check overlap. This must be in world-space.</param>
         /// <param name="filter">The filter to control the result returned.</param>
         /// <returns>If the query overlaps anything.</returns>
-        public unsafe readonly bool TestOverlapGeometry(PolygonGeometry geometry, PhysicsQuery.QueryFilter filter) => TestOverlapGeometry(new ReadOnlySpan<PolygonGeometry>(&geometry, 1), filter);
+        public readonly bool TestOverlapGeometry(PolygonGeometry geometry, PhysicsQuery.QueryFilter filter) => TestOverlapGeometry(stackalloc PolygonGeometry[1] { geometry }, filter);
 
         /// <summary>
         /// Tests if the provided Polygon geometry overlaps any shapes.
@@ -1757,7 +2059,27 @@ namespace Unity.U2D.Physics
         /// <param name="geometry">The Polygon geometry used to check overlap. These must be in world-space.</param>
         /// <param name="filter">The filter to control the result returned.</param>
         /// <returns>If the query overlaps anything.</returns>
-        public readonly bool TestOverlapGeometry(ReadOnlySpan<PolygonGeometry> geometry, PhysicsQuery.QueryFilter filter) => PhysicsWorld_TestOverlapPolygonGeometry(this, geometry, filter);
+        public readonly bool TestOverlapGeometry(ReadOnlySpan<PolygonGeometry> geometry, PhysicsQuery.QueryFilter filter) => PhysicsWorld_TestOverlapPolygonGeometry(this, geometry, Vector2.zero, filter);
+
+        /// <summary>
+        /// Tests if the provided Polygon geometry overlaps any shapes.
+        /// See <see cref="PolygonGeometry"/> and <see cref="PhysicsQuery.QueryFilter"/>.
+        /// </summary>
+        /// <param name="geometry">The Polygon geometry used to check overlap. This must be in local-space, relative to <paramref name="origin"/>.</param>
+        /// <param name="origin">The point, in world space, that the geometry is defined relative to. This lets the geometry be authored in a local frame instead of being translated into world space before the query.</param>
+        /// <param name="filter">The filter to control the result returned.</param>
+        /// <returns>If the query overlaps anything.</returns>
+        public readonly bool TestOverlapGeometry(PolygonGeometry geometry, Vector2 origin, PhysicsQuery.QueryFilter filter) => TestOverlapGeometry(stackalloc PolygonGeometry[1] { geometry }, origin, filter);
+
+        /// <summary>
+        /// Tests if the provided Polygon geometry overlaps any shapes.
+        /// See <see cref="PolygonGeometry"/> and <see cref="PhysicsQuery.QueryFilter"/>.
+        /// </summary>
+        /// <param name="geometry">The Polygon geometry used to check overlap. These must be in local-space, relative to <paramref name="origin"/>.</param>
+        /// <param name="origin">The point, in world space, that the geometry is defined relative to. This lets the geometry be authored in a local frame instead of being translated into world space before the query.</param>
+        /// <param name="filter">The filter to control the result returned.</param>
+        /// <returns>If the query overlaps anything.</returns>
+        public readonly bool TestOverlapGeometry(ReadOnlySpan<PolygonGeometry> geometry, Vector2 origin, PhysicsQuery.QueryFilter filter) => PhysicsWorld_TestOverlapPolygonGeometry(this, geometry, origin, filter);
 
         /// <summary>
         /// Tests if the provided Segment geometry overlaps any shapes.
@@ -1766,7 +2088,7 @@ namespace Unity.U2D.Physics
         /// <param name="geometry">The Segment geometry used to check overlap. This must be in world-space.</param>
         /// <param name="filter">The filter to control the result returned.</param>
         /// <returns>If the query overlaps anything.</returns>
-        public unsafe readonly bool TestOverlapGeometry(SegmentGeometry geometry, PhysicsQuery.QueryFilter filter) => TestOverlapGeometry(new ReadOnlySpan<SegmentGeometry>(&geometry, 1), filter);
+        public readonly bool TestOverlapGeometry(SegmentGeometry geometry, PhysicsQuery.QueryFilter filter) => TestOverlapGeometry(stackalloc SegmentGeometry[1] { geometry }, filter);
 
         /// <summary>
         /// Tests if the provided Segment geometry overlaps any shapes.
@@ -1775,7 +2097,27 @@ namespace Unity.U2D.Physics
         /// <param name="geometry">The Segment geometry used to check overlap. These must be in world-space.</param>
         /// <param name="filter">The filter to control the result returned.</param>
         /// <returns>If the query overlaps anything.</returns>
-        public readonly bool TestOverlapGeometry(ReadOnlySpan<SegmentGeometry> geometry, PhysicsQuery.QueryFilter filter) => PhysicsWorld_TestOverlapSegmentGeometry(this, geometry, filter);
+        public readonly bool TestOverlapGeometry(ReadOnlySpan<SegmentGeometry> geometry, PhysicsQuery.QueryFilter filter) => PhysicsWorld_TestOverlapSegmentGeometry(this, geometry, Vector2.zero, filter);
+
+        /// <summary>
+        /// Tests if the provided Segment geometry overlaps any shapes.
+        /// See <see cref="SegmentGeometry"/> and <see cref="PhysicsQuery.QueryFilter"/>.
+        /// </summary>
+        /// <param name="geometry">The Segment geometry used to check overlap. This must be in local-space, relative to <paramref name="origin"/>.</param>
+        /// <param name="origin">The point, in world space, that the geometry is defined relative to. This lets the geometry be authored in a local frame instead of being translated into world space before the query.</param>
+        /// <param name="filter">The filter to control the result returned.</param>
+        /// <returns>If the query overlaps anything.</returns>
+        public readonly bool TestOverlapGeometry(SegmentGeometry geometry, Vector2 origin, PhysicsQuery.QueryFilter filter) => TestOverlapGeometry(stackalloc SegmentGeometry[1] { geometry }, origin, filter);
+
+        /// <summary>
+        /// Tests if the provided Segment geometry overlaps any shapes.
+        /// See <see cref="SegmentGeometry"/> and <see cref="PhysicsQuery.QueryFilter"/>.
+        /// </summary>
+        /// <param name="geometry">The Segment geometry used to check overlap. These must be in local-space, relative to <paramref name="origin"/>.</param>
+        /// <param name="origin">The point, in world space, that the geometry is defined relative to. This lets the geometry be authored in a local frame instead of being translated into world space before the query.</param>
+        /// <param name="filter">The filter to control the result returned.</param>
+        /// <returns>If the query overlaps anything.</returns>
+        public readonly bool TestOverlapGeometry(ReadOnlySpan<SegmentGeometry> geometry, Vector2 origin, PhysicsQuery.QueryFilter filter) => PhysicsWorld_TestOverlapSegmentGeometry(this, geometry, origin, filter);
 
         /// <summary>
         /// Tests if the provided Chain-Segment geometry overlaps any shapes.
@@ -1784,7 +2126,7 @@ namespace Unity.U2D.Physics
         /// <param name="geometry">The Chain-Segment geometry used to check overlap. This must be in world-space.</param>
         /// <param name="filter">The filter to control the result returned.</param>
         /// <returns>If the query overlaps anything.</returns>
-        public unsafe readonly bool TestOverlapGeometry(ChainSegmentGeometry geometry, PhysicsQuery.QueryFilter filter) => TestOverlapGeometry(new ReadOnlySpan<ChainSegmentGeometry>(&geometry, 1), filter);
+        public readonly bool TestOverlapGeometry(ChainSegmentGeometry geometry, PhysicsQuery.QueryFilter filter) => TestOverlapGeometry(stackalloc ChainSegmentGeometry[1] { geometry }, filter);
 
         /// <summary>
         /// Tests if the provided Chain-Segment geometry overlaps any shapes.
@@ -1793,7 +2135,27 @@ namespace Unity.U2D.Physics
         /// <param name="geometry">The Chain-Segment geometry used to check overlap. These must be in world-space.</param>
         /// <param name="filter">The filter to control the result returned.</param>
         /// <returns>If the query overlaps anything.</returns>
-        public readonly bool TestOverlapGeometry(ReadOnlySpan<ChainSegmentGeometry> geometry, PhysicsQuery.QueryFilter filter) => PhysicsWorld_TestOverlapChainSegmentGeometry(this, geometry, filter);
+        public readonly bool TestOverlapGeometry(ReadOnlySpan<ChainSegmentGeometry> geometry, PhysicsQuery.QueryFilter filter) => PhysicsWorld_TestOverlapChainSegmentGeometry(this, geometry, Vector2.zero, filter);
+
+        /// <summary>
+        /// Tests if the provided Chain-Segment geometry overlaps any shapes.
+        /// See <see cref="ChainSegmentGeometry"/> and <see cref="PhysicsQuery.QueryFilter"/>.
+        /// </summary>
+        /// <param name="geometry">The Chain-Segment geometry used to check overlap. This must be in local-space, relative to <paramref name="origin"/>.</param>
+        /// <param name="origin">The point, in world space, that the geometry is defined relative to. This lets the geometry be authored in a local frame instead of being translated into world space before the query.</param>
+        /// <param name="filter">The filter to control the result returned.</param>
+        /// <returns>If the query overlaps anything.</returns>
+        public readonly bool TestOverlapGeometry(ChainSegmentGeometry geometry, Vector2 origin, PhysicsQuery.QueryFilter filter) => TestOverlapGeometry(stackalloc ChainSegmentGeometry[1] { geometry }, origin, filter);
+
+        /// <summary>
+        /// Tests if the provided Chain-Segment geometry overlaps any shapes.
+        /// See <see cref="ChainSegmentGeometry"/> and <see cref="PhysicsQuery.QueryFilter"/>.
+        /// </summary>
+        /// <param name="geometry">The Chain-Segment geometry used to check overlap. These must be in local-space, relative to <paramref name="origin"/>.</param>
+        /// <param name="origin">The point, in world space, that the geometry is defined relative to. This lets the geometry be authored in a local frame instead of being translated into world space before the query.</param>
+        /// <param name="filter">The filter to control the result returned.</param>
+        /// <returns>If the query overlaps anything.</returns>
+        public readonly bool TestOverlapGeometry(ReadOnlySpan<ChainSegmentGeometry> geometry, Vector2 origin, PhysicsQuery.QueryFilter filter) => PhysicsWorld_TestOverlapChainSegmentGeometry(this, geometry, origin, filter);
 
         /// <summary>
         /// Returns all shapes that potentially overlap the provided AABB.
@@ -1804,7 +2166,7 @@ namespace Unity.U2D.Physics
         /// <param name="filter">The filter to control what results are returned.</param>
         /// <param name="allocator">The memory allocator to use for the results. This can only be <see cref="Unity.Collections.Allocator.Temp"/>, <see cref="Unity.Collections.Allocator.TempJob"/> or <see cref="Unity.Collections.Allocator.Persistent"/>.</param>
         /// <returns>The query overlap results. This NativeArray must be disposed of after use otherwise leaks will occur. The exception to this is if the array is empty.</returns>
-        public unsafe readonly NativeArray<PhysicsQuery.WorldOverlapResult> OverlapAABB(PhysicsAABB aabb, PhysicsQuery.QueryFilter filter, Allocator allocator = Unity.Collections.Allocator.Temp) => OverlapAABB(new ReadOnlySpan<PhysicsAABB>(&aabb, 1), filter, allocator);
+        public readonly NativeArray<PhysicsQuery.WorldOverlapResult> OverlapAABB(PhysicsAABB aabb, PhysicsQuery.QueryFilter filter, Allocator allocator = Unity.Collections.Allocator.Temp) => OverlapAABB(stackalloc PhysicsAABB[1] { aabb }, filter, allocator);
 
         /// <summary>
         /// Returns all shapes that potentially overlap the provided AABBs.
@@ -1844,7 +2206,26 @@ namespace Unity.U2D.Physics
         /// <param name="filter">The filter to control what results are returned.</param>
         /// <param name="allocator">The memory allocator to use for the results. This can only be <see cref="Unity.Collections.Allocator.Temp"/>, <see cref="Unity.Collections.Allocator.TempJob"/> or <see cref="Unity.Collections.Allocator.Persistent"/>.</param>
         /// <returns>The query overlap results. This NativeArray must be disposed of after use otherwise leaks will occur. The exception to this is if the array is empty.</returns>
-        public readonly NativeArray<PhysicsQuery.WorldOverlapResult> OverlapShape(PhysicsShape shape, PhysicsQuery.QueryFilter filter, Allocator allocator = Unity.Collections.Allocator.Temp) => PhysicsWorld_OverlapShape(this, shape.CreateShapeProxy(true), filter, allocator, shape).ToNativeArray<PhysicsQuery.WorldOverlapResult>();
+        public readonly NativeArray<PhysicsQuery.WorldOverlapResult> OverlapShape(PhysicsShape shape, PhysicsQuery.QueryFilter filter, Allocator allocator = Unity.Collections.Allocator.Temp)
+        {
+            ReadOnlySpan<PhysicsShape.ShapeProxy> span = stackalloc PhysicsShape.ShapeProxy[1] { shape.CreateShapeProxy(true) };
+            return PhysicsWorld_OverlapShapeProxy(this, span, Vector2.zero, filter, shape, allocator).ToNativeArray<PhysicsQuery.WorldOverlapResult>();
+        }
+
+        /// <summary>
+        /// Returns all shapes that overlap the provided shape.
+        /// The selected shape is excluded from any results and must be in this world otherwise a warning will be produced.
+        /// </summary>
+        /// <param name="shape">The shape used to check overlap.</param>
+        /// <param name="origin">The point, in world space, the shape's local geometry is tested at. The shape's body is not moved and its position is not used, so the same shape can be tested anywhere.</param>
+        /// <param name="filter">The filter to control what results are returned.</param>
+        /// <param name="allocator">The memory allocator to use for the results. This can only be <see cref="Unity.Collections.Allocator.Temp"/>, <see cref="Unity.Collections.Allocator.TempJob"/> or <see cref="Unity.Collections.Allocator.Persistent"/>.</param>
+        /// <returns>The query overlap results. This NativeArray must be disposed of after use otherwise leaks will occur. The exception to this is if the array is empty.</returns>
+        public readonly NativeArray<PhysicsQuery.WorldOverlapResult> OverlapShape(PhysicsShape shape, Vector2 origin, PhysicsQuery.QueryFilter filter, Allocator allocator = Unity.Collections.Allocator.Temp)
+        {
+            ReadOnlySpan<PhysicsShape.ShapeProxy> span = stackalloc PhysicsShape.ShapeProxy[1] { shape.CreateShapeProxy() };
+            return PhysicsWorld_OverlapShapeProxy(this, span, origin, filter, shape, allocator).ToNativeArray<PhysicsQuery.WorldOverlapResult>();
+        }
 
         /// <summary>
         /// Returns all shapes that overlap the shape proxy.
@@ -1854,7 +2235,18 @@ namespace Unity.U2D.Physics
         /// <param name="filter">The filter to control what results are returned.</param>
         /// <param name="allocator">The memory allocator to use for the results. This can only be <see cref="Unity.Collections.Allocator.Temp"/>, <see cref="Unity.Collections.Allocator.TempJob"/> or <see cref="Unity.Collections.Allocator.Persistent"/>.</param>
         /// <returns>The query overlap results. This NativeArray must be disposed of after use otherwise leaks will occur. The exception to this is if the array is empty.</returns>
-        public unsafe readonly NativeArray<PhysicsQuery.WorldOverlapResult> OverlapShapeProxy(PhysicsShape.ShapeProxy shapeProxy, PhysicsQuery.QueryFilter filter, Allocator allocator = Unity.Collections.Allocator.Temp) => OverlapShapeProxy(new ReadOnlySpan<PhysicsShape.ShapeProxy>(&shapeProxy, 1), filter, allocator);
+        public readonly NativeArray<PhysicsQuery.WorldOverlapResult> OverlapShapeProxy(PhysicsShape.ShapeProxy shapeProxy, PhysicsQuery.QueryFilter filter, Allocator allocator = Unity.Collections.Allocator.Temp) => OverlapShapeProxy(stackalloc PhysicsShape.ShapeProxy[1] { shapeProxy }, filter, allocator);
+
+        /// <summary>
+        /// Returns all shapes that overlap the shape proxy.
+        /// See <see cref="PhysicsQuery.QueryFilter"/>. <see cref="PhysicsQuery.WorldOverlapResult"/> and <see cref="Unity.Collections.Allocator"/>.
+        /// </summary>
+        /// <param name="shapeProxy">The shape proxy to use. This must be in local-space, relative to <paramref name="origin"/>.</param>
+        /// <param name="origin">The point, in world space, that the shape proxy is defined relative to. This lets the proxy be authored in a local frame instead of being translated into world space before the query.</param>
+        /// <param name="filter">The filter to control what results are returned.</param>
+        /// <param name="allocator">The memory allocator to use for the results. This can only be <see cref="Unity.Collections.Allocator.Temp"/>, <see cref="Unity.Collections.Allocator.TempJob"/> or <see cref="Unity.Collections.Allocator.Persistent"/>.</param>
+        /// <returns>The query overlap results. This NativeArray must be disposed of after use otherwise leaks will occur. The exception to this is if the array is empty.</returns>
+        public readonly NativeArray<PhysicsQuery.WorldOverlapResult> OverlapShapeProxy(PhysicsShape.ShapeProxy shapeProxy, Vector2 origin, PhysicsQuery.QueryFilter filter, Allocator allocator = Unity.Collections.Allocator.Temp) => OverlapShapeProxy(stackalloc PhysicsShape.ShapeProxy[1] { shapeProxy }, origin, filter, allocator);
 
         /// <summary>
         /// Returns all shapes that overlap the shape proxies.
@@ -1864,7 +2256,18 @@ namespace Unity.U2D.Physics
         /// <param name="filter">The filter to control what results are returned.</param>
         /// <param name="allocator">The memory allocator to use for the results. This can only be <see cref="Unity.Collections.Allocator.Temp"/>, <see cref="Unity.Collections.Allocator.TempJob"/> or <see cref="Unity.Collections.Allocator.Persistent"/>.</param>
         /// <returns>The query overlap results. This NativeArray must be disposed of after use otherwise leaks will occur. The exception to this is if the array is empty.</returns>
-        public readonly NativeArray<PhysicsQuery.WorldOverlapResult> OverlapShapeProxy(ReadOnlySpan<PhysicsShape.ShapeProxy> shapeProxies, PhysicsQuery.QueryFilter filter, Allocator allocator = Unity.Collections.Allocator.Temp) => PhysicsWorld_OverlapShapeProxy(this, shapeProxies, filter, allocator).ToNativeArray<PhysicsQuery.WorldOverlapResult>();
+        public readonly NativeArray<PhysicsQuery.WorldOverlapResult> OverlapShapeProxy(ReadOnlySpan<PhysicsShape.ShapeProxy> shapeProxies, PhysicsQuery.QueryFilter filter, Allocator allocator = Unity.Collections.Allocator.Temp) => OverlapShapeProxy(shapeProxies, Vector2.zero, filter, allocator);
+
+        /// <summary>
+        /// Returns all shapes that overlap the shape proxies.
+        /// See <see cref="PhysicsQuery.QueryFilter"/>. <see cref="PhysicsQuery.WorldOverlapResult"/> and <see cref="Unity.Collections.Allocator"/>.
+        /// </summary>
+        /// <param name="shapeProxies">The shape proxies to use. These must be in local-space, relative to <paramref name="origin"/>.</param>
+        /// <param name="origin">The point, in world space, that the shape proxies are defined relative to. This lets the proxies be authored in a local frame instead of being translated into world space before the query.</param>
+        /// <param name="filter">The filter to control what results are returned.</param>
+        /// <param name="allocator">The memory allocator to use for the results. This can only be <see cref="Unity.Collections.Allocator.Temp"/>, <see cref="Unity.Collections.Allocator.TempJob"/> or <see cref="Unity.Collections.Allocator.Persistent"/>.</param>
+        /// <returns>The query overlap results. This NativeArray must be disposed of after use otherwise leaks will occur. The exception to this is if the array is empty.</returns>
+        public readonly NativeArray<PhysicsQuery.WorldOverlapResult> OverlapShapeProxy(ReadOnlySpan<PhysicsShape.ShapeProxy> shapeProxies, Vector2 origin, PhysicsQuery.QueryFilter filter, Allocator allocator = Unity.Collections.Allocator.Temp) => PhysicsWorld_OverlapShapeProxy(this, shapeProxies, origin, filter, default, allocator).ToNativeArray<PhysicsQuery.WorldOverlapResult>();
 
         /// <summary>
         /// Returns all shapes that overlap the provided point.
@@ -1875,7 +2278,7 @@ namespace Unity.U2D.Physics
         /// <param name="filter">The filter to control what results are returned.</param>
         /// <param name="allocator">The memory allocator to use for the results. This can only be <see cref="Unity.Collections.Allocator.Temp"/>, <see cref="Unity.Collections.Allocator.TempJob"/> or <see cref="Unity.Collections.Allocator.Persistent"/>.</param>
         /// <returns>The query overlap results. This NativeArray must be disposed of after use otherwise leaks will occur. The exception to this is if the array is empty.</returns>
-        public unsafe readonly NativeArray<PhysicsQuery.WorldOverlapResult> OverlapPoint(Vector2 point, PhysicsQuery.QueryFilter filter, Allocator allocator = Unity.Collections.Allocator.Temp) => OverlapPoint(new ReadOnlySpan<Vector2>(&point, 1), filter, allocator);
+        public readonly NativeArray<PhysicsQuery.WorldOverlapResult> OverlapPoint(Vector2 point, PhysicsQuery.QueryFilter filter, Allocator allocator = Unity.Collections.Allocator.Temp) => OverlapPoint(stackalloc Vector2[1] { point }, filter, allocator);
 
         /// <summary>
         /// Returns all shapes that overlap the provided point(s).
@@ -1897,7 +2300,7 @@ namespace Unity.U2D.Physics
         /// <param name="filter">The filter to control what results are returned.</param>
         /// <param name="allocator">The memory allocator to use for the results. This can only be <see cref="Unity.Collections.Allocator.Temp"/>, <see cref="Unity.Collections.Allocator.TempJob"/> or <see cref="Unity.Collections.Allocator.Persistent"/>.</param>
         /// <returns>The query overlap results. This NativeArray must be disposed of after use otherwise leaks will occur. The exception to this is if the array is empty.</returns>
-        public unsafe readonly NativeArray<PhysicsQuery.WorldOverlapResult> OverlapGeometry(CircleGeometry geometry, PhysicsQuery.QueryFilter filter, Allocator allocator = Unity.Collections.Allocator.Temp) => OverlapGeometry(new ReadOnlySpan<CircleGeometry>(&geometry, 1), filter, allocator);
+        public readonly NativeArray<PhysicsQuery.WorldOverlapResult> OverlapGeometry(CircleGeometry geometry, PhysicsQuery.QueryFilter filter, Allocator allocator = Unity.Collections.Allocator.Temp) => OverlapGeometry(stackalloc CircleGeometry[1] { geometry }, filter, allocator);
 
         /// <summary>
         /// Returns all shapes that overlap the provided Circle geometry.
@@ -1908,7 +2311,29 @@ namespace Unity.U2D.Physics
         /// <param name="filter">The filter to control what results are returned.</param>
         /// <param name="allocator">The memory allocator to use for the results. This can only be <see cref="Unity.Collections.Allocator.Temp"/>, <see cref="Unity.Collections.Allocator.TempJob"/> or <see cref="Unity.Collections.Allocator.Persistent"/>.</param>
         /// <returns>The query overlap results. This NativeArray must be disposed of after use otherwise leaks will occur. The exception to this is if the array is empty.</returns>
-        public readonly NativeArray<PhysicsQuery.WorldOverlapResult> OverlapGeometry(ReadOnlySpan<CircleGeometry> geometry, PhysicsQuery.QueryFilter filter, Allocator allocator = Unity.Collections.Allocator.Temp) => PhysicsWorld_OverlapCircleGeometry(this, geometry, filter, allocator).ToNativeArray<PhysicsQuery.WorldOverlapResult>();
+        public readonly NativeArray<PhysicsQuery.WorldOverlapResult> OverlapGeometry(ReadOnlySpan<CircleGeometry> geometry, PhysicsQuery.QueryFilter filter, Allocator allocator = Unity.Collections.Allocator.Temp) => PhysicsWorld_OverlapCircleGeometry(this, geometry, Vector2.zero, filter, allocator).ToNativeArray<PhysicsQuery.WorldOverlapResult>();
+
+        /// <summary>
+        /// Returns all shapes that overlap the provided Circle geometry.
+        /// See <see cref="CircleGeometry"/>, <see cref="PhysicsQuery.QueryFilter"/>, <see cref="PhysicsQuery.WorldOverlapResult"/> and <see cref="Unity.Collections.Allocator"/>.
+        /// </summary>
+        /// <param name="geometry">The Circle geometry used to check overlap. This must be in local-space, relative to <paramref name="origin"/>.</param>
+        /// <param name="origin">The point, in world space, that the geometry is defined relative to. This lets the geometry be authored in a local frame instead of being translated into world space before the query.</param>
+        /// <param name="filter">The filter to control what results are returned.</param>
+        /// <param name="allocator">The memory allocator to use for the results. This can only be <see cref="Unity.Collections.Allocator.Temp"/>, <see cref="Unity.Collections.Allocator.TempJob"/> or <see cref="Unity.Collections.Allocator.Persistent"/>.</param>
+        /// <returns>The query overlap results. This NativeArray must be disposed of after use otherwise leaks will occur. The exception to this is if the array is empty.</returns>
+        public readonly NativeArray<PhysicsQuery.WorldOverlapResult> OverlapGeometry(CircleGeometry geometry, Vector2 origin, PhysicsQuery.QueryFilter filter, Allocator allocator = Unity.Collections.Allocator.Temp) => OverlapGeometry(stackalloc CircleGeometry[1] { geometry }, origin, filter, allocator);
+
+        /// <summary>
+        /// Returns all shapes that overlap the provided Circle geometry.
+        /// See <see cref="CircleGeometry"/>, <see cref="PhysicsQuery.QueryFilter"/>, <see cref="PhysicsQuery.WorldOverlapResult"/> and <see cref="Unity.Collections.Allocator"/>.
+        /// </summary>
+        /// <param name="geometry">The Circle geometry used to check overlap. These must be in local-space, relative to <paramref name="origin"/>.</param>
+        /// <param name="origin">The point, in world space, that the geometry is defined relative to. This lets the geometry be authored in a local frame instead of being translated into world space before the query.</param>
+        /// <param name="filter">The filter to control what results are returned.</param>
+        /// <param name="allocator">The memory allocator to use for the results. This can only be <see cref="Unity.Collections.Allocator.Temp"/>, <see cref="Unity.Collections.Allocator.TempJob"/> or <see cref="Unity.Collections.Allocator.Persistent"/>.</param>
+        /// <returns>The query overlap results. This NativeArray must be disposed of after use otherwise leaks will occur. The exception to this is if the array is empty.</returns>
+        public readonly NativeArray<PhysicsQuery.WorldOverlapResult> OverlapGeometry(ReadOnlySpan<CircleGeometry> geometry, Vector2 origin, PhysicsQuery.QueryFilter filter, Allocator allocator = Unity.Collections.Allocator.Temp) => PhysicsWorld_OverlapCircleGeometry(this, geometry, origin, filter, allocator).ToNativeArray<PhysicsQuery.WorldOverlapResult>();
 
         /// <summary>
         /// Returns all shapes that overlap the provided Capsule geometry.
@@ -1918,7 +2343,7 @@ namespace Unity.U2D.Physics
         /// <param name="filter">The filter to control what results are returned.</param>
         /// <param name="allocator">The memory allocator to use for the results. This can only be <see cref="Unity.Collections.Allocator.Temp"/>, <see cref="Unity.Collections.Allocator.TempJob"/> or <see cref="Unity.Collections.Allocator.Persistent"/>.</param>
         /// <returns>The query overlap results. This NativeArray must be disposed of after use otherwise leaks will occur. The exception to this is if the array is empty.</returns>
-        public unsafe readonly NativeArray<PhysicsQuery.WorldOverlapResult> OverlapGeometry(CapsuleGeometry geometry, PhysicsQuery.QueryFilter filter, Allocator allocator = Unity.Collections.Allocator.Temp) => OverlapGeometry(new ReadOnlySpan<CapsuleGeometry>(&geometry, 1), filter, allocator);
+        public readonly NativeArray<PhysicsQuery.WorldOverlapResult> OverlapGeometry(CapsuleGeometry geometry, PhysicsQuery.QueryFilter filter, Allocator allocator = Unity.Collections.Allocator.Temp) => OverlapGeometry(stackalloc CapsuleGeometry[1] { geometry }, filter, allocator);
 
         /// <summary>
         /// Returns all shapes that overlap the provided Capsule geometry.
@@ -1928,7 +2353,29 @@ namespace Unity.U2D.Physics
         /// <param name="filter">The filter to control what results are returned.</param>
         /// <param name="allocator">The memory allocator to use for the results. This can only be <see cref="Unity.Collections.Allocator.Temp"/>, <see cref="Unity.Collections.Allocator.TempJob"/> or <see cref="Unity.Collections.Allocator.Persistent"/>.</param>
         /// <returns>The query overlap results. This NativeArray must be disposed of after use otherwise leaks will occur. The exception to this is if the array is empty.</returns>
-        public readonly NativeArray<PhysicsQuery.WorldOverlapResult> OverlapGeometry(ReadOnlySpan<CapsuleGeometry> geometry, PhysicsQuery.QueryFilter filter, Allocator allocator = Unity.Collections.Allocator.Temp) => PhysicsWorld_OverlapCapsuleGeometry(this, geometry, filter, allocator).ToNativeArray<PhysicsQuery.WorldOverlapResult>();
+        public readonly NativeArray<PhysicsQuery.WorldOverlapResult> OverlapGeometry(ReadOnlySpan<CapsuleGeometry> geometry, PhysicsQuery.QueryFilter filter, Allocator allocator = Unity.Collections.Allocator.Temp) => PhysicsWorld_OverlapCapsuleGeometry(this, geometry, Vector2.zero, filter, allocator).ToNativeArray<PhysicsQuery.WorldOverlapResult>();
+
+        /// <summary>
+        /// Returns all shapes that overlap the provided Capsule geometry.
+        /// See <see cref="CapsuleGeometry"/>, <see cref="PhysicsQuery.QueryFilter"/>, <see cref="PhysicsQuery.WorldOverlapResult"/> and <see cref="Unity.Collections.Allocator"/>.
+        /// </summary>
+        /// <param name="geometry">The Capsule geometry used to check overlap. This must be in local-space, relative to <paramref name="origin"/>.</param>
+        /// <param name="origin">The point, in world space, that the geometry is defined relative to. This lets the geometry be authored in a local frame instead of being translated into world space before the query.</param>
+        /// <param name="filter">The filter to control what results are returned.</param>
+        /// <param name="allocator">The memory allocator to use for the results. This can only be <see cref="Unity.Collections.Allocator.Temp"/>, <see cref="Unity.Collections.Allocator.TempJob"/> or <see cref="Unity.Collections.Allocator.Persistent"/>.</param>
+        /// <returns>The query overlap results. This NativeArray must be disposed of after use otherwise leaks will occur. The exception to this is if the array is empty.</returns>
+        public readonly NativeArray<PhysicsQuery.WorldOverlapResult> OverlapGeometry(CapsuleGeometry geometry, Vector2 origin, PhysicsQuery.QueryFilter filter, Allocator allocator = Unity.Collections.Allocator.Temp) => OverlapGeometry(stackalloc CapsuleGeometry[1] { geometry }, origin, filter, allocator);
+
+        /// <summary>
+        /// Returns all shapes that overlap the provided Capsule geometry.
+        /// See <see cref="CapsuleGeometry"/>, <see cref="PhysicsQuery.QueryFilter"/>, <see cref="PhysicsQuery.WorldOverlapResult"/> and <see cref="Unity.Collections.Allocator"/>.
+        /// </summary>
+        /// <param name="geometry">The Capsule geometry used to check overlap. These must be in local-space, relative to <paramref name="origin"/>.</param>
+        /// <param name="origin">The point, in world space, that the geometry is defined relative to. This lets the geometry be authored in a local frame instead of being translated into world space before the query.</param>
+        /// <param name="filter">The filter to control what results are returned.</param>
+        /// <param name="allocator">The memory allocator to use for the results. This can only be <see cref="Unity.Collections.Allocator.Temp"/>, <see cref="Unity.Collections.Allocator.TempJob"/> or <see cref="Unity.Collections.Allocator.Persistent"/>.</param>
+        /// <returns>The query overlap results. This NativeArray must be disposed of after use otherwise leaks will occur. The exception to this is if the array is empty.</returns>
+        public readonly NativeArray<PhysicsQuery.WorldOverlapResult> OverlapGeometry(ReadOnlySpan<CapsuleGeometry> geometry, Vector2 origin, PhysicsQuery.QueryFilter filter, Allocator allocator = Unity.Collections.Allocator.Temp) => PhysicsWorld_OverlapCapsuleGeometry(this, geometry, origin, filter, allocator).ToNativeArray<PhysicsQuery.WorldOverlapResult>();
 
         /// <summary>
         /// Returns all shapes that overlap the provided Polygon geometry.
@@ -1938,7 +2385,7 @@ namespace Unity.U2D.Physics
         /// <param name="filter">The filter to control what results are returned.</param>
         /// <param name="allocator">The memory allocator to use for the results. This can only be <see cref="Unity.Collections.Allocator.Temp"/>, <see cref="Unity.Collections.Allocator.TempJob"/> or <see cref="Unity.Collections.Allocator.Persistent"/>.</param>
         /// <returns>The query overlap results. This NativeArray must be disposed of after use otherwise leaks will occur. The exception to this is if the array is empty.</returns>
-        public unsafe readonly NativeArray<PhysicsQuery.WorldOverlapResult> OverlapGeometry(PolygonGeometry geometry, PhysicsQuery.QueryFilter filter, Allocator allocator = Unity.Collections.Allocator.Temp) => OverlapGeometry(new ReadOnlySpan<PolygonGeometry>(&geometry, 1), filter, allocator);
+        public readonly NativeArray<PhysicsQuery.WorldOverlapResult> OverlapGeometry(PolygonGeometry geometry, PhysicsQuery.QueryFilter filter, Allocator allocator = Unity.Collections.Allocator.Temp) => OverlapGeometry(stackalloc PolygonGeometry[1] { geometry }, filter, allocator);
 
         /// <summary>
         /// Returns all shapes that overlap the provided Polygon geometry.
@@ -1948,7 +2395,29 @@ namespace Unity.U2D.Physics
         /// <param name="filter">The filter to control what results are returned.</param>
         /// <param name="allocator">The memory allocator to use for the results. This can only be <see cref="Unity.Collections.Allocator.Temp"/>, <see cref="Unity.Collections.Allocator.TempJob"/> or <see cref="Unity.Collections.Allocator.Persistent"/>.</param>
         /// <returns>The query overlap results. This NativeArray must be disposed of after use otherwise leaks will occur. The exception to this is if the array is empty.</returns>
-        public readonly NativeArray<PhysicsQuery.WorldOverlapResult> OverlapGeometry(ReadOnlySpan<PolygonGeometry> geometry, PhysicsQuery.QueryFilter filter, Allocator allocator = Unity.Collections.Allocator.Temp) => PhysicsWorld_OverlapPolygonGeometry(this, geometry, filter, allocator).ToNativeArray<PhysicsQuery.WorldOverlapResult>();
+        public readonly NativeArray<PhysicsQuery.WorldOverlapResult> OverlapGeometry(ReadOnlySpan<PolygonGeometry> geometry, PhysicsQuery.QueryFilter filter, Allocator allocator = Unity.Collections.Allocator.Temp) => PhysicsWorld_OverlapPolygonGeometry(this, geometry, Vector2.zero, filter, allocator).ToNativeArray<PhysicsQuery.WorldOverlapResult>();
+
+        /// <summary>
+        /// Returns all shapes that overlap the provided Polygon geometry.
+        /// See <see cref="PolygonGeometry"/>, <see cref="PhysicsQuery.QueryFilter"/>, <see cref="PhysicsQuery.WorldOverlapResult"/> and <see cref="Unity.Collections.Allocator"/>.
+        /// </summary>
+        /// <param name="geometry">The Polygon geometry used to check overlap. This must be in local-space, relative to <paramref name="origin"/>.</param>
+        /// <param name="origin">The point, in world space, that the geometry is defined relative to. This lets the geometry be authored in a local frame instead of being translated into world space before the query.</param>
+        /// <param name="filter">The filter to control what results are returned.</param>
+        /// <param name="allocator">The memory allocator to use for the results. This can only be <see cref="Unity.Collections.Allocator.Temp"/>, <see cref="Unity.Collections.Allocator.TempJob"/> or <see cref="Unity.Collections.Allocator.Persistent"/>.</param>
+        /// <returns>The query overlap results. This NativeArray must be disposed of after use otherwise leaks will occur. The exception to this is if the array is empty.</returns>
+        public readonly NativeArray<PhysicsQuery.WorldOverlapResult> OverlapGeometry(PolygonGeometry geometry, Vector2 origin, PhysicsQuery.QueryFilter filter, Allocator allocator = Unity.Collections.Allocator.Temp) => OverlapGeometry(stackalloc PolygonGeometry[1] { geometry }, origin, filter, allocator);
+
+        /// <summary>
+        /// Returns all shapes that overlap the provided Polygon geometry.
+        /// See <see cref="PolygonGeometry"/>, <see cref="PhysicsQuery.QueryFilter"/>, <see cref="PhysicsQuery.WorldOverlapResult"/> and <see cref="Unity.Collections.Allocator"/>.
+        /// </summary>
+        /// <param name="geometry">The Polygon geometry used to check overlap. These must be in local-space, relative to <paramref name="origin"/>.</param>
+        /// <param name="origin">The point, in world space, that the geometry is defined relative to. This lets the geometry be authored in a local frame instead of being translated into world space before the query.</param>
+        /// <param name="filter">The filter to control what results are returned.</param>
+        /// <param name="allocator">The memory allocator to use for the results. This can only be <see cref="Unity.Collections.Allocator.Temp"/>, <see cref="Unity.Collections.Allocator.TempJob"/> or <see cref="Unity.Collections.Allocator.Persistent"/>.</param>
+        /// <returns>The query overlap results. This NativeArray must be disposed of after use otherwise leaks will occur. The exception to this is if the array is empty.</returns>
+        public readonly NativeArray<PhysicsQuery.WorldOverlapResult> OverlapGeometry(ReadOnlySpan<PolygonGeometry> geometry, Vector2 origin, PhysicsQuery.QueryFilter filter, Allocator allocator = Unity.Collections.Allocator.Temp) => PhysicsWorld_OverlapPolygonGeometry(this, geometry, origin, filter, allocator).ToNativeArray<PhysicsQuery.WorldOverlapResult>();
 
         /// <summary>
         /// Returns all shapes that overlap the provided Segment geometry.
@@ -1958,7 +2427,7 @@ namespace Unity.U2D.Physics
         /// <param name="filter">The filter to control what results are returned.</param>
         /// <param name="allocator">The memory allocator to use for the results. This can only be <see cref="Unity.Collections.Allocator.Temp"/>, <see cref="Unity.Collections.Allocator.TempJob"/> or <see cref="Unity.Collections.Allocator.Persistent"/>.</param>
         /// <returns>The query overlap results. This NativeArray must be disposed of after use otherwise leaks will occur. The exception to this is if the array is empty.</returns>
-        public unsafe readonly NativeArray<PhysicsQuery.WorldOverlapResult> OverlapGeometry(SegmentGeometry geometry, PhysicsQuery.QueryFilter filter, Allocator allocator = Unity.Collections.Allocator.Temp) => OverlapGeometry(new ReadOnlySpan<SegmentGeometry>(&geometry, 1), filter, allocator);
+        public readonly NativeArray<PhysicsQuery.WorldOverlapResult> OverlapGeometry(SegmentGeometry geometry, PhysicsQuery.QueryFilter filter, Allocator allocator = Unity.Collections.Allocator.Temp) => OverlapGeometry(stackalloc SegmentGeometry[1] { geometry }, filter, allocator);
 
         /// <summary>
         /// Returns all shapes that overlap the provided Segment geometry.
@@ -1968,7 +2437,29 @@ namespace Unity.U2D.Physics
         /// <param name="filter">The filter to control what results are returned.</param>
         /// <param name="allocator">The memory allocator to use for the results. This can only be <see cref="Unity.Collections.Allocator.Temp"/>, <see cref="Unity.Collections.Allocator.TempJob"/> or <see cref="Unity.Collections.Allocator.Persistent"/>.</param>
         /// <returns>The query overlap results. This NativeArray must be disposed of after use otherwise leaks will occur. The exception to this is if the array is empty.</returns>
-        public readonly NativeArray<PhysicsQuery.WorldOverlapResult> OverlapGeometry(ReadOnlySpan<SegmentGeometry> geometry, PhysicsQuery.QueryFilter filter, Allocator allocator = Unity.Collections.Allocator.Temp) => PhysicsWorld_OverlapSegmentGeometry(this, geometry, filter, allocator).ToNativeArray<PhysicsQuery.WorldOverlapResult>();
+        public readonly NativeArray<PhysicsQuery.WorldOverlapResult> OverlapGeometry(ReadOnlySpan<SegmentGeometry> geometry, PhysicsQuery.QueryFilter filter, Allocator allocator = Unity.Collections.Allocator.Temp) => PhysicsWorld_OverlapSegmentGeometry(this, geometry, Vector2.zero, filter, allocator).ToNativeArray<PhysicsQuery.WorldOverlapResult>();
+
+        /// <summary>
+        /// Returns all shapes that overlap the provided Segment geometry.
+        /// See <see cref="SegmentGeometry"/>, <see cref="PhysicsQuery.QueryFilter"/>, <see cref="PhysicsQuery.WorldOverlapResult"/> and <see cref="Unity.Collections.Allocator"/>.
+        /// </summary>
+        /// <param name="geometry">The Segment geometry used to check overlap. This must be in local-space, relative to <paramref name="origin"/>.</param>
+        /// <param name="origin">The point, in world space, that the geometry is defined relative to. This lets the geometry be authored in a local frame instead of being translated into world space before the query.</param>
+        /// <param name="filter">The filter to control what results are returned.</param>
+        /// <param name="allocator">The memory allocator to use for the results. This can only be <see cref="Unity.Collections.Allocator.Temp"/>, <see cref="Unity.Collections.Allocator.TempJob"/> or <see cref="Unity.Collections.Allocator.Persistent"/>.</param>
+        /// <returns>The query overlap results. This NativeArray must be disposed of after use otherwise leaks will occur. The exception to this is if the array is empty.</returns>
+        public readonly NativeArray<PhysicsQuery.WorldOverlapResult> OverlapGeometry(SegmentGeometry geometry, Vector2 origin, PhysicsQuery.QueryFilter filter, Allocator allocator = Unity.Collections.Allocator.Temp) => OverlapGeometry(stackalloc SegmentGeometry[1] { geometry }, origin, filter, allocator);
+
+        /// <summary>
+        /// Returns all shapes that overlap the provided Segment geometry.
+        /// See <see cref="SegmentGeometry"/>, <see cref="PhysicsQuery.QueryFilter"/>, <see cref="PhysicsQuery.WorldOverlapResult"/> and <see cref="Unity.Collections.Allocator"/>.
+        /// </summary>
+        /// <param name="geometry">The Segment geometry used to check overlap. These must be in local-space, relative to <paramref name="origin"/>.</param>
+        /// <param name="origin">The point, in world space, that the geometry is defined relative to. This lets the geometry be authored in a local frame instead of being translated into world space before the query.</param>
+        /// <param name="filter">The filter to control what results are returned.</param>
+        /// <param name="allocator">The memory allocator to use for the results. This can only be <see cref="Unity.Collections.Allocator.Temp"/>, <see cref="Unity.Collections.Allocator.TempJob"/> or <see cref="Unity.Collections.Allocator.Persistent"/>.</param>
+        /// <returns>The query overlap results. This NativeArray must be disposed of after use otherwise leaks will occur. The exception to this is if the array is empty.</returns>
+        public readonly NativeArray<PhysicsQuery.WorldOverlapResult> OverlapGeometry(ReadOnlySpan<SegmentGeometry> geometry, Vector2 origin, PhysicsQuery.QueryFilter filter, Allocator allocator = Unity.Collections.Allocator.Temp) => PhysicsWorld_OverlapSegmentGeometry(this, geometry, origin, filter, allocator).ToNativeArray<PhysicsQuery.WorldOverlapResult>();
 
         /// <summary>
         /// Returns all shapes that overlap the provided Chain-Segment geometry.
@@ -1978,7 +2469,7 @@ namespace Unity.U2D.Physics
         /// <param name="filter">The filter to control what results are returned.</param>
         /// <param name="allocator">The memory allocator to use for the results. This can only be <see cref="Unity.Collections.Allocator.Temp"/>, <see cref="Unity.Collections.Allocator.TempJob"/> or <see cref="Unity.Collections.Allocator.Persistent"/>.</param>
         /// <returns>The query overlap results. This NativeArray must be disposed of after use otherwise leaks will occur. The exception to this is if the array is empty.</returns>
-        public unsafe readonly NativeArray<PhysicsQuery.WorldOverlapResult> OverlapGeometry(ChainSegmentGeometry geometry, PhysicsQuery.QueryFilter filter, Allocator allocator = Unity.Collections.Allocator.Temp) => OverlapGeometry(new ReadOnlySpan<ChainSegmentGeometry>(&geometry, 1), filter, allocator);
+        public readonly NativeArray<PhysicsQuery.WorldOverlapResult> OverlapGeometry(ChainSegmentGeometry geometry, PhysicsQuery.QueryFilter filter, Allocator allocator = Unity.Collections.Allocator.Temp) => OverlapGeometry(stackalloc ChainSegmentGeometry[1] { geometry }, filter, allocator);
 
         /// <summary>
         /// Returns all shapes that overlap the provided Chain-Segment geometry.
@@ -1988,7 +2479,29 @@ namespace Unity.U2D.Physics
         /// <param name="filter">The filter to control what results are returned.</param>
         /// <param name="allocator">The memory allocator to use for the results. This can only be <see cref="Unity.Collections.Allocator.Temp"/>, <see cref="Unity.Collections.Allocator.TempJob"/> or <see cref="Unity.Collections.Allocator.Persistent"/>.</param>
         /// <returns>The query overlap results. This NativeArray must be disposed of after use otherwise leaks will occur. The exception to this is if the array is empty.</returns>
-        public readonly NativeArray<PhysicsQuery.WorldOverlapResult> OverlapGeometry(ReadOnlySpan<ChainSegmentGeometry> geometry, PhysicsQuery.QueryFilter filter, Allocator allocator = Unity.Collections.Allocator.Temp) => PhysicsWorld_OverlapChainSegmentGeometry(this, geometry, filter, allocator).ToNativeArray<PhysicsQuery.WorldOverlapResult>();
+        public readonly NativeArray<PhysicsQuery.WorldOverlapResult> OverlapGeometry(ReadOnlySpan<ChainSegmentGeometry> geometry, PhysicsQuery.QueryFilter filter, Allocator allocator = Unity.Collections.Allocator.Temp) => PhysicsWorld_OverlapChainSegmentGeometry(this, geometry, Vector2.zero, filter, allocator).ToNativeArray<PhysicsQuery.WorldOverlapResult>();
+
+        /// <summary>
+        /// Returns all shapes that overlap the provided Chain-Segment geometry.
+        /// See <see cref="ChainSegmentGeometry"/>, <see cref="PhysicsQuery.QueryFilter"/>, <see cref="PhysicsQuery.WorldOverlapResult"/> and <see cref="Unity.Collections.Allocator"/>.
+        /// </summary>
+        /// <param name="geometry">The Chain-Segment geometry used to check overlap. This must be in local-space, relative to <paramref name="origin"/>.</param>
+        /// <param name="origin">The point, in world space, that the geometry is defined relative to. This lets the geometry be authored in a local frame instead of being translated into world space before the query.</param>
+        /// <param name="filter">The filter to control what results are returned.</param>
+        /// <param name="allocator">The memory allocator to use for the results. This can only be <see cref="Unity.Collections.Allocator.Temp"/>, <see cref="Unity.Collections.Allocator.TempJob"/> or <see cref="Unity.Collections.Allocator.Persistent"/>.</param>
+        /// <returns>The query overlap results. This NativeArray must be disposed of after use otherwise leaks will occur. The exception to this is if the array is empty.</returns>
+        public readonly NativeArray<PhysicsQuery.WorldOverlapResult> OverlapGeometry(ChainSegmentGeometry geometry, Vector2 origin, PhysicsQuery.QueryFilter filter, Allocator allocator = Unity.Collections.Allocator.Temp) => OverlapGeometry(stackalloc ChainSegmentGeometry[1] { geometry }, origin, filter, allocator);
+
+        /// <summary>
+        /// Returns all shapes that overlap the provided Chain-Segment geometry.
+        /// See <see cref="ChainSegmentGeometry"/>, <see cref="PhysicsQuery.QueryFilter"/>, <see cref="PhysicsQuery.WorldOverlapResult"/> and <see cref="Unity.Collections.Allocator"/>.
+        /// </summary>
+        /// <param name="geometry">The Chain-Segment geometry used to check overlap. These must be in local-space, relative to <paramref name="origin"/>.</param>
+        /// <param name="origin">The point, in world space, that the geometry is defined relative to. This lets the geometry be authored in a local frame instead of being translated into world space before the query.</param>
+        /// <param name="filter">The filter to control what results are returned.</param>
+        /// <param name="allocator">The memory allocator to use for the results. This can only be <see cref="Unity.Collections.Allocator.Temp"/>, <see cref="Unity.Collections.Allocator.TempJob"/> or <see cref="Unity.Collections.Allocator.Persistent"/>.</param>
+        /// <returns>The query overlap results. This NativeArray must be disposed of after use otherwise leaks will occur. The exception to this is if the array is empty.</returns>
+        public readonly NativeArray<PhysicsQuery.WorldOverlapResult> OverlapGeometry(ReadOnlySpan<ChainSegmentGeometry> geometry, Vector2 origin, PhysicsQuery.QueryFilter filter, Allocator allocator = Unity.Collections.Allocator.Temp) => PhysicsWorld_OverlapChainSegmentGeometry(this, geometry, origin, filter, allocator).ToNativeArray<PhysicsQuery.WorldOverlapResult>();
 
         /// <summary>
         /// Returns the shape(s) that intersect the specified Ray.
@@ -2014,22 +2527,40 @@ namespace Unity.U2D.Physics
         /// <param name="castMode">Controls how many and in what order the results are returned.</param>
         /// <param name="allocator">The memory allocator to use for the results. This can only be <see cref="Unity.Collections.Allocator.Temp"/>, <see cref="Unity.Collections.Allocator.TempJob"/> or <see cref="Unity.Collections.Allocator.Persistent"/>.</param>
         /// <returns>The query cast results. This NativeArray must be disposed of after use otherwise leaks will occur. The exception to this is if the array is empty.</returns>
-        /// <exception cref="System.ArgumentException">Thrown if an invalid shape or shape type is used, specifically if <see cref="PhysicsShape.ShapeType.Segment"/> or <see cref="PhysicsShape.ShapeType.ChainSegment"/> shape types are used.</exception>
+        /// <exception cref="System.ArgumentException">Thrown if an invalid shape is used.</exception>
         public readonly NativeArray<PhysicsQuery.WorldCastResult> CastShape(PhysicsShape shape, Vector2 translation, PhysicsQuery.QueryFilter filter, PhysicsQuery.WorldCastMode castMode = PhysicsQuery.WorldCastMode.Closest, Allocator allocator = Unity.Collections.Allocator.Temp)
         {
             if (shape.isValid)
-            {
-                // Validate shape type and perform cast.
-                var shapeType = shape.shapeType;
-                if (shapeType != PhysicsShape.ShapeType.Segment && shapeType != PhysicsShape.ShapeType.ChainSegment)
-                    return PhysicsWorld_CastShape(this, shape.CreateShapeProxy(true), translation, filter, castMode, allocator, shape).ToNativeArray<PhysicsQuery.WorldCastResult>();
-            }
+                return PhysicsWorld_CastShape(this, shape.CreateShapeProxy(true), Vector2.zero, translation, filter, castMode, shape, allocator).ToNativeArray<PhysicsQuery.WorldCastResult>();
 
-            throw new ArgumentException("Invalid shape or shape-type used for cast.");
+            throw new ArgumentException("Invalid shape used for cast.");
         }
 
         /// <summary>
-        /// Returns the shape(s) that intersect the specified Circle geometry as it is cast through the world.
+        /// Returns the shape(s) that intersect the specified shape as it is cast through the world.
+        /// The selected shape is excluded from any results and must be in this world otherwise a warning will be produced.
+        /// Neither <see cref="PhysicsShape.ShapeType.Segment"/> or <see cref="PhysicsShape.ShapeType.ChainSegment"/> shape types are supported.
+        /// See <see cref="PhysicsQuery.QueryFilter"/>, <see cref="PhysicsQuery.WorldCastMode"/>, <see cref="PhysicsQuery.WorldCastResult"/> and <see cref="Unity.Collections.Allocator"/>.
+        /// </summary>
+        /// <param name="shape">The shape used to cast through the world.</param>
+        /// <param name="origin">The point, in world space, the shape's local geometry is cast from. The shape's body is not moved and its position is not used, so the same shape can be cast from anywhere. It has no effect on <paramref name="translation"/>, which is a direction.</param>
+        /// <param name="translation">The translation relative to the shape pose defining the direction the shape geometry will move through the world.</param>
+        /// <param name="filter">The filter to control what results are returned.</param>
+        /// <param name="castMode">Controls how many and in what order the results are returned.</param>
+        /// <param name="allocator">The memory allocator to use for the results. This can only be <see cref="Unity.Collections.Allocator.Temp"/>, <see cref="Unity.Collections.Allocator.TempJob"/> or <see cref="Unity.Collections.Allocator.Persistent"/>.</param>
+        /// <returns>The query cast results. This NativeArray must be disposed of after use otherwise leaks will occur. The exception to this is if the array is empty.</returns>
+        /// <exception cref="System.ArgumentException">Thrown if an invalid shape is used.</exception>
+        public readonly NativeArray<PhysicsQuery.WorldCastResult> CastShape(PhysicsShape shape, Vector2 origin, Vector2 translation, PhysicsQuery.QueryFilter filter, PhysicsQuery.WorldCastMode castMode = PhysicsQuery.WorldCastMode.Closest, Allocator allocator = Unity.Collections.Allocator.Temp)
+        {
+            if (shape.isValid)
+                return PhysicsWorld_CastShape(this, shape.CreateShapeProxy(), origin, translation, filter, castMode, shape, allocator).ToNativeArray<PhysicsQuery.WorldCastResult>();
+
+            throw new ArgumentException("Invalid shape used for cast.");
+        }
+
+        /// <summary>
+        /// Returns the shape(s) that intersect the specified shape proxy as it is cast through the world.
+        /// Neither <see cref="PhysicsShape.ShapeType.Segment"/> or <see cref="PhysicsShape.ShapeType.ChainSegment"/> shape types are supported.
         /// See <see cref="PhysicsQuery.QueryFilter"/>, <see cref="PhysicsQuery.WorldCastMode"/>, <see cref="PhysicsQuery.WorldCastResult"/> and <see cref="Unity.Collections.Allocator"/>.
         /// </summary>
         /// <param name="shapeProxy">The shape proxy to use. This must be in world-space.</param>
@@ -2038,7 +2569,21 @@ namespace Unity.U2D.Physics
         /// <param name="castMode">Controls how many and in what order the results are returned.</param>
         /// <param name="allocator">The memory allocator to use for the results. This can only be <see cref="Unity.Collections.Allocator.Temp"/>, <see cref="Unity.Collections.Allocator.TempJob"/> or <see cref="Unity.Collections.Allocator.Persistent"/>.</param>
         /// <returns>The query cast results. This NativeArray must be disposed of after use otherwise leaks will occur. The exception to this is if the array is empty.</returns>
-        public readonly NativeArray<PhysicsQuery.WorldCastResult> CastShapeProxy(PhysicsShape.ShapeProxy shapeProxy, Vector2 translation, PhysicsQuery.QueryFilter filter, PhysicsQuery.WorldCastMode castMode = PhysicsQuery.WorldCastMode.Closest, Allocator allocator = Unity.Collections.Allocator.Temp) => PhysicsWorld_CastShapeProxy(this, shapeProxy, translation, filter, castMode, allocator).ToNativeArray<PhysicsQuery.WorldCastResult>();
+        public readonly NativeArray<PhysicsQuery.WorldCastResult> CastShapeProxy(PhysicsShape.ShapeProxy shapeProxy, Vector2 translation, PhysicsQuery.QueryFilter filter, PhysicsQuery.WorldCastMode castMode = PhysicsQuery.WorldCastMode.Closest, Allocator allocator = Unity.Collections.Allocator.Temp) => CastShapeProxy(shapeProxy, Vector2.zero, translation, filter, castMode, allocator);
+
+        /// <summary>
+        /// Returns the shape(s) that intersect the specified shape proxy as it is cast through the world.
+        /// Neither <see cref="PhysicsShape.ShapeType.Segment"/> or <see cref="PhysicsShape.ShapeType.ChainSegment"/> shape types are supported.
+        /// See <see cref="PhysicsQuery.QueryFilter"/>, <see cref="PhysicsQuery.WorldCastMode"/>, <see cref="PhysicsQuery.WorldCastResult"/> and <see cref="Unity.Collections.Allocator"/>.
+        /// </summary>
+        /// <param name="shapeProxy">The shape proxy to use. This must be in local-space, relative to <paramref name="origin"/>.</param>
+        /// <param name="origin">The point, in world space, that the shape proxy is defined relative to. This lets the proxy be authored in a local frame instead of being translated into world space before the cast. It has no effect on <paramref name="translation"/>, which is a direction.</param>
+        /// <param name="translation">The translation relative to the shape proxy defining the direction the shape proxy will move through the world.</param>
+        /// <param name="filter">The filter to control what results are returned.</param>
+        /// <param name="castMode">Controls how many and in what order the results are returned.</param>
+        /// <param name="allocator">The memory allocator to use for the results. This can only be <see cref="Unity.Collections.Allocator.Temp"/>, <see cref="Unity.Collections.Allocator.TempJob"/> or <see cref="Unity.Collections.Allocator.Persistent"/>.</param>
+        /// <returns>The query cast results. This NativeArray must be disposed of after use otherwise leaks will occur. The exception to this is if the array is empty.</returns>
+        public readonly NativeArray<PhysicsQuery.WorldCastResult> CastShapeProxy(PhysicsShape.ShapeProxy shapeProxy, Vector2 origin, Vector2 translation, PhysicsQuery.QueryFilter filter, PhysicsQuery.WorldCastMode castMode = PhysicsQuery.WorldCastMode.Closest, Allocator allocator = Unity.Collections.Allocator.Temp) => PhysicsWorld_CastShape(this, shapeProxy, origin, translation, filter, castMode, default, allocator).ToNativeArray<PhysicsQuery.WorldCastResult>();
 
         /// <summary>
         /// Cast a "Mover" which is geometry designed to collide with the world and solve its movement.
@@ -2058,7 +2603,20 @@ namespace Unity.U2D.Physics
         /// <param name="castMode">Controls how many and in what order the results are returned.</param>
         /// <param name="allocator">The memory allocator to use for the results. This can only be <see cref="Unity.Collections.Allocator.Temp"/>, <see cref="Unity.Collections.Allocator.TempJob"/> or <see cref="Unity.Collections.Allocator.Persistent"/>.</param>
         /// <returns>The query cast results. This NativeArray must be disposed of after use otherwise leaks will occur. The exception to this is if the array is empty.</returns>
-        public readonly NativeArray<PhysicsQuery.WorldCastResult> CastGeometry(CircleGeometry geometry, Vector2 translation, PhysicsQuery.QueryFilter filter, PhysicsQuery.WorldCastMode castMode = PhysicsQuery.WorldCastMode.Closest, Allocator allocator = Unity.Collections.Allocator.Temp) => CastShapeProxy(new PhysicsShape.ShapeProxy(geometry), translation, filter, castMode, allocator);
+        public readonly NativeArray<PhysicsQuery.WorldCastResult> CastGeometry(CircleGeometry geometry, Vector2 translation, PhysicsQuery.QueryFilter filter, PhysicsQuery.WorldCastMode castMode = PhysicsQuery.WorldCastMode.Closest, Allocator allocator = Unity.Collections.Allocator.Temp) => CastShapeProxy(new PhysicsShape.ShapeProxy(geometry), Vector2.zero, translation, filter, castMode, allocator);
+
+        /// <summary>
+        /// Returns the shape(s) that intersect the specified Circle geometry as it is cast through the world.
+        /// See <see cref="PhysicsQuery.QueryFilter"/>, <see cref="PhysicsQuery.WorldCastMode"/>, <see cref="PhysicsQuery.WorldCastResult"/> and <see cref="Unity.Collections.Allocator"/>.
+        /// </summary>
+        /// <param name="geometry">The Circle geometry used to cast through the world. This must be in local-space, relative to <paramref name="origin"/>.</param>
+        /// <param name="origin">The point, in world space, that the geometry is defined relative to. This lets the geometry be authored in a local frame instead of being translated into world space before the cast. It has no effect on <paramref name="translation"/>, which is a direction.</param>
+        /// <param name="translation">The translation relative to the geometry defining the direction the geometry will move through the world.</param>
+        /// <param name="filter">The filter to control what results are returned.</param>
+        /// <param name="castMode">Controls how many and in what order the results are returned.</param>
+        /// <param name="allocator">The memory allocator to use for the results. This can only be <see cref="Unity.Collections.Allocator.Temp"/>, <see cref="Unity.Collections.Allocator.TempJob"/> or <see cref="Unity.Collections.Allocator.Persistent"/>.</param>
+        /// <returns>The query cast results. This NativeArray must be disposed of after use otherwise leaks will occur. The exception to this is if the array is empty.</returns>
+        public readonly NativeArray<PhysicsQuery.WorldCastResult> CastGeometry(CircleGeometry geometry, Vector2 origin, Vector2 translation, PhysicsQuery.QueryFilter filter, PhysicsQuery.WorldCastMode castMode = PhysicsQuery.WorldCastMode.Closest, Allocator allocator = Unity.Collections.Allocator.Temp) => CastShapeProxy(new PhysicsShape.ShapeProxy(geometry), origin, translation, filter, castMode, allocator);
 
         /// <summary>
         /// Returns the shape(s) that intersect the specified Capsule geometry as it is cast through the world.
@@ -2070,7 +2628,20 @@ namespace Unity.U2D.Physics
         /// <param name="castMode">Controls how many and in what order the results are returned.</param>
         /// <param name="allocator">The memory allocator to use for the results. This can only be <see cref="Unity.Collections.Allocator.Temp"/>, <see cref="Unity.Collections.Allocator.TempJob"/> or <see cref="Unity.Collections.Allocator.Persistent"/>.</param>
         /// <returns>The query cast results. This NativeArray must be disposed of after use otherwise leaks will occur. The exception to this is if the array is empty.</returns>
-        public readonly NativeArray<PhysicsQuery.WorldCastResult> CastGeometry(CapsuleGeometry geometry, Vector2 translation, PhysicsQuery.QueryFilter filter, PhysicsQuery.WorldCastMode castMode = PhysicsQuery.WorldCastMode.Closest, Allocator allocator = Unity.Collections.Allocator.Temp) => CastShapeProxy(new PhysicsShape.ShapeProxy(geometry), translation, filter, castMode, allocator);
+        public readonly NativeArray<PhysicsQuery.WorldCastResult> CastGeometry(CapsuleGeometry geometry, Vector2 translation, PhysicsQuery.QueryFilter filter, PhysicsQuery.WorldCastMode castMode = PhysicsQuery.WorldCastMode.Closest, Allocator allocator = Unity.Collections.Allocator.Temp) => CastShapeProxy(new PhysicsShape.ShapeProxy(geometry), Vector2.zero, translation, filter, castMode, allocator);
+
+        /// <summary>
+        /// Returns the shape(s) that intersect the specified Capsule geometry as it is cast through the world.
+        /// See <see cref="PhysicsQuery.QueryFilter"/>, <see cref="PhysicsQuery.WorldCastMode"/>, <see cref="PhysicsQuery.WorldCastResult"/> and <see cref="Unity.Collections.Allocator"/>.
+        /// </summary>
+        /// <param name="geometry">The Capsule geometry used to cast through the world. This must be in local-space, relative to <paramref name="origin"/>.</param>
+        /// <param name="origin">The point, in world space, that the geometry is defined relative to. This lets the geometry be authored in a local frame instead of being translated into world space before the cast. It has no effect on <paramref name="translation"/>, which is a direction.</param>
+        /// <param name="translation">The translation relative to the geometry defining the direction the geometry will move through the world.</param>
+        /// <param name="filter">The filter to control what results are returned.</param>
+        /// <param name="castMode">Controls how many and in what order the results are returned.</param>
+        /// <param name="allocator">The memory allocator to use for the results. This can only be <see cref="Unity.Collections.Allocator.Temp"/>, <see cref="Unity.Collections.Allocator.TempJob"/> or <see cref="Unity.Collections.Allocator.Persistent"/>.</param>
+        /// <returns>The query cast results. This NativeArray must be disposed of after use otherwise leaks will occur. The exception to this is if the array is empty.</returns>
+        public readonly NativeArray<PhysicsQuery.WorldCastResult> CastGeometry(CapsuleGeometry geometry, Vector2 origin, Vector2 translation, PhysicsQuery.QueryFilter filter, PhysicsQuery.WorldCastMode castMode = PhysicsQuery.WorldCastMode.Closest, Allocator allocator = Unity.Collections.Allocator.Temp) => CastShapeProxy(new PhysicsShape.ShapeProxy(geometry), origin, translation, filter, castMode, allocator);
 
         /// <summary>
         /// Returns the shape(s) that intersect the specified Polygon geometry as it is cast through the world.
@@ -2082,7 +2653,20 @@ namespace Unity.U2D.Physics
         /// <param name="castMode">Controls how many and in what order the results are returned.</param>
         /// <param name="allocator">The memory allocator to use for the results. This can only be <see cref="Unity.Collections.Allocator.Temp"/>, <see cref="Unity.Collections.Allocator.TempJob"/> or <see cref="Unity.Collections.Allocator.Persistent"/>.</param>
         /// <returns>The query cast results. This NativeArray must be disposed of after use otherwise leaks will occur. The exception to this is if the array is empty.</returns>
-        public readonly NativeArray<PhysicsQuery.WorldCastResult> CastGeometry(PolygonGeometry geometry, Vector2 translation, PhysicsQuery.QueryFilter filter, PhysicsQuery.WorldCastMode castMode = PhysicsQuery.WorldCastMode.Closest, Allocator allocator = Unity.Collections.Allocator.Temp) => CastShapeProxy(new PhysicsShape.ShapeProxy(geometry), translation, filter, castMode, allocator);
+        public readonly NativeArray<PhysicsQuery.WorldCastResult> CastGeometry(PolygonGeometry geometry, Vector2 translation, PhysicsQuery.QueryFilter filter, PhysicsQuery.WorldCastMode castMode = PhysicsQuery.WorldCastMode.Closest, Allocator allocator = Unity.Collections.Allocator.Temp) => CastShapeProxy(new PhysicsShape.ShapeProxy(geometry), Vector2.zero, translation, filter, castMode, allocator);
+
+        /// <summary>
+        /// Returns the shape(s) that intersect the specified Polygon geometry as it is cast through the world.
+        /// See <see cref="PhysicsQuery.QueryFilter"/>, <see cref="PhysicsQuery.WorldCastMode"/>, <see cref="PhysicsQuery.WorldCastResult"/> and <see cref="Unity.Collections.Allocator"/>.
+        /// </summary>
+        /// <param name="geometry">The Polygon geometry used to cast through the world. This must be in local-space, relative to <paramref name="origin"/>.</param>
+        /// <param name="origin">The point, in world space, that the geometry is defined relative to. This lets the geometry be authored in a local frame instead of being translated into world space before the cast. It has no effect on <paramref name="translation"/>, which is a direction.</param>
+        /// <param name="translation">The translation relative to the geometry defining the direction the geometry will move through the world.</param>
+        /// <param name="filter">The filter to control what results are returned.</param>
+        /// <param name="castMode">Controls how many and in what order the results are returned.</param>
+        /// <param name="allocator">The memory allocator to use for the results. This can only be <see cref="Unity.Collections.Allocator.Temp"/>, <see cref="Unity.Collections.Allocator.TempJob"/> or <see cref="Unity.Collections.Allocator.Persistent"/>.</param>
+        /// <returns>The query cast results. This NativeArray must be disposed of after use otherwise leaks will occur. The exception to this is if the array is empty.</returns>
+        public readonly NativeArray<PhysicsQuery.WorldCastResult> CastGeometry(PolygonGeometry geometry, Vector2 origin, Vector2 translation, PhysicsQuery.QueryFilter filter, PhysicsQuery.WorldCastMode castMode = PhysicsQuery.WorldCastMode.Closest, Allocator allocator = Unity.Collections.Allocator.Temp) => CastShapeProxy(new PhysicsShape.ShapeProxy(geometry), origin, translation, filter, castMode, allocator);
 
         #endregion
 
@@ -2106,10 +2690,34 @@ namespace Unity.U2D.Physics
         /// <summary>
         /// Create a batch of bodies in the world.
         /// </summary>
+        /// <remarks>
+        /// Use this method to create many bodies that share the same configuration, instead of calling <see cref="PhysicsWorld.CreateBody(PhysicsBodyDefinition)"/> in a loop.
+        /// </remarks>
         /// <param name="definition">The body definition to use.</param>
         /// <param name="bodyCount">The number of bodies to create.</param>
         /// <param name="allocator">The memory allocator to use for the results. This can only be <see cref="Unity.Collections.Allocator.Temp"/>, <see cref="Unity.Collections.Allocator.TempJob"/> or <see cref="Unity.Collections.Allocator.Persistent"/>.</param>
         /// <returns>The created bodies. This NativeArray must be disposed of after use otherwise leaks will occur. The exception to this is if the array is empty.</returns>
+        /// <example>
+        /// <code lang="cs">
+        /// <![CDATA[
+        /// // Create 500 bodies using a single definition.
+        /// using UnityEngine;
+        /// using Unity.Collections;
+        /// using Unity.U2D.Physics;
+        ///
+        /// public class CreateBodyBatchExample : MonoBehaviour
+        /// {
+        ///     public PhysicsBodyDefinition bodyDefinition = PhysicsBodyDefinition.defaultDefinition;
+        ///
+        ///     void Start()
+        ///     {
+        ///         PhysicsWorld world = PhysicsWorld.defaultWorld;
+        ///         using NativeArray<PhysicsBody> fiveHundredBodies = world.CreateBodyBatch(bodyDefinition, 500);
+        ///     }
+        /// }
+        /// ]]>
+        /// </code>
+        /// </example>
         public NativeArray<PhysicsBody> CreateBodyBatch(PhysicsBodyDefinition definition, int bodyCount, Allocator allocator = Unity.Collections.Allocator.Temp) => PhysicsBody.CreateBatch(this, definition, bodyCount, allocator);
 
         /// <summary>
@@ -2148,7 +2756,33 @@ namespace Unity.U2D.Physics
         /// Any invalid bodies will be ignored.
         /// Owned bodies will produce a warning and will not be destroyed (See <see cref="PhysicsBody.SetOwner(UnityEngine.Object)"/>).
         /// </summary>
+        /// <remarks>
+        /// Use this method to destroy the bodies you create with <see cref="PhysicsWorld.CreateBodyBatch(PhysicsBodyDefinition, int, Allocator)"/>.
+        /// </remarks>
         /// <param name="bodies">The bodies to destroy.</param>
+        /// <example>
+        /// <code lang="cs">
+        /// <![CDATA[
+        /// // Destroy a batch of bodies created with CreateBodyBatch.
+        /// using UnityEngine;
+        /// using Unity.Collections;
+        /// using Unity.U2D.Physics;
+        ///
+        /// public class DestroyBodyBatchExample : MonoBehaviour
+        /// {
+        ///     public PhysicsBodyDefinition bodyDefinition = PhysicsBodyDefinition.defaultDefinition;
+        ///
+        ///     void Start()
+        ///     {
+        ///         PhysicsWorld world = PhysicsWorld.defaultWorld;
+        ///         NativeArray<PhysicsBody> bodies = world.CreateBodyBatch(bodyDefinition, 500);
+        ///         PhysicsWorld.DestroyBodyBatch(bodies);
+        ///         bodies.Dispose();
+        ///     }
+        /// }
+        /// ]]>
+        /// </code>
+        /// </example>
         public static void DestroyBodyBatch(ReadOnlySpan<PhysicsBody> bodies) => PhysicsBody.DestroyBatch(bodies);
 
         /// <summary>
@@ -2168,8 +2802,36 @@ namespace Unity.U2D.Physics
         /// Owned shapes will produce a warning and will not be destroyed (<see cref="PhysicsShape.SetOwner(UnityEngine.Object)"/>).
         /// See <see cref="PhysicsBody.MassConfiguration"/>.
         /// </summary>
+        /// <remarks>
+        /// Use this method to destroy the shapes you create with <see cref="PhysicsBody.CreateShapeBatch(ReadOnlySpan{CircleGeometry}, PhysicsShapeDefinition, Allocator)"/>.
+        /// </remarks>
         /// <param name="shapes">The shapes to destroy.</param>
         /// <param name="updateBodyMass">Whether to update the body mass configuration. Not doing so is faster, especially when destroying multiple shapes.</param>
+        /// <example>
+        /// <code lang="cs">
+        /// <![CDATA[
+        /// // Destroy a batch of shapes created with CreateShapeBatch.
+        /// using UnityEngine;
+        /// using Unity.Collections;
+        /// using Unity.U2D.Physics;
+        ///
+        /// public class DestroyShapeBatchExample : MonoBehaviour
+        /// {
+        ///     void Start()
+        ///     {
+        ///         PhysicsWorld world = PhysicsWorld.defaultWorld;
+        ///         PhysicsBody body = world.CreateBody();
+        ///         using NativeArray<CircleGeometry> circleGeometries = new NativeArray<CircleGeometry>(
+        ///             new[] { new CircleGeometry { radius = 1f } }, Allocator.Temp);
+        ///
+        ///         NativeArray<PhysicsShape> shapes = body.CreateShapeBatch(circleGeometries, PhysicsShapeDefinition.defaultDefinition);
+        ///         PhysicsWorld.DestroyShapeBatch(shapes, updateBodyMass: true);
+        ///         shapes.Dispose();
+        ///     }
+        /// }
+        /// ]]>
+        /// </code>
+        /// </example>
         public static void DestroyShapeBatch(ReadOnlySpan<PhysicsShape> shapes, bool updateBodyMass) => PhysicsShape.DestroyBatch(shapes, updateBodyMass);
 
         /// <summary>
@@ -2207,8 +2869,39 @@ namespace Unity.U2D.Physics
         /// Create a PhysicsDistanceJoint in the world.
         /// See <see cref="PhysicsDistanceJoint.Create(PhysicsWorld, PhysicsDistanceJointDefinition)"/>.
         /// </summary>
+        /// <remarks>
+        /// Use this method to connect two bodies with a distance constraint, keeping them a set distance apart, similarly to a spring or a rope.
+        /// </remarks>
         /// <param name="definition">The joint definition to use.</param>
         /// <returns>The created joint.</returns>
+        /// <example>
+        /// <code lang="cs">
+        /// <![CDATA[
+        /// // Connect two existing bodies with a distance joint.
+        /// using UnityEngine;
+        /// using Unity.U2D.Physics;
+        ///
+        /// public class CreateDistanceJointExample : MonoBehaviour
+        /// {
+        ///     void Start()
+        ///     {
+        ///         PhysicsWorld world = PhysicsWorld.defaultWorld;
+        ///         PhysicsBody body1 = world.CreateBody();
+        ///         PhysicsBody body2 = world.CreateBody();
+        ///
+        ///         PhysicsDistanceJointDefinition jointDefinition = new PhysicsDistanceJointDefinition
+        ///         {
+        ///             bodyA = body1,
+        ///             bodyB = body2,
+        ///             autoDistance = false,
+        ///             distance = 2f
+        ///         };
+        ///         PhysicsJoint distanceJoint = world.CreateJoint(jointDefinition);
+        ///     }
+        /// }
+        /// ]]>
+        /// </code>
+        /// </example>
         public readonly PhysicsDistanceJoint CreateJoint(PhysicsDistanceJointDefinition definition) => PhysicsDistanceJoint.Create(this, definition);
 
         /// <summary>
@@ -2506,7 +3199,7 @@ namespace Unity.U2D.Physics
         /// </summary>
         [Serializable]
         [StructLayout(LayoutKind.Sequential)]
-        public unsafe partial record struct WorldProfile
+        public partial record struct WorldProfile
         {
             /// <summary>
             /// Time spent stepping the simulation forward.
@@ -2569,9 +3262,9 @@ namespace Unity.U2D.Physics
 	        public float relaxImpulses { readonly get => m_RelaxImpulses; set => m_RelaxImpulses = value; }
 
             /// <summary>
-            /// Time spent applying bounciness.
+            /// Time spent applying bounce impulses after the other constraints are solved.
             /// </summary>
-            public float applyBounciness { readonly get => m_ApplyBounciness; set => m_ApplyBounciness = value; }
+	        public float bounceImpulses { readonly get => m_BounceImpulses; set => m_BounceImpulses = value; }
 
             /// <summary>
             /// Time spent storing impulses.
@@ -2651,7 +3344,7 @@ namespace Unity.U2D.Physics
                     solveImpulses = profileA.solveImpulses + profileB.solveImpulses,
                     integrateTransforms = profileA.integrateTransforms + profileB.integrateTransforms,
                     relaxImpulses = profileA.relaxImpulses + profileB.relaxImpulses,
-                    applyBounciness = profileA.applyBounciness + profileB.applyBounciness,
+                    bounceImpulses = profileA.bounceImpulses + profileB.bounceImpulses,
                     storeImpulses = profileA.storeImpulses + profileB.storeImpulses,
                     splitIslands = profileA.splitIslands + profileB.splitIslands,
                     bodyTransforms = profileA.bodyTransforms + profileB.bodyTransforms,
@@ -2688,7 +3381,7 @@ namespace Unity.U2D.Physics
                     solveImpulses = Mathf.Max(profileA.solveImpulses, profileB.solveImpulses),
                     integrateTransforms = Mathf.Max(profileA.integrateTransforms, profileB.integrateTransforms),
                     relaxImpulses = Mathf.Max(profileA.relaxImpulses, profileB.relaxImpulses),
-                    applyBounciness = Mathf.Max(profileA.applyBounciness, profileB.applyBounciness),
+                    bounceImpulses = Mathf.Max(profileA.bounceImpulses, profileB.bounceImpulses),
                     storeImpulses = Mathf.Max(profileA.storeImpulses, profileB.storeImpulses),
                     splitIslands = Mathf.Max(profileA.splitIslands, profileB.splitIslands),
                     bodyTransforms = Mathf.Max(profileA.bodyTransforms, profileB.bodyTransforms),
@@ -2717,7 +3410,7 @@ namespace Unity.U2D.Physics
 	        [SerializeField] float m_SolveImpulses;
 	        [SerializeField] float m_IntegrateTransforms;
 	        [SerializeField] float m_RelaxImpulses;
-            [SerializeField] float m_ApplyBounciness;
+	        [SerializeField] float m_BounceImpulses;
 	        [SerializeField] float m_StoreImpulses;
 	        [SerializeField] float m_SplitIslands;
 	        [SerializeField] float m_BodyTransforms;
@@ -3599,6 +4292,21 @@ namespace Unity.U2D.Physics
         public readonly int drawOrder { get => PhysicsWorld_GetDrawOrder(this); set => PhysicsWorld_SetDrawOrder(this, value); }
 
         /// <summary>
+        /// Draws a body, its shapes and its joints at its assigned Transform's current world pose instead of its
+        /// simulated physics pose, whenever that body is writing its pose to the Transform.
+        /// Turning this on costs extra computation for every body drawn, and what gets drawn is no longer a picture
+        /// of the simulation: shapes can appear to be touching, overlapping, or separated from each other when the
+        /// simulation itself says otherwise.
+        /// </summary>
+        /// <remarks>
+        /// Only affects a body whose write mode produces a pose that can differ from the simulated one,
+        /// <see cref="PhysicsBody.TransformWriteMode.Interpolate"/> or <see cref="PhysicsBody.TransformWriteMode.Extrapolate"/>.
+        /// A body left at <see cref="PhysicsBody.TransformWriteMode.Current"/> or <see cref="PhysicsBody.TransformWriteMode.Off"/>
+        /// keeps drawing from its simulated pose either way. See <see cref="PhysicsBody.transformWriteMode"/>.
+        /// </remarks>
+        public readonly bool drawAtTransform { get => PhysicsWorld_GetDrawAtTransform(this); set => PhysicsWorld_SetDrawAtTransform(this, value); }
+
+        /// <summary>
         /// Controls whether this world's custom draw is automatically cleared each frame.
         /// When enabled (the default), custom draw elements with a lifetime of zero are cleared each frame so they must be submitted every frame to remain visible.
         /// When disabled, custom draw is retained until <see cref="PhysicsWorld.ClearDraw"/> is called, so it persists across frames and repaints without being resubmitted.
@@ -3606,34 +4314,32 @@ namespace Unity.U2D.Physics
         public readonly bool autoClearCustom { get => PhysicsWorld_GetAutoClearCustom(this); set => PhysicsWorld_SetAutoClearCustom(this, value); }
 
         /// <summary>
-        /// Controls the element depth.
-        /// 
-        /// When using custom drawing of geometry or primitive shapes there is no reference to the orthogonal axis used with
-        /// respect to the current <see cref="PhysicsWorld.transformPlane"/>.
-        ///
-        /// The element depth is in world-space and for each transform plan is defined as:
-        /// 
-        ///- Element depth is rendered along the Z axis when using <see cref="PhysicsWorld.TransformPlane.XY"/>.
-        ///- Element depth is rendered along the Y axis when using <see cref="PhysicsWorld.TransformPlane.XZ"/>.
-        ///- Element depth is rendered along the X axis when using <see cref="PhysicsWorld.TransformPlane.ZY"/>.
-        ///
-        /// You should set the element depth before performing any custom draw.
-        ///
-        /// The element depth will be reset to zero when rendering is complete.
+        /// The depth that custom drawing is drawn at when it is not tied to a body, in world space, along the axis perpendicular to the transform plane.
         /// </summary>
-        public readonly float elementDepth { get => PhysicsWorld_GetElementDepth(this); set => PhysicsWorld_SetElementDepth(this, value); }
+        /// <remarks>
+        /// Custom drawing of geometry, points and lines has no body to take a depth from, so it is drawn at this depth.
+        /// Set the depth before performing the custom drawing it applies to.
+        /// The depth axis is Z for <see cref="PhysicsWorld.TransformPlane.XY"/>, Y for <see cref="PhysicsWorld.TransformPlane.XZ"/> and X for <see cref="PhysicsWorld.TransformPlane.ZY"/>.
+        /// Drawing that belongs to a body, such as a body, shape or joint being drawn by the world, uses the depth of that body instead.
+        /// See <see cref="PhysicsBody.drawDepth"/>.
+        /// A value that is not finite is rejected and leaves the depth unchanged.
+        /// The depth stays as set until it is changed or <see cref="PhysicsWorld.ClearDraw"/> is called, which resets it to zero.
+        /// </remarks>
+        public readonly float drawDepth { get => PhysicsWorld_GetDrawDepth(this); set => PhysicsWorld_SetDrawDepth(this, value); }
 
         /// <summary>
-        /// Set the element depth using the specified 3D position. The relevant axis will be extracted using the current <see cref="PhysicsWorld.transformPlane"/>.
-        /// If <see cref="PhysicsWorld.TransformPlane.Custom"/> is used, the element depth is always set to zero.
-        ///
-        /// For more details, see <see cref="PhysicsWorld.elementDepth"/>.
+        /// Sets the draw depth from a 3D position, using the axis that matches the current transform plane.
         /// </summary>
-        /// <param name="position">The 3D position to extract the element depth from.</param>
-        public readonly void SetElementDepth3D(Vector3 position)
+        /// <remarks>
+        /// The relevant axis is taken from the position using the current <see cref="PhysicsWorld.transformPlane"/>.
+        /// If <see cref="PhysicsWorld.TransformPlane.Custom"/> is used, the draw depth is set to zero.
+        /// See <see cref="PhysicsWorld.drawDepth"/>.
+        /// </remarks>
+        /// <param name="position">The 3D position to take the draw depth from.</param>
+        public readonly void SetDrawDepth3D(Vector3 position)
         {
             var worldTransformPlane = transformPlane;
-            elementDepth = worldTransformPlane != TransformPlane.Custom ? PhysicsMath.GetTranslationIgnoredAxis(position, transformPlane) : 0.0f;
+            drawDepth = worldTransformPlane != TransformPlane.Custom ? PhysicsMath.GetTranslationIgnoredAxis(position, transformPlane) : 0.0f;
         }
 
         /// <summary>
@@ -3658,7 +4364,7 @@ namespace Unity.U2D.Physics
         /// <param name="color">The color to draw with. Here, the color alpha is used only for the interior fill color but will never be completely opaque.</param>
         /// <param name="lifetime">How long the element should be drawn for, in seconds. The default is zero indicating that it should only be drawn once. Lifetime is only used when the world is playing.</param>
         /// <param name="drawFillOptions">Controls what aspects of the primitive is drawn.</param>
-        public unsafe readonly void DrawGeometry(CircleGeometry geometry, PhysicsTransform transform, Color color, float lifetime = 0.0f, DrawFillOptions drawFillOptions = DrawFillOptions.All) => PhysicsWorld_DrawCircleGeometrySpan(this, new ReadOnlySpan<CircleGeometry>(&geometry, 1), transform, color, lifetime, drawFillOptions);
+        public readonly void DrawGeometry(CircleGeometry geometry, PhysicsTransform transform, Color color, float lifetime = 0.0f, DrawFillOptions drawFillOptions = DrawFillOptions.All) => PhysicsWorld_DrawCircleGeometrySpan(this, stackalloc CircleGeometry[1] { geometry }, transform, color, lifetime, drawFillOptions);
 
         /// <summary>
         /// Draw the specified span of Circle Geometry.
@@ -3678,7 +4384,7 @@ namespace Unity.U2D.Physics
         /// <param name="color">The color to draw with. Here, the color alpha is used only for the interior fill color but will never be completely opaque.</param>
         /// <param name="lifetime">How long the element should be drawn for, in seconds. The default is zero indicating that it should only be drawn once. Lifetime is only used when the world is playing.</param>
         /// <param name="drawFillOptions">Controls what aspects of the primitive is drawn.</param>
-        public unsafe readonly void DrawGeometry(CapsuleGeometry geometry, PhysicsTransform transform, Color color, float lifetime = 0.0f, DrawFillOptions drawFillOptions = DrawFillOptions.All) => PhysicsWorld_DrawCapsuleGeometrySpan(this, new ReadOnlySpan<CapsuleGeometry>(&geometry, 1), transform, color, lifetime, drawFillOptions);
+        public readonly void DrawGeometry(CapsuleGeometry geometry, PhysicsTransform transform, Color color, float lifetime = 0.0f, DrawFillOptions drawFillOptions = DrawFillOptions.All) => PhysicsWorld_DrawCapsuleGeometrySpan(this, stackalloc CapsuleGeometry[1] { geometry }, transform, color, lifetime, drawFillOptions);
 
         /// <summary>
         /// Draw the specified span of Capsule geometry.
@@ -3698,7 +4404,7 @@ namespace Unity.U2D.Physics
         /// <param name="color">The color to draw with. Here, the color alpha is used only for the interior fill color but will never be completely opaque.</param>
         /// <param name="lifetime">How long the element should be drawn for, in seconds. The default is zero indicating that it should only be drawn once. Lifetime is only used when the world is playing.</param>
         /// <param name="drawFillOptions">Controls what aspects of the primitive is drawn.</param>
-        public unsafe readonly void DrawGeometry(PolygonGeometry geometry, PhysicsTransform transform, Color color, float lifetime = 0.0f, DrawFillOptions drawFillOptions = DrawFillOptions.All) => PhysicsWorld_DrawPolygonGeometrySpan(this, new ReadOnlySpan<PolygonGeometry>(&geometry, 1), transform, color, lifetime, drawFillOptions);
+        public readonly void DrawGeometry(PolygonGeometry geometry, PhysicsTransform transform, Color color, float lifetime = 0.0f, DrawFillOptions drawFillOptions = DrawFillOptions.All) => PhysicsWorld_DrawPolygonGeometrySpan(this, stackalloc PolygonGeometry[1] { geometry }, transform, color, lifetime, drawFillOptions);
 
         /// <summary>
         /// Draw the specified span of Polygon geometry.
@@ -3717,7 +4423,7 @@ namespace Unity.U2D.Physics
         /// <param name="transform">The transform to use on the specified geometry.</param>
         /// <param name="color">The color to draw with.</param>
         /// <param name="lifetime">How long the element should be drawn for, in seconds. The default is zero indicating that it should only be drawn once. Lifetime is only used when the world is playing.</param>
-        public unsafe readonly void DrawGeometry(SegmentGeometry geometry, PhysicsTransform transform, Color color, float lifetime = 0.0f) => PhysicsWorld_DrawSegmentGeometrySpan(this, new ReadOnlySpan<SegmentGeometry>(&geometry, 1), transform, color, lifetime);
+        public readonly void DrawGeometry(SegmentGeometry geometry, PhysicsTransform transform, Color color, float lifetime = 0.0f) => PhysicsWorld_DrawSegmentGeometrySpan(this, stackalloc SegmentGeometry[1] { geometry }, transform, color, lifetime);
 
         /// <summary>
         /// Draw the specified span of Segment geometry.
@@ -3736,7 +4442,7 @@ namespace Unity.U2D.Physics
         /// <param name="color">The color to draw with.</param>
         /// <param name="lifetime">How long the element should be drawn for, in seconds. The default is zero indicating that it should only be drawn once. Lifetime is only used when the world is playing.</param>
         /// <param name="drawFillOptions">Controls what aspects of the primitive is drawn.</param>
-        public unsafe readonly void DrawShapeProxy(PhysicsShape.ShapeProxy shapeProxy, PhysicsTransform transform, Color color, float lifetime = 0.0f, DrawFillOptions drawFillOptions = DrawFillOptions.Outline) => PhysicsWorld_DrawShapeProxySpan(this, new ReadOnlySpan<PhysicsShape.ShapeProxy>(&shapeProxy, 1), transform, color, lifetime, drawFillOptions);
+        public readonly void DrawShapeProxy(PhysicsShape.ShapeProxy shapeProxy, PhysicsTransform transform, Color color, float lifetime = 0.0f, DrawFillOptions drawFillOptions = DrawFillOptions.Outline) => PhysicsWorld_DrawShapeProxySpan(this, stackalloc PhysicsShape.ShapeProxy[1] { shapeProxy }, transform, color, lifetime, drawFillOptions);
 
         /// <summary>
         /// Draw the specified span of <see cref="PhysicsShape.ShapeProxy"/>.
@@ -3805,10 +4511,46 @@ namespace Unity.U2D.Physics
         /// <summary>
         /// Draw a Line.
         /// </summary>
+        /// <remarks>
+        /// Use this method, and the other `Draw` methods of <see cref="PhysicsWorld"/>, to draw your own debug shapes.
+        /// A drawn shape only lasts for one frame unless you set `lifetime` to keep it visible for longer.
+        /// </remarks>
         /// <param name="point0">The start of the line.</param>
         /// <param name="point1">The end of the line.</param>
         /// <param name="color">The color to draw with.</param>
         /// <param name="lifetime">How long the element should be drawn for, in seconds. The default is zero indicating that it should only be drawn once. Lifetime is only used when the world is playing.</param>
+        /// <example>
+        /// <code lang="cs">
+        /// <![CDATA[
+        /// // Get the main physics world.
+        /// using UnityEngine;
+        /// using Unity.U2D.Physics;
+        ///
+        /// public class DrawDebugShapesExample : MonoBehaviour
+        /// {
+        ///     void Update()
+        ///     {
+        ///         PhysicsWorld world = PhysicsWorld.defaultWorld;
+        ///
+        ///         // Draw a line from the origin to (30, 40) in "cornflower blue".
+        ///         world.DrawLine(Vector2.zero, new Vector2(30f, 40f), Color.cornflowerBlue);
+        ///
+        ///         // Draw a circle from the origin to (30, 40) in "forest green".
+        ///         world.DrawCircle(new Vector2(30f, 40f), 2f, Color.forestGreen);
+        ///
+        ///         // Draw a point with a 3 pixel radius at (-5, 10) in "gold".
+        ///         world.DrawPoint(new Vector2(-5f, 10f), 3f, Color.gold);
+        ///
+        ///         // Draw a circle for 5 seconds instead of a single frame.
+        ///         const float lifeTime = 5f;
+        ///         world.DrawGeometry(new CircleGeometry { radius = 2f }, PhysicsTransform.identity, Color.cornflowerBlue, lifeTime);
+        ///     }
+        /// }
+        /// ]]>
+        /// </code>
+        /// </example>
+        /// <seealso cref="PhysicsWorld.DrawCircle"/>
+        /// <seealso cref="PhysicsWorld.DrawPoint"/>
         public readonly void DrawLine(Vector2 point0, Vector2 point1, Color color, float lifetime = 0.0f) => PhysicsWorld_DrawLine(this, point0, point1, color, lifetime);
 
         /// <summary>
@@ -3839,7 +4581,8 @@ namespace Unity.U2D.Physics
         /// See <see cref="PhysicsShape.Draw"/> for drawing a single shape.
         /// </remarks>
         /// <param name="shapes">The shapes to draw.</param>
-        public static void DrawShapes(ReadOnlySpan<PhysicsShape> shapes) => PhysicsWorld_DrawShapes(shapes);
+        /// <returns>The number of shapes that were ignored (not drawn because the shape was invalid). A single warning is logged when any are ignored.</returns>
+        public static int DrawShapes(ReadOnlySpan<PhysicsShape> shapes) => PhysicsWorld_DrawShapes(shapes);
 
         /// <undoc/>
         internal static void DrawAllWorlds(PhysicsAABB drawAABB, DrawTarget cameraTarget) => PhysicsWorld_DrawAllWorlds(drawAABB, cameraTarget);
@@ -3853,7 +4596,7 @@ namespace Unity.U2D.Physics
         /// <param name="color">The color to draw with.</param>
         /// <param name="lifetime">How long the element should be drawn for, in seconds. The default is zero indicating that it should only be drawn once. Lifetime is only used when the world is playing.</param>
         /// <param name="drawEnd">Whether to draw the arrow at the end of the translation or not.</param>
-        public unsafe readonly void DrawQueryCastRay(PhysicsQuery.CastRayInput input, Color color, float lifetime = 0.0f, bool drawEnd = false) => DrawQueryCastRay(new ReadOnlySpan<PhysicsQuery.CastRayInput>(&input, 1), color, lifetime, drawEnd);
+        public readonly void DrawQueryCastRay(PhysicsQuery.CastRayInput input, Color color, float lifetime = 0.0f, bool drawEnd = false) => DrawQueryCastRay(stackalloc PhysicsQuery.CastRayInput[1] { input }, color, lifetime, drawEnd);
 
         /// <summary>
         /// Draw the <see cref="PhysicsWorld.CastRay(PhysicsQuery.CastRayInput, PhysicsQuery.QueryFilter, PhysicsQuery.WorldCastMode, Allocator)"/> query inputs.
@@ -3952,7 +4695,7 @@ namespace Unity.U2D.Physics
         /// <param name="lifetime">How long the element should be drawn for, in seconds. The default is zero indicating that it should only be drawn once. Lifetime is only used when the world is playing.</param>
         /// <param name="drawPoint">Whether to draw the point in the result or not.</param>
         /// <param name="drawNormal">Whether to draw the normal in the result or not.</param>
-        public unsafe readonly void DrawQueryResult(PhysicsQuery.CastResult result, Color color, float lifetime = 0.0f, bool drawPoint = true, bool drawNormal = true) => DrawQueryResult(new ReadOnlySpan<PhysicsQuery.CastResult>(&result, 1), color, lifetime, drawPoint, drawNormal);
+        public readonly void DrawQueryResult(PhysicsQuery.CastResult result, Color color, float lifetime = 0.0f, bool drawPoint = true, bool drawNormal = true) => DrawQueryResult(stackalloc PhysicsQuery.CastResult[1] { result }, color, lifetime, drawPoint, drawNormal);
 
         /// <summary>
         /// Draw the <see cref="PhysicsQuery.CastResult"/> returned from multiple queries.
@@ -3973,7 +4716,7 @@ namespace Unity.U2D.Physics
         /// <param name="lifetime">How long the element should be drawn for, in seconds. The default is zero indicating that it should only be drawn once. Lifetime is only used when the world is playing.</param>
         /// <param name="drawPoint">Whether to draw the point in the result or not.</param>
         /// <param name="drawNormal">Whether to draw the normal in the result or not.</param>
-        public unsafe readonly void DrawQueryResult(PhysicsQuery.WorldCastResult result, Color color, float lifetime = 0.0f, bool drawPoint = true, bool drawNormal = true) => DrawQueryResult(new ReadOnlySpan<PhysicsQuery.WorldCastResult>(&result, 1), color, lifetime, drawPoint, drawNormal);
+        public readonly void DrawQueryResult(PhysicsQuery.WorldCastResult result, Color color, float lifetime = 0.0f, bool drawPoint = true, bool drawNormal = true) => DrawQueryResult(stackalloc PhysicsQuery.WorldCastResult[1] { result }, color, lifetime, drawPoint, drawNormal);
 
         /// <summary>
         /// Draw the <see cref="PhysicsQuery.WorldCastResult"/> returned from multiple queries.

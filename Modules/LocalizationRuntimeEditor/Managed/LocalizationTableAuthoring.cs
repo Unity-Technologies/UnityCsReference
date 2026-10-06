@@ -13,6 +13,9 @@ namespace Unity.Localization.Editor;
 // The public entry points are on LocalizationEditorSettings; these do the work.
 static class LocalizationTableAuthoring
 {
+    // An id of 0 means "no key", so an entry carrying one cannot be looked up, renamed, valued or deleted.
+    internal static bool IsAddressableKey(SharedTableData.SharedTableEntry entry) => entry != null && entry.Id != 0;
+
     internal static bool CanCreateCollection(out string reason)
     {
         var settings = LocalizationEditorSettings.ActiveSettings;
@@ -101,11 +104,15 @@ static class LocalizationTableAuthoring
     // A raw create with no existence check, so a caller building every locale at once uses it directly.
     internal static ResourceTable AddLocaleTable(ResourceTableCollection collection, Locale locale)
     {
+        // An unsaved collection has no folder to put the table asset in.
+        var collectionPath = AssetDatabase.GetAssetPath(collection);
+        if (string.IsNullOrEmpty(collectionPath))
+            return null;
         var table = ScriptableObject.CreateInstance<ResourceTable>();
         table.name = $"{collection.TableCollectionName}_{locale.Code}";
         table.SharedData = collection.SharedData;
         table.LocaleIdentifier = locale.Identifier;
-        var dir = Path.GetDirectoryName(AssetDatabase.GetAssetPath(collection))?.Replace('\\', '/');
+        var dir = Path.GetDirectoryName(collectionPath)?.Replace('\\', '/');
         var path = AssetDatabase.GenerateUniqueAssetPath($"{dir}/{collection.TableCollectionName}_{locale.Code}.asset");
         AssetDatabase.CreateAsset(table, path);
         collection.AddTable(table);
@@ -121,6 +128,8 @@ static class LocalizationTableAuthoring
         if (existing != null)
             return existing;
         var table = AddLocaleTable(collection, locale);
+        if (table == null)
+            return null;
         // Join any surrounding undo group (an import registers one) so rolling back does not orphan the new asset.
         Undo.RegisterCreatedObjectUndo(table, "Add Localization Table");
         AssetProviderEditors.RegisterCollection(collection);

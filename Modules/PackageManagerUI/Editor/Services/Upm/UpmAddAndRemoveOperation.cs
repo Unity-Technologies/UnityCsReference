@@ -48,15 +48,15 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         [SerializeField]
         protected string[] m_PackageIdsToReset = Array.Empty<string>();
-        public IReadOnlyCollection<string> packageIdsToReset => m_PackageIdsToReset;
+        public IReadOnlyList<string> packageIdsToReset => m_PackageIdsToReset;
 
         [SerializeField]
         protected string[] m_PackageIdsToAdd = Array.Empty<string>();
-        public IReadOnlyCollection<string> packageIdsToAdd => m_PackageIdsToAdd;
+        public IReadOnlyList<string> packageIdsToAdd => m_PackageIdsToAdd;
 
         [SerializeField]
         protected string[] m_PackagesNamesToRemove = Array.Empty<string>();
-        public IReadOnlyCollection<string> packagesNamesToRemove => m_PackagesNamesToRemove;
+        public IReadOnlyList<string> packagesNamesToRemove => m_PackagesNamesToRemove;
 
         [SerializeField]
         private UpmAddAndRemoveDryRun m_DryRun = new ();

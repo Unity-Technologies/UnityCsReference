@@ -16,6 +16,52 @@ namespace Unity.U2D.Physics
     /// <summary>
     /// Provides the ability to compose geometry using specific operations on layers in a specific order.
     /// </summary>
+    /// <example>
+    /// <code lang="cs">
+    /// <![CDATA[
+    /// // The following example combines a circle and a capsule shape. Attach this
+    /// // script to a GameObject, then enter Play mode to check the combined shape.
+    /// using UnityEngine;
+    /// using Unity.U2D.Physics;
+    /// using Unity.Collections;
+    ///
+    /// public class CombineShapes : MonoBehaviour
+    /// {
+    ///     // Create the definition for a circle object.
+    ///     public CircleGeometry circleGeometry = CircleGeometry.defaultGeometry;
+    ///     public PhysicsTransform circleTransform = new Vector2(0f, 0f);
+    ///
+    ///     // Create the definition for a capsule object.
+    ///     public CapsuleGeometry capsuleGeometry = CapsuleGeometry.defaultGeometry;
+    ///     public PhysicsTransform capsuleTransform = new Vector2(0.75f, 0f);
+    ///
+    ///     private void Awake()
+    ///     {
+    ///         PhysicsWorld world = PhysicsWorld.defaultWorld;
+    ///
+    ///         // Create a composer to combine shapes.
+    ///         PhysicsComposer composer = PhysicsComposer.Create(Allocator.Temp);
+    ///
+    ///         // Add both shapes to the composer.
+    ///         composer.AddLayer(circleGeometry, circleTransform);
+    ///         composer.AddLayer(capsuleGeometry, capsuleTransform, PhysicsComposer.Operation.OR);
+    ///
+    ///         // Combine the shapes.
+    ///         using NativeArray<PolygonGeometry> combinedShape = composer.CreatePolygonGeometry(new Vector2(1f, 1f), Allocator.Temp);
+    ///
+    ///         // Create a body with the combined shapes.
+    ///         PhysicsBody body = world.CreateBody();
+    ///         using NativeArray<PhysicsShape> shapes = body.CreateShapeBatch(combinedShape, PhysicsShapeDefinition.defaultDefinition);
+    ///
+    ///         // Destroy the composer to also destroy the temporary allocator.
+    ///         composer.Destroy();
+    ///     }
+    /// }
+    /// ]]>
+    /// </code>
+    /// </example>
+    /// <seealso cref="PhysicsComposer.Operation"/>
+    /// <seealso cref="PhysicsBody.CreateShapeBatch(ReadOnlySpan{CircleGeometry}, PhysicsShapeDefinition, Allocator)"/>
     [StructLayout(LayoutKind.Sequential)]
     [MovedFrom(autoUpdateAPI: ScriptUpdateConstants.AutoUpdateAPI, sourceNamespace: ScriptUpdateConstants.SourceNamespace, sourceAssembly: ScriptUpdateConstants.SourceAssembly)]
     public readonly struct PhysicsComposer : IEquatable<PhysicsComposer>, IDisposable
@@ -256,6 +302,36 @@ namespace Unity.U2D.Physics
         /// <summary>
         /// A composer operation.
         /// </summary>
+        /// <remarks>
+        /// Pass an operation into <see cref="PhysicsComposer.AddLayer(CircleGeometry, PhysicsTransform, PhysicsComposer.Operation, int, float, bool)"/> to control how each new layer combines with the layers already added to the <see cref="PhysicsComposer"/>.
+        /// `OR` adds the shape, `AND` keeps only the areas where the new shape and the existing shapes overlap, `NOT` subtracts the new shape from the existing shapes, and `XOR` removes overlapping areas but keeps the non-overlapping areas.
+        /// </remarks>
+        /// <example>
+        /// <code lang="cs">
+        /// <![CDATA[
+        /// // Add a circle layer, then subtract a capsule layer from it.
+        /// using UnityEngine;
+        /// using Unity.Collections;
+        /// using Unity.U2D.Physics;
+        ///
+        /// public class ComposerOperationExample : MonoBehaviour
+        /// {
+        ///     public CircleGeometry circleGeometry = CircleGeometry.defaultGeometry;
+        ///     public CapsuleGeometry capsuleGeometry = CapsuleGeometry.defaultGeometry;
+        ///
+        ///     void Start()
+        ///     {
+        ///         PhysicsComposer composer = PhysicsComposer.Create(Allocator.Temp);
+        ///         composer.AddLayer(circleGeometry, PhysicsTransform.identity, PhysicsComposer.Operation.OR);
+        ///         composer.AddLayer(capsuleGeometry, PhysicsTransform.identity, PhysicsComposer.Operation.NOT);
+        ///
+        ///         // Destroy the composer to also destroy the temporary allocator.
+        ///         composer.Destroy();
+        ///     }
+        /// }
+        /// ]]>
+        /// </code>
+        /// </example>
         public enum Operation
         {
             /// <summary>
@@ -372,9 +448,9 @@ namespace Unity.U2D.Physics
         /// <param name="curveStride">The curve stride controls how many vertices are used to approximate the circle geometry. Lower values produce more vertices whereas larger values produce fewer vertices. The valid range is [<see cref="PhysicsComposer.MinCurveStride"/>, 1.0] although values over 0.3 tend to produce relatively poor results.</param>
         /// <param name="reverseWinding">Whether the winding should be reversed. Typically winding is generated anti-clockwise, reversed winding is therefore clockwise.</param>
         /// <returns>A handle to the new layer.</returns>
-        public unsafe readonly LayerHandle AddLayer(CircleGeometry geometry, PhysicsTransform transform, Operation operation = Operation.OR, int order = 0, float curveStride = DefaultCurveStride, bool reverseWinding = false)
+        public readonly LayerHandle AddLayer(CircleGeometry geometry, PhysicsTransform transform, Operation operation = Operation.OR, int order = 0, float curveStride = DefaultCurveStride, bool reverseWinding = false)
         {
-            return AddLayer(new ReadOnlySpan<CircleGeometry>(&geometry, 1), transform, operation, order, curveStride, reverseWinding);
+            return AddLayer(stackalloc CircleGeometry[1] { geometry }, transform, operation, order, curveStride, reverseWinding);
         }
 
         /// <summary>
@@ -402,9 +478,9 @@ namespace Unity.U2D.Physics
         /// <param name="curveStride">The curve stride controls how many vertices are used to approximate the curved end-caps of the capsule geometry. Lower values produce more vertices whereas larger values produce fewer vertices. The valid range is [<see cref="PhysicsComposer.MinCurveStride"/>, 1.0] although values over 0.3 tend to produce relatively poor results.</param>
         /// <param name="reverseWinding">Whether the winding should be reversed. Typically winding is generated anti-clockwise, reversed winding is therefore clockwise.</param>
         /// <returns>A handle to the new layer.</returns>
-        public unsafe readonly LayerHandle AddLayer(CapsuleGeometry geometry, PhysicsTransform transform, Operation operation = Operation.OR, int order = 0,  float curveStride = DefaultCurveStride, bool reverseWinding = false)
+        public readonly LayerHandle AddLayer(CapsuleGeometry geometry, PhysicsTransform transform, Operation operation = Operation.OR, int order = 0,  float curveStride = DefaultCurveStride, bool reverseWinding = false)
         {
-            return AddLayer(new ReadOnlySpan<CapsuleGeometry>(&geometry, 1), transform, operation, order, curveStride, reverseWinding);
+            return AddLayer(stackalloc CapsuleGeometry[1] { geometry }, transform, operation, order, curveStride, reverseWinding);
         }
 
         /// <summary>
@@ -434,9 +510,9 @@ namespace Unity.U2D.Physics
         /// <param name="curveStride">The curve stride is only used when a non-zero radius is used. It controls how many vertices are used to approximate the curved polygon geometry. Lower values produce more vertices whereas larger values produce fewer vertices. The valid range is [<see cref="PhysicsComposer.MinCurveStride"/>, 1.0] although values over 0.3 tend to produce relatively poor results.</param>
         /// <param name="reverseWinding">Whether the winding should be reversed. Typically winding is generated anti-clockwise, reversed winding is therefore clockwise.</param>
         /// <returns>A handle to the new layer.</returns>
-        public unsafe readonly LayerHandle AddLayer(PolygonGeometry geometry, PhysicsTransform transform, Operation operation = Operation.OR, int order = 0, float curveStride = DefaultCurveStride, bool reverseWinding = false)
+        public readonly LayerHandle AddLayer(PolygonGeometry geometry, PhysicsTransform transform, Operation operation = Operation.OR, int order = 0, float curveStride = DefaultCurveStride, bool reverseWinding = false)
         {
-            return AddLayer(new ReadOnlySpan<PolygonGeometry>(&geometry, 1), transform, operation, order, curveStride, reverseWinding);
+            return AddLayer(stackalloc PolygonGeometry[1] { geometry }, transform, operation, order, curveStride, reverseWinding);
         }
 
         /// <summary>
@@ -466,9 +542,9 @@ namespace Unity.U2D.Physics
         /// <param name="curveStride">The curve stride is used to approximately the curved geometry but is applied according to the specific shape geometry type. Lower values produce more vertices, larger values fewer vertices. The valid range is [<see cref="PhysicsComposer.MinCurveStride"/>, 1.0] although values over 0.3 tend to produce relatively poor results.</param>
         /// <param name="reverseWinding">Whether the winding should be reversed. Typically winding is generated anti-clockwise, reversed winding is therefore clockwise.</param>
         /// <returns>A handle to the new layer.</returns>
-        public unsafe readonly LayerHandle AddLayer(PhysicsShape shape, PhysicsTransform transform, Operation operation = Operation.OR, int order = 0, float curveStride = DefaultCurveStride, bool reverseWinding = false)
+        public readonly LayerHandle AddLayer(PhysicsShape shape, PhysicsTransform transform, Operation operation = Operation.OR, int order = 0, float curveStride = DefaultCurveStride, bool reverseWinding = false)
         {
-            return AddLayer(new ReadOnlySpan<PhysicsShape>(&shape, 1), transform, operation, order, curveStride, reverseWinding);
+            return AddLayer(stackalloc PhysicsShape[1] { shape }, transform, operation, order, curveStride, reverseWinding);
         }
 
         /// <summary>

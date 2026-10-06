@@ -161,24 +161,14 @@ namespace UnityEngine.UIElements
         [SerializeField]
         internal ScalableImage[] scalableImages = Array.Empty<ScalableImage>();
 
-        [NonSerialized]
-        private bool m_IsDefaultStyleSheet;
+        [SerializeField]
+        StyleSheetPriority m_Priority;
 
         [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
-        internal bool isDefaultStyleSheet
+        internal StyleSheetPriority priority
         {
-            get { return m_IsDefaultStyleSheet; }
-            set
-            {
-                m_IsDefaultStyleSheet = value;
-                if (flattenedRecursiveImports != null)
-                {
-                    foreach (var importedStyleSheet in flattenedRecursiveImports)
-                    {
-                        importedStyleSheet.isDefaultStyleSheet = value;
-                    }
-                }
-            }
+            get { return m_Priority; }
+            set { m_Priority = value; }
         }
 
         bool TryCheckAccess<T>(T[] list, StyleValueType type, StyleValueHandle handle, out T value)
@@ -269,7 +259,6 @@ namespace UnityEngine.UIElements
                 if (importedStyleSheet == null)
                     continue;
 
-                importedStyleSheet.isDefaultStyleSheet = isDefaultStyleSheet;
                 FlattenImportedStyleSheetsRecursive(importedStyleSheet);
                 m_FlattenedImportedStyleSheets.Add(importedStyleSheet);
             }

@@ -2,7 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: Terrain not yet converted
 using UnityEngine;
 using UnityEngine.Experimental.Rendering;
 using UnityEngine.Serialization;
@@ -22,9 +21,9 @@ namespace UnityEditor
 
         public void Reset()
         {
-            #pragma warning disable UAL0018 // rebuilt/resubscribed wholesale on the next reload via this object's own lifecycle; a stale value in the interim is never observed
+#pragma warning disable UAL0018 // every read of m_Mask re-fills it from DefaultMask() when it comes back null, and DefaultMask() recreates the texture after a reload cleared it, so a stale mask cannot survive
             m_Mask = DefaultMask();
-            #pragma warning restore UAL0018
+#pragma warning restore UAL0018
             m_Falloff = AnimationCurve.Linear(0, 0, 1, 1);
             m_RadiusScale = 1.0f;
             m_BlackWhiteRemapMin = 0.0f;
@@ -61,6 +60,8 @@ namespace UnityEditor
         internal bool readOnly { get; set; } = false;
 
         [AutoStaticsCleanupOnCodeReload] // programmatically-created Texture2D (SetPixels); drop on reload so it is rebuilt fresh
+        // Lazily generated 64x64 fallback mask: the accessor recreates and fills it whenever it is null.
+        [IgnoreForUAL0015("Lazily regenerated fallback mask texture when the cached one is null")]
         static Texture2D s_WhiteTexture = null;
         [NoAutoStaticsCleanup] // lazy material cache; lazy-init pattern, no code-reload-sensitive state
         static Material s_CreateBrushMaterial = null;
@@ -83,9 +84,9 @@ namespace UnityEditor
             if (m_UpdateTexture || m_Texture == null)
             {
                 if (m_Mask == null)
-                    #pragma warning disable UAL0018 // rebuilt/resubscribed wholesale on the next reload via this object's own lifecycle; a stale value in the interim is never observed
+#pragma warning disable UAL0018 // the null check above re-fills the mask from DefaultMask(), which recreates the texture after a reload cleared it, so the captured mask is never stale
                     m_Mask = DefaultMask();
-                    #pragma warning restore UAL0018
+#pragma warning restore UAL0018
 
                 m_Texture = GenerateBrushTexture(m_Mask, m_Falloff, m_RadiusScale, m_BlackWhiteRemapMin, m_BlackWhiteRemapMax, m_InvertRemapRange, m_Mask.width, m_Mask.height);
                 m_Texture.name = $"Terrain Brush ({m_Mask.name})";
@@ -98,9 +99,9 @@ namespace UnityEditor
             if (m_UpdateThumbnail || m_Thumbnail == null)
             {
                 if (m_Mask == null)
-                    #pragma warning disable UAL0018 // rebuilt/resubscribed wholesale on the next reload via this object's own lifecycle; a stale value in the interim is never observed
+#pragma warning disable UAL0018 // the null check above re-fills the mask from DefaultMask(), which recreates the texture after a reload cleared it, so the captured mask is never stale
                     m_Mask = DefaultMask();
-                    #pragma warning restore UAL0018
+#pragma warning restore UAL0018
 
                 m_Thumbnail = GenerateBrushTexture(m_Mask, m_Falloff, m_RadiusScale, m_BlackWhiteRemapMin, m_BlackWhiteRemapMax, m_InvertRemapRange, 64, 64, true);
                 m_Thumbnail.name = $"Terrain Brush Thumbnail ({m_Mask.name})";
@@ -186,4 +187,3 @@ namespace UnityEditor
         }
     }
 }
-#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

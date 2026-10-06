@@ -10,32 +10,32 @@ namespace UnityEditor
     {
         private static class Styles
         {
-            public static readonly GUIContent colorText = EditorGUIUtility.TrTextContent("Color", "Color (RGB) and Opacity (A)");
-            public static readonly GUIContent normalMapText = EditorGUIUtility.TrTextContent("Normal", "Normal (RGB)");
-            public static readonly GUIContent extraMapText = EditorGUIUtility.TrTextContent("Extra", "Smoothness (R), Metallic (G), AO (B)");
-            public static readonly GUIContent subsurfaceMapText = EditorGUIUtility.TrTextContent("Subsurface", "Subsurface (RGB)");
+            public static readonly GUIContent colorText = L10n.TextContent("Color", "Color (RGB) and Opacity (A)", null, null);
+            public static readonly GUIContent normalMapText = L10n.TextContent("Normal", "Normal (RGB)", null, null);
+            public static readonly GUIContent extraMapText = L10n.TextContent("Extra", "Smoothness (R), Metallic (G), AO (B)", null, null);
+            public static readonly GUIContent subsurfaceMapText = L10n.TextContent("Subsurface", "Subsurface (RGB)", null, null);
 
-            public static readonly GUIContent smoothnessText = EditorGUIUtility.TrTextContent("Smoothness", "Smoothness value");
-            public static readonly GUIContent metallicText = EditorGUIUtility.TrTextContent("Metallic", "Metallic value");
+            public static readonly GUIContent smoothnessText = L10n.TextContent("Smoothness", "Smoothness value", null, null);
+            public static readonly GUIContent metallicText = L10n.TextContent("Metallic", "Metallic value", null, null);
 
-            public static readonly GUIContent twoSidedText = EditorGUIUtility.TrTextContent("Two-Sided", "Set this material to render as two-sided");
-            public static readonly GUIContent hueVariationText = EditorGUIUtility.TrTextContent("Hue Variation", "Hue variation Color (RGB) and Amount (A)");
-            public static readonly GUIContent normalMappingText = EditorGUIUtility.TrTextContent("Normal Map", "Enable normal mapping");
-            public static readonly GUIContent subsurfaceText = EditorGUIUtility.TrTextContent("Subsurface", "Enable subsurface scattering");
-            public static readonly GUIContent subsurfaceIndirectText = EditorGUIUtility.TrTextContent("Indirect Subsurface", "Scalar on subsurface from indirect light");
+            public static readonly GUIContent twoSidedText = L10n.TextContent("Two-Sided", "Set this material to render as two-sided", null, null);
+            public static readonly GUIContent hueVariationText = L10n.TextContent("Hue Variation", "Hue variation Color (RGB) and Amount (A)", null, null);
+            public static readonly GUIContent normalMappingText = L10n.TextContent("Normal Map", "Enable normal mapping", null, null);
+            public static readonly GUIContent subsurfaceText = L10n.TextContent("Subsurface", "Enable subsurface scattering", null, null);
+            public static readonly GUIContent subsurfaceIndirectText = L10n.TextContent("Indirect Subsurface", "Scalar on subsurface from indirect light", null, null);
 
-            public static readonly GUIContent windSharedText = EditorGUIUtility.TrTextContent("Shared Motion", "Wind quality setting");
-            public static readonly GUIContent windBranch1Text = EditorGUIUtility.TrTextContent("Branch1 Motion", "Wind quality setting");
-            public static readonly GUIContent windBranch2Text = EditorGUIUtility.TrTextContent("Branch2 Motion", "Wind quality setting");
-            public static readonly GUIContent windRippleText = EditorGUIUtility.TrTextContent("Ripple Motion", "Wind quality setting");
-            public static readonly GUIContent windShimmerText = EditorGUIUtility.TrTextContent("Shimmer Motion", "Wind quality setting");
+            public static readonly GUIContent windSharedText = L10n.TextContent("Shared Motion", "Wind quality setting", null, null);
+            public static readonly GUIContent windBranch1Text = L10n.TextContent("Branch1 Motion", "Wind quality setting", null, null);
+            public static readonly GUIContent windBranch2Text = L10n.TextContent("Branch2 Motion", "Wind quality setting", null, null);
+            public static readonly GUIContent windRippleText = L10n.TextContent("Ripple Motion", "Wind quality setting", null, null);
+            public static readonly GUIContent windShimmerText = L10n.TextContent("Shimmer Motion", "Wind quality setting", null, null);
 
-            public static readonly GUIContent billboardText = EditorGUIUtility.TrTextContent("Billboard", "Enable billboard features (crossfading, etc.)");
-            public static readonly GUIContent billboardShadowFadeText = EditorGUIUtility.TrTextContent("Shadow Fade", "Fade shadow effect on billboards");
+            public static readonly GUIContent billboardText = L10n.TextContent("Billboard", "Enable billboard features (crossfading, etc.)", null, null);
+            public static readonly GUIContent billboardShadowFadeText = L10n.TextContent("Shadow Fade", "Fade shadow effect on billboards", null, null);
 
-            public static readonly GUIContent primaryMapsText = EditorGUIUtility.TrTextContent("Maps");
-            public static readonly GUIContent optionsText = EditorGUIUtility.TrTextContent("Options");
-            public static readonly GUIContent advancedText = EditorGUIUtility.TrTextContent("Advanced Options");
+            public static readonly GUIContent primaryMapsText = L10n.TextContent("Maps", null, null, null);
+            public static readonly GUIContent optionsText = L10n.TextContent("Options", null, null, null);
+            public static readonly GUIContent advancedText = L10n.TextContent("Advanced Options", null, null, null);
         }
 
         public override void OnGUI(MaterialEditor materialEditor, MaterialProperty[] properties)
@@ -100,7 +100,7 @@ namespace UnityEditor
 
                 // leaf facing
                 MaterialProperty propLeafFacing = FindProperty("_LeafFacingKwToggle", properties);
-                MakeAlignedProperty(propLeafFacing, EditorGUIUtility.TrTextContent("Leaf Facing", "Toggles the effect that renders the leaves facing the camera."), materialEditor, true);
+                MakeAlignedProperty(propLeafFacing, L10n.TextContent("Leaf Facing", "Toggles the effect that renders the leaves facing the camera.", null, null), materialEditor, true);
 
                 // wind
                 MaterialProperty propWindShared  = FindProperty("_WIND_SHARED", properties);

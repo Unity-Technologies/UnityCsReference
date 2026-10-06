@@ -2,7 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: UIToolkitFramework not yet converted
+using Unity.Scripting.LifecycleManagement;
 using UnityEditor.SceneManagement;
 using UnityEngine;
 using UnityEngine.TextCore.Text;
@@ -11,10 +11,14 @@ using TextUtilities = UnityEngine.UIElements.TextUtilities;
 
 namespace UnityEditor.UIElements
 {
-    [InitializeOnLoad]
-    internal static class EditorDelegateRegistration
+    internal static partial class EditorDelegateRegistration
     {
-        static EditorDelegateRegistration()
+        // Every slot installed here is cleared on code reload, so this registration has to run on each
+        // load. A static constructor would only run once per domain, leaving runtime UI Toolkit without
+        // its editor-side implementations (play-mode queries, text settings, panel debug, ICU data)
+        // after the first reload.
+        [OnCodeLoaded]
+        static void Initialize()
         {
             DefaultEventSystem.IsEditorRemoteConnected = () => EditorApplication.isRemoteConnected;
 
@@ -25,22 +29,34 @@ namespace UnityEditor.UIElements
 
             PanelSettings.CreateRuntimePanelDebug = UIElementsEditorRuntimeUtility.CreateRuntimePanelDebug;
             PanelSettings.GetOrCreateDefaultTheme = PanelSettingsCreator.GetFirstThemeOrCreateDefaultTheme;
+#pragma warning disable UAL0018 // the property setter forwards to GameViewRenderInfoQuery.getImplementation, which is [AutoStaticsCleanupOnCodeReload] and reinstalled here on every load; the analyzer cannot see the cleaned field through the property indirection
             PanelSettings.GetGameViewRenderInfo = PlayModeView.GetLastInteractedGameView;
+#pragma warning restore UAL0018
             PanelSettings.SetPanelSettingsAssetDirty = EditorUtility.SetDirty;
             PanelSettings.RequestEditorPlayerLoopUpdate = EditorApplication.QueuePlayerLoopUpdate;
             PanelSettings.s_AssignICUData += SetICUDataAsset;
 
-            EditorApplication.playModeStateChanged += stateChange =>
-            {
-                if (stateChange == PlayModeStateChange.EnteredPlayMode)
-                    UIElementsRuntimeUtility.OnEnteredPlayMode();
-                if (stateChange == PlayModeStateChange.ExitingPlayMode)
-                    UIElementsRuntimeUtility.OnExitingPlayMode();
-            };
+            EditorApplication.playModeStateChanged += OnPlayModeStateChanged;
 
             UIDocument.IsEditingPrefab = () => PrefabStageUtility.GetCurrentPrefabStage() != null;
+            UIDocument.IsGameObjectInOpenPrefabStage = go => PrefabStageUtility.GetPrefabStage(go) != null;
 
             L10nUtility.SetTranslateFunc(text => L10n.Tr(text, null));
+        }
+
+        [OnCodeUnloading]
+        static void Uninitialize()
+        {
+            PanelSettings.s_AssignICUData -= SetICUDataAsset;
+            EditorApplication.playModeStateChanged -= OnPlayModeStateChanged;
+        }
+
+        private static void OnPlayModeStateChanged(PlayModeStateChange stateChange)
+        {
+            if (stateChange == PlayModeStateChange.EnteredPlayMode)
+                UIElementsRuntimeUtility.OnEnteredPlayMode();
+            if (stateChange == PlayModeStateChange.ExitingPlayMode)
+                UIElementsRuntimeUtility.OnExitingPlayMode();
         }
 
         private static void SetICUDataAsset(PanelSettings target)
@@ -57,4 +73,3 @@ namespace UnityEditor.UIElements
         }
     }
 }
-#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

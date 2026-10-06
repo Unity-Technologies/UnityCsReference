@@ -23,7 +23,9 @@ namespace UnityEditor
     public static class EditorAnalytics
     {
 
-        internal extern static string DrainDebuggerRecords();
+        internal extern static string ReadDebuggerRecordsSince(long afterSequence, long afterHeaderId);
+
+        internal extern static void ClearDebuggerRecords();
 
         internal static AnalyticsResult SendEventRefreshAccess(object parameters)
         {

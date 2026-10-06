@@ -9,6 +9,7 @@ using Unity.Collections.LowLevel.Unsafe;
 
 namespace Unity.Jobs
 {
+    ///<summary>Represents a handle to a job, which uniquely identifies a job scheduled in the job system.</summary>
     [NativeHeader("ManagedKernel/Jobs/ScriptBindings/JobsBindings.h")]
     public struct JobHandle : IEquatable<JobHandle>
     {
@@ -19,6 +20,11 @@ namespace Unity.Jobs
         [NativeDisableUnsafePtrRestriction]
         internal IntPtr debugInfo;
 
+        ///<summary>Ensures that a job has completed.</summary>
+        ///<remarks>The job system automatically prioritizes the job and any of its dependencies to run first in the queue, then attempts to execute the job on 
+        ///the thread which calls the Complete method.
+        ///
+        ///**Note:** You can't use this method in single-threaded WebGL builds where the job represents a network transfer because HTTP transfers in web browsers must run to completion asynchronously.</remarks>
         public void Complete()
         {
             if (jobGroup == 0)
@@ -27,6 +33,9 @@ namespace Unity.Jobs
             ScheduleBatchedJobsAndComplete(ref this);
         }
 
+        ///<summary>Ensures that all jobs have completed.</summary>
+        ///<remarks>The job system automatically prioritizes all the given jobs and any of its dependencies to run first in the queue, then attempts to execute all 
+        ///the jobs if they aren't executing on the worker threads yet. It completes as soon as all referenced jobs have completed.</remarks>
         unsafe public static void CompleteAll(ref JobHandle job0, ref JobHandle job1)
         {
             JobHandle* jobs = stackalloc JobHandle[2];
@@ -38,6 +47,9 @@ namespace Unity.Jobs
             job1 = new JobHandle();
         }
 
+        ///<summary>Ensures that all jobs have completed.</summary>
+        ///<remarks>The job system automatically prioritizes all the given jobs and any of its dependencies to run first in the queue, then attempts to execute all 
+        ///the jobs if they aren't executing on the worker threads yet. It completes as soon as all referenced jobs have completed.</remarks>
         unsafe public static void CompleteAll(ref JobHandle job0, ref JobHandle job1, ref JobHandle job2)
         {
             JobHandle* jobs = stackalloc JobHandle[3];
@@ -51,13 +63,23 @@ namespace Unity.Jobs
             job2 = new JobHandle();
         }
 
+        ///<summary>Ensures that all jobs have completed.</summary>
+        ///<remarks>The job system automatically prioritizes all the given jobs and any of its dependencies to run first in the queue, then attempts to execute all 
+        ///the jobs if they aren't executing on the worker threads yet. It completes as soon as all referenced jobs have completed.</remarks>
         public unsafe static void CompleteAll(NativeArray<JobHandle> jobs)
         {
             ScheduleBatchedJobsAndCompleteAll(jobs.GetUnsafeReadOnlyPtr(), jobs.Length);
         }
 
+        ///<summary>Determines if a task is running.</summary>
+        ///<remarks>Returns false if the task is currently running. Returns true if the task has completed.</remarks>
         public bool IsCompleted { get { return ScheduleBatchedJobsAndIsCompleted(ref this); } }
 
+        ///<summary>Makes Schedule methods available to worker threads.</summary>
+        ///<remarks>By default, jobs are only put on a local queue when using job Schedule methods. <c>ScheduleBatchedJobs</c> makes them available to the worker threads to 
+        ///execute. The job system intentionally delays job execution until you call <c>ScheduleBatchedJobs</c> manually because the cost of waking up worker threads can be expensive. It's 
+        ///best practic to delay waking up worker threads until a few jobs have been scheduled. If you're scheduling jobs in a loop, wait to schedule the jobs until the end of the loop. 
+        ///If you do significant amounts of work on the main thread between scheduling jobs, then it can make sense to <c>ScheduleBatchedJobs</c> between each job.</remarks>
         [NativeMethod("ScheduleBatchedScriptingJobs", IsFreeFunction = true, IsThreadSafe = true)]
         public static extern  void ScheduleBatchedJobs();
 
@@ -71,21 +93,113 @@ namespace Unity.Jobs
         static extern unsafe void ScheduleBatchedJobsAndCompleteAll(void* jobs, int count);
 
 
+        ///<summary>Combines multiple dependencies into a single dependency.</summary>
+        ///<remarks>All job schedule methods for <see cref="IJob" /> or <see cref="IJobParallelFor" /> job types take a single dependency. Sometimes you might need to express dependencies 
+        ///against multiple running jobs at the same time. Use this method to combine a set of dependencies into a single dependency that can be passed to a job.</remarks>
+        ///<example>
+        ///  <code><![CDATA[
+        /// // Schedule 3 jobs, jobs a and b can run in parallel to each other,
+        /// // job c will only run once both jobA and jobB has completed
+        ///
+        /// // Schedule job a
+        ///var jobA = new MyJob(...);
+        ///var jobAHandle = jobA.Schedule();
+        ///
+        /// // Schedule job b
+        ///var jobB = new MyJob(...);
+        ///var jobBHandle = jobB.Schedule();
+        ///
+        /// // For job c, combine dependencies of job a and b
+        /// // Then use that for scheduling the next job
+        ///var jobC = new DependentJob(...);
+        ///var dependency = JobHandle.CombineDependencies(jobAHandle, jobBHandle);
+        ///jobC.Schedule(dependency);
+        ///]]></code>
+        ///</example>
         public static JobHandle CombineDependencies(JobHandle job0, JobHandle job1)
         {
             return CombineDependenciesInternal2(ref job0, ref job1);
         }
 
+        ///<summary>Combines multiple dependencies into a single dependency.</summary>
+        ///<remarks>All job schedule methods for <see cref="IJob" /> or <see cref="IJobParallelFor" /> job types take a single dependency. Sometimes you might need to express dependencies 
+        ///against multiple running jobs at the same time. Use this method to combine a set of dependencies into a single dependency that can be passed to a job.</remarks>
+        ///<example>
+        ///  <code><![CDATA[
+        /// // Schedule 3 jobs, jobs a and b can run in parallel to each other,
+        /// // job c will only run once both jobA and jobB has completed
+        ///
+        /// // Schedule job a
+        ///var jobA = new MyJob(...);
+        ///var jobAHandle = jobA.Schedule();
+        ///
+        /// // Schedule job b
+        ///var jobB = new MyJob(...);
+        ///var jobBHandle = jobB.Schedule();
+        ///
+        /// // For job c, combine dependencies of job a and b
+        /// // Then use that for scheduling the next job
+        ///var jobC = new DependentJob(...);
+        ///var dependency = JobHandle.CombineDependencies(jobAHandle, jobBHandle);
+        ///jobC.Schedule(dependency);
+        ///]]></code>
+        ///</example>
         public static JobHandle CombineDependencies(JobHandle job0, JobHandle job1, JobHandle job2)
         {
             return CombineDependenciesInternal3(ref job0, ref job1, ref job2);
         }
 
+        ///<summary>Combines multiple dependencies into a single dependency.</summary>
+        ///<remarks>All job schedule methods for <see cref="IJob" /> or <see cref="IJobParallelFor" /> job types take a single dependency. Sometimes you might need to express dependencies 
+        ///against multiple running jobs at the same time. Use this method to combine a set of dependencies into a single dependency that can be passed to a job.</remarks>
+        ///<example>
+        ///  <code><![CDATA[
+        /// // Schedule 3 jobs, jobs a and b can run in parallel to each other,
+        /// // job c will only run once both jobA and jobB has completed
+        ///
+        /// // Schedule job a
+        ///var jobA = new MyJob(...);
+        ///var jobAHandle = jobA.Schedule();
+        ///
+        /// // Schedule job b
+        ///var jobB = new MyJob(...);
+        ///var jobBHandle = jobB.Schedule();
+        ///
+        /// // For job c, combine dependencies of job a and b
+        /// // Then use that for scheduling the next job
+        ///var jobC = new DependentJob(...);
+        ///var dependency = JobHandle.CombineDependencies(jobAHandle, jobBHandle);
+        ///jobC.Schedule(dependency);
+        ///]]></code>
+        ///</example>
         unsafe public static JobHandle CombineDependencies(NativeArray<JobHandle> jobs)
         {
             return CombineDependenciesInternalPtr(jobs.GetUnsafeReadOnlyPtr(), jobs.Length);
         }
 
+        ///<summary>Combines multiple dependencies into a single dependency.</summary>
+        ///<remarks>All job schedule methods for <see cref="IJob" /> or <see cref="IJobParallelFor" /> job types take a single dependency. Sometimes you might need to express dependencies 
+        ///against multiple running jobs at the same time. Use this method to combine a set of dependencies into a single dependency that can be passed to a job.</remarks>
+        ///<example>
+        ///  <code><![CDATA[
+        /// // Schedule 3 jobs, jobs a and b can run in parallel to each other,
+        /// // job c will only run once both jobA and jobB has completed
+        ///
+        /// // Schedule job a
+        ///var jobA = new MyJob(...);
+        ///var jobAHandle = jobA.Schedule();
+        ///
+        /// // Schedule job b
+        ///var jobB = new MyJob(...);
+        ///var jobBHandle = jobB.Schedule();
+        ///
+        /// // For job c, combine dependencies of job a and b
+        /// // Then use that for scheduling the next job
+        ///var jobC = new DependentJob(...);
+        ///var dependency = JobHandle.CombineDependencies(jobAHandle, jobBHandle);
+        ///jobC.Schedule(dependency);
+        ///]]></code>
+        ///</example>
         unsafe public static JobHandle CombineDependencies(NativeSlice<JobHandle> jobs)
         {
             return CombineDependenciesInternalPtr(jobs.GetUnsafeReadOnlyPtr(), jobs.Length);
@@ -100,6 +214,10 @@ namespace Unity.Jobs
         [NativeMethod(IsFreeFunction = true, IsThreadSafe = true, ThrowsException = true)]
         internal static extern unsafe JobHandle CombineDependenciesInternalPtr(void* jobs, int count);
 
+        ///<summary>CheckFenceIsDependencyOrDidSyncFence.</summary>
+        ///<param name="jobHandle">Job handle.</param>
+        ///<param name="dependsOn">Job handle dependency.</param>
+        ///<returns>Return value.</returns>
         [NativeMethod(IsFreeFunction = true, IsThreadSafe = true)]
         public static extern bool CheckFenceIsDependencyOrDidSyncFence(JobHandle jobHandle, JobHandle dependsOn);
 
@@ -143,6 +261,7 @@ namespace Unity.Jobs
         [FreeFunction("CompleteManualJobFence", isThreadSafe: true)]
         internal static extern bool CompleteManualJobFence(ref JobHandle handle);
 
+        ///<exclude />
         public bool Equals(JobHandle other)
         {
             return jobGroup == other.jobGroup;
@@ -153,11 +272,13 @@ namespace Unity.Jobs
             return obj is JobHandle && this == (JobHandle)obj;
         }
 
+        ///<exclude />
         public static bool operator ==(JobHandle a, JobHandle b)
         {
             return a.jobGroup == b.jobGroup;
         }
 
+        ///<exclude />
         public static bool operator !=(JobHandle a, JobHandle b)
         {
             return !(a == b);
@@ -174,8 +295,11 @@ namespace Unity.Jobs
 
 namespace Unity.Jobs.LowLevel.Unsafe
 {
+    ///<summary>Contains unsafe utility methods for <see cref="Unity.Jobs.JobHandle" /> instances.</summary>
     public static class JobHandleUnsafeUtility
     {
+        ///<summary>Combines multiple dependencies into a single one using an unsafe array of job handles.</summary>
+        ///<seealso cref="JobHandle.CombineDependencies" />
         unsafe public static JobHandle CombineDependencies(JobHandle* jobs, int count)
         {
             return JobHandle.CombineDependenciesInternalPtr(jobs, count);

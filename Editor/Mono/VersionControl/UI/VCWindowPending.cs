@@ -2,7 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: VersionControl not yet converted
 using System;
 using Unity.Scripting.LifecycleManagement;
 using UnityEditor.ShortcutManagement;
@@ -20,19 +19,15 @@ namespace UnityEditor.VersionControl
     [EditorWindowTitle(title = "Version Control", icon = "UnityEditor.VersionControl")]
     internal partial class WindowPending : EditorWindow
     {
-        #pragma warning disable UAL0015 // this side effect does not outlive the current call (global trigger / lazily-loaded asset re-fetched on next access); a stale reference is harmlessly replaced
-        internal WindowPending() {}
-        #pragma warning restore UAL0015
-
         internal class Styles
         {
             public GUIStyle box = "CN Box";
             public GUIStyle bottomBarBg = "ProjectBrowserBottomBarBg";
-            public static readonly GUIContent connectingLabel = EditorGUIUtility.TrTextContent("CONNECTING...");
-            public static readonly GUIContent offlineLabel = EditorGUIUtility.TrTextContent("OFFLINE");
-            public static readonly GUIContent workOfflineLabel = EditorGUIUtility.TrTextContent("WORK OFFLINE is enabled in Version Control Settings. Unity will behave as if version control is disabled.");
-            public static readonly GUIContent disabledLabel = EditorGUIUtility.TrTextContent("Disabled");
-            public static readonly GUIContent editorSettingsLabel = EditorGUIUtility.TrTextContent("Version Control Settings");
+            public static readonly GUIContent connectingLabel = L10n.TextContent("CONNECTING...", null, null, null);
+            public static readonly GUIContent offlineLabel = L10n.TextContent("OFFLINE", null, null, null);
+            public static readonly GUIContent workOfflineLabel = L10n.TextContent("WORK OFFLINE is enabled in Version Control Settings. Unity will behave as if version control is disabled.", null, null, null);
+            public static readonly GUIContent disabledLabel = L10n.TextContent("Disabled", null, null, null);
+            public static readonly GUIContent editorSettingsLabel = L10n.TextContent("Version Control Settings", null, null, null);
         }
         [NoAutoStaticsCleanup] // lazy-initialized UI styles cache
         static Styles s_Styles = null;
@@ -625,7 +620,7 @@ namespace UnityEditor.VersionControl
                 // Draw separation line over the button
                 GUI.Label(rect, GUIContent.none, s_Styles.bottomBarBg);
 
-                var content = EditorGUIUtility.TrTextContent("Apply All Incoming Changes");
+                var content = L10n.TextContent("Apply All Incoming Changes", null, null, null);
                 var buttonSize = EditorStyles.miniButton.CalcSize(content);
                 Rect progressRect = new Rect(rect.x, rect.y - 2, rect.width - buttonSize.x - 5f, rect.height);
                 ProgressGUI(progressRect, Provider.activeTask, false);
@@ -739,11 +734,11 @@ namespace UnityEditor.VersionControl
 
             if (s_ToolbarButtonsWidth == 0f)
             {
-                s_ToolbarButtonsWidth = EditorStyles.toolbarButton.CalcSize(EditorGUIUtility.TrTextContent("Incoming (xx)")).x;
-                s_ToolbarButtonsWidth += EditorStyles.toolbarButton.CalcSize(EditorGUIUtility.TrTextContent("Outgoing")).x;
+                s_ToolbarButtonsWidth = EditorStyles.toolbarButton.CalcSize(L10n.TextContent("Incoming (xx)", null, null, null)).x;
+                s_ToolbarButtonsWidth += EditorStyles.toolbarButton.CalcSize(L10n.TextContent("Outgoing", null, null, null)).x;
                 s_ToolbarButtonsWidth += EditorStyles.toolbarButton.CalcSize(new GUIContent(refreshIcon)).x;
                 s_SettingsButtonWidth = EditorStyles.toolbarButton.CalcSize(Styles.editorSettingsLabel).x;
-                s_DeleteChangesetsButtonWidth = EditorStyles.toolbarButton.CalcSize(EditorGUIUtility.TrTextContent("Delete Empty Changesets")).x;
+                s_DeleteChangesetsButtonWidth = EditorStyles.toolbarButton.CalcSize(L10n.TextContent("Delete Empty Changesets", null, null, null)).x;
                 minSize = new Vector2(s_ToolbarButtonsWidth + k_MinSearchFieldWidth, k_MinWindowHeight);
             }
         }
@@ -771,4 +766,3 @@ namespace UnityEditor.VersionControl
         }
     }
 }
-#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

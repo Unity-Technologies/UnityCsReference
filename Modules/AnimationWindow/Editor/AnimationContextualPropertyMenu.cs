@@ -2,7 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: MecanimAnimation not yet converted
 using System;
 using System.Collections.Generic;
 using UnityEngine;
@@ -27,18 +26,24 @@ namespace UnityEditorInternal
         }
 
         [AutoStaticsCleanupOnCodeReload]
-        public static AnimationPropertyContextualMenu Instance = new AnimationPropertyContextualMenu();
+        static AnimationPropertyContextualMenu s_Instance;
+
+        // Created on demand rather than by a field initializer: the constructor subscribes to the
+        // contextual-property-menu hooks, which are cleared on code reload, and a field initializer does
+        // not re-run afterwards — so the animation context menu would stop appearing after the first
+        // reload. Going through the property re-subscribes on the next use instead.
+        public static AnimationPropertyContextualMenu Instance => s_Instance ??= new AnimationPropertyContextualMenu();
 
         IAnimationContextualResponder m_Responder;
 
-        private static readonly GUIContent addKeyContent = EditorGUIUtility.TrTextContent("Add Key");
-        private static readonly GUIContent updateKeyContent = EditorGUIUtility.TrTextContent("Update Key");
-        private static readonly GUIContent removeKeyContent = EditorGUIUtility.TrTextContent("Remove Key");
-        private static readonly GUIContent removeCurveContent = EditorGUIUtility.TrTextContent("Remove All Keys");
-        private static readonly GUIContent goToPreviousKeyContent = EditorGUIUtility.TrTextContent("Go to Previous Key");
-        private static readonly GUIContent goToNextKeyContent = EditorGUIUtility.TrTextContent("Go to Next Key");
-        private static readonly GUIContent addCandidatesContent = EditorGUIUtility.TrTextContent("Key All Modified");
-        private static readonly GUIContent addAnimatedContent = EditorGUIUtility.TrTextContent("Key All Animated");
+        private static readonly GUIContent addKeyContent = L10n.TextContent("Add Key", null, null, null);
+        private static readonly GUIContent updateKeyContent = L10n.TextContent("Update Key", null, null, null);
+        private static readonly GUIContent removeKeyContent = L10n.TextContent("Remove Key", null, null, null);
+        private static readonly GUIContent removeCurveContent = L10n.TextContent("Remove All Keys", null, null, null);
+        private static readonly GUIContent goToPreviousKeyContent = L10n.TextContent("Go to Previous Key", null, null, null);
+        private static readonly GUIContent goToNextKeyContent = L10n.TextContent("Go to Next Key", null, null, null);
+        private static readonly GUIContent addCandidatesContent = L10n.TextContent("Key All Modified", null, null, null);
+        private static readonly GUIContent addAnimatedContent = L10n.TextContent("Key All Animated", null, null, null);
 
         // for tests that match emitted items without re-translating the literals.
         internal static string AddKeyText => addKeyContent.text;
@@ -198,4 +203,3 @@ namespace UnityEditorInternal
         }
     }
 }
-#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

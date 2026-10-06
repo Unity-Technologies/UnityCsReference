@@ -2,7 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: UIToolkitFramework not yet converted
 using System;
 using System.Collections.Generic;
 using Object = UnityEngine.Object;
@@ -126,7 +125,7 @@ class LocalizedAssetElement : LocalizedReferenceElement
             return new VisualElement();
 
         var row = s_StorageRow.Instantiate();
-        row.Q<Label>("storage-label").text = L10n.Tr("Storage", null);
+        row.Q<Label>("storage-label").text = LocLabels.Storage;
 
         var current = AssetEntryEditors.Get(entry.GetType());
         var button = row.Q<Button>("storage-menu");
@@ -158,7 +157,7 @@ class LocalizedAssetElement : LocalizedReferenceElement
     static Object CurrentObject(IAssetEntry entry) => entry switch
     {
         AssetEntry direct => direct.Default,
-        ResourceAssetEntry resource => string.IsNullOrEmpty(resource.Default) ? null : Resources.Load(resource.Default),
+        ResourceAssetEntry resource => string.IsNullOrEmpty(resource.Default) ? null : SubAssetAddress.LoadFromResources(resource.Default),
         _ => null,
     };
 
@@ -181,8 +180,11 @@ class LocalizedAssetElement : LocalizedReferenceElement
             return null;
         var relative = AssetProviderEditors.ResourcesRelativePath(AssetDatabase.GetAssetPath(value));
         if (relative == null)
+        {
             Debug.LogWarning($"'{value.name}' is not under a Resources folder; it was not carried over when switching storage.");
-        return relative;
+            return null;
+        }
+        return AssetDatabase.IsSubAsset(value) ? SubAssetAddress.Format(relative, value.name) : relative;
     }
 
     static string AssetPreview(IAssetEntry entry)
@@ -195,4 +197,3 @@ class LocalizedAssetElement : LocalizedReferenceElement
         };
     }
 }
-#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

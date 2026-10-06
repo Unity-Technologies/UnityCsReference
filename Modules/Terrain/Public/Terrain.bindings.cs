@@ -113,6 +113,8 @@ namespace UnityEngine
     [StaticAccessor("GetITerrainManager()", StaticAccessorType.Arrow)]
     public sealed partial class Terrain : Behaviour
     {
+        internal Terrain(global::UnityEngine.EntityId id) : base(id) {}
+        public Terrain() {}
         ///<summary>The Terrain Data that stores heightmaps, terrain textures, detail meshes and trees.</summary>
         extern public TerrainData terrainData { get; set; }
 
@@ -614,7 +616,6 @@ namespace UnityEngine
         extern private static void Internal_FillActiveTerrainList([NotNull] [Out] List<Terrain> terrainList);
 
         ///<summary>Creates a Terrain including collider from <see cref="TerrainData" />.</summary>
-        [UsedByNativeCode]
         extern public static GameObject CreateTerrainGameObject(TerrainData assignTerrain);
 
         ///<summary>The Terrain tile to the left, which is in the negative X direction.</summary>
@@ -669,6 +670,8 @@ namespace UnityEngine
     [ExcludeFromPreset]
     public sealed partial class Tree : Component
     {
+        internal Tree(global::UnityEngine.EntityId id) : base(id) {}
+        public Tree() {}
         ///<summary>Data asociated to the Tree.</summary>
         ///<remarks>Check the tree creator.</remarks>
         [NativeProperty("TreeData")]
@@ -818,14 +821,15 @@ namespace UnityEngine
     [global::UnityEngine.NativeClass("SpeedTreeWindAsset", PersistentTypeId = 228)]
     public partial class SpeedTreeWindAsset : Object
     {
+        internal SpeedTreeWindAsset(global::UnityEngine.EntityId id) : base(id) {}
         extern public int Version { get; set; }
 
         internal SpeedTreeWindAsset(int version, SpeedTreeWindConfig9 config)
         {
-            Internal_Create(this, version, SpeedTreeWindConfig9.Serialize(config));
+            SetEntityIdFromConstructor(Internal_Create(version, SpeedTreeWindConfig9.Serialize(config)));
         }
 
         [NativeMethod(ThrowsException = true)]
-        static extern void Internal_Create([Writable] SpeedTreeWindAsset notSelf, int version, byte[] data);
+        static extern EntityId Internal_Create(int version, byte[] data);
     }
 }

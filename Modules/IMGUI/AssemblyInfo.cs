@@ -4,28 +4,64 @@
 
 using System.Runtime.CompilerServices;
 
-// Make internal visible to UIElements module.
+// OK: "friend" and test assemblies from the same product area, evolving in lockstep with this module
+
 [assembly: InternalsVisibleTo("UnityEngine.UIElementsModule")]
-[assembly: InternalsVisibleTo("Unity.UIElements")]
-[assembly: InternalsVisibleTo("Unity.UIElements.Editor")]
+[assembly: InternalsVisibleTo("Unity.UIElements.Tests")]
+[assembly: InternalsVisibleTo("Unity.UIElements.PlayModeTests")]
+[assembly: InternalsVisibleTo("EditorGUI.Tests.Playmode")]
+[assembly: InternalsVisibleTo("Unity.PerformanceTesting.IMGUI")]
+[assembly: InternalsVisibleTo("Assembly-CSharp-testable")] // TextGenerator runtime tests use RuntimeTextSettings
+[assembly: InternalsVisibleTo("UnityEngine.UIElements.Tests.Base")]
+[assembly: InternalsVisibleTo("UnityEngine.UIElements.Tests.Bindings")]
+[assembly: InternalsVisibleTo("UnityEngine.UIElements.Tests.Controls")]
+[assembly: InternalsVisibleTo("UnityEngine.UIElements.Tests.Utils")]
+[assembly: InternalsVisibleTo("UnityEngine.UIElements.Tests.UXML")]
+
+[assembly: InternalsVisibleTo("DynamicProxyGenAssembly2")] // for Moq
+
+[assembly: InternalsVisibleTo("UnityEditor.CoreModule")]
+[assembly: InternalsVisibleTo("UnityEditor.StyleSheetsModule")]
+[assembly: InternalsVisibleTo("UnityEditor.UIElementsModule")]
+[assembly: InternalsVisibleTo("UnityEditor.UIBuilderModule")]
+
+[assembly: InternalsVisibleTo("Unity.UIElements.EditorTests")]
 [assembly: InternalsVisibleTo("Unity.UIElements.EditorResources.Authoring")]
 [assembly: InternalsVisibleTo("Unity.UIElements.EditorResources.EditorTests")]
-[assembly: InternalsVisibleTo("Unity.UIElements.EditorTests")]
-[assembly: InternalsVisibleTo("Unity.UIElements.Tests")]
-[assembly: InternalsVisibleTo("UnityEngine.UI.Tests")]
-[assembly: InternalsVisibleTo("EditorGUI.Tests.Playmode")]
-// Make internal visible to integration test project
-[assembly: InternalsVisibleTo("UnityEngine.InputForUIVisualizer")]
-[assembly: InternalsVisibleTo("UnityEngine.InputForUITests")]
-[assembly: InternalsVisibleTo("Unity.Motion.Editor.AnimationWindow")]
-// Lets the UI test framework override s_HasCurrentWindowKeyFocusFunc so IMGUI keyboard tests run in headless.
+[assembly: InternalsVisibleTo("Unity.UI.Builder.EditorTests")]
+[assembly: InternalsVisibleTo("Assembly-CSharp-Editor-testable")]
 [assembly: InternalsVisibleTo("Unity.UI.TestFramework.Editor")]
+[assembly: InternalsVisibleTo("Unity.Modules.InputForUI.Tests.Editor")] // GUIUtility.processEvent
+[assembly: InternalsVisibleTo("Unity.Modules.Core.InspectorFramework.Tests.Editor")] // GUIContent.Temp
 
-[assembly: InternalsVisibleTo("Unity.Modules.InputForUI.Tests.Playmode")]
-[assembly: InternalsVisibleTo("Unity.Modules.InputForUI.Tests.Common")]
-[assembly: InternalsVisibleTo("Unity.Modules.InputForUI.Tests.Editor")]
-[assembly: InternalsVisibleTo("Unity.Modules.Core.InspectorFramework.Tests.Editor")]
+// TOLERATED: modules or core packages evolving in lockstep with this module
+// Reducing this list means to improve the API design of this module.
 
-// Performance Tests Assemblies
-[assembly: InternalsVisibleTo("Unity.PerformanceTesting.IMGUI")]
+[assembly: InternalsVisibleTo("UnityEditor.AnimationWindowModule")] // GUIClip, GUIUtility.GetPermanentControlID, SDFStyleScope
+[assembly: InternalsVisibleTo("UnityEditor.ClothModule")] // GUILayoutUtility.topLevel
+[assembly: InternalsVisibleTo("UnityEditor.DeviceSimulatorModule")] // GUI.blitMaterial
+[assembly: InternalsVisibleTo("UnityEditor.DiagnosticsModule")] // GUIContent.Temp
+[assembly: InternalsVisibleTo("UnityEditor.GraphViewModule")] // GUIUtility.RoundToPixelGrid
+[assembly: InternalsVisibleTo("UnityEditor.Graphs")] // GUIClip.Clip/Unclip, GUIContent.Temp, SDFStyleScope
+[assembly: InternalsVisibleTo("UnityEditor.Physics2DModule")] // GUIClip.topmostRect
+[assembly: InternalsVisibleTo("UnityEditor.PresetsUIModule")] // GUIContent.Temp
+[assembly: InternalsVisibleTo("UnityEditor.QuickSearchModule")] // GUIClip.Unclip/enabled, GUIContent.Temp
+[assembly: InternalsVisibleTo("UnityEditor.SketchUpModule")] // GUIContent.Temp
+[assembly: InternalsVisibleTo("UnityEditor.TerrainModule")] // GUIUtility.mouseUsed
+[assembly: InternalsVisibleTo("UnityEditor.VideoModule")] // GUIContent.Temp
 
+[assembly: InternalsVisibleTo("UnityEditor.Android.Extensions")] // GUIContent.Temp
+
+[assembly: InternalsVisibleTo("Unity.Modules.Core.TextureMipLimit.Tests.Editor")] // GUIUtility.pixelsPerPoint
+
+// NOT TOLERATED: assemblies distributed in packages not evolving in lockstep with this module
+// Until this list is empty, your internal API is included in your public API, and changing internal APIs is considered a breaking change.
+
+[assembly: InternalsVisibleTo("Unity.InternalAPIEngineBridge.001")] // com.unity.2d.common: GUIClip.visibleRect/topmostRect/GetTopRect
+[assembly: InternalsVisibleTo("Unity.InternalAPIEngineBridge.002")] // com.unity.entities: GUIUtility.pixelsPerPoint
+
+[assembly: InternalsVisibleTo("Unity.2D.Sprite.Editor")] // com.unity.2d.sprite: GUIClip.Push/Pop/Unclip, GUIUtility.GetPermanentControlID
+[assembly: InternalsVisibleTo("Unity.2D.Tilemap.Editor")] // com.unity.2d.tilemap: GUIClip.Unclip, GUIContent.Temp, GUIUtility.GetPermanentControlID
+[assembly: InternalsVisibleTo("Unity.Timeline.Editor")] // com.unity.timeline: GUIClip.Clip/Unclip, GUIContent.Temp, GUISkin.current, GUIUtility.guiDepth/GetPermanentControlID
+[assembly: InternalsVisibleTo("Unity.Timeline.EditorTests")] // com.unity.timeline tests: GUIClip.Unclip, GUISkin.error
+[assembly: InternalsVisibleTo("Unity.Motion.Editor.AnimationWindow")] // com.unity.motion (external repository)

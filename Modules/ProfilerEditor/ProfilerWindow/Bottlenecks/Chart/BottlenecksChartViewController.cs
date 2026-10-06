@@ -2,13 +2,13 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: Profiling not yet converted
 using System;
 using System.Collections.Generic;
 using Unity.Collections;
 using Unity.Scripting.LifecycleManagement;
 using UnityEditor;
 using UnityEditor.Accessibility;
+using UnityEditor.Profiling;
 using UnityEditor.UIElements;
 using UnityEditorInternal;
 using UnityEngine;
@@ -82,7 +82,11 @@ namespace Unity.Profiling.Editor.UI
 
         public bool SaveHighlightsInfo(string filename)
         {
-            return m_Model.ToFile(filename, ProfilerDriver.lastFrameIndex - ProfilerDriver.firstFrameIndex + 1);
+            // lastFrameIndex - firstFrameIndex + 1 gives 1, not 0, when both are the sentinel -1.
+            var numFramesSaved = (ProfilerDriver.lastFrameIndex == FrameDataView.invalidOrCurrentFrameIndex)
+                ? 0
+                : ProfilerDriver.lastFrameIndex - ProfilerDriver.firstFrameIndex + 1;
+            return m_Model.ToFile(filename, numFramesSaved);
         }
 
         protected override VisualElement LoadView()
@@ -448,4 +452,3 @@ namespace Unity.Profiling.Editor.UI
         }
     }
 }
-#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

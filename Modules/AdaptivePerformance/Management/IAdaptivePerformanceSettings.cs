@@ -140,14 +140,16 @@ namespace UnityEngine.AdaptivePerformance
         private System.Action<string> m_NameSetter;
         private System.Func<AdaptivePerformanceScalerSettingsBase> m_NormalModeGetter;
         private System.Func<AdaptivePerformanceScalerSettingsBase> m_BatteryModeGetter;
+        private System.Func<AdaptivePerformanceScalerSettingsBase> m_StableFrameModeGetter;
 
-        public ScalerSettingsEnabledWrapper(System.Func<AdaptivePerformanceScalerSettingsBase> baseSettingsGetter, System.Func<string> nameGetter, System.Action<string> nameSetter, System.Func<AdaptivePerformanceScalerSettingsBase> normalModeGetter = null, System.Func<AdaptivePerformanceScalerSettingsBase> batteryModeGetter = null)
+        public ScalerSettingsEnabledWrapper(System.Func<AdaptivePerformanceScalerSettingsBase> baseSettingsGetter, System.Func<string> nameGetter, System.Action<string> nameSetter, System.Func<AdaptivePerformanceScalerSettingsBase> normalModeGetter = null, System.Func<AdaptivePerformanceScalerSettingsBase> batteryModeGetter = null, System.Func<AdaptivePerformanceScalerSettingsBase> stableFrameModeGetter = null)
         {
             m_BaseSettingsGetter = baseSettingsGetter;
             m_NameGetter = nameGetter;
             m_NameSetter = nameSetter;
             m_NormalModeGetter = normalModeGetter;
             m_BatteryModeGetter = batteryModeGetter;
+            m_StableFrameModeGetter = stableFrameModeGetter;
         }
 
         public override string name
@@ -206,6 +208,11 @@ namespace UnityEngine.AdaptivePerformance
         public override AdaptivePerformanceScalerSettingsBase GetBatteryModeSetting()
         {
             return m_BatteryModeGetter != null ? m_BatteryModeGetter() : m_BaseSettingsGetter();
+        }
+
+        public override AdaptivePerformanceScalerSettingsBase GetStableFrameModeSetting()
+        {
+            return m_StableFrameModeGetter != null ? m_StableFrameModeGetter() : m_BaseSettingsGetter();
         }
     }
 
@@ -266,14 +273,15 @@ namespace UnityEngine.AdaptivePerformance
         // .enabled and is copied per mode via ApplySettingsBase along with the other
         // mode-specific visual fields (scale, visualImpact, target, minBound, maxBound,
         // maxLevel) on the raw structs returned by GetNormalModeSetting() /
-        // GetBatteryModeSetting().
+        // GetBatteryModeSetting() / GetStableFrameModeSetting().
         void ApplySettingsAllModes(AdaptivePerformanceScalerSettingsBase destination, AdaptivePerformanceScalerSettingsBase sources)
         {
             if (destination == null || sources == null)
                 return;
             destination.name = sources.name;
-            ApplySettingsBase(destination.GetNormalModeSetting(),  sources.GetNormalModeSetting());
-            ApplySettingsBase(destination.GetBatteryModeSetting(), sources.GetBatteryModeSetting());
+            ApplySettingsBase(destination.GetNormalModeSetting(),      sources.GetNormalModeSetting());
+            ApplySettingsBase(destination.GetBatteryModeSetting(),     sources.GetBatteryModeSetting());
+            ApplySettingsBase(destination.GetStableFrameModeSetting(), sources.GetStableFrameModeSetting());
         }
 
         void ApplySettingsBase(AdaptivePerformanceScalerSettingsBase destination, AdaptivePerformanceScalerSettingsBase sources)
@@ -390,6 +398,20 @@ namespace UnityEngine.AdaptivePerformance
                             maxLevel = 1,
                         }
                     },
+                    {
+                        OperationMode.StableFrameMode,
+                        () => new AdaptivePerformanceScalerSettingsBase
+                        {
+                            name = "Adaptive Framerate",
+                            enabled = false,
+                            scale = 1.0f,
+                            visualImpact = ScalerVisualImpact.High,
+                            target = ScalerTarget.CPU | ScalerTarget.GPU | ScalerTarget.FillRate,
+                            minBound = 15,
+                            maxBound = 60,
+                            maxLevel = 60 - 15,
+                        }
+                    },
                 }
             },
             {
@@ -402,6 +424,9 @@ namespace UnityEngine.AdaptivePerformance
                     { OperationMode.BatteryMode, () => new AdaptivePerformanceScalerSettingsBase
                         { name = "Adaptive Resolution", enabled = false, scale = 1.0f, visualImpact = ScalerVisualImpact.Low,
                           target = ScalerTarget.FillRate | ScalerTarget.GPU, maxLevel = 1, minBound = 0.5f, maxBound = 0.5f } },
+                    { OperationMode.StableFrameMode, () => new AdaptivePerformanceScalerSettingsBase
+                        { name = "Adaptive Resolution", enabled = false, scale = 1.0f, visualImpact = ScalerVisualImpact.Low,
+                          target = ScalerTarget.FillRate | ScalerTarget.GPU, maxLevel = 9, minBound = 0.5f, maxBound = 1 } },
                 }
             },
             {
@@ -414,6 +439,9 @@ namespace UnityEngine.AdaptivePerformance
                     { OperationMode.BatteryMode, () => new AdaptivePerformanceScalerSettingsBase
                         { name = "Adaptive Batching", enabled = false, scale = 1, visualImpact = ScalerVisualImpact.Medium,
                           target = ScalerTarget.CPU, maxLevel = 1, minBound = 0, maxBound = 0 } },
+                    { OperationMode.StableFrameMode, () => new AdaptivePerformanceScalerSettingsBase
+                        { name = "Adaptive Batching", enabled = false, scale = 1, visualImpact = ScalerVisualImpact.Medium,
+                          target = ScalerTarget.CPU, maxLevel = 1, minBound = 0, maxBound = 1 } },
                 }
             },
             {
@@ -426,6 +454,9 @@ namespace UnityEngine.AdaptivePerformance
                     { OperationMode.BatteryMode, () => new AdaptivePerformanceScalerSettingsBase
                         { name = "Adaptive LOD", enabled = false, scale = 1, visualImpact = ScalerVisualImpact.High,
                           target = ScalerTarget.GPU, maxLevel = 1, minBound = 0.4f, maxBound = 0.4f } },
+                    { OperationMode.StableFrameMode, () => new AdaptivePerformanceScalerSettingsBase
+                        { name = "Adaptive LOD", enabled = false, scale = 1, visualImpact = ScalerVisualImpact.High,
+                          target = ScalerTarget.GPU, maxLevel = 3, minBound = 0.4f, maxBound = 1 } },
                 }
             },
             {
@@ -438,6 +469,9 @@ namespace UnityEngine.AdaptivePerformance
                     { OperationMode.BatteryMode, () => new AdaptivePerformanceScalerSettingsBase
                         { name = "Adaptive Lut", enabled = false, scale = 1, visualImpact = ScalerVisualImpact.Medium,
                           target = ScalerTarget.GPU | ScalerTarget.CPU, maxLevel = 1, minBound = 0, maxBound = 0 } },
+                    { OperationMode.StableFrameMode, () => new AdaptivePerformanceScalerSettingsBase
+                        { name = "Adaptive Lut", enabled = false, scale = 1, visualImpact = ScalerVisualImpact.Medium,
+                          target = ScalerTarget.GPU | ScalerTarget.CPU, maxLevel = 1, minBound = 0, maxBound = 1 } },
                 }
             },
             {
@@ -450,6 +484,9 @@ namespace UnityEngine.AdaptivePerformance
                     { OperationMode.BatteryMode, () => new AdaptivePerformanceScalerSettingsBase
                         { name = "Adaptive MSAA", enabled = false, scale = 1, visualImpact = ScalerVisualImpact.Medium,
                           target = ScalerTarget.GPU | ScalerTarget.FillRate, maxLevel = 1, minBound = 0, maxBound = 0 } },
+                    { OperationMode.StableFrameMode, () => new AdaptivePerformanceScalerSettingsBase
+                        { name = "Adaptive MSAA", enabled = false, scale = 1, visualImpact = ScalerVisualImpact.Medium,
+                          target = ScalerTarget.GPU | ScalerTarget.FillRate, maxLevel = 2, minBound = 0, maxBound = 1 } },
                 }
             },
             {
@@ -462,6 +499,9 @@ namespace UnityEngine.AdaptivePerformance
                     { OperationMode.BatteryMode, () => new AdaptivePerformanceScalerSettingsBase
                         { name = "Adaptive Shadow Cascade", enabled = false, scale = 1, visualImpact = ScalerVisualImpact.Medium,
                           target = ScalerTarget.GPU | ScalerTarget.CPU, maxLevel = 1, minBound = 0, maxBound = 0 } },
+                    { OperationMode.StableFrameMode, () => new AdaptivePerformanceScalerSettingsBase
+                        { name = "Adaptive Shadow Cascade", enabled = false, scale = 1, visualImpact = ScalerVisualImpact.Medium,
+                          target = ScalerTarget.GPU | ScalerTarget.CPU, maxLevel = 2, minBound = 0, maxBound = 1 } },
                 }
             },
             {
@@ -474,6 +514,9 @@ namespace UnityEngine.AdaptivePerformance
                     { OperationMode.BatteryMode, () => new AdaptivePerformanceScalerSettingsBase
                         { name = "Adaptive Shadow Distance", enabled = false, scale = 1, visualImpact = ScalerVisualImpact.Low,
                           target = ScalerTarget.GPU, maxLevel = 1, minBound = 0.15f, maxBound = 0.15f } },
+                    { OperationMode.StableFrameMode, () => new AdaptivePerformanceScalerSettingsBase
+                        { name = "Adaptive Shadow Distance", enabled = false, scale = 1, visualImpact = ScalerVisualImpact.Low,
+                          target = ScalerTarget.GPU, maxLevel = 3, minBound = 0.15f, maxBound = 1 } },
                 }
             },
             {
@@ -486,6 +529,9 @@ namespace UnityEngine.AdaptivePerformance
                     { OperationMode.BatteryMode, () => new AdaptivePerformanceScalerSettingsBase
                         { name = "Adaptive Shadowmap Resolution", enabled = false, scale = 1, visualImpact = ScalerVisualImpact.Low,
                           target = ScalerTarget.GPU, maxLevel = 1, minBound = 0.15f, maxBound = 0.15f } },
+                    { OperationMode.StableFrameMode, () => new AdaptivePerformanceScalerSettingsBase
+                        { name = "Adaptive Shadowmap Resolution", enabled = false, scale = 1, visualImpact = ScalerVisualImpact.Low,
+                          target = ScalerTarget.GPU, maxLevel = 3, minBound = 0.15f, maxBound = 1 } },
                 }
             },
             {
@@ -498,6 +544,9 @@ namespace UnityEngine.AdaptivePerformance
                     { OperationMode.BatteryMode, () => new AdaptivePerformanceScalerSettingsBase
                         { name = "Adaptive Shadow Quality", enabled = false, scale = 1, visualImpact = ScalerVisualImpact.High,
                           target = ScalerTarget.GPU | ScalerTarget.CPU, maxLevel = 1, minBound = 0, maxBound = 0 } },
+                    { OperationMode.StableFrameMode, () => new AdaptivePerformanceScalerSettingsBase
+                        { name = "Adaptive Shadow Quality", enabled = false, scale = 1, visualImpact = ScalerVisualImpact.High,
+                          target = ScalerTarget.GPU | ScalerTarget.CPU, maxLevel = 3, minBound = 0, maxBound = 1 } },
                 }
             },
             {
@@ -510,6 +559,9 @@ namespace UnityEngine.AdaptivePerformance
                     { OperationMode.BatteryMode, () => new AdaptivePerformanceScalerSettingsBase
                         { name = "Adaptive Sorting", enabled = false, scale = 1, visualImpact = ScalerVisualImpact.Medium,
                           target = ScalerTarget.CPU, maxLevel = 1, minBound = 0, maxBound = 0 } },
+                    { OperationMode.StableFrameMode, () => new AdaptivePerformanceScalerSettingsBase
+                        { name = "Adaptive Sorting", enabled = false, scale = 1, visualImpact = ScalerVisualImpact.Medium,
+                          target = ScalerTarget.CPU, maxLevel = 1, minBound = 0, maxBound = 1 } },
                 }
             },
             {
@@ -522,6 +574,9 @@ namespace UnityEngine.AdaptivePerformance
                     { OperationMode.BatteryMode, () => new AdaptivePerformanceScalerSettingsBase
                         { name = "Adaptive Transparency", enabled = false, scale = 1, visualImpact = ScalerVisualImpact.High,
                           target = ScalerTarget.GPU, maxLevel = 1, minBound = 0, maxBound = 0 } },
+                    { OperationMode.StableFrameMode, () => new AdaptivePerformanceScalerSettingsBase
+                        { name = "Adaptive Transparency", enabled = false, scale = 1, visualImpact = ScalerVisualImpact.High,
+                          target = ScalerTarget.GPU, maxLevel = 1, minBound = 0, maxBound = 1 } },
                 }
             },
             {
@@ -534,6 +589,9 @@ namespace UnityEngine.AdaptivePerformance
                     { OperationMode.BatteryMode, () => new AdaptivePerformanceScalerSettingsBase
                         { name = "Adaptive View Distance", enabled = false, scale = 1, visualImpact = ScalerVisualImpact.High,
                           target = ScalerTarget.GPU, maxLevel = 1, minBound = 50f, maxBound = 50f } },
+                    { OperationMode.StableFrameMode, () => new AdaptivePerformanceScalerSettingsBase
+                        { name = "Adaptive View Distance", enabled = false, scale = 1, visualImpact = ScalerVisualImpact.High,
+                          target = ScalerTarget.GPU, maxLevel = 40, minBound = 50f, maxBound = 1000 } },
                 }
             },
             {
@@ -546,6 +604,9 @@ namespace UnityEngine.AdaptivePerformance
                     { OperationMode.BatteryMode, () => new AdaptivePerformanceScalerSettingsBase
                         { name = "Adaptive Physics", enabled = false, scale = 1, visualImpact = ScalerVisualImpact.Low,
                           target = ScalerTarget.CPU, maxLevel = 1, minBound = 0.5f, maxBound = 0.5f } },
+                    { OperationMode.StableFrameMode, () => new AdaptivePerformanceScalerSettingsBase
+                        { name = "Adaptive Physics", enabled = false, scale = 1, visualImpact = ScalerVisualImpact.Low,
+                          target = ScalerTarget.CPU, maxLevel = 5, minBound = 0.5f, maxBound = 1 } },
                 }
             },
             {
@@ -558,6 +619,9 @@ namespace UnityEngine.AdaptivePerformance
                     { OperationMode.BatteryMode, () => new AdaptivePerformanceScalerSettingsBase
                         { name = "Adaptive Decals", enabled = false, scale = 1, visualImpact = ScalerVisualImpact.Medium,
                           target = ScalerTarget.GPU, maxLevel = 1, minBound = 0.01f, maxBound = 0.01f } },
+                    { OperationMode.StableFrameMode, () => new AdaptivePerformanceScalerSettingsBase
+                        { name = "Adaptive Decals", enabled = false, scale = 1, visualImpact = ScalerVisualImpact.Medium,
+                          target = ScalerTarget.GPU, maxLevel = 20, minBound = 0.01f, maxBound = 1 } },
                 }
             },
             {
@@ -570,6 +634,9 @@ namespace UnityEngine.AdaptivePerformance
                     { OperationMode.BatteryMode, () => new AdaptivePerformanceScalerSettingsBase
                         { name = "Adaptive Layer Culling", enabled = false, scale = 1, visualImpact = ScalerVisualImpact.Medium,
                           target = ScalerTarget.CPU, maxLevel = 1, minBound = 0.01f, maxBound = 0.01f } },
+                    { OperationMode.StableFrameMode, () => new AdaptivePerformanceScalerSettingsBase
+                        { name = "Adaptive Layer Culling", enabled = false, scale = 1, visualImpact = ScalerVisualImpact.Medium,
+                          target = ScalerTarget.CPU, maxLevel = 40, minBound = 0.01f, maxBound = 1 } },
                 }
             },
             {
@@ -581,6 +648,9 @@ namespace UnityEngine.AdaptivePerformance
                           target = ScalerTarget.CPU | ScalerTarget.GPU | ScalerTarget.FillRate, minBound = 1, maxBound = 60, maxLevel = 59 } },
                     { OperationMode.BatteryMode, () => new AdaptivePerformanceScalerSettingsBase
                         { name = "Adaptive On Demand Rendering", enabled = false, scale = 1.0f, visualImpact = ScalerVisualImpact.High,
+                          target = ScalerTarget.CPU | ScalerTarget.GPU | ScalerTarget.FillRate, minBound = 1, maxBound = 60, maxLevel = 59 } },
+                    { OperationMode.StableFrameMode, () => new AdaptivePerformanceScalerSettingsBase
+                        { name = "Adaptive Rendering", enabled = false, scale = 1.0f, visualImpact = ScalerVisualImpact.High,
                           target = ScalerTarget.CPU | ScalerTarget.GPU | ScalerTarget.FillRate, minBound = 1, maxBound = 60, maxLevel = 59 } },
                 }
             },
@@ -642,23 +712,26 @@ namespace UnityEngine.AdaptivePerformance
             if (m_WrapperCache.TryGetValue(key, out var cached))
                 return cached;
 
-            var shared  = FindOrCreateShared(key);
-            var normal  = FindOrCreatePerMode(key, OperationMode.NormalMode);
-            var battery = FindOrCreatePerMode(key, OperationMode.BatteryMode);
+            var shared      = FindOrCreateShared(key);
+            var normal      = FindOrCreatePerMode(key, OperationMode.NormalMode);
+            var battery     = FindOrCreatePerMode(key, OperationMode.BatteryMode);
+            var stableFrame = FindOrCreatePerMode(key, OperationMode.StableFrameMode);
 
             var wrapper = new ScalerSettingsEnabledWrapper(
                 () =>
                 {
                     switch (OperationMode)
                     {
-                        case OperationMode.BatteryMode: return battery.settings;
-                        default:                        return normal.settings;
+                        case OperationMode.BatteryMode:     return battery.settings;
+                        case OperationMode.StableFrameMode: return stableFrame.settings;
+                        default:                            return normal.settings;
                     }
                 },
                 () => shared.displayName,
                 (val) => shared.displayName = val,
                 () => normal.settings,
-                () => battery.settings
+                () => battery.settings,
+                () => stableFrame.settings
             );
             m_WrapperCache[key] = wrapper;
             return wrapper;
@@ -1310,6 +1383,14 @@ namespace UnityEngine.AdaptivePerformance
             return this;
         }
 
+        /// <summary>
+        /// Gets the stable frame mode settings. For wrappers, this returns the underlying stable frame mode field.
+        /// For regular settings objects, this returns itself.
+        /// </summary>
+        public virtual AdaptivePerformanceScalerSettingsBase GetStableFrameModeSetting()
+        {
+            return this;
+        }
     }
 
     /// <summary>
@@ -1501,6 +1582,8 @@ namespace UnityEngine.AdaptivePerformance
         AdaptivePerformanceBatteryModeProvider m_BatteryModeProvider = new AdaptivePerformanceBatteryModeProvider();
         [SerializeField]
         AdaptivePerformanceNormalModeProvider m_NormalModeProvider = new AdaptivePerformanceNormalModeProvider();
+        [SerializeField]
+        AdaptivePerformanceStableFrameModeProvider m_StableFrameModeProvider = new AdaptivePerformanceStableFrameModeProvider();
 
         IAdaptivePerformanceModeProvider m_ActiveModeProvider;
 
@@ -1520,6 +1603,14 @@ namespace UnityEngine.AdaptivePerformance
         public AdaptivePerformanceNormalModeProvider NormalModeProvider
         {
             get => m_NormalModeProvider;
+        }
+
+        /// <summary>
+        /// Returns the default stable frame mode provider, which is used to control the behavior of the indexer in stable frame mode.
+        /// </summary>
+        public AdaptivePerformanceStableFrameModeProvider StableFrameModeProvider
+        {
+            get => m_StableFrameModeProvider;
         }
 
         /// <summary>
@@ -1654,6 +1745,8 @@ namespace UnityEngine.AdaptivePerformance
             // and let the battery provider re-force its scalers from the freshly-applied profile.
             if (IndexerOperationMode == OperationMode.BatteryMode)
                 BatteryModeProvider?.OnScalerProfileChanged();
+            else if (IndexerOperationMode == OperationMode.StableFrameMode)
+                StableFrameModeProvider?.OnScalerProfileChanged();
         }
 
         bool ApplyScalerProfileToAllScalers()
@@ -1694,6 +1787,8 @@ namespace UnityEngine.AdaptivePerformance
                         aScaler.ApplyDefaultSetting(settingsBase.GetNormalModeSetting());
                         // Apply battery mode settings
                         aScaler.ApplyBatteryModeSetting(settingsBase.GetBatteryModeSetting());
+                        // Apply stable frame mode settings
+                        aScaler.ApplyStableFrameModeSetting(settingsBase.GetStableFrameModeSetting());
                         // Pull the profile's enabled intent into the scaler instance.
                         // Without this, default scalers created via ScriptableObject.CreateInstance
                         // retain their m_ScalerEnabled = false default and remain permanently

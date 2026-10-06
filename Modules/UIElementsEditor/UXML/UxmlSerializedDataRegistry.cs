@@ -23,6 +23,9 @@ namespace UnityEditor.UIElements
         [AutoStaticsCleanupOnCodeReload]
         static Dictionary<string, Type> s_MovedTypes = new();
         [AutoStaticsCleanupOnCodeReload]
+        // Per-type description memo: a miss re-creates the description and adds it back, so the cache
+        // cleared on reload refills on demand.
+        [IgnoreForUAL0015("Per-type description memo, re-created on the next miss")]
         static Dictionary<string, UxmlSerializedDataDescription> s_DescriptionsCache = new();
 
         [AutoStaticsCleanupOnCodeReload]

@@ -126,6 +126,8 @@ namespace UnityEngine
     [UIModuleHelpURL("class-RectTransform")]
     public sealed partial class RectTransform : Transform
     {
+        internal RectTransform(global::UnityEngine.EntityId id) : base(id) {}
+        public RectTransform() {}
         public enum Edge { Left = 0, Right = 1, Top = 2, Bottom = 3 }
         public enum Axis { Horizontal = 0, Vertical = 1 }
         public enum FitResult

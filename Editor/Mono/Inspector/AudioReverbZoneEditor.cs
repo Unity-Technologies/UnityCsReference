@@ -31,22 +31,22 @@ namespace UnityEditor
 
         private static class Styles
         {
-            public static readonly GUIContent MinDistanceTooltip = EditorGUIUtility.TrTextContent("MinDistance", "The distance from the centerpoint that the reverb will have full effect at");
-            public static readonly GUIContent MaxDistanceTooltip = EditorGUIUtility.TrTextContent("MaxDistance", "The distance from the centerpoint that the reverb will not have any effect");
-            public static readonly GUIContent ReverbPresetTooltip = EditorGUIUtility.TrTextContent("ReverbPreset", "The reverb preset");
-            public static readonly GUIContent RoomTooltip = EditorGUIUtility.TrTextContent("Room", "Room effect level (at mid frequencies)");
-            public static readonly GUIContent RoomHFTooltip = EditorGUIUtility.TrTextContent("Room HF", "Relative room effect level at high frequencies");
-            public static readonly GUIContent RoomLFTooltip = EditorGUIUtility.TrTextContent("Room LF", "Relative room effect level at low frequencies");
-            public static readonly GUIContent DecayTimeTooltip = EditorGUIUtility.TrTextContent("Decay Time", "Reverberation decay time at mid frequencies");
-            public static readonly GUIContent DecayHFRatioTooltip = EditorGUIUtility.TrTextContent("Decay HF Ratio", "High-frequency to mid-frequency decay time ratio");
-            public static readonly GUIContent ReflectionsTooltip = EditorGUIUtility.TrTextContent("Reflections", "Early reflections level relative to room effect");
-            public static readonly GUIContent ReflectionsDelayTooltip = EditorGUIUtility.TrTextContent("Reflections Delay", "Initial reflection delay time");
-            public static readonly GUIContent ReverbTooltip = EditorGUIUtility.TrTextContent("Reverb", "Late reverberation level relative to room effect");
-            public static readonly GUIContent ReverbDelayTooltip = EditorGUIUtility.TrTextContent("Reverb Delay", "Late reverberation delay time relative to initial reflection");
-            public static readonly GUIContent HFReferenceTooltip = EditorGUIUtility.TrTextContent("HF Reference", "Reference high frequency (Hz)");
-            public static readonly GUIContent LFReferenceTooltip = EditorGUIUtility.TrTextContent("LF Reference", "Reference low frequency (Hz)");
-            public static readonly GUIContent DiffusionTooltip = EditorGUIUtility.TrTextContent("Diffusion", "Value that controls the echo density in the late reverberation decay");
-            public static readonly GUIContent DensityTooltip = EditorGUIUtility.TrTextContent("Density", "Value that controls the modal density in the late reverberation decay");
+            public static readonly GUIContent MinDistanceTooltip = L10n.TextContent("MinDistance", "The distance from the centerpoint that the reverb will have full effect at", null, null);
+            public static readonly GUIContent MaxDistanceTooltip = L10n.TextContent("MaxDistance", "The distance from the centerpoint that the reverb will not have any effect", null, null);
+            public static readonly GUIContent ReverbPresetTooltip = L10n.TextContent("ReverbPreset", "The reverb preset", null, null);
+            public static readonly GUIContent RoomTooltip = L10n.TextContent("Room", "Room effect level (at mid frequencies)", null, null);
+            public static readonly GUIContent RoomHFTooltip = L10n.TextContent("Room HF", "Relative room effect level at high frequencies", null, null);
+            public static readonly GUIContent RoomLFTooltip = L10n.TextContent("Room LF", "Relative room effect level at low frequencies", null, null);
+            public static readonly GUIContent DecayTimeTooltip = L10n.TextContent("Decay Time", "Reverberation decay time at mid frequencies", null, null);
+            public static readonly GUIContent DecayHFRatioTooltip = L10n.TextContent("Decay HF Ratio", "High-frequency to mid-frequency decay time ratio", null, null);
+            public static readonly GUIContent ReflectionsTooltip = L10n.TextContent("Reflections", "Early reflections level relative to room effect", null, null);
+            public static readonly GUIContent ReflectionsDelayTooltip = L10n.TextContent("Reflections Delay", "Initial reflection delay time", null, null);
+            public static readonly GUIContent ReverbTooltip = L10n.TextContent("Reverb", "Late reverberation level relative to room effect", null, null);
+            public static readonly GUIContent ReverbDelayTooltip = L10n.TextContent("Reverb Delay", "Late reverberation delay time relative to initial reflection", null, null);
+            public static readonly GUIContent HFReferenceTooltip = L10n.TextContent("HF Reference", "Reference high frequency (Hz)", null, null);
+            public static readonly GUIContent LFReferenceTooltip = L10n.TextContent("LF Reference", "Reference low frequency (Hz)", null, null);
+            public static readonly GUIContent DiffusionTooltip = L10n.TextContent("Diffusion", "Value that controls the echo density in the late reverberation decay", null, null);
+            public static readonly GUIContent DensityTooltip = L10n.TextContent("Density", "Value that controls the modal density in the late reverberation decay", null, null);
         }
 
 

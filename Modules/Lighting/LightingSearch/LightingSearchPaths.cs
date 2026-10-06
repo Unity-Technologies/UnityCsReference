@@ -8,13 +8,6 @@ using UnityEngine;
 
 namespace UnityEditor.Lighting.LightingSearch
 {
-    internal enum MaterialGlobalIlluminationDisplay
-    {
-        None,
-        Realtime,
-        Baked
-    }
-
     // Simplified light type for the Lighting Search table. Maps Unity's detailed shapes
     // (Spot, Pyramid, Box, Rectangle, Disc, Tube) to four display categories.
     internal enum SimplifiedLightType

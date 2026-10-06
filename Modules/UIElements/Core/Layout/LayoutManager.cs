@@ -2,8 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: UIToolkitFramework not yet converted
-#pragma warning disable UAL0010,UAL0011,UAL0012,UAL0013,UAL0014 // AutoStaticsCleanup: UIToolkitFramework not yet converted
 using Unity.Scripting.LifecycleManagement;
 using System;
 using System.Collections.Concurrent;
@@ -146,9 +144,16 @@ internal partial class LayoutManager : IDisposable
         Shutdown // The SharedManager was disposed and must not re-created
     }
     [AutoStaticsCleanupOnCodeReload]
+    // Every VisualElement construction reaches this gate through SharedManager. Cleanup resets it to
+    // Uninitialized and Initialize() re-creates the shared manager on the next access, so a constructor
+    // that trips the gate leaves nothing stale behind for the next code-loaded scope.
+    [IgnoreForUAL0015("Initialization gate re-evaluated on demand by SharedManager after cleanup resets it")]
     static SharedManagerState s_Initialized;
 
     [AutoStaticsCleanupOnCodeReload]
+    // Initialize() recreates the shared manager on the next SharedManager access after cleanup nulls
+    // this, so a constructor that forces the shared instance leaves nothing stale behind.
+    [IgnoreForUAL0015("Shared instance recreated on demand by Initialize() after cleanup nulls it")]
     static LayoutManager s_SharedInstance = null;
 
     public static bool IsSharedManagerCreated => s_Initialized == SharedManagerState.Initialized;
@@ -163,12 +168,21 @@ internal partial class LayoutManager : IDisposable
     }
 
     [AutoStaticsCleanupOnCodeReload]
+    // Registry of live managers: every LayoutManager adds itself here from its own constructor, so the
+    // list cleared on reload refills itself as managers are recreated in the next code-loaded scope.
+    [IgnoreForUAL0015("Live-manager registry, refilled by each LayoutManager constructor after cleanup")]
     static List<LayoutManager> s_Managers = new List<LayoutManager>();
+
+    // Starts at 1: undefined nodes and configs report index 0.
+    [NoAutoStaticsCleanup]
+    static int s_NextManagerIndex = 1;
+
+    [NoAutoStaticsCleanup]
+    static int s_ManagerIndexBase;
 
     // Important: Assumptions about Order of operations for Initialize() and Shutdown()
     // 1. Initialize() is always called first on the main thread.
     //    This is because VisualElement instances do not support being created on other threads.
-    //    Later on Initialize() it is called on the finalizer thread when a VisualElement is finalized.
     //    THEREFORE there shouldn't be any race condition for the transition between Uninitialized and Initialized.
     // 2. Shutdown() is only called after the first call to Initialize()
     //    Since it is registered on the AppDomain unload event as part of Initialize().
@@ -242,13 +256,29 @@ internal partial class LayoutManager : IDisposable
     internal int PendingRecycleNodeCount => m_NodesToFree.Count;
 
     internal static LayoutManager GetManager(int index)
-        => (uint) index < s_Managers.Count ? s_Managers[index] : null;
+    {
+        var slot = index - s_ManagerIndexBase;
+        return (uint)slot < s_Managers.Count ? s_Managers[slot] : null;
+    }
+
+    // Never initializes: called from the finalizer thread.
+    internal static void RecycleNode(ref LayoutNode node)
+    {
+        var manager = s_SharedInstance;
+        if (manager != null)
+            manager.EnqueueNodeForRecycling(ref node);
+        else
+            node = LayoutNode.Undefined;
+    }
 
     public LayoutManager(Allocator allocator) : this(allocator, DefaultCapacity, InitialStyle.Get()) {}
 
     public unsafe LayoutManager(Allocator allocator, int initialNodeCapacity, ComputedStyle initialStyle)
     {
-        m_Index = s_Managers.Count;
+        if (s_Managers.Count == 0)
+            s_ManagerIndexBase = s_NextManagerIndex;
+
+        m_Index = s_NextManagerIndex++;
         s_Managers.Add(this);
 
         const string areaName = nameof(UIElements);
@@ -323,7 +353,9 @@ internal partial class LayoutManager : IDisposable
 
     public void Dispose()
     {
-        s_Managers[m_Index] = null;
+        var slot = m_Index - s_ManagerIndexBase;
+        if ((uint)slot < s_Managers.Count)
+            s_Managers[slot] = null;
 
         unsafe
         {
@@ -362,9 +394,12 @@ internal partial class LayoutManager : IDisposable
         return new LayoutConfig(GetAccess(), m_Configs.Allocate());
     }
 
+    public bool OwnsConfig(in LayoutConfig config) => !config.IsUndefined && config.ManagerIndex == m_Index;
+
     public void DestroyConfig(ref LayoutConfig config)
     {
-        m_Configs.Free(config.Handle);
+        if (OwnsConfig(config))
+            m_Configs.Free(config.Handle);
         config = LayoutConfig.Undefined;
     }
 
@@ -432,7 +467,9 @@ internal partial class LayoutManager : IDisposable
         if (node.IsUndefined)
             return;
 
-        m_NodesToFree.Enqueue(node.Handle);
+        // Nodes from a manager disposed by a code reload were freed with it.
+        if (node.ManagerIndex == m_Index)
+            m_NodesToFree.Enqueue(node.Handle);
 
         node = LayoutNode.Undefined;
     }
@@ -484,5 +521,3 @@ internal partial class LayoutManager : IDisposable
         m_ManagedBaselineFunctions.UpdateValue(ref index, value);
     }
 }
-#pragma warning restore UAL0010,UAL0011,UAL0012,UAL0013,UAL0014
-#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

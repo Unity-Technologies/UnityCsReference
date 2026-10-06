@@ -12,23 +12,18 @@ static class LanguageToolbar
 {
     const string k_Path = "Localization/Language";
 
-    // A project with no locales has nothing to preview, so the dropdown takes no toolbar space until it does.
-    static bool HasLocales => LocalizationEditorSettings.ActiveSettings is { } settings && settings.AvailableLocales.Count > 0;
-
     /// <summary>
-    /// Re-evaluates whether the toolbar dropdown has anything to show, after locales or settings change.
+    /// Re-reads the selected locale, after locales or settings change.
     /// </summary>
     internal static void Refresh() => MainToolbar.Refresh(k_Path);
 
+    // The element is not in the Unity Default preset (RFC-U0145), so a project adds it from the toolbar's menu.
     [MainToolbarElement(k_Path, defaultDockIndex = 40, defaultDockPosition = MainToolbarDockPosition.Left)]
     static MainToolbarElement Create()
     {
         LocalizationSettings.SelectedLocaleChanged -= OnSelectedLocaleChanged;
         LocalizationSettings.SelectedLocaleChanged += OnSelectedLocaleChanged;
-        return new MainToolbarDropdown(new MainToolbarContent(CurrentLabel(), L10n.Tr("Preview locale", null)), ShowMenu)
-        {
-            displayed = HasLocales,
-        };
+        return new MainToolbarDropdown(new MainToolbarContent(CurrentLabel(), L10n.Tr("Preview locale", null)), ShowMenu);
     }
 
     static void OnSelectedLocaleChanged(Locale _) => MainToolbar.Refresh(k_Path);
@@ -36,10 +31,10 @@ static class LanguageToolbar
     static string CurrentLabel()
     {
         var settings = LocalizationEditorSettings.ActiveSettings;
-        if (settings == null)
-            return L10n.Tr("No settings", null);
+        if (settings == null || settings.AvailableLocales.Count == 0)
+            return LocLabels.None;
         var selected = LocalizationSettings.SelectedLocale ?? settings.ProjectLocale;
-        return selected != null ? selected.LocaleName : L10n.Tr("None", null);
+        return selected != null ? selected.LocaleName : LocLabels.None;
     }
 
     static void ShowMenu(Rect anchor)
@@ -64,7 +59,7 @@ static class LanguageToolbar
         }
 
         menu.AddSeparator(string.Empty);
-        menu.AddItem(new GUIContent(L10n.Tr("Localization settings...", null)), false,
+        menu.AddItem(new GUIContent(LocLabels.LocalizationSettings), false,
             () => SettingsService.OpenProjectSettings("Project/Localization"));
         menu.DropDown(anchor);
     }

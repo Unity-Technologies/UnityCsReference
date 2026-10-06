@@ -2,7 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: EditorWindowManagement not yet converted
 using System;
 using System.Collections.Generic;
 using UnityEngine.Scripting;
@@ -17,6 +16,9 @@ namespace UnityEditor.MPE
     public partial class ChannelClient
     {
         [AutoStaticsCleanupOnCodeReload]
+        // Live-client registry: GetOrCreateClient creates and re-adds a client on a miss and Close removes
+        // it, so the registry cleared on reload refills as clients are requested again.
+        [IgnoreForUAL0015("Live-client registry, refilled by GetOrCreateClient on the next request")]
         internal static Dictionary<int, ChannelClient> s_Clients = new Dictionary<int, ChannelClient>();
         List<Action<string>> m_Handlers = new List<Action<string>>();
         List<Action<byte[]>> m_BinaryHandlers = new List<Action<byte[]>>();
@@ -216,9 +218,9 @@ namespace UnityEditor.MPE
         public ChannelClientScope(bool autoTick, string channelName, Action<string> handler, bool closeClientOnExit = true)
         {
             m_CloseClientOnExit = closeClientOnExit;
-            #pragma warning disable UAL0015,UAL0018 // rebuilt/resubscribed wholesale on the next reload via this object's own lifecycle; a stale value in the interim is never observed
+#pragma warning disable UAL0018 // the scope is a using-scoped struct that closes the client when it goes out of scope, so the client reference never outlives the block that took it
             client = ChannelClient.GetOrCreateClient(channelName);
-            #pragma warning restore UAL0015,UAL0018
+#pragma warning restore UAL0018
             m_Off = client.RegisterMessageHandler(handler);
             client.Start(autoTick);
         }
@@ -226,9 +228,9 @@ namespace UnityEditor.MPE
         public ChannelClientScope(bool autoTick, string channelName, Action<byte[]> handler, bool closeClientOnExit = true)
         {
             m_CloseClientOnExit = closeClientOnExit;
-            #pragma warning disable UAL0015,UAL0018 // rebuilt/resubscribed wholesale on the next reload via this object's own lifecycle; a stale value in the interim is never observed
+#pragma warning disable UAL0018 // the scope is a using-scoped struct that closes the client when it goes out of scope, so the client reference never outlives the block that took it
             client = ChannelClient.GetOrCreateClient(channelName);
-            #pragma warning restore UAL0015,UAL0018
+#pragma warning restore UAL0018
             m_Off = client.RegisterMessageHandler(handler);
             client.Start(autoTick);
         }
@@ -241,4 +243,3 @@ namespace UnityEditor.MPE
         }
     }
 }
-#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

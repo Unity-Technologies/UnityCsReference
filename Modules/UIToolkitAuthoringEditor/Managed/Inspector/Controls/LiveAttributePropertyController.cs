@@ -359,7 +359,7 @@ partial class LiveAttributePropertyController
                     valueType = isArray
                         ? LiveAttributePropertyModificationValueType.BoxedArrayValue
                         : LiveAttributePropertyModificationValueType.BoxedValue,
-                    value = value,
+                    value = attributeDescription.ConvertToSerializedFieldValue(value),
                     isBound = isBound,
                 });
             }

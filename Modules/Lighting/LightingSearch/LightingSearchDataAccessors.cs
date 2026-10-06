@@ -123,7 +123,7 @@ namespace UnityEditor.Lighting.LightingSearch
             if (!go.TryGetComponent<MeshRenderer>(out var meshRenderer))
                 return false;
 
-            return GameObjectUtility.AreStaticEditorFlagsSet(go, StaticEditorFlags.ContributeGI);
+            return GameObjectUtility.AnyStaticEditorFlagsSet(go, StaticEditorFlags.ContributeGI);
         }
 
         internal static void SetContributeGI(GameObject go, bool value)
@@ -138,10 +138,10 @@ namespace UnityEditor.Lighting.LightingSearch
             GameObjectUtility.SetStaticEditorFlags(go, flag);
         }
 
-        internal static ReceiveGI GetReceiveGI(GameObject go)
+        internal static ReceiveGI? GetReceiveGI(GameObject go)
         {
             if (!go.TryGetComponent<MeshRenderer>(out var meshRenderer))
-                return ReceiveGI.Lightmaps;
+                return null;
 
             return meshRenderer.receiveGI;
         }
@@ -253,13 +253,24 @@ namespace UnityEditor.Lighting.LightingSearch
             return material.globalIlluminationFlags;
         }
 
+        const MaterialGlobalIlluminationFlags k_EmissionModeMask =
+            MaterialGlobalIlluminationFlags.RealtimeIndirectEmission | MaterialGlobalIlluminationFlags.BakedEmission;
+
         internal static void SetMaterialGlobalIlluminationFlags(Material material, MaterialGlobalIlluminationFlags flags)
         {
             if (material == null)
                 return;
 
             Undo.RecordObject(material, "Change material global illumination flags");
-            material.globalIlluminationFlags = flags;
+
+            var merged = material.globalIlluminationFlags & ~k_EmissionModeMask;
+            merged |= flags & k_EmissionModeMask;
+
+            // Let the engine recompute the EmissiveIsBlack flag from the current emission color.
+            if (material.HasProperty(k_EmissionColor))
+                merged = MaterialEditor.FixupEmissiveFlag(material.GetColor(k_EmissionColor), merged);
+
+            material.globalIlluminationFlags = merged;
         }
     }
 }

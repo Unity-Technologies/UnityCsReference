@@ -55,6 +55,7 @@ using UnityEngine;
 [assembly: InternalsVisibleTo("Unity.IntegrationTests.Profiler")]
 [assembly: InternalsVisibleTo("Unity.Modules.ProfilerEditor.MemorySnapshot.Tests.Editor")]
 [assembly: InternalsVisibleTo("Unity.Modules.ProfilerEditor.MemorySnapshot.Tests.Playmode")]
+[assembly: InternalsVisibleTo("Unity.Modules.JobsProfilerEditor.Tests.Editor")]
 [assembly: InternalsVisibleTo("Unity.Modules.UnityConnectEditor.Tests.Editor")]
 [assembly: InternalsVisibleTo("Unity.IntegrationTests.PS4")]
 [assembly: InternalsVisibleTo("Unity.IntegrationTests.PS5")]
@@ -135,6 +136,7 @@ using UnityEngine;
 [assembly: InternalsVisibleTo("Unity.Modules.CoreEditor.DragAndDrop.Tests.Editor")]
 [assembly: InternalsVisibleTo("Unity.Modules.CoreEditor.SceneHierarchy.Tests.Editor")]
 [assembly: InternalsVisibleTo("Unity.Modules.CoreEditor.SceneHierarchy.Tests.Common")]
+[assembly: InternalsVisibleTo("Unity.Hierarchy.Editor.Tests")]
 [assembly: InternalsVisibleTo("Unity.Modules.Core.NestedPrefabsBackwardsCompatibility.Tests.Editor")]
 [assembly: InternalsVisibleTo("Unity.Modules.CoreEditor.NestedPrefabsFrontEnd.Tests.Editor")]
 [assembly: InternalsVisibleTo("Unity.PlayMode.Editor.Tests")]
@@ -208,6 +210,8 @@ using UnityEngine;
 [assembly: InternalsVisibleTo("SRPSmoke.Editor.Tests")]
 [assembly: InternalsVisibleTo("Unity.Testing.HDRP_EditModeTests")]
 [assembly: InternalsVisibleTo("Unity.RenderPipelines.Core.Editor.Tests")]
+[assembly: InternalsVisibleTo("Unity.InternalAPIEngineBridge.RenderPipelines.Core.Editor")]
+[assembly: InternalsVisibleTo("Unity.RenderPipelines.Universal.Editor.Tests")]
 [assembly: InternalsVisibleTo("Unity.ShaderGraph.Editor")]
 [assembly: InternalsVisibleTo("Unity.Testing.SRP.Universal.Foundation.Editor")]
 
@@ -263,6 +267,7 @@ using UnityEngine;
 [assembly: InternalsVisibleTo("Unity.Modules.BuildProfileEditor.Tests.Editor")]
 [assembly: InternalsVisibleTo("Unity.Modules.BuildProfileEditor.BuildPlayerWindow.Tests.Editor")]
 [assembly: InternalsVisibleTo("Unity.Modules.DeviceSimulator.Tests.Editor")]
+[assembly: InternalsVisibleTo("Unity.Modules.Core.PlayerSettings.Tests.Editor")]
 [assembly: InternalsVisibleTo("Unity.Modules.UI.Tests.Editor")]
 [assembly: InternalsVisibleTo("Unity.Modules.Multiplayer.Server.Tests.Editor")]
 [assembly: InternalsVisibleTo("Unity.Modules.Multiplayer.PlayMode.Tests.Editor")]
@@ -273,6 +278,10 @@ using UnityEngine;
 [assembly: InternalsVisibleTo("Unity.Modules.Physics.Tests.Editor")]
 [assembly: InternalsVisibleTo("Unity.Modules.GI.EditorBake.Tests.Editor")]
 [assembly: InternalsVisibleTo("Unity.Modules.GI.LightProbes.Tests.Editor")]
+[assembly: InternalsVisibleTo("Unity.Modules.GI.EnvironmentLighting.Tests.Editor")]
+[assembly: InternalsVisibleTo("Unity.Modules.GI.LightingWindow.Tests.Editor")]
+[assembly: InternalsVisibleTo("Unity.Modules.GI.LightingExplorer.Tests.Editor")]
+[assembly: InternalsVisibleTo("Unity.Modules.GI.LightingSettings.Tests.Editor")]
 [assembly: InternalsVisibleTo("Unity.Modules.GI.BakedGI.SubScenes.Tests.Editor")]
 [assembly: InternalsVisibleTo("Unity.Modules.GI.BakedGI.SceneVisibility.Tests.Editor")]
 [assembly: InternalsVisibleTo("Unity.Modules.GI.UVUnwrap.Tests.Editor")]
@@ -333,4 +342,7 @@ using UnityEngine;
 [assembly: InternalsVisibleTo("Unity.Modules.AI.Tests.Editor")]
 [assembly: InternalsVisibleTo("Unity.Modules.Scripting.Scripting.Tests.Editor")]
 [assembly: InternalsVisibleTo("Unity.Modules.Scripting.ALCLeakDetector.Tests.Editor")]
+
+// Tests/SRPTests/Projects/UniversalGraphicsTest_UGUI/Assets/Tests/GraphicsTests
+[assembly: InternalsVisibleTo("Unity.Package.uGUI.GraphicsTests")]
 

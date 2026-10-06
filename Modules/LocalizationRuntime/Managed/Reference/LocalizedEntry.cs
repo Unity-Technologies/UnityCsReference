@@ -22,7 +22,7 @@ namespace Unity.Localization;
 /// </remarks>
 /// <typeparam name="TEntry">The entry interface to resolve, for example <see cref="IStringEntry"/> or <see cref="IAssetEntry"/>.</typeparam>
 /// <example>
-/// <para>Resolve the raw entry for a reference and read its value.</para>
+/// Resolve the raw entry for a reference and read its value.
 /// <code source="../../../../Modules/LocalizationRuntime/Tests/UTFTests/Localization.Samples/Reference/LocalizedEntryResolveExample.cs"/>
 /// </example>
 /// <seealso cref="LocalizedString"/>
@@ -69,7 +69,7 @@ public partial class LocalizedEntry<TEntry> : LocalizedReference where TEntry : 
     /// <param name="table">The table collection to resolve the entry from.</param>
     /// <param name="entry">The entry within the table collection to resolve.</param>
     /// <example>
-    /// <para>Point a reference at an entry in one call.</para>
+    /// Point a reference at an entry in one call.
     /// <code source="../../../../Modules/LocalizationRuntime/Tests/UTFTests/Localization.Samples/Reference/LocalizedEntrySetReferenceExample.cs"/>
     /// </example>
     public void SetReference(TableReference table, TableEntryReference entry)
@@ -92,12 +92,12 @@ public partial class LocalizedEntry<TEntry> : LocalizedReference where TEntry : 
     /// <param name="cancellationToken">A token that cancels the asynchronous load. The default token never cancels.</param>
     /// <returns>An awaitable that produces the resolved entry, or null when it cannot be resolved.</returns>
     /// <example>
-    /// <para>Load an entry asynchronously.</para>
+    /// Load an entry asynchronously.
     /// <code source="../../../../Modules/LocalizationRuntime/Tests/UTFTests/Localization.Samples/Reference/LocalizedEntryGetEntryAsyncExample.cs"/>
     /// </example>
     public Awaitable<TEntry> GetEntryAsync(CancellationToken cancellationToken = default)
     {
-        if (!LocalizationSettings.InitializationSettled)
+        if (!LocalizationSettings.InitializationSettledFor(ResolveOverrideLocale()))
             return InitializeThenResolveAsync(cancellationToken);
         return GetEntryAsync(ResolvingLocale(), cancellationToken);
     }
@@ -107,15 +107,14 @@ public partial class LocalizedEntry<TEntry> : LocalizedReference where TEntry : 
         var localeId = locale != null ? locale.Identifier : default;
         if (TryGetCachedEntry(localeId, out var cached))
             return AwaitableUtility.FromResult(cached);
-        var database = LocalizationSettings.ResourceDatabase;
-        if (database == null || IsEmpty)
+        if (!LocalizationSettings.TryGetDatabaseForResolve(IsEmpty, out var database))
             return AwaitableUtility.FromResult<TEntry>(null);
         return ResolveAsync(database, locale, localeId, cancellationToken);
     }
 
     async Awaitable<TEntry> InitializeThenResolveAsync(CancellationToken cancellationToken)
     {
-        await LocalizationSettings.EnsureInitializedForUse();
+        await LocalizationSettings.EnsureInitializedForUse(cancellationToken);
         return await GetEntryAsync(ResolvingLocale(), cancellationToken);
     }
 
@@ -137,17 +136,17 @@ public partial class LocalizedEntry<TEntry> : LocalizedReference where TEntry : 
     /// </remarks>
     /// <returns>The resolved entry, or null when it is not available synchronously.</returns>
     /// <example>
-    /// <para>Read an entry from an already-loaded table.</para>
+    /// Read an entry from an already-loaded table.
     /// <code source="../../../../Modules/LocalizationRuntime/Tests/UTFTests/Localization.Samples/Reference/LocalizedEntryGetEntryExample.cs"/>
     /// </example>
-    public TEntry GetEntry()
+    public TEntry GetEntry() => IsEmpty ? null : GetEntry(SyncResolvingLocale());
+
+    internal TEntry GetEntry(Locale locale)
     {
-        var locale = ResolvingLocale();
         var localeId = locale != null ? locale.Identifier : default;
         if (TryGetCachedEntry(localeId, out var cached))
             return cached;
-        var database = LocalizationSettings.ResourceDatabase;
-        if (database == null || IsEmpty)
+        if (!LocalizationSettings.TryGetDatabaseForResolve(IsEmpty, out var database))
             return null;
         var entry = database.GetEntry(TableReference, TableEntryReference, locale, EnableFallback) as TEntry;
         CacheEntry(entry, localeId, missIsFinal: false);

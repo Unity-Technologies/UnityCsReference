@@ -27,12 +27,12 @@ namespace UnityEditor.PackageManager.UI.Internal
         IEnumerable<IPackageVersion> EnumerateDirectReverseDependencies(IPackageVersion version, bool featureOnly);
         bool IsUsedByFeature(IPackageVersion version);
         bool HasCustomizedDependencies(IPackageVersion version, CustomizedDependencyType dependencyType);
-        IReadOnlyCollection<IPackage> GetCustomizedDependencies(IPackageVersion version, CustomizedDependencyType dependencyType);
+        IReadOnlyList<IPackage> GetCustomizedDependencies(IPackageVersion version, CustomizedDependencyType dependencyType);
         SampleCollection GetSamples(string packageTechnicalName);
         Sample GetSample(string sampleUniqueId);
-        void UpdateSamples(IReadOnlyCollection<SampleCollection> toAddOrUpdate = null, IReadOnlyCollection<string> toRemove = null);
+        void UpdateSamples(IReadOnlyList<SampleCollection> toAddOrUpdate = null, IReadOnlyList<string> toRemove = null);
         void OnPackagesModified(IList<IPackage> modified, bool isProgressUpdated = false);
-        void UpdatePackages(IReadOnlyCollection<IPackage> toAddOrUpdate = null, IReadOnlyCollection<string> toRemove = null, PackagesChangedSource changedSource = PackagesChangedSource.Other);
+        void UpdatePackages(IReadOnlyList<IPackage> toAddOrUpdate = null, IReadOnlyList<string> toRemove = null, PackagesChangedSource changedSource = PackagesChangedSource.Other);
         void FinalizePackageUniqueId(string tempUniqueId, string finalizedUniqueId);
 
         PackageInUseState GetPackagesInUseState();
@@ -40,12 +40,12 @@ namespace UnityEditor.PackageManager.UI.Internal
 
     internal class SamplesChangeArgs
     {
-        public IReadOnlyCollection<SampleCollection> added = Array.Empty<SampleCollection>();
-        public IReadOnlyCollection<SampleCollection> updated = Array.Empty<SampleCollection>();
-        public IReadOnlyCollection<SampleCollection> removed = Array.Empty<SampleCollection>();
+        public IReadOnlyList<SampleCollection> added = Array.Empty<SampleCollection>();
+        public IReadOnlyList<SampleCollection> updated = Array.Empty<SampleCollection>();
+        public IReadOnlyList<SampleCollection> removed = Array.Empty<SampleCollection>();
 
         // preUpdate is the same size as the postUpdate list
-        public IReadOnlyCollection<SampleCollection> preUpdate = Array.Empty<SampleCollection>();
+        public IReadOnlyList<SampleCollection> preUpdate = Array.Empty<SampleCollection>();
     }
 
     internal class PackagesChangeArgs
@@ -229,7 +229,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             return enumerator.MoveNext();
         }
 
-        public IReadOnlyCollection<IPackage> GetCustomizedDependencies(IPackageVersion version, CustomizedDependencyType dependencyType)
+        public IReadOnlyList<IPackage> GetCustomizedDependencies(IPackageVersion version, CustomizedDependencyType dependencyType)
         {
             return new List<IPackage>(EnumerateCustomizedDependencies(version, dependencyType));
         }
@@ -254,7 +254,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         public SampleCollection GetSamples(string packageTechnicalName) => m_PackageTechnicalNameToSampleCollectionsMap.GetValueOrDefault(packageTechnicalName);
         public Sample GetSample(string sampleUniqueId) => m_SampleUniqueIdToSamplesMap.GetValueOrDefault(sampleUniqueId);
-        public void UpdateSamples(IReadOnlyCollection<SampleCollection> toAddOrUpdate = null, IReadOnlyCollection<string> toRemove = null)
+        public void UpdateSamples(IReadOnlyList<SampleCollection> toAddOrUpdate = null, IReadOnlyList<string> toRemove = null)
         {
             toAddOrUpdate ??= Array.Empty<SampleCollection>();
             toRemove ??= Array.Empty<string>();
@@ -343,7 +343,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             TriggerOnPackagesChanged(updated: modified, progressUpdated: isProgressUpdated ? modified : null);
         }
 
-        public void UpdatePackages(IReadOnlyCollection<IPackage> toAddOrUpdate = null, IReadOnlyCollection<string> toRemove = null, PackagesChangedSource changedSource = PackagesChangedSource.Other)
+        public void UpdatePackages(IReadOnlyList<IPackage> toAddOrUpdate = null, IReadOnlyList<string> toRemove = null, PackagesChangedSource changedSource = PackagesChangedSource.Other)
         {
             toAddOrUpdate ??= Array.Empty<IPackage>();
             toRemove ??= Array.Empty<string>();

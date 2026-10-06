@@ -425,9 +425,15 @@ namespace UnityEditor
         /// https://developer.android.com/reference/android/view/WindowInsets.Type#navigationBars()
         /// </summary>
         NavigationBars = 1 << 1,
+        /// <summary>
+        /// The caption bar, which contains the window title and the window controls.
+        /// It only appears when the application window is displayed in a freeform or desktop windowing environment.
+        /// The system controls its visibility, so requesting it as a visible inset has no effect.
+        /// https://developer.android.com/reference/android/view/WindowInsets.Type#captionBar()
+        /// </summary>
+        CaptionBar = 1 << 2,
 
         // Currently we don't expose the other ones, leave them for reference
-        //CaptionBar = 1 << 2,
         //IME = 1 << 3,
         //SystemGestures = 1 << 4,
         //MandatorySystemGestures = 1 << 5,
@@ -1191,6 +1197,15 @@ namespace UnityEditor
                 [NativeMethod("GetAndroidUseSwappy")]
                 get;
                 [NativeMethod("SetAndroidUseSwappy")]
+                set;
+            }
+
+            // Unity Render Service, Vulkan API only: use android virtual display instead of offscreen swapchain
+            internal static extern bool renderServiceUseVirtualDisplay
+            {
+                [NativeMethod("GetAndroidRenderServiceUseVirtualDisplay")]
+                get;
+                [NativeMethod("SetAndroidRenderServiceUseVirtualDisplay")]
                 set;
             }
 

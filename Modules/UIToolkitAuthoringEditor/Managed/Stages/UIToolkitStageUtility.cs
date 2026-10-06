@@ -26,6 +26,20 @@ static class UIToolkitStageUtility
             handler.RequestSelectionOnNextUpdate(new List<VisualElementAsset>(assets));
     }
 
+    /// <inheritdoc cref="VisualElementNodeHandler.RequestRenameOfPendingSelection"/>
+    public static void RequestRenameOfPendingSelection()
+    {
+        if (TryGetElementHandler(out var handler))
+            handler.RequestRenameOfPendingSelection();
+    }
+
+    /// <inheritdoc cref="VisualElementNodeHandler.RequestFocusOfPendingSelection"/>
+    public static void RequestFocusOfPendingSelection(BindingId attributePath, IPanel inspectorPanel)
+    {
+        if (TryGetElementHandler(out var handler))
+            handler.RequestFocusOfPendingSelection(attributePath, inspectorPanel);
+    }
+
     /// <inheritdoc cref="VisualElementNodeHandler.ScopePendingSelectionRequestsTo"/>
     public static void ScopePendingSelectionRequestsTo(VisualElement parent)
     {
@@ -87,22 +101,13 @@ static class UIToolkitStageUtility
     }
 
     /// <summary>
-    /// Whether the settings allow authoring the UI of the loaded scenes. This says nothing about which stage is
-    /// currently displayed — see <see cref="IsAuthoringActiveInMainStage"/> for that.
+    /// Whether the Main Stage is the stage being displayed. Any other stage — a prefab stage, the UI Stage —
+    /// shows its own content instead.
     /// </summary>
-    public static bool IsAuthoringEnabledInMainStage =>
-        UIToolkitAuthoringSettings.EnableInSceneUIAuthoring && UIToolkitAuthoringSettings.EnableMainStageAuthoring;
-
-    /// <summary>
-    /// Whether Main Stage authoring is enabled <em>and</em> in effect right now, i.e. the Main Stage is the
-    /// stage being displayed. Any other stage — a prefab stage, the UI Stage — shows its own content, which
-    /// these settings have no say over.
-    /// </summary>
-    public static bool IsAuthoringActiveInMainStage =>
-        IsAuthoringEnabledInMainStage && StageUtility.GetCurrentStage() is MainStage;
+    public static bool IsAuthoringActiveInMainStage => StageUtility.GetCurrentStage() is MainStage;
 
     public static VisualElementEditFlags GetMainStageEditFlags(VisualElement element) =>
-        IsAuthoringEnabledInMainStage && element?.visualElementAsset != null
+        element?.visualElementAsset != null
             ? VisualElementEditFlags.FullyEditable
             : VisualElementEditFlags.None;
 

@@ -12,15 +12,15 @@ namespace UnityEditor
     {
         class Texts
         {
-            public GUIContent ratio = EditorGUIUtility.TrTextContent("Ratio", "Amount of particles that have a light source attached to them.");
-            public GUIContent randomDistribution = EditorGUIUtility.TrTextContent("Random Distribution", "Emit lights randomly, or at regular intervals.");
-            public GUIContent light = EditorGUIUtility.TrTextContent("Light", "Light prefab to be used for spawning particle lights.");
-            public GUIContent color = EditorGUIUtility.TrTextContent("Use Particle Color", "Check the option to multiply the particle color by the light color. Otherwise, only the color of the light is used.");
-            public GUIContent range = EditorGUIUtility.TrTextContent("Size Affects Range", "Multiply the range of the light with the size of the particle.");
-            public GUIContent intensity = EditorGUIUtility.TrTextContent("Alpha Affects Intensity", "Multiply the intensity of the light with the alpha of the particle.");
-            public GUIContent rangeCurve = EditorGUIUtility.TrTextContent("Range Multiplier", "Apply a custom multiplier to the range of the lights. If you use a curve to set this value, the Particle System applies the curve over the lifetime of each particle.");
-            public GUIContent intensityCurve = EditorGUIUtility.TrTextContent("Intensity Multiplier", "Apply a custom multiplier to the intensity of the lights. If you use a curve to set this value, the Particle System applies the curve over the lifetime of each particle.");
-            public GUIContent maxLights = EditorGUIUtility.TrTextContent("Maximum Lights", "Limit the amount of lights the system can create. This module makes it very easy to create lots of lights, which can hurt performance.");
+            public GUIContent ratio = L10n.TextContent("Ratio", "Amount of particles that have a light source attached to them.", null, null);
+            public GUIContent randomDistribution = L10n.TextContent("Random Distribution", "Emit lights randomly, or at regular intervals.", null, null);
+            public GUIContent light = L10n.TextContent("Light", "Light prefab to be used for spawning particle lights.", null, null);
+            public GUIContent color = L10n.TextContent("Use Particle Color", "Check the option to multiply the particle color by the light color. Otherwise, only the color of the light is used.", null, null);
+            public GUIContent range = L10n.TextContent("Size Affects Range", "Multiply the range of the light with the size of the particle.", null, null);
+            public GUIContent intensity = L10n.TextContent("Alpha Affects Intensity", "Multiply the intensity of the light with the alpha of the particle.", null, null);
+            public GUIContent rangeCurve = L10n.TextContent("Range Multiplier", "Apply a custom multiplier to the range of the lights. If you use a curve to set this value, the Particle System applies the curve over the lifetime of each particle.", null, null);
+            public GUIContent intensityCurve = L10n.TextContent("Intensity Multiplier", "Apply a custom multiplier to the intensity of the lights. If you use a curve to set this value, the Particle System applies the curve over the lifetime of each particle.", null, null);
+            public GUIContent maxLights = L10n.TextContent("Maximum Lights", "Limit the amount of lights the system can create. This module makes it very easy to create lots of lights, which can hurt performance.", null, null);
         }
         [NoAutoStaticsCleanup] // lazy-initialized UI text cache
         static Texts s_Texts;
@@ -78,7 +78,7 @@ namespace UnityEditor
                 Light light = (Light)m_Light.objectReferenceValue;
                 if (light.type != LightType.Point && light.type != LightType.Spot && light.type != LightType.Rectangle)
                 {
-                    GUIContent warning = EditorGUIUtility.TrTextContent("Only point, spot, and rectangle area lights are supported on particles.");
+                    GUIContent warning = L10n.TextContent("Only point, spot, and rectangle area lights are supported on particles.", null, null, null);
                     EditorGUILayout.HelpBox(warning.text, MessageType.Warning, true);
                 }
             }

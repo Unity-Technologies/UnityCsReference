@@ -4,7 +4,7 @@
 
 using System;
 using System.Collections.Generic;
-using Unity.GraphToolkit.CSO;
+using Unity.CSO;
 using Unity.GraphToolkit.InternalBridge;
 using UnityEditor;
 using UnityEngine;

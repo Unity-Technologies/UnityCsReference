@@ -2,10 +2,8 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: GraphToolkit not yet converted
-#pragma warning disable UAL0010,UAL0011,UAL0012,UAL0013,UAL0014 // AutoStaticsCleanup: GraphToolkit not yet converted
 using System.Collections.Generic;
-using Unity.GraphToolkit.CSO;
+using Unity.CSO;
 using Unity.GraphToolsAuthoringFramework.InternalEditorBridge;
 using Unity.Scripting.LifecycleManagement;
 using UnityEditor;
@@ -154,6 +152,8 @@ namespace Unity.GraphToolkit.Editor
             undoRedoEventCallback += UndoRedo;
         }
 
+        protected override CommandHandlerRegistrar CreateCommandHandlerRegistrar() => new  CSO.Editor.CommandHandlerRegistrar(this);
+
         /// <inheritdoc />
         protected override void Dispose(bool disposing)
         {
@@ -207,10 +207,13 @@ namespace Unity.GraphToolkit.Editor
             registrar.AddStateComponent(ToolState);
             registrar.AddStateComponent(UndoState);
 
-            registrar.RegisterDefaultCommandHandler<LoadGraphCommand>();
-            registrar.RegisterDefaultCommandHandler<UnloadGraphCommand>();
-            registrar.RegisterDefaultCommandHandler<UndoRedoCommand>();
-            registrar.RegisterDefaultCommandHandler<BuildAllEditorCommand>();
+            if (registrar is CSO.Editor.CommandHandlerRegistrar editorRegistrar)
+            {
+                editorRegistrar.RegisterDefaultCommandHandler<LoadGraphCommand>();
+                editorRegistrar.RegisterDefaultCommandHandler<UnloadGraphCommand>();
+                editorRegistrar.RegisterDefaultCommandHandler<UndoRedoCommand>();
+                editorRegistrar.RegisterDefaultCommandHandler<BuildAllEditorCommand>();
+            }
         }
 
         /// <inheritdoc />
@@ -305,5 +308,3 @@ namespace Unity.GraphToolkit.Editor
         }
     }
 }
-#pragma warning restore UAL0010,UAL0011,UAL0012,UAL0013,UAL0014
-#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

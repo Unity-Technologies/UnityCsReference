@@ -28,5 +28,8 @@ namespace UnityEditor.PackageManager.UI.Internal
             foreach (var version in m_Versions)
                 yield return version;
         }
+
+        public override int Count => m_Versions.Length;
+        public override IPackageVersion this[int index] => m_Versions[index];
     }
 }

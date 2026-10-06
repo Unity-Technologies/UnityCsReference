@@ -4,6 +4,7 @@
 
 using System.IO;
 using System.Collections.Generic;
+using System.Text.RegularExpressions;
 using UnityEngine;
 using UnityEditor;
 using UnityEditor.AssetImporters;
@@ -13,12 +14,13 @@ using Unity.Scripting.LifecycleManagement;
 namespace UnityEditor.Rendering
 {
     [HelpURL("https://docs.unity3d.com/ScriptReference/Experimental.Rendering.GraphicsStateCollection.html")]
-    [ScriptedImporter(version: 1, ext: k_FileExtension, AllowCaching = true)]
+    [ScriptedImporter(version: 2, ext: k_FileExtension, AllowCaching = true)]
     [ExcludeFromPreset]
     class GraphicsStateCollectionImporter : ScriptedImporter
     {
         private const string k_FileExtension = "graphicsstate";
         private const string k_DefaultFileName = "New Graphics State Collection." + k_FileExtension;
+        static readonly Regex k_ShaderAssetGuid = new Regex(@"""shaderAssetGUID""\s*:\s*""([0-9a-fA-F]{32})""", RegexOptions.Compiled);
 
         public RuntimePlatform runtimePlatform;
         public GraphicsDeviceType graphicsDeviceType;
@@ -39,6 +41,25 @@ namespace UnityEditor.Rendering
                 icon,
                 null
             );
+        }
+
+        // Each variant resolves its shader by GUID
+        static string[] GatherDependenciesFromSourceFile(string path)
+        {
+            var dependencies = new HashSet<string>();
+            // A package asset path is virtual; the file of a registry package lives in Library/PackageCache
+            foreach (Match match in k_ShaderAssetGuid.Matches(File.ReadAllText(FileUtil.PathToAbsolutePathForFileIO(path))))
+            {
+                var shaderPath = AssetDatabase.GUIDToAssetPath(match.Groups[1].Value);
+                // Built-in shaders live in resource files, not assets
+                if (shaderPath.StartsWith("Assets/", System.StringComparison.Ordinal) ||
+                    shaderPath.StartsWith("Packages/", System.StringComparison.Ordinal))
+                    dependencies.Add(shaderPath);
+            }
+
+            var result = new string[dependencies.Count];
+            dependencies.CopyTo(result);
+            return result;
         }
 
         public override void OnImportAsset(AssetImportContext ctx)

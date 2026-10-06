@@ -2,7 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: UIToolkitAuthoringFramework not yet converted
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -133,7 +132,9 @@ class VisualElementReferenceSearchProvider : SearchProvider
         fetchPropositions = FetchPropositions;
 
         // The actual items we search against.
+#pragma warning disable UAL0018 // FetchItems reaches SearchItem.clear, whose backing fields are already reload-safe (lazy sentinel / stateless stub) at their own declarations
         fetchItems = FetchItems;
+#pragma warning restore UAL0018
 
         fetchThumbnail = (item, _) => item.thumbnail;
 
@@ -295,4 +296,3 @@ class VisualElementReferenceSearchProvider : SearchProvider
         descriptor.Id.GetStringView().Split(k_Separator, StringSplitOptions.RemoveEmptyEntries, idsSubstrings);
     }
 }
-#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

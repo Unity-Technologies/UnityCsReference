@@ -30,7 +30,7 @@ namespace UnityEditor.SceneTemplate
 
     struct InMemorySceneState
     {
-        public string guid;
+        public GUID guid;
         public string path;
         public string rootFolder;
         public bool hasCloneableDependencies;
@@ -40,7 +40,7 @@ namespace UnityEditor.SceneTemplate
         [NoAutoStaticsCleanup] // empty-state sentinel for a value-type struct (strings + bools); holds no references, safe to persist
         public static InMemorySceneState None = new InMemorySceneState();
 
-        public bool valid => !string.IsNullOrEmpty(guid);
+        public bool valid => !guid.Empty();
 
         internal static InMemorySceneState Import(string sessionData)
         {

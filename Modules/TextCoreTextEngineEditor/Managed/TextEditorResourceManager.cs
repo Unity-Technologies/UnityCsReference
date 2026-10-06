@@ -2,8 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: TextTextCore not yet converted
-#pragma warning disable UAL0010,UAL0011,UAL0012,UAL0013,UAL0014 // AutoStaticsCleanup: TextTextCore not yet converted
 using System.Collections.Generic;
 using UnityEditor.TextCore.LowLevel;
 using UnityEngine.TextCore.Text;
@@ -22,30 +20,13 @@ namespace UnityEditor.TextCore.Text
             FontAsset.RegisterResourceForReimport += TextEditorResourceManager.RegisterResourceForReimport;
             FontAsset.OnFontAssetTextureChanged += TextEditorResourceManager.AddTextureToAsset;
             FontAsset.SetAtlasTextureIsReadable += FontEngineEditorUtilities.SetAtlasTextureIsReadable;
+            FontAsset.OnAtlasTexturePersistenceChanged += TextEditorResourceManager.ConfigureAtlasTexturePersistence;
+            FontAsset.OnAtlasTextureUploaded += TextEditorResourceManager.ClearAtlasTextureDirtyState;
             FontAsset.GetSourceFontRef += TextEditorResourceManager.GetSourceFontRef;
             FontAsset.SetSourceFontGUID += TextEditorResourceManager.SetSourceFontGUID;
             FontAsset.ResolveDynamicSourceFont += FontSubsetterManager.ResolveDynamicSourceFont;
             FontAsset.EditorApplicationIsUpdating += () => EditorApplication.isUpdating;
-
-            // Callback to handle clearing dynamic font asset data when closing the Editor
-            EditorApplication.quitting += () =>
-            {
-                // Find all font assets in the project
-                string searchPattern = "t:FontAsset";
-                string[] fontAssetGUIDs = AssetDatabase.FindAssets(searchPattern);
-
-                for (int i = 0; i < fontAssetGUIDs.Length; i++)
-                {
-                    string fontAssetPath = AssetDatabase.GUIDToAssetPath(fontAssetGUIDs[i]);
-                    FontAsset fontAsset = AssetDatabase.LoadAssetAtPath<FontAsset>(fontAssetPath);
-
-                    if (fontAsset != null && (fontAsset.atlasPopulationMode == AtlasPopulationMode.Dynamic || fontAsset.atlasPopulationMode == AtlasPopulationMode.DynamicOS) && fontAsset.clearDynamicDataOnBuild && fontAsset.atlasTexture != null && fontAsset.atlasTexture.width > 1)
-                    {
-                        Debug.Log("Clearing [" + fontAsset.name + "] dynamic font asset data.");
-                        fontAsset.ClearCharacterAndGlyphTablesInternal();
-                    }
-                }
-            };
+            FontAsset.EditorIsBuildingPlayer += () => BuildPipeline.isBuildingPlayer;
         }
     }
 
@@ -183,10 +164,59 @@ namespace UnityEditor.TextCore.Text
             if (!EditorUtility.IsPersistent(obj) || (obj.hideFlags & HideFlags.DontSave) != 0)
                 return;
 
+            if (HasSessionOnlyDynamicData(obj))
+            {
+                if (tex != null)
+                    tex.hideFlags = HideFlags.DontSave;
+
+                return;
+            }
+
             if (tex != null)
                 AssetDatabase.AddObjectToAsset(tex, obj);
 
             RegisterResourceForReimport(obj);
+        }
+
+        internal static bool HasSessionOnlyDynamicData(Object obj)
+        {
+            return obj is FontAsset fontAsset && fontAsset.hasSessionOnlyDynamicData;
+        }
+
+        internal static void ConfigureAtlasTexturePersistence(FontAsset fontAsset)
+        {
+            if (fontAsset == null || fontAsset.atlasTextures == null)
+                return;
+
+            bool sessionOnly = HasSessionOnlyDynamicData(fontAsset);
+
+            foreach (var texture in fontAsset.atlasTextures)
+            {
+                if (texture != null)
+                    FontEngineEditorUtilities.SetAtlasTextureSessionOnly(texture, sessionOnly);
+            }
+        }
+
+        // Pages added while the asset was session-only are transient; once it persists, they must ship in the file.
+        internal static void PersistAtlasTextures(FontAsset fontAsset)
+        {
+            if (fontAsset.atlasTextures == null)
+                return;
+
+            foreach (var texture in fontAsset.atlasTextures)
+            {
+                if (texture == null || (texture.hideFlags & HideFlags.DontSave) == 0)
+                    continue;
+
+                texture.hideFlags = HideFlags.None;
+                AssetDatabase.AddObjectToAsset(texture, fontAsset);
+            }
+        }
+
+        internal static void ClearAtlasTextureDirtyState(Texture2D texture)
+        {
+            if (texture != null && FontEngineEditorUtilities.IsAtlasTextureSessionOnly(texture))
+                EditorUtility.ClearDirty(texture);
         }
 
         internal static Font GetSourceFontRef(string guid)
@@ -233,7 +263,7 @@ namespace UnityEditor.TextCore.Text
             for (int i = 0; i < objReImportCount; i++)
             {
                 Object obj = m_ObjectReImportQueue[i];
-                if (obj != null)
+                if (obj != null && !HasSessionOnlyDynamicData(obj))
                 {
                     string assetPath = AssetDatabase.GetAssetPath(obj);
 
@@ -272,5 +302,3 @@ namespace UnityEditor.TextCore.Text
         }
     }
 }
-#pragma warning restore UAL0010,UAL0011,UAL0012,UAL0013,UAL0014
-#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

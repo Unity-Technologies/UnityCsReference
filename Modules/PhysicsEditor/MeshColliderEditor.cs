@@ -17,10 +17,10 @@ namespace UnityEditor
 
         private static class Styles
         {
-            public static readonly GUIContent isTriggerText = EditorGUIUtility.TrTextContent("Is Trigger", "Is this collider a trigger? Triggers are only supported on convex colliders.");
-            public static readonly GUIContent convexText = EditorGUIUtility.TrTextContent("Convex", "Is this collider convex?");
-            public static readonly GUIContent cookingOptionsText = EditorGUIUtility.TrTextContent("Cooking Options", "Options affecting the result of the mesh processing by the physics engine.");
-            public static readonly GUIContent meshText = EditorGUIUtility.TrTextContent("Mesh", "Reference to the Mesh to use for collisions.");
+            public static readonly GUIContent isTriggerText = L10n.TextContent("Is Trigger", "Is this collider a trigger? Triggers are only supported on convex colliders.", null, null);
+            public static readonly GUIContent convexText = L10n.TextContent("Convex", "Is this collider convex?", null, null);
+            public static readonly GUIContent cookingOptionsText = L10n.TextContent("Cooking Options", "Options affecting the result of the mesh processing by the physics engine.", null, null);
+            public static readonly GUIContent meshText = L10n.TextContent("Mesh", "Reference to the Mesh to use for collisions.", null, null);
         }
 
         public override void OnEnable()
@@ -114,8 +114,8 @@ namespace UnityEditor
                     if (InternalEditorUtility.CanMeshBeModifiedFromCode(meshPath))
                     {
                         if (InternalEditorUtility.DrawWarningHelpBoxWithButton(
-                            EditorGUIUtility.TrTextContent(message),
-                            EditorGUIUtility.TrTextContent("Enable Pre-bake Collision"), 200.0f))
+                            L10n.TextContent(message, null, null, null),
+                            L10n.TextContent("Enable Pre-bake Collision", null, null, null), 200.0f))
                         {
                             InternalEditorUtility.ImportMeshWithPreBakeCollision(mesh, isConvex);
                         }
@@ -123,8 +123,8 @@ namespace UnityEditor
                     else
                     {
                         if (InternalEditorUtility.DrawWarningHelpBoxWithButton(
-                            EditorGUIUtility.TrTextContent(message),
-                            EditorGUIUtility.TrTextContent("View")))
+                            L10n.TextContent(message, null, null, null),
+                            L10n.TextContent("View", null, null, null)))
                         {
                             Selection.objects = new UnityEngine.Object[] { mesh };
                         }

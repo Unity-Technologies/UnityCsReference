@@ -98,7 +98,9 @@ namespace UnityEngine
             listPrivateFieldAccess._version++;
         }
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        // The unsafe cast of List<T> to ListPrivateFieldAccess<T> is invalid, as the JIT assumes reference
+        // class fields are never aliased. With aggressive inlining stale list fields may be used.
+        [MethodImpl(MethodImplOptions.NoInlining)]
         public static void ResetListSize<T>(List<T> list, int size)
         {
             if (list.Capacity < size) throw new ArgumentException($"Resetting to {size} which is bigger than capacity {list.Capacity} is not allowed!");

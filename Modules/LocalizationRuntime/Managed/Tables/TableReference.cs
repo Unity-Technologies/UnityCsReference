@@ -19,7 +19,7 @@ namespace Unity.Localization;
 /// single entry, and resolve either against a <see cref="ResourceDatabase"/> or a <see cref="ResourceTable"/>.
 /// </remarks>
 /// <example>
-/// <para>Create references by name and by GUID, then inspect how each identifies its collection.</para>
+/// Create references by name and by GUID, then inspect how each identifies its collection.
 /// <code source="../../../../Modules/LocalizationRuntime/Tests/UTFTests/Localization.Samples/Components/TableReferenceOverviewExample.cs"/>
 /// </example>
 /// <seealso cref="ResourceTable"/>
@@ -38,7 +38,7 @@ public struct TableReference : IEquatable<TableReference>
     /// stored data. <c>Empty</c> indicates the reference points at nothing.
     /// </remarks>
     /// <example>
-    /// <para>Branch on how a reference identifies its collection.</para>
+    /// Branch on how a reference identifies its collection.
     /// <code source="../../../../Modules/LocalizationRuntime/Tests/UTFTests/Localization.Samples/Components/TableReferenceTypeSwitchExample.cs"/>
     /// </example>
     public enum Type
@@ -102,7 +102,7 @@ public struct TableReference : IEquatable<TableReference>
     /// <param name="tableCollectionName">The name of the table collection to reference.</param>
     /// <returns>A table reference that identifies the collection by name.</returns>
     /// <example>
-    /// <para>Reference a collection by name through the implicit conversion.</para>
+    /// Reference a collection by name through the implicit conversion.
     /// <code source="../../../../Modules/LocalizationRuntime/Tests/UTFTests/Localization.Samples/Components/TableReferenceFromNameExample.cs"/>
     /// </example>
     public static implicit operator TableReference(string tableCollectionName)
@@ -119,7 +119,7 @@ public struct TableReference : IEquatable<TableReference>
     /// <param name="tableCollectionNameGuid">The GUID of the table collection to reference.</param>
     /// <returns>A table reference that identifies the collection by GUID.</returns>
     /// <example>
-    /// <para>Reference a collection by GUID so it survives a rename.</para>
+    /// Reference a collection by GUID so it survives a rename.
     /// <code source="../../../../Modules/LocalizationRuntime/Tests/UTFTests/Localization.Samples/Components/TableReferenceFromGuidExample.cs"/>
     /// </example>
     public static TableReference FromGuid(string tableCollectionNameGuid)
@@ -135,7 +135,7 @@ public struct TableReference : IEquatable<TableReference>
     /// <param name="tableCollectionNameGuid">The GUID of the table collection to reference.</param>
     /// <returns>A table reference that identifies the collection by GUID.</returns>
     /// <example>
-    /// <para>Reference a collection from a GUID you already hold.</para>
+    /// Reference a collection from a GUID you already hold.
     /// <code source="../../../../Modules/LocalizationRuntime/Tests/UTFTests/Localization.Samples/Components/TableReferenceFromTypedGuidExample.cs"/>
     /// </example>
     public static TableReference FromGuid(GUID tableCollectionNameGuid)
@@ -156,7 +156,7 @@ public struct TableReference : IEquatable<TableReference>
     /// <param name="other">The table reference to compare with this one.</param>
     /// <returns><c>true</c> if both references identify the same collection; otherwise, <c>false</c>.</returns>
     /// <example>
-    /// <para>Compare a name reference against a GUID reference for the same collection.</para>
+    /// Compare a name reference against a GUID reference for the same collection.
     /// <code source="../../../../Modules/LocalizationRuntime/Tests/UTFTests/Localization.Samples/Components/TableReferenceEqualsExample.cs"/>
     /// </example>
     public bool Equals(TableReference other)
@@ -182,7 +182,7 @@ public struct TableReference : IEquatable<TableReference>
     /// <param name="obj">The object to compare with this reference.</param>
     /// <returns><c>true</c> if <paramref name="obj"/> is a table reference that identifies the same collection; otherwise, <c>false</c>.</returns>
     /// <example>
-    /// <para>Compare against a boxed reference.</para>
+    /// Compare against a boxed reference.
     /// <code source="../../../../Modules/LocalizationRuntime/Tests/UTFTests/Localization.Samples/Components/TableReferenceEqualsObjectExample.cs"/>
     /// </example>
     public override bool Equals(object obj) => obj is TableReference other && Equals(other);
@@ -197,7 +197,7 @@ public struct TableReference : IEquatable<TableReference>
     /// </remarks>
     /// <returns>An integer hash code derived from the part of the reference that resolution uses.</returns>
     /// <example>
-    /// <para>Use a table reference as a dictionary key.</para>
+    /// Use a table reference as a dictionary key.
     /// <code source="../../../../Modules/LocalizationRuntime/Tests/UTFTests/Localization.Samples/Components/TableReferenceHashCodeExample.cs"/>
     /// </example>
     public override int GetHashCode()
@@ -219,7 +219,7 @@ public struct TableReference : IEquatable<TableReference>
     /// </remarks>
     /// <returns>A human-readable description of the reference.</returns>
     /// <example>
-    /// <para>Log the reference for debugging.</para>
+    /// Log the reference for debugging.
     /// <code source="../../../../Modules/LocalizationRuntime/Tests/UTFTests/Localization.Samples/Components/TableReferenceToStringExample.cs"/>
     /// </example>
     public override string ToString()
@@ -245,7 +245,7 @@ public struct TableReference : IEquatable<TableReference>
 /// <see cref="TableReference"/> to address an entry in a specific collection.
 /// </remarks>
 /// <example>
-/// <para>Create entry references by key text and by key id, then resolve one to an id.</para>
+/// Create entry references by key text and by key id, then resolve one to an id.
 /// <code source="../../../../Modules/LocalizationRuntime/Tests/UTFTests/Localization.Samples/Components/TableEntryReferenceOverviewExample.cs"/>
 /// </example>
 /// <seealso cref="TableReference"/>
@@ -263,7 +263,7 @@ public struct TableEntryReference : IEquatable<TableEntryReference>
     /// rather than set directly. <c>Empty</c> indicates the reference points at no entry.
     /// </remarks>
     /// <example>
-    /// <para>Branch on how an entry reference identifies its entry.</para>
+    /// Branch on how an entry reference identifies its entry.
     /// <code source="../../../../Modules/LocalizationRuntime/Tests/UTFTests/Localization.Samples/Components/TableEntryReferenceTypeSwitchExample.cs"/>
     /// </example>
     public enum Type
@@ -327,7 +327,7 @@ public struct TableEntryReference : IEquatable<TableEntryReference>
     /// <param name="key">The key text of the entry to reference.</param>
     /// <returns>An entry reference that identifies the entry by key text.</returns>
     /// <example>
-    /// <para>Reference an entry by key text through the implicit conversion.</para>
+    /// Reference an entry by key text through the implicit conversion.
     /// <code source="../../../../Modules/LocalizationRuntime/Tests/UTFTests/Localization.Samples/Components/TableEntryReferenceFromKeyExample.cs"/>
     /// </example>
     public static implicit operator TableEntryReference(string key) => new() { m_Key = key };
@@ -342,7 +342,7 @@ public struct TableEntryReference : IEquatable<TableEntryReference>
     /// <param name="keyId">The stable key id of the entry to reference.</param>
     /// <returns>An entry reference that identifies the entry by key id.</returns>
     /// <example>
-    /// <para>Reference an entry by key id through the implicit conversion.</para>
+    /// Reference an entry by key id through the implicit conversion.
     /// <code source="../../../../Modules/LocalizationRuntime/Tests/UTFTests/Localization.Samples/Components/TableEntryReferenceFromKeyIdExample.cs"/>
     /// </example>
     public static implicit operator TableEntryReference(long keyId) => new() { m_KeyId = keyId };
@@ -358,7 +358,7 @@ public struct TableEntryReference : IEquatable<TableEntryReference>
     /// <param name="sharedData">The shared table data to resolve the key against.</param>
     /// <returns>The resolved key id, or <c>0</c> when the reference cannot be resolved.</returns>
     /// <example>
-    /// <para>Resolve an entry reference to a stable key id.</para>
+    /// Resolve an entry reference to a stable key id.
     /// <code source="../../../../Modules/LocalizationRuntime/Tests/UTFTests/Localization.Samples/Components/TableEntryReferenceResolveKeyIdExample.cs"/>
     /// </example>
     public long ResolveKeyId(SharedTableData sharedData)
@@ -381,7 +381,7 @@ public struct TableEntryReference : IEquatable<TableEntryReference>
     /// <param name="sharedData">The shared table data to resolve the key against.</param>
     /// <returns>The resolved key text, or null when the reference cannot be resolved.</returns>
     /// <example>
-    /// <para>Resolve an entry reference to its human-readable key text.</para>
+    /// Resolve an entry reference to its human-readable key text.
     /// <code source="../../../../Modules/LocalizationRuntime/Tests/UTFTests/Localization.Samples/Components/TableEntryReferenceResolveKeyNameExample.cs"/>
     /// </example>
     public string ResolveKeyName(SharedTableData sharedData)
@@ -404,7 +404,7 @@ public struct TableEntryReference : IEquatable<TableEntryReference>
     /// <param name="other">The entry reference to compare with this one.</param>
     /// <returns><c>true</c> if both references identify the same entry; otherwise, <c>false</c>.</returns>
     /// <example>
-    /// <para>Compare two entry references for value equality.</para>
+    /// Compare two entry references for value equality.
     /// <code source="../../../../Modules/LocalizationRuntime/Tests/UTFTests/Localization.Samples/Components/TableEntryReferenceEqualsExample.cs"/>
     /// </example>
     public bool Equals(TableEntryReference other)
@@ -430,7 +430,7 @@ public struct TableEntryReference : IEquatable<TableEntryReference>
     /// <param name="obj">The object to compare with this reference.</param>
     /// <returns><c>true</c> if <paramref name="obj"/> is an entry reference that identifies the same entry; otherwise, <c>false</c>.</returns>
     /// <example>
-    /// <para>Compare against a boxed reference.</para>
+    /// Compare against a boxed reference.
     /// <code source="../../../../Modules/LocalizationRuntime/Tests/UTFTests/Localization.Samples/Components/TableEntryReferenceEqualsObjectExample.cs"/>
     /// </example>
     public override bool Equals(object obj) => obj is TableEntryReference other && Equals(other);
@@ -444,7 +444,7 @@ public struct TableEntryReference : IEquatable<TableEntryReference>
     /// </remarks>
     /// <returns>An integer hash code derived from the part of the reference that resolution uses.</returns>
     /// <example>
-    /// <para>Use an entry reference as a dictionary key.</para>
+    /// Use an entry reference as a dictionary key.
     /// <code source="../../../../Modules/LocalizationRuntime/Tests/UTFTests/Localization.Samples/Components/TableEntryReferenceHashCodeExample.cs"/>
     /// </example>
     public override int GetHashCode()
@@ -466,7 +466,7 @@ public struct TableEntryReference : IEquatable<TableEntryReference>
     /// </remarks>
     /// <returns>A human-readable description of the reference.</returns>
     /// <example>
-    /// <para>Log the entry reference for debugging.</para>
+    /// Log the entry reference for debugging.
     /// <code source="../../../../Modules/LocalizationRuntime/Tests/UTFTests/Localization.Samples/Components/TableEntryReferenceToStringExample.cs"/>
     /// </example>
     public override string ToString()

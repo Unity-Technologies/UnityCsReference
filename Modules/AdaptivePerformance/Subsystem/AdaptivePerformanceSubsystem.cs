@@ -85,7 +85,11 @@ namespace UnityEngine.AdaptivePerformance.Provider
         /// <summary>
         /// See <see cref="IDevicePerformanceLevelControl.SetEnergyEfficiencyMode"/>
         /// </summary>
-        EnergyEfficiencyMode = 0x10000
+        EnergyEfficiencyMode = 0x10000,
+        /// <summary>
+        /// See <see cref="PerformanceDataRecord.EnergyUsage"/>
+        /// </summary>
+        EnergyUsage = 0x20000
     }
 
     /// <summary>
@@ -216,8 +220,13 @@ namespace UnityEngine.AdaptivePerformance.Provider
         /// Android Battery Saver, etc.). Has changed when <see cref="Feature.LowPowerMode"/>
         /// bit is set in <see cref="ChangeFlags"/>.
         /// </summary>
-        /// <value>True when the device is under a low-power condition.</value>
         public bool LowPowerMode { get; set; }
+
+        /// <summary>
+        /// The latest per-subsystem energy consumption since energy-usage tracking was started or reset.
+        /// Has changed when <see cref="Feature.EnergyUsage"/> bit is set in <see cref="ChangeFlags"/>.
+        /// </summary>
+        public EnergyUsage EnergyUsage { get; set; }
     }
 
     /// <summary>
@@ -302,6 +311,120 @@ namespace UnityEngine.AdaptivePerformance.Provider
             return false;
         }
 
+    }
+
+    /// <summary>
+    /// Optional provider interface for per-subsystem energy tracking. A provider implements this interface when it
+    /// can report <see cref="Feature.EnergyUsage"/>. Adaptive Performance discovers the implementation through
+    /// <see cref="AdaptivePerformanceSubsystem.EnergyUsageControl"/> and surfaces it to users as <see cref="IEnergyUsageControl"/>.
+    /// </summary>
+    /// <remarks>
+    /// Implement this interface on the provider class itself, the one that derives from
+    /// <see cref="AdaptivePerformanceSubsystem.APProvider"/>. Adaptive Performance casts the provider to this
+    /// interface, so an implementation on a separate object isn't discovered.
+    ///
+    /// Include <see cref="Feature.EnergyUsage"/> in <see cref="AdaptivePerformanceSubsystem.APProvider.Capabilities"/>
+    /// at startup. Capabilities don't change afterwards, and without that bit Adaptive Performance reports
+    /// <see cref="IEnergyUsageControl.EnergyUsageTrackingSupported"/> as false and never starts tracking.
+    ///
+    /// Report readings from <see cref="AdaptivePerformanceSubsystem.APProvider.Update"/>: assign
+    /// <see cref="PerformanceDataRecord.EnergyUsage"/> and set the <see cref="Feature.EnergyUsage"/> bit in
+    /// <see cref="PerformanceDataRecord.ChangeFlags"/>. Adaptive Performance ignores the value when that bit is
+    /// clear, so set it whenever the platform produces a new sample. Report each subsystem the device can't measure
+    /// with <see cref="EnergyUsageReading.Available"/> set to false rather than reporting zero energy for it.
+    ///
+    /// <see cref="EnergyUsageReading.Energy"/> is cumulative microwatt-seconds since tracking last started or reset,
+    /// and <see cref="EnergyUsageReading.Interval"/> is the number of milliseconds that value covers.
+    /// </remarks>
+    /// <example>
+    /// The following example outlines a provider that reports CPU energy consumption.
+    /// <code lang="cs"><![CDATA[
+    /// using System;
+    /// using UnityEngine.AdaptivePerformance;
+    /// using UnityEngine.AdaptivePerformance.Provider;
+    ///
+    /// public class ExampleEnergyUsageProvider : AdaptivePerformanceSubsystem.APProvider, IEnergyUsageProvider
+    /// {
+    ///     PerformanceDataRecord updateResult;
+    ///     bool trackingActive;
+    ///
+    ///     public ExampleEnergyUsageProvider()
+    ///     {
+    ///         // Declare the capability at startup, otherwise Adaptive Performance never starts tracking.
+    ///         Capabilities = Feature.EnergyUsage;
+    ///     }
+    ///
+    ///     public override Feature Capabilities { get; set; }
+    ///
+    ///     public override PerformanceDataRecord Update()
+    ///     {
+    ///         updateResult.ChangeFlags = Feature.None;
+    ///
+    ///         // Platforms produce new samples far less often than once per frame.
+    ///         if (trackingActive && TryReadCpuEnergy(out long energy, out long interval))
+    ///         {
+    ///             updateResult.EnergyUsage = new EnergyUsage(
+    ///                 (EnergyUsageSubsystem.Cpu, new EnergyUsageReading(true, energy, interval)),
+    ///                 // Subsystems this device can't measure are reported as unavailable.
+    ///                 (EnergyUsageSubsystem.Gpu, new EnergyUsageReading(false, 0, 0)));
+    ///
+    ///             // Adaptive Performance only picks up EnergyUsage when this bit is set.
+    ///             updateResult.ChangeFlags |= Feature.EnergyUsage;
+    ///         }
+    ///
+    ///         return updateResult;
+    ///     }
+    ///
+    ///     public bool StartEnergyUsageTracking()
+    ///     {
+    ///         // Adaptive Performance also calls this while tracking is active, to reset the baseline.
+    ///         trackingActive = ResetPlatformCounters();
+    ///         return trackingActive;
+    ///     }
+    ///
+    ///     public void StopEnergyUsageTracking()
+    ///     {
+    ///         // Safe to call when tracking isn't active, because shutdown also calls it.
+    ///         trackingActive = false;
+    ///     }
+    ///
+    ///     // Platform-specific: resets the counters that Energy is measured from.
+    ///     bool ResetPlatformCounters() => true;
+    ///
+    ///     // Platform-specific: reads cumulative microwatt-seconds and the milliseconds they cover.
+    ///     bool TryReadCpuEnergy(out long energy, out long interval)
+    ///     {
+    ///         energy = 0;
+    ///         interval = 0;
+    ///         return false;
+    ///     }
+    ///
+    ///     public override void Start() => Initialized = true;
+    ///     public override void Stop() => StopEnergyUsageTracking();
+    ///     public override void Destroy() => StopEnergyUsageTracking();
+    ///
+    ///     public override IApplicationLifecycle ApplicationLifecycle => null;
+    ///     public override IDevicePerformanceLevelControl PerformanceLevelControl => null;
+    ///     public override Version Version => new Version(1, 0, 0);
+    ///     public override bool Initialized { get; set; }
+    /// }
+    /// ]]></code>
+    /// </example>
+    /// <seealso cref="IEnergyUsageControl"/>
+    /// <seealso cref="EnergyUsage"/>
+    /// <seealso cref="AdaptivePerformanceSubsystem.EnergyUsageControl"/>
+    public interface IEnergyUsageProvider
+    {
+        /// <summary>
+        /// Starts per-subsystem energy tracking, or resets the baseline if tracking is already active.
+        /// </summary>
+        /// <returns>Returns true after tracking starts or resets, and false if it's not currently available.</returns>
+        bool StartEnergyUsageTracking();
+
+        /// <summary>
+        /// Stops per-subsystem energy tracking.
+        /// </summary>
+        void StopEnergyUsageTracking();
     }
 
     /// <summary>
@@ -392,8 +515,13 @@ namespace UnityEngine.AdaptivePerformance.Provider
         /// <value>Performance level control object</value>
         public override IDevicePerformanceLevelControl PerformanceLevelControl => provider.PerformanceLevelControl;
         /// <summary>
+        /// Per-subsystem energy tracking control, or null if the provider doesn't support <see cref="Feature.EnergyUsage"/>.
+        /// The returned reference doesn't change after startup.
+        /// </summary>
+        public IEnergyUsageProvider EnergyUsageControl => provider as IEnergyUsageProvider;
+        /// <summary>
         /// Returns the version of the subsystem implementation.
-        /// Can be used together with SubsystemDescriptor to identify a subsystem.
+        /// Typically used together with SubsystemDescriptor to identify a subsystem.
         /// </summary>
         /// <value>Version number</value>
         public override Version Version => provider.Version;

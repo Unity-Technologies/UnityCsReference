@@ -56,45 +56,39 @@ public class PluralLocalizationFormatter : FormatterBase, IFormatterLiteralExtra
 
         // Extract the plural words from the format string:
         var pluralWords = format.Split(SplitChar);
-        // This extension requires at least two plural words:
-        if (pluralWords.Count == 1)
-        {
-            // Auto detection calls just return a failure to evaluate
-            if (string.IsNullOrEmpty(formattingInfo.Placeholder?.FormatterName))
-                return false;
 
-            // throw, if the formatter has been called explicitly
-            throw new FormatException($"Formatter named '{formattingInfo.Placeholder?.FormatterName}' requires at least 2 plural words.");
-        }
+        var useAutoDetection = string.IsNullOrEmpty(formattingInfo.Placeholder?.FormatterName);
+
+        // Auto-detection needs at least two plural words; a named call may pass one for singular languages
+        if (useAutoDetection && pluralWords.Count <= 1) return false;
 
         decimal value;
 
         // We can format numbers, and IEnumerables. For IEnumerables we look at the number of items
         // in the collection: this means the user can e.g. use the same parameter for both plural and list, for example
         // 'Smart.Format("The following {0:plural:person is|people are} impressed: {0:list:{}|, |, and}", new[] { "bob", "alice" });'
-        if (current is IConvertible convertible && current is not bool)
-            value = convertible.ToDecimal(null);
-        else if (current is IEnumerable<object> objects)
+        switch (current)
         {
-            if (objects is ICollection<object> collection)
-                value = collection.Count;
-            else
-            {
-                var count = 0;
-                foreach (var _ in objects)
-                    count++;
-                value = count;
-            }
-        }
-        else
-        {
-            // Auto detection calls just return a failure to evaluate
-            if (string.IsNullOrEmpty(formattingInfo.Placeholder?.FormatterName))
-                return false;
+            case IConvertible convertible when convertible is not (bool or string) && TryGetDecimalValue(convertible, out value):
+                break;
+            case IEnumerable<object> objects:
+                if (objects is ICollection<object> collection)
+                    value = collection.Count;
+                else
+                {
+                    var count = 0;
+                    foreach (var _ in objects)
+                        count++;
+                    value = count;
+                }
+                break;
+            default:
+                // Auto detection calls just return a failure to evaluate
+                if (useAutoDetection) return false;
 
-            // throw, if the formatter has been called explicitly
-            throw new FormatException(
-                $"Formatter named '{formattingInfo.Placeholder?.FormatterName}' can format numbers and IEnumerables, but the argument was of type '{current?.GetType().ToString() ?? "null"}'");
+                // throw, if the formatter has been called explicitly
+                throw new FormattingException(format,
+                    $"Formatter named '{formattingInfo.Placeholder?.FormatterName}' can format numbers and IEnumerables, but the argument was of type '{current?.GetType().ToString() ?? "null"}'", 0);
         }
 
         // Get the specific plural rule, or the default rule:
@@ -111,6 +105,27 @@ public class PluralLocalizationFormatter : FormatterBase, IFormatterLiteralExtra
         var pluralForm = pluralWords[pluralIndex];
         formattingInfo.FormatAsChild(pluralForm, current);
         return true;
+    }
+
+    static bool TryGetDecimalValue(IConvertible convertible, out decimal value)
+    {
+        // ToDecimal always throws for these, so skip the exception
+        if (convertible.GetTypeCode() is TypeCode.Char or TypeCode.DateTime or TypeCode.DBNull)
+        {
+            value = default;
+            return false;
+        }
+
+        try
+        {
+            value = convertible.ToDecimal(null);
+            return true;
+        }
+        catch
+        {
+            value = default;
+            return false;
+        }
     }
 
     static PluralRules.PluralRuleDelegate GetPluralRule(IFormattingInfo formattingInfo)
@@ -172,8 +187,8 @@ public class PluralLocalizationFormatter : FormatterBase, IFormatterLiteralExtra
         // Extract the plural words from the format string:
         var pluralWords = format.Split(SplitChar);
 
-        // This extension requires at least two plural words:
-        if (pluralWords.Count == 1)
+        // This extension requires at least two plural words for auto-detection
+        if (pluralWords.Count <= 1 && string.IsNullOrEmpty(formattingInfo.Placeholder?.FormatterName))
             return;
 
         for (int i = 0; i < pluralWords.Count; ++i)

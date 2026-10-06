@@ -14,7 +14,7 @@ namespace UnityEditor.VersionControl
     [NativeHeader("Editor/Src/VersionControl/VC_bindings.h")]
     [UsedByNativeCode]
     [StructLayout(LayoutKind.Sequential)]
-    partial class ChangeSet
+    public partial class ChangeSet
     {
         // The bindings generator will set the instance pointer in this field
         IntPtr m_Self;

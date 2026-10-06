@@ -3,9 +3,8 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System.Collections.Generic;
-using UnityEditor;
-using UnityEngine.UIElements;
 using UnityEngine.Bindings;
+using UnityEngine.UIElements;
 
 namespace Unity.UIToolkit.Editor;
 
@@ -17,49 +16,107 @@ internal enum SubDocumentOptions
     Isolation,
 }
 
-[System.Serializable]
 [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
-internal class LoadUIDocumentCommand
+internal sealed class LoadUIDocumentCommand : Command<LoadUIDocumentCommand>
 {
-    public const string CommandId = "UIToolkit__LoadDocument__CommandId";
-
-    public List<VisualTreeAsset> subDocuments;
-    public List<TemplateAsset> contextInstances;
-    public SubDocumentOptions subDocumentOptions;
-    public int selectedId = -1;
+    public VisualTreeAsset Document { get; private set; }
+    public List<VisualTreeAsset> SubDocuments { get; private set; }
+    public List<TemplateAsset> ContextInstances { get; private set; }
+    public SubDocumentOptions Options { get; private set; }
+    public int SelectedId { get; private set; }
 
     /// <summary>
     /// Innermost-first TemplateAsset ids of the selected element's enclosing instances, up to but
     /// excluding the instance of the opened document.
     /// </summary>
     /// <remarks>
-    /// Senders that record no chain leave it empty, which the JSON round-trip also produces from null.
+    /// Senders that record no chain leave this null, and <see cref="FindSelectedElement"/> falls back
+    /// to the first id match.
     /// </remarks>
-    public List<int> selectedInstanceIds;
+    public List<int> SelectedInstanceIds { get; private set; }
 
     /// <summary>
     /// The document containing the selected element's asset, which resolution also requires to match.
     /// </summary>
     /// <remarks>
-    /// Asset ids are unique only within one document. Senders that record none leave it null, which
+    /// Asset ids are unique only within one document. Senders that record none leave this null, which
     /// skips the check.
     /// </remarks>
-    public VisualTreeAsset selectedSourceDocument;
+    public VisualTreeAsset SelectedSourceDocument { get; private set; }
 
-    /// <summary>
-    /// Opens the document in the UI Builder, handing this command over for it to consume.
-    /// </summary>
-    public void OpenInBuilder(VisualTreeAsset document)
+    public static LoadUIDocumentCommand GetPooled(
+        object source,
+        VisualTreeAsset document,
+        int selectedId = -1,
+        VisualTreeAsset selectedSourceDocument = null,
+        List<int> selectedInstanceIds = null,
+        SubDocumentOptions subDocumentOptions = SubDocumentOptions.None,
+        List<VisualTreeAsset> subDocuments = null,
+        List<TemplateAsset> contextInstances = null)
     {
-        SessionState.SetString(CommandId, EditorJsonUtility.ToJson(this));
-        try
+        var cmd = GetPooled();
+        cmd.Source = source;
+        cmd.Document = document;
+        cmd.SelectedId = selectedId;
+        cmd.SelectedSourceDocument = selectedSourceDocument;
+        cmd.SelectedInstanceIds = selectedInstanceIds;
+        cmd.Options = subDocumentOptions;
+        cmd.SubDocuments = subDocuments;
+        cmd.ContextInstances = contextInstances;
+        return cmd;
+    }
+
+    public static void Execute(
+        object source,
+        VisualTreeAsset document,
+        int selectedId = -1,
+        VisualTreeAsset selectedSourceDocument = null,
+        List<int> selectedInstanceIds = null,
+        SubDocumentOptions subDocumentOptions = SubDocumentOptions.None,
+        List<VisualTreeAsset> subDocuments = null,
+        List<TemplateAsset> contextInstances = null)
+    {
+        using var command = GetPooled(source, document, selectedId, selectedSourceDocument,
+            selectedInstanceIds, subDocumentOptions, subDocuments, contextInstances);
+        UICommandQueue.Execute(command);
+    }
+
+    protected override void Init()
+    {
+        base.Init();
+        Document = null;
+        SubDocuments = null;
+        ContextInstances = null;
+        Options = SubDocumentOptions.None;
+        SelectedId = -1;
+        SelectedInstanceIds = null;
+        SelectedSourceDocument = null;
+    }
+
+    public override bool Validate()
+    {
+        if (Document == null || Document.importedWithErrors)
+            return false;
+
+        if (Options != SubDocumentOptions.None)
         {
-            AssetDatabase.OpenAsset(document.GetEntityId());
+            if (SubDocuments == null || SubDocuments.Count == 0)
+                return false;
+            if (Options == SubDocumentOptions.InContext &&
+                (ContextInstances == null || ContextInstances.Count < SubDocuments.Count))
+                return false;
         }
-        finally
+
+        if (SubDocuments != null)
         {
-            SessionState.EraseString(CommandId);
+            foreach (var doc in SubDocuments)
+            {
+                if (doc == null || doc.importedWithErrors)
+                    return false;
+            }
         }
+
+        return true;
     }
 
     /// <summary>

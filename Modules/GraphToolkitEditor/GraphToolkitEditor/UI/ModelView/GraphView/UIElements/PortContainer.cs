@@ -133,6 +133,14 @@ namespace Unity.GraphToolkit.Editor
             this.ReplaceAndCacheClassName(newCountModifier, ref m_CurrentPortCountClassName);
         }
 
+        public void RemovePortsFromRootView()
+        {
+            using var dispose = GetTempPortList(out var uiPorts);
+            foreach (var port in uiPorts)
+            {
+                port.RemoveFromRootView();
+            }
+        }
 
         PooledObject<List<Port>> GetTempPortList(out List<Port> tempPortList)
         {

@@ -18,8 +18,8 @@ namespace UnityEditor
         private static class Styles
         {
             // TreeView column
-            public static readonly GUIContent TransformName = EditorGUIUtility.TrTextContent("Node Name");
-            public static readonly GUIContent EnableName = EditorGUIUtility.TrTextContent("Use", "Maintain Alt/Option key to enable or disable all children");
+            public static readonly GUIContent TransformName = L10n.TextContent("Node Name", null, null, null);
+            public static readonly GUIContent EnableName = L10n.TextContent("Use", "Maintain Alt/Option key to enable or disable all children", null, null);
         }
 
 

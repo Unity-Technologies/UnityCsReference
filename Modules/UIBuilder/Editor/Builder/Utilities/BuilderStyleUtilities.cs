@@ -13,8 +13,8 @@ namespace Unity.UI.Builder
 {
     internal class BuilderStyleUtilities
     {
-        // A display:grid element only lays out as a grid while the feature flag is on; with it off it
-        // falls back to flex, so the editing tools must treat it as flex too.
+        // Grid layout always runs at runtime; the feature flag here only gates whether the Builder's
+        // grid-specific editing affordances (dragger, placement indicator, canvas controls) show up.
         internal static bool IsGridContainer(VisualElement ve)
             => ve != null && ve.resolvedStyle.display == DisplayStyle.Grid && UIToolkitProjectSettings.enableGridLayout;
 
@@ -75,39 +75,7 @@ namespace Unity.UI.Builder
 
         public static string GenerateElementTargetedSelector(VisualElement documentElement)
         {
-            string elementTargetedSelector;
-
-            // if element has name, use that to target it
-            if (!string.IsNullOrEmpty(documentElement?.name))
-            {
-                elementTargetedSelector = $"#{documentElement.name}";
-            }
-            // if element has no name, use its class to target it
-            else if (GetLastClassFromClassList(documentElement, out var className))
-            {
-                elementTargetedSelector = $".{className}";
-            }
-            // if element has no class, use its type to target it
-            else
-            {
-                elementTargetedSelector = documentElement?.typeName;
-            }
-
-            // add its parents name or class or type to the selector
-            if (documentElement?.parent != null && !BuilderSharedStyles.IsDocumentElement(documentElement.parent))
-            {
-                elementTargetedSelector = GenerateElementTargetedSelector(documentElement.parent) + " > " + elementTargetedSelector;
-            }
-
-            return elementTargetedSelector;
-        }
-
-        private static bool GetLastClassFromClassList(VisualElement element, out string className)
-        {
-            className = null;
-            foreach (var c in element.GetClasses())
-                className = c;
-            return className != null;
+            return VisualElementSelectorUtility.GenerateTargetedSelector(documentElement, BuilderSharedStyles.IsDocumentElement);
         }
     }
 }

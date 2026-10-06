@@ -27,32 +27,40 @@ namespace Unity.Localization;
 /// <see cref="StartupSelectors"/>. Call <see cref="InitializeAsync"/> to load locales and select the startup locale.
 /// </remarks>
 /// <example>
-/// <para>Initializes localization and switches to a specific locale.</para>
+/// Initializes localization and switches to a specific locale.
 /// <code source="../../../../Modules/LocalizationRuntime/Tests/UTFTests/Localization.Samples/Settings/InitializeAndSwitchLocaleExample.cs"/>
 /// </example>
 /// <seealso cref="Unity.Localization.ResourceDatabase"/>
 /// <seealso cref="Locale"/>
 /// <seealso cref="LocaleIdentifier"/>
 /// <seealso cref="IStartupLocaleSelector"/>
+[HelpURL("localization/localization-settings-reference")]
 public partial class LocalizationSettings : ScriptableObject
 {
-    [AutoStaticsCleanup] // the wrapper type is reloadable; Initialize() re-registers the active settings
+    // Never cleaned up automatically, for both of the reasons SmartStringsSettings.s_Instance gives, and because PlayModeScope is entered after the editor registers the settings and before Awake.
+    [NoAutoStaticsCleanup]
     static LocalizationSettings s_Instance;
+
+    [AutoStaticsCleanup] // mirrors ResetStaticsForPlayMode()
+    static bool s_WarnedNoSettings;
 
     [VisibleToOtherModules("UnityEditor.LocalizationRuntimeModule")]
     internal static void ResetStaticsForPlayMode()
     {
         SelectedLocaleChanged = null;
         InitializationCompleted = null;
+        s_WarnedNoSettings = false;
         if (s_Instance != null)
         {
             // An initialization run still in flight belongs to the previous session; abandon it.
             s_Instance.m_InitGeneration++;
             s_Instance.m_InitCts?.Cancel();
+            s_Instance.m_PreloadCts?.Cancel();
             s_Instance.m_Initialized = false;
             s_Instance.m_Initializing = false;
             s_Instance.m_Preparing = false;
             s_Instance.m_InitializationRequested = false;
+            s_Instance.m_StallWarned = false;
             s_Instance.CompleteInitWaiters();
             s_Instance.m_SelectedLocaleCode = s_Instance.m_ProjectLocaleCode;
         }
@@ -69,20 +77,31 @@ public partial class LocalizationSettings : ScriptableObject
     [SerializeReference] ResourceDatabase m_ResourceDatabase = new();
     [SerializeReference] List<IStartupLocaleSelector> m_StartupSelectors = new() { new CommandLineLocaleSelector(), new SystemLocaleSelector() };
     [SerializeField] LoadingPreference m_PreferredLoading = LoadingPreference.Asynchronous;
+    [SerializeField] SmartStringsSettings m_SmartStringsSettings;
+    [SerializeField] PreloadBehavior m_PreloadBehavior = PreloadBehavior.PreloadSelectedLocale;
+    [SerializeField] List<TableReference> m_PreloadTables = new();
+    [SerializeField] Apple.AppInfo m_AppleAppInfo = new();
+    [SerializeField] Android.AppInfo m_AndroidAppInfo = new();
 #pragma warning disable CS0649
     [SerializeField] bool m_DeferInitialization;
 #pragma warning restore CS0649
+
+    // Long enough that a slow platform sign-in or save-file load does not trip the warning.
+    const float k_StallWarningSeconds = 30f;
 
     string m_SelectedLocaleCode;
     bool m_Initialized;
     bool m_Initializing;
     bool m_Preparing;
     bool m_InitializationRequested;
+    bool m_StallWarned;
+    float m_StallWarningSeconds = k_StallWarningSeconds;
 #pragma warning disable CS0649
     int m_InitGeneration;
 #pragma warning restore CS0649
     CancellationTokenSource m_InitCts;
-    List<AwaitableCompletionSource> m_InitWaiters;
+    CancellationTokenSource m_PreloadCts;
+    List<InitWaiter> m_InitWaiters;
 
     /// <summary>
     /// Raised after the selected locale changes.
@@ -94,7 +113,7 @@ public partial class LocalizationSettings : ScriptableObject
     /// leaks. To run code once when initialization finishes instead, use <see cref="InitializationCompleted"/>.
     /// </remarks>
     /// <example>
-    /// <para>Refreshes a label whenever the locale changes.</para>
+    /// Refreshes a label whenever the locale changes.
     /// <code source="../../../../Modules/LocalizationRuntime/Tests/UTFTests/Localization.Samples/Settings/SelectedLocaleChangedExample.cs"/>
     /// </example>
     /// <seealso cref="SelectedLocale"/>
@@ -112,7 +131,7 @@ public partial class LocalizationSettings : ScriptableObject
     /// it is static, unsubscribe when your object is destroyed.
     /// </remarks>
     /// <example>
-    /// <para>Runs code once localization is ready.</para>
+    /// Runs code once localization is ready.
     /// <code source="../../../../Modules/LocalizationRuntime/Tests/UTFTests/Localization.Samples/Settings/InitializationCompletedExample.cs"/>
     /// </example>
     /// <seealso cref="InitializeAsync"/>
@@ -145,6 +164,27 @@ public partial class LocalizationSettings : ScriptableObject
     /// <remarks>Convenience accessor for the <see cref="Database"/> of the active <see cref="Instance"/>; resolves localized strings and assets.</remarks>
     public static ResourceDatabase ResourceDatabase => s_Instance != null ? s_Instance.m_ResourceDatabase : null;
 
+    // The resolve paths use this rather than ResourceDatabase: it reports a reference that has something to look up and nothing to look it up in.
+    internal static bool TryGetDatabaseForResolve(bool isEmpty, out ResourceDatabase database)
+    {
+        database = null;
+        if (isEmpty)
+            return false;
+        if (s_Instance != null)
+        {
+            database = s_Instance.m_ResourceDatabase;
+            return database != null;
+        }
+        if (!s_WarnedNoSettings)
+        {
+            s_WarnedNoSettings = true;
+            Debug.LogWarning("A localized value was resolved but no LocalizationSettings is registered, so it and " +
+                "every other localized value resolve as empty. Create the settings in Project Settings > Localization, " +
+                "or check that the project's settings asset still exists.");
+        }
+        return false;
+    }
+
     /// <summary>
     /// The default loading behaviour used by the reference accessors and their change events.
     /// </summary>
@@ -156,7 +196,7 @@ public partial class LocalizationSettings : ScriptableObject
     /// settings instance is registered, this reads as <see cref="LoadingPreference.Asynchronous"/>.
     /// </remarks>
     /// <example>
-    /// <para>Make localized references resolve synchronously by default.</para>
+    /// Make localized references resolve synchronously by default.
     /// <code source="../../../../Modules/LocalizationRuntime/Tests/UTFTests/Localization.Samples/Settings/PreferredLoadingExample.cs"/>
     /// </example>
     /// <seealso cref="LoadingPreference"/>
@@ -164,6 +204,87 @@ public partial class LocalizationSettings : ScriptableObject
     {
         get => s_Instance != null ? s_Instance.m_PreferredLoading : LoadingPreference.Asynchronous;
         set { if (s_Instance != null) s_Instance.m_PreferredLoading = value; }
+    }
+
+    /// <summary>
+    /// The preload behavior the flagged table collections follow.
+    /// </summary>
+    /// <remarks>
+    /// Defaults to <see cref="Unity.Localization.PreloadBehavior.PreloadSelectedLocale"/>. Flag collections for
+    /// preloading in the Editor. The flagged tables load when initialization completes and again after the selected
+    /// locale changes, so their values are available to the synchronous accessors afterwards. Without a registered
+    /// settings instance, this reads as <see cref="Unity.Localization.PreloadBehavior.NoPreloading"/>.
+    /// </remarks>
+    /// <example>
+    /// Preload the flagged tables for the selected locale and its fallbacks.
+    /// <code source="../../../../Modules/LocalizationRuntime/Tests/UTFTests/Localization.Samples/Settings/PreloadBehaviorExample.cs"/>
+    /// </example>
+    /// <seealso cref="Unity.Localization.PreloadBehavior"/>
+    public static PreloadBehavior PreloadBehavior
+    {
+        get => s_Instance != null ? s_Instance.m_PreloadBehavior : PreloadBehavior.NoPreloading;
+        set { if (s_Instance != null) s_Instance.m_PreloadBehavior = value; }
+    }
+
+    internal PreloadBehavior PreloadBehaviorSetting
+    {
+        [VisibleToOtherModules("UnityEditor.LocalizationRuntimeModule")]
+        get => m_PreloadBehavior;
+        [VisibleToOtherModules("UnityEditor.LocalizationRuntimeModule")]
+        set => m_PreloadBehavior = value;
+    }
+
+    // The editor maintains this list; the runtime only reads it.
+    internal List<TableReference> PreloadTables
+    {
+        [VisibleToOtherModules("UnityEditor.LocalizationRuntimeModule")]
+        get => m_PreloadTables;
+    }
+
+    /// <summary>
+    /// The localized values that describe an Apple application in its property list.
+    /// </summary>
+    /// <remarks>
+    /// Holds the application name and the permission prompts the operating system shows while the application is not
+    /// running. Unity reads it when it builds for an Apple platform and writes the values into the generated Xcode
+    /// project, so configure it before building. Without a registered settings instance this reads as null.
+    /// </remarks>
+    /// <example>
+    /// Configure the Apple application name and permission prompts before a build.
+    /// <code source="../../../../Modules/LocalizationRuntime/Tests/UTFTests/Localization.Samples/Platform/AppleAppInfoExample.cs"/>
+    /// </example>
+    /// <seealso cref="Apple.AppInfo"/>
+    /// <seealso cref="Android.AppInfo"/>
+    public static Apple.AppInfo AppleAppInfo => s_Instance != null ? s_Instance.AppleAppInfoSetting : null;
+
+    /// <summary>
+    /// The localized values that describe an Android application in its resources.
+    /// </summary>
+    /// <remarks>
+    /// Holds the application name and the launcher icons the operating system shows while the application is not
+    /// running. Unity reads it when it builds an Android player and writes the values as localized resources, so
+    /// configure it before building. Without a registered settings instance this reads as null.
+    /// </remarks>
+    /// <example>
+    /// Configure the Android application name before a build.
+    /// <code source="../../../../Modules/LocalizationRuntime/Tests/UTFTests/Localization.Samples/Platform/AndroidAppInfoExample.cs"/>
+    /// </example>
+    /// <seealso cref="Android.AppInfo"/>
+    /// <seealso cref="Apple.AppInfo"/>
+    public static Android.AppInfo AndroidAppInfo => s_Instance != null ? s_Instance.AndroidAppInfoSetting : null;
+
+    // Settings serialized before these fields existed carry no value for them, and deserialization does not run
+    // field initializers, so create on first read rather than trusting the initializer.
+    internal Apple.AppInfo AppleAppInfoSetting
+    {
+        [VisibleToOtherModules("UnityEditor.LocalizationRuntimeModule")]
+        get => m_AppleAppInfo ??= new Apple.AppInfo();
+    }
+
+    internal Android.AppInfo AndroidAppInfoSetting
+    {
+        [VisibleToOtherModules("UnityEditor.LocalizationRuntimeModule")]
+        get => m_AndroidAppInfo ??= new Android.AppInfo();
     }
 
     /// <summary>
@@ -201,7 +322,7 @@ public partial class LocalizationSettings : ScriptableObject
     /// demand, so the table windows and inspectors keep working with no game running to ask for a value.
     /// </remarks>
     /// <example>
-    /// <para>Initialize localization only once a save file has loaded.</para>
+    /// Initialize localization only once a save file has loaded.
     /// <code source="../../../../Modules/LocalizationRuntime/Tests/UTFTests/Localization.Samples/Settings/DeferInitializationExample.cs"/>
     /// </example>
     /// <seealso cref="InitializeAsync"/>
@@ -260,18 +381,40 @@ public partial class LocalizationSettings : ScriptableObject
     }
 
     /// <summary>
+    /// The Smart Strings settings whose formatter resolves this project's Smart String entries.
+    /// </summary>
+    /// <remarks>
+    /// Leave this empty to use the project's own Smart Strings settings, which is what most projects want. Assign
+    /// settings here to give localization a formatter of its own, with its own sources and formatters, without
+    /// changing how the rest of the project formats Smart Strings.
+    /// </remarks>
+    /// <seealso cref="GetSmartFormatter"/>
+    public SmartStringsSettings SmartStringsSettings
+    {
+        get => m_SmartStringsSettings;
+        set => m_SmartStringsSettings = value;
+    }
+
+    /// <summary>
     /// Returns the Smart formatter used to format Smart String entries.
     /// </summary>
     /// <remarks>
-    /// Returns the default Smart formatter, <see cref="Smart.Default"/>. The resource database uses this formatter when
-    /// resolving Smart entries.
+    /// Returns the formatter of <see cref="SmartStringsSettings"/> when one is assigned, then the project's Smart
+    /// Strings settings, and falls back to <see cref="Smart.Default"/> when the project has neither. The resource
+    /// database uses this formatter when resolving Smart entries.
     /// </remarks>
-    /// <returns>The default Smart formatter.</returns>
+    /// <returns>The Smart formatter that formats this project's entries.</returns>
     /// <example>
-    /// <para>Formats a value with the active Smart formatter.</para>
+    /// Formats a value with the active Smart formatter.
     /// <code source="../../../../Modules/LocalizationRuntime/Tests/UTFTests/Localization.Samples/Settings/GetSmartFormatterExample.cs"/>
     /// </example>
-    public SmartFormatter GetSmartFormatter() => Smart.Default;
+    /// <seealso cref="SmartStringsSettings"/>
+    public SmartFormatter GetSmartFormatter()
+    {
+        if (m_SmartStringsSettings != null)
+            return m_SmartStringsSettings.SmartFormatter;
+        return Smart.Project ?? Smart.Default;
+    }
 
     /// <summary>
     /// The currently selected locale, or null when none is selected.
@@ -307,7 +450,7 @@ public partial class LocalizationSettings : ScriptableObject
     /// </remarks>
     /// <param name="locale">The locale to register as available.</param>
     /// <example>
-    /// <para>Registers a French locale.</para>
+    /// Registers a French locale.
     /// <code source="../../../../Modules/LocalizationRuntime/Tests/UTFTests/Localization.Samples/Settings/AddLocaleExample.cs"/>
     /// </example>
     public void AddLocale(Locale locale)
@@ -325,7 +468,7 @@ public partial class LocalizationSettings : ScriptableObject
     /// </remarks>
     /// <param name="locale">The locale to remove from the available set.</param>
     /// <example>
-    /// <para>Removes a previously registered locale.</para>
+    /// Removes a previously registered locale.
     /// <code source="../../../../Modules/LocalizationRuntime/Tests/UTFTests/Localization.Samples/Settings/RemoveLocaleExample.cs"/>
     /// </example>
     public void RemoveLocale(Locale locale)
@@ -342,7 +485,7 @@ public partial class LocalizationSettings : ScriptableObject
     /// fails to deserialize. Call this to clean up the list; it does not affect valid locales.
     /// </remarks>
     /// <example>
-    /// <para>Removes null locale entries from the settings.</para>
+    /// Removes null locale entries from the settings.
     /// <code source="../../../../Modules/LocalizationRuntime/Tests/UTFTests/Localization.Samples/Settings/CompactLocalesExample.cs"/>
     /// </example>
     [VisibleToOtherModules("UnityEditor.LocalizationRuntimeModule")]
@@ -359,7 +502,7 @@ public partial class LocalizationSettings : ScriptableObject
     /// <param name="identifier">The identifier of the locale to find.</param>
     /// <returns>The registered locale that matches the identifier, or null when none matches.</returns>
     /// <example>
-    /// <para>Finds a locale by code and selects it.</para>
+    /// Finds a locale by code and selects it.
     /// <code source="../../../../Modules/LocalizationRuntime/Tests/UTFTests/Localization.Samples/Settings/GetLocaleExample.cs"/>
     /// </example>
     public Locale GetLocale(LocaleIdentifier identifier)
@@ -387,7 +530,7 @@ public partial class LocalizationSettings : ScriptableObject
     /// <param name="filter">Returns true for each selector to evaluate, or null to evaluate them all.</param>
     /// <returns>The locale the chain produces, or null when there is no project locale either.</returns>
     /// <example>
-    /// <para>Show the saved language alongside the one the project would otherwise start in.</para>
+    /// Show the saved language alongside the one the project would otherwise start in.
     /// <code source="../../../../Modules/LocalizationRuntime/Tests/UTFTests/Localization.Samples/Settings/EvaluateStartupLocaleExample.cs"/>
     /// </example>
     /// <seealso cref="StartupSelector"/>
@@ -403,6 +546,96 @@ public partial class LocalizationSettings : ScriptableObject
         m_SelectedLocaleCode = code;
         m_ResourceDatabase?.OnLocaleChanged(previous);
         SelectedLocaleChanged?.Invoke(locale);
+        if (m_Initialized)
+            RunPreloadAsync();
+    }
+
+    async void RunPreloadAsync() => await PreloadPassAsync();
+
+    // One pass at a time: a pass started by initialization or a locale change cancels the one before it.
+    async Awaitable PreloadPassAsync()
+    {
+        m_PreloadCts?.Cancel();
+        var cts = m_PreloadCts = new CancellationTokenSource();
+        try
+        {
+            await PreloadFlaggedTablesAsync(cts.Token);
+        }
+        catch (OperationCanceledException)
+        {
+        }
+        catch (Exception e)
+        {
+            Debug.LogException(e);
+        }
+        finally
+        {
+            if (m_PreloadCts == cts)
+                m_PreloadCts = null;
+            cts.Dispose();
+        }
+    }
+
+    async Awaitable PreloadFlaggedTablesAsync(CancellationToken cancellationToken)
+    {
+        if (m_PreloadBehavior == PreloadBehavior.NoPreloading || m_PreloadTables.Count == 0 || m_ResourceDatabase == null)
+            return;
+
+        var locales = new List<Locale>();
+        switch (m_PreloadBehavior)
+        {
+            case PreloadBehavior.PreloadAllLocales:
+                foreach (var locale in m_AvailableLocales)
+                {
+                    if (locale != null && locale.Enabled)
+                        locales.Add(locale);
+                }
+                break;
+            case PreloadBehavior.PreloadSelectedLocaleAndFallbacks:
+                AddWithFallbacks(GetLocale(new LocaleIdentifier(m_SelectedLocaleCode)), locales);
+                break;
+            default:
+                var selected = GetLocale(new LocaleIdentifier(m_SelectedLocaleCode));
+                if (selected != null)
+                    locales.Add(selected);
+                break;
+        }
+
+        var loads = new List<Awaitable<ResourceTable>>();
+        foreach (var locale in locales)
+        {
+            foreach (var reference in m_PreloadTables)
+            {
+                if (!reference.IsEmpty)
+                    loads.Add(m_ResourceDatabase.GetTableAsync(reference, locale, cancellationToken));
+            }
+        }
+        // Every started load is awaited even after a failure, so no pooled awaitable is abandoned.
+        foreach (var load in loads)
+        {
+            try
+            {
+                await load;
+            }
+            catch (OperationCanceledException)
+            {
+            }
+            catch (Exception e)
+            {
+                Debug.LogException(e);
+            }
+        }
+        cancellationToken.ThrowIfCancellationRequested();
+    }
+
+    void AddWithFallbacks(Locale locale, List<Locale> locales)
+    {
+        // The chain can loop, so stop when a locale repeats.
+        while (locale != null && !locales.Contains(locale))
+        {
+            locales.Add(locale);
+            locale = string.IsNullOrEmpty(locale.FallbackCode) ? null : GetLocale(new LocaleIdentifier(locale.FallbackCode));
+        }
     }
 
     /// <summary>
@@ -419,7 +652,7 @@ public partial class LocalizationSettings : ScriptableObject
     /// </remarks>
     /// <returns>An awaitable that completes when initialization has finished, or immediately when it has already run.</returns>
     /// <example>
-    /// <para>Waits for localization to be ready before resolving a string.</para>
+    /// Waits for localization to be ready before resolving a string.
     /// <code source="../../../../Modules/LocalizationRuntime/Tests/UTFTests/Localization.Samples/Settings/InitializeAsyncExample.cs"/>
     /// </example>
     public static Awaitable InitializeAsync()
@@ -433,8 +666,8 @@ public partial class LocalizationSettings : ScriptableObject
 
     // The asynchronous on-demand path. A deferred project starts the run itself, so this waits for it rather than
     // starting one; the caller is already awaiting, so it simply resolves later than it would have.
-    internal static Awaitable EnsureInitializedForUse()
-        => s_Instance != null ? s_Instance.EnsureInitialized(mayStart: false) : AwaitableUtility.Completed();
+    internal static Awaitable EnsureInitializedForUse(CancellationToken cancellationToken = default)
+        => s_Instance != null ? s_Instance.EnsureInitialized(mayStart: false, cancellationToken) : AwaitableUtility.Completed();
 
     // The synchronous on-demand path. It cannot wait, so starting the run is the only way it could return a value,
     // and starting it is exactly what a deferred project asked us not to do.
@@ -456,19 +689,102 @@ public partial class LocalizationSettings : ScriptableObject
     bool Deferred => m_DeferInitialization && Application.isPlaying
         && !m_InitializationRequested && !m_Initialized;
 
-    internal static bool InitializationSettled => s_Instance == null || s_Instance.m_Initialized || s_Instance.m_Preparing;
+    internal static bool InitializationSettled => s_Instance == null || s_Instance.m_Initialized;
 
-    Awaitable EnsureInitialized(bool mayStart)
+    // A read for a named locale does not depend on the startup selection, and the selector being prepared may be the
+    // one reading, so it resolves rather than waiting for the run it is part of.
+    internal static bool InitializationSettledFor(Locale locale)
+        => InitializationSettled || (locale != null && s_Instance.m_Preparing);
+
+    // A synchronous resolve cannot wait, so a deferred project is not offered one: the awaited path waits for
+    // InitializeAsync instead of throwing.
+    internal static bool PreferSyncResolve
+        => s_Instance != null && s_Instance.m_PreferredLoading == LoadingPreference.Synchronous && !s_Instance.Deferred;
+
+    Awaitable EnsureInitialized(bool mayStart, CancellationToken cancellationToken = default)
     {
-        // See InitializationSettled: waiting while the run prepares would deadlock, so resolve with the current state.
-        if (m_Initialized || m_Preparing)
+        if (m_Initialized)
             return AwaitableUtility.Completed();
         // Awaitables are single-await, so every caller gets its own completion source.
-        var waiter = new AwaitableCompletionSource();
-        (m_InitWaiters ??= new List<AwaitableCompletionSource>()).Add(waiter);
+        var waiter = new InitWaiter { Source = new AwaitableCompletionSource() };
+        (m_InitWaiters ??= new List<InitWaiter>()).Add(waiter);
+        if (cancellationToken.CanBeCanceled)
+            waiter.Registration = cancellationToken.Register(() => CancelInitWaiterOnMainThread(waiter));
         if (mayStart || !Deferred)
             StartInitialization();
-        return waiter.Awaitable;
+        else
+            WatchForInitializationStall();
+        return waiter.Source.Awaitable;
+    }
+
+    // Tests shorten the wait; nothing else changes it.
+    internal float StallWarningSeconds
+    {
+        get => m_StallWarningSeconds;
+        set => m_StallWarningSeconds = value;
+    }
+
+    void WatchForInitializationStall()
+    {
+        if (m_StallWarned)
+            return;
+        m_StallWarned = true;
+        WarnIfInitializationStallsAsync();
+    }
+
+    // Nothing can tell a long wait from a stuck one, so say so once and leave the run alone. The deadline is real
+    // time polled per frame rather than WaitForSecondsAsync, because only the next-frame queue keeps the editor's
+    // player loop running while it waits.
+    async void WarnIfInitializationStallsAsync()
+    {
+        var generation = m_InitGeneration;
+        var seconds = m_StallWarningSeconds;
+        try
+        {
+            var deadline = Time.realtimeSinceStartup + seconds;
+            while (Time.realtimeSinceStartup < deadline)
+            {
+                await Awaitable.NextFrameAsync();
+                if (generation != m_InitGeneration || m_Initialized)
+                    return;
+            }
+            Debug.LogWarning(m_InitializationRequested
+                ? $"Localized values have been waiting {seconds:0.##} seconds for localization to initialize. A startup selector's PrepareAsync, or a provider's DiscoverLocalesAsync, has not returned, and neither may await the run it is part of."
+                : $"Localized values have been waiting {seconds:0.##} seconds for LocalizationSettings.InitializeAsync. Defer Initialization is on, so nothing resolves until you call it.");
+        }
+        catch (OperationCanceledException)
+        {
+        }
+        catch (Exception e)
+        {
+            Debug.LogException(e);
+        }
+    }
+
+    // The waiter list belongs to the main thread, and a token can be cancelled from any of them. Awaiting the main
+    // thread resolves without a frame when the caller is already on it.
+    async void CancelInitWaiterOnMainThread(InitWaiter waiter)
+    {
+        try
+        {
+            await Awaitable.MainThreadAsync();
+            CancelInitWaiter(waiter);
+        }
+        catch (Exception e)
+        {
+            Debug.LogException(e);
+        }
+    }
+
+    // One caller giving up leaves the run alone: everything else waiting on it still needs it to finish.
+    void CancelInitWaiter(InitWaiter waiter)
+    {
+        if (waiter.Done)
+            return;
+        waiter.Done = true;
+        waiter.Registration.Dispose();
+        waiter.Source.TrySetCanceled();
+        m_InitWaiters?.Remove(waiter);
     }
 
     void StartInitialization()
@@ -478,6 +794,9 @@ public partial class LocalizationSettings : ScriptableObject
             return;
         m_Initializing = true;
         RunInitializeAsync();
+        // The run finishes inline unless a provider or a selector yields, so only one still going needs watching.
+        if (!m_Initialized)
+            WatchForInitializationStall();
     }
 
     async void RunInitializeAsync()
@@ -514,6 +833,9 @@ public partial class LocalizationSettings : ScriptableObject
                 foreach (var selector in m_StartupSelectors)
                     (selector as IStartupLocaleInitialize)?.PostInitialize(this);
             }
+            await PreloadPassAsync();
+            if (generation != m_InitGeneration)
+                return;
             InitializationCompleted?.Invoke();
         }
         catch (OperationCanceledException)
@@ -604,7 +926,20 @@ public partial class LocalizationSettings : ScriptableObject
         if (waiters == null)
             return;
         foreach (var waiter in waiters)
-            waiter.SetResult();
+        {
+            if (waiter.Done)
+                continue;
+            waiter.Done = true;
+            waiter.Registration.Dispose();
+            waiter.Source.TrySetResult();
+        }
+    }
+
+    sealed class InitWaiter
+    {
+        public AwaitableCompletionSource Source;
+        public CancellationTokenRegistration Registration;
+        public bool Done;
     }
 
     void OnEnable()

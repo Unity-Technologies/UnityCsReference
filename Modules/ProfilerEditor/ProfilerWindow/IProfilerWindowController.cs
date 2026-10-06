@@ -23,7 +23,6 @@ namespace UnityEditorInternal
         long selectedFrameIndex { get; set; }
         ProfilerModule selectedModule { get; set; }
         ProfilerModule GetProfilerModuleByType(Type T);
-        ProfilerModule GetJobsProfilerModule();
 
         event Action frameDataViewAboutToBeDisposed;
 

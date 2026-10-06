@@ -156,6 +156,7 @@ namespace UnityEditor
         ///<summary>Nintendo Switch™ 2 target.</summary>
         Switch2 = 37,
 
+        [Obsolete("Kepler has been removed in 6000.7")]
         [ExcludeFromDocs]
         Kepler = 38,
     }

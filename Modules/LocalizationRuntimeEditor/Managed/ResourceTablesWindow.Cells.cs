@@ -29,7 +29,6 @@ partial class ResourceTablesWindow
             Tags = cell.Q("tags"),
             MetadataButton = cell.Q<Button>("metadata-button")
         };
-        LocIcons.Apply(refs.MetadataButton, LocIcons.Metadata);
         cell.userData = refs;
         return cell;
     }
@@ -38,7 +37,6 @@ partial class ResourceTablesWindow
     {
         var cell = m_ValueCellTemplate.Instantiate();
         var refs = new ValueCellRefs { Field = cell.Q("field"), MetadataButton = cell.Q<Button>("metadata-button") };
-        LocIcons.Apply(refs.MetadataButton, LocIcons.Metadata);
         cell.userData = refs;
         return cell;
     }
@@ -294,11 +292,13 @@ partial class ResourceTablesWindow
 
     void ConfigureMetadataButton(Button button, MetadataCollection collection, Object owner, Func<string> metadataPath, MetadataType target, string title)
     {
+        var hasData = collection != null && collection.HasData;
         button.style.display = DisplayStyle.Flex;
         button.tooltip = L10n.Tr("Metadata", null);
-        button.EnableInClassList(LocClasses.LocIconBtnActive, collection != null && collection.HasData);
-        button.clickable = new Clickable(() => MetadataPopup.Show(button.worldBound, title, owner, metadataPath?.Invoke(), target,
-            () => { if (owner != null) EditorUtility.SetDirty(owner); RebuildTree(); }));
+        LocIcons.Apply(button, hasData ? LocIcons.MetadataOn : LocIcons.Metadata);
+        button.EnableInClassList(LocClasses.LocIconBtnActive, hasData);
+        button.clickable = new Clickable(() => MetadataPopup.Show(button.worldBound, rootVisualElement, title, owner, metadataPath?.Invoke(), target,
+            () => { if (owner != null) EditorUtility.SetDirty(owner); }));
     }
 
     VisualElement BuildVariantCell(ResourceTable table, VariantRow variantRow)

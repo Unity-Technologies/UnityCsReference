@@ -187,6 +187,7 @@ namespace UnityEngine.UIElements
             private BaseRuntimePanel m_RuntimePanel;
 
             internal bool isInitialized => m_RuntimePanel != null;
+            internal BaseRuntimePanel panelIfInitialized => m_RuntimePanel;
             internal bool isTransient { get; set; }
 
             /// <summary>
@@ -300,12 +301,28 @@ namespace UnityEngine.UIElements
         [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
         internal void CacheDisplayRectAndScale()
         {
-            m_TargetRect = GetDisplayRect(); // Expensive to evaluate, so cache
+            // A panel driven manually (tests/tooling) keeps the values from SetResolvedTargetAndScale.
+            var panel = m_PanelAccess.panelIfInitialized;
 
-            if (renderMode == PanelRenderMode.WorldSpace)
-                m_ResolvedScale = 1.0f; // No panel scaling for world-space
-            else
-                m_ResolvedScale = PanelSettingsUtility.ResolveScale(this, m_TargetRect.size);
+            if (panel == null || !panel.overrideSizeForTests)
+                m_TargetRect = GetDisplayRect(); // Expensive to evaluate, so cache
+
+            if (panel == null || !panel.overrideScalingForTests)
+            {
+                if (renderMode == PanelRenderMode.WorldSpace)
+                    m_ResolvedScale = 1.0f; // No panel scaling for world-space
+                else
+                    m_ResolvedScale = PanelSettingsUtility.ResolveScale(this, m_TargetRect.size);
+            }
+        }
+
+        // Pins the resolved target rect and scale; only takes effect while the panel's
+        // overrideSizeForTests/overrideScalingForTests are true, otherwise the
+        // next update recomputes them.
+        internal void SetResolvedTargetAndScale(Vector2 size, float scale = 1f)
+        {
+            m_TargetRect = new Rect(Vector2.zero, size);
+            m_ResolvedScale = scale;
         }
 
         [SerializeField]
@@ -747,10 +764,16 @@ namespace UnityEngine.UIElements
         }
 
         [AutoStaticsCleanupOnCodeReload]
+        // Editor-side implementation slot: EditorDelegateRegistration.Initialize() runs on every code
+        // load and reinstalls it, so the value cleared on reload is back before anything reads it.
+        [IgnoreForUAL0015("Editor implementation reinstalled on every code load by EditorDelegateRegistration.Initialize()")]
         internal static Action<BaseRuntimePanel> CreateRuntimePanelDebug;
 
-        [VisibleToOtherModules("UnityEditor.VectorGraphicsModule")]
+        [VisibleToOtherModules("UnityEditor.VectorGraphicsModule", "UnityEditor.Android.Extensions")]
         [AutoStaticsCleanupOnCodeReload]
+        // Editor-side implementation slot: EditorDelegateRegistration.Initialize() runs on every code
+        // load and reinstalls it, so the value cleared on reload is back before anything reads it.
+        [IgnoreForUAL0015("Editor implementation reinstalled on every code load by EditorDelegateRegistration.Initialize()")]
         internal static Func<ThemeStyleSheet> GetOrCreateDefaultTheme;
         internal static Func<int, IGameViewRenderInfo> GetGameViewRenderInfo
         {
@@ -758,8 +781,14 @@ namespace UnityEngine.UIElements
             set => GameViewRenderInfoQuery.getImplementation = value;
         }
         [AutoStaticsCleanupOnCodeReload]
+        // Editor-side implementation slot: EditorDelegateRegistration.Initialize() runs on every code
+        // load and reinstalls it, so the value cleared on reload is back before anything reads it.
+        [IgnoreForUAL0015("Editor implementation reinstalled on every code load by EditorDelegateRegistration.Initialize()")]
         internal static Action<PanelSettings> SetPanelSettingsAssetDirty;
         [AutoStaticsCleanupOnCodeReload] // re-registered by EditorDelegateRegistration on load
+        // Editor-side implementation slot: EditorDelegateRegistration.Initialize() runs on every code
+        // load and reinstalls it, so the value cleared on reload is back before anything reads it.
+        [IgnoreForUAL0015("Editor implementation reinstalled on every code load by EditorDelegateRegistration.Initialize()")]
         internal static Action RequestEditorPlayerLoopUpdate;
 
         internal static void SetupLiveReloadPanelTrackers(bool isLiveReloadOn)
@@ -793,13 +822,13 @@ namespace UnityEngine.UIElements
 
         internal BaseRuntimePanel panel
         {
-            [VisibleToOtherModules("UnityEditor.VectorGraphicsModule")]
+            [VisibleToOtherModules("UnityEditor.VectorGraphicsModule", "UnityEditor.Android.Extensions")]
             get { return m_PanelAccess.panel; }
         }
 
         internal bool isInitialized => m_PanelAccess?.isInitialized ?? false;
 
-        [VisibleToOtherModules("UnityEditor.VectorGraphicsModule")]
+        [VisibleToOtherModules("UnityEditor.VectorGraphicsModule", "UnityEditor.Android.Extensions")]
         internal bool isTransient { get => m_PanelAccess.isTransient; set => m_PanelAccess.isTransient = value; }
 
         /// <summary>
@@ -900,9 +929,10 @@ namespace UnityEngine.UIElements
         {
             // We assume users will want their UIDocument to look as closely as possible to what they look like in the UIBuilder.
             // This is no guarantee, but it's the best we can do at the moment.
-            // One-time authoring default from editor Screen.dpi (not game-view runtime DPI from CacheDisplayRectAndScale).
-            referenceDpi = Screen.dpi;
             scaleMode = PanelScaleMode.ConstantPhysicalSize;
+            // Seed from the same source ResolveScale divides by; a different quantity resolves to a
+            // fractional scale, which puts hairlines between device pixels.
+            referenceDpi = GetScreenDpiForScaleResolution();
             renderMode = PanelRenderMode.ScreenSpaceOverlay;
             colliderUpdateMode = ColliderUpdateMode.MatchBoundingBox;
             pixelsPerUnit = 100.0f;
@@ -982,9 +1012,6 @@ namespace UnityEngine.UIElements
 
             if (themeUss != null)
             {
-
-                // Ensure that isDefaultStyleSheet is set to true even though isDefaultStyleSheet is defaulted to true for ThemeStyleSheet.
-                themeUss.isDefaultStyleSheet = true;
                 root?.styleSheets.Add(themeUss);
             }
             else
@@ -1135,6 +1162,13 @@ namespace UnityEngine.UIElements
                 m_AttachedPanelComponentsList.RemoveFromListAndFromVisualTree(panelComponent);
             }
 
+            // A prefab-stage instance of a screen-space panel must not attach while playing: it would draw
+            // over the live UI and steal its input. World-space panels keep attaching so prefab contents
+            // stay visible while editing.
+            if (Application.isPlaying && renderMode != PanelRenderMode.WorldSpace &&
+                (UIDocument.IsGameObjectInOpenPrefabStage?.Invoke(panelComponent.gameObject) ?? false))
+                return;
+
             m_AttachedPanelComponentsList.AddToListAndToVisualTree(panelComponent, visualTree, false);
 
             UITKAccessibilityBridge.OnPanelComponentAttached(panelComponent);
@@ -1160,6 +1194,9 @@ namespace UnityEngine.UIElements
         private PanelRenderMode m_OldRenderMode;
         private bool m_IsLoaded = false;
         [AutoStaticsCleanupOnCodeReload]
+        // Editor-side implementation slot: EditorDelegateRegistration.Initialize() runs on every code
+        // load and reinstalls it, so the value cleared on reload is back before anything reads it.
+        [IgnoreForUAL0015("Editor implementation reinstalled on every code load by EditorDelegateRegistration.Initialize()")]
         internal static Action<PanelSettings> s_AssignICUData;
 
         private void OnValidate()

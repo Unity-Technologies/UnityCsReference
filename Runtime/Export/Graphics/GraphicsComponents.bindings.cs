@@ -10,17 +10,23 @@ using UnityEngine.Rendering;
 
 namespace UnityEngine
 {
+    [System.Obsolete("Occlusion Portal is deprecated. Use GPU Occlusion Culling instead. #from(6000.7)", false)]
     [global::UnityEngine.NativeClass("OcclusionPortal", PersistentTypeId = 41)]
     [NativeHeader("Runtime/Camera/OcclusionPortal.h")]
     public sealed partial class OcclusionPortal : Component
     {
+        internal OcclusionPortal(global::UnityEngine.EntityId id) : base(id) {}
+        public OcclusionPortal() {}
         [NativeProperty("IsOpen")] public extern bool open { get; set; }
     }
 
+    [System.Obsolete("Occlusion Area is deprecated. Use GPU Occlusion Culling instead. #from(6000.7)", false)]
     [global::UnityEngine.NativeClass("OcclusionArea", PersistentTypeId = 192)]
     [NativeHeader("Runtime/Camera/OcclusionArea.h")]
     public sealed partial class OcclusionArea : Component
     {
+        internal OcclusionArea(global::UnityEngine.EntityId id) : base(id) {}
+        public OcclusionArea() {}
         public extern Vector3 center { get; set; }
         public extern Vector3 size { get; set; }
     }
@@ -29,12 +35,13 @@ namespace UnityEngine
     [NativeHeader("Runtime/Camera/Flare.h")]
     public sealed partial class Flare : Object
     {
+        internal Flare(global::UnityEngine.EntityId id) : base(id) {}
         public Flare()
         {
-            Internal_Create(this);
+            SetEntityIdFromConstructor(Internal_Create());
         }
 
-        extern static void Internal_Create([Writable] Flare self);
+        extern static EntityId Internal_Create();
 
         [System.Serializable]
         [UsedByNativeCode]
@@ -81,6 +88,8 @@ namespace UnityEngine
     [SRPReplacementComponentAttribute("UnityEngine.Rendering.LensFlareComponentSRP", "Lens Flare SRP" )]
     public sealed partial class LensFlare : Behaviour
     {
+        internal LensFlare(global::UnityEngine.EntityId id) : base(id) {}
+        public LensFlare() {}
         extern public float brightness    { get; set; }
         extern public float fadeSpeed     { get; set; }
         extern public Color color         { get; set; }
@@ -95,6 +104,8 @@ namespace UnityEngine
     [SRPReplacementComponentAttribute("UnityEngine.Rendering.Universal.DecalProjector", "Decal Projector SRP")]
     public sealed partial class Projector : Behaviour
     {
+        internal Projector(global::UnityEngine.EntityId id) : base(id) {}
+        public Projector() {}
         extern public float nearClipPlane    { get; set; }
         extern public float farClipPlane     { get; set; }
         extern public float fieldOfView      { get; set; }
@@ -110,6 +121,8 @@ namespace UnityEngine
     [NativeHeader("Runtime/Camera/Skybox.h")]
     public sealed partial class Skybox : Behaviour
     {
+        internal Skybox(global::UnityEngine.EntityId id) : base(id) {}
+        public Skybox() {}
         extern public Material material { get; set; }
     }
 
@@ -118,6 +131,8 @@ namespace UnityEngine
     [NativeHeader("Runtime/Graphics/Mesh/MeshFilter.h")]
     public sealed partial class MeshFilter : Component
     {
+        internal MeshFilter(global::UnityEngine.EntityId id) : base(id) {}
+        public MeshFilter() {}
         [RequiredByNativeCode]  // MeshFilter is used in the VR Splash screen.
         private void DontStripMeshFilter() {}
 
@@ -132,6 +147,7 @@ namespace UnityEngine
     [SRPReplacementComponentAttribute("UnityEngine.Rendering.LensFlareComponentSRP", "Lens Flare SRP")]
     internal sealed partial class Halo : Behaviour
     {
+        internal Halo(global::UnityEngine.EntityId id) : base(id) {}
         extern public float size { get; set; }
         extern public Color color { get; set; }
     }

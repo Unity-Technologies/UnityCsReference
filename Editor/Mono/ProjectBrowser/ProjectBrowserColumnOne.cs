@@ -485,8 +485,11 @@ namespace UnityEditor
 
     internal class ProjectBrowserColumnOneTreeViewDragging : AssetsTreeViewDragging
     {
-        public ProjectBrowserColumnOneTreeViewDragging(TreeViewController<EntityId> treeView) : base(treeView)
+        readonly ProjectBrowser m_ProjectBrowser;
+
+        public ProjectBrowserColumnOneTreeViewDragging(TreeViewController<EntityId> treeView, ProjectBrowser projectBrowser) : base(treeView)
         {
+            m_ProjectBrowser = projectBrowser;
         }
 
         public override void StartDrag(TreeViewItem<EntityId> draggedItem, List<EntityId> draggedItemIDs)
@@ -500,7 +503,9 @@ namespace UnityEditor
                     return;
             }
 
-            ProjectWindowUtil.StartDrag(draggedItem.id, draggedItemIDs);
+            // The owner marks this as a Project window drag, which is what earns a native preview.
+            var previewData = new DragAndDrop.PreviewData { ownerId = m_ProjectBrowser.GetEntityId() };
+            ProjectWindowUtil.StartDrag(draggedItem.id, draggedItemIDs, previewData);
         }
 
         public override DragAndDropVisualMode DoDrag(TreeViewItem<EntityId> parentItem, TreeViewItem<EntityId> targetItem, bool perform, DropPosition dropPos)

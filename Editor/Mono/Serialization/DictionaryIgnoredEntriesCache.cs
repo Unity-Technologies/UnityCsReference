@@ -82,7 +82,7 @@ namespace UnityEngine
 
         // Main-thread only. Resources.IsInstanceLoaded resolves via Object::IDToPointer, which is the
         // non-thread-safe variant and DebugAsserts on the main thread (see Runtime/BaseClasses/BaseObject.h
-        // and Runtime/BaseClasses/EntityIdStore.cpp::GetNativePtr). All current call sites
+        // and Entities/EntityIdStore.cpp::GetNativePtr). All current call sites
         // (ObjectChangeEvents.changesPublished, EditorSceneManager.sceneClosed, SceneManager.sceneUnloaded)
         // fire on the main thread.
         public int PruneUnloadedHosts()

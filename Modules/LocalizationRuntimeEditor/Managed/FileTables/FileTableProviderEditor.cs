@@ -17,7 +17,7 @@ namespace Unity.Localization.Editor;
 /// files are never generated and its tables do not resolve in a player.
 /// </remarks>
 /// <example>
-/// <para>Register a writer for a custom file format.</para>
+/// Register a writer for a custom file format.
 /// <code source="../../../../Modules/LocalizationRuntimeEditor/Tests/UTFTests/Editor/Localization.Samples/CustomFileTableProviderEditorExample.cs"/>
 /// </example>
 /// <seealso cref="ITableFileWriter"/>

@@ -2,7 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: UIToolkitAuthoringFramework not yet converted
 using System;
 using System.Collections.Generic;
 using System.Reflection;
@@ -41,6 +40,7 @@ sealed partial class VisualElementComponentsInspectorElement : VisualElement
     const string k_EntryUssClassName = k_UssClassName + "__entry";
     const string k_RemoveButtonUssClassName = k_UssClassName + "__remove-button";
     const string k_DataFoldoutUssClassName = k_UssClassName + "__data-foldout";
+    const string k_StyleSheet = "UIToolkitAuthoring/Inspector/Controls/VisualElementComponentsInspectorElement.uss";
 
     static readonly string k_AddComponentText = L10n.Tr("Add Component", null);
     static readonly string k_RemoveText = L10n.Tr("Remove", null);
@@ -93,6 +93,7 @@ sealed partial class VisualElementComponentsInspectorElement : VisualElement
     public VisualElementComponentsInspectorElement()
     {
         AddToClassList(k_UssClassName);
+        styleSheets.Add(EditorGUIUtility.Load(k_StyleSheet) as StyleSheet);
 
         m_ComponentsContainer = new VisualElement();
         Add(m_ComponentsContainer);
@@ -149,6 +150,10 @@ sealed partial class VisualElementComponentsInspectorElement : VisualElement
                 }
 
                 var componentType = description.serializedDataType.DeclaringType;
+                // A [HideInInspector] component can still be authored in UXML text; the UI never shows it.
+                if (VisualElementComponentVisibility.IsHidden(componentType))
+                    continue;
+
                 var entry = new ComponentEntryView(m_Target, description, m_IsReadOnly,
                     CanEdit ? () => RemoveComponent(componentType) : null);
                 m_Entries.Add(entry);
@@ -197,7 +202,7 @@ sealed partial class VisualElementComponentsInspectorElement : VisualElement
                 continue;
 
             var componentType = description.serializedDataType?.DeclaringType;
-            if (componentType == null)
+            if (componentType == null || VisualElementComponentVisibility.IsHidden(componentType))
                 continue;
 
             // [RequiresElementOfType]: only offer components whose owner constraint the element satisfies.
@@ -362,6 +367,11 @@ sealed partial class VisualElementComponentsInspectorElement : VisualElement
                 return;
             }
 
+            var bindingPath = view.Context.serializedBasePath;
+
+            VisualElementAttributesInspectorElement.DiscardStaleRootField(
+                ref m_RootPropertyField, args, bindingPath);
+
             if (m_RootPropertyField == null)
             {
                 m_RootPropertyField = new PropertyField();
@@ -373,7 +383,7 @@ sealed partial class VisualElementComponentsInspectorElement : VisualElement
                 m_AttributesView.Add(m_RootPropertyField);
             }
 
-            m_RootPropertyField.bindingPath = view.Context.serializedBasePath;
+            m_RootPropertyField.bindingPath = bindingPath;
         }
 
         void HideDataFoldoutHeader()
@@ -385,7 +395,6 @@ sealed partial class VisualElementComponentsInspectorElement : VisualElement
             if (dataFoldout == null)
                 return;
 
-            dataFoldout.value = true;
             dataFoldout.AddToClassList(k_DataFoldoutUssClassName);   // header hide + content margin live in USS
         }
 
@@ -395,4 +404,3 @@ sealed partial class VisualElementComponentsInspectorElement : VisualElement
         }
     }
 }
-#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

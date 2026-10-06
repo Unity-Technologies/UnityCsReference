@@ -381,6 +381,17 @@ namespace Unity.U2D.Physics
         public readonly float currentMotorForce { get => DistanceJoint_GetCurrentMotorForce(this); }
 
         /// <summary>
+        /// The force the spring applied along the joint during the last simulation step, usually in newtons.
+        /// A positive value pushes the two bodies apart and a negative value pulls them together.
+        /// This is zero when the spring is disabled.
+        /// Unlike the current constraint force, it excludes the force from the distance limits and the motor.
+        /// </summary>
+        /// <remarks>
+        /// See <see cref="enableSpring"/> and <see cref="currentConstraintForce"/>.
+        /// </remarks>
+        public readonly float currentSpringForce { get => DistanceJoint_GetCurrentSpringForce(this); }
+
+        /// <summary>
         /// Enable/Disable the joint distance limit.
         /// </summary>
         public readonly bool enableLimit { get => DistanceJoint_GetEnableLimit(this); set => DistanceJoint_SetEnableLimit(this, value); }

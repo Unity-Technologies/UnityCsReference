@@ -2,7 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: Lighting not yet converted
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -537,17 +536,17 @@ namespace UnityEditor
 
         internal static partial class Styles
         {
-            public static readonly GUIContent showWireframe = EditorGUIUtility.TrTextContent("Show Wireframe", "Show the tetrahedron wireframe visualizing the blending between probes.");
-            public static readonly GUIContent selectedProbePosition = EditorGUIUtility.TrTextContent("Selected Probe Position", "The local position of this probe relative to the parent group.");
-            public static readonly GUIContent addProbe = EditorGUIUtility.TrTextContent("Add Probe", "Add a Light Probe to the Light Probe Group.");
-            public static readonly GUIContent deleteSelected = EditorGUIUtility.TrTextContent("Delete Selected", "Delete the selected Light Probes from the Light Probe Group.");
-            public static readonly GUIContent selectAll = EditorGUIUtility.TrTextContent("Select All", "Select all Light Probes in the Light Probe Group.");
-            public static readonly GUIContent duplicateSelected = EditorGUIUtility.TrTextContent("Duplicate Selected", "Duplicate the selected Light Probes.");
-            public static readonly GUIContent performDeringing = EditorGUIUtility.TrTextContent("Remove Ringing", "When enabled, removes visible overshooting often observed as ringing on objects affected by intense lighting at the expense of reduced contrast.");
-            public static readonly GUIContent enterEditMode = EditorGUIUtility.TrTextContent("Edit Light Probe Positions", "Change positions for Light Probes.");
-            public static readonly GUIContent exitEditMode = EditorGUIUtility.TrTextContent("Exit Light Probe Editing", "Exit Light Probe Positions Editing.");
-            public static readonly GUIContent toolIcon = EditorGUIUtility.TrIconContent("EditCollider", "Edit Light Probe Group.\n\nUse the overlay to add Light Probes and modify probe positions.");
-            public static readonly GUIContent editModeInfoBox = EditorGUIUtility.TrTextContentWithIcon("Use the <b>Edit Light Probe Group Tool</b> in the <b>Scene Tools Overlay</b> to edit Light Probe positions.", MessageType.Info);
+            public static readonly GUIContent showWireframe = L10n.TextContent("Show Wireframe", "Show the tetrahedron wireframe visualizing the blending between probes.", null, null);
+            public static readonly GUIContent selectedProbePosition = L10n.TextContent("Selected Probe Position", "The local position of this probe relative to the parent group.", null, null);
+            public static readonly GUIContent addProbe = L10n.TextContent("Add Probe", "Add a Light Probe to the Light Probe Group.", null, null);
+            public static readonly GUIContent deleteSelected = L10n.TextContent("Delete Selected", "Delete the selected Light Probes from the Light Probe Group.", null, null);
+            public static readonly GUIContent selectAll = L10n.TextContent("Select All", "Select all Light Probes in the Light Probe Group.", null, null);
+            public static readonly GUIContent duplicateSelected = L10n.TextContent("Duplicate Selected", "Duplicate the selected Light Probes.", null, null);
+            public static readonly GUIContent performDeringing = L10n.TextContent("Remove Ringing", "When enabled, removes visible overshooting often observed as ringing on objects affected by intense lighting at the expense of reduced contrast.", null, null);
+            public static readonly GUIContent enterEditMode = L10n.TextContent("Edit Light Probe Positions", "Change positions for Light Probes.", null, null);
+            public static readonly GUIContent exitEditMode = L10n.TextContent("Exit Light Probe Editing", "Exit Light Probe Positions Editing.", null, null);
+            public static readonly GUIContent toolIcon = L10n.IconContent("EditCollider", "Edit Light Probe Group.\n\nUse the overlay to add Light Probes and modify probe positions.", null);
+            public static readonly GUIContent editModeInfoBox = L10n.TextContentWithIcon("Use the <b>Edit Light Probe Group Tool</b> in the <b>Scene Tools Overlay</b> to edit Light Probe positions.", MessageType.Info, null);
             // This is a property due to [UUM-78837](https://jira.unity3d.com/browse/UUM-78837)
             // Create GUIStyle lazily on request rather than on static class initialization where the EditorStyles.helpBox may not be initialized yet.
             public static GUIStyle editModeInfoBoxStyle
@@ -783,4 +782,3 @@ namespace UnityEditor
         }
     }
 }
-#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

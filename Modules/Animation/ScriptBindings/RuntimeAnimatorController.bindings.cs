@@ -29,6 +29,7 @@ namespace UnityEngine
     {
         ///<exclude />
         protected RuntimeAnimatorController() {}
+        protected internal RuntimeAnimatorController(global::UnityEngine.EntityId id) : base(id) {}
 
         ///<summary>Retrieves all <see cref="AnimationClip" /> used by the controller.</summary>
         extern public AnimationClip[] animationClips { get; }

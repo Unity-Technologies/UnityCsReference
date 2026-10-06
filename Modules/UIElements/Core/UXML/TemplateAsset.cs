@@ -18,6 +18,8 @@ namespace UnityEngine.UIElements
         internal const string k_AttributeOverrideElementNameAttributeName = "element-name";
         internal const string k_DifferentTemplateWarning = $"{nameof(TemplateAsset)} previously linked to a different {nameof(VisualTreeAsset)}.";
         internal const string k_LostTemplateError = $"{nameof(TemplateAsset)} previously had a template registration that was lost.";
+        internal const string k_CircularTemplateErrorFormat = "Circular template reference: '{0}' instantiates itself through '{1}'.";
+        internal const string k_CircularTemplateLabelFormat = "Circular Template: '{0}'";
 
         [SerializeField]
         private string m_TemplateAlias;
@@ -170,6 +172,13 @@ namespace UnityEngine.UIElements
                     tc.Add(new Label($"Unknown Template: '{tc.templateId}'"));
                     return tc;
                 }
+            }
+
+            if (VisualTreeAsset.IsCloning(tc.templateSource))
+            {
+                Debug.LogErrorFormat(cc.visualTreeAsset, k_CircularTemplateErrorFormat, tc.templateSource.name, tc.templateId);
+                tc.Add(new Label(string.Format(k_CircularTemplateLabelFormat, tc.templateId)));
+                return tc;
             }
 
             // Gather the overrides in hierarchical order where overrides coming from the parent VisualTreeAsset will appear in the lists below before the overrides coming from the nested

@@ -2,7 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: HeadlessRuntime not yet converted
 using System;
 using System.Collections.Generic;
 using UnityEngine;
@@ -37,6 +36,31 @@ interface IPlayModeControllerItem
     IPlayModeControllerItem WithDecoratorSettings<TDecorator, TSettings>(TSettings settings)
         where TDecorator : PlayModeControllerDecorator<TSettings>
         where TSettings : struct;
+
+    static IPlayModeControllerItem FindByControllerType(IEnumerable<IPlayModeControllerItem> items, Type controllerType)
+    {
+        if (items == null)
+            return null;
+
+        foreach (var item in items)
+        {
+            if (item != null && item.GetInstanceType() == controllerType)
+                return item;
+        }
+
+        return null;
+    }
+
+    static IPlayModeControllerItem Create(Type controllerType)
+    {
+        var settingsType = PlayModeController.GetSettingsType(controllerType);
+        var itemType = typeof(PlayModeControllerItem<,>).MakeGenericType(controllerType, settingsType);
+        // The (name, settings) constructor is the only one that generates an id, and the id is the
+        // key the per-user settings store is written under.
+        var newItem = (IPlayModeControllerItem)Activator.CreateInstance(
+            itemType, controllerType.Name, Activator.CreateInstance(settingsType));
+        return newItem;
+    }
 }
 
 [Serializable]
@@ -175,7 +199,7 @@ struct PlayModeControllerItem<TController, TSettings> : IPlayModeControllerItem
 
         foreach (var decoratorType in decoratorTypes)
         {
-            if (!existingDecoratorTypes.Contains(decoratorType) && PlayModeControllerDecorator.IsDecoratorWithSettings(decoratorType))
+            if (!existingDecoratorTypes.Contains(decoratorType) && PlayModeController.IsControllerWithSettings(decoratorType))
             {
                 m_Decorators.Add(IDecoratorItem.Create(decoratorType));
             }
@@ -220,4 +244,3 @@ struct PlayModeControllerItem<TController, TSettings> : IPlayModeControllerItem
         return copy;
     }
 }
-#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

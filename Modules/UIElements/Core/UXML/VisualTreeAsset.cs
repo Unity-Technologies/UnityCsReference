@@ -92,10 +92,12 @@ namespace UnityEngine.UIElements
         private static readonly Dictionary<string, VisualElement> s_TemporarySlotInsertionPoints = new Dictionary<string, VisualElement>();
         [NoAutoStaticsCleanup]
         private static readonly List<int> s_VeaIdsPath = new List<int>();
+        [NoAutoStaticsCleanup]
+        private static readonly HashSet<VisualTreeAsset> s_CloningAssets = new HashSet<VisualTreeAsset>();
 
         [Serializable]
-        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
-        internal partial struct UsingEntry
+        [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
+        internal partial struct UsingEntry : IEquatable<UsingEntry>
         {
             [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
             [NoAutoStaticsCleanup]
@@ -119,6 +121,11 @@ namespace UnityEngine.UIElements
                 this.alias = alias;
                 this.path = null;
                 this.asset = asset;
+            }
+
+            public bool Equals(UsingEntry other)
+            {
+                return alias == other.alias && path == other.path && asset == other.asset;
             }
         }
 
@@ -191,7 +198,7 @@ namespace UnityEngine.UIElements
 
         internal List<UsingEntry> usings
         {
-            [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
+            [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
             get => m_Usings;
         }
 
@@ -370,6 +377,9 @@ namespace UnityEngine.UIElements
             foreach (var asset in DepthFirstTraversal())
             {
                 asset.SetVisualTreeAssetWithOutNotify(this);
+
+                if (asset is VisualElementAsset vea)
+                    vea.ResetCachedClassList();
             }
         }
 
@@ -577,6 +587,8 @@ namespace UnityEngine.UIElements
             }
         }
 
+        internal static bool IsCloning(VisualTreeAsset asset) => s_CloningAssets.Contains(asset);
+
         internal void CloneTree(VisualElement target, CreationContext cc, VisualElementAssetReferenceTable.DocumentNode parentAuthoringNode)
         {
             if (target == null)
@@ -586,38 +598,47 @@ namespace UnityEngine.UIElements
             if (null == m_VisualTree)
                 return;
 
-            var root = m_VisualTree;
-            AssignClassListFromAssetToElement(root, target);
-            AssignStyleSheetFromAssetToElement(root, target);
-
-            for (var i = 0; i < root.childCount; ++i)
+            var addedToCloningSet = s_CloningAssets.Add(this);
+            try
             {
-                // Assumes m_VisualElementAssets only contain VisualElementAsset.
-                var child = root[i] as VisualElementAsset;
+                var root = m_VisualTree;
+                AssignClassListFromAssetToElement(root, target);
+                AssignStyleSheetFromAssetToElement(root, target);
 
-                var isTemplate = false;
-                if (child is TemplateAsset)
+                for (var i = 0; i < root.childCount; ++i)
                 {
-                    cc.veaIdsPath.Add(child.id);
-                    isTemplate = true;
+                    // Assumes m_VisualElementAssets only contain VisualElementAsset.
+                    var child = root[i] as VisualElementAsset;
+
+                    var isTemplate = false;
+                    if (child is TemplateAsset)
+                    {
+                        cc.veaIdsPath.Add(child.id);
+                        isTemplate = true;
+                    }
+
+                    var newCc = new CreationContext(cc.slotInsertionPoints, cc.attributeOverrides, cc.serializedDataOverrides,
+                        this, target, cc.veaIdsPath, null, cc.templateAsset);
+
+                    var childElement = CloneSetupRecursively(child, newCc, parentAuthoringNode);
+
+                    if (isTemplate)
+                    {
+                        cc.veaIdsPath.Remove(child.id);
+                    }
+
+                    if (null != childElement)
+                    {
+                        // if contentContainer == this, the shadow and the logical hierarchy are identical
+                        // otherwise, if there is a CC, we want to insert in the shadow
+                        target.hierarchy.Add(childElement);
+                    }
                 }
-
-                var newCc = new CreationContext(cc.slotInsertionPoints, cc.attributeOverrides, cc.serializedDataOverrides,
-                    this, target, cc.veaIdsPath, null, cc.templateAsset);
-
-                var childElement = CloneSetupRecursively(child, newCc, parentAuthoringNode);
-
-                if (isTemplate)
-                {
-                    cc.veaIdsPath.Remove(child.id);
-                }
-
-                if (null != childElement)
-                {
-                    // if contentContainer == this, the shadow and the logical hierarchy are identical
-                    // otherwise, if there is a CC, we want to insert in the shadow
-                    target.hierarchy.Add(childElement);
-                }
+            }
+            finally
+            {
+                if (addedToCloningSet)
+                    s_CloningAssets.Remove(this);
             }
         }
 
@@ -656,11 +677,11 @@ namespace UnityEngine.UIElements
                 context.slotInsertionPoints.Add(slotName, ve);
             }
 
-            if (asset.ruleIndex != -1)
+            if (asset.ruleIndex >= 0)
             {
                 if (inlineSheet == null)
                     Debug.LogWarning("VisualElementAsset has a RuleIndex but no inlineStyleSheet");
-                else
+                else if (asset.ruleIndex < inlineSheet.rules.Length)
                 {
                     var rule = inlineSheet.rules[asset.ruleIndex];
                     ve.SetInlineRule(inlineSheet, rule);
@@ -1143,11 +1164,6 @@ namespace UnityEngine.UIElements
             }
         }
 
-        private bool IdExists(int id)
-        {
-            return UsedIds.ContainsKey(id);
-        }
-
         internal void UnregisterId(UxmlAsset uxmlAsset)
         {
             if (m_UsedIds == null)
@@ -1163,51 +1179,57 @@ namespace UnityEngine.UIElements
             // Invalid id, regenerate one
             if (uxmlAsset.id == 0)
             {
-                uxmlAsset.id = GenerateNewId(uxmlAsset, siblingIndex < 0 ? uxmlAsset.SiblingIndex() : siblingIndex, UsedIds);
-                UsedIds[uxmlAsset.id] = uxmlAsset;
-                if (uxmlAsset.hasAuthoringId)
-                {
-                    // Log/Report authoring conflict.
-                    onAuthoringIdConflictResolved?.Invoke(uxmlAsset, 0, uxmlAsset.id);
-                    uxmlAsset.hasAuthoringId = false;
-                }
+                RegenerateId(uxmlAsset, siblingIndex);
                 return;
             }
 
-            if(IdExists(uxmlAsset.id))
+            if (UsedIds.TryGetValue(uxmlAsset.id, out var previousEntry))
             {
+                // An asset is in the tree before it is registered, so a cache built on the way in already
+                // holds it. Finding itself here is not a conflict.
+                if (previousEntry == uxmlAsset)
+                    return;
+
                 // Try to preserve the non-generated id.
                 if (uxmlAsset.hasAuthoringId)
                 {
-                    var previousEntry = m_UsedIds[uxmlAsset.id];
                     // If the id is already used by a non-generated id, report an error
                     if (previousEntry.hasAuthoringId)
                     {
-                        var previousId = uxmlAsset.id;
-                        uxmlAsset.id = GenerateNewId(uxmlAsset, siblingIndex < 0 ? uxmlAsset.SiblingIndex() : siblingIndex, UsedIds);
-                        UsedIds[uxmlAsset.id] = uxmlAsset;
-                        // Log/Report authoring conflict.
-                        onAuthoringIdConflictResolved?.Invoke(uxmlAsset, previousId, uxmlAsset.id);
-                        uxmlAsset.hasAuthoringId = false;
+                        RegenerateId(uxmlAsset, siblingIndex);
                     }
                     // Assign a new id to the generated one
                     else
                     {
-                        previousEntry.id = GenerateNewId(previousEntry, previousEntry.SiblingIndex(), UsedIds);
-                        UsedIds[previousEntry.id] = previousEntry;
+                        RegenerateId(previousEntry, previousEntry.SiblingIndex());
                         UsedIds[uxmlAsset.id] = uxmlAsset;
                     }
                 }
                 else
                 {
-                    uxmlAsset.id = GenerateNewId(uxmlAsset, siblingIndex < 0 ? uxmlAsset.SiblingIndex() : siblingIndex, UsedIds);
-                    UsedIds[uxmlAsset.id] = uxmlAsset;
+                    RegenerateId(uxmlAsset, siblingIndex);
                 }
             }
             else
             {
                 UsedIds.Add(uxmlAsset.id, uxmlAsset);
             }
+        }
+
+        void RegenerateId(UxmlAsset uxmlAsset, int siblingIndex)
+        {
+            var previousId = uxmlAsset.id;
+            uxmlAsset.id = GenerateNewId(uxmlAsset, siblingIndex < 0 ? uxmlAsset.SiblingIndex() : siblingIndex, UsedIds);
+            UsedIds[uxmlAsset.id] = uxmlAsset;
+
+            if (!uxmlAsset.hasAuthoringId)
+                return;
+
+            onAuthoringIdConflictResolved?.Invoke(uxmlAsset, previousId, uxmlAsset.id);
+
+            // The exporter writes the attribute, so leaving it would save an id the asset no longer owns.
+            uxmlAsset.hasAuthoringId = false;
+            uxmlAsset.RemoveAttribute(UxmlAsset.AuthoringIdAttribute);
         }
 
         [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
@@ -1254,9 +1276,16 @@ namespace UnityEngine.UIElements
             if (vea.ruleIndex < 0)
                 return;
 
-            var toStyleSheet = next.GetOrCreateInlineStyleSheet();
             var fromStyleSheet = previous.inlineSheet;
+            if (fromStyleSheet == null || vea.ruleIndex >= fromStyleSheet.rules.Length)
+            {
+                // Carrying the index over would point it at an unrelated rule in the destination sheet.
+                vea.ruleIndex = -1;
+                Debug.LogWarning(VisualElementAsset.k_LostInlineStyles);
+                return;
+            }
 
+            var toStyleSheet = next.GetOrCreateInlineStyleSheet();
             var fromRule = fromStyleSheet.rules[vea.ruleIndex];
 
             // Add rule to StyleSheet.

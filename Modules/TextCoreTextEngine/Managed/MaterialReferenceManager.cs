@@ -10,6 +10,8 @@ namespace UnityEngine.TextCore.Text
     partial class MaterialReferenceManager
     {
         [AutoStaticsCleanupOnCodeReload]
+        // Lazy singleton, recreated on the next instance access after cleanup nulls it.
+        [IgnoreForUAL0015("Lazy singleton recreated on demand after cleanup nulls it")]
         static MaterialReferenceManager s_Instance;
 
         // Dictionaries used to track Asset references.

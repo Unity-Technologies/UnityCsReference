@@ -23,7 +23,7 @@ namespace Unity.UI.Builder
 
         protected override bool ExplorerCanStartDrag(VisualElement targetElement)
         {
-            if (!targetElement.IsPartOfActiveVisualTreeAsset(paneWindow.document))
+            if (!targetElement.IsPartOfActiveVisualTreeAsset(paneWindow.document) || paneWindow.document.isCanvasReadOnly)
                 return false;
 
             return true;

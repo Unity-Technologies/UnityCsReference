@@ -34,7 +34,13 @@ namespace UnityEditor
                 }
             }
 
-            public readonly int x, y, z, xy, yz, xz, xyz;
+            public readonly int x;
+            public readonly int y;
+            public readonly int z;
+            public readonly int xy;
+            public readonly int yz;
+            public readonly int xz;
+            public readonly int xyz;
 
             internal int this[int index]
             {

@@ -120,7 +120,7 @@ internal class FontAssetFactory
         }
     }
 
-    internal static FontAsset? ConvertFontToFontAsset(Font font, bool persistent = true)
+    internal static FontAsset? ConvertFontToFontAsset(Font font, bool persistent = true, bool isIMGUI = true)
     {
         if (font == null)
             return null;
@@ -128,7 +128,15 @@ internal class FontAssetFactory
         FontAsset? fontAsset = FontAsset.CreateFontAsset(font, 0, 90, 9, GlyphRenderMode.DEFAULT, 1024, 1024, AtlasPopulationMode.Dynamic, true);
 
         if (fontAsset != null)
+        {
             SetupFontAssetSettings(fontAsset, persistent);
+
+            if (!isIMGUI)
+            {
+                fontAsset.material.SetTexture("_GUIClipTexture", Texture2D.whiteTexture);
+                fontAsset.material.renderQueue = (int)UnityEngine.Rendering.RenderQueue.Transparent;
+            }
+        }
 
         return fontAsset;
     }

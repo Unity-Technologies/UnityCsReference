@@ -3200,7 +3200,7 @@ namespace UnityEngine.UIElements.StyleSheets
                 case StylePropertyId.AnimationNames:
                     return new[]
                     {
-                        typeof(IEnumerable<UIAnimationClip>)
+                        typeof(UIAnimationClip)
                     };
                 case StylePropertyId.BackgroundImage:
                     return Background.allowedAssetTypes;

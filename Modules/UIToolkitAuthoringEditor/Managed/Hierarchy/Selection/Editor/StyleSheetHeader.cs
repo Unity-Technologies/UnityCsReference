@@ -2,7 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: UIToolkitAuthoringFramework not yet converted
 using Unity.Properties;
 using UnityEditor;
 using UnityEngine;
@@ -26,10 +25,13 @@ partial class StyleSheetHeader : UISelectionObjectHeader
     private const string k_StyleSheetLight = "UIToolkitAuthoring/Inspector/UIToolkitAuthoringInspectorLight.uss";
 
     [AutoStaticsCleanupOnCodeReload]
+    [IgnoreForUAL0015("Lazily reloaded by the ctor's null check on next instance construction after reload")]
     static StyleSheet s_StyleSheet;
     [AutoStaticsCleanupOnCodeReload]
+    [IgnoreForUAL0015("Lazily reloaded by the ctor's null check on next instance construction after reload")]
     static StyleSheet s_ThemedStyleSheet;
     [AutoStaticsCleanupOnCodeReload]
+    [IgnoreForUAL0015("Lazily reloaded by the ctor's null check on next instance construction after reload")]
     static bool s_ThemedStyleSheetIsProSkin;
 
     private TextField m_StyleSheetName;
@@ -99,4 +101,3 @@ partial class StyleSheetHeader : UISelectionObjectHeader
         m_StyleSheetName.dataSource = this;
     }
 }
-#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

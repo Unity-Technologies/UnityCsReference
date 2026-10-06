@@ -249,6 +249,15 @@ namespace UnityEditorInternal
             set;
         }
 
+        // True when deep profiling was already on when the session started; instrumentation is
+        // then fixed for the process lifetime.
+        [StaticAccessor("profiling::GetProfilerSessionPtr()", StaticAccessorType.Arrow)]
+        static internal extern bool deepProfilingEnabledAtStartup
+        {
+            [NativeMethod("IsDeepProfilingEnabledAtStartup")]
+            get;
+        }
+
         [StaticAccessor("profiling::GetProfilerSessionPtr()", StaticAccessorType.Arrow)]
         static public extern ProfilerMemoryRecordMode memoryRecordMode
         {
@@ -382,6 +391,9 @@ namespace UnityEditorInternal
         }
 
         [AutoStaticsCleanupOnCodeReload]
+        // Subscribers are profiler window modules and services that subscribe and unsubscribe with their
+        // own lifecycle, so the cleared invocation list refills as they are recreated.
+        [IgnoreForUAL0015("Event whose subscribers re-register through their own lifecycle after a code reload")]
         public static event Action<int, int> NewProfilerFrameRecorded;
 
         [RequiredByNativeCode]
@@ -391,6 +403,9 @@ namespace UnityEditorInternal
         }
 
         [AutoStaticsCleanupOnCodeReload]
+        // Subscribers are profiler window modules and services that subscribe and unsubscribe with their
+        // own lifecycle, so the cleared invocation list refills as they are recreated.
+        [IgnoreForUAL0015("Event whose subscribers re-register through their own lifecycle after a code reload")]
         public static event Action profileLoaded;
 
         [RequiredByNativeCode]
@@ -400,6 +415,9 @@ namespace UnityEditorInternal
         }
 
         [AutoStaticsCleanupOnCodeReload]
+        // Subscribers are profiler window modules and services that subscribe and unsubscribe with their
+        // own lifecycle, so the cleared invocation list refills as they are recreated.
+        [IgnoreForUAL0015("Event whose subscribers re-register through their own lifecycle after a code reload")]
         public static event Action profileCleared;
 
         [RequiredByNativeCode]

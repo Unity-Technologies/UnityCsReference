@@ -33,7 +33,11 @@ namespace UnityEditor
                 }
             }
 
-            public readonly int x, y, z, cameraAxis, xyz;
+            public readonly int x;
+            public readonly int y;
+            public readonly int z;
+            public readonly int cameraAxis;
+            public readonly int xyz;
 
             internal int this[int index]
             {

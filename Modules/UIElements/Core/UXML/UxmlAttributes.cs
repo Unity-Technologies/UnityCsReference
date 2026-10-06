@@ -524,6 +524,10 @@ namespace UnityEngine.UIElements
     /// An element holds at most one component of each type. Read or modify an attached component
     /// with <see cref="VisualElement.GetComponent{T}"/>; remove it with
     /// <see cref="VisualElement.RemoveComponent{T}"/>.
+    ///
+    /// Add <see cref="HideInInspector"/> to the struct to keep the component out of every editor
+    /// surface: the VisualElement inspector, the UI Builder inspector, and the UI Toolkit Debugger.
+    /// This is independent of <see cref="exposeToUxml"/>, which decides only UXML authoring.
     /// </remarks>
     /// <example nocheck="true">
     /// The following example attaches a click counter to a button without subclassing it.
@@ -693,15 +697,91 @@ namespace UnityEngine.UIElements
     /// <see cref="VisualElement.RemoveComponent{T}"/> removes the component from an element.
     /// </summary>
     /// <remarks>
+    /// <para>
     /// The method must be <c>static void M(ref T self, <see cref="VisualElement"/> owner)</c>, and a
     /// component may declare at most one. It runs before the component storage is freed and before
     /// its <c>[RegisterCallback]</c> handlers are unregistered, so the method can still read its own
-    /// live data and clean up any owner state the component configured. It runs only on an explicit
-    /// <c>RemoveComponent</c> call; it does not run when the element detaches from a panel or when
-    /// the element itself is torn down.
+    /// live data and clean up any owner state the component configured.
+    /// </para>
+    /// <para>
+    /// It runs only on an explicit <see cref="VisualElement.RemoveComponent{T}"/> or
+    /// <see cref="VisualElement.TryRemoveComponent{T}"/> call, immediately and inline, while the element
+    /// is still alive. Does not run when the element is released, when its panel is torn down, or when it
+    /// is garbage-collected. It is therefore not guaranteed to run for a given component instance.
+    /// </para>
+    /// <para>
+    /// Because the method receives the owning element, it may read its own state, touch that element, and
+    /// add or remove components.
+    /// </para>
+    /// <para>
+    /// To free something the component allocated, use
+    /// <see cref="ReleaseComponentResourcesAttribute">[ReleaseComponentResources]</see> instead. That hook
+    /// is guaranteed to run exactly once per component instance, on every release path: explicit removal,
+    /// <see cref="VisualElement.ReleaseResources"/>, panel teardown, a recursive clear with
+    /// <see cref="VisualElementClearOptions.RecursiveReleaseResources"/>, and garbage collection. Its call
+    /// is deferred to the next <c>Collect()</c> on the main thread, where the element may already have been
+    /// collected, so it receives only its own data and no element, and may do nothing beyond freeing what
+    /// the component allocated.
+    /// </para>
+    /// <para>
+    /// Rule of thumb: if you allocated it, free it in
+    /// <see cref="ReleaseComponentResourcesAttribute">[ReleaseComponentResources]</see>. If you want to
+    /// react to a user removing your component, use <c>[OnComponentRemoved]</c>. Never rely on
+    /// <c>[OnComponentRemoved]</c> to release anything.
+    /// </para>
     /// </remarks>
     [AttributeUsage(AttributeTargets.Method, Inherited = false)]
     public class OnComponentRemovedAttribute : Attribute
+    {
+    }
+
+    /// <summary>
+    /// Declares a static method of a <see cref="VisualElementComponentAttribute"/> struct that frees the
+    /// resources the component allocated. It runs exactly once per component instance, on every path
+    /// that releases the component, on the main thread.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// The method must be <c>static void M(ref T self)</c>, and a component may declare at most one.
+    /// Free what this component allocated, and nothing else.
+    /// </para>
+    /// <para>
+    /// It runs on every path that releases the component: explicit removal with
+    /// <see cref="VisualElement.RemoveComponent{T}"/> or <see cref="VisualElement.TryRemoveComponent{T}"/>,
+    /// <see cref="VisualElement.ReleaseResources"/>, panel teardown, a recursive clear with
+    /// <see cref="VisualElementClearOptions.RecursiveReleaseResources"/>, and garbage collection. Whichever
+    /// path releases the component, the method is guaranteed to run, exactly once per component instance.
+    /// The call is deferred to the next <c>Collect()</c> and always happens on the main thread.
+    /// </para>
+    /// <para>
+    /// The method receives no <see cref="VisualElement"/>. The element is unavailable by design, not by
+    /// omission: the call is deferred to a main-thread drain that can run after the owning element has
+    /// already been garbage-collected, and the element unlinks its component storage before that drain,
+    /// so no element can be resolved at that point.
+    /// </para>
+    /// <para>
+    /// A component that holds a native container or an <see cref="IDisposable"/> field, directly or
+    /// through a nested struct, must declare this method: releasing the component clears its storage
+    /// with a raw memory copy, which drops the allocation without freeing it. The <c>UITKSG050</c>
+    /// diagnostic reports the omission as an error.
+    /// </para>
+    /// <para>
+    /// <see cref="OnComponentRemovedAttribute">[OnComponentRemoved]</see> is not an alternative. It runs
+    /// only on an explicit <see cref="VisualElement.RemoveComponent{T}"/> or
+    /// <see cref="VisualElement.TryRemoveComponent{T}"/> call, immediately and inline while the element is
+    /// still alive, and it receives that element, so it may read its own state, touch the element, and add
+    /// or remove components. It is skipped on element teardown and on garbage collection, so it is not
+    /// guaranteed to run.
+    /// </para>
+    /// <para>
+    /// Rule of thumb: if you allocated it, free it in <c>[ReleaseComponentResources]</c>. If you want to
+    /// react to a user removing your component, use
+    /// <see cref="OnComponentRemovedAttribute">[OnComponentRemoved]</see>. Never rely on
+    /// <c>[OnComponentRemoved]</c> to release anything.
+    /// </para>
+    /// </remarks>
+    [AttributeUsage(AttributeTargets.Method, Inherited = false)]
+    public class ReleaseComponentResourcesAttribute : Attribute
     {
     }
 

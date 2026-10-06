@@ -1,10 +1,10 @@
-#pragma warning disable UAL0010,UAL0011,UAL0012,UAL0013,UAL0014 // AutoStaticsCleanup: GraphicsDeviceFeatures not yet converted
 using UnityEngine;
 using UnityEngine.Rendering;
 using System;
 using System.Runtime.InteropServices;
 using System.Collections.Generic;
 using UnityEditor;
+using Unity.Scripting.LifecycleManagement;
 
 
 namespace UnityEngine.AMD
@@ -164,6 +164,7 @@ namespace UnityEngine.AMD
     {
         #region Private
 
+        [NoAutoStaticsCleanup]
         static private GraphicsDevice sGraphicsDeviceInstance = null;
         private Stack<FSR2Context> s_ContextObjectPool_FSR2 = new Stack<FSR2Context>();
         private Stack<FSRUpscalerContext> s_ContextObjectPool_SDK = new Stack<FSRUpscalerContext>(); // FSR3/4
@@ -562,6 +563,7 @@ namespace UnityEngine.AMD
         #region Imports
 
         [DllImport("AMDUnityPlugin", CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
+        [return: MarshalAs(UnmanagedType.I1)]
         private extern static bool AMDUP_InitApi();
 
         [DllImport("AMDUnityPlugin", CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
@@ -571,6 +573,7 @@ namespace UnityEngine.AMD
         private static extern uint AMDUP_GetDeviceVersion();
 
         [DllImport("AMDUnityPlugin", CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
+        [return: MarshalAs(UnmanagedType.I1)]
         private extern static bool AMDUP_IsFeatureAvailable(GraphicsDeviceFeature featureID);
 
         [DllImport("AMDUnityPlugin", CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
@@ -583,12 +586,15 @@ namespace UnityEngine.AMD
         private static extern uint AMDUP_CreateFeatureSlot();
 
         [DllImport("AMDUnityPlugin", CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
+        [return: MarshalAs(UnmanagedType.I1)]
         private static extern bool AMDUP_GetRenderResolutionFromQualityMode(FSR2Quality qualityMode, uint displayWidth, uint displayHeight, out uint renderWidth, out uint renderHeight);
 
         [DllImport("AMDUnityPlugin", CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
+        [return: MarshalAs(UnmanagedType.I1)]
         private static extern bool AMDUP_GetRenderResolutionFromQualityModeFSR3(FSR3Quality qualityMode, uint displayWidth, uint displayHeight, out uint renderWidth, out uint renderHeight);
 
         [DllImport("AMDUnityPlugin", CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
+        [return: MarshalAs(UnmanagedType.I1)]
         private static extern bool AMDUP_GetRenderResolutionFromQualityModeFSR4(FSR4Quality qualityMode, uint displayWidth, uint displayHeight, out uint renderWidth, out uint renderHeight);
 
         [DllImport("AMDUnityPlugin", CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
@@ -610,9 +616,11 @@ namespace UnityEngine.AMD
         private static extern void AMDUP_DeleteDebugView(IntPtr debugView);
 
         [DllImport("AMDUnityPlugin", CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
+        [return: MarshalAs(UnmanagedType.I1)]
         private static extern bool AMDUP_GetFidelityFxSdkVersion(out uint major, out uint minor, out uint patch);
 
         [DllImport("AMDUnityPlugin", CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
+        [return: MarshalAs(UnmanagedType.I1)]
         private static extern bool AMDUP_GetFeatureVersion(GraphicsDeviceFeature feature, out uint major, out uint minor, out uint patch);
 
         [DllImport("AMDUnityPlugin", CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
@@ -624,4 +632,3 @@ namespace UnityEngine.AMD
         #endregion
     };
 } // namespace AMD
-#pragma warning restore UAL0010,UAL0011,UAL0012,UAL0013,UAL0014

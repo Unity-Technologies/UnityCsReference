@@ -28,13 +28,13 @@ namespace UnityEditor.TerrainTools
 
         private class Styles
         {
-            public readonly GUIContent brushSize = EditorGUIUtility.TrTextContent("Brush Size", "Size of the brush used to paint.");
-            public readonly GUIContent details = EditorGUIUtility.TrTextContent("Details");
-            public readonly GUIContent detailTargetStrength = EditorGUIUtility.TrTextContent("Target Strength", "Target amount");
-            public readonly GUIContent detailVertexWarning = EditorGUIUtility.TrTextContent("The currently selected detail will not render at full strength. Either paint with low opacity, or lower the terrain detail density. Alternatively consider use instanced rendering by setting \"Use GPU Instancing\" to true.");
-            public readonly GUIContent editDetails = EditorGUIUtility.TrTextContent("Edit Details...", "Add or remove detail meshes");
-            public readonly GUIContent noDetailObjectDefined = EditorGUIUtility.TrTextContent("No Detail objects defined.");
-            public readonly GUIContent opacity = EditorGUIUtility.TrTextContent("Opacity", "Strength of the applied effect.");
+            public readonly GUIContent brushSize = L10n.TextContent("Brush Size", "Size of the brush used to paint.", null, null);
+            public readonly GUIContent details = L10n.TextContent("Details", null, null, null);
+            public readonly GUIContent detailTargetStrength = L10n.TextContent("Target Strength", "Target amount", null, null);
+            public readonly GUIContent detailVertexWarning = L10n.TextContent("The currently selected detail will not render at full strength. Either paint with low opacity, or lower the terrain detail density. Alternatively consider use instanced rendering by setting \"Use GPU Instancing\" to true.", null, null, null);
+            public readonly GUIContent editDetails = L10n.TextContent("Edit Details...", "Add or remove detail meshes", null, null);
+            public readonly GUIContent noDetailObjectDefined = L10n.TextContent("No Detail objects defined.", null, null, null);
+            public readonly GUIContent opacity = L10n.TextContent("Opacity", "Strength of the applied effect.", null, null);
         }
 
         [NoAutoStaticsCleanup] // lazy GUIContent/GUIStyle styles holder; editor infra, no user refs
@@ -63,6 +63,9 @@ namespace UnityEditor.TerrainTools
             }
         }
         [AutoStaticsCleanupOnCodeReload]
+        // The target-strength overlay slider subscribes on AttachToPanelEvent and unsubscribes on detach, so
+        // the subscription comes back as soon as the overlay is attached to a panel again.
+        [IgnoreForUAL0015("Event re-subscribed by the brush overlay on AttachToPanelEvent")]
         internal static event Action BrushTargetStrengthChanged;
 
         // storing the previous detailStrength to trigger a strengthChanged Action
@@ -306,8 +309,8 @@ namespace UnityEditor.TerrainTools
                         }
 
                         if (InternalEditorUtility.DrawWarningHelpBoxWithButton(
-                            EditorGUIUtility.TrTextContent(errorMessage),
-                            EditorGUIUtility.TrTextContent(buttonMessage)))
+                            L10n.TextContent(errorMessage, null, null, null),
+                            L10n.TextContent(buttonMessage, null, null, null)))
                         {
                             foreach (Texture tex in mutableTextures)
                             {
@@ -337,8 +340,8 @@ namespace UnityEditor.TerrainTools
                         }
 
                         if (InternalEditorUtility.DrawWarningHelpBoxWithButton(
-                            EditorGUIUtility.TrTextContent(errorMessage),
-                            EditorGUIUtility.TrTextContent(buttonMessage)))
+                            L10n.TextContent(errorMessage, null, null, null),
+                            L10n.TextContent(buttonMessage, null, null, null)))
                         {
                             Selection.objects = selectionObjs;
                         }
@@ -354,8 +357,8 @@ namespace UnityEditor.TerrainTools
                     {
                         string errorMessage = "Read/Write is disabled on the Texture referenced by the Terrain Detail Prototype";
                         if (InternalEditorUtility.DrawWarningHelpBoxWithButton(
-                            EditorGUIUtility.TrTextContent(errorMessage),
-                            EditorGUIUtility.TrTextContent("Enable")))
+                            L10n.TextContent(errorMessage, null, null, null),
+                            L10n.TextContent("Enable", null, null, null)))
                         {
                             InternalEditorUtility.ImportTextureAsReadable(detailPrototype.prototypeTexture);
                         }
@@ -364,8 +367,8 @@ namespace UnityEditor.TerrainTools
                     {
                         var advice = isEngineAsset ? $"'{detailPrototype.prototypeTexture.name}' is an engine asset and cannot be modified nor copied. It is recommended to choose another asset." : "Modify a copy of the Texture because it is not editable.";
                         if (InternalEditorUtility.DrawWarningHelpBoxWithButton(
-                           EditorGUIUtility.TrTextContent($"Read/Write is disabled on the Texture referenced by the Terrain Detail Prototype. {advice}"),
-                           EditorGUIUtility.TrTextContent("View")))
+                           L10n.TextContent($"Read/Write is disabled on the Texture referenced by the Terrain Detail Prototype. {advice}", null, null, null),
+                           L10n.TextContent("View", null, null, null)))
                         {
                             Selection.objects = new UnityEngine.Object[] { detailPrototype.prototypeTexture };
                         }

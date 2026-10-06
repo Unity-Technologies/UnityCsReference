@@ -27,12 +27,13 @@ namespace UnityEngine.Animations
     [NativeClass("ParentConstraint", PersistentTypeId = 0x69B45D86)]
     public sealed partial class ParentConstraint : Behaviour, IConstraint, IConstraintInternal
     {
+        internal ParentConstraint(global::UnityEngine.EntityId id) : base(id) {}
         ParentConstraint()
         {
-            Internal_Create(this);
+            SetEntityIdFromConstructor(Internal_Create());
         }
 
-        private static extern void Internal_Create([Writable] ParentConstraint self);
+        private static extern EntityId Internal_Create();
 
         ///<summary>The weight of the constraint component.</summary>
         public extern float weight { get; set; }

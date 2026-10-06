@@ -2,7 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: IMGUIControls not yet converted
 using UnityEngine;
 using UnityEditor.Compilation;
 using UnityEditor.Scripting;
@@ -27,10 +26,6 @@ namespace UnityEditor
         private const int k_WindowWidth = 290;
         private const int k_WindowHeight = (int)EditorGUI.kSingleLineHeight * k_FieldCount + k_FrameWidth * 2;
 
-        static ManagedDebuggerWindow()
-        {
-            SubscribeToDebuggerAttached();
-        }
 
         public ManagedDebuggerWindow(CodeOptimization codeOptimization)
         {
@@ -38,19 +33,19 @@ namespace UnityEditor
 
             if (CodeOptimization.Debug == m_CodeOptimization)
             {
-                m_CodeOptimizationTitleContent = EditorGUIUtility.TrTextContent("Mode: Debug");
-                m_CodeOptimizationButtonContent = EditorGUIUtility.TrTextContent("Switch to release mode");
+                m_CodeOptimizationTitleContent = L10n.TextContent("Mode: Debug", null, null, null);
+                m_CodeOptimizationButtonContent = L10n.TextContent("Switch to release mode", null, null, null);
                 m_CodeOptimizationTextContent = (!EditorUtility.scriptCompilationFailed) ?
-                    EditorGUIUtility.TrTextContentWithIcon("Release mode disables C# debugging but improves C# performance.\nSwitching to release mode will recompile and reload all scripts.", EditorGUIUtility.GetHelpIcon(MessageType.Info)) :
-                    EditorGUIUtility.TrTextContentWithIcon("All compiler errors must be fixed before switching to release mode.", EditorGUIUtility.GetHelpIcon(MessageType.Error));
+                    L10n.TextContentWithIcon("Release mode disables C# debugging but improves C# performance.\nSwitching to release mode will recompile and reload all scripts.", EditorGUIUtility.GetHelpIcon(MessageType.Info), null) :
+                    L10n.TextContentWithIcon("All compiler errors must be fixed before switching to release mode.", EditorGUIUtility.GetHelpIcon(MessageType.Error), null);
             }
             else
             {
-                m_CodeOptimizationTitleContent = EditorGUIUtility.TrTextContent("Mode: Release");
-                m_CodeOptimizationButtonContent = EditorGUIUtility.TrTextContent("Switch to debug mode");
+                m_CodeOptimizationTitleContent = L10n.TextContent("Mode: Release", null, null, null);
+                m_CodeOptimizationButtonContent = L10n.TextContent("Switch to debug mode", null, null, null);
                 m_CodeOptimizationTextContent = (!EditorUtility.scriptCompilationFailed) ?
-                    EditorGUIUtility.TrTextContentWithIcon("Debug mode enables C# debugging but reduces C# performance.\nSwitching to debug mode will recompile and reload all scripts.", EditorGUIUtility.GetHelpIcon(MessageType.Info)) :
-                    EditorGUIUtility.TrTextContentWithIcon("All compiler errors must be fixed before switching to debug mode.", EditorGUIUtility.GetHelpIcon(MessageType.Error));
+                    L10n.TextContentWithIcon("Debug mode enables C# debugging but reduces C# performance.\nSwitching to debug mode will recompile and reload all scripts.\nTo debug Modules, set \"Code Optimization On Startup\" to Debug in Preferences and restart.", EditorGUIUtility.GetHelpIcon(MessageType.Info), null) :
+                    L10n.TextContentWithIcon("All compiler errors must be fixed before switching to debug mode.", EditorGUIUtility.GetHelpIcon(MessageType.Error), null);
             }
 
             m_TextRectHeight = EditorStyles.helpBox.CalcHeight(m_CodeOptimizationTextContent, k_WindowWidth);
@@ -98,59 +93,6 @@ namespace UnityEditor
             return new Vector2(k_WindowWidth, k_WindowHeight + m_TextRectHeight);
         }
 
-        private static void OnDebuggerAttached(bool debuggerAttached)
-        {
-            if (debuggerAttached)
-            {
-                if (CodeOptimization.Release == CompilationPipeline.codeOptimization)
-                {
-                    if (EditorUtility.scriptCompilationFailed)
-                    {
-                        EditorUtility.DisplayDialog(
-                            "C# Debugger Attached",
-                            "All compiler errors must be fixed before switching to debug mode.",
-                            "OK");
-                        ManagedDebugger.Disconnect();
-                    }
-                    else
-                    {
-                        int option = EditorUtility.DisplayDialogComplex(
-                            "C# Debugger Attached",
-@"You are trying to attach a debugger, but Debug Mode is switched off in your project.
-
-When Unity is in Debug Mode, C# performance is reduced, but you can attach a debugger. Switching to Debug Mode also recompiles and reloads all scripts.
-
-You can enable Debug Mode temporarily for this Editor session, switch it on for all projects until further notice, or cancel attaching the debugger.
-
-If you switch it on for all projects, you can change it later in the ""Code Optimization on Startup"" setting in the Preferences window.",
-                            "Enable debugging for this session",
-                            "Cancel",
-                            "Enable debugging for all projects");
-
-                        if (option == 0)
-                        {
-                            ToggleDebugState(CompilationPipeline.codeOptimization);
-                        }
-                        else if (option == 2)
-                        {
-                            EditorPrefs.SetBool("ScriptDebugInfoEnabled", true);
-                            ToggleDebugState(CompilationPipeline.codeOptimization);
-                        }
-                        else
-                        {
-                            ManagedDebugger.Disconnect();
-                        }
-                    }
-                }
-            }
-
-            AppStatusBar.StatusChanged();
-        }
-
-        private static void SubscribeToDebuggerAttached()
-        {
-            ManagedDebugger.debuggerAttached += OnDebuggerAttached;
-        }
 
         private static void ToggleDebugState(CodeOptimization codeOptimization)
         {
@@ -165,4 +107,3 @@ If you switch it on for all projects, you can change it later in the ""Code Opti
         }
     }
 }
-#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

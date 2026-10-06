@@ -132,8 +132,9 @@ namespace UnityEditor.U2D
     [NativeClass("SpriteAtlasAsset", PersistentTypeId = 0x2489757E)]
     public class SpriteAtlasAsset : UnityEngine.Object
     {
-        public SpriteAtlasAsset() { Internal_Create(this); }
-        extern private static void Internal_Create([Writable] SpriteAtlasAsset self);
+        internal SpriteAtlasAsset(global::UnityEngine.EntityId id) : base(id) {}
+        public SpriteAtlasAsset() { SetEntityIdFromConstructor(Internal_Create()); }
+        extern private static EntityId Internal_Create();
 
         extern public bool isVariant { [NativeMethod("GetIsVariant")] get; }
         extern public void SetIsVariant(bool value);

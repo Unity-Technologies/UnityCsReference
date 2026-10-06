@@ -93,7 +93,7 @@ namespace UnityEditor
 
         #region Contact retrieval and filtering
 
-        private struct VisContactPoint
+        internal struct VisContactPoint
         {
             public Vector3 point;
             public Vector3 normal;
@@ -116,7 +116,7 @@ namespace UnityEditor
             }
         }
 
-        private struct ReadContactsJob : IJob
+        internal struct ReadContactsJob : IJob
         {
             public ContactArrayWrapper contactBuffer;
 
@@ -165,7 +165,7 @@ namespace UnityEditor
 
         // This whole mess is here because we have no access to Vectors in the Core module
         // and the NativeArray safety doesn't allow array resizing when running a single thread job
-        private struct ContactArrayWrapper
+        internal struct ContactArrayWrapper
         {
             private NativeArray<VisContactPoint> m_Buffer;
             private int m_Count;

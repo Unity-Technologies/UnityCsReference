@@ -110,7 +110,7 @@ namespace UnityEngine.Rendering
         public static RenderPipelineGlobalSettings GetSettingsForRenderPipeline<T>()
             where T : RenderPipeline
         {
-            return  Internal_GetSettingsForRenderPipeline(typeof(T).FullName) as RenderPipelineGlobalSettings;
+            return  Internal_GetSettingsForRenderPipeline(RenderPipelineTypeName<T>.fullName) as RenderPipelineGlobalSettings;
         }
 
         public static RenderPipelineGlobalSettings GetSettingsForRenderPipeline(Type renderPipelineType)
@@ -168,5 +168,12 @@ namespace UnityEngine.Rendering
         extern internal static void SetDirtyRenderPipelineGlobalSettingsContaining(object renderpipelineGraphicsSettings);
         [RequiredByNativeCode] private static string GetCurrentRenderPipelineTypeFullName() => currentRenderPipeline != null ? currentRenderPipeline.pipelineTypeFullName : string.Empty;
 
+    }
+
+    // need somewhere static to keep each type fullname so it isnt GCd
+    static class RenderPipelineTypeName<TRenderPipeline>
+        where TRenderPipeline : RenderPipeline
+    {
+        internal static readonly string fullName = typeof(TRenderPipeline).FullName;
     }
 }

@@ -27,7 +27,7 @@ namespace UnityEditor
         internal class DesktopSingleCPUProperty : Property
         {
             public DesktopSingleCPUProperty(BuildTarget buildTarget, DesktopPluginCPUArchitecture architecture)
-                : base(EditorGUIUtility.TrTextContent(GetArchitectureNameInGUI(buildTarget, architecture)), cpuKey, architecture, BuildPipeline.GetBuildTargetName(buildTarget))
+                : base(L10n.TextContent(GetArchitectureNameInGUI(buildTarget, architecture), null, null, null), cpuKey, architecture, BuildPipeline.GetBuildTargetName(buildTarget))
             {
             }
 
@@ -88,7 +88,7 @@ namespace UnityEditor
                 architectureCount = m_SupportedArchitectures.Length;
                 m_SupportedArchitectureNames = new GUIContent[architectureCount];
                 for (int i = 0; i < architectureCount; i++)
-                    m_SupportedArchitectureNames[i] = EditorGUIUtility.TrTextContent(GetArchitectureNameInGUI(buildTarget, m_SupportedArchitectures[i]));
+                    m_SupportedArchitectureNames[i] = L10n.TextContent(GetArchitectureNameInGUI(buildTarget, m_SupportedArchitectures[i]), null, null, null);
             }
 
             DesktopPluginCPUArchitecture GetCurrentArchitecture(PluginImporterInspector inspector)
@@ -168,10 +168,10 @@ namespace UnityEditor
 
             // Windows 32-bit (x86) and Windows 64-bit (ARM64/x86_64) are separate targets, so they have separate checkboxes
             // Linux only has x64 architecture and Mac has a single target for both 64-bit architectures (ARM64/Intel-64bit)
-            m_Windows32Managed = new DesktopSingleCPUProperty(EditorGUIUtility.TrTextContent("Windows x86"), BuildTarget.StandaloneWindows);
-            m_Windows64Managed = new DesktopSingleCPUProperty(EditorGUIUtility.TrTextContent("Windows 64-bit"), BuildTarget.StandaloneWindows64);
-            m_LinuxManaged = new DesktopSingleCPUProperty(EditorGUIUtility.TrTextContent("Linux x64"),BuildTarget.StandaloneLinux64);
-            m_MacOSManaged = new DesktopSingleCPUProperty(EditorGUIUtility.TrTextContent("macOS 64-bit"),BuildTarget.StandaloneOSX);
+            m_Windows32Managed = new DesktopSingleCPUProperty(L10n.TextContent("Windows x86", null, null, null), BuildTarget.StandaloneWindows);
+            m_Windows64Managed = new DesktopSingleCPUProperty(L10n.TextContent("Windows 64-bit", null, null, null), BuildTarget.StandaloneWindows64);
+            m_LinuxManaged = new DesktopSingleCPUProperty(L10n.TextContent("Linux x64", null, null, null),BuildTarget.StandaloneLinux64);
+            m_MacOSManaged = new DesktopSingleCPUProperty(L10n.TextContent("macOS 64-bit", null, null, null),BuildTarget.StandaloneOSX);
 
             nativeProperties = new Property[]
             {
@@ -230,7 +230,7 @@ namespace UnityEditor
             {
                 if (IsUsableOnWindows(imp))
                 {
-                    EditorGUILayout.LabelField(EditorGUIUtility.TrTextContent("Windows"), EditorStyles.boldLabel);
+                    EditorGUILayout.LabelField(L10n.TextContent("Windows", null, null, null), EditorStyles.boldLabel);
                     m_Windows32.OnGUI(inspector);
                     m_Windows64.OnGUI(inspector);
                     EditorGUILayout.Space();
@@ -238,14 +238,14 @@ namespace UnityEditor
 
                 if (IsUsableOnLinux(imp))
                 {
-                    EditorGUILayout.LabelField(EditorGUIUtility.TrTextContent("Linux"), EditorStyles.boldLabel);
+                    EditorGUILayout.LabelField(L10n.TextContent("Linux", null, null, null), EditorStyles.boldLabel);
                     m_Linux.OnGUI(inspector);
                     EditorGUILayout.Space();
                 }
 
                 if (IsUsableOnOSX(imp))
                 {
-                    EditorGUILayout.LabelField(EditorGUIUtility.TrTextContent("macOS"), EditorStyles.boldLabel);
+                    EditorGUILayout.LabelField(L10n.TextContent("macOS", null, null, null), EditorStyles.boldLabel);
                     m_MacOS.OnGUI(inspector);
                     EditorGUILayout.Space();
                 }

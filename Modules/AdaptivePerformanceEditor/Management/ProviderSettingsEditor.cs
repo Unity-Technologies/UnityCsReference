@@ -30,40 +30,43 @@ namespace UnityEditor.AdaptivePerformance.Editor
         const string k_IndexerPerformanceActionDelay = "m_PerformanceActionDelay";
         const string k_ScalerProfileList = "m_scalerProfileList";
 
-        static readonly GUIContent s_LoggingLabel = EditorGUIUtility.TrTextContent(L10n.Tr("Logging", null), L10n.Tr("Only active in development mode.", null));
-        static readonly GUIContent s_AutomaticPerformanceModeEnabledLabel = EditorGUIUtility.TrTextContent(L10n.Tr("Auto Performance Mode", null), L10n.Tr("Auto Performance Mode controls performance by changing CPU and GPU levels.", null));
-        static readonly GUIContent s_AutomaticGameModeEnabledLabel = EditorGUIUtility.TrTextContent(L10n.Tr("Auto Game Mode", null), L10n.Tr("Auto Game Mode controls performance by changing target FPS based on device GameMode settings.", null));
-        static readonly GUIContent s_EnableBoostOnStartupLabel = EditorGUIUtility.TrTextContent(L10n.Tr("Boost mode on startup", null), L10n.Tr("Enables the CPU and GPU boost mode before engine startup to decrease startup time.", null));
-        static readonly GUIContent s_StatsLoggingFrequencyInFramesLabel = EditorGUIUtility.TrTextContent(L10n.Tr("Logging Frequency", null), L10n.Tr("Changes the logging frequency.", null));
-        static readonly GUIContent s_IndexerActiveLabel = EditorGUIUtility.TrTextContent(L10n.Tr("Active", null), L10n.Tr("Is indexer enabled.", null));
-        static readonly GUIContent s_IndexerThermalActionDelayLabel = EditorGUIUtility.TrTextContent(L10n.Tr("Thermal Action Delay", null), L10n.Tr("Delay after any scaler is applied or unapplied because of thermal state.", null));
-        static readonly GUIContent s_IndexerPerformanceActionDelayLabel = EditorGUIUtility.TrTextContent(L10n.Tr("Performance Action Delay", null), L10n.Tr("Delay after any scaler is applied or unapplied because of performance state.", null));
+        static readonly GUIContent s_LoggingLabel = L10n.TextContent("Logging", "Only active in development mode.", null, null);
+        static readonly GUIContent s_AutomaticPerformanceModeEnabledLabel = L10n.TextContent("Auto Performance Mode", "Auto Performance Mode controls performance by changing CPU and GPU levels.", null, null);
+        static readonly GUIContent s_AutomaticGameModeEnabledLabel = L10n.TextContent("Auto Game Mode", "Auto Game Mode controls performance by changing target FPS based on device GameMode settings.", null, null);
+        static readonly GUIContent s_EnableBoostOnStartupLabel = L10n.TextContent("Boost mode on startup", "Enables the CPU and GPU boost mode before engine startup to decrease startup time.", null, null);
+        static readonly GUIContent s_StatsLoggingFrequencyInFramesLabel = L10n.TextContent("Logging Frequency", "Changes the logging frequency.", null, null);
+        static readonly GUIContent s_IndexerActiveLabel = L10n.TextContent("Active", "Is indexer enabled.", null, null);
+        static readonly GUIContent s_IndexerThermalActionDelayLabel = L10n.TextContent("Thermal Action Delay", "Delay after any scaler is applied or unapplied because of thermal state.", null, null);
+        static readonly GUIContent s_IndexerPerformanceActionDelayLabel = L10n.TextContent("Performance Action Delay", "Delay after any scaler is applied or unapplied because of performance state.", null, null);
+        static readonly GUIContent s_IdleTimeThresholdLabel = L10n.TextContent("Idle Time Threshold", "Time in seconds the application must be idle before Battery Mode reduces the target framerate to save power.", null, null);
+        static readonly GUIContent s_SavingTargetLabel = L10n.TextContent("Save Target", "Target fraction of power to save in Battery Mode. Higher values save more power at the cost of performance.", null, null);
+        static readonly GUIContent s_TargetFrameTimeVarianceLabel = L10n.TextContent("Target Frame Time Variance (ms²)", "Maximum frame time variance, in milliseconds squared, that Stable Frame Mode tolerates. When variance rises above this value, quality is lowered. When it falls well below, quality is raised. The value is roughly the square of the tolerated jitter: 16 allows about 4 ms.", null, null);
         static readonly string[] k_ModeOptions = new string[] {AdaptivePerformanceNormalModeProvider.kModeName, AdaptivePerformanceBatteryModeProvider.kModeName};
-        static readonly GUIContent s_ModeLabel = EditorGUIUtility.TrTextContent(L10n.Tr("Operation Mode", null));
-        static readonly GUIContent s_ScalerScale = EditorGUIUtility.TrTextContent(L10n.Tr("Scale", null), L10n.Tr("Scale to control the quality impact for the scaler. No quality change when 1, improved quality when >1, and lowered quality when <1", null));
-        static readonly GUIContent s_ScalerVisualImpact = EditorGUIUtility.TrTextContent(L10n.Tr("Visual Impact", null), L10n.Tr("Visual impact the scaler has on the application. The higher the more impact the scaler has on the visuals.", null));
-        static readonly GUIContent s_ScalerTarget = EditorGUIUtility.TrTextContent(L10n.Tr("Target", null), L10n.Tr("Target for the scaler of the application bottleneck. The target selected has the most impact on the quality control of this scaler. Can only be overriden via API.", null));
-        static readonly GUIContent s_ScalerMaxLevel = EditorGUIUtility.TrTextContent(L10n.Tr("Max Level", null), L10n.Tr("Maximum level for the scaler. This is tied to the implementation of the scaler to divide the levels into concrete steps.", null));
-        static readonly GUIContent s_ScalerMinBound = EditorGUIUtility.TrTextContent(L10n.Tr("Min Scale", null), L10n.Tr("Minimum value for the scale boundary.", null));
-        static readonly GUIContent s_ScalerMaxBound = EditorGUIUtility.TrTextContent(L10n.Tr("Max Scale", null), L10n.Tr("Maximum value for the scale boundary.", null));
+        static readonly GUIContent s_ModeLabel = L10n.TextContent("Operation Mode", "The mode indexer starts with. Battery Mode for saving battery and Normal Mode for the highest achievable FPS.", null, null);
+        static readonly GUIContent s_ScalerScale = L10n.TextContent("Scale", "Scale to control the quality impact for the scaler. No quality change when 1, improved quality when >1, and lowered quality when <1", null, null);
+        static readonly GUIContent s_ScalerVisualImpact = L10n.TextContent("Visual Impact", "Visual impact the scaler has on the application. The higher the more impact the scaler has on the visuals.", null, null);
+        static readonly GUIContent s_ScalerTarget = L10n.TextContent("Target", "Target for the scaler of the application bottleneck. The target selected has the most impact on the quality control of this scaler. Can only be overriden via API.", null, null);
+        static readonly GUIContent s_ScalerMaxLevel = L10n.TextContent("Max Level", "Maximum level for the scaler. This is tied to the implementation of the scaler to divide the levels into concrete steps.", null, null);
+        static readonly GUIContent s_ScalerMinBound = L10n.TextContent("Min Scale", "Minimum value for the scale boundary.", null, null);
+        static readonly GUIContent s_ScalerMaxBound = L10n.TextContent("Max Scale", "Maximum value for the scale boundary.", null, null);
 
-        static readonly GUIContent s_AdaptiveFramerate = EditorGUIUtility.TrTextContent(L10n.Tr("Framerate", null), L10n.Tr("Adaptive Framerate enables you to automatically control the application's framerate by the defined minimum and maximum framerate. It uses Application.targetFramerate to control the framerate for your application.", null));
-        static readonly GUIContent s_AdaptiveResolution = EditorGUIUtility.TrTextContent(L10n.Tr("Resolution", null), L10n.Tr("Adaptive Resolution enables you to automatically control the screen resolution of the application by the defined scale. It uses Dynamic Resolution (Vulkan only) and uses Resolution Scale of the Universal Render Pipeline as fallback if the project uses Universal Render Pipeline.", null));
-        static readonly GUIContent s_AdaptiveLOD = EditorGUIUtility.TrTextContent(L10n.Tr("LOD", null), L10n.Tr("Adaptive LOD changes the LOD bias based on the thermal and performance load.", null));
-        static readonly GUIContent s_AdaptiveLut = EditorGUIUtility.TrTextContent(L10n.Tr("LUT", null), L10n.Tr("Requires Universal Render Pipeline. Adaptive LUT changes the LUT Bias of the Universal Render Pipeline based on the thermal and performance load.", null));
-        static readonly GUIContent s_AdaptiveMSAA = EditorGUIUtility.TrTextContent(L10n.Tr("MSAA", null), L10n.Tr("Requires Universal Render Pipeline. Adaptive MSAA changes the Anti Aliasing Quality Bias of the Universal Render Pipeline based on the thermal and performance load.", null));
-        static readonly GUIContent s_AdaptiveShadowCascade = EditorGUIUtility.TrTextContent(L10n.Tr("Shadow Cascade", null), L10n.Tr("Requires Universal Render Pipeline. Adaptive Shadow Cascade changes the Main Light Shadow Cascades Count Bias of the Universal Render Pipeline based on the thermal and performance load.", null));
-        static readonly GUIContent s_AdaptiveShadowDistance = EditorGUIUtility.TrTextContent(L10n.Tr("Shadow Distance", null), L10n.Tr("Requires Universal Render Pipeline. Adaptive Shadow Distance changes the Max Shadow Distance Multiplier of the Universal Render Pipeline based on the thermal and performance load.", null));
-        static readonly GUIContent s_AdaptiveShadowmapResolution = EditorGUIUtility.TrTextContent(L10n.Tr("Shadowmap Resolution", null), L10n.Tr("Requires Universal Render Pipeline. Adaptive Shadowmap Resolution changes the  Main Light Shadowmap Resolution Multiplier of the Universal Render Pipeline based on the thermal and performance load.", null));
-        static readonly GUIContent s_AdaptiveShadowQuality = EditorGUIUtility.TrTextContent(L10n.Tr("Shadow Quality", null), L10n.Tr("Requires Universal Render Pipeline. Adaptive Shadow Quality changes the Shadow Quality Bias of the Universal Render Pipeline based on the thermal and performance load.", null));
-        static readonly GUIContent s_AdaptiveSorting = EditorGUIUtility.TrTextContent(L10n.Tr("Sorting", null), L10n.Tr("Requires Universal Render Pipeline. Adaptive Sorting skips the front-to-back sorting of the Universal Render Pipeline based on the thermal and performance load.", null));
-        static readonly GUIContent s_AdaptiveTransparency = EditorGUIUtility.TrTextContent(L10n.Tr("Transparency", null), L10n.Tr("Requires Universal Render Pipeline. Adaptive Transparency skips transparent objects render pass.", null));
-        static readonly GUIContent s_AdaptiveViewDistance = EditorGUIUtility.TrTextContent(L10n.Tr("View Distance", null), L10n.Tr("Adaptive View Distance changes the view distance of the main camera. Requires the MainCamera tag on the Camera you want to assign.", null));
-        static readonly GUIContent s_AdaptivePhysics = EditorGUIUtility.TrTextContent(L10n.Tr("Physics", null), L10n.Tr("Adaptive Physics changes the Time.fixedDeltaTime based on the thermal and performance load.", null));
-        static readonly GUIContent s_AdaptiveDecals = EditorGUIUtility.TrTextContent(L10n.Tr("Decals", null), L10n.Tr("Adaptive Decal changes the maximum draw distance for all decals of the Universal Render Pipeline based on the thermal and performance load.", null));
-        static readonly GUIContent s_AdaptiveLayerCulling = EditorGUIUtility.TrTextContent(L10n.Tr("Layer Culling", null), L10n.Tr("Adaptive Layer Culling changes the maximum draw distance for each layer based on the thermal and performance load. It scales the value provided by camera.layerCullDistances.", null));
+        static readonly GUIContent s_AdaptiveFramerate = L10n.TextContent("Framerate", "Adaptive Framerate enables you to automatically control the application's framerate by the defined minimum and maximum framerate. It uses Application.targetFramerate to control the framerate for your application.", null, null);
+        static readonly GUIContent s_AdaptiveResolution = L10n.TextContent("Resolution", "Adaptive Resolution enables you to automatically control the screen resolution of the application by the defined scale. It uses Dynamic Resolution (Vulkan only) and uses Resolution Scale of the Universal Render Pipeline as fallback if the project uses Universal Render Pipeline.", null, null);
+        static readonly GUIContent s_AdaptiveLOD = L10n.TextContent("LOD", "Adaptive LOD changes the LOD bias based on the thermal and performance load.", null, null);
+        static readonly GUIContent s_AdaptiveLut = L10n.TextContent("LUT", "Requires Universal Render Pipeline. Adaptive LUT changes the LUT Bias of the Universal Render Pipeline based on the thermal and performance load.", null, null);
+        static readonly GUIContent s_AdaptiveMSAA = L10n.TextContent("MSAA", "Requires Universal Render Pipeline. Adaptive MSAA changes the Anti Aliasing Quality Bias of the Universal Render Pipeline based on the thermal and performance load.", null, null);
+        static readonly GUIContent s_AdaptiveShadowCascade = L10n.TextContent("Shadow Cascade", "Requires Universal Render Pipeline. Adaptive Shadow Cascade changes the Main Light Shadow Cascades Count Bias of the Universal Render Pipeline based on the thermal and performance load.", null, null);
+        static readonly GUIContent s_AdaptiveShadowDistance = L10n.TextContent("Shadow Distance", "Requires Universal Render Pipeline. Adaptive Shadow Distance changes the Max Shadow Distance Multiplier of the Universal Render Pipeline based on the thermal and performance load.", null, null);
+        static readonly GUIContent s_AdaptiveShadowmapResolution = L10n.TextContent("Shadowmap Resolution", "Requires Universal Render Pipeline. Adaptive Shadowmap Resolution changes the  Main Light Shadowmap Resolution Multiplier of the Universal Render Pipeline based on the thermal and performance load.", null, null);
+        static readonly GUIContent s_AdaptiveShadowQuality = L10n.TextContent("Shadow Quality", "Requires Universal Render Pipeline. Adaptive Shadow Quality changes the Shadow Quality Bias of the Universal Render Pipeline based on the thermal and performance load.", null, null);
+        static readonly GUIContent s_AdaptiveSorting = L10n.TextContent("Sorting", "Requires Universal Render Pipeline. Adaptive Sorting skips the front-to-back sorting of the Universal Render Pipeline based on the thermal and performance load.", null, null);
+        static readonly GUIContent s_AdaptiveTransparency = L10n.TextContent("Transparency", "Requires Universal Render Pipeline. Adaptive Transparency skips transparent objects render pass.", null, null);
+        static readonly GUIContent s_AdaptiveViewDistance = L10n.TextContent("View Distance", "Adaptive View Distance changes the view distance of the main camera. Requires the MainCamera tag on the Camera you want to assign.", null, null);
+        static readonly GUIContent s_AdaptivePhysics = L10n.TextContent("Physics", "Adaptive Physics changes the Time.fixedDeltaTime based on the thermal and performance load.", null, null);
+        static readonly GUIContent s_AdaptiveDecals = L10n.TextContent("Decals", "Adaptive Decal changes the maximum draw distance for all decals of the Universal Render Pipeline based on the thermal and performance load.", null, null);
+        static readonly GUIContent s_AdaptiveLayerCulling = L10n.TextContent("Layer Culling", "Adaptive Layer Culling changes the maximum draw distance for each layer based on the thermal and performance load. It scales the value provided by camera.layerCullDistances.", null, null);
         
-        static readonly GUIContent s_AdaptiveOnDemandRendering = EditorGUIUtility.TrTextContent(L10n.Tr("On Demand Rendering", null), L10n.Tr("Adaptive On Demand Rendering skips rendering frames while the application is idle in Battery Mode by driving Rendering.OnDemandRendering.renderFrameInterval.", null));
+        static readonly GUIContent s_AdaptiveOnDemandRendering = L10n.TextContent("On Demand Rendering", "Adaptive On Demand Rendering skips rendering frames while the application is idle in Battery Mode by driving Rendering.OnDemandRendering.renderFrameInterval.", null, null);
 
         // Tab strip used in place of the per-scaler Operation Mode dropdown.
         // Visual order is defined by s_OperationModeTabOrder; the labels are derived
@@ -73,11 +76,19 @@ namespace UnityEditor.AdaptivePerformance.Editor
         {
             OperationMode.NormalMode,
             OperationMode.BatteryMode,
+            OperationMode.StableFrameMode,
         };
         [NoAutoStaticsCleanup]
         static GUIContent[] s_OperationModeTabs;
+        // GUIStyle lookups by name require GUI.skin to be loaded, so cache lazily on first draw.
+        // Standard Unity tab styles: pick by position (only-one / first / middle / last)
+        // so the strip renders correctly for any tab count from 1 upward.
+        [NoAutoStaticsCleanup]
+        static GUIStyle s_TabOnlyOneStyle;
         [NoAutoStaticsCleanup]
         static GUIStyle s_TabFirstStyle;
+        [NoAutoStaticsCleanup]
+        static GUIStyle s_TabMiddleStyle;
         [NoAutoStaticsCleanup]
         static GUIStyle s_TabLastStyle;
         const int k_TabButtonHeight = 22;
@@ -86,6 +97,8 @@ namespace UnityEditor.AdaptivePerformance.Editor
         // Fixed x-offset (from the row's left edge) for the per-scaler Enabled checkbox
         // on the header row. 
         const int k_TickboxPosition = 227;
+        // Gap between a prefix label's text and its field when sizing labelWidth to the text.
+        const float k_LabelFieldSpacing = 4f;
 
 
         static readonly string s_FramerateWarningVSync = L10n.Tr("Adaptive Framerate is only supported without VSync. Set VSync Count to \"Don't Sync\" in Quality settings.", null);
@@ -152,11 +165,11 @@ namespace UnityEditor.AdaptivePerformance.Editor
         /// </summary>
         protected virtual bool IsThermalActionDelayAvailable { get; private set; } = true;
 
-        static readonly GUIContent k_ShowRuntimeSettings = EditorGUIUtility.TrTextContent(L10n.Tr("Runtime Settings", null));
-        static readonly GUIContent k_ShowDevelopmentSettings = EditorGUIUtility.TrTextContent(L10n.Tr("Development Settings", null));
-        static readonly GUIContent k_ShowIndexerSettings = EditorGUIUtility.TrTextContent(L10n.Tr("Indexer Settings", null));
-        static readonly GUIContent k_ShowScalerSettings = EditorGUIUtility.TrTextContent(L10n.Tr("Scaler Settings", null));
-        static readonly GUIContent k_ShowScalerProfiles = EditorGUIUtility.TrTextContent(L10n.Tr("Scaler Profiles", null));
+        static readonly GUIContent k_ShowRuntimeSettings = L10n.TextContent("Runtime Settings", null, null, null);
+        static readonly GUIContent k_ShowDevelopmentSettings = L10n.TextContent("Development Settings", null, null, null);
+        static readonly GUIContent k_ShowIndexerSettings = L10n.TextContent("Indexer Settings", null, null, null);
+        static readonly GUIContent k_ShowScalerSettings = L10n.TextContent("Scaler Settings", null, null, null);
+        static readonly GUIContent k_ShowScalerProfiles = L10n.TextContent("Scaler Profiles", null, null, null);
 
         struct ScalerSettingInformation
         {
@@ -405,13 +418,17 @@ namespace UnityEditor.AdaptivePerformance.Editor
                 {
                     m_CurrentSettings.ActiveModeProvider = m_CurrentSettings.BatteryModeProvider;
                 }
+                else if (m_CurrentSettings.IndexerOperationMode == OperationMode.StableFrameMode)
+                {
+                    m_CurrentSettings.ActiveModeProvider = m_CurrentSettings.StableFrameModeProvider;
+                }
 
                 if (m_CurrentSettings.IndexerOperationMode == OperationMode.BatteryMode)
                 {
                     EditorGUI.BeginChangeCheck();
                     // Clamp the minimum here: IntField ignores the field's [Min] attribute, so
                     // without this the user could type a negative value directly.
-                    int newIdleTimeThreshold = Mathf.Max(1, EditorGUILayout.IntField("Idle Time Threshold", m_CurrentSettings.BatteryModeProvider.IdleTimeThresholdInSeconds));
+                    int newIdleTimeThreshold = Mathf.Max(1, EditorGUILayout.IntField(s_IdleTimeThresholdLabel, m_CurrentSettings.BatteryModeProvider.IdleTimeThresholdInSeconds));
                     if (EditorGUI.EndChangeCheck())
                     {
                         m_CurrentSettings.BatteryModeProvider.IdleTimeThresholdInSeconds = newIdleTimeThreshold;
@@ -419,12 +436,34 @@ namespace UnityEditor.AdaptivePerformance.Editor
                     }
 
                     EditorGUI.BeginChangeCheck();
-                    float newSavingTarget = EditorGUILayout.Slider("Save Target", m_CurrentSettings.BatteryModeProvider.SavingTarget, 0f, 0.8f);
+                    float newSavingTarget = EditorGUILayout.Slider(s_SavingTargetLabel, m_CurrentSettings.BatteryModeProvider.SavingTarget, 0f, 0.8f);
                     if (EditorGUI.EndChangeCheck())
                     {
                         m_CurrentSettings.BatteryModeProvider.SavingTarget = newSavingTarget;
                         MarkNonSerializedChange();
                     }
+                }
+                else if (m_CurrentSettings.IndexerOperationMode == OperationMode.StableFrameMode)
+                {
+                    // Default labelWidth (~150px) truncates the descriptive label, so widen it
+                    // just for this field and restore afterwards. Size it from the text plus
+                    // the current indent, since the prefix label loses the indent from its width.
+                    var prevLabelWidth = EditorGUIUtility.labelWidth;
+                    float indent = EditorGUI.IndentedRect(Rect.zero).x;
+                    float requiredLabelWidth = indent + EditorStyles.label.CalcSize(s_TargetFrameTimeVarianceLabel).x + k_LabelFieldSpacing;
+                    EditorGUIUtility.labelWidth = Mathf.Max(prevLabelWidth, requiredLabelWidth);
+                    EditorGUI.BeginChangeCheck();
+                    // Clamp at the input site so the inspector doesn't show negatives
+                    // even briefly. The property setter also enforces a floor, but
+                    // clamping here keeps the displayed value consistent on the same
+                    // frame the user types it.
+                    float newVariance = Mathf.Max(0f, EditorGUILayout.FloatField(s_TargetFrameTimeVarianceLabel, m_CurrentSettings.StableFrameModeProvider.TargetFrameTimeVarianceMs));
+                    if (EditorGUI.EndChangeCheck())
+                    {
+                        m_CurrentSettings.StableFrameModeProvider.TargetFrameTimeVarianceMs = newVariance;
+                        MarkNonSerializedChange();
+                    }
+                    EditorGUIUtility.labelWidth = prevLabelWidth;
                 }
 
                 GUI.enabled = true;
@@ -519,7 +558,7 @@ namespace UnityEditor.AdaptivePerformance.Editor
                         if (EditorGUILayout.DropdownButton(GUIContent.none, FocusType.Passive, menuButton))
                         {
                             GenericMenu menu = new GenericMenu();
-                            menu.AddItem(EditorGUIUtility.TrTextContent("Remove"), false, (tmp) =>
+                            menu.AddItem(L10n.TextContent("Remove", null, null, null), false, (tmp) =>
                             {
                                 int index = (int)tmp;
                                 if (currentSetting.ScalerProfiles.Length == 1)
@@ -561,14 +600,20 @@ namespace UnityEditor.AdaptivePerformance.Editor
                             // list draws inside the frame below them.
                             if (s_TabFirstStyle == null)
                             {
-                                s_TabFirstStyle = "Tab first";
-                                s_TabLastStyle = "Tab last";
+                                // Clip labels so they don't overflow into adjacent tabs in narrow windows
+                                s_TabOnlyOneStyle = new GUIStyle("Tab onlyOne") { clipping = TextClipping.Ellipsis };
+                                s_TabFirstStyle = new GUIStyle("Tab first") { clipping = TextClipping.Ellipsis };
+                                s_TabMiddleStyle = new GUIStyle("Tab middle") { clipping = TextClipping.Ellipsis };
+                                s_TabLastStyle = new GUIStyle("Tab last") { clipping = TextClipping.Ellipsis };
                             }
                             if (s_OperationModeTabs == null)
                             {
                                 s_OperationModeTabs = new GUIContent[s_OperationModeTabOrder.Length];
                                 for (int t = 0; t < s_OperationModeTabOrder.Length; t++)
-                                    s_OperationModeTabs[t] = EditorGUIUtility.TrTextContent(L10n.Tr(ObjectNames.NicifyVariableName(s_OperationModeTabOrder[t].ToString()), null));
+                                {
+                                    string tabName = ObjectNames.NicifyVariableName(s_OperationModeTabOrder[t].ToString());
+                                    s_OperationModeTabs[t] = L10n.TextContent(tabName, tabName, null, null);
+                                }
                             }
 
                             // Matches BeginPlatformGrouping styling: a frameBox wraps the
@@ -581,22 +626,29 @@ namespace UnityEditor.AdaptivePerformance.Editor
                             GUILayout.Space(30);
                             Rect frameRect = EditorGUILayout.BeginVertical(EditorStyles.frameBox);
 
-                            int leftWidth = Mathf.RoundToInt(frameRect.width * 0.5f);
-                            Rect firstTabRect = new Rect(frameRect.x, frameRect.y, leftWidth, k_TabButtonHeight);
-                            Rect lastTabRect = new Rect(frameRect.x + leftWidth, frameRect.y, frameRect.width - leftWidth, k_TabButtonHeight);
-
+                            int tabCount = s_OperationModeTabOrder.Length;
                             int currentTabIdx = Array.IndexOf(s_OperationModeTabOrder, profileInfo.viewedMode);
                             if (currentTabIdx < 0) currentTabIdx = 0;
 
-                            if (GUI.Toggle(firstTabRect, currentTabIdx == 0, s_OperationModeTabs[0], s_TabFirstStyle) && currentTabIdx != 0)
+                            // Split the frame's width into tabCount equal segments using rounded
+                            // pixel boundaries so adjacent tabs share seams without rounding gaps.
+                            float tabWidth = frameRect.width / tabCount;
+                            for (int t = 0; t < tabCount; t++)
                             {
-                                profileInfo.viewedMode = s_OperationModeTabOrder[0];
-                                OnViewedModeChanged();
-                            }
-                            if (GUI.Toggle(lastTabRect, currentTabIdx == 1, s_OperationModeTabs[1], s_TabLastStyle) && currentTabIdx != 1)
-                            {
-                                profileInfo.viewedMode = s_OperationModeTabOrder[1];
-                                OnViewedModeChanged();
+                                int left = Mathf.RoundToInt(t * tabWidth);
+                                int right = Mathf.RoundToInt((t + 1) * tabWidth);
+                                Rect tabSegment = new Rect(frameRect.x + left, frameRect.y, right - left, k_TabButtonHeight);
+
+                                GUIStyle tabStyle = tabCount == 1     ? s_TabOnlyOneStyle
+                                                  : t == 0            ? s_TabFirstStyle
+                                                  : t == tabCount - 1 ? s_TabLastStyle
+                                                  :                     s_TabMiddleStyle;
+
+                                if (GUI.Toggle(tabSegment, currentTabIdx == t, s_OperationModeTabs[t], tabStyle) && currentTabIdx != t)
+                                {
+                                    profileInfo.viewedMode = s_OperationModeTabOrder[t];
+                                    OnViewedModeChanged();
+                                }
                             }
 
                             // Tabs are drawn at fixed Rects above; reserve matching layout
@@ -735,20 +787,31 @@ namespace UnityEditor.AdaptivePerformance.Editor
 
         // Resolves the per-mode struct the inspector should read from and write to for
         // the currently-viewed tab. Custom scalers expose their per-mode structs as
-        // DefaultSetting / BatteryModeSetting properties; default-scaler wrappers expose
-        // them via GetNormalModeSetting() / GetBatteryModeSetting(). Centralized here so
-        // no caller has to repeat the "which mode + which kind of scaler" branching, and
-        // so the editor never goes through ActiveSetting (which routes by the global
+        // DefaultSetting / BatteryModeSetting / StableFrameModeSetting properties;
+        // default-scaler wrappers expose them via Get*ModeSetting(). Centralized here
+        // so no caller has to repeat the "which mode + which kind of scaler" branching,
+        // and so the editor never goes through ActiveSetting (which routes by the global
         // IndexerOperationMode and would ignore the viewed tab).
         static AdaptivePerformanceScalerSettingsBase GetActiveModeSetting(
             OperationMode viewedMode,
             AdaptivePerformanceScalerSettingsBase scalerSetting,
             AdaptivePerformanceScaler scaler)
         {
-            bool battery = viewedMode == OperationMode.BatteryMode;
             if (scaler != null)
-                return battery ? scaler.BatteryModeSetting : scaler.DefaultSetting;
-            return battery ? scalerSetting.GetBatteryModeSetting() : scalerSetting.GetNormalModeSetting();
+            {
+                switch (viewedMode)
+                {
+                    case OperationMode.BatteryMode:     return scaler.BatteryModeSetting;
+                    case OperationMode.StableFrameMode: return scaler.StableFrameModeSetting;
+                    default:                            return scaler.DefaultSetting;
+                }
+            }
+            switch (viewedMode)
+            {
+                case OperationMode.BatteryMode:     return scalerSetting.GetBatteryModeSetting();
+                case OperationMode.StableFrameMode: return scalerSetting.GetStableFrameModeSetting();
+                default:                            return scalerSetting.GetNormalModeSetting();
+            }
         }
 
         // Called when the per-profile Operation Mode tab selection changes. Clears

@@ -38,6 +38,8 @@ namespace UnityEngine.AI
     [HelpURL("https://docs.unity3d.com/Packages/com.unity.ai.navigation@2.0/manual/NavMeshAgent.html")]
     public sealed class NavMeshAgent : Behaviour
     {
+        internal NavMeshAgent(global::UnityEngine.EntityId id) : base(id) {}
+        public NavMeshAgent() {}
         ///<summary>Sets or updates the destination thus triggering the calculation for a new path.</summary>
         ///<remarks>Note that the path may not become available until after a few frames later.
         ///While the path is being computed, <see cref="pathPending" /> will be true.

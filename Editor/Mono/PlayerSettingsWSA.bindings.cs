@@ -12,6 +12,7 @@ namespace UnityEditor
     // Player Settings is where you define various parameters for the final game that you will build in Unity. Some of these values are used in the Resolution Dialog that launches when you open a standalone game.
     public sealed partial class PlayerSettings : UnityEngine.Object
     {
+        internal PlayerSettings(global::UnityEngine.EntityId id) : base(id) {}
         public enum WSAApplicationShowName
         {
             NotSet = 0,

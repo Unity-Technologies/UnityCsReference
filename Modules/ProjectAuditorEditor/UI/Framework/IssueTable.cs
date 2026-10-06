@@ -32,7 +32,7 @@ namespace Unity.ProjectAuditor.Editor.UI.Framework
 
         protected override void AddColumnHeaderContextMenuItems(GenericMenu menu)
         {
-            menu.AddItem(EditorGUIUtility.TrTextContent("Resize to Fit"), false, new GenericMenu.MenuFunction(ResizeToFit));
+            menu.AddItem(L10n.TextContent("Resize to Fit", null, null, null), false, new GenericMenu.MenuFunction(ResizeToFit));
             menu.AddSeparator("");
             for (int userData = 0; userData < state.columns.Length; ++userData)
             {
@@ -114,7 +114,8 @@ namespace Unity.ProjectAuditor.Editor.UI.Framework
             multicolumnHeader.sortingChanged += OnSortingChanged;
             showAlternatingRowBackgrounds = true;
 
-            Clear();
+            // Reset without clearing the selection
+            ResetIssues();
         }
 
         public void AddIssues(IReadOnlyCollection<ReportItem> issues)
@@ -141,17 +142,7 @@ namespace Unity.ProjectAuditor.Editor.UI.Framework
 
             foreach (var issue in issues)
             {
-                var depth = 1;
-                if (m_Layout.IsHierarchy)
-                {
-                    if (m_Desc.Category == IssueCategory.BuildStep)
-                    {
-                        depth = issue.GetCustomPropertyInt32(BuildReportStepProperty.Depth);
-                    }
-                    else
-                        depth = 0;
-                }
-
+                var depth = m_Layout.IsHierarchy ? 0 : 1;
                 var item = new IssueTableItem(m_NextId++, depth, issue.Description, issue, issue.GetPropertyGroup(m_Layout.Properties[groupPropertyIndex]));
                 items.Add(item.id, item);
             }
@@ -161,10 +152,15 @@ namespace Unity.ProjectAuditor.Editor.UI.Framework
 
         public void Clear()
         {
+            ResetIssues();
+            ClearSelection();
+        }
+
+        void ResetIssues()
+        {
             m_NextId = k_FirstId;
             m_TreeViewItemGroupsLookup.Clear();
             m_TreeViewItemIssues = new Dictionary<int, IssueTableItem>();
-            ClearSelection();
         }
 
         protected override TreeViewItem BuildRoot()
@@ -201,7 +197,19 @@ namespace Unity.ProjectAuditor.Editor.UI.Framework
             m_NumMatchingIssues = filteredItems.Length;
             if (m_NumMatchingIssues == 0)
             {
-                m_Rows.Add(new TreeViewItem(0, 0, "No items"));
+                var pageHasIssues = false;
+                foreach (var item in allIssues)
+                {
+                    if (m_View.MatchesPage(item.ReportItem))
+                    {
+                        pageHasIssues = true;
+                        break;
+                    }
+                }
+                var message = pageHasIssues
+                    ? Styles.NoItemsMatchFilters
+                    : string.Format(Styles.NoItemsFound, m_Desc.DisplayName);
+                m_Rows.Add(new TreeViewItem(0, 0, message));
                 return m_Rows;
             }
 
@@ -233,6 +241,12 @@ namespace Unity.ProjectAuditor.Editor.UI.Framework
 
                 foreach (var issue in allIssues)
                 {
+                    // allIssues spans every page that shares this category's view (e.g. Code is shown under
+                    // both Optimization and Upgrade), so exclude issues that don't belong on the current page.
+                    // Otherwise an issue ignored on one page could make an empty group appear on another.
+                    if (!m_View.MatchesPage(issue.ReportItem))
+                        continue;
+
                     string filteredItemName = issue.GroupName;
                     if (!groupNameItemLookupIgnored.ContainsKey(filteredItemName))
                     {
@@ -421,7 +435,7 @@ namespace Unity.ProjectAuditor.Editor.UI.Framework
 
             if (item == null)
             {
-                if (propertyType == PropertyType.Description)
+                if (columnIndex == 0)
                     EditorGUI.LabelField(cellRect, new GUIContent(treeViewItem.displayName, treeViewItem.displayName), labelStyle);
                 return;
             }
@@ -494,7 +508,7 @@ namespace Unity.ProjectAuditor.Editor.UI.Framework
                     }
                     else if (!string.IsNullOrEmpty(item.GroupAreas))
                     {
-                        var content = EditorGUIUtility.TrTempContent(item.GroupAreas);
+                        var content = L10n.TempContent(item.GroupAreas, null);
                         content.tooltip = Styles.MixedArea.tooltip;
                         EditorGUI.LabelField(cellRect, content, labelStyle);
                     }
@@ -540,7 +554,7 @@ namespace Unity.ProjectAuditor.Editor.UI.Framework
 
                     case PropertyType.Areas:
                         var areaNames = issue.Id.GetDescriptor().GetAreasSummary();
-                        var content = EditorGUIUtility.TrTempContent(areaNames);
+                        var content = L10n.TempContent(areaNames, null);
                         content.tooltip = Styles.MixedArea.tooltip;
                         EditorGUI.LabelField(cellRect, content, labelStyle);
                         break;
@@ -1153,8 +1167,10 @@ namespace Unity.ProjectAuditor.Editor.UI.Framework
 
         static class Styles
         {
-            public static readonly GUIContent MixedArea = EditorGUIUtility.TrTextContent("Mixed", "Areas that this issue might have an impact on");
-            public static readonly GUIContent MixedSeverity = EditorGUIUtility.TrTextContent("Mixed");
+            public static readonly GUIContent MixedArea = L10n.TextContent("Mixed", "Areas that this issue might have an impact on", null, null);
+            public static readonly GUIContent MixedSeverity = L10n.TextContent("Mixed", null, null, null);
+            public static readonly string NoItemsFound = L10n.Tr("No {0} found.", null);
+            public static readonly string NoItemsMatchFilters = L10n.Tr("No items match the current filters.", null);
         }
     }
 }

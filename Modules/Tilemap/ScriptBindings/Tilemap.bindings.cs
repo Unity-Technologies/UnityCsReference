@@ -35,6 +35,56 @@ namespace UnityEngine.Tilemaps
         LockAll = LockColor | LockTransform,
     }
 
+    ///<summary>Options for the reasons why a <see cref="Tilemap" /> itself has changed.</summary>
+    ///<remarks>These reasons affect every cell, and are reported by <see cref="Tilemap.tilemapChanged" />. For changes
+    ///to individual tiles, see <see cref="TileChangeReason" />.
+    ///A batch of changes is reported with the reasons of every change in it combined.</remarks>
+    [Flags]
+    public enum TilemapChangeReason
+    {
+        ///<summary>The origin or size of the <see cref="Tilemap" /> changed.</summary>
+        ///<remarks>Existing tiles keep their positions.</remarks>
+        Dimensions = 1 << 0,
+        ///<summary>A property of the <see cref="Tilemap" />, such as its tile anchor, orientation or color, changed.</summary>
+        Property = 1 << 1,
+        ///<summary>The geometry of the <see cref="Tilemap" /> changed, including changes to its <see cref="Grid" />.</summary>
+        ///<remarks>Every tile moves, so colliders built from the <see cref="Tilemap" /> are out of date.</remarks>
+        Geometry = 1 << 2,
+        ///<summary>All map-wide changes.</summary>
+        Everything = Dimensions | Property | Geometry,
+        ///<summary>The change was made to the editor preview of the <see cref="Tilemap" /> rather than to the
+        ///<see cref="Tilemap" /> itself.</summary>
+        ///<remarks>This accompanies the reason for the change. Ignore changes carrying it to leave a brush preview
+        ///out of anything built from the <see cref="Tilemap" />.</remarks>
+        EditorPreview = 1 << 3,
+    }
+
+    ///<summary>Options for the reasons why tiles of a <see cref="Tilemap" /> have changed.</summary>
+    ///<remarks>These reasons are reported by <see cref="Tilemap.tilemapTilesChanged" />. For changes to the
+    ///<see cref="Tilemap" /> itself, see <see cref="TilemapChangeReason" />.
+    ///A batch of changes is reported with the reasons of every change in it combined, so a reason cannot be traced
+    ///back to the individual tile that caused it.</remarks>
+    [Flags]
+    public enum TileChangeReason
+    {
+        ///<summary>A <see cref="Tile" /> was set, cleared or refreshed, so any of its properties may have changed.</summary>
+        Replaced = 1 << 0,
+        ///<summary>The animation of a <see cref="Tile" /> changed.</summary>
+        SpriteAnimation = 1 << 1,
+        ///<summary>The transform matrix of a <see cref="Tile" /> changed.</summary>
+        Transform = 1 << 2,
+        ///<summary>The color of a <see cref="Tile" /> changed.</summary>
+        Color = 1 << 3,
+        ///<summary>The <see cref="TileFlags" /> of a <see cref="Tile" /> changed.</summary>
+        Flags = 1 << 4,
+        ///<summary>The <see cref="Tile.ColliderType" /> of a <see cref="Tile" /> changed.</summary>
+        ColliderType = 1 << 5,
+
+        ///<summary>The changes which require colliders to be rebuilt for physics.</summary>
+        ///<remarks>Test against this to ignore changes that cannot affect collision, such as a tile being recolored.</remarks>
+        Physics = Replaced | Transform | ColliderType,
+    }
+
     ///<summary>Options for flags controlling behavior for a Tile Animation on a <see cref="Tilemap" />.</summary>
     [Flags]
     public enum TileAnimationFlags
@@ -65,6 +115,8 @@ namespace UnityEngine.Tilemaps
     [NativeClass("Tilemap", PersistentTypeId = 0x6DA822BD)]
     public sealed partial class Tilemap : GridLayout
     {
+        internal Tilemap(global::UnityEngine.EntityId id) : base(id) {}
+        public Tilemap() {}
         ///<summary>Determines the orientation of <see cref="Tile" />s in the <see cref="Tilemap" />.</summary>
         public enum Orientation
         {
@@ -1248,46 +1300,35 @@ namespace UnityEngine.Tilemaps
 
         ///<summary>A Struct for containing changes to a <see cref="Tile" /> when it has been changed on a <see cref="Tilemap" />.</summary>
         [RequiredByNativeCode]
+        [StructLayout(LayoutKind.Sequential)]
+        [NativeHeader("Modules/Tilemap/Public/TilemapTile.h")]
         public struct SyncTile
         {
             internal Vector3Int m_Position;
-            internal TileBase m_Tile;
+            internal EntityId m_TileId;
             internal TileData m_TileData;
 
             ///<summary>The position of the <see cref="Tile" /> on a <see cref="Tilemap" /> which has changed.</summary>
-            public Vector3Int position
-            {
-                get { return m_Position; }
-            }
-
-            ///<summary>The <see cref="Tile" /> at the given position on the <see cref="Tilemap" />.</summary>
-            ///<remarks>This is null if a <see cref="Tile" /> has been removed from the <see cref="Tilemap" />.</remarks>
-            public TileBase tile
-            {
-                get { return m_Tile; }
-            }
+            public Vector3Int position => m_Position;
 
             ///<summary>The properties of the <see cref="Tile" /> at the given position on the <see cref="Tilemap" />.</summary>
             ///<remarks>This is invalid if there is no <see cref="Tile" /> at that position on the <see cref="Tilemap" />.</remarks>
-            public TileData tileData
-            {
-                get { return m_TileData; }
-            }
+            public TileData tileData => m_TileData;
 
-            [RequiredByNativeCode]
-            internal static void ReconstructArrayElementRaw(SyncTile[] array, int index, TileBase tile, Vector3Int position, TileData tileData)
-            {
-                ref SyncTile tmp = ref array[index];
-                tmp.m_Tile = tile;
-                tmp.m_Position = position;
-                tmp.m_TileData = tileData;
-            }
+            ///<summary>Whether there is a <see cref="Tile" /> at the given position on the <see cref="Tilemap" />.</summary>
+            ///<remarks>This is faster than checking <see cref="tile" /> against null, as it does not resolve the <see cref="Tile" />.</remarks>
+            public bool hasTile => Resources.EntityIdIsValid(m_TileId);
+
+            ///<summary>The <see cref="Tile" /> at the given position on the <see cref="Tilemap" />.</summary>
+            ///<remarks>This is null if a <see cref="Tile" /> has been removed from the <see cref="Tilemap" />.</remarks>
+            public TileBase tile => Resources.EntityIdIsValid(m_TileId) ? Resources.EntityIdToObject(m_TileId) as TileBase : null;
         }
 
         internal struct SyncTileCallbackSettings
         {
             internal bool hasSyncTileCallback;
             internal bool hasPositionsChangedCallback;
+            internal bool hasTilesChangedCallback;
             internal bool isBufferSyncTile;
         }
 
@@ -1296,6 +1337,7 @@ namespace UnityEngine.Tilemaps
         {
             settings.hasSyncTileCallback = HasSyncTileCallback();
             settings.hasPositionsChangedCallback = HasPositionsChangedCallback();
+            settings.hasTilesChangedCallback = HasTilesChangedCallback();
             settings.isBufferSyncTile = bufferSyncTile;
         }
 
@@ -1311,6 +1353,56 @@ namespace UnityEngine.Tilemaps
         private void DoPositionsChangedCallback(int count, IntPtr positionsIntPtr)
         {
             HandlePositionsChangedCallback(count, positionsIntPtr);
+        }
+
+        // The engine reports both kinds of reason in one word, so each conversion keeps only what its own enum names.
+        private const int k_NativeTilemapReasonMask = 0x00000007;
+        private const int k_NativeTileEverything = 1 << 16;
+        private const int k_NativeTileSprite = 1 << 17;
+        private const int k_NativeTileSpriteAnimation = 1 << 18;
+        private const int k_NativeTileTransform = 1 << 19;
+        private const int k_NativeTileColor = 1 << 20;
+        private const int k_NativeTileFlags = 1 << 21;
+        private const int k_NativeTileColliderType = 1 << 23;
+        private const int k_NativeEditorPreview = 1 << 31;
+
+        private static TilemapChangeReason ToTilemapChangeReason(int nativeReason)
+        {
+            var reason = (TilemapChangeReason)(nativeReason & k_NativeTilemapReasonMask);
+            if ((nativeReason & k_NativeEditorPreview) != 0)
+                reason |= TilemapChangeReason.EditorPreview;
+            return reason;
+        }
+
+        private static TileChangeReason ToTileChangeReason(int nativeReason)
+        {
+            TileChangeReason reason = 0;
+            // A changed sprite is folded in: on its own it says no more than that the tile is not what it was.
+            if ((nativeReason & (k_NativeTileEverything | k_NativeTileSprite)) != 0)
+                reason |= TileChangeReason.Replaced;
+            if ((nativeReason & k_NativeTileSpriteAnimation) != 0)
+                reason |= TileChangeReason.SpriteAnimation;
+            if ((nativeReason & k_NativeTileTransform) != 0)
+                reason |= TileChangeReason.Transform;
+            if ((nativeReason & k_NativeTileColor) != 0)
+                reason |= TileChangeReason.Color;
+            if ((nativeReason & k_NativeTileFlags) != 0)
+                reason |= TileChangeReason.Flags;
+            if ((nativeReason & k_NativeTileColliderType) != 0)
+                reason |= TileChangeReason.ColliderType;
+            return reason;
+        }
+
+        [RequiredByNativeCode]
+        private void DoTilesChangedCallback(int count, IntPtr entriesIntPtr, int reason)
+        {
+            HandleTilesChangedCallback(count, entriesIntPtr, ToTileChangeReason(reason));
+        }
+
+        [RequiredByNativeCode]
+        private void DoTilemapChangedCallback(int reason)
+        {
+            HandleTilemapChangedCallback(ToTilemapChangeReason(reason));
         }
 
         #region Non Allocating Getters
@@ -2021,6 +2113,8 @@ namespace UnityEngine.Tilemaps
     [NativeClass("TilemapRenderer", PersistentTypeId = 0x1CD494D8)]
     public sealed partial class TilemapRenderer : Renderer
     {
+        internal TilemapRenderer(global::UnityEngine.EntityId id) : base(id) {}
+        public TilemapRenderer() {}
         ///<summary>Sort order for all tiles rendered by the <see cref="TilemapRenderer" />.</summary>
         public enum SortOrder
         {
@@ -2459,6 +2553,8 @@ namespace UnityEngine.Tilemaps
     [NativeClass("TilemapCollider2D", PersistentTypeId = 0x012CE73C)]
     public sealed partial class TilemapCollider2D : Collider2D
     {
+        internal TilemapCollider2D(global::UnityEngine.EntityId id) : base(id) {}
+        public TilemapCollider2D() {}
         // Get/Set Delaunay mesh usage.
         ///<summary>When the value is true, the Collider uses an additional Delaunay triangulation step to produce the Collider mesh. When the value is false, this additional step does not occur.</summary>
         ///<remarks>Using Delaunay triangulation can reduce the number of shapes created in the Collider mesh and reduce the number of small triangle fans produced, both of which can improve overall physics performance.</remarks>

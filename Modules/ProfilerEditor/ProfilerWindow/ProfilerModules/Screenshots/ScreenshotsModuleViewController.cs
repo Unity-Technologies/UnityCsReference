@@ -112,6 +112,9 @@ namespace UnityEditorInternal.Profiling
             // own event rather than settingsChanged, so subscribe to it to keep the panel in sync.
             ProfilerUserSettings.targetFramesPerSecondChanged += OnTargetFramesPerSecondChanged;
 
+            // A clear leaves no frame to select, so nothing else resets the panels.
+            ProfilerDriver.profileCleared += OnProfileCleared;
+
             UpdateScreenshotCountAndEmptyState();
             ApplyFrameSelection((int)ProfilerWindow.selectedFrameIndex);
 
@@ -135,6 +138,15 @@ namespace UnityEditorInternal.Profiling
             // Re-apply the current selection so the info panel's over-budget timings reflect the new
             // target frame rate. Resolving to the same frame skips the expensive screenshot re-extract.
             ApplyFrameSelection((int)ProfilerWindow.selectedFrameIndex);
+        }
+
+        void OnProfileCleared()
+        {
+            // The catalogue only raises Changed when the clear actually dropped screenshots, so a
+            // session with frames but no screenshots would never reset. Pass -1 rather than the
+            // window's selected frame: it may not have reset its cached current frame yet.
+            UpdateScreenshotCountAndEmptyState();
+            ApplyFrameSelection(-1);
         }
 
         void OnPlayModeStateChanged(PlayModeStateChange stateChange)
@@ -166,7 +178,8 @@ namespace UnityEditorInternal.Profiling
             if (profilerFrame < 0)
             {
                 // No valid frame (empty capture, cleared profiler, or an empty capture loaded): reset
-                // the info panel to its empty state so it doesn't keep the previous frame's values.
+                // both panels so they don't keep the previous frame's values.
+                m_DetailsViewController?.Clear();
                 if (m_InfoPanelVisible)
                     m_InfoPanelViewController?.UpdateForFrame(-1, 0);
                 return;
@@ -176,7 +189,7 @@ namespace UnityEditorInternal.Profiling
             // chart use, so it never surfaces a screenshot from a frame trimmed out of the window.
             var firstDisplayedFrame = ScreenshotIndexCatalogue.FirstSelectableFrameIndex();
 
-            m_TimelineViewController?.UpdateSelection(ResolveDisplayFrame(profilerFrame));
+            m_TimelineViewController?.UpdateSelection(ResolveHighlightFrame(profilerFrame, firstDisplayedFrame));
             m_DetailsViewController?.LoadScreenshot(profilerFrame, firstDisplayedFrame);
 
             // Skip refreshing the info panel while it's collapsed; it's refreshed when toggled back on.
@@ -225,18 +238,17 @@ namespace UnityEditorInternal.Profiling
             }
         }
 
-        // The screenshot the strip should highlight for a given profiler frame: the screenshot at
-        // that frame if one exists, else the nearest one before it (matching what the detail panel
-        // displays). When there's no screenshot at or before the frame, returns the frame unchanged
-        // and the strip falls back to highlighting the closest thumbnail.
-        int ResolveDisplayFrame(int profilerFrame)
+        // The screenshot the strip should highlight for a given profiler frame, resolved through the
+        // same bounded lookup as the detail panel and the info panel so the three can't disagree.
+        // -1 when there's nothing to highlight: the strip must show no selection rather than fall
+        // back to its closest thumbnail, which for a frame below the display window is the first one.
+        int ResolveHighlightFrame(int profilerFrame, int firstDisplayedFrame)
         {
-            if (m_Catalogue == null || m_Catalogue.TryGetEmissionFrame(profilerFrame, out _))
-                return profilerFrame;
-            if (m_Catalogue.TryGetNearestPriorLogicalFrame(profilerFrame, out var nearest))
-                return nearest.LogicalFrame;
+            if (m_Catalogue == null
+                || !m_Catalogue.TryResolveDisplayedScreenshot(profilerFrame, firstDisplayedFrame, out var source))
+                return -1;
 
-            return profilerFrame;
+            return source.LogicalFrame;
         }
 
         void OnTimelineFrameSelected(int frameIndex)
@@ -287,6 +299,7 @@ namespace UnityEditorInternal.Profiling
                 EditorApplication.playModeStateChanged -= OnPlayModeStateChanged;
                 ProfilerUserSettings.settingsChanged -= OnProfilerSettingsChanged;
                 ProfilerUserSettings.targetFramesPerSecondChanged -= OnTargetFramesPerSecondChanged;
+                ProfilerDriver.profileCleared -= OnProfileCleared;
 
                 if (ProfilerWindow != null)
                     ProfilerWindow.SelectedFrameIndexChanged -= OnSelectedFrameChanged;

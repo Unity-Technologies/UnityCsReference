@@ -2,7 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: GraphicsDebuggingTools not yet converted
 using UnityEditor;
 using UnityEngine;
 using Unity.Scripting.LifecycleManagement;
@@ -72,11 +71,11 @@ namespace UnityEditorInternal.FrameDebuggerInternal
         // Top Toolbar
         internal struct TopToolbar
         {
-            internal static readonly GUIContent s_RecordButtonEnable = EditorGUIUtility.TrTextContent(L10n.Tr("Enable", null));
-            internal static readonly GUIContent s_RecordButtonDisable = EditorGUIUtility.TrTextContent(L10n.Tr("Disable", null));
-            internal static readonly GUIContent s_PrevFrame = EditorGUIUtility.TrIconContent("Profiler.PrevFrame", "Go back one frame");
-            internal static readonly GUIContent s_NextFrame = EditorGUIUtility.TrIconContent("Profiler.NextFrame", "Go one frame forwards");
-            internal static readonly GUIContent s_LevelsHeader = EditorGUIUtility.TrTextContent("Levels", "Render target display black/white intensity levels");
+            internal static readonly GUIContent s_RecordButtonEnable = L10n.TextContent("Enable", null, null, null);
+            internal static readonly GUIContent s_RecordButtonDisable = L10n.TextContent("Disable", null, null, null);
+            internal static readonly GUIContent s_PrevFrame = L10n.IconContent("Profiler.PrevFrame", "Go back one frame", null);
+            internal static readonly GUIContent s_NextFrame = L10n.IconContent("Profiler.NextFrame", "Go one frame forwards", null);
+            internal static readonly GUIContent s_LevelsHeader = L10n.TextContent("Levels", "Render target display black/white intensity levels", null, null);
         }
 
         // Event Toolbar in the Event Details window
@@ -110,28 +109,28 @@ namespace UnityEditorInternal.FrameDebuggerInternal
                 fixedHeight = k_ToolbarHeight
             };
 
-            internal static readonly GUIContent s_DepthLabel = EditorGUIUtility.TrTextContent("Depth", "Show depth buffer");
-            internal static readonly GUIContent s_StencilLabel = EditorGUIUtility.TrTextContent("Stencil", "Show stencil buffer");
+            internal static readonly GUIContent s_DepthLabel = L10n.TextContent("Depth", "Show depth buffer", null, null);
+            internal static readonly GUIContent s_StencilLabel = L10n.TextContent("Stencil", "Show stencil buffer", null, null);
 
             internal static readonly GUIContent[] s_ChannelLabels = new[]
             {
-                EditorGUIUtility.TrTextContent("R", "Shows the selected channel from the Render Target"),
-                EditorGUIUtility.TrTextContent("G", "Shows the selected channel from the Render Target"),
-                EditorGUIUtility.TrTextContent("B", "Shows the selected channel from the Render Target"),
-                EditorGUIUtility.TrTextContent("A", "Shows the selected channel from the Render Target"),
+                L10n.TextContent("R", "Shows the selected channel from the Render Target", null, null),
+                L10n.TextContent("G", "Shows the selected channel from the Render Target", null, null),
+                L10n.TextContent("B", "Shows the selected channel from the Render Target", null, null),
+                L10n.TextContent("A", "Shows the selected channel from the Render Target", null, null),
             };
 
-            internal static readonly GUIContent s_LevelsHeader = EditorGUIUtility.TrTextContent("Levels", "Render target display black/white intensity levels");
+            internal static readonly GUIContent s_LevelsHeader = L10n.TextContent("Levels", "Render target display black/white intensity levels", null, null);
             internal static readonly GUIContent[] s_MRTLabels = new[]
             {
-                EditorGUIUtility.TrTextContent("RT 0", "Show render target #0"),
-                EditorGUIUtility.TrTextContent("RT 1", "Show render target #1"),
-                EditorGUIUtility.TrTextContent("RT 2", "Show render target #2"),
-                EditorGUIUtility.TrTextContent("RT 3", "Show render target #3"),
-                EditorGUIUtility.TrTextContent("RT 4", "Show render target #4"),
-                EditorGUIUtility.TrTextContent("RT 5", "Show render target #5"),
-                EditorGUIUtility.TrTextContent("RT 6", "Show render target #6"),
-                EditorGUIUtility.TrTextContent("RT 7", "Show render target #7")
+                L10n.TextContent("RT 0", "Show render target #0", null, null),
+                L10n.TextContent("RT 1", "Show render target #1", null, null),
+                L10n.TextContent("RT 2", "Show render target #2", null, null),
+                L10n.TextContent("RT 3", "Show render target #3", null, null),
+                L10n.TextContent("RT 4", "Show render target #4", null, null),
+                L10n.TextContent("RT 5", "Show render target #5", null, null),
+                L10n.TextContent("RT 6", "Show render target #6", null, null),
+                L10n.TextContent("RT 7", "Show render target #7", null, null)
             };
         }
 
@@ -267,43 +266,43 @@ namespace UnityEditorInternal.FrameDebuggerInternal
             internal const string k_ErrorInvalidPlayerGUID = "Player GUID is invalid.";
             internal const string k_WarningPlayerNotSendingData = "No response from player. \nTry: Focus the player window, verify it's a Development Build, and check it uses MultiThreaded, LegacyJobified, or NativeGraphicsJobs threading mode.";
 
-            internal static readonly GUIContent s_RenderTargetText = EditorGUIUtility.TrTextContent("RenderTarget");
-            internal static readonly GUIContent s_CopyEventText = EditorGUIUtility.TrTextContent("Copy Event Info");
-            internal static readonly GUIContent s_CopyPropertyText = EditorGUIUtility.TrTextContent("Copy Property");
+            internal static readonly GUIContent s_RenderTargetText = L10n.TextContent("RenderTarget", null, null, null);
+            internal static readonly GUIContent s_CopyEventText = L10n.TextContent("Copy Event Info", null, null, null);
+            internal static readonly GUIContent s_CopyPropertyText = L10n.TextContent("Copy Property", null, null, null);
             internal static readonly GUIContent[] s_FoldoutCopyText =
             {
-                EditorGUIUtility.TrTextContent("Copy Output"),
-                EditorGUIUtility.TrTextContent("Copy All Details"),
-                EditorGUIUtility.TrTextContent("Copy All Keyword Properties"),
-                EditorGUIUtility.TrTextContent("Copy All Texture Properties"),
-                EditorGUIUtility.TrTextContent("Copy All Integer Properties"),
-                EditorGUIUtility.TrTextContent("Copy All Float Properties"),
-                EditorGUIUtility.TrTextContent("Copy All Vector Properties"),
-                EditorGUIUtility.TrTextContent("Copy All Matrix Properties"),
-                EditorGUIUtility.TrTextContent("Copy All Buffer Properties"),
-                EditorGUIUtility.TrTextContent("Copy All Constant Buffer Properties")
+                L10n.TextContent("Copy Output", null, null, null),
+                L10n.TextContent("Copy All Details", null, null, null),
+                L10n.TextContent("Copy All Keyword Properties", null, null, null),
+                L10n.TextContent("Copy All Texture Properties", null, null, null),
+                L10n.TextContent("Copy All Integer Properties", null, null, null),
+                L10n.TextContent("Copy All Float Properties", null, null, null),
+                L10n.TextContent("Copy All Vector Properties", null, null, null),
+                L10n.TextContent("Copy All Matrix Properties", null, null, null),
+                L10n.TextContent("Copy All Buffer Properties", null, null, null),
+                L10n.TextContent("Copy All Constant Buffer Properties", null, null, null)
             };
-            internal static readonly GUIContent s_RealShaderText = EditorGUIUtility.TrTextContent("Used Shader", "The shader used in this draw call.");
-            internal static readonly GUIContent s_OriginalShaderText = EditorGUIUtility.TrTextContent("Original Shader", "The shader originally set to be used in this draw call.");
-            internal static readonly GUIContent s_RayTracingShaderText = EditorGUIUtility.TrTextContent("Ray Tracing Shader", "");
-            internal static readonly GUIContent s_RayTracingGenerationShaderText = EditorGUIUtility.TrTextContent("Ray Generation Shader", "");
-            internal static readonly GUIContent s_ComputeShaderText = EditorGUIUtility.TrTextContent("Compute Shader", "");
-            internal static readonly GUIContent s_ShadingRateImageText = EditorGUIUtility.TrTextContent("Shading Rate Image");
-            internal static readonly GUIContent s_BatchCauseText = EditorGUIUtility.TrTextContent("Batch cause");
-            internal static readonly GUIContent s_PassLightModeText = EditorGUIUtility.TrTextContent("Pass\nLightMode");
-            internal static readonly GUIContent s_ArrayPopupButtonText = EditorGUIUtility.TrTextContent("...");
-            internal static readonly GUIContent s_FoldoutOutputText = EditorGUIUtility.TrTextContent("Output");
-            internal static readonly GUIContent s_FoldoutMeshText = EditorGUIUtility.TrTextContent("Meshes");
-            internal static readonly GUIContent s_FoldoutMeshNotSupportedText = EditorGUIUtility.TrTextContent("Meshes - Not supported");
-            internal static readonly GUIContent s_FoldoutEventDetailsText = EditorGUIUtility.TrTextContent("Details");
-            internal static readonly GUIContent s_FoldoutTexturesText = EditorGUIUtility.TrTextContent("Textures");
-            internal static readonly GUIContent s_FoldoutKeywordsText = EditorGUIUtility.TrTextContent("Keywords");
-            internal static readonly GUIContent s_FoldoutFloatsText = EditorGUIUtility.TrTextContent("Floats");
-            internal static readonly GUIContent s_FoldoutIntsText = EditorGUIUtility.TrTextContent("Ints");
-            internal static readonly GUIContent s_FoldoutVectorsText = EditorGUIUtility.TrTextContent("Vectors");
-            internal static readonly GUIContent s_FoldoutMatricesText = EditorGUIUtility.TrTextContent("Matrices");
-            internal static readonly GUIContent s_FoldoutBuffersText = EditorGUIUtility.TrTextContent("Buffers");
-            internal static readonly GUIContent s_FoldoutCBufferText = EditorGUIUtility.TrTextContent("Constant Buffers");
+            internal static readonly GUIContent s_RealShaderText = L10n.TextContent("Used Shader", "The shader used in this draw call.", null, null);
+            internal static readonly GUIContent s_OriginalShaderText = L10n.TextContent("Original Shader", "The shader originally set to be used in this draw call.", null, null);
+            internal static readonly GUIContent s_RayTracingShaderText = L10n.TextContent("Ray Tracing Shader", "", null, null);
+            internal static readonly GUIContent s_RayTracingGenerationShaderText = L10n.TextContent("Ray Generation Shader", "", null, null);
+            internal static readonly GUIContent s_ComputeShaderText = L10n.TextContent("Compute Shader", "", null, null);
+            internal static readonly GUIContent s_ShadingRateImageText = L10n.TextContent("Shading Rate Image", null, null, null);
+            internal static readonly GUIContent s_BatchCauseText = L10n.TextContent("Batch cause", null, null, null);
+            internal static readonly GUIContent s_PassLightModeText = L10n.TextContent("Pass\nLightMode", null, null, null);
+            internal static readonly GUIContent s_ArrayPopupButtonText = L10n.TextContent("...", null, null, null);
+            internal static readonly GUIContent s_FoldoutOutputText = L10n.TextContent("Output", null, null, null);
+            internal static readonly GUIContent s_FoldoutMeshText = L10n.TextContent("Meshes", null, null, null);
+            internal static readonly GUIContent s_FoldoutMeshNotSupportedText = L10n.TextContent("Meshes - Not supported", null, null, null);
+            internal static readonly GUIContent s_FoldoutEventDetailsText = L10n.TextContent("Details", null, null, null);
+            internal static readonly GUIContent s_FoldoutTexturesText = L10n.TextContent("Textures", null, null, null);
+            internal static readonly GUIContent s_FoldoutKeywordsText = L10n.TextContent("Keywords", null, null, null);
+            internal static readonly GUIContent s_FoldoutFloatsText = L10n.TextContent("Floats", null, null, null);
+            internal static readonly GUIContent s_FoldoutIntsText = L10n.TextContent("Ints", null, null, null);
+            internal static readonly GUIContent s_FoldoutVectorsText = L10n.TextContent("Vectors", null, null, null);
+            internal static readonly GUIContent s_FoldoutMatricesText = L10n.TextContent("Matrices", null, null, null);
+            internal static readonly GUIContent s_FoldoutBuffersText = L10n.TextContent("Buffers", null, null, null);
+            internal static readonly GUIContent s_FoldoutCBufferText = L10n.TextContent("Constant Buffers", null, null, null);
             internal struct DetailsSectionInfo
             {
                 internal GUIContent header;
@@ -322,42 +321,42 @@ namespace UnityEditorInternal.FrameDebuggerInternal
             internal static readonly DetailsSectionInfo[] s_DetailsSections = new DetailsSectionInfo[]
             {
                 new DetailsSectionInfo(
-                    EditorGUIUtility.TrTextContent("Event Info"),
+                    L10n.TextContent("Event Info", null, null, null),
                     "FrameDebuggerDetailsEventInfo",
                     false
                 ),
                 new DetailsSectionInfo(
-                    EditorGUIUtility.TrTextContent("Render Target"),
+                    L10n.TextContent("Render Target", null, null, null),
                     "FrameDebuggerDetailsRenderTarget",
                     true
                 ),
                 new DetailsSectionInfo(
-                    EditorGUIUtility.TrTextContent("Blending"),
+                    L10n.TextContent("Blending", null, null, null),
                     "FrameDebuggerDetailsBlending",
                     false
                 ),
                 new DetailsSectionInfo(
-                    EditorGUIUtility.TrTextContent("Depth & Culling"),
+                    L10n.TextContent("Depth & Culling", null, null, null),
                     "FrameDebuggerDetailsDepthCulling",
                     false
                 ),
                 new DetailsSectionInfo(
-                    EditorGUIUtility.TrTextContent("Stencil"),
+                    L10n.TextContent("Stencil", null, null, null),
                     "FrameDebuggerDetailsStencil",
                     false
                 ),
                 new DetailsSectionInfo(
-                    EditorGUIUtility.TrTextContent("Variable Rate Shading"),
+                    L10n.TextContent("Variable Rate Shading", null, null, null),
                     "FrameDebuggerDetailsVariableRateShading",
                     false
                 ),
                 new DetailsSectionInfo(
-                    EditorGUIUtility.TrTextContent("Shader"),
+                    L10n.TextContent("Shader", null, null, null),
                     "FrameDebuggerDetailsShader",
                     false
                 ),
             };
-            internal static readonly GUIContent s_NotAvailableText = EditorGUIUtility.TrTextContent(k_NotAvailable);
+            internal static readonly GUIContent s_NotAvailableText = L10n.TextContent(k_NotAvailable, null, null, null);
             [NoAutoStaticsCleanup] // programmatic Texture2D persists across incremental code reload; lifecycle managed by FrameDebuggerStyles.OnDisable
             internal static Texture2D s_RenderTargetMeshBackgroundTexture = null;
             internal static readonly string[] s_BatchBreakCauses = FrameDebuggerUtility.GetBatchBreakCauseStrings();
@@ -401,4 +400,3 @@ namespace UnityEditorInternal.FrameDebuggerInternal
         }
     }
 }
-#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

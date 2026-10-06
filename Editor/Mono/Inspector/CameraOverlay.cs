@@ -2,7 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: SceneTooling not yet converted
 using System;
 using System.Collections.Generic;
 using UnityEditor.Overlays;
@@ -31,6 +30,11 @@ namespace UnityEditor
         Camera selectedCamera => m_SelectedCamera;
 
         [AutoStaticsCleanupOnCodeReload]
+        // Refcounted registry of live camera preview overlays: each overlay registers itself when it is
+        // created and unregisters when it goes away. The overlay instances are plain managed objects that
+        // do not survive a code reload either — they are recreated with the SceneView's overlay canvas —
+        // so the registry and the live overlay set reset together and stay consistent.
+        [IgnoreForUAL0015("Live-overlay registry refilled as camera preview overlays are recreated")]
         static Dictionary<Camera, (SceneViewCameraOverlay overlay, int count)> s_CameraOverlays = new Dictionary<Camera, (SceneViewCameraOverlay, int)>();
 
         SceneViewCameraOverlay(Camera camera)
@@ -152,4 +156,3 @@ namespace UnityEditor
         }
     }
 }
-#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

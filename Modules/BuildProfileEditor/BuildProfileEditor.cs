@@ -40,8 +40,8 @@ namespace UnityEditor.Build.Profile
         const string k_SettingsFoldoutRoot = "bp-editor-settings-container";
         const string k_InsightSettingsFoldout = "insights-analytics-foldout";
 
-        static readonly GUIContent s_Copy = EditorGUIUtility.TrTextContent("Copy");
-        static readonly GUIContent s_Paste = EditorGUIUtility.TrTextContent("Paste");
+        static readonly GUIContent s_Copy = L10n.TextContent("Copy", null, null, null);
+        static readonly GUIContent s_Paste = L10n.TextContent("Paste", null, null, null);
 
         bool isClassic = false;
         BuildProfileSceneList m_SceneList;
@@ -301,9 +301,9 @@ namespace UnityEditor.Build.Profile
                 if (settings.GetIsRequired())
                 {
                     m_SettingsFoldoutRoot.Add(new BuildProfileSettingsFoldout(
-                    serializedObject,
-                    m_Profile,
-                    settings));
+                        serializedObject,
+                        m_Profile,
+                        settings));
 
                     BuildProfileModuleUtil.UpdateActiveEditors(m_Profile);
                 }

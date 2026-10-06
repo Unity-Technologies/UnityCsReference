@@ -2,7 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: Terrain not yet converted
 using UnityEngine;
 
 namespace UnityEditor
@@ -25,12 +24,12 @@ namespace UnityEditor
 
         static class Styles
         {
-            public static readonly GUIContent readonlyText = EditorGUIUtility.TrTextContent("One or more selected Brushes are read-only.");
-            public static readonly GUIContent maskTexture = EditorGUIUtility.TrTextContent("Mask Texture", "Texture Red channel controls the shape of the Brush");
-            public static readonly GUIContent falloff = EditorGUIUtility.TrTextContent("Falloff Curve", "Controls the Brush falloff curve, over the distance from the center of the Brush.");
-            public static readonly GUIContent radiusScale = EditorGUIUtility.TrTextContent("Falloff Radius Scale", "Controls the radius of the falloff curve.");
-            public static readonly GUIContent remap = EditorGUIUtility.TrTextContent("Brush Remap", "Remaps the grayscale values of the Brush");
-            public static readonly GUIContent remapInvert = EditorGUIUtility.TrTextContent("Brush Invert", "Inverts the Brush shape, swapping black and white");
+            public static readonly GUIContent readonlyText = L10n.TextContent("One or more selected Brushes are read-only.", null, null, null);
+            public static readonly GUIContent maskTexture = L10n.TextContent("Mask Texture", "Texture Red channel controls the shape of the Brush", null, null);
+            public static readonly GUIContent falloff = L10n.TextContent("Falloff Curve", "Controls the Brush falloff curve, over the distance from the center of the Brush.", null, null);
+            public static readonly GUIContent radiusScale = L10n.TextContent("Falloff Radius Scale", "Controls the radius of the falloff curve.", null, null);
+            public static readonly GUIContent remap = L10n.TextContent("Brush Remap", "Remaps the grayscale values of the Brush", null, null);
+            public static readonly GUIContent remapInvert = L10n.TextContent("Brush Invert", "Inverts the Brush shape, swapping black and white", null, null);
         }
 
 
@@ -152,12 +151,11 @@ namespace UnityEditor
                 return null;
 
             if (brush.m_Mask == null)
-                #pragma warning disable UAL0018 // rebuilt/resubscribed wholesale on the next reload via this object's own lifecycle; a stale value in the interim is never observed
+#pragma warning disable UAL0018 // the null check above re-fills the mask from DefaultMask(), which recreates the texture after a reload cleared it, and the brush is only used to render this one preview
                 brush.m_Mask = Brush.DefaultMask();
-                #pragma warning restore UAL0018
+#pragma warning restore UAL0018
             PreviewHelpers.AdjustWidthAndHeightForStaticPreview(brush.m_Mask.width, brush.m_Mask.height, ref width, ref height);
             return Brush.GenerateBrushTexture(brush.m_Mask, brush.m_Falloff, brush.m_RadiusScale, brush.m_BlackWhiteRemapMin, brush.m_BlackWhiteRemapMax, brush.m_InvertRemapRange, width, height, true);
         }
     }
 }
-#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

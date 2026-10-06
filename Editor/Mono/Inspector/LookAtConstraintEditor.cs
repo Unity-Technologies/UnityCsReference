@@ -33,11 +33,11 @@ namespace UnityEditor
 
         private class Styles : ConstraintStyleBase
         {
-            GUIContent m_RotationAtRest = EditorGUIUtility.TrTextContent("Rotation At Rest", "The orientation of the constrained object when the weights of the sources add up to zero or when all the rotation axes are disabled.");
-            GUIContent m_RotationOffset = EditorGUIUtility.TrTextContent("Rotation Offset", "The offset from the constrained orientation.");
-            GUIContent m_WorldUpObject = EditorGUIUtility.TrTextContent("World Up Object", "The reference object when the World Up Type is either Object Up or Object Rotation Up.");
-            GUIContent m_Roll = EditorGUIUtility.TrTextContent("Roll", "Specifies the roll angle in degrees.");
-            GUIContent m_UseUpObject = EditorGUIUtility.TrTextContent("Use Up Object", "Specifies how the world up vector should be computed. Either use the World Up Object or the Roll value");
+            GUIContent m_RotationAtRest = L10n.TextContent("Rotation At Rest", "The orientation of the constrained object when the weights of the sources add up to zero or when all the rotation axes are disabled.", null, null);
+            GUIContent m_RotationOffset = L10n.TextContent("Rotation Offset", "The offset from the constrained orientation.", null, null);
+            GUIContent m_WorldUpObject = L10n.TextContent("World Up Object", "The reference object when the World Up Type is either Object Up or Object Rotation Up.", null, null);
+            GUIContent m_Roll = L10n.TextContent("Roll", "Specifies the roll angle in degrees.", null, null);
+            GUIContent m_UseUpObject = L10n.TextContent("Use Up Object", "Specifies how the world up vector should be computed. Either use the World Up Object or the Roll value", null, null);
 
             public override GUIContent AtRest { get { return m_RotationAtRest; } }
             public override GUIContent Offset { get { return m_RotationOffset; } }

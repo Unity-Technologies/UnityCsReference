@@ -2,7 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: Search not yet converted
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -156,6 +155,9 @@ namespace UnityEditor.Search
             }
         }
 
+        // Scoped lazy holder: its value is bound to the code-loaded scope and re-created by the factory on
+        // the first access in the next scope.
+        [IgnoreForUAL0015("Scoped lazy holder, value re-created by its factory in the next code-loaded scope")]
         static readonly ScopedLazy<LazyInitStatics, CodeLoadedScope> s_ScopedLazy = new(() => new LazyInitStatics());
 
         /// <summary>
@@ -975,4 +977,3 @@ namespace UnityEditor.Search
         }
     }
 }
-#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

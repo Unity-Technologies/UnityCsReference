@@ -4,6 +4,7 @@
 
 using System;
 using UnityEngine;
+using UnityEngine.UIElements;
 using Object = UnityEngine.Object;
 using UnityEditor.AssetImporters;
 namespace UnityEditor
@@ -68,6 +69,8 @@ namespace UnityEditor
         internal virtual void ResetValues() {}
 
         public abstract void OnInspectorGUI();
+
+        public virtual VisualElement CreateInspectorGUI() => null;
 
         internal virtual bool HasModified()
         {

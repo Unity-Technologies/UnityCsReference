@@ -51,7 +51,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         [SerializeField]
         protected List<PackageImage> m_Images;
-        public IReadOnlyCollection<PackageImage> images => m_Images;
+        public IReadOnlyList<PackageImage> images => m_Images;
 
         [SerializeField]
         protected long m_PurchasedTimeTicks;
@@ -59,7 +59,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         [SerializeField]
         protected string[] m_Labels;
-        public IReadOnlyCollection<string> labels => m_Labels;
+        public IReadOnlyList<string> labels => m_Labels;
 
         private void SetPurchaseInfo(AssetStorePurchaseInfo purchaseInfo)
         {

@@ -307,6 +307,7 @@ namespace UnityEngine
     [ExcludeFromPreset]
     public partial class AssetBundle : Object
     {
+        internal AssetBundle(global::UnityEngine.EntityId id) : base(id) {}
         private AssetBundle() {}
 
         ///<exclude />

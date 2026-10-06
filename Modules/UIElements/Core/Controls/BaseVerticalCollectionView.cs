@@ -2,8 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: UIToolkitFramework not yet converted
-#pragma warning disable UAL0010,UAL0011,UAL0012,UAL0013,UAL0014 // AutoStaticsCleanup: UIToolkitFramework not yet converted
 using Unity.Scripting.LifecycleManagement;
 using System;
 using System.Buffers;
@@ -817,6 +815,9 @@ namespace UnityEngine.UIElements
         }
         private RangeSelectionDirection m_RangeSelectionDirection;
 
+        // Id of the last item clicked or reached by keyboard navigation; a shift-click ranges from it.
+        private int m_SelectionAnchorId = -1;
+
         private ListViewDragger m_Dragger;
 
         internal const float ItemHeightUnset = -1;
@@ -1480,6 +1481,7 @@ namespace UnityEngine.UIElements
                     selectedIndex = index;
                 }
 
+                m_SelectionAnchorId = viewController.GetIdForIndex(index);
                 ScrollToItem(index);
             }
 
@@ -1739,7 +1741,7 @@ namespace UnityEngine.UIElements
                         }
                         else
                         {
-                            DoRangeSelection(clickedIndex);
+                            DoAnchoredRangeSelection(clickedIndex);
                         }
                     }
                     else if (selectionType == SelectionType.Multiple && m_Selection.ContainsIndex(clickedIndex))
@@ -1764,6 +1766,7 @@ namespace UnityEngine.UIElements
                             itemsChosen?.Invoke(selectedItems);
                     }
 
+                    m_SelectionAnchorId = clickedItemId;
                     break;
                 case 2:
                     if (itemsChosen == null)
@@ -1831,9 +1834,48 @@ namespace UnityEngine.UIElements
             ArrayPool<int>.Shared.Return(newSelection);
         }
 
+        private void DoAnchoredRangeSelection(int clickedIndex)
+        {
+            if (clickedIndex < 0 || clickedIndex >= m_ViewController.itemsSource.Count)
+                return;
+
+            var anchorIndex = m_SelectionAnchorId == -1 ? -1 : viewController.GetIndexForId(m_SelectionAnchorId);
+            if (anchorIndex >= m_ViewController.itemsSource.Count)
+                anchorIndex = -1;
+
+            // No usable anchor (programmatic selection, collapsed or removed item): keep the historical
+            // selection-bounds behavior instead of the anchored arithmetic.
+            if (anchorIndex == -1)
+            {
+                DoRangeSelection(clickedIndex);
+                return;
+            }
+
+            var result = RangeSelectionHelper.ComputeRangeSelection(clickedIndex, anchorIndex,
+                m_Selection.minIndex, m_Selection.maxIndex, m_Selection.indexCount,
+                m_Selection.ContainsIndex(clickedIndex));
+
+            if (result.unchanged)
+                return;
+
+            var count = result.to - result.from + 1;
+            if (count <= 0)
+                return;
+
+            var newSelection = ArrayPool<int>.Shared.Rent(count);
+            for (var i = 0; i < count; ++i)
+                newSelection[i] = result.from + i;
+
+            if (!result.addToExisting)
+                ClearSelectionWithoutValidation();
+            AddToSelection(newSelection.AsSpan(0, count));
+            ArrayPool<int>.Shared.Return(newSelection);
+        }
+
         private void ProcessSingleClick(int clickedIndex)
         {
             SetSelection(clickedIndex);
+            m_SelectionAnchorId = viewController.GetIdForIndex(clickedIndex);
         }
 
         internal void SelectAll()
@@ -2079,6 +2121,7 @@ namespace UnityEngine.UIElements
                 recycledItem.SetSelected(false);
 
             m_Selection.Clear();
+            m_SelectionAnchorId = -1;
         }
 
         internal override void OnViewDataReady()
@@ -2159,5 +2202,3 @@ namespace UnityEngine.UIElements
         }
     }
 }
-#pragma warning restore UAL0010,UAL0011,UAL0012,UAL0013,UAL0014
-#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

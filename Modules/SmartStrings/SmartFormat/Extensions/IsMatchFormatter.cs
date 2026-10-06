@@ -81,7 +81,7 @@ public class IsMatchFormatter : FormatterBase, IInitializer, IFormatterLiteralEx
                 $"Formatter named '{formattingInfo.Placeholder?.FormatterName}' requires at least 2 format options.");
         }
 
-        var regEx = m_RegexCache.GetOrAdd(expression, static (expr, options) => new Regex(expr, options), m_RegexOptions);
+        var regEx = m_RegexCache.GetOrAdd(expression, static (expr, options) => new Regex(expr, options, TimeSpan.FromMilliseconds(500)), m_RegexOptions);
         var match = regEx.Match(formattingInfo.CurrentValue.ToString());
 
         if (!match.Success)
@@ -156,11 +156,11 @@ public class IsMatchFormatter : FormatterBase, IInitializer, IFormatterLiteralEx
 
     /// <summary>
     /// The name of the placeholder used to output RegEx matching group values.
-    /// <para>
+    /// 
     /// Example:<br/>
     /// {value:ismatch(regex):First match in '{}'\\: {m[1]}|No match}<br/>
     /// "m" is the PlaceholderNameForMatches
-    /// </para>
+    /// 
     /// </summary>
     public string PlaceholderNameForMatches { get => m_PlaceholderNameForMatches; set => m_PlaceholderNameForMatches = value; }
 

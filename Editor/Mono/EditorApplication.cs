@@ -4,6 +4,7 @@
 
 using System;
 using System.IO;
+using System.Runtime.InteropServices;
 using System.Text;
 using Unity.Scripting.LifecycleManagement;
 using UnityEngine.SceneManagement;
@@ -205,6 +206,9 @@ namespace UnityEditor
 
         // Delegate for generic updates.
         [AutoStaticsCleanupOnCodeReload]
+        // Subscribers attach through their own lifecycle and re-subscribe after a code reload, so the
+        // cleared invocation list refills itself.
+        [IgnoreForUAL0015("Event whose subscribers re-register through their own lifecycle after a code reload")]
         public static CallbackFunction update;
 
         [AutoStaticsCleanupOnCodeReload]
@@ -212,6 +216,9 @@ namespace UnityEditor
 
         [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
         [AutoStaticsCleanupOnCodeReload]
+        // Subscribers attach through their own lifecycle and re-subscribe after a code reload, so the
+        // cleared invocation list refills itself.
+        [IgnoreForUAL0015("Event whose subscribers re-register through their own lifecycle after a code reload")]
         internal static event CallbackFunction tick;
 
         public static event Func<bool> wantsToQuit
@@ -220,6 +227,9 @@ namespace UnityEditor
             remove => m_WantsToQuitEvent.Remove(value);
         }
         [AutoStaticsCleanupOnCodeReload]
+        // Backing store for the wantsToQuit event: subscribers attach through their own lifecycle - main view
+        // and window OnEnable, search and scenario initialization - so the cleared store refills itself.
+        [IgnoreForUAL0015("Event backing store whose subscribers re-register through their own lifecycle")]
         private static EventWithPerformanceTracker<Func<bool>> m_WantsToQuitEvent = new EventWithPerformanceTracker<Func<bool>>($"{nameof(EditorApplication)}.{nameof(wantsToQuit)}");
 
         public static event Action quitting
@@ -228,9 +238,15 @@ namespace UnityEditor
             remove => m_QuittingEvent.Remove(value);
         }
         [AutoStaticsCleanupOnCodeReload]
+        // Backing store for the quitting event: subscribers attach through their own lifecycle and
+        // re-subscribe after a code reload, so the cleared store refills itself.
+        [IgnoreForUAL0015("Event backing store whose subscribers re-register through their own lifecycle")]
         private static EventWithPerformanceTracker<Action> m_QuittingEvent = new EventWithPerformanceTracker<Action>($"{nameof(EditorApplication)}.{nameof(quitting)}");
 
         [AutoStaticsCleanupOnCodeReload]
+        // One-shot delegate slot: it is read and set back to null on every tick, and callers re-add
+        // themselves whenever they need another delayed call, so nothing persists here by design.
+        [IgnoreForUAL0015("One-shot delayed-call slot, nulled on every tick and re-added by callers")]
         public static CallbackFunction delayCall;
         [AutoStaticsCleanupOnCodeReload]
         private static DelegateWithPerformanceTracker<CallbackFunction> m_DelayCallEvent = new DelegateWithPerformanceTracker<CallbackFunction>($"{nameof(EditorApplication)}.{nameof(delayCall)}");
@@ -261,6 +277,9 @@ namespace UnityEditor
             remove => m_HierarchyChangedEvent.Remove(value);
         }
         [AutoStaticsCleanupOnCodeReload]
+        // Backing list for the hierarchyChanged event: subscribers attach through their own lifecycle and
+        // re-subscribe after a code reload, so the cleared list refills itself.
+        [IgnoreForUAL0015("Event backing store whose subscribers re-register through their own lifecycle")]
         private static EventWithPerformanceTracker<Action> m_HierarchyChangedEvent = new EventWithPerformanceTracker<Action>($"{nameof(EditorApplication)}.{nameof(hierarchyChanged)}");
 
         [Obsolete("Use EditorApplication.hierarchyChanged")]
@@ -273,6 +292,9 @@ namespace UnityEditor
             remove => m_ProjectChangedEvent.Remove(value);
         }
         [AutoStaticsCleanupOnCodeReload]
+        // Backing list for the projectChanged event: subscribers attach through their own lifecycle and
+        // re-subscribe after a code reload, so the cleared list refills itself.
+        [IgnoreForUAL0015("Event backing store whose subscribers re-register through their own lifecycle")]
         private static EventWithPerformanceTracker<Action> m_ProjectChangedEvent = new EventWithPerformanceTracker<Action>($"{nameof(EditorApplication)}.{nameof(projectChanged)}");
 
         [Obsolete("Use EditorApplication.projectChanged")]
@@ -290,6 +312,10 @@ namespace UnityEditor
 
         [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.GraphToolkitModule", "UnityEditor.UIToolkitAuthoringModule")]
         [AutoStaticsCleanupOnCodeReload]
+        // Subscribers attach through their own lifecycle - an [OnCodeLoaded] initializer in the UI asset
+        // registry, the UI Builder scoped class constructor and clients calling RegisterFileSavedCallback -
+        // so the cleared invocation list refills itself.
+        [IgnoreForUAL0015("Event whose subscribers re-register through their own lifecycle after a code reload")]
         internal static CallbackFunction fileMenuSaved;
 
         [AutoStaticsCleanupOnCodeReload]
@@ -303,6 +329,9 @@ namespace UnityEditor
 
         // Delegate for changed keyboard modifier keys.
         [AutoStaticsCleanupOnCodeReload]
+        // Subscribers attach through their own lifecycle and re-subscribe after a code reload, so the
+        // cleared invocation list refills itself.
+        [IgnoreForUAL0015("Event whose subscribers re-register through their own lifecycle after a code reload")]
         public static CallbackFunction modifierKeysChanged;
 
         public static event Action<PauseState> pauseStateChanged
@@ -311,6 +340,9 @@ namespace UnityEditor
             remove => m_PauseStateChangedEvent.Remove(value);
         }
         [AutoStaticsCleanupOnCodeReload]
+        // Backing store for the pauseStateChanged event: subscribers attach through their own lifecycle and
+        // re-subscribe after a code reload, so the cleared store refills itself.
+        [IgnoreForUAL0015("Event backing store whose subscribers re-register through their own lifecycle")]
         private static EventWithPerformanceTracker<Action<PauseState>> m_PauseStateChangedEvent = new EventWithPerformanceTracker<Action<PauseState>>($"{nameof(EditorApplication)}.{nameof(pauseStateChanged)}");
 
         public static event Action<PlayModeStateChange> playModeStateChanged
@@ -319,6 +351,9 @@ namespace UnityEditor
             remove => m_PlayModeStateChangedEvent.Remove(value);
         }
         [AutoStaticsCleanupOnCodeReload]
+        // Backing list for the playModeStateChanged event: subscribers attach through their own lifecycle
+        // and re-subscribe after a code reload, so the cleared list refills itself.
+        [IgnoreForUAL0015("Event backing store whose subscribers re-register through their own lifecycle")]
         private static EventWithPerformanceTracker<Action<PlayModeStateChange>> m_PlayModeStateChangedEvent = new EventWithPerformanceTracker<Action<PlayModeStateChange>>($"{nameof(EditorApplication)}.{nameof(playModeStateChanged)}");
 
         [VisibleToOtherModules]
@@ -337,15 +372,24 @@ namespace UnityEditor
         // Global key up/down or mouse up/down/drag events that were not handled by anyone
         [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
         [AutoStaticsCleanupOnCodeReload]
+        // Subscribers attach through their own lifecycle: ShortcutIntegration re-adds its handler when the
+        // enabled flag is set again while lazily recreating its controller.
+        [IgnoreForUAL0015("Event whose subscribers re-register through their own lifecycle after a code reload")]
         internal static CallbackFunction globalEventHandler;
         [AutoStaticsCleanupOnCodeReload]
         internal static CallbackFunction shortcutHelperBarEventHandler;
 
         // Returns true when the pressed keys are defined in the Trigger
         [AutoStaticsCleanupOnCodeReload]
+        // ShortcutIntegration re-adds its handler from InitializeController, which runs again the first
+        // time the shortcut controller is accessed after a code reload.
+        [IgnoreForUAL0015("Handler re-added by ShortcutIntegration when its controller is lazily recreated")]
         internal static Func<bool> doPressedKeysTriggerAnyShortcut;
 
         [AutoStaticsCleanupOnCodeReload]
+        // Subscribers attach through their own lifecycle - ShortcutIntegration re-subscribes when its
+        // controller is lazily recreated - so the cleared invocation list refills itself.
+        [IgnoreForUAL0015("Event whose subscribers re-register through their own lifecycle after a code reload")]
         public static event Action<bool> focusChanged;
 
         // Windows were reordered
@@ -354,6 +398,10 @@ namespace UnityEditor
 
         // Global contextual menus for inspector values
         [AutoStaticsCleanupOnCodeReload]
+        // Subscribers re-register through their own lifecycle after a code load: the animation menu goes
+        // through AnimationPropertyContextualMenu.Instance, which recreates itself on next use, and the
+        // inspector-side subscribers re-attach from OnEnable.
+        [IgnoreForUAL0015("Event whose subscribers re-register through their own lifecycle after a code load")]
         public static SerializedPropertyCallbackFunction contextualPropertyMenu;
 
         [AutoStaticsCleanupOnCodeReload]
@@ -361,7 +409,9 @@ namespace UnityEditor
 
         static readonly bool k_ShowScriptingBackendInTitle = Application.HasARGV("displayScriptingBackend");
 
-        const string k_ScriptingBackendName = "Mono";
+        const string k_ScriptingBackendName = "CoreCLR";
+
+        static readonly string k_ProcessArchitectureName = RuntimeInformation.ProcessArchitecture.ToString().ToLowerInvariant();
 
         internal static string GetDefaultMainWindowTitle(ApplicationTitleDescriptor desc)
         {
@@ -402,6 +452,8 @@ namespace UnityEditor
             {
                 title += " " + L10n.Tr("[CODE COVERAGE]", null);
             }
+
+            title += $" ({k_ProcessArchitectureName})";
 
             if (k_ShowScriptingBackendInTitle)
             {
@@ -488,6 +540,22 @@ namespace UnityEditor
         {
             foreach (GUIView view in Resources.FindObjectsOfTypeAll(typeof(GUIView)))
                 view.Repaint();
+        }
+
+        internal static void DisplayRestartRequiredDialog(string settingName, string details = null)
+        {
+            var message = string.Format(L10n.Tr("The Unity Editor must be restarted for the change to \"{0}\" to take full effect.", null), settingName);
+            if (!string.IsNullOrEmpty(details))
+                message += "\n\n" + details;
+
+            var restartNow = EditorUtility.DisplayDialog(
+                L10n.Tr("Unity editor restart required", null),
+                message,
+                L10n.Tr("Restart Editor", null),
+                L10n.Tr("Restart Later", null));
+
+            if (restartNow)
+                RequestCloseAndRelaunchWithCurrentArguments();
         }
 
         internal static void RequestRepaintAllTexts(VersionChangeType incrementVersion)

@@ -48,7 +48,7 @@ namespace UnityEngine.UIElements
         public float borderTopWidth => ve.layoutNode.LayoutBorderTop;
         public float bottom => ve.layoutNode.LayoutBottom;
         public Color color => ve.computedStyle.color;
-        public float columnGap => ve.computedStyle.columnGap.value;
+        public float columnGap => ve.ResolveGapValue(ve.computedStyle.columnGap, true);
         public DisplayStyle display => ve.computedStyle.display;
         public IEnumerable<FilterFunction> filter => ve.computedStyle.rareData.Read().filter.ToManaged();
         public StyleFloat flexBasis => new StyleFloat(ve.layoutNode.ComputedFlexBasis);
@@ -77,6 +77,7 @@ namespace UnityEngine.UIElements
         public StyleFloat minHeight => ve.ResolveLengthValue(ve.computedStyle.minHeight, false);
         public StyleFloat minWidth => ve.ResolveLengthValue(ve.computedStyle.minWidth, true);
         public float opacity => ve.computedStyle.opacity;
+        public Overflow overflow => ve.computedStyle.overflow == OverflowInternal.Visible ? Overflow.Visible : Overflow.Hidden;
         public float paddingBottom => ve.layoutNode.LayoutPaddingBottom;
         public float paddingLeft => ve.layoutNode.LayoutPaddingLeft;
         public float paddingRight => ve.layoutNode.LayoutPaddingRight;
@@ -84,7 +85,7 @@ namespace UnityEngine.UIElements
         public Position position => ve.computedStyle.position;
         public float right => ve.layoutNode.LayoutRight;
         public Rotate rotate => ve.computedStyle.rotate;
-        public float rowGap => ve.computedStyle.rowGap.value;
+        public float rowGap => ve.ResolveGapValue(ve.computedStyle.rowGap, false);
         public Scale scale => ve.computedStyle.scale;
         public TextOverflow textOverflow => ve.computedStyle.textOverflow;
         public TextShadow textShadow => ve.computedStyle.textShadow;
@@ -242,6 +243,8 @@ namespace UnityEngine.UIElements
         StyleFloat IResolvedStyle.minWidth => resolvedStyle.minWidth;
 
         float IResolvedStyle.opacity => resolvedStyle.opacity;
+
+        Overflow IResolvedStyle.overflow => resolvedStyle.overflow;
 
         float IResolvedStyle.paddingBottom => resolvedStyle.paddingBottom;
 

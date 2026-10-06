@@ -72,18 +72,18 @@ namespace UnityEditor
             public GUIStyle warningOverlay = GetStyle("WarningOverlay");
             public Texture2D scrollShadowTexture = EditorGUIUtility.FindTexture("ScrollShadow");
             public Texture2D leftToRightShadowTexture = EditorGUIUtility.FindTexture("LeftToRightShadow");
-            public GUIContent soloGUIContent = EditorGUIUtility.TrTextContent("", "Adds this group to set of soloed groups");
-            public GUIContent muteGUIContent = EditorGUIUtility.TrTextContent("", "Mutes this group");
-            public GUIContent bypassGUIContent = EditorGUIUtility.TrTextContent("", "Bypasses the effects on this group");
-            public GUIContent effectSlotGUIContent = EditorGUIUtility.TrTextContent("", "Drag horizontally to change wet mix levels or vertically to change order of effects. Note: Enable wet mixing in the context menu.");
-            public GUIContent attenuationSlotGUIContent = EditorGUIUtility.TrTextContent("", "Place the attenuation slot in the effect stack where attenuation should take effect");
-            public GUIContent emptySendSlotGUIContent = EditorGUIUtility.TrTextContent("", "Connect to a Receive in the context menu or in the inspector");
-            public GUIContent returnSlotGUIContent = EditorGUIUtility.TrTextContent("", "Connect a Send to this Receive");
-            public GUIContent duckVolumeSlotGUIContent = EditorGUIUtility.TrTextContent("", "Connect a Send to this Duck Volume");
-            public GUIContent duckingFaderGUIContent = EditorGUIUtility.TrTextContent("", "Ducking Fader");
-            public GUIContent attenuationFader = EditorGUIUtility.TrTextContent("", "Attenuation fader");
-            public GUIContent vuMeterGUIContent = EditorGUIUtility.TrTextContent("", "The VU meter shows the current level of the mix of all sounds and subgroups.");
-            public GUIContent referencedGroups = EditorGUIUtility.TrTextContent("Referenced groups", "Mixer groups that are hidden but are referenced by the visible mixer groups are shown here for convenience");
+            public GUIContent soloGUIContent = L10n.TextContent("", "Adds this group to set of soloed groups", null, null);
+            public GUIContent muteGUIContent = L10n.TextContent("", "Mutes this group", null, null);
+            public GUIContent bypassGUIContent = L10n.TextContent("", "Bypasses the effects on this group", null, null);
+            public GUIContent effectSlotGUIContent = L10n.TextContent("", "Drag horizontally to change wet mix levels or vertically to change order of effects. Note: Enable wet mixing in the context menu.", null, null);
+            public GUIContent attenuationSlotGUIContent = L10n.TextContent("", "Place the attenuation slot in the effect stack where attenuation should take effect", null, null);
+            public GUIContent emptySendSlotGUIContent = L10n.TextContent("", "Connect to a Receive in the context menu or in the inspector", null, null);
+            public GUIContent returnSlotGUIContent = L10n.TextContent("", "Connect a Send to this Receive", null, null);
+            public GUIContent duckVolumeSlotGUIContent = L10n.TextContent("", "Connect a Send to this Duck Volume", null, null);
+            public GUIContent duckingFaderGUIContent = L10n.TextContent("", "Ducking Fader", null, null);
+            public GUIContent attenuationFader = L10n.TextContent("", "Attenuation fader", null, null);
+            public GUIContent vuMeterGUIContent = L10n.TextContent("", "The VU meter shows the current level of the mix of all sounds and subgroups.", null, null);
+            public GUIContent referencedGroups = L10n.TextContent("Referenced groups", "Mixer groups that are hidden but are referenced by the visible mixer groups are shown here for convenience", null, null);
             public GUIContent sendString = new GUIContent("s");
 
 

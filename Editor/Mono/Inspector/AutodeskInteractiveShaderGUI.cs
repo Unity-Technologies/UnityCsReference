@@ -19,21 +19,21 @@ namespace UnityEditor
 
         private static class Styles
         {
-            public static readonly GUIContent uvSetLabel = EditorGUIUtility.TrTextContent("UV Set");
+            public static readonly GUIContent uvSetLabel = L10n.TextContent("UV Set", null, null, null);
 
-            public static readonly GUIContent albedoText = EditorGUIUtility.TrTextContent("Albedo", "Albedo (RGB) and Transparency (A)");
-            public static readonly GUIContent alphaCutoffText = EditorGUIUtility.TrTextContent("Alpha Cutoff", "Threshold for alpha cutoff");
-            public static readonly GUIContent metallicMapText = EditorGUIUtility.TrTextContent("Metallic", "Metallic (R) and Smoothness (A)");
-            public static readonly GUIContent roughnessText = EditorGUIUtility.TrTextContent("Roughness", "Roughness value");
-            public static readonly GUIContent highlightsText = EditorGUIUtility.TrTextContent("Specular Highlights", "Specular Highlights");
-            public static readonly GUIContent reflectionsText = EditorGUIUtility.TrTextContent("Reflections", "Glossy Reflections");
-            public static readonly GUIContent normalMapText = EditorGUIUtility.TrTextContent("Normal Map", "Normal Map");
-            public static readonly GUIContent heightMapText = EditorGUIUtility.TrTextContent("Height Map", "Height Map (G)");
-            public static readonly GUIContent occlusionText = EditorGUIUtility.TrTextContent("Occlusion", "Occlusion (G)");
-            public static readonly GUIContent emissionText = EditorGUIUtility.TrTextContent("Color", "Emission (RGB)");
-            public static readonly GUIContent detailMaskText = EditorGUIUtility.TrTextContent("Detail Mask", "Mask for Secondary Maps (A)");
-            public static readonly GUIContent detailAlbedoText = EditorGUIUtility.TrTextContent("Detail Albedo x2", "Albedo (RGB) multiplied by 2");
-            public static readonly GUIContent detailNormalMapText = EditorGUIUtility.TrTextContent("Normal Map", "Normal Map");
+            public static readonly GUIContent albedoText = L10n.TextContent("Albedo", "Albedo (RGB) and Transparency (A)", null, null);
+            public static readonly GUIContent alphaCutoffText = L10n.TextContent("Alpha Cutoff", "Threshold for alpha cutoff", null, null);
+            public static readonly GUIContent metallicMapText = L10n.TextContent("Metallic", "Metallic (R) and Smoothness (A)", null, null);
+            public static readonly GUIContent roughnessText = L10n.TextContent("Roughness", "Roughness value", null, null);
+            public static readonly GUIContent highlightsText = L10n.TextContent("Specular Highlights", "Specular Highlights", null, null);
+            public static readonly GUIContent reflectionsText = L10n.TextContent("Reflections", "Glossy Reflections", null, null);
+            public static readonly GUIContent normalMapText = L10n.TextContent("Normal Map", "Normal Map", null, null);
+            public static readonly GUIContent heightMapText = L10n.TextContent("Height Map", "Height Map (G)", null, null);
+            public static readonly GUIContent occlusionText = L10n.TextContent("Occlusion", "Occlusion (G)", null, null);
+            public static readonly GUIContent emissionText = L10n.TextContent("Color", "Emission (RGB)", null, null);
+            public static readonly GUIContent detailMaskText = L10n.TextContent("Detail Mask", "Mask for Secondary Maps (A)", null, null);
+            public static readonly GUIContent detailAlbedoText = L10n.TextContent("Detail Albedo x2", "Albedo (RGB) multiplied by 2", null, null);
+            public static readonly GUIContent detailNormalMapText = L10n.TextContent("Normal Map", "Normal Map", null, null);
 
             public static readonly string primaryMapsText = "Main Maps";
             public static readonly string secondaryMapsText = "Secondary Maps";

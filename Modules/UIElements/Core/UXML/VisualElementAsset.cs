@@ -312,7 +312,6 @@ namespace UnityEngine.UIElements
             }
         }
 
-        // For performance tests
         internal void ResetCachedClassList()
         {
             m_ClassesUnique = null;

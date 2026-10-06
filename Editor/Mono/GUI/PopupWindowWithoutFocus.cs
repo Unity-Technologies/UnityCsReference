@@ -2,7 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: IMGUIControls not yet converted
 using UnityEngine;
 using UnityEngine.Scripting;
 using UnityEditor;
@@ -16,6 +15,9 @@ namespace UnityEditor
     partial class PopupWindowWithoutFocus : PopupWindow
     {
         [AutoStaticsCleanupOnCodeReload]
+        // Points at the popup window that is currently open; OnEnable assigns it and OnDisable clears it, and
+        // Show creates a new popup when it is null.
+        [IgnoreForUAL0015("Open-popup reference reassigned by OnEnable and recreated by Show when null")]
         static PopupWindowWithoutFocus s_PopupWindowWithoutFocus;
         bool hasBeenFocused = false;
 
@@ -108,4 +110,3 @@ namespace UnityEditor
         }
     }
 }
-#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

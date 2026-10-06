@@ -409,30 +409,48 @@ sealed class HierarchyViewDragHandler
         var handlingData = BuildHandlingData(dragAndDropTargets, insertAtIndex, dragAndDropData, in parentNode);
         var keptAny = false;
         viewModelRebuilt = false;
-        var viewModelVersion = ViewModel.Version;
+        var viewModel = ViewModel;
+        var viewModelVersion = viewModel.Version;
 
-        foreach (var (editorHandler, sortType) in m_ParticipatingHandlers)
+        // Only the handler that moves a sort group's objects reports a mode; the others sharing the group abstain.
+        using var _ = HashSetPool<HierarchyNodeType>.Get(out var sortTypeGroupMovers);
+
+        for (var i = 0; i < m_ParticipatingHandlers.Count; ++i)
         {
+            var (editorHandler, sortType) = m_ParticipatingHandlers[i];
             var visualMode = editorHandler.OnReorder(handlingData);
-
-            if (ViewModel.Version != viewModelVersion)
-            {
-                // The handler rebuilt the view model. Bail with Rejected (matching the external drop path) so the
-                // caller skips the move and undo registration; the new view model is authoritative.
-                viewModelRebuilt = true;
-                return DragVisualMode.Rejected;
-            }
-
-            // Only keep the valid visual mode.
-            if (visualMode != DragVisualMode.None && visualMode != DragVisualMode.Rejected)
-                resultMode = visualMode;
 
             if (visualMode == DragVisualMode.Rejected)
             {
                 rejectedSortTypes.Add(sortType);
             }
             else
+            {
                 keptAny = true;
+
+                // Only keep the valid visual mode.
+                if (visualMode != DragVisualMode.None)
+                {
+                    resultMode = visualMode;
+                    sortTypeGroupMovers.Add(sortType);
+                }
+            }
+
+            if (ViewModelRebuilt(viewModel, viewModelVersion))
+            {
+                // The handler rebuilt the view model. The handlers not notified yet could not move their objects,
+                // so their nodes must not move either, unless a notified handler already moved their sort group.
+                // Handlers not in a group do not share their SortType with any other handlers, so they cannot be in
+                // the remaining sort type and the sortTypeGroupMovers at the same time.
+                viewModelRebuilt = true;
+                for (var j = i + 1; j < m_ParticipatingHandlers.Count; ++j)
+                {
+                    var remainingSortType = m_ParticipatingHandlers[j].SortType;
+                    if (!sortTypeGroupMovers.Contains(remainingSortType))
+                        rejectedSortTypes.Add(remainingSortType);
+                }
+                return DragVisualMode.Rejected;
+            }
         }
 
         // Every participating handler rejected: nothing will move, report the rejection to the caller.
@@ -476,7 +494,8 @@ sealed class HierarchyViewDragHandler
         var resultMode = DragVisualMode.None;
         var rejected = false;
         viewModelRebuilt = false;
-        var viewModelVersion = ViewModel.Version;
+        var viewModel = ViewModel;
+        var viewModelVersion = viewModel.Version;
 
         foreach (var handler in Source.EnumerateNodeTypeHandlers())
         {
@@ -485,12 +504,12 @@ sealed class HierarchyViewDragHandler
 
             var visualMode = editorHandler.OnAcceptDrop(handlingData);
 
-            if (ViewModel.Version != viewModelVersion)
+            if (ViewModelRebuilt(viewModel, viewModelVersion))
             {
-                // The handler rebuilt the view model. Stop: remaining handlers and the caller's ScanAddedNodes
-                // would run against a view model that no longer matches this drop.
+                // The handler rebuilt the view model. Stop: remaining handlers would run against a view model that
+                // no longer matches this drop. The caller decides whether the drop can still complete.
                 viewModelRebuilt = true;
-                return DragVisualMode.Rejected;
+                return visualMode != DragVisualMode.None && visualMode != DragVisualMode.Rejected ? visualMode : DragVisualMode.Rejected;
             }
 
             if (visualMode == DragVisualMode.Rejected)
@@ -560,6 +579,14 @@ sealed class HierarchyViewDragHandler
         return result;
     }
 
+    // Whether a handler replaced or changed the view model a drop was validated against. A replacement can report the
+    // same version, so the instance is compared too.
+    bool ViewModelRebuilt(HierarchyViewModel viewModel, uint version) => !ReferenceEquals(ViewModel, viewModel) || ViewModel.Version != version;
+
+    // The hierarchy a drop started in outlives a stage switch, so the drop still completes on it unless a handler
+    // destroyed it or rebuilt the view model on that same hierarchy.
+    bool CanCompleteDropOn(Hierarchy dropSource, bool viewModelRebuilt) => dropSource.IsCreated && !(viewModelRebuilt && Source == dropSource);
+
     DragVisualMode ExecuteDrop(in HandleDragAndDropArgs args, in HierarchyViewDragAndDropTargets dragAndDropTargets, out bool didInternalReorder)
     {
         didInternalReorder = false;
@@ -585,17 +612,21 @@ sealed class HierarchyViewDragHandler
             if (parentNode == HierarchyNode.Null)
                 return DragVisualMode.Rejected;
 
+            // Capture what the drop is based on before notifying handlers. A handler can rebuild the view model,
+            // which disposes it, so nothing can be read back from it afterwards. The hierarchy itself is owned by
+            // the stage stack and outlives a stage change, so the move can still be applied to it.
+            var dropSource = Source;
+            using var _selection = ListPool<(HierarchyNode Node, HierarchyNode Parent, int ChildIndex)>.Get(out var selection);
+            foreach (ref readonly var node in ViewModel.EnumerateNodesWithFlags(HierarchyNodeFlags.Selected))
+                selection.Add((node, ViewModel.GetParent(in node), ViewModel.GetChildIndex(in node)));
+
             // Notify handlers FIRST, before any node moves, so they can sync their underlying objects (Transform,
             // Scene, etc.) from the still-pre-move layout. A handler returning Rejected flags its sort type as
             // rejected, and nodes belonging to those sort groups are skipped when we do the move.
             using var _rejectedSortTypes = HashSetPool<HierarchyNodeType>.Get(out var rejectedSortTypes);
             result = HandleNodeHandlersOnReorder(dragAndDropTargets, args.insertAtIndex, args.dragAndDropData, in parentNode, rejectedSortTypes, out var viewModelRebuilt);
 
-            // A handler rebuilt the view model (e.g. opened a prefab stage). Nothing has moved yet; the rebuilt
-            // view model is authoritative. Skip the framework move and undo entirely (matches the external path).
-            // TODO: When the global stack of hierarchies is supported, this will have to be changed, for now we reject
-            // without any possibility of undo no matter what has been executed.
-            if (viewModelRebuilt)
+            if (!CanCompleteDropOn(dropSource, viewModelRebuilt))
                 return DragVisualMode.Rejected;
 
             // Collect the nodes that actually moved. Nodes with no IHierarchyEditorNodeTypeHandler are moved by default.
@@ -603,17 +634,17 @@ sealed class HierarchyViewDragHandler
             using var _movedNodes = ListPool<HierarchyNode>.Get(out var movedNodes);
             using var _preParents = ListPool<HierarchyNode>.Get(out var preParents);
             using var _preChildIndices = ListPool<int>.Get(out var preChildIndices);
-            foreach (ref readonly var node in ViewModel.EnumerateNodesWithFlags(HierarchyNodeFlags.Selected))
+            foreach (var (node, preParent, preChildIndex) in selection)
             {
                 // Skip node if its sort group was rejected, whether by its own handler or by the handler that
                 // reorders the group on its behalf.
-                if (rejectedSortTypes.Contains(Source.GetNodeSortType(in node)))
+                if (rejectedSortTypes.Contains(dropSource.GetNodeSortType(in node)))
                     continue;
                 movedNodes.Add(node);
                 if (isUndoSupported)
                 {
-                    preParents.Add(ViewModel.GetParent(in node));
-                    preChildIndices.Add(ViewModel.GetChildIndex(in node));
+                    preParents.Add(preParent);
+                    preChildIndices.Add(preChildIndex);
                 }
             }
 
@@ -622,18 +653,18 @@ sealed class HierarchyViewDragHandler
                 return DragVisualMode.Rejected;
 
             var movedNodesSpan = NoAllocHelpers.CreateReadOnlySpan(movedNodes);
-            Source.SetParent(movedNodesSpan, in parentNode, dragAndDropTargets.childIndex);
+            dropSource.SetParent(movedNodesSpan, in parentNode, dragAndDropTargets.childIndex);
 
             // Register a single coherent undo entry over exactly the nodes that moved.
             if (isUndoSupported)
             {
                 using var _postChildIndices = ListPool<int>.Get(out var postChildIndices);
                 foreach (var node in movedNodes)
-                    // We get the child indices from the Source since SetParent is done on the Hierarchy.
-                    postChildIndices.Add(Source.GetChildIndex(node));
+                    // We get the child indices from the source since SetParent is done on the Hierarchy.
+                    postChildIndices.Add(dropSource.GetChildIndex(node));
 
                 HierarchyUndoManager.RegisterChildIndexUndo(
-                    Source,
+                    dropSource,
                     movedNodesSpan,
                     NoAllocHelpers.CreateReadOnlySpan(preParents),
                     NoAllocHelpers.CreateReadOnlySpan(preChildIndices),
@@ -642,7 +673,9 @@ sealed class HierarchyViewDragHandler
                     "Reorder Hierarchy");
             }
 
-            didInternalReorder = true;
+            // Only when the view still shows the hierarchy the nodes moved in: the caller expands the drop parent
+            // for an internal reorder, which makes no sense against data the view no longer displays.
+            didInternalReorder = !viewModelRebuilt;
 
             // Nodes actually moved (at minimum the selection's non-editor-handler nodes, which always move),
             // so the drop was not rejected. Report the accepted mode even if every participating handler
@@ -655,39 +688,40 @@ sealed class HierarchyViewDragHandler
             // External drag or handler-owned internal drag (AcceptParent=false): delegate entirely to handlers.
 
             // Let handlers perform the drop (e.g. instantiate a prefab into the scene).
+            var dropSource = Source;
             var visualMode = HandleNodeHandlersOnAcceptDrop(dragAndDropTargets, args.insertAtIndex, args.dragAndDropData, in parentNode, out var viewModelRebuilt);
-            if (visualMode == DragVisualMode.Rejected || visualMode == DragVisualMode.None || viewModelRebuilt)
+            if (visualMode == DragVisualMode.Rejected || visualMode == DragVisualMode.None || !CanCompleteDropOn(dropSource, viewModelRebuilt))
                 return DragVisualMode.Rejected;
 
             // Run the hierarchy update; handlers write Add commands to the stream, which is executed then cleared.
-            var cmdList = Source.GetCommandList();
+            var cmdList = dropSource.GetCommandList();
             var startOffset = cmdList.ReadPosition;
-            Source.Update();
+            dropSource.Update();
 
             // Recover newly added nodes by scanning the buffer bytes written during the update.
             // Filter to nodes placed directly under parentNode — handlers may add nodes elsewhere.
             var newNodes = cmdList.ScanAddedNodes(startOffset, cmdList.LastWritePosition);
             using var _newNodes = ListPool<HierarchyNode>.Get(out var newNodesUnderParent);
             foreach (var node in newNodes)
-                if (Source.GetParent(in node) == parentNode)
+                if (dropSource.GetParent(in node) == parentNode)
                     newNodesUnderParent.Add(node);
 
             // Reposition the new nodes to the exact drop point requested by the user.
             if (newNodesUnderParent.Count > 0 && dragAndDropTargets.dropPosition == DragAndDropPosition.BetweenItems)
             {
                 var newNodesSpan = NoAllocHelpers.CreateReadOnlySpan(newNodesUnderParent);
-                Source.SetParent(newNodesSpan, in parentNode, dragAndDropTargets.childIndex);
+                dropSource.SetParent(newNodesSpan, in parentNode, dragAndDropTargets.childIndex);
 
                 if (HierarchyUndoManager.IsUndoRedoSupported())
                 {
                     // Register an undo operation for the new nodes' child indices under the parent,
                     // so that they are restored to the new positions in case of a redo (an undo would delete those nodes).
-                    // We get the child indices from the Source since SetParent is done on the Hierarchy.
+                    // We get the child indices from the source since SetParent is done on the Hierarchy.
                     using var _postChildIndices = ListPool<int>.Get(out var postChildIndices);
                     for (int i = 0; i < newNodesUnderParent.Count; ++i)
-                        postChildIndices.Add(Source.GetChildIndex(newNodesUnderParent[i]));
+                        postChildIndices.Add(dropSource.GetChildIndex(newNodesUnderParent[i]));
                     HierarchyUndoManager.RegisterChildIndexUndo(
-                        Source,
+                        dropSource,
                         newNodesSpan,
                         Array.Empty<HierarchyNode>(),
                         Array.Empty<int>(),
@@ -696,8 +730,12 @@ sealed class HierarchyViewDragHandler
                         "Reorder Hierarchy");
                 }
 
-                var firstRoot = newNodesUnderParent[0];
-                m_HierarchyView.EnqueuePostUpdateAction(() => m_HierarchyView.Frame(in firstRoot));
+                // Only when the view still shows the hierarchy the nodes were added to.
+                if (!viewModelRebuilt)
+                {
+                    var firstRoot = newNodesUnderParent[0];
+                    m_HierarchyView.EnqueuePostUpdateAction(() => m_HierarchyView.Frame(in firstRoot));
+                }
             }
 
             result = visualMode;

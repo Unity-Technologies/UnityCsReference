@@ -14,6 +14,9 @@ class Store
 {
     internal PortPreviewStore PortPreviewStore = new();
     internal WireVisualStore WireVisualStore = new();
-    internal NodeAccentStore NodeAccentStore = new();
+    internal TransitionVisualStore TransitionVisualStore = new();
+    internal AccentStore NodeAccentStore = new();
+    internal AccentStore StateAccentStore = new();
+    internal ConditionVisualStore ConditionVisualStore = new();
 }
 

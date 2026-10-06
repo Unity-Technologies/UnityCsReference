@@ -10,6 +10,7 @@ namespace UnityEngine.Connect
     [NativeHeader("Modules/UnityConnect/UnityConnectSettings.h")]
     internal class UnityConnectSettings : Object
     {
+        internal UnityConnectSettings(global::UnityEngine.EntityId id) : base(id) {}
         [StaticAccessor("GetUnityConnectSettings()", StaticAccessorType.Dot)]
         public extern static bool enabled
         {

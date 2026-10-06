@@ -54,6 +54,7 @@ namespace UnityEngine.Audio
     public abstract class AudioResource : Object
     {
         protected internal AudioResource() {}
+        protected internal AudioResource(global::UnityEngine.EntityId id) : base(id) {}
     }
 
     [NativeHeader("Modules/Audio/Public/ScriptBindings/Audio.bindings.h")]
@@ -1388,6 +1389,7 @@ namespace UnityEngine
     [StaticAccessor("AudioClipBindings", StaticAccessorType.DoubleColon)]
     public sealed partial class AudioClip : AudioResource, IAudioGenerator
     {
+        internal AudioClip(global::UnityEngine.EntityId id) : base(id) {}
         private AudioClip() {}
 
         extern static private bool GetData([NotNull] AudioClip clip, Span<float> data, int samplesOffset);
@@ -2355,6 +2357,8 @@ namespace UnityEngine
     [global::UnityEngine.NativeClass("AudioBehaviour", PersistentTypeId = 180)]
     public class AudioBehaviour : Behaviour
     {
+        public AudioBehaviour() {}
+        internal AudioBehaviour(global::UnityEngine.EntityId id) : base(id) {}
     }
 
     ///<summary>Representation of a listener in 3D space.</summary>
@@ -2367,6 +2371,8 @@ namespace UnityEngine
     [StaticAccessor("AudioListenerBindings", StaticAccessorType.DoubleColon)]
     public sealed partial class AudioListener : AudioBehaviour
     {
+        internal AudioListener(global::UnityEngine.EntityId id) : base(id) {}
+        public AudioListener() {}
         [NativeMethod(ThrowsException = true)]
         extern static private void GetOutputDataHelper([Out] float[] samples, int channel);
 
@@ -2528,6 +2534,8 @@ namespace UnityEngine
     [StaticAccessor("AudioSourceBindings", StaticAccessorType.DoubleColon)]
     public sealed partial class AudioSource : AudioBehaviour
     {
+        internal AudioSource(global::UnityEngine.EntityId id) : base(id) {}
+        public AudioSource() {}
         extern static private float GetPitch([NotNull] AudioSource source);
         extern static private void SetPitch([NotNull] AudioSource source, float pitch);
 
@@ -2824,6 +2832,35 @@ namespace UnityEngine
         extern internal DualThreadHandle generatorInstanceHandle { get; }
 
         extern internal Object generatorObject { get; set; }
+
+        /// <summary>
+        /// Gets a handle to the effect instantiated from a specific <see cref="IAudioEffect" /> component attached to this <see cref="AudioSource" />'s GameObject.
+        /// </summary>
+        /// <remarks>
+        /// Use this for runtime scripting control of an attached effect while it is playing, for example to send messages
+        /// with <see cref="ControlContext.SendMessage" />. Since the <see cref="AudioSource" /> owns the instance, check for
+        /// its existence using <see cref="ControlContext.Exists" />.
+        /// </remarks>
+        /// <param name="effectComponent">Component implementing <see cref="IAudioEffect" /> on the same GameObject as this <see cref="AudioSource" />.</param>
+        /// <typeparam name="TComponent">The concrete component type. Must derive from <see cref="Component"/> so that <see cref="ScriptableObject"/>-based <see cref="UnityEngine.Audio.IAudioEffect"/> implementations are rejected at compile time.</typeparam>
+        /// <returns>The <see cref="ProcessorInstance" /> for the effect, or a default-initialized instance if the component has no instantiated effect.</returns>
+        public ProcessorInstance GetEffectInstance<TComponent>(TComponent effectComponent)
+            where TComponent : Component, UnityEngine.Audio.IAudioEffect
+        {
+            // Unity's overloaded op_Equality handles the fake-null case for destroyed components,
+            // and the editor's GetEntityId() returns cached ids for destroyed objects (where players
+            // return EntityId.None) so this guard is required for editor/player consistency.
+            if (effectComponent != null)
+            {
+                var handle = GetEffectInstanceHandle(effectComponent.GetEntityId());
+                if (handle.WasCreated)
+                    return new UnityEngine.Audio.EffectInstance(handle);
+            }
+            return default;
+        }
+
+        [NativeMethod("GetEffectInstanceHandle")]
+        extern internal Audio.DualThreadHandle GetEffectInstanceHandle(EntityId componentEntityId);
 
         ///<summary>The target group to which the AudioSource should route its signal.</summary>
         extern public AudioMixerGroup outputAudioMixerGroup { get; set; }
@@ -3911,6 +3948,8 @@ namespace UnityEngine
     [NativeHeader("Modules/Audio/Public/AudioReverbZone.h")]
     public sealed partial class AudioReverbZone : Behaviour
     {
+        internal AudioReverbZone(global::UnityEngine.EntityId id) : base(id) {}
+        public AudioReverbZone() {}
         //  The distance from the centerpoint that the reverb will have full effect at. Default = 10.0.
         ///<summary>The distance from the centerpoint that the reverb will have full effect at. Default = 10.0.</summary>
         extern public float minDistance { get; set; }
@@ -3970,6 +4009,8 @@ namespace UnityEngine
     [RequireComponent(typeof(AudioBehaviour))]
     public sealed partial class AudioLowPassFilter : Behaviour
     {
+        internal AudioLowPassFilter(global::UnityEngine.EntityId id) : base(id) {}
+        public AudioLowPassFilter() {}
         extern private AnimationCurve GetCustomLowpassLevelCurveCopy();
 
         [NativeMethod(Name = "AudioLowPassFilterBindings::SetCustomLowpassLevelCurveHelper", IsFreeFunction = true, ThrowsException = true)]
@@ -4055,6 +4096,8 @@ namespace UnityEngine
     [RequireComponent(typeof(AudioBehaviour))]
     public sealed partial class AudioHighPassFilter : Behaviour
     {
+        internal AudioHighPassFilter(global::UnityEngine.EntityId id) : base(id) {}
+        public AudioHighPassFilter() {}
         // Highpass cutoff frequency in hz. 10.0 to 22000.0. Default = 5000.0.
         ///<summary>Highpass cutoff frequency in hz. 10.0 to 22000.0. Default = 5000.0.</summary>
         ///<example>
@@ -4109,6 +4152,8 @@ namespace UnityEngine
     [RequireComponent(typeof(AudioBehaviour))]
     public sealed class AudioDistortionFilter : Behaviour
     {
+        internal AudioDistortionFilter(global::UnityEngine.EntityId id) : base(id) {}
+        public AudioDistortionFilter() {}
         // Distortion value. 0.0 to 1.0. Default = 0.5.
         ///<summary>Distortion value. 0.0 to 1.0. Default = 0.5.</summary>
         extern public float distortionLevel { get; set; }
@@ -4120,6 +4165,8 @@ namespace UnityEngine
     [RequireComponent(typeof(AudioBehaviour))]
     public sealed class AudioEchoFilter : Behaviour
     {
+        internal AudioEchoFilter(global::UnityEngine.EntityId id) : base(id) {}
+        public AudioEchoFilter() {}
         // Echo delay in ms. 10 to 5000. Default = 500.
         ///<summary>Echo delay in ms. 10 to 5000. Default = 500.</summary>
         ///<example>
@@ -4216,6 +4263,8 @@ namespace UnityEngine
     [RequireComponent(typeof(AudioBehaviour))]
     public sealed partial class AudioChorusFilter : Behaviour
     {
+        internal AudioChorusFilter(global::UnityEngine.EntityId id) : base(id) {}
+        public AudioChorusFilter() {}
         // Volume of original signal to pass to output. 0.0 to 1.0. Default = 0.5.
         ///<summary>Volume of original signal to pass to output. 0.0 to 1.0. Default = 0.5.</summary>
         ///<example>
@@ -4376,6 +4425,8 @@ namespace UnityEngine
     [RequireComponent(typeof(AudioBehaviour))]
     public sealed partial class AudioReverbFilter : Behaviour
     {
+        internal AudioReverbFilter(global::UnityEngine.EntityId id) : base(id) {}
+        public AudioReverbFilter() {}
         ///<summary>Set/Get reverb preset properties.</summary>
         extern public AudioReverbPreset reverbPreset { get; set; }
 

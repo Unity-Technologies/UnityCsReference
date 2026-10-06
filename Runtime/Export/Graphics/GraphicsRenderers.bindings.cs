@@ -23,6 +23,8 @@ namespace UnityEngine
     [UsedByNativeCode]
     public partial class Renderer : Component
     {
+        public Renderer() {}
+        protected internal Renderer(global::UnityEngine.EntityId id) : base(id) {}
         // called when the object became visible by any camera.
         // void OnBecameVisible();
 
@@ -117,6 +119,7 @@ namespace UnityEngine
 
         internal extern byte stagePriority { get; set; }
 
+        [Obsolete("Renderer.allowOcclusionWhenDynamic is deprecated and will be removed in a future release. Consider migrating to GPU Occlusion Culling where your target platform supports it. #from(6000.7)", false)]
         [NativeProperty("IsDynamicOccludee")] extern public bool allowOcclusionWhenDynamic { get; set; }
 
         [NativeProperty("ForceMeshLod")] extern public Int16 forceMeshLod { get; set; }
@@ -226,12 +229,19 @@ namespace UnityEngine
         }
 
         extern public LODGroup LODGroup { get; }
+
+        extern public uint lodGroupMask
+        {
+            [FreeFunction(Name = "RendererScripting::GetLODGroupMask", HasExplicitThis = true)] get;
+        }
     }
 
     [global::UnityEngine.NativeClass("TrailRenderer", PersistentTypeId = 96)]
     [NativeHeader("Runtime/Graphics/TrailRenderer.h")]
     public sealed partial class TrailRenderer : Renderer
     {
+        internal TrailRenderer(global::UnityEngine.EntityId id) : base(id) {}
+        public TrailRenderer() {}
         extern public float time                { get; set; }
         extern internal float previewTimeScale  { get; set; }
         extern public float startWidth          { get; set; }
@@ -324,6 +334,8 @@ namespace UnityEngine
     [NativeHeader("Runtime/Graphics/LineRenderer.h")]
     public sealed partial class LineRenderer : Renderer
     {
+        internal LineRenderer(global::UnityEngine.EntityId id) : base(id) {}
+        public LineRenderer() {}
         extern public float startWidth          { get; set; }
         extern public float endWidth            { get; set; }
         extern public float widthMultiplier     { get; set; }
@@ -392,6 +404,8 @@ namespace UnityEngine
     [NativeHeader("Runtime/Graphics/Mesh/SkinnedMeshRenderer.h"), RequiredByNativeCode /* used by VisualEffect, returns type */]
     public partial class SkinnedMeshRenderer : Renderer
     {
+        internal SkinnedMeshRenderer(global::UnityEngine.EntityId id) : base(id) {}
+        public SkinnedMeshRenderer() {}
         extern public SkinQuality quality { get; set; }
         extern public bool updateWhenOffscreen  { get; set; }
         extern public bool forceMatrixRecalculationPerRender  { get; set; }
@@ -448,6 +462,8 @@ namespace UnityEngine
     [NativeHeader("Runtime/Graphics/Mesh/MeshRenderer.h")]
     public partial class MeshRenderer : Renderer
     {
+        internal MeshRenderer(global::UnityEngine.EntityId id) : base(id) {}
+        public MeshRenderer() {}
         [RequiredByNativeCode]  // MeshRenderer is used in the VR Splash screen.
         private void DontStripMeshRenderer() {}
 

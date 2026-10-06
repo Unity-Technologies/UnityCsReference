@@ -23,12 +23,12 @@ namespace UnityEditor
     {
         static class SpriteUtilityStrings
         {
-            public static readonly GUIContent saveAnimDialogMessage = EditorGUIUtility.TrTextContent("Create a new animation for the game object '{0}':");
-            public static readonly GUIContent saveAnimDialogTitle = EditorGUIUtility.TrTextContent("Create New Animation");
-            public static readonly GUIContent saveAnimDialogName = EditorGUIUtility.TrTextContent("New Animation");
-            public static readonly GUIContent unableToFindSpriteRendererWarning = EditorGUIUtility.TrTextContent("There should be a SpriteRenderer in dragged object");
-            public static readonly GUIContent unableToAddSpriteRendererWarning = EditorGUIUtility.TrTextContent("Unable to add SpriteRenderer into Gameobject.");
-            public static readonly GUIContent failedToCreateAnimationError = EditorGUIUtility.TrTextContent("Failed to create animation for dragged object");
+            public static readonly GUIContent saveAnimDialogMessage = L10n.TextContent("Create a new animation for the game object '{0}':", null, null, null);
+            public static readonly GUIContent saveAnimDialogTitle = L10n.TextContent("Create New Animation", null, null, null);
+            public static readonly GUIContent saveAnimDialogName = L10n.TextContent("New Animation", null, null, null);
+            public static readonly GUIContent unableToFindSpriteRendererWarning = L10n.TextContent("There should be a SpriteRenderer in dragged object", null, null, null);
+            public static readonly GUIContent unableToAddSpriteRendererWarning = L10n.TextContent("Unable to add SpriteRenderer into Gameobject.", null, null, null);
+            public static readonly GUIContent failedToCreateAnimationError = L10n.TextContent("Failed to create animation for dragged object", null, null, null);
         }
 
         [NoAutoStaticsCleanup] // Lazily-created Material from a built-in shader; safe to persist across reloads.

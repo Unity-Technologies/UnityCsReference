@@ -2,8 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: UIToolkitFramework not yet converted
-#pragma warning disable UAL0010,UAL0011,UAL0012,UAL0013,UAL0014 // AutoStaticsCleanup: UIToolkitFramework not yet converted
 //
 // Copyright SmartFormat Project maintainers and contributors.
 // Licensed under the MIT license.
@@ -18,14 +16,23 @@ namespace Unity.SmartStrings.Core.Parsing;
 /// <summary>
 /// Handles escaped literals, like \\ or \n
 /// </summary>
-[NoAutoStaticsCleanup] // immutable escape-character lookup tables
 static class EscapedLiteral
 {
+    // Immutable escape-character lookup table: char keys and values only, populated once from literals
+    // and never mutated, so nothing user-defined can be pinned across a code reload.
+    [NoAutoStaticsCleanup]
     static readonly Dictionary<char, char> GeneralLookupTable = new() {
-        // General
+        // Escaping the escape character itself
         {'\\', '\\'},
+        // Placeholder related
         {'{', '{'},
         {'}', '}'},
+        {':', ':'} // escaped colons can be used anywhere in the format string
+    };
+
+    // Same immutable char-to-char shape as GeneralLookupTable above.
+    [NoAutoStaticsCleanup]
+    static readonly Dictionary<char, char> CharLiteralLookupTable = new() {
         {'0', '\0'},
         {'a', '\a'},
         {'b', '\b'},
@@ -33,10 +40,11 @@ static class EscapedLiteral
         {'n', '\n'},
         {'r', '\r'},
         {'t', '\t'},
-        {'v', '\v'},
-        {':', ':'} // escaped colons can be used anywhere in the format string
+        {'v', '\v'}
     };
 
+    // Same immutable char-to-char shape as GeneralLookupTable above.
+    [NoAutoStaticsCleanup]
     static readonly Dictionary<char, char> FormatterOptionsLookupTable = new() {
         // Smart.Format characters used in formatter options
         {'(', '('},
@@ -49,13 +57,13 @@ static class EscapedLiteral
     /// <param name="input">The input character.</param>
     /// <param name="result">The matching character.</param>
     /// <param name="includeFormatterOptionChars">If <see langword="true"/>, (){}: will be escaped, else not.</param>
+    /// <param name="includeCharacterLiterals">If <see langword="true"/>, \n, \t etc. will be escaped, else not.</param>
     /// <returns><see langword="true"/>, if a matching character was found.</returns>
-    public static bool TryGetChar(char input, out char result, bool includeFormatterOptionChars)
+    public static bool TryGetChar(char input, out char result, bool includeFormatterOptionChars, bool includeCharacterLiterals = true)
     {
-        return includeFormatterOptionChars
-            ? GeneralLookupTable.TryGetValue(input, out result) ||
-            FormatterOptionsLookupTable.TryGetValue(input, out result)
-            : GeneralLookupTable.TryGetValue(input, out result);
+        return GeneralLookupTable.TryGetValue(input, out result) ||
+            (includeCharacterLiterals && CharLiteralLookupTable.TryGetValue(input, out result)) ||
+            (includeFormatterOptionChars && FormatterOptionsLookupTable.TryGetValue(input, out result));
     }
 
     static char GetUnicode(ReadOnlySpan<char> input, int startIndex)
@@ -77,9 +85,10 @@ static class EscapedLiteral
     /// <param name="escapingSequenceStart"></param>
     /// <param name="input"></param>
     /// <param name="includeFormatterOptionChars">If <see langword="true"/>, (){}: will be escaped, else not.</param>
+    /// <param name="includeCharacterLiterals">If <see langword="true"/>, \n, \t etc. will be escaped, else not.</param>
     /// <param name="resultBuffer">The buffer to fill. It's enough to have a buffer with the same size as the input length.</param>
     /// <returns>The input having escaped characters replaced with their real value.</returns>
-    public static ReadOnlySpan<char> UnEscapeCharLiterals(char escapingSequenceStart, ReadOnlySpan<char> input, bool includeFormatterOptionChars, Span<char> resultBuffer)
+    public static ReadOnlySpan<char> UnEscapeCharLiterals(char escapingSequenceStart, ReadOnlySpan<char> input, bool includeFormatterOptionChars, bool includeCharacterLiterals, Span<char> resultBuffer)
     {
         var max = input.Length;
         var resultIndex = 0;
@@ -106,7 +115,7 @@ static class EscapedLiteral
                     continue;
                 }
 
-                if (TryGetChar(input[nextInputIndex], out var realChar, includeFormatterOptionChars))
+                if (TryGetChar(input[nextInputIndex], out var realChar, includeFormatterOptionChars, includeCharacterLiterals))
                 {
                     resultBuffer[resultIndex++] = realChar;
                 }
@@ -146,6 +155,13 @@ static class EscapedLiteral
                 continue;
             }
 
+            if (CharLiteralLookupTable.ContainsValue(c))
+            {
+                yield return escapeSequenceStart;
+                yield return GetKeyForValue(CharLiteralLookupTable, c);
+                continue;
+            }
+
             if (includeFormatterOptionChars && FormatterOptionsLookupTable.ContainsValue(c))
             {
                 yield return escapeSequenceStart;
@@ -167,5 +183,3 @@ static class EscapedLiteral
         return default;
     }
 }
-#pragma warning restore UAL0010,UAL0011,UAL0012,UAL0013,UAL0014
-#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

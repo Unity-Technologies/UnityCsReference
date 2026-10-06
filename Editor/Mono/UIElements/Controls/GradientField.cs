@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using System.Collections.Generic;
 using Unity.Properties;
 using UnityEngine;
 using UnityEditorInternal;
@@ -238,16 +239,36 @@ namespace UnityEditor.UIElements
             GradientPicker.Show(rawValue, hdr, colorSpace, OnGradientChanged, OnPickerClosed);
         }
 
+        internal event Action pickerClosed;
+
         void OnPickerClosed()
         {
-            // Increment and name a new group before collapsing so that any redo entries created
-            // by mid-session undos are truncated from the stack. (UUM-142114)
-            if (m_PickerHasChanges)
+            try
             {
-                Undo.IncrementCurrentGroup();
-                Undo.SetCurrentGroupName("Modify Gradient");
+                pickerClosed?.Invoke();
             }
-            Undo.CollapseUndoOperations(m_PickerUndoGroup);
+            finally
+            {
+                // Increment and name a new group before collapsing so that any redo entries created
+                // by mid-session undos are truncated from the stack. (UUM-142114)
+                if (m_PickerHasChanges && IsAnyPickerChangeApplied())
+                {
+                    Undo.IncrementCurrentGroup();
+                    Undo.SetCurrentGroupName("Modify Gradient");
+                }
+                Undo.CollapseUndoOperations(m_PickerUndoGroup);
+            }
+        }
+
+        // Once every picker change is undone, naming would only add an empty entry and clear redo. (UUM-153510)
+        bool IsAnyPickerChangeApplied()
+        {
+            Undo.FlushTrackedObjects();
+            if (!Undo.HasRedo())
+                return true;
+
+            Undo.GetRecords(new List<string>(), out var undoCursor);
+            return undoCursor > 0 && Undo.GetGroupFromStack(undoCursor - 1) >= m_PickerUndoGroup;
         }
 
         // We dont want Undo operations to be combined when the picker is still open so we will handle the collapsing. (UUM-142114)
@@ -275,7 +296,7 @@ namespace UnityEditor.UIElements
             }
         }
 
-        void OnGradientChanged(Gradient newValue)
+        internal void OnGradientChanged(Gradient newValue)
         {
             m_PickerHasChanges = true;
             m_ForceSendEvent = true;

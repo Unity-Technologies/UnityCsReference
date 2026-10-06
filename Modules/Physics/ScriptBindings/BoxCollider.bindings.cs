@@ -16,6 +16,8 @@ namespace UnityEngine
     [NativeHeader("Modules/Physics/BoxCollider.h")]
     public partial class BoxCollider : Collider
     {
+        internal BoxCollider(global::UnityEngine.EntityId id) : base(id) {}
+        public BoxCollider() {}
         ///<summary>The center of the box, measured in the object's local space.</summary>
         extern public Vector3 center { get; set; }
         ///<summary>The size of the box, measured in the object's local space.</summary>

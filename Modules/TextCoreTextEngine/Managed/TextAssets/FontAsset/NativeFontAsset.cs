@@ -143,6 +143,9 @@ namespace UnityEngine.TextCore.Text
         }
 
         [AutoStaticsCleanupOnCodeReload]
+        // Scratch set for one fallback traversal: cleared before every walk, so the set cleared on
+        // reload is refilled by the next traversal.
+        [IgnoreForUAL0015("Per-traversal scratch set, cleared and refilled on every fallback walk")]
         private static HashSet<EntityId> visitedFontAssets = new HashSet<EntityId>();
         private bool HasRecursion(FontAsset fontAsset)
         {
@@ -257,6 +260,27 @@ namespace UnityEngine.TextCore.Text
             return (regularTypefaces, italicTypefaces);
         }
 
+        // Bridges for external text systems (TMP)
+        internal static IntPtr CreateNativeFontAsset(FaceInfo faceInfo, Font sourceFontFile, Font sourceFontEditorRef, string sourceFontFilePath, EntityId fontEntityId, IntPtr[] fallbacks, IntPtr[] weightFallbacks, IntPtr[] italicFallbacks, GlyphRenderMode renderMode, byte italicSlant, float boldWeight, int boldSpacing, Object owner)
+        {
+            return Create(faceInfo, sourceFontFile, sourceFontEditorRef, sourceFontFilePath, fontEntityId, fallbacks, weightFallbacks, italicFallbacks, renderMode, italicSlant, boldWeight, boldSpacing, MarshalledUnityObject.MarshalNotNull(owner));
+        }
+
+        internal static void DestroyNativeFontAsset(IntPtr nativeFontAsset, Object owner)
+        {
+            Destroy(nativeFontAsset, MarshalledUnityObject.MarshalNotNull(owner));
+        }
+
+        internal static void UpdateNativeFallbacks(IntPtr nativeFontAsset, IntPtr[] fallbacks)
+        {
+            UpdateFallbacks(nativeFontAsset, fallbacks);
+        }
+
+        internal static void UpdateNativeSourceFontFile(IntPtr nativeFontAsset, Font sourceFontFile)
+        {
+            UpdateSourceFontFile(nativeFontAsset, sourceFontFile);
+        }
+
         static extern void UpdateFontEditorRef(IntPtr ptr, Font sourceFont_EditorRef);
 
         static extern void UpdateSourceFontFile(IntPtr ptr, Font sourceFontFile);
@@ -270,6 +294,9 @@ namespace UnityEngine.TextCore.Text
         static extern void UpdateItalicAngle(IntPtr ptr, byte italicAngle);
         static extern void UpdateBoldWeight(IntPtr ptr, float boldWeight);
         static extern void UpdateBoldSpacing(IntPtr ptr, int boldSpacing);
+
+        static extern bool TryGetGlyphIndex(IntPtr ptr, uint unicode, out uint glyphIndex);
+        static extern bool TryGetGlyphMetrics(IntPtr ptr, uint glyphIndex, out GlyphMetrics metrics);
 
         [FreeFunction("FontAsset::Destroy")]
         static extern void Destroy(IntPtr ptr, IntPtr managedObject);

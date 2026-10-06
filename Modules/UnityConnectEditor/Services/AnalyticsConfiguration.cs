@@ -11,6 +11,7 @@ namespace UnityEditor.Connect
     internal partial class AnalyticsConfiguration
     {
         [AutoStaticsCleanupOnCodeReload]
+        [IgnoreForUAL0015("Lazily re-created by the instance getter on next access after reload")]
         static AnalyticsConfiguration k_Instance;
 
         readonly string m_LearnMoreUrl;

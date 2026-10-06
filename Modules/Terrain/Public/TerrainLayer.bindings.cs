@@ -35,11 +35,12 @@ namespace UnityEngine
     [NativeClass("TerrainLayer", PersistentTypeId = 0x746C6179)]
     public sealed partial class TerrainLayer : Object
     {
+        internal TerrainLayer(global::UnityEngine.EntityId id) : base(id) {}
         ///<exclude />
-        public TerrainLayer() { Internal_Create(this); }
+        public TerrainLayer() { SetEntityIdFromConstructor(Internal_Create()); }
 
         [FreeFunction("TerrainLayerScriptingInterface::Create")]
-        extern private static void Internal_Create([Writable] TerrainLayer layer);
+        extern private static EntityId Internal_Create();
 
         ///<summary>The diffuse texture used by the terrain layer.</summary>
         extern public Texture2D diffuseTexture { get; set; }

@@ -17,6 +17,8 @@ namespace UnityEngine
     [NativeClass("Unity::HingeJoint", PersistentTypeId = 59)]
     public class HingeJoint : Joint
     {
+        internal HingeJoint(global::UnityEngine.EntityId id) : base(id) {}
+        public HingeJoint() {}
         ///<summary>The motor will apply a force up to a maximum force to achieve the target velocity in degrees per second.</summary>
         ///<remarks>
         ///  <para>The motor tries to reach <see cref="JointMotor.targetVelocity" /> angular velocity in degrees per second.

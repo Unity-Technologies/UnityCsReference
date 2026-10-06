@@ -25,6 +25,7 @@ internal static partial class StyleVariableUtility
     [NoAutoStaticsCleanup] // shared empty dictionary sentinel, safe to persist
     static readonly Dictionary<string, string> s_EmptyEditorVarDescriptions = new();
     [AutoStaticsCleanupOnCodeReload]
+    [IgnoreForUAL0015("Lazily re-populated by InitEditorVarDescriptions on next access after reload")]
     static Dictionary<string, string> s_EditorVarDescriptions;
 
     [Serializable]
@@ -187,7 +188,7 @@ internal static partial class StyleVariableUtility
             if (variables[i].name == variableName)
             {
                 string descr = null;
-                if (variable.sheet.isDefaultStyleSheet)
+                if (variable.tier != UnityEngine.UIElements.StyleSheetPriority.Default)
                 {
                     editorVariableDescriptions.TryGetValue(variableName, out descr);
                 }

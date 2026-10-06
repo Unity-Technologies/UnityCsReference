@@ -11,10 +11,6 @@ namespace UnityEditor.PackageManager.UI.Internal
     [Serializable]
     internal abstract class SimplePage : BasePage
     {
-        [SerializeField]
-        protected VisualStateList m_VisualStateList = new();
-        public override IVisualStateList visualStates => m_VisualStateList;
-
         protected override void UpdateFiltersInternal(PageFilters newFilters, PageFilters.ChangedTypes changedTypes, bool triggerEvent = true)
         {
             base.UpdateFiltersInternal(newFilters, changedTypes, triggerEvent);

@@ -40,11 +40,20 @@ namespace UnityEditor.Build.Analysis
             ShowEmpty();
         }
 
-        public void ShowAsset(BuildAnalysisAsset asset, BuildAnalysisImporterType? importer)
+        /// <summary>
+        /// The reference tabs under the Asset-mode metadata. The owning tab view drives their
+        /// state (loading, unavailable, bound) — this panel only hosts them.
+        /// </summary>
+        internal ReferenceSection References => m_AssetBody.References;
+
+        public void ShowAsset(BuildAnalysisAsset asset, BuildAnalysisImporterType? importer, bool showReferences)
         {
             var path = asset.Path ?? string.Empty;
             m_Header.Bind(IconUtility.GetAssetIcon(path), Path.GetFileNameWithoutExtension(path), path);
             m_AssetBody.Bind(asset, importer);
+            // Hidden when the build type structurally never records dependency data (Player
+            // builds ship no ContentLayout.json) — same treatment as the Root Assets table.
+            m_AssetBody.References.SetVisible(showReferences);
             SetMode(Mode.Asset);
         }
 
@@ -67,6 +76,11 @@ namespace UnityEditor.Build.Analysis
             m_Header.style.display = mode == Mode.Empty ? DisplayStyle.None : DisplayStyle.Flex;
             m_AssetBody.style.display = mode == Mode.Asset ? DisplayStyle.Flex : DisplayStyle.None;
             m_RootBody.style.display = mode == Mode.Root ? DisplayStyle.Flex : DisplayStyle.None;
+
+            // A section switched away from mid-load would keep its spinner schedule ticking
+            // invisibly; ShowAsset re-applies the right visibility on the way back.
+            if (mode != Mode.Asset)
+                m_AssetBody.References.SetVisible(false);
         }
     }
 
@@ -145,6 +159,7 @@ namespace UnityEditor.Build.Analysis
         internal readonly InspectorField ObjectsCount = new InspectorField("Objects count");
         internal readonly InspectorField ResourcesFiles = new InspectorField("Resources files");
         internal readonly InspectorField AssetPath = new InspectorField("Asset path");
+        internal readonly ReferenceSection References = new ReferenceSection();
 
         public AssetInspectorBody()
         {
@@ -154,6 +169,7 @@ namespace UnityEditor.Build.Analysis
             Add(ObjectsCount);
             Add(ResourcesFiles);
             Add(AssetPath);
+            Add(References);
         }
 
         public void Bind(BuildAnalysisAsset asset, BuildAnalysisImporterType? importer)
@@ -454,30 +470,12 @@ namespace UnityEditor.Build.Analysis
             m_EmptyBody.Refresh();
         }
 
-        private static VisualElement MakeItem()
-        {
-            var row = new VisualElement();
-            row.AddToClassList("inspector__references-item");
-            var icon = new Image { scaleMode = ScaleMode.ScaleToFit };
-            icon.AddToClassList("inspector__references-item-icon");
-            row.Add(icon);
-            var name = new Label();
-            name.AddToClassList("inspector__references-item-name");
-            row.Add(name);
-            var size = new Label();
-            size.AddToClassList("inspector__references-item-size");
-            row.Add(size);
-            return row;
-        }
+        private static VisualElement MakeItem() => AssetReferenceRow.Make(withSize: true);
 
         private void BindItem(VisualElement ve, int index)
         {
             var row = m_Rows[m_FilteredIndices[index]];
-            ((Image)ve.ElementAt(0)).image = row.Icon;
-            var name = (Label)ve.ElementAt(1);
-            name.text = row.Name;
-            name.tooltip = row.Path;
-            ((Label)ve.ElementAt(2)).text = row.Size;
+            AssetReferenceRow.Bind(ve, row.Icon, row.Name, row.Path, row.Size);
         }
     }
 }

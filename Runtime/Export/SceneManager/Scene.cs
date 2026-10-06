@@ -32,7 +32,7 @@ namespace UnityEngine.SceneManagement
             get { return GetLoadingStateInternal(handle); }
         }
 
-        internal string guid
+        internal GUID guid
         {
             get { return GetGUIDInternal(handle); }
         }
@@ -154,7 +154,7 @@ namespace UnityEngine.SceneManagement
             return handle == rhs.handle;
         }
 
-        internal void SetPathAndGuid(string path, string guid)
+        internal void SetPathAndGuid(string path, GUID guid)
         {
             SetPathAndGUIDInternal(m_Handle, path, guid);
         }

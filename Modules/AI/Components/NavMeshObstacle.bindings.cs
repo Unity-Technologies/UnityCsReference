@@ -27,6 +27,8 @@ namespace UnityEngine.AI
     [HelpURL("https://docs.unity3d.com/Packages/com.unity.ai.navigation@2.0/manual/NavMeshObstacle.html")]
     public sealed class NavMeshObstacle : Behaviour
     {
+        internal NavMeshObstacle(global::UnityEngine.EntityId id) : base(id) {}
+        public NavMeshObstacle() {}
         ///<summary>Height of the obstacle's cylinder shape.</summary>
         ///<seealso cref="radius" />
         public extern float height { get; set; }

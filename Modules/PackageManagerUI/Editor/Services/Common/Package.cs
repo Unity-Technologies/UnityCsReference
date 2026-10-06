@@ -107,7 +107,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         // errors on the package level (not just about a particular version)
         [SerializeField]
         private List<UIError> m_Errors;
-        public IEnumerable<UIError> errors => m_Errors;
+        public IReadOnlyList<UIError> errors => m_Errors;
 
         private IEnumerable<UIError> GetAllErrorsInPackageAndVersions()
         {
@@ -126,7 +126,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         private IVersionList m_VersionList;
         public IVersionList versions => m_VersionList;
 
-        IEnumerable<UI.IPackageVersion> UI.IPackage.versions => versions;
+        IReadOnlyList<UI.IPackageVersion> UI.IPackage.versions => versions;
 
         private void LinkPackageAndVersions()
         {

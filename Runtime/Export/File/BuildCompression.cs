@@ -9,6 +9,7 @@ using UnityEngine.Scripting.APIUpdating;
 
 namespace UnityEngine
 {
+    [NativeHeader("Runtime/Utilities/Compression/CompressionBindings.h")]
     public enum CompressionType
     {
         None,
@@ -17,6 +18,7 @@ namespace UnityEngine
         Lz4HC,
     }
 
+    [NativeHeader("Runtime/Utilities/Compression/CompressionBindings.h")]
     public enum CompressionLevel
     {
         None,

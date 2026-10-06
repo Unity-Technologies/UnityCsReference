@@ -15,7 +15,7 @@ namespace UnityEditor
 {
     public partial class PlayerSettings
     {
-        partial struct SplashScreenLogo
+        public partial struct SplashScreenLogo
         {
             [ExcludeFromDocs]
             public static PlayerSettings.SplashScreenLogo Create(float duration)

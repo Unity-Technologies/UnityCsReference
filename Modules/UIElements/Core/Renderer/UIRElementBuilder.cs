@@ -2,7 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: UIToolkitFramework not yet converted
 using System;
 using System.Collections.Generic;
 using Unity.Collections;
@@ -30,10 +29,10 @@ namespace UnityEngine.UIElements.UIR
             DrawVisualElementBackdrop(mgc);
 
             RenderTree nestedRenderTree = ve.nestedRenderData.renderTree;
-            RectInt quad = nestedRenderTree.quadRect;
+            Rect quad = nestedRenderTree.quadRect;
             var uvRect = nestedRenderTree.quadUVRect;
 
-            if (quad != RectInt.zero)
+            if (quad != Rect.zero)
             {
                 var color = Color.white;
 
@@ -221,17 +220,19 @@ namespace UnityEngine.UIElements.UIR
 
             // UV corners depend on world transform; UIRRepaintUpdater forces a visuals-changed
             // event for transform changes on backdrop-filter elements to keep these in sync.
-            BackdropFilterHelper.UpdateBackdropFilterUVCorners(ve, renderData);
+            ExtraRenderData backdrop = m_RenderTreeManager.GetExtraData(renderData);
+            if (!BackdropFilterHelper.UpdateBackdropFilterUVCorners(ve, renderData, backdrop))
+                return;
 
             var veRect = new Rect(0, 0, veSize.x, veSize.y);
 
             // Only the extents are consumed, so map the size directly: the render-time rect mapping
             // reads the active viewport, which means nothing during mesh generation.
-            Rect worldBound = ve.worldBound;
+            Rect recordedRect = backdrop.backdropFilterRecordedRect;
             float pixelsPerPoint = ve.scaledPixelsPerPoint;
             var texSize = new Vector2(
-                Mathf.RoundToInt(worldBound.width * pixelsPerPoint),
-                Mathf.RoundToInt(worldBound.height * pixelsPerPoint));
+                Mathf.RoundToInt(recordedRect.width * pixelsPerPoint),
+                Mathf.RoundToInt(recordedRect.height * pixelsPerPoint));
 
             var rectParams = new MeshGenerator.RectangleParams
             {
@@ -242,12 +243,14 @@ namespace UnityEngine.UIElements.UIR
                 contentSize = texSize,
                 textureSize = texSize,
                 scaleMode = ScaleMode.StretchToFill,
+#pragma warning disable UAL0018 // rectParams is a local mesh-generation descriptor consumed below; the tint does not outlive this call
                 playmodeTintColor = ve.playModeTintColor,
+#pragma warning restore UAL0018
                 // Set UV corners for proper rotation support via bilinear interpolation
-                uvTopLeft = renderData.backdropFilterUVTopLeft,
-                uvTopRight = renderData.backdropFilterUVTopRight,
-                uvBottomRight = renderData.backdropFilterUVBottomRight,
-                uvBottomLeft = renderData.backdropFilterUVBottomLeft,
+                uvTopLeft = backdrop.backdropFilterUVTopLeft,
+                uvTopRight = backdrop.backdropFilterUVTopRight,
+                uvBottomRight = backdrop.backdropFilterUVBottomRight,
+                uvBottomLeft = backdrop.backdropFilterUVBottomLeft,
                 uvCornersValid = true
             };
 
@@ -281,7 +284,7 @@ namespace UnityEngine.UIElements.UIR
             }
 
             // Draw using TextureId directly (texture will be bound during command execution by GenerateBackdropFilterTexture)
-            mgc.entryRecorder.DrawMesh(mgc.parentEntry, vertices, indices, renderData.backdropFilterTextureId, false);
+            mgc.entryRecorder.DrawMesh(mgc.parentEntry, vertices, indices, backdrop.backdropFilterTextureId, false);
         }
 
         protected override void DrawVisualElementBackground(MeshGenerationContext mgc)
@@ -608,4 +611,3 @@ namespace UnityEngine.UIElements.UIR
         }
     }
 }
-#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

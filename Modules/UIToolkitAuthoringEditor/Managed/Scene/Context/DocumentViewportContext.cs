@@ -16,9 +16,10 @@ namespace Unity.UIToolkit.Editor;
 /// code. There is no stage to borrow a <see cref="PanelElement"/> from here, so this context creates one.
 /// </summary>
 /// <remarks>
-/// The panel is an independent clone of the document, not the live instances a scene panel component renders.
-/// Nothing selects, inspects or holds on to its elements, which is what makes rebuilding it wholesale cheap —
-/// and why every edit reaches it as a re-clone rather than as a write onto its elements.
+/// The panel is an independent clone of the document, not the live instances a scene panel component renders,
+/// which is why every edit reaches it as a re-clone rather than as a write onto its elements. The clone is
+/// selection-tracked so it can be authored from, but what a click on it selects is the live element it stands
+/// in for whenever there is one — see <see cref="AuthoritativeRoot"/>.
 /// </remarks>
 sealed class DocumentViewportContext : IUIViewportContext
 {
@@ -62,6 +63,11 @@ sealed class DocumentViewportContext : IUIViewportContext
 
     public PanelElement PanelElement => m_PanelElement;
 
+    // Read fresh rather than cached: live reload rebuilds the component's tree under the same component, and a
+    // document handed over without one (a Project-window pick) has no live tree to defer to at all.
+    public VisualElement AuthoritativeRoot =>
+        m_PanelComponentObject ? m_PanelComponent.GetRootVisualElement() : null;
+
     public VisualTreeAsset RootVisualTreeAsset => m_Document;
 
     public VisualTreeAsset EditedVisualTreeAsset => m_Document;
@@ -88,7 +94,12 @@ sealed class DocumentViewportContext : IUIViewportContext
     // A context built from a panel component dies with it; one built from a document only needs the document.
     public bool IsValid => m_Document != null && (ReferenceEquals(m_PanelComponent, null) || m_PanelComponentObject != null);
 
-    public bool AllowsAuthoring => UIToolkitStageUtility.IsAuthoringEnabledInMainStage;
+    public bool AllowsAuthoring => true;
+
+    // Outside a stage the style sheets save from the Style Sheets window, so only the document is in scope.
+    public bool HasUnsavedChanges => m_Document && UIAssetRegistry.LiveInstance?.CanSettleSingleAsset(m_Document) == true;
+
+    public bool Save() => m_Document && UIAssetRegistry.instance.SaveSingleAsset(m_Document, CommandSources.Viewport);
 
     public void Acquire()
     {
@@ -105,6 +116,10 @@ sealed class DocumentViewportContext : IUIViewportContext
         // Tracked read-only so the document is watched even when no scene panel renders it, which is what makes
         // the reimport and discard notifications below reach this preview.
         UIAssetRegistry.instance.AttachPanel(m_PanelElement.SubPanel, this, CollectRoots);
+
+        // Selection-tracked so the clone's elements carry selection objects. A click still prefers the live
+        // element they stand in for; these are what answers when there is none, or none corresponds.
+        VisualElementSelectionRegistry.Instance?.TrackPreviewPanel(m_PanelElement.SubPanel);
 
         UICommandQueue.RegisterHandlerForCategory(k_NeedsReclone, OnAuthoringCommandExecuted);
         UIAssetRegistry.instance.AssetReloaded += OnAssetReloaded;
@@ -134,6 +149,9 @@ sealed class DocumentViewportContext : IUIViewportContext
         if (registry != null)
             registry.DetachPanel(m_PanelElement.SubPanel);
 
+        // Before the panel is destroyed: untracking is what destroys the selection objects its elements hold.
+        VisualElementSelectionRegistry.Instance?.UntrackPreviewPanel(m_PanelElement.SubPanel);
+
         m_PanelElement.subRootVisualElement?.Clear();
         m_PanelElement.DestroyPanelPermanently();
         m_PanelElement = null;
@@ -143,6 +161,10 @@ sealed class DocumentViewportContext : IUIViewportContext
     {
         if (m_PanelElement == null)
             return;
+
+        // Consumes whatever a command just scheduled: the clone below is the re-clone it asked for, and leaving
+        // the flag set would have the queued FlushReclone throw this tree away again one tick later.
+        m_ReclonePending = false;
 
         // Process whatever is already pending before cloning, so the new tree is built from an up-to-date panel.
         m_PanelElement.FrameUpdate();
@@ -170,7 +192,10 @@ sealed class DocumentViewportContext : IUIViewportContext
             viewport.PushBreadcrumb(gameObject.name, EditorGUIUtility.ObjectContent(gameObject, typeof(GameObject)).image as Texture2D);
 
         if (m_Document)
-            viewport.PushBreadcrumb(m_Document.name, EditorGUIUtility.Load("VisualTreeAsset Icon") as Texture2D);
+        {
+            var label = UIAssetRegistry.LiveInstance?.IsDirty(m_Document) == true ? m_Document.name + "*" : m_Document.name;
+            viewport.PushBreadcrumb(label, EditorGUIUtility.Load("VisualTreeAsset Icon") as Texture2D);
+        }
     }
 
     void CollectRoots(List<VisualTreeAsset> roots)
@@ -199,8 +224,10 @@ sealed class DocumentViewportContext : IUIViewportContext
         if (context.Status != CommandExecutionStatus.Success)
             return;
 
-        // Deliberately not filtered by the asset the command touched: a command carries no reliable one (the UI
-        // Builder records none), and a pointless rebuild costs less than a missed change.
+        // Only the preview is rebuilt here. Pushing the change into the live scene documents is
+        // StageCommandHandler's job, which does it once per command group, for the assets the group actually
+        // recorded — neither of which this handler can tell, since it sees one command at a time and a command
+        // carries no reliable asset (the UI Builder records none).
         ScheduleReclone();
     }
 

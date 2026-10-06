@@ -29,7 +29,7 @@ internal class OpenManifestExternallyAction : PackageAction
         return true;
     }
 
-    protected override bool TriggerActionImplementation(IReadOnlyCollection<IPackage> packages)
+    protected override bool TriggerActionImplementation(IReadOnlyList<IPackage> packages)
     {
         bool result = true;
         var openedVersions = new List<IPackageVersion>();

@@ -17,6 +17,7 @@ namespace UnityEditor.Connect
     internal sealed partial class ServicesConfiguration
     {
         [AutoStaticsCleanupOnCodeReload]
+        [IgnoreForUAL0015("Lazily re-created by the instance getter on next access after reload")]
         static ServicesConfiguration k_Instance;
         const string k_CloudHubServiceUrl = "https://public-cdn.cloud.unity3d.com/editor/production/cloud/hub";
         const string k_CloudUsageDashboardUrl = "/usage";

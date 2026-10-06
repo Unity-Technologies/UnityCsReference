@@ -1,10 +1,10 @@
-#pragma warning disable UAL0010,UAL0011,UAL0012,UAL0013,UAL0014 // AutoStaticsCleanup: GraphicsDeviceFeatures not yet converted
 using UnityEngine;
 using UnityEngine.Rendering;
 using System;
 using System.Runtime.InteropServices;
 using System.Collections.Generic;
 using UnityEditor;
+using Unity.Scripting.LifecycleManagement;
 
 
 namespace UnityEngine.NVIDIA
@@ -43,14 +43,15 @@ namespace UnityEngine.NVIDIA
     public class GraphicsDevice
     {
         //Application ID obtained from NVIDIA or ProjectID of the Unity project
-        private static string  s_DefaultProjectID = "231313132";
-        private static string  s_DefaultAppDir    = ".\\";
+        private static readonly string  s_DefaultProjectID = "231313132";
+        private static readonly string  s_DefaultAppDir    = ".\\";
 
         // -----------------------------------------------------------------------------------
         // Private command buffer / helpers / initializers and utilities
         // -----------------------------------------------------------------------------------
         #region Private
 
+        [NoAutoStaticsCleanup]
         static private GraphicsDevice sGraphicsDeviceInstance = null;
 
         private InitDeviceContext m_InitDeviceContext = null;
@@ -346,15 +347,18 @@ namespace UnityEngine.NVIDIA
         #region Imports
 
         [DllImport("NVUnityPlugin", CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
+        [return: MarshalAs(UnmanagedType.I1)]
         private extern static bool NVUP_InitApi(IntPtr initData);
 
         [DllImport("NVUnityPlugin", CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
         private extern static void NVUP_ShutdownApi();
 
         [DllImport("NVUnityPlugin", CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
+        [return: MarshalAs(UnmanagedType.I1)]
         private extern static bool NVUP_IsFeatureAvailable(GraphicsDeviceFeature featureID);
 
         [DllImport("NVUnityPlugin", CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
+        [return: MarshalAs(UnmanagedType.I1)]
         private extern static bool NVUP_GetOptimalSettings(uint inTargetWidth, uint inTargetHeight, DLSSQuality inPerfVQuality, out OptimalDLSSSettingsData data);
 
         [DllImport("NVUnityPlugin", CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
@@ -395,4 +399,3 @@ namespace UnityEngine.NVIDIA
         #endregion
     };
 } // namespace NVIDIA
-#pragma warning restore UAL0010,UAL0011,UAL0012,UAL0013,UAL0014

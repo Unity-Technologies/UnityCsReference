@@ -8,10 +8,12 @@ using System.Linq;
 using Unity.ProjectAuditor.Editor.Core;
 using UnityEngine;
 
+using TreeViewState = UnityEditor.IMGUI.Controls.TreeViewState<int>;
+
 namespace Unity.ProjectAuditor.Editor.UI.Framework
 {
     [Serializable]
-    internal sealed class ViewManager
+    internal sealed class ViewManager : ISerializationCallbackReceiver
     {
         Report m_Report;
         AnalysisView[] m_Views;
@@ -19,6 +21,7 @@ namespace Unity.ProjectAuditor.Editor.UI.Framework
 
         [SerializeField] SerializableEnum<IssueCategory>[] m_Categories;
         [SerializeField] int m_ActiveViewIndex;
+        [SerializeField] Dictionary<SerializableEnum<IssueCategory>, TreeViewState> m_TreeViewStates = new Dictionary<SerializableEnum<IssueCategory>, TreeViewState>();
         HashSet<IssueCategory> m_PendingCategories;
         HashSet<string> m_PendingModuleNames;
 
@@ -74,14 +77,36 @@ namespace Unity.ProjectAuditor.Editor.UI.Framework
             }
         }
 
+        void ISerializationCallbackReceiver.OnBeforeSerialize()
+        {
+        }
+
+        // Remove any obsolete IssueCategory items from m_Categories
+        void ISerializationCallbackReceiver.OnAfterDeserialize()
+        {
+            var categories = m_Categories.ToValuesList();
+            for (int index = categories.Count - 1; index >= 0; index--)
+            {
+                if (categories[index].IsObsolete())
+                {
+                    m_TreeViewStates.Remove(categories[index]);
+                    categories.RemoveAt(index);
+                }
+            }
+
+            if (m_Categories.Length != categories.Count)
+            {
+                m_Categories = categories.ToSerializableArray();
+                m_ActiveViewIndex = 0;
+            }
+        }
+
         public void Create(SeverityRules rules, ViewStates viewStates, Action<ViewDescriptor, bool> onCreateView = null, ProjectAuditorWindow window = null)
         {
             var views = new List<AnalysisView>();
             foreach (var category in m_Categories)
             {
-                #pragma warning disable UAC2001 // Avoid Linq
-                var desc = ViewDescriptor.GetAll().FirstOrDefault(d => d.Category == category);
-#pragma warning restore UAC2001
+                var desc = Array.Find(ViewDescriptor.GetAll(), d => d.Category == category);
                 if (desc == null)
                 {
                     Debug.LogWarning($"[{ProjectAuditor.DisplayName}] Descriptor for " + ProjectAuditor.GetCategoryName(category) + " was not registered.");
@@ -100,13 +125,23 @@ namespace Unity.ProjectAuditor.Editor.UI.Framework
                 }
 
                 var view = desc.Type != null ? (AnalysisView)Activator.CreateInstance(desc.Type, this) : new AnalysisView(this);
-                view.Create(desc, layout, rules, viewStates, window);
+                view.Create(desc, layout, rules, viewStates, window, GetOrCreateTreeViewState(category));
                 view.OnEnable();
                 views.Add(view);
             }
 
             m_Views = views.ToArray();
             m_AssistantController = new ProjectAuditorAssistantController();
+        }
+
+        TreeViewState GetOrCreateTreeViewState(IssueCategory category)
+        {
+            if (m_TreeViewStates.TryGetValue(category, out var state))
+                return state;
+
+            state = new TreeViewState();
+            m_TreeViewStates.Add(category, state);
+            return state;
         }
 
         public void ClearView(IssueCategory category)
@@ -135,9 +170,7 @@ namespace Unity.ProjectAuditor.Editor.UI.Framework
 
         public AnalysisView GetView(IssueCategory category)
         {
-            #pragma warning disable UAC2001 // Avoid Linq
-            return m_Views.FirstOrDefault(v => v.Desc.Category == category);
-#pragma warning restore UAC2001
+            return Array.Find(m_Views, v => v.Desc.Category == category);
         }
 
         public void ChangeView(IssueCategory category)

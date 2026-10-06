@@ -2,7 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: MecanimAnimation not yet converted
 using System;
 using UnityEngine;
 using System.Collections.Generic;
@@ -18,11 +17,11 @@ namespace UnityEditor.AnimationWindowBuiltin
     {
         internal static class Styles
         {
-            public static readonly GUIContent textAddEvent = EditorGUIUtility.TrTextContent("Add Animation Event");
-            public static readonly GUIContent textDeleteEvents = EditorGUIUtility.TrTextContent("Delete Animation Events");
-            public static readonly GUIContent textDeleteEvent = EditorGUIUtility.TrTextContent("Delete Animation Event");
-            public static readonly GUIContent textCopyEvents = EditorGUIUtility.TrTextContent("Copy Animation Events");
-            public static readonly GUIContent textPasteEvents = EditorGUIUtility.TrTextContent("Paste Animation Events");
+            public static readonly GUIContent textAddEvent = L10n.TextContent("Add Animation Event", null, null, null);
+            public static readonly GUIContent textDeleteEvents = L10n.TextContent("Delete Animation Events", null, null, null);
+            public static readonly GUIContent textDeleteEvent = L10n.TextContent("Delete Animation Event", null, null, null);
+            public static readonly GUIContent textCopyEvents = L10n.TextContent("Copy Animation Events", null, null, null);
+            public static readonly GUIContent textPasteEvents = L10n.TextContent("Paste Animation Events", null, null, null);
 
             public static readonly GUIContent eventMarker = EditorGUIUtility.IconContent("Animation.LargeEventMarker");
             public static readonly GUIContent eventMarkerMultiOverlay = EditorGUIUtility.IconContent("Animation.LargeEventMarker.MultiOverlay");
@@ -702,4 +701,3 @@ namespace UnityEditor.AnimationWindowBuiltin
         }
     }
 } // namespace
-#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

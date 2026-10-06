@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Pool;
 using UnityEngine.UIElements;
@@ -26,6 +27,11 @@ namespace UnityEditor.UIElements.Inspector
         const string k_GenerateAccessibilityHierarchyLabel = "Generate Accessibility Hierarchy";
         const string k_GenerateAccessibilityHierarchyTooltip = "Include this component's content in the automatically " +
             "generated accessibility hierarchy. For more information, visit Project Settings > UI Toolkit.";
+        const string k_TrackScreenSpacePositionLabel = "Track Screen Space Position";
+        const string k_TrackScreenSpacePositionTooltip = "Move the UI to follow this GameObject's position on screen, " +
+            "as seen from the main camera. Hides the UI when the position is off screen. Screen-space render modes only.";
+        const string k_ScreenSpaceOffsetLabel = "Screen Space Offset";
+        const string k_ScreenSpaceOffsetTooltip = "Offset from the tracked screen-space position, in panel coordinates.";
 
         // Flags set by PresetEditor on temporary preview GameObjects
         const HideFlags k_PresetPreviewFlags = HideFlags.HideInHierarchy | HideFlags.NotEditable |
@@ -54,6 +60,10 @@ namespace UnityEditor.UIElements.Inspector
 
         private EnumField m_PivotReferenceSizeField;
         private EnumField m_PivotField;
+
+        private Foldout m_ScreenSpaceTrackingFoldout;
+        private Toggle m_TrackScreenSpacePositionToggle;
+        private Vector2Field m_ScreenSpaceOffsetField;
 
         private HelpBox m_DrivenByParentWarning;
         private HelpBox m_MissingPanelSettings;
@@ -148,6 +158,50 @@ namespace UnityEditor.UIElements.Inspector
                 Undo.RecordObject(target, "Change Position");
                 pc.position = (Position)evt.newValue;
             });
+
+            // PanelRenderer-only feature; not exposed on UIDocument.
+            if (target is PanelRenderer panelRenderer)
+            {
+                m_ScreenSpaceTrackingFoldout = new Foldout
+                {
+                    name = "screen-space-tracking-settings",
+                    text = "Screen Space Tracking Settings"
+                };
+
+                m_TrackScreenSpacePositionToggle = new Toggle(k_TrackScreenSpacePositionLabel)
+                {
+                    name = "track-screen-space-position-field",
+                    tooltip = k_TrackScreenSpacePositionTooltip
+                };
+                m_TrackScreenSpacePositionToggle.AddToClassList(BaseField<bool>.alignedFieldUssClassName);
+                m_TrackScreenSpacePositionToggle.SetValueWithoutNotify(panelRenderer.trackScreenSpacePosition);
+                m_TrackScreenSpacePositionToggle.RegisterValueChangedCallback(evt =>
+                {
+                    Undo.RecordObject(target, "Change Track Screen Space Position");
+                    panelRenderer.trackScreenSpacePosition = evt.newValue;
+                    UpdateValues();
+                });
+
+                m_ScreenSpaceOffsetField = new Vector2Field(k_ScreenSpaceOffsetLabel)
+                {
+                    name = "screen-space-offset-field",
+                    tooltip = k_ScreenSpaceOffsetTooltip
+                };
+                m_ScreenSpaceOffsetField.AddToClassList(BaseField<Vector2>.alignedFieldUssClassName);
+                m_ScreenSpaceOffsetField.SetValueWithoutNotify(panelRenderer.screenSpaceOffset);
+                m_ScreenSpaceOffsetField.RegisterValueChangedCallback(evt =>
+                {
+                    Undo.RecordObject(target, "Change Screen Space Offset");
+                    panelRenderer.screenSpaceOffset = evt.newValue;
+                });
+
+                m_ScreenSpaceTrackingFoldout.Add(m_ScreenSpaceOffsetField);
+
+                var positionFieldParent = m_PositionEnumField.parent;
+                int insertIndex = positionFieldParent.IndexOf(m_PositionEnumField) + 1;
+                positionFieldParent.Insert(insertIndex, m_TrackScreenSpacePositionToggle);
+                positionFieldParent.Insert(insertIndex + 1, m_ScreenSpaceTrackingFoldout);
+            }
 
             m_WorldSpaceSizeField = m_RootVisualElement.MandatoryQ<EnumField>("size-mode");
             m_WorldSpaceSizeField.Init(pc.worldSpaceSizeMode);
@@ -253,6 +307,8 @@ namespace UnityEditor.UIElements.Inspector
 
             bool isWorldSpace = panelComponent.panelSettings?.renderMode == PanelRenderMode.WorldSpace;
 
+            UpdateScreenSpaceTrackingFields();
+
             DisplayStyle sortingDisplayStyle = (!isWorldSpace || panelComponent.parentUI != null) ? DisplayStyle.Flex : DisplayStyle.None;
             m_PositionEnumField.style.display = panelComponent.parentUI != null? DisplayStyle.Flex : DisplayStyle.None;
 
@@ -275,6 +331,34 @@ namespace UnityEditor.UIElements.Inspector
 
             // Let the component update its rendering properties (UUM-105765)
             panelComponent.PerformUpdate();
+        }
+
+        private void RefreshFieldValues()
+        {
+            if (target == null)
+                return;
+
+            var pc = (IPanelComponent)target;
+            var size = pc.worldSpaceSize;
+
+            bool changed = SetValueIfChanged(m_PositionEnumField, pc.position);
+            changed |= SetValueIfChanged(m_WorldSpaceSizeField, pc.worldSpaceSizeMode);
+            changed |= SetValueIfChanged(m_WorldSpaceWidthField, size.x);
+            changed |= SetValueIfChanged(m_WorldSpaceHeightField, size.y);
+            changed |= SetValueIfChanged(m_PivotReferenceSizeField, pc.pivotReferenceSize);
+            changed |= SetValueIfChanged(m_PivotField, pc.pivot);
+
+            if (changed)
+                UpdateValues();
+        }
+
+        static bool SetValueIfChanged<T>(BaseField<T> field, T value)
+        {
+            if (EqualityComparer<T>.Default.Equals(field.value, value))
+                return false;
+
+            field.SetValueWithoutNotify(value);
+            return true;
         }
 
         string GenerateEditorElementsErrorMessage(int maxElements)
@@ -333,6 +417,25 @@ namespace UnityEditor.UIElements.Inspector
             }
         }
 
+        private void UpdateScreenSpaceTrackingFields()
+        {
+            // The target can be destroyed while the scheduled refresh is active.
+            if (m_TrackScreenSpacePositionToggle == null || target is not PanelRenderer panelRenderer || panelRenderer == null)
+                return;
+
+            var panelSettings = panelRenderer.panelSettings;
+            bool showTracking = panelSettings != null && panelSettings.renderMode != PanelRenderMode.WorldSpace;
+            bool tracking = panelRenderer.trackScreenSpacePosition;
+
+            m_TrackScreenSpacePositionToggle.style.display = showTracking ? DisplayStyle.Flex : DisplayStyle.None;
+            if (m_TrackScreenSpacePositionToggle.value != tracking)
+                m_TrackScreenSpacePositionToggle.SetValueWithoutNotify(tracking);
+
+            m_ScreenSpaceTrackingFoldout.style.display = (showTracking && tracking) ? DisplayStyle.Flex : DisplayStyle.None;
+            if (m_ScreenSpaceOffsetField.value != panelRenderer.screenSpaceOffset)
+                m_ScreenSpaceOffsetField.SetValueWithoutNotify(panelRenderer.screenSpaceOffset);
+        }
+
         private void UpdateInputConfigurationOptions()
         {
             var panelComp = (IPanelComponent)target;
@@ -371,9 +474,13 @@ namespace UnityEditor.UIElements.Inspector
 
             BindFields();
             UpdateValues();
+            m_RootVisualElement.TrackSerializedObjectValue(serializedObject, _ => RefreshFieldValues());
 
             UpdateInputConfigurationOptions();
             m_InputConfiguration.schedule.Execute(UpdateInputConfigurationOptions).Every(200);
+
+            // The render mode can change on the asset while the inspector is open.
+            m_TrackScreenSpacePositionToggle?.schedule.Execute(UpdateScreenSpaceTrackingFields).Every(200);
 
             return m_RootVisualElement;
         }
@@ -381,7 +488,7 @@ namespace UnityEditor.UIElements.Inspector
         void AddPanelRendererComponent()
         {
             var component = (Component)target;
-            var pr = component.gameObject.AddComponent<PanelRenderer>();
+            var pr = Undo.AddComponent(component.gameObject, typeof(PanelRenderer));
 
             var uiDoc = (target as UIDocument);
             if (uiDoc == null)

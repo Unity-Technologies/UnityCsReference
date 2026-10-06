@@ -12,39 +12,39 @@ namespace UnityEditor
     {
         class Texts
         {
-            public GUIContent mode = EditorGUIUtility.TrTextContent("Mode", "Select how trails are generated on the particles.");
-            public GUIContent ratio = EditorGUIUtility.TrTextContent("Ratio", "Choose what proportion of particles will receive a trail.");
-            public GUIContent lifetime = EditorGUIUtility.TrTextContent("Lifetime", "How long each trail will last, relative to the life of the particle.");
-            public GUIContent minVertexDistance = EditorGUIUtility.TrTextContent("Minimum Vertex Distance", "The minimum distance each trail can travel before adding a new vertex.");
-            public GUIContent textureMode = EditorGUIUtility.TrTextContent("Texture Mode", "Should the U coordinate be stretched or tiled?");
-            public GUIContent textureScale = EditorGUIUtility.TrTextContent("Texture Scale", "Scale the texture along the UV coordinates using this multiplier.");
-            public GUIContent worldSpace = EditorGUIUtility.TrTextContent("World Space", "Trail points will be dropped in world space, even if the particle system is simulating in local space.");
-            public GUIContent dieWithParticles = EditorGUIUtility.TrTextContent("Die with Particles", "The trails will disappear when their owning particles die.");
-            public GUIContent sizeAffectsWidth = EditorGUIUtility.TrTextContent("Size affects Width", "The trails will use the particle size to control their width.");
-            public GUIContent sizeAffectsLifetime = EditorGUIUtility.TrTextContent("Size affects Lifetime", "The trails will use the particle size to control their lifetime.");
-            public GUIContent inheritParticleColor = EditorGUIUtility.TrTextContent("Inherit Particle Color", "The trails will use the particle color as their base color.");
-            public GUIContent colorOverLifetime = EditorGUIUtility.TrTextContent("Color over Lifetime", "The color of the trails during the lifetime of the particle they are attached to.");
-            public GUIContent widthOverTrail = EditorGUIUtility.TrTextContent("Width over Trail", "Select a width for the trail from its start to end vertex.");
-            public GUIContent colorOverTrail = EditorGUIUtility.TrTextContent("Color over Trail", "Select a color for the trail from its start to end vertex.");
-            public GUIContent generateLightingData = EditorGUIUtility.TrTextContent("Generate Lighting Data", "Toggle generation of normal and tangent data, for use in lit shaders.");
-            public GUIContent shadowBias = EditorGUIUtility.TrTextContent("Shadow Bias", "Apply a shadow bias to prevent self-shadowing artifacts. The specified value is the proportion of the trail width at each segment.");
-            public GUIContent ribbonCount = EditorGUIUtility.TrTextContent("Ribbon Count", "Select how many ribbons to render throughout the Particle System.");
-            public GUIContent splitSubEmitterRibbons = EditorGUIUtility.TrTextContent("Split Sub Emitter Ribbons", "When used on a sub emitter, ribbons will connect particles from each parent particle independently.");
-            public GUIContent attachRibbonsToTransform = EditorGUIUtility.TrTextContent("Attach Ribbons to Transform", "Connect each ribbon to the position of the Transform Component.");
+            public GUIContent mode = L10n.TextContent("Mode", "Select how trails are generated on the particles.", null, null);
+            public GUIContent ratio = L10n.TextContent("Ratio", "Choose what proportion of particles will receive a trail.", null, null);
+            public GUIContent lifetime = L10n.TextContent("Lifetime", "How long each trail will last, relative to the life of the particle.", null, null);
+            public GUIContent minVertexDistance = L10n.TextContent("Minimum Vertex Distance", "The minimum distance each trail can travel before adding a new vertex.", null, null);
+            public GUIContent textureMode = L10n.TextContent("Texture Mode", "Should the U coordinate be stretched or tiled?", null, null);
+            public GUIContent textureScale = L10n.TextContent("Texture Scale", "Scale the texture along the UV coordinates using this multiplier.", null, null);
+            public GUIContent worldSpace = L10n.TextContent("World Space", "Trail points will be dropped in world space, even if the particle system is simulating in local space.", null, null);
+            public GUIContent dieWithParticles = L10n.TextContent("Die with Particles", "The trails will disappear when their owning particles die.", null, null);
+            public GUIContent sizeAffectsWidth = L10n.TextContent("Size affects Width", "The trails will use the particle size to control their width.", null, null);
+            public GUIContent sizeAffectsLifetime = L10n.TextContent("Size affects Lifetime", "The trails will use the particle size to control their lifetime.", null, null);
+            public GUIContent inheritParticleColor = L10n.TextContent("Inherit Particle Color", "The trails will use the particle color as their base color.", null, null);
+            public GUIContent colorOverLifetime = L10n.TextContent("Color over Lifetime", "The color of the trails during the lifetime of the particle they are attached to.", null, null);
+            public GUIContent widthOverTrail = L10n.TextContent("Width over Trail", "Select a width for the trail from its start to end vertex.", null, null);
+            public GUIContent colorOverTrail = L10n.TextContent("Color over Trail", "Select a color for the trail from its start to end vertex.", null, null);
+            public GUIContent generateLightingData = L10n.TextContent("Generate Lighting Data", "Toggle generation of normal and tangent data, for use in lit shaders.", null, null);
+            public GUIContent shadowBias = L10n.TextContent("Shadow Bias", "Apply a shadow bias to prevent self-shadowing artifacts. The specified value is the proportion of the trail width at each segment.", null, null);
+            public GUIContent ribbonCount = L10n.TextContent("Ribbon Count", "Select how many ribbons to render throughout the Particle System.", null, null);
+            public GUIContent splitSubEmitterRibbons = L10n.TextContent("Split Sub Emitter Ribbons", "When used on a sub emitter, ribbons will connect particles from each parent particle independently.", null, null);
+            public GUIContent attachRibbonsToTransform = L10n.TextContent("Attach Ribbons to Transform", "Connect each ribbon to the position of the Transform Component.", null, null);
 
             public GUIContent[] trailModeOptions =
             {
-                EditorGUIUtility.TrTextContent("Particles"),
-                EditorGUIUtility.TrTextContent("Ribbon")
+                L10n.TextContent("Particles", null, null, null),
+                L10n.TextContent("Ribbon", null, null, null)
             };
 
             public GUIContent[] textureModeOptions = new GUIContent[]
             {
-                EditorGUIUtility.TrTextContent("Stretch"),
-                EditorGUIUtility.TrTextContent("Tile"),
-                EditorGUIUtility.TrTextContent("DistributePerSegment"),
-                EditorGUIUtility.TrTextContent("RepeatPerSegment"),
-                EditorGUIUtility.TrTextContent("Static")
+                L10n.TextContent("Stretch", null, null, null),
+                L10n.TextContent("Tile", null, null, null),
+                L10n.TextContent("DistributePerSegment", null, null, null),
+                L10n.TextContent("RepeatPerSegment", null, null, null),
+                L10n.TextContent("Static", null, null, null)
             };
         }
         [NoAutoStaticsCleanup] // lazy-initialized UI text cache

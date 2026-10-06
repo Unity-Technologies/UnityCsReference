@@ -13,6 +13,8 @@ namespace UnityEngine
     [NativeClass("Unity::CharacterJoint", PersistentTypeId = 144)]
     public partial class CharacterJoint : Joint
     {
+        internal CharacterJoint(global::UnityEngine.EntityId id) : base(id) {}
+        public CharacterJoint() {}
         ///<summary>The secondary axis around which the joint can rotate.</summary>
         ///<remarks>
         ///  <see cref="CharacterJoint.swing1Limit" /> are the limits of the rotation allowed around this axis.</remarks>

@@ -18,7 +18,7 @@ namespace Unity.Localization.Providers;
 /// <see cref="ResourceFolderProvider"/> (both).
 /// </remarks>
 /// <example>
-/// <para>A synchronous provider that resolves assets it already holds in memory.</para>
+/// A synchronous provider that resolves assets it already holds in memory.
 /// <code source="../../../../Modules/LocalizationRuntime/Tests/UTFTests/Localization.Samples/Providers/SyncAssetProviderExample.cs"/>
 /// </example>
 /// <seealso cref="IAsyncAssetProvider"/>
@@ -45,7 +45,7 @@ public interface IAssetProvider
     /// </remarks>
     /// <param name="asset">The asset to release.</param>
     /// <example>
-    /// <para>Release an asset once it is no longer needed.</para>
+    /// Release an asset once it is no longer needed.
     /// <code source="../../../../Modules/LocalizationRuntime/Tests/UTFTests/Localization.Samples/Providers/IAssetProviderReleaseExample.cs"/>
     /// </example>
     void Release(Object asset);

@@ -124,6 +124,7 @@ partial class UICanvas : VisualElement, IVisualElementChangeProcessor
     bool m_PreviewMode;
     int m_ScopeLevel = 0;
     uint m_LastSeenSubPanelVersion = uint.MaxValue;
+    readonly CanvasBackdropTexture m_BackdropTexture = new();
 
     string m_StorageKey;
 
@@ -225,6 +226,14 @@ partial class UICanvas : VisualElement, IVisualElementChangeProcessor
 
     Vector2 ViewSize => new(m_DocumentRoot.style.width.value.value, m_DocumentRoot.style.height.value.value);
 
+    // Unity's overloaded null-check: '?.' would dereference a destroyed (fake-null) settings object.
+    CanvasBackgroundType EffectiveBackgroundType => m_Settings != null ? m_Settings.BackgroundType : CanvasSettings.DefaultBackgroundType;
+    Color EffectiveBackgroundColor => m_Settings != null ? m_Settings.BackgroundColor : CanvasSettings.DefaultBackgroundColor;
+    float EffectiveBackgroundColorOpacity => m_Settings != null ? m_Settings.BackgroundColorOpacity : CanvasSettings.DefaultBackgroundOpacity;
+    Texture2D EffectiveBackgroundImage => m_Settings != null ? m_Settings.BackgroundImage : CanvasSettings.DefaultBackgroundImage;
+    float EffectiveBackgroundImageOpacity => m_Settings != null ? m_Settings.BackgroundImageOpacity : CanvasSettings.DefaultBackgroundOpacity;
+    ScaleMode EffectiveBackgroundImageScaleMode => m_Settings != null ? m_Settings.BackgroundImageScaleMode : CanvasSettings.DefaultScaleMode;
+
     public UICanvas()
     {
         AddToClassList(UssClass);
@@ -290,6 +299,7 @@ partial class UICanvas : VisualElement, IVisualElementChangeProcessor
     {
         m_DocumentRoot.style.backgroundImage = default;
         PanelElement = null;
+        m_BackdropTexture.Release();
         RequestRefresh = null;
 
         if (!m_Settings)
@@ -328,6 +338,7 @@ partial class UICanvas : VisualElement, IVisualElementChangeProcessor
 
         m_DocumentRoot.style.backgroundImage = default;
         PanelElement = null;
+        m_BackdropTexture.Release();
         m_Settings = null;
         m_SettingsKey = EntityId.None;
     }
@@ -409,7 +420,7 @@ partial class UICanvas : VisualElement, IVisualElementChangeProcessor
         // does not get a warped render due to a one-frame delay.
         m_PanelElement.FrameUpdate();
         m_CheckerboardBackground.MarkDirtyRepaint();
-        m_DocumentRoot.MarkDirtyRepaint();
+        m_DocumentRoot.OnCanvasChanged();
     }
 
     void SetupPreviewMode(bool enabled)
@@ -433,8 +444,11 @@ partial class UICanvas : VisualElement, IVisualElementChangeProcessor
         m_DocumentRoot.PanelElement = null;
         m_DocumentRoot.style.backgroundImage = StyleKeyword.Null;
         panelElement.OnAfterRepaint -= OnPanelElementWasRepainted;
+        panelElement.OnBeforeRender -= OnSubPanelBeforeRender;
         panelElement.SubPanel?.UnregisterChangeProcessor(this);
         Panel.beforeTickingAnyScheduledPanel -= ForceRuntimePanelUpdate;
+        // The domain-reload teardown releases only the panel, so this is the last hook that runs on it.
+        m_BackdropTexture.Release();
     }
 
     void Acquire(PanelElement panelElement)
@@ -444,6 +458,7 @@ partial class UICanvas : VisualElement, IVisualElementChangeProcessor
 
         panelElement.ContentOverflowMode = m_PreviewMode ? Overflow.Hidden : Overflow.Visible;
         panelElement.OnAfterRepaint += OnPanelElementWasRepainted;
+        panelElement.OnBeforeRender += OnSubPanelBeforeRender;
         panelElement.SubPanel?.RegisterChangeProcessor(this);
         m_DocumentRoot.style.backgroundImage = Background.FromRenderTexture(panelElement.RenderTexture);
         m_DocumentRoot.PanelElement = panelElement;
@@ -482,7 +497,9 @@ partial class UICanvas : VisualElement, IVisualElementChangeProcessor
     {
         // If only the `visualTree` changed, we don't need to repaint the render texture. This happens because we apply
         // the panel settings on the panel, but then we need to override some settings such as the 'visualTree`'s size.
-        if (changes.styleChanged.Count == 1 && changes.styleChanged.Contains(panelElementPanel.visualTree))
+        if (OnlyContains(changes.styleChanged, panelElementPanel.visualTree) &&
+            OnlyContains(changes.layoutChanged, panelElementPanel.visualTree) &&
+            (changes.styleChanged.Count > 0 || changes.layoutChanged.Count > 0))
             return;
 
         if (m_PanelElement == null || PanelElement.SubPanel == null)
@@ -490,6 +507,11 @@ partial class UICanvas : VisualElement, IVisualElementChangeProcessor
 
         PanelElement.SubPanel.visualTree.MarkDirtyRepaint();
         m_DocumentRoot.IncrementVersion(VersionChangeType.Repaint);
+    }
+
+    static bool OnlyContains(HashSet<VisualElement> set, VisualElement element)
+    {
+        return set.Count == 0 || (set.Count == 1 && set.Contains(element));
     }
 
     void IVisualElementChangeProcessor.EndProcessing(BaseVisualElementPanel panelElementPanel)
@@ -534,7 +556,7 @@ partial class UICanvas : VisualElement, IVisualElementChangeProcessor
 
     void SetupBackground()
     {
-        switch (m_Settings?.BackgroundType ?? CanvasSettings.DefaultBackgroundType)
+        switch (EffectiveBackgroundType)
         {
             case CanvasBackgroundType.Checkerboard:
                 m_BackgroundColorOverlay.style.display = DisplayStyle.None;
@@ -566,15 +588,11 @@ partial class UICanvas : VisualElement, IVisualElementChangeProcessor
 
     void SetupOverlays()
     {
-        m_BackgroundColorOverlay.style.backgroundColor =
-            m_Settings?.BackgroundColor ?? CanvasSettings.DefaultBackgroundColor;
-        m_BackgroundColorOverlay.style.opacity =
-            m_Settings?.BackgroundColorOpacity ?? CanvasSettings.DefaultBackgroundOpacity;
-        m_BackgroundImageOverlay.style.opacity =
-            m_Settings?.BackgroundImageOpacity ?? CanvasSettings.DefaultBackgroundOpacity;
-        m_BackgroundImageOverlay.style.backgroundImage =
-            m_Settings?.BackgroundImage ?? CanvasSettings.DefaultBackgroundImage;
-        var scaleMode = m_Settings?.BackgroundImageScaleMode ?? CanvasSettings.DefaultScaleMode;
+        m_BackgroundColorOverlay.style.backgroundColor = EffectiveBackgroundColor;
+        m_BackgroundColorOverlay.style.opacity = EffectiveBackgroundColorOpacity;
+        m_BackgroundImageOverlay.style.opacity = EffectiveBackgroundImageOpacity;
+        m_BackgroundImageOverlay.style.backgroundImage = EffectiveBackgroundImage;
+        var scaleMode = EffectiveBackgroundImageScaleMode;
         m_BackgroundImageOverlay.style.backgroundRepeat =
             BackgroundPropertyHelper.ConvertScaleModeToBackgroundRepeat(scaleMode);
         m_BackgroundImageOverlay.style.backgroundSize =
@@ -601,12 +619,58 @@ partial class UICanvas : VisualElement, IVisualElementChangeProcessor
         m_PanelElement.PickAll(m_DocumentRoot.WorldToLocal(worldPosition), results);
     }
 
+    void OnSubPanelBeforeRender()
+    {
+        var renderTexture = m_PanelElement?.RenderTexture;
+        if (renderTexture == null || panel is not Panel hostPanel)
+            return;
+
+        var pixelsPerPoint = hostPanel.pixelsPerPoint;
+        var settings = new CanvasBackdropTexture.Settings
+        {
+            CanvasRect = new Rect(Offset * pixelsPerPoint, BaseSize * ZoomScale * pixelsPerPoint),
+            PixelsPerPoint = pixelsPerPoint,
+            CheckerTexture = m_CheckerboardBackground.texture,
+            CheckerCellSize = m_CheckerboardBackground.cellSize,
+            BackgroundType = EffectiveBackgroundType,
+            BackgroundColor = EffectiveBackgroundColor,
+            BackgroundColorOpacity = EffectiveBackgroundColorOpacity,
+            BackgroundImage = EffectiveBackgroundImage,
+            BackgroundImageContentsHash = EffectiveBackgroundImage != null ? EffectiveBackgroundImage.imageContentsHash : default,
+            BackgroundImageOpacity = EffectiveBackgroundImageOpacity,
+            BackgroundImageScaleMode = EffectiveBackgroundImageScaleMode,
+        };
+
+        var texture = m_BackdropTexture.Update(renderTexture.width, renderTexture.height, settings);
+        if (texture == null)
+            return;
+
+        var previous = RenderTexture.active;
+        try
+        {
+            Graphics.Blit(texture, renderTexture);
+        }
+        finally
+        {
+            RenderTexture.active = previous;
+        }
+        m_PanelElement.MarkTargetPrefilled();
+    }
+
     void ForceRuntimePanelUpdate(Panel p)
     {
         if (p != panel)
             return;
 
-        m_PanelElement?.FrameUpdate();
+        // A pure display-scale change fires no canvas event; recommit so the target resizes with it.
+        if (m_PanelElement != null && p.pixelsPerPoint != m_PanelElement.SubPanelPixelsPerPoint)
+            CommitToPanelElement();
+        else
+            m_PanelElement?.FrameUpdate();
+
+        // The commit early-outs while a manipulation scope is open; keep the sub-panel ticking meanwhile.
+        if (m_PanelElement != null && p.pixelsPerPoint != m_PanelElement.SubPanelPixelsPerPoint)
+            m_PanelElement.FrameUpdate();
 
         var subPanel = m_PanelElement?.SubPanel;
         if (subPanel == null)
@@ -646,7 +710,14 @@ partial class UICanvas : VisualElement, IVisualElementChangeProcessor
 
         foreach (var element in elementsToHighlight)
         {
-            m_HighlightOverlay.AddOverlay(element, self? OverlayContent.Outline : OverlayContent.AllBoxes);
+            // Highlights are broadcast, and outside the UI Stage the same document is on screen twice: as the
+            // live tree the request came from and as this canvas's clone of it. Only the clone has bounds that
+            // mean anything here, so anything mapping onto none of its elements is dropped rather than drawn.
+            var target = m_DocumentRoot.ResolveCanvasElement(element);
+            if (target == null)
+                continue;
+
+            m_HighlightOverlay.AddOverlay(target, self ? OverlayContent.Outline : OverlayContent.AllBoxes);
         }
     }
 }

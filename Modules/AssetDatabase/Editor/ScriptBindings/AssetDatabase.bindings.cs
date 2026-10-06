@@ -626,6 +626,11 @@ namespace UnityEditor
         [PreventExecutionInState(AssetDatabasePreventExecution.kCodeReload, PreventExecutionSeverity.PreventExecution_ManagedException, kPreventExecutionDuringCodeReloadHowToFixMsg)]
         extern internal static GUID AssetPathToGUID_Internal(string path);
 
+        // Pins the GUID a later CreateAsset at this path will adopt, instead of it minting a random one.
+        [PreventExecutionInState(AssetDatabasePreventExecution.kImportWorkerProcess, PreventExecutionSeverity.PreventExecution_ManagedException)]
+        [PreventExecutionInState(AssetDatabasePreventExecution.kCodeReload, PreventExecutionSeverity.PreventExecution_ManagedException, kPreventExecutionDuringCodeReloadHowToFixMsg)]
+        extern internal static bool ReserveAssetGUIDMapping(string path, GUID guid);
+
         public static string GUIDToAssetPath(string guid)
         {
             return GUIDToAssetPath_Internal(new GUID(guid));
@@ -1226,7 +1231,9 @@ namespace UnityEditor
         private extern static void _RefreshSettings();
         public static void RefreshSettings() => _RefreshSettings();
 
+        // Re-subscribed on every domain reload by CacheServerToggle's static constructor.
         [AutoStaticsCleanupOnCodeReload]
+        [IgnoreForUAL0015("Event re-subscribed on every domain reload by CacheServerToggle's static constructor")]
         public static event Action<CacheServerConnectionChangedParameters> cacheServerConnectionChanged;
         [RequiredByNativeCode]
         private static void OnCacheServerConnectionChanged()
@@ -1353,7 +1360,9 @@ namespace UnityEditor
         public enum RefreshImportMode
         {
             InProcess = 0,
-            OutOfProcessPerQueue = 1
+            [Obsolete("Use OutOfProcess instead. Unity selects which importers run out of process by importer name with both settings.")]
+            OutOfProcessPerQueue = 1,
+            OutOfProcess = 2
         }
 
         [PreventExecutionInState(AssetDatabasePreventExecution.kCodeReload, PreventExecutionSeverity.PreventExecution_ManagedException, kPreventExecutionDuringCodeReloadHowToFixMsg)]

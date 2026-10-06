@@ -518,7 +518,7 @@ namespace UnityEditor
         // The authentication token
         static string GetToken()
         {
-            return InternalEditorUtility.GetAuthToken();
+            return UnityEditor.Licensing.LicensingUtility.GetAuthToken();
         }
 
         // Login status

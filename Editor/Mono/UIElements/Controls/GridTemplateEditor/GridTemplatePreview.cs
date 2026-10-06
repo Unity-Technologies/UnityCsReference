@@ -52,6 +52,14 @@ namespace UnityEditor.UIElements
         {
             Clear();
 
+            if (m_Columns.Count == 0 && m_Rows.Count == 0)
+            {
+                var empty = new Label(L10n.Tr("No columns or rows defined", null));
+                empty.AddToClassList(emptyLabelUssClassName);
+                Add(empty);
+                return;
+            }
+
             var cols = ExpandForPreview(m_Columns);
             var rows = ExpandForPreview(m_Rows);
 
@@ -121,5 +129,6 @@ namespace UnityEditor.UIElements
         }
 
         public static readonly string ussClassName = "grid-template-preview";
+        public static readonly string emptyLabelUssClassName = ussClassName + "__empty-label";
     }
 }

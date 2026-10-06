@@ -19,7 +19,7 @@ namespace UnityEngine.UIElements
     /// <see cref="AccessibilityTreeGenerator"/>. Unregistered types deliberately have no role here so
     /// they can never be announced as interactive.
     /// </remarks>
-    internal static class AccessibilityRoleRegistry
+    internal static partial class AccessibilityRoleRegistry
     {
         // Immutable after construction and only ever holds engine types from this module, so
         // nothing here can pin a user assembly across a code reload; safe to persist.
@@ -36,16 +36,37 @@ namespace UnityEngine.UIElements
             { typeof(ScrollView), AccessibilityRole.ScrollView },
         };
 
+        // Role resolution runs per element in every generation, refresh and scope-resolution
+        // walk, and the base-chain/open-generic search is reflection-heavy; the answer is a
+        // property of the element's type, so it is resolved once per type. Grows only with the
+        // number of distinct element types — effectively bounded.
+        [AutoStaticsCleanupOnCodeReload]
+        static readonly Dictionary<Type, (bool hasRole, AccessibilityRole role)> s_ResolvedRoles = new();
+
         /// <summary>
         /// Finds the role registered for the element's type, walking up the inheritance chain so
         /// derived controls (for example a custom Button subclass) keep their base control's role.
         /// Along the walk, a generic type also matches a role registered for its open definition,
         /// so control families like <c>TextInputBaseField&lt;T&gt;</c> register once for every
-        /// value type.
+        /// value type. Resolutions are cached per type.
         /// </summary>
         public static bool TryGetRole(VisualElement element, out AccessibilityRole role)
         {
-            for (var type = element.GetType(); type != null && typeof(VisualElement).IsAssignableFrom(type); type = type.BaseType)
+            var elementType = element.GetType();
+            if (s_ResolvedRoles.TryGetValue(elementType, out var resolved))
+            {
+                role = resolved.role;
+                return resolved.hasRole;
+            }
+
+            var hasRole = ResolveRole(elementType, out role);
+            s_ResolvedRoles[elementType] = (hasRole, role);
+            return hasRole;
+        }
+
+        static bool ResolveRole(Type elementType, out AccessibilityRole role)
+        {
+            for (var type = elementType; type != null && typeof(VisualElement).IsAssignableFrom(type); type = type.BaseType)
             {
                 if (s_Roles.TryGetValue(type, out role))
                     return true;

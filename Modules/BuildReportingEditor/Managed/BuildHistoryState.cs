@@ -4,6 +4,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.IO;
 using Unity.Scripting.LifecycleManagement;
 using UnityEditor.Build.Reporting;
@@ -119,7 +120,9 @@ namespace UnityEditor.Build
                 if (entry.Summary.BuildResult == BuildResult.Pending)
                     continue;
 
-                DateTime endTime = entry.BuildStartTime.AddMilliseconds(entry.Summary.TotalTimeMs);
+                // Hand-copied or corrupted summaries can hold durations that would overflow DateTime.
+                long maxDurationMs = (DateTime.MaxValue.Ticks - entry.BuildStartTime.Ticks) / TimeSpan.TicksPerMillisecond;
+                DateTime endTime = entry.BuildStartTime.AddMilliseconds(Math.Clamp(entry.Summary.TotalTimeMs, 0L, maxDurationMs));
                 if (!found || endTime > bestEndTime)
                 {
                     bestEndTime = endTime;
@@ -369,6 +372,24 @@ namespace UnityEditor.Build
             return DeleteHistoryUnchecked(toDelete);
         }
 
+        // True when the history already holds at least `limit` entries as recent as the given
+        // start time, so a new entry with that start time would be pruned immediately.
+        internal bool WouldRetentionPruneNewBuild(DateTime buildStartTimeUtc, int limit)
+        {
+            if (limit <= 0)
+                return false;
+
+            EnsureCacheLoaded();
+
+            int newerCount = 0;
+            foreach (var entry in m_Builds.Values)
+            {
+                if (entry.BuildStartTime >= buildStartTimeUtc)
+                    newerCount++;
+            }
+            return newerCount >= limit;
+        }
+
         // Deletes all build history from disk and clears the cache.
         // Returns the number of build metadata directories successfully deleted.
         public int DeleteAllHistory()
@@ -588,10 +609,12 @@ namespace UnityEditor.Build
             {
                 var summary = BuildReportSummary.Load(summaryPath);
 
-                // Parse the build time from the summary, fallback to directory creation time
                 DateTime buildStartTime;
-                if (!DateTime.TryParse(summary.BuildStartedAt, out buildStartTime))
-                    buildStartTime = Directory.GetCreationTime(metadataPath);
+                if (!DateTime.TryParse(summary.BuildStartedAt, CultureInfo.InvariantCulture,
+                    DateTimeStyles.AdjustToUniversal | DateTimeStyles.AssumeUniversal, out buildStartTime))
+                {
+                    buildStartTime = Directory.GetCreationTime(metadataPath).ToUniversalTime();
+                }
 
                 entry = new BuildEntry
                 {

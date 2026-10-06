@@ -65,11 +65,19 @@ namespace UnityEngine.AdaptivePerformance
                     case OperationMode.BatteryMode:
                         Holder.Instance.OperationModeStatus.CurrentOperationalModeProvider = settings.BatteryModeProvider;
                         break;
+                    case OperationMode.StableFrameMode:
+                        Holder.Instance.OperationModeStatus.CurrentOperationalModeProvider = settings.StableFrameModeProvider;
+                        break;
                     case OperationMode.NormalMode:
                     default:
                         Holder.Instance.OperationModeStatus.CurrentOperationalModeProvider = settings.NormalModeProvider;
                         break;
                 }
+            }
+            else
+            {
+                // The previous manager ended this mode when it was deinitialized
+                settings.ActiveModeProvider.OnOperationModeStart();
             }
         }
         public void Deinitialize()

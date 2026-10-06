@@ -31,6 +31,11 @@ namespace UnityEngine.UIElements
 
         static StyleCache()
         {
+            UnloadingUtility.InitializeOnEveryCodeLoad(UnloadingSubscriber.StyleCache, Reinitialize);
+        }
+
+        static void Reinitialize()
+        {
             UnloadingUtility.SubscribeToUnloading(UnloadingSubscriber.StyleCache, ClearStyleCache);
         }
 
@@ -92,6 +97,7 @@ namespace UnityEngine.UIElements
         private HashSet<VisualElement> m_TransitionPropertyUpdateList = new HashSet<VisualElement>();
         private uint m_Version = 0;
         private uint m_LastVersion = 0;
+        private bool m_InUpdate;
 
         private TTraversal m_StyleContextHierarchyTraversal = new ();
 
@@ -135,35 +141,50 @@ namespace UnityEngine.UIElements
 
         public override void Update()
         {
-            if (m_Version == m_LastVersion)
+            // ApplyStyles dispatches CustomStyleResolvedEvent, and a handler can reach ValidateLayout; Repaint
+            // and UpdateWithoutRepaint run this phase outside ValidateLayout's own re-entrancy guard.
+            if (m_Version == m_LastVersion || m_InUpdate)
                 return;
 
-            m_LastVersion = m_Version;
-            ApplyStyles();
-
-            // Style resolution replaces computed styles wholesale via SetComputedStyle, which
-            // overwrites values that UIAnimationBinder applied via ApplyPropertyAnimation.
-            // CSS transitions are handled by ForceUpdateTransitions inside TraverseRecursive,
-            // but animation binders have no equivalent. Re-apply the last sampled binder values
-            // so they survive style re-resolution.
-            var animSystem = panel?.GetUpdater(VisualTreeUpdatePhase.Animation) as VisualElementAnimationSystem;
-            if (animSystem != null && animSystem.hasActiveAnimationBinders)
+            m_InUpdate = true;
+            try
             {
-                animSystem.ReapplyAnimationBinderValues();
-            }
+                m_LastVersion = m_Version;
+                ApplyStyles();
 
-            m_StyleContextHierarchyTraversal.Clear();
-
-            foreach (var ve in m_TransitionPropertyUpdateList)
-            {
-                // Allow for transitions to be cancelled if matching transition property was removed.
-                if (ve.hasRunningAnimations || ve.hasCompletedAnimations)
+                var animSystem = panel?.GetUpdater(VisualTreeUpdatePhase.Animation) as VisualElementAnimationSystem;
+                if (animSystem != null)
                 {
-                    ComputedTransitionUtils.UpdateComputedTransitions(ref ve.computedStyle, out var computedTransitions);
-                    m_StyleContextHierarchyTraversal.CancelAnimationsWithNoTransitionProperty(computedTransitions, ve, ref ve.computedStyle);
+                    // Before the re-apply below, so a clip removed by this pass drops its binder
+                    // instead of having its last sampled value painted over the new style.
+                    animSystem.FlushDirtyElementClips();
+
+                    // Style resolution replaces computed styles wholesale via SetComputedStyle, which
+                    // overwrites values that UIAnimationBinder applied via ApplyPropertyAnimation.
+                    // CSS transitions are handled by ForceUpdateTransitions inside TraverseRecursive,
+                    // but animation binders have no equivalent. Re-apply the last sampled binder values
+                    // so they survive style re-resolution.
+                    if (animSystem.hasActiveAnimationBinders)
+                        animSystem.ReapplyAnimationBinderValues();
                 }
+
+                m_StyleContextHierarchyTraversal.Clear();
+
+                foreach (var ve in m_TransitionPropertyUpdateList)
+                {
+                    // Allow for transitions to be cancelled if matching transition property was removed.
+                    if (ve.hasRunningOrCompletedAnimations)
+                    {
+                        ComputedTransitionUtils.UpdateComputedTransitions(ref ve.computedStyle, out var computedTransitions);
+                        m_StyleContextHierarchyTraversal.CancelAnimationsWithNoTransitionProperty(computedTransitions, ve, ref ve.computedStyle);
+                    }
+                }
+                m_TransitionPropertyUpdateList.Clear();
             }
-            m_TransitionPropertyUpdateList.Clear();
+            finally
+            {
+                m_InUpdate = false;
+            }
         }
 
         protected bool disposed { get; private set; }
@@ -242,6 +263,16 @@ namespace UnityEngine.UIElements
             m_CacheEntryStack.RemoveRange(index, count);
         }
 
+        // Returns the context to its initial state, dropping anything an aborted traversal left behind.
+        public void Reset()
+        {
+            m_StyleSheetStack.Clear();
+            m_CacheEntryStack.Clear();
+            variableContext = StyleVariableContext.none;
+            currentElement = null;
+            ancestorFilter.Clear();
+        }
+
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public StyleSheet GetStyleSheetAt(int index)
         {
@@ -289,21 +320,31 @@ namespace UnityEngine.UIElements
         {
             m_CustomStyleResolvedElements = VisualElementListPool.Get();
 
-            // Set flag to true during traversal - any AddChangedElement() calls will be queued
-            m_IsApplyingStyles = true;
-
-            base.Traverse(element);
-
-            // Set flag to false before dispatching events - user callbacks can directly modify elements
-            m_IsApplyingStyles = false;
-
-
-            // Process elements that were queued during traversal (before m_IsApplyingStyles was set to false)
-            // Mark them dirty for next frame
-            ProcessQueuedElements();
-
             try
             {
+                // Set flag to true during traversal - any AddChangedElement() calls will be queued
+                m_IsApplyingStyles = true;
+
+                try
+                {
+                    base.Traverse(element);
+                }
+                finally
+                {
+                    // An exception can abort TraverseRecursive at any depth without unwinding its stacks.
+                    // Leftover cache entries point at native memory freed when their style sheet unloads
+                    // (UUM-153734), so reset here; this relies on nothing catching mid-traversal.
+                    m_StyleMatchingContext.Reset();
+                    m_TempMatchResults.Clear();
+
+                    // Set flag to false before dispatching events - user callbacks can directly modify elements
+                    m_IsApplyingStyles = false;
+
+                    // Process elements that were queued during traversal (before m_IsApplyingStyles was set to false)
+                    // Mark them dirty for next frame
+                    ProcessQueuedElements();
+                }
+
                 // Dispatch accumulated CustomStyleResolvedEvents
                 foreach (var elt in m_CustomStyleResolvedElements)
                 {
@@ -398,11 +439,12 @@ namespace UnityEngine.UIElements
             }
 
             int originalStyleSheetCount = m_StyleMatchingContext.styleSheetCount;
-            if (element.styleSheetList != null)
+            var elementSheets = element.styleSheetList;
+            if (elementSheets != null)
             {
-                for (var i = 0; i < element.styleSheetList.Count; i++)
+                for (var i = 0; i < elementSheets.Count; i++)
                 {
-                    m_StyleMatchingContext.AddStyleSheet(element.styleSheetList[i]);
+                    m_StyleMatchingContext.AddStyleSheet(elementSheets[i]);
                 }
             }
 
@@ -429,7 +471,8 @@ namespace UnityEngine.UIElements
                         {
                             if (!property.isCustomProperty)
                                 continue;
-                            var sv = new StyleVariable(property.customNameId, rule.styleSheet, property.values);
+                            // Inline styles are always local content
+                            var sv = new StyleVariable(property.customNameId, rule.styleSheet, property.values, StyleSheetPriority.Default);
                             variableContext.Add(sv);
                         }
                     }
@@ -581,7 +624,7 @@ namespace UnityEngine.UIElements
                 var rule = match.complexSelector.rule;
                 if (rule.customPropertiesCount > 0)
                 {
-                    ProcessMatchedVariables(sheet, rule);
+                    ProcessMatchedVariables(sheet, rule, match.tier);
                 }
             }
 
@@ -632,7 +675,7 @@ namespace UnityEngine.UIElements
             return resolvedStyles;
         }
 
-        private void ProcessMatchedVariables(StyleSheet sheet, StyleRule rule)
+        private void ProcessMatchedVariables(StyleSheet sheet, StyleRule rule, StyleSheetPriority tier)
         {
             foreach (var property in rule.properties)
             {
@@ -641,7 +684,8 @@ namespace UnityEngine.UIElements
                     var sv = new StyleVariable(
                         property.customNameId,
                         sheet,
-                        property.values
+                        property.values,
+                        tier
                     );
                     m_ProcessVarContext.Add(sv);
                 }

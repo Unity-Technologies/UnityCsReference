@@ -2,7 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: NativeHierarchyContainer not yet converted
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -75,7 +74,8 @@ namespace Unity.Hierarchy
         Unity.Hierarchy.Hierarchy m_Hierarchy;
         HierarchyFlattened m_HierarchyFlattened;
         HierarchyViewModel m_HierarchyViewModel;
-        int m_Version;
+        bool m_OwnsHierarchyFlattened;
+        uint m_Version;
 
         // Data update state
         UpdateStage m_UpdateStage = UpdateStage.First;
@@ -150,6 +150,26 @@ namespace Unity.Hierarchy
         /// <summary>
         /// Raised when a <see cref="HierarchyViewItem"/> is bound to a <see cref="HierarchyView"/>. Use this event to customize the view item.
         /// </summary>
+        /// <example>
+        /// The following example draws visual connector lines in the Hierarchy window to show the parent and child relationships between GameObjects. It uses the instance-level `BindViewItem` event to register a per-view binding handler that adds the visual connector lines between each parent and child item in the Hierarchy window. 
+        ///
+        /// The example requires three USS files: `Connectors.uss` for the base styles, `Connectors_dark.uss` for the Dark theme, and `Connectors_light.uss` for the Light theme.
+        ///
+        /// To use this example, save the script and USS files in a folder called `Assets/Editor/Connectors`. Scripts in an `Editor` folder can use the Hierarchy module API without additional setup. If you save the script outside of an `Editor` folder, you must enable the Hierarchy built-in module in the **Package Manager** window, which also adds the module to your Player builds.
+        /// <code source="../../../Tests/EditModeAndPlayModeTests/HierarchySamples/Assets/Editor/Connectors/Connectors.cs"/>
+        /// </example>
+        /// <example>
+        /// The following example shows how to style `Connectors.uss`.
+        /// <code source="../../../Tests/EditModeAndPlayModeTests/HierarchySamples/Assets/Editor/Connectors/Connectors.uss"/>
+        /// </example>
+        /// <example>
+        /// The following example shows how to style `Connectors_dark.uss`.
+        /// <code source="../../../Tests/EditModeAndPlayModeTests/HierarchySamples/Assets/Editor/Connectors/Connectors_dark.uss"/>
+        /// </example>
+        /// <example>
+        /// The following example shows how to style `Connectors_light.uss`.
+        /// <code source="../../../Tests/EditModeAndPlayModeTests/HierarchySamples/Assets/Editor/Connectors/Connectors_light.uss"/>
+        /// </example>
         public event BindViewItemEventHandler BindViewItem;
 
         /// <summary>
@@ -275,6 +295,26 @@ namespace Unity.Hierarchy
         /// <summary>
         /// Whether the <see cref="HierarchyView"/> is filtering nodes.
         /// </summary>
+        /// <example>
+        /// The following example draws visual connector lines in the Hierarchy window to show the parent and child relationships between GameObjects. It uses `Filtering` to detect when the Hierarchy is in search mode, and sets the connector depth to 0 because filtering flattens the tree. 
+        ///
+        /// The example requires three USS files: `Connectors.uss` for the base styles, `Connectors_dark.uss` for the Dark theme, and `Connectors_light.uss` for the Light theme.
+        ///
+        /// To use this example, save the script and USS files in a folder called `Assets/Editor/Connectors`. Scripts in an `Editor` folder can use the Hierarchy module API without additional setup. If you save the script outside of an `Editor` folder, you must enable the Hierarchy built-in module in the **Package Manager** window, which also adds the module to your Player builds.
+        /// <code source="../../../Tests/EditModeAndPlayModeTests/HierarchySamples/Assets/Editor/Connectors/Connectors.cs"/>
+        /// </example>
+        /// <example>
+        /// The following example shows how to style `Connectors.uss`.
+        /// <code source="../../../Tests/EditModeAndPlayModeTests/HierarchySamples/Assets/Editor/Connectors/Connectors.uss"/>
+        /// </example>
+        /// <example>
+        /// The following example shows how to style `Connectors_dark.uss`.
+        /// <code source="../../../Tests/EditModeAndPlayModeTests/HierarchySamples/Assets/Editor/Connectors/Connectors_dark.uss"/>
+        /// </example>
+        /// <example>
+        /// The following example shows how to style `Connectors_light.uss`.
+        /// <code source="../../../Tests/EditModeAndPlayModeTests/HierarchySamples/Assets/Editor/Connectors/Connectors_light.uss"/>
+        /// </example>
         public bool Filtering => m_HierarchyViewModel.Filtering;
 
         /// <summary>
@@ -420,8 +460,24 @@ namespace Unity.Hierarchy
         /// <param name="hierarchy">The <see cref="Hierarchy"/> to set as the source.</param>
         /// <param name="defaultFlags">The default flags used to initialize new nodes.</param>
         public void SetSourceHierarchy(Unity.Hierarchy.Hierarchy hierarchy, HierarchyNodeFlags defaultFlags = HierarchyNodeFlags.None)
+            => SetSource(hierarchy, null, true, defaultFlags);
+
+        /// <summary>
+        /// Sets the source hierarchy and a <see cref="HierarchyFlattened"/> owned by the caller, so that several
+        /// views can share one packed hierarchy instead of each packing its own.
+        /// </summary>
+        /// <param name="hierarchy">The <see cref="Hierarchy"/> backing <paramref name="hierarchyFlattened"/>.</param>
+        /// <param name="hierarchyFlattened">The <see cref="HierarchyFlattened"/> to read from. The caller keeps ownership.</param>
+        /// <param name="defaultFlags">The default flags used to initialize new nodes.</param>
+        [VisibleToOtherModules("UnityEditor.HierarchyModule")]
+        internal void SetSourceHierarchyFlattened(Unity.Hierarchy.Hierarchy hierarchy, HierarchyFlattened hierarchyFlattened, HierarchyNodeFlags defaultFlags = HierarchyNodeFlags.None)
+            => SetSource(hierarchy, hierarchyFlattened, false, defaultFlags);
+
+        void SetSource(Unity.Hierarchy.Hierarchy hierarchy, HierarchyFlattened hierarchyFlattened, bool ownsHierarchyFlattened, HierarchyNodeFlags defaultFlags)
         {
-            if (m_Hierarchy == hierarchy)
+            // Rebinding the very same source is a no-op. For a borrowed flattened the identity that matters is
+            // the flattened itself, since a new one can be handed over for the same hierarchy.
+            if (ownsHierarchyFlattened ? m_Hierarchy == hierarchy : m_HierarchyFlattened == hierarchyFlattened)
                 return;
 
             m_CollectionView.animation?.SkipAnimation();
@@ -468,10 +524,11 @@ namespace Unity.Hierarchy
             }
             if (m_HierarchyFlattened != null)
             {
-                if (m_HierarchyFlattened.IsCreated)
+                if (m_OwnsHierarchyFlattened && m_HierarchyFlattened.IsCreated)
                     m_HierarchyFlattened.Dispose();
                 m_HierarchyFlattened = null;
             }
+            m_OwnsHierarchyFlattened = false;
             m_Hierarchy = null; // User is responsible for disposing the hierarchy
 
             // If setting to null, we're done
@@ -480,7 +537,8 @@ namespace Unity.Hierarchy
 
             // Set the new hierarchy source
             m_Hierarchy = hierarchy;
-            m_HierarchyFlattened = new HierarchyFlattened(m_Hierarchy);
+            m_HierarchyFlattened = ownsHierarchyFlattened ? new HierarchyFlattened(m_Hierarchy) : hierarchyFlattened;
+            m_OwnsHierarchyFlattened = ownsHierarchyFlattened;
             m_HierarchyViewModel = new HierarchyViewModel(m_HierarchyFlattened, defaultFlags);
 
             // Force update data to ensure list view reads valid data when we set the items source
@@ -612,6 +670,17 @@ namespace Unity.Hierarchy
         /// Sets the current selection to a single node and deselects all other nodes.
         /// </summary>
         /// <param name="node">The <see cref="HierarchyNode"/> to set as the selection.</param>
+        /// <example>
+        /// The following example adds an action to a context menu that you can use to select the nearest common ancestor of the GameObjects you have selected in the Hierarchy window. The action appears in the **Hierarchy Samples** submenu of the context menu. The example uses `SetSelection` to select the common ancestor, then calls `HierarchyView.Frame` to scroll the ancestor into view.
+        ///
+        /// To use this example:
+        ///
+        ///1. Save the script in a folder called `Assets/Editor/SelectCommonAncestor`. Scripts in an `Editor` folder can use the Hierarchy module API without additional setup. If you save the script outside of an `Editor` folder, you must enable the Hierarchy built-in module in the **Package Manager** window, which also adds the module to your Player builds.
+        ///2. Select two or more GameObjects.
+        ///3. In the Hierarchy window, right-click and select **Hierarchy Samples**, then **Select Common Ancestor**.
+        ///
+        /// <code source="../../../Tests/EditModeAndPlayModeTests/HierarchySamples/Assets/Editor/SelectCommonAncestor/SelectCommonAncestor.cs"/>
+        /// </example>
         public void SetSelection(in HierarchyNode node)
         {
             using (var _ = new HierarchyViewModelFlagsChangeScope(m_HierarchyViewModel))
@@ -1033,6 +1102,17 @@ namespace Unity.Hierarchy
         /// Frames the specified node. This expands the node's ancestors and scrolls to the node.
         /// </summary>
         /// <param name="node">The <see cref="HierarchyNode"/> to frame.</param>
+        /// <example>
+        /// The following example adds an action to a context menu that you can use to select the nearest common ancestor of the GameObjects you have selected in the Hierarchy window. The action appears in the **Hierarchy Samples** submenu of the context menu. The example uses `Frame` to scroll the common ancestor into view after selecting the node.
+        ///
+        /// To use this example:
+        ///
+        ///1. Save the script in a folder called `Assets/Editor/SelectCommonAncestor`. Scripts in an `Editor` folder can use the Hierarchy module API without additional setup. If you save the script outside of an `Editor` folder, you must enable the Hierarchy built-in module in the **Package Manager** window, which also adds the module to your Player builds.
+        ///2. Select two or more GameObjects.
+        ///3. In the Hierarchy window, right-click and select **Hierarchy Samples**, then **Select Common Ancestor**.
+        ///
+        /// <code source="../../../Tests/EditModeAndPlayModeTests/HierarchySamples/Assets/Editor/SelectCommonAncestor/SelectCommonAncestor.cs"/>
+        /// </example>
         public void Frame(in HierarchyNode node)
         {
             HierarchyLogging.Log($"HierarchyView({GetHashCode():X}).FrameNode({node})");
@@ -1278,6 +1358,27 @@ namespace Unity.Hierarchy
             m_PostUpdateActionQueue.PushBack(action);
         }
 
+        // Deferred because the caller is inside the update that creates the node, and held in m_ScheduledItem so
+        // the existing rename cancellation applies.
+        [VisibleToOtherModules]
+        internal void ScheduleFrameAndBeginRename(in HierarchyNode node)
+        {
+            HierarchyLogging.Log($"HierarchyView({GetHashCode():X}).ScheduleFrameAndBeginRename({node})");
+            CancelScheduledRename();
+
+            var target = node;
+            m_ScheduledItem = schedule.Execute(() =>
+            {
+                m_ScheduledItem = null;
+
+                if (m_Hierarchy is not { IsCreated: true } || !m_Hierarchy.Exists(in target))
+                    return;
+
+                Frame(in target);
+                BeginRename(in target);
+            });
+        }
+
         [VisibleToOtherModules]
         internal void BeginRename(in HierarchyNode node)
         {
@@ -1332,6 +1433,23 @@ namespace Unity.Hierarchy
             }
         }
 
+        /// <summary>
+        /// Cancels any pending or ongoing rename. Used to make sure a rename does not stay active
+        /// while an unrelated action (e.g. a keyboard shortcut like Duplicate) is executed.
+        /// </summary>
+        [VisibleToOtherModules("UnityEditor.HierarchyModule")]
+        internal void CancelRename()
+        {
+            CancelScheduledRename();
+
+            if (!m_IsRenamingItem)
+                return;
+
+            var itemName = m_RenamingItem.Q<HierarchyViewItemName>();
+            itemName?.CancelRename();
+            SetRenamingItem(null);
+        }
+
         internal void InvokePopulateContextMenu(ContextualMenuPopulateEvent evt)
         {
             // Cancel any pending rename when right-clicking to show context menu
@@ -1341,12 +1459,11 @@ namespace Unity.Hierarchy
             if (hierarchyView == null)
                 return;
 
-            if (m_IsRenamingItem)
-            {
-                var itemName = m_RenamingItem.Q<HierarchyViewItemName>();
-                itemName?.CancelRename();
-                SetRenamingItem(null);
-            }
+            CancelRename();
+
+            // The native context menu is modal, so without a repaint before it opens the cancelled
+            // rename field stays visible behind the open menu (UUM-150371).
+            evt.menu.repaintPanelBeforeDisplay = true;
 
             evt.StopImmediatePropagation();
 
@@ -2299,4 +2416,3 @@ namespace Unity.Hierarchy
         }
     }
 }
-#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

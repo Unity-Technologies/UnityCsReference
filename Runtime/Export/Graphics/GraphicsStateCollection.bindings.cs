@@ -16,6 +16,7 @@ namespace UnityEngine.Rendering
     [NativeClass("GraphicsStateCollection", PersistentTypeId = 0x0351036A)]
     public sealed partial class GraphicsStateCollection : Object
     {
+        internal GraphicsStateCollection(global::UnityEngine.EntityId id) : base(id) {}
         public partial struct GraphicsState
         {
             extern public void SetMeshData(Mesh mesh, int submesh, [uei.DefaultValue("null")] Renderer renderer = null);
@@ -168,6 +169,6 @@ namespace UnityEngine.Rendering
         extern private bool AddGraphicsStatesFromReference_Internal(GraphicsState refState, Mesh[] meshes, Material[] materials, GlobalKeyword[] globalKeywords, int samples, ReadOnlySpan<AttachmentDescriptor> attachments,
             ReadOnlySpan<SubPassDescriptor> subPasses, int subPassIndex, int depthAttachmentIndex, int shadingRateIndex);
 
-        [NativeName("CreateFromScript")] extern private static void Internal_Create([Writable] GraphicsStateCollection gsc);
+        [NativeName("CreateFromScript")] extern private static EntityId Internal_Create();
     }
 }

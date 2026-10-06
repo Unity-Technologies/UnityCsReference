@@ -2,8 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: UIToolkitFramework not yet converted
-#pragma warning disable UAL0010,UAL0011,UAL0012,UAL0013,UAL0014 // AutoStaticsCleanup: UIToolkitFramework not yet converted
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -161,7 +159,7 @@ namespace UnityEditor.UIElements
         {
             PopulateCache(editors);
             m_EditorTarget = editor.targets[0];
-            var editorTitle = ObjectNames.GetInspectorTitle(m_EditorTarget, editor.targets.Length > 1);
+            var editorTitle = editor.GetInspectorTitle(editor.targets.Length > 1);
 
             m_Header = BuildHeaderElement(editorTitle, out m_HeaderIMGUIContainer);
             m_Footer = BuildFooterElement(editorTitle);
@@ -183,7 +181,7 @@ namespace UnityEditor.UIElements
         InspectorElement BuildInspectorElement()
         {
             var editors = PopulateCache();
-            var editorTitle = ObjectNames.GetInspectorTitle(m_EditorTarget);
+            var editorTitle = editor.GetInspectorTitle(multiEditing: false);
 
             var inspectorElement = new InspectorElement(editor)
             {
@@ -247,7 +245,7 @@ namespace UnityEditor.UIElements
             PopulateCache(editors);
             Object editorTarget = editor.targets[0];
             name = GetNameFromEditor(editor);
-            string editorTitle = ObjectNames.GetInspectorTitle(editorTarget);
+            string editorTitle = editor.GetInspectorTitle(multiEditing: false);
 
             // If the target change we need to invalidate IMGUI container cached measurements
             // See https://fogbugz.unity3d.com/f/cases/1279830/
@@ -307,7 +305,7 @@ namespace UnityEditor.UIElements
             var updateInspectorVisibility = false;
 
             // If the editor targets contain many targets and multi editing is not supported, we should not add this inspector.
-            if (null != editor && (editor.targets.Length <= 1 || PropertyEditor.IsMultiEditingSupported(editor, editor.target, inspectorWindow.inspectorMode)))
+            if (null != editor && (editor.targets.Length <= 1 || PropertyEditor.IsMultiEditingSupported(editor, editor.targetType, inspectorWindow.inspectorMode)))
             {
                 m_InspectorElement = BuildInspectorElement();
                 Insert(IndexOf(m_Header) + 1, m_InspectorElement);
@@ -329,9 +327,13 @@ namespace UnityEditor.UIElements
 
         string GetNameFromEditor(Editor editor)
         {
-            return editor == null ?
-                    "Nothing Selected" :
-                    $"{editor.GetType().Name}_{editor.targets[0].GetType().Name}_{editor.targets[0].GetEntityId()}";
+            if (editor == null)
+                return "Nothing Selected";
+            // targetType is m_DataComponentType for data-component editors and the
+            // first target's runtime type otherwise; falls back to "Component" if the
+            // type isn't resolvable.
+            var typeName = editor.targetType != null ? editor.targetType.Name : "Component";
+            return $"{editor.GetType().Name}_{typeName}_{EntityId.ToULong(editor.targetEntityId)}";
         }
 
         void UpdateInspectorVisibility()
@@ -438,8 +440,11 @@ namespace UnityEditor.UIElements
             // Case 891450:
             // - ActiveEditorTracker will automatically create editors for materials of components on tracked game objects
             // - UnityEngine.UI.Mask will destroy this material in OnDisable (e.g. disabling it with the checkbox) causing problems when drawing the material editor
+            //
+            // Component editors intentionally have a null target (data lives in the tracker's
+            // EntityIds via m_TargetEntityIds); they must proceed with rendering.
             var target = editor.target;
-            if (target == null && !NativeClassExtensionUtilities.ExtendsANativeType(target))
+            if (target == null && !editor.isDataComponentEditor && !NativeClassExtensionUtilities.ExtendsANativeType(target))
             {
                 if (m_InspectorElement != null)
                 {
@@ -464,9 +469,9 @@ namespace UnityEditor.UIElements
                 }
             }
 
-            m_WasVisible = inspectorWindow.WasEditorVisible(editors, m_EditorIndex, target);
+            m_WasVisible = inspectorWindow.WasEditorVisible(editors, m_EditorIndex);
 
-            GUIUtility.GetControlID(target.GetEntityId().GetHashCode(), FocusType.Passive);
+            GUIUtility.GetControlID(editor.targetEntityId.GetHashCode(), FocusType.Passive);
             EditorGUIUtility.ResetGUIState();
             GUI.color = playModeTintColor;
 
@@ -498,7 +503,7 @@ namespace UnityEditor.UIElements
 
             UpdateInspectorVisibility();
 
-            var multiEditingSupported = PropertyEditor.IsMultiEditingSupported(editor, target, inspectorWindow.inspectorMode);
+            var multiEditingSupported = PropertyEditor.IsMultiEditingSupported(editor, editor.targetType, inspectorWindow.inspectorMode);
 
             if (!multiEditingSupported && m_WasVisible)
             {
@@ -607,7 +612,7 @@ namespace UnityEditor.UIElements
                 if (wasVisible != isVisible)
                 {
                     inspectorWindow.tracker.SetVisible(m_EditorIndex, isVisible ? 1 : 0);
-                    InternalEditorUtility.SetIsInspectorExpanded(target, isVisible);
+                    currentEditor.SetInspectorExpanded(isVisible);
                     if (isVisible)
                     {
                         inspectorWindow.lastInteractedEditor = currentEditor;
@@ -686,7 +691,7 @@ namespace UnityEditor.UIElements
             if (EditorGUI.ShouldDrawOverrideBackground(ed.targets, Event.current, comp))
             {
                 var rect = GUILayoutUtility.kDummyRect;
-                bool wasVisible = inspectorWindow.WasEditorVisible(editors, m_EditorIndex, target);
+                bool wasVisible = inspectorWindow.WasEditorVisible(editors, m_EditorIndex);
                 // if the inspector is currently visible then the override background drawn by the footer needs to be slightly larger than if the inspector is collapsed
                 if (wasVisible)
                 {
@@ -713,7 +718,7 @@ namespace UnityEditor.UIElements
                     Rect globalComponentRect = GUIClip.Unclip(content);
                     globalComponentRect.position =
                         globalComponentRect.position + inspectorWindow.parent.screenPosition.position;
-                    ScreenShots.ScreenShotComponent(globalComponentRect, editor.target);
+                    ScreenShots.ScreenShotComponent(globalComponentRect, editor.targetType);
                 }
             }
         }
@@ -795,7 +800,7 @@ namespace UnityEditor.UIElements
         {
             if (s_EditorDecoratorCollection.Count != 0 && TryGetDecorators(editor, s_Decorators))
             {
-                editorTitle ??= ObjectNames.GetInspectorTitle(editor.targets[0], editor.targets.Length > 1);
+                editorTitle ??= editor.GetInspectorTitle(editor.targets.Length > 1);
                 CreateDecoratorsElement(editorTitle, s_Decorators);
                 SetElementVisible(m_DecoratorsElement, m_WasVisible);
             }
@@ -853,5 +858,3 @@ namespace UnityEditor.UIElements
         }
     }
 }
-#pragma warning restore UAL0010,UAL0011,UAL0012,UAL0013,UAL0014
-#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

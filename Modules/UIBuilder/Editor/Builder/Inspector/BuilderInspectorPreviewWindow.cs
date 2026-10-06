@@ -2,7 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: UIBuilder not yet converted
 using UnityEditor;
 using UnityEngine.UIElements;
 using Toolbar = UnityEditor.UIElements.Toolbar;
@@ -11,9 +10,6 @@ namespace Unity.UI.Builder
 {
     internal class BuilderInspectorPreviewWindow : BuilderPaneWindow, IHasCustomMenu
     {
-        #pragma warning disable UAL0015 // this side effect does not outlive the current call (global trigger / lazily-loaded asset re-fetched on next access); a stale reference is harmlessly replaced
-        internal BuilderInspectorPreviewWindow() {}
-        #pragma warning restore UAL0015
 
         private static readonly string s_UssClassName = "unity-builder-selector-preview";
         static readonly string s_IdleLabelClassName = s_UssClassName + "__idle-label";
@@ -78,7 +74,7 @@ namespace Unity.UI.Builder
 
         public void AddItemsToMenu(GenericMenu menu)
         { 
-            menu.AddItem(EditorGUIUtility.TrTextContent(BuilderConstants.PreviewDockToInspector), false, Close);
+            menu.AddItem(L10n.TextContent(BuilderConstants.PreviewDockToInspector, null, null, null), false, Close);
         }
         
         protected override void OnDestroy()
@@ -94,4 +90,3 @@ namespace Unity.UI.Builder
         }
     }
 }
-#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

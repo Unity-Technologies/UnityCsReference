@@ -91,7 +91,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             SendEvent(action, GetAnalyticsPackageId(version), packageTag: version?.GetAnalyticsTags());
         }
 
-        public static void SendEvent(string action, IReadOnlyCollection<IPackage> packages)
+        public static void SendEvent(string action, IReadOnlyList<IPackage> packages)
         {
             var packageIds = new string[packages.Count];
             var packageTags = new string[packages.Count];
@@ -106,7 +106,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             SendEvent(action, packageIds: packageIds, packageTags: packageTags);
         }
 
-        public static void SendEvent(string action, IReadOnlyCollection<IPackageVersion> versions)
+        public static void SendEvent(string action, IReadOnlyList<IPackageVersion> versions)
         {
             SendEvent(action, packageIds: versions?.SelectToNewArray(GetAnalyticsPackageId), packageTags: versions?.SelectToNewArray(v => v.GetAnalyticsTags()));
         }
@@ -116,7 +116,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             SendEvent(action, sample.uniqueId);
         }
 
-        public static void SendEvent(string action, IReadOnlyCollection<Sample> samples)
+        public static void SendEvent(string action, IReadOnlyList<Sample> samples)
         {
             SendEvent(action, packageIds: samples?.SelectToNewArray(s => s.uniqueId));
         }

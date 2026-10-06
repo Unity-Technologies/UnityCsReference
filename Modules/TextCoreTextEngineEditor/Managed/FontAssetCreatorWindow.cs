@@ -2,7 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: TextTextCore not yet converted
 using System.Collections.Generic;
 using System.Globalization;
 using System.Threading;
@@ -1521,7 +1520,7 @@ namespace UnityEditor.TextCore.Text
                 AssetDatabase.CreateAsset(fontAsset, tex_Path_NoExt + ".asset");
 
                 // Set version number of font asset
-                fontAsset.version = "1.1.0";
+                fontAsset.version = FontAsset.k_Version;
 
                 //Set Font Asset Type
                 fontAsset.atlasRenderMode = m_GlyphRenderMode;
@@ -1566,7 +1565,7 @@ namespace UnityEditor.TextCore.Text
                 Material[] material_references = TextCoreEditorUtilities.FindMaterialReferences(fontAsset);
 
                 // Set version number of font asset
-                fontAsset.version = "1.1.0";
+                fontAsset.version = FontAsset.k_Version;
 
                 // Rebind to the font the atlas was just generated from.
                 fontAsset.SourceFont_EditorRef = m_SourceFont;
@@ -1690,7 +1689,7 @@ namespace UnityEditor.TextCore.Text
                 AssetDatabase.CreateAsset(fontAsset, tex_Path_NoExt + ".asset");
 
                 // Set version number of font asset
-                fontAsset.version = "1.1.0";
+                fontAsset.version = FontAsset.k_Version;
 
                 // Reference to source font file GUID.
                 fontAsset.m_SourceFontFile_EditorRef = m_SourceFont;
@@ -1745,7 +1744,7 @@ namespace UnityEditor.TextCore.Text
                 Material[] material_references = TextCoreEditorUtilities.FindMaterialReferences(fontAsset);
 
                 // Set version number of font asset
-                fontAsset.version = "1.1.0";
+                fontAsset.version = FontAsset.k_Version;
 
                 // Rebind to the font the atlas was just generated from.
                 fontAsset.SourceFont_EditorRef = m_SourceFont;
@@ -1850,6 +1849,7 @@ namespace UnityEditor.TextCore.Text
             if (m_AtlasPopulationMode == AtlasPopulationMode.Static)
             {
                 fontAsset.atlasPopulationMode = AtlasPopulationMode.Static;
+                fontAsset.dynamicDataPersistence = DynamicDataPersistence.Persistent;
                 FontEngineEditorUtilities.SetAtlasTextureIsReadable(fontAsset.atlasTexture, false);
                 return;
             }
@@ -1871,8 +1871,8 @@ namespace UnityEditor.TextCore.Text
             if (fontAsset.atlasPopulationMode != AtlasPopulationMode.Dynamic && fontAsset.atlasPopulationMode != AtlasPopulationMode.DynamicOS)
                 fontAsset.atlasPopulationMode = AtlasPopulationMode.Dynamic;
 
-            // Without this the baked glyph/character tables are cleared on the next build or editor quit.
-            fontAsset.clearDynamicDataOnBuild = false;
+            // Without this the baked glyph/character tables are cleared on the next build or save.
+            fontAsset.dynamicDataPersistence = DynamicDataPersistence.Persistent;
 
             Texture2D[] atlasTextures = fontAsset.atlasTextures;
             if (atlasTextures != null)
@@ -2050,4 +2050,3 @@ namespace UnityEditor.TextCore.Text
 }
 
 #pragma warning restore CS0618
-#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

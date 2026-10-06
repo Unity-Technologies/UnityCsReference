@@ -6,7 +6,6 @@ using System.Collections.Generic;
 using UnityEditor;
 using UnityEditor.SceneManagement;
 using UnityEditor.UIElements;
-using UnityEngine.Pool;
 using UnityEngine.UIElements;
 
 namespace Unity.UIToolkit.Editor;
@@ -130,14 +129,7 @@ internal sealed class UnsetAllAttributesCommand : Command<UnsetAllAttributesComm
             // Skip the BindingView path (IgnoredAttributeNames set): it edits a binding's sub-attributes on a different owner, not the element's bindings.
             if (IgnoredAttributeNames == null && VisualElement != null)
             {
-                using (ListPool<BindingId>.Get(out var boundIds))
-                {
-                    foreach (var bindingInfo in VisualElement.GetBindingInfos())
-                        boundIds.Add(bindingInfo.bindingId);
-
-                    foreach (var bindingId in boundIds)
-                        VisualElement.ClearBinding(bindingId);
-                }
+                UxmlAssetUtilities.ClearLiveBindings(VisualElement);
 
                 Description.FindAttributeWithUxmlName("Bindings")?.SyncSerializedData(VisualElement, OwnerSerializedData);
 

@@ -13,7 +13,11 @@ namespace Unity.UI.Builder
     // TODO: Hack. We need this because EditorGUIUtility.systemCopyBuffer is always empty on Mac in BatchMode.
     static partial class BuilderEditorUtility
     {
-        [AutoStaticsCleanupOnCodeReload]
+        // This stands in for EditorGUIUtility.systemCopyBuffer, which is engine-side and survives a code
+        // reload, so this has to as well: it is written only by a copy action and read by a paste, with no
+        // repopulation path. Clearing it would make a copy taken before a reload silently unpasteable.
+        // It holds only a string, so keeping it retains nothing from the outgoing scope.
+        [NoAutoStaticsCleanup]
         static string s_FakeSystemCopyBuffer = string.Empty;
 
         public static string systemCopyBuffer

@@ -2,7 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: Packman not yet converted
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -326,11 +325,11 @@ namespace UnityEditor
             internal static class Constants
             {
                 public static readonly Texture2D folderIcon = EditorGUIUtility.FindTexture(EditorResources.folderIconName);
-                public static readonly GUIContent badgeNew = EditorGUIUtility.TrIconContent("PackageBadgeNew", "This is a new asset.");
-                public static readonly GUIContent badgeOverride = EditorGUIUtility.TrIconContent("PackageBadgeOverride", "This project setting will be overridden!");
-                public static readonly GUIContent badgeWarnPathConflict = EditorGUIUtility.TrIconContent("console.warnicon", "Warning: File exists in project, but with different GUID. Will override existing asset which may be undesired.");
-                public static readonly GUIContent badgeChange = EditorGUIUtility.TrIconContent("playLoopOff", "This asset is new or has changed.");
-                public static readonly GUIContent badgeWarnPathRestricted = EditorGUIUtility.TrIconContent("console.erroricon", "Error: Asset is restricted and will not be imported in your project.");
+                public static readonly GUIContent badgeNew = L10n.IconContent("PackageBadgeNew", "This is a new asset.", null);
+                public static readonly GUIContent badgeOverride = L10n.IconContent("PackageBadgeOverride", "This project setting will be overridden!", null);
+                public static readonly GUIContent badgeWarnPathConflict = L10n.IconContent("console.warnicon", "Warning: File exists in project, but with different GUID. Will override existing asset which may be undesired.", null);
+                public static readonly GUIContent badgeChange = L10n.IconContent("playLoopOff", "This asset is new or has changed.", null);
+                public static readonly GUIContent badgeWarnPathRestricted = L10n.IconContent("console.erroricon", "Error: Asset is restricted and will not be imported in your project.", null);
                 public static readonly GUIStyle badgeRestrictedStyle = new GUIStyle(GUI.skin.label)
                 {
                     alignment = TextAnchor.MiddleCenter,
@@ -432,7 +431,7 @@ namespace UnityEditor
                             {
                                 Rect labelRect = new Rect(rowRect.xMax - 58, rowRect.y, rowRect.height, rowRect.height);
                                 EditorGUIUtility.SetIconSize(new Vector2(rowRect.height, rowRect.height));
-                                GUIContent badgeWarnGUIDConflict = EditorGUIUtility.TrIconContent("console.warnicon", "Warning: A file exists in this project with the same GUID. This Asset being imported will be assigned a new GUID. References to the asset being imported in other imported Assets will be replaced with a reference to: " + item.existingAssetPath);
+                                GUIContent badgeWarnGUIDConflict = L10n.IconContent("console.warnicon", "Warning: A file exists in this project with the same GUID. This Asset being imported will be assigned a new GUID. References to the asset being imported in other imported Assets will be replaced with a reference to: " + item.existingAssetPath, null);
                                 GUI.Label(labelRect, badgeWarnGUIDConflict, Constants.paddinglessStyle);
                                 EditorGUIUtility.SetIconSize(Vector2.zero);
                             }
@@ -749,4 +748,3 @@ namespace UnityEditor
         }
     }
 }
-#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

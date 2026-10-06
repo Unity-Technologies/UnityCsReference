@@ -236,6 +236,7 @@ namespace UnityEngine
 
     public partial class RenderTexture : Texture
     {
+        internal RenderTexture(global::UnityEngine.EntityId id) : base(id) {}
         [RequiredByNativeCode] // used to create builtin textures
         internal protected RenderTexture()
         {
@@ -244,7 +245,7 @@ namespace UnityEngine
         public RenderTexture(RenderTextureDescriptor desc)
         {
             ValidateRenderTextureDesc(ref desc);
-            Internal_Create(this);
+            SetEntityIdFromConstructor(Internal_Create());
             SetRenderTextureDescriptor(desc);
         }
 
@@ -255,7 +256,7 @@ namespace UnityEngine
 
             RenderTextureDescriptor desc = textureToCopy.descriptor;
             ValidateRenderTextureDesc(ref desc);
-            Internal_Create(this);
+            SetEntityIdFromConstructor(Internal_Create());
             SetRenderTextureDescriptor(desc);
         }
 
@@ -281,7 +282,7 @@ namespace UnityEngine
             if (format != GraphicsFormat.None && !ValidateFormat(format, GraphicsFormatUsage.Render))
                 return;
 
-            Internal_Create(this);
+            SetEntityIdFromConstructor(Internal_Create());
             this.depthStencilFormat = GetDepthStencilFormatLegacy(depth, format);
             this.width = width; this.height = height; this.graphicsFormat = format; SetMipMapCount(mipCount);
 
@@ -297,7 +298,7 @@ namespace UnityEngine
             if (colorFormat != GraphicsFormat.None && !ValidateFormat(colorFormat, GraphicsFormatUsage.Render))
                 return;
 
-            Internal_Create(this);
+            SetEntityIdFromConstructor(Internal_Create());
             this.width = width; this.height = height; this.depthStencilFormat = depthStencilFormat;  this.graphicsFormat = colorFormat; SetMipMapCount(mipCount);
 
             SetSRGBReadWrite(GraphicsFormatUtility.IsSRGBFormat(colorFormat));
@@ -345,7 +346,7 @@ namespace UnityEngine
                     return;
             }
 
-            Internal_Create(this);
+            SetEntityIdFromConstructor(Internal_Create());
             this.width = width; this.height = height; this.depthStencilFormat = depthStencilFormat; this.graphicsFormat = colorFormat;
 
             SetMipMapCount(mipCount);
@@ -608,6 +609,7 @@ namespace UnityEngine
 
     public sealed partial class CustomRenderTexture : RenderTexture
     {
+        internal CustomRenderTexture(global::UnityEngine.EntityId id) : base(id) {}
         // Be careful. We can't call base constructor here because it would create the native object twice.
         public CustomRenderTexture(int width, int height, RenderTextureFormat format, [uei.DefaultValue("RenderTextureReadWrite.Default")] RenderTextureReadWrite readWrite)
             : this(width, height, GetCompatibleFormat(format, readWrite))
@@ -651,7 +653,7 @@ namespace UnityEngine
             if (format != GraphicsFormat.None && !ValidateFormat(format, GraphicsFormatUsage.Render))
                 return;
 
-            Internal_CreateCustomRenderTexture(this);
+            SetEntityIdFromConstructor(Internal_CreateCustomRenderTexture());
             this.width = width;
             this.height = height;
             this.graphicsFormat = format;
@@ -675,6 +677,7 @@ namespace UnityEngine
 
     public partial class Texture : Object
     {
+        protected internal Texture(global::UnityEngine.EntityId id) : base(id) {}
         public static readonly int GenerateAllMips = -1;
 
         // In TextureFormat constructors, we eventually need to convert the TextureFormat to a GraphicsFormat
@@ -772,6 +775,7 @@ namespace UnityEngine
 
     public partial class Texture2D : Texture
     {
+        internal Texture2D(global::UnityEngine.EntityId id) : base(id) {}
         internal bool ValidateFormat(TextureFormat format, int width, int height)
         {
             bool isValid = ValidateFormat(format);
@@ -924,7 +928,7 @@ namespace UnityEngine
             TextureFormat format = TextureFormat.RGBA32;
             const bool linear = false;
             if (width == 0 && height == 0)
-                Internal_CreateEmptyImpl(this);
+                SetEntityIdFromConstructor(Internal_CreateEmptyImpl());
             else if (ValidateFormat(format, width, height))
                 Internal_Create(this, width, height, Texture.GenerateAllMips, GraphicsFormatUtility.GetGraphicsFormat(format, !linear), GetTextureColorSpace(linear), TextureCreationFlags.MipChain, IntPtr.Zero, true, null);
         }
@@ -1233,6 +1237,7 @@ namespace UnityEngine
 
     public sealed partial class Cubemap : Texture
     {
+        internal Cubemap(global::UnityEngine.EntityId id) : base(id) {}
         internal bool ValidateFormat(TextureFormat format, int width)
         {
             bool isValid = ValidateFormat(format);
@@ -1439,6 +1444,7 @@ namespace UnityEngine
 
     public sealed partial class Texture3D : Texture
     {
+        internal Texture3D(global::UnityEngine.EntityId id) : base(id) {}
         [uei.ExcludeFromDocs]
         public Texture3D(int width, int height, int depth, DefaultFormat format, TextureCreationFlags flags)
             : this(width, height, depth, SystemInfo.GetGraphicsFormat(format), flags)
@@ -1639,6 +1645,7 @@ namespace UnityEngine
 
     public sealed partial class Texture2DArray : Texture
     {
+        internal Texture2DArray(global::UnityEngine.EntityId id) : base(id) {}
         internal bool ValidateFormat(TextureFormat format, int width, int height)
         {
             bool isValid = ValidateFormat(format);
@@ -1840,6 +1847,7 @@ namespace UnityEngine
 
     public sealed partial class CubemapArray : Texture
     {
+        internal CubemapArray(global::UnityEngine.EntityId id) : base(id) {}
         [uei.ExcludeFromDocs]
         public CubemapArray(int width, int cubemapCount, DefaultFormat format, TextureCreationFlags flags)
             : this(width, cubemapCount, SystemInfo.GetGraphicsFormat(format), flags)
@@ -1987,6 +1995,7 @@ namespace UnityEngine
 
     public sealed partial class SparseTexture : Texture
     {
+        internal SparseTexture(global::UnityEngine.EntityId id) : base(id) {}
         internal bool ValidateFormat(TextureFormat format, int width, int height)
         {
             bool isValid = ValidateFormat(format);
@@ -2046,7 +2055,7 @@ namespace UnityEngine
             if (!ValidateSize(width, height, format))
                 return;
 
-            Internal_Create(this, width, height, format, GetTextureColorSpace(format), mipCount);
+            SetEntityIdFromConstructor(Internal_Create(width, height, format, GetTextureColorSpace(format), mipCount));
         }
 
         [uei.ExcludeFromDocs]
@@ -2083,7 +2092,7 @@ namespace UnityEngine
             if (!ValidateSize(width, height, format))
                 return;
 
-            Internal_Create(this, width, height, format, GetTextureColorSpace(linear), mipCount);
+            SetEntityIdFromConstructor(Internal_Create(width, height, format, GetTextureColorSpace(linear), mipCount));
         }
     }
 }

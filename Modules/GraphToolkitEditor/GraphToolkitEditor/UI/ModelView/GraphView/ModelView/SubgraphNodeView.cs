@@ -2,7 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: GraphToolkit not yet converted
 using System;
 using Unity.Scripting.LifecycleManagement;
 using UnityEditor;
@@ -42,6 +41,7 @@ namespace Unity.GraphToolkit.Editor
         VisualElement m_TabDraggableAreaElement;
         readonly NodeColorLinePainterAnimator m_GradientAnimator = new();
 
+        bool m_FillAmountOverridden;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="SubgraphNodeView"/> class.
@@ -137,7 +137,7 @@ namespace Unity.GraphToolkit.Editor
                     m_TabElement.MarkDirtyRepaint();
                 }
 
-                if (NodeModel.FillAmount != 0f)
+                if (!m_FillAmountOverridden)
                     m_GradientAnimator.SetFillAmount(NodeModel.FillAmount, m_TabElement.MarkDirtyRepaint);
             }
         }
@@ -153,15 +153,22 @@ namespace Unity.GraphToolkit.Editor
 
          void TabElementOnGeometryChanged(GeometryChangedEvent e)
         {
-            if (NodeModel.FillAmount != 0.0f)
+            if (!m_FillAmountOverridden)
                 m_GradientAnimator.SetFillAmount(NodeModel.FillAmount, m_TabElement.MarkDirtyRepaint);
         }
 
         /// <inheritdoc/>
-        public override void SetFillAmount(float percentage)
+        public override void OverrideFillAmount(float percentage)
         {
-            float effective = percentage == 0f ? NodeModel.FillAmount : percentage;
-            m_GradientAnimator.SetFillAmount(effective, m_TabElement.MarkDirtyRepaint);
+            m_FillAmountOverridden = true;
+            m_GradientAnimator.SetFillAmount(percentage, m_TabElement.MarkDirtyRepaint);
+        }
+
+        /// <inheritdoc/>
+        public override void ClearFillAmountOverride()
+        {
+            m_FillAmountOverridden = false;
+            m_GradientAnimator.SetFillAmount(NodeModel.FillAmount, m_TabElement.MarkDirtyRepaint);
         }
 
         /// <inheritdoc/>
@@ -245,4 +252,3 @@ namespace Unity.GraphToolkit.Editor
         }
     }
 }
-#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

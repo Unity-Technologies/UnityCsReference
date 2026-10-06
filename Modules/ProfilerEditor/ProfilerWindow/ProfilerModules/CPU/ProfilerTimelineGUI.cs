@@ -1656,7 +1656,9 @@ namespace UnityEditorInternal
                     bool isSelectedSample = false;
                     if (!flowLinesDrawer.hasSelectedEvent)
                     {
+#pragma warning disable UAC2015 // FlowEvent should implement IEquatable to avoid boxing, but it is public API so may be a breaking change
                         isSelectedSample = (m_SelectedEntry.threadIndex == threadInfo.threadIndex) && (m_SelectedEntry.frameId == flowEventFrameIndex) && m_SelectedEntry.FlowEvents.Contains(flowEvent);
+#pragma warning restore UAC2015
                     }
                     flowLinesDrawer.AddFlowEvent(flowEventData, sampleRect, isSelectedSample);
 

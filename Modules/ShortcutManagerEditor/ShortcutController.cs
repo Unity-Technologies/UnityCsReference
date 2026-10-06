@@ -2,7 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: ShortcutManagement not yet converted
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -52,6 +51,9 @@ namespace UnityEditor.ShortcutManagement
         }
 
         [AutoStaticsCleanupOnCodeReload]
+        // Lazy singleton: the instance getter calls EnsureShortcutControllerCreated, which rebuilds the
+        // controller (and re-subscribes its editor handlers) after cleanup nulls it.
+        [IgnoreForUAL0015("Lazy singleton rebuilt by EnsureShortcutControllerCreated after cleanup nulls it")]
         private static ShortcutController s_Instance;
         public static ShortcutController instance
         {
@@ -63,6 +65,10 @@ namespace UnityEditor.ShortcutManagement
         }
 
         [AutoStaticsCleanupOnCodeReload]
+        // Mirrors whether the editor event handlers are attached: both this flag and those subscriptions
+        // are cleared together, and InitializeController sets enabled back to true when the controller is
+        // lazily recreated, which re-attaches them.
+        [IgnoreForUAL0015("Handler-attachment flag set again by InitializeController when the controller is recreated")]
         private static bool s_Enabled;
         internal static bool enabled
         {
@@ -446,4 +452,3 @@ namespace UnityEditor.ShortcutManagement
         }
     }
 }
-#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

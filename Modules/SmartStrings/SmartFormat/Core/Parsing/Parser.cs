@@ -22,15 +22,6 @@ namespace Unity.SmartStrings.Core.Parsing;
 [Serializable]
 public class Parser
 {
-    // Deprecated values. Used here for upgrading.
-    [SerializeField, HideInInspector] internal char m_OpeningBrace = '{';
-    [SerializeField, HideInInspector] internal char m_ClosingBrace = '}';
-    [SerializeField, HideInInspector] internal bool m_AlphanumericSelectors;
-    [SerializeField, HideInInspector] internal string m_AllowedSelectorChars = "";
-    [SerializeField, HideInInspector] internal string m_Operators = "";
-    [SerializeField, HideInInspector] internal bool m_AlternativeEscaping;
-    [SerializeField, HideInInspector] internal char m_AlternativeEscapeChar = '\\';
-
     const int k_PositionUndefined = -1;
     readonly ParsingErrorText m_ParsingErrorText = new();
 
@@ -44,11 +35,12 @@ public class Parser
     public SmartSettings Settings { get; }
 
     // Cache method results from settings
-    readonly List<char> m_OperatorChars;
+    readonly CharSet m_OperatorChars;
+    // The settings list itself, so custom operators added after construction still apply
     readonly List<char> m_CustomOperatorChars;
     readonly ParserSettings m_ParserSettings;
-    readonly List<char> m_ValidSelectorChars;
-    readonly List<char> m_FormatOptionsTerminatorChars;
+    readonly CharSet m_SelectorChars;
+    readonly CharSet m_FormatOptionsTerminatorChars;
 
     /// <summary>
     /// Raised when an error occurs during parsing.
@@ -66,90 +58,16 @@ public class Parser
     {
         Settings = smartSettings ?? new SmartSettings();
         m_ParserSettings = Settings.Parser;
-        m_OperatorChars = m_ParserSettings.OperatorChars();
+        m_OperatorChars = new CharSet(m_ParserSettings.OperatorChars());
         m_CustomOperatorChars = m_ParserSettings.CustomOperatorChars();
-        m_FormatOptionsTerminatorChars = m_ParserSettings.FormatOptionsTerminatorChars();
+        m_FormatOptionsTerminatorChars = new CharSet(m_ParserSettings.FormatOptionsTerminatorChars());
 
-        m_ValidSelectorChars = new List<char>();
-        m_ValidSelectorChars.AddRange(m_ParserSettings.SelectorChars());
-        m_ValidSelectorChars.AddRange(m_ParserSettings.OperatorChars());
-        m_ValidSelectorChars.AddRange(m_ParserSettings.CustomSelectorChars());
+        // Selector chars can be an allowlist or blocklist:
+        m_SelectorChars = m_ParserSettings.GetSelectorChars();
 
         m_InputFormat = string.Empty;
         m_ResultFormat = null;
     }
-
-    /// <summary>
-    /// Includes a-z and A-Z in the list of allowed selector chars.
-    /// </summary>
-    [Obsolete("Alphanumeric selectors are always enabled", false)]
-    public void AddAlphanumericSelectors()
-    {
-        // Do nothing - this is the standard behavior
-    }
-
-    /// <summary>
-    /// Adds specific characters to the allowed selector chars.
-    /// </summary>
-    /// <param name="chars">Characters to add to the allowed selector characters.</param>
-    [Obsolete("Use 'Settings.Parser.AddCustomSelectorChars' instead.", false)]
-    public void AddAdditionalSelectorChars(string chars)
-    {
-        m_ParserSettings.AddCustomSelectorChars(chars.ToCharArray());
-    }
-
-    /// <summary>
-    /// Adds specific characters to the allowed operator chars.
-    /// An operator is a character that is in the selector string
-    /// that splits the selectors.
-    /// </summary>
-    /// <param name="chars">Characters to add to the allowed operator characters.</param>
-    [Obsolete("Use 'Settings.Parser.AddCustomOperatorChars' instead.", false)]
-    public void AddOperators(string chars)
-    {
-        m_ParserSettings.AddCustomOperatorChars(chars.ToCharArray());
-    }
-
-    /// <summary>
-    /// Sets the AlternativeEscaping option to True
-    /// so that braces will only be escaped after the
-    /// specified character. The only allowed escape character is the backslash '\'.
-    /// </summary>
-    /// <param name="alternativeEscapeChar">Defaults to backslash</param>
-    [Obsolete("Use 'Settings.StringFormatCompatibility' instead.", false)]
-    public void UseAlternativeEscapeChar(char alternativeEscapeChar = '\\')
-    {
-        if (alternativeEscapeChar != m_ParserSettings.CharLiteralEscapeChar)
-        {
-            throw new ArgumentException("Cannot set an escape character other than '\\'",
-                nameof(alternativeEscapeChar));
-        }
-        Settings.StringFormatCompatibility = false;
-    }
-
-    /// <summary>
-    /// Uses {{ and }} for escaping braces for compatibility with string.Format.
-    /// However, this does not work very well with nested placeholders,
-    /// so it is recommended to use an 'alternative' escape char, which is the
-    /// backslash.
-    /// </summary>
-    [Obsolete("Use 'Settings.StringFormatCompatibility' instead.", false)]
-    public void UseBraceEscaping()
-    {
-        throw new NotSupportedException($"Init-only property {nameof(Settings)}.{nameof(Settings.StringFormatCompatibility)} can only be set in an object initializer");
-    }
-
-    /// <summary>
-    /// Sets the closing and opening braces for the parser.
-    /// </summary>
-    /// <param name="opening">Character to use as the opening brace.</param>
-    /// <param name="closing">Character to use as the closing brace.</param>
-    [Obsolete("This feature has been removed", false)]
-    public void UseAlternativeBraces(char opening, char closing)
-    {
-        throw new NotSupportedException("This feature has been removed");
-    }
-
     /// <summary>
     /// The Container for indexes pointing to positions within the input format.
     /// </summary>
@@ -608,7 +526,7 @@ public class Parser
         else
         {
             // Ensure the selector characters are valid:
-            if (!m_ValidSelectorChars.Contains(inputChar))
+            if (m_SelectorChars.Contains(inputChar) != m_SelectorChars.IsAllowList)
                 parsingErrors.AddIssue(m_ResultFormat,
                     $"'0x{Convert.ToUInt32(inputChar):X}': " +
                     m_ParsingErrorText[ParsingError.InvalidCharactersInSelector],
@@ -658,7 +576,7 @@ public class Parser
             // Skip escaped terminating characters
             if (m_InputFormat[m_Index.Current] == m_ParserSettings.CharLiteralEscapeChar &&
                 (m_FormatOptionsTerminatorChars.Contains(nextChar) ||
-                 EscapedLiteral.TryGetChar(nextChar, out _, true)))
+                 EscapedLiteral.TryGetChar(nextChar, out _, true, false)))
             {
                 m_Index.Current = m_Index.SafeAdd(m_Index.Current, 1);
                 if (m_FormatOptionsTerminatorChars.Contains(
@@ -822,7 +740,7 @@ public class Parser
     }
 
     /// <summary>
-    /// Handles <see cref="ParsingError"/>s as defined in <see cref="SmartSettings.ParseErrorAction"/>.
+    /// Handles <see cref="ParsingError"/>s as defined by the parser's error action.
     /// </summary>
     /// <param name="parsingErrors"></param>
     /// <param name="currentResult"></param>

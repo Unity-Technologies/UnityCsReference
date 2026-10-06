@@ -114,7 +114,6 @@ namespace Unity.GraphToolkit.Editor
 
         protected VisualElement m_Root;
         protected Image m_Icon;
-        protected VisualElement m_ColorLine;
         protected VisualElement m_NodeToolbarButtonsContainer;
         protected Label m_SubTitle;
 
@@ -139,6 +138,26 @@ namespace Unity.GraphToolkit.Editor
         public Image Icon => m_Icon;
 
         /// <summary>
+        /// Replaces the current icon with a new one at the same position and returns it.
+        /// Use this when an inline tintColor must be cleared (the only way to clear <c>m_TintColorIsInline</c>
+        /// is to create a new <see cref="Image"/> element).
+        /// </summary>
+        internal Image ReplaceIcon()
+        {
+            if (m_Icon?.parent == null)
+                return m_Icon;
+
+            var parent = m_Icon.parent;
+            var index = parent.IndexOf(m_Icon);
+            parent.Remove(m_Icon);
+            m_Icon = new Image();
+            m_Icon.AddToClassList(ussClassName.WithUssElement(GraphElementHelper.iconName));
+            m_Icon.AddToClassList(m_ParentClassName.WithUssElement(GraphElementHelper.iconName));
+            parent.Insert(index, m_Icon);
+            return m_Icon;
+        }
+
+        /// <summary>
         /// The subtitle on the node.
         /// </summary>
         public Label SubTitle => m_SubTitle;
@@ -146,7 +165,6 @@ namespace Unity.GraphToolkit.Editor
         /// <inheritdoc />
         public override VisualElement Root => m_Root;
 
-        public ProgressBar CoroutineProgressBar { get; protected set; }
 
         /// <summary>
         /// Initializes a new instance of the <see cref="NodeTitlePart"/> class.
@@ -209,14 +227,6 @@ namespace Unity.GraphToolkit.Editor
             }
 
             CreateTitleLabel();
-
-            if (nodeModel is IHasProgress)
-            {
-                CoroutineProgressBar = new ProgressBar();
-                CoroutineProgressBar.AddToClassList(ussClassName.WithUssElement("progress-bar"));
-                CoroutineProgressBar.AddToClassList(m_ParentClassName.WithUssElement("progress-bar"));
-                TitleContainer.Add(CoroutineProgressBar);
-            }
 
             m_NodeToolbarButtonsContainer = new VisualElement();
             m_NodeToolbarButtonsContainer.AddToClassList(buttonContainerUssClassName);
@@ -350,14 +360,6 @@ namespace Unity.GraphToolkit.Editor
 
                 m_PreviousIconString = iconTypeString;
                 m_PreviousIconPath = iconPath;
-            }
-
-            var hasProgressNode = nodeModel as IHasProgress;
-            var showProgress = hasProgressNode is { Progress: >= 0 };
-            CoroutineProgressBar?.EnableInClassList(GraphElementHelper.hiddenUssModifier, !showProgress);
-            if (CoroutineProgressBar != null && showProgress)
-            {
-                CoroutineProgressBar.value = hasProgressNode.Progress;
             }
 
             if (visitor.ChangeHints.HasChange(ChangeHint.Data))

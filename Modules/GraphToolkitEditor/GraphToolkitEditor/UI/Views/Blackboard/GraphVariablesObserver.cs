@@ -3,7 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System.Collections.Generic;
-using Unity.GraphToolkit.CSO;
+using Unity.CSO;
 using UnityEngine;
 
 namespace Unity.GraphToolkit.Editor

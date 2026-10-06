@@ -80,6 +80,8 @@ namespace UnityEngine
     [NativeClass("Unity::Cloth", PersistentTypeId = 183)]
     public sealed partial class Cloth : Component
     {
+        internal Cloth(global::UnityEngine.EntityId id) : base(id) {}
+        public Cloth() {}
         ///<summary>The current vertex positions of the cloth object.</summary>
         ///<remarks>This gives you read access to the vertex positions of the cloth object, so you can analyse it's current simulation state.
         ///Note that the vertex indices may not necessarily correspond to the indices of the source mesh - especially when triangle stripping

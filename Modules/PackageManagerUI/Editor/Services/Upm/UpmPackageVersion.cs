@@ -34,7 +34,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         [SerializeField]
         private List<UIError> m_Errors = new();
-        public override IReadOnlyCollection<UIError> errors => (IReadOnlyCollection<UIError>)m_Errors ?? Array.Empty<UIError>();
+        public override IReadOnlyList<UIError> errors => (IReadOnlyList<UIError>)m_Errors ?? Array.Empty<UIError>();
 
         [SerializeField]
         private string m_PackageId;

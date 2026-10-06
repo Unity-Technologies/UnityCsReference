@@ -2,7 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: Profiling not yet converted
 using System;
 using System.Collections.Generic;
 using Unity.Scripting.LifecycleManagement;
@@ -270,20 +269,20 @@ namespace UnityEditor
             var maxWidth = 200;
             m_MulticolumnHeaderState = new MultiColumnHeaderState(new[]
             {
-                new MultiColumnHeaderState.Column {headerContent = EditorGUIUtility.TrTextContent("Object"), width = 220, maxWidth = 400, canSort = true},
-                new MultiColumnHeaderState.Column {headerContent = EditorGUIUtility.TrTextContent("Self Batch Count"), width = initwidth, maxWidth = maxWidth},
-                new MultiColumnHeaderState.Column {headerContent = EditorGUIUtility.TrTextContent("Cumulative Batch Count"), width = initwidth, maxWidth = maxWidth},
-                new MultiColumnHeaderState.Column {headerContent = EditorGUIUtility.TrTextContent("Self Vertex Count"), width = initwidth, maxWidth = maxWidth},
-                new MultiColumnHeaderState.Column {headerContent = EditorGUIUtility.TrTextContent("Cumulative Vertex Count"), width = initwidth, maxWidth = maxWidth},
+                new MultiColumnHeaderState.Column {headerContent = L10n.TextContent("Object", null, null, null), width = 220, maxWidth = 400, canSort = true},
+                new MultiColumnHeaderState.Column {headerContent = L10n.TextContent("Self Batch Count", null, null, null), width = initwidth, maxWidth = maxWidth},
+                new MultiColumnHeaderState.Column {headerContent = L10n.TextContent("Cumulative Batch Count", null, null, null), width = initwidth, maxWidth = maxWidth},
+                new MultiColumnHeaderState.Column {headerContent = L10n.TextContent("Self Vertex Count", null, null, null), width = initwidth, maxWidth = maxWidth},
+                new MultiColumnHeaderState.Column {headerContent = L10n.TextContent("Cumulative Vertex Count", null, null, null), width = initwidth, maxWidth = maxWidth},
                 new MultiColumnHeaderState.Column
                 {
-                    headerContent = EditorGUIUtility.TrTextContent("Batch Breaking Reason"),
+                    headerContent = L10n.TextContent("Batch Breaking Reason", null, null, null),
                     width = 220,
                     maxWidth = 400,
                     canSort = false
                 },
-                new MultiColumnHeaderState.Column {headerContent = EditorGUIUtility.TrTextContent("GameObject Count"), width = initwidth, maxWidth = 400},
-                new MultiColumnHeaderState.Column {headerContent = EditorGUIUtility.TrTextContent("GameObjects"), width = 150, maxWidth = 400, canSort = false},
+                new MultiColumnHeaderState.Column {headerContent = L10n.TextContent("GameObject Count", null, null, null), width = initwidth, maxWidth = 400},
+                new MultiColumnHeaderState.Column {headerContent = L10n.TextContent("GameObjects", null, null, null), width = 150, maxWidth = 400, canSort = false},
             });
             foreach (var column in m_MulticolumnHeaderState.columns)
             {
@@ -397,11 +396,11 @@ namespace UnityEditor
                 header = "OL title";
                 header.alignment = TextAnchor.MiddleLeft;
 
-                noData = EditorGUIUtility.TrTextContent("No frame data available - UI profiling is only available when profiling in the editor");
+                noData = L10n.TextContent("No frame data available - UI profiling is only available when profiling in the editor", null, null, null);
 
-                contentDetachRender = EditorGUIUtility.TrTextContent("Detach");
+                contentDetachRender = L10n.TextContent("Detach", null, null, null);
 
-                backgroundOptions = new[] {EditorGUIUtility.TrTextContent("Checkerboard"), EditorGUIUtility.TrTextContent("Black"), EditorGUIUtility.TrTextContent("White")};
+                backgroundOptions = new[] {L10n.TextContent("Checkerboard", null, null, null), L10n.TextContent("Black", null, null, null), L10n.TextContent("White", null, null, null)};
                 backgroundValues = new[]
                 {
                     (int)PreviewBackgroundType.Checkerboard,
@@ -411,7 +410,7 @@ namespace UnityEditor
 
                 rendermodeOptions = new[]
                 {
-                    EditorGUIUtility.TrTextContent("Standard"), EditorGUIUtility.TrTextContent("Overdraw"), EditorGUIUtility.TrTextContent("Composite overdraw")
+                    L10n.TextContent("Standard", null, null, null), L10n.TextContent("Overdraw", null, null, null), L10n.TextContent("Composite overdraw", null, null, null)
                 };
                 rendermodeValues = new[]
                 {
@@ -490,4 +489,3 @@ namespace UnityEditor
         }
     }
 }
-#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

@@ -29,7 +29,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                 onActionTriggered?.Invoke();
         }
 
-        public void TriggerAction(IReadOnlyCollection<BulkType> items)
+        public void TriggerAction(IReadOnlyList<BulkType> items)
         {
             if (TriggerActionImplementation(items))
                 onActionTriggered?.Invoke();
@@ -68,7 +68,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         protected abstract bool TriggerActionImplementation(SingleType item);
         // By default, bulk actions are not supported
-        protected virtual bool TriggerActionImplementation(IReadOnlyCollection<BulkType> items) => false;
+        protected virtual bool TriggerActionImplementation(IReadOnlyList<BulkType> items) => false;
         public abstract string GetText(SingleType item, bool isInProgress);
         public abstract string GetTooltip(SingleType item,  bool isInProgress);
         public virtual bool IsInProgress(SingleType item) => false;

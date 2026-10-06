@@ -18,15 +18,15 @@ namespace UnityEditor
     {
         private static class Styles
         {
-            public static readonly GUIContent PlayableText = EditorGUIUtility.TrTextContent("Playable");
-            public static readonly GUIContent InitialTimeContent = EditorGUIUtility.TrTextContent("Initial Time", "The time at which the Playable will begin playing");
-            public static readonly GUIContent TimeContent = EditorGUIUtility.TrTextContent("Current Time", "The current Playable time");
-            public static readonly GUIContent InitialStateContent = EditorGUIUtility.TrTextContent("Play On Awake", "Whether the Playable should be playing after it loads");
-            public static readonly GUIContent UpdateMethod = EditorGUIUtility.TrTextContent("Update Method", "Controls how the Playable updates every frame");
-            public static readonly GUIContent WrapModeContent = EditorGUIUtility.TrTextContent("Wrap Mode", "Controls the behaviour of evaluating the Playable outside its duration");
-            public static readonly GUIContent NoBindingsContent = EditorGUIUtility.TrTextContent("This channel will not playback because it is not currently assigned");
-            public static readonly GUIContent BindingsTitleContent = EditorGUIUtility.TrTextContent("Bindings");
-            public static readonly GUIContent ClearUnused = EditorGUIUtility.TrTextContent("Show Unused", "A PlayableDirector may contain bindings to objects not referenced by the assigned Playable file.\nToggle this field to show them.\n It is recommended to remove unused bound objects if their Playable will be no longer used by this PlayableDirector.");
+            public static readonly GUIContent PlayableText = L10n.TextContent("Playable", null, null, null);
+            public static readonly GUIContent InitialTimeContent = L10n.TextContent("Initial Time", "The time at which the Playable will begin playing", null, null);
+            public static readonly GUIContent TimeContent = L10n.TextContent("Current Time", "The current Playable time", null, null);
+            public static readonly GUIContent InitialStateContent = L10n.TextContent("Play On Awake", "Whether the Playable should be playing after it loads", null, null);
+            public static readonly GUIContent UpdateMethod = L10n.TextContent("Update Method", "Controls how the Playable updates every frame", null, null);
+            public static readonly GUIContent WrapModeContent = L10n.TextContent("Wrap Mode", "Controls the behaviour of evaluating the Playable outside its duration", null, null);
+            public static readonly GUIContent NoBindingsContent = L10n.TextContent("This channel will not playback because it is not currently assigned", null, null, null);
+            public static readonly GUIContent BindingsTitleContent = L10n.TextContent("Bindings", null, null, null);
+            public static readonly GUIContent ClearUnused = L10n.TextContent("Show Unused", "A PlayableDirector may contain bindings to objects not referenced by the assigned Playable file.\nToggle this field to show them.\n It is recommended to remove unused bound objects if their Playable will be no longer used by this PlayableDirector.", null, null);
         }
 
         private static readonly int ObjectFieldControlID = "s_ObjectFieldHash".GetHashCode();

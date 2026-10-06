@@ -90,7 +90,9 @@ namespace UnityEditor
         internal static string ProjectLayoutPath => GetProjectLayoutPerMode(ModeService.currentId);
         internal static string currentLayoutName => GetLayoutFileName(ModeService.currentId, Application.unityVersionVer);
 
+        // Re-subscribed on every code load by LayoutDropdown.Initialize().
         [AutoStaticsCleanupOnCodeReload]
+        [IgnoreForUAL0015("Event re-subscribed on every code load by LayoutDropdown.Initialize()")]
         internal static event Action lastLoadedLayoutChanged;
 
         [NoAutoStaticsCleanup] // string label cache, value type with no user references, safe to persist across code reload
@@ -115,18 +117,39 @@ namespace UnityEditor
             ModeService.InitializeCurrentMode();
         }
 
+        static bool CanCloseAllWindows(bool keepMainWindow)
+        {
+            // The prompt is suppressed during automated runs, unless an interaction context has been installed
+            // to answer it. That is how a test drives the cancel path.
+            if (Application.isTestRun && !GlobalInteractionContext.TestAccess.isInstalled)
+                return true;
+
+            return ContainerWindow.CanCloseAll(keepMainWindow);
+        }
+
         public static void LoadCurrentModeLayout(bool keepMainWindow)
         {
+            LoadCurrentModeLayout(keepMainWindow, promptToSaveChanges: true);
+        }
+
+        static void LoadCurrentModeLayout(bool keepMainWindow, bool promptToSaveChanges)
+        {
+            if (promptToSaveChanges && !CanCloseAllWindows(keepMainWindow))
+                return;
+
             InitializeLayoutPreferencesFolder();
             var dynamicLayout = ModeService.GetDynamicLayout();
+
+            // Passing noUnsavedChangesPrompt here as the user was prompted above.
+            // This avoids a repeated prompt to save changes
             if (dynamicLayout == null)
-                LoadLastUsedLayoutForCurrentMode(keepMainWindow);
+                LoadLastUsedLayoutForCurrentMode(keepMainWindow, noUnsavedChangesPrompt: true);
             else
             {
                 var projectLayoutExists = File.Exists(ProjectLayoutPath);
                 if ((projectLayoutExists && Convert.ToBoolean(dynamicLayout["restore_saved_layout"]))
                     || !LoadModeDynamicLayout(keepMainWindow, dynamicLayout))
-                    LoadLastUsedLayoutForCurrentMode(keepMainWindow);
+                    LoadLastUsedLayoutForCurrentMode(keepMainWindow, noUnsavedChangesPrompt: true);
             }
         }
 
@@ -447,26 +470,32 @@ namespace UnityEditor
         // 4. Last loaded layout in global preferences for any Unity version, in descending alphabetical order
         // 5. Any available layouts specified by the EditorMode, if EditorMode supplies layouts
         // 6. The factory default layout
-        private static void LoadLastUsedLayoutForCurrentMode(bool keepMainWindow)
+        // IMPORTANT: Pass noUnsavedChangesPrompt if the user has already answered an unsaved changes dialog for this
+        // action. Every candidate below runs the same gate, so without it the user is asked once per candidate, and
+        // a cancel part way through leaves the editor with its windows already closed.
+        private static void LoadLastUsedLayoutForCurrentMode(bool keepMainWindow, bool noUnsavedChangesPrompt)
         {
+            var projectLayoutFlags = GetLoadWindowLayoutFlags(false, false, keepMainWindow, false, noUnsavedChangesPrompt);
+            var otherLayoutFlags = projectLayoutFlags | LoadWindowLayoutFlags.NewProjectCreated;
+
             // steps 1-4
             foreach (var layout in GetLastLayout())
-                if (LoadWindowLayout_Internal(layout, layout != ProjectLayoutPath, false, keepMainWindow, false))
+                if (LoadWindowLayout_Internal(layout, layout != ProjectLayoutPath ? otherLayoutFlags : projectLayoutFlags))
                     return;
 
             // step 5
             foreach (var layout in GetCurrentModeLayouts())
-                if (LoadWindowLayout_Internal(layout, layout != ProjectLayoutPath, false, keepMainWindow, false))
+                if (LoadWindowLayout_Internal(layout, layout != ProjectLayoutPath ? otherLayoutFlags : projectLayoutFlags))
                     return;
 
             // It is not mandatory that modes define a layout. In that case, skip right to the default layout.
             if (!string.IsNullOrEmpty(ModeService.GetDefaultModeLayout())
-                && LoadWindowLayout_Internal(ModeService.GetDefaultModeLayout(), true, false, keepMainWindow, false))
+                && LoadWindowLayout_Internal(ModeService.GetDefaultModeLayout(), otherLayoutFlags))
                 return;
 
             // If all else fails, load the default layout that ships with the editor. If that fails, prompt the user to
             // restore the default layouts.
-            if (!LoadWindowLayout_Internal(GetDefaultLayoutPath(), true, false, keepMainWindow, false))
+            if (!LoadWindowLayout_Internal(GetDefaultLayoutPath(), otherLayoutFlags))
             {
                 int option = 0;
 
@@ -1231,9 +1260,14 @@ namespace UnityEditor
         // Attempts to load a layout. If unsuccessful, restores the previous layout.
         public static bool TryLoadWindowLayout(string path, LoadWindowLayoutFlags flags)
         {
-            if (LoadWindowLayout_Internal(path, flags))
+            // Ask about unsaved changes once, before any window is closed. Cancelling leaves the current layout
+            // intact, so there is nothing to recover from and the fallback below must not run (UUM-150448).
+            if (!CanCloseAllWindows(flags.HasFlag(LoadWindowLayoutFlags.KeepMainWindow)))
+                return false;
+
+            if (LoadWindowLayout_Internal(path, flags | LoadWindowLayoutFlags.NoUnsavedChangesPrompt))
                 return true;
-            LoadCurrentModeLayout(FindMainWindow());
+            LoadCurrentModeLayout(FindMainWindow(), promptToSaveChanges: false);
             return false;
         }
 
@@ -1246,7 +1280,8 @@ namespace UnityEditor
             KeepMainWindow = 1 << 2,
             LogsErrorToConsole = 1 << 3,
             NoMainWindowSupport = 1 << 4,
-            SaveLayoutPreferences = 1 << 5
+            SaveLayoutPreferences = 1 << 5,
+            NoUnsavedChangesPrompt = 1 << 6
         }
 
         // This method is public only because some packages have internal access and use it.
@@ -1273,7 +1308,7 @@ namespace UnityEditor
             return LoadWindowLayout_Internal(path, flags);
         }
 
-        static LoadWindowLayoutFlags GetLoadWindowLayoutFlags(bool newProjectLayoutWasCreated, bool setLastLoadedLayoutName, bool keepMainWindow, bool logErrorsToConsole)
+        static LoadWindowLayoutFlags GetLoadWindowLayoutFlags(bool newProjectLayoutWasCreated, bool setLastLoadedLayoutName, bool keepMainWindow, bool logErrorsToConsole, bool noUnsavedChangesPrompt = false)
         {
             var flags = LoadWindowLayoutFlags.SaveLayoutPreferences;
             if (newProjectLayoutWasCreated)
@@ -1284,6 +1319,8 @@ namespace UnityEditor
                 flags |= LoadWindowLayoutFlags.KeepMainWindow;
             if (logErrorsToConsole)
                 flags |= LoadWindowLayoutFlags.LogsErrorToConsole;
+            if (noUnsavedChangesPrompt)
+                flags |= LoadWindowLayoutFlags.NoUnsavedChangesPrompt;
             return flags;
         }
 
@@ -1295,7 +1332,8 @@ namespace UnityEditor
         {
             Console.WriteLine($"[LAYOUT] About to load {path}, keepMainWindow={flags.HasFlag(LoadWindowLayoutFlags.KeepMainWindow)}");
 
-            if (!Application.isTestRun && !ContainerWindow.CanCloseAll(flags.HasFlag(LoadWindowLayoutFlags.KeepMainWindow)))
+            if (!flags.HasFlag(LoadWindowLayoutFlags.NoUnsavedChangesPrompt)
+                && !CanCloseAllWindows(flags.HasFlag(LoadWindowLayoutFlags.KeepMainWindow)))
                 return false;
 
             bool mainWindowMaximized = ContainerWindow.mainWindow?.maximized ?? false;
@@ -1725,13 +1763,14 @@ namespace UnityEditor
                 return;
             }
 
-            if (!ContainerWindow.CanCloseAll(false))
+            if (!CanCloseAllWindows(false))
                 return;
 
             ResetFactorySettings();
         }
 
-        public static void ResetFactorySettings()
+        // IMPORTANT: This discards unsaved work without asking, so keep it private.
+        static void ResetFactorySettings()
         {
             // Reset user layouts
             ResetUserLayouts();
@@ -1739,7 +1778,7 @@ namespace UnityEditor
             // Reset mode settings
             ModeService.ChangeModeById("default");
 
-            LoadCurrentModeLayout(keepMainWindow: false);
+            LoadCurrentModeLayout(keepMainWindow: false, promptToSaveChanges: false);
             ReloadWindowLayoutMenu();
             EditorUtility.Internal_UpdateAllMenus();
             ShortcutIntegration.instance.RebuildShortcuts();

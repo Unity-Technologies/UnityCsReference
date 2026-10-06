@@ -59,7 +59,7 @@ namespace UnityEditorInternal
             }
         }
 
-        public static readonly GUIContent kFrameTooltip = EditorGUIUtility.TrTextContent("", "Press 'F' to frame selection");
+        public static readonly GUIContent kFrameTooltip = L10n.TextContent("", "Press 'F' to frame selection", null, null);
 
         const int kMaxPooledRowsCount = 1000000;
 

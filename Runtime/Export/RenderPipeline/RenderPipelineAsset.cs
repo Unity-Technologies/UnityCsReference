@@ -93,7 +93,26 @@ namespace UnityEngine.Rendering
             }
         }
 
-        internal string pipelineTypeFullName => pipelineType?.FullName ?? string.Empty;
+        [NonSerialized] Type m_PipelineTypeForFullName;
+        [NonSerialized] string m_PipelineTypeFullName;
+
+        internal string pipelineTypeFullName
+        {
+            get
+            {
+                var type = pipelineType;
+                if (type == null)
+                    return string.Empty;
+
+                if (type != m_PipelineTypeForFullName)
+                {
+                    m_PipelineTypeFullName = type.FullName;
+                    m_PipelineTypeForFullName = type;
+                }
+
+                return m_PipelineTypeFullName;
+            }
+        }
 
         protected virtual void EnsureGlobalSettings()
         {

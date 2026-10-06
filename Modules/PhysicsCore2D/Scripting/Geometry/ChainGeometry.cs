@@ -36,8 +36,12 @@ namespace Unity.U2D.Physics
         }
 
         /// <summary>
-        /// Check if the geometry is valid or not.
+        /// Whether the geometry describes a chain that can be used.
         /// </summary>
+        /// <remarks>
+        /// There must be at least three vertices, every vertex must be finite, and each consecutive pair must be further apart than <see cref="PhysicsWorld.minEdgeLength"/>.
+        /// The closing edge of a loop is not checked here because the geometry does not carry the loop intent; that edge is checked when the segments are created.
+        /// </remarks>
         public readonly bool isValid => ChainGeometry_IsValid(this);
 
         /// <summary>

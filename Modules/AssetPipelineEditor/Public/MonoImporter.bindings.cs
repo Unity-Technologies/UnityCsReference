@@ -15,6 +15,8 @@ namespace UnityEditor
     [ExcludeFromPreset]
     public class MonoImporter : AssetImporter
     {
+        internal MonoImporter(global::UnityEngine.EntityId id) : base(id) {}
+        public MonoImporter() {}
         public extern void SetDefaultReferences(string[] name, Object[] target);
 
         [FreeFunction("MonoImporterBindings::GetDefaultReferencesInternal")]

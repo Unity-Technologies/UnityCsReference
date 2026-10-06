@@ -13,5 +13,11 @@ namespace UnityEditor.TextCore.LowLevel
     {
         [NativeMethod(Name = "TextCore::FontEngineEditorUtilities::SetAtlasTextureIsReadable", IsFreeFunction = true)]
         internal extern static void SetAtlasTextureIsReadable(Texture2D texture, bool isReadable);
+
+        [NativeMethod(Name = "TextCore::FontEngineEditorUtilities::SetAtlasTextureSessionOnly", IsFreeFunction = true)]
+        internal extern static void SetAtlasTextureSessionOnly(Texture2D texture, bool sessionOnly);
+
+        [NativeMethod(Name = "TextCore::FontEngineEditorUtilities::IsAtlasTextureSessionOnly", IsFreeFunction = true)]
+        internal extern static bool IsAtlasTextureSessionOnly(Texture2D texture);
     }
 }

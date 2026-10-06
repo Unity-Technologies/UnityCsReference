@@ -2,7 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: SceneTooling not yet converted
 using UnityEditor.Connect;
 using System;
 using UnityEngine;
@@ -34,27 +33,26 @@ namespace UnityEditor.Toolbars
             }
             else
             {
-                string text = s_LoggedIn ? GetUserInitials(UnityConnect.instance.userInfo.displayName) : L10n.Tr("Sign in", null);
+                string text = L10n.Tr("Sign in", null);
                 info = new MainToolbarButton(new MainToolbarContent(text), UnityConnect.instance.ShowLogin);
             }
             info.displayed = s_Available;
             return info;
         }
 
+        [InitializeOnLoadMethod]
+        static void Initialize()
+        {
+            UnityConnect.instance.StateChanged += OnStateChange;
+            OnStateChange(UnityConnect.instance.connectInfo);
+        }
+
         static AccountDropdown()
         {
             s_Available = MPE.ProcessService.level == MPE.ProcessLevel.Main;
-            s_LoggedIn = false;
             s_AccountIcon = EditorGUIUtility.LoadIcon("Account");
 
-            EditorApplication.delayCall += DelayInitialization;
-        }
-
-        static void DelayInitialization()
-        {
             EditorApplication.update += CheckAvailability;
-            UnityConnect.instance.StateChanged += OnStateChange;
-            OnStateChange(UnityConnect.instance.connectInfo);
         }
 
         static void CheckAvailability()
@@ -79,11 +77,11 @@ namespace UnityEditor.Toolbars
             if (UnityConnect.instance.online)
             {
                 var accountUrl = UnityConnect.instance.GetConfigurationURL(CloudConfigUrl.CloudPortal);
-                menu.AddItem(EditorGUIUtility.TrTextContent("My account"), false, () => UnityConnect.instance.OpenAuthorizedURLInWebBrowser(accountUrl));
+                menu.AddItem(L10n.TextContent("My account", null, null, null), false, () => UnityConnect.instance.OpenAuthorizedURLInWebBrowser(accountUrl));
             }
             else
             {
-                menu.AddDisabledItem(EditorGUIUtility.TrTextContent("My account"));
+                menu.AddDisabledItem(L10n.TextContent("My account", null, null, null));
             }
 
             var name = $"{L10n.Tr("Sign out", null)} {UnityConnect.instance.userInfo.displayName}";
@@ -93,9 +91,9 @@ namespace UnityEditor.Toolbars
             {
                 menu.AddSeparator("");
                 if (UnityConnect.instance.online)
-                    menu.AddItem(EditorGUIUtility.TrTextContent("Upgrade your Unity plan"), false, () => UnityEngine.Application.OpenURL("https://store.unity.com/"));
+                    menu.AddItem(L10n.TextContent("Upgrade your Unity plan", null, null, null), false, () => UnityEngine.Application.OpenURL("https://store.unity.com/"));
                 else
-                    menu.AddDisabledItem(EditorGUIUtility.TrTextContent("Upgrade your Unity plan"));
+                    menu.AddDisabledItem(L10n.TextContent("Upgrade your Unity plan", null, null, null));
             }
 
             menu.DropDown(dropDownRect, true);
@@ -121,4 +119,3 @@ namespace UnityEditor.Toolbars
         }
     }
 }
-#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

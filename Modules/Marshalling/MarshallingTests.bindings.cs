@@ -294,9 +294,10 @@ namespace UnityEngine
     [StructLayout(LayoutKind.Sequential)]
     internal class MarshallingTestObject : Object
     {
+        internal MarshallingTestObject(global::UnityEngine.EntityId id) : base(id) {}
         public MarshallingTestObject()
         {
-            Internal_CreateMarshallingTestObject(this);
+            SetEntityIdFromConstructor(Internal_CreateMarshallingTestObject());
         }
 
         public extern int MemberFunction(int a);
@@ -316,7 +317,7 @@ namespace UnityEngine
 
         public extern static MarshallingTestObject Create();
 
-        extern private static void Internal_CreateMarshallingTestObject([Writable] MarshallingTestObject notSelf);
+        extern private static EntityId Internal_CreateMarshallingTestObject();
 
         [RequiredMember, RequiredByNativeCode(Optional = true)]
         private int TestField;
@@ -428,6 +429,33 @@ namespace UnityEngine
         public static extern DerivedScriptableObject[] ReturnDerivedScriptableObjectArray(DerivedScriptableObject param);
         public static extern DerivedScriptableObject2[] ReturnDerivedScriptableObject2Array(DerivedScriptableObject2 param);
 
+        // Array type punning (neutron#2326): the managed collection element type (T) differs from the marshalled
+        // element type (UnityEngine.Object). The collection marshaller allocates a real new T[] and only views it as
+        // Object[] internally while filling, so the returned/filled collection's runtime type is genuinely T[]/List<T>.
+        [return: UnityMarshalAs(NativeType.MarshalAsType, MarshalAsType = typeof(UnityEngine.Object[]))]
+        public static extern T[] ReturnTypedUnityObjectArray<T>();
+
+        [return: UnityMarshalAs(NativeType.MarshalAsType, MarshalAsType = typeof(UnityEngine.Object[]))]
+        public static extern T[] ReturnEmptyUnityObjectArray<T>();
+
+        public static extern void FillTypedUnityObjectArray<T>([UnityMarshalAs(NativeType.MarshalAsType, MarshalAsType = typeof(UnityEngine.Object[]))] out T[] results);
+
+        public static extern void FillTypedUnityObjectList<T>([Out][UnityMarshalAs(NativeType.MarshalAsType, MarshalAsType = typeof(List<UnityEngine.Object>))] List<T> results);
+
+        public static extern void FillEmptyTypedUnityObjectArray<T>([UnityMarshalAs(NativeType.MarshalAsType, MarshalAsType = typeof(UnityEngine.Object[]))] out T[] results);
+
+        // Punned returns of a nullable native collection: unlike a plain core::vector these can express
+        // null as distinct from empty, which the FindObjects* bindings rely on for an invalid searched type.
+        [return: UnityMarshalAs(NativeType.MarshalAsType, MarshalAsType = typeof(UnityEngine.Object[]))]
+        public static extern T[] ReturnNullableTypedUnityObjectArray<T>();
+
+        [return: UnityMarshalAs(NativeType.MarshalAsType, MarshalAsType = typeof(UnityEngine.Object[]))]
+        public static extern T[] ReturnEmptyNullableUnityObjectArray<T>();
+
+        [return: UnityMarshalAs(NativeType.MarshalAsType, MarshalAsType = typeof(UnityEngine.Object[]))]
+        public static extern T[] ReturnNullUnityObjectArray<T>();
+
+        public static extern void FillNullTypedUnityObjectArray<T>([UnityMarshalAs(NativeType.MarshalAsType, MarshalAsType = typeof(UnityEngine.Object[]))] out T[] results);
     }
 
     [NativeHeader("Modules/Marshalling/MarshallingTests.h")]
@@ -443,6 +471,8 @@ namespace UnityEngine
         [NativeMethod(ThrowsException = true)] public static extern void ObjectParameterNullAllowed(MarshallingTestObject param);
         public static extern void ObjectParameterNullNotAllowed([NotNull] MarshallingTestObject param);
 
+        // These exercise the [Writable] marshalling itself (managed object passed through); they are not constructors,
+        // so they opt out of the EntityId-return contract.
         public static extern void WritableObjectParameterNullAllowed([Writable] MarshallingTestObject param);
         public static extern void WritableObjectParameterNullNotAllowed([NotNull][Writable] MarshallingTestObject param);
 
@@ -540,6 +570,9 @@ namespace UnityEngine
         public static extern System.Type[] CanUnmarshallArrayOfScriptingSystemTypeObjectPtrToSystemTypeArray();
         public static extern System.Type[] CanUnmarshallArrayOfUnityTypeToSystemTypeArray();
         public static extern System.Type[] CanUnmarshallArrayOfScriptingClassPtrToSystemTypeArray();
+
+        // roundtrip used by performance tests
+        public static extern System.Type CanRoundTripTypeToScriptingTypePtrToType(System.Type type);
     }
 
     // --------------------------------------------------------------------
@@ -577,6 +610,9 @@ namespace UnityEngine
         public static extern System.Reflection.FieldInfo[] CanUnmarshallScriptingArrayPtrToFieldInfoArray();
         public static extern System.Reflection.FieldInfo[] CanUnmarshallArrayOfScriptingFieldInfoObjectPtrToFieldInfoArray();
         public static extern System.Reflection.FieldInfo[] CanUnmarshallArrayOfScriptingFieldPtrToFieldInfoArray();
+
+        // roundtrip used by performance tests
+        public static extern System.Reflection.FieldInfo CanRoundTripFieldInfoToScriptingFieldPtrToFieldInfo(System.Reflection.FieldInfo field);
     }
 
     // --------------------------------------------------------------------
@@ -614,6 +650,9 @@ namespace UnityEngine
         public static extern System.Reflection.MethodInfo[] CanUnmarshallScriptingArrayPtrToMethodInfoArray();
         public static extern System.Reflection.MethodInfo[] CanUnmarshallArrayOfScriptingMethodInfoObjectPtrToMethodInfoArray();
         public static extern System.Reflection.MethodInfo[] CanUnmarshallArrayOfScriptingMethodPtrToMethodInfoArray();
+
+        // roundtrip used by performance tests
+        public static extern System.Reflection.MethodInfo CanRoundTripMethodInfoToScriptingMethodPtrToMethodInfo(System.Reflection.MethodInfo method);
     }
 
     // --------------------------------------------------------------------
@@ -1690,6 +1729,38 @@ namespace UnityEngine
         public static extern void PPtrOutMarshalledBufferReuse([Out] MarshallingTestObject[] param);
         public static extern void PPtrInOutMarshalledBufferReuse([In, Out] MarshallingTestObject[] param);
 
+        // The non-GC safe bindings don't support by-ref arrays
+        public static extern void PPtrOutRefMarshalledBufferReuse(out MarshallingTestObject[] param, int size);
+
+        // The non-GC safe bindings don't support custom marshalled types as array elements
+        // Note: that the blittable and non-blittable types call the same native method - their custom marshallers map to the same native type
+
+        [NativeType(CodegenOptions = CodegenOptions.Custom, IntermediateScriptingStructName = "NonBlittableCustomMarshalledToSmallerSizeManaged")]
+        public struct NonBlittableCustomMarshalledToSmallerSize
+        {
+            [NativeName("value")]
+            public object Value { get; set; }
+        }
+
+        [NativeType(CodegenOptions = CodegenOptions.Custom, IntermediateScriptingStructName = "BlittableCustomMarshalledToSmallerSizeManaged")]
+        public struct BlittableCustomMarshalledToSmallerSize
+        {
+            public long Value { get; set; }
+        }
+
+        //  Marshalling of arrays of custom marshalled types does not work correclty on the pre-GC safe bindings
+        [NativeMethod("OutMarshalledBufferReuse")]
+        public static extern void NonBlittableOutMarshalledBufferReuse([Out] NonBlittableCustomMarshalledToSmallerSize[] param);
+        [NativeMethod("OutRefMarshalledBufferReuse")]
+        public static extern void NonBlittableOutRefMarshalledBufferReuse(out NonBlittableCustomMarshalledToSmallerSize[] param, int size);
+        [NativeMethod("InOutMarshalledBufferReuse")]
+        public static extern void NonBlittableInOutMarshalledBufferReuse([In, Out] NonBlittableCustomMarshalledToSmallerSize[] param);
+        [NativeMethod("OutMarshalledBufferReuse")]
+        public static extern void BlittableOutMarshalledBufferReuse([Out] BlittableCustomMarshalledToSmallerSize[] param);
+        [NativeMethod("OutRefMarshalledBufferReuse")]
+        public static extern void BlittableOutRefMarshalledBufferReuse(out BlittableCustomMarshalledToSmallerSize[] param, int size);
+        [NativeMethod("InOutMarshalledBufferReuse")]
+        public static extern void BlittableInOutMarshalledBufferReuse([In, Out] BlittableCustomMarshalledToSmallerSize[] param);
 
     }
 }

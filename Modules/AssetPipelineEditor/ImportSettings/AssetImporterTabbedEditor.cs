@@ -21,6 +21,14 @@ namespace UnityEditor
         public BaseAssetImporterTabUI activeTab { get; private set; }
         protected BaseAssetImporterTabUI[] tabs { get { return m_Tabs; } set { m_Tabs = value; } }
 
+        protected int activeTabIndex => m_ActiveEditorIndex;
+        protected void SetActiveTabIndex(int index)
+        {
+            m_ActiveEditorIndex = index;
+            activeTab = m_Tabs[index];
+            EditorPrefs.SetInt(GetType().Name + "ActiveEditorIndex", index);
+        }
+
         public override void OnEnable()
         {
             base.OnEnable();
@@ -32,7 +40,7 @@ namespace UnityEditor
                 tab.OnEnable();
             }
 
-            m_ActiveEditorIndex = EditorPrefs.GetInt(this.GetType().Name + "ActiveEditorIndex", 0);
+            m_ActiveEditorIndex = Mathf.Clamp(EditorPrefs.GetInt(this.GetType().Name + "ActiveEditorIndex", 0), 0, m_Tabs.Length - 1);
             if (activeTab == null)
                 activeTab = m_Tabs[m_ActiveEditorIndex];
         }

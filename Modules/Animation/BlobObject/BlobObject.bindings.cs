@@ -145,12 +145,13 @@ namespace UnityEngine
     [UsedByNativeCode]
     internal class BlobObject : Object
     {
+        internal BlobObject(global::UnityEngine.EntityId id) : base(id) {}
         public BlobObject()
         {
-            Internal_Create(this);
+            SetEntityIdFromConstructor(Internal_Create());
         }
 
-        extern private static void      Internal_Create([Writable] BlobObject self);
+        extern private static EntityId  Internal_Create();
 
         [NativeMethod(IsThreadSafe = true)]
         extern internal unsafe void*    GetBlobData(out ulong typeHash, out uint size);

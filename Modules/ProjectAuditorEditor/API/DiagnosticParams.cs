@@ -83,7 +83,7 @@ namespace Unity.ProjectAuditor.Editor
                     var paaramData = diagnosticParams.GetParameterData(key);
 
                     EditorGUILayout.BeginHorizontal();
-                    EditorGUILayout.LabelField(EditorGUIUtility.TrTextContent(paaramData.UserFriendlyName, paaramData.Tooltip), GUILayout.MinWidth(maxWidth + 40), GUILayout.ExpandWidth(false));
+                    EditorGUILayout.LabelField(L10n.TextContent(paaramData.UserFriendlyName, paaramData.Tooltip, null, null), GUILayout.MinWidth(maxWidth + 40), GUILayout.ExpandWidth(false));
 
                     EditorGUI.BeginChangeCheck();
                     int newValue = EditorGUILayout.IntField(m_Params[key], GUILayout.ExpandWidth(true));

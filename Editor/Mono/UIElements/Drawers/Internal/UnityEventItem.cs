@@ -2,7 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: UIToolkitFramework not yet converted
 using System;
 using System.Diagnostics;
 using UnityEditorInternal;
@@ -18,11 +17,11 @@ namespace UnityEditor.UIElements
         {
             public SerializedProperty listener;
             public SerializedProperty mode;
-            public SerializedProperty arguments;
             public SerializedProperty callState;
             public SerializedProperty listenerTarget;
             public SerializedProperty methodName;
             public SerializedProperty objectArgument;
+            public SerializedProperty objectArgumentAssemblyTypeName;
         }
 
         // uss names
@@ -38,6 +37,10 @@ namespace UnityEditor.UIElements
         internal const string kObjectParameterName = kUssClassName + "__object-parameter";
 
         PropertyData m_PropertyData;
+
+        bool m_HasAppliedParameterField;
+        PersistentListenerMode m_AppliedMode;
+        string m_AppliedObjectArgumentTypeName;
 
         public PropertyField callStateDropdown
         {
@@ -145,7 +148,7 @@ namespace UnityEditor.UIElements
 
         internal void BindFields(PropertyData data)
         {
-            // As this is a reusable item in a ListView, we need to unbind as you can only TrackPropertyValue on one property at a time
+            // As this is a reusable item in a ListView, we need to unbind as an element can only track properties on one SerializedObject at a time
             listenerTarget.Unbind();
 
             m_PropertyData = data;
@@ -165,19 +168,38 @@ namespace UnityEditor.UIElements
                 functionDropdown.SetValueWithoutNotify(functionDropdown.value);
             });
 
+            // Variants of one function share a method name, and per-property tracking never reports the mode change.
+            listenerTarget.TrackSerializedObjectValue(m_PropertyData.listener.serializedObject, _ => UpdateParameterField());
+
+            m_HasAppliedParameterField = false;
             UpdateParameterField();
         }
 
         internal void UpdateParameterField()
         {
             var modeEnum = (PersistentListenerMode)m_PropertyData.mode.enumValueIndex;
-            var argument = getArgumentCallback.Invoke(m_PropertyData);
 
             //only allow argument if we have a valid target / method
             if (m_PropertyData.listenerTarget.objectReferenceValue == null || string.IsNullOrEmpty(m_PropertyData.methodName.stringValue))
             {
                 modeEnum = PersistentListenerMode.Void;
             }
+
+            var objectArgumentTypeName = modeEnum == PersistentListenerMode.Object
+                ? m_PropertyData.objectArgumentAssemblyTypeName.stringValue
+                : null;
+
+            // This runs on every edit to the object, so only rebuild when the shown field would actually differ.
+            if (m_HasAppliedParameterField && modeEnum == m_AppliedMode && objectArgumentTypeName == m_AppliedObjectArgumentTypeName)
+            {
+                return;
+            }
+
+            m_HasAppliedParameterField = true;
+            m_AppliedMode = modeEnum;
+            m_AppliedObjectArgumentTypeName = objectArgumentTypeName;
+
+            var argument = getArgumentCallback.Invoke(m_PropertyData);
 
             if (modeEnum == PersistentListenerMode.Void || modeEnum == PersistentListenerMode.EventDefined)
             {
@@ -189,12 +211,11 @@ namespace UnityEditor.UIElements
                 parameterProperty.style.display = DisplayStyle.None;
                 objectParameter.style.display = DisplayStyle.Flex;
 
-                var desiredArgTypeName = m_PropertyData.arguments.FindPropertyRelative(UnityEventDrawer.kObjectArgumentAssemblyTypeName).stringValue;
                 var desiredType = typeof(UnityEngine.Object);
 
-                if (!string.IsNullOrEmpty(desiredArgTypeName))
+                if (!string.IsNullOrEmpty(objectArgumentTypeName))
                 {
-                    desiredType = Type.GetType(desiredArgTypeName, false) ?? typeof(UnityEngine.Object);
+                    desiredType = Type.GetType(objectArgumentTypeName, false) ?? typeof(UnityEngine.Object);
                 }
 
                 objectParameter.objectType = desiredType;
@@ -209,4 +230,3 @@ namespace UnityEditor.UIElements
         }
     }
 }
-#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

@@ -17,6 +17,7 @@ namespace UnityEngine
     [NativeClass("RenderAs2D", PersistentTypeId = 0x42CAB754)]
     internal sealed class RenderAs2D : Renderer
     {
+        internal RenderAs2D(global::UnityEngine.EntityId id) : base(id) {}
         internal extern void Init(Component owner);
         internal extern bool IsOwner(Component owner);
     }

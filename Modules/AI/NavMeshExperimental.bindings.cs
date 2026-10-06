@@ -266,9 +266,11 @@ namespace UnityEngine.Experimental.AI
             // because the atomic safety handle stores that state.
             var removeQuery = AtomicSafetyHandle.GetAllowReadOrWriteAccess(m_Safety);
 
+            var wasSafetyRegistered = !AtomicSafetyHandle.IsTempMemoryHandle(m_Safety);
+
             AtomicSafetyHandle.DisposeHandle(ref m_Safety);
 
-            if (removeQuery)
+            if (wasSafetyRegistered && removeQuery)
                 RemoveQuerySafetyExp(m_NavMeshQuery, m_Safety);
             UnsafeUtility.LeakErase(m_NavMeshQuery, LeakCategory.NavMeshQuery);
             DestroyExp(m_NavMeshQuery);

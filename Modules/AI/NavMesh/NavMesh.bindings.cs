@@ -103,22 +103,23 @@ namespace UnityEngine.AI
     [NativeHeader("Modules/AI/NavMesh/NavMesh.bindings.h")]
     public sealed class NavMeshData : Object
     {
+        internal NavMeshData(global::UnityEngine.EntityId id) : base(id) {}
         ///<summary>Constructs a new object for representing a NavMesh for the default agent type.</summary>
         ///<remarks>At construction this NavMesh is empty, i.e. there are no polygons. You can use this class to create, build and add a NavMesh at runtime.</remarks>
         public NavMeshData()
         {
-            Internal_Create(this, 0);
+            SetEntityIdFromConstructor(Internal_Create(0));
         }
 
         ///<summary>Constructs a new object representing a NavMesh for the specified agent type.</summary>
         ///<param name="agentTypeID">The agent type ID to create a NavMesh for.</param>
         public NavMeshData(int agentTypeID)
         {
-            Internal_Create(this, agentTypeID);
+            SetEntityIdFromConstructor(Internal_Create(agentTypeID));
         }
 
         [StaticAccessor("NavMeshDataBindings", StaticAccessorType.DoubleColon)]
-        static extern void Internal_Create([Writable] NavMeshData mono, int agentTypeID);
+        static extern EntityId Internal_Create(int agentTypeID);
 
         ///<summary>Returns the bounding volume of the input geometry used to build this NavMesh (RO).</summary>
         ///<remarks>If the NavMesh data has not been built, the bounds will have zero values.</remarks>

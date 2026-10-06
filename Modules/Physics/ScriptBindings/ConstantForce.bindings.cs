@@ -17,6 +17,8 @@ namespace UnityEngine
     [NativeHeader("Modules/Physics/ConstantForce.h")]
     public class ConstantForce : Behaviour
     {
+        internal ConstantForce(global::UnityEngine.EntityId id) : base(id) {}
+        public ConstantForce() {}
         ///<summary>The force applied to the rigidbody every frame.</summary>
         extern public Vector3 force { get; set; }
         ///<summary>The torque applied to the rigidbody every frame.</summary>

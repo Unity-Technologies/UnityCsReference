@@ -22,9 +22,22 @@ namespace Unity.Localization.Providers.FileTables;
 public class ResourceTableData
 {
     /// <summary>
+    /// The format version this Unity writes and reads.
+    /// </summary>
+    /// <remarks>
+    /// Compare a file's <see cref="SchemaVersion"/> against this before trusting its contents, so a file written by a
+    /// newer Unity is refused rather than read as though it were this format.
+    /// </remarks>
+    public const string CurrentSchemaVersion = "3";
+
+    /// <summary>
     /// The format version, so a reader can reject or migrate older data.
     /// </summary>
-    public string SchemaVersion = "3";
+    /// <remarks>
+    /// Defaults to <see cref="CurrentSchemaVersion"/>. A file that states a different version is refused, because
+    /// there is no migration between versions and reading it as the current format would misread its entries.
+    /// </remarks>
+    public string SchemaVersion = CurrentSchemaVersion;
 
     /// <summary>
     /// The collection name this table belongs to.

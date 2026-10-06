@@ -170,6 +170,10 @@ namespace UnityEditor
         protected bool allowSliderZoomHorizontal { get { return m_EnableSliderZoomHorizontal && m_HScaleMin < m_HScaleMax; } }
         protected bool allowSliderZoomVertical { get { return m_EnableSliderZoomVertical && m_VScaleMin < m_VScaleMax; } }
 
+        // Controls drawn over the area receive a mouse down only after BeginViewGUI has taken the keyboard
+        // control, which ends any editing session they had. Return false to skip that. (UUM-140166)
+        protected virtual bool captureKeyboardControlOnMouseDown { get { return true; } }
+
         public bool m_UniformScale;
         public bool uniformScale { get { return m_UniformScale; } set { m_UniformScale = value; } }
 
@@ -678,7 +682,8 @@ namespace UnityEditor
                     {
                         // Catch keyboard control when clicked inside zoomable area
                         // (used to restrict scrollwheel)
-                        GUIUtility.keyboardControl = id;
+                        if (captureKeyboardControlOnMouseDown)
+                            GUIUtility.keyboardControl = id;
 
                         if (IsZoomEvent() || IsPanEvent())
                         {

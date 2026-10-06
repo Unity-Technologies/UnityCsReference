@@ -2,8 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: HeadlessRuntime not yet converted
-#pragma warning disable UAL0010,UAL0011,UAL0012,UAL0013,UAL0014 // AutoStaticsCleanup: HeadlessRuntime not yet converted
 using System;
 using System.Collections.Generic;
 using Unity.Scripting.LifecycleManagement;
@@ -32,7 +30,7 @@ namespace Unity.Multiplayer.PlayMode.Editor
 
         public static readonly Vector2 windowSize = new Vector2(300, 175);
         [AutoStaticsCleanupOnCodeReload] // maps editor views to instance objects; both stale after reload
-        static Dictionary<InstanceView, Instance> m_ViewToInstance = new();
+        static Dictionary<InstanceView, ControllerRuntime> m_ViewToInstance = new();
 
         public override Vector2 GetWindowSize()
         {
@@ -97,9 +95,9 @@ namespace Unity.Multiplayer.PlayMode.Editor
             }
         }
 
-        class InstanceView : VisualElement
+        internal class InstanceView : VisualElement
         {
-            internal readonly Instance m_Instance;
+            internal readonly ControllerRuntime m_Instance;
             readonly VisualElement m_StatusIndicator;
             readonly VisualElement m_DriftIndicator;
             readonly Image m_RunModeIndicator;
@@ -118,7 +116,7 @@ namespace Unity.Multiplayer.PlayMode.Editor
             const string k_LoadingClass = "loading";
             const string k_IdleClass = "idle";
 
-            internal InstanceView(Instance instance)
+            internal InstanceView(ControllerRuntime instance)
             {
                 m_Instance = instance;
                 AddToClassList(k_InstanceViewClass);
@@ -196,6 +194,12 @@ namespace Unity.Multiplayer.PlayMode.Editor
                             AddToClassList(k_ActiveClass);
                             m_StatusIndicator.tooltip = "running";
                         }
+                        else if (status.CurrentStage is ExecutionStage.Run &&
+                            status.StageStatuses[(int)ExecutionStage.Run].State is ExecutionState.Completed)
+                        {
+                            AddToClassList(k_IdleClass);
+                            m_StatusIndicator.tooltip = "idle";
+                        }
                         else
                         {
                             AddToClassList(k_LoadingClass);
@@ -216,7 +220,7 @@ namespace Unity.Multiplayer.PlayMode.Editor
             internal void RefreshFreeRunUI()
             {
                 // Grab the running mode and update the visual icon if it's changed.
-                // Every instance kind is rendered here, and Instance.RunMode covers the kinds
+                // Every instance kind is rendered here, and ControllerRuntime.RunMode covers the kinds
                 // that carry no run mode decorator.
                 var currRunMode = m_Instance.RunMode;
                 m_RunModeIndicator.SetRunModeIcon(currRunMode);
@@ -254,7 +258,7 @@ namespace Unity.Multiplayer.PlayMode.Editor
             }
         }
 
-        private Instance GetInstanceByItem(IPlayModeControllerItem instanceItem)
+        private ControllerRuntime GetInstanceByItem(IPlayModeControllerItem instanceItem)
         {
             var currentConfig = PlayModeScenarioManager.ActiveScenario as OrchestratedScenario;
             if (currentConfig == null || currentConfig.Scenario == null)
@@ -264,5 +268,3 @@ namespace Unity.Multiplayer.PlayMode.Editor
         }
     }
 }
-#pragma warning restore UAL0010,UAL0011,UAL0012,UAL0013,UAL0014
-#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

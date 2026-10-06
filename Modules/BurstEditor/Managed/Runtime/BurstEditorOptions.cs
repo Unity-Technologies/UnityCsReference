@@ -2,16 +2,16 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0010,UAL0011,UAL0012,UAL0013,UAL0014 // AutoStaticsCleanup: Burst not yet converted
 using System.Diagnostics;
 using UnityEditor;
+using Unity.Scripting.LifecycleManagement;
 
 namespace Unity.Burst.Editor
 {
     /// <summary>
     /// Responsible to synchronize <see cref="BurstCompiler.Options"/> with the menu
     /// </summary>
-    internal static class BurstEditorOptions
+    internal static partial class BurstEditorOptions
     {
         // Properties stored in SessionState (survive between domain reloads, but stays alive only during the life of the editor)
         private const string EnableBurstSafetyChecksText = "BurstSafetyChecks";
@@ -26,6 +26,7 @@ namespace Unity.Burst.Editor
         /// <summary>
         /// <c>true</c> if the menu options are synchronized with <see cref="BurstCompiler.Options"/>
         /// </summary>
+        [AutoStaticsCleanupOnCodeReload]
         private static bool _isSynchronized;
 
         public static void EnsureSynchronized()
@@ -116,4 +117,3 @@ namespace Unity.Burst.Editor
         }
     }
 }
-#pragma warning restore UAL0010,UAL0011,UAL0012,UAL0013,UAL0014

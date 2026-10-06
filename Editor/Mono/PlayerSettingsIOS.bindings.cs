@@ -35,10 +35,10 @@ namespace UnityEditor
     // For Simulator
     public enum AppleMobileArchitectureSimulator
     {
-        [Obsolete("X86_64 iOS/tvOS Simulator architecture is deprecated and will be removed in a future Unity version. Switch to ARM64 in Player Settings.", false)]
+        [Obsolete("X86_64 iOS/tvOS Simulator architecture has been removed and setting it has no effect.", false)]
         X86_64 = 0,
         ARM64 = 1 << 0,
-        [Obsolete("Universal iOS/tvOS Simulator architecture is deprecated and will be removed in a future Unity version. Switch to ARM64 in Player Settings.", false)]
+        [Obsolete("Universal iOS/tvOS Simulator architecture has been removed and setting it has no effect.", false)]
         Universal = 1 << 1
     }
 

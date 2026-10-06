@@ -101,8 +101,12 @@ namespace Unity.U2D.Physics
         public readonly NativeArray<PolygonGeometry> ToPolygons(PhysicsTransform transform, float curveStride = PhysicsComposer.DefaultCurveStride, Allocator allocator = Allocator.Temp) => PhysicsComposer.ToPolygons(this, transform, curveStride, allocator);
 
         /// <summary>
-        /// Check if the geometry is valid or not.
+        /// Whether the geometry describes a capsule that can be used.
         /// </summary>
+        /// <remarks>
+        /// Both centers must be finite and further apart than <see cref="PhysicsWorld.minEdgeLength"/>, and the radius must be finite and zero or greater.
+        /// See <see cref="CapsuleGeometry.areEdgesValid"/> for the center separation on its own.
+        /// </remarks>
         public readonly bool isValid => CapsuleGeometry_IsValid(this);
 
         /// <summary>
@@ -324,9 +328,16 @@ namespace Unity.U2D.Physics
         }
 
         /// <summary>
-        /// Get a validated version of the geometry, if possible.
+        /// Repair the capsule so that it can be used.
         /// </summary>
-        /// <returns>A validated copy of the geometry with an updated length and radius if required. See <see cref="CapsuleGeometry.isValid"/>.</returns>
+        /// <remarks>
+        /// The radius is clamped to zero or greater.
+        /// When the two centers are further apart than <see cref="PhysicsWorld.minEdgeLength"/> they are left as they are, otherwise both are replaced with the shortest axis that can still be used.
+        /// That replacement keeps the direction between the two centers, or points up when they are identical, because a capsule with no length would behave as a circle instead.
+        /// It does not preserve the original position: a capsule repaired this way is centered on the origin.
+        /// A non-finite center or radius is not always repaired and can be returned unchanged, so check <see cref="CapsuleGeometry.isValid"/> when those values might not be finite.
+        /// </remarks>
+        /// <returns>The repaired capsule. See <see cref="CapsuleGeometry.isValid"/>.</returns>
         public readonly CapsuleGeometry Validate() => CapsuleGeometry_Validate(this);
 
         /// <undoc/>

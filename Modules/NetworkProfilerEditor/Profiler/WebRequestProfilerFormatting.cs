@@ -4,7 +4,7 @@
 
 namespace UnityEditor.Networking
 {
-    // Turns the raw counters a frame row carries into the strings the details view shows.
+    // Turns the raw counters a request record carries into the strings the details view shows.
     static class WebRequestProfilerFormatting
     {
         const ulong k_Kilobyte = 1024;
@@ -33,12 +33,52 @@ namespace UnityEditor.Networking
             return count == 1 ? $"{count} {singularNoun}" : $"{count} {singularNoun}s";
         }
 
-        // Nothing captures byte counts yet, so every row carries 0 and "0 B" would read as a request
-        // that transferred nothing rather than one whose size is unknown. Revisit when the transport
-        // supplies real counts: a genuinely empty response should then read "0 B" again.
-        public static string FormatTransferSize(ulong bytes)
+        // An em dash rather than "0 B", which would be a measurement, and rather than the hyphen the
+        // other columns use for "not known yet".
+        public const string NotMeasured = "—";
+
+        public const string NotMeasuredTooltip =
+            "Not measured: the transport that ran this request does not count transferred bytes.";
+
+        // Three renderings, because a zero has two meanings: a number when the transport counted,
+        // "0 B" when it counted nothing crossing the wire, NotMeasured when nothing counted at all.
+        public static string FormatTransferSize(ulong bytes, bool measured)
         {
-            return bytes != 0 ? FormatBytes(bytes) : "-";
+            return measured ? FormatBytes(bytes) : NotMeasured;
+        }
+
+        public const string PartialTotalTooltip =
+            "A lower bound: some of these requests ran on a transport that does not count transferred bytes.";
+
+        // Rows need not agree on whether their bytes were measurable, and unmeasured ones contribute
+        // nothing - so a partial sum is a floor and says so, rather than an exact-looking wrong number.
+        public static string FormatTransferTotal(ulong bytes, bool anyMeasured, bool anyUnmeasured)
+        {
+            if (!anyMeasured)
+                return NotMeasured;
+
+            return anyUnmeasured ? $"≥ {FormatBytes(bytes)}" : FormatBytes(bytes);
+        }
+
+        // Per direction: the Web transport counts what it downloads and has no upload counter.
+        public static bool HasMeasuredDownload(WebRequestProfilerRecord record)
+        {
+            return (record.measured & WebRequestProfilerMeasurement.Download) != 0;
+        }
+
+        public static bool HasMeasuredUpload(WebRequestProfilerRecord record)
+        {
+            return (record.measured & WebRequestProfilerMeasurement.Upload) != 0;
+        }
+
+        public static string FormatDownloadSize(WebRequestProfilerRecord record)
+        {
+            return FormatTransferSize(record.bytesDownloaded, HasMeasuredDownload(record));
+        }
+
+        public static string FormatUploadSize(WebRequestProfilerRecord record)
+        {
+            return FormatTransferSize(record.bytesUploaded, HasMeasuredUpload(record));
         }
 
         // Nanoseconds in, because a local request finishes well under a millisecond and would otherwise
@@ -56,34 +96,34 @@ namespace UnityEditor.Networking
         }
 
         // Column form: narrow enough that the state has to be carried by a glyph rather than a word.
-        public static string FormatStatusCode(WebRequestProfilerRow row)
+        public static string FormatStatusCode(WebRequestProfilerRecord record)
         {
-            if ((WebRequestProfilerState)row.state == WebRequestProfilerState.InFlight)
+            if (record.state == WebRequestProfilerState.InFlight)
                 return "...";
 
-            return row.statusCode != 0 ? row.statusCode.ToString() : "-";
+            return record.statusCode != 0 ? record.statusCode.ToString() : "-";
         }
 
         // The managed API the request came through. Native cannot tell them apart, so an untagged row
         // reads as UnityWebRequest.
-        public static string FormatSource(WebRequestProfilerRow row)
+        public static string FormatSource(WebRequestProfilerRecord record)
         {
-            return (WebRequestProfilerSource)row.source == WebRequestProfilerSource.HttpClient
+            return record.source == WebRequestProfilerSource.HttpClient
                 ? ".NET HttpClient"
                 : "UnityWebRequest";
         }
 
         // Inspector form.
-        public static string FormatStatus(WebRequestProfilerRow row)
+        public static string FormatStatus(WebRequestProfilerRecord record)
         {
-            switch ((WebRequestProfilerState)row.state)
+            switch (record.state)
             {
                 case WebRequestProfilerState.InFlight:
                     return "In flight";
                 case WebRequestProfilerState.Failed:
-                    return row.statusCode != 0 ? $"{row.statusCode} (failed)" : "Failed";
+                    return record.statusCode != 0 ? $"{record.statusCode} (failed)" : "Failed";
                 default:
-                    return row.statusCode != 0 ? row.statusCode.ToString() : "Completed";
+                    return record.statusCode != 0 ? record.statusCode.ToString() : "Completed";
             }
         }
     }

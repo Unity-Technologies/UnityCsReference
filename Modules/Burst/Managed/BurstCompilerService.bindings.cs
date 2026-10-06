@@ -24,7 +24,7 @@ namespace Unity.Burst.LowLevel
         [ClearCacheBetweenCodeLoads]
         static void ClearCacheBetweenCodeLoads() => ReloadAssemblySearchPathsForBurstInternal();
 
-        [NativeMethod("Initialize")]
+        [NativeMethod("Initialize", ThrowsException = true)]
         static extern string InitializeInternal(string path, ExtractCompilerFlags extractCompilerFlags);
 
         [NativeMethod(IsThreadSafe = true)]
@@ -61,7 +61,11 @@ namespace Unity.Burst.LowLevel
 
         public static extern bool LoadBurstLibrary(string fullPathToLibBurstGenerated);
 
-       [RequiredByNativeCode]
+
+        [NativeMethod(IsThreadSafe = true)]
+        internal static extern bool IsInBurstedJob();
+
+        [RequiredByNativeCode]
         private static MethodInfo GetMethodInfoForDelegate(System.Delegate targetMethod)
         {
             return targetMethod.Method;

@@ -17,9 +17,9 @@ namespace Unity.SmartStrings;
 /// <summary>
 /// This class holds a <see cref="Default"/> instance of a <see cref="SmartFormatter"/>.
 /// The default instance has all extensions registered.
-/// <para>For optimized performance, create a <see cref="SmartFormatter"/> instance and register the
-/// particular extensions that are needed.</para>
-/// <para><see cref="Smart"/> methods are not thread safe.</para>
+/// For optimized performance, create a <see cref="SmartFormatter"/> instance and register the
+/// particular extensions that are needed.
+/// <see cref="Smart"/> methods are not thread safe.
 /// </summary>
 public static partial class Smart
 {
@@ -97,14 +97,14 @@ public static partial class Smart
     /// <summary>
     /// The default <see cref="SmartFormatter"/> used by the static <see cref="Smart"/> formatting methods.
     /// If not set, a formatter from <see cref="CreateDefaultSmartFormat()"/> is used.
-    /// <para>
+    /// 
     /// Using the <see cref="ThreadStaticAttribute"/>, <see cref="Default"/> returns isolated instances of the <see cref="SmartFormatter"/> in each thread.
     /// As <see cref="Default"/> is thread-static, customizations must be applied on each thread.
-    /// </para>
-    /// <para>
+    /// 
+    /// 
     /// Note that the internal object pools are shared across all threads and are not thread safe,
     /// so formatting from multiple threads concurrently is not supported.
-    /// </para>
+    /// 
     /// </summary>
     public static SmartFormatter Default
     {
@@ -130,24 +130,24 @@ public static partial class Smart
     /// Creates a new <see cref="SmartFormatter"/> instance with core extensions registered.
     /// For optimized performance, create a <see cref="SmartFormatter"/> instance and register the
     /// particular extensions that are really needed.
-    /// <para>
+    /// 
     /// See <see cref="WellKnownExtensionTypes.Formatters"/> and <see cref="WellKnownExtensionTypes.Sources"/>
     /// for a complete list of well-known types.
-    /// </para>
+    /// 
     /// </summary>
     /// <param name="settings">The <see cref="SmartSettings"/> to use, or <see langword="null"/> for default settings.</param>
     /// <returns>A <see cref="SmartFormatter"/> with core extensions registered:
-    /// <para>
+    /// 
     /// <see cref="ISource"/>s:
     /// <see cref="StringSource"/>, <see cref="ListFormatter"/>, <see cref="DictionarySource"/>,
     /// <see cref="PropertiesSource"/>, <see cref="DefaultSource"/>, <see cref="KeyValuePairSource"/>
-    /// </para>
-    /// <para>
+    /// 
+    /// 
     /// <see cref="IFormatter"/>s:
     /// <see cref="ListFormatter"/>, <see cref="PluralLocalizationFormatter"/>,
     /// <see cref="ConditionalFormatter"/>, <see cref="IsMatchFormatter"/>, <see cref="NullFormatter"/>,
     /// <see cref="ChooseFormatter"/>, <see cref="SubStringFormatter"/>, <see cref="DefaultFormatter"/>.
-    /// </para>
+    /// 
     /// </returns>
     public static SmartFormatter CreateDefaultSmartFormat(SmartSettings settings)
     {

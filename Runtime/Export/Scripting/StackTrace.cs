@@ -38,16 +38,6 @@ namespace UnityEngine
             return message + "\n" + stackTrace;
         }
 
-        // As this class is part of UnityEngine, it might not be available during CoreCLR code loading operations.
-        // On CoreCLR use the StackTraceInterop directly as it is part of Scripting Core, which doesn't get unloaded.
-
-        [RequiredByNativeCode]
-        static void SetProjectFolder(string folder)
-            => Unity.Scripting.StackTrace.BasePath = folder;
-
-        [RequiredByNativeCode]
-        static void ExtractStringFromExceptionInternal(System.Object exceptiono, out string message, out string stackTrace)
-            => Unity.Scripting.StackTrace.GetMessageAndStackTrace(exceptiono as Exception, out message, out stackTrace);
     }
 
     [Serializable]

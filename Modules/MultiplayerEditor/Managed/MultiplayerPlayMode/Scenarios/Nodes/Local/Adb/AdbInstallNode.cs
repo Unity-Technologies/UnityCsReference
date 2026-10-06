@@ -2,7 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: HeadlessRuntime not yet converted
 using System;
 using System.Threading;
 using System.Threading.Tasks;
@@ -23,7 +22,9 @@ namespace Unity.Multiplayer.PlayMode.Editor
 
         public IAdbService GetAdbService()
         {
+#pragma warning disable UAL0018 // m_AdbService is a non-serialized field of a node owned by the Scenario ScriptableObject: it comes back empty after a reload and this lazy fetch re-resolves the current service
             m_AdbService ??= AdbService.GetInstance();
+#pragma warning restore UAL0018
             return m_AdbService;
         }
 
@@ -49,4 +50,3 @@ namespace Unity.Multiplayer.PlayMode.Editor
         }
     }
 }
-#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

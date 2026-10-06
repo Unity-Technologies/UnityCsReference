@@ -31,7 +31,7 @@ namespace UnityEditor
 
         protected class Texts
         {
-            public GUIContent addModules = EditorGUIUtility.TrTextContent("", "Show/Hide Modules");
+            public GUIContent addModules = L10n.TextContent("", "Show/Hide Modules", null, null);
             public string bulletPoint = "\u2022 ";
         }
         [NoAutoStaticsCleanup] // lazy-initialized UI text cache
@@ -547,7 +547,7 @@ namespace UnityEditor
             }
 
             menu.AddSeparator("");
-            menu.AddItem(EditorGUIUtility.TrTextContent("Show All Modules"), ParticleEffectUI.GetAllModulesVisible(), AddModuleCallback, 10000);
+            menu.AddItem(L10n.TextContent("Show All Modules", null, null, null), ParticleEffectUI.GetAllModulesVisible(), AddModuleCallback, 10000);
             menu.ShowAsContext();
             Event.current.Use();
         }
@@ -597,12 +597,12 @@ namespace UnityEditor
             GenericMenu menu = new GenericMenu();
 
             if (!ParticleEffectUI.GetAllModulesVisible())
-                menu.AddItem(EditorGUIUtility.TrTextContent("Remove"), false, ModuleMenuCallback, moduleIndex);
+                menu.AddItem(L10n.TextContent("Remove", null, null, null), false, ModuleMenuCallback, moduleIndex);
             else
-                menu.AddDisabledItem(EditorGUIUtility.TrTextContent("Remove")); // Do not allow remove module when always show modules is enabled
+                menu.AddDisabledItem(L10n.TextContent("Remove", null, null, null)); // Do not allow remove module when always show modules is enabled
 
-            var copy = EditorGUIUtility.TrTextContent("Copy Module");
-            var paste = EditorGUIUtility.TrTextContent("Paste Module");
+            var copy = L10n.TextContent("Copy Module", null, null, null);
+            var paste = L10n.TextContent("Paste Module", null, null, null);
 
             SerializedProperty prop = m_ParticleSystemSerializedObject.FindProperty(m_Modules[moduleIndex].moduleName);
             if (prop != null)
@@ -655,14 +655,14 @@ namespace UnityEditor
             // Now create the menu, add items and show it
             GenericMenu menu = new GenericMenu();
 
-            menu.AddItem(EditorGUIUtility.TrTextContent("Show Location"), false, EmitterMenuCallback, 2);
+            menu.AddItem(L10n.TextContent("Show Location", null, null, null), false, EmitterMenuCallback, 2);
             menu.AddSeparator("");
             if (m_ParticleSystems[0].gameObject.activeInHierarchy)
-                menu.AddItem(EditorGUIUtility.TrTextContent("Create Particle System"), false, EmitterMenuCallback, 0);
+                menu.AddItem(L10n.TextContent("Create Particle System", null, null, null), false, EmitterMenuCallback, 0);
             else
-                menu.AddDisabledItem(EditorGUIUtility.TrTextContent("Create new Particle System"));
+                menu.AddDisabledItem(L10n.TextContent("Create new Particle System", null, null, null));
 
-            menu.AddItem(EditorGUIUtility.TrTextContent("Reset"), false, EmitterMenuCallback, 1);
+            menu.AddItem(L10n.TextContent("Reset", null, null, null), false, EmitterMenuCallback, 1);
             menu.ShowAsContext();
             Event.current.Use();
         }

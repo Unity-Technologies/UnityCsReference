@@ -81,8 +81,9 @@ namespace UnityEditor
             set;
         }
 
-        [StaticAccessor("SelectionBindings", StaticAccessorType.DoubleColon)]
-        extern internal static void SetSelectionWithActiveObject([UnityMarshalAs(NativeType.ScriptingObjectPtr)] Object[] newSelection, Object activeObject);
+        // Native takes EntityIds. The object overloads convert here, skipping null and destroyed objects.
+        internal static void SetSelectionWithActiveObject(Object[] newSelection, Object activeObject)
+            => SetSelectionWithActiveEntityId(EntityIdsOf(newSelection), EntityIdOf(activeObject));
 
         [StaticAccessor("SelectionBindings", StaticAccessorType.DoubleColon)]
         extern internal static void SetSelectionWithActiveEntityId([NotNull] EntityId[] newSelection, EntityId activeObject);
@@ -93,8 +94,8 @@ namespace UnityEditor
             throw new InvalidOperationException("Use SetSelectionWithActiveEntityId.");
         }
 
-        [StaticAccessor("SelectionBindings", StaticAccessorType.DoubleColon)]
-        internal static extern void SetFullSelection([UnityMarshalAs(NativeType.ScriptingObjectPtr)] Object[] newSelection, Object activeObject, Object context, DataMode dataModeHint, bool notifyOnReselection);
+        internal static void SetFullSelection(Object[] newSelection, Object activeObject, Object context, DataMode dataModeHint, bool notifyOnReselection)
+            => SetFullSelectionByID(EntityIdsOf(newSelection), EntityIdOf(activeObject), EntityIdOf(context), dataModeHint, notifyOnReselection);
         internal static void SetFullSelection(Object[] newSelection, Object activeObject, Object context, DataMode dataModeHint)
             => SetFullSelection(newSelection, activeObject, context, dataModeHint, false);
 
@@ -152,8 +153,26 @@ namespace UnityEditor
         internal static int activeContextInstanceID { get => activeContextEntityId; }
 
         // The actual unfiltered selection from the Scene.
+        public static Object[] objects { get => GetObjects(); set => SetEntityIds(EntityIdsOf(value)); }
+
         [StaticAccessor("SelectionBindings", StaticAccessorType.DoubleColon)]
-        extern public static Object[] objects { [return: UnityMarshalAs(NativeType.ScriptingObjectPtr)]  get; [param:UnityMarshalAs(NativeType.ScriptingObjectPtr)] set; }
+        [return: UnityMarshalAs(NativeType.ScriptingObjectPtr)]
+        extern static Object[] GetObjects();
+
+        static EntityId EntityIdOf(Object obj) => obj != null ? obj.GetEntityId() : EntityId.None;
+
+        static EntityId[] EntityIdsOf(Object[] objects)
+        {
+            if (objects == null)
+                return Array.Empty<EntityId>();
+            var entityIds = new System.Collections.Generic.List<EntityId>(objects.Length);
+            foreach (var obj in objects)
+            {
+                if (obj != null)
+                    entityIds.Add(obj.GetEntityId());
+            }
+            return entityIds.ToArray();
+        }
 
         // The actual unfiltered selection from the Scene returned as instance ids instead of ::ref::objects.
         [StaticAccessor("SelectionBindings", StaticAccessorType.DoubleColon)]

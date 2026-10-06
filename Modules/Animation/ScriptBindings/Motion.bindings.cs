@@ -25,6 +25,7 @@ namespace UnityEngine
     public partial class Motion : Object
     {
         protected Motion() {}
+        protected internal Motion(global::UnityEngine.EntityId id) : base(id) {}
 
         extern public float averageDuration { get; }
         extern public float averageAngularSpeed { get; }

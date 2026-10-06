@@ -18,17 +18,15 @@ namespace Unity.U2D.Physics
 {
     /// <undoc/>
     [StructLayout(LayoutKind.Sequential)]
-    static class PhysicsWorldRenderer
+    static partial class PhysicsWorldRenderer
     {
-        static readonly string s_RenderCommandBufferName = "PhysicsCore2D.PhysicsWorld.Renderer";
-        // Engine-internal renderer state. This class lives in an engine module (not reloadable user code) and holds no references to user code:
-        // the render callbacks point at its own methods and the resources are engine objects, all of which remain valid across a user-code reload.
+        // Engine-internal renderer state. This class lives in an engine module (not reloadable user code) and holds no references to user code.
+        // The render callbacks point at its own methods and the resources are engine objects, all of which remain valid across a user-code reload.
         // ShutdownRendering() (invoked by native code) is what disposes these, so they are safe to persist.
-        [NoAutoStaticsCleanup] static bool s_IsInitialized = false; // engine-internal init flag, no user-code reference — safe to persist across a code reload
-        [NoAutoStaticsCleanup] static bool s_UsingBIRP = false; // engine-internal render-pipeline flag, no user-code reference — safe to persist across a code reload
-        [NoAutoStaticsCleanup] static CommandBuffer s_RendererCommandBuffer = null; // engine CommandBuffer disposed by ShutdownRendering (native), no user-code reference — safe to persist across a code reload
-        [NoAutoStaticsCleanup] static DrawerGroup[] s_DrawerGroups = null; // engine drawer groups disposed by ShutdownRendering (native), no user-code reference — safe to persist across a code reload
-        [NoAutoStaticsCleanup] static Mesh s_RenderMesh = null; // engine Mesh destroyed by ShutdownRendering (native), no user-code reference — safe to persist across a code reload
+        [NoAutoStaticsCleanup] static bool s_IsInitialized = false; // engine-internal init flag, no user-code reference, safe to persist across a code reload
+        [NoAutoStaticsCleanup] static CommandBuffer s_RendererCommandBuffer = null; // engine CommandBuffer disposed by ShutdownRendering (native), no user-code reference, safe to persist across a code reload
+        [NoAutoStaticsCleanup] static DrawerGroup[] s_DrawerGroups = null; // engine drawer groups disposed by ShutdownRendering (native), no user-code reference, safe to persist across a code reload
+        [NoAutoStaticsCleanup] static Mesh s_RenderMesh = null; // engine Mesh destroyed by ShutdownRendering (native), no user-code reference, safe to persist across a code reload
 
         // Shader property IDs resolved once from fixed names and never reassigned; readonly unmanaged value types are auto-exempt.
         static readonly int s_ElementBufferShaderProperty = Shader.PropertyToID("element_buffer");
@@ -37,9 +35,11 @@ namespace Unity.U2D.Physics
         static readonly int s_ThicknessShaderProperty = Shader.PropertyToID("thickness");
         static readonly int s_FillAlphaShaderProperty = Shader.PropertyToID("fillAlpha");
 
+        static readonly string s_RenderCommandBufferName = "PhysicsCore2D.PhysicsWorld.Renderer";
+
+        // Profiler markers.
         static readonly ProfilerMarker s_DrawWorldsMarker = new ProfilerMarker("PhysicsCore2D.DrawWorlds");
-        static readonly ProfilerMarker s_DrawWorldsExecuteRenderCommandsBIRPMarker = new ProfilerMarker("PhysicsCore2D.DrawWorlds.ExecuteRenderCommands (BIRP)");
-        static readonly ProfilerMarker s_DrawWorldsExecuteRenderCommandsSRPMarker = new ProfilerMarker("PhysicsCore2D.DrawWorlds.ExecuteRenderCommands (SRP)");
+        static readonly ProfilerMarker s_DrawWorldsExecuteRenderCommandsMarker = new ProfilerMarker("PhysicsCore2D.DrawWorlds.ExecuteRenderCommands");
         static readonly ProfilerMarker s_DrawWorldsAddRenderCommandsMarker = new ProfilerMarker("PhysicsCore2D.DrawWorlds.AddRenderCommands");
         static readonly ProfilerMarker s_DrawWorldsWorldDrawEventMarker = new ProfilerMarker("PhysicsCore2D.DrawWorlds.WorldDrawEvent");
         static readonly ProfilerMarker s_DrawWorldsPolygonCommandMarker = new ProfilerMarker("PhysicsCore2D.DrawWorlds.PolygonCommand");
@@ -56,32 +56,27 @@ namespace Unity.U2D.Physics
             if (s_IsInitialized)
                 return;
 
-            // Flag if using the built-in render pipeline or not.
-            s_UsingBIRP = GraphicsSettings.currentRenderPipeline == null;
-
             // Register render callback.
-            if (s_UsingBIRP)
-                Camera.onPostRender += RenderWorlds_BIRP;
-            else
-                RenderPipelineManager.endContextRendering += RenderWorlds_SRP;
+            RenderPipelineManager.endContextRendering += RenderWorlds;
 
             // Flag as initialized.
             s_IsInitialized = true;
         }
 
         /// <undoc/>
+        [OnCodeUnloading]
         [RequiredByNativeCode]
         static void ShutdownRendering()
         {
+            // Runs on code unloading so the Unity objects used for rendering are released while they are still valid.
+            // Native calls it outside a code reload, such as when rendering is disabled or the editor quits.
+
             // Finish if not initialized.
             if (!s_IsInitialized)
                 return;
 
             // Unregister render callback.
-            if (s_UsingBIRP)
-                Camera.onPostRender -= RenderWorlds_BIRP;
-            else
-                RenderPipelineManager.endContextRendering -= RenderWorlds_SRP;
+            RenderPipelineManager.endContextRendering -= RenderWorlds;
 
             // Dispose of the drawer groups.
             if (s_DrawerGroups != null)
@@ -162,51 +157,14 @@ namespace Unity.U2D.Physics
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         static bool IsCameraTypeValid(Camera camera) => (camera.cameraType & (CameraType.Game | CameraType.SceneView)) != 0;
 
-        // Map a camera (already validated as Game or SceneView) to the matching DrawTarget so the per-world draw filter
-        // can compare it against each world's drawTarget. A camera is only ever one view, never Both.
+        // Map a camera (already validated as Game or SceneView) to the matching DrawTarget so the per-world draw filter can compare it against each world's drawTarget.
+        // A camera is only ever one view, never Both.
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         static PhysicsWorld.DrawTarget GetCameraDrawTarget(Camera camera) =>
             camera.cameraType == CameraType.SceneView ? PhysicsWorld.DrawTarget.SceneView : PhysicsWorld.DrawTarget.GameView;
 
         /// <undoc/>
-        static void RenderWorlds_BIRP(Camera camera)
-        {
-            // Ensure the camera type is valid.
-            if (!IsCameraTypeValid(camera))
-                return;
-
-            // Finish if rendering is not allowed and we're not always drawing worlds.
-            var isRenderingAllowed = PhysicsWorld.isRenderingAllowed;
-            var alwaysDrawWorlds = PhysicsWorld.alwaysDrawWorlds;
-            if (!isRenderingAllowed && !alwaysDrawWorlds)
-                return;
-
-            using (s_DrawWorldsMarker.Auto())
-            {
-
-                // Draw all the worlds.
-                PhysicsWorld.DrawAllWorlds(drawAABB: GetCameraViewAABB(camera), cameraTarget: GetCameraDrawTarget(camera));
-
-                // Render if allowed.
-                if (isRenderingAllowed && s_RendererCommandBuffer != null)
-                {
-                    using (s_DrawWorldsExecuteRenderCommandsBIRPMarker.Auto())
-                    {
-
-                        // We're not custom rendering so render the final command buffer.
-                        Graphics.ExecuteCommandBuffer(s_RendererCommandBuffer);
-
-                        // Clear the render command buffer.
-                        s_RendererCommandBuffer.Clear();
-
-                    }
-                }
-
-            }
-        }
-
-        /// <undoc/>
-        static void RenderWorlds_SRP(ScriptableRenderContext context, List<Camera> cameras)
+        static void RenderWorlds(ScriptableRenderContext context, List<Camera> cameras)
         {
             // Not sure if this can happen but protect against it regardless.
             if (cameras.Count == 0)
@@ -225,29 +183,24 @@ namespace Unity.U2D.Physics
             if (!isRenderingAllowed && !alwaysDrawWorlds)
                 return;
 
+            using (s_DrawWorldsMarker.Auto())
             {
-                using (s_DrawWorldsMarker.Auto())
+                // Draw all the worlds.
+                PhysicsWorld.DrawAllWorlds(drawAABB: GetCameraViewAABB(camera), cameraTarget: GetCameraDrawTarget(camera));
+
+                // Render if allowed.
+                if (isRenderingAllowed && s_RendererCommandBuffer != null)
                 {
-
-                    // Draw all the worlds.
-                    PhysicsWorld.DrawAllWorlds(drawAABB: GetCameraViewAABB(camera), cameraTarget: GetCameraDrawTarget(camera));
-
-                    // Render if allowed.
-                    if (isRenderingAllowed && s_RendererCommandBuffer != null)
+                    using (s_DrawWorldsExecuteRenderCommandsMarker.Auto())
                     {
-                        using (s_DrawWorldsExecuteRenderCommandsSRPMarker.Auto())
-                        {
 
-                            // Render the final command buffer.
-                            context.ExecuteCommandBuffer(s_RendererCommandBuffer);
-                            context.Submit();
+                        // Render the final command buffer.
+                        context.ExecuteCommandBuffer(s_RendererCommandBuffer);
+                        context.Submit();
 
-                            // Clear the render command buffer.
-                            s_RendererCommandBuffer.Clear();
-
-                        }
+                        // Clear the render command buffer.
+                        s_RendererCommandBuffer.Clear();
                     }
-
                 }
             }
         }
@@ -280,7 +233,6 @@ namespace Unity.U2D.Physics
                         // Draw the drawer group.
                         drawerGroup.Draw(rendererCommandBuffer: s_RendererCommandBuffer, drawResults: ref drawResults, thickness: thickness, fillAlpha: fillAlpha, transformPlane: transformPlane, transformPlaneCustomMatrix: ref transformPlaneCustomMatrix);
                     }
-
                 }
             }
 
@@ -292,7 +244,6 @@ namespace Unity.U2D.Physics
 
                     // Yes, so call the world draw results event.
                     PhysicsEvents.InvokeWorldDrawResultsEvent(physicsWorld, ref drawResults);
-
                 }
             }
         }
@@ -406,7 +357,6 @@ namespace Unity.U2D.Physics
 
                     using (s_DrawWorldsPolygonCommandMarker.Auto())
                     {
-
                         // Set-up command buffer.
                         m_CommandData[0].indexCountPerInstance = GetMesh().GetIndexCount(0);
                         m_CommandData[0].instanceCount = (uint)count;
@@ -433,7 +383,6 @@ namespace Unity.U2D.Physics
 
                         // Draw to the renderer command buffer.
                         rendererCommandBuffer.DrawMeshInstancedIndirect(GetMesh(), 0, m_ShaderMaterial, 0, m_GraphicsBuffer, 0, m_ShaderMaterialPropertyBlock);
-
                     }
                 }
             }
@@ -487,7 +436,6 @@ namespace Unity.U2D.Physics
 
                         // Draw to the renderer command buffer.
                         rendererCommandBuffer.DrawMeshInstancedIndirect(GetMesh(), 0, m_ShaderMaterial, 0, m_GraphicsBuffer, 0, m_ShaderMaterialPropertyBlock);
-
                     }
                 }
             }
@@ -514,7 +462,6 @@ namespace Unity.U2D.Physics
 
                     using (s_DrawWorldsCapsuleCommandMarker.Auto())
                     {
-
                         // Set-up command buffer.
                         m_CommandData[0].indexCountPerInstance = GetMesh().GetIndexCount(0);
                         m_CommandData[0].instanceCount = (uint)count;
@@ -541,7 +488,6 @@ namespace Unity.U2D.Physics
 
                         // Draw to the renderer command buffer.
                         rendererCommandBuffer.DrawMeshInstancedIndirect(GetMesh(), 0, m_ShaderMaterial, 0, m_GraphicsBuffer, 0, m_ShaderMaterialPropertyBlock);
-
                     }
                 }
             }
@@ -568,7 +514,6 @@ namespace Unity.U2D.Physics
 
                     using (s_DrawWorldsLineCommandMarker.Auto())
                     {
-
                         // Set-up command buffer.
                         m_CommandData[0].indexCountPerInstance = GetMesh().GetIndexCount(0);
                         m_CommandData[0].instanceCount = (uint)count;
@@ -594,7 +539,6 @@ namespace Unity.U2D.Physics
 
                         // Draw to the renderer command buffer.
                         rendererCommandBuffer.DrawMeshInstancedIndirect(GetMesh(), 0, m_ShaderMaterial, 0, m_GraphicsBuffer, 0, m_ShaderMaterialPropertyBlock);
-
                     }
                 }
             }
@@ -621,7 +565,6 @@ namespace Unity.U2D.Physics
 
                     using (s_DrawWorldsPointCommandMarker.Auto())
                     {
-
                         // Set-up command buffer.
                         m_CommandData[0].indexCountPerInstance = GetMesh().GetIndexCount(0);
                         m_CommandData[0].instanceCount = (uint)count;
@@ -646,7 +589,6 @@ namespace Unity.U2D.Physics
 
                         // Draw to the renderer command buffer.
                         rendererCommandBuffer.DrawMeshInstancedIndirect(GetMesh(), 0, m_ShaderMaterial, 0, m_GraphicsBuffer, 0, m_ShaderMaterialPropertyBlock);
-
                     }
                 }
             }

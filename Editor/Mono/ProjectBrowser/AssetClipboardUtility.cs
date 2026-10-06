@@ -149,15 +149,13 @@ namespace UnityEditor
                     if (invalidName)
                         Debug.LogWarning($"Duplicated object '{asset.name}' does not have a valid name for an asset. The new asset will be called '{newAssetName}'.");
 
-                    var newPath = AssetDatabase.GenerateUniqueAssetPath(
-                        string.Format("{0}{1}{2}.{3}",
-                            Path.GetDirectoryName(assetPath),
-                            Path.DirectorySeparatorChar,
-                            newAssetName,
-                            extension)
-                    );
+                    var newPath = string.Format("{0}{1}{2}.{3}",
+                        Path.GetDirectoryName(assetPath),
+                        Path.DirectorySeparatorChar,
+                        newAssetName,
+                        extension);
 
-                    assetPath = GetValidPath(newPath, destination);
+                    assetPath = AssetDatabase.GenerateUniqueAssetPath(GetValidPath(newPath, destination));
                     AssetDatabase.CreateAsset(Object.Instantiate(asset), assetPath);
                     pastedObjects.Add(assetPath);
                 }
@@ -368,7 +366,7 @@ namespace UnityEditor
             if (target == null)
                 return assetPath;
 
-            string[] pathSplit = assetPath.Split('/');
+            string[] pathSplit = assetPath.Split('/', Path.DirectorySeparatorChar);
             return target + '/' + pathSplit[pathSplit.Length - 1];
         }
 

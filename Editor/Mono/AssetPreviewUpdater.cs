@@ -10,10 +10,17 @@ namespace UnityEditor
 {
     internal static class AssetPreviewUpdater
     {
-        [RequiredByNativeCode]
         public static Texture2D CreatePreviewForAsset(Object obj, Object[] subAssets, string assetPath)
         {
             return CreatePreview(obj, subAssets, assetPath, 128, 128);
+        }
+
+        // Called from native (AssetPreviewGeneration.cpp), which takes the EntityId of the preview texture.
+        [RequiredByNativeCode]
+        static EntityId CreatePreviewForAssetEntityId(Object obj, Object[] subAssets, string assetPath)
+        {
+            var preview = CreatePreviewForAsset(obj, subAssets, assetPath);
+            return ReferenceEquals(preview, null) ? EntityId.None : preview.GetEntityId();
         }
 
         // Generate a preview texture for an asset

@@ -11,6 +11,7 @@ namespace UnityEngine
     [NativeClass("LowerResBlitTexture", PersistentTypeId = 0x583d8c3f)]
     internal class LowerResBlitTexture : Object
     {
+        internal LowerResBlitTexture(global::UnityEngine.EntityId id) : base(id) {}
         [RequiredByNativeCode]
         internal void LowerResBlitTextureDontStripMe() {}
     }
@@ -18,6 +19,7 @@ namespace UnityEngine
     [global::UnityEngine.NativeClass("PreloadData", PersistentTypeId = 150)]
     internal class PreloadData : Object
     {
+        internal PreloadData(global::UnityEngine.EntityId id) : base(id) {}
         [RequiredByNativeCode]
         internal void PreloadDataDontStripMe() {}
     }

@@ -42,6 +42,12 @@ internal class BuildProfileBootstrapView : VisualElement
             m_PackageAddProgressLabel.text = TrText.buildProfileActivatingPlatform;
         }
 
+        if (initializationInfo.state == BuildProfileInitialization.State.ClaimingEntitlements)
+        {
+            StartSpinner();
+            m_PackageAddProgressLabel.text = TrText.buildProfileClaimingEntitlements;
+        }
+
         if (initializationInfo.state == BuildProfileInitialization.State.AwaitingExtension)
         {
             StartSpinner();

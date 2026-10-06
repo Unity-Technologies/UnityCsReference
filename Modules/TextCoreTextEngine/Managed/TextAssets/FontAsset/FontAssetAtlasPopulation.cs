@@ -24,8 +24,13 @@ namespace UnityEngine.TextCore.Text
     {
         // List and HashSet used for tracking font assets whose font atlas texture and character data needs updating.
         [AutoStaticsCleanupOnCodeReload]
+        // Pending-work queue: RegisterFontAssetForFontFeatureUpdate re-adds entries and the update pass
+        // drains it, so a queue cleared on reload refills from the assets that still need work.
+        [IgnoreForUAL0015("Pending-work queue, re-populated by the Register path and drained each update")]
         static List<FontAsset> k_FontAssets_FontFeaturesUpdateQueue = new List<FontAsset>();
         [AutoStaticsCleanupOnCodeReload]
+        // Membership index for the queue above; cleared and refilled in step with it.
+        [IgnoreForUAL0015("Membership index for the font-features update queue, refilled in step with it")]
         static HashSet<EntityId> k_FontAssets_FontFeaturesUpdateQueueLookup = new HashSet<EntityId>();
 
         uint GetGlyphIndexWithFallback(uint unicode)
@@ -48,13 +53,23 @@ namespace UnityEngine.TextCore.Text
         }
 
         [AutoStaticsCleanupOnCodeReload]
+        // Pending-work queue: the Register path re-adds entries and the update pass drains it, so a queue
+        // cleared on reload refills from the assets that still need work.
+        [IgnoreForUAL0015("Pending-work queue, re-populated by the Register path and drained each update")]
         static List<FontAsset> k_FontAssets_KerningUpdateQueue = new List<FontAsset>();
         [AutoStaticsCleanupOnCodeReload]
+        // Membership index for the queue above; cleared and refilled in step with it.
+        [IgnoreForUAL0015("Membership index for the kerning update queue, refilled in step with it")]
         static HashSet<EntityId> k_FontAssets_KerningUpdateQueueLookup = new HashSet<EntityId>();
 
         [AutoStaticsCleanupOnCodeReload]
+        // Pending-work queue: the Register path re-adds entries and the update pass drains it, so a queue
+        // cleared on reload refills from the atlas textures that still need work.
+        [IgnoreForUAL0015("Pending-work queue, re-populated by the Register path and drained each update")]
         static List<Texture2D> k_FontAssets_AtlasTexturesUpdateQueue = new List<Texture2D>();
         [AutoStaticsCleanupOnCodeReload]
+        // Membership index for the queue above; cleared and refilled in step with it.
+        [IgnoreForUAL0015("Membership index for the atlas-textures update queue, refilled in step with it")]
         static HashSet<EntityId> k_FontAssets_AtlasTexturesUpdateQueueLookup = new HashSet<EntityId>();
 
         internal static void RegisterFontAssetForFontFeatureUpdate(FontAsset fontAsset)
@@ -123,7 +138,11 @@ namespace UnityEngine.TextCore.Text
             int count = k_FontAssets_AtlasTexturesUpdateQueueLookup.Count;
 
             for (int i = 0; i < count; i++)
+            {
                 k_FontAssets_AtlasTexturesUpdateQueue[i].Apply(false, false);
+
+                OnAtlasTextureUploaded?.Invoke(k_FontAssets_AtlasTexturesUpdateQueue[i]);
+            }
 
             if (count > 0)
             {
@@ -504,11 +523,10 @@ namespace UnityEngine.TextCore.Text
                 return isMissingCharacters ? false : true;
             }
 
-            // Resize the Atlas Texture to the appropriate size
-            if (m_AtlasTextures[m_AtlasTextureIndex].width <= 1 || m_AtlasTextures[m_AtlasTextureIndex].height <= 1)
+            if (!TryResizeAtlasTexture())
             {
-                m_AtlasTextures[m_AtlasTextureIndex].Reinitialize(m_AtlasWidth, m_AtlasHeight);
-                FontEngine.ResetAtlasTexture(m_AtlasTextures[m_AtlasTextureIndex]);
+                missingUnicodes = unicodes;
+                return false;
             }
 
             Glyph[] glyphs;
@@ -590,6 +608,7 @@ namespace UnityEngine.TextCore.Text
 
             // Makes the changes to the font asset persistent.
             RegisterResourceForUpdate?.Invoke(this);
+            NotifyAtlasTexturesUploaded();
 
             // Populate list of missing characters
             foreach (var character in m_CharactersToAdd)
@@ -629,12 +648,8 @@ namespace UnityEngine.TextCore.Text
                     return true;
             }
 
-            // Resize the Atlas Texture to the appropriate size
-            if (m_AtlasTextures[m_AtlasTextureIndex].width <= 1 || m_AtlasTextures[m_AtlasTextureIndex].height <= 1)
-            {
-                m_AtlasTextures[m_AtlasTextureIndex].Reinitialize(m_AtlasWidth, m_AtlasHeight);
-                FontEngine.ResetAtlasTexture(m_AtlasTextures[m_AtlasTextureIndex]);
-            }
+            if (!TryResizeAtlasTexture())
+                return false;
 
             bool allGlyphsAddedToTexture = false;
             while (!allGlyphsAddedToTexture)
@@ -849,6 +864,29 @@ namespace UnityEngine.TextCore.Text
             }
         }
 
+        // A build empties the atlas before it writes its data, and the Editor can still repaint in
+        // between, so growing the atlas back now would put it into the build.
+        bool TryResizeAtlasTexture()
+        {
+            Texture2D texture = m_AtlasTextures[m_AtlasTextureIndex];
+            if (texture.width > 1 && texture.height > 1)
+                return true;
+
+            if (m_ClearedForBuild && (EditorIsBuildingPlayer?.Invoke() ?? false))
+                return false;
+
+            if (texture.isReadable == false)
+                SetAtlasTextureIsReadable?.Invoke(texture, true);
+
+            texture.Reinitialize(m_AtlasWidth, m_AtlasHeight);
+            FontEngine.ResetAtlasTexture(texture);
+
+            // Writing the asset re-reads the texture, which drops the flags, so they are restored as it is re-inflated.
+            OnAtlasTexturePersistenceChanged?.Invoke(this);
+            OnAtlasTextureUploaded?.Invoke(texture);
+            return true;
+        }
+
         bool TryAddGlyphToAtlas(uint glyphIndex, out Glyph glyph, bool populateLigatures = true)
         {
             glyph = null;
@@ -858,12 +896,8 @@ namespace UnityEngine.TextCore.Text
                 return false;
             }
 
-            // Resize the Atlas Texture to the appropriate size
-            if (m_AtlasTextures[m_AtlasTextureIndex].width <= 1 || m_AtlasTextures[m_AtlasTextureIndex].height <= 1)
-            {
-                m_AtlasTextures[m_AtlasTextureIndex].Reinitialize(m_AtlasWidth, m_AtlasHeight);
-                FontEngine.ResetAtlasTexture(m_AtlasTextures[m_AtlasTextureIndex]);
-            }
+            if (!TryResizeAtlasTexture())
+                return false;
 
             // Set texture upload mode to batching texture.Apply()
             // This will be set back to true in TryAddGlyphToTexture
@@ -986,6 +1020,18 @@ namespace UnityEngine.TextCore.Text
             return allGlyphsAddedToTexture;
         }
 
+        void NotifyAtlasTexturesUploaded()
+        {
+            if (OnAtlasTextureUploaded == null || m_AtlasTextures == null)
+                return;
+
+            for (int i = 0; i < m_AtlasTextures.Length; i++)
+            {
+                if (m_AtlasTextures[i] != null)
+                    OnAtlasTextureUploaded.Invoke(m_AtlasTextures[i]);
+            }
+        }
+
         void SetupNewAtlasTexture()
         {
             m_AtlasTextureIndex += 1;
@@ -995,7 +1041,7 @@ namespace UnityEngine.TextCore.Text
                 Array.Resize(ref m_AtlasTextures, m_AtlasTextures.Length * 2);
 
             // Initialize new atlas texture
-            TextureFormat texFormat = ((GlyphRasterModes)m_AtlasRenderMode & GlyphRasterModes.RASTER_MODE_COLOR) == GlyphRasterModes.RASTER_MODE_COLOR ? TextureFormat.RGBA32 : TextureFormat.Alpha8;
+            TextureFormat texFormat = IsColor() ? TextureFormat.RGBA32 : TextureFormat.Alpha8;
             m_AtlasTextures[m_AtlasTextureIndex] = new Texture2D(m_AtlasWidth, m_AtlasHeight, texFormat, false);
             m_AtlasTextures[m_AtlasTextureIndex].hideFlags = m_AtlasTextures[0].hideFlags;
             FontEngine.ResetAtlasTexture(m_AtlasTextures[m_AtlasTextureIndex]);
@@ -1011,6 +1057,7 @@ namespace UnityEngine.TextCore.Text
             tex.name = atlasTexture.name + " " + m_AtlasTextureIndex;
 
             OnFontAssetTextureChanged?.Invoke(tex, this);
+            OnAtlasTexturePersistenceChanged?.Invoke(this);
         }
 
         Character CreateCharacterAndAddToCache(uint unicode, Glyph glyph, FontStyles fontStyle, TextFontWeight fontWeight)

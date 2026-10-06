@@ -2,14 +2,13 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: GraphToolkit not yet converted
 using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using Unity.Collections;
-using Unity.GraphToolkit.CSO;
+using Unity.CSO;
 using UnityEditor;
 using UnityEditor.UIElements;
 using UnityEngine;
@@ -621,13 +620,13 @@ namespace Unity.GraphToolkit.Editor
         {
             if (value == null && element is not ObjectField) return;
 
-            // Primitives 
+            // Primitives
             if (element is IntegerField intF) { intF.SetValueWithoutNotify((int)value); return; }
             if (element is FloatField floatF) { floatF.SetValueWithoutNotify((float)value); return; }
             if (element is DoubleField doubleF) { doubleF.SetValueWithoutNotify((double)value); return; }
             if (element is LongField longF) { longF.SetValueWithoutNotify((long)value); return; }
             if (element is Toggle tog) { tog.SetValueWithoutNotify((bool)value); return; }
-            
+
             // TextField handles 'string' AND 'char'
             if (element is TextField textF) { textF.SetValueWithoutNotify(value.ToString()); return; }
 
@@ -669,22 +668,22 @@ namespace Unity.GraphToolkit.Editor
                 }
                 return;
             }
-            
+
             // LayerMaskField takes 'int', but the value might be 'LayerMask' struct
-            if (element is LayerMaskField layF) 
-            { 
+            if (element is LayerMaskField layF)
+            {
                 int intVal = value is LayerMask lm ? lm.value : (int)value;
-                layF.SetValueWithoutNotify(intVal); 
-                return; 
+                layF.SetValueWithoutNotify(intVal);
+                return;
             }
 
             // Objects (Object and GameObject)
             if (element is ObjectField objF) { objF.SetValueWithoutNotify((Object)value); return; }
 
             // Fallback 1: Reflection
-            var method = element.GetType().GetMethod("SetValueWithoutNotify", 
+            var method = element.GetType().GetMethod("SetValueWithoutNotify",
                 BindingFlags.Public | BindingFlags.Instance);
-            
+
             if (method != null)
             {
                 method.Invoke(element, new[] { value });
@@ -700,4 +699,3 @@ namespace Unity.GraphToolkit.Editor
         }
     }
 }
-#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

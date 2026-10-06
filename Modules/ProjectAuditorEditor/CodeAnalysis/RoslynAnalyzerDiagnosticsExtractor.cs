@@ -20,7 +20,7 @@ namespace Unity.ProjectAuditor.Editor.CodeAnalysis
     static class RoslynAnalyzerDiagnosticsExtractor
     {
         const string k_ToolRelativePath = "RoslynAnalyzers/ProjectAuditorRules.DiagnosticsInspector.dll";
-        const string k_CommonAnalyzerRelativePath = "Unity.Analyzers/Unity.Analyzers.Common.dll"; // Load whitelisted analyzers from Unity's common set
+        static readonly string[] k_UnityAnalyzerRelativePaths = ["Unity.Analyzers/Unity.Analyzers.Common.dll", "Unity.Analyzers/Unity.Analyzers.LongLiving.dll"]; // Load whitelisted analyzers from Unity's set
 
 #pragma warning disable CS0649 // assigned during JSON deserialization
 
@@ -56,12 +56,18 @@ namespace Unity.ProjectAuditor.Editor.CodeAnalysis
         }
 
         /// <summary>
-        /// Resolves the full path to Unity's bundled "common" analyzer, or null if it isn't present.
+        /// Resolves the full paths to Unity's bundled analyzers, or null if they aren't present.
         /// </summary>
-        public static string ResolveUnityCommonAnalyzerPath()
+        public static List<string> ResolveUnityAnalyzerPaths()
         {
-            var path = Path.Combine(EditorApplication.applicationBuildPipelinePath, k_CommonAnalyzerRelativePath);
-            return File.Exists(path) ? Path.GetFullPath(path) : null;
+            var result = new List<string>();
+            foreach (var path in k_UnityAnalyzerRelativePaths)
+            {
+                var buildPath = Path.Combine(EditorApplication.applicationBuildPipelinePath, path);
+                if (File.Exists(buildPath))
+                    result.Add(Path.GetFullPath(buildPath));
+            }
+            return result;
         }
 
         /// <summary>

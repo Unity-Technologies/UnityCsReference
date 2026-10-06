@@ -33,7 +33,7 @@ namespace Unity.UI.Builder
             if ((fakeSelector == null || fakeSelector.rule != complexSelector.rule))
             {
                 Undo.RegisterCompleteObjectUndo(styleSheet, BuilderConstants.AddNewSelectorUndoMessage);
-                complexSelector.rule.AddSelector(fakeSelectorString);
+                fakeSelector = complexSelector.rule.AddSelector(fakeSelectorString);
             }
 
             selectorElement.SetProperty(BuilderConstants.ElementLinkedFakeStyleSelectorVEPropertyName, fakeSelector);

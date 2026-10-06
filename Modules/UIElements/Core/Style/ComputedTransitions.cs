@@ -7,6 +7,7 @@ using System;
 using System.Collections.Generic;
 using UnityEngine.UIElements.Experimental;
 using UnityEngine.UIElements.StyleSheets;
+using static UnityEngine.UIElements.StyleSheets.StyleHashUtility;
 
 namespace UnityEngine.UIElements
 {
@@ -81,18 +82,24 @@ namespace UnityEngine.UIElements
             return computedTransitions;
         }
 
-        private static int GetTransitionHashCode(ref ComputedStyle cs)
+        // The per-list lengths are load bearing: StyleCache trusts this hash with no content check.
+        internal static int GetTransitionHashCode(ref ComputedStyle cs)
         {
-            var hash = new HashCode();
-            hash.Add(cs.transitionDelay.Length);
-            foreach (var x in cs.transitionDelay) hash.Add(x);
-            hash.Add(cs.transitionDuration.Length);
-            foreach (var x in cs.transitionDuration) hash.Add(x);
-            hash.Add(cs.transitionProperty.Length);
-            foreach (var x in cs.transitionProperty) hash.Add(x);
-            hash.Add(cs.transitionTimingFunction.Length);
-            foreach (var x in cs.transitionTimingFunction) hash.Add(x);
-            return hash.ToHashCode();
+            var delays = cs.transitionDelay;
+            var durations = cs.transitionDuration;
+            var properties = cs.transitionProperty;
+            var timingFunctions = cs.transitionTimingFunction;
+
+            var hash = k_OffsetBasis;
+            hash = Mix(hash, delays.Length);
+            foreach (var x in delays) hash = Mix(hash, x.GetHashCode());
+            hash = Mix(hash, durations.Length);
+            foreach (var x in durations) hash = Mix(hash, x.GetHashCode());
+            hash = Mix(hash, properties.Length);
+            foreach (var x in properties) hash = Mix(hash, (int)x);
+            hash = Mix(hash, timingFunctions.Length);
+            foreach (var x in timingFunctions) hash = Mix(hash, x.GetHashCode());
+            return Fold(hash);
         }
 
         internal static bool SameTransitionProperty(ref ComputedStyle x, ref ComputedStyle y)

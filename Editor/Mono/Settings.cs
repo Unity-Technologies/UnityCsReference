@@ -187,6 +187,10 @@ namespace UnityEditor
         [NoAutoStaticsCleanup] // registered editor preferences keyed by name (internal pref types only); persists across reload
         static SortedList<string, object> m_Prefs = new SortedList<string, object>();
         [AutoStaticsCleanupOnCodeReload]
+        // Subscribers (OverlayPrefs, RectTransformEditor, scene-view overlays, UI Toolkit authoring
+        // controls) all re-register through their own lifecycle after a code reload: OnEnable,
+        // [OnCodeLoaded], constructors of recreated instances, or panel attach events.
+        [IgnoreForUAL0015("Subscribers re-register through their own lifecycle after a code reload")]
         public static Action<string, Type> settingChanged;
         [AutoStaticsCleanupOnCodeReload]
         public static Action settingsReverted;
@@ -340,6 +344,7 @@ namespace UnityEditor
         public static implicit operator float(SavedFloat s) => s.value;
     }
 
+    [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
     internal class SavedBool : SavedValue<bool>
     {
         public SavedBool(string name, bool value) : base(name, value) { }

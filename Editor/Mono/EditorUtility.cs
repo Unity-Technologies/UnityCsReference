@@ -44,6 +44,7 @@ namespace UnityEditor
     [global::UnityEngine.NativeClass("SceneAsset", PersistentTypeId = 1032)]
     public class SceneAsset : Object
     {
+        internal SceneAsset(global::UnityEngine.EntityId id) : base(id) {}
         private SceneAsset() {}
     }
 
@@ -74,6 +75,9 @@ namespace UnityEditor
         public delegate void SelectMenuItemFunction(object userData, string[] options, int selected);
 
         [AutoStaticsCleanupOnCodeReload]
+        // EditorContextualMenuManager re-registers its pointer-reset handler on every code load from its
+        // static constructor.
+        [IgnoreForUAL0015("Event re-subscribed on every code load by EditorContextualMenuManager's static constructor")]
         internal static event Action onResetMouseDown;
 
         public static bool LoadWindowLayout(string path)
@@ -348,8 +352,11 @@ namespace UnityEditor
             if (!editor || editor.hideInspector)
                 return true;
 
-            // Check for missing scripts or check is serializedObject can be created.
-            if (editor.target == null && editor.serializedObject?.FindProperty("m_Script") != null)
+            // Null target renders in two cases: missing-script MonoBehaviours
+            // (SO carries m_Script) and data-component editors.
+            if (editor.target == null
+                && (editor.isDataComponentEditor
+                    || editor.serializedObject?.FindProperty("m_Script") != null))
                 return false;
 
             if (editor.inspectorMode != InspectorMode.Normal)

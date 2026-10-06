@@ -16,21 +16,21 @@ namespace Unity.SmartStrings.Extensions;
 /// Resolution goes through <see cref="PropertyContainer"/>, so any type Unity.Properties can build a
 /// property bag for is supported, including plain classes and structs and
 /// <see cref="UnityEngine.MonoBehaviour"/> fields, with no property bag registered in advance.
-/// <para>
+/// 
 /// The members that resolve mirror Unity's serialization rules: public instance fields and members
 /// marked with <see cref="CreatePropertyAttribute"/> or <see cref="UnityEngine.SerializeField"/>.
 /// Methods and plain, non-attributed properties are not visited, so those selectors return
 /// <see langword="false"/> and are left to a later source.
-/// </para>
-/// <para>
+/// 
+/// 
 /// Matching is ordinal by default. When the formatter is configured for case-insensitive placeholders,
 /// a selector with no exact member match is resolved by a case-insensitive scan of the members,
 /// returning the first match.
-/// </para>
-/// <para>
+/// 
+/// 
 /// On fully ahead-of-time compiled players, Unity.Properties may be unable to build a property bag
 /// for a type that is not referenced elsewhere.
-/// </para>
+/// 
 /// </remarks>
 [Serializable]
 public class PropertiesSource : Source

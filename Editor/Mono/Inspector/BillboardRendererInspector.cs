@@ -13,7 +13,7 @@ namespace UnityEditor
     {
         class Styles
         {
-            public static readonly GUIContent billboard = EditorGUIUtility.TrTextContent("Billboard");
+            public static readonly GUIContent billboard = L10n.TextContent("Billboard", null, null, null);
         }
 
         private SerializedProperty m_Billboard;

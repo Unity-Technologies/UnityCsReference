@@ -53,6 +53,41 @@ namespace UnityEngine.UIElements.UIR
         RegisteredForBackdropFilterCallbacks = 1 << 10,
         // Curved UI: the engine-owned curvature mesh modifier is registered on the owner.
         HasCurvatureModifier = 1 << 11,
+        // Value of the owner's isWorldSpaceRootPanelComponent at insertion time, which decides both the
+        // render-chain cut and whether z-indexed descendants may be promoted past this element.
+        CutsRenderChain = 1 << 12,
+        HasBackdropFilter = 1 << 13,
+
+        // Set when a descendant is dirty for the matching class, so a dirty-class pass can descend
+        // straight to the dirty elements instead of walking the whole tree. One bit per class rather
+        // than one shared bit, because the five passes are separate: a shared bit would make each of
+        // them descend the union of all the classes' closures.
+        //
+        // These must stay contiguous and in RenderDataDirtyTypeClasses order -- the bit for a class is
+        // obtained by shifting SubtreeDirtyClipping left by the class index.
+        SubtreeDirtyClipping = 1 << 14,
+        SubtreeDirtyOpacity = 1 << 15,
+        SubtreeDirtyColor = 1 << 16,
+        SubtreeDirtyTransformSize = 1 << 17,
+        SubtreeDirtyVisuals = 1 << 18,
+
+        SubtreeDirtyAll = SubtreeDirtyClipping | SubtreeDirtyOpacity | SubtreeDirtyColor | SubtreeDirtyTransformSize | SubtreeDirtyVisuals,
+
+        // Set on a parent that holds a ChildrenDirtyTracker, so the walk skips the ExtraRenderData lookup
+        // for the parents that never needed one.
+        HasChildrenTracker = 1 << 19,
+
+        // Set while this element sits in its parent's ChildrenDirtyTracker.
+        TrackedByParent = 1 << 20,
+
+        // Set on a parent that has given up on tracking which of its children are dirty, because too many
+        // of them are. Its walk goes back to the child list until the subtree comes clean. A new tracker
+        // starts in this state, since the children dirtied before it are not tracked.
+        ChildrenTrackerSaturated = 1 << 21,
+
+        // Set on a parent whose children's sibling keys no longer order them: it just started tracking, or
+        // an insertion found no gap. The keys are rebuilt the next time its tracker is iterated.
+        ChildrenKeysStale = 1 << 22,
     }
 
     // This is intended for data that used infrequently, to such an extent, that it's not worth being directly in RenderChainVEData.
@@ -69,6 +104,24 @@ namespace UnityEngine.UIElements.UIR
         // callbacks never run while a render target is bound. The lists persist (empty) across pooled reuse.
         public List<MaterialPropertyBlock> filterCallbackPropertyBlocks;
         public List<MaterialPropertyBlock> backdropFilterCallbackPropertyBlocks;
+
+        // Backdrop-filter render state; live only while RenderData.hasBackdropFilterAllocated.
+        // The TextureId is a persistent handle, the RT is created during render and released next frame.
+        public TextureId backdropFilterTextureId;
+        public RenderTexture backdropFilterTemporaryTexture;
+
+        // Backdrop texture mapping, accounting for rotation.
+        public Vector2 backdropFilterUVBottomLeft;
+        public Vector2 backdropFilterUVTopLeft;
+        public Vector2 backdropFilterUVTopRight;
+        public Vector2 backdropFilterUVBottomRight;
+
+        // The element's world rect clipped to its ancestors, fixed at mesh-record time. The UV corners above
+        // are normalized within it, so the render phase sizes the texture from this and not from ve.worldBound.
+        public Rect backdropFilterRecordedRect;
+
+        // Null until this element first has ChildrenDirtyTracker.k_MinTrackedChildCount children.
+        public ChildrenDirtyTracker childrenTracker;
     }
 
     struct GraphicEntry
@@ -87,16 +140,16 @@ namespace UnityEngine.UIElements.UIR
         public RenderData parent, prevSibling, nextSibling;
         public RenderData firstChild, lastChild;
         public RenderData groupTransformAncestor, boneTransformAncestor;
-        public RenderData prevDirty, nextDirty; // Embedded doubly-linked list for dirty updates
         public RenderDataFlags flags;
         public int depthInRenderTree;
+        public int childCount;
+        public int siblingKey; // Gapped label ordering this element among its siblings; assigned by SpliceAfter.
         public RenderDataDirtyTypes dirtiedValues;
         public uint dirtyID;
         public RenderChainCommand firstHeadCommand, lastHeadCommand; // Sequential for the same owner
         public RenderChainCommand firstTailCommand, lastTailCommand; // Sequential for the same owner
         public bool localFlipsWinding;
         public bool worldFlipsWinding;
-        public bool worldTransformScaleZero;
 
         public ClipMethod clipMethod; // Self
         public int childrenStencilRef;
@@ -111,24 +164,9 @@ namespace UnityEngine.UIElements.UIR
 
         public BasicNode<GraphicEntry> graphicEntries;
 
-        // Texture ID for backdrop-filter effect (persistent handle, texture bound during render).
-        // Validity doubles as the lifecycle oracle: see hasBackdropFilterAllocated.
-        public TextureId backdropFilterTextureId;
-
-        // Temporary RenderTexture for backdrop-filter (created during render, released next frame)
-        public RenderTexture backdropFilterTemporaryTexture;
-
-        // UV corners for backdrop-filter texture mapping (accounts for rotation)
-        // Order: bottom-left, top-left, top-right, bottom-right
-        public Vector2 backdropFilterUVBottomLeft;
-        public Vector2 backdropFilterUVTopLeft;
-        public Vector2 backdropFilterUVTopRight;
-        public Vector2 backdropFilterUVBottomRight;
-
-        // True when backdrop-filter resources are currently allocated for this render data
-        // (TextureId reserved, panel and descendant counters incremented).
-        // Synchronized against owner.hasBackdropFilter by RenderEvents.SyncBackdropFilterState.
-        public bool hasBackdropFilterAllocated => backdropFilterTextureId.IsValid();
+        // True while this render data's ExtraRenderData holds live backdrop-filter state. A flag rather than a
+        // derived check, so a pooled ExtraRenderData's stale fields can never read as allocated.
+        public bool hasBackdropFilterAllocated => (flags & RenderDataFlags.HasBackdropFilter) != 0;
 
         // Curved UI: true while the engine-owned curvature mesh modifier is registered on the
         // owner. Synchronized against owner.hasCurvature by UIRCurvatureMeshModifier.SyncState. Packed
@@ -167,10 +205,10 @@ namespace UnityEngine.UIElements.UIR
             lastChild = null;
             groupTransformAncestor = null;
             boneTransformAncestor = null;
-            prevDirty = null;
-            nextDirty = null;
             flags = RenderDataFlags.IsClippingRectDirty;
             depthInRenderTree = 0;
+            childCount = 0;
+            siblingKey = 0;
             dirtiedValues = RenderDataDirtyTypes.None;
             dirtyID = 0;
             firstHeadCommand = null;
@@ -179,7 +217,6 @@ namespace UnityEngine.UIElements.UIR
             lastTailCommand = null;
             localFlipsWinding = false;
             worldFlipsWinding = false;
-            worldTransformScaleZero = false;
             clipMethod = ClipMethod.Undetermined;
             childrenStencilRef = 0;
             childrenMaskDepth = 0;
@@ -200,12 +237,6 @@ namespace UnityEngine.UIElements.UIR
             compositeOpacity = float.MaxValue; // Any unreasonable value will do to trip the opacity composer to work
             backgroundAlpha = 0.0f;
             graphicEntries = null;
-            backdropFilterTextureId = TextureId.invalid;
-            backdropFilterTemporaryTexture = null;
-            backdropFilterUVBottomLeft = Vector2.zero;
-            backdropFilterUVTopLeft = Vector2.zero;
-            backdropFilterUVTopRight = Vector2.zero;
-            backdropFilterUVBottomRight = Vector2.zero;
             pendingRepaint = false;
             pendingHierarchicalRepaint = false;
             m_EffectiveModifiers = null;
@@ -226,8 +257,6 @@ namespace UnityEngine.UIElements.UIR
             lastChild = null;
             groupTransformAncestor = null;
             boneTransformAncestor = null;
-            prevDirty = null;
-            nextDirty = null;
             firstHeadCommand = null;
             lastHeadCommand = null;
             firstTailCommand = null;
@@ -242,6 +271,25 @@ namespace UnityEngine.UIElements.UIR
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             get => (flags & RenderDataFlags.IsGroupTransform) == RenderDataFlags.IsGroupTransform;
+        }
+
+        public bool cutsRenderChain
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get => (flags & RenderDataFlags.CutsRenderChain) == RenderDataFlags.CutsRenderChain;
+        }
+
+        public bool hasChildrenTracker
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get => (flags & RenderDataFlags.HasChildrenTracker) == RenderDataFlags.HasChildrenTracker;
+        }
+
+        // Dirty itself, or on the path to a dirty descendant, for any dirty class.
+        public bool isOnDirtyPath
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get => dirtiedValues != RenderDataDirtyTypes.None || (flags & RenderDataFlags.SubtreeDirtyAll) != 0;
         }
 
         // Explicit z-index (auto is encoded as int.MinValue; 0 keeps document order, so both are excluded).
@@ -297,6 +345,13 @@ namespace UnityEngine.UIElements.UIR
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             get => (flags & RenderDataFlags.IsNestedRenderTreeRoot) == RenderDataFlags.IsNestedRenderTreeRoot;
+        }
+
+        // Defines its own transform space (a bone, a group, or a nested render-tree root): bone inheritance and re-pointing stop here.
+        public bool isBoneBarrier
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get => isGroupTransform || isNestedRenderTreeRoot || AllocatesID(transformID);
         }
 
         public bool isClippingRectDirty
@@ -439,27 +494,23 @@ namespace UnityEngine.UIElements.UIR
                         m_ClippingRectMinusGroup = clip;
                     else
                     {
-                        var clipMinusGroup = clip;
-
-                        // TODO: Skip for identity
-                        VisualElement.TransformAlignedRect(ref owner.worldTransformRef, ref clipMinusGroup);
-
+                        // Relative to the boundary directly: its inverse does not exist while it is collapsed.
+                        Matrix4x4 toBoundary;
                         if (groupTransformAncestor != null)
-                            VisualElement.TransformAlignedRect(ref groupTransformAncestor.owner.worldTransformInverse, ref clipMinusGroup);
+                            UIRUtility.ComputeMatrixRelativeToAncestor(this, groupTransformAncestor, out toBoundary);
                         else
-                            VisualElement.TransformAlignedRect(ref renderTree.rootRenderData.owner.worldTransformInverse, ref clipMinusGroup);
+                            UIRUtility.ComputeMatrixRelativeToRenderTree(this, out toBoundary);
+
+                        var clipMinusGroup = clip;
+                        VisualElement.TransformAlignedRect(ref toBoundary, ref clipMinusGroup);
 
                         m_ClippingRectMinusGroup = parentClipIsInfinite ? clipMinusGroup : IntersectClipRects(clipMinusGroup, inheritedClippingMinusGroup);
                     }
                 }
 
                 // Bring clip in render-tree space
-                VisualElement.TransformAlignedRect(ref owner.worldTransformRef, ref clip);
-
-                var tree = renderTree;
-                var treeRoot = tree.rootRenderData;
-                if (!tree.isRootRenderTree)
-                    VisualElement.TransformAlignedRect(ref treeRoot.owner.worldTransformInverse, ref clip);
+                UIRUtility.ComputeMatrixRelativeToRenderTree(this, out var toTree);
+                VisualElement.TransformAlignedRect(ref toTree, ref clip);
 
                 // Intersect with inherited clipping
                 m_ClippingRect = IntersectClipRects(clip, inheritedClipping);
@@ -472,7 +523,7 @@ namespace UnityEngine.UIElements.UIR
             }
         }
 
-        private static Rect IntersectClipRects(Rect rect, Rect parentRect)
+        internal static Rect IntersectClipRects(Rect rect, Rect parentRect)
         {
             float x1 = Mathf.Max(rect.xMin, parentRect.xMin);
             float x2 = Mathf.Min(rect.xMax, parentRect.xMax);

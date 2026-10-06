@@ -11,6 +11,18 @@ using UnityEngine.Scripting;
 
 namespace Unity.Loading
 {
+    // Mirror of native ContentFileSourceType, documented in Runtime/BaseClasses/BuiltContentFileId.h.
+    [UsedByNativeCode]
+    [VisibleToOtherModules]
+    internal enum ContentFileSourceType : byte
+    {
+        None = 0,
+        ObjectCluster = 1,
+        SingleImportedObject = 2,
+        SingleSourceObject = 3,
+        MonoScript = 4,
+        DefaultResources = 5,
+    }
 
     /// <summary>
     /// A low-level reference to an object within an asset, used to pull assets into a content directory build, and for on-demand
@@ -52,25 +64,29 @@ namespace Unity.Loading
     [UsedByNativeCode]
     public struct LoadableObjectId : IEquatable<LoadableObjectId>
     {
+        // Field order must match native LoadableObjectId (packed to 32 bytes).
         [VisibleToOtherModules] internal GUID m_GUID;
-        [VisibleToOtherModules] internal FileIdentifierType m_FileIdentifierType;
         [VisibleToOtherModules] internal long m_LocalIdentifierInFile;
-        internal Hash128 m_ObjectIdHash;
+        [VisibleToOtherModules] internal FileIdentifierType m_FileIdentifierType;
+        internal ContentFileSourceType m_ContentFileSourceType;
 
         /// <summary>
         /// True if this LoadableObjectId is initialized with valid data.
         /// </summary>
-        public readonly bool IsValid => ((!m_GUID.Empty() && m_LocalIdentifierInFile != 0) || m_ObjectIdHash.isValid);
+        public readonly bool IsValid => ((!m_GUID.Empty() && m_LocalIdentifierInFile != 0) || m_ContentFileSourceType != ContentFileSourceType.None);
 
         [ExcludeFromDocs]
         public static bool operator ==(LoadableObjectId x, LoadableObjectId y)
         {
-            if (x.m_ObjectIdHash.isValid != y.m_ObjectIdHash.isValid)
+            if (x.m_ContentFileSourceType != y.m_ContentFileSourceType)
                 return false;
 
-            if (x.m_ObjectIdHash.isValid)
+            if (x.m_ContentFileSourceType != ContentFileSourceType.None)
             {
-                return x.m_ObjectIdHash == y.m_ObjectIdHash;
+                // Baked ids compare by owning content file + target lfid. All MonoScripts share one
+                // file, so the (source script) GUID is not part of a MonoScript reference's identity.
+                return x.m_LocalIdentifierInFile == y.m_LocalIdentifierInFile &&
+                       (x.m_ContentFileSourceType == ContentFileSourceType.MonoScript || x.m_GUID == y.m_GUID);
             }
 
             // Otherwise use the guid, type, and fileid
@@ -102,8 +118,13 @@ namespace Unity.Loading
         {
             unchecked
             {
-                if (m_ObjectIdHash.isValid)
-                    return m_ObjectIdHash.GetHashCode();
+                if (m_ContentFileSourceType != ContentFileSourceType.None)
+                {
+                    var bakedHashCode = m_ContentFileSourceType == ContentFileSourceType.MonoScript ? 0 : m_GUID.GetHashCode();
+                    bakedHashCode = (bakedHashCode * 397) ^ (int)m_ContentFileSourceType;
+                    bakedHashCode = (bakedHashCode * 397) ^ m_LocalIdentifierInFile.GetHashCode();
+                    return bakedHashCode;
+                }
 
                 var hashCode = m_GUID.GetHashCode();
                 hashCode = (hashCode * 397) ^ (int)m_FileIdentifierType;
@@ -121,9 +142,10 @@ namespace Unity.Loading
             if (!IsValid)
                 return "{ Invalid }";
 
-            return $"{{ oid-{GetOrCalculateObjectIdHash()}, guid: {m_GUID}, fileID: {m_LocalIdentifierInFile}, type: {(int)m_FileIdentifierType} }}";
-        }
+            if (m_ContentFileSourceType != ContentFileSourceType.None)
+                return $"{{ guid: {m_GUID}, fileID: {m_LocalIdentifierInFile}, kind: {m_ContentFileSourceType} }}";
 
-        internal extern Hash128 GetOrCalculateObjectIdHash();
+            return $"{{ guid: {m_GUID}, fileID: {m_LocalIdentifierInFile}, type: {(int)m_FileIdentifierType} }}";
+        }
     }
 }

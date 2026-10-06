@@ -25,15 +25,15 @@ namespace UnityEditor
 
         class Texts
         {
-            public GUIContent linearX = EditorGUIUtility.TrTextContent("Linear  X", "Apply linear velocity to particles.");
-            public GUIContent orbitalX = EditorGUIUtility.TrTextContent("Orbital X", "Apply orbital velocity to particles, which will rotate them around the center of the system.");
-            public GUIContent orbitalOffsetX = EditorGUIUtility.TrTextContent("Offset  X", "Apply an offset to the center of rotation.");
+            public GUIContent linearX = L10n.TextContent("Linear  X", "Apply linear velocity to particles.", null, null);
+            public GUIContent orbitalX = L10n.TextContent("Orbital X", "Apply orbital velocity to particles, which will rotate them around the center of the system.", null, null);
+            public GUIContent orbitalOffsetX = L10n.TextContent("Offset  X", "Apply an offset to the center of rotation.", null, null);
             public GUIContent y = EditorGUIUtility.TextContent("Y");
             public GUIContent z = EditorGUIUtility.TextContent("Z");
-            public GUIContent space = EditorGUIUtility.TrTextContent("Space", "Specifies if the velocity values are in local space (rotated with the transform) or world space.");
-            public GUIContent speedMultiplier = EditorGUIUtility.TrTextContent("Speed Modifier", "Multiply the particle speed by this value");
-            public GUIContent radial = EditorGUIUtility.TrTextContent("Radial", "Apply radial velocity to particles, which will project them out from the center of the system.");
-            public GUIContent linearSpace = EditorGUIUtility.TrTextContent("Space", "Specifies if the velocity values are in local space (rotated with the transform) or world space.");
+            public GUIContent space = L10n.TextContent("Space", "Specifies if the velocity values are in local space (rotated with the transform) or world space.", null, null);
+            public GUIContent speedMultiplier = L10n.TextContent("Speed Modifier", "Multiply the particle speed by this value", null, null);
+            public GUIContent radial = L10n.TextContent("Radial", "Apply radial velocity to particles, which will project them out from the center of the system.", null, null);
+            public GUIContent linearSpace = L10n.TextContent("Space", "Specifies if the velocity values are in local space (rotated with the transform) or world space.", null, null);
             public string[] spaces = { "Local", "World" };
         }
         [NoAutoStaticsCleanup] // lazy-initialized UI text cache

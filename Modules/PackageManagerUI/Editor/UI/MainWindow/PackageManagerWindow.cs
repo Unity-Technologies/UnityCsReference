@@ -2,7 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: Packman not yet converted
 using System;
 using System.Collections.Generic;
 using Unity.Scripting.LifecycleManagement;
@@ -47,12 +46,10 @@ namespace UnityEditor.PackageManager.UI
     [EditorWindowTitle(title = "Package Manager", icon = "Package Manager")]
     internal partial class PackageManagerWindow : EditorWindow
     {
-        #pragma warning disable UAL0015 // this side effect does not outlive the current call (global trigger / lazily-loaded asset re-fetched on next access); a stale reference is harmlessly replaced
-        internal PackageManagerWindow() {}
-        #pragma warning restore UAL0015
 
         [AutoStaticsCleanupOnCodeReload]
         private static bool s_IsInitializationFrameDone;
+        public static bool isInitializationFrameDone => s_IsInitializationFrameDone;
 
         [OnCodeLoaded]
         static void Initialize()
@@ -63,7 +60,8 @@ namespace UnityEditor.PackageManager.UI
 
         private static void OnRegisteredPackages(PackageRegistrationEventArgs args)
         {
-            ServicesContainer.instance.Resolve<IInProjectPackagesMonitor>().OnRegisteredPackages(args);
+            DelayIfInitializing(() =>
+                ServicesContainer.instance.Resolve<IInProjectPackagesMonitor>().OnRegisteredPackages(args));
         }
 
         public static PackageManagerWindow instance => s_EnabledInstances.Count > 0 ? s_EnabledInstances[0] : null;
@@ -150,48 +148,53 @@ namespace UnityEditor.PackageManager.UI
             if (string.IsNullOrEmpty(url))
                 return;
 
-            // When the user just acquired a package on the Asset Store and then clicked the "Open in Unity" button immediately,
-            // we need to refresh the license here so the package shows up in the correct state
-            ServicesContainer.instance.Resolve<ILicenceProxy>().UpdateLicense();
-
-            // com.unity3d.kharma:content/11111                       => AssetStore url
-            // com.unity3d.kharma:upmpackage/com.unity.xxx@1.2.2      => Upm url
-            if (TryExtractUpmPackageInfoFromUrl(url, out var technicalName, out var version))
+            DelayIfInitializing(() =>
             {
-                var packageDatabase = ServicesContainer.instance.Resolve<IPackageDatabase>();
-                var package = packageDatabase.GetPackageByIdOrName(technicalName);
-                if (package != null)
-                    SelectPackageStatic(technicalName);
-                else
-                    SelectPageStatic(pageId: InProjectPage.k_Id);
+                // When the user just acquired a package on the Asset Store and then clicked the "Open in Unity" button immediately,
+                // we need to refresh the license here so the package shows up in the correct state
+                ServicesContainer.instance.Resolve<ILicenceProxy>().UpdateLicense();
 
-                if (!string.IsNullOrEmpty(version) || package == null)
-                    EditorApplication.delayCall += () => OpenAddPackageByName(technicalName, version);
-            }
-            else
-            {
-                var startIndex = url.LastIndexOf('/');
-                if (startIndex > 0)
+                // com.unity3d.kharma:content/11111                       => AssetStore url
+                // com.unity3d.kharma:upmpackage/com.unity.xxx@1.2.2      => Upm url
+                if (TryExtractUpmPackageInfoFromUrl(url, out var technicalName, out var version))
                 {
-                    var id = url.Substring(startIndex + 1);
-                    var endIndex = id.IndexOf('?');
-                    if (endIndex > 0)
-                        id = id.Substring(0, endIndex);
+                    ShowWindowAnd(() =>
+                    {
+                        var packageDatabase = ServicesContainer.instance.Resolve<IPackageDatabase>();
+                        var delayedSelectionHandler = ServicesContainer.instance.Resolve<IDelayedSelectionHandler>();
+                        var package = packageDatabase.GetPackageByIdOrName(technicalName);
+                        if (package != null)
+                            delayedSelectionHandler.SelectPackage(technicalName);
+                        else
+                            delayedSelectionHandler.SelectPage(InProjectPage.k_Id);
 
-                    SelectPackageStatic(id, MyAssetsPage.k_Id);
+                        if (!string.IsNullOrEmpty(version) || package == null)
+                            instance.m_Root.OpenAddPackageByNameDropdown(technicalName, version);
+                    });
                 }
-            }
-        }
+                else
+                {
+                    var startIndex = url.LastIndexOf('/');
+                    if (startIndex > 0)
+                    {
+                        var id = url.Substring(startIndex + 1);
+                        var endIndex = id.IndexOf('?');
+                        if (endIndex > 0)
+                            id = id.Substring(0, endIndex);
 
-        private static void OpenAddPackageByName(string technicalName, string version)
-        {
-            ShowWindow(() => instance.m_Root.OpenAddPackageByNameDropdown(technicalName, version));
+                        ShowWindowAnd(() => ServicesContainer.instance.Resolve<IDelayedSelectionHandler>().SelectPackage(id, MyAssetsPage.k_Id));
+                    }
+                }
+            });
         }
 
         [UsedByNativeCode]
         public static void OpenCreatePackageDropdown()
         {
-            ShowWindow(() => instance.m_Root.OpenCreatePackageDropdown());
+            DelayIfInitializing(() =>
+            {
+                ShowWindowAnd(() => instance.m_Root.OpenCreatePackageDropdown());
+            });
         }
 
         private static T FindWindow<T>() where T : EditorWindow
@@ -204,55 +207,69 @@ namespace UnityEditor.PackageManager.UI
         public static void OpenAndSelectPackage(string packageToSelect, string pageId = null)
         {
             var isWindowAlreadyVisible = instance is not null;
-            SelectPackageStatic(packageToSelect, pageId);
-            if (!isWindowAlreadyVisible)
-                PackageManagerWindowAnalytics.SendEvent("openWindow", packageToSelect);
+            DelayIfInitializing(() =>
+            {
+                ShowWindowAnd(() =>
+                {
+                    ServicesContainer.instance.Resolve<IDelayedSelectionHandler>().SelectPackage(packageToSelect, pageId);
+                    if (!isWindowAlreadyVisible)
+                        PackageManagerWindowAnalytics.SendEvent("openWindow", packageToSelect);
+                });
+            });
         }
 
         [UsedByNativeCode]
         public static void OpenExportPackageWindow(string packageName)
         {
-            var packageDatabase = ServicesContainer.instance.Resolve<IPackageDatabase>();
-            var modalManager = ServicesContainer.instance.Resolve<IModalManager>();
-            var package = packageDatabase.GetPackageByIdOrName(packageName);
-
-            if (package == null)
+            DelayIfInitializing(() =>
             {
-                Debug.LogError(L10n.Tr("[Package Manager Window] Unable to open the Export window. Try opening the Package Manager Window first and exporting from there.", null));
-                return;
-            }
+                var package = ServicesContainer.instance.Resolve<IPackageDatabase>().GetPackageByIdOrName(packageName);
+                if (package == null)
+                {
+                    Debug.LogError(L10n.Tr("[Package Manager Window] Unable to open the Export window. Try opening the Package Manager Window first and exporting from there.", null));
+                    return;
+                }
 
-            // There is a flickering effect on the project browser if we don't repaint it before showing the modal.
-            // https://jira.unity3d.com/browse/UUM-113810
-            FindWindow<ProjectBrowser>()?.RepaintImmediately();
-            var version = package.versions.installed;
-            ServicesContainer.instance.Resolve<IUnityConnectProxy>().ParseOrganizationInfosAsync((organizationInfo) => {
-                modalManager.ShowExportModal(version, organizationInfo);
+                // There is a flickering effect on the project browser if we don't repaint it before showing the modal.
+                FindWindow<ProjectBrowser>()?.RepaintImmediately();
+                var version = package.versions.installed;
+                ServicesContainer.instance.Resolve<IUnityConnectProxy>().ParseOrganizationInfosAsync((organizationInfo) => {
+                    ServicesContainer.instance.Resolve<IModalManager>().ShowExportModal(version, organizationInfo);
+                });
             });
         }
 
         public static void OpenAndSelectPage(string pageId, string searchText = null)
         {
             var isWindowAlreadyVisible = FindWindow<PackageManagerWindow>() is not null;
-
-            SelectPageStatic(pageId, searchText);
-            if (!isWindowAlreadyVisible)
-                PackageManagerWindowAnalytics.SendEvent("openWindowOnFilter", pageId);
+            DelayIfInitializing(() =>
+            {
+                ShowWindowAnd(() =>
+                {
+                    ServicesContainer.instance.Resolve<IDelayedSelectionHandler>().SelectPage(pageId, searchText);
+                    if (!isWindowAlreadyVisible)
+                        PackageManagerWindowAnalytics.SendEvent("openWindowOnFilter", pageId);
+                });
+            });
         }
 
         public static void OpenSamplesPage(IReadOnlyList<string> packagesToSelect)
         {
-            ShowWindow(() =>
+            DelayIfInitializing(() =>
             {
-                ServicesContainer.instance.Resolve<IDelayedSelectionHandler>().SelectSamplePageWithPackageFilters(packagesToSelect);
-                PackageManagerWindowAnalytics.SendEvent("openSamplesPage");
+                ShowWindowAnd(() =>
+                {
+                    ServicesContainer.instance.Resolve<IDelayedSelectionHandler>().SelectSamplePageWithPackageFilters(packagesToSelect);
+                    PackageManagerWindowAnalytics.SendEvent("openSamplesPage");
+                });
             });
         }
 
         [UsedByNativeCode("PackageManagerUI_OnPackageManagerResolve")]
         public static void OnPackageManagerResolve()
         {
-            ServicesContainer.instance.Resolve<IInProjectPackagesMonitor>().OnPackageManagerResolve();
+            DelayIfInitializing(() =>
+                ServicesContainer.instance.Resolve<IInProjectPackagesMonitor>().OnPackageManagerResolve());
         }
 
         [InitializeOnLoadMethod]
@@ -265,42 +282,28 @@ namespace UnityEditor.PackageManager.UI
         [UsedByNativeCode]
         public static void OnEditorFinishLoadingProject()
         {
-            ServicesContainer.instance.Resolve<IInProjectPackagesMonitor>().OnEditorFinishLoadingProject();
+            DelayIfInitializing(() =>
+                ServicesContainer.instance.Resolve<IInProjectPackagesMonitor>().OnEditorFinishLoadingProject());
         }
 
-        private static void SelectPackageStatic(string packageToSelect = null, string pageId = null)
+        private static void ShowWindowAnd(Action postOpenWindowAction)
         {
-            ShowWindow
-            (
-                // We use DelayedSelectionHandler to handle the case where the package is not yet available when the
-                // selection is set. That could happen when we want to open Package Manager and select a package, but
-                // the refresh call is not yet finished. It could also happen when we create a package and the newly
-                // crated package is not yet in the database until after package resolution.
-                () => ServicesContainer.instance.Resolve<IDelayedSelectionHandler>().SelectPackage(packageToSelect, pageId)
-            );
+            GetWindow<PackageManagerWindow>().Show();
+            postOpenWindowAction?.Invoke();
         }
 
-        private static void SelectPageStatic(string pageId = null, string searchText = "")
+        // Static functions in this class (especially those called from native code) can run during the initialization
+        // frame, before ScriptableObjects such as ServicesContainer and EditorWindow are ready. Accessing ServicesContainer
+        // then is unsafe, and opening the window then creates duplicate windows (UUM-139988), so we defer until the frame is over.
+        private static void DelayIfInitializing(Action action)
         {
-            ShowWindow(() => ServicesContainer.instance.Resolve<IDelayedSelectionHandler>().SelectPage(pageId, searchText));
-        }
+            if (action == null)
+                return;
 
-        private static void ShowWindow(Action postOpenWindowAction)
-        {
-            // There is a special case where we received a function call to open the Package Manager when during InitializeOnLoad
-            // (right after domain reload, for example), and show the PackageManager window immediately will cause the creation
-            // of multiple Package Manager windows. As a result we want to delay opening until the initialization frame is over.
-            // This is an issue with Editor Windows in general and a ticket has been created (UUM-139988)
             if (!s_IsInitializationFrameDone)
-            {
-                EditorApplication.delayCall += () => ShowWindow(postOpenWindowAction);
-            }
+                EditorApplication.delayCall += action.Invoke;
             else
-            {
-                GetWindow<PackageManagerWindow>().Show();
-                postOpenWindowAction?.Invoke();
-            }
+                action.Invoke();
         }
     }
 }
-#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

@@ -90,10 +90,11 @@ namespace UnityEngine.Rendering
                 return implemented;
             }
 
+            // Returns EntityIds: native (VirtualTexturingEditorManager.cpp) keeps the materials as PPtrs.
             [RequiredByNativeCode]
-            internal static Material[] OnIncludeAdditionalStacksInPlayer()
+            internal static EntityId[] OnIncludeAdditionalStacksInPlayer()
             {
-                List<Material> forceIncludes = new List<Material>();
+                List<EntityId> forceIncludes = new List<EntityId>();
 
                 if (stackBuildingFeedbackCallbacks != null)
                 {
@@ -102,7 +103,12 @@ namespace UnityEngine.Rendering
                         try
                         {
                             IList<Material> list = cb.OnIncludeAdditionalStacksInPlayer();
-                            forceIncludes.AddRange(list);
+                            forceIncludes.Capacity = Math.Max(forceIncludes.Capacity, forceIncludes.Count + list.Count);
+                            foreach (var material in list)
+                            {
+                                if (material != null)
+                                    forceIncludes.Add(material.GetEntityId());
+                            }
                         }
                         catch (Exception e)
                         {

@@ -14,7 +14,6 @@ using UnityEngine.TextCore.LowLevel;
 
 namespace UnityEngine.TextCore.Text
 {
-    [StructLayout(LayoutKind.Sequential)]
     [NativeHeader("Modules/TextCoreTextEngine/Native/TextLib.h")]
     [VisibleToOtherModules("UnityEngine.UIElementsModule", "Unity.UIElements.PlayModeTests", "UnityEngine.IMGUIModule")]
     internal partial class TextLib
@@ -226,6 +225,9 @@ namespace UnityEngine.TextCore.Text
         [NativeMethod(Name = "TextLib::FindIntersectingLink")]
         static public extern int FindIntersectingLink(Vector2 point, IntPtr textGenerationInfo);
 
+        [NativeMethod(Name = "TextLib::GetIntersectingLinkText")]
+        static public extern string GetIntersectingLinkText(Vector2 point, IntPtr textGenerationInfo, out int linkId);
+
         [NativeMethod(Name = "TextLib::GetCharacterCount")]
         static public extern int GetCharacterCount(IntPtr textGenerationInfo);
 
@@ -299,6 +301,12 @@ namespace UnityEngine.TextCore.Text
 
         [VisibleToOtherModules("UnityEngine.UIElementsModule")]
         public static extern float GetLineBaselineY(IntPtr ptr, int lineNumber);
+
+        [VisibleToOtherModules("UnityEngine.UIElementsModule")]
+        public static extern float GetLineXOrigin(IntPtr ptr, int lineNumber);
+
+        [VisibleToOtherModules("UnityEngine.UIElementsModule")]
+        public static extern float GetLineWidth(IntPtr ptr, int lineNumber);
     }
 
     [NativeHeader("Modules/TextCoreTextEngine/Native/OSFontFallback.h")]
@@ -324,5 +332,8 @@ namespace UnityEngine.TextCore.Text
         [FreeFunction("OSFontFallback::ReleaseNativeFallback")]
         [VisibleToOtherModules("UnityEngine.UIElementsModule")]
         internal static extern void ReleaseNativeFallback(IntPtr nativePtr);
+
+        [FreeFunction("OSFontFallback::TryGetFontReferenceForUnicode")]
+        internal static extern bool TryGetFontReferenceForUnicode(long unicode, out FontReference fontRef);
     }
 }

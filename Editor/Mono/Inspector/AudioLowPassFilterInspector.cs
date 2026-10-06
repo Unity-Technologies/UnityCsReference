@@ -15,8 +15,8 @@ namespace UnityEditor
 
         private static class Styles
         {
-            public static readonly GUIContent LowpassResonanceQTooltip = EditorGUIUtility.TrTextContent("Lowpass Resonance Q", "Determines how much the filter's self-resonance is dampened");
-            public static readonly GUIContent LowpassLevelCustomCurveTooltip = EditorGUIUtility.TrTextContent("Cutoff Frequency", "Lowpass cutoff frequency in Hz");
+            public static readonly GUIContent LowpassResonanceQTooltip = L10n.TextContent("Lowpass Resonance Q", "Determines how much the filter's self-resonance is dampened", null, null);
+            public static readonly GUIContent LowpassLevelCustomCurveTooltip = L10n.TextContent("Cutoff Frequency", "Lowpass cutoff frequency in Hz", null, null);
         }
 
         void OnEnable()

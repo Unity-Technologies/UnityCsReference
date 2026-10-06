@@ -14,7 +14,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         private IWindow m_Window;
         private bool m_NeedRefresh;
         private List<PackageActionDropdownItem> m_DropdownItems;
-        public IReadOnlyCollection<PackageActionDropdownItem> dropdownItems => m_DropdownItems;
+        public IReadOnlyList<PackageActionDropdownItem> dropdownItems => m_DropdownItems;
         public DropdownButton dropdownButton { get; }
 
         private Action<PackageSelectionArgs> m_Action;

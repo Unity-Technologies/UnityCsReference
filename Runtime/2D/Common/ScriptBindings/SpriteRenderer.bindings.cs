@@ -35,6 +35,8 @@ namespace UnityEngine
     [RequireComponent(typeof(Transform))]
     public sealed partial class SpriteRenderer : Renderer
     {
+        internal SpriteRenderer(global::UnityEngine.EntityId id) : base(id) {}
+        public SpriteRenderer() {}
         UnityEvent<SpriteRenderer> m_SpriteChangeEvent;
 
         public void RegisterSpriteChangeCallback(UnityEngine.Events.UnityAction<SpriteRenderer> callback)

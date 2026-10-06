@@ -2,7 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: SceneTooling not yet converted
 using System;
 using UnityEditor.Experimental;
 using UnityEngine;
@@ -93,7 +92,7 @@ namespace UnityEditor
 
         void UpdateValidation()
         {
-            var validationErrorMessage = m_Validator?.Invoke(m_TextField.value);
+            var validationErrorMessage = m_Validator?.Invoke(m_TextField.value.Trim());
 
             m_WarningText.text = validationErrorMessage;
             m_IsValid = validationErrorMessage == null;
@@ -104,7 +103,7 @@ namespace UnityEditor
 
         void Submit()
         {
-            m_Action(m_TextField.text);
+            m_Action(m_TextField.text.Trim());
             Close();
         }
 
@@ -134,4 +133,3 @@ namespace UnityEditor
         }
     }
 }
-#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

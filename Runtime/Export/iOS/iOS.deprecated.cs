@@ -276,28 +276,6 @@ namespace UnityEngine
         FaceDown
     }
 
-    // The iPhoneInput class acts as the interface into the iPhone's unique Input systems.
-    [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
-    [Obsolete("iPhoneInput class is deprecated. Please use Input instead (UnityUpgradable) -> Input", true)]
-    public class iPhoneInput
-    {
-        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
-        [Obsolete("orientation property is deprecated. Please use Input.deviceOrientation instead (UnityUpgradable) -> Input.deviceOrientation", true)]
-        public static iPhoneOrientation orientation { get { return default(iPhoneOrientation); } }
-
-        // Folowing members are not strictly required to update references from iPhoneInput -> Input, but
-        // any method that takes an argument like iPhoneInput.touchCount will fail resolution if the member (touchCount) is not present
-        // in the "old" version of the type and the update may fail.
-
-        public static iPhoneAccelerationEvent[] accelerationEvents { get { return null; } }
-        public static iPhoneTouch[] touches { get { return null; }  }
-        public static int touchCount { get { return 0; }    }
-        public static bool multiTouchEnabled { get { return false; } set {} }
-        public static int accelerationEventCount { get { return 0; }    }
-        public static Vector3 acceleration { get { return default(Vector3); } }
-        public static iPhoneTouch GetTouch(int index) { return default(iPhoneTouch); }
-        public static iPhoneAccelerationEvent GetAccelerationEvent(int index) { return default(iPhoneAccelerationEvent); }
-    }
 
     //
     // iPhone

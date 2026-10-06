@@ -12,6 +12,7 @@ namespace UnityEditor.Connect
     internal partial class PurchasingConfiguration
     {
         [AutoStaticsCleanupOnCodeReload]
+        [IgnoreForUAL0015("Lazily re-created by the instance getter on next access after reload")]
         static PurchasingConfiguration k_Instance;
 
         readonly string m_PurchasingPackageUrl;

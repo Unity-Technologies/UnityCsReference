@@ -82,28 +82,28 @@ namespace UnityEditor
 
         internal class Texts
         {
-            public static readonly GUIContent animate = EditorGUIUtility.TrTextContent("Animation");
-            public static readonly GUIContent backgroundColor = EditorGUIUtility.TrTextContent("Background Color", "Background color when no background image is used. On Android, use this property to set static splash image background color.");
-            public static readonly GUIContent backgroundImage = EditorGUIUtility.TrTextContent("Background Image", "Image to be used in landscape and portrait (when portrait image is not set).");
-            public static readonly GUIContent backgroundPortraitImage = EditorGUIUtility.TrTextContent("Alternate Portrait Image*", "Optional image to be used in portrait mode.");
-            public static readonly GUIContent backgroundTitle = EditorGUIUtility.TrTextContent("Background*");
-            public static readonly GUIContent backgroundZoom = EditorGUIUtility.TrTextContent("Background Zoom");
-            public static readonly GUIContent blurBackground = EditorGUIUtility.TrTextContent("Blur Background Image");
-            public static readonly GUIContent cancelPreviewSplash = EditorGUIUtility.TrTextContent("Cancel Preview");
-            public static readonly GUIContent configDialogBanner = EditorGUIUtility.TrTextContent("Application Config Dialog Banner");
-            public static readonly GUIContent configDialogBannerDeprecationWarning = EditorGUIUtility.TrTextContent("Application Config Dialog Banner is deprecated and will be removed in future versions.");
-            public static readonly GUIContent drawMode = EditorGUIUtility.TrTextContent("Draw Mode");
-            public static readonly GUIContent logoDuration = EditorGUIUtility.TrTextContent("Logo Duration", "The time the logo will be shown for.");
-            public static readonly GUIContent logosTitle = EditorGUIUtility.TrTextContent("Logos*");
-            public static readonly GUIContent logoZoom = EditorGUIUtility.TrTextContent("Logo Zoom");
-            public static readonly GUIContent overlayOpacity = EditorGUIUtility.TrTextContent("Overlay Opacity", "Overlay strength applied to improve logo visibility.");
-            public static readonly GUIContent previewSplash = EditorGUIUtility.TrTextContent("Preview", "Preview the splash screen in the game view.");
-            public static readonly GUIContent showLogo = EditorGUIUtility.TrTextContent("Show Unity Logo");
-            public static readonly GUIContent showSplash = EditorGUIUtility.TrTextContent("Show Splash Screen");
-            public static readonly GUIContent splashStyle = EditorGUIUtility.TrTextContent("Splash Style");
-            public static readonly GUIContent splashTitle = EditorGUIUtility.TrTextContent("Splash Screen");
-            public static readonly GUIContent title = EditorGUIUtility.TrTextContent("Splash Image");
-            public static readonly GUIContent vrSplashScreen = EditorGUIUtility.TrTextContent("Virtual Reality Splash Image");
+            public static readonly GUIContent animate = L10n.TextContent("Animation", null, null, null);
+            public static readonly GUIContent backgroundColor = L10n.TextContent("Background Color", "Background color when no background image is used. On Android, use this property to set static splash image background color.", null, null);
+            public static readonly GUIContent backgroundImage = L10n.TextContent("Background Image", "Image to be used in landscape and portrait (when portrait image is not set).", null, null);
+            public static readonly GUIContent backgroundPortraitImage = L10n.TextContent("Alternate Portrait Image*", "Optional image to be used in portrait mode.", null, null);
+            public static readonly GUIContent backgroundTitle = L10n.TextContent("Background*", null, null, null);
+            public static readonly GUIContent backgroundZoom = L10n.TextContent("Background Zoom", null, null, null);
+            public static readonly GUIContent blurBackground = L10n.TextContent("Blur Background Image", null, null, null);
+            public static readonly GUIContent cancelPreviewSplash = L10n.TextContent("Cancel Preview", null, null, null);
+            public static readonly GUIContent configDialogBanner = L10n.TextContent("Application Config Dialog Banner", null, null, null);
+            public static readonly GUIContent configDialogBannerDeprecationWarning = L10n.TextContent("Application Config Dialog Banner is deprecated and will be removed in future versions.", null, null, null);
+            public static readonly GUIContent drawMode = L10n.TextContent("Draw Mode", null, null, null);
+            public static readonly GUIContent logoDuration = L10n.TextContent("Logo Duration", "The time the logo will be shown for.", null, null);
+            public static readonly GUIContent logosTitle = L10n.TextContent("Logos*", null, null, null);
+            public static readonly GUIContent logoZoom = L10n.TextContent("Logo Zoom", null, null, null);
+            public static readonly GUIContent overlayOpacity = L10n.TextContent("Overlay Opacity", "Overlay strength applied to improve logo visibility.", null, null);
+            public static readonly GUIContent previewSplash = L10n.TextContent("Preview", "Preview the splash screen in the game view.", null, null);
+            public static readonly GUIContent showLogo = L10n.TextContent("Show Unity Logo", null, null, null);
+            public static readonly GUIContent showSplash = L10n.TextContent("Show Splash Screen", null, null, null);
+            public static readonly GUIContent splashStyle = L10n.TextContent("Splash Style", null, null, null);
+            public static readonly GUIContent splashTitle = L10n.TextContent("Splash Screen", null, null, null);
+            public static readonly GUIContent title = L10n.TextContent("Splash Image", null, null, null);
+            public static readonly GUIContent vrSplashScreen = L10n.TextContent("Virtual Reality Splash Image", null, null, null);
         }
 
         public PlayerSettingsSplashScreenEditor(PlayerSettingsEditor owner)

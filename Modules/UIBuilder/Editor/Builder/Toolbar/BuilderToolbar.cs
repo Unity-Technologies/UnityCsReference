@@ -2,7 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: UIBuilder not yet converted
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -301,6 +300,8 @@ namespace Unity.UI.Builder
             if (checkForUnsavedChanges && !document.CheckForUnsavedChanges())
                 return false;
 
+            var wasEditingThemeStyleSheet = document.isEditingThemeStyleSheet;
+
             if (unloadAllSubdocuments)
                 document.GoToRootDocument(m_Viewport.documentRootElement, m_PaneWindow, true);
 
@@ -317,6 +318,12 @@ namespace Unity.UI.Builder
             m_Library?.ResetCurrentlyLoadedUxmlStyles();
 
             UpdateHasUnsavedChanges();
+
+            // Starting a new document leaves StyleSheet Editing Mode; restore the normal pane layout,
+            // and reapply the stored preview theme an opened .tss had suppressed.
+            (m_PaneWindow as Builder)?.UpdateStyleSheetEditingModeLayout();
+            if (wasEditingThemeStyleSheet)
+                ChangeCanvasTheme(document.currentCanvasTheme, document.currentCanvasThemeStyleSheet, true);
 
             return true;
         }
@@ -335,8 +342,9 @@ namespace Unity.UI.Builder
             if (!userConfirmed)
                 return;
 
-            // Save last save path.
-            m_LastSavePath = Path.GetDirectoryName(document.uxmlPath);
+            // Save last save path. The StyleSheet Editing host has no UXML path, so leave it untouched.
+            if (!string.IsNullOrEmpty(document.uxmlPath))
+                m_LastSavePath = Path.GetDirectoryName(document.uxmlPath);
 
             // Set doc field value.
             UpdateHasUnsavedChanges();
@@ -360,6 +368,12 @@ namespace Unity.UI.Builder
 
         public bool ReloadDocument()
         {
+            // The StyleSheet Editing host is a non-persistent copy that cannot be reloaded as a document;
+            // rebuild the mode around the (possibly reimported) opened sheet instead.
+            var openUXMLFile = document.activeOpenUXMLFile;
+            if (openUXMLFile.isStyleSheetEditingMode)
+                return LoadStyleSheetDocument(openUXMLFile.openedStyleSheet, true);
+
             return LoadDocument(document.visualTreeAsset, false);
         }
 
@@ -399,6 +413,46 @@ namespace Unity.UI.Builder
 
             document.LoadDocument(visualTreeAsset, m_Viewport.documentRootElement);
 
+            PostLoadDocumentRefresh();
+        }
+
+        // Opens a .uss/.tss by itself (StyleSheet Editing Mode), hosted in a read-only copy of the
+        // preview document. Mirrors LoadDocument, including the external-change handling.
+        public bool LoadStyleSheetDocument(StyleSheet styleSheet, bool assetModifiedExternally = false)
+        {
+            if (styleSheet == null)
+                return false;
+
+            var previewDocument = BuilderAssetUtilities.FindStyleSheetEditingPreviewDocument();
+            if (previewDocument == null)
+            {
+                Debug.LogError(BuilderConstants.ToolbarCannotLoadStyleSheetEditingPreviewMessage);
+                return false;
+            }
+
+            var proceedWithLoad = document.CheckForUnsavedChanges(assetModifiedExternally);
+            if (!proceedWithLoad && assetModifiedExternally)
+            {
+                // Needed to refresh the document after an external change was kept.
+                document.OnAfterBuilderDeserialize(m_Viewport.documentRootElement);
+                m_Selection.NotifyOfHierarchyChange(document);
+                m_Selection.ClearSelection(this);
+            }
+
+            if (!proceedWithLoad)
+                return false;
+
+            document.GoToRootDocument(m_Viewport.documentRootElement, m_PaneWindow);
+
+            m_Selection.ClearSelection(null);
+            document.LoadStyleSheetDocument(previewDocument, styleSheet, m_Viewport.documentRootElement);
+
+            PostLoadDocumentRefresh();
+            return true;
+        }
+
+        void PostLoadDocumentRefresh()
+        {
             m_Viewport.SetViewFromDocumentSetting();
             m_Inspector?.canvasInspector.Refresh();
             InitCanvasTheme();
@@ -418,6 +472,9 @@ namespace Unity.UI.Builder
             }
 
             OnAfterBuilderDeserialize();
+
+            // Apply (or revert) the StyleSheet Editing Mode pane layout.
+            (m_PaneWindow as Builder)?.UpdateStyleSheetEditingModeLayout();
         }
 
         void SetUpFileMenu()
@@ -429,7 +486,14 @@ namespace Unity.UI.Builder
 
             m_FileMenu.menu.AppendAction("Open...", a =>
             {
-                var path = OpenLoadFileDialog(BuilderConstants.ToolbarLoadUxmlDialogTitle, BuilderConstants.Uxml);
+                // With the experimental StyleSheet Editing Mode enabled, stylesheets are openable too.
+                var styleSheetsOpenable = UIToolkitProjectSettings.enableStyleSheetEditingMode;
+                var path = styleSheetsOpenable
+                    ? EditorUtility.OpenFilePanelWithFilters(
+                        BuilderConstants.ToolbarLoadDocumentDialogTitle,
+                        Path.GetDirectoryName(m_LastSavePath),
+                        new[] { "UI Toolkit", "uxml,uss,tss" })
+                    : OpenLoadFileDialog(BuilderConstants.ToolbarLoadUxmlDialogTitle, BuilderConstants.Uxml);
                 if (string.IsNullOrEmpty(path))
                     return;
 
@@ -440,6 +504,13 @@ namespace Unity.UI.Builder
                 else
                 {
                     Debug.LogError(BuilderConstants.ToolbarCannotLoadUxmlOutsideProjectMessage);
+                    return;
+                }
+
+                if (styleSheetsOpenable &&
+                    (path.EndsWith(BuilderConstants.UssExtension) || path.EndsWith(BuilderConstants.TssExtension)))
+                {
+                    LoadStyleSheetDocument(BuilderPackageUtilities.LoadAssetAtPath<StyleSheet>(path));
                     return;
                 }
 
@@ -457,7 +528,9 @@ namespace Unity.UI.Builder
             m_FileMenu.menu.AppendAction("Save As...", a =>
             {
                 SaveDocument(true);
-            });
+            },
+            // The StyleSheet Editing host has no document file of its own to save elsewhere.
+            a => document.isStyleSheetEditingMode ? DropdownMenuAction.Status.Disabled : DropdownMenuAction.Status.Normal);
         }
 
         static string GetTextForZoomScale(float scale)
@@ -594,12 +667,24 @@ namespace Unity.UI.Builder
             m_Viewport.canvas.defaultBackgroundElement.style.display = theme == CanvasTheme.Custom ? DisplayStyle.None : DisplayStyle.Flex;
             m_Viewport.canvas.checkerboardBackgroundElement.style.display = theme == CanvasTheme.Custom ? DisplayStyle.Flex : DisplayStyle.None;
 
-            StyleSheet activeThemeStyleSheet = ThemeUtility.GetStyleSheetForTheme(theme, customThemeStyleSheet);
+            // An opened .tss IS the theme: preview it bare, without layering a preview theme on top.
+            // The stored preference is untouched, so leaving the mode reapplies it.
+            var editingThemeStyleSheet = document.isEditingThemeStyleSheet;
+            StyleSheet activeThemeStyleSheet = editingThemeStyleSheet
+                ? null
+                : ThemeUtility.GetStyleSheetForTheme(theme, customThemeStyleSheet);
 
-            ApplyCanvasTheme(m_Viewport.sharedStylesAndDocumentElement, activeThemeStyleSheet, m_LastCustomTheme);
-            ApplyCanvasTheme(m_Viewport.documentRootElement, activeThemeStyleSheet, m_LastCustomTheme);
+            // The opened .tss can BE the previous canvas theme (opening the theme you preview with),
+            // and the document's sheets share the canvas theme's element: removing the "old theme"
+            // would strip the document's only copy of the opened sheet.
+            var previousCustomTheme = m_LastCustomTheme;
+            if (editingThemeStyleSheet && previousCustomTheme == document.activeOpenUXMLFile.openedStyleSheet)
+                previousCustomTheme = null;
+
+            ApplyCanvasTheme(m_Viewport.sharedStylesAndDocumentElement, activeThemeStyleSheet, previousCustomTheme);
+            ApplyCanvasTheme(m_Viewport.documentRootElement, activeThemeStyleSheet, previousCustomTheme);
             ApplyCanvasBackground(m_Viewport.canvas.defaultBackgroundElement, theme);
-            ApplyCanvasTheme(m_TooltipPreview, activeThemeStyleSheet, m_LastCustomTheme);
+            ApplyCanvasTheme(m_TooltipPreview, activeThemeStyleSheet, previousCustomTheme);
             ApplyCanvasBackground(m_TooltipPreview, theme);
             document.ChangeDocumentTheme(m_Viewport.documentRootElement, theme, customThemeStyleSheet, saveOverride: !isInit);
             m_LastCustomTheme = customThemeStyleSheet;
@@ -609,6 +694,12 @@ namespace Unity.UI.Builder
             // Update reset button state and menu status after changing theme
             UpdateResetThemeButtonState();
             UpdateCanvasThemeMenuStatus();
+
+            // Hide the theme switch while the opened .tss is itself the previewed theme; when visible,
+            // the reset button keeps the display UpdateResetThemeButtonState just decided.
+            m_CanvasThemeMenu.style.display = editingThemeStyleSheet ? DisplayStyle.None : DisplayStyle.Flex;
+            if (editingThemeStyleSheet)
+                m_ResetThemeButton.style.display = DisplayStyle.None;
         }
 
         internal void ResetThemeToProjectSettings()
@@ -779,6 +870,21 @@ namespace Unity.UI.Builder
 
         void SetCanvasTitle()
         {
+            // In StyleSheet Editing Mode the opened sheet is the document: title with its file name.
+            if (document.isStyleSheetEditingMode)
+            {
+                var sheetPath = document.ussPaths.Count > 0 ? document.ussPaths[0] : string.Empty;
+                var sheetTitle = string.IsNullOrEmpty(sheetPath)
+                    ? BuilderConstants.ToolbarUnsavedFileDisplayText
+                    : Path.GetFileName(sheetPath);
+                if (document.hasUnsavedChanges)
+                    sheetTitle += BuilderConstants.ToolbarUnsavedFileSuffix;
+
+                m_Viewport.canvas.titleLabel.text = sheetTitle;
+                m_Viewport.canvas.titleLabel.tooltip = sheetPath;
+                return;
+            }
+
             var newFileName = document.uxmlFileName;
             bool hasUSSChanges = ((m_Selection.selectionType == BuilderSelectionType.StyleSheet) || (m_Selection.selectionType == BuilderSelectionType.StyleSelector) || (m_Selection.selectionType == BuilderSelectionType.ParentStyleSelector));
 
@@ -866,4 +972,3 @@ namespace Unity.UI.Builder
         }
     }
 }
-#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

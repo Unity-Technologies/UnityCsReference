@@ -99,7 +99,7 @@ namespace Unity.UI.Builder
             }
         }
 
-        static void ReadFloatList(StylePropertyManipulator manipulator, List<float> result)
+        internal static void ReadFloatList(StylePropertyManipulator manipulator, List<float> result)
         {
             if (null == manipulator.styleProperty)
                 return;
@@ -113,7 +113,11 @@ namespace Unity.UI.Builder
                         result.Add(value.sheet.ReadFloat(value.handle));
                         break;
                     case StyleValueType.Dimension:
-                        result.Add(value.sheet.ReadDimension(value.handle).value);
+                        var dimension = value.sheet.ReadDimension(value.handle);
+                        if (!dimension.IsTimeValue())
+                            result.Add(0f);
+                        else
+                            result.Add(dimension.unit == Dimension.Unit.Millisecond ? dimension.value / 1000f : dimension.value);
                         break;
                     default:
                         result.Add(0f);

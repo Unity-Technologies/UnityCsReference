@@ -19,6 +19,10 @@ namespace UnityEditor
     internal static partial class Clipboard
     {
         [AutoStaticsCleanupOnCodeReload]
+        // Parse cache of the system clipboard string: FetchState compares it against
+        // EditorGUIUtility.systemCopyBuffer and rebuilds the state whenever they differ, so the clipboard
+        // contents themselves are never held here.
+        [IgnoreForUAL0015("Parse cache of the system clipboard, rebuilt by FetchState on the next access")]
         static ClipboardState m_State = new ClipboardState();
 
         public static bool hasLong

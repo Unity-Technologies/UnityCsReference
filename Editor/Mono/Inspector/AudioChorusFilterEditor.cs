@@ -19,13 +19,13 @@ namespace UnityEditor
 
         private static class Styles
         {
-            public static readonly GUIContent DryMixTooltip = EditorGUIUtility.TrTextContent("Dry Mix", "Volume of original signal to pass to output");
-            public static readonly GUIContent WetMix1Tooltip = EditorGUIUtility.TrTextContent("Wet Mix 1", "Volume of 1st chorus tap");
-            public static readonly GUIContent WetMix2Tooltip = EditorGUIUtility.TrTextContent("Wet Mix 2", "Volume of 2nd chorus tap");
-            public static readonly GUIContent WetMix3Tooltip = EditorGUIUtility.TrTextContent("Wet Mix 3", "Volume of 3rd chorus tap");
-            public static readonly GUIContent DelayTooltip = EditorGUIUtility.TrTextContent("Delay", "Chorus delay in ms");
-            public static readonly GUIContent RateTooltip = EditorGUIUtility.TrTextContent("Rate", "Chorus modulation rate in hz");
-            public static readonly GUIContent DepthTooltip = EditorGUIUtility.TrTextContent("Depth", "Chorus modulation depth");
+            public static readonly GUIContent DryMixTooltip = L10n.TextContent("Dry Mix", "Volume of original signal to pass to output", null, null);
+            public static readonly GUIContent WetMix1Tooltip = L10n.TextContent("Wet Mix 1", "Volume of 1st chorus tap", null, null);
+            public static readonly GUIContent WetMix2Tooltip = L10n.TextContent("Wet Mix 2", "Volume of 2nd chorus tap", null, null);
+            public static readonly GUIContent WetMix3Tooltip = L10n.TextContent("Wet Mix 3", "Volume of 3rd chorus tap", null, null);
+            public static readonly GUIContent DelayTooltip = L10n.TextContent("Delay", "Chorus delay in ms", null, null);
+            public static readonly GUIContent RateTooltip = L10n.TextContent("Rate", "Chorus modulation rate in hz", null, null);
+            public static readonly GUIContent DepthTooltip = L10n.TextContent("Depth", "Chorus modulation depth", null, null);
         }
 
         private void OnEnable()

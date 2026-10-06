@@ -52,7 +52,7 @@ namespace UnityEditor.SceneManagement
 
         internal virtual bool showOptionsButton { get { return false; } }
 
-        internal abstract int sceneCount { get; }
+        internal abstract int sceneCount { [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")] get; }
 
         [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
         internal abstract Scene GetSceneAt(int index);
@@ -98,8 +98,8 @@ namespace UnityEditor.SceneManagement
         {
             if (SupportsSaving())
             {
-                var saveText = EditorGUIUtility.TrTextContent("Save");
-                var discardText = EditorGUIUtility.TrTextContent("Discard changes");
+                var saveText = L10n.TextContent("Save", null, null, null);
+                var discardText = L10n.TextContent("Discard changes", null, null, null);
 
                 // Save
                 if (hasUnsavedChanges)

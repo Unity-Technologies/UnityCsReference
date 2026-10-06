@@ -89,7 +89,7 @@ namespace UnityEditor
             private static GUIStyle menuItem;
             [NoAutoStaticsCleanup] // safe: lazily rebuilt GUI style cache, recreated on demand
             private static GUIStyle separator;
-            private static readonly GUIContent debuggerLabel = EditorGUIUtility.TrTextContent("Rendering Debugger...");
+            private static readonly GUIContent debuggerLabel = L10n.TextContent("Rendering Debugger...", null, null, null);
 
             public static GUIStyle s_MenuItem => menuItem ?? (menuItem = "MenuItem");
             public static GUIStyle s_Separator => separator ?? (separator = "sv_iconselector_sep");

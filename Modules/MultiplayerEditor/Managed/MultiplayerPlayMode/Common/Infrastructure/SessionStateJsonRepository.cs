@@ -109,7 +109,7 @@ namespace Unity.Multiplayer.PlayMode.Editor
             try
             {
                 // We have to use lists because complex Dictionary keys are not serialized properly.
-                var list = JsonSerializer.Deserialize<List<KeyValuePair<TKey, TState>>>(serializedData);
+                var list = JsonSerializer.Deserialize<List<KeyValuePair<TKey, TState>>>(serializedData, SessionStateJsonSerialization.SerializerOptions);
                 if (list == null)
                 {
                     states = new Dictionary<TKey, TState>();
@@ -134,7 +134,7 @@ namespace Unity.Multiplayer.PlayMode.Editor
         string Serialize(Dictionary<TKey, TState> states)
         {
             var list = new List<KeyValuePair<TKey, TState>>(states);  // This is because we can serialize lists (not dictionaries)
-            return JsonSerializer.Serialize(list);
+            return JsonSerializer.Serialize(list, SessionStateJsonSerialization.SerializerOptions);
         }
 
         public static void DeleteAll(SessionStateJsonRepository<TKey, TState> sessionStateJsonRepository)
@@ -150,6 +150,9 @@ namespace Unity.Multiplayer.PlayMode.Editor
     static partial class DuplicateKeyChecker
     {
         [AutoStaticsCleanupOnCodeReload] // keys re-registered on reload; old keys would cause false-positive duplicate exceptions
+        // Duplicate-key guard set: keys are added as repositories register them, so the set cleared on reload
+        // refills as those registrations happen again (and stale keys would report false duplicates).
+        [IgnoreForUAL0015("Duplicate-key guard set refilled as repository keys are registered again")]
         static HashSet<string> RuntimeCheckOfNonDuplicateKeys = new HashSet<string>();
 
         public static void Clear()
@@ -163,5 +166,12 @@ namespace Unity.Multiplayer.PlayMode.Editor
                 throw new ArgumentException(key);
             RuntimeCheckOfNonDuplicateKeys.Add(key);
         }
+    }
+
+    static class SessionStateJsonSerialization
+    {
+        // The stored states keep their payload in public fields, which System.Text.Json omits by default
+        [NoAutoStaticsCleanup] // immutable serializer options; safe to persist across reload
+        public static JsonSerializerOptions SerializerOptions { get; } = new JsonSerializerOptions { IncludeFields = true };
     }
 }

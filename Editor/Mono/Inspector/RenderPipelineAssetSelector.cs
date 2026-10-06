@@ -16,7 +16,7 @@ namespace UnityEditor
     {
         static class RenderPipelineAssetSelectorStyles
         {
-            public static readonly GUIContent renderPipeLabel = EditorGUIUtility.TrTextContent("Scriptable Render Pipeline");
+            public static readonly GUIContent renderPipeLabel = L10n.TextContent("Scriptable Render Pipeline", null, null, null);
 
             public static string renderPipeChangedWarning => LocalizationDatabase.GetLocalizedString("Changing this render pipeline asset may take a significant amount of time.");
             public static string renderPipeChangedTitleBox => LocalizationDatabase.GetLocalizedString("Changing Render Pipeline");

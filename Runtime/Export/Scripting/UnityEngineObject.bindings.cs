@@ -132,113 +132,6 @@ namespace UnityEngine
         public string ToString(string format, IFormatProvider formatProvider) => m_index.ToString(format, formatProvider);
     }
 
-#pragma warning disable 612, 618
-    [StructLayout(LayoutKind.Sequential, Size = 8)]
-    [UsedByNativeCode]
-    [Serializable]
-    [NativeClass("EntityId")]
-    [NativeHeader("Runtime/BaseClasses/BaseObject.h")]
-    [NativeHeader("Runtime/BaseClasses/EntityIdStore.h")]
-    public struct EntityId : IEquatable<EntityId>, IComparable<EntityId>, IFormattable
-    {
-        [SerializeField]
-        ulong m_rawData;
-
-        public static EntityId None => new EntityId { m_rawData = 0 };
-        public override bool Equals(object obj) => obj is EntityId other && Equals(other);
-        public bool Equals(EntityId other)
-        {
-            return m_rawData == other.m_rawData;
-        }
-        public int CompareTo(EntityId other) => m_rawData.CompareTo(other.m_rawData);
-        public static bool operator ==(EntityId left, EntityId right) => left.Equals(right);
-        public static bool operator !=(EntityId left, EntityId right) => !left.Equals(right);
-
-        public static bool operator <(EntityId left, EntityId right)  => left.m_rawData < right.m_rawData;
-        public static bool operator >(EntityId left, EntityId right)  => left.m_rawData > right.m_rawData;
-        public static bool operator <=(EntityId left, EntityId right) => left.m_rawData <= right.m_rawData;
-        public static bool operator >=(EntityId left, EntityId right) => left.m_rawData >= right.m_rawData;
-
-        public override int GetHashCode()
-        {
-            // Mirrors native EntityId::CalculateHash (Fibonacci hash, 2^64 / phi multiplier,
-            // with a high-to-low fold so callers that mask off only the low bits of the
-            // hash still see the full avalanche from Version bits).
-            unchecked // No-op under the assembly's default /checked- build; documents that the multiply is meant to wrap.
-            {
-                const ulong kKnuth64 = 0x9E3779B97F4A7C15UL;
-                uint hash = (uint)((m_rawData * kKnuth64) >> 32);
-                return (int)(hash ^ (hash >> 16));
-            }
-        }
-
-        public bool IsValid()
-        {
-            return this != EntityId.None;
-        }
-
-        // Bit layout matches native EntityId (see Modules/NativeKernel/Include/NativeKernel/BaseClasses/EntityID.h):
-        //   [Version:24 | TypeId:12 | Index:28]
-        //   Index:   bits  0–27 (mask 0x0FFFFFFF)
-        //   TypeId:  bits 28–39
-        //   Version: bits 40–63
-        internal uint Index   => (uint)(m_rawData & 0x0FFFFFFFUL);
-        internal uint Version => (uint)((m_rawData >> 40) & 0xFFFFFFUL);
-
-
-        [Obsolete("EntityId will not be representable by an int in the future. This equals will be removed in a future version.", true)]
-        public bool Equals(int other) => throw new NotImplementedException();
-
-        [Obsolete("EntityId will not be representable by an int in the future. This casting operator will be removed in a future version.", true)]
-        public static implicit operator int(EntityId entityId) => throw new NotImplementedException();
-
-        [Obsolete("EntityId will not be representable by an int in the future. This casting operator will be removed in a future version.", true)]
-        public static implicit operator EntityId(int intValue) => throw new NotImplementedException();
-
-        public override string ToString() => $"{((int)(m_rawData & 0xFFFFFFFF)).ToString(CultureInfo.InvariantCulture)}:{(int)(m_rawData >> 32)}";
-        public string ToString(string format) => $"{((int)(m_rawData & 0xFFFFFFFF)).ToString(format, CultureInfo.InvariantCulture)}:{(int)(m_rawData >> 32)}";
-        public string ToString(string format, IFormatProvider formatProvider) => $"{((int)(m_rawData & 0xFFFFFFFF)).ToString(format, formatProvider)}:{((int)(m_rawData >> 32)).ToString(format, formatProvider)}";
-
-
-        internal static unsafe EntityId AllocateEntityId()
-        {
-            EntityId id;
-            EntityIdStore.AllocateEntityIds(&id, 1);
-            return id;
-        }
-
-        [VisibleToOtherModules("UnityEngine.UIElementsModule")]
-        internal static EntityId Parse(string input)
-        {
-            if (string.IsNullOrEmpty(input))
-                return EntityId.None;
-
-            // Same as native StringToEntityId: full raw UInt64, no reinterpretation (see EntityID.cpp).
-            if (!ulong.TryParse(input, NumberStyles.Integer, CultureInfo.InvariantCulture, out var ulongResult))
-            {
-                var colonIndex = input.IndexOf(':');
-                if (colonIndex == -1 || colonIndex == 0 || colonIndex == input.Length - 1)
-                    return EntityId.None;
-                var indexStr = input.Substring(0, colonIndex);
-                var versionStr = input.Substring(colonIndex + 1);
-                if (!int.TryParse(indexStr, NumberStyles.Integer, CultureInfo.InvariantCulture, out var entityIndex))
-                    return EntityId.None;
-                if (!int.TryParse(versionStr, NumberStyles.Integer, CultureInfo.InvariantCulture, out var entityVersion))
-                    return EntityId.None;
-                ulongResult = ((ulong)entityVersion << 32) | (uint)entityIndex;
-            }
-
-            return EntityId.FromULong(ulongResult);
-        }
-
-        [Obsolete("Please use EntityId.ToULong(EntityId) instead.", false)]
-        public ulong GetRawData() => m_rawData;
-
-        public static EntityId FromULong(ulong input) => new EntityId { m_rawData = input };
-        public static ulong ToULong(EntityId entityId) => entityId.m_rawData;
-    }
-    #pragma warning restore 612, 618
-
     class AssetGCFilterTypeAttribute : Attribute
     {
         public AssetGCFilterTypeAttribute() {}
@@ -254,37 +147,106 @@ namespace UnityEngine
     {
 
 #pragma warning disable 649
-        IntPtr   m_CachedPtr;
-
+        // The only link from a managed UnityEngine.Object to its native object. The native pointer is
+        // resolved on demand through the EntityIdStore (lock-free, validates the id version), so a
+        // destroyed or recycled id resolves to null without native ever writing back into this object.
         private EntityId m_EntityId;
+
 #pragma warning disable 169
+        // Set by native on "fake null" wrappers: managed objects created for a reference that could not be
+        // bound to a native object (unassigned, missing, or type-mismatched). Never set on a bound wrapper.
         private string m_UnityRuntimeErrorString;
 #pragma warning restore 169
-
-#pragma warning disable 414
-#pragma warning restore 414
 #pragma warning restore 649
 
         const string objectIsNullMessage = "The Object you want to instantiate is null.";
         const string cloneDestroyedMessage = "Instantiate failed because the clone was destroyed during creation. This can happen if DestroyImmediate is called in MonoBehaviour.Awake.";
 
-        [System.Security.SecuritySafeCritical]
-        public unsafe EntityId GetEntityId()
+        // Explicit parameterless ctor: it preserves the (previously implicit) parameterless ctor that
+        // every Object subclass chains to via `: base()`. Declaring the EntityId ctor below would
+        // otherwise suppress the compiler-generated one.
+        public Object() {}
+
+        // Wrapper-construction ctor used by the TypeManagerV2 wrapper factories: binds this managed
+        // wrapper to the already-existing native object identified by `id`. The EntityId is the whole
+        // link; the native pointer is resolved through the EntityIdStore on every use. Each [NativeClass]
+        // Object subclass declares `internal T(global::UnityEngine.EntityId id) : base(id) {}` (enforced by the generator).
+        protected internal Object(EntityId id)
         {
-            //Because in the player we dissalow calling GetInstanceID() on a non-mainthread, we're also
-            //doing this in the editor, so people notice this problem early. even though technically in the editor,
-            //it is a threadsafe operation.
-            EnsureRunningOnMainThread();
-            return m_EntityId;
+            m_EntityId = id;
         }
 
-        // Skips the editor main-thread guard (itself a per-call icall): all callers are on the
-        // PackEntityIdInLSOI arm (clone/Instantiate), which always runs on the main thread.
-        // If a caller on a non-main-thread path is added, restore the guard here.
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal unsafe EntityId GetEntityIdForSerializationUnchecked()
+        [System.Security.SecuritySafeCritical]
+        public EntityId GetEntityId()
         {
-            return m_EntityId;
+            return UntagReleasedWrapperId(m_EntityId);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal EntityId GetEntityIdForSerializationUnchecked()
+        {
+            return UntagReleasedWrapperId(m_EntityId);
+        }
+
+        // Released wrappers store their id with the lowest version bit cleared; keep in sync with Scripting::TagReleasedWrapperEntityId
+        const ulong k_ReleasedWrapperEntityIdBit = 1UL << 40;
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        static bool IsReleasedWrapperId(EntityId storedId)
+        {
+            return storedId != EntityId.None && (EntityId.ToULong(storedId) & k_ReleasedWrapperEntityIdBit) == 0;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        static EntityId TagReleasedWrapperId(EntityId entityId)
+        {
+            return EntityId.FromULong(EntityId.ToULong(entityId) & ~k_ReleasedWrapperEntityIdBit);
+        }
+
+        // Setting the bit is a no-op on a live id, so only None needs excluding
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        static EntityId UntagReleasedWrapperId(EntityId storedId)
+        {
+            return storedId == EntityId.None ? storedId : EntityId.FromULong(EntityId.ToULong(storedId) | k_ReleasedWrapperEntityIdBit);
+        }
+
+        // A released wrapper only reaches a published object; a tagged id never resolves through the raw lookup
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        static unsafe void* GetNativeObjectForWrapper(EntityId storedId)
+        {
+            void* nativeObject = EntityIdStore.GetRawNativeObject(storedId);
+            if (nativeObject == null && IsReleasedWrapperId(storedId))
+                nativeObject = EntityIdStore.GetNativeObject(UntagReleasedWrapperId(storedId));
+            return nativeObject;
+        }
+
+        // Called by constructors of UnityEngine.Object subclasses with the EntityId returned by their native
+        // constructor binding. Links the two objects in both directions: this object stores the id, and a strong
+        // GCHandle to this object is written into the native object's GCHandle slot, so native code and later
+        // managed lookups resolve the native object to this instance.
+        // EntityId.None means native did not create an object (it raised an exception, or the caller reports the
+        // failure); this object then stays null.
+        [VisibleToOtherModules]
+        internal unsafe void SetEntityIdFromConstructor(EntityId entityId)
+        {
+            m_EntityId = entityId;
+            if (entityId == EntityId.None)
+                return;
+
+            void* nativeObject = EntityIdStore.GetNativeObject(entityId);
+            if (nativeObject == null)
+                throw new InvalidOperationException($"{GetType().FullName}: the native constructor returned EntityId {entityId} but no object is registered for it.");
+
+            if (!MarshalledUnityObject.TryPublishWrapper((IntPtr)nativeObject, this))
+                throw new InvalidOperationException($"{GetType().FullName}: the native constructor created a managed wrapper for the new object before returning. A constructor binding must not hand the object to managed code.");
+        }
+
+        // True when a native object exists for this wrapper (published, loading or in MainThreadCleanup). A lock-free
+        // store read: no icall, no main-thread requirement, so it is usable from worker threads (serialization).
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal unsafe bool HasLiveNativeObject()
+        {
+            return GetNativeObjectForWrapper(m_EntityId) != null;
         }
 
         [Obsolete("Calling MemberwiseClone on a UnityEngine.Object will result in a corrupt object, use Instantiate or InstantiateAsync instead.", true)]
@@ -302,7 +264,7 @@ namespace UnityEngine
             //in the editor, we store the m_EntityId in the c# objects. It's actually possible to have multiple c# objects
             //pointing to the same c++ object in some edge cases, and in those cases we'd like GetHashCode() and Equals() to treat
             //these objects as equals.
-            return m_EntityId.GetHashCode();
+            return GetEntityId().GetHashCode();
         }
 
         public override bool Equals(object other)
@@ -333,66 +295,33 @@ namespace UnityEngine
             if (rhsNull) return !IsNativeObjectAlive(lhs);
             if (lhsNull) return !IsNativeObjectAlive(rhs);
 
-            return lhs.m_EntityId == rhs.m_EntityId;
+            return lhs.GetEntityId() == rhs.GetEntityId();
         }
 
-        private void EnsureRunningOnMainThread()
+        static unsafe bool IsNativeObjectAlive(UnityEngine.Object o)
         {
-            if (!CurrentThreadIsMainThread())
-                throw new System.InvalidOperationException("EnsureRunningOnMainThread can only be called from the main thread");
-        }
+            void* nativeObject = GetNativeObjectForWrapper(o.m_EntityId);
+            if (nativeObject != null)
+                return MarshalledUnityObject.IsInstanceOf(nativeObject, o);
 
-        static bool IsNativeObjectAlive(UnityEngine.Object o)
-        {
-            if (o.GetCachedPtr() != IntPtr.Zero)
-                return true;
-
-            //Ressurection of assets is complicated.
-            //For almost all cases, if you have a c# wrapper for an asset like a material,
-            //if the material gets moved, or deleted, and later placed back, the persistentmanager
-            //will ensure it will come back with the same instanceid.
-            //in this case, we want the old c# wrapper to still "work".
-            //we only support this behaviour in the editor, even though there
-            //are some cases in the player where this could happen too. (when unloading things from assetbundles)
-            //supporting this makes all operator== slow though, so we decided to not support it in the player.
-            //
-            //we have an exception for assets that "are" a c# object, like a MonoBehaviour in a prefab, and a ScriptableObject.
-            //in this case, the asset "is" the c# object,  and you cannot actually pretend
-            //the old wrapper points to the new c# object. this is why we make an exception in the operator==
-            //for this case. If we had a c# wrapper to a persistent monobehaviour, and that one gets
-            //destroyed, and placed back with the same instanceID,  we still will say that the old
-            //c# object is null.
+            // A MonoBehaviour/ScriptableObject reloaded from the PersistentManager gets a new C# instance, so this
+            // one would not be it.
             if (o is MonoBehaviour || o is ScriptableObject)
                 return false;
 
+            //Ressurection of assets: if you have a c# wrapper for an asset like a material, and the material
+            //gets moved, or deleted, and later placed back, the persistentmanager will ensure it comes back
+            //with the same EntityId, and the old c# wrapper works again. If the object is loaded again, the
+            //EntityIdStore lookup above already resolves it; here we additionally treat an object that is not
+            //loaded but still available in the persistent manager as alive (accessing it loads it). Only the
+            //editor does this last step: it is an icall, and only the editor moves assets around.
             return DoesObjectWithInstanceIDExist(o.GetEntityId());
-        }
-
-        [RequiredByNativeCode]
-        internal System.IntPtr GetCachedPtr()
-        {
-            return m_CachedPtr;
-        }
-
-        [RequiredByNativeCode]
-        static void GetCachedPtrFromNative(System.Object obj, out System.IntPtr ptr)
-        {
-            var self = UnsafeUtility.As<System.Object, UnityEngine.Object>(ref obj);
-            // TODO: change parameter to UnityEngine.Object once additional proxy work is done to allow passing GC handles directly
-            ptr = self.m_CachedPtr;
-        }
-
-        [RequiredByNativeCode]
-        static void SetCachedPtrFromNative(System.Object obj, System.IntPtr ptr)
-        {
-            var self = UnsafeUtility.As<System.Object, UnityEngine.Object>(ref obj);
-            // TODO: change parameter to UnityEngine.Object once additional proxy work is done to allow passing GC handles directly
-            self.m_CachedPtr = ptr;
         }
 
         [RequiredByNativeCode]
         static void GetEntityIdFromNative(System.Object obj, out EntityId v)
         {
+            // TODO: change parameter to UnityEngine.Object once additional proxy work is done to allow passing GC handles directly
             var self = UnsafeUtility.As<System.Object, UnityEngine.Object>(ref obj);
             v = self.m_EntityId;
         }
@@ -402,6 +331,16 @@ namespace UnityEngine
         {
             var self = UnsafeUtility.As<System.Object, UnityEngine.Object>(ref obj);
             self.m_EntityId = v;
+        }
+
+        // Called by native when a native object gets this managed object as its wrapper
+        // (Scripting::ConnectScriptingWrapperToObject).
+        [RequiredByNativeCode]
+        static void BindNativeObject(System.Object obj, EntityId v)
+        {
+            var unityObj = UnsafeUtility.As<System.Object, UnityEngine.Object>(ref obj);
+            unityObj.m_EntityId = v;
+            unityObj.m_UnityRuntimeErrorString = null;
         }
 
         [RequiredByNativeCode]
@@ -420,16 +359,6 @@ namespace UnityEngine
         {
             var self = UnsafeUtility.As<System.Object, UnityEngine.Object>(ref obj);
             return self.GetUnityRuntimeErrorString();
-        }
-
-        [RequiredByNativeCode]
-        static void BindNativeObject(System.Object obj, System.IntPtr cachedPtr, EntityId v)
-        {
-            // TODO: change parameter to UnityEngine.Object once additional proxy work is done to allow passing GC handles directly
-            var unityObj = UnsafeUtility.As<System.Object, UnityEngine.Object>(ref obj);
-            unityObj.m_CachedPtr = cachedPtr;
-            unityObj.m_EntityId = v;
-            unityObj.m_UnityRuntimeErrorString = null;
         }
 
         // The name of the object.
@@ -793,6 +722,39 @@ namespace UnityEngine
         [FreeFunction("AllocateEntityIds")]
         internal extern static EntityId[] AllocateEntityIds(int count);
 
+        // Byte offset of the GCHandle member inside a C++ Object; the native store only
+        // hands out an Object*, and the GCHandle that links it to a managed wrapper is
+        // part of Object's layout, so the resolution below lives here rather than in the
+        // low-level EntityIdStore. GetOffsetOfGCHandleInCPlusPlusObject is declared with
+        // the other native layout offsets further down.
+        //
+        // -1 until first resolved; the offset is a constant of the C++ Object layout, so a
+        // benign race just recomputes the same value. Survives domain reloads (the native
+        // layout is invariant); a runtime that resets statics anyway just re-fetches.
+        [NoAutoStaticsCleanup]
+        static int s_OffsetOfGCHandleInObject = -1;
+
+        // Resolves an EntityId to its managed wrapper via the native object's GCHandle.
+        // null when the entity is not resident, or is resident natively but not yet wrapped
+        // (e.g. a baked / deserialized ref on first access), so the caller can fall back to
+        // native resolution which materializes the wrapper.
+        internal static unsafe T GetManagedObject<T>(EntityId entity) where T : Object
+        {
+            void* objectPtr = EntityIdStore.GetNativeObject(entity);
+            if (objectPtr == null)
+                return null;
+
+            int offset = s_OffsetOfGCHandleInObject;
+            if (offset < 0)
+                s_OffsetOfGCHandleInObject = offset = GetOffsetOfGCHandleInCPlusPlusObject();
+
+            GCHandle handle = *(GCHandle*)((byte*)objectPtr + offset);
+            // Reading Target on an empty handle would throw.
+            if (!handle.IsAllocated)
+                return null;
+            return UnsafeUtility.As<T>(handle.Target);
+        }
+
         // Makes the object /target/ not be destroyed automatically when loading a new scene.
         [FreeFunction("GetSceneManager().DontDestroyOnLoad", ThrowsException = true)]
         public extern static void DontDestroyOnLoad([NotNull] Object target);
@@ -984,8 +946,21 @@ namespace UnityEngine
 
         public static bool operator!=(Object x, Object y) { return !CompareBaseObjects(x, y); }
 
-        [NativeMethod(Name = "Object::GetOffsetOfInstanceIdMember", IsFreeFunction = true, IsThreadSafe = true)]
-        extern static int GetOffsetOfInstanceIDInCPlusPlusObject();
+        [NativeMethod(Name = "Object::GetOffsetOfGCHandleMember", IsFreeFunction = true, IsThreadSafe = true)]
+        extern static int GetOffsetOfGCHandleInCPlusPlusObject();
+
+        [NativeMethod(Name = "Object::GetOffsetOfTypeIndexWord", IsFreeFunction = true, IsThreadSafe = true)]
+        extern static int GetOffsetOfTypeIndexWordInCPlusPlusObject();
+
+        [NativeMethod(Name = "Object::RegisterCreatedCallback", IsFreeFunction = true, IsThreadSafe = true)]
+        internal extern static void RegisterEntityCreatedCallback(IntPtr callback);
+
+        [NativeMethod(Name = "Object::RegisterEntityDestroyedCallback", IsFreeFunction = true, IsThreadSafe = true)]
+        internal extern static void RegisterEntityDestroyedCallback(IntPtr callback);
+
+        // Editor fake-null (MonoObjectNULL) side channel; see Scripting::SetPendingFakeNullWrapper.
+        [NativeMethod(Name = "Scripting::TakePendingFakeNullWrapper", IsFreeFunction = true, IsThreadSafe = true)]
+        extern static IntPtr TakePendingFakeNullWrapper();
 
         [NativeMethod(Name = "CurrentThreadIsMainThread", IsFreeFunction = true, IsThreadSafe = true)]
         extern static bool CurrentThreadIsMainThread();
@@ -1038,7 +1013,7 @@ namespace UnityEngine
         internal extern static Object FindObjectFromInstanceIDThreadSafe(EntityId instanceID);
 
         [FreeFunction("UnityEngineObjectBindings::GetPtrFromInstanceID")]
-        private extern static IntPtr GetPtrFromInstanceID(EntityId instanceID, Type objectType, out bool isMonoBehaviour);
+        private extern static IntPtr GetPtrFromInstanceID(EntityId instanceID, Type objectType);
 
         [VisibleToOtherModules]
         [FreeFunction("UnityEngineObjectBindings::ForceLoadFromInstanceID")]
@@ -1046,7 +1021,8 @@ namespace UnityEngine
         [VisibleToOtherModules("UnityEngine.UIElementsModule")]
         internal static Object CreateMissingReferenceObject(EntityId instanceID)
         {
-            return new Object { m_EntityId = instanceID };
+            // Never bound, so it carries the id tagged as released
+            return new Object { m_EntityId = TagReleasedWrapperId(instanceID) };
         }
 
         [FreeFunction("UnityEngineObjectBindings::MarkObjectDirty", HasExplicitThis = true)]
@@ -1055,6 +1031,183 @@ namespace UnityEngine
         [VisibleToOtherModules]
         internal static class MarshalledUnityObject
         {
+            // Lazy scripting-wrapper creation, owned by managed code.
+            //
+            // A native Object carries an 8-byte GCHandle slot (see BaseObject.h). The wrapper is created
+            // here in C# on first use and its strong GCHandle is written back into that slot, so every
+            // later lookup (native or managed) resolves to the same instance. The runtime type is read
+            // from native memory: the type index is in a bitfield word at s_TypeIndexWordOffset, isolated
+            // with the shift/mask below (matching the bit layout in BaseObject.h).
+            //
+            // Offsets are read once by Initialize(); the per-object path is then plain memory access
+            // plus a dictionary lookup for the factory. Not set via field initializers or a static ctor:
+            // a .cctor would add a class-init check before every offset read on the resolve path.
+            // Initialize() must run before the first resolve; CoreInitializer calls it from [OnAssemblyLoaded].
+            // Native layout offsets, valid for the process lifetime.
+            [NoAutoStaticsCleanup] static int s_GCHandleOffset;
+            [NoAutoStaticsCleanup] static int s_TypeIndexWordOffset;
+
+            // Called by CoreInitializer before any wrapper is resolved. See the offset fields above for
+            // why this is a method, not a static ctor.
+            internal static void Initialize()
+            {
+                s_GCHandleOffset = GetOffsetOfGCHandleInCPlusPlusObject();
+                s_TypeIndexWordOffset = GetOffsetOfTypeIndexWordInCPlusPlusObject();
+            }
+
+            // kMemLabelBits(11) + kTemporaryFlagsBits(1) + kHideFlagsBits(7) + kIsPersistentBits(1)
+            const int k_TypeIndexShift = 20;
+            // kCachedTypeIndexBits(12)
+            const uint k_TypeIndexMask = 0xFFF;
+
+
+            // Returns the managed wrapper for the native object at objPtr, whose EntityId is id, creating the
+            // wrapper on first use. The cached case is inlined; the create-on-miss path is outlined below.
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public static unsafe UnityEngine.Object EnsureScriptingWrapperFor(IntPtr objPtr, EntityId id)
+            {
+                // Fast path: wrapper already created.
+                IntPtr existing = *(IntPtr*)((byte*)objPtr + s_GCHandleOffset);
+                if (existing != IntPtr.Zero)
+                    return ResolveWrapperHandle(existing);
+
+                return CreateScriptingWrapperForSlow(objPtr, id);
+            }
+
+            // Creates the wrapper and publishes its handle into the slot with a CAS. If another thread
+            // published first, frees ours and uses theirs. Building a wrapper twice on a race is harmless:
+            // it only stores the EntityId, and the extra managed object becomes garbage once its handle is freed.
+            [MethodImpl(MethodImplOptions.NoInlining)]
+            static unsafe UnityEngine.Object CreateScriptingWrapperForSlow(IntPtr objPtr, EntityId id)
+            {
+                uint word = *(uint*)((byte*)objPtr + s_TypeIndexWordOffset);
+                int runtimeTypeIndex = (int)((word >> k_TypeIndexShift) & k_TypeIndexMask);
+
+                // Walks the native RTTI base chain to the nearest registered wrapper factory; native-only
+                // types resolve to their nearest managed ancestor. The ctor stores the EntityId.
+                var wrapper = TypeManagerV2.CreateProxyObject(runtimeTypeIndex, id) as UnityEngine.Object;
+                if (wrapper == null)
+                {
+                    // Scripted object (MonoBehaviour/ScriptableObject subclass) not yet created by the
+                    // MonoScript machinery. Don't create one here: it would be the wrong type. Mirrors
+                    // native ScriptingWrapperFor's IsAScriptedObject() early-out.
+                    return null;
+                }
+
+                if (!TryPublishWrapper(objPtr, wrapper, out IntPtr installed))
+                {
+                    // Another thread published first: use theirs.
+                    return ResolveWrapperHandle(installed);
+                }
+                return wrapper;
+            }
+
+            // Publishes `wrapper` as the managed wrapper of the native object at objPtr: allocates a strong
+            // GCHandle (kept for the native object's lifetime; freed and the slot zeroed natively when the object
+            // is destroyed or the domain is unloaded) and CASes it into the object's GCHandle slot. Returns false,
+            // with the handle freed and `installed` set to the existing handle, if the slot was already taken.
+            internal static unsafe bool TryPublishWrapper(IntPtr objPtr, UnityEngine.Object wrapper, out IntPtr installed)
+            {
+                GCHandle handle = GCHandle.Alloc(wrapper);
+                IntPtr* slot = (IntPtr*)((byte*)objPtr + s_GCHandleOffset);
+                installed = Interlocked.CompareExchange(ref *slot, GCHandle.ToIntPtr(handle), IntPtr.Zero);
+                if (installed != IntPtr.Zero)
+                {
+                    handle.Free();
+                    return false;
+                }
+                return true;
+            }
+
+            internal static bool TryPublishWrapper(IntPtr objPtr, UnityEngine.Object wrapper)
+            {
+                return TryPublishWrapper(objPtr, wrapper, out _);
+            }
+
+            // A MonoBehaviour/ScriptableObject is its C# instance: only the one in the native GC-handle slot is the object,
+            // not a placeholder or stale instance with the same id. Other types carry no managed state, so any instance is.
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            internal static unsafe bool IsInstanceOf(void* objPtr, UnityEngine.Object o)
+            {
+                IntPtr handle = *(IntPtr*)((byte*)objPtr + s_GCHandleOffset);
+                if (handle != IntPtr.Zero && ReferenceEquals(ResolveWrapperHandle(handle), o))
+                    return true;
+                return !(o is MonoBehaviour || o is ScriptableObject);
+            }
+
+            // Marshalling for standards-compliant backends (CoreCLR). A UnityEngine.Object parameter, return value,
+            // struct field or array element crosses the boundary as its EntityId; native resolves the id when it
+            // needs the pointer (Marshalling::ReadOnlyUnityObjectMarshaller). Marshalling in is a field read, plus one
+            // EntityIdStore lookup for [NotNull] parameters so the exception is raised before the call.
+
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public static unsafe EntityId MarshalId<T>(T obj) where T : Object
+            {
+                // Do not do an == null or .Equals(null) check here or anything that would make an icall; see Marshal<T>.
+                if (ReferenceEquals(obj, null))
+                    return EntityId.None;
+
+                var storedId = obj.m_EntityId;
+                if (EntityIdStore.GetRawNativeObject(storedId) != null)
+                    return storedId;
+                if (IsReleasedWrapperId(storedId))
+                    return MarshalReleasedWrapperId(obj, storedId);
+                // Native loads an unloaded asset when it resolves the id; a script-derived instance that is not the
+                // object's own must not cause that.
+                if (IsScriptDerivedClass(obj))
+                    return EntityId.None;
+                return storedId;
+            }
+
+            // Native resolves ids with a lookup that accepts unpublished objects, so a released wrapper must only pass a published or unloaded one
+            static unsafe EntityId MarshalReleasedWrapperId<T>(T obj, EntityId storedId) where T : Object
+            {
+                var entityId = UntagReleasedWrapperId(storedId);
+                if (EntityIdStore.GetNativeObject(entityId) != null)
+                    return entityId;
+                if (EntityIdStore.GetRawNativeObject(entityId) == null)
+                    return IsScriptDerivedClass(obj) ? EntityId.None : entityId;
+
+                // Still loading or being destroyed: the PersistentManager waits for a load in flight
+                return MarshalFromInstanceId(obj) != IntPtr.Zero ? entityId : EntityId.None;
+            }
+
+            // [NotNull] parameter: obj itself has already been null-checked by the generated code. Throws
+            // ArgumentNullException (with the "destroyed but still trying to access it" diagnostics) unless obj
+            // resolves to a live native object.
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public static EntityId MarshalIdNotNull<T>(T obj, string parameterName) where T : Object
+            {
+                if (!ResolvesToLiveNativeObject(obj))
+                    ThrowArgumentNullException(obj, parameterName);
+                return obj.GetEntityId();
+            }
+
+            // [NotNull] 'this' or struct field: same, throwing NullReferenceException; see MarshalNotNullThis.
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public static EntityId MarshalIdNotNullThis<T>(T obj) where T : Object
+            {
+                if (MarshalNotNullThis(obj) == IntPtr.Zero)
+                    ThrowNullReferenceException(obj);
+                return obj.GetEntityId();
+            }
+
+            // Whether native will be able to resolve obj's EntityId to an object of type T. Fast path: the id is in
+            // the EntityIdStore and obj is not an editor fake-null wrapper. Editor slow path: the object may be an
+            // unloaded asset (loaded through the PersistentManager) or a fake-null wrapper whose id now names a live
+            // object (type-checked), both handled by MarshalFromInstanceId; native applies the same rules again when
+            // it resolves the id (Scripting::ResolveNativeObject).
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            private static unsafe bool ResolvesToLiveNativeObject<T>(T obj) where T : Object
+            {
+                if (GetNativeObjectForWrapper(obj.m_EntityId) != null && CanResolveDirectly(obj))
+                    return true;
+                return MarshalFromInstanceId(obj) != IntPtr.Zero;
+            }
+
+            // Marshalling for Mono and IL2CPP. A UnityEngine.Object parameter crosses as the native Object*, resolved here
+            // through the EntityIdStore.
+
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public static IntPtr Marshal<T>(T obj) where T : Object
             {
@@ -1068,68 +1221,54 @@ namespace UnityEngine
             }
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public static IntPtr MarshalNotNull<T>(T obj) where T : Object
+            public static unsafe IntPtr MarshalNotNull<T>(T obj) where T : Object
             {
                 // obj has already been checked and is guaranteed to not be null
-                if (obj.m_CachedPtr != IntPtr.Zero)
-                    return obj.m_CachedPtr;
+                void* nativeObject = GetNativeObjectForWrapper(obj.m_EntityId);
+                if (nativeObject != null && CanResolveDirectly(obj))
+                    return (IntPtr)nativeObject;
                 return MarshalFromInstanceId(obj);
             }
 
+            // 'this' of an instance icall: an instance of a script-derived class must be the one the native object holds,
+            // or the call's arguments would come from another instance's fields. Base-class instances carry no such state.
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public static unsafe IntPtr MarshalNotNullThis<T>(T obj) where T : Object
+            {
+                void* nativeObject = GetNativeObjectForWrapper(obj.m_EntityId);
+                if (nativeObject != null && (IsInstanceOf(nativeObject, obj) || !IsScriptDerivedClass(obj)) && CanResolveDirectly(obj))
+                    return (IntPtr)nativeObject;
+                return MarshalFromInstanceId(obj);
+            }
+
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            static bool IsScriptDerivedClass(Object obj)
+            {
+                var type = obj.GetType();
+                return (obj is MonoBehaviour && type != typeof(MonoBehaviour)) || (obj is ScriptableObject && type != typeof(ScriptableObject));
+            }
+
+            // A fake-null wrapper (m_UnityRuntimeErrorString set, see TransferPPtrToMonoObject.cpp) can carry the id of a
+            // live object of another type (UUM-143556); it must resolve through native, which type-checks.
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            internal static bool CanResolveDirectly(Object obj)
+            {
+                return obj.m_UnityRuntimeErrorString == null;
+            }
+
+            // Editor slow path: the object is not loaded, or obj is a fake-null wrapper. Resolves through
+            // native, which loads the object from the PersistentManager if needed and checks that it is
+            // assignable to the declared parameter type T.
             private static IntPtr MarshalFromInstanceId<T>(T obj) where T : Object
             {
                 if (obj.m_EntityId == EntityId.None)
                     return IntPtr.Zero;
 
-                var retPtr = GetPtrFromInstanceID(obj.m_EntityId, typeof(T), out var isNativeInstanceMonoBehaviour);
-                if (retPtr == IntPtr.Zero)
+                // A script-derived instance that is not the object's own must not load the object.
+                if (IsScriptDerivedClass(obj))
                     return IntPtr.Zero;
 
-                if (!isNativeInstanceMonoBehaviour)
-                    return retPtr;
-
-                if (IsMonoBehaviourOrScriptableObjectOrParentClass(obj))
-                    return retPtr;
-
-                return IntPtr.Zero;
-            }
-
-            static bool IsMonoBehaviourOrScriptableObjectOrParentClass(Object obj)
-            {
-                // There might be multiple C# objects pointing to the same C++ object. This is not safe for
-                // MonoBehaviour/ScriptableObject _derived_ classes that might have additional state in their C# objects,
-                // as the C# objects would get out of sync.
-                // However, it is safe for multiple MonoBehaviour/ScriptableObject (and parent classes) C# objects to point to
-                // the same C++ object, because all the state reachable from a C# reference with such a type is stored in the C++ object
-                // and they will therefore always be in sync.
-
-                var objClass = obj.GetType();
-
-                if (objClass == typeof(Object) || objClass == typeof(MonoBehaviour) || objClass == typeof(ScriptableObject))
-                    return true;
-
-                return Array.IndexOf(m_MonoBehaviorBaseClasses, objClass) >= 0;
-            }
-
-            [NoAutoStaticsCleanup] // m_MonoBehaviourBaseClasses can be reused accross code reloads
-            private static readonly Type[] m_MonoBehaviorBaseClasses;
-
-            static MarshalledUnityObject()
-            {
-                var baseClassList = new List<Type>();
-                var baseClass = typeof(MonoBehaviour).BaseType;
-                while (baseClass != typeof(Object))
-                {
-                    baseClassList.Add(baseClass);
-                    baseClass = baseClass.BaseType;
-                }
-                baseClass = typeof(ScriptableObject).BaseType;
-                while (baseClass != typeof(Object))
-                {
-                    baseClassList.Add(baseClass);
-                    baseClass = baseClass.BaseType;
-                }
-                m_MonoBehaviorBaseClasses = baseClassList.ToArray();
+                return GetPtrFromInstanceID(obj.GetEntityId(), typeof(T));
             }
 
             public static void TryThrowEditorNullExceptionObject(Object unityObj) => TryThrowEditorNullExceptionObject(unityObj, null);
@@ -1163,71 +1302,77 @@ namespace UnityEngine
             }
 
 
+            // Scalar return values: native returns the object's EntityId (see Marshalling::UnityObjectReturnValue).
+            // Resolve it through the EntityIdStore and hand back the object's wrapper, creating it on first use.
+            // EntityId.None (or an id that no longer resolves) is null; the editor fake-null wrapper, if any,
+            // comes through the side channel.
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public static T Unmarshal<T>(IntPtr gcHandlePtr) where T : UnityEngine.Object
+            public static unsafe T Unmarshal<T>(EntityId id) where T : UnityEngine.Object
             {
-                if (gcHandlePtr == IntPtr.Zero)
-                    return null;
+                if (id == EntityId.None)
+                    return UnmarshalNullOrFakeNull<T>();
 
-                var gcHandle = FromIntPtrUnsafe(gcHandlePtr);
-                var target = (T)gcHandle.Target;
+                void* objPtr = EntityIdStore.GetRawNativeObject(id);
+                if (objPtr == null)
+                    return UnmarshalNullOrFakeNull<T>();
 
-            // This is to handle the MonoObjectNULL case
-            // If the instance ID is zero then this is a fake null object and there is no native
-            // object that owns this handle.  It was created in UnityEngineMarshalling.h and
-            // needs to be freed here
-            if (target.GetEntityId() == EntityId.None)
-                gcHandle.Free();
-                return target;
+                // The native return type is T by construction, so reinterpret rather than castclass.
+                return UnsafeUtility.As<T>(EnsureScriptingWrapperFor((IntPtr)objPtr, id));
+            }
+
+            // Outlined null / editor fake-null handling; NoInlining keeps Unmarshal<T>'s hot path small.
+            [MethodImpl(MethodImplOptions.NoInlining)]
+            static T UnmarshalNullOrFakeNull<T>() where T : UnityEngine.Object
+            {
+                // MonoObjectNULL fake-null: no native object, delivered through the side channel.
+                // Consume the temp handle and free it here (it was created just for this return).
+                IntPtr pending = TakePendingFakeNullWrapper();
+                if (pending != IntPtr.Zero)
+                {
+                    var tempHandle = FromIntPtrUnsafe(pending);
+                    var fakeNull = (T)tempHandle.Target;
+                    tempHandle.Free();
+                    return fakeNull;
+                }
+                return null;
+            }
+
+            // Resolves a strong GCHandle from an object's slot to its wrapper. On CoreCLR the handle
+            // points at the table entry holding the object reference, so read it directly (like native
+            // scripting_gchandle_get_target_unsafe); the low pin bit is masked off. The slot only ever
+            // holds a UnityEngine.Object, so reinterpret instead of castclass.
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            static unsafe UnityEngine.Object ResolveWrapperHandle(IntPtr handle)
+            {
+                IntPtr* entry = (IntPtr*)(void*)((nint)handle & ~(nint)1);
+                return UnsafeUtility.As<UnityEngine.Object>(UnsafeUtility.As<IntPtr, object>(ref *entry));
             }
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public static GCHandle FromIntPtrUnsafe(IntPtr gcHandle)
             {
-                // Use a unsafe memory cast to avoid the overhead of checking the
-                // IntPtr value for validity in the current domain. The Mono class
-                // library does this which introduces meaningful overhead. We assume
-                // the GC handle we hold is valid for the current domain. There
-                // is no such validity check when constructing and retrieving GC
-                // handles in C++, and we want to avoid the overhead of the check
-                // when doing the equivalent in C#.
-                return UnsafeUtility.As<IntPtr, GCHandle>(ref gcHandle);
+                return GCHandle.FromIntPtr(gcHandle);
             }
 
+            // UnityEngine.Object collections cross as one EntityId per element, in both directions (see
+            // Marshalling::UnityObjectArrayElement / ContainerFromArray). An element that is an unloaded asset keeps
+            // its id; native loads it if it needs the pointer.
             public unsafe static void Marshal<T, TCollectionAccessor>(in TCollectionAccessor collectionAccessor, ref MarshalledArray marshalledArray)
                 where T : UnityEngine.Object
                 where TCollectionAccessor : struct, ICollectionMarshallingAccessor<T>
             {
-                // In the editor we may need to send the instanceID's to native.
-                // There are some cases where we have a valid instanceID but, but the native pointer will be null.
-                // See IsMonoBehaviourOrScriptableObjectOrParentClass
-                marshalledArray.size = marshalledArray.size / 2; // If preallocated we're only preallocated for the size of an IntPtr
-                MarshalledArray.Allocate<T, TCollectionAccessor>(collectionAccessor, ref marshalledArray, sizeof(IntPtr) + sizeof(EntityId), elementCleanupRequired: false);
+                MarshalledArray.Allocate<T, EntityId, TCollectionAccessor>(collectionAccessor, ref marshalledArray, elementCleanupRequired: false);
+                var span = marshalledArray.AsSpan<EntityId>();
 
-                var pointerSpan = marshalledArray.AsSpan<IntPtr>();
-                var entityIdSpan = new Span<EntityId>((IntPtr*)marshalledArray.data + pointerSpan.Length, pointerSpan.Length);
-
-                for (int i = 0; i < pointerSpan.Length; i++)
-                {
-                    var obj = collectionAccessor[i];
-                    if (ReferenceEquals(obj, null))
-                    {
-                        pointerSpan[i] = IntPtr.Zero;
-                        entityIdSpan[i] = EntityId.None;
-                    }
-                    else
-                    {
-                        pointerSpan[i] = MarshalNotNull(obj);
-                        entityIdSpan[i] = obj.m_EntityId;
-                    }
-                }
+                for (int i = 0; i < span.Length; i++)
+                    span[i] = MarshalId(collectionAccessor[i]);
             }
 
             public static void Unmarshal<T, TCollectionAccessor>(in MarshalledArray marshalledArray, ref TCollectionAccessor collectionAccessor)
                 where T : UnityEngine.Object
                 where TCollectionAccessor : struct, ICollectionMarshallingAccessor<T>
             {
-                var span = marshalledArray.GetDataForUnmarshal<T, IntPtr, TCollectionAccessor>(ref collectionAccessor);
+                var span = marshalledArray.GetDataForUnmarshal<T, EntityId, TCollectionAccessor>(ref collectionAccessor);
 
                 for (int i = 0; i < span.Length; i++)
                     collectionAccessor[i] = Unmarshal<T>(span[i]);

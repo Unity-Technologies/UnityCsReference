@@ -62,18 +62,23 @@ public class LiteralText : FormatItem
     {
         if (Length == 0) return ReadOnlySpan<char>.Empty;
 
-        // The buffer is only for 1 character - each escaped char goes into its own LiteralText
-        return SmartSettings.Parser.ConvertCharacterStringLiterals &&
-            BaseString.AsSpan(StartIndex)[0] == SmartSettings.Parser.CharLiteralEscapeChar
-            ? EscapedLiteral.UnEscapeCharLiterals(SmartSettings.Parser.CharLiteralEscapeChar,
-            BaseString.AsSpan(StartIndex, Length),
-            false, new char[1])
-            : BaseString.AsSpan(StartIndex, Length);
+        var span = BaseString.AsSpan(StartIndex, Length);
+
+        return SmartSettings.Parser.ConvertCharacterStringLiterals switch
+        {
+            // The buffer is only for 1 character - each escaped char goes into its own LiteralText
+            true when span[0] == SmartSettings.Parser.CharLiteralEscapeChar
+                => EscapedLiteral.UnEscapeCharLiterals(SmartSettings.Parser.CharLiteralEscapeChar, span, false, true, new char[1]),
+            // An escaped escape char, i.e. "\\", still collapses to one when character literals are not converted
+            false when span.Length == 2 && span[0] == span[1] && span[0] == SmartSettings.Parser.CharLiteralEscapeChar
+                => span.Slice(1),
+            _ => span
+        };
     }
 
     /// <summary>
     /// Clears the <see cref="LiteralText"/> item.
-    /// <para>This method gets called by <see cref="LiteralTextPool"/> when it releases an instance.</para>
+    /// This method gets called by <see cref="LiteralTextPool"/> when it releases an instance.
     /// </summary>
     public override void Clear()
     {

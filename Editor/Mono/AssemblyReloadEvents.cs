@@ -16,6 +16,9 @@ namespace UnityEditor
             remove => m_BeforeAssemblyReloadEvent.Remove(value);
         }
         [AutoStaticsCleanupOnCodeReload]
+        // Backing list for the beforeAssemblyReload event: subscribers attach through their own lifecycle
+        // and re-subscribe after a code reload, so the cleared list refills itself.
+        [IgnoreForUAL0015("Event backing store whose subscribers re-register through their own lifecycle")]
         private static EventWithPerformanceTracker<AssemblyReloadCallback> m_BeforeAssemblyReloadEvent =
             new EventWithPerformanceTracker<AssemblyReloadCallback>($"{nameof(AssemblyReloadEvents)}.{nameof(beforeAssemblyReload)}");
         public static event AssemblyReloadCallback afterAssemblyReload
@@ -24,6 +27,9 @@ namespace UnityEditor
             remove => m_AfterAssemblyReloadEvent.Remove(value);
         }
         [AutoStaticsCleanupOnCodeReload]
+        // Backing store for the afterAssemblyReload event: subscribers attach through their own lifecycle
+        // and re-subscribe after a code reload, so the cleared store refills itself.
+        [IgnoreForUAL0015("Event backing store whose subscribers re-register through their own lifecycle")]
         private static EventWithPerformanceTracker<AssemblyReloadCallback> m_AfterAssemblyReloadEvent =
             new EventWithPerformanceTracker<AssemblyReloadCallback>($"{nameof(AssemblyReloadEvents)}.{nameof(afterAssemblyReload)}");
 

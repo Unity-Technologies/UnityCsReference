@@ -5,7 +5,7 @@
 using System;
 using System.Collections.Generic;
 using JetBrains.Annotations;
-using Unity.GraphToolkit.CSO;
+using Unity.CSO;
 using UnityEditor;
 using UnityEngine;
 using Object = UnityEngine.Object;
@@ -700,7 +700,7 @@ namespace Unity.GraphToolkit.Editor
                 undoStateUpdater.SaveStates(selectionHelper.SelectionStates);
             }
 
-            var subgraphVariableNodes = new Dictionary<VariableDeclarationModelBase, HashSet<VariableNodeModel>>();
+            var subgraphVariableNodes = new Dictionary<Hash128, HashSet<VariableNodeModel>>();
             var elementsToCopy = new List<Model>();
 
             // The subgraph top left position will be used to compute the copied elements' positions in the target graph.
@@ -739,10 +739,10 @@ namespace Unity.GraphToolkit.Editor
                 if (element is VariableNodeModel variableNode)
                 {
                     // Keep track of the variable declarations and their associated variable nodes in the subgraph.
-                    if (!subgraphVariableNodes.TryGetValue(variableNode.VariableDeclarationModel, out var nodes))
+                    if (!subgraphVariableNodes.TryGetValue(variableNode.VariableDeclarationModel.Guid, out var nodes))
                     {
                         nodes = new HashSet<VariableNodeModel>();
-                        subgraphVariableNodes[variableNode.VariableDeclarationModel] = nodes;
+                        subgraphVariableNodes[variableNode.VariableDeclarationModel.Guid] = nodes;
                     }
                     nodes.Add(variableNode);
 
@@ -815,7 +815,7 @@ namespace Unity.GraphToolkit.Editor
                         continue;
 
                     // Get all the instances of that variable declaration in the subgraph.
-                    if (!subgraphVariableNodes.TryGetValue(variableDeclaration, out var variableNodes))
+                    if (!subgraphVariableNodes.TryGetValue(variableDeclaration.Guid, out var variableNodes))
                         continue;
 
                     // For each instance, create a corresponding wire in the target graph.

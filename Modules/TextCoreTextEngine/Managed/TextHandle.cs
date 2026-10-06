@@ -165,8 +165,6 @@ namespace UnityEngine.TextCore.Text
 
                 m_TextGenerationInfo = value;
 
-                //skip the flag getter as it does checks and they would fail while we are doing the setup
-                bool isCachePermanentATG = m_TextHandleFlags.HasFlag(TextHandleFlags.IsCachedPermanentATG);
                 //Set the generation to something that would be higly unprobable instead of the current one to see if it makes a difference
                 m_CreateGenerationIteration = TextGenerationInfo.CurrentGenerationIteration;
             }
@@ -181,7 +179,7 @@ namespace UnityEngine.TextCore.Text
         internal bool IsCachedPermanentATG {
             get
             {
-                bool isCacheATG = m_TextHandleFlags.HasFlag(TextHandleFlags.IsCachedPermanentATG);
+                bool isCacheATG = (m_TextHandleFlags & TextHandleFlags.IsCachedPermanentATG) != 0;
 
                 //For ATG, textInfo can be allocated during the frame generation wihout being in permanent cache
                 if (isCacheATG)
@@ -203,7 +201,7 @@ namespace UnityEngine.TextCore.Text
         {
             get
             {
-                bool isCacheTextCore = m_TextHandleFlags.HasFlag(TextHandleFlags.IsCachedPermanentTextCore);
+                bool isCacheTextCore = (m_TextHandleFlags & TextHandleFlags.IsCachedPermanentTextCore) != 0;
                 if (!IsCachedTemporary && isCacheTextCore != (TextInfoNode != null))
                     Debug.AssertFormat(false, "TextHandle : TextCore Permanent cache mismatch. isCache {0} but {1}", isCacheTextCore, TextInfoNode == null ? " has no node": "has a node");
 
@@ -768,7 +766,27 @@ namespace UnityEngine.TextCore.Text
             }
 
             int id = TextLib.FindIntersectingLink(point * GetPixelsPerPoint(), textGenerationInfo);
+            return GetLinkInfo(id);
+        }
 
+        [VisibleToOtherModules("UnityEngine.IMGUIModule", "UnityEngine.UIElementsModule")]
+        internal RichTextLinkInfo ATGFindIntersectingLink(Vector2 point, out string linkText)
+        {
+            Debug.Assert(useAdvancedText);
+
+            if (textGenerationInfo == IntPtr.Zero)
+            {
+                Debug.LogError("TextGenerationInfo pointer is null.");
+                linkText = string.Empty;
+                return new RichTextLinkInfo { id = -1 };
+            }
+
+            linkText = TextLib.GetIntersectingLinkText(point * GetPixelsPerPoint(), textGenerationInfo, out int id);
+            return GetLinkInfo(id);
+        }
+
+        RichTextLinkInfo GetLinkInfo(int id)
+        {
             if (m_Links == null || id < 0 || id >= m_Links.Length)
                 return new RichTextLinkInfo { id = -1 };
 
@@ -784,7 +802,7 @@ namespace UnityEngine.TextCore.Text
                 return;
             }
 
-            bool isCacheATG = m_TextHandleFlags.HasFlag(TextHandleFlags.IsCachedPermanentATG);
+            bool isCacheATG = (m_TextHandleFlags & TextHandleFlags.IsCachedPermanentATG) != 0;
             if (isCacheATG)
                 return;
 

@@ -22,7 +22,6 @@ namespace UnityEditor
     [NativeHeader("Runtime/Input/TimeManager.h")]
     [NativeHeader("Editor/Src/ProjectVersion.h")]
     [NativeHeader("Runtime/Misc/BuildSettings.h")]
-    [NativeHeader("Runtime/Interfaces/ILicensing.h")]
     [StaticAccessor("EditorApplicationBindings", StaticAccessorType.DoubleColon)]
     public sealed partial class EditorApplication
     {
@@ -147,9 +146,6 @@ namespace UnityEditor
         {
             get { return ScriptingRuntimeVersion.Latest; }
         }
-
-        [StaticAccessor("GetILicensing()", StaticAccessorType.Arrow)]
-        internal static extern string GetLicenseType();
 
         // Prevents loading of assemblies when it is inconvenient.
         [StaticAccessor("GetApplication()", StaticAccessorType.Dot)]
@@ -376,6 +372,9 @@ namespace UnityEditor
         internal static extern void CloseAndRelaunch(string[] arguments);
 
         internal static extern void RequestCloseAndRelaunchWithCurrentArguments();
+
+        // Deferred restart with the current launch arguments minus argsToRemove plus argsToAdd.
+        internal static extern void RequestCloseAndRelaunchWithModifiedArguments(string[] argsToRemove, string[] argsToAdd);
 
         // Triggers the editor to restart, after which all scripts will be recompiled.
         internal static void RestartEditorAndRecompileScripts()

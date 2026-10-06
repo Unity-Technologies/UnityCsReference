@@ -25,13 +25,14 @@ namespace UnityEditor.Audio
     [HelpURL("class-AudioMixer")]
     internal class AudioMixerSnapshotController : AudioMixerSnapshot
     {
+        internal AudioMixerSnapshotController(global::UnityEngine.EntityId id) : base(id) {}
         public AudioMixerSnapshotController(AudioMixer owner)
         {
-            Internal_CreateAudioMixerSnapshotController(this, owner);
+            SetEntityIdFromConstructor(Internal_CreateAudioMixerSnapshotController(owner));
         }
 
         [FreeFunction("AudioMixerSnapshotControllerBindings::Internal_CreateAudioMixerSnapshotController")]
-        private static extern void Internal_CreateAudioMixerSnapshotController([Writable] AudioMixerSnapshotController mono, AudioMixer owner);
+        private static extern EntityId Internal_CreateAudioMixerSnapshotController(AudioMixer owner);
 
         public extern GUID snapshotID { get; }
 

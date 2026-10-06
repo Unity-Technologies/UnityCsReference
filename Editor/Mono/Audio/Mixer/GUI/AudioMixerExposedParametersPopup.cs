@@ -2,7 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: AudioAuthoring not yet converted
 using System;
 using Unity.Scripting.LifecycleManagement;
 using UnityEngine;
@@ -25,7 +24,7 @@ namespace UnityEditor
         }
 
         // Cache to prevent constructing string on every event
-        static readonly GUIContent m_ButtonContent = EditorGUIUtility.TrTextContent("", "Audio Mixer parameters can be exposed to scripting. Select an Audio Mixer Group, right click one of its properties in the Inspector and select 'Expose'.");
+        static readonly GUIContent m_ButtonContent = L10n.TextContent("", "Audio Mixer parameters can be exposed to scripting. Select an Audio Mixer Group, right click one of its properties in the Inspector and select 'Expose'.", null, null);
         [NoAutoStaticsCleanup] // Display cache invalidation counter compared against controller state; -1 default re-syncs on next access, safe to persist across reload.
         static int m_LastNumExposedParams = -1;
         static GUIContent GetButtonContent(AudioMixerController controller)
@@ -64,4 +63,3 @@ namespace UnityEditor
         }
     }
 } // namespace
-#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

@@ -15,6 +15,8 @@ namespace UnityEditor.VFX
     [NativeClass("VisualEffectSubgraph", PersistentTypeId = 0x3B4A7520)]
     internal abstract class VisualEffectSubgraph : VisualEffectObject
     {
+        protected VisualEffectSubgraph() {}
+        protected internal VisualEffectSubgraph(global::UnityEngine.EntityId id) : base(id) {}
     }
 
     [UsedByNativeCode]
@@ -23,14 +25,15 @@ namespace UnityEditor.VFX
     [NativeClass("VisualEffectSubgraphOperator", PersistentTypeId = 0x3B4A752B)]
     internal class VisualEffectSubgraphOperator : VisualEffectSubgraph
     {
+        internal VisualEffectSubgraphOperator(global::UnityEngine.EntityId id) : base(id) {}
         public const string Extension = ".vfxoperator";
 
         public VisualEffectSubgraphOperator()
         {
-            CreateVisualEffectSubgraph(this);
+            SetEntityIdFromConstructor(CreateVisualEffectSubgraph());
         }
 
-        private static extern void CreateVisualEffectSubgraph([Writable] VisualEffectSubgraphOperator subGraph);
+        private static extern EntityId CreateVisualEffectSubgraph();
     }
 
     [UsedByNativeCode]
@@ -39,12 +42,13 @@ namespace UnityEditor.VFX
     [NativeClass("VisualEffectSubgraphBlock", PersistentTypeId = 0x3B4A752C)]
     internal class VisualEffectSubgraphBlock : VisualEffectSubgraph
     {
+        internal VisualEffectSubgraphBlock(global::UnityEngine.EntityId id) : base(id) {}
         public const string Extension = ".vfxblock";
         public VisualEffectSubgraphBlock()
         {
-            CreateVisualEffectSubgraph(this);
+            SetEntityIdFromConstructor(CreateVisualEffectSubgraph());
         }
 
-        private static extern void CreateVisualEffectSubgraph([Writable] VisualEffectSubgraphBlock subGraph);
+        private static extern EntityId CreateVisualEffectSubgraph();
     }
 }

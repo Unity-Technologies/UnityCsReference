@@ -18,7 +18,7 @@ namespace Unity.Localization;
 /// editor's "Add Metadata" menu.
 /// </remarks>
 /// <example>
-/// <para>Implement the interface to define a custom metadata item that carries its own fields.</para>
+/// Implement the interface to define a custom metadata item that carries its own fields.
 /// <code source="../../../../Modules/LocalizationRuntime/Tests/UTFTests/Localization.Samples/Metadata/IMetadataExample.cs"/>
 /// </example>
 /// <seealso cref="MetadataCollection"/>
@@ -40,7 +40,7 @@ public interface IMetadata
 /// <see cref="AddMetadata(IMetadata)"/> and <see cref="RemoveMetadata(IMetadata)"/>.
 /// </remarks>
 /// <example>
-/// <para>Add a comment to a collection, then read it back by type.</para>
+/// Add a comment to a collection, then read it back by type.
 /// <code source="../../../../Modules/LocalizationRuntime/Tests/UTFTests/Localization.Samples/Metadata/MetadataCollectionOverviewExample.cs"/>
 /// </example>
 /// <seealso cref="IMetadata"/>
@@ -72,7 +72,7 @@ public class MetadataCollection
     /// <typeparam name="T">The metadata type to find.</typeparam>
     /// <returns>The first item assignable to <typeparamref name="T"/>, or null when none is present.</returns>
     /// <example>
-    /// <para>Read the first comment attached to a collection.</para>
+    /// Read the first comment attached to a collection.
     /// <code source="../../../../Modules/LocalizationRuntime/Tests/UTFTests/Localization.Samples/Metadata/MetadataCollectionGetMetadataExample.cs"/>
     /// </example>
     public T GetMetadata<T>() where T : class, IMetadata
@@ -94,7 +94,7 @@ public class MetadataCollection
     /// <typeparam name="T">The metadata type to enumerate.</typeparam>
     /// <returns>A sequence of the items assignable to <typeparamref name="T"/>.</returns>
     /// <example>
-    /// <para>Iterate every comment attached to a collection.</para>
+    /// Iterate every comment attached to a collection.
     /// <code source="../../../../Modules/LocalizationRuntime/Tests/UTFTests/Localization.Samples/Metadata/MetadataCollectionGetMetadatasExample.cs"/>
     /// </example>
     public IEnumerable<T> GetMetadatas<T>() where T : class, IMetadata
@@ -115,7 +115,7 @@ public class MetadataCollection
     /// <typeparam name="T">The metadata type to test for.</typeparam>
     /// <returns><c>true</c> if at least one item is assignable to <typeparamref name="T"/>; otherwise, <c>false</c>.</returns>
     /// <example>
-    /// <para>Check whether a collection already has a comment.</para>
+    /// Check whether a collection already has a comment.
     /// <code source="../../../../Modules/LocalizationRuntime/Tests/UTFTests/Localization.Samples/Metadata/MetadataCollectionContainsExample.cs"/>
     /// </example>
     public bool Contains<T>() where T : class, IMetadata => GetMetadata<T>() != null;
@@ -129,7 +129,7 @@ public class MetadataCollection
     /// </remarks>
     /// <param name="metadata">The item to add.</param>
     /// <example>
-    /// <para>Attach a comment to a collection.</para>
+    /// Attach a comment to a collection.
     /// <code source="../../../../Modules/LocalizationRuntime/Tests/UTFTests/Localization.Samples/Metadata/MetadataCollectionAddMetadataExample.cs"/>
     /// </example>
     public void AddMetadata(IMetadata metadata)
@@ -147,7 +147,7 @@ public class MetadataCollection
     /// <param name="metadata">The item to remove.</param>
     /// <returns><c>true</c> if the item was present and removed; otherwise, <c>false</c>.</returns>
     /// <example>
-    /// <para>Remove a previously added metadata item.</para>
+    /// Remove a previously added metadata item.
     /// <code source="../../../../Modules/LocalizationRuntime/Tests/UTFTests/Localization.Samples/Metadata/MetadataCollectionRemoveMetadataExample.cs"/>
     /// </example>
     public bool RemoveMetadata(IMetadata metadata) => m_Items.Remove(metadata);

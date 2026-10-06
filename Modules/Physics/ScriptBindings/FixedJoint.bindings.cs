@@ -14,5 +14,9 @@ namespace UnityEngine
     [RequireComponent(typeof(Rigidbody))]
     [NativeHeader("Modules/Physics/FixedJoint.h")]
     [NativeClass("Unity::FixedJoint", PersistentTypeId = 138)]
-    public class FixedJoint : Joint {}
+    public class FixedJoint : Joint
+    {
+        internal FixedJoint(global::UnityEngine.EntityId id) : base(id) {}
+        public FixedJoint() {}
+    }
 }

@@ -457,9 +457,9 @@ namespace UnityEditorInternal.Profiling
 
         internal static class Styles
         {
-            public static readonly GUIContent gatherObjectReferences = EditorGUIUtility.TrTextContent("Gather object references", "Collect reference information to see where objects are referenced from. Disable this to save memory");
-            public static readonly GUIContent takeSample = EditorGUIUtility.TrTextContent("Take Sample {0}", "Warning: this may freeze the Editor and the connected Player for a moment!");
-            public static readonly GUIContent memoryUsageInEditorDisclaimer = EditorGUIUtility.TrTextContent("Memory usage in the Editor is not the same as it would be in a Player.");
+            public static readonly GUIContent gatherObjectReferences = L10n.TextContent("Gather object references", "Collect reference information to see where objects are referenced from. Disable this to save memory", null, null);
+            public static readonly GUIContent takeSample = L10n.TextContent("Take Sample {0}", "Warning: this may freeze the Editor and the connected Player for a moment!", null, null);
+            public static readonly GUIContent memoryUsageInEditorDisclaimer = L10n.TextContent("Memory usage in the Editor is not the same as it would be in a Player.", null, null, null);
             public static readonly string packageInstallSuggestion = L10n.Tr("Install Memory Profiler Package{0}", null);
             public static readonly string packageInstallSuggestionVersionPart = L10n.Tr(" (Version {0})", null);
             [NoAutoStaticsCleanup] // Not readonly: updated with version info when package search results arrive

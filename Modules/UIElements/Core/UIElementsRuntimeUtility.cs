@@ -2,8 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: UIToolkitFramework not yet converted
-#pragma warning disable UAL0010,UAL0011,UAL0012,UAL0013,UAL0014 // AutoStaticsCleanup: UIToolkitFramework not yet converted
 using Unity.Scripting.LifecycleManagement;
 using System;
 using System.Collections.Generic;
@@ -31,6 +29,14 @@ namespace UnityEngine.UIElements
         public static readonly ProfilerMarker s_PreUpdatePanelRenderersMarker = new ProfilerMarker(ProfilerCategory.UIToolkit, "UIElements.PreUpdatePanelRenderers");
         public static readonly ProfilerMarker s_UpdatePanelRenderersMarker = new ProfilerMarker(ProfilerCategory.UIToolkit, "UIElements.UpdatePanelRenderers");
 
+        // Must stay a lazily-triggered static ctor, and this class must carry no lifecycle hook at all:
+        // any [OnCodeLoaded]/[OnCodeUnloading] method here is a first access to the type, which forces
+        // this initializer to run inside the code-load window, where the editor-resources bake has
+        // nothing loadable yet and EditorResources::Load asserts.
+        // No teardown is needed either - every callback installed below lives in a field that is
+        // itself [AutoStaticsCleanupOnCodeReload], so reload clears them and the next first access
+        // re-installs them per ALC.
+#pragma warning disable UAL0015 // installs native render/update callbacks, re-installed on first access after reload
         static UIElementsRuntimeUtility()
         {
             Canvas.externBeginRenderOverlays = BeginRenderOverlays;
@@ -39,6 +45,7 @@ namespace UnityEngine.UIElements
 
             UIElementsRuntimeUtilityNative.SetUpdateCallback(UpdatePanels);
         }
+#pragma warning restore UAL0015
 
         /// <summary>
         /// Returns true if any screen-space overlay panel has elements with backdrop-filter enabled.
@@ -117,7 +124,7 @@ namespace UnityEngine.UIElements
                 UIElementsUtility.GetAllPanels(panels, ContextType.Player);
                 foreach (var panel in panels)
                 {
-                    if (!(panel is BaseRuntimePanel runtimePanel))
+                    if (!(panel is BaseRuntimePanel runtimePanel) || panel is IAuthoringPanel)
                         continue;
 
                     if (runtimePanel.drawsInCameras)
@@ -346,6 +353,7 @@ namespace UnityEngine.UIElements
         }
 
         [AutoStaticsCleanupOnCodeReload]
+        [IgnoreForUAL0015("Lazily re-created by the defaultEventSystem getter on next access after reload")]
         private static DefaultEventSystem s_DefaultEventSystem;
         internal static DefaultEventSystem defaultEventSystem =>
             s_DefaultEventSystem ?? (s_DefaultEventSystem = new DefaultEventSystem());
@@ -367,7 +375,14 @@ namespace UnityEngine.UIElements
                 ComponentManager.SharedManager.Collect();
             }
 
-            NativeTextBufferReclaimer.Collect();
+            // Not inside ComponentManager.Collect: that manager exists only once an unmanaged component
+            // does, while a managed-only composition still queues finalizer releases.
+            ComponentTypeSet.DrainPendingReleases();
+
+            if (TextBufferStore.IsSharedManagerCreated)
+            {
+                TextBufferStore.SharedManager.Collect();
+            }
 
             using (s_PreUpdatePanelRenderersMarker.Auto())
             {
@@ -442,8 +457,10 @@ namespace UnityEngine.UIElements
 
         internal static void RemovePanelRenderer(PanelRenderer panelRenderer)
         {
-            var ps = panelRenderer.panelSettings as PanelSettings;
-            ps?.DetachPanelComponent(panelRenderer);
+            // The inherited panelSettings resolves parentUI, and while a prefab unloads that reloads a parent that is
+            // already gone
+            if (panelRenderer.rootVisualElement != null)
+                panelRenderer.ownPanelSettings?.DetachPanelComponent(panelRenderer);
 
             s_AllPanelRenderers.Remove(panelRenderer);
             s_DirtyPanelRenderers.Remove(panelRenderer);
@@ -734,5 +751,3 @@ namespace UnityEngine.UIElements
         }
     }
 }
-#pragma warning restore UAL0010,UAL0011,UAL0012,UAL0013,UAL0014
-#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

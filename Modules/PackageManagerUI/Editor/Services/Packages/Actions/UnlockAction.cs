@@ -14,7 +14,7 @@ internal class UnlockAction : PackageAction
         m_PageManager = pageManager;
     }
 
-    protected override bool TriggerActionImplementation(IReadOnlyCollection<IPackage> packages)
+    protected override bool TriggerActionImplementation(IReadOnlyList<IPackage> packages)
     {
         var packageUniqueIds = packages.SelectToNewArray(p => p.uniqueId);
         m_PageManager.activePage.SetUserUnlockedState(packageUniqueIds, true);

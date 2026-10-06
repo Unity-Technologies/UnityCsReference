@@ -16,6 +16,8 @@ namespace UnityEngine
     [NativeClass("Unity::Joint", PersistentTypeId = 57)]
     public class Joint : Component
     {
+        public Joint() {}
+        internal Joint(global::UnityEngine.EntityId id) : base(id) {}
         ///<summary>A reference to another rigidbody this joint connects to.</summary>
         ///<remarks>If not set then the joint connects the object to a fixed point in world space.
         ///

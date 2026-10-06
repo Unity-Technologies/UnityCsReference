@@ -26,8 +26,13 @@ namespace Unity.Multiplayer.PlayMode.Editor
         public UnityPlayer GetPlayer() => MultiplayerPlaymode.Players[GetInput(PlayerInstanceIndex)];
         public bool IsRunning()
         {
+            if (!EditorApplication.isPlaying)
+                return false;
+
+            // The clone editors are always in sync with the main one. Launching and
+            // UnexpectedlyStopped still count as running: a restart decision is pending.
             var player = GetPlayer();
-            return player.PlayerState == PlayerState.Launched;
+            return player.PlayerState is not PlayerState.NotLaunched;
         }
 
         public CloneEditorRunNode()
@@ -135,8 +140,7 @@ namespace Unity.Multiplayer.PlayMode.Editor
 
             }
 
-            // Wait until Scenario Mode players (including main player) are out of playmode
-            while (EditorApplication.isPlaying) { await Task.Delay(100); }
+            while (IsRunning()) { await Task.Delay(100); }
 
             if (!shouldDeactivate)
             {

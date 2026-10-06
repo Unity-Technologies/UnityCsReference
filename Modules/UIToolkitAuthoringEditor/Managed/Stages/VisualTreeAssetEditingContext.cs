@@ -114,40 +114,127 @@ internal readonly record struct VisualTreeAssetEditingContext
     /// </summary>
     /// <param name="context">The context to reimport</param>
     /// <returns>A new instance of the context, with the assets reloaded.</returns>
+    /// <exception cref="ArgumentException">
+    /// A <see cref="TemplateAsset"/> along <paramref name="context"/>'s <see cref="SubDocumentPath"/> can no
+    /// longer be found, e.g. because it was only an unsaved edit that has since been discarded.
+    /// </exception>
     public static VisualTreeAssetEditingContext Reload(VisualTreeAssetEditingContext context)
     {
+        if (TryReload(context, out var reloaded))
+            return reloaded;
+
+        if (!context.RootVisualTreeAsset)
+            throw new ArgumentException($"Provided root {nameof(VisualTreeAsset)} no longer exists.", nameof(context));
+
+        throw new ArgumentException($"Provided {nameof(TemplateAsset)} is not part of the '{context.RootVisualTreeAsset.name}' {nameof(VisualTreeAsset)}.", nameof(context));
+    }
+
+    /// <summary>
+    /// Attempts to reimport the assets being used by the editing context.
+    /// </summary>
+    /// <param name="context">The context to reimport.</param>
+    /// <param name="reloaded">A new instance of the context, with the assets reloaded.</param>
+    /// <returns>
+    /// <see langword="false"/> when a <see cref="TemplateAsset"/> along <paramref name="context"/>'s
+    /// <see cref="SubDocumentPath"/> can no longer be found, e.g. because it was only an unsaved edit that has
+    /// since been discarded, leaving <paramref name="reloaded"/> at its default value.
+    /// </returns>
+    internal static bool TryReload(VisualTreeAssetEditingContext context, out VisualTreeAssetEditingContext reloaded)
+    {
         var rootPath = AssetDatabase.GetAssetPath(context.RootVisualTreeAsset);
+        var rootVta = string.IsNullOrEmpty(rootPath)
+            ? context.RootVisualTreeAsset
+            : AssetDatabase.LoadAssetAtPath<VisualTreeAsset>(rootPath);
+
+        if (!rootVta)
+        {
+            reloaded = default;
+            return false;
+        }
 
         var path = context.SubDocumentPath;
         if (context.SubDocumentPath != null && context.SubDocumentPath.Length > 0)
         {
             path = new TemplateAsset[context.SubDocumentPath.Length];
-            var vta = string.IsNullOrEmpty(rootPath)
-                ? context.RootVisualTreeAsset
-                : AssetDatabase.LoadAssetAtPath<VisualTreeAsset>(rootPath);
+            var vta = rootVta;
             for (var i = 0; i < context.SubDocumentPath.Length; ++i)
             {
+                if (!vta || context.SubDocumentPath[i] == null)
+                {
+                    reloaded = default;
+                    return false;
+                }
+
                 var templateId = context.SubDocumentPath[i].id;
+                TemplateAsset found = null;
                 foreach (var templateAsset in vta.DepthFirstTraversalOfType<TemplateAsset>())
                 {
                     if (templateAsset.id == templateId)
                     {
-                        path[i] = templateAsset;
-                        vta = templateAsset.ResolveTemplate();
+                        found = templateAsset;
                         break;
                     }
                 }
+
+                if (found == null)
+                {
+                    reloaded = default;
+                    return false;
+                }
+
+                path[i] = found;
+                vta = found.ResolveTemplate();
             }
         }
 
-        return new VisualTreeAssetEditingContext(
-            string.IsNullOrEmpty(rootPath)
-                ? context.RootVisualTreeAsset
-                : AssetDatabase.LoadAssetAtPath<VisualTreeAsset>(rootPath),
-            path,
-            context.SubDocumentOptions,
-            context.PanelSettings
-        );
+        reloaded = new VisualTreeAssetEditingContext(rootVta, path, context.SubDocumentOptions, context.PanelSettings);
+        return true;
+    }
+
+    /// <summary>
+    /// Checks whether <paramref name="context"/>'s <see cref="SubDocumentPath"/> can still be resolved against
+    /// the current state of its documents, without allocating a resolved path or re-validating a rebuilt context.
+    /// </summary>
+    /// <remarks>
+    /// Cheaper than <see cref="TryReload"/> for callers that only need a yes/no answer, such as a stage's
+    /// validity check, which can run every tick a sub-document stage is open.
+    /// </remarks>
+    internal static bool CanResolveSubDocumentPath(VisualTreeAssetEditingContext context)
+    {
+        var rootPath = AssetDatabase.GetAssetPath(context.RootVisualTreeAsset);
+        var vta = string.IsNullOrEmpty(rootPath)
+            ? context.RootVisualTreeAsset
+            : AssetDatabase.LoadAssetAtPath<VisualTreeAsset>(rootPath);
+
+        if (!vta)
+            return false;
+
+        if (context.SubDocumentPath == null)
+            return true;
+
+        for (var i = 0; i < context.SubDocumentPath.Length; ++i)
+        {
+            if (!vta || context.SubDocumentPath[i] == null)
+                return false;
+
+            var templateId = context.SubDocumentPath[i].id;
+            TemplateAsset found = null;
+            foreach (var templateAsset in vta.DepthFirstTraversalOfType<TemplateAsset>())
+            {
+                if (templateAsset.id == templateId)
+                {
+                    found = templateAsset;
+                    break;
+                }
+            }
+
+            if (found == null)
+                return false;
+
+            vta = found.ResolveTemplate();
+        }
+
+        return true;
     }
 
     /// <summary>

@@ -23,14 +23,14 @@ namespace UnityEditor
 
         class Texts
         {
-            public GUIContent mode = EditorGUIUtility.TrTextContent("Mode", "Select the type of data to populate this stream with.");
-            public GUIContent vectorComponentCount = EditorGUIUtility.TrTextContent("Number of Components", "How many of the components (XYZW) to fill.");
+            public GUIContent mode = L10n.TextContent("Mode", "Select the type of data to populate this stream with.", null, null);
+            public GUIContent vectorComponentCount = L10n.TextContent("Number of Components", "How many of the components (XYZW) to fill.", null, null);
 
             public GUIContent[] modes = new GUIContent[]
             {
-                EditorGUIUtility.TrTextContent("Disabled"),
-                EditorGUIUtility.TrTextContent("Vector"),
-                EditorGUIUtility.TrTextContent("Color")
+                L10n.TextContent("Disabled", null, null, null),
+                L10n.TextContent("Vector", null, null, null),
+                L10n.TextContent("Color", null, null, null)
             };
         }
         [NoAutoStaticsCleanup] // lazy-initialized UI text cache

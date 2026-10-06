@@ -22,41 +22,41 @@ namespace UnityEditor
         class Styles
         {
             public readonly GUIContent dataSourceContent =
-                EditorGUIUtility.TrTextContent("Source", "Type of source the movie will be read from.");
+                L10n.TextContent("Source", "Type of source the movie will be read from.", null, null);
             public readonly GUIContent timeUpdateModeContent =
-                EditorGUIUtility.TrTextContent("Update Mode", "The clock source to use to derive the current time.");
+                L10n.TextContent("Update Mode", "The clock source to use to derive the current time.", null, null);
             public readonly GUIContent videoClipContent =
-                EditorGUIUtility.TrTextContent("Video Clip", "VideoClips can be imported using the asset pipeline.");
+                L10n.TextContent("Video Clip", "VideoClips can be imported using the asset pipeline.", null, null);
             public readonly GUIContent urlContent =
-                EditorGUIUtility.TrTextContent("URL", "URLs");// can be http:// or file://. File URLs can be relative [file://] or absolute [file:///].  For file URLs, the prefix is optional.");
-            public readonly GUIContent browseContent = EditorGUIUtility.TrTextContent("Browse...", "Click to set a file:// URL.  http:// URLs have to be written or copy-pasted manually.");
+                L10n.TextContent("URL", "URLs", null, null);// can be http:// or file://. File URLs can be relative [file://] or absolute [file:///].  For file URLs, the prefix is optional.");
+            public readonly GUIContent browseContent = L10n.TextContent("Browse...", "Click to set a file:// URL.  http:// URLs have to be written or copy-pasted manually.", null, null);
             public readonly GUIContent playOnAwakeContent =
-                EditorGUIUtility.TrTextContent("Play On Awake", "Start playback as soon as the game is started.");
+                L10n.TextContent("Play On Awake", "Start playback as soon as the game is started.", null, null);
             public readonly GUIContent waitForFirstFrameContent =
-                EditorGUIUtility.TrTextContent("Wait For First Frame", "Wait for first frame to be ready before starting playback. When on, player time will only start increasing when the first image is ready.  When off, the first few frames may be skipped while clip preparation is ongoing.");
+                L10n.TextContent("Wait For First Frame", "Wait for first frame to be ready before starting playback. When on, player time will only start increasing when the first image is ready.  When off, the first few frames may be skipped while clip preparation is ongoing.", null, null);
             public readonly GUIContent loopContent =
-                EditorGUIUtility.TrTextContent("Loop", "Start playback at the beginning when end is reached.");
+                L10n.TextContent("Loop", "Start playback at the beginning when end is reached.", null, null);
             public readonly GUIContent skipOnDropContent =
-                EditorGUIUtility.TrTextContent("Skip On Drop", "Allow to skip frames to catch up with current time.");
+                L10n.TextContent("Skip On Drop", "Allow to skip frames to catch up with current time.", null, null);
             public readonly GUIContent playbackSpeedContent =
-                EditorGUIUtility.TrTextContent("Playback Speed", "Increase or decrease the playback speed. 1.0 is the normal speed.");
+                L10n.TextContent("Playback Speed", "Increase or decrease the playback speed. 1.0 is the normal speed.", null, null);
             public readonly GUIContent renderModeContent =
-                EditorGUIUtility.TrTextContent("Render Mode", "Type of object on which the played images will be drawn.");
+                L10n.TextContent("Render Mode", "Type of object on which the played images will be drawn.", null, null);
             public readonly GUIContent cameraContent =
-                EditorGUIUtility.TrTextContent("Camera", "Camera where the images will be drawn, behind (Back Plane) or in front of (Front Plane) of the scene.");
+                L10n.TextContent("Camera", "Camera where the images will be drawn, behind (Back Plane) or in front of (Front Plane) of the scene.", null, null);
             public readonly GUIContent textureContent =
-                EditorGUIUtility.TrTextContent("Target Texture", "RenderTexture where the images will be drawn. RenderTextures can be created under the Assets folder and then used on other objects.");
+                L10n.TextContent("Target Texture", "RenderTexture where the images will be drawn. RenderTextures can be created under the Assets folder and then used on other objects.", null, null);
             public readonly GUIContent alphaContent =
-                EditorGUIUtility.TrTextContent("Alpha", "A value less than 1.0 will reveal the content behind the video.");
+                L10n.TextContent("Alpha", "A value less than 1.0 will reveal the content behind the video.", null, null);
             public readonly GUIContent camera3DLayout =
-                EditorGUIUtility.TrTextContent("3D Layout", "Layout of 3D content in the source video. Only meaningful when stereoscopic render is used.");
+                L10n.TextContent("3D Layout", "Layout of 3D content in the source video. Only meaningful when stereoscopic render is used.", null, null);
             public readonly GUIContent audioOutputModeContent =
-                EditorGUIUtility.TrTextContent("Audio Output Mode", "Where the audio in the movie will be output.");
+                L10n.TextContent("Audio Output Mode", "Where the audio in the movie will be output.", null, null);
             public readonly GUIContent audioSourceContent =
-                EditorGUIUtility.TrTextContent("Audio Source", "AudioSource component that will receive this track's audio samples.");
-            public readonly GUIContent aspectRatioLabel = EditorGUIUtility.TrTextContent("Aspect Ratio");
-            public readonly GUIContent muteLabel = EditorGUIUtility.TrTextContent("Mute");
-            public readonly GUIContent volumeLabel = EditorGUIUtility.TrTextContent("Volume");
+                L10n.TextContent("Audio Source", "AudioSource component that will receive this track's audio samples.", null, null);
+            public readonly GUIContent aspectRatioLabel = L10n.TextContent("Aspect Ratio", null, null, null);
+            public readonly GUIContent muteLabel = L10n.TextContent("Mute", null, null, null);
+            public readonly GUIContent volumeLabel = L10n.TextContent("Volume", null, null, null);
             public readonly GUIContent controlledAudioTrackCountContent = EditorGUIUtility.TextContent(
                 "Controlled Tracks|How many audio tracks will the player control.  The actual number of tracks is only known during playback when the source is a URL.");
             public readonly GUIContent materialRendererContent = EditorGUIUtility.TextContent(

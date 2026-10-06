@@ -29,6 +29,22 @@ namespace UnityEngine.UIElements.UIR
         public uint groupTransformElementsChanged;
     }
 
+    // Coherent copy of the last fully rendered frame's renderer stats, for the UI Toolkit Debugger.
+    // The live stats cannot be read asynchronously: m_Stats is reset at the start of every
+    // ProcessChanges and the device draw stats are only filled during rendering. Capturing both at
+    // the end of the frame guarantees they describe the same completed frame.
+    class RenderStatsSnapshot
+    {
+        public ChainBuilderStats lastChainBuilderStats;
+        public UIRenderDevice.DrawStatistics lastDrawStats;
+
+        public void Capture(in ChainBuilderStats stats, UIRenderDevice device)
+        {
+            lastChainBuilderStats = stats;
+            lastDrawStats = device.GatherDrawStatistics();
+        }
+    }
+
     // We want to pool MeshWriteData instances, but unlike usual pooling, we don't explicitly return them to a pool. So instead,
     // here we'll simply keep track of them so they can be reused, but we can only reuse them when a Reset has been performed.
     class MeshWriteDataPool : ImplicitPool<MeshWriteData>
@@ -404,6 +420,9 @@ namespace UnityEngine.UIElements.UIR
 
         internal ref ChainBuilderStats statsByRef => ref m_Stats;
 
+        RenderStatsSnapshot m_StatsSnapshot;
+        internal RenderStatsSnapshot statsSnapshot => m_StatsSnapshot;
+
         RenderTree m_RootRenderTree;
         internal RenderTree rootRenderTree
         {
@@ -458,8 +477,6 @@ namespace UnityEngine.UIElements.UIR
                 m_Stats.elementsRemoved = removedThisFrame;
                 m_TotalVisualElements += (int)addedThisFrame - (int)removedThisFrame;
 
-                shaderInfoAllocator.storageCompareWrites = m_ShaderInfoUpdateGuard.compareWrites;
-
                 m_BlockDirtyRegistration = true; // The repaint updater is not supposed to register new changes while processing sub-trees
                 m_Compositor.Update(m_RootRenderTree);
                 device.AdvanceFrame(); // Before making any changes to the buffers
@@ -494,6 +511,10 @@ namespace UnityEngine.UIElements.UIR
                 if (drawInCameras)
                     SerializeRootTreeCommands();
 
+                // drawInCameras panels never go through RenderRootTree, so this is their last stop.
+                // panelDebug itself exists on every editor panel; only attached debuggers matter.
+                if (drawInCameras && panel.panelDebug?.hasAttachedDebuggers == true)
+                    (m_StatsSnapshot ??= new RenderStatsSnapshot()).Capture(in m_Stats, device);
             }
         }
 
@@ -559,6 +580,11 @@ namespace UnityEngine.UIElements.UIR
 
             RenderSingleTree(m_RootRenderTree, null, RectInt.zero, Rect.zero);
 
+            // m_Stats is still intact here (it is only reset by the next ProcessChanges), and the
+            // draw stats were just filled: the captured pair describes this exact frame.
+            // panelDebug itself exists on every editor panel; only attached debuggers matter.
+            if (panel.panelDebug?.hasAttachedDebuggers == true)
+                (m_StatsSnapshot ??= new RenderStatsSnapshot()).Capture(in m_Stats, device);
         }
 
         void RenderNestedTrees()
@@ -739,15 +765,24 @@ namespace UnityEngine.UIElements.UIR
                 if (onlyDynamicColorIsDirty)
                 {
                     UIEOnVisualsChanged(ve, false);
+                    ve.MarkRenderHintsClean();
                 }
                 else
                 {
-                    UIEOnChildRemoving(ve);
-                    UIEOnChildAdded(ve);
+                    UIEOnRenderTreeStructureChanged(ve);
                 }
-
-                ve.MarkRenderHintsClean();
             }
+        }
+
+        // Forces the remove/re-add rebuild; UIEOnRenderHintsChanged's DynamicColor fast path must not swallow structural changes.
+        public void UIEOnRenderTreeStructureChanged(VisualElement ve)
+        {
+            if (ve.renderData == null)
+                return;
+
+            UIEOnChildRemoving(ve);
+            UIEOnChildAdded(ve);
+            ve.MarkRenderHintsClean();
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -937,6 +972,7 @@ namespace UnityEngine.UIElements.UIR
             // The emptied lists stay on the pooled ExtraRenderData for reuse.
             ReleaseFilterCallbackBlocks(extraData.filterCallbackPropertyBlocks);
             ReleaseFilterCallbackBlocks(extraData.backdropFilterCallbackPropertyBlocks);
+            ChildrenDirtyTracker.OnExtraDataFreed(renderData, extraData);
 
             m_ExtraDataPool.Return(extraData);
 

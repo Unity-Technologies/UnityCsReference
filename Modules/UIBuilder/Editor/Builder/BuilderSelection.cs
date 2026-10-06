@@ -514,8 +514,10 @@ namespace Unity.UI.Builder
             m_Notifications.Clear();
 
             // This is so anyone interested can refresh their use of this USS with
-            // the latest (unsaved to disk) changes.
-            if (m_PaneWindow is Builder builder && builder.styleSheets.elementHierarchyView.hasUnsavedChanges && !isAnonymousDocument)
+            // the latest (unsaved to disk) changes. A StyleSheet Editing document is anonymous (its host
+            // has no file), but the opened sheet is a real shared asset whose edits must propagate.
+            if (m_PaneWindow is Builder builder && builder.styleSheets.elementHierarchyView.hasUnsavedChanges &&
+                (!isAnonymousDocument || m_PaneWindow.document.isStyleSheetEditingMode))
             {
                 m_PaneWindow.document.MarkStyleSheetsDirty();
                 UIElementsUtility.MarkVisualTreeAssetAsChanged(m_PaneWindow.document.visualTreeAsset);

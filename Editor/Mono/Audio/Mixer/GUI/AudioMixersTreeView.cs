@@ -2,7 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: AudioAuthoring not yet converted
 using System.IO;
 using UnityEditor.ProjectWindowCallback;
 using UnityEngine;
@@ -536,8 +535,8 @@ namespace UnityEditor
 
         class Styles
         {
-            public GUIContent header = EditorGUIUtility.TrTextContent("Mixers", "All mixers in the project are shown here. By default, a mixer outputs to the AudioListener but mixers can also route their output to other mixers. Each mixer shows where it outputs (in parenthesis). To reroute a mixer simply drag the mixer upon another mixer and select a group from the popup.");
-            public GUIContent addButton = EditorGUIUtility.TrIconContent("CreateAddNew", "Add mixer asset. The asset will be saved in the same folder as the current selected mixer or, if none is selected, saved in the Assets folder.");
+            public GUIContent header = L10n.TextContent("Mixers", "All mixers in the project are shown here. By default, a mixer outputs to the AudioListener but mixers can also route their output to other mixers. Each mixer shows where it outputs (in parenthesis). To reroute a mixer simply drag the mixer upon another mixer and select a group from the popup.", null, null);
+            public GUIContent addButton = L10n.IconContent("CreateAddNew", "Add mixer asset. The asset will be saved in the same folder as the current selected mixer or, if none is selected, saved in the Assets folder.", null);
             public Texture2D audioMixerIcon = EditorGUIUtility.FindTexture(typeof(AudioMixerController));
         }
         [NoAutoStaticsCleanup] // Lazy GUIContent/Texture2D holder loaded by fixed name/type, re-initialized on first access via null-check; safe to persist across reload.
@@ -584,9 +583,9 @@ namespace UnityEditor
             if (node != null)
             {
                 GenericMenu pm = new GenericMenu();
-                pm.AddItem(EditorGUIUtility.TrTextContent("Rename"), false, RenameAudioMixerCallback, node);
+                pm.AddItem(L10n.TextContent("Rename", null, null, null), false, RenameAudioMixerCallback, node);
                 pm.AddSeparator("");
-                pm.AddItem(EditorGUIUtility.TrTextContent("Delete AudioMixer"), false, DeleteAudioMixerCallback, node.mixer);
+                pm.AddItem(L10n.TextContent("Delete AudioMixer", null, null, null), false, DeleteAudioMixerCallback, node.mixer);
                 pm.ShowAsContext();
             }
         }
@@ -703,7 +702,7 @@ namespace UnityEditor
                 Object startSelection = draggedMixers.Length == 1 ? draggedMixers[0].outputAudioMixerGroup : null;
                 ObjectSelector.get.Show(startSelection, typeof(AudioMixerGroup), null, false, new List<EntityId>() { droppedUponMixer.GetEntityId() });
                 ObjectSelector.get.objectSelectorID = kObjectSelectorID;
-                ObjectSelector.get.titleContent = EditorGUIUtility.TrTextContent("Select Output Audio Mixer Group");
+                ObjectSelector.get.titleContent = L10n.TextContent("Select Output Audio Mixer Group", null, null, null);
                 GUIUtility.ExitGUI();
             }
         }
@@ -748,4 +747,3 @@ namespace UnityEditor
         }
     }
 }
-#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

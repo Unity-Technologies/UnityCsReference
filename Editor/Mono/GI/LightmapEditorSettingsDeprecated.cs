@@ -112,19 +112,13 @@ namespace UnityEditor
         {
             get
             {
-#pragma warning disable 618 // ProgressiveCPU is deprecated; legacy giBakeBackend bridge still needs to map to it.
-                if (lightmapper == Lightmapper.ProgressiveCPU)
-#pragma warning restore 618
-                    return GIBakeBackend.PathTracer;
-                else
-                    return GIBakeBackend.Radiosity;
+                // The progressive lightmapper is the only remaining backend.
+                return GIBakeBackend.PathTracer;
             }
             set
             {
                 if (value == GIBakeBackend.PathTracer)
-#pragma warning disable 618 // ProgressiveCPU is deprecated; legacy giBakeBackend bridge still needs to map to it.
-                    lightmapper = Lightmapper.ProgressiveCPU;
-#pragma warning restore 618
+                    lightmapper = Lightmapper.ProgressiveGPU;
                 else
                     lightmapper = Lightmapper.Enlighten;
             }

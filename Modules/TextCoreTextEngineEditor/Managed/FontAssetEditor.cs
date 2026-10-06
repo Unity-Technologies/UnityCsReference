@@ -234,7 +234,7 @@ namespace UnityEditor.TextCore.Text
         private SerializedProperty m_AtlasWidth_prop;
         private SerializedProperty m_AtlasHeight_prop;
         private SerializedProperty m_IsMultiAtlasTexturesEnabled_prop;
-        private SerializedProperty m_ClearDynamicDataOnBuild_prop;
+        private SerializedProperty m_DynamicDataPersistence_prop;
         private SerializedProperty m_GetFontFeatures_prop;
 
         private SerializedProperty fontWeights_prop;
@@ -299,7 +299,7 @@ namespace UnityEditor.TextCore.Text
             m_AtlasWidth_prop = serializedObject.FindProperty("m_AtlasWidth");
             m_AtlasHeight_prop = serializedObject.FindProperty("m_AtlasHeight");
             m_IsMultiAtlasTexturesEnabled_prop = serializedObject.FindProperty("m_IsMultiAtlasTexturesEnabled");
-            m_ClearDynamicDataOnBuild_prop = serializedObject.FindProperty("m_ClearDynamicDataOnBuild");
+            m_DynamicDataPersistence_prop = serializedObject.FindProperty("m_DynamicDataPersistence");
             m_GetFontFeatures_prop = serializedObject.FindProperty("m_GetFontFeatures");
             m_ShowObsoleteProperties_prop = serializedObject.FindProperty("m_ShowObsoleteProperties");
 
@@ -397,8 +397,7 @@ namespace UnityEditor.TextCore.Text
 
             serializedObject.Update();
 
-            // Disabled until the conversion flow ships with its legal notice.
-            //DrawStaticMigrationSection();
+            DrawStaticMigrationSection();
 
             if (m_ShowObsoleteProperties_prop.boolValue)
             {
@@ -560,7 +559,13 @@ namespace UnityEditor.TextCore.Text
                             m_MaterialPresetsRequireUpdate = true;
                             m_DisplayDestructiveChangeWarning = true;
                         }
-                        EditorGUILayout.PropertyField(m_ClearDynamicDataOnBuild_prop, new GUIContent("Clear Dynamic Data On Build", "Clears all dynamic data restoring the font asset back to its default creation and empty state."));
+                        EditorGUI.BeginChangeCheck();
+                        EditorGUILayout.PropertyField(m_DynamicDataPersistence_prop, new GUIContent("Dynamic Data", "What happens to glyphs generated while working in the Editor. Session Only: kept in memory, dropped on save, builds start with an empty atlas. Persistent: saved into the asset file and shipped in builds."));
+                        if (EditorGUI.EndChangeCheck())
+                        {
+                            serializedObject.ApplyModifiedProperties();
+                            TextEditorResourceManager.ConfigureAtlasTexturePersistence(m_fontAsset);
+                        }
 
                         if (m_ShowObsoleteProperties_prop.boolValue)
                         {
@@ -975,6 +980,9 @@ namespace UnityEditor.TextCore.Text
             {
                 int arraySize = m_GlyphTable_prop.arraySize;
                 int itemsPerPage = 15;
+                bool glyphTableReadOnly = m_fontAsset.hasSessionOnlyDynamicData;
+                if (glyphTableReadOnly)
+                    EditorGUILayout.HelpBox("Dynamic Data is Session Only: glyph edits are discarded on save.", MessageType.Info);
 
                 // Display Glyph Management Tools
                 EditorGUILayout.BeginVertical(EditorStyles.helpBox);
@@ -1037,7 +1045,7 @@ namespace UnityEditor.TextCore.Text
 
                         EditorGUILayout.BeginVertical(glyphPanelStyle);
 
-                        using (new EditorGUI.DisabledScope(i != m_SelectedGlyphRecord))
+                        using (new EditorGUI.DisabledScope(i != m_SelectedGlyphRecord || glyphTableReadOnly))
                         {
                             EditorGUILayout.PropertyField(glyphProperty);
                         }
@@ -1063,7 +1071,7 @@ namespace UnityEditor.TextCore.Text
                         }
 
                         // Draw Selection Highlight and Glyph Options
-                        if (m_SelectedGlyphRecord == i)
+                        if (m_SelectedGlyphRecord == i && !glyphTableReadOnly)
                         {
                             // Reset other selections
                             ResetSelections(RecordSelectionType.GlyphRecord);
@@ -1905,10 +1913,31 @@ namespace UnityEditor.TextCore.Text
         {
             if (m_SelectedMarkToBaseRecord != -1)
                 DrawMarkToBasePreview(m_SelectedMarkToBaseRecord, rect);
-
-            if (m_SelectedMarkToMarkRecord != -1)
+            else if (m_SelectedMarkToMarkRecord != -1)
                 DrawMarkToMarkPreview(m_SelectedMarkToMarkRecord, rect);
+            else
+                DrawAtlasPreview(rect);
+        }
 
+        void DrawAtlasPreview(Rect rect)
+        {
+            Texture2D[] pages = m_fontAsset.atlasTextures;
+            if (pages == null || pages.Length == 0)
+                return;
+
+            float pageWidth = rect.width / pages.Length;
+            for (int i = 0; i < pages.Length; i++)
+            {
+                Texture2D page = pages[i];
+                if (page == null || page.width <= 1)
+                    continue;
+
+                Rect pageRect = new Rect(rect.x + i * pageWidth, rect.y, pageWidth, rect.height);
+                if (page.format == TextureFormat.Alpha8)
+                    EditorGUI.DrawTextureAlpha(pageRect, page, ScaleMode.ScaleToFit);
+                else
+                    EditorGUI.DrawPreviewTexture(pageRect, page, null, ScaleMode.ScaleToFit);
+            }
         }
 
         void ResetSelections(RecordSelectionType type)
@@ -2973,7 +3002,7 @@ namespace UnityEditor.TextCore.Text
                         FontEngineEditorUtilities.SetAtlasTextureIsReadable(tex, false);
                 }
 
-                //Debug.Log("Atlas Population mode set to [Static].");
+                m_fontAsset.dynamicDataPersistence = DynamicDataPersistence.Persistent;
             }
             else // Dynamic font asset
             {
@@ -2992,10 +3021,10 @@ namespace UnityEditor.TextCore.Text
                         if (tex != null && tex.isReadable == false)
                             FontEngineEditorUtilities.SetAtlasTextureIsReadable(tex, true);
                     }
-
-                    //Debug.Log("Atlas Population mode set to [" + (m_AtlasPopulationMode_prop.intValue == 1 ? "Dynamic" : "Dynamic OS") + "].");
                 }
             }
+
+            TextEditorResourceManager.ConfigureAtlasTexturePersistence(m_fontAsset);
 
             serializedObject.Update();
             isAssetDirty = true;

@@ -5,7 +5,7 @@
 using System;
 using System.Collections.Generic;
 using JetBrains.Annotations;
-using Unity.GraphToolkit.CSO;
+using Unity.CSO;
 using UnityEditor;
 
 namespace Unity.GraphToolkit.Editor

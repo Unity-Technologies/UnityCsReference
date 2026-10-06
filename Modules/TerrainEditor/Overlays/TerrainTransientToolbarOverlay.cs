@@ -2,7 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: Terrain not yet converted
 using UnityEditor;
 using UnityEditor.Overlays;
 using UnityEditor.Toolbars;
@@ -41,6 +40,9 @@ namespace UnityEditor.TerrainTools
     {
         bool m_OverlaysPackageInstalled;
         [AutoStaticsCleanupOnCodeReload] // holds a (possibly user-implemented) tool instance; drop on reload
+        // Re-derived from EditorToolManager.GetActiveTool by the overlay UpdateState pass, and set again
+        // whenever a terrain paint tool is activated.
+        [IgnoreForUAL0015("Re-derived from the active editor tool by the overlay UpdateState pass")]
         internal static ITerrainPaintToolWithOverlays s_LastSelectedTool;
         [NoAutoStaticsCleanup] // value-type enum; last-selected category
         internal static TerrainTool s_LastSelectedTerrainCategory;
@@ -84,6 +86,9 @@ namespace UnityEditor.TerrainTools
 
 
         [AutoStaticsCleanupOnCodeReload] // overlay instance; drop the stale one on reload (overlay system recreates it)
+        // Points at the live overlay and is re-assigned by the constructor when the overlay system recreates
+        // it; the only reader null-checks it first.
+        [IgnoreForUAL0015("Overlay instance slot re-assigned by the constructor when the overlay is recreated")]
         internal static TerrainTransientToolbarOverlay s_TerrainTransientToolbarOverlay;
 
         // determines whether the toolbar should be visible or not
@@ -561,4 +566,3 @@ namespace UnityEditor.TerrainTools
         }
     }
 }
-#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

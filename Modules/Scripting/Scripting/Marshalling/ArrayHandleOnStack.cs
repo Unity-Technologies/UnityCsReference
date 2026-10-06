@@ -22,24 +22,6 @@ namespace UnityEngine.Bindings
         private unsafe readonly void* _arrayRefPtr;
         private readonly IntPtr _allocArrayCallbackPtr;
 
-        // GetFunctionPointerForDelegate can not target a generic method on CoreCLR
-        // For CoreCLR we use function pointers from emitted methods instead
-        [NoAutoStaticsCleanup]
-        static ArrayHandleOnStack.CreateArrayDelegate s_createArrayDelegate;
-        [NoAutoStaticsCleanup]
-        static IntPtr s_createArrayFcnPtr;
-
-        unsafe static ArrayHandleOnStack()
-        {
-            s_createArrayDelegate = AllocArrayManagedCallback;
-            s_createArrayFcnPtr = Marshal.GetFunctionPointerForDelegate<ArrayHandleOnStack.CreateArrayDelegate>(s_createArrayDelegate);
-        }
-
-        public unsafe ArrayHandleOnStack(void* arrayRefPtr)
-        {
-            _arrayRefPtr = arrayRefPtr;
-            _allocArrayCallbackPtr = s_createArrayFcnPtr;
-        }
         public unsafe ArrayHandleOnStack(void* arrayRefPtr, IntPtr allocArrayCallbackPtr)
         {
             _arrayRefPtr = arrayRefPtr;

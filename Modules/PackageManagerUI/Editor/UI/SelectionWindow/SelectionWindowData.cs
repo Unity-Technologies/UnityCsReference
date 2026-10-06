@@ -76,7 +76,7 @@ internal class SelectionWindowData : ISerializationCallbackReceiver
     }
 
     // This constructor only constructs an instance of SelectionWindowData for the remove case.
-    public SelectionWindowData(IReadOnlyCollection<Asset> assetsList, string packageName, string description)
+    public SelectionWindowData(IReadOnlyList<Asset> assetsList, string packageName, string description)
     {
         const string assetsFolder = "Assets/";
         headerTitle = packageName;

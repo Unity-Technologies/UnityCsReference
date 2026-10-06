@@ -358,6 +358,121 @@ namespace UnityEditor.Build
             return BuildHistoryState.Instance.DeleteHistory(buildSessionGuids);
         }
 
+        /// <summary>
+        /// Registers a build performed by an external build pipeline in the build history.
+        /// </summary>
+        /// <param name="buildInfo">The description of the external build.</param>
+        /// <returns>The path of the new build report directory.</returns>
+        /// <exception cref="System.ArgumentException">Thrown when <see cref="ExternalBuildInfo.BuildSessionGUID"/> is empty or
+        /// already tracked, <see cref="ExternalBuildInfo.BuildStartedAt"/> is not set, <see cref="ExternalBuildInfo.BuildType"/>
+        /// or <see cref="ExternalBuildInfo.Platform"/> is not a defined enum value, <see cref="ExternalBuildInfo.BuildResult"/>
+        /// is not a final result, or <see cref="ExternalBuildInfo.TotalTime"/> is negative or overflows the build start time.</exception>
+        /// <exception cref="System.InvalidOperationException">Thrown when the build history is at <see cref="BuildHistoryLimit"/>
+        /// and every retained build is more recent than this build, so registering it would immediately delete it. Delete older
+        /// entries or increase the limit to register it.</exception>
+        /// <exception cref="System.IO.IOException">Thrown when the build report directory already exists on disk.</exception>
+        /// <remarks>
+        /// Call this method from the main thread when a build performed outside the Unity build pipeline has finished,
+        /// to make it appear in the build history and the **Build Analysis** window alongside Player and
+        /// Content Directory builds.
+        /// </remarks>
+        /// <example>
+        /// <code source="../Tests/BuildReporting/Assets/Editor/ReferenceExamples/RegisterExternalBuild.cs"/>
+        /// </example>
+        public static string RegisterExternalBuild(ExternalBuildInfo buildInfo)
+        {
+            if (buildInfo.BuildSessionGUID.Empty())
+                throw new ArgumentException("BuildSessionGUID must not be empty.", nameof(buildInfo));
+
+            BuildHistoryState.Instance.Refresh();
+
+            if (BuildHistoryState.Instance.TryGetBuildReportDirectory(buildInfo.BuildSessionGUID, out string existingDirectory))
+                throw new ArgumentException($"A build with session GUID {buildInfo.BuildSessionGUID} is already tracked in the build history at: {existingDirectory}.", nameof(buildInfo));
+
+            if (buildInfo.BuildStartedAt == default)
+                throw new ArgumentException("BuildStartedAt must be set.", nameof(buildInfo));
+
+            if (!Enum.IsDefined(typeof(BuildType), buildInfo.BuildType))
+                throw new ArgumentException($"BuildType value {(int)buildInfo.BuildType} is not a defined {nameof(BuildType)}.", nameof(buildInfo));
+
+            if (!Enum.IsDefined(typeof(BuildTarget), buildInfo.Platform))
+                throw new ArgumentException($"Platform value {(int)buildInfo.Platform} is not a defined {nameof(BuildTarget)}.", nameof(buildInfo));
+
+            if (buildInfo.BuildResult != BuildResult.Succeeded &&
+                buildInfo.BuildResult != BuildResult.Failed &&
+                buildInfo.BuildResult != BuildResult.Cancelled)
+            {
+                throw new ArgumentException($"BuildResult must be a final result (Succeeded, Failed, or Cancelled), not {buildInfo.BuildResult}.", nameof(buildInfo));
+            }
+
+            DateTime startUtc = buildInfo.BuildStartedAt.UtcDateTime;
+
+            if (buildInfo.TotalTime < TimeSpan.Zero || buildInfo.TotalTime > DateTime.MaxValue - startUtc)
+                throw new ArgumentException($"TotalTime value {buildInfo.TotalTime} must be a non-negative duration that can be added to the build start time.", nameof(buildInfo));
+
+            if (BuildHistoryState.Instance.WouldRetentionPruneNewBuild(startUtc, BuildHistoryLimit))
+                throw new InvalidOperationException($"The build history is at its limit ({BuildHistoryLimit}) and every retained build is more recent than this build, so registering it would immediately delete it. Delete older entries or increase {nameof(BuildHistory)}.{nameof(BuildHistoryLimit)}.");
+
+            var summary = new BuildReportSummary
+            {
+                Version = BuildReportSummary.kVersion,
+                BuildContentOptions = Array.Empty<string>(),
+                BuildManifestHash = new Hash128().ToString(),
+                BuildName = buildInfo.BuildName ?? string.Empty,
+                BuildOptions = Array.Empty<string>(),
+                BuildProfilePath = string.Empty,
+                BuildResult = buildInfo.BuildResult,
+                BuildResultName = buildInfo.BuildResult.ToString(),
+                BuildSessionGUID = buildInfo.BuildSessionGUID,
+                BuildStartedAt = startUtc.ToString("o", CultureInfo.InvariantCulture),
+                BuildType = buildInfo.BuildType,
+                BuildTypeName = string.IsNullOrEmpty(buildInfo.BuildTypeName) ? buildInfo.BuildType.ToString() : buildInfo.BuildTypeName,
+                OutputPath = buildInfo.OutputPath ?? string.Empty,
+                Platform = buildInfo.Platform,
+                PlatformName = buildInfo.Platform.ToString(),
+                ProducerPackage = buildInfo.ProducerPackage ?? string.Empty,
+                SubtargetName = string.Empty,
+                TotalErrors = buildInfo.TotalErrors,
+                TotalSizeBytes = buildInfo.TotalSizeBytes,
+                TotalTimeMs = (long)buildInfo.TotalTime.TotalMilliseconds,
+                TotalWarnings = buildInfo.TotalWarnings,
+            };
+
+            string rootDirectory = BuildHistoryDirectory;
+            Directory.CreateDirectory(rootDirectory);
+
+            // The folder name can collide (second resolution, 8-char GUID prefix); fall back to the full GUID.
+            string folderName = FormatBuildHistoryFolderName(summary.BuildSessionGUID, startUtc);
+            string directoryPath = rootDirectory + "/" + folderName;
+            if (Directory.Exists(directoryPath))
+                directoryPath = rootDirectory + "/" + folderName + summary.BuildSessionGUID.ToString().Substring(kFolderNameGuidPrefixLength);
+            if (Directory.Exists(directoryPath))
+                throw new IOException($"Build report directory already exists at: {directoryPath}.");
+
+            Directory.CreateDirectory(directoryPath);
+            try
+            {
+                BuildReportSummary.Save(summary, directoryPath);
+                BuildHistoryState.Instance.AddOrUpdateBuild(directoryPath);
+            }
+            catch
+            {
+                try
+                {
+                    Directory.Delete(directoryPath, true);
+                }
+                catch (Exception cleanupError)
+                {
+                    Debug.LogWarning($"Failed to clean up build report directory '{directoryPath}': {cleanupError.Message}");
+                }
+                throw;
+            }
+
+            ApplyRetentionPolicy();
+
+            return directoryPath;
+        }
+
         // ==================== Build Lifecycle (called from C++ build pipeline) ====================
 
         // Folder name format: YYYYMMDD-HHMMSSZ-<8 hex chars of build session GUID>.

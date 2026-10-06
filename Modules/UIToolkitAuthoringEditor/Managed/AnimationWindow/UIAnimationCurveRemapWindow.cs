@@ -36,16 +36,16 @@ namespace Unity.UIToolkit.Editor
         // Above, which would anchor the window's bottom-left to the cursor whenever it does not fit under.
         static readonly PopupLocation[] k_Placement = { PopupLocation.Below, PopupLocation.Overlay };
 
-        static readonly string k_Title = L10n.Tr("Remap Animation Curve");
-        static readonly string k_SharedFormat = L10n.Tr("Clip shared by {0} elements - all are affected");
-        static readonly string k_BrokenLabel = L10n.Tr("Broken path");
-        static readonly string k_TargetLabel = L10n.Tr("Target path");
-        static readonly string k_Unnamed = L10n.Tr("Name this element to animate it");
-        static readonly string k_ShadowedFormat = L10n.Tr("Another element named \"{0}\" is registered first");
-        static readonly string k_OccupiedFormat = L10n.Tr("The clip already animates \"{0}\" on this element");
-        static readonly string k_NoTarget = L10n.Tr("Select an element");
-        static readonly string k_Cancel = L10n.Tr("Cancel");
-        static readonly string k_Remap = L10n.Tr("Remap");
+        static readonly string k_Title = L10n.Tr("Remap Animation Curve", null);
+        static readonly string k_SharedFormat = L10n.Tr("Clip shared by {0} elements - all are affected", null);
+        static readonly string k_BrokenLabel = L10n.Tr("Broken path", null);
+        static readonly string k_TargetLabel = L10n.Tr("Target path", null);
+        static readonly string k_Unnamed = L10n.Tr("Name this element to animate it", null);
+        static readonly string k_ShadowedFormat = L10n.Tr("Another element named \"{0}\" is registered first", null);
+        static readonly string k_OccupiedFormat = L10n.Tr("The clip already animates \"{0}\" on this element", null);
+        static readonly string k_NoTarget = L10n.Tr("Select an element", null);
+        static readonly string k_Cancel = L10n.Tr("Cancel", null);
+        static readonly string k_Remap = L10n.Tr("Remap", null);
 
         Action<string> m_OnPicked;
         UIAnimationRemapTarget m_Root;

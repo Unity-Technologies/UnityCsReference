@@ -123,12 +123,13 @@ namespace UnityEngine.Animations
     [NativeClass("PositionConstraint", PersistentTypeId = 0x6C61FB20)]
     public sealed partial class PositionConstraint : Behaviour, IConstraint, IConstraintInternal
     {
+        internal PositionConstraint(global::UnityEngine.EntityId id) : base(id) {}
         PositionConstraint()
         {
-            Internal_Create(this);
+            SetEntityIdFromConstructor(Internal_Create());
         }
 
-        private static extern void Internal_Create([Writable] PositionConstraint self);
+        private static extern EntityId Internal_Create();
 
         ///<summary>The weight of the constraint component.</summary>
         public extern float weight { get; set; }
@@ -285,12 +286,13 @@ namespace UnityEngine.Animations
     [NativeClass("RotationConstraint", PersistentTypeId = 0x6C61FB21)]
     public sealed partial class RotationConstraint : Behaviour, IConstraint, IConstraintInternal
     {
+        internal RotationConstraint(global::UnityEngine.EntityId id) : base(id) {}
         RotationConstraint()
         {
-            Internal_Create(this);
+            SetEntityIdFromConstructor(Internal_Create());
         }
 
-        private static extern void Internal_Create([Writable] RotationConstraint self);
+        private static extern EntityId Internal_Create();
 
         ///<summary>The weight of the constraint component.</summary>
         public extern float weight { get; set; }
@@ -446,12 +448,13 @@ namespace UnityEngine.Animations
     [NativeClass("ScaleConstraint", PersistentTypeId = 0x6C61FB22)]
     public sealed partial class ScaleConstraint : Behaviour, IConstraint, IConstraintInternal
     {
+        internal ScaleConstraint(global::UnityEngine.EntityId id) : base(id) {}
         ScaleConstraint()
         {
-            Internal_Create(this);
+            SetEntityIdFromConstructor(Internal_Create());
         }
 
-        private static extern void Internal_Create([Writable] ScaleConstraint self);
+        private static extern EntityId Internal_Create();
 
         ///<summary>The weight of the constraint component.</summary>
         public extern float weight { get; set; }

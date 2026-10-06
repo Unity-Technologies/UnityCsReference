@@ -14,7 +14,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         }
 
         protected abstract override bool TriggerActionImplementation(Sample sample);
-        protected override bool TriggerActionImplementation(IReadOnlyCollection<Sample> samples) => false;
+        protected override bool TriggerActionImplementation(IReadOnlyList<Sample> samples) => false;
         public virtual string GetMultiSelectText(Sample sample) => GetText(sample, false);
     }
 }

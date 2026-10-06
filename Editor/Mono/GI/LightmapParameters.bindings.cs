@@ -12,13 +12,14 @@ namespace UnityEditor
     [PreventReadOnlyInstanceModificationAttribute]
     public sealed partial class LightmapParameters : UnityEngine.Object
     {
+        internal LightmapParameters(global::UnityEngine.EntityId id) : base(id) {}
         public LightmapParameters()
         {
-            Internal_Create(this);
+            SetEntityIdFromConstructor(Internal_Create());
         }
 
         [FreeFunction("LightmapParametersBindings::Internal_Create")]
-        private extern static void Internal_Create([UnityEngine.Writable] LightmapParameters self);
+        private extern static UnityEngine.EntityId Internal_Create();
 
         public extern static LightmapParameters GetLightmapParametersForLightingSettings(UnityEngine.LightingSettings lightingSettings);
         public extern static void SetLightmapParametersForLightingSettings(LightmapParameters parameters, UnityEngine.LightingSettings lightingSettings);

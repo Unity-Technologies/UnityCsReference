@@ -8,6 +8,7 @@ using System.Reflection;
 using UnityEngine;
 using System.Collections.Generic;
 using Unity.Scripting.LifecycleManagement;
+using UnityEditor.ShortcutManagement;
 
 namespace UnityEditor.Toolbars
 {
@@ -87,6 +88,24 @@ namespace UnityEditor.Toolbars
                 overlay.RebuildContent();
         }
 
+        public enum PickerMode
+        {
+            All,
+            ToolbarElements,
+            MenuItems,
+        }
+
+        public static void OpenMainToolbarPicker(string filter) => OpenMainToolbarPicker(PickerMode.All, filter);
+
+        public static void OpenMainToolbarPicker(PickerMode mode = PickerMode.All, string filter = null) =>
+            MainToolbarWindow.RaisePickerRequested(mode, filter ?? string.Empty);
+
+        [Shortcut("Main Toolbar/Open Toolbar Elements Picker")]
+        internal static void OpenToolbarElementsPickerShortcut() => OpenMainToolbarPicker(PickerMode.ToolbarElements);
+
+        [Shortcut("Main Toolbar/Open Menu Items Picker")]
+        internal static void OpenMenuItemsPickerShortcut() => OpenMainToolbarPicker(PickerMode.MenuItems);
+
         internal static void ShowAll(string path)
         {
             SetDisplayedAll(path, true);
@@ -97,18 +116,43 @@ namespace UnityEditor.Toolbars
             SetDisplayedAll(path, false);
         }
 
-        static void SetDisplayedAll(string startsWith, bool displayed)
+        // Skips overlays GetSortedAvailableOverlays treats as unavailable; pinned menu items have no createElementMethod but still count.
+        static IEnumerable<Overlay> EnumerateAvailableOverlaysUnder(string path)
         {
             if (!windowExists)
-                return;
+                yield break;
 
             foreach (var overlay in window.overlayCanvas.overlays)
             {
-                if (overlay.id.StartsWith(startsWith, StringComparison.Ordinal))
+                if (!overlay.id.StartsWith(path, StringComparison.Ordinal))
+                    continue;
+                if (overlay is MainToolbarOverlay mto && !mto.IsAvailable())
+                    continue;
+                yield return overlay;
+            }
+        }
+
+        // Enables every element under the path if any of them is currently hidden, otherwise disables them all.
+        internal static void ToggleAll(string path)
+        {
+            var anyHidden = false;
+            foreach (var overlay in EnumerateAvailableOverlaysUnder(path))
+            {
+                if (!overlay.displayed)
                 {
-                    overlay.displayed = displayed;
+                    anyHidden = true;
+                    break;
                 }
             }
+
+            SetDisplayedAll(path, anyHidden);
+        }
+
+        static void SetDisplayedAll(string startsWith, bool displayed)
+        {
+            // Same set ToggleAll counts, so the decision and the write can't disagree.
+            foreach (var overlay in EnumerateAvailableOverlaysUnder(startsWith))
+                overlay.displayed = displayed;
         }
 
         internal static bool TryGetOverlay(string path, out Overlay overlay)
@@ -123,6 +167,9 @@ namespace UnityEditor.Toolbars
         }
 
         [AutoStaticsCleanupOnCodeReload]
+        // GetAllElementDefinitions re-creates or clears this and refills it from TypeCache every time the
+        // element definitions are collected.
+        [IgnoreForUAL0015("Availability-method map rebuilt from TypeCache by GetAllElementDefinitions")]
         static Dictionary<string, MethodInfo> s_PathToAvailabilityMethods;
         internal static List<ElementDefinition> GetAllElementDefinitions()
         {
@@ -196,6 +243,100 @@ namespace UnityEditor.Toolbars
             return m_Definitions;
         }
 
+        internal static List<(Overlay overlay, MainToolbarElementAttribute attrib, bool isUnityOnly)> GetSortedAvailableOverlays()
+        {
+            var result = new List<(Overlay overlay, MainToolbarElementAttribute attrib, bool isUnityOnly)>();
+            if (!windowExists)
+                return result;
+
+            var overlays = new List<(Overlay overlay, MainToolbarElementAttribute attrib)>();
+            var unityOnlyOverlays = new HashSet<Overlay>();
+
+            foreach (var overlay in window.overlayCanvas.overlays)
+            {
+                // Same guard as EnumerateAvailableOverlaysUnder: not every entry on this canvas is a MainToolbarOverlay.
+                if (overlay is not MainToolbarOverlay mto || mto.createElementMethod == null)
+                    continue; // Dynamically-created overlay (e.g. a pinned menu item); not part of this list.
+
+                if (!mto.IsAvailable())
+                    continue;
+
+                overlays.Add((overlay, mto.createElementMethod.GetCustomAttribute<MainToolbarElementAttribute>()));
+                if (mto.createElementMethod.GetCustomAttribute<UnityOnlyMainToolbarPresetAttribute>() != null)
+                    unityOnlyOverlays.Add(overlay);
+            }
+
+            overlays.Sort((a, b) =>
+            {
+                if (unityOnlyOverlays.Contains(a.overlay) && !unityOnlyOverlays.Contains(b.overlay))
+                    return -1;
+                if (unityOnlyOverlays.Contains(b.overlay) && !unityOnlyOverlays.Contains(a.overlay))
+                    return 1;
+
+                var cmp = a.attrib.menuPriority.CompareTo(b.attrib.menuPriority);
+                if (cmp != 0)
+                    return cmp;
+
+                cmp = string.Compare(a.attrib.path, b.attrib.path, StringComparison.OrdinalIgnoreCase);
+                if (cmp != 0)
+                    return cmp;
+
+                return ((int)a.attrib.defaultDockPosition * 100 + a.attrib.defaultDockIndex)
+                    .CompareTo((int)b.attrib.defaultDockPosition * 100 + b.attrib.defaultDockIndex);
+            });
+
+            foreach (var pair in overlays)
+                result.Add((pair.overlay, pair.attrib, unityOnlyOverlays.Contains(pair.overlay)));
+
+            return result;
+        }
+
+        // Cached so every FetchItems call doesn't re-fetch and re-sort the overlay list; invalidated by MainToolbarPicker at Open()/OnDisable().
+        [AutoStaticsCleanupOnCodeReload]
+        static List<(Overlay overlay, MainToolbarElementAttribute attrib, bool isUnityOnly)> s_PickerOverlayCache;
+
+        internal static List<(Overlay overlay, MainToolbarElementAttribute attrib, bool isUnityOnly)> GetSortedAvailableOverlaysCached()
+            => s_PickerOverlayCache ??= GetSortedAvailableOverlays();
+
+        // Maps every path here, and each of its ancestor category prefixes, to its index above; lets StableIdComparer sort by menu order instead of alphabetically.
+        [AutoStaticsCleanupOnCodeReload]
+        static Dictionary<string, int> s_PickerElementSortRanks;
+
+        internal static bool TryGetElementSortRank(string path, out int rank)
+        {
+            s_PickerElementSortRanks ??= BuildElementSortRanks();
+            return s_PickerElementSortRanks.TryGetValue(path, out rank);
+        }
+
+        static Dictionary<string, int> BuildElementSortRanks()
+        {
+            var ranks = new Dictionary<string, int>();
+            var overlays = GetSortedAvailableOverlaysCached();
+            for (var i = 0; i < overlays.Count; ++i)
+            {
+                var path = overlays[i].attrib.path;
+                ranks.TryAdd(path, i);
+
+                // Every ancestor category gets the rank of its earliest child, the first time it's seen.
+                var separatorIndex = path.LastIndexOf('/');
+                while (separatorIndex >= 0)
+                {
+                    path = path.Substring(0, separatorIndex);
+                    ranks.TryAdd(path, i);
+                    separatorIndex = path.LastIndexOf('/');
+                }
+            }
+            return ranks;
+        }
+
+        internal static void InvalidatePickerOverlayCache()
+        {
+            s_PickerOverlayCache = null;
+            s_PickerElementSortRanks = null;
+        }
+
+        internal static bool IsMenuItemPinned(string menuPath) => OverlayCanvasesData.instance.ContainsPinnedMenuItem(menuPath);
+
         internal static void ResetToUnityDefaultLayout()
         {
             window.overlayCanvas.ApplyPreset(new UnityOnlyToolbarPreset());
@@ -207,10 +348,14 @@ namespace UnityEditor.Toolbars
 
         internal const string menuItemOverlayIdPrefix = "Menu Items/";
 
+        // MenuItemExists also matches submenu containers; ExtractSubmenus is empty only for a leaf, the only kind that's executable.
+        internal static bool IsExecutableMenuItem(string menuPath) =>
+            Menu.MenuItemExists(menuPath) && Menu.ExtractSubmenus(menuPath).Length == 0;
+
         // Returns null when menuPath no longer resolves to a real menu item, so no overlay is created at all.
         internal static MainToolbarOverlay CreateMenuItemOverlay(string menuPath)
         {
-            if (!Menu.MenuItemExists(menuPath))
+            if (!IsExecutableMenuItem(menuPath))
                 return null;
 
             var defaultOverlayAttrib = new OverlayAttribute();
@@ -233,6 +378,10 @@ namespace UnityEditor.Toolbars
 
         internal static void PinMenuItem(string menuPath)
         {
+            // Must run before AddPinnedMenuItem, which persists to preferences immediately.
+            if (!IsExecutableMenuItem(menuPath))
+                return;
+
             if (!OverlayCanvasesData.instance.AddPinnedMenuItem(menuPath))
                 return; // already pinned - silent no-op
 

@@ -19,6 +19,9 @@ namespace UnityEditor
         static readonly EntityId[] k_SingleSelectionCache = new EntityId[1];
 
         [AutoStaticsCleanupOnCodeReload]
+        // Subscribers attach through their own lifecycle and re-subscribe after a code reload, so the
+        // cleared invocation list refills itself.
+        [IgnoreForUAL0015("Event whose subscribers re-register through their own lifecycle after a code reload")]
         public static System.Action selectionChanged;
         [AutoStaticsCleanupOnCodeReload]
         private static DelegateWithPerformanceTracker<System.Action> m_SelectionChangedEvent = new DelegateWithPerformanceTracker<System.Action>($"{nameof(Selection)}.{nameof(selectionChanged)}");

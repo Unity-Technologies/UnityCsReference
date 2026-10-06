@@ -12,20 +12,21 @@ using UnityEngine.UIElements;
 
 namespace UnityEditor.Networking
 {
-    // Details view for the Web Requests profiler module: a summary strip, the request list for the
-    // selected frame, and an inspector for the selected request.
+    // Details view for the Web Requests profiler module: a summary strip, every request captured so
+    // far, and an inspector for the selected one.
     //
-    // The design this follows also specifies an Initiator column and Payload, Response body, Timing
-    // and Message tabs. Each needs capture that does not exist yet (the calling script and line,
-    // headers, bodies and per-phase timings), so they are left out rather than shown as columns and
-    // tabs that never fill.
+    // The design this follows also specifies an Initiator column and a Message tab. The first needs
+    // the calling script and line, which is capture that does not exist; the second is a WebSocket
+    // frame log and we observe no frames. Both are left out rather than shown never filling.
     internal class WebRequestDetailsViewController : ProfilerModuleViewController
     {
         const string k_UxmlResourceName = "WebRequest/UXML/Profiler/WebRequestDetailsView.uxml";
         const string k_UssResourceName = "WebRequest/StyleSheets/Profiler/WebRequestDetailsView.uss";
         const string k_UssLightResourceName = "WebRequest/StyleSheets/Profiler/WebRequestDetailsViewLight.uss";
         const string k_UssDarkResourceName = "WebRequest/StyleSheets/Profiler/WebRequestDetailsViewDark.uss";
+        const string k_InsecureIconResourceName = "WebRequest/Icons/UnsafeConnection.png";
 
+        const string k_OrderColumn = "order-column";
         const string k_StatusColumn = "status-column";
         const string k_MethodColumn = "method-column";
         const string k_NameColumn = "name-column";
@@ -35,9 +36,17 @@ namespace UnityEditor.Networking
         const string k_TimeColumn = "time-column";
 
         const string k_CellClass = "web-request-details-view__cell";
+        const string k_NameCellClass = "web-request-details-view__name-cell";
+        const string k_InsecureIconClass = "web-request-details-view__insecure-icon";
+        const string k_CredentialIconClass = "web-request-details-view__credential-icon";
+        const string k_TruncationNoteClass = "web-request-details-view__truncation-note";
         const string k_StatusSuccessClass = "web-request-details-view__status--success";
         const string k_StatusErrorClass = "web-request-details-view__status--error";
         const string k_StatusInFlightClass = "web-request-details-view__status--in-flight";
+
+        const string k_InsecureTooltip = "Sent over plain HTTP, so the request and response were not encrypted.";
+
+        const string k_CredentialTooltip = "This value is a credential and is stored in plain text in the profiler captures. Be careful when sharing a saved capture (.raw file).";
 
         internal const string k_InspectorVisiblePrefKey = "ProfilerWindow.WebRequests.DetailsPanel.Visible";
         internal const string k_InspectorWidthPrefKey = "ProfilerWindow.WebRequests.DetailsPanel.Width";
@@ -45,12 +54,20 @@ namespace UnityEditor.Networking
         // Must match the inspector's USS min-width, or the drag line is placed where the pane is not.
         const float k_InspectorMinWidth = 220f;
 
+        readonly WebRequestProfilerCaptureLog m_Log = new WebRequestProfilerCaptureLog();
+
+        // What the list shows: the log's records that pass the filter, in the user's sort order. The log
+        // itself stays in capture order, because the merge keys off it and the summary totals the whole
+        // capture rather than the visible rows.
+        readonly List<WebRequestProfilerRecord> m_Rows = new List<WebRequestProfilerRecord>();
+        readonly List<SortColumnDescription> m_SortOrder = new List<SortColumnDescription>();
+
+        string m_Filter = string.Empty;
+
         bool m_InspectorVisible;
 
-        readonly List<WebRequestProfilerRow> m_Rows = new List<WebRequestProfilerRow>();
-        byte[] m_Strings = Array.Empty<byte>();
-
         MultiColumnListView m_ListView;
+        ToolbarSearchField m_Search;
         Label m_SummaryRequests;
         Label m_SummaryCompleted;
         Label m_SummaryTransferred;
@@ -64,7 +81,14 @@ namespace UnityEditor.Networking
         ToolbarButton m_InspectorToggle;
         VisualElement m_Inspector;
         Label m_InspectorEmpty;
-        Foldout m_General;
+        TabView m_Tabs;
+        Tab m_PayloadTab;
+        Tab m_HeadersTab;
+        Foldout m_QueryParameters;
+        Foldout m_RequestPayload;
+        Foldout m_ResponseHeaders;
+        Foldout m_RequestHeaders;
+        Foldout m_RequestWireHeaders;
         Label m_FieldUrl;
         Label m_FieldMethod;
         Label m_FieldStatus;
@@ -72,6 +96,21 @@ namespace UnityEditor.Networking
         Label m_FieldType;
         Label m_FieldTransferred;
         Label m_FieldDuration;
+        Label m_TimingEmpty;
+        VisualElement m_TimingPhases;
+        VisualElement m_QueryParameterRows;
+        TextField m_QueryParametersText;
+        UnityEngine.UIElements.Button m_QueryParametersSource;
+        UnityEngine.UIElements.Button m_RequestPayloadSource;
+        string m_SelectedUrl = string.Empty;
+        bool m_QueryParametersShowSource;
+        bool m_RequestPayloadShowSource;
+        Label m_RequestPayloadEmpty;
+        TextField m_RequestPayloadText;
+        TreeView m_RequestPayloadTree;
+        Label m_ResponseBodyEmpty;
+        TextField m_ResponseBodyText;
+        TreeView m_ResponseBodyTree;
 
         public WebRequestDetailsViewController(ProfilerWindow profilerWindow) : base(profilerWindow) {}
 
@@ -98,29 +137,70 @@ namespace UnityEditor.Networking
 
             m_Inspector = view.Q<VisualElement>("web-request-details-view__inspector");
             m_InspectorEmpty = view.Q<Label>("web-request-details-view__inspector-empty");
-            m_General = view.Q<Foldout>("web-request-details-view__general");
+            m_Tabs = view.Q<TabView>("web-request-details-view__tabs");
+            m_HeadersTab = view.Q<Tab>("web-request-details-view__headers-tab");
+            m_PayloadTab = view.Q<Tab>("web-request-details-view__payload-tab");
+            m_QueryParameters = view.Q<Foldout>("web-request-details-view__query-parameters");
+            m_RequestPayload = view.Q<Foldout>("web-request-details-view__request-payload");
+            m_ResponseHeaders = view.Q<Foldout>("web-request-details-view__response-headers");
+            m_RequestHeaders = view.Q<Foldout>("web-request-details-view__request-headers");
+            m_RequestWireHeaders = view.Q<Foldout>("web-request-details-view__request-wire-headers");
             m_FieldUrl = view.Q<Label>("web-request-details-view__field-url");
             m_FieldMethod = view.Q<Label>("web-request-details-view__field-method");
             m_FieldStatus = view.Q<Label>("web-request-details-view__field-status");
             m_FieldSource = view.Q<Label>("web-request-details-view__field-source");
             m_FieldType = view.Q<Label>("web-request-details-view__field-type");
             m_FieldTransferred = view.Q<Label>("web-request-details-view__field-transferred");
+            m_FieldUrl.enableRichText = false;
+            m_FieldType.enableRichText = false;
             m_FieldDuration = view.Q<Label>("web-request-details-view__field-duration");
+            m_TimingEmpty = view.Q<Label>("web-request-details-view__timing-empty");
+            m_TimingPhases = view.Q<VisualElement>("web-request-details-view__timing-phases");
+
+            m_QueryParameterRows = view.Q<VisualElement>("web-request-details-view__query-parameters-rows");
+            m_QueryParametersText = view.Q<TextField>("web-request-details-view__query-parameters-text");
+            m_RequestPayloadEmpty = view.Q<Label>("web-request-details-view__request-payload-empty");
+            m_RequestPayloadText = view.Q<TextField>("web-request-details-view__request-payload-text");
+            m_ResponseBodyEmpty = view.Q<Label>("web-request-details-view__response-body-empty");
+            m_ResponseBodyText = view.Q<TextField>("web-request-details-view__response-body-text");
+
+            m_RequestPayloadTree = SetUpBodyTree(view, "web-request-details-view__request-payload-tree");
+            m_ResponseBodyTree = SetUpBodyTree(view, "web-request-details-view__response-body-tree");
+
+            m_QueryParametersSource = SetUpSourceButton(view, "web-request-details-view__query-parameters-source",
+                () => m_QueryParametersShowSource = !m_QueryParametersShowSource);
+            m_RequestPayloadSource = SetUpSourceButton(view, "web-request-details-view__request-payload-source",
+                () => m_RequestPayloadShowSource = !m_RequestPayloadShowSource);
+
+            SetUpCopyButton(view, "web-request-details-view__query-parameters-copy", () => WebRequestProfilerUrl.RawQueryString(m_SelectedUrl));
+            SetUpCopyButton(view, "web-request-details-view__request-payload-copy", () => m_RequestPayloadText.value);
+            SetUpCopyButton(view, "web-request-details-view__response-body-copy", () => m_ResponseBodyText.value);
 
             SetUpInspectorToggle(view);
 
+            m_Search = view.Q<ToolbarSearchField>("web-request-details-view__search");
+            m_Search.RegisterValueChangedCallback(OnFilterChanged);
+
             m_ListView = view.Q<MultiColumnListView>("web-request-details-view__list");
+            m_ListView.sortingMode = ColumnSortingMode.Custom;
             SetUpColumns();
             m_ListView.itemsSource = m_Rows;
             m_ListView.selectionChanged += OnSelectionChanged;
+            m_ListView.columnSortingChanged += OnColumnSortingChanged;
 
-            ReloadData(ProfilerWindow.selectedFrameIndex);
+            ReloadData(force: true);
             ProfilerWindow.SelectedFrameIndexChanged += OnSelectedFrameIndexChanged;
 
-            // Clearing the profiler does not necessarily move the selected frame, so the frame-changed
-            // event above cannot be relied on to empty the list. ProfilerModule.Clear() is the usual
-            // hook, but it cannot reach here - the details view controller is private to the base class.
+            // Frames keep arriving while the cursor stays put: a user who selects a frame during a
+            // recording pins selectedFrameIndex, so the event above stops firing and the log would stop
+            // ingesting until they moved it again. Cheap per frame, because ReloadData early-outs when
+            // Sync reports it read nothing.
+            ProfilerDriver.NewProfilerFrameRecorded += OnNewProfilerFrameRecorded;
+
+            // ProfilerModule.Clear() is the usual hook but cannot reach here - the details view
+            // controller is private to the base class.
             ProfilerDriver.profileCleared += OnProfileCleared;
+            ProfilerDriver.profileLoaded += OnProfileLoaded;
 
             return view;
         }
@@ -131,9 +211,17 @@ namespace UnityEditor.Networking
                 return;
 
             ProfilerWindow.SelectedFrameIndexChanged -= OnSelectedFrameIndexChanged;
+            ProfilerDriver.NewProfilerFrameRecorded -= OnNewProfilerFrameRecorded;
             ProfilerDriver.profileCleared -= OnProfileCleared;
+            ProfilerDriver.profileLoaded -= OnProfileLoaded;
             if (m_ListView != null)
+            {
                 m_ListView.selectionChanged -= OnSelectionChanged;
+                m_ListView.columnSortingChanged -= OnColumnSortingChanged;
+            }
+
+            if (m_Search != null)
+                m_Search.UnregisterValueChangedCallback(OnFilterChanged);
 
             if (m_InspectorToggle != null)
                 m_InspectorToggle.clicked -= ToggleInspector;
@@ -193,51 +281,149 @@ namespace UnityEditor.Networking
 
         void SetUpColumns()
         {
-            BindColumn(k_StatusColumn, (label, row) =>
+            BindColumn(k_StatusColumn, (label, record) =>
             {
-                label.text = WebRequestProfilerFormatting.FormatStatusCode(row);
+                label.text = WebRequestProfilerFormatting.FormatStatusCode(record);
 
                 label.RemoveFromClassList(k_StatusSuccessClass);
                 label.RemoveFromClassList(k_StatusErrorClass);
                 label.RemoveFromClassList(k_StatusInFlightClass);
-                label.AddToClassList(StatusClassFor(row));
+                label.AddToClassList(StatusClassFor(record));
             });
 
-            BindColumn(k_MethodColumn, (label, row) => label.text = MethodOf(row));
-            BindColumn(k_NameColumn, (label, row) =>
+            // One-based: the first request a user made is "1", not "0".
+            BindColumn(k_OrderColumn, (label, record) => label.text = (record.captureIndex + 1).ToString());
+            BindColumn(k_MethodColumn, (label, record) => label.text = record.method);
+            BindNameColumn();
+            BindColumn(k_SourceColumn, (label, record) =>
             {
-                label.text = UrlOf(row);
+                label.text = WebRequestProfilerFormatting.FormatSource(record);
                 label.tooltip = label.text;
             });
-            BindColumn(k_SourceColumn, (label, row) =>
+            BindColumn(k_TypeColumn, (label, record) =>
             {
-                label.text = WebRequestProfilerFormatting.FormatSource(row);
+                label.text = record.contentType;
                 label.tooltip = label.text;
             });
-            BindColumn(k_TypeColumn, (label, row) =>
+            BindColumn(k_SizeColumn, (label, record) =>
             {
-                label.text = ContentTypeOf(row);
-                label.tooltip = label.text;
+                label.text = WebRequestProfilerFormatting.FormatDownloadSize(record);
+                // Here rather than makeCell: cells are recycled, and a measured row must not keep an
+                // unmeasured one's explanation.
+                label.tooltip = WebRequestProfilerFormatting.HasMeasuredDownload(record)
+                    ? string.Empty
+                    : WebRequestProfilerFormatting.NotMeasuredTooltip;
             });
-            BindColumn(k_SizeColumn, (label, row) => label.text = WebRequestProfilerFormatting.FormatTransferSize(row.bytesDownloaded));
-            BindColumn(k_TimeColumn, (label, row) => label.text = WebRequestProfilerFormatting.FormatDuration(row.durationNs));
+            BindColumn(k_TimeColumn, (label, record) => label.text = WebRequestProfilerFormatting.FormatDuration(record.durationNs));
         }
 
-        void BindColumn(string columnName, Action<Label, WebRequestProfilerRow> bind)
+        void BindColumn(string columnName, Action<Label, WebRequestProfilerRecord> bind)
         {
             var column = m_ListView.columns[columnName];
             column.makeCell = () =>
             {
-                var label = new Label();
+                var label = CapturedTextLabel();
                 label.AddToClassList(k_CellClass);
+                AddRowContextMenu(label);
                 return label;
             };
-            column.bindCell = (element, index) => bind((Label)element, m_Rows[index]);
+            column.bindCell = (element, index) =>
+            {
+                element.userData = index;
+                bind((Label)element, m_Rows[index]);
+            };
         }
 
-        static string StatusClassFor(WebRequestProfilerRow row)
+        // Its own factory because the cell is a row rather than a bare label: the warning sits beside the
+        // URL when the request went over plain HTTP.
+        void BindNameColumn()
         {
-            switch ((WebRequestProfilerState)row.state)
+            var column = m_ListView.columns[k_NameColumn];
+            column.makeCell = () =>
+            {
+                var cell = new VisualElement();
+                cell.AddToClassList(k_NameCellClass);
+
+                // Ahead of the label, which grows to fill the cell and would otherwise push the icon to
+                // the far edge, away from the URL it refers to.
+                var warning = new Image { name = "insecure" };
+                warning.AddToClassList(k_InsecureIconClass);
+                warning.image = EditorGUIUtility.LoadIcon(k_InsecureIconResourceName);
+                cell.Add(warning);
+
+                var label = CapturedTextLabel();
+                label.AddToClassList(k_CellClass);
+                cell.Add(label);
+
+                AddRowContextMenu(cell);
+                return cell;
+            };
+            column.bindCell = (element, index) =>
+            {
+                element.userData = index;
+                var record = m_Rows[index];
+
+                var label = element.Q<Label>();
+                label.text = record.url;
+                label.tooltip = record.url;
+
+                // Hidden rather than removed from layout, so every URL in the column starts at the same x.
+                // A hidden element still hit-tests, so the tooltip and picking come off with it - otherwise
+                // hovering the empty icon slot on an HTTPS row reports it as unencrypted.
+                var warning = element.Q<Image>("insecure");
+                var insecure = IsInsecure(record.url);
+                warning.style.visibility = insecure ? Visibility.Visible : Visibility.Hidden;
+                warning.pickingMode = insecure ? PickingMode.Position : PickingMode.Ignore;
+                warning.tooltip = insecure ? k_InsecureTooltip : null;
+            };
+        }
+
+        // Loopback is exempt: Unity allows plain HTTP there whatever the insecure-connections setting is,
+        // so flagging it would fire on every local test server.
+        internal static bool IsInsecure(string url)
+        {
+            if (!Uri.TryCreate(url, UriKind.Absolute, out var uri))
+                return false;
+
+            return string.Equals(uri.Scheme, "http", StringComparison.OrdinalIgnoreCase) && !uri.IsLoopback;
+        }
+
+        // On every cell, not the row: MultiColumnListView builds a row from independent cell elements, and
+        // a right-click lands on whichever one is under the pointer. The bound index rides on the element
+        // because the menu opens without changing the selection.
+        void AddRowContextMenu(VisualElement cell)
+        {
+            cell.AddManipulator(new ContextualMenuManipulator(evt => PopulateRowMenu(evt, cell)));
+        }
+
+        void PopulateRowMenu(ContextualMenuPopulateEvent evt, VisualElement cell)
+        {
+            if (!(cell.userData is int index) || index < 0 || index >= m_Rows.Count)
+                return;
+
+            var record = m_Rows[index];
+            evt.menu.AppendAction("Copy URL", _ => EditorGUIUtility.systemCopyBuffer = record.url);
+            evt.menu.AppendAction("Copy Details", _ => EditorGUIUtility.systemCopyBuffer = Describe(record));
+        }
+
+        internal static string Describe(WebRequestProfilerRecord record)
+        {
+            var builder = new System.Text.StringBuilder();
+            builder.Append(record.method).Append(' ').Append(record.url).Append('\n');
+            builder.Append("Status: ").Append(WebRequestProfilerFormatting.FormatStatus(record)).Append('\n');
+            builder.Append("Source: ").Append(WebRequestProfilerFormatting.FormatSource(record)).Append('\n');
+            if (!string.IsNullOrEmpty(record.contentType))
+                builder.Append("Content type: ").Append(record.contentType).Append('\n');
+            builder.Append("Transferred: ")
+                .Append(WebRequestProfilerFormatting.FormatDownloadSize(record)).Append(" down / ")
+                .Append(WebRequestProfilerFormatting.FormatUploadSize(record)).Append(" up\n");
+            builder.Append("Duration: ").Append(WebRequestProfilerFormatting.FormatDuration(record.durationNs));
+            return builder.ToString();
+        }
+
+        static string StatusClassFor(WebRequestProfilerRecord record)
+        {
+            switch (record.state)
             {
                 case WebRequestProfilerState.InFlight:
                     return k_StatusInFlightClass;
@@ -245,56 +431,128 @@ namespace UnityEditor.Networking
                     return k_StatusErrorClass;
                 default:
                     // A request can complete transport-wise and still carry an HTTP error status.
-                    return row.statusCode >= 400 ? k_StatusErrorClass : k_StatusSuccessClass;
+                    return record.statusCode >= 400 ? k_StatusErrorClass : k_StatusSuccessClass;
             }
         }
 
-        string UrlOf(WebRequestProfilerRow row) => WebRequestProfilerFrameReader.Slice(m_Strings, row.urlOffset, row.urlLength);
-
-        string MethodOf(WebRequestProfilerRow row) => WebRequestProfilerFrameReader.Slice(m_Strings, row.methodOffset, row.methodLength);
-
-        // Empty until the response arrives, so an in-flight row shows nothing rather than a stale type.
-        string ContentTypeOf(WebRequestProfilerRow row) => WebRequestProfilerFrameReader.Slice(m_Strings, row.contentTypeOffset, row.contentTypeLength);
-
-        void OnSelectedFrameIndexChanged(long selectedFrameIndex)
+        void OnSelectedFrameIndexChanged(long _)
         {
-            ReloadData(selectedFrameIndex);
+            ReloadData();
         }
 
-        // The frames are already gone by the time this runs, so the reload finds nothing and empties
-        // the list, the summary and the inspector through the one path rather than a second one that
-        // could drift from it.
+        // ProfilerDriver hands over the frame range; neither argument is needed here, because Sync
+        // reads the range off the driver itself.
+        void OnNewProfilerFrameRecorded(int _, int __)
+        {
+            ReloadData();
+        }
+
+        // Clearing need not move the selected frame, and a replacement capture renumbers frames from
+        // zero, so neither the frame-changed event nor the ingested range can catch it.
         void OnProfileCleared()
         {
-            ReloadData(ProfilerWindow.selectedFrameIndex);
+            m_Log.Clear();
+            ReloadData(force: true);
         }
 
-        void ReloadData(long selectedFrameIndex)
+        // A loaded capture is a different session: its frames renumber from zero and its request ids
+        // start over, so merging it into what is already ingested would mix two sessions under colliding
+        // ids. Sync cannot notice on its own - it only ever reads forward, so a load at least as long as
+        // the current session leaves the ingested mark ahead of every loaded frame and reads none of them.
+        void OnProfileLoaded()
         {
-            // Stepping through frames should not drop the selection: a request in flight appears in
-            // every frame it spans, so follow it by id rather than by row index, which shifts as other
-            // requests start and finish around it.
+            m_Log.Clear();
+            ReloadData(force: true);
+        }
+
+        // force covers the cases Sync cannot report on: a Clear leaves it with nothing to ingest, so it
+        // returns false while the rows it emptied are still on screen.
+        void ReloadData(bool force = false)
+        {
+            // Tracked by id, not row index: a newly ingested frame can add requests above this one, and
+            // so can a re-sort.
             var previouslySelected = SelectedRequestId();
 
-            m_Rows.Clear();
-            m_Strings = Array.Empty<byte>();
+            // Every frame in the buffer, not the selected one. A request is emitted in each frame it is
+            // alive in and then dropped, so its completion - and with it the status code and content
+            // type - exists in exactly one frame.
+            var changed = m_Log.Sync(ProfilerDriver.firstFrameIndex, ProfilerDriver.lastFrameIndex);
 
-            var rows = WebRequestProfilerFrameReader.ReadFrame(selectedFrameIndex, out var strings);
-            if (rows != null)
+            // Scrubbing raises a frame change per frame and the log spans the whole recording, so
+            // re-filtering and re-sorting it for an unchanged list gets steadily more expensive.
+            if (!changed && !force)
+                return;
+
+            RebuildRows();
+            RestoreSelection(previouslySelected);
+            UpdateSummary();
+        }
+
+        void OnColumnSortingChanged()
+        {
+            var previouslySelected = SelectedRequestId();
+
+            RebuildRows();
+            RestoreSelection(previouslySelected);
+        }
+
+        void OnFilterChanged(ChangeEvent<string> evt)
+        {
+            m_Filter = evt.newValue ?? string.Empty;
+
+            var previouslySelected = SelectedRequestId();
+            RebuildRows();
+            RestoreSelection(previouslySelected);
+            UpdateSummary();
+        }
+
+        // Filtered and sorted here rather than only when the user acts, so both outlive ingesting a frame.
+        void RebuildRows()
+        {
+            m_Rows.Clear();
+            foreach (var record in m_Log.Records)
             {
-                m_Rows.AddRange(rows);
-                m_Strings = strings;
+                if (MatchesFilter(record))
+                    m_Rows.Add(record);
             }
 
-            m_ListView.RefreshItems();
+            SortRows();
 
-            var index = previouslySelected.HasValue ? IndexOfRequest(previouslySelected.Value) : -1;
+            m_ListView.RefreshItems();
+        }
+
+        bool MatchesFilter(WebRequestProfilerRecord record)
+        {
+            return Matches(record, m_Filter);
+        }
+
+        internal static bool Matches(WebRequestProfilerRecord record, string filter)
+        {
+            if (string.IsNullOrEmpty(filter))
+                return true;
+
+            // Status is skipped while in flight: its code is still 0, so every such row would match "0".
+            return Contains(record.url, filter)
+                || Contains(record.method, filter)
+                || Contains(record.contentType, filter)
+                || Contains(WebRequestProfilerFormatting.FormatSource(record), filter)
+                || (record.statusCode != 0 && Contains(record.statusCode.ToString(), filter));
+        }
+
+        static bool Contains(string value, string filter)
+        {
+            return !string.IsNullOrEmpty(value)
+                && value.IndexOf(filter, StringComparison.OrdinalIgnoreCase) >= 0;
+        }
+
+        void RestoreSelection(ulong? requestId)
+        {
+            var index = requestId.HasValue ? IndexOfRequest(requestId.Value) : -1;
             if (index >= 0)
                 m_ListView.SetSelectionWithoutNotify(new[] { index });
             else
                 m_ListView.ClearSelection();
 
-            UpdateSummary();
             UpdateInspector(index);
         }
 
@@ -315,6 +573,79 @@ namespace UnityEditor.Networking
             return -1;
         }
 
+        void SortRows()
+        {
+            m_SortOrder.Clear();
+            if (m_ListView.sortedColumns != null)
+            {
+                foreach (var description in m_ListView.sortedColumns)
+                    m_SortOrder.Add(description);
+            }
+
+            SortRecords(m_Rows, m_SortOrder);
+        }
+
+        // Shift-clicking headers builds a multi-column order, so every description is consulted in turn.
+        internal static void SortRecords(List<WebRequestProfilerRecord> records, List<SortColumnDescription> sortOrder)
+        {
+            // No sorted column means capture order, which the caller already holds.
+            if (sortOrder.Count == 0)
+                return;
+
+            records.Sort((a, b) => CompareRows(a, b, sortOrder));
+        }
+
+        // Ties break on requestId, which is handed out in start order. List.Sort is unstable and the
+        // rows are re-sorted on every frame change, so without a total order equal rows would swap
+        // places as the user scrubs.
+        static int CompareRows(WebRequestProfilerRecord a, WebRequestProfilerRecord b, List<SortColumnDescription> sortOrder)
+        {
+            foreach (var description in sortOrder)
+            {
+                var comparison = CompareColumn(description.columnName, a, b);
+                if (comparison != 0)
+                    return description.direction == SortDirection.Ascending ? comparison : -comparison;
+            }
+
+            return a.requestId.CompareTo(b.requestId);
+        }
+
+        static int CompareColumn(string columnName, WebRequestProfilerRecord a, WebRequestProfilerRecord b)
+        {
+            switch (columnName)
+            {
+                // The capture index, not the row's position: sorting by anything else must not change
+                // what this column reports, or it stops meaning call order.
+                case k_OrderColumn:
+                    return a.captureIndex.CompareTo(b.captureIndex);
+                // In-flight rows have no status code yet, so they group together at 0.
+                case k_StatusColumn:
+                    return a.statusCode.CompareTo(b.statusCode);
+                case k_MethodColumn:
+                    return CompareText(a.method, b.method);
+                case k_NameColumn:
+                    return CompareText(a.url, b.url);
+                // On the displayed name, not the enum, so the order matches what the column reads.
+                case k_SourceColumn:
+                    return CompareText(
+                        WebRequestProfilerFormatting.FormatSource(a),
+                        WebRequestProfilerFormatting.FormatSource(b));
+                case k_TypeColumn:
+                    return CompareText(a.contentType, b.contentType);
+                case k_SizeColumn:
+                    return a.bytesDownloaded.CompareTo(b.bytesDownloaded);
+                case k_TimeColumn:
+                    return a.durationNs.CompareTo(b.durationNs);
+                default:
+                    return 0;
+            }
+        }
+
+        static int CompareText(string a, string b)
+        {
+            return string.Compare(a, b, StringComparison.OrdinalIgnoreCase);
+        }
+
         void UpdateSummary()
         {
             var completed = 0;
@@ -322,47 +653,79 @@ namespace UnityEditor.Networking
             var pending = 0;
             ulong bytesDown = 0;
             ulong bytesUp = 0;
-            var durations = new List<ulong>(m_Rows.Count);
+            var records = m_Log.Records;
+            var durations = new List<ulong>(records.Count);
 
-            foreach (var row in m_Rows)
+            // A capture can mix transports that count bytes with ones that do not, so a sum over some
+            // of the rows is a floor and FormatTransferTotal marks it as one.
+            var measuredDown = false;
+            var measuredUp = false;
+            var unmeasuredDown = false;
+            var unmeasuredUp = false;
+
+            foreach (var record in records)
             {
-                bytesDown += row.bytesDownloaded;
-                bytesUp += row.bytesUploaded;
+                if (WebRequestProfilerFormatting.HasMeasuredDownload(record))
+                {
+                    bytesDown += record.bytesDownloaded;
+                    measuredDown = true;
+                }
+                else
+                {
+                    unmeasuredDown = true;
+                }
 
-                switch ((WebRequestProfilerState)row.state)
+                if (WebRequestProfilerFormatting.HasMeasuredUpload(record))
+                {
+                    bytesUp += record.bytesUploaded;
+                    measuredUp = true;
+                }
+                else
+                {
+                    unmeasuredUp = true;
+                }
+
+                switch (record.state)
                 {
                     case WebRequestProfilerState.InFlight:
                         pending++;
                         break;
                     case WebRequestProfilerState.Failed:
                         errors++;
-                        durations.Add(row.durationNs);
+                        durations.Add(record.durationNs);
                         break;
                     default:
                         completed++;
-                        if (row.statusCode >= 400)
+                        if (record.statusCode >= 400)
                             errors++;
-                        durations.Add(row.durationNs);
+                        durations.Add(record.durationNs);
                         break;
                 }
             }
 
-            m_SummaryRequests.text = WebRequestProfilerFormatting.FormatCount(m_Rows.Count, "Request");
+            // Every total covers the whole capture rather than the filtered rows; the request count is the
+            // only one that says how many are visible, so a filter cannot make the totals mean two things.
+            m_SummaryRequests.text = m_Rows.Count == records.Count
+                ? WebRequestProfilerFormatting.FormatCount(records.Count, "Request")
+                : $"{m_Rows.Count} of {WebRequestProfilerFormatting.FormatCount(records.Count, "Request")}";
             m_SummaryCompleted.text = $"{completed} Completed";
-            m_SummaryTransferred.text = $"{WebRequestProfilerFormatting.FormatTransferSize(bytesDown + bytesUp)} Transferred";
+            // Both directions in one figure, so it is a floor as soon as either of them is.
+            var anyUnmeasured = unmeasuredDown || unmeasuredUp;
+            m_SummaryTransferred.text = $"{WebRequestProfilerFormatting.FormatTransferTotal(bytesDown + bytesUp, measuredDown || measuredUp, anyUnmeasured)} Transferred";
+            m_SummaryTransferred.tooltip = anyUnmeasured ? WebRequestProfilerFormatting.PartialTotalTooltip : string.Empty;
             m_SummaryPending.text = WebRequestProfilerFormatting.FormatCount(pending, "Pending Request");
-            // No finished request in the frame means no sample, which is not the same as a latency of
-            // zero - every request being still in flight is ordinary while scrubbing.
+            // No finished request means no sample, which is not the same as a latency of zero.
             var latency = durations.Count > 0
                 ? WebRequestProfilerFormatting.FormatDuration(Percentile(durations, 0.95f))
                 : "-";
             m_SummaryLatency.text = $"Latency p95: {latency}";
             m_SummaryErrors.text = WebRequestProfilerFormatting.FormatCount(errors, "Error");
-            m_SummaryBytes.text = $"Total Bytes Down/Up: {WebRequestProfilerFormatting.FormatTransferSize(bytesDown)} / {WebRequestProfilerFormatting.FormatTransferSize(bytesUp)}";
+            m_SummaryBytes.text = $"Total Bytes Down/Up: {WebRequestProfilerFormatting.FormatTransferTotal(bytesDown, measuredDown, unmeasuredDown)} / {WebRequestProfilerFormatting.FormatTransferTotal(bytesUp, measuredUp, unmeasuredUp)}";
+            m_SummaryBytes.tooltip = anyUnmeasured ? WebRequestProfilerFormatting.PartialTotalTooltip : string.Empty;
         }
 
-        // Nearest-rank percentile: with the handful of requests a frame usually holds, interpolating
-        // between neighbours would imply more precision than the sample supports.
+        // Nearest-rank percentile: interpolating between neighbours would imply more precision than a
+        // capture of a few dozen requests supports.
         static ulong Percentile(List<ulong> values, float percentile)
         {
             if (values.Count == 0)
@@ -376,7 +739,28 @@ namespace UnityEditor.Networking
 
         void OnSelectionChanged(IEnumerable<object> _)
         {
-            UpdateInspector(m_ListView.selectedIndex);
+            var index = m_ListView.selectedIndex;
+            UpdateInspector(index);
+            JumpToCompletionFrame(index);
+        }
+
+        // The frame a request finished in is the one whose counters and markers cover its transfer, and
+        // it is the only frame carrying its completion, so selecting the request goes there.
+        void JumpToCompletionFrame(int index)
+        {
+            if (index < 0 || index >= m_Rows.Count)
+                return;
+
+            var frame = m_Rows[index].completedFrame;
+            if (frame < 0 || frame == ProfilerWindow.selectedFrameIndex)
+                return;
+
+            // The log outlives the ring buffer, so a request can still be listed after the frame it
+            // completed in has been evicted. Staying put beats jumping to an empty frame.
+            if (frame < ProfilerDriver.firstFrameIndex || frame > ProfilerDriver.lastFrameIndex)
+                return;
+
+            ProfilerWindow.selectedFrameIndex = frame;
         }
 
         void UpdateInspector(int index)
@@ -384,20 +768,632 @@ namespace UnityEditor.Networking
             var hasSelection = index >= 0 && index < m_Rows.Count;
 
             m_InspectorEmpty.style.display = hasSelection ? DisplayStyle.None : DisplayStyle.Flex;
-            m_General.style.display = hasSelection ? DisplayStyle.Flex : DisplayStyle.None;
+            // The TabView owns each tab's content, so this one toggle covers all of them.
+            m_Tabs.style.display = hasSelection ? DisplayStyle.Flex : DisplayStyle.None;
 
             if (!hasSelection)
                 return;
 
-            var row = m_Rows[index];
-            m_FieldUrl.text = UrlOf(row);
-            m_FieldMethod.text = MethodOf(row);
-            m_FieldStatus.text = WebRequestProfilerFormatting.FormatStatus(row);
-            m_FieldSource.text = WebRequestProfilerFormatting.FormatSource(row);
-            var contentType = ContentTypeOf(row);
-            m_FieldType.text = string.IsNullOrEmpty(contentType) ? "-" : contentType;
-            m_FieldTransferred.text = $"{WebRequestProfilerFormatting.FormatTransferSize(row.bytesDownloaded)} down / {WebRequestProfilerFormatting.FormatTransferSize(row.bytesUploaded)} up";
-            m_FieldDuration.text = WebRequestProfilerFormatting.FormatDuration(row.durationNs);
+            var record = m_Rows[index];
+            m_FieldUrl.text = record.url;
+            m_FieldMethod.text = record.method;
+            m_FieldStatus.text = WebRequestProfilerFormatting.FormatStatus(record);
+            m_FieldSource.text = WebRequestProfilerFormatting.FormatSource(record);
+            m_FieldType.text = string.IsNullOrEmpty(record.contentType) ? "-" : record.contentType;
+            m_FieldTransferred.text = $"{WebRequestProfilerFormatting.FormatDownloadSize(record)} down / {WebRequestProfilerFormatting.FormatUploadSize(record)} up";
+            m_FieldTransferred.tooltip = WebRequestProfilerFormatting.HasMeasuredDownload(record)
+                && WebRequestProfilerFormatting.HasMeasuredUpload(record)
+                ? string.Empty
+                : WebRequestProfilerFormatting.NotMeasuredTooltip;
+            m_FieldDuration.text = WebRequestProfilerFormatting.FormatDuration(record.durationNs);
+
+            PopulateHeaders(m_ResponseHeaders, record, WebRequestProfilerHeaderKind.Response);
+            PopulateHeaders(m_RequestHeaders, record, WebRequestProfilerHeaderKind.Request);
+            PopulateHeaders(m_RequestWireHeaders, record, WebRequestProfilerHeaderKind.RequestWire,
+                "Not captured. The headers sent are only recorded on supported platforms, and are "
+                + "unavailable if the request failed before anything went out.");
+
+            m_SelectedUrl = record.url;
+
+            var showQuery = ShouldShowQueryParameters(record.url);
+            var showPayload = ShouldShowRequestPayload(record.requestBody);
+            m_QueryParameters.style.display = showQuery ? DisplayStyle.Flex : DisplayStyle.None;
+            m_RequestPayload.style.display = showPayload ? DisplayStyle.Flex : DisplayStyle.None;
+            SetTabVisible(m_PayloadTab, showQuery || showPayload);
+
+            if (showQuery)
+                PopulateQueryParameters(record);
+
+            PopulateBody(m_RequestPayloadEmpty, m_RequestPayloadText, m_RequestPayloadTree,
+                m_RequestPayloadSource, record, record.requestBody, m_RequestPayloadShowSource);
+
+            PopulateBody(m_ResponseBodyEmpty, m_ResponseBodyText, m_ResponseBodyTree,
+                null, record, record.responseBody, showSource: false);
+            PopulateTiming(record);
+        }
+
+        static TreeView SetUpBodyTree(VisualElement view, string treeName)
+        {
+            var tree = view.Q<TreeView>(treeName);
+            tree.selectionType = SelectionType.None;
+            tree.focusable = false;
+            tree.makeItem = () =>
+            {
+                var label = CapturedTextLabel();
+                label.AddToClassList("web-request-details-view__body-tree-row");
+                return label;
+            };
+            tree.bindItem = (element, index) =>
+                ((Label)element).text = tree.GetItemDataForIndex<WebRequestProfilerJsonNode>(index).label;
+            tree.itemExpandedChanged += _ => FitTreeToContent(tree);
+            return tree;
+        }
+
+        static void FitTreeToContent(TreeView tree)
+        {
+            var visibleRows = tree.viewController?.itemsSource?.Count ?? 0;
+            tree.style.height = visibleRows * tree.fixedItemHeight;
+        }
+
+        static Label CapturedTextLabel(string text = null)
+        {
+            var label = new Label(text);
+            label.enableRichText = false;
+            return label;
+        }
+
+        void SetTabVisible(Tab tab, bool visible)
+        {
+            if (!visible && m_Tabs.activeTab == tab)
+                m_Tabs.activeTab = m_HeadersTab;
+
+            if (visible)
+            {
+                tab.style.display = StyleKeyword.Null;
+                tab.tabHeader.style.display = StyleKeyword.Null;
+                return;
+            }
+
+            tab.style.display = DisplayStyle.None;
+            tab.tabHeader.style.display = DisplayStyle.None;
+        }
+
+        UnityEngine.UIElements.Button SetUpSourceButton(VisualElement view, string buttonName, Action toggle)
+        {
+            var button = view.Q<UnityEngine.UIElements.Button>(buttonName);
+            button.clicked += () =>
+            {
+                toggle();
+                UpdateInspector(m_ListView.selectedIndex);
+            };
+            return button;
+        }
+
+        internal static bool ShouldShowQueryParameters(string url) => WebRequestProfilerUrl.ParseQueryParameters(url).Count > 0;
+
+        internal static bool ShouldShowRequestPayload(in WebRequestProfilerBody body) =>
+            !(body.captured && body.totalLength == 0);
+
+        internal static bool AcceptIncompleteTree(bool incomplete, bool isTruncated) =>
+            !incomplete || isTruncated;
+
+        internal static bool ShouldShowPayloadTab(string url, in WebRequestProfilerBody requestBody) =>
+            ShouldShowQueryParameters(url) || ShouldShowRequestPayload(requestBody);
+
+        // Copies what the box shows, so a truncated body copies the part that exists.
+        static void SetUpCopyButton(VisualElement view, string buttonName, Func<string> textToCopy)
+        {
+            // Qualified: UnityEditorInternal has a Button too, and this file uses both namespaces.
+            var button = view.Q<UnityEngine.UIElements.Button>(buttonName);
+            button.clicked += () =>
+            {
+                var text = textToCopy();
+                if (!string.IsNullOrEmpty(text))
+                    EditorGUIUtility.systemCopyBuffer = text;
+            };
+        }
+
+
+        void PopulateQueryParameters(WebRequestProfilerRecord record)
+        {
+            var raw = WebRequestProfilerUrl.RawQueryString(record.url);
+            m_QueryParametersSource.text = m_QueryParametersShowSource ? "View Parsed" : "View Source";
+            m_QueryParametersText.SetValueWithoutNotify(raw);
+            m_QueryParametersText.style.display = m_QueryParametersShowSource ? DisplayStyle.Flex : DisplayStyle.None;
+            m_QueryParameterRows.style.display = m_QueryParametersShowSource ? DisplayStyle.None : DisplayStyle.Flex;
+
+            if (m_QueryParametersShowSource)
+                return;
+
+            PopulateQueryParameterRows(m_QueryParameterRows, record);
+        }
+
+        internal static void PopulateQueryParameterRows(VisualElement rows, WebRequestProfilerRecord record)
+        {
+            rows.Clear();
+
+            foreach (var parameter in WebRequestProfilerUrl.ParseQueryParameters(record.url))
+            {
+                var field = new VisualElement();
+                field.AddToClassList("web-request-details-view__field");
+
+                var nameLabel = CapturedTextLabel(parameter.Key);
+                nameLabel.AddToClassList("web-request-details-view__field-label");
+
+                var valueLabel = CapturedTextLabel(parameter.Value);
+                valueLabel.AddToClassList("web-request-details-view__field-value");
+                valueLabel.selection.isSelectable = true;
+
+                field.Add(nameLabel);
+                field.Add(valueLabel);
+                rows.Add(field);
+            }
+        }
+
+        readonly struct BodyViewKey : IEquatable<BodyViewKey>
+        {
+            readonly ulong m_RequestId;
+            readonly WebRequestProfilerState m_State;
+            readonly WebRequestProfilerBodyCapture m_BodyCapture;
+            readonly string m_Text;
+            readonly string m_ContentType;
+            readonly ulong m_TotalLength;
+            readonly uint m_CapturedLength;
+            readonly WebRequestProfilerBodyFlags m_Flags;
+            readonly bool m_Captured;
+            readonly bool m_ShowSource;
+
+            public BodyViewKey(WebRequestProfilerRecord record, in WebRequestProfilerBody body, bool showSource)
+            {
+                m_RequestId = record.requestId;
+                m_State = record.state;
+                m_BodyCapture = record.bodyCapture;
+                m_Text = body.text;
+                m_ContentType = body.contentType;
+                m_TotalLength = body.totalLength;
+                m_CapturedLength = body.capturedLength;
+                m_Flags = body.flags;
+                m_Captured = body.captured;
+                m_ShowSource = showSource;
+            }
+
+            public bool Equals(BodyViewKey other) =>
+                m_RequestId == other.m_RequestId && m_State == other.m_State
+                && m_BodyCapture == other.m_BodyCapture && ReferenceEquals(m_Text, other.m_Text)
+                && m_ContentType == other.m_ContentType && m_TotalLength == other.m_TotalLength
+                && m_CapturedLength == other.m_CapturedLength && m_Flags == other.m_Flags
+                && m_Captured == other.m_Captured && m_ShowSource == other.m_ShowSource;
+
+            public override bool Equals(object obj) => obj is BodyViewKey other && Equals(other);
+            public override int GetHashCode() => (int)m_RequestId;
+        }
+
+        // Captured, never captured, or skipped by the type gate. Only the first has text.
+        static void PopulateBody(Label empty, TextField text, TreeView tree,
+            UnityEngine.UIElements.Button source,
+            WebRequestProfilerRecord record, in WebRequestProfilerBody body, bool showSource)
+        {
+            var key = new BodyViewKey(record, body, showSource);
+            if (tree.userData is BodyViewKey shown && shown.Equals(key))
+                return;
+
+            tree.userData = key;
+
+            if (source != null)
+                source.style.display = DisplayStyle.None;
+
+            tree.style.display = DisplayStyle.None;
+            tree.SetRootItems(new List<TreeViewItemData<WebRequestProfilerJsonNode>>());
+            tree.Rebuild();
+
+            if (!body.captured)
+            {
+                var known = (record.bodyCapture & WebRequestProfilerBodyCapture.TransportKnown) != 0;
+                var supported = (record.bodyCapture & WebRequestProfilerBodyCapture.Supported) != 0;
+
+                if (known && !supported)
+                {
+                    empty.text = "Not captured: the transport that ran this request cannot report bodies.";
+                }
+                else if (record.state == WebRequestProfilerState.InFlight)
+                {
+                    empty.text = "Bodies are recorded when a request finishes.";
+                }
+                else if (!known)
+                {
+                    empty.text = "Not captured: nothing was sent for this request, so there is no body to record.";
+                }
+                else
+                {
+                    empty.text = "Not captured: this capture was recorded with body capture turned off.";
+                }
+                empty.style.display = DisplayStyle.Flex;
+                text.style.display = DisplayStyle.None;
+                text.SetValueWithoutNotify(string.Empty);
+                return;
+            }
+
+            if (body.IsBinary)
+            {
+                empty.text = $"Not captured (binary). {WebRequestProfilerFormatting.FormatBytes(body.totalLength)} of a content type that is not text.";
+                empty.style.display = DisplayStyle.Flex;
+                text.style.display = DisplayStyle.None;
+                text.SetValueWithoutNotify(string.Empty);
+                return;
+            }
+
+            if (body.totalLength == 0)
+            {
+                empty.text = "This request carried no body.";
+                empty.style.display = DisplayStyle.Flex;
+                text.style.display = DisplayStyle.None;
+                text.SetValueWithoutNotify(string.Empty);
+                return;
+            }
+
+            // Set even when the tree is what gets shown: Copy reads this field, and it is what View
+            // Source swaps to without having to re-decode anything.
+            text.SetValueWithoutNotify(body.text);
+
+            // Both figures are bytes, which is what the cap counts; the decoded string's length would
+            // be UTF-16 code units.
+            var note = body.IsTruncated
+                ? $"Showing the first {WebRequestProfilerFormatting.FormatBytes(body.capturedLength)} of {WebRequestProfilerFormatting.FormatBytes(body.totalLength)}."
+                : string.Empty;
+
+            var claimsJson = WebRequestProfilerJsonTree.IsJsonContentType(body.contentType);
+
+            List<TreeViewItemData<WebRequestProfilerJsonNode>> roots = null;
+            var incomplete = false;
+            var parsed = claimsJson
+                && WebRequestProfilerJsonTree.TryBuild(body.text, out roots, out incomplete)
+                && AcceptIncompleteTree(incomplete, body.IsTruncated);
+
+            if (parsed && source != null)
+            {
+                source.style.display = DisplayStyle.Flex;
+                source.text = showSource ? "View Parsed" : "View Source";
+            }
+
+            if (parsed && !showSource)
+            {
+                if (incomplete)
+                {
+                    note = body.IsTruncated
+                        ? note + " The structure is incomplete."
+                        : "The body ended mid-structure, so this tree is incomplete.";
+                }
+
+                empty.text = note;
+                empty.style.display = string.IsNullOrEmpty(note) ? DisplayStyle.None : DisplayStyle.Flex;
+                text.style.display = DisplayStyle.None;
+                tree.SetRootItems(roots);
+                tree.Rebuild();
+                tree.ExpandAll();
+                FitTreeToContent(tree);
+                tree.style.display = DisplayStyle.Flex;
+                return;
+            }
+
+            if (claimsJson && !parsed)
+            {
+                note = string.IsNullOrEmpty(note)
+                    ? "The body is not valid JSON. Showing the raw body."
+                    : note + " The body is not valid JSON. Showing the raw body.";
+            }
+
+            empty.text = note;
+            empty.style.display = string.IsNullOrEmpty(note) ? DisplayStyle.None : DisplayStyle.Flex;
+            text.style.display = DisplayStyle.Flex;
+        }
+
+        internal static void PopulateHeaders(Foldout foldout, WebRequestProfilerRecord record,
+            WebRequestProfilerHeaderKind kind, string emptyText = null)
+        {
+            foldout.Clear();
+
+            var count = 0;
+            var truncated = false;
+            if (record.headers != null)
+            {
+                foreach (var header in record.headers)
+                {
+                    if (header.kind != kind)
+                        continue;
+
+                    truncated |= header.truncated;
+
+                    var field = new VisualElement();
+                    field.AddToClassList("web-request-details-view__field");
+
+                    var name = CapturedTextLabel(header.name);
+                    name.AddToClassList("web-request-details-view__field-label");
+
+                    var value = CapturedTextLabel(header.value);
+                    value.AddToClassList("web-request-details-view__field-value");
+                    value.selection.isSelectable = true;
+
+                    field.Add(name);
+
+                    if (header.isCredential)
+                    {
+                        var warning = new Image();
+                        warning.AddToClassList(k_CredentialIconClass);
+                        warning.image = EditorGUIUtility.LoadIcon("console.warnicon.sml");
+                        field.Add(warning);
+
+                        // On the row, not the 12px icon: hovering anywhere on it reaches the warning.
+                        field.tooltip = k_CredentialTooltip;
+                    }
+
+                    field.Add(value);
+                    foldout.Add(field);
+                    ++count;
+                }
+            }
+
+            if (count == 0)
+            {
+                // Headers are recorded when the request finishes, so an in-flight row genuinely has
+                // none yet - say so rather than showing an empty section that looks broken. A record
+                // that has any header set has been reported on, so an empty section of one kind means
+                // the request carried none of that kind: the usual case is a request with response
+                // headers and no custom request headers, which must not read as still waiting.
+                var text = emptyText ?? (record.headers != null ? "None captured." : "None captured yet.");
+                var empty = new Label(text);
+                empty.AddToClassList("web-request-details-view__inspector-empty");
+                foldout.Add(empty);
+            }
+
+            if (truncated)
+            {
+                var note = new Label("Capture stopped after " + count
+                    + " headers for this request; any beyond that were not recorded.");
+                note.AddToClassList(k_TruncationNoteClass);
+                foldout.Add(note);
+            }
+        }
+
+        // The transport reports cumulative marks; what matters is how long each phase took, so show the
+        // gaps between them. A mark of zero means the phase never happened - no TLS, or a reused
+        // connection - which reads as "skipped" rather than as having taken no time.
+        void PopulateTiming(WebRequestProfilerRecord record)
+        {
+            m_TimingPhases.Clear();
+
+            if (!record.hasTimings)
+            {
+                m_TimingEmpty.style.display = DisplayStyle.Flex;
+                m_TimingEmpty.text = record.state == WebRequestProfilerState.InFlight
+                    ? "Timings are measured when the request finishes."
+                    : "This request's transport does not measure per-phase timings.";
+                return;
+            }
+
+            m_TimingEmpty.style.display = DisplayStyle.None;
+
+            var timings = record.timings;
+
+            // Cumulative marks, in the order the phases occur. Names and per-phase colours follow the
+            // Editor design system's palette, so the modifier is part of the contract with the two
+            // themed stylesheets rather than a detail of this loop.
+            //
+            // Section is the design's grouping, and null repeats the section above rather than starting a
+            // new one, so the headers fall out of this table instead of being tracked separately. The
+            // design collapses DNS Lookup, Initial Connection and SSL into a single "Connection" row;
+            // that variant was considered and rejected, because the rule is to expose every timing
+            // detail curl gives us and the palette assigns those three their own colours. Its grouping is
+            // kept, which is what "and Connection" in the first section name is doing.
+            var phases = new (string Section, string Label, string Modifier, ulong Mark)[]
+            {
+                ("Resource Scheduling and Connection", "Queueing", "queueing", timings.queuedUsec),
+                (null, "DNS Lookup", "dns-lookup", timings.nameLookupUsec),
+                (null, "Initial Connection", "initial-connection", timings.connectUsec),
+                (null, "TLS", "tls", timings.tlsHandshakeUsec),
+                ("Request/Response", "Request sent", "request-sent", timings.preTransferUsec),
+                (null, "Waiting for server response", "waiting", timings.startTransferUsec),
+                (null, "Content Download", "content-download", timings.totalUsec),
+            };
+
+            var total = timings.totalUsec;
+
+            var marks = new ulong[phases.Length];
+            for (var i = 0; i < phases.Length; ++i)
+                marks[i] = phases[i].Mark;
+
+            var spans = ComputePhaseSpans(marks, timings.availableMarks);
+
+            // Each section is its own panel, so rows are added to the panel rather than to the list.
+            VisualElement panel = null;
+            for (var i = 0; i < phases.Length; ++i)
+            {
+                var (section, label, modifier, _) = phases[i];
+                var span = spans[i];
+
+                if (section != null)
+                {
+                    panel = MakeSectionPanel(section);
+                    m_TimingPhases.Add(panel);
+                }
+
+                panel.Add(span.skipped
+                    ? MakePhaseRow(label, modifier, "Skipped", 0f, 0f, false)
+                    : MakePhaseRow(label, modifier, FormatPhaseDuration(span.elapsedUsec),
+                        span.start, span.width, true));
+            }
+
+            // Its own band below the panels rather than a row inside the last one, which is what the
+            // design does and what stops it reading as another phase of Content Download.
+            var totalRow = new VisualElement();
+            totalRow.AddToClassList("web-request-details-view__phase-total");
+
+            var totalLabel = new Label("Total Time");
+            totalLabel.AddToClassList("web-request-details-view__phase-total-label");
+
+            var totalValue = new Label(FormatPhaseDuration(total));
+            totalValue.AddToClassList("web-request-details-view__phase-total-value");
+
+            totalRow.Add(totalLabel);
+            totalRow.Add(totalValue);
+            m_TimingPhases.Add(totalRow);
+        }
+
+        // A panel per section, with its own header row carrying the section name and the "Duration"
+        // column title. Rows are added to the returned element rather than to the list, so the panel's
+        // background groups them the way the design does.
+        static VisualElement MakeSectionPanel(string title)
+        {
+            var panel = new VisualElement();
+            panel.AddToClassList("web-request-details-view__phase-section");
+
+            var header = new VisualElement();
+            header.AddToClassList("web-request-details-view__phase-section-header");
+
+            var name = new Label(title);
+            name.AddToClassList("web-request-details-view__phase-section-title");
+
+            // Sits over the value column, which is what makes it a column heading rather than a caption.
+            var duration = new Label("Duration");
+            duration.AddToClassList("web-request-details-view__phase-section-duration");
+
+            header.Add(name);
+            header.Add(duration);
+            panel.Add(header);
+            return panel;
+        }
+
+        // Milliseconds to two decimals, which is what the Timing tab's design shows and what makes the
+        // phases of one request comparable at a glance - a column mixing us and ms has to be read twice.
+        // Deliberately not WebRequestProfilerFormatting.FormatDuration: that switches units so a
+        // sub-millisecond request does not read as zero, and it is shared with the list's Time column.
+        static string FormatPhaseDuration(ulong microseconds)
+        {
+            return $"{microseconds / 1000f:0.00} ms";
+        }
+
+        // Where one phase bar sits on the track, as fractions of the request's total duration.
+        internal struct PhaseSpan
+        {
+            public ulong elapsedUsec;
+            public float start;
+            public float width;
+            public bool skipped;
+            // The transport could not read this mark at all, which the view says differently from
+            // skipped: one is a phase that did not happen, the other a phase nobody measured.
+            public bool unavailable;
+        }
+
+        // Split out of PopulateTiming so it can be tested: building the view needs a live panel, and the
+        // arithmetic - not the colour - is the half of this that has gone wrong in practice. The bars
+        // shipped left-aligned once, every phase starting at zero, which is a correct set of widths and
+        // a useless picture.
+        //
+        // marks are cumulative microseconds from the start of the request, in phase order, with zero
+        // meaning the phase never happened. availableMarks carries one bit per mark, in the same
+        // order, saying whether the transport could read it - without which a zero cannot be told
+        // apart from an unmeasured phase.
+        internal static PhaseSpan[] ComputePhaseSpans(ulong[] marks, ulong availableMarks)
+        {
+            var spans = new PhaseSpan[marks.Length];
+
+            // The last mark is the request total, and it is what every fraction is against. Taking it
+            // from the array rather than the largest mark keeps a non-monotonic report from rescaling
+            // the whole column.
+            var total = marks.Length > 0 ? marks[marks.Length - 1] : 0ul;
+
+            ulong previous = 0;
+            for (var i = 0; i < marks.Length; ++i)
+            {
+                if ((availableMarks & (1ul << i)) == 0)
+                {
+                    // Unreadable on this transport, so it says nothing about the request either way and
+                    // must not move the baseline - the phase after it still starts where the last
+                    // measured one ended.
+                    spans[i].unavailable = true;
+                    continue;
+                }
+
+                if (marks[i] == 0)
+                {
+                    // Never happened, so it has no position either - a zero-width bar parked at the
+                    // previous mark would read as an instant phase rather than an absent one.
+                    spans[i].skipped = true;
+                    continue;
+                }
+
+                // The marks should be monotonic, but a transport reporting them out of order must not
+                // produce a negative duration.
+                var elapsed = marks[i] > previous ? marks[i] - previous : 0ul;
+
+                spans[i].elapsedUsec = elapsed;
+                // Starts where the last phase that actually happened ended, which is what makes the
+                // column read left to right as elapsed time.
+                spans[i].start = total > 0 ? (float)previous / total : 0f;
+                spans[i].width = total > 0 ? (float)elapsed / total : 0f;
+
+                // Only ever forward. Rejecting a regressed mark is not enough on its own: moving the
+                // baseline back to it would hand the *next* phase the regression as extra duration and
+                // start it before a phase that has already finished.
+                if (marks[i] > previous)
+                    previous = marks[i];
+            }
+
+            return spans;
+        }
+
+        // start and fraction are both of the request's total duration, so the bars lay out as a
+        // waterfall: each one begins where the phase before it ended. Width alone would left-align every
+        // phase and lose the only thing the view is for - when each one happened.
+        // A phase shorter than a pixel of track still has to be visible - a request whose queueing took
+        // half a millisecond out of half a second is a real phase, and rounding it to nothing is how the
+        // tab loses the small ones. Two pixels reads as a deliberate hairline rather than an artefact.
+        const float k_MinPhaseBarPx = 2f;
+
+        // The track's own width is not known until layout, so this is the fraction of it a hairline may
+        // need. Reserving it keeps a bar that starts near the end from being clipped away entirely by
+        // the track's overflow, at the cost of placing the very last sliver slightly early - which is a
+        // better trade than drawing nothing.
+        const float k_MaxPhaseStart = 0.98f;
+
+        static VisualElement MakePhaseRow(string label, string modifier, string value, float start, float fraction,
+            bool hasBar)
+        {
+            var root = new VisualElement();
+            root.AddToClassList("web-request-details-view__phase");
+
+            var name = new Label(label);
+            name.AddToClassList("web-request-details-view__phase-label");
+
+            var bar = new VisualElement();
+            bar.AddToClassList("web-request-details-view__phase-bar");
+
+            // No fill element at all rather than a zero-width one: a skipped phase and the Total row have
+            // no bar, and a minimum width applied to an empty fill would draw them a stub that says the
+            // phase happened.
+            if (hasBar)
+            {
+                var fill = new VisualElement();
+                fill.AddToClassList("web-request-details-view__phase-fill");
+                if (modifier != null)
+                    fill.AddToClassList($"web-request-details-view__phase-fill--{modifier}");
+
+                var left = Mathf.Clamp(start, 0f, k_MaxPhaseStart);
+                // Clamped against what is left of the track rather than against 1, so a phase running to
+                // the end stops at the right edge instead of being cut off by the track's overflow.
+                var width = Mathf.Clamp(fraction, 0f, 1f - left);
+                fill.style.left = Length.Percent(left * 100f);
+                fill.style.width = Length.Percent(width * 100f);
+                fill.style.minWidth = k_MinPhaseBarPx;
+                bar.Add(fill);
+            }
+
+            var amount = new Label(value);
+            amount.AddToClassList("web-request-details-view__phase-value");
+
+            root.Add(name);
+            root.Add(bar);
+            root.Add(amount);
+            return root;
         }
     }
 }

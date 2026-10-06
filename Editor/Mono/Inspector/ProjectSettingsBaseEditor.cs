@@ -31,5 +31,8 @@ namespace UnityEditorInternal
     [NativeClass(null)]
     [ExcludeFromObjectFactory]
     internal abstract class ProjectSettingsBase : Object
-    {}
+    {
+        protected ProjectSettingsBase() {}
+        protected internal ProjectSettingsBase(global::UnityEngine.EntityId id) : base(id) {}
+    }
 }

@@ -115,8 +115,9 @@ class SerializedManagedEnumBinding : SerializedObjectBindingToBaseField<Enum, Ba
             }
         }
 
-        Debug.LogWarning("Error: invalid enum value " + enumValueAsInt + " for type " + managedType);
-        return null;
+        // A value with no matching member is still a legal boxed enum, and the field renders it as
+        // an empty label, so hand it back rather than a null the callers have to guard.
+        return (Enum)Enum.ToObject(managedType, enumValueAsInt);
     }
 
     protected override void SyncPropertyToField(BaseField<Enum> c, SerializedProperty p)
@@ -163,11 +164,9 @@ class SerializedManagedEnumBinding : SerializedObjectBindingToBaseField<Enum, Ba
             if (valueIndex != -1)
                 lastEnumValue = enumData.flagValues[valueIndex];
             else
-            {
-                lastEnumValue = 0;
-                if (field != null)
-                    Debug.LogWarning("Error: invalid enum value " + fieldValue + " for type " + managedType);
-            }
+                // The field holds a value with no matching member, so read the number off it
+                // directly instead of writing a zero over what is already serialized.
+                lastEnumValue = unchecked((int)Convert.ToInt64(fieldValue));
         }
     }
 

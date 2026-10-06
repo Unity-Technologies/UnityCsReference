@@ -199,7 +199,7 @@ namespace Unity.Profiling.Editor.UI
             {
                 // Return early if it looks like we don't have any session metadata.
                 CaptureMetaDataVersion = -1;
-                if (1 > frameData.GetSessionMetaDataCount(ProfilerDriver.profilerInternalSessionMetaDataGuid, (int)ProfilingSessionMetaDataEntry.Version))
+                if (!frameData.valid || 1 > frameData.GetSessionMetaDataCount(ProfilerDriver.profilerInternalSessionMetaDataGuid, (int)ProfilingSessionMetaDataEntry.Version))
                     return;
 
                 // Due to a previous issue with attempting to write metadata before it was available,
@@ -297,7 +297,8 @@ namespace Unity.Profiling.Editor.UI
                             if (DataValueBuffers[i][j] > BottleneckThreshold)
                                 ++overCount;
                         }
-                        PercentOverThreshold[i] = 100 * (overCount / (float)(DataSeriesCapacity - firstElement));
+                        // numFramesSaved can be 0 for an empty recording; avoid a 0/0 NaN.
+                        PercentOverThreshold[i] = (numFramesSaved > 0) ? 100 * (overCount / (float)numFramesSaved) : 0f;
                         bWriter.Write(PercentOverThreshold[i]);
                     }
 
@@ -465,7 +466,8 @@ namespace Unity.Profiling.Editor.UI
                                 ++overCount;
                         }
 
-                        PercentOverThreshold[i] = 100 * (overCount / (float)DataSeriesCapacityThumbnail);
+                        // DataSeriesCapacityThumbnail can be 0 for an empty capture; avoid a 0/0 NaN.
+                        PercentOverThreshold[i] = (DataSeriesCapacityThumbnail > 0) ? 100 * (overCount / (float)DataSeriesCapacityThumbnail) : 0f;
                         // Percentage is at the end of each set of frame data:
                         // First 40 bytes are everything else we write at the start of the file.
                         var offSetDataSeries = (i + 1) * sizeof(float) * DataSeriesCapacityThumbnail;

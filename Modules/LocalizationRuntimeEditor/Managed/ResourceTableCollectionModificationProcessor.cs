@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System;
 using System.Collections.Generic;
 using System.IO;
 using Unity.Scripting.LifecycleManagement;
@@ -20,6 +21,9 @@ partial class ResourceTableCollectionModificationProcessor : AssetModificationPr
 
     static AssetDeleteResult OnWillDeleteAsset(string path, RemoveAssetOptions options)
     {
+        if (!path.EndsWith(".asset", StringComparison.Ordinal) || AssetDatabase.GetMainAssetTypeAtPath(path) != typeof(ResourceTableCollection))
+            return AssetDeleteResult.DidNotDelete;
+
         var collection = AssetDatabase.LoadAssetAtPath<ResourceTableCollection>(path);
         if (collection == null)
             return AssetDeleteResult.DidNotDelete;

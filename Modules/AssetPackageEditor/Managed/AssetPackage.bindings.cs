@@ -88,6 +88,8 @@ namespace UnityEditor.AssetPackage
         [NativeMethod(ThrowsException = true)]
         public static extern void ExportPackageWithGUIDs(string[] guids, string fileName, string ownerOrgId);
         [NativeMethod(ThrowsException = true)]
+        public static extern void ExportPackageWithGUIDsFromUI(string[] guids, string fileName, string ownerOrgId);
+        [NativeMethod(ThrowsException = true)]
         public static extern void ExportPackageAndPackageManagerManifest(string[] guids, string fileName, string ownerOrgId);
 
         [FreeFunction("DelayedImportPackageAssets")]

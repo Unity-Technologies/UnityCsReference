@@ -51,7 +51,7 @@ namespace UnityEngine
         {
             if (options == CreateOptions.CreateNativeObject)
             {
-                Internal_CreateInstance(this, text);
+                SetEntityIdFromConstructor(Internal_CreateInstance(text));
             }
         }
 
@@ -59,7 +59,7 @@ namespace UnityEngine
         {
             if (options == CreateOptions.CreateNativeObject)
             {
-                Internal_CreateInstanceFromBytes(this, bytes);
+                SetEntityIdFromConstructor(Internal_CreateInstanceFromBytes(bytes));
             }
         }
 

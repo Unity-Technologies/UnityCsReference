@@ -17,6 +17,8 @@ namespace UnityEditor
     [NativeHeader("Runtime/Camera/ReflectionProbeTypes.h")]
     public partial class SpeedTreeImporter : AssetImporter
     {
+        internal SpeedTreeImporter(global::UnityEngine.EntityId id) : base(id) {}
+        public SpeedTreeImporter() {}
         public enum MaterialLocation
         {
             [Obsolete("External Material Location is no longer supported.", false)]

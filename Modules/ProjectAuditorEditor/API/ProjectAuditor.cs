@@ -15,6 +15,7 @@ using UnityEditor.Build;
 using UnityEditor.Build.Reporting;
 using Unity.ProjectAuditor.Editor.Modules;
 using Unity.Scripting.LifecycleManagement;
+using Unity.Collections;
 
 namespace Unity.ProjectAuditor.Editor
 {
@@ -73,6 +74,7 @@ namespace Unity.ProjectAuditor.Editor
         /// </summary>
         /// <param name="progress"> Progress bar, if applicable </param>
         /// <returns> Generated report </returns>
+        /// <exception cref="System.InvalidOperationException">Thrown if the Project Auditor Rules package is not installed.</exception>
         public Report Audit(IProgress progress = null)
         {
             return Audit(new AnalysisParams(), progress);
@@ -84,6 +86,7 @@ namespace Unity.ProjectAuditor.Editor
         /// <param name="analysisParams"> Parameters to control the audit process </param>
         /// <param name="progress"> Progress bar, if applicable </param>
         /// <returns> Generated report </returns>
+        /// <exception cref="System.InvalidOperationException">Thrown if the Project Auditor Rules package is not installed.</exception>
         public Report Audit(AnalysisParams analysisParams, IProgress progress = null)
         {
             Report report = null;
@@ -107,8 +110,12 @@ namespace Unity.ProjectAuditor.Editor
         /// </summary>
         /// <param name="analysisParams"> Parameters to control the audit process </param>
         /// <param name="progress"> Progress bar, if applicable </param>
+        /// <exception cref="System.InvalidOperationException">Thrown if the Project Auditor Rules package is not installed.</exception>
         public void AuditAsync(AnalysisParams analysisParams, IProgress progress = null)
         {
+            if (!ProjectAuditorRulesPackage.IsInstalled)
+                throw new InvalidOperationException("Install the Project Auditor Rules package before using Project Auditor");
+
             if (analysisParams.Platform == BuildTarget.NoTarget)
                 analysisParams.Platform = EditorUserBuildSettings.activeBuildTarget;
 
@@ -133,9 +140,8 @@ namespace Unity.ProjectAuditor.Editor
 #pragma warning disable UAC2001 // Avoid Linq
                 report.SessionInfo.Categories = reportCategories.Distinct().ToSerializableArray();
 #pragma warning restore UAC2001
-                report.SessionInfo.ProjectAreas |= analysisParams.ExistingReportProjectAreas;
 
-                if ((analysisParams.ExistingReportProjectAreas & ProjectAreaFlags.Code) != 0)
+                if (categories.Contains(IssueCategory.Code))
                 {
                     report.SessionInfo.CodeAnalysisFlags = analysisParams.CodeAnalysisFlags;
                     report.SessionInfo.CodeOwnerFlags = analysisParams.CodeOwnerFlags;
@@ -152,8 +158,8 @@ namespace Unity.ProjectAuditor.Editor
             {
                 // Error and early out if the user has request analysis of a platform which the Unity Editor doesn't have installed support for
                 Debug.LogError($"[{DisplayName}] Build target {platform} is not supported in this Unity Editor");
-                analysisParams.OnStarted(report, Array.Empty<string>(), Array.Empty<IssueCategory>());
-                analysisParams.OnCompleted(report);
+                analysisParams.OnStarted?.Invoke(report, Array.Empty<string>(), Array.Empty<IssueCategory>());
+                analysisParams.OnCompleted?.Invoke(report);
                 return;
             }
 
@@ -334,6 +340,12 @@ namespace Unity.ProjectAuditor.Editor
 
         internal void DelayedPostBuildAudit()
         {
+            // Unsubscribe before auditing in case an exception is thrown.
+            EditorApplication.update -= DelayedPostBuildAudit;
+
+            if (!ProjectAuditorRulesPackage.IsInstalled)
+                return;
+
             var report = Audit();
 
             var numIssues = report.NumTotalIssues;
@@ -344,8 +356,6 @@ namespace Unity.ProjectAuditor.Editor
                 else
                     Debug.Log($"[{DisplayName}] Analysis found " + numIssues + " issues");
             }
-
-            EditorApplication.update -= DelayedPostBuildAudit;
         }
 
         /// <summary>

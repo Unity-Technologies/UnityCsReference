@@ -14,9 +14,9 @@ namespace UnityEditor
     {
         static class Texts
         {
-            public static readonly GUIContent m_EnableSuspendLabel = EditorGUIUtility.TrTextContent("Auto Mixer Suspend", "Enables/disables suspending of processing in order to save CPU when the RMS signal level falls under the defined threshold (in dB). Mixers resume processing when an AudioSource referencing them starts playing again.");
-            public static readonly GUIContent m_SuspendThresholdLabel = EditorGUIUtility.TrTextContent("    Threshold Volume", "The level of the Master Group at which the mixer suspends processing in order to save CPU. Mixers resume processing when an AudioSource referencing them starts playing again.");
-            public static readonly GUIContent m_UpdateModeLabel = EditorGUIUtility.TrTextContent("Update Mode", "Update AudioMixer transitions with game time or unscaled realtime.");
+            public static readonly GUIContent m_EnableSuspendLabel = L10n.TextContent("Auto Mixer Suspend", "Enables/disables suspending of processing in order to save CPU when the RMS signal level falls under the defined threshold (in dB). Mixers resume processing when an AudioSource referencing them starts playing again.", null, null);
+            public static readonly GUIContent m_SuspendThresholdLabel = L10n.TextContent("    Threshold Volume", "The level of the Master Group at which the mixer suspends processing in order to save CPU. Mixers resume processing when an AudioSource referencing them starts playing again.", null, null);
+            public static readonly GUIContent m_UpdateModeLabel = L10n.TextContent("Update Mode", "Update AudioMixer transitions with game time or unscaled realtime.", null, null);
             public const string dB = "dB";
         }
 

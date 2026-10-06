@@ -2,7 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: SceneTooling not yet converted
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
@@ -302,6 +301,8 @@ namespace UnityEditor.Overlays
         const string k_SceneContainersName = "overlay-scene-containers";
         const string k_AnchoredContainerName = "AnchoredContainers";
         [AutoStaticsCleanupOnCodeReload]
+        // Lazily reloaded with EditorGUIUtility.Load on the next use after cleanup nulls it.
+        [IgnoreForUAL0015("Lazy VisualTreeAsset cache, reloaded on demand after cleanup nulls it")]
         static VisualTreeAsset s_DropZoneTreeAsset;
 
         static SaveData defaultSaveData => new SaveData()
@@ -1534,4 +1535,3 @@ namespace UnityEditor.Overlays
         }
     }
 }
-#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

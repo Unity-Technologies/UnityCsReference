@@ -12,8 +12,10 @@ namespace Unity.GraphToolkit.Editor
     /// Represents a node option, one that appear in the Node Options section
     /// of the model inspector.
     /// </summary>
+    /// <remarks>The same model backs the options of a node and the options of a state, which the public API exposes
+    /// through <see cref="INodeOption"/> and <see cref="IStateOption"/> respectively.</remarks>
     [UnityRestricted]
-    internal class NodeOption : INodeOption
+    internal class NodeOption : INodeOption, IStateOption
     {
         internal static readonly string k_OptionIdPrefix = "__option_";
 
@@ -59,12 +61,28 @@ namespace Unity.GraphToolkit.Editor
 
         string INodeOption.Tooltip => PortModel.ToolTip;
 
-        bool INodeOption.TryGetValue<T>(out T value)
+        bool INodeOption.TryGetValue<T>(out T value) => TryGetValue(out value);
+
+        bool INodeOption.TrySetValue<T>(T value) => TrySetValue(value);
+
+        Type IStateOption.DataType => PortModel.PortDataType;
+
+        string IStateOption.Name => Id;
+
+        string IStateOption.DisplayName => PortModel.Title;
+
+        string IStateOption.Tooltip => PortModel.ToolTip;
+
+        bool IStateOption.TryGetValue<T>(out T value) => TryGetValue(out value);
+
+        bool IStateOption.TrySetValue<T>(T value) => TrySetValue(value);
+
+        bool TryGetValue<T>(out T value)
         {
             return PortModel.EmbeddedValue.TryGetValue(out value);
         }
 
-        bool INodeOption.TrySetValue<T>(T value)
+        bool TrySetValue<T>(T value)
         {
             var graphModel = PortModel.GraphModel as GraphModelImp;
             graphModel?.CheckModificationLock();

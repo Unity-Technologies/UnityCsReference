@@ -94,9 +94,9 @@ namespace UnityEditor
             return m_Tilemap.GetAnyTileEntityId(position);
         }
 
-        // Called from native code - TilemapScripting.cpp
+        // Called from native code - TilemapScripting.cpp, which keeps the tile as a PPtr (EntityId).
         [RequiredByNativeCode]
-        private static TileBase CreateInvalidTile()
+        private static EntityId CreateInvalidTile()
         {
             Sprite sprite = GetInvalidTileSprite();
 
@@ -107,7 +107,7 @@ namespace UnityEditor
             tile.transform = Matrix4x4.identity;
             tile.flags = TileFlags.LockAll;
 
-            return tile;
+            return tile.GetEntityId();
         }
 
         [RequiredByNativeCode]

@@ -430,6 +430,9 @@ namespace UnityEditor
         // Lazily (re)created in GetSerializedObject(); reset to null on reload so it rebuilds on next access
         // (the disposable SerializedObject has no field initializer for the generator to reassign after dispose).
         [AutoStaticsCleanupOnCodeReload(CleanupStrategy = CleanupStrategy.ResetToDefaultValue)]
+        // GetSerializedObject rebuilds it from the native player settings object whenever it is null or points
+        // at a different target, so the next property access recreates it.
+        [IgnoreForUAL0015("Rebuilt from the native player settings object by GetSerializedObject when null")]
         private static SerializedObject _serializedObject;
 
         [FreeFunction("GetPlayerSettingsPtr")]
@@ -907,6 +910,9 @@ namespace UnityEditor
 
         [FreeFunction("GetTargetPlatformGraphicsAPIAvailability")]
         internal static extern UnityEngine.Rendering.GraphicsDeviceType[] GetSupportedGraphicsAPIs(BuildTarget platform);
+
+        [FreeFunction("GetTargetPlatformUGKCapableGraphicsAPIs")]
+        internal static extern UnityEngine.Rendering.GraphicsDeviceType[] GetUGKCapableGraphicsAPIs(BuildTarget platform);
 
         [NativeMethod("GetPlatformGraphicsAPIs")]
         public static extern UnityEngine.Rendering.GraphicsDeviceType[] GetGraphicsAPIs(BuildTarget platform);
@@ -2127,18 +2133,29 @@ namespace UnityEditor
         [StaticAccessor("PlayerSettingsBindings", StaticAccessorType.DoubleColon)]
         private static extern void SetUseDefaultGraphicsAPIsImpl_Internal(PlayerSettings instance, BuildTarget platform, bool automatic);
 
-        [NativeMethod("GetPlatformGraphicsAPIs")]
-        internal extern UnityEngine.Rendering.GraphicsDeviceType[] GetGraphicsAPIs_Internal(BuildTarget platform);
+        [NativeMethod("GetPlatformGraphicsAPIsWithUGKVariants")]
+        internal extern UnityEngine.Rendering.GraphicsDeviceType[] GetGraphicsAPIsWithUGKVariants_Internal(BuildTarget platform);
+
+        [NativeMethod("GetPlatformGraphicsAPIUGKFlags")]
+        internal extern int[] GetGraphicsAPIUGKFlags_Internal(BuildTarget platform);
 
         [StaticAccessor("PlayerSettingsBindings", StaticAccessorType.DoubleColon)]
-        private static extern void SetGraphicsAPIsImpl_Internal(PlayerSettings instance, BuildTarget platform, UnityEngine.Rendering.GraphicsDeviceType[] apis);
+        private static extern void SetGraphicsAPIsImpl_Internal(PlayerSettings instance, BuildTarget platform, UnityEngine.Rendering.GraphicsDeviceType[] apis, int[] ugkFlags);
 
-        internal void SetGraphicsAPIs_Internal(BuildTarget platform, UnityEngine.Rendering.GraphicsDeviceType[] apis, bool shouldSync)
+        internal void SetGraphicsAPIs_Internal(BuildTarget platform, UnityEngine.Rendering.GraphicsDeviceType[] apis, int[] ugkFlags, bool shouldSync)
         {
-            SetGraphicsAPIsImpl_Internal(this, platform, apis);
+            SetGraphicsAPIsImpl_Internal(this, platform, apis, ugkFlags);
             // we do cache api list in player settings editor, so if we update from script we should forcibly update cache
             if (shouldSync)
                 PlayerSettingsEditor.SyncEditors(platform);
+        }
+
+        [NativeMethod("GetPlatformGraphicsAPIs")]
+        internal extern UnityEngine.Rendering.GraphicsDeviceType[] GetGraphicsAPIs_Internal(BuildTarget platform);
+
+        internal void SetGraphicsAPIs_Internal(BuildTarget platform, UnityEngine.Rendering.GraphicsDeviceType[] apis, bool shouldSync)
+        {
+            SetGraphicsAPIs_Internal(platform, apis, null, shouldSync);
         }
 
         [NativeMethod("GetColorGamuts")]

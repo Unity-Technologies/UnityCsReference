@@ -16,6 +16,7 @@ namespace UnityEditor.ShaderApiReflection
     [NativeClass("ShaderApiReflection::ShaderIncludeReflection", PersistentTypeId = 0x0C78A93D)]
     public sealed class ShaderIncludeReflection : Object
     {
+        internal ShaderIncludeReflection(global::UnityEngine.EntityId id) : base(id) {}
         // Public API
 
         public ReadOnlyCollection<LogMessage> LogMessages => GetOrLoadLogMessages().AsReadOnly();

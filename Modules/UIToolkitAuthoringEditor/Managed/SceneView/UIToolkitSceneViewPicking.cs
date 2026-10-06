@@ -2,7 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: UIToolkitAuthoringFramework not yet converted
 using System.Collections.Generic;
 using Unity.UIToolkit.Editor.Utilities;
 using UnityEditor;
@@ -35,11 +34,10 @@ namespace Unity.UIToolkit.Editor
 
         const float k_PickingQuadCameraOffset = 0.001f;
 
-        static RenderPickingResult RenderForPicking(in RenderPickingArgs args)
+        internal static RenderPickingResult RenderForPicking(in RenderPickingArgs args)
         {
-            // Per-element picking only makes sense when the user has opted into the hierarchy
-            // integration; otherwise the SceneView should just select the panel GameObject as a whole.
-            if (!UIToolkitAuthoringSettings.EnableInSceneUIAuthoring)
+            // The FindObjectsByType scans below are too costly to run on every picking pass without UI in play.
+            if (!AnyWorldSpacePlayerPanel())
                 return default;
 
             // Store system ignore/filter set and type for use in resolve callback
@@ -85,6 +83,19 @@ namespace Unity.UIToolkit.Editor
             }
 
             return new RenderPickingResult(s_PickedPanels.Count, ResolvePickedElementByRaycast);
+        }
+
+        static bool AnyWorldSpacePlayerPanel()
+        {
+            using var _ = UnityEngine.Pool.ListPool<Panel>.Get(out var panels);
+            UIElementsUtility.GetAllPanels(panels, ContextType.Player);
+            foreach (var panel in panels)
+            {
+                if (panel.drawsInCameras)
+                    return true;
+            }
+
+            return false;
         }
 
         static void RenderPanelBoundsForPicking(IPanelComponent component, int pickingID)
@@ -234,4 +245,3 @@ namespace Unity.UIToolkit.Editor
 
     }
 }
-#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

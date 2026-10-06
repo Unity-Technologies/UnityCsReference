@@ -2,7 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: BuildSettingsWindow not yet converted
 using System;
 using UnityEngine;
 using UnityEngine.UIElements;
@@ -48,7 +47,9 @@ namespace UnityEditor.Build.Profile.Elements
                 var root = this.Q<VisualElement>("scene-list-foldout-root");
                 var addOpenSceneListButton = this.Q<Button>("scene-list-foldout-add-open-button");
 
+#pragma warning disable UAL0015 // chains into BuildPlayerSceneTreeView's ctor, whose subscription is unsubscribed by UnsubscribeListChange before this view can outlive the current CodeLoaded scope
                 root.Add(m_SceneList.GetSceneListGUI());
+#pragma warning restore UAL0015
 
                 addOpenSceneListButton.text = TrText.addOpenScenes;
                 addOpenSceneListButton.clicked += () => m_SceneList.AddOpenScenes();
@@ -145,4 +146,3 @@ namespace UnityEditor.Build.Profile.Elements
         }
     }
 }
-#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

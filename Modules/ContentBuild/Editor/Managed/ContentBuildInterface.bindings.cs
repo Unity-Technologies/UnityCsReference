@@ -342,10 +342,8 @@ namespace UnityEditor.Build.Content
         [Obsolete("WriteGameManagersSerializedFile will be removed in a future version. Calling the function will throw an exception.", false)]
         public static WriteResult WriteGameManagersSerializedFile(string outputFolder, WriteManagerParameters parameters)
         {
-            return WriteGameManagersSerializedFileRaw(outputFolder, parameters.settings, parameters.globalUsage, parameters.referenceMap);
+            throw new NotSupportedException("WriteGameManagersSerializedFile is deprecated and no longer supported.");
         }
-
-        static extern WriteResult WriteGameManagersSerializedFileRaw(string outputFolder, BuildSettings settings, BuildUsageTagGlobal globalUsage, BuildReferenceMap referenceMap);
 
         ///<summary>Create a Unity archive file, containing the content of one or more resource files.</summary>
         ///<remarks>Generate a Unity Archive file.  This low level API is exposed primarily for use by the **Scriptable Build Pipeline** package.

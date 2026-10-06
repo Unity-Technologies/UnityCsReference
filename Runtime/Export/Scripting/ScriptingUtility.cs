@@ -40,7 +40,7 @@ namespace UnityEngine
         [RequiredByNativeCode]
         static unsafe void GetValueAtOffsetObjectInstanceID(IntPtr handle, int offset, out EntityId instanceID)
         {
-            int kObjectHeader = 2 * IntPtr.Size;
+            int kObjectHeader = IntPtr.Size;
             var gchandle = GCHandle.FromIntPtr(handle);
             var o = gchandle.Target;
 

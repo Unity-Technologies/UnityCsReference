@@ -2,8 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: UIToolkitFramework not yet converted
-#pragma warning disable UAL0010,UAL0011,UAL0012,UAL0013,UAL0014 // AutoStaticsCleanup: UIToolkitFramework not yet converted
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -52,6 +50,14 @@ namespace UnityEditor.UIElements
         public ObjectField objectField => m_ObjectField;
         public PopupField<string> typePopup => m_TypePopup;
 
+        // The gradient preview strip, exposed so hosts can intercept clicks and open their
+        // own gradient editor instead of the built-in gradient picker.
+        internal GradientField gradientColorsField
+        {
+            [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
+            get => m_GradientColorsField;
+        }
+
         public BackgroundField() : this(null) {}
 
         public BackgroundField(string label) : base(label, null)
@@ -91,10 +97,10 @@ namespace UnityEditor.UIElements
             m_GradientTypeField.RegisterValueChangedCallback(_ => OnGradientControlChanged());
             m_GradientContainer.Add(m_GradientTypeField);
 
-            m_GradientColorsField = new GradientField("Color")
+            m_GradientColorsField = new GradientField("Gradient Stops")
             {
                 value = new Gradient(),
-                tooltip = "The colors and alpha stops of the gradient. Up to 4 stops are supported.",
+                tooltip = "The color stops of the gradient. Click to edit. Up to 4 stops are supported.",
             };
             m_GradientColorsField.RegisterValueChangedCallback(_ => OnGradientControlChanged());
             m_GradientContainer.Add(m_GradientColorsField);
@@ -157,12 +163,12 @@ namespace UnityEditor.UIElements
             value = Background.FromGradient(gradient);
         }
 
-        // Sensible starting gradient (CSS "to bottom", white → white) shown when nothing is set.
+        // Sensible starting gradient (CSS "to bottom", black → white) shown when nothing is set.
         internal static BackgroundGradient defaultAuthoringGradient
         {
-            [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
+            [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
             get => BackgroundGradient.Linear(Mathf.PI,
-                BackgroundGradientStop.Percent(Color.white, 0f),
+                BackgroundGradientStop.Percent(Color.black, 0f),
                 BackgroundGradientStop.Percent(Color.white, 1f));
         }
 
@@ -187,6 +193,9 @@ namespace UnityEditor.UIElements
         // Shared between this field and BackgroundGradientField. Reset on reload so the
         // warning can re-arm instead of being permanently suppressed.
         [AutoStaticsCleanupOnCodeReload]
+        // Latch that keeps the too-many-gradient-keys warning to once; resetting it only allows the same
+        // warning to be logged one more time, it changes no field behaviour.
+        [IgnoreForUAL0015("Warn-once latch, only affects whether the warning is logged again")]
         static bool s_WarnedTooManyGradientKeys;
 
         [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
@@ -325,5 +334,3 @@ namespace UnityEditor.UIElements
         }
     }
 }
-#pragma warning restore UAL0010,UAL0011,UAL0012,UAL0013,UAL0014
-#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

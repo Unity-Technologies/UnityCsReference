@@ -145,7 +145,7 @@ namespace UnityEngine.UIElements
             foreach (var record in matchRecords)
             {
                 int specificity = record.complexSelector.specificity;
-                if (record.sheet.isDefaultStyleSheet)
+                if (record.tier == UnityEngine.UIElements.StyleSheetPriority.Builtin)
                     specificity = UnitySpecificity;
 
                 var properties = record.complexSelector.rule.properties;
@@ -197,7 +197,7 @@ namespace UnityEngine.UIElements
             foreach (var record in matchRecords)
             {
                 int specificity = record.complexSelector.specificity;
-                if (record.sheet.isDefaultStyleSheet)
+                if (record.tier == UnityEngine.UIElements.StyleSheetPriority.Builtin)
                     specificity = UnitySpecificity;
 
                 foreach (var property in record.complexSelector.rule.properties)

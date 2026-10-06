@@ -281,6 +281,7 @@ namespace UnityEditor.Modules
             {
                 LinkXmlFiles = AssemblyStripper.GetLinkXmlFiles(args, linkerInputDirectory),
                 EditorToLinkerData = AssemblyStripper.WriteEditorData(args, linkerInputDirectory),
+                ManagedCaptureConfigFile = AssemblyStripper.WriteManagedCaptureConfig(linkerInputDirectory),
 #pragma warning disable UAC2001 // Avoid Linq
                 AssembliesToProcess = assembliesToProcess.ToArray(),
 #pragma warning restore UAC2001
@@ -548,9 +549,6 @@ namespace UnityEditor.Modules
             var scriptingBackend = PlayerSettings.GetScriptingBackend(GetNamedBuildTarget(args));
             switch (scriptingBackend)
             {
-                case ScriptingImplementation.Mono2x:
-                    return ScriptingBackend.Mono;
-
                 case ScriptingImplementation.IL2CPP:
                     return ScriptingBackend.IL2CPP;
 
@@ -588,7 +586,8 @@ namespace UnityEditor.Modules
 
         static NPath DagDirectory => "Library/Bee";
 
-        string DagName(BuildPostProcessArgs args) => $"Player{GetInstallPathFor(args).GetHashCode():x8}";
+        // GetHashCode is randomized per process on CoreCLR; this name must be stable across builds
+        string DagName(BuildPostProcessArgs args) => $"Player{Hash128.Compute(GetInstallPathFor(args))}";
 
         protected virtual IEnumerable<object> GetDataForBuildProgramFor(BuildPostProcessArgs args)
         {

@@ -53,6 +53,9 @@ namespace UnityEditor
         }
 
         [AutoStaticsCleanupOnCodeReload] // lazy cache of obsolete type messages, must reset on reload
+        // Lazy message cache: the lookup re-walks the obsolete types and refills the dictionary whenever it
+        // is null, so the next inspector draw rebuilds it.
+        [IgnoreForUAL0015("Lazy obsolete-message cache rebuilt on the next lookup after cleanup")]
         private static Dictionary<Type, ObsoleteMessageContainer> s_ObsoleteTypeMessages;
 
         private static Type ResolveReplacementType(string typeName)
@@ -82,14 +85,19 @@ namespace UnityEditor
 
         public static bool TryGetObsoleteMessage(Editor editor, out ObsoleteMessageContainer obsoleteMessageContainer)
         {
-            if (!editor || !editor.target)
+            // targetType is null for editors without any target (real null and data-component
+            // with unresolvable TypeId); Object editors resolve via target.GetType(),
+            // data-component editors via m_DataComponentType, so [Obsolete] on component
+            // types surfaces in the inspector too.
+            var targetType = editor != null ? editor.targetType : null;
+            if (targetType == null)
             {
                 obsoleteMessageContainer = default;
                 return false;
             }
 
             if (s_ObsoleteTypeMessages != null)
-                return s_ObsoleteTypeMessages.TryGetValue(editor.target.GetType(), out obsoleteMessageContainer);
+                return s_ObsoleteTypeMessages.TryGetValue(targetType, out obsoleteMessageContainer);
 
             var obsoleteTypes = TypeCache.GetTypesWithAttribute<ObsoleteAttribute>();
             s_ObsoleteTypeMessages = new Dictionary<Type, ObsoleteMessageContainer>(obsoleteTypes.Count);
@@ -118,7 +126,7 @@ namespace UnityEditor
                 s_ObsoleteTypeMessages[type] = new ObsoleteMessageContainer(message, messageType, replacementType, displayName);
             }
 
-            return s_ObsoleteTypeMessages.TryGetValue(editor.target.GetType(), out obsoleteMessageContainer);
+            return s_ObsoleteTypeMessages.TryGetValue(targetType, out obsoleteMessageContainer);
         }
     }
 }

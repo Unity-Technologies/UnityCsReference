@@ -56,6 +56,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             Add(root);
             cache = new VisualElementCache(root);
             focusable = true;
+            tabIndex = -1;
 
             RegisterCallback<AttachToPanelEvent>(OnAttachToPanel);
             RegisterCallback<DetachFromPanelEvent>(OnDetachFromPanel);
@@ -65,8 +66,6 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         private void OnAttachToPanel(AttachToPanelEvent evt)
         {
-            RegisterEventsToAdaptFocus();
-
             globalSplitter.fixedPaneInitialDimension = m_PackageManagerPrefs.sidebarWidth;
             mainContainerSplitter.fixedPaneInitialDimension = m_PackageManagerPrefs.leftContainerWidth;
 
@@ -194,26 +193,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         public void OnLostFocus()
         {
-            mainContainerSplitter.RemoveFromClassList(k_FocusedClassName);
-            sidebar.RemoveFromClassList(k_FocusedClassName);
             RemoveFromClassList(k_FocusedClassName);
-        }
-
-        private void RegisterEventsToAdaptFocus()
-        {
-            // We have to use PointerDownEvent instead of MouseDownEvent because in some cases (i.e. selectable text fields)
-            // the event won't reach our code. PointerDownEvent will always be triggered on click which guarantees full support.
-            mainContainerSplitter.RegisterCallback<PointerDownEvent>(_ =>
-            {
-                mainContainerSplitter.AddToClassList(k_FocusedClassName);
-                sidebar.RemoveFromClassList(k_FocusedClassName);
-            }, TrickleDown.TrickleDown);
-
-            sidebar.RegisterCallback<PointerDownEvent>(_ =>
-            {
-                mainContainerSplitter.RemoveFromClassList(k_FocusedClassName);
-                sidebar.AddToClassList(k_FocusedClassName);
-            }, TrickleDown.TrickleDown);
         }
 
         public void OpenAddPackageByNameDropdown(string technicalName, string version)

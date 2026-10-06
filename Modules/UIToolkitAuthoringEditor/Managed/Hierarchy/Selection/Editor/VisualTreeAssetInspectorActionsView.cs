@@ -3,10 +3,11 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using System.IO;
+using Unity.Scripting.LifecycleManagement;
 using UnityEditor;
 using UnityEditor.IMGUI.Controls;
-using UnityEditor.SceneManagement;
-using UnityEngine;
+using UnityEditor.UIElements;
 using UnityEngine.UIElements;
 
 namespace Unity.UIToolkit.Editor;
@@ -15,21 +16,49 @@ namespace Unity.UIToolkit.Editor;
 partial class VisualTreeAssetInspectorActionsView : VisualElement
 {
     public const string UssClass = "unity-visual-tree-asset-inspector-actions-view";
-    public const string SelectVtaButtonUssClass = UssClass + "__select-button";
-    public const string OpenVtaInContextButtonUssClass = UssClass + "__open-in-context-button";
-    public const string OpenVtaInBuilderButtonUssClass = UssClass + "__open-in-builder-button";
-    public const string HiddenOpenVtaButtonUssClass = OpenVtaInBuilderButtonUssClass + "--hidden";
+    public const string MenuButtonUssClass = UssClass + "__menu-button";
+    public const string OpenInContextButtonUssClass = UssClass + "__open-in-context-button";
+    public const string HiddenUssClass = UssClass + "--hidden";
+
+    internal static readonly string SaveTextFormat = L10n.Tr("Save {0}", null);
+    internal static readonly string SelectInProjectText = L10n.Tr("Select in Project", null);
+    internal static readonly string OpenInContextText = L10n.Tr("Open in Context", null);
+    internal static readonly string OpenInIsolationText = L10n.Tr("Open in Isolation", null);
+    internal static readonly string MenuButtonTooltip = L10n.Tr("Asset actions", null);
 
     private const string k_VisualTreeAsset = "UIToolkitAuthoring/Inspector/VisualTreeAssetInspectorActionsView.uxml";
 
-    private readonly Button m_SelectButton;
+    // Tests swap in a GenericDropdownMenu, which they can inspect and click; the OS menu cannot be driven.
+    [AutoStaticsCleanupOnCodeReload]
+    internal static Func<AbstractGenericMenu> CreateMenuOverride;
+
+    private readonly Button m_MenuButton;
     private readonly Button m_OpenInContextButton;
-    private readonly Button m_OpenInBuilderButton;
 
     private VisualTreeAsset m_VisualTreeAsset;
     private TemplateAsset[] m_SubDocumentPath;
+    private bool m_CanOpenInContext = true;
+    private string m_OpenInContextDisabledTooltip;
 
-    public Button OpenInContextButton => m_OpenInContextButton;
+    public bool OpenInContextEnabled => m_CanOpenInContext;
+
+    internal string SaveItemText => GetSaveItemText(m_VisualTreeAsset);
+
+    internal bool CanSave => CanSaveAsset(m_VisualTreeAsset);
+
+    private static string GetSaveItemText(VisualTreeAsset asset) =>
+        string.Format(SaveTextFormat, GetAssetFileName(asset));
+
+    private static bool CanSaveAsset(VisualTreeAsset asset) =>
+        asset && UIAssetRegistry.LiveInstance?.CanSettleSingleAsset(asset) == true;
+
+    private static string GetAssetFileName(VisualTreeAsset asset)
+    {
+        if (!asset)
+            return string.Empty;
+
+        return Path.GetFileName(AssetDatabase.GetAssetPath(asset.GetEntityId()));
+    }
 
     public PanelSettings PanelSettings { get; set; }
 
@@ -66,36 +95,91 @@ partial class VisualTreeAssetInspectorActionsView : VisualElement
         var vta = EditorGUIUtility.Load(k_VisualTreeAsset) as VisualTreeAsset;
         vta.CloneTree(this);
 
-        m_SelectButton = this.Q<Button>(className:SelectVtaButtonUssClass);
-        m_SelectButton.AddToClassList(HiddenOpenVtaButtonUssClass);
-        m_SelectButton.clicked += SelectAssetInProject;
+        m_MenuButton = this.Q<Button>(className: MenuButtonUssClass);
+        m_MenuButton.tooltip = MenuButtonTooltip;
+        m_MenuButton.clicked += ShowMenu;
 
-        m_OpenInContextButton = this.Q<Button>(className:OpenVtaInContextButtonUssClass);
-        m_OpenInContextButton.AddToClassList(HiddenOpenVtaButtonUssClass);
+        m_OpenInContextButton = this.Q<Button>(className: OpenInContextButtonUssClass);
+        m_OpenInContextButton.tooltip = OpenInContextText;
         m_OpenInContextButton.clicked += OpenInContext;
-
-        m_OpenInBuilderButton = this.Q<Button>(className:OpenVtaInBuilderButtonUssClass);
-        m_OpenInBuilderButton.AddToClassList(HiddenOpenVtaButtonUssClass);
-        m_OpenInBuilderButton.clicked += OpenInUIBuilder;
 
         UpdateControlStates();
     }
 
+    public void SetOpenInContextState(bool enabled, string disabledTooltip = null)
+    {
+        m_CanOpenInContext = enabled;
+        m_OpenInContextDisabledTooltip = disabledTooltip;
+
+        m_OpenInContextButton.SetEnabled(enabled);
+        m_OpenInContextButton.tooltip = enabled || string.IsNullOrEmpty(disabledTooltip)
+            ? OpenInContextText
+            : disabledTooltip;
+    }
 
     public void UpdateControlStates()
     {
-        var assetPath = String.Empty;
         var isAssetPathValid = false;
 
         if (m_VisualTreeAsset)
+            isAssetPathValid = !string.IsNullOrEmpty(AssetDatabase.GetAssetPath(m_VisualTreeAsset.GetEntityId()));
+
+        m_MenuButton.EnableInClassList(HiddenUssClass, !isAssetPathValid);
+        m_OpenInContextButton?.EnableInClassList(HiddenUssClass, !isAssetPathValid);
+    }
+
+    private void ShowMenu()
+    {
+        var menu = CreateMenuOverride != null ? CreateMenuOverride() : new GenericOSMenu();
+
+        var assetAtMenuTime = m_VisualTreeAsset;
+        var saveText = GetSaveItemText(assetAtMenuTime);
+        if (CanSaveAsset(assetAtMenuTime))
+            menu.AddItem(saveText, false, () => SaveAsset(assetAtMenuTime));
+        else
+            menu.AddDisabledItem(saveText, false);
+
+        menu.AddSeparator(string.Empty);
+
+        menu.AddItem(SelectInProjectText, false, SelectAssetInProject);
+
+        if (m_CanOpenInContext)
         {
-            assetPath = AssetDatabase.GetAssetPath(m_VisualTreeAsset.GetEntityId());
-            isAssetPathValid = !string.IsNullOrEmpty(assetPath);
+            menu.AddItem(OpenInContextText, false, OpenInContext);
+        }
+        else
+        {
+            menu.AddDisabledItem(OpenInContextText, false);
+            if (menu is GenericDropdownMenu dropdownMenu && !string.IsNullOrEmpty(m_OpenInContextDisabledTooltip))
+                SetItemTooltip(dropdownMenu, OpenInContextText, m_OpenInContextDisabledTooltip);
         }
 
-        m_SelectButton.EnableInClassList(HiddenOpenVtaButtonUssClass, !isAssetPathValid);
-        m_OpenInContextButton.EnableInClassList(HiddenOpenVtaButtonUssClass, !isAssetPathValid);
-        m_OpenInBuilderButton.EnableInClassList(HiddenOpenVtaButtonUssClass, !isAssetPathValid);
+        menu.AddItem(OpenInIsolationText, false, OpenInIsolation);
+
+        menu.AddItem(StageContextMenuUtility.OpenInUIBuilder, false, OpenInUIBuilder);
+
+        menu.DropDown(m_MenuButton.worldBound, m_MenuButton, DropdownMenuSizeMode.Auto);
+    }
+
+    private static void SetItemTooltip(GenericDropdownMenu menu, string itemName, string tooltip)
+    {
+        foreach (var row in menu.contentContainer.Children())
+        {
+            var label = row.Q<Label>(className: GenericDropdownMenu.labelUssClassName);
+            if (label == null || label.text != itemName)
+                continue;
+
+            row.tooltip = tooltip;
+            return;
+        }
+    }
+
+    private static void SaveAsset(VisualTreeAsset asset)
+    {
+        if (!CanSaveAsset(asset))
+            return;
+
+        UIAssetRegistry.instance.SaveSingleAsset(asset, CommandSources.Inspector);
     }
 
     private void SelectAssetInProject()
@@ -115,7 +199,22 @@ partial class VisualTreeAssetInspectorActionsView : VisualElement
             PanelSettings
         );
 
-        VisualElementEditingStage.GoToStage(context, BreadcrumbBar.SeparatorStyle.Line);
+        UIStageNavigation.Navigate(context, BreadcrumbBar.SeparatorStyle.Line);
+    }
+
+    private void OpenInIsolation()
+    {
+        var options = m_SubDocumentPath is { Length: > 0 } ? SubDocumentOptions.Isolation : SubDocumentOptions.None;
+        var rootVisualTreeAsset = m_SubDocumentPath is { Length: > 0 } ? m_SubDocumentPath[0].visualTreeAsset : m_VisualTreeAsset;
+
+        var context = new VisualTreeAssetEditingContext(
+            rootVisualTreeAsset,
+            m_SubDocumentPath,
+            options,
+            PanelSettings
+        );
+
+        UIStageNavigation.Navigate(context, BreadcrumbBar.SeparatorStyle.Line);
     }
 
     private void OpenInUIBuilder()

@@ -90,10 +90,10 @@ namespace Unity.GraphToolkit.Editor
 
         class Styles
         {
-            public static readonly GUIContent kEnableSnapToPortLabel = EditorGUIUtility.TrTextContent("Connected Port Snapping", "If enabled, nodes align to connected ports.");
-            public static readonly GUIContent kEnableSnapToBordersLabel = EditorGUIUtility.TrTextContent("Element Snapping", "If enabled, graph elements align with one another when you move them.");
-            public static readonly GUIContent kEnableSnapToGridLabel = EditorGUIUtility.TrTextContent("Grid Snapping", "If enabled, graph elements align with the grid.");
-            public static readonly GUIContent kEnableSnapToSpacingLabel = EditorGUIUtility.TrTextContent("Equal Spacing Snapping", "If enabled, graph elements align to keep equal spacing with their neighbors.");
+            public static readonly GUIContent kEnableSnapToPortLabel = L10n.TextContent("Connected Port Snapping", "If enabled, nodes align to connected ports.", null, null);
+            public static readonly GUIContent kEnableSnapToBordersLabel = L10n.TextContent("Element Snapping", "If enabled, graph elements align with one another when you move them.", null, null);
+            public static readonly GUIContent kEnableSnapToGridLabel = L10n.TextContent("Grid Snapping", "If enabled, graph elements align with the grid.", null, null);
+            public static readonly GUIContent kEnableSnapToSpacingLabel = L10n.TextContent("Equal Spacing Snapping", "If enabled, graph elements align to keep equal spacing with their neighbors.", null, null);
         }
 
         [SettingsProvider]

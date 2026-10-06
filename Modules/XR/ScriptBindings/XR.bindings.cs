@@ -35,9 +35,10 @@ namespace UnityEngine.XR
     [NativeConditional("ENABLE_VR")]
     public static partial class XRSettings
     {
-        ///<summary>Globally enables or disables XR for the application.</summary>
-        ///<remarks>Set this to true to enable XR mode for the application. Note that this does not activate XR mode. XR mode is activated when a supported Head Mounted Display (HMD) is connected.
-        ///The GearVR cannot be disabled once activated. A warning message is shown when attempting to disable a GearVR device.</remarks>
+        ///<summary>Indicates whether Unity loaded and initialized the XR display subsystem.</summary>
+        ///<remarks>This property is read-only. Its setter is obsolete and causes a compilation error. To start or stop XR at runtime, call Start or Stop on an <see cref="XRDisplaySubsystem" /> instance instead. In a project that uses the XR Plug-in Management package, manage the loader lifecycle through that package rather than calling these methods directly.
+        ///
+        ///This property reports the loaded state, not the running state. It stays true after you stop the display subsystem, and becomes false only when Unity destroys that subsystem. To test whether XR is currently running, use <see cref="XRSettings.isDeviceActive" />.</remarks>
         extern public static bool enabled
         {
             [StaticAccessor("GetIVRDeviceScripting()", StaticAccessorType.ArrowWithDefaultReturnIfNull)]
@@ -48,12 +49,12 @@ namespace UnityEngine.XR
         }
 
         ///<summary>Sets the render mode for the XR device. The render mode controls how the view of the XR device renders in the Game view and in the main window on a host PC.</summary>
-        ///<remarks>See <see cref="XR.GameViewRenderMode" /> for a description of each available render mode.</remarks>
+        ///<remarks>Refer to <see cref="XR.GameViewRenderMode" /> for a description of each available render mode.</remarks>
         [StaticAccessor("GetIVRDeviceScripting()", StaticAccessorType.ArrowWithDefaultReturnIfNull)]
         extern public static GameViewRenderMode gameViewRenderMode { get; set; }
 
         ///<summary>Read-only value that can be used to determine if the XR device is active.</summary>
-        ///<remarks>When true, Unity accepts input from the device and attempts to render to the device's display(s). Note that this returns true even if the device is not currently rendering due to lack of user presence (see <see cref="CommonUsages.userPresence"/>). This can become false if a device is disconnected, could not be initialized (see <see cref="XRSettings.LoadDeviceByName" />), or <see cref="XRSettings.enabled" /> is set to false.
+        ///<remarks>When true, Unity accepts input from the device and attempts to render to the device's display or displays. Note that this returns true even if the device isn't currently rendering due to lack of user presence (refer to <see cref="CommonUsages.userPresence"/>). This can become false if a device is disconnected, wasn't initialized (refer to <see cref="SubsystemManager" /> to find a display subsystem descriptor and create the subsystem from it), or the XR display subsystem is stopped.
         ///
         ///XR output is automatically mirrored to the main display (if applicable).  This can be controlled with <see cref="XRSettings.showDeviceView" />.
         ///
@@ -142,7 +143,7 @@ namespace UnityEngine.XR
         extern public static bool useOcclusionMesh { get; set; }
 
         ///<summary>Type of XR device that is currently loaded.</summary>
-        ///<remarks>**Note:** Rendering to the device may not be happening even though it is loaded.  See <see cref="XRSettings.enabled" />.
+        ///<remarks>**Note:** Rendering to the device may not be happening even though it is loaded.  Refer to <see cref="XRSettings.enabled" />.
         ///
         ///In order to change the currently loaded device or reload the current device, use <see cref="XRSettings.LoadDeviceByName" />.</remarks>
         [NativeName("DeviceName")]
@@ -176,7 +177,7 @@ namespace UnityEngine.XR
             ///Scene culling and shadow map rendering is shared between both eyes.
             ///The main render target must be an array of render targets.
             ///Special hardware support is required for this mode to run.
-            ///See the [manual](xref:SinglePassStereoRendering) for how to get the most out of instanced rendering.</remarks>
+            ///Refer to the [manual](xref:SinglePassStereoRendering) for how to get the most out of instanced rendering.</remarks>
             ///<seealso cref="XRSettings.stereoRenderingMode" />
             SinglePassInstanced,
             ///<summary>This is a OpenGL optimized version of the <see cref="XRSettings.StereoRenderingMode.SinglePassInstanced" /> mode.</summary>
@@ -184,7 +185,7 @@ namespace UnityEngine.XR
             ///Scene culling and shadow map rendering is shared between both eyes.
             ///The main render target must be an array of render targets.
             ///Special hardware support is required for this mode to run. Depending on their graphics capabilities, certain GPUs will run this stereo rendering mode and others will run <see cref="XRSettings.StereoRenderingMode.SinglePassInstanced" />. GPUs that support neither of those modes will fall back to <see cref="XRSettings.StereoRenderingMode.MultiPass" />.
-            ///See the [manual](xref:SinglePassStereoRendering) for how to get the most out of instanced rendering.</remarks>
+            ///Refer to the [manual](xref:SinglePassStereoRendering) for how to get the most out of instanced rendering.</remarks>
             ///<seealso cref="XRSettings.stereoRenderingMode" />
             SinglePassMultiview
         }

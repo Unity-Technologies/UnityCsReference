@@ -13,6 +13,7 @@ namespace UnityEditor
     public class DefaultAsset : UnityEngine.Object
     {
         private protected DefaultAsset() {}
+        internal DefaultAsset(global::UnityEngine.EntityId id) : base(id) {}
         internal extern string message { get; }
 
         internal extern bool isWarning {[NativeName("IsWarning")] get; }

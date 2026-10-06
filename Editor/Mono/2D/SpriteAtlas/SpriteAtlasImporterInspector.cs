@@ -2,7 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: _2D not yet converted
 using System.Collections.Generic;
 using System.IO;
 using Unity.Jobs;
@@ -50,43 +49,47 @@ namespace UnityEditor.U2D
             public readonly GUIStyle previewSliderThumb = "preSliderThumb";
             public readonly GUIStyle previewLabel = "preLabel";
 
-            public readonly GUIContent textureSettingLabel = EditorGUIUtility.TrTextContent("Texture");
-            public readonly GUIContent variantSettingLabel = EditorGUIUtility.TrTextContent("Variant");
-            public readonly GUIContent packingParametersLabel = EditorGUIUtility.TrTextContent("Packing");
-            public readonly GUIContent atlasTypeLabel = EditorGUIUtility.TrTextContent("Type");
-            public readonly GUIContent defaultPlatformLabel = EditorGUIUtility.TrTextContent("Default");
-            public readonly GUIContent masterAtlasLabel = EditorGUIUtility.TrTextContent("Master Atlas", "Assigning another Sprite Atlas asset will make this atlas a variant of it.");
-            public readonly GUIContent packerLabel = EditorGUIUtility.TrTextContent("Scriptable Packer", "Scriptable Object that implements custom packing for Sprite-Atlas.");
-            public readonly GUIContent bindAsDefaultLabel = EditorGUIUtility.TrTextContent("Include in Build", "Packed textures will be included in the build by default.");
-            public readonly GUIContent enableRotationLabel = EditorGUIUtility.TrTextContent("Allow Rotation", "Try rotating the sprite to fit better during packing.");
-            public readonly GUIContent enableTightPackingLabel = EditorGUIUtility.TrTextContent("Tight Packing", "Use the mesh outline to fit instead of the whole texture rect during packing.");
-            public readonly GUIContent enableAlphaDilationLabel = EditorGUIUtility.TrTextContent("Alpha Dilation", "Enable Alpha Dilation for SpriteAtlas padding pixels.");
-            public readonly GUIContent paddingLabel = EditorGUIUtility.TrTextContent("Padding", "The amount of extra padding between packed sprites.");
+            public readonly GUIContent textureSettingLabel = L10n.TextContent("Texture", null, null, null);
+            public readonly GUIContent variantSettingLabel = L10n.TextContent("Variant", null, null, null);
+            public readonly GUIContent packingParametersLabel = L10n.TextContent("Packing", null, null, null);
+            public readonly GUIContent atlasTypeLabel = L10n.TextContent("Type", null, null, null);
+            public readonly GUIContent defaultPlatformLabel = L10n.TextContent("Default", null, null, null);
+            public readonly GUIContent masterAtlasLabel = L10n.TextContent("Master Atlas", "Assigning another Sprite Atlas asset will make this atlas a variant of it.", null, null);
+            public readonly GUIContent packerLabel = L10n.TextContent("Scriptable Packer", "Scriptable Object that implements custom packing for Sprite-Atlas.", null, null);
+            public readonly GUIContent bindAsDefaultLabel = L10n.TextContent("Include in Build", "Packed textures will be included in the build by default.", null, null);
+            public readonly GUIContent enableRotationLabel = L10n.TextContent("Allow Rotation", "Try rotating the sprite to fit better during packing.", null, null);
+            public readonly GUIContent enableTightPackingLabel = L10n.TextContent("Tight Packing", "Use the mesh outline to fit instead of the whole texture rect during packing.", null, null);
+            public readonly GUIContent enableAlphaDilationLabel = L10n.TextContent("Alpha Dilation", "Enable Alpha Dilation for SpriteAtlas padding pixels.", null, null);
+            public readonly GUIContent paddingLabel = L10n.TextContent("Padding", "The amount of extra padding between packed sprites.", null, null);
 
-            public readonly GUIContent generateMipMapLabel = EditorGUIUtility.TrTextContent("Generate Mip Maps");
-            public readonly GUIContent packPreviewLabel = EditorGUIUtility.TrTextContent("Pack Preview", "Pack and preview Sprite Atlas textures when Enabled for Builds. Previews shown may not be upto-date.");
-            public readonly GUIContent sRGBLabel = EditorGUIUtility.TrTextContent("sRGB", "Texture content is stored in gamma space.");
-            public readonly GUIContent readWrite = EditorGUIUtility.TrTextContent("Read/Write", "Enable to be able to access the raw pixel data from code.");
-            public readonly GUIContent variantMultiplierLabel = EditorGUIUtility.TrTextContent("Scale", "Down scale ratio.");
-            public readonly GUIContent copyMasterButton = EditorGUIUtility.TrTextContent("Copy Master's Settings", "Copy all master's settings into this variant.");
+            public readonly GUIContent generateMipMapLabel = L10n.TextContent("Generate Mip Maps", null, null, null);
+            public readonly GUIContent packPreviewLabel = L10n.TextContent("Pack Preview", "Pack and preview Sprite Atlas textures when Enabled for Builds. Previews shown may not be upto-date.", null, null);
+            public readonly GUIContent sRGBLabel = L10n.TextContent("sRGB", "Texture content is stored in gamma space.", null, null);
+            public readonly GUIContent readWrite = L10n.TextContent("Read/Write", "Enable to be able to access the raw pixel data from code.", null, null);
+            public readonly GUIContent variantMultiplierLabel = L10n.TextContent("Scale", "Down scale ratio.", null, null);
+            public readonly GUIContent copyMasterButton = L10n.TextContent("Copy Master's Settings", "Copy all master's settings into this variant.", null, null);
 
-            public readonly GUIContent disabledPackLabel = EditorGUIUtility.TrTextContent("Sprite Atlas packing is disabled. Enable it in Edit > Project Settings > Editor.", null, EditorGUIUtility.GetHelpIcon(MessageType.Info));
-            public readonly GUIContent packableListLabel = EditorGUIUtility.TrTextContent("Objects for Packing", "Only accepts Folders, Sprite Sheet (Texture) and Sprite.");
+            public readonly GUIContent disabledPackLabel = L10n.TextContentWithIcon("Sprite Atlas packing is disabled. Enable it in Edit > Project Settings > Editor.", null, EditorGUIUtility.GetHelpIcon(MessageType.Info), null);
+            public readonly GUIContent packableListLabel = L10n.TextContent("Objects for Packing", "Only accepts Folders, Sprite Sheet (Texture) and Sprite.", null, null);
 
-            public readonly GUIContent notPowerOfTwoWarning = EditorGUIUtility.TrTextContent("This scale will produce a Variant Sprite Atlas with a packed Texture that is NPOT (non - power of two). This may cause visual artifacts in certain compression/Texture formats.");
-            public readonly GUIContent secondaryTextureNameLabel = EditorGUIUtility.TrTextContent("Secondary Texture Name", "The name of the Secondary Texture to apply the following settings to.");
-            public readonly GUIContent platformSettingsDropDownLabel = EditorGUIUtility.TrTextContent("Show Platform Settings For");
+            public readonly GUIContent notPowerOfTwoWarning = L10n.TextContent("This scale will produce a Variant Sprite Atlas with a packed Texture that is NPOT (non - power of two). This may cause visual artifacts in certain compression/Texture formats.", null, null, null);
+            public readonly GUIContent secondaryTextureNameLabel = L10n.TextContent("Secondary Texture Name", "The name of the Secondary Texture to apply the following settings to.", null, null);
+            public readonly GUIContent platformSettingsDropDownLabel = L10n.TextContent("Show Platform Settings For", null, null, null);
 
             public readonly GUIContent smallZoom = EditorGUIUtility.IconContent("PreTextureMipMapLow");
             public readonly GUIContent largeZoom = EditorGUIUtility.IconContent("PreTextureMipMapHigh");
             public readonly GUIContent alphaIcon = EditorGUIUtility.IconContent("PreTextureAlpha");
             public readonly GUIContent RGBIcon = EditorGUIUtility.IconContent("PreTextureRGB");
-            public readonly GUIContent trashIcon = EditorGUIUtility.TrIconContent("TreeEditor.Trash", "Delete currently selected settings.");
+            public readonly GUIContent trashIcon = L10n.IconContent("TreeEditor.Trash", "Delete currently selected settings.", null);
 
             public readonly int packableElementHash = "PackableElement".GetHashCode();
             public readonly int packableSelectorHash = "PackableSelector".GetHashCode();
 
             public readonly string swapObjectRegisterUndo = L10n.Tr("Swap Packable", null);
+            public readonly string platformSettingsRegisterUndo = L10n.Tr("Sprite Atlas Platform Settings", null);
+            public readonly string secondaryColorSpaceRegisterUndo = L10n.Tr("Secondary Texture sRGB", null);
+            public readonly string deleteSecondarySettingsRegisterUndo = L10n.Tr("Delete Secondary Texture Settings", null);
+            public readonly string renameSecondarySettingsRegisterUndo = L10n.Tr("Rename Secondary Texture Settings", null);
             public readonly string secondaryTextureNameTextControlName = "secondary_texture_name_text_field";
             public readonly string defaultTextForSecondaryTextureName = L10n.Tr("(Matches the names of the Secondary Textures in your Sprites.)", null);
             public readonly string nameUniquenessWarning = L10n.Tr("Secondary Texture names must be unique within a Sprite or Sprite Atlas.", null);
@@ -94,8 +97,8 @@ namespace UnityEditor.U2D
             public readonly int[] atlasTypeValues = { 0, 1 };
             public readonly GUIContent[] atlasTypeOptions =
             {
-                EditorGUIUtility.TrTextContent("Master"),
-                EditorGUIUtility.TrTextContent("Variant"),
+                L10n.TextContent("Master", null, null, null),
+                L10n.TextContent("Variant", null, null, null),
             };
 
             public readonly int[] paddingValues = { 2, 4, 8 };
@@ -320,6 +323,7 @@ namespace UnityEditor.U2D
         public override void OnEnable()
         {
             base.OnEnable();
+            Undo.undoRedoPerformed += OnUndoRedoPerformed;
             if (!AreImporterTargetsValid()) // asset gone: base already logged and bailed
                 return;
 
@@ -352,6 +356,36 @@ namespace UnityEditor.U2D
 
             m_AssetGUID = AssetDatabase.GUIDFromAssetPath(m_AssetPath);
             UpdateSpriteAtlasAssetSerializedObject();
+        }
+
+        public override void OnDisable()
+        {
+            Undo.undoRedoPerformed -= OnUndoRedoPerformed;
+            base.OnDisable();
+        }
+
+        // Platform settings are stored on the importer's native object and are not edited through
+        // SerializedProperties, so an Undo/Redo of them has to be picked up explicitly: the cached
+        // copies in m_TempPlatformSettings and the secondary texture name list are both stale by then.
+        private void OnUndoRedoPerformed()
+        {
+            if (!AreImporterTargetsValid())
+                return;
+
+            serializedObject.UpdateIfRequiredOrScript();
+
+            // Keep the dropdown on the same secondary texture if it survived the Undo/Redo.
+            var selectedName = secondaryTextureSelected ? m_PlatformSettingsOptions[m_SelectedPlatformSettings] : null;
+            PopulatePlatformSettingsOptions();
+            if (selectedName != null)
+            {
+                var index = m_PlatformSettingsOptions.IndexOf(selectedName);
+                if (index != -1)
+                    m_SelectedPlatformSettings = index;
+            }
+
+            SyncPlatformSettings();
+            Repaint();
         }
 
         private void UpdateSpriteAtlasAssetSerializedObject()
@@ -413,8 +447,19 @@ namespace UnityEditor.U2D
             }
         }
 
+        // Platform settings are written straight to the importer's native object instead of through
+        // SerializedProperties, so each such write has to record its own Undo entry. Pending property
+        // edits are flushed first so the snapshot does not roll them back along with the settings.
+        void RegisterPlatformSettingsUndo(string undoName)
+        {
+            serializedObject.ApplyModifiedProperties();
+            Undo.RegisterCompleteObjectUndo(spriteAtlasImporter, undoName);
+        }
+
         void RenameSecondaryPlatformSettings(string oldName, string newName)
         {
+            RegisterPlatformSettingsUndo(styles.renameSecondarySettingsRegisterUndo);
+
             spriteAtlasImporter.DeleteSecondaryPlatformSettings(oldName);
 
             var defaultPlatformSettings = m_TempPlatformSettings[TextureImporterInspector.s_DefaultPlatformName];
@@ -453,17 +498,18 @@ namespace UnityEditor.U2D
 
         protected override void Apply()
         {
-            if (HasModified())
+            var hasModified = HasModified();
+            if (hasModified && spriteAtlasAsset)
             {
-                if (spriteAtlasAsset)
-                {
-                    SpriteAtlasAsset.Save(spriteAtlasAsset, m_AssetPath);
-                    AssetDatabase.ImportAsset(m_AssetPath);
-                }
-
-                m_ContentHash = GetInspectorHash();
+                SpriteAtlasAsset.Save(spriteAtlasAsset, m_AssetPath);
+                AssetDatabase.ImportAsset(m_AssetPath);
             }
+
             base.Apply();
+
+            // Snapshot after base.Apply(), which flushes the importer's serialized properties.
+            if (hasModified)
+                UpdateContentHash();
         }
 
         protected override bool useAssetDrawPreview { get { return false; } }
@@ -502,7 +548,30 @@ namespace UnityEditor.U2D
 
         public override bool HasModified()
         {
-            return (base.HasModified() || m_ContentHash != GetInspectorHash());
+            // base.HasModified() flushes pending property edits, so it has to run before the Update()
+            // calls below. Both SerializedObjects must then be in sync with their native objects
+            // before hashing: HasModified() is also invoked from native (UpdateUnsavedChangesState,
+            // fired by RevertObject/UpdateSavedData) at a point where neither has been Update()d yet,
+            // and hashing the stale caches there reports the inspector as still dirty.
+            var baseModified = base.HasModified();
+            serializedObject.Update();
+            m_SerializedAssetObject?.Update();
+            return (baseModified || m_ContentHash != GetInspectorHash());
+        }
+
+        // Re-baselines the content hash and pushes the resulting state to hasUnsavedChanges. The
+        // explicit refresh is needed because the native UpdateSavedData/RevertObject callbacks
+        // evaluate HasModified() while m_ContentHash still describes the pre-apply/pre-revert state,
+        // so the flag they leave behind has to be recomputed once the baseline is up to date.
+        private void UpdateContentHash()
+        {
+            // Callers run after an apply/revert has already flushed pending edits, so syncing with
+            // the native objects here cannot drop user input, and the baseline must be taken from
+            // the synced state to match what HasModified() will hash.
+            serializedObject.Update();
+            m_SerializedAssetObject?.Update();
+            m_ContentHash = GetInspectorHash();
+            hasUnsavedChanges = HasModified();
         }
 
         private void ValidateMasterAtlas()
@@ -686,6 +755,7 @@ namespace UnityEditor.U2D
                     {
                         EditorGUI.EndEditingActiveTextField();
 
+                        RegisterPlatformSettingsUndo(styles.deleteSecondarySettingsRegisterUndo);
                         spriteAtlasImporter.DeleteSecondaryPlatformSettings(m_PlatformSettingsOptions[m_SelectedPlatformSettings]);
 
                         m_PlatformSettingsOptions.RemoveAt(m_SelectedPlatformSettings);
@@ -740,7 +810,10 @@ namespace UnityEditor.U2D
                         EditorGUI.BeginChangeCheck();
                         bool value = EditorGUILayout.Toggle(s_Styles.sRGBLabel, spriteAtlasImporter.GetSecondaryColorSpace(secondaryTextureName));
                         if (EditorGUI.EndChangeCheck())
+                        {
+                            RegisterPlatformSettingsUndo(styles.secondaryColorSpaceRegisterUndo);
                             spriteAtlasImporter.SetSecondaryColorSpace(secondaryTextureName, value);
+                        }
 
                         HandlePlatformSettingUI(textFieldText);
                     }
@@ -760,6 +833,7 @@ namespace UnityEditor.U2D
             {
                 if (m_TexturePlatformSettingsController.HandleDefaultSettings(defaultPlatformSettings, view, m_TexturePlatformSettingTextureHelper))
                 {
+                    RegisterPlatformSettingsUndo(styles.platformSettingsRegisterUndo);
                     for (var i = 0; i < defaultPlatformSettings.Count; ++i)
                     {
                         if (isSecondary)
@@ -798,6 +872,7 @@ namespace UnityEditor.U2D
                 m_TexturePlatformSettingsView.buildPlatformTitle = buildPlatform.title.text;
                 if (m_TexturePlatformSettingsController.HandlePlatformSettings(buildPlatform.defaultTarget, platformSettings, view, m_TexturePlatformSettingTextureHelper))
                 {
+                    RegisterPlatformSettingsUndo(styles.platformSettingsRegisterUndo);
                     for (var i = 0; i < platformSettings.Count; ++i)
                     {
                         if (isSecondary)
@@ -892,7 +967,7 @@ namespace UnityEditor.U2D
         public override void SaveChanges()
         {
             base.SaveChanges();
-            m_ContentHash = GetInspectorHash();
+            UpdateContentHash();
         }
 
         public override void DiscardChanges()
@@ -903,8 +978,12 @@ namespace UnityEditor.U2D
             UpdateSpriteAtlasAssetSerializedObject();
             if (EditorSettings.spritePackerMode == SpritePackerMode.SpriteAtlasV2)
                 m_PreviewStatus = PreviewStatus.Unknown;
-            m_ContentHash = GetInspectorHash();
+
+            // base.DiscardChanges() reverts the importer's serialized data, so the hash has to be
+            // snapshot after it. Taking it before leaves m_ContentHash describing the discarded state,
+            // which makes HasModified() report the inspector as dirty again right after a discard.
             base.DiscardChanges();
+            UpdateContentHash();
         }
 
         void UpdatePages()
@@ -1080,4 +1159,3 @@ namespace UnityEditor.U2D
         }
     }
 }
-#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

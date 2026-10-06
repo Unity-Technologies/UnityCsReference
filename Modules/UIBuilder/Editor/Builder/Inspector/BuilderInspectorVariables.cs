@@ -2,7 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: UIBuilder not yet converted
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -35,12 +34,29 @@ namespace Unity.UI.Builder
 
         protected override VariablesListItem CreateListItem() => new BuilderInspectorVariablesListItem();
 
+        protected override void UpdateOverrideRowsTrackedProperties()
+        {
+            base.UpdateOverrideRowsTrackedProperties();
+
+            variablesListView.EnableInClassList(BuilderConstants.InspectorLocalStyleOverrideClassName, variablesItemsSource.Count > 0);
+            m_Inspector.localStyles.UpdateStyleCategoryFoldoutOverrides();
+        }
+
         protected override void OnStyleSheetModified()
         {
             // Force immediate style resolution to update the element's variableContext
             currentVisualElement.SetInlineRule(styleSheet, styleRule);
 
             m_Inspector.panel.visualTree.IncrementVersion(VersionChangeType.StyleSheet);
+
+            if (!BuilderSharedStyles.IsSelectorElement(currentVisualElement))
+            {
+                m_Selection.NotifyOfHierarchyChange(
+                    m_Inspector,
+                    currentVisualElement,
+                    BuilderHierarchyChangeType.InlineStyle | BuilderHierarchyChangeType.FullRefresh);
+            }
+
             m_Selection.NotifyOfStylingChange();
         }
 
@@ -187,4 +203,3 @@ namespace Unity.UI.Builder
         }
     }
 }
-#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

@@ -20,31 +20,31 @@ namespace UnityEditor.Modules
     {
         static readonly string[] kMaxTextureSizeStrings = { "32", "64", "128", "256", "512", "1024", "2048", "4096", "8192", "16384" };
         static readonly int[] kMaxTextureSizeValues = { 32, 64, 128, 256, 512, 1024, 2048, 4096, 8192, 16384 };
-        static readonly GUIContent maxSize = EditorGUIUtility.TrTextContent("Max Size", "Textures larger than this will be scaled down.");
+        static readonly GUIContent maxSize = L10n.TextContent("Max Size", "Textures larger than this will be scaled down.", null, null);
         static readonly string kMaxSizeOverrideString = L10n.Tr("Max texture size is overriden to {0} in Build Settings window.", null);
 
         static readonly string[] kResizeAlgorithmStrings = { "Mitchell", "Bilinear" };
         static readonly int[] kResizeAlgorithmValues = { (int)TextureResizeAlgorithm.Mitchell, (int)TextureResizeAlgorithm.Bilinear };
-        static readonly GUIContent kResizeAlgorithm = EditorGUIUtility.TrTextContent("Resize Algorithm", "Select algorithm to apply for textures when scaled down.");
-        static readonly GUIContent kTextureFormat = EditorGUIUtility.TrTextContent("Format");
-        static readonly GUIContent kTextureCompression = EditorGUIUtility.TrTextContent("Compression", "How will this texture be compressed?");
-        static readonly GUIContent kUseAlphaSplitLabel = EditorGUIUtility.TrTextContent("Split Alpha Channel", "Alpha for this texture will be preserved by splitting the alpha channel to another texture, and both resulting textures will be compressed using ETC1.");
-        static readonly GUIContent kCrunchedCompression = EditorGUIUtility.TrTextContent("Use Crunch Compression", "Texture is crunch-compressed to save space on disk when applicable.");
-        static readonly GUIContent kCompressionQuality = EditorGUIUtility.TrTextContent("Compressor Quality");
-        static readonly GUIContent kCompressionQualitySlider = EditorGUIUtility.TrTextContent("Compressor Quality", "Use the slider to adjust compression quality from 0 (Fastest) to 100 (Best)");
+        static readonly GUIContent kResizeAlgorithm = L10n.TextContent("Resize Algorithm", "Select algorithm to apply for textures when scaled down.", null, null);
+        static readonly GUIContent kTextureFormat = L10n.TextContent("Format", null, null, null);
+        static readonly GUIContent kTextureCompression = L10n.TextContent("Compression", "How will this texture be compressed?", null, null);
+        static readonly GUIContent kUseAlphaSplitLabel = L10n.TextContent("Split Alpha Channel", "Alpha for this texture will be preserved by splitting the alpha channel to another texture, and both resulting textures will be compressed using ETC1.", null, null);
+        static readonly GUIContent kCrunchedCompression = L10n.TextContent("Use Crunch Compression", "Texture is crunch-compressed to save space on disk when applicable.", null, null);
+        static readonly GUIContent kCompressionQuality = L10n.TextContent("Compressor Quality", null, null, null);
+        static readonly GUIContent kCompressionQualitySlider = L10n.TextContent("Compressor Quality", "Use the slider to adjust compression quality from 0 (Fastest) to 100 (Best)", null, null);
         static readonly GUIContent[] kMobileCompressionQualityOptions =
         {
-            EditorGUIUtility.TrTextContent("Fast"),
-            EditorGUIUtility.TrTextContent("Normal"),
-            EditorGUIUtility.TrTextContent("Best")
+            L10n.TextContent("Fast", null, null, null),
+            L10n.TextContent("Normal", null, null, null),
+            L10n.TextContent("Best", null, null, null)
         };
 
         static readonly GUIContent[] kTextureCompressionOptions =
         {
-            EditorGUIUtility.TrTextContent("None", "Texture is not compressed."),
-            EditorGUIUtility.TrTextContent("Low Quality", "Texture compressed with low quality but high performance, high compression format."),
-            EditorGUIUtility.TrTextContent("Normal Quality", "Texture is compressed with a standard format."),
-            EditorGUIUtility.TrTextContent("High Quality", "Texture compressed with a high quality format."),
+            L10n.TextContent("None", "Texture is not compressed.", null, null),
+            L10n.TextContent("Low Quality", "Texture compressed with low quality but high performance, high compression format.", null, null),
+            L10n.TextContent("Normal Quality", "Texture is compressed with a standard format.", null, null),
+            L10n.TextContent("High Quality", "Texture compressed with a high quality format.", null, null),
         };
         static readonly int[] kTextureCompressionValues =
         {

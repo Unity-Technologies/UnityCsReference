@@ -2,7 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: Kernel not yet converted
 using UnityEngine;
 using Unity.Scripting.LifecycleManagement;
 
@@ -10,6 +9,9 @@ namespace UnityEditor
 {
     internal partial class DrivenRectTransformUndo
     {
+        // Both undo events are cleared on code reload, so these subscriptions have to be re-established on
+        // every load. A static constructor would only run once per domain, and driven RectTransform values
+        // would stop being refreshed around undo/redo after the first reload.
         [OnCodeLoaded]
         static void Initialize()
         {
@@ -36,4 +38,3 @@ namespace UnityEditor
         }
     }
 }
-#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

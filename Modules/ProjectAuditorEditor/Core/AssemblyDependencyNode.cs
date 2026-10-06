@@ -2,7 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-using System.Linq;
+using System.Collections.Generic;
 
 namespace Unity.ProjectAuditor.Editor.Core
 {
@@ -10,13 +10,14 @@ namespace Unity.ProjectAuditor.Editor.Core
     {
         readonly string m_Name;
 
-        public AssemblyDependencyNode(string name, string[] deps = null)
+        public AssemblyDependencyNode(string name, IReadOnlyList<string> deps = null)
         {
             m_Name = name;
             if (deps != null)
-                #pragma warning disable UAC2001 // Avoid Linq
-                AddChildren(deps.Select(d => new AssemblyDependencyNode(d)).ToArray<DependencyNode>());
-#pragma warning restore UAC2001
+            {
+                foreach (var dep in deps)
+                    AddChild(new AssemblyDependencyNode(dep));
+            }
         }
 
         internal override string GetName()

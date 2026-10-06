@@ -144,14 +144,18 @@ namespace UnityEditor.CrashReporting
             return config;
         }
 
-        public static void UploadSymbolsInPath(string authToken, string symbolPath, string il2cppOutputPath, string il2cppFileRoot, string includeFilter, string excludeFilter, bool waitForExit)
+        public static void UploadSymbolsInPath(string authToken, string symbolPath, string il2cppOutputPath, string il2cppFileRoot, string includeFilter, string excludeFilter, bool waitForExit, string logSuffix = "")
         {
             try
             {
                 UploadPlatformConfig platformConfig = GetUploadPlatformConfig();
 
+                var logFilePath = platformConfig.LogFilePath;
+                if (!string.IsNullOrEmpty(logSuffix))
+                    logFilePath = Path.ChangeExtension(logFilePath, null) + "_" + logSuffix + ".log";
+
                 string args = string.Format("-symbolPath \"{0}\" -log \"{1}\"",
-                    symbolPath, platformConfig.LogFilePath);
+                    symbolPath, logFilePath);
 
                 if (!String.IsNullOrEmpty(includeFilter))
                 {

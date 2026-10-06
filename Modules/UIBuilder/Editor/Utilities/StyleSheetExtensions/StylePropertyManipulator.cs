@@ -108,6 +108,9 @@ namespace Unity.UI.Builder
 
             public bool isVariableUnresolved => isVariable && handles?.Count == 0;
 
+            // Unresolved variables and non-var() functions (e.g. gradients) still occupy one value slot.
+            public bool hasNoResolvedHandles => handles?.Count == 0;
+
             public void Dispose()
             {
                 if (null != handles)
@@ -235,7 +238,7 @@ namespace Unity.UI.Builder
             var count = 0;
             foreach (var part in stylePropertyParts)
             {
-                if (part.isVariable && part.isVariableUnresolved)
+                if (part.hasNoResolvedHandles)
                     count += 1;
                 else
                     count += part.handles.Count;
@@ -788,11 +791,12 @@ namespace Unity.UI.Builder
             styleProperty.values = list.ToArray();
             var i = part.offset;
             var newPart = ResolveValueOrVariable(styleSheet, element, styleRule, styleProperty.name, styleProperty.values.AsSpan(), ref i, editorExtensionMode);
+            newPart.offset = initialOffset;
             stylePropertyParts.RemoveAt(indices.partIndex);
             stylePropertyParts.Insert(indices.partIndex, newPart);
             part.Dispose();
 
-            AdjustOffsets(indices.partIndex, i - nextOffset);
+            AdjustOffsets(indices.partIndex + 1, handles.Length - range);
         }
 
         void AdjustOffsets(int indicesPartIndex, int partOffset)
@@ -825,7 +829,7 @@ namespace Unity.UI.Builder
                     }
                 }
 
-                if (!part.isVariableUnresolved)
+                if (!part.hasNoResolvedHandles)
                     continue;
 
                 if (--current < 0)
@@ -988,8 +992,7 @@ namespace Unity.UI.Builder
                 case StyleValueType.ScalableImage:
                 case StyleValueType.MissingAssetReference:
                 {
-                    // skip comma
-                    ++currentIndex;
+                    currentIndex = SkipToEndOfValue(styleSheet, propertyHandles, currentIndex);
 
                     var part = StylePropertyPart.Create();
                     part.handles.Add(new StylePropertyValue
@@ -1012,7 +1015,8 @@ namespace Unity.UI.Builder
                         {
                             // Non-var() function (e.g. gradient) — skip its args so the outer walk
                             // doesn't stumble on inner commas.
-                            currentIndex += argCount - 1;
+                            currentIndex = SkipToEndOfValue(styleSheet, propertyHandles,
+                                SkipFunctionArgs(styleSheet, propertyHandles, currentIndex, argCount));
                             return StylePropertyPart.Create();
                         }
 
@@ -1021,8 +1025,7 @@ namespace Unity.UI.Builder
                         {
                             if (argCount == 1)
                             {
-                                // Skip comma
-                                ++currentIndex;
+                                currentIndex = SkipToEndOfValue(styleSheet, propertyHandles, currentIndex);
                                 var part = StylePropertyPart.Create();
                                 if (null == manipulator || manipulator.stylePropertyParts.Count == 0)
                                 {
@@ -1050,6 +1053,7 @@ namespace Unity.UI.Builder
                         return fallbackPart;
                     }
 
+                    currentIndex = SkipToEndOfValue(styleSheet, propertyHandles, currentIndex);
                     return StylePropertyPart.Create();
                 }
                 // These should never be hit as they are being handled by the cases above
@@ -1059,6 +1063,38 @@ namespace Unity.UI.Builder
                 default:
                     throw new ArgumentOutOfRangeException();
             }
+        }
+
+        // index points at the first argument; skips argCount top-level arguments, where a nested
+        // function (with its own count and args) is a single argument, and returns the index of the
+        // last argument handle. Clamped so a stale over-count in serialized data cannot walk out of bounds.
+        static int SkipFunctionArgs(StyleSheet styleSheet, Span<StyleValueHandle> handles, int index, int argCount)
+        {
+            for (var arg = 0; arg < argCount && index < handles.Length; ++arg)
+            {
+                if (handles[index].valueType == StyleValueType.Function && index + 1 < handles.Length)
+                {
+                    var nestedArgCount = (int)styleSheet.ReadFloat(handles[index + 1]);
+                    index = SkipFunctionArgs(styleSheet, handles, index + 2, nestedArgCount) + 1;
+                }
+                else
+                {
+                    ++index;
+                }
+            }
+
+            return index - 1;
+        }
+
+        // A part runs to the next comma, as the write methods replace whole comma-separated parts.
+        static int SkipToEndOfValue(StyleSheet styleSheet, Span<StyleValueHandle> handles, int index)
+        {
+            while (index + 1 < handles.Length && handles[index + 1].valueType != StyleValueType.CommaSeparator)
+            {
+                index = SkipFunctionArgs(styleSheet, handles, index + 1, 1);
+            }
+
+            return Math.Min(index + 1, handles.Length - 1);
         }
 
         static StylePropertyManipulator ResolveVariable(
@@ -1073,10 +1109,19 @@ namespace Unity.UI.Builder
                     variableNameUnique, out var stylePropertyValue))
             {
                 var propValue = stylePropertyValue;
-                if (!editorExtensionMode && propValue.sheet.isDefaultStyleSheet)
+
+                // The computed-style provenance only carries the declaring sheet, whose own
+                // priority says nothing about how it was pulled in (a plain USS imported by a
+                // theme is theme content). The variable context carries the effective tier of
+                // the match; a miss means the variable came from inline styles, which are local.
+                var tier = UnityEngine.UIElements.StyleSheetPriority.Default;
+                if (currentVisualElement.variableContext.TryFindVariable(variableNameUnique.id, out var contextVariable))
+                    tier = contextVariable.tier;
+
+                if (!editorExtensionMode && tier != UnityEngine.UIElements.StyleSheetPriority.Default)
                     return null;
 
-                if (propValue.sheet.isDefaultStyleSheet)
+                if (tier != UnityEngine.UIElements.StyleSheetPriority.Default)
                 {
                     StyleVariableUtility.editorVariableDescriptions.TryGetValue(variableName, out var variableDescription);
                 }

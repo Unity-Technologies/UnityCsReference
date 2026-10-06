@@ -435,6 +435,40 @@ namespace Unity.GraphToolkit.Editor
 
                 if (r.yMax > maxY)
                     maxY = r.yMax;
+
+                if (e is StateView { StateModel: not null } stateView)
+                {
+                    // A self-transition renders outside its state's visual bounds,
+                    // and lives in the transition layer rather than as a child of the state, so it is
+                    // never present in `elements`. Widen the bounds for any self-transition attached to
+                    // this state so the placemat covers the arc as well.
+                    foreach (var wire in stateView.StateModel.GetInPort().GetConnectedWires())
+                    {
+                        if (wire is not TransitionSupportModel { IsSelfTransition: true } support || support is IGhostWireModel)
+                            continue;
+
+                        var transitionView = support.GetView<TransitionView>(stateView.RootView);
+                        var sizeElement = transitionView?.SizeElement;
+                        if (sizeElement?.parent == null)
+                            continue;
+
+                        var tr = sizeElement.parent.ChangeCoordinatesTo(reference, sizeElement.layout);
+                        if (float.IsNaN(tr.width) || float.IsNaN(tr.height))
+                            continue;
+
+                        if (tr.xMin < minX)
+                            minX = tr.xMin;
+
+                        if (tr.xMax > maxX)
+                            maxX = tr.xMax;
+
+                        if (tr.yMin < minY)
+                            minY = tr.yMin;
+
+                        if (tr.yMax > maxY)
+                            maxY = tr.yMax;
+                    }
+                }
             }
 
             var width = maxX - minX + k_SmartResizeMargin * 2.0f;

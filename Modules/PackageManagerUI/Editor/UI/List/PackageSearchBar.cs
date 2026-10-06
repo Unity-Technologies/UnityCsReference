@@ -34,9 +34,13 @@ namespace UnityEditor.PackageManager.UI.Internal
 
             m_SearchField = new ToolbarSearchField();
             m_SearchField.textInputField.maxLength = k_SearchFieldTextLimit;
+            var cancelButton = m_SearchField.Q<Button>("unity-cancel");
+            if (cancelButton != null)
+                cancelButton.tabIndex = -1;
             Add(m_SearchField);
 
             focusable = true;
+            tabIndex = -1;
             m_SearchFieldDelayArgs = null;
 
             RegisterCallback<AttachToPanelEvent>(OnAttachToPanel);

@@ -79,7 +79,11 @@ namespace Unity.GraphToolkit.Editor
 
         Color m_DefaultColor;
 
+        Color m_LineColor;
+
         string m_Tooltip;
+
+        Texture2D m_Icon;
 
         /// <summary>
         /// The default color of the transition.
@@ -92,6 +96,26 @@ namespace Unity.GraphToolkit.Editor
                 if (m_DefaultColor == value)
                     return;
                 m_DefaultColor = value;
+                GraphModel?.CurrentGraphChangeDescription.AddChangedModel(this, ChangeHint.Style);
+            }
+        }
+
+        /// <inheritdoc cref="ITransition.FillColor" />
+        Color ITransition.FillColor
+        {
+            get => DefaultColor;
+            set => DefaultColor = value;
+        }
+
+        /// <inheritdoc cref="ITransition.LineColor" />
+        public virtual Color LineColor
+        {
+            get => m_LineColor;
+            set
+            {
+                if (m_LineColor == value)
+                    return;
+                m_LineColor = value;
                 GraphModel?.CurrentGraphChangeDescription.AddChangedModel(this, ChangeHint.Style);
             }
         }
@@ -117,6 +141,20 @@ namespace Unity.GraphToolkit.Editor
         /// The transitions in this transition support.
         /// </summary>
         public virtual IReadOnlyList<TransitionModel> Transitions => m_Transitions;
+
+        /// <inheritdoc />
+        public Texture2D Icon
+        {
+            get => m_Icon;
+            set
+            {
+                if (m_Icon == value)
+                    return;
+
+                m_Icon = value;
+                GraphModel?.CurrentGraphChangeDescription.AddChangedModel(this, ChangeHint.Style);
+            }
+        }
 
         /// <inheritdoc cref="ITransition.FromState" />
         public IState FromState => GetPublicState(FromPort?.NodeModel);
@@ -329,11 +367,16 @@ namespace Unity.GraphToolkit.Editor
         /// <inheritdoc />
         public override void SetPorts(PortModel toPortModel, PortModel fromPortModel)
         {
+            // Compute the anchor position before base.SetPorts(). If we computed after,
+            // a cloned wire would find itself in the index with
+            // its copied offset and produce a doubled value (e.g. 30 → 60 instead of 30).
+            var selfTargetPort = IsSelfTransition ? toPortModel as StatePortModel : null;
+            var anchorPos = selfTargetPort?.ComputeOffsetForNewSingleStateTransition() ?? 0f;
+
             base.SetPorts(toPortModel, fromPortModel);
 
-            if (IsSelfTransition && toPortModel is StatePortModel statePortModel)
+            if (selfTargetPort != null)
             {
-                var anchorPos = statePortModel.ComputeOffsetForNewSingleStateTransition();
                 SetToAnchor(AnchorSide.Top, anchorPos);
             }
         }

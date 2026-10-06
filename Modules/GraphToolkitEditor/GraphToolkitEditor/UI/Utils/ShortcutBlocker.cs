@@ -45,6 +45,7 @@ namespace Unity.GraphToolkit.Editor
 
             m_DragTarget.RegisterCallback<PointerDownEvent>(OnPointerDownEvent, TrickleDown.TrickleDown);
             m_DragTarget.RegisterCallback<PointerUpEvent>(OnPointerUpEvent, TrickleDown.TrickleDown);
+            m_DragTarget.RegisterCallback<ContextualMenuPopulateEvent>(OnContextualMenuPopulateEvent);
         }
 
         public void Disable()
@@ -57,6 +58,7 @@ namespace Unity.GraphToolkit.Editor
             m_DragTarget.UnregisterCallback<AttachToPanelEvent>(OnAttachToPanel);
             m_DragTarget.UnregisterCallback<PointerDownEvent>(OnPointerDownEvent, TrickleDown.TrickleDown);
             m_DragTarget.UnregisterCallback<PointerUpEvent>(OnPointerUpEvent, TrickleDown.TrickleDown);
+            m_DragTarget.UnregisterCallback<ContextualMenuPopulateEvent>(OnContextualMenuPopulateEvent);
             UnregisterShortcutBlockingHandlers();
         }
 
@@ -133,6 +135,9 @@ namespace Unity.GraphToolkit.Editor
             // Don't stop the propagation of the event
             StopBlocking();
         }
+
+        // Native context menus may swallow pointer up leaving the ShortcutBlocker in a block state until it is manually reset (eg : focus change)
+        void OnContextualMenuPopulateEvent(ContextualMenuPopulateEvent evt) => StopBlocking();
 
         void OnKeyDownEvent(KeyDownEvent evt)
         {

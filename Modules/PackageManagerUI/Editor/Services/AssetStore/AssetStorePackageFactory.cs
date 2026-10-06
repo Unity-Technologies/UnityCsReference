@@ -130,7 +130,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             GeneratePackagesAndTriggerChangeEvent(productIds);
         }
 
-        private void OnUpdateInfosChanged(IReadOnlyCollection<AssetStoreUpdateInfo> updateInfos)
+        private void OnUpdateInfosChanged(IReadOnlyList<AssetStoreUpdateInfo> updateInfos)
         {
             // Right now updateInfo goes hands in hands with localInfo, so we handle it the same way as localInfo changes
             // and only check packages we already checked before (the ones with productInfos). This behaviour might change in the future
@@ -146,7 +146,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             GeneratePackagesAndTriggerChangeEvent(new [] { productInfo.productId });
         }
 
-        private void OnPurchaseInfosChanged(IReadOnlyCollection<AssetStorePurchaseInfo> purchaseInfos)
+        private void OnPurchaseInfosChanged(IReadOnlyList<AssetStorePurchaseInfo> purchaseInfos)
         {
             GeneratePackagesAndTriggerChangeEvent(purchaseInfos.SelectToNewArray(info => info.productId));
         }

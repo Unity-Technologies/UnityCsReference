@@ -40,6 +40,8 @@ namespace UnityEngine
     [NativeHeader("Runtime/Export/Graphics/Light.bindings.h")]
     public sealed partial class Light : Behaviour
     {
+        internal Light(global::UnityEngine.EntityId id) : base(id) {}
+        public Light() {}
         extern public void Reset();
 
         // How this light casts shadows?

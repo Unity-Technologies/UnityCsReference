@@ -22,6 +22,8 @@ namespace UnityEditor
     [ExcludeFromPreset]
     public sealed partial class PluginImporter : AssetImporter
     {
+        internal PluginImporter(global::UnityEngine.EntityId id) : base(id) {}
+        public PluginImporter() {}
         [NativeMethod("GetCompatibleWithPlatformOrAnyPlatform")]
         extern internal bool GetCompatibleWithPlatformOrAnyPlatformBuildTarget(string buildTarget);
 

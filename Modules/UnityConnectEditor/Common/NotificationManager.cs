@@ -20,6 +20,7 @@ namespace UnityEditor.Connect
     internal partial class NotificationManager
     {
         [AutoStaticsCleanupOnCodeReload]
+        [IgnoreForUAL0015("Lazily re-created by the instance getter on next access after reload")]
         static NotificationManager k_Instance;
 
         const long k_DuplicateNotificationMillisecondsThreshold = 1000;

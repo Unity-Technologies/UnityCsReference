@@ -17,9 +17,10 @@ namespace Unity.GraphToolkit.Editor
         /// <param name="orientation">The orientation of the port to create.</param>
         /// <param name="attributes">The attributes used to convey information about the port, if any.</param>
         /// <param name="defaultValue">The default value to assign to the constant associated to the port.</param>
+        /// <param name="allowedTypes">The set of types the user may select for a polymorphic port, or null for a fixed-type port.</param>
         IPort AddInputPort(string portName, Type dataType = null,
                 string portId = null, PortOrientation orientation = PortOrientation.Horizontal,
-                Attribute[] attributes = null, object defaultValue = default);
+                Attribute[] attributes = null, object defaultValue = default, TypeHandle[] allowedTypes = null);
 
         /// <summary>
         /// Adds a new output port on the node.

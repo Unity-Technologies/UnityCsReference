@@ -2,7 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: _2D not yet converted
 using System;
 using UnityEngine;
 using UnityEditorInternal;
@@ -16,12 +15,12 @@ namespace UnityEditor
     {
         protected class Styles
         {
-            public static readonly GUIContent openSpriteEditor = EditorGUIUtility.TrTextContent("Open Sprite Editor");
-            public static readonly GUIContent install2DPackage = EditorGUIUtility.TrTextContent("Install 2D Sprite Package");
-            public static readonly GUIContent failedToInstall2DPackageTitle = EditorGUIUtility.TrTextContent("Installation Failed");
-            public static readonly GUIContent failedToInstall2DPackageContent = EditorGUIUtility.TrTextContent("Failed to install package com.unity.2d.sprite.\nErrorCode: {0}\nMessage: {1}");
-            public static readonly GUIContent install2DPackageReason = EditorGUIUtility.TrTextContent("The Sprite Editor window is not available because the 2D Sprite package is not installed. Click on the 'Install 2D Sprite Package' button to install the package to edit Sprites in Sprite Editor window.");
-            public static readonly GUIContent okText = EditorGUIUtility.TrTextContent("OK");
+            public static readonly GUIContent openSpriteEditor = L10n.TextContent("Open Sprite Editor", null, null, null);
+            public static readonly GUIContent install2DPackage = L10n.TextContent("Install 2D Sprite Package", null, null, null);
+            public static readonly GUIContent failedToInstall2DPackageTitle = L10n.TextContent("Installation Failed", null, null, null);
+            public static readonly GUIContent failedToInstall2DPackageContent = L10n.TextContent("Failed to install package com.unity.2d.sprite.\nErrorCode: {0}\nMessage: {1}", null, null, null);
+            public static readonly GUIContent install2DPackageReason = L10n.TextContent("The Sprite Editor window is not available because the 2D Sprite package is not installed. Click on the 'Install 2D Sprite Package' button to install the package to edit Sprites in Sprite Editor window.", null, null, null);
+            public static readonly GUIContent okText = L10n.TextContent("OK", null, null, null);
         }
 
         [AutoStaticsCleanupOnCodeReload]
@@ -154,4 +153,3 @@ namespace UnityEditor
         }
     }
 }
-#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

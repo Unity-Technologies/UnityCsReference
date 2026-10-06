@@ -17,6 +17,8 @@ namespace UnityEngine
     [UIModuleHelpURL("class-CanvasRenderer")]
     public sealed partial class CanvasRenderer : Component
     {
+        internal CanvasRenderer(global::UnityEngine.EntityId id) : base(id) {}
+        public CanvasRenderer() {}
         ///<summary>Enable 'render stack' pop draw call.</summary>
         ///<remarks>When rendering using the hierarchy the renderer can insert a 'pop'. The pop instruction is executed after all children have been rendered. The canvas renderer is rerendered using the configured pop materials.
         ///

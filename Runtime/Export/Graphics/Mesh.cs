@@ -20,6 +20,7 @@ namespace UnityEngine
     [RequiredByNativeCode] // Used by IMGUI (even on empty projects, it draws development console & watermarks)
     public sealed partial class Mesh : Object
     {
+        internal Mesh(global::UnityEngine.EntityId id) : base(id) {}
         internal static VertexAttribute GetUVChannel(int uvIndex)
         {
             if (uvIndex < 0 || uvIndex > 7)

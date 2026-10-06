@@ -48,7 +48,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         public virtual DependencyInfo[] resolvedDependencies => null;
         public virtual EntitlementsInfo entitlements => null;
 
-        public virtual IReadOnlyCollection<Asset> importedAssets => null;
+        public virtual IReadOnlyList<Asset> importedAssets => null;
 
         [NonSerialized]
         private IPackage m_Package;
@@ -83,7 +83,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         public virtual bool hasEntitlementsError => false;
         public bool isEnterprise => entitlements is { licensingModel: EntitlementLicensingModel.Enterprise };
 
-        public virtual IReadOnlyCollection<UIError> errors => Array.Empty<UIError>();
+        public virtual IReadOnlyList<UIError> errors => Array.Empty<UIError>();
         public virtual IReadOnlyList<PackageSizeInfo> sizes => Array.Empty<PackageSizeInfo>();
         public virtual IReadOnlyList<SemVersion> supportedVersions => Array.Empty<SemVersion>();
         public virtual SemVersion? supportedVersion => null;

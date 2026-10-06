@@ -47,13 +47,14 @@ namespace UnityEditor
         public string EditorGUI_DelayedTextEditor_content;
         public string EditorGUI_DelayedControlThatHadFocusValue;
 
+        // Called from native (CodeReloadSerialization_Editor.cpp), which works with the EntityId, not the wrapper.
         [RequiredByNativeCode]
-        static ScriptReloadProperties Store()
+        static EntityId Store()
         {
             ScriptReloadProperties obj = CreateInstance<ScriptReloadProperties>();
             obj.hideFlags = HideFlags.HideAndDontSave;
             obj.ManagedStore();
-            return obj;
+            return obj.GetEntityId();
         }
 
         [RequiredByNativeCode]

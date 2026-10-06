@@ -97,6 +97,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             messageAreaButton.clickable.clicked += OnButtonClicked;
 
             focusable = true;
+            tabIndex = -1;
 
             mainArea.RegisterCallback<GeometryChangedEvent>(OnGeometryChange);
             RegisterCallback<AttachToPanelEvent>(OnAttachToPanel);
@@ -105,6 +106,8 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         private void OnAttachToPanel(AttachToPanelEvent evt)
         {
+            listContainer.RegisterCallback<PointerDownEvent>(OnListContainerPointerDown, TrickleDown.TrickleDown);
+
             m_PageRefreshHandler.onRefreshOperationStart += OnRefreshOperationStartOrFinish;
             m_PageRefreshHandler.onRefreshOperationFinish += OnRefreshOperationStartOrFinish;
 
@@ -133,6 +136,8 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         private void OnDetachFromPanel(DetachFromPanelEvent evt)
         {
+            listContainer.UnregisterCallback<PointerDownEvent>(OnListContainerPointerDown, TrickleDown.TrickleDown);
+
             m_PageRefreshHandler.onRefreshOperationStart -= OnRefreshOperationStartOrFinish;
             m_PageRefreshHandler.onRefreshOperationFinish -= OnRefreshOperationStartOrFinish;
 
@@ -151,6 +156,23 @@ namespace UnityEditor.PackageManager.UI.Internal
         private void OnActivePageChanged(IPage page)
         {
             OnListRebuild(page);
+        }
+
+        private void OnListContainerPointerDown(PointerDownEvent evt)
+        {
+            var target = evt.target as VisualElement;
+            while (target != null && target != listContainer)
+            {
+                if (target is IListItem)
+                    return;
+                target = target.parent;
+            }
+
+            var uniqueId = m_PageManager.activePage.GetSelection().last;
+            if (string.IsNullOrEmpty(uniqueId))
+                return;
+            focusController?.IgnoreEvent(evt);
+            m_CurrentView?.GetListItem(uniqueId)?.element?.Focus();
         }
 
         private void OnTrimmedSearchTextChanged(IPage page)

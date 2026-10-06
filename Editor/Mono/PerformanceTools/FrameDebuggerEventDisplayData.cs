@@ -1407,7 +1407,7 @@ namespace UnityEditorInternal.FrameDebuggerInternal
                 m_MeshNames = new GUIContent[meshes.Count];
                 for (var i = 0; i < m_Meshes.Length; ++i)
                 {
-                    m_MeshNames[i] = EditorGUIUtility.TrTextContent(m_Meshes[i].name, string.Empty);
+                    m_MeshNames[i] = L10n.TextContent(m_Meshes[i].name, string.Empty, null, null);
 
                     if (i == 0)
                         m_MeshStringBuilder.AppendFormat(k_TwoColumnFormat, "Meshes", m_MeshNames[i].text);
@@ -1429,7 +1429,7 @@ namespace UnityEditorInternal.FrameDebuggerInternal
                 {
                     m_Meshes = new Mesh[] { curEventData.m_Mesh };
                     m_MeshNames = new GUIContent[1];
-                    m_MeshNames[0] = EditorGUIUtility.TrTextContent(curEventData.m_Mesh.name, string.Empty);
+                    m_MeshNames[0] = L10n.TextContent(curEventData.m_Mesh.name, string.Empty, null, null);
                     m_MeshStringBuilder.AppendFormat(k_TwoColumnFormat, "Mesh", m_MeshNames[0].text);
                 }
             }

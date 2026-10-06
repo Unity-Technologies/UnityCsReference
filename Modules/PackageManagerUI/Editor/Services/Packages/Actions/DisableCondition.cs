@@ -154,8 +154,7 @@ internal class DisableIfPackageIsInInvalidLocation : IDisableCondition<IPackageV
 
     private static bool PackageIsInInvalidLocation(IPackageVersion version)
     {
-        var error = version?.errors?.FirstMatch(e => !e.HasAttribute(UIError.Attribute.Clearable | UIError.Attribute.HiddenFromUI));
-        return error is { errorCode: UIErrorCode.UpmError_InvalidSourcePath };
+        return version?.errors?.AnyMatches(e => e.errorCode == UIErrorCode.UpmError_InvalidSourcePath) == true;
     }
 }
 

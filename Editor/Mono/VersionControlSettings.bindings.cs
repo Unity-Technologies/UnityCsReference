@@ -54,6 +54,7 @@ namespace UnityEditor
     [UnityEngine.NativeClass("VersionControlSettings", PersistentTypeId = 0x351A24BB)]
     public sealed class VersionControlSettings : Object
     {
+        internal VersionControlSettings(global::UnityEngine.EntityId id) : base(id) {}
         private VersionControlSettings()
         {
         }

@@ -6,15 +6,15 @@ using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using UnityEditor.Connect;
+using UnityEditor.Marketplace;
 using UnityEditor.PackageManager;
-using UnityEditor.PackageManager.UI.Internal;
 using UnityEngine;
 using UnityEngine.Bindings;
 
 namespace UnityEditor.Build.Profile;
 
 [VisibleToOtherModules]
-internal class PlatformPackageServiceInfoProvider
+internal class PlatformPackageServiceInfoProvider : IPackageServiceInfoProvider
 {
     public event Action OnPackageInfoUpdated;
     public event Action OnUserLoginStateChanged;
@@ -27,29 +27,35 @@ internal class PlatformPackageServiceInfoProvider
         Timeout
     }
 
-    List<PlatformPackageServiceInfo> m_PackageServiceInfoList = new List<PlatformPackageServiceInfo>();
-    readonly HttpClientFactory m_HttpClientFactory = new HttpClientFactory();
-    readonly DateTimeProxy m_DateTimeProxy = new DateTimeProxy();
-    readonly UnityConnectProxy m_UnityConnectProxy = new UnityConnectProxy();
-    readonly UnityOAuthProxy m_UnityOAuthProxy = new UnityOAuthProxy();
-    readonly AssetStoreOAuth m_AssetStoreOAuth;
+    readonly Dictionary<string, PlatformPackageServiceInfo> m_PackageServiceInfos = new Dictionary<string, PlatformPackageServiceInfo>();
+
+    /// <summary>
+    /// Product info requests in flight keyed by package name.
+    /// </summary>
+    readonly Dictionary<string, Task<MarketplacePackageInfo>> m_InFlightProductInfo = new Dictionary<string, Task<MarketplacePackageInfo>>();
+
+    /// <summary>
+    /// Claims in flight, keyed by organization and product.
+    /// </summary>
+    readonly Dictionary<string, Task<EntitlementClaimResult>> m_InFlightClaims = new Dictionary<string, Task<EntitlementClaimResult>>();
+
+    Task<string> m_InFlightOrganizationIdWait;
+
+    IMarketplaceEditorApiClient m_ApiClient;
+    IMarketplaceEditorApiClient apiClient => m_ApiClient ??= new MarketplaceEditorApiClient();
 
     public bool isUserLoggedIn => UnityConnect.instance.loggedIn;
     public void ShowLogin() => UnityConnect.instance.ShowLogin();
 
-    string m_Host = string.Empty;
-    string host
-    {
-        get
-        {
-            if (string.IsNullOrEmpty(m_Host))
-                m_Host = m_UnityConnectProxy.GetConfigurationURL(Connect.CloudConfigUrl.CloudPackagesApi);
-            return m_Host;
-        }
-    }
-
     const int k_TimeoutSeconds = 30;
-    const string k_ProductInfoUri = "/-/api/product";
+
+    /// <summary>
+    /// Must stay below BuildProfileEntitlementClaimInfo.k_AttemptTimeoutSeconds. The wait runs inside a
+    /// claim attempt, so if the attempt times out first the caller sees a cancellation instead of
+    /// NoOrganizationIdException, and the stage reports a timeout rather than the missing organization.
+    /// </summary>
+    const int k_OrganizationIdTimeoutSeconds = 20;
+    const int k_OrganizationIdPollMilliseconds = 250;
 
     class PlatformPackageServiceInfo
     {
@@ -57,6 +63,7 @@ internal class PlatformPackageServiceInfoProvider
         public long productId { get; }
         public PackageManager.PackageInfo packageInfo { get; }
         public Texture thumbnail;
+        public MarketplacePackageInfo marketplaceInfo;
 
         public PlatformPackageServiceInfo(PackageManager.PackageInfo packageInfo)
         {
@@ -78,14 +85,13 @@ internal class PlatformPackageServiceInfoProvider
 
     internal PlatformPackageServiceInfoProvider()
     {
-        m_AssetStoreOAuth = new AssetStoreOAuth(m_DateTimeProxy, m_UnityConnectProxy, m_UnityOAuthProxy, m_HttpClientFactory);
         UnityConnect.instance.StateChanged += OnStateChanged;
     }
 
     public void Dispose()
     {
         UnityConnect.instance.StateChanged -= OnStateChanged;
-        foreach (var packageInfo in m_PackageServiceInfoList)
+        foreach (var packageInfo in m_PackageServiceInfos.Values)
             packageInfo.Dispose();
     }
 
@@ -108,17 +114,35 @@ internal class PlatformPackageServiceInfoProvider
         return true;
     }
 
+    public bool HasPackageInfo(string packageName) => GetPackageInfo(packageName) != null;
+
     public PackageManager.PackageInfo GetPackageInfo(string packageName)
     {
-        var packageServiceInfo = m_PackageServiceInfoList.Find(p => p.name == packageName);
-        return packageServiceInfo?.packageInfo;
+        return m_PackageServiceInfos.TryGetValue(packageName, out var packageServiceInfo) ? packageServiceInfo.packageInfo : null;
     }
 
     public Texture GetThumbnail(string packageName)
     {
-        var packageServiceInfo = m_PackageServiceInfoList.Find(p => p.name == packageName);
-        return packageServiceInfo?.thumbnail;
+        return m_PackageServiceInfos.TryGetValue(packageName, out var packageServiceInfo) ? packageServiceInfo.thumbnail : null;
     }
+
+    public string GetMarketplaceProductId(string packageName) => GetMarketplaceInfo(packageName)?.productId;
+
+    /// <summary>
+    /// Whether the user already holds the entitlement for the package. Null means unknown, which is not the same
+    /// as not entitled and must not be collapsed into it.
+    /// </summary>
+    public bool? HasMarketplaceEntitlement(string packageName) => GetMarketplaceInfo(packageName)?.entitlement?.hasEntitlement;
+
+    /// <summary>
+    /// URL of the license the package is distributed under. Null when the product names no license.
+    /// </summary>
+    public string GetLicenseUrl(string packageName) => GetMarketplaceInfo(packageName)?.license?.url;
+
+    /// <summary>
+    /// Short name to label <see cref="GetLicenseUrl"/> with.
+    /// </summary>
+    public string GetLicenseName(string packageName) => GetMarketplaceInfo(packageName)?.license?.name;
 
     /// <summary>
     /// True when the package uses the Enterprise licensing model, meaning access is granted by an entitlement.
@@ -126,6 +150,128 @@ internal class PlatformPackageServiceInfoProvider
     public bool IsEnterprisePackage(string packageName)
     {
         return GetPackageInfo(packageName)?.entitlements?.licensingModel == EntitlementLicensingModel.Enterprise;
+    }
+
+    /// <summary>
+    /// True when the package uses the Asset Store licensing model, meaning access depends on an
+    /// entitlement the user can claim.
+    /// </summary>
+    public bool IsAssetStorePackage(string packageName)
+    {
+        return GetPackageInfo(packageName)?.entitlements?.licensingModel == EntitlementLicensingModel.AssetStore;
+    }
+
+    public Task<MarketplacePackageInfo> GetOrFetchProductInfoAsync(string packageName)
+    {
+        var resolved = GetMarketplaceInfo(packageName);
+        if (resolved != null)
+            return Task.FromResult(resolved);
+
+        if (m_InFlightProductInfo.TryGetValue(packageName, out var inFlight))
+            return inFlight;
+
+        var request = FetchProductInfoCoreAsync(packageName);
+        if (!request.IsCompleted)
+            m_InFlightProductInfo[packageName] = request;
+
+        return request;
+    }
+
+    public async Task<EntitlementClaimResult> ClaimEntitlementAsync(string productId)
+    {
+        var claimOrganizationId = await GetOrganizationIdAsync();
+        var key = claimOrganizationId + ":" + productId;
+
+        if (m_InFlightClaims.TryGetValue(key, out var inFlight))
+            return await inFlight;
+
+        var request = ClaimEntitlementCoreAsync(key, claimOrganizationId, productId);
+        if (!request.IsCompleted)
+            m_InFlightClaims[key] = request;
+
+        return await request;
+    }
+
+    MarketplacePackageInfo GetMarketplaceInfo(string packageName)
+    {
+        return m_PackageServiceInfos.TryGetValue(packageName, out var packageServiceInfo) ? packageServiceInfo.marketplaceInfo : null;
+    }
+
+    async Task<MarketplacePackageInfo> FetchProductInfoCoreAsync(string packageName)
+    {
+        try
+        {
+            var productInfo = await apiClient.GetPackageInfoAsync(packageName);
+            if (productInfo != null && m_PackageServiceInfos.TryGetValue(packageName, out var packageServiceInfo))
+                packageServiceInfo.marketplaceInfo = productInfo;
+
+            return productInfo;
+        }
+        finally
+        {
+            m_InFlightProductInfo.Remove(packageName);
+        }
+    }
+
+    async Task<EntitlementClaimResult> ClaimEntitlementCoreAsync(string key, string claimOrganizationId, string productId)
+    {
+        try
+        {
+            return await apiClient.ClaimEntitlementAsync(new EntitlementClaimArgs(claimOrganizationId, productId));
+        }
+        finally
+        {
+            m_InFlightClaims.Remove(key);
+        }
+    }
+
+    /// <summary>
+    /// The project-linked organization's Genesis ID, which is what the services gateway expects an
+    /// entitlement to be claimed against. Empty until the project state machine has resolved it.
+    /// </summary>
+    string organizationId => CloudProjectSettings.organizationKey;
+
+    Task<string> GetOrganizationIdAsync()
+    {
+        if (m_InFlightOrganizationIdWait != null)
+            return m_InFlightOrganizationIdWait;
+
+        var request = WaitForOrganizationIdAsync();
+        if (!request.IsCompleted)
+            m_InFlightOrganizationIdWait = request;
+
+        return request;
+    }
+
+    /// <summary>
+    /// Polls until the organization ID resolves or it is clear that none is coming.
+    /// Required for claiming entitlements for <see cref="BuildProfile.CreateBuildProfile"/>
+    /// at project start up and batch mode.
+    /// </summary>
+    async Task<string> WaitForOrganizationIdAsync()
+    {
+        try
+        {
+            var deadline = DateTime.UtcNow + TimeSpan.FromSeconds(k_OrganizationIdTimeoutSeconds);
+            while (true)
+            {
+                var resolved = organizationId;
+                if (!string.IsNullOrEmpty(resolved))
+                    return resolved;
+
+                if (UnityConnect.instance.isUserInfoReady && !UnityConnect.instance.loggedIn)
+                    throw new NoOrganizationIdException("No user is signed in.");
+
+                if (UnityConnect.instance.projectInfo.valid || DateTime.UtcNow >= deadline)
+                    throw new NoOrganizationIdException("The project's organization could not be determined.");
+
+                await Task.Delay(k_OrganizationIdPollMilliseconds);
+            }
+        }
+        finally
+        {
+            m_InFlightOrganizationIdWait = null;
+        }
     }
 
     async void FetchPackageServiceInfo()
@@ -138,11 +284,10 @@ internal class PlatformPackageServiceInfoProvider
             var packageInfo = PackageManager.PackageInfo.FindForPackageName(name);
             if (packageInfo != null)
             {
-                var packageServiceInfo = new PlatformPackageServiceInfo(packageInfo);
-                m_PackageServiceInfoList.Add(packageServiceInfo);
+                var packageServiceInfo = Store(packageInfo);
 
                 if (packageServiceInfo.productId != -1)
-                    packageInfoSearchTasks.Add(FetchThumbnailFromAssetStoreAsync(packageServiceInfo.productId));
+                    packageInfoSearchTasks.Add(FetchProductInfoAsync(packageServiceInfo.name));
             }
             else
                 packageInfoSearchTasks.Add(FetchPackageServiceInfoFromServerAsync(name));
@@ -157,7 +302,7 @@ internal class PlatformPackageServiceInfoProvider
 
         var searchTask = Task.WhenAll(packageInfoSearchTasks);
         var timeoutTask = Task.Delay(TimeSpan.FromSeconds(k_TimeoutSeconds));
-        
+
         var completedTask = await Task.WhenAny(searchTask, timeoutTask);
 
         if (completedTask == timeoutTask)
@@ -205,13 +350,11 @@ internal class PlatformPackageServiceInfoProvider
 
                 try
                 {
-                    var packageInformation = new PlatformPackageServiceInfo(packageInfo);
-                    m_PackageServiceInfoList.Add(packageInformation);
-
+                    var packageInformation = Store(packageInfo);
                     if (packageInformation.productId != -1)
                     {
-                        var thumbnailResult = await FetchThumbnailFromAssetStoreAsync(packageInformation.productId);
-                        if (!thumbnailResult)
+                        var productInfoResult = await FetchProductInfoAsync(packageInformation.name);
+                        if (!productInfoResult)
                         {
                             tcs.SetResult(false);
                             return;
@@ -234,64 +377,39 @@ internal class PlatformPackageServiceInfoProvider
         return tcs.Task;
     }
 
-    Task<bool> FetchThumbnailFromAssetStoreAsync(long productId)
+    async Task<bool> FetchProductInfoAsync(string packageName)
     {
-        var tcs = new TaskCompletionSource<bool>();
-        FetchProductInfoFromAssetStore(productId, async result =>
+        try
         {
-            try
-            {
-                if (result == null || result.ContainsKey("errorMessage"))
-                {
-                    tcs.SetResult(false);
-                    return;
-                }
+            var productInfo = await GetOrFetchProductInfoAsync(packageName);
+            if (productInfo == null || !m_PackageServiceInfos.TryGetValue(packageName, out var packageServiceInfo))
+                return false;
 
-                var imageUrl = GetThumbnailUrlFromProductDetails(result);
-                if (string.IsNullOrEmpty(imageUrl))
-                {
-                    tcs.SetResult(false);
-                    return;
-                }
+            if (string.IsNullOrEmpty(productInfo.thumbnail))
+                return false;
 
-                var image = await DownloadImageByUrlAsync(imageUrl);
-                if (image == null)
-                {
-                    tcs.SetResult(false);
-                    return;
-                }
+            var image = await DownloadImageByUrlAsync(productInfo.thumbnail);
+            if (image == null)
+                return false;
 
-                var packageServiceInfo = m_PackageServiceInfoList.Find(p => p.productId == productId);
-                if (packageServiceInfo == null)
-                {
-                    tcs.SetResult(false);
-                    return;
-                }
-
-                image.hideFlags = HideFlags.HideAndDontSave;
-                packageServiceInfo.thumbnail = image;
-                tcs.SetResult(true);
-            }
-            catch
-            {
-                tcs.SetResult(false);
-            }
-        });
-        return tcs.Task;
+            image.hideFlags = HideFlags.HideAndDontSave;
+            packageServiceInfo.thumbnail = image;
+            return true;
+        }
+        catch
+        {
+            return false;
+        }
     }
 
-    string GetThumbnailUrlFromProductDetails(IDictionary<string, object> productDetail)
+    PlatformPackageServiceInfo Store(PackageManager.PackageInfo packageInfo)
     {
-        if (productDetail == null)
-            return string.Empty;
+        var packageServiceInfo = new PlatformPackageServiceInfo(packageInfo);
+        if (m_PackageServiceInfos.TryGetValue(packageServiceInfo.name, out var existing))
+            existing.Dispose();
 
-        var mainImageDictionary = productDetail.GetDictionary("mainImage");
-        var thumbnailUrl = mainImageDictionary?.GetString("small_v2");
-        if (string.IsNullOrEmpty(thumbnailUrl))
-            return string.Empty;
-
-        thumbnailUrl = thumbnailUrl.Replace("//d2ujflorbtfzji.cloudfront.net/", "//assetstorev1-prd-cdn.unity3d.com/");
-        return "http:" + thumbnailUrl;
+        m_PackageServiceInfos[packageServiceInfo.name] = packageServiceInfo;
+        return packageServiceInfo;
     }
 
     Task<Texture> DownloadImageByUrlAsync(string url)
@@ -304,7 +422,7 @@ internal class PlatformPackageServiceInfoProvider
             return tcs.Task;
         }
 
-        var httpRequest = m_HttpClientFactory.GetASyncHTTPClient(url);
+        var httpRequest = new AsyncHTTPClient(url);
         httpRequest.doneCallback = httpClient =>
         {
             if (httpClient.IsSuccess() && httpClient.texture != null)
@@ -315,34 +433,5 @@ internal class PlatformPackageServiceInfoProvider
         httpRequest.Begin();
 
         return tcs.Task;
-    }
-
-    void FetchProductInfoFromAssetStore(long productId, Action<Dictionary<string, object>> value)
-    {
-        var url = $"{host}{k_ProductInfoUri}/{productId}";
-        var httpRequest = m_HttpClientFactory.GetASyncHTTPClient(url);
-        m_AssetStoreOAuth.FetchAccessToken(
-            token =>
-            {
-                httpRequest.tag = $"GetPlatformPackageProductDetail{productId}";
-                httpRequest.header["Content-Type"] = "application/json";
-                httpRequest.header["Authorization"] = "Bearer " + token.accessToken;
-                httpRequest.doneCallback = request =>
-                {
-                    if (!request.IsSuccess())
-                    {
-                        value?.Invoke(null);
-                        return;
-                    }
-
-                    var parsedResult = m_HttpClientFactory.ParseResponseAsDictionary(request);
-                    value?.Invoke(parsedResult);
-                };
-                httpRequest.Begin();
-            },
-            error =>
-            {
-                value?.Invoke(null);
-            });
     }
 }

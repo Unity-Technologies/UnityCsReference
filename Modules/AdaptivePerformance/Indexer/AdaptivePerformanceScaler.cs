@@ -61,8 +61,9 @@ namespace UnityEngine.AdaptivePerformance
             {
                 switch (IndexerOperationMode)
                 {
-                    case OperationMode.BatteryMode: return m_batteryModeSetting;
-                    default:                        return m_defaultSetting;
+                    case OperationMode.BatteryMode:     return m_batteryModeSetting;
+                    case OperationMode.StableFrameMode: return m_stableFrameModeSetting;
+                    default:                            return m_defaultSetting;
                 }
             }
         }
@@ -225,11 +226,23 @@ namespace UnityEngine.AdaptivePerformance
             set => m_batteryModeSetting = value;
         }
 
+        /// <summary>
+        /// Default settings for this scaler in stable frame mode.
+        /// </summary>
+        public AdaptivePerformanceScalerSettingsBase StableFrameModeSetting
+        {
+            get => m_stableFrameModeSetting;
+            set => m_stableFrameModeSetting = value;
+        }
+
         [SerializeField]
         AdaptivePerformanceScalerSettingsBase m_defaultSetting = new AdaptivePerformanceScalerSettingsBase();
 
         [SerializeField]
         AdaptivePerformanceScalerSettingsBase m_batteryModeSetting = new AdaptivePerformanceScalerSettingsBase();
+
+        [SerializeField]
+        AdaptivePerformanceScalerSettingsBase m_stableFrameModeSetting = new AdaptivePerformanceScalerSettingsBase();
 
 
         /// <summary>
@@ -432,11 +445,21 @@ namespace UnityEngine.AdaptivePerformance
         }
 
         /// <summary>
+        /// Apply stable frame mode settings to the scaler. This allows scalers to have separate configurations for stable frame operation mode.
+        /// This is used by Scaler Profiles to apply stable frame mode settings.
+        /// </summary>
+        /// <param name="stableFrameModeSetting">The settings to apply to the scaler for stable frame mode.</param>
+        public void ApplyStableFrameModeSetting(AdaptivePerformanceScalerSettingsBase stableFrameModeSetting)
+        {
+            m_stableFrameModeSetting = stableFrameModeSetting;
+        }
+
+        /// <summary>
         /// Hydrates this scaler from a profile setting in one shot: installs the
-        /// per-mode override for every mode (default / battery). Enabled state rides
-        /// inside each mode's settings struct, so applying the per-mode structs is
-        /// sufficient — <see cref="Enabled"/> reads from the active struct via
-        /// <see cref="ActiveSetting"/>.
+        /// per-mode override for every mode (default / battery / stable frame).
+        /// Enabled state rides inside each mode's settings struct, so applying the
+        /// per-mode structs is sufficient — <see cref="Enabled"/> reads from the
+        /// active struct via <see cref="ActiveSetting"/>.
         /// Intended for subclasses to call from Awake with their own typed setting,
         /// e.g. ApplyProfileSettings(m_Settings.scalerSettings.AdaptivePhysics).
         /// No-op if setting is null.
@@ -452,6 +475,9 @@ namespace UnityEngine.AdaptivePerformance
             var battery = setting.GetBatteryModeSetting();
             if (battery != null)
                 ApplyBatteryModeSetting(battery);
+            var stableFrame = setting.GetStableFrameModeSetting();
+            if (stableFrame != null)
+                ApplyStableFrameModeSetting(stableFrame);
         }
 
         /// <summary>

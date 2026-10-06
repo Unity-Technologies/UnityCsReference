@@ -103,7 +103,7 @@ namespace UnityEditor
         Aspect16by9 = 4,
     }
 
-    partial class PlayerSettings
+    public partial class PlayerSettings
     {
         // deprecated since forever
         [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
@@ -143,7 +143,7 @@ namespace UnityEditor
         public static void SetAspectRatio(AspectRatio aspectRatio, bool enable) { }
     }
 
-    partial class PlayerSettings
+    public partial class PlayerSettings
     {
         [Obsolete("Use PlayerSettings.Android.keystorePass instead (UnityUpgradable) -> UnityEditor.PlayerSettings/Android.keystorePass", true)]
         [NoAutoStaticsCleanup]
@@ -152,7 +152,7 @@ namespace UnityEditor
         [NoAutoStaticsCleanup]
         public static string keyaliasPass { get; set; }
 
-        partial class Android
+        public partial class Android
         {
             // deprecated in 2018.1
             [Obsolete("Use targetArchitectures instead. (UnityUpgradable) -> targetArchitectures", false)]
@@ -187,7 +187,7 @@ namespace UnityEditor
             }
         }
 
-        partial class iOS
+        public partial class iOS
         {
             // deprecated in 5.0
             [Obsolete("exitOnSuspend is deprecated, use appInBackgroundBehavior", false)]

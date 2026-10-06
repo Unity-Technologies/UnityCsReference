@@ -134,7 +134,7 @@ namespace UnityEditor.Build.Profile
 
             BuildProfileModuleUtil.EnsureCustomBuildProfileFolderExists();
             string assetPath = BuildProfileModuleUtil.GetProfilePathWithProvidedName(platformId, profileName);
-            var packagesToInstall = BuildTargetDiscovery.GetAllMissingRequiredPlatformPackageNames(platformId);
+            var packagesToInstall = BuildTargetDiscovery.GetAllMissingRequiredPlatformPackageIdentifiers(platformId);
 
             return CreateInstance(platformId, assetPath, -1, packagesToInstall, onProfileReady);
         }
@@ -146,7 +146,7 @@ namespace UnityEditor.Build.Profile
         [VisibleToOtherModules("UnityEditor.BuildProfileModule")]
         internal static BuildProfile CreateInstance(GUID platformId, string assetPath)
         {
-            return CreateInstance(platformId, assetPath, -1, Array.Empty<string>());
+            return CreateInstance(platformId, assetPath, -1, Array.Empty<BuildTargetDiscovery.PlatformPackageIdentifier>());
         }
 
         [VisibleToOtherModules("UnityEditor.BuildProfileModule")]
@@ -154,7 +154,7 @@ namespace UnityEditor.Build.Profile
             GUID platformId,
             string assetPath,
             int preconfiguredSettingsVariant,
-            string[] packagesToAdd,
+            BuildTargetDiscovery.PlatformPackageIdentifier[] packagesToAdd,
             UnityAction<BuildProfile> onProfileReady = null,
             GUID selectedPlatformGuid = default)
         {
@@ -243,6 +243,28 @@ namespace UnityEditor.Build.Profile
                 platformBuildProfile = buildProfileExtension.CreateBuildProfilePlatformSettings();
                 EditorUtility.SetDirty(this);
             }
+            else if (ShouldWarnAboutMissingPlatformSupport())
+            {
+                var message =
+                    $"[BuildProfile] Could not create platform settings for build profile '{name}': platform " +
+                    $"support for '{BuildProfileModuleUtil.GetClassicPlatformDisplayName(guid)}' is not installed or enabled.";
+                if (BuildTargetDiscovery.BuildPlatformIsDerivedPlatform(guid))
+                    message += $" The profile falls back to its base platform '{buildTarget}'.";
+                Debug.LogWarning(message);
+            }
+        }
+
+        /// <summary>
+        /// TryCreatePlatformSettings runs from OnEnable for every profile that is loaded, and leaves
+        /// platformBuildProfile null whenever support is missing, so an unguarded warning repeats on every
+        /// enable. Report only the active profile, and only once its initialization has settled.
+        /// </summary>
+        bool ShouldWarnAboutMissingPlatformSupport()
+        {
+            if (BuildProfileContext.instance.TryGetInitializationInfo(this, out var initialization) && !initialization.IsDone())
+                return false;
+
+            return BuildProfileContext.activeProfile == this;
         }
     }
 }

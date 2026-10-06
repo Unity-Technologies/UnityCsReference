@@ -23,7 +23,7 @@ namespace UnityEngine.SceneManagement
         extern private static string GetPathInternal(SceneHandle sceneHandle);
 
         [StaticAccessor("SceneBindings", StaticAccessorType.DoubleColon)]
-        extern private static void SetPathAndGUIDInternal(SceneHandle sceneHandle, string path, string guid);
+        extern private static void SetPathAndGUIDInternal(SceneHandle sceneHandle, string path, GUID guid);
 
         [StaticAccessor("SceneBindings", StaticAccessorType.DoubleColon)]
         extern private static string GetNameInternal(SceneHandle sceneHandle);
@@ -33,7 +33,7 @@ namespace UnityEngine.SceneManagement
         extern private static void SetNameInternal(SceneHandle sceneHandle, string name);
 
         [StaticAccessor("SceneBindings", StaticAccessorType.DoubleColon)]
-        extern private static string GetGUIDInternal(SceneHandle sceneHandle);
+        extern private static GUID GetGUIDInternal(SceneHandle sceneHandle);
 
         [StaticAccessor("SceneBindings", StaticAccessorType.DoubleColon)]
         extern private static LoadableSceneId GetLoadableSceneIdInternal(SceneHandle sceneHandle);

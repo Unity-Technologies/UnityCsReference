@@ -48,6 +48,31 @@ namespace UnityEngine.UIElements
         [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
 
         internal FilterParameter defaultValue;
+
+        // Code-only (not serialized): default(struct) must mean "no clamp" so declarations without
+        // an explicit range (e.g. deserialized custom definitions) stay unclamped.
+        [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
+        internal bool hasFloatRange;
+
+        [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
+        internal float minFloatValue;
+
+        [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
+        internal float maxFloatValue;
+
+        [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
+        internal float ClampFloat(float value)
+        {
+            if (!hasFloatRange)
+                return value;
+
+            // Mathf.Clamp compares, so NaN passes through both tests unchanged and would reach the
+            // shader; 0 is the neutral value for every ranged parameter. Infinities clamp normally.
+            if (float.IsNaN(value))
+                value = 0.0f;
+
+            return Mathf.Clamp(value, minFloatValue, maxFloatValue);
+        }
     }
 
     /// <summary>
@@ -236,8 +261,13 @@ namespace UnityEngine.UIElements
         /// <summary>Indicates if the shader must return a color in the gamma color space.</summary>
         public bool writesGamma { get; internal set; }
 
-        /// <summary>The DPI scaling factor of the render tree.</summary>
+        /// <summary>The number of pixels per point in the texture being filtered. Multiply point-based parameter values by this factor to convert them to pixels.</summary>
         public float scaledPixelsPerPoint { get; internal set; }
+
+        // Per-axis variant (geometric mean = scaledPixelsPerPoint): the backdrop path can carry a
+        // non-uniform content scale, and axis-bound parameters (drop-shadow offsets, per-pass blur
+        // sigmas) must not route through the scalar approximation.
+        internal Vector2 perAxisScaledPixelsPerPoint { get; set; }
     }
 
     /// <summary>

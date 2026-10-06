@@ -15,10 +15,10 @@ namespace UnityEditor.SpeedTree.Importer
     {
         private static class Styles
         {
-            public static readonly GUIContent ApplyAndGenerate = EditorGUIUtility.TrTextContent("Apply & Generate Materials", "Apply current importer settings and generate materials with new settings.");
-            public static readonly GUIContent Regenerate = EditorGUIUtility.TrTextContent("Regenerate Materials", "Regenerate materials from the current importer settings.");
-            public static readonly GUIContent RegenerateRemapped = EditorGUIUtility.TrTextContent("Regenerate Materials", "Regenerate the remapped materials from the current import settings.");
-            public static readonly GUIContent ApplyAndGenerateRemapped = EditorGUIUtility.TrTextContent("Apply & Generate Materials", "Apply current importer settings and regenerate the remapped materials with new settings.");
+            public static readonly GUIContent ApplyAndGenerate = L10n.TextContent("Apply & Generate Materials", "Apply current importer settings and generate materials with new settings.", null, null);
+            public static readonly GUIContent Regenerate = L10n.TextContent("Regenerate Materials", "Regenerate materials from the current importer settings.", null, null);
+            public static readonly GUIContent RegenerateRemapped = L10n.TextContent("Regenerate Materials", "Regenerate the remapped materials from the current import settings.", null, null);
+            public static readonly GUIContent ApplyAndGenerateRemapped = L10n.TextContent("Apply & Generate Materials", "Apply current importer settings and regenerate the remapped materials with new settings.", null, null);
 
             public static readonly string ModelTabName = "Model";
             public static readonly string MaterialsTabName = "Materials";

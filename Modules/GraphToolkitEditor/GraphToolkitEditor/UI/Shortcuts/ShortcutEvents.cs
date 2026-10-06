@@ -212,6 +212,24 @@ namespace Unity.GraphToolkit.Editor
     }
 
     /// <summary>
+    /// The binding that starts a transition from anywhere on a state.
+    /// </summary>
+    /// <remarks>
+    /// This is bound to a mouse button rather than a key: it names the click that starts a transition,
+    /// so that the binding shows up in the menu and can be rebound like any other shortcut. The
+    /// manipulator reads the binding and acts on the mouse event itself, since it needs the press
+    /// position and the drag that follows, so no shortcut event is ever dispatched for it.
+    /// </remarks>
+    [ToolShortcutEvent(null, id, k_KeyCode, k_Modifiers)]
+    [UnityRestricted]
+    internal class ShortcutCreateTransitionEvent : ShortcutEventBase<ShortcutCreateTransitionEvent>
+    {
+        public const string id = "Create Transition";
+        const KeyCode k_KeyCode = KeyCode.Mouse0;
+        const ShortcutModifiers k_Modifiers = ShortcutModifiers.Shift;
+    }
+
+    /// <summary>
     /// An event sent by the Toggle Node Collapse shortcut.
     /// </summary>
     [ToolShortcutEvent(null, id, k_KeyCode, k_Modifiers)]

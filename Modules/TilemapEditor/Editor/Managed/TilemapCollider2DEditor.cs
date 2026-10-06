@@ -17,12 +17,12 @@ namespace UnityEditor
 
         private new static class Styles
         {
-            public static readonly GUIContent maximumTileChangeCountLabel = EditorGUIUtility.TrTextContent("Max Tile Change Count"
+            public static readonly GUIContent maximumTileChangeCountLabel = L10n.TextContent("Max Tile Change Count"
                 , "Maximum number of Tile Changes accumulated before doing a full collider rebuild instead of an incremental rebuild. "
-                + "Change this if incremental rebuilds are slow for the number of Tile Changes accumulated.");
-            public static readonly GUIContent extrusionFactorLabel = EditorGUIUtility.TrTextContent("Extrusion Factor"
+                + "Change this if incremental rebuilds are slow for the number of Tile Changes accumulated.", null, null);
+            public static readonly GUIContent extrusionFactorLabel = L10n.TextContent("Extrusion Factor"
                 , "Extrudes collider shape of each Tile by this amount for helping with compositing fine gaps between "
-                + "neighboring Tile's collider shape when using a CompositeCollider2D. This is in Unity world-space units.");
+                + "neighboring Tile's collider shape when using a CompositeCollider2D. This is in Unity world-space units.", null, null);
         }
 
         public override void OnEnable()

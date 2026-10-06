@@ -21,7 +21,7 @@ namespace Unity.Localization.Providers;
 /// guid-address to path alias with <see cref="AddAlias(string,string)"/> so a guid reference still resolves.
 /// </remarks>
 /// <example>
-/// <para>Load an asset from a Resources folder by path.</para>
+/// Load an asset from a Resources folder by path.
 /// <code source="../../../../Modules/LocalizationRuntime/Tests/UTFTests/Localization.Samples/Providers/ResourceFolderProviderOverviewExample.cs"/>
 /// </example>
 /// <seealso cref="IAssetProvider"/>
@@ -47,7 +47,7 @@ public sealed class ResourceFolderProvider : IAsyncAssetProvider, ISynchronousAs
     /// <param name="address">The address callers request through an <see cref="AssetKey"/>, for example a table guid address.</param>
     /// <param name="path">The <c>Resources</c> path the address resolves to.</param>
     /// <example>
-    /// <para>Alias a guid address to a Resources path, then load through the alias.</para>
+    /// Alias a guid address to a Resources path, then load through the alias.
     /// <code source="../../../../Modules/LocalizationRuntime/Tests/UTFTests/Localization.Samples/Providers/ResourceFolderProviderAddAliasExample.cs"/>
     /// </example>
     public void AddAlias(string address, string path)
@@ -69,7 +69,7 @@ public sealed class ResourceFolderProvider : IAsyncAssetProvider, ISynchronousAs
     /// <param name="address">The address to clear.</param>
     /// <returns><c>true</c> if an alias was removed; otherwise, <c>false</c>.</returns>
     /// <example>
-    /// <para>Remove an alias that was registered earlier.</para>
+    /// Remove an alias that was registered earlier.
     /// <code source="../../../../Modules/LocalizationRuntime/Tests/UTFTests/Localization.Samples/Providers/ResourceFolderProviderRemoveExample.cs"/>
     /// </example>
     public bool Remove(string address)
@@ -141,7 +141,7 @@ public sealed class ResourceFolderProvider : IAsyncAssetProvider, ISynchronousAs
     /// <param name="cancellationToken">A token that cancels the load.</param>
     /// <returns>The loaded asset, or <see langword="null"/> when nothing at the path matches.</returns>
     /// <example>
-    /// <para>Load a sprite from a Resources folder.</para>
+    /// Load a sprite from a Resources folder.
     /// <code source="../../../../Modules/LocalizationRuntime/Tests/UTFTests/Localization.Samples/Providers/ResourceFolderProviderLoadAssetGenericExample.cs"/>
     /// </example>
     public async Awaitable<T> LoadAssetAsync<T>(AssetKey key, CancellationToken cancellationToken) where T : Object
@@ -189,7 +189,7 @@ public sealed class ResourceFolderProvider : IAsyncAssetProvider, ISynchronousAs
     /// </remarks>
     /// <param name="asset">The asset to unload.</param>
     /// <example>
-    /// <para>Release a loaded asset once it is no longer needed.</para>
+    /// Release a loaded asset once it is no longer needed.
     /// <code source="../../../../Modules/LocalizationRuntime/Tests/UTFTests/Localization.Samples/Providers/ResourceFolderProviderReleaseExample.cs"/>
     /// </example>
     public void Release(Object asset) => ResourceRelease.Unload(asset);

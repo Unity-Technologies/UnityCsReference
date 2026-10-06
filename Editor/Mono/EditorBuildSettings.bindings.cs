@@ -77,6 +77,7 @@ namespace UnityEditor
     [NativeHeader("Editor/Src/EditorBuildSettings.h")]
     public partial class EditorBuildSettings : UnityEngine.Object
     {
+        internal EditorBuildSettings(global::UnityEngine.EntityId id) : base(id) {}
         private EditorBuildSettings() {}
         [AutoStaticsCleanupOnCodeReload]
         public static event Action sceneListChanged;

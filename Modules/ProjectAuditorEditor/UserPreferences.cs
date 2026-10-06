@@ -23,7 +23,6 @@ namespace Unity.ProjectAuditor.Editor
         ProjectSettings = 1 << 1,
         Assets = 1 << 2,
         Shaders = 1 << 3,
-        Build = 1 << 4,
         GameObjects = 1 << 5,
 
         // this is just helper enum to display All instead of Every
@@ -39,21 +38,21 @@ namespace Unity.ProjectAuditor.Editor
 
         private class Styles
         {
-            public static readonly GUIContent ProjectAreaSelection = EditorGUIUtility.TrTextContent("Project Areas", "Select project areas to analyze.");
-            public static readonly GUIContent Analysis = EditorGUIUtility.TrTextContent("Analysis");
-            public static readonly GUIContent PlatformSelection = EditorGUIUtility.TrTextContent("Platform", "Select the target platform.");
-            public static readonly GUIContent CodeAnalysisFlagsSelection = EditorGUIUtility.TrTextContent("Code Analysis Areas", "Select which code Project Auditor analyzes.");
-            public static readonly GUIContent CodeOwnersSelection = EditorGUIUtility.TrTextContent("Code Owners", "Select whose code Project Auditor analyzes.");
-            public static readonly GUIContent LogTimingsInfo = EditorGUIUtility.TrTextContent("Log timing information");
-            public static readonly GUIContent Build = EditorGUIUtility.TrTextContent("Build");
-            public static readonly GUIContent AfterBuild = EditorGUIUtility.TrTextContent("Log number of issues after Build", "Enabling this option will mean that after running a build, Project Auditor will analyze the project and output the total number of issues found to the console.");
-            public static readonly GUIContent FailBuild = EditorGUIUtility.TrTextContent("Log issues as Errors", "Enable this option to output the issues to the Console as Errors (rather than Info).");
-            public static readonly GUIContent Report = EditorGUIUtility.TrTextContent("Report");
-            public static readonly GUIContent PrettifyJSONOutput = EditorGUIUtility.TrTextContent("Prettify saved .projectauditor files");
-            public static readonly GUIContent UseBuildSettings = EditorGUIUtility.TrTextContent("Use Build Settings");
-            public static readonly GUIContent SuppressedDiagnostics = EditorGUIUtility.TrTextContent("Suppressed Issues", "A comma- or semicolon-delimited list of issue IDs to exclude from analysis. Use the search button to add/browse IDs from the list of known issues.");
-            public static readonly GUIContent Manage = EditorGUIUtility.TrTextContent("Manage", "Open in Search");
-            public static readonly GUIContent ManageDisabled = EditorGUIUtility.TrTextContent("Manage", "Open the Project Auditor window to enable browsing.");
+            public static readonly GUIContent ProjectAreaSelection = L10n.TextContent("Project Areas", "Select project areas to analyze.", null, null);
+            public static readonly GUIContent Analysis = L10n.TextContent("Analysis", null, null, null);
+            public static readonly GUIContent PlatformSelection = L10n.TextContent("Platform", "Select the target platform.", null, null);
+            public static readonly GUIContent CodeAnalysisFlagsSelection = L10n.TextContent("Code Analysis Areas", "Select which code Project Auditor analyzes.", null, null);
+            public static readonly GUIContent CodeOwnersSelection = L10n.TextContent("Code Owners", "Select whose code Project Auditor analyzes.", null, null);
+            public static readonly GUIContent LogTimingsInfo = L10n.TextContent("Log timing information", null, null, null);
+            public static readonly GUIContent Build = L10n.TextContent("Build", null, null, null);
+            public static readonly GUIContent AfterBuild = L10n.TextContent("Log number of issues after Build", "Enabling this option will mean that after running a build, Project Auditor will analyze the project and output the total number of issues found to the console.", null, null);
+            public static readonly GUIContent FailBuild = L10n.TextContent("Log issues as Errors", "Enable this option to output the issues to the Console as Errors (rather than Info).", null, null);
+            public static readonly GUIContent Report = L10n.TextContent("Report", null, null, null);
+            public static readonly GUIContent PrettifyJSONOutput = L10n.TextContent("Prettify saved .projectauditor files", null, null, null);
+            public static readonly GUIContent UseBuildSettings = L10n.TextContent("Use Build Settings", null, null, null);
+            public static readonly GUIContent SuppressedDiagnostics = L10n.TextContent("Suppressed Issues", "A comma-, semicolon- or space-delimited list of issue IDs to exclude from analysis. Use the search button to add/browse IDs from the list of known issues.", null, null);
+            public static readonly GUIContent Manage = L10n.TextContent("Manage", "Open in Search", null, null);
+            public static readonly GUIContent ManageDisabled = L10n.TextContent("Manage", "Open the Project Auditor window to enable browsing.", null, null);
         }
 
         const bool k_LogTimingsInfoDefault = false;
@@ -63,7 +62,8 @@ namespace Unity.ProjectAuditor.Editor
         const string k_SuppressedDiagnosticsDefault = "";
 
         // Characters accepted as delimiters between issue IDs in the suppressed-issues list.
-        static readonly char[] k_SuppressedDiagnosticsSeparators = { ',', ';' };
+        // Same set the C# compiler accepts in its /nowarn list, so both suppression lists behave alike.
+        static readonly char[] k_SuppressedDiagnosticsSeparators = { ',', ';', ' ' };
 
         [AutoStaticsCleanupOnCodeReload]
         internal static string LoadSavePath = string.Empty;
@@ -213,7 +213,7 @@ namespace Unity.ProjectAuditor.Editor
             s_SupportedBuildTargets = supportedBuildTargets.ToArray();
 
             s_PlatformContents = Array.ConvertAll(s_SupportedBuildTargets,
-                t => (t == BuildTarget.NoTarget) ? Styles.UseBuildSettings : EditorGUIUtility.TrTextContent(Formatting.GetModernBuildTargetName(t)));
+                t => (t == BuildTarget.NoTarget) ? Styles.UseBuildSettings : L10n.TextContent(Formatting.GetModernBuildTargetName(t), null, null, null));
         }
 
         public static EditorWindow OpenPreferencesWindow()
@@ -253,7 +253,8 @@ namespace Unity.ProjectAuditor.Editor
             EditorGUILayout.LabelField(Styles.Analysis, EditorStyles.boldLabel);
             EditorGUI.indentLevel++;
 
-            SharedPreferencesGUI();
+            ProjectAreasPreferencesGUI();
+            SharedPreferencesGUI(ProjectAreasToAnalyze);
 
             GUILayout.Space(10f);
 
@@ -288,10 +289,13 @@ namespace Unity.ProjectAuditor.Editor
             GUILayout.Space(10f);
         }
 
-        internal static void SharedPreferencesGUI()
+        internal static void ProjectAreasPreferencesGUI()
         {
             ProjectAreasToAnalyze.Set((ProjectAreaFlags)EditorGUILayout.EnumFlagsField(Styles.ProjectAreaSelection, ProjectAreasToAnalyze, GUILayout.ExpandWidth(true)));
+        }
 
+        internal static void SharedPreferencesGUI(ProjectAreaFlags projectAreasToAnalyze)
+        {
             var selectedTarget = Array.IndexOf(s_SupportedBuildTargets, AnalysisTargetPlatform);
 
             // AnalysisTargetPlatform is not supported in this Unity Editor. Perhaps it was selected in a different Editor version.
@@ -304,7 +308,7 @@ namespace Unity.ProjectAuditor.Editor
             selectedTarget = EditorGUILayout.Popup(Styles.PlatformSelection, selectedTarget, s_PlatformContents);
             AnalysisTargetPlatform.Set(s_SupportedBuildTargets[selectedTarget]);
 
-            using (new EditorGUI.DisabledScope((ProjectAreasToAnalyze & ProjectAreaFlags.Code) == 0))
+            using (new EditorGUI.DisabledScope((projectAreasToAnalyze & ProjectAreaFlags.Code) == 0))
             {
                 CodeAnalysisGUI();
             }
@@ -324,15 +328,22 @@ namespace Unity.ProjectAuditor.Editor
         /// </summary>
         public static HashSet<string> BuildSuppressedDiagnosticsSet()
         {
-            var suppressed = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            return new HashSet<string>(ParseSuppressedDiagnostics(), StringComparer.OrdinalIgnoreCase);
+        }
+
+        // Every write to SuppressedDiagnostics must be re-joined from this list, or malformed input survives.
+        static List<string> ParseSuppressedDiagnostics()
+        {
+            var ids = new List<string>();
+            var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
             foreach (var token in ((string)SuppressedDiagnostics).Split(k_SuppressedDiagnosticsSeparators, StringSplitOptions.RemoveEmptyEntries))
             {
                 var id = token.Trim();
-                if (id.Length > 0)
-                    suppressed.Add(id);
+                if (id.Length > 0 && seen.Add(id))
+                    ids.Add(id);
             }
 
-            return suppressed;
+            return ids;
         }
 
         public static void WarnOnInvalidSuppressedDiagnostics(HashSet<string> suppressed)
@@ -365,6 +376,7 @@ namespace Unity.ProjectAuditor.Editor
                 // editor with the SettingsWindow search box (which otherwise copies this field's value into itself).
                 GUI.SetNextControlName("ProjectAuditor.SuppressedDiagnostics");
 
+                RoslynDiagnosticsLibrary.EnsureLoaded();
                 var hasLoadedDescriptors = (DescriptorLibrary.GetAllDescriptors().Count > 0);
                 SuppressedDiagnostics.Set(EditorGUILayout.DelayedTextField(Styles.SuppressedDiagnostics, SuppressedDiagnostics, GUILayout.ExpandWidth(true)));
                 using (new EditorGUI.DisabledScope(!hasLoadedDescriptors))
@@ -397,9 +409,10 @@ namespace Unity.ProjectAuditor.Editor
             if (suppressedDiagnostics.Contains(id))
                 return false; // already suppressed
 
-            string current = SuppressedDiagnostics;
-            var separator = string.IsNullOrEmpty(current.Trim()) ? string.Empty : ", ";
-            SuppressedDiagnostics.Set($"{current.TrimEnd()}{separator}{id}");
+            var ids = ParseSuppressedDiagnostics();
+            ids.Add(id);
+
+            SuppressedDiagnostics.Set(string.Join(", ", ids));
             suppressedDiagnostics.Add(id);
             return true;
         }
@@ -410,13 +423,8 @@ namespace Unity.ProjectAuditor.Editor
             if (!suppressedDiagnostics.Contains(id))
                 return false; // not suppressed
 
-            var kept = new List<string>();
-            foreach (var token in ((string)SuppressedDiagnostics).Split(k_SuppressedDiagnosticsSeparators, StringSplitOptions.RemoveEmptyEntries))
-            {
-                var trimmed = token.Trim();
-                if (trimmed.Length > 0 && !string.Equals(trimmed, id, StringComparison.OrdinalIgnoreCase))
-                    kept.Add(trimmed);
-            }
+            var kept = ParseSuppressedDiagnostics();
+            kept.RemoveAll(existing => string.Equals(existing, id, StringComparison.OrdinalIgnoreCase));
 
             SuppressedDiagnostics.Set(string.Join(", ", kept));
             suppressedDiagnostics.Remove(id);

@@ -21,10 +21,10 @@ internal class ToggleTreeView<T> : TreeView where T : ToggleTreeViewItem, new()
 {
     static class Styles
     {
-        public static readonly GUIContent toggleAll = EditorGUIUtility.TrTextContent("Toggle All");
-        public static readonly GUIContent expandAll = EditorGUIUtility.TrTextContent("Expand All");
-        public static readonly GUIContent collapseAll = EditorGUIUtility.TrTextContent("Collapse All");
-        public static readonly GUIContent toggle = EditorGUIUtility.TrTextContent("", "Maintain Alt/Option key to enable or disable all children");
+        public static readonly GUIContent toggleAll = L10n.TextContent("Toggle All", null, null, null);
+        public static readonly GUIContent expandAll = L10n.TextContent("Expand All", null, null, null);
+        public static readonly GUIContent collapseAll = L10n.TextContent("Collapse All", null, null, null);
+        public static readonly GUIContent toggle = L10n.TextContent("", "Maintain Alt/Option key to enable or disable all children", null, null);
         public static readonly GUIContent filterSelected = new GUIContent(EditorGUIUtility.FindTexture("FilterSelectedOnly"), "Filter selected only");
     }
 

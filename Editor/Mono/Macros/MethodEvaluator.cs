@@ -101,11 +101,7 @@ namespace UnityEditor.Macros
                 return null;
             }
 
-            public Assembly AssemblyResolve(object sender, ResolveEventArgs args)
-            {
-                var simpleName = args.Name.Split(',')[0];
-                return LoadFromSearchDirectories(simpleName);
-            }
+            public Assembly AssemblyResolve(AssemblyName assemblyName) => LoadFromSearchDirectories(assemblyName.Name);
 
 
             public Assembly TypeResolve(object sender, ResolveEventArgs args)
@@ -250,10 +246,9 @@ namespace UnityEditor.Macros
                 // when the test runs in the Unity Editor.
                 // So to fix that we add a TypeResolve handler which will try to find the type in the assemblies in the project itself.
 #pragma warning disable UAC0006 // AppDomain usage - we remove the resolver in finally block
-                AppDomain.CurrentDomain.AssemblyResolve += resolver.AssemblyResolve;
+                CurrentAssemblies.AssemblyResolve += resolver.AssemblyResolve;
                 AppDomain.CurrentDomain.TypeResolve += resolver.TypeResolve;
 #pragma warning restore UAC0006 // AppDomain usage
-
             }
 
             try
@@ -291,7 +286,7 @@ namespace UnityEditor.Macros
                 {
                     // Important touch to not leak the resolvers to Default AssemblyLoadContext.
 #pragma warning disable UAC0006 // AppDomain usage
-                AppDomain.CurrentDomain.AssemblyResolve -= resolver.AssemblyResolve;
+                    CurrentAssemblies.AssemblyResolve -= resolver.AssemblyResolve;
                     AppDomain.CurrentDomain.TypeResolve -= resolver.TypeResolve;
 #pragma warning restore UAC0006 // AppDomain usage
                 }

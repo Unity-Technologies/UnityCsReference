@@ -2,7 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: AudioAuthoring not yet converted
 using UnityEngine;
 using System.Collections.Generic;
 using System.Linq;
@@ -23,9 +22,9 @@ namespace UnityEditor
 
         class Styles
         {
-            public GUIContent starIcon = EditorGUIUtility.TrIconContent("Favorite", "Start snapshot");
-            public GUIContent header = EditorGUIUtility.TrTextContent("Snapshots", "A snapshot is a set of values for all parameters in the mixer. When using the mixer, you modify parameters in the selected snapshot. Blend between multiple snapshots at runtime.");
-            public GUIContent addButton = EditorGUIUtility.TrIconContent("CreateAddNew");
+            public GUIContent starIcon = L10n.IconContent("Favorite", "Start snapshot", null);
+            public GUIContent header = L10n.TextContent("Snapshots", "A snapshot is a set of values for all parameters in the mixer. When using the mixer, you modify parameters in the selected snapshot. Blend between multiple snapshots at runtime.", null, null);
+            public GUIContent addButton = L10n.IconContent("CreateAddNew", null, null);
             public Texture2D snapshotsIcon = EditorGUIUtility.FindTexture(typeof(UnityEngine.Audio.AudioMixerSnapshot));
         }
         [NoAutoStaticsCleanup] // Lazy GUIContent/Texture2D style cache rebuilt on demand via null check; assets survive reload, safe to persist.
@@ -291,11 +290,11 @@ namespace UnityEditor
             {
                 var menu = new GenericMenu();
                 data input = new data() { snapshot = snapshot, list = list };
-                menu.AddItem(EditorGUIUtility.TrTextContent("Set as start Snapshot"), false, SetAsStartupSnapshot, input);
+                menu.AddItem(L10n.TextContent("Set as start Snapshot", null, null, null), false, SetAsStartupSnapshot, input);
                 menu.AddSeparator("");
-                menu.AddItem(EditorGUIUtility.TrTextContent("Rename"), false, Rename, input);
-                menu.AddItem(EditorGUIUtility.TrTextContent("Duplicate"), false, Duplicate, input);
-                menu.AddItem(EditorGUIUtility.TrTextContent("Delete"), false, Delete, input);
+                menu.AddItem(L10n.TextContent("Rename", null, null, null), false, Rename, input);
+                menu.AddItem(L10n.TextContent("Duplicate", null, null, null), false, Duplicate, input);
+                menu.AddItem(L10n.TextContent("Delete", null, null, null), false, Delete, input);
 
                 menu.DropDown(buttonRect);
             }
@@ -331,4 +330,3 @@ namespace UnityEditor
         }
     }
 }
-#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

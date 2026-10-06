@@ -40,6 +40,8 @@ namespace UnityEngine
     [NativeHeader("Runtime/Graphics/Mesh/Mesh.h")]
     public partial class MeshCollider : Collider
     {
+        internal MeshCollider(global::UnityEngine.EntityId id) : base(id) {}
+        public MeshCollider() {}
         ///<summary>The mesh object used for collision detection.</summary>
         ///<remarks>If prior to setting <see cref="sharedMesh" /> any of the vertices, indices or triangles of the mesh have been changed then the shapes of the MeshCollider will be rebuilt.</remarks>
         ///<example>

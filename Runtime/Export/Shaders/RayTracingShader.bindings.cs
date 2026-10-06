@@ -31,6 +31,7 @@ namespace UnityEngine.Rendering
     [NativeClass("RayTracingShader", PersistentTypeId = 0x313A45A1)]
     public sealed partial class RayTracingShader : Object
     {
+        internal RayTracingShader(global::UnityEngine.EntityId id) : base(id) {}
         public extern float maxRecursionDepth { get; }
 
         [FreeFunction(Name = "RayTracingShaderScripting::SetFloat", HasExplicitThis = true)]

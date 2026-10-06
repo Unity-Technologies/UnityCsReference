@@ -33,6 +33,7 @@ namespace UnityEngine
     [RequireComponent(typeof(Transform))]
     public sealed partial class Camera : Behaviour
     {
+        internal Camera(global::UnityEngine.EntityId id) : base(id) {}
         /// <summary>
         /// The minimum allowed aperture.
         /// </summary>
@@ -127,6 +128,7 @@ namespace UnityEngine
         [Obsolete("PreviewCullingLayer is obsolete. Use scene culling masks instead.", false)]
         internal static int PreviewCullingLayer { get { return 31; } } // Return 31 because this used to be the PreviewCullingLayer stored in kPreviewLayer in Camera.h
 
+        [Obsolete("Camera.useOcclusionCulling is deprecated and will be removed in a future release. Consider migrating to GPU Occlusion Culling where your target platform supports it. #from(6000.7)", false)]
         extern public bool useOcclusionCulling { get; set; }
         extern public Matrix4x4 cullingMatrix { get; set; }
         extern public void ResetCullingMatrix();

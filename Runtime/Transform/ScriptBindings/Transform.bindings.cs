@@ -21,6 +21,7 @@ namespace UnityEngine
     [RequiredByNativeCode]
     public partial class Transform : Component, IEnumerable
     {
+        internal Transform(global::UnityEngine.EntityId id) : base(id) {}
         protected Transform() { }
 
         // The position of the transform in world space.

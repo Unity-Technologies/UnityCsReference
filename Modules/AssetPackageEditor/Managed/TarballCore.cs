@@ -92,8 +92,8 @@ namespace UnityEditor.AssetPackage
         /// </summary>
         /// <param name="fileSize">The size of the file.</param>
         /// <returns>The padding size.</returns>
-        private static int GetTarFilePaddingSize(int fileSize)
-            => 511 - (fileSize + 511) % 512;
+        private static int GetTarFilePaddingSize(long fileSize)
+            => (int)(511 - (fileSize + 511) % 512);
 
         /// <summary>Writes a tar entry (header, contents and padding) to a stream.</summary>
         public static void WriteEntry(Stream stream, string filename, ReadOnlySpan<byte> fileData, long fileModTime)
@@ -103,6 +103,34 @@ namespace UnityEditor.AssetPackage
             stream.Write(header);
             stream.Write(fileData);
             var padding = header[..GetTarFilePaddingSize(fileData.Length)];
+            padding.Clear();
+            stream.Write(padding);
+        }
+
+        /// <summary>Writes a tar entry (header, contents and padding) to a stream, streaming the contents.</summary>
+        /// <remarks>Avoids buffering the file contents in memory, supporting entries up to the tar limit of 8.5 GB.</remarks>
+        public static void WriteEntry(Stream stream, string filename, Stream fileData, long fileSize, long fileModTime)
+        {
+            if (fileSize > ElevenOctalDigitLimit)
+                throw new IOException($"'{filename}' is {fileSize} bytes, exceeding the tar entry limit of {ElevenOctalDigitLimit} bytes");
+
+            Span<byte> header = stackalloc byte[RecordSize];
+            EncodeEntryHeader(header, filename, fileSize, fileModTime);
+            stream.Write(header);
+
+            // Copy exactly fileSize bytes so a file mutated mid-copy cannot silently corrupt the archive
+            Span<byte> buffer = stackalloc byte[4096];
+            long remaining = fileSize;
+            while (remaining > 0)
+            {
+                var read = fileData.Read(buffer[..(int)Math.Min(buffer.Length, remaining)]);
+                if (read == 0)
+                    throw new IOException($"'{filename}' ended after {fileSize - remaining} bytes, expected {fileSize} bytes");
+                stream.Write(buffer[..read]);
+                remaining -= read;
+            }
+
+            var padding = header[..GetTarFilePaddingSize(fileSize)];
             padding.Clear();
             stream.Write(padding);
         }

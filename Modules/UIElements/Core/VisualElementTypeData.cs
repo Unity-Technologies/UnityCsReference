@@ -2,8 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: UIToolkitFramework not yet converted
-#pragma warning disable UAL0010,UAL0011,UAL0012,UAL0013,UAL0014 // AutoStaticsCleanup: UIToolkitFramework not yet converted
 using Unity.Scripting.LifecycleManagement;
 using System;
 using System.Collections.Generic;
@@ -123,6 +121,9 @@ namespace UnityEngine.UIElements
             }
         }
         [AutoStaticsCleanupOnCodeReload]
+        // Per-Type reflection cache: GetOrCreateTypeData below re-creates a missing entry on first use,
+        // so the cache cleared on reload (it must not keep old Type keys alive) refills on demand.
+        [IgnoreForUAL0015("Per-Type reflection cache, re-created on demand by GetOrCreateTypeData")]
         private static Dictionary<Type, TypeData> s_TypeData = new(new TypeReferenceComparer());
 
         [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
@@ -138,5 +139,3 @@ namespace UnityEngine.UIElements
         }
     }
 }
-#pragma warning restore UAL0010,UAL0011,UAL0012,UAL0013,UAL0014
-#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

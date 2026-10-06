@@ -2,7 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: UIToolkitFramework not yet converted
 using System;
 using System.Collections.Generic;
 using Unity.Properties;
@@ -361,6 +360,8 @@ namespace UnityEngine.UIElements
             // Clamp both values
             clampedValue.x = Mathf.Clamp(valueToClamp.x, m_MinLimit, valueToClamp.y);
             clampedValue.y = Mathf.Clamp(valueToClamp.y, valueToClamp.x, m_MaxLimit);
+            clampedValue.x = Mathf.Clamp(clampedValue.x, m_MinLimit, m_MaxLimit);
+            clampedValue.y = Mathf.Clamp(clampedValue.y, clampedValue.x, m_MaxLimit);
             return clampedValue;
         }
 
@@ -676,4 +677,3 @@ namespace UnityEngine.UIElements
         }
     }
 }
-#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

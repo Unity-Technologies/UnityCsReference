@@ -4,6 +4,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Runtime.CompilerServices;
 using UnityEngine.Assertions;
 using UnityEngine.Bindings;
 using UnityEngine.UIElements.Experimental;
@@ -46,11 +47,84 @@ namespace UnityEngine.UIElements
 
     public partial class VisualElement : IStylePropertyAnimations
     {
-        internal bool hasRunningAnimations => styleAnimation.runningAnimationCount > 0;
-        internal bool hasCompletedAnimations => styleAnimation.completedAnimationCount > 0;
+        // Absent until the element runs a style transition.
+        ref VisualElementAnimationComponent animationData
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get
+            {
+                if ((m_Flags & VisualElementFlags.HasAnimationComponent) == 0)
+                    return ref NullComponentRef<VisualElementAnimationComponent>();
 
-        int IStylePropertyAnimations.runningAnimationCount { get; set; }
-        int IStylePropertyAnimations.completedAnimationCount { get; set; }
+                return ref GetComponentRefOrNullRef<VisualElementAnimationComponent>();
+            }
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        ref VisualElementAnimationComponent GetOrAddAnimationData()
+        {
+            ref var data = ref GetOrAddComponent<VisualElementAnimationComponent>();
+            m_Flags |= VisualElementFlags.HasAnimationComponent;
+            return ref data;
+        }
+
+        internal bool hasRunningAnimations
+        {
+            get
+            {
+                ref var data = ref animationData;
+                return !Unsafe.IsNullRef(ref data) && data.runningAnimationCount > 0;
+            }
+        }
+
+        internal bool hasCompletedAnimations
+        {
+            get
+            {
+                ref var data = ref animationData;
+                return !Unsafe.IsNullRef(ref data) && data.completedAnimationCount > 0;
+            }
+        }
+
+        // One lookup for the callers that need "running or completed", instead of two.
+        internal bool hasRunningOrCompletedAnimations
+        {
+            get
+            {
+                ref var data = ref animationData;
+                return !Unsafe.IsNullRef(ref data) && (data.runningAnimationCount > 0 || data.completedAnimationCount > 0);
+            }
+        }
+
+        int IStylePropertyAnimations.runningAnimationCount
+        {
+            get
+            {
+                ref var data = ref animationData;
+                return Unsafe.IsNullRef(ref data) ? 0 : data.runningAnimationCount;
+            }
+            set
+            {
+                if (value == 0 && (m_Flags & VisualElementFlags.HasAnimationComponent) == 0)
+                    return;
+                GetOrAddAnimationData().runningAnimationCount = value;
+            }
+        }
+
+        int IStylePropertyAnimations.completedAnimationCount
+        {
+            get
+            {
+                ref var data = ref animationData;
+                return Unsafe.IsNullRef(ref data) ? 0 : data.completedAnimationCount;
+            }
+            set
+            {
+                if (value == 0 && (m_Flags & VisualElementFlags.HasAnimationComponent) == 0)
+                    return;
+                GetOrAddAnimationData().completedAnimationCount = value;
+            }
+        }
 
         [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
         internal IStylePropertyAnimationSystem GetStylePropertyAnimationSystem()
@@ -174,7 +248,7 @@ namespace UnityEngine.UIElements
 
         void IStylePropertyAnimations.CancelAllAnimations()
         {
-            if (hasRunningAnimations || hasCompletedAnimations)
+            if (hasRunningOrCompletedAnimations)
                 GetStylePropertyAnimationSystem()?.CancelAllAnimations(this);
         }
 
@@ -190,7 +264,7 @@ namespace UnityEngine.UIElements
 
         void IStylePropertyAnimations.GetAllAnimations(List<StylePropertyId> outPropertyIds)
         {
-            if (hasRunningAnimations || hasCompletedAnimations)
+            if (hasRunningOrCompletedAnimations)
                 GetStylePropertyAnimationSystem().GetAllAnimations(this, outPropertyIds);
         }
 

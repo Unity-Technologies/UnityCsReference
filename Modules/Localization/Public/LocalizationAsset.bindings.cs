@@ -17,14 +17,15 @@ namespace UnityEngine
     [MovedFrom("UnityEditor")]
     public sealed class LocalizationAsset : Object
     {
+        internal LocalizationAsset(global::UnityEngine.EntityId id) : base(id) {}
         ///<summary>Creates a new empty LocalizationAsset object.</summary>
         public LocalizationAsset()
         {
-            Internal_CreateInstance(this);
+            SetEntityIdFromConstructor(Internal_CreateInstance());
         }
 
         [FreeFunction("Internal_CreateInstance")]
-        private static extern void Internal_CreateInstance([Writable] LocalizationAsset locAsset);
+        private static extern EntityId Internal_CreateInstance();
 
         ///<summary>Set the localized string for the specified key</summary>
         ///<param name="original">Original string acting as key.</param>

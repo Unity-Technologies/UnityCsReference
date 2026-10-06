@@ -19,7 +19,7 @@ namespace UnityEditor.Build
         internal static BuildPlayerContext ActiveInstance { get; private set; }
 
         ///<summary>The player build options associated with this build.</summary>
-        public BuildPlayerOptions BuildPlayerOptions { get; }
+        public BuildPlayerOptions BuildPlayerOptions { get; private set; }
 
         internal BuildPlayerContext(BuildPlayerOptions buildPlayerOptions)
         {
@@ -54,6 +54,20 @@ namespace UnityEditor.Build
         {
             if (!AdditionalBuildReportDirectories.Contains(directory))
                 AdditionalBuildReportDirectories.Add(directory);
+
+            var options = BuildPlayerOptions;
+            var existingDirectories = options.previousBuildReportDirectories ?? Array.Empty<string>();
+
+            // The build options can already list the directory, either because a previous call added it or because
+            // the build profile/build window prepopulated it. Either way, don't add it a second time.
+            if (Array.IndexOf(existingDirectories, directory) >= 0)
+                return;
+
+            var updatedDirectories = new string[existingDirectories.Length + 1];
+            Array.Copy(existingDirectories, updatedDirectories, existingDirectories.Length);
+            updatedDirectories[existingDirectories.Length] = directory;
+            options.previousBuildReportDirectories = updatedDirectories;
+            BuildPlayerOptions = options;
         }
 
         /// <undoc/>

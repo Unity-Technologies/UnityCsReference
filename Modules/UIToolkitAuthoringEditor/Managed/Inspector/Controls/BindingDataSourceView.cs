@@ -397,7 +397,8 @@ internal partial class BindingDataSourceView : BindableElement
     void UpdateCompleter()
     {
         if (m_DataSourcePathCompleter == null || m_DataSourceObjectField == null || m_DataSourceTypeField == null
-            || m_DataSourcePathField?.Context == null || m_DataSourcePathField?.boundProperty is not { isValid: true })
+            || m_DataSourcePathField?.Context?.element == null
+            || m_DataSourcePathField?.boundProperty is not { isValid: true })
             return;
 
         var context = m_DataSourcePathField.Context;

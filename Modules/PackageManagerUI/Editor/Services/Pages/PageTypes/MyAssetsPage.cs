@@ -45,10 +45,6 @@ namespace UnityEditor.PackageManager.UI.Internal
         public override RefreshOptions refreshOptions => RefreshOptions.Purchased | RefreshOptions.ImportedAssets | RefreshOptions.LocalInfo;
         public override PageCapability capability => PageCapability.RequireNetwork | PageCapability.RequireUserLoggedIn;
 
-        [SerializeField]
-        private PaginatedVisualStateList m_VisualStateList = new();
-        public override IVisualStateList visualStates => m_VisualStateList;
-
         [NonSerialized]
         private IPackageDatabase m_PackageDatabase;
         [NonSerialized]
@@ -115,7 +111,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             if (!changedTypes.AnyFilterValuesChanged())
                 return;
             ListPurchases();
-            ClearAllAndTriggerRebuildEvent();
+            ClearAndTriggerRebuildEvent();
         }
 
         public override void UpdateSupportedFiltersAsync()
@@ -128,7 +124,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         protected override void RefreshListOnSearchTextChange()
         {
             ListPurchases();
-            ClearAllAndTriggerRebuildEvent();
+            ClearAndTriggerRebuildEvent();
         }
 
         private void ListPurchases()
@@ -138,9 +134,9 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_AssetStoreClient.ListPurchases(queryArgs);
         }
 
-        private void ClearAllAndTriggerRebuildEvent()
+        private void ClearAndTriggerRebuildEvent()
         {
-            m_VisualStateList.ClearAll();
+            m_VisualStateList.Clear();
             TriggerListRebuild();
         }
 
@@ -183,7 +179,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             {
                 if (!visualStates.Contains(package.uniqueId))
                 {
-                    m_VisualStateList.AddExtraItem(package.uniqueId);
+                    m_VisualStateList.AddTemporaryItem(package.uniqueId);
                     TriggerOnListUpdate(added: new[] { package.uniqueId });
                 }
                 else
@@ -193,11 +189,11 @@ namespace UnityEditor.PackageManager.UI.Internal
             }
         }
 
-        public override void LoadExtraItems(IEnumerable<string> itemUniqueIds)
+        public override void LoadTemporaryItems(IEnumerable<string> itemUniqueIds)
         {
             var addedItems = new List<string>(itemUniqueIds.Filter(p => !visualStates.Contains(p)));
             foreach (var item in addedItems)
-                m_VisualStateList.AddExtraItem(item);
+                m_VisualStateList.AddTemporaryItem(item);
             TriggerOnListUpdate(added: addedItems);
         }
 
@@ -207,7 +203,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             var isNewItem = !visualStates.Contains(uniqueId);
 
             if (isNewItem)
-                m_VisualStateList.AddExtraItem(productId.ToString());
+                m_VisualStateList.AddTemporaryItem(productId.ToString());
 
             if (!isActive)
                 return;
@@ -245,15 +241,13 @@ namespace UnityEditor.PackageManager.UI.Internal
             if (purchases.startIndex == 0)
             {
                 // override the result if the new list starts from index 0 (meaning it's a refresh)
-                m_VisualStateList.Rebuild(newPackageIds);
-                m_VisualStateList.ClearExtraItems();
-                m_VisualStateList.SetTotal(purchases.total);
+                var numUnloadedItems = purchases.total - newPackageIds.Count;
+                m_VisualStateList.Rebuild(newPackageIds, numUnloadedItems);
             }
             else if (purchases.startIndex == visualStates.countLoaded)
             {
                 // append the result if it is the next page
-                m_VisualStateList.AddRange(newPackageIds);
-                m_VisualStateList.ClearExtraItems();
+                m_VisualStateList.LoadMoreItems(newPackageIds);
             }
             else
             {
@@ -296,7 +290,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             if (!loggedIn)
             {
                 // When users log out, even when we are not on `My Assets` page we should still clear the Asset Store page properly
-                ClearAllAndTriggerRebuildEvent();
+                ClearAndTriggerRebuildEvent();
             }
         }
     }

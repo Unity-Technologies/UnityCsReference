@@ -51,13 +51,7 @@ namespace UnityEditor
 
         public string GetAuthToken()
         {
-            return UnityEditorInternal.InternalEditorUtility.GetAuthToken();
-        }
-
-        [Obsolete("GetLicenseFlags is no longer supported", error: true)]
-        public int[] GetLicenseFlags()
-        {
-            return Array.Empty<int>();
+            return UnityEditor.Licensing.LicensingUtility.GetAuthToken();
         }
 
         public string GetString(string key)

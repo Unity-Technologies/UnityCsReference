@@ -10,6 +10,11 @@ using UnityEngine;
 using UnityEngine.Assertions;
 using UnityEngine.Bindings;
 using UnityEngine.Rendering;
+
+using BindingInfo = UnityEngine.Shaders.BindingInfo;
+using ShaderResourceOptions = UnityEngine.Shaders.ShaderResourceOptions;
+using ShaderResourceType = UnityEngine.Shaders.ShaderResourceType;
+
 using DebuggerDisplayAttribute = System.Diagnostics.DebuggerDisplayAttribute;
 
 namespace UnityEditor
@@ -277,11 +282,14 @@ namespace UnityEditor
         public struct TextureBindingInfo
         {
             public string Name { get; }
-            public int Index { get; }
-            public int SamplerIndex { get; }
+            public BindingInfo Binding { get; }
+            public BindingInfo SamplerBinding { get; }
             public bool Multisampled { get; }
             public int ArraySize { get; }
             public TextureDimension Dim { get; }
+
+            public int Index { get { return (int)Binding.Slot; } }
+            public int SamplerIndex { get { return (int)SamplerBinding.Slot; } }
         }
 
         public struct SpecializationConstantInfo
@@ -299,16 +307,48 @@ namespace UnityEditor
             CombinedTextureSampler,
             Sampler,
             RayTracingAccelerationStructure,
+
+            Unknown
         };
+
+        static ResourceKind ResourceKindFromResourceType(ShaderResourceType type)
+        {
+            switch (type)
+            {
+                case ShaderResourceType.ConstantBuffer:
+                    return ResourceKind.ConstantBuffer;
+                case ShaderResourceType.Buffer:
+                    return ResourceKind.Buffer;
+                case ShaderResourceType.TypedBuffer:
+                    return ResourceKind.TypedBuffer;
+                case ShaderResourceType.Texture:
+                    return ResourceKind.Texture;
+                case ShaderResourceType.CombinedTextureSampler:
+                    return ResourceKind.CombinedTextureSampler;
+                case ShaderResourceType.Sampler:
+                    return ResourceKind.Sampler;
+                case ShaderResourceType.RayTracingAccelerationStructure:
+                    return ResourceKind.RayTracingAccelerationStructure;
+
+                case ShaderResourceType.InputTarget:
+                case ShaderResourceType.SpecializationConstant:
+                case ShaderResourceType.Unknown:
+                    break;
+            }
+            return ResourceKind.Unknown;
+        }
 
         [DebuggerDisplay("{Kind} {Name} {Index} {Writable}")]
         public struct ResourceBindingInfo
         {
             public string Name { get; }
-            public int Index { get; }
-            public int SamplerIndex { get; }
-            public ResourceKind Kind { get; }
-            public bool Writable { get; }
+            public BindingInfo Binding { get; }
+            public BindingInfo SecondaryBinding { get; }
+
+            public int Index { get { return (int)Binding.Slot; } }
+            public int SamplerIndex { get { return (int)SecondaryBinding.Slot; } }
+            public ResourceKind Kind { get { return ResourceKindFromResourceType(Binding.ResourceType); } }
+            public bool Writable { get { return (Binding.ResourceOptions & ShaderResourceOptions.Writable) != 0; } }
         }
     }
 

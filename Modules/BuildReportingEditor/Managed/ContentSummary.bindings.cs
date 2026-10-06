@@ -105,6 +105,7 @@ namespace UnityEditor.Build.Reporting
     [NativeClass("BuildReporting::ContentSummary", PersistentTypeId = 0x13B4CAB2)]
     public sealed class ContentSummary : Object
     {
+        internal ContentSummary(global::UnityEngine.EntityId id) : base(id) {}
         private ContentSummary()
         {
         }

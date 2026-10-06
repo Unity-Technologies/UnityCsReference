@@ -128,7 +128,7 @@ namespace UnityEditor.PackageManager.UI
             images.IsSequenceEqual(null) &&
             m_PreviousImportPaths.IsSequenceEqual(null);
 
-        internal static IReadOnlyCollection<Sample> FindByPackage(PackageInfo packageInfo)
+        internal static IReadOnlyList<Sample> FindByPackage(PackageInfo packageInfo)
         {
             return ServicesContainer.instance.Resolve<ISampleFactory>().ParseSamples(packageInfo);
         }

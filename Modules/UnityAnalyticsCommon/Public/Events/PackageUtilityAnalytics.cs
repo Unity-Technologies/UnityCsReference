@@ -53,15 +53,21 @@ namespace UnityEditor.Analytics
     [UnityEngine.Internal.ExcludeFromDocs]
     class AssetExportAnalytic : UnityEngine.Analytics.AnalyticsEventBase
     {
-        public AssetExportAnalytic() : base("assetExport", 1) { }
+        public AssetExportAnalytic() : base("assetExport", 2) { }
 
         [RequiredByNativeCode]
         public static AssetExportAnalytic CreateAssetExportAnalytic() { return new AssetExportAnalytic(); }
 
         public string package_name;
-        public string error_message;
+        public string export_error_message;
         public int items_count;
         public string[] asset_extensions;
         public bool include_upm_dependencies;
+        public int source;
+        public bool signing_succeeded;
+        public string owner_org_id;
+        public bool has_bypass_entitlement;
+        public bool user_signed_in;
+        public string signature_error_message;
     }
 }

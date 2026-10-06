@@ -21,6 +21,8 @@ namespace UnityEngine
     [NativeClass("StreamingController", PersistentTypeId = 0x5BF715FE)]
     public class StreamingController : Behaviour
     {
+        internal StreamingController(global::UnityEngine.EntityId id) : base(id) {}
+        public StreamingController() {}
         ///<summary>Offset applied to the mipmap level chosen by the texture streaming system for any textures visible from this camera. This Offset can take either a positive or negative value.</summary>
         ///<remarks>When texture streaming is active, Unity loads mipmap levels for textures based on their distance from all active cameras. This bias is added to all textures visible from this camera and allows you to force smaller or larger mipmap levels to be loaded for textures visible from this camera.</remarks>
         extern public float streamingMipmapBias { get; set; }

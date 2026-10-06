@@ -2,12 +2,21 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System;
 using System.Collections.Generic;
 using UnityEngine.UIElements;
 using Unity.Scripting.LifecycleManagement;
 
 namespace Unity.UIToolkit.Editor;
 
+/// <summary>
+/// Hosts the move/resize overlay for the selected element, over the element the canvas actually renders.
+/// </summary>
+/// <remarks>
+/// Same indirection as <see cref="SelectionHandleManager"/>: the selection can name a live scene element while
+/// the canvas shows a preview clone of it, and the overlay has to sit on the clone to land on screen. The
+/// writes it makes go to the backing asset either way, so both faces of the element see them.
+/// </remarks>
 sealed class VisualElementManipulatorOverlayManager
 {
     [NoAutoStaticsCleanup] // overlay pool, safe to persist
@@ -17,14 +26,18 @@ sealed class VisualElementManipulatorOverlayManager
             overlay => overlay.Deactivate());
 
     readonly VisualElement m_Container;
+    readonly Func<VisualElementSelection, VisualElement> m_ResolveTarget;
 
     readonly Dictionary<VisualElementSelection, VisualElementManipulatorOverlay> m_SelectionToOverlay = new();
 
     public float ZoomScale { get; set; } = 1f;
 
-    public VisualElementManipulatorOverlayManager(VisualElement container)
+    public VisualElementManipulatorOverlayManager(
+        VisualElement container,
+        Func<VisualElementSelection, VisualElement> resolveTarget)
     {
         m_Container = container;
+        m_ResolveTarget = resolveTarget;
     }
 
     public void AcquireOverlay(VisualElementSelection selection)
@@ -34,7 +47,7 @@ sealed class VisualElementManipulatorOverlayManager
         var overlay = s_Pool.Get();
         overlay.ZoomScale = ZoomScale;
         m_Container.Add(overlay);
-        overlay.Target = selection.Element;
+        overlay.Target = m_ResolveTarget(selection);
         overlay.IsReadOnly = IsReadOnly(selection);
         overlay.Activate();
 
@@ -55,7 +68,7 @@ sealed class VisualElementManipulatorOverlayManager
     {
         if (!m_SelectionToOverlay.TryGetValue(selection, out var overlay)) return;
         overlay.ZoomScale = ZoomScale;
-        overlay.Target = selection.Element;
+        overlay.Target = m_ResolveTarget(selection);
         overlay.IsReadOnly = IsReadOnly(selection);
         overlay.Activate();
         overlay.UpdateLayout();
@@ -75,7 +88,7 @@ sealed class VisualElementManipulatorOverlayManager
             var overlay = kvp.Value;
             var selection = kvp.Key;
             overlay.ZoomScale = zoomScale;
-            overlay.Target = selection.Element;
+            overlay.Target = m_ResolveTarget(selection);
             overlay.IsReadOnly = IsReadOnly(selection);
             overlay.Activate();
         }

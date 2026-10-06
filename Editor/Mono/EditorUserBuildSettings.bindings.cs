@@ -361,6 +361,7 @@ namespace UnityEditor
     [StaticAccessor("GetEditorUserBuildSettings()", StaticAccessorType.Dot)]
     public partial class EditorUserBuildSettings : Object
     {
+        internal EditorUserBuildSettings(global::UnityEngine.EntityId id) : base(id) {}
         internal const string kSettingArchitecture = "Architecture";
         private EditorUserBuildSettings() {}
 

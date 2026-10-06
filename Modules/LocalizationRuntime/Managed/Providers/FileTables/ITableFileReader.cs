@@ -17,7 +17,7 @@ namespace Unity.Localization.Providers.FileTables;
 /// <see cref="JsonResourceProvider"/> pairs the default <see cref="JsonTableReader"/> for JSON.
 /// </remarks>
 /// <example>
-/// <para>Add a runtime table format by pairing a reader with a provider.</para>
+/// Add a runtime table format by pairing a reader with a provider.
 /// <code source="../../../../../Modules/LocalizationRuntime/Tests/UTFTests/Localization.Samples/Providers/CustomFileTableProviderExample.cs"/>
 /// </example>
 /// <seealso cref="FileTableProvider"/>
@@ -37,7 +37,8 @@ public interface ITableFileReader
     /// Reads a table snapshot from a stream.
     /// </summary>
     /// <remarks>
-    /// The stream is left open for the caller to dispose.
+    /// The stream is left open for the caller to dispose. Throw when the content does not describe a table rather
+    /// than returning an empty snapshot, so the provider reports the file instead of serving a table with no entries.
     /// </remarks>
     /// <param name="stream">The source stream to read from.</param>
     /// <returns>The table snapshot read from the stream.</returns>

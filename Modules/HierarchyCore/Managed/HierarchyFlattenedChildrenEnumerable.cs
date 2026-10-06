@@ -60,7 +60,7 @@ namespace Unity.Hierarchy
             readonly HierarchyFlattenedChildrenEnumerable m_Enumerable;
             readonly int m_End;
             readonly int m_Depth;
-            readonly int m_Version;
+            readonly uint m_Version;
             int m_Current;
 
             internal Enumerator(HierarchyFlattenedChildrenEnumerable enumerable)

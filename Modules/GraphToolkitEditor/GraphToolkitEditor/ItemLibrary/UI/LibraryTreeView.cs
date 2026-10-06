@@ -493,9 +493,26 @@ namespace Unity.GraphToolkit.ItemLibrary.Editor
 
                 if (typeStyle.HasValue)
                 {
+                    iconElement.style.visibility = Visibility.Visible;
                     iconElement.tintColor = typeStyle.Value.color;
-                    if (overrideIcon && typeStyle.Value.icon != null)
-                        iconElement.image = typeStyle.Value.icon;
+                    if (overrideIcon)
+                    {
+                        if (typeStyle.Value.suppressIcon)
+                        {
+                            m_TypeHandleInfos.RemoveUssClasses(GraphElementHelper.iconDataTypeClassPrefix, iconElement, type);
+                            iconElement.style.visibility = Visibility.Hidden;
+                        }
+                        else if (typeStyle.Value.icon != null)
+                        {
+                            iconElement.image = typeStyle.Value.icon;
+                        }
+                        else
+                        {
+                            // Default USS icon with custom color: add the base variable icon class so the
+                            // default icon (Advanced@4x.png) shows via TypeIcons.uss and tintColor tints it.
+                            iconElement.AddToClassList("ge-icon-variable");
+                        }
+                    }
                 }
             }
 

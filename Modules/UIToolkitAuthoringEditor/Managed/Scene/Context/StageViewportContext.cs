@@ -25,6 +25,10 @@ sealed class StageViewportContext : IUIViewportContext
 
     public PanelElement PanelElement => m_Stage ? m_Stage.PanelElement : null;
 
+    // The stage's own panel is what the Hierarchy and the inspector already select into, so there is nothing
+    // for the viewport to resolve through.
+    public VisualElement AuthoritativeRoot => null;
+
     public VisualTreeAsset RootVisualTreeAsset => m_Stage ? m_Stage.Context.RootVisualTreeAsset : null;
 
     public VisualTreeAsset EditedVisualTreeAsset => m_Stage ? m_Stage.EditedVisualTreeAsset : null;
@@ -46,6 +50,11 @@ sealed class StageViewportContext : IUIViewportContext
 
     // Entering the stage is itself the way to author a document.
     public bool AllowsAuthoring => true;
+
+    // The same scope as File > Save: the document together with its style sheets.
+    public bool HasUnsavedChanges => m_Stage && m_Stage.hasUnsavedChanges;
+
+    public bool Save() => m_Stage && m_Stage.Save();
 
     // The stage created the panel when it opened and destroys it when it closes; the viewport only borrows it.
     public void Acquire()
@@ -77,7 +86,7 @@ sealed class StageViewportContext : IUIViewportContext
             var stage = history[i];
             var content = stage.CreateHeaderContent();
             var icon = content.image as Texture2D;
-            var label = content.text;
+            var label = stage.hasUnsavedChanges ? content.text + "*" : content.text;
 
             var isCurrentStage = i == history.Count - 1;
             if (isCurrentStage)

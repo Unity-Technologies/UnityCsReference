@@ -9,7 +9,7 @@ namespace UnityEditor
     [System.Serializable]
     internal class TransformRotationGUI
     {
-        private GUIContent rotationContent = EditorGUIUtility.TrTextContent("Rotation", "The local rotation of this Game Object relative to the parent.");
+        private GUIContent rotationContent = L10n.TextContent("Rotation", "The local rotation of this Game Object relative to the parent.", null, null);
         private const float kQuaternionFloatPrecision = 1e-6f;
 
         EditorGUI.NumberFieldValue[] m_EulerFloats =

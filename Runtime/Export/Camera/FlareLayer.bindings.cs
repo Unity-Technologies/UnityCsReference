@@ -13,5 +13,6 @@ namespace UnityEngine
     public class FlareLayer : Behaviour
     {
         internal FlareLayer() {}
+        internal FlareLayer(global::UnityEngine.EntityId id) : base(id) {}
     }
 }

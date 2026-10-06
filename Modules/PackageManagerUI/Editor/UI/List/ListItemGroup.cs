@@ -24,6 +24,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_Cache = new VisualElementCache(root);
 
             headerCaret.RegisterValueChangedCallback(OnHeaderClicked);
+            headerCaret.tabIndex = -1;
             headerTag.pickingMode = PickingMode.Ignore;
 
             SetGroupName(groupName);

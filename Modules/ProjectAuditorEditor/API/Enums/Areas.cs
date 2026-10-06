@@ -90,6 +90,7 @@ namespace Unity.ProjectAuditor.Editor
     internal static class AreasExtensions
     {
         public static readonly Areas All = Union(Enum.GetValues(typeof(Areas)));
+        internal const Areas AllUpgradeAreas = Areas.Upgrade | Areas.MigrationToCoreCLR | Areas.MigrationToURP;
 
         static Areas Union(Array array)
         {
@@ -120,6 +121,18 @@ namespace Unity.ProjectAuditor.Editor
             return frontendString;
         }
 
+        // The inverse of ToFrontendString: also accepts the enum spelling, and combinations of either
+        internal static bool TryParseFrontendString(string value, out Areas areas)
+        {
+            if (string.Equals(value, "All", StringComparison.OrdinalIgnoreCase))
+            {
+                areas = All;
+                return true;
+            }
+
+            return Enum.TryParse(value.Replace(" ", ""), true, out areas);
+        }
+
         static string BuildFrontendString(Areas areas)
         {
             var sb = new StringBuilder();
@@ -140,11 +153,11 @@ namespace Unity.ProjectAuditor.Editor
                 if (area == Areas.MigrationToCoreCLR)
                     sb.Append("Migration To CoreCLR"); // ToString creates "Core CLR" with an extra space
                 else
-                    sb.Append(area.ToString());
+                    sb.Append(ObjectNames.NicifyVariableName(area.ToString()));
             }
 
             // Fall back on the enum's own formatting for "None", "All", and any undefined flags
-            return ObjectNames.NicifyVariableName(sb.Length > 0 ? sb.ToString() : areas.ToString());
+            return (sb.Length > 0) ? sb.ToString() : ObjectNames.NicifyVariableName(areas.ToString());
         }
 
         static Areas[] GetAlphabeticalAreas()

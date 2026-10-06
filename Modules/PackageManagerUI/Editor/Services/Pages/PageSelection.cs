@@ -11,7 +11,7 @@ using UnityEngine;
 namespace UnityEditor.PackageManager.UI.Internal
 {
     [Serializable]
-    internal class PageSelection : IReadOnlyCollection<string>, ISerializationCallbackReceiver
+    internal class PageSelection : IReadOnlyList<string>, ISerializationCallbackReceiver
     {
         private string[] m_PreviousSelections = Array.Empty<string>();
 
@@ -27,18 +27,15 @@ namespace UnityEditor.PackageManager.UI.Internal
         public string first => m_OrderedSelections.Count > 0 ? m_OrderedSelections[0] : null;
         public string last => m_OrderedSelections.Count > 0 ? m_OrderedSelections[^1] : null;
 
-        public int Count => m_SelectionsLookup.Count;
-
         public bool SetNewSelection(IEnumerable<string> itemUniqueIds)
         {
             m_OrderedSelections.ToArray(ref m_PreviousSelections);
             m_OrderedSelections.Clear();
-            m_OrderedSelections.AddRange(itemUniqueIds);
-            var selectionUpdated = !m_PreviousSelections.IsSequenceEqual(m_OrderedSelections);
-            if (selectionUpdated)
-                m_OrderedSelections.ToHashSet(ref m_SelectionsLookup);
-
-            return selectionUpdated;
+            m_SelectionsLookup.Clear();
+            foreach (var itemUniqueId in itemUniqueIds)
+                if (m_SelectionsLookup.Add(itemUniqueId))
+                    m_OrderedSelections.Add(itemUniqueId);
+            return !m_PreviousSelections.IsSequenceEqual(m_OrderedSelections);
         }
 
         public bool AmendSelection(IEnumerable<string> toAdd, IEnumerable<string> toRemove)
@@ -81,13 +78,13 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_OrderedSelections.ToArray(ref m_PreviousSelections);
             if (!itemSelected)
             {
-                if (m_SelectionsLookup.Add(itemUniqueId))
-                    m_OrderedSelections.Add(itemUniqueId);
+                m_SelectionsLookup.Add(itemUniqueId);
+                m_OrderedSelections.Add(itemUniqueId);
             }
             else
             {
                 m_SelectionsLookup.Remove(itemUniqueId);
-                m_OrderedSelections.RemoveAll(i => i == itemUniqueId);
+                m_OrderedSelections.Remove(itemUniqueId);
             }
             return true;
         }
@@ -107,15 +104,10 @@ namespace UnityEditor.PackageManager.UI.Internal
         }
 
         [ExcludeFromCodeCoverage]
-        public IEnumerator<string> GetEnumerator()
-        {
-            return m_SelectionsLookup.GetEnumerator();
-        }
-
+        public IEnumerator<string> GetEnumerator() => m_OrderedSelections.GetEnumerator();
         [ExcludeFromCodeCoverage]
-        IEnumerator IEnumerable.GetEnumerator()
-        {
-            return m_SelectionsLookup.GetEnumerator();
-        }
+        IEnumerator IEnumerable.GetEnumerator() => m_OrderedSelections.GetEnumerator();
+        public int Count => m_OrderedSelections.Count;
+        public string this[int index] => m_OrderedSelections[index];
     }
 }

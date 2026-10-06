@@ -15,6 +15,8 @@ namespace UnityEngine
     [NativeClass("Unity::SpringJoint", PersistentTypeId = 145)]
     public class SpringJoint : Joint
     {
+        internal SpringJoint(global::UnityEngine.EntityId id) : base(id) {}
+        public SpringJoint() {}
         ///<summary>The spring force used to keep the two objects together.</summary>
         extern public float spring { get; set; }
         ///<summary>The damper force used to dampen the spring force.</summary>

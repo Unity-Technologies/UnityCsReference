@@ -2,7 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: UIToolkitAuthoringFramework not yet converted
 using System;
 using UnityEngine;
 using UnityEditor;
@@ -182,6 +181,14 @@ namespace Unity.UIToolkit.Editor
             var f = m_FilterFunction;
             if (evt.newValue is float floatValue)
             {
+                var declarations = f.GetDefinition()?.parameters;
+                if (declarations != null && paramIndex < declarations.Length)
+                {
+                    float clamped = declarations[paramIndex].ClampFloat(floatValue);
+                    if (clamped != floatValue && field is FloatField floatField)
+                        floatField.SetValueWithoutNotify(clamped);
+                    floatValue = clamped;
+                }
                 f.SetParameter(paramIndex, new FilterParameter(floatValue));
             }
             else if (evt.newValue is Color colorValue)
@@ -193,4 +200,3 @@ namespace Unity.UIToolkit.Editor
         }
     }
 }
-#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

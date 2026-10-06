@@ -8,6 +8,7 @@ using UnityEngine;
 using UnityEngine.Bindings;
 using Object = UnityEngine.Object;
 using UsedByNativeCodeAttribute = UnityEngine.Scripting.UsedByNativeCodeAttribute;
+using UnityEditor.Experimental.AssetImporters.ImportBlocks;
 
 namespace UnityEditor
 {
@@ -428,12 +429,13 @@ namespace UnityEditor
     [NativeHeader("Editor/Src/Animation/HumanTemplate.h")]
     public sealed partial class HumanTemplate : Object
     {
+        internal HumanTemplate(global::UnityEngine.EntityId id) : base(id) {}
         public HumanTemplate()
         {
-            Internal_Create(this);
+            SetEntityIdFromConstructor(Internal_Create());
         }
 
-        extern private static void Internal_Create([Writable] HumanTemplate self);
+        extern private static EntityId Internal_Create();
 
         extern public void Insert(string name, string templateName);
 
@@ -460,8 +462,27 @@ namespace UnityEditor
     [NativeHeader("Modules/AssetPipelineEditor/Public/ModelImporting/ModelImporter.bindings.h")]
     [global::UnityEngine.NativeClass("ModelImporter", PersistentTypeId = 1040)]
     [NativeHeader("Modules/Animation/ScriptBindings/AvatarBuilder.bindings.h")]
-    public partial class ModelImporter : AssetImporter
+    [UnityEngine.ExtensionOfNativeClass]
+    public partial class ModelImporter : AssetImporter, IBlockImporter
     {
+        public ModelImporter() {}
+        protected internal ModelImporter(global::UnityEngine.EntityId id) : base(id) {}
+
+        [SerializeField]
+        BlockCollection<IModelImporterBlock> m_BlockCollection = new BlockCollection<IModelImporterBlock>();
+
+        /// <summary>
+        /// The import block collection associated with this model importer.
+        /// Blocks run during import to customize the model import pipeline.
+        /// </summary>
+        [UnityEngine.Internal.ExcludeFromDocs]
+        public BlockCollection<IModelImporterBlock> blockCollection
+        {
+            get => m_BlockCollection ??= new BlockCollection<IModelImporterBlock>();
+        }
+
+        IBlockCollection IBlockImporter.Blocks => blockCollection;
+
         public extern ModelImporterMaterialName materialName
         {
             get;

@@ -2,7 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: Kernel not yet converted
 using System;
 using System.Linq;
 using UnityEngine;
@@ -30,7 +29,7 @@ namespace UnityEditor
         internal static void InitUndoWindow()
         {
             EditorWindow wnd = GetWindow(typeof(UndoWindow));
-            wnd.titleContent = EditorGUIUtility.TrTextContent("Undo");
+            wnd.titleContent = L10n.TextContent("Undo", null, null, null);
         }
 
         private void Update()
@@ -75,4 +74,3 @@ namespace UnityEditor
         }
     }
 }
-#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

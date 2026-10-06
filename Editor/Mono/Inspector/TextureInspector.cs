@@ -2,7 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: Texture not yet converted
 using System.Collections.Generic;
 using Unity.Scripting.LifecycleManagement;
 using UnityEngine;
@@ -75,27 +74,27 @@ namespace UnityEditor
 
             public static readonly GUIContent[] previewChannelIcons =
             {
-                EditorGUIUtility.TrIconContent("PreTexRGB"),
-                EditorGUIUtility.TrIconContent("PreTexR"),
-                EditorGUIUtility.TrIconContent("PreTexG"),
-                EditorGUIUtility.TrIconContent("PreTexB"),
-                EditorGUIUtility.TrIconContent("PreTexA")
+                L10n.IconContent("PreTexRGB", null, null),
+                L10n.IconContent("PreTexR", null, null),
+                L10n.IconContent("PreTexG", null, null),
+                L10n.IconContent("PreTexB", null, null),
+                L10n.IconContent("PreTexA", null, null)
             };
-            public static readonly GUIContent previewColorIcon = EditorGUIUtility.TrIconContent("Color", "Displaying grayscale. Click to switch to color.");
-            public static readonly GUIContent previewGrayscaleIcon = EditorGUIUtility.TrIconContent("Grayscale", "Displaying color. Click to switch to grayscale.");
+            public static readonly GUIContent previewColorIcon = L10n.IconContent("Color", "Displaying grayscale. Click to switch to color.", null);
+            public static readonly GUIContent previewGrayscaleIcon = L10n.IconContent("Grayscale", "Displaying color. Click to switch to grayscale.", null);
 
-            public static readonly GUIContent wrapModeLabel = EditorGUIUtility.TrTextContent("Wrap Mode");
-            public static readonly GUIContent wrapU = EditorGUIUtility.TrTextContent("U axis");
-            public static readonly GUIContent wrapV = EditorGUIUtility.TrTextContent("V axis");
-            public static readonly GUIContent wrapW = EditorGUIUtility.TrTextContent("W axis");
+            public static readonly GUIContent wrapModeLabel = L10n.TextContent("Wrap Mode", null, null, null);
+            public static readonly GUIContent wrapU = L10n.TextContent("U axis", null, null, null);
+            public static readonly GUIContent wrapV = L10n.TextContent("V axis", null, null, null);
+            public static readonly GUIContent wrapW = L10n.TextContent("W axis", null, null, null);
 
             public static readonly GUIContent[] wrapModeContents =
             {
-                EditorGUIUtility.TrTextContent("Repeat"),
-                EditorGUIUtility.TrTextContent("Clamp"),
-                EditorGUIUtility.TrTextContent("Mirror"),
-                EditorGUIUtility.TrTextContent("Mirror Once"),
-                EditorGUIUtility.TrTextContent("Per-axis")
+                L10n.TextContent("Repeat", null, null, null),
+                L10n.TextContent("Clamp", null, null, null),
+                L10n.TextContent("Mirror", null, null, null),
+                L10n.TextContent("Mirror Once", null, null, null),
+                L10n.TextContent("Per-axis", null, null, null)
             };
             public static readonly int[] wrapModeValues =
             {
@@ -1251,4 +1250,3 @@ class PreviewGUI
         return scrollPosition;
     }
 }
-#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

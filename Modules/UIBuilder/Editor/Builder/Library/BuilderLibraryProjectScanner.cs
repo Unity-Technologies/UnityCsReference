@@ -35,8 +35,13 @@ namespace Unity.UI.Builder
 
         readonly SearchFilter m_SearchFilter;
         [AutoStaticsCleanupOnCodeReload]
+        // Result of the last AssetDatabase asset query; FindAssets re-runs the query at the start of
+        // every library regeneration, and the readers below no-op while it is null.
+        [IgnoreForUAL0015("Asset query result re-run by FindAssets on every library regeneration")]
         private static IEnumerable<HierarchyIterator> m_Assets;
         [AutoStaticsCleanupOnCodeReload]
+        // GUID-to-path lookup refilled by FindAssets in step with the asset query above.
+        [IgnoreForUAL0015("GUID-to-path lookup refilled by FindAssets alongside the asset query")]
         private static readonly Dictionary<string, string> m_AssetIDAndPathPair = new Dictionary<string, string>();
 
         public BuilderLibraryProjectScanner()

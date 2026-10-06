@@ -15,7 +15,10 @@ namespace UnityEngine.UIElements
     {
         internal override void OnEnable()
         {
-            isDefaultStyleSheet = true;
+            // Imported themes carry an explicit tier baked by ThemeStyleSheetImporter; this
+            // fallback only covers themes created from code at runtime.
+            if (priority == StyleSheetPriority.Default)
+                priority = StyleSheetPriority.UserTheme;
             base.OnEnable();
         }
     }

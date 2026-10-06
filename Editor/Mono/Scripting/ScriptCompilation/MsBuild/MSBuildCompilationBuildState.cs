@@ -103,7 +103,7 @@ class MSBuildCompilationBuildState
 
     private BuildParameters GetBuildParameters(string configuration, bool useNugetRestore, bool generateBinLog = false)
     {
-        var dotnetSdk = Path.Combine(EditorApplication.applicationContentsPath, @"DotNetSdk\");
+        var dotnetSdk = Path.Combine(EditorApplication.applicationContentsPath, "DotNetSdk") + Path.DirectorySeparatorChar;
         var rootProject = Path.GetFullPath("Main.EntryPoint.csproj");
 
         return new BuildParameters

@@ -13,6 +13,8 @@ namespace UnityEngine
     [NativeHeader("Runtime/Mono/MonoBehaviour.h")]
     public class Behaviour : Component
     {
+        public Behaviour() {}
+        protected internal Behaviour(global::UnityEngine.EntityId id) : base(id) {}
         // Enabled Behaviours are Updated, disabled Behaviours are not.
         [RequiredByNativeCode] // GetFixedBehaviourManager is directly used by fixed update in the player loop
         [NativeProperty]

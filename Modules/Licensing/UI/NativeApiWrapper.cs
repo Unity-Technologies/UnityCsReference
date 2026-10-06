@@ -3,7 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System.Collections.Generic;
-using UnityEditor.Experimental.Licensing;
+using UnityEditor.Licensing;
 using UnityEditor.Licensing.UI.Helper;
 using UnityEditor.SceneManagement;
 using UnityEditorInternal;
@@ -38,8 +38,7 @@ class NativeApiWrapper : INativeApiWrapper
 
     public virtual bool HasUiEntitlement()
     {
-        var entitlementInfos = LicensingUtility.HasEntitlementsExtended(new[] { Constants.UiEntitlement }, false);
-        return entitlementInfos.Length > 0;
+        return LicensingUtility.HasEntitlement(CommonEntitlements.UseEditorUI);
     }
 
     public virtual Scene[] GetAllScenes()

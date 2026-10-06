@@ -2,7 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: BuildSettingsWindow not yet converted
 using System;
 using System.Collections.Generic;
 using JetBrains.Annotations;
@@ -228,6 +227,8 @@ namespace UnityEditor.Build.Profile
             BuildProfileContext.activeProfileChanged -= OnActiveProfileChanged;
             BuildProfileContext.activeProfileChanged += OnActiveProfileChanged;
             ActiveBuildTargetListener.activeBuildTargetChanged += OnActiveBuildTargetChanged;
+            Undo.undoRedoEvent -= OnUndoRedo;
+            Undo.undoRedoEvent += OnUndoRedo;
         }
 
         public void OnDisable()
@@ -236,6 +237,7 @@ namespace UnityEditor.Build.Profile
 
             BuildProfileContext.activeProfileChanged -= OnActiveProfileChanged;
             ActiveBuildTargetListener.activeBuildTargetChanged -= OnActiveBuildTargetChanged;
+            Undo.undoRedoEvent -= OnUndoRedo;
 
             if (m_BuildProfileDataSource != null)
             {
@@ -803,6 +805,13 @@ namespace UnityEditor.Build.Profile
             UpdateFormButtonState(m_BuildProfileSelection.Get(0));
         }
 
+        // Undo/redo restores the values but does not paint the window. Most of the settings are drawn
+        // in IMGUI containers, which only refresh on a panel repaint.
+        void OnUndoRedo(in UndoRedoInfo info)
+        {
+            Repaint();
+        }
+
         void RebuildBuildProfileEditor(BuildProfile profile)
         {
             // Rebuild the BuildProfile inspector, targeting the newly selected BuildProfile.
@@ -943,4 +952,3 @@ namespace UnityEditor.Build.Profile
         }
     }
 }
-#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

@@ -138,6 +138,8 @@ namespace UnityEngine
      NativeHeader("Modules/TextRendering/Public/TextMesh.h")]
     public sealed class TextMesh : Component
     {
+        internal TextMesh(global::UnityEngine.EntityId id) : base(id) {}
+        public TextMesh() {}
         ///<summary>The specified input text to display.</summary>
         ///<example>
         ///  <code><![CDATA[
@@ -595,6 +597,7 @@ namespace UnityEngine
      StaticAccessor("TextRenderingPrivate", StaticAccessorType.DoubleColon)]
     public sealed partial class Font : Object
     {
+        internal Font(global::UnityEngine.EntityId id) : base(id) {}
         ///<summary>Set a function to be called when the dynamic font texture is rebuilt.</summary>
         ///<remarks>This lets you set a delegate function to be called when the dynamic font texture is rebuilt. This will happen when new characters added to the font no longer fit into the texture. The font texture will then be rebuilt to fit all needed characters. If you use custom meshes to render characters from the font, you will need to use this callback to regenerate such meshes, as previous UV coordinates from the Font will no longer be valid.</remarks>
         ///<seealso cref="RequestCharactersInTexture" />
@@ -681,7 +684,7 @@ namespace UnityEngine
         ///<remarks>You may want to use this if you need to create Font objects programmatically to set up your own font by assigning the <see cref="Font.characterInfo" /> property.</remarks>
         public Font()
         {
-            Internal_CreateFont(this, null);
+            SetEntityIdFromConstructor(Internal_CreateFont(null));
         }
 
         ///<summary>Create a new Font.</summary>
@@ -693,14 +696,14 @@ namespace UnityEngine
             bool isFileName = System.IO.Path.GetDirectoryName(name) == string.Empty;
 
             if (isFileName)
-                Internal_CreateFont(this, name);
+                SetEntityIdFromConstructor(Internal_CreateFont(name));
             else
-                Internal_CreateFontFromPath(this, name);
+                SetEntityIdFromConstructor(Internal_CreateFontFromPath(name));
         }
 
         private Font(string[] names, int size)
         {
-            Internal_CreateDynamicFont(this, names, size);
+            SetEntityIdFromConstructor(Internal_CreateDynamicFont(names, size));
         }
 
         ///<summary>Creates a Font object which lets you render a font installed on the user machine.</summary>
@@ -822,9 +825,9 @@ namespace UnityEngine
         [NativeMethod(IsThreadSafe = true)][VisibleToOtherModules("UnityEngine.UIElementsModule", "UnityEditor.CoreModule")]
         internal static extern bool IsFontSmoothingEnabled();
 
-        private static extern void Internal_CreateFont([Writable] Font self, string name);
-        private static extern void Internal_CreateFontFromPath([Writable] Font self, string fontPath);
-        private static extern void Internal_CreateDynamicFont([Writable] Font self, [UnityMarshalAs(NativeType.ScriptingObjectPtr)]string[] _names, int size);
+        private static extern EntityId Internal_CreateFont(string name);
+        private static extern EntityId Internal_CreateFontFromPath(string fontPath);
+        private static extern EntityId Internal_CreateDynamicFont([UnityMarshalAs(NativeType.ScriptingObjectPtr)]string[] _names, int size);
 
         ///<summary>Get rendering info for a specific character.</summary>
         ///<remarks>Note: You should only ever need to use this when you want to implement your own text rendering.
@@ -977,6 +980,9 @@ namespace UnityEngine
         private static int s_NextId = 0;
         private readonly int m_Id;
         [AutoStaticsCleanupOnCodeReload]
+        // Live-instance registry: every TextGenerator registers itself from its own constructor, so the
+        // registry cleared on reload refills as generators are recreated.
+        [IgnoreForUAL0015("Live-instance registry, refilled by each TextGenerator constructor")]
         private static Dictionary<int, WeakReference> s_Instances = new Dictionary<int, WeakReference>();
 
         ///<summary>Extents of the generated text in rect format.</summary>

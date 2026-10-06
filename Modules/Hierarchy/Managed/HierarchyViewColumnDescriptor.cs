@@ -11,6 +11,19 @@ namespace Unity.Hierarchy
     /// <summary>
     /// Provides a column descriptor used to register a new column in the <see cref="HierarchyView"/> and to control the display and customization of this column.
     /// </summary>
+    /// <example>
+    /// The following example creates a column in the Hierarchy window that displays the icons of each component attached to a GameObject. It uses `HierarchyViewColumnDescriptor` to register the column, configure its properties, and pair the column with a `HierarchyViewCellDescriptor` to populate each cell. 
+    ///
+    /// The example requires the USS file `ComponentsColumn.uss`.
+    /// To use this example, save the script and USS file in a folder called `Assets/Editor/ComponentsColumn`. Scripts in an `Editor` folder can use the Hierarchy module API without additional setup. If you save the script outside of an `Editor` folder, you must enable the Hierarchy built-in module in the **Package Manager** window, which also adds the module to your Player builds. 
+    ///
+    /// After adding the script to your project, enable the new **Components** column in the Hierarchy window for it to display.
+    /// <code source="../../../Tests/EditModeAndPlayModeTests/HierarchySamples/Assets/Editor/ComponentsColumn/ComponentsColumn.cs"/>
+    /// </example>
+    /// <example>
+    /// The following example shows how to style `ComponentsColumn.uss`.
+    /// <code source="../../../Tests/EditModeAndPlayModeTests/HierarchySamples/Assets/Editor/ComponentsColumn/ComponentsColumn.uss"/>
+    /// </example>
     public sealed class HierarchyViewColumnDescriptor
     {
         bool m_IsBound;

@@ -27,9 +27,26 @@ namespace UnityEngine
 
 // Need to use Location in this helper extension for il2cpp backend.
 #pragma warning disable UAC0007
-            return assembly.Location;
+            // Fast path for assemblies loaded from disk outside of our MonoManager.
+            if (!string.IsNullOrEmpty(assembly.Location))
+                return assembly.Location;
+
+            // Our AssemblyLoader layer's native API interprets ScriptingAssemblyPtr as GCHandle IntPtr.
+            // And we convert it back to Assembly object when doing lookup in the cache (see AssemblyInteropCache).
+            var handle = GCHandle.Alloc(assembly);
+            try
+            {
+                var path = Internal_GetAssemblyLocation(GCHandle.ToIntPtr(handle));
+                return path;
+            }
+            finally
+            {
+                handle.Free();
+            }
 #pragma warning restore UAC0007
         }
 
+        [FreeFunction("ScriptingRuntime::Internal_GetAssemblyLocation")]
+        internal static extern string Internal_GetAssemblyLocation(IntPtr assemblyHandleIntPtr);
     }
 }

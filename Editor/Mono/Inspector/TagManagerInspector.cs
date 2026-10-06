@@ -43,15 +43,15 @@ namespace UnityEditor
 
         internal class StylesNonSearchable
         {
-            public static readonly GUIContent existingTagMessage = EditorGUIUtility.TrTextContent("Tag with \"{0}\" name already exists.");
+            public static readonly GUIContent existingTagMessage = L10n.TextContent("Tag with \"{0}\" name already exists.", null, null, null);
         }
 
         internal class Styles
         {
-            public static readonly GUIContent tags = EditorGUIUtility.TrTextContent("Tags");
-            public static readonly GUIContent sortingLayers = EditorGUIUtility.TrTextContent("Sorting Layers");
-            public static readonly GUIContent layers = EditorGUIUtility.TrTextContent("Layers");
-            public static readonly GUIContent renderingLayers = EditorGUIUtility.TrTextContent("Rendering Layers");
+            public static readonly GUIContent tags = L10n.TextContent("Tags", null, null, null);
+            public static readonly GUIContent sortingLayers = L10n.TextContent("Sorting Layers", null, null, null);
+            public static readonly GUIContent layers = L10n.TextContent("Layers", null, null, null);
+            public static readonly GUIContent renderingLayers = L10n.TextContent("Rendering Layers", null, null, null);
 
             public static readonly float elementHeight = EditorGUIUtility.singleLineHeight + 2;
             public const float headerListHeight = 3;

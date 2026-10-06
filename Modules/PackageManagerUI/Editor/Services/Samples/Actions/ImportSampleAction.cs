@@ -94,7 +94,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             return true;
         }
 
-        protected override bool TriggerActionImplementation(IReadOnlyCollection<Sample> samples)
+        protected override bool TriggerActionImplementation(IReadOnlyList<Sample> samples)
         {
             m_SampleImporter.Import(samples, Sample.ImportOptions.OverridePreviousImports);
 

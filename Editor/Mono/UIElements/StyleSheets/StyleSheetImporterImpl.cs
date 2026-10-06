@@ -8,6 +8,7 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using ExCSS;
+using ParseError = ExCSS.ParseError;
 using Unity.Collections;
 using UnityEditor.AssetImporters;
 using UnityEngine;
@@ -58,6 +59,7 @@ namespace UnityEditor.UIElements.StyleSheets
         protected readonly StyleValidator m_Validator;
         protected string m_AssetPath;
         protected int m_CurrentLine;
+        bool m_DeclarationHasVar;
 
         readonly StringBuilder m_StringBuilder = new StringBuilder();
 
@@ -183,7 +185,8 @@ namespace UnityEditor.UIElements.StyleSheets
                 return null;
             }
 
-            m_Context?.DependsOnSourceAsset(path);
+            if (!URIHelpers.IsBuiltinResourcePath(path))
+                m_Context?.DependsOnSourceAsset(path);
 
             if (string.IsNullOrEmpty(subAssetPath))
                 return AssetDatabase.LoadMainAssetAtPath(path);
@@ -508,12 +511,15 @@ namespace UnityEditor.UIElements.StyleSheets
                         return;
                     }
 
-                    // explicit asset reference already loaded
-                    m_Context?.DependsOnArtifact(projectRelativePath);
+                    if (!response.isBuiltinResource)
+                    {
+                        // explicit asset reference already loaded
+                        m_Context?.DependsOnArtifact(projectRelativePath);
 
-                    // Necessary to avoid the warning "Import of asset setup artifact dependency to but dependency isn't used
-                    // and therefore not registered in the asset database". (UUM-68160)
-                    AssetDatabase.LoadAssetAtPath(projectRelativePath, typeof(Object));
+                        // Necessary to avoid the warning "Import of asset setup artifact dependency to but dependency isn't used
+                        // and therefore not registered in the asset database". (UUM-68160)
+                        AssetDatabase.LoadAssetAtPath(projectRelativePath, typeof(Object));
+                    }
                 }
                 else
                 {
@@ -538,7 +544,7 @@ namespace UnityEditor.UIElements.StyleSheets
                     {
                         string hiResImageLocation = URIHelpers.InjectFileNameSuffix(projectRelativePath, "@2x");
 
-                        if (File.Exists(FileUtil.PathToAbsolutePath(hiResImageLocation)))
+                        if (File.Exists(FileUtil.PathToAbsolutePathForFileIO(hiResImageLocation)))
                         {
                             UnityEngine.Object hiResImage = DeclareDependencyAndLoad(hiResImageLocation);
 
@@ -726,15 +732,35 @@ namespace UnityEditor.UIElements.StyleSheets
                 }
             }
 
+            m_DeclarationHasVar = ContainsVarFunction(property.DeclaredValue.Original);
             foreach (var t in property.DeclaredValue.Original)
             {
                 VisitToken(t);
             }
+            m_DeclarationHasVar = false;
+        }
+
+        static bool ContainsVarFunction(TokenValue tokens)
+        {
+            foreach (var t in tokens)
+            {
+                if (t is FunctionToken { Data: StyleValueFunctionExtension.k_Var })
+                    return true;
+            }
+            return false;
         }
 
         static bool IsScalarTimeProperty(StylePropertyId id)
         {
             return id == StylePropertyId.AnimationDuration || id == StylePropertyId.AnimationDelay;
+        }
+
+        static bool AcceptsFractionUnit(StylePropertyId id)
+        {
+            // Custom properties hold raw values for var(), so `--my-track: 1fr` must survive.
+            return id is StylePropertyId.GridTemplateColumns or StylePropertyId.GridTemplateRows
+                or StylePropertyId.GridAutoColumns or StylePropertyId.GridAutoRows
+                or StylePropertyId.Custom;
         }
 
         void VisitToken(Token token)
@@ -790,18 +816,19 @@ namespace UnityEditor.UIElements.StyleSheets
                     break;
 
                 case UnitToken unitToken:
-                    if (s_UnitNameToDimensionUnit.TryGetValue(unitToken.Unit, out var dimensionUnit))
-                    {
-                        var dimension = new Dimension(unitToken.Value, dimensionUnit);
-                        if (dimension.IsTimeValue() && IsScalarTimeProperty(m_Builder.currentProperty.id))
-                            m_Builder.AddValue(dimensionUnit == Dimension.Unit.Millisecond ? unitToken.Value / 1000f : unitToken.Value);
-                        else
-                            m_Builder.AddValue(dimension);
-                    }
-                    else
+                    if (!s_UnitNameToDimensionUnit.TryGetValue(unitToken.Unit, out var dimensionUnit)
+                        || (dimensionUnit == Dimension.Unit.Fraction && !AcceptsFractionUnit(m_Builder.currentProperty.id)))
                     {
                         m_Errors.AddSemanticError(StyleSheetImportErrorCode.UnsupportedUnit, string.Format(glossary.unsupportedUnit, unitToken.ToValue()), unitToken.Position.Line, unitToken.Position.Column);
+                        break;
                     }
+
+                    var dimension = new Dimension(unitToken.Value, dimensionUnit);
+                    // Resolved var() values are validated against <time>#, so they must keep the unit.
+                    if (dimension.IsTimeValue() && IsScalarTimeProperty(m_Builder.currentProperty.id) && !m_DeclarationHasVar)
+                        m_Builder.AddValue(dimensionUnit == Dimension.Unit.Millisecond ? unitToken.Value / 1000f : unitToken.Value);
+                    else
+                        m_Builder.AddValue(dimension);
                     break;
 
                 case UrlToken urlToken:
@@ -1011,7 +1038,7 @@ namespace UnityEditor.UIElements.StyleSheets
         }
     }
 
-    [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
+    [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule", "UnityEditor.UIElementsModule")]
     internal class StyleSheetImporterImpl : StyleValueImporter
     {
         [NoAutoStaticsCleanup]
@@ -1044,7 +1071,7 @@ namespace UnityEditor.UIElements.StyleSheets
 
         internal static void PopulateDependencies(string assetPath, List<string> dependencies)
         {
-            var contents = File.ReadAllText(FileUtil.PathToAbsolutePath(assetPath));
+            var contents = File.ReadAllText(FileUtil.PathToAbsolutePathForFileIO(assetPath));
 
             if (string.IsNullOrEmpty(contents))
                 return;
@@ -1121,6 +1148,32 @@ namespace UnityEditor.UIElements.StyleSheets
             m_Context?.DependsOnCustomDependency(UnityStyleSheet.k_SerializationLayoutDependencyKey);
         }
 
+        public static bool IsSelectorSupported(string selector, out string error)
+        {
+            var importer = new StyleSheetImporterImpl();
+            var scratch = ScriptableObject.CreateInstance<UnityStyleSheet>();
+            try
+            {
+                importer.Import(scratch, selector + " {}");
+            }
+            finally
+            {
+                Object.DestroyImmediate(scratch);
+            }
+
+            foreach (var importError in importer.m_Errors)
+            {
+                if (!importError.isWarning)
+                {
+                    error = importError.message;
+                    return false;
+                }
+            }
+
+            error = null;
+            return true;
+        }
+
         void AddUssParserError(TokenizerError error)
         {
             // Currntly ExCSS 4.3 has the same info in error.Message, we will try to add more detail:
@@ -1167,6 +1220,36 @@ namespace UnityEditor.UIElements.StyleSheets
                     var importRules = styleSheet.ImportRules.ToList();
 #pragma warning restore UAC2001
                     var importDirectivesCount = importRules.Count;
+
+                    // In CSS, @import must precede all style rules. USS accepts it anywhere, but the
+                    // position never affects priority, so a late @import likely signals a wrong
+                    // expectation. Compare line AND column so an import following a rule on the same
+                    // line is caught too.
+                    var firstStyleRuleLine = int.MaxValue;
+                    var firstStyleRuleColumn = int.MaxValue;
+                    foreach (var styleRule in styleSheet.StyleRules)
+                    {
+                        var rulePosition = styleRule.StylesheetText.Range.Start;
+                        if (rulePosition.Line < firstStyleRuleLine
+                            || (rulePosition.Line == firstStyleRuleLine && rulePosition.Column < firstStyleRuleColumn))
+                        {
+                            firstStyleRuleLine = rulePosition.Line;
+                            firstStyleRuleColumn = rulePosition.Column;
+                        }
+                    }
+
+                    for (int i = 0; i < importDirectivesCount; ++i)
+                    {
+                        var importText = importRules[i].StylesheetText;
+                        if (importText == null)
+                            continue;
+
+                        var importPosition = importText.Range.Start;
+                        if (importPosition.Line > firstStyleRuleLine
+                            || (importPosition.Line == firstStyleRuleLine && importPosition.Column > firstStyleRuleColumn))
+                            m_Errors.AddValidationWarning(glossary.importAfterStyleRule, importPosition.Line);
+                    }
+
                     asset.imports = new UnityStyleSheet.ImportStruct[importDirectivesCount];
                     for (int i = 0; i < importDirectivesCount; ++i)
                     {
@@ -1193,14 +1276,25 @@ namespace UnityEditor.UIElements.StyleSheets
                             importedStyleSheet = response.resolvedQueryAsset as UnityStyleSheet;
                             if (importedStyleSheet)
                             {
-                                m_Context?.DependsOnArtifact(projectRelativePath);
+                                if (!response.isBuiltinResource)
+                                    m_Context?.DependsOnArtifact(projectRelativePath);
                             }
                             else
                             {
                                 importedStyleSheet = DeclareDependencyAndLoad(projectRelativePath) as UnityStyleSheet;
                             }
 
-                            if (!response.isLibraryAsset)
+                            // Unsupported shape: only themes import themes. Selector matching only
+                            // keeps the Builtin tier sticky (see StyleSelectorMatch), so a theme
+                            // nested under a regular sheet loses its priority and ranks as
+                            // ordinary imported content.
+                            if (asset is not ThemeStyleSheet && importedStyleSheet is ThemeStyleSheet)
+                            {
+                                m_Errors.AddValidationWarning(glossary.themeImportedByStyleSheet,
+                                    importRules[i].StylesheetText?.Range.Start.Line ?? m_CurrentLine);
+                            }
+
+                            if (!response.isLibraryAsset && !response.isBuiltinResource)
                             {
                                 m_Context?.DependsOnImportedAsset(projectRelativePath);
                             }
@@ -1254,7 +1348,7 @@ namespace UnityEditor.UIElements.StyleSheets
                     if (!string.IsNullOrEmpty(result.hint))
                         msg = $"{msg} -> {result.hint}";
 
-                    m_Errors.AddValidationWarning(msg, GetPropertyLine(property));
+                    m_Errors.AddValidationWarning(msg, m_CurrentLine);
                 }
             }
         }
@@ -1262,8 +1356,9 @@ namespace UnityEditor.UIElements.StyleSheets
         int GetPropertyLine(Property property)
         {
             // Property doesnt seem to have a position. StylesheetText is always null.
-            // Grab it from the first token
-            return property.DeclaredValue.Original[0].Position.Line;
+            // Grab it from the first token; an empty declaration has none, so use the last line seen.
+            var tokens = property.DeclaredValue.Original;
+            return tokens.Count > 0 ? tokens[0].Position.Line : m_CurrentLine;
         }
 
         void VisitSheet(ParserStyleSheet styleSheet)
@@ -1279,14 +1374,11 @@ namespace UnityEditor.UIElements.StyleSheets
 
                 foreach (var property in rule.Style.Declarations)
                 {
-                    // Property doesnt seem to have a position. StylesheetText is always null.
-                    // Grab it from the first token
-                    var propertyLine = GetPropertyLine(property);
-                    m_CurrentLine = propertyLine;
+                    m_CurrentLine = GetPropertyLine(property);
 
                     ValidateProperty(property);
 
-                    m_Builder.BeginProperty(property.Name, propertyLine);
+                    m_Builder.BeginProperty(property.Name, m_CurrentLine);
 
                     // Note: we must rely on recursion to correctly handle parser types here
                     VisitValue(property);

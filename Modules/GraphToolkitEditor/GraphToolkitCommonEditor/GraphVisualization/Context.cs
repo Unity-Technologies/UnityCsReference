@@ -34,7 +34,10 @@ public sealed class Context : IDisposable
 
     PortPreviewManager m_PortPreview;
     WireVisualManager m_WireVisualManager;
-    NodeAccentManager m_NodeAccentManager;
+    TransitionVisualManager m_TransitionVisualManager;
+    AccentManager<CollapsibleInOutNodeView> m_NodeAccentManager;
+    AccentManager<StateView> m_StateAccentManager;
+    ConditionVisualManager m_ConditionVisualManager;
 
     internal Session Session { get; }
 
@@ -117,12 +120,12 @@ public sealed class Context : IDisposable
         set => NodeAccent.Enabled = value;
     }
 
-    internal NodeAccentManager NodeAccent
+    internal AccentManager<CollapsibleInOutNodeView> NodeAccent
     {
         get
         {
             ThrowIfDisposed();
-            return m_NodeAccentManager ??= new NodeAccentManager(Session);
+            return m_NodeAccentManager ??= new AccentManager<CollapsibleInOutNodeView>(Session, Session.Store.NodeAccentStore);
         }
     }
 
@@ -234,6 +237,164 @@ public sealed class Context : IDisposable
     }
 
     /// <summary>
+    /// Returns a <see cref="TransitionReference"/> that identifies the transition with the given ID within this visualization context.
+    /// </summary>
+    /// <param name="transitionID">The unique identifier of the transition to reference.</param>
+    /// <returns>A <see cref="TransitionReference"/> that targets the transition identified by <paramref name="transitionID"/> within this <see cref="Context"/>.</returns>
+    /// <exception cref="ObjectDisposedException">Thrown when you access this method after you call <see cref="Context.Dispose"/> on the context.</exception>
+    /// <exception cref="ArgumentException">Thrown when you provide an invalid <paramref name="transitionID"/>.</exception>
+    /// <remarks>
+    /// The returned <see cref="TransitionReference"/> is only meaningful for this <see cref="Context"/> and references the transition by its ID rather than by direct lookup.
+    /// The transition doesn't need to exist in the current state machine canvas at the time of this call.
+    /// Throws <see cref="ObjectDisposedException"/> when you access this method after you call <see cref="Context.Dispose"/> on the context.
+    /// Throws <see cref="ArgumentException"/> when you provide an invalid <paramref name="transitionID"/>.
+    /// </remarks>
+    /// <example>
+    /// <code>
+    /// TransitionReference transitionRef = context.GetTransitionReference(startTransition.ID);
+    /// transitionRef.LineColor = DebugStyles.Pending;
+    /// </code>
+    /// </example>
+    public TransitionReference GetTransitionReference(Hash128 transitionID)
+    {
+        ThrowIfDisposed();
+
+        if (!transitionID.isValid)
+            throw new ArgumentException("The provided transition ID isn't valid.", nameof(transitionID));
+
+        return new TransitionReference(this, transitionID);
+    }
+
+    /// <summary>
+    /// Whether the transition customization feature is enabled for this visualization context. Enabled by default.
+    /// </summary>
+    /// <remarks>
+    /// When the value is true, all transition customization changes are re-executed against the current state machine canvas.
+    /// When the value is false, any transition customization clears.
+    /// The system preserves the changes so they're restored when the value is set to true again.
+    /// </remarks>
+    public bool TransitionCustomizationEnabled
+    {
+        get => TransitionVisuals.Enabled;
+        set => TransitionVisuals.Enabled = value;
+    }
+
+    internal TransitionVisualManager TransitionVisuals
+    {
+        get
+        {
+            ThrowIfDisposed();
+            return m_TransitionVisualManager ??= new TransitionVisualManager(Session);
+        }
+    }
+
+    /// <summary>
+    /// Returns a <see cref="StateReference"/> that identifies the state with the given ID within this visualization context.
+    /// </summary>
+    /// <param name="stateID">The unique identifier of the state to reference.</param>
+    /// <returns>A <see cref="StateReference"/> that targets the state identified by <paramref name="stateID"/> within this <see cref="Context"/>.</returns>
+    /// <exception cref="ObjectDisposedException">Thrown when you access this property after you call <see cref="Context.Dispose"/> on the context.</exception>
+    /// <exception cref="ArgumentException">Thrown when you provide an invalid <paramref name="stateID"/>.</exception>
+    /// <remarks>
+    /// The returned <see cref="StateReference"/> is only meaningful for this <see cref="Context"/> and references the state by its ID rather than by direct lookup.
+    /// The state doesn't need to exist in the current state machine canvas at the time of this call.
+    /// Throws <see cref="ObjectDisposedException"/> when you access this property after you call <see cref="Context.Dispose"/> on the context.
+    /// Throws <see cref="ArgumentException"/> when you provide an invalid <paramref name="stateID"/>.
+    /// </remarks>
+    /// <example>
+    /// <code>
+    /// StateReference stateRef = context.GetStateReference(stateID);
+    /// stateRef.FillAmount = 75f;
+    /// </code>
+    /// </example>
+    public StateReference GetStateReference(Hash128 stateID)
+    {
+        ThrowIfDisposed();
+
+        if (!stateID.isValid)
+            throw new ArgumentException("The provided state ID isn't valid.", nameof(stateID));
+
+        return new StateReference(this, stateID);
+    }
+
+    /// <summary>
+    /// Whether the state customization feature is enabled for this visualization context. Enabled by default.
+    /// </summary>
+    /// <remarks>
+    /// When the value is true, all state customization changes are re-executed against the current state machine canvas.
+    /// When the value is false, any state customization clears.
+    /// The system preserves the changes so they're restored when the value is set to true again.
+    /// </remarks>
+    public bool StateCustomizationEnabled
+    {
+        get => StateAccent.Enabled;
+        set => StateAccent.Enabled = value;
+    }
+
+    internal AccentManager<StateView> StateAccent
+    {
+        get
+        {
+            ThrowIfDisposed();
+            return m_StateAccentManager ??= new AccentManager<StateView>(Session, Session.Store.StateAccentStore);
+        }
+    }
+
+    /// <summary>
+    /// Returns a <see cref="ConditionReference"/> that identifies the condition with the given ID within this visualization context.
+    /// </summary>
+    /// <param name="conditionID">The unique identifier of the condition to reference.</param>
+    /// <returns>A <see cref="ConditionReference"/> that targets the condition identified by <paramref name="conditionID"/> within this <see cref="Context"/>.</returns>
+    /// <exception cref="ObjectDisposedException">Thrown when you access this method after you call <see cref="Context.Dispose"/> on the context.</exception>
+    /// <exception cref="ArgumentException">Thrown when you provide an invalid <paramref name="conditionID"/>.</exception>
+    /// <remarks>
+    /// The returned <see cref="ConditionReference"/> is only meaningful for this <see cref="Context"/> and references the condition by its ID rather than by direct lookup.
+    /// The condition doesn't need to exist in the current graph at the time of this call.
+    /// Throws <see cref="ObjectDisposedException"/> when you access this method after you call <see cref="Context.Dispose"/> on the context.
+    /// Throws <see cref="ArgumentException"/> when you provide an invalid <paramref name="conditionID"/>.
+    /// </remarks>
+    /// <example>
+    /// <code>
+    /// ConditionReference conditionRef = context.GetConditionReference(conditionID);
+    /// conditionRef.Icon = DebugStyles.PendingIcon;
+    /// </code>
+    /// </example>
+    public ConditionReference GetConditionReference(Hash128 conditionID)
+    {
+        ThrowIfDisposed();
+
+        if (!conditionID.isValid)
+            throw new ArgumentException("The provided condition ID isn't valid.", nameof(conditionID));
+
+        return new ConditionReference(this, conditionID);
+    }
+
+    /// <summary>
+    /// Whether the condition customization feature is enabled for this visualization context. Enabled by default.
+    /// </summary>
+    /// <exception cref="ObjectDisposedException">Thrown when you access this property after you call <see cref="Context.Dispose"/> on the context.</exception>
+    /// <remarks>
+    /// When the value is true, icon overrides applied through <see cref="ConditionReference"/> are honored.
+    /// When the value is false, <see cref="ConditionReference.Icon"/> reads the condition's own icon instead of any override.
+    /// The system preserves the overrides so they're honored again when the value is set to true.
+    /// Throws <see cref="ObjectDisposedException"/> when you access this property after you call <see cref="Context.Dispose"/> on the context.
+    /// </remarks>
+    public bool ConditionCustomizationEnabled
+    {
+        get => ConditionVisuals.Enabled;
+        set => ConditionVisuals.Enabled = value;
+    }
+
+    internal ConditionVisualManager ConditionVisuals
+    {
+        get
+        {
+            ThrowIfDisposed();
+            return m_ConditionVisualManager ??= new ConditionVisualManager(Session);
+        }
+    }
+
+    /// <summary>
     /// Releases this context and clears all associated visualization data.
     /// </summary>
     /// <remarks>
@@ -284,6 +445,9 @@ public sealed class Context : IDisposable
         PortPreview.ClearAll();
         WireVisuals.ClearAll();
         NodeAccent.ClearAll();
+        TransitionVisuals.ClearAll();
+        StateAccent.ClearAll();
+        ConditionVisuals.ClearAll();
     }
 
     void ThrowIfDisposed()

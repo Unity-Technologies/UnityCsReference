@@ -26,7 +26,7 @@ internal class RemoveAction : PackageAction
         m_PageManager = pageManager;
     }
 
-    protected override bool TriggerActionImplementation(IReadOnlyCollection<IPackage> packages)
+    protected override bool TriggerActionImplementation(IReadOnlyList<IPackage> packages)
     {
         var isModules = packages.AnyMatches(p => p.versions.primary.HasTag(PackageTag.BuiltIn));
         var title = string.Format(L10n.Tr(isModules ? "Disabling {0} items" : "Removing {0} items", null), packages.Count);
@@ -165,7 +165,7 @@ internal class RemoveAction : PackageAction
         new DisableIfExportingInProgress()
     );
 
-    private void DeselectPackages(IReadOnlyCollection<IPackage> packages)
+    private void DeselectPackages(IReadOnlyList<IPackage> packages)
     {
         m_PageManager.activePage.RemoveSelection(packages.SelectAsEnumerable(p => p.uniqueId), false);
     }

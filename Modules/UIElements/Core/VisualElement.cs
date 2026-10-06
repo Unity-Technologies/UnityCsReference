@@ -2,8 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: UIToolkitFramework not yet converted
-#pragma warning disable UAL0010,UAL0011,UAL0012,UAL0013,UAL0014 // AutoStaticsCleanup: UIToolkitFramework not yet converted
 using Unity.Scripting.LifecycleManagement;
 using System;
 using System.Collections.Generic;
@@ -39,43 +37,86 @@ namespace UnityEngine.UIElements
         Root      = 1 << 7,     // set on the root visual element
     }
 
+    // The word is declared on CallbackEventHandler: bits 0, 1, 3, 4 and 6 back properties on that class and
+    // on Focusable, the rest properties on VisualElement. Bits 26-29 hold the two 2-bit direction fields, so
+    // only 13, 15, 16, 17, 30 and 31 are still free.
     [Flags]
-    internal enum VisualElementFlags
+    // Every member spells 1L: an int literal would silently overflow past bit 30.
+    internal enum VisualElementFlags : long
     {
+        // Element is an IMGUIContainer, which needs custom treatment when dispatching events
+        IsIMGUIContainer = 1L << 0,
+        // Element can potentially receive focus
+        IsFocusable = 1L << 1,
         // Need to compute world clip
-        WorldClipDirty = 1 << 2,
+        WorldClipDirty = 1L << 2,
+        // Element delegates the focus to its children
+        DelegatesFocus = 1L << 3,
+        // Children of a composite appear at its tabIndex position in the focus ring, but the root itself doesn't
+        ExcludeFromFocusRing = 1L << 4,
         // Need to compute world bounding box
-        EventInterestParentCategoriesDirty = 1 << 5,
+        EventInterestParentCategoriesDirty = 1L << 5,
+        // Clicking a disabled child can give this element the focus
+        EligibleToReceiveFocusFromDisabledChild = 1L << 6,
         // Element is a root for composite controls
-        CompositeRoot = 1 << 7,
+        CompositeRoot = 1L << 7,
         // Element has a custom measure function
-        RequireMeasureFunction = 1 << 8,
+        RequireMeasureFunction = 1L << 8,
         // Element has view data persistence
-        EnableViewDataPersistence = 1 << 9,
+        EnableViewDataPersistence = 1L << 9,
+        // Play-mode tint is not applied to this element nor to its children
+        DisablePlayModeTint = 1L << 10,
         // Element needs to receive an AttachToPanel event
-        NeedsAttachToPanelEvent = 1 << 11,
+        NeedsAttachToPanelEvent = 1L << 11,
         // Element has released the LayoutNode create in its constructor and can't be used anymore
-        Released = 1 << 12,
+        Released = 1L << 12,
+        // Element draws its text with TextElement's default handler, instead of subscribing to
+        // generateVisualContent for it
+        UseDefaultTextGenerateContent = 1L << 13,
         // Element is not rendered, but we keep the generated geometry in case it is shown later
-        DisableRendering = 1 << 14,
+        DisableRendering = 1L << 14,
         // The DataSource tracking of the element should not ne processed when the element has not been configured properly
-        DetachedDataSource = 1 << 18,
+        DetachedDataSource = 1L << 18,
         // Element has capture on one or more pointerIds
-        PointerCapture = 1 << 19,
+        PointerCapture = 1L << 19,
         // Element is a root UIDocument
-        IsWorldSpaceRootPanelComponent = 1 << 20,
+        IsWorldSpaceRootPanelComponent = 1L << 20,
         // Element wants a GeometryChangedEvent if any of its descendent receives one
-        ReceivesHierarchyGeometryChangedEvents = 1 << 21,
+        ReceivesHierarchyGeometryChangedEvents = 1L << 21,
         // Element itself is disabled, independently of the disabled state of its parents
-        DisabledSelf = 1 << 22,
+        DisabledSelf = 1L << 22,
         // Element style have been initialized, so transitions can be applied to it when it changes next time
-        StyleInitialized = 1 << 23,
+        StyleInitialized = 1L << 23,
         // Element styles need to be updated, implicitly applies to all its descendants
-        StyleDirty = 1 << 24,
+        StyleDirty = 1L << 24,
         // Element is an ancestor of an element with StylesDirty flag, but doesn't need to be updated itself
-        StyleAncestorOfDirty = 1 << 25,
+        StyleAncestorOfDirty = 1L << 25,
+        // 2-bit encoding of the LanguageDirection set on the element
+        LanguageDirectionMask = 3L << VisualElementFlagsShift.LanguageDirection,
+        // 2-bit encoding of the LanguageDirection resolved from the ancestors
+        LocalLanguageDirectionMask = 3L << VisualElementFlagsShift.LocalLanguageDirection,
+        // 14-bit encoding of RenderHints: seven hints and the seven dirty bits paired with them
+        RenderHintsMask = 0x3FFFL << VisualElementFlagsShift.RenderHints,
+        // Presence of each private component, so an accessor answers without searching the component set
+        HasDataBindingComponent = 1L << 46,
+        HasAnimationComponent = 1L << 47,
+        HasPaintingComponent = 1L << 48,
+        HasViewDataComponent = 1L << 49,
+        HasStyleSheetsComponent = 1L << 50,
+        // Every private component's presence bit, cleared together when an element releases its components
+        PrivateComponentMask = HasDataBindingComponent | HasAnimationComponent | HasPaintingComponent |
+            HasViewDataComponent | HasStyleSheetsComponent,
         // Element initial flags
-        Init = WorldClipDirty | EventInterestParentCategoriesDirty | DetachedDataSource
+        Init = WorldClipDirty | EventInterestParentCategoriesDirty | DetachedDataSource |
+            EligibleToReceiveFocusFromDisabledChild
+    }
+
+    // Free bits: 15, 16, 17, 30, 31, and 51 upwards.
+    internal static class VisualElementFlagsShift
+    {
+        public const int LanguageDirection = 26;
+        public const int LocalLanguageDirection = 28;
+        public const int RenderHints = 32;
     }
 
     /// <summary>
@@ -227,14 +268,14 @@ namespace UnityEngine.UIElements
             set
             {
                 ref var f = ref transformFlags;
-                var changed = areAncestorsAndSelfDisplayed != value;
-                f = value ? f | VisualElementTransformFlags.HierarchyDisplayed : f & ~VisualElementTransformFlags.HierarchyDisplayed;
+                var previous = f;
+                f = value ? previous | VisualElementTransformFlags.HierarchyDisplayed : previous & ~VisualElementTransformFlags.HierarchyDisplayed;
 
                 // Displayed state decides an element's inclusion in the generated accessibility
                 // hierarchy, and a display flip bumps no bit on the affected descendants — this
                 // setter, which the layout updater drives for every affected element, is their
                 // only per-element signal.
-                if (changed)
+                if (previous != f && UITKAccessibilityBridge.isLive)
                     UITKAccessibilityBridge.OnElementDisplayedChanged(this);
 
                 if (renderData == null)
@@ -265,7 +306,6 @@ namespace UnityEngine.UIElements
         StyleClassList m_ClassList;
         private Dictionary<PropertyName, object> m_PropertyBag;
 
-        private VisualElementFlags m_Flags;
         internal VisualElementFlags flags
         {
             get {
@@ -371,7 +411,11 @@ namespace UnityEngine.UIElements
             get { return panel?.focusController; }
         }
 
-        private bool m_DisablePlayModeTint = false;
+        private bool disablePlayModeTintSelf
+        {
+            get => GetFlag(VisualElementFlags.DisablePlayModeTint);
+            set => SetFlag(VisualElementFlags.DisablePlayModeTint, value);
+        }
 
         /// <summary>
         /// Play-mode tint is applied by default unless this is set to true. It's applied hierarchically to this <see cref="VisualElement"/> and to all its children that exist on an editor panel.
@@ -381,11 +425,11 @@ namespace UnityEngine.UIElements
         {
             get
             {
-                if (panel?.contextType == ContextType.Player || m_DisablePlayModeTint)
+                if (panel?.contextType == ContextType.Player || disablePlayModeTintSelf)
                     return true;
                 for (var p = parent; p != null; p = p.parent)
                 {
-                    if (p.m_DisablePlayModeTint)
+                    if (p.disablePlayModeTintSelf)
                         return true;
                 }
 
@@ -393,10 +437,10 @@ namespace UnityEngine.UIElements
             }
             set
             {
-                if (m_DisablePlayModeTint == value)
+                if (disablePlayModeTintSelf == value)
                     return;
 
-                m_DisablePlayModeTint = value;
+                disablePlayModeTintSelf = value;
                 MarkDirtyRepaint();
                 NotifyPropertyChanged(disablePlayModeTintProperty);
             }
@@ -411,45 +455,54 @@ namespace UnityEngine.UIElements
             }
         }
 
-        private RenderHints m_RenderHints;
-
         /// <summary>
         /// Requested render hints and change flags. Note that the renderer can ignore them: reading them does not
         /// guarantee that they are effective.
         /// </summary>
         internal RenderHints renderHints
         {
-            get { return m_RenderHints; }
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get => (RenderHints)((long)(m_Flags & VisualElementFlags.RenderHintsMask) >>
+                                 VisualElementFlagsShift.RenderHints);
             set
             {
+                var current = renderHints;
+
                 // Filter out the dirty flags
-                RenderHints oldHints = m_RenderHints & ~RenderHints.DirtyAll;
+                RenderHints oldHints = current & ~RenderHints.DirtyAll;
                 RenderHints newHints = value & ~RenderHints.DirtyAll;
                 RenderHints changedHints = oldHints ^ newHints;
 
                 if (changedHints != 0)
                 {
-                    RenderHints oldDirty = m_RenderHints & RenderHints.DirtyAll;
+                    RenderHints oldDirty = current & RenderHints.DirtyAll;
                     RenderHints addDirty = (RenderHints)((int)changedHints << (int)RenderHints.DirtyOffset);
 
-                    m_RenderHints = newHints | oldDirty | addDirty;
+                    SetRenderHints(newHints | oldDirty | addDirty);
                     IncrementVersion(VersionChangeType.RenderHints);
                 }
             }
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        void SetRenderHints(RenderHints value)
+        {
+            var bits = (VisualElementFlags)((long)value << VisualElementFlagsShift.RenderHints);
+            m_Flags = (m_Flags & ~VisualElementFlags.RenderHintsMask) |
+                      (bits & VisualElementFlags.RenderHintsMask);
         }
 
         // Dirty flags cannot be removed by the renderHints setter
         // This method must ONLY be called from the renderer
         internal void MarkRenderHintsClean()
         {
-            m_RenderHints &= ~RenderHints.DirtyAll;
+            SetRenderHints(renderHints & ~RenderHints.DirtyAll);
         }
 
         internal Rect lastLayout;
         internal Rect lastPseudoPadding;
         internal RenderData renderData; // TODO: Search for every usage of this, should be minimal!!
         internal RenderData nestedRenderData; // Non-null when rendering into a render texture
-        internal int hierarchyDepth;
         internal int insertionIndex = -1;
 
         // TODO: Do some validation to make sure all effects actually have a material
@@ -1126,6 +1179,24 @@ namespace UnityEngine.UIElements
             set => transformFlags = value ? transformFlags | VisualElementTransformFlags.WorldTransformInverseDirty : transformFlags & ~VisualElementTransformFlags.WorldTransformInverseDirty;
         }
 
+        // Refreshing the inverse is what decides this, so it is read through the same laziness.
+        internal ref Matrix4x4 GetWorldTransformInverse(out bool isSingular)
+        {
+            if (isWorldTransformInverseOrDependenciesDirty)
+                UpdateWorldTransformInverse();
+            isSingular = (transformFlags & VisualElementTransformFlags.WorldTransformSingular) != 0;
+            return ref transformData.WorldTransformInverse;
+        }
+
+        internal bool isWorldTransformSingular
+        {
+            get
+            {
+                GetWorldTransformInverse(out bool isSingular);
+                return isSingular;
+            }
+        }
+
         private const VisualElementTransformFlags worldTransformInverseDirtyDependencies =
             VisualElementTransformFlags.WorldTransformInverseDirty | VisualElementTransformFlags.WorldTransformDirty;
 
@@ -1229,9 +1300,20 @@ namespace UnityEngine.UIElements
             isWorldBoundingBoxDirty = true;
         }
 
+        // Below |det| ~1e-3, inverse * world loses a descendant's offset to float32 cancellation (UUM-140869).
+        internal const float k_MinInvertibleDeterminantSquared = 1e-6f;
+
         internal void UpdateWorldTransformInverse()
         {
-            Matrix4x4.Inverse3DAffine(in worldTransformRef, ref transformData.WorldTransformInverse);
+            ref var world = ref worldTransformRef;
+            bool invertible = Matrix4x4.Inverse3DAffine(in world, ref transformData.WorldTransformInverse);
+            float det = world.m00 * (world.m11 * world.m22 - world.m12 * world.m21)
+                - world.m01 * (world.m10 * world.m22 - world.m12 * world.m20)
+                + world.m02 * (world.m10 * world.m21 - world.m11 * world.m20);
+            bool singular = !invertible || det * det < k_MinInvertibleDeterminantSquared;
+            transformFlags = singular
+                ? transformFlags | VisualElementTransformFlags.WorldTransformSingular
+                : transformFlags & ~VisualElementTransformFlags.WorldTransformSingular;
             isWorldTransformInverseDirty = false;
         }
 
@@ -1352,7 +1434,7 @@ namespace UnityEngine.UIElements
                 // Every effective disabled flip funnels through here (own state and the SetEnabled
                 // tree walk alike), and it bumps no version bit unless a style selector depends on
                 // it — so this is where the generated accessibility hierarchy learns about it.
-                if ((diff & PseudoStates.Disabled) != 0)
+                if ((diff & PseudoStates.Disabled) != 0 && UITKAccessibilityBridge.isLive)
                     UITKAccessibilityBridge.OnElementEnabledChanged(this);
             }
         }
@@ -1593,8 +1675,27 @@ namespace UnityEngine.UIElements
             }
         }
 
-        // Used for view data persistence (ie. scroll position or tree view expanded states)
-        private string m_ViewDataKey;
+        // Absent until the element is given a view data key, which a handful of controls do and most
+        // elements never do.
+        ref VisualElementViewDataComponent viewDataStorage
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get
+            {
+                if ((m_Flags & VisualElementFlags.HasViewDataComponent) == 0)
+                    return ref NullComponentRef<VisualElementViewDataComponent>();
+
+                return ref GetComponentRefOrNullRef<VisualElementViewDataComponent>();
+            }
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        ref VisualElementViewDataComponent GetOrAddViewDataStorage()
+        {
+            ref var data = ref GetOrAddComponent<VisualElementViewDataComponent>();
+            m_Flags |= VisualElementFlags.HasViewDataComponent;
+            return ref data;
+        }
 
         /// <summary>
         /// Used for view data persistence, such as tree expanded states, scroll position, or zoom level.
@@ -1607,12 +1708,16 @@ namespace UnityEngine.UIElements
         [UxmlAttribute]
         public string viewDataKey
         {
-            get => m_ViewDataKey;
+            get
+            {
+                ref var data = ref viewDataStorage;
+                return Unsafe.IsNullRef(ref data) ? null : data.viewDataKey;
+            }
             set
             {
-                if (m_ViewDataKey != value)
+                if (viewDataKey != value)
                 {
-                    m_ViewDataKey = value;
+                    GetOrAddViewDataStorage().viewDataKey = value;
 
                     if (!string.IsNullOrEmpty(value))
                         IncrementVersion(VersionChangeType.ViewData);
@@ -1757,7 +1862,21 @@ namespace UnityEngine.UIElements
             set => focusable = value;
         }
 
-        LanguageDirection m_LanguageDirection;
+        [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
+        LanguageDirection GetDirection(int shift) => (LanguageDirection)(((long)m_Flags >> shift) & 3);
+
+        // Derives the mask from the shift so the two can't be mispaired, and rejects values that would not
+        // survive the 2-bit round trip instead of silently truncating into the neighbouring field.
+        [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
+        void SetDirection(int shift, LanguageDirection value)
+        {
+            if (value < LanguageDirection.Inherit || value > LanguageDirection.RTL)
+                throw new ArgumentOutOfRangeException(nameof(value), value, null);
+
+            var mask = (VisualElementFlags)(3L << shift);
+            m_Flags = (m_Flags & ~mask) | (VisualElementFlags)((long)value << shift);
+        }
+
         /// <summary>
         /// Indicates the directionality of the element's text. The value will propagate to the element's children.
         /// </summary>
@@ -1765,14 +1884,14 @@ namespace UnityEngine.UIElements
         [UxmlAttribute]
         public LanguageDirection languageDirection
         {
-            get => m_LanguageDirection;
+            get => GetDirection(VisualElementFlagsShift.LanguageDirection);
             set
             {
-                if (m_LanguageDirection == value)
+                if (GetDirection(VisualElementFlagsShift.LanguageDirection) == value)
                     return;
 
-                m_LanguageDirection = value;
-                localLanguageDirection = m_LanguageDirection;
+                SetDirection(VisualElementFlagsShift.LanguageDirection, value);
+                localLanguageDirection = value;
                 NotifyPropertyChanged(languageDirectionProperty);
             }
         }
@@ -1800,15 +1919,36 @@ namespace UnityEngine.UIElements
         /// </summary>
         [UxmlAttribute, HideInInspector, UxmlTypeReference(typeof(object))]
         [Tooltip(DataBinding.k_DataSourceTooltip)]
-        public Type dataSourceType { get; set; }
+        public Type dataSourceType
+        {
+            get
+            {
+                ref var data = ref dataBindingData;
+                return Unsafe.IsNullRef(ref data) ? null : data.dataSourceType;
+            }
+            set
+            {
+                if (value == null && (m_Flags & VisualElementFlags.HasDataBindingComponent) == 0)
+                    return;
+
+                GetOrAddDataBindingData().dataSourceType = value;
+            }
+        }
 
         [UxmlObjectReference("Bindings"), UxmlInternalField, HideInInspector]
         [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
         internal List<Binding> bindings
         {
-            get => m_Bindings ??= new List<Binding>();
+            get
+            {
+                ref var data = ref GetOrAddDataBindingData();
+                return data.bindings ??= new List<Binding>();
+            }
             set
             {
+                if (value == null && (m_Flags & VisualElementFlags.HasDataBindingComponent) == 0)
+                    return;
+
                 if (value != null)
                 {
                     foreach(var binding in value)
@@ -1817,7 +1957,7 @@ namespace UnityEngine.UIElements
                     }
                 }
 
-                m_Bindings = value;
+                GetOrAddDataBindingData().bindings = value;
             }
         }
 
@@ -1940,10 +2080,7 @@ namespace UnityEngine.UIElements
             m_Children = s_EmptyList;
             controlid = ++s_NextId;
 
-            hierarchy = new Hierarchy(this);
-
             m_ClassList = StyleClassList.Empty;
-            flags = VisualElementFlags.Init;
 
             focusable = false;
 
@@ -1985,10 +2122,6 @@ namespace UnityEngine.UIElements
             UpdateClassSelectorData();
         }
 
-        // For unit tests
-        [AutoStaticsCleanupOnCodeReload]
-        internal static int s_FinalizerCount = 0;
-
 #pragma warning disable UA5000 // The Avoid Finalizer Analyzer produces compile errors for any new finalizers. This pre-existing finalizer declaration has been suppressed, but should be rewritten if possible.
         ~VisualElement()
         {
@@ -1996,14 +2129,10 @@ namespace UnityEngine.UIElements
             {
                 if (!resourcesReleased)
                 {
-                    if (LayoutManager.IsSharedManagerCreated)
-                    {
-                        LayoutManager.SharedManager.EnqueueNodeForRecycling(ref m_LayoutNode);
-                    }
-                    ReleaseComponentStorage();
+                    LayoutManager.RecycleNode(ref m_LayoutNode);
+                    ReleaseComponentStorage(fromFinalizer: true);
                     ReleaseNativeResources(fromFinalizer: true);
                 }
-                s_FinalizerCount++;
             }
             // Exceptions inside finalizers are not automatically logged by Unity
             // So let's report those in the console to make sure they don't go undetected
@@ -2015,7 +2144,7 @@ namespace UnityEngine.UIElements
         }
 #pragma warning restore UA5000
 
-        private const string k_ElementReleaseExceptionMessage = "You can't modify a VisualElement after its resources are released. This usually happens when PanelRenderer releases elements during UI reload or cleanup. Make sure that you don't hold stale references to elements.";
+        private protected const string k_ElementReleaseExceptionMessage = "You can't modify a VisualElement after its resources are released. This usually happens when PanelRenderer releases elements during UI reload or cleanup. Make sure that you don't hold stale references to elements.";
 
         /// <summary>
         /// Indicates if the element has released its reusable resources, in which case it can not be modified or added again.
@@ -2064,8 +2193,10 @@ namespace UnityEngine.UIElements
         internal void ReleaseResourcesNoChecks()
         {
             flags |= VisualElementFlags.Released;
-            LayoutManager.SharedManager.EnqueueNodeForRecycling(ref m_LayoutNode);
-            ReleaseComponentStorage(returnManagedBoxesToPool: true);
+
+            LayoutManager.RecycleNode(ref m_LayoutNode);
+
+            ReleaseComponentStorage();
 
             // Put back some of the lists we own to their pools
             // Note: we already know the child list was pooled back when clearing the element
@@ -2092,11 +2223,7 @@ namespace UnityEngine.UIElements
         {
             if (e.currentTarget is VisualElement element && !string.IsNullOrEmpty(element.tooltip))
             {
-                if (e.rect != Rect.zero)
-                {
-                    e.rect = e.rect;
-                }
-                else
+                if (e.rect == Rect.zero)
                 {
                     // Clamp to world clip (UUM-109120)
                     var wb = element.worldBound;
@@ -2506,23 +2633,22 @@ namespace UnityEngine.UIElements
             }
         }
 
-        LanguageDirection m_LocalLanguageDirection;
         internal LanguageDirection localLanguageDirection
         {
-            get => m_LocalLanguageDirection;
+            get => GetDirection(VisualElementFlagsShift.LocalLanguageDirection);
             set
             {
-                if (m_LocalLanguageDirection == value)
+                if (GetDirection(VisualElementFlagsShift.LocalLanguageDirection) == value)
                     return;
 
-                m_LocalLanguageDirection = value;
+                SetDirection(VisualElementFlagsShift.LocalLanguageDirection, value);
 
                 IncrementVersion(VersionChangeType.Layout | VersionChangeType.Repaint);
                 var count = m_Children.Count;
                 for (int i = 0; i < count; ++i)
                 {
                     if(m_Children[i].languageDirection == LanguageDirection.Inherit)
-                        m_Children[i].localLanguageDirection = m_LocalLanguageDirection;
+                        m_Children[i].localLanguageDirection = value;
                 }
             }
         }
@@ -2582,6 +2708,23 @@ namespace UnityEngine.UIElements
             return (renderData.dirtiedValues & RenderDataDirtyTypes.Visuals) == RenderDataDirtyTypes.Visuals;
         }
 
+        // One shared instance, so the getter can hand back the same object the setter recognises. Two
+        // method-group conversions at different call sites would not compare equal.
+        [NoAutoStaticsCleanup] // a delegate to a static method; holds no per-domain state to clear
+        internal static readonly Action<MeshGenerationContext> k_DefaultTextGenerateContent =
+            TextElement.OnGenerateVisualContent;
+
+        // Flag-gated, so an element with no painting component answers in one bit test.
+        Action<MeshGenerationContext> storedGenerateVisualContent
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get
+            {
+                ref var data = ref paintingData;
+                return Unsafe.IsNullRef(ref data) ? null : data.generateVisualContent;
+            }
+        }
+
         /// <summary>
         /// Delegate function to generate the visual content of a visual element.
         /// </summary>
@@ -2602,23 +2745,86 @@ namespace UnityEngine.UIElements
         /// <remarks>
         /// SA: [[MeshGenerationContext]]
         /// </remarks>
-        public Action<MeshGenerationContext> generateVisualContent { get; set; }
+        public Action<MeshGenerationContext> generateVisualContent
+        {
+            // A text element draws its text through a flag rather than by subscribing, so the delegate
+            // stays null on the elements that only ever wanted the default. The accessors put the handler
+            // back in the value they hand out and take it back off the value they are given, so `+=`,
+            // plain assignment and `= null` keep behaving exactly as they did when it was a real
+            // subscription: assigning replaces the text drawing, appending keeps it.
+            get
+            {
+                if ((m_Flags & VisualElementFlags.UseDefaultTextGenerateContent) == 0)
+                    return storedGenerateVisualContent;
+
+                return k_DefaultTextGenerateContent + storedGenerateVisualContent;
+            }
+            set
+            {
+                var toStore = (m_Flags & VisualElementFlags.UseDefaultTextGenerateContent) == 0
+                    ? value
+                    : StripDefaultTextGenerateContent(value);
+
+                // Clearing something that was never stored must not create the storage.
+                if (toStore == null && (m_Flags & VisualElementFlags.HasPaintingComponent) == 0)
+                    return;
+
+                GetOrAddPaintingData().generateVisualContent = toStore;
+            }
+        }
+
+        // Returns what to store, and clears the flag unless `value` still starts with the default text
+        // handler. Only reached on an element that currently draws default text.
+        Action<MeshGenerationContext> StripDefaultTextGenerateContent(Action<MeshGenerationContext> value)
+        {
+            if (value == null)
+            {
+                m_Flags &= ~VisualElementFlags.UseDefaultTextGenerateContent;
+                return null;
+            }
+
+            if (ReferenceEquals(value, k_DefaultTextGenerateContent))
+                return null;
+
+            var handlers = value.GetInvocationList();
+            if (handlers.Length < 2 || !ReferenceEquals(handlers[0], k_DefaultTextGenerateContent))
+            {
+                m_Flags &= ~VisualElementFlags.UseDefaultTextGenerateContent;
+                return value;
+            }
+
+            Action<MeshGenerationContext> rest = null;
+            for (var i = 1; i < handlers.Length; i++)
+                rest += (Action<MeshGenerationContext>)handlers[i];
+
+            return rest;
+        }
 
         static readonly Unity.Profiling.ProfilerMarker k_GenerateVisualContentMarker = new(ProfilerCategory.UIToolkit, "GenerateVisualContent");
 
         internal void InvokeGenerateVisualContent(MeshGenerationContext mgc)
         {
-            if (generateVisualContent != null)
+            var drawsDefaultText = (m_Flags & VisualElementFlags.UseDefaultTextGenerateContent) != 0;
+            var callback = storedGenerateVisualContent;
+
+            if (!drawsDefaultText && callback == null)
+                return;
+
+            try
             {
-                try
+                using (k_GenerateVisualContentMarker.Auto())
                 {
-                    using (k_GenerateVisualContentMarker.Auto())
-                        generateVisualContent(mgc);
+                    // Ordered as the subscription was: the text first, then anything added after it. An
+                    // exception in the text handler skips the rest, exactly as it did in the multicast.
+                    if (drawsDefaultText)
+                        TextElement.OnGenerateVisualContent(mgc);
+
+                    callback?.Invoke(mgc);
                 }
-                catch (Exception e)
-                {
-                    Debug.LogException(e);
-                }
+            }
+            catch (Exception e)
+            {
+                Debug.LogException(e);
             }
         }
 
@@ -3572,5 +3778,3 @@ namespace UnityEngine.UIElements
 
     }
 }
-#pragma warning restore UAL0010,UAL0011,UAL0012,UAL0013,UAL0014
-#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

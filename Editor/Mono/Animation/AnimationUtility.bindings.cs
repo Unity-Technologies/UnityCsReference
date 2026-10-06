@@ -155,7 +155,7 @@ namespace UnityEditor
         extern internal static AnimationClip[] GetAnimationClipsInAnimationPlayer([NotNull] GameObject gameObject);
 
         // Sets the array of AnimationClips to be referenced in the Animation component
-        extern public static void SetAnimationClips([NotNull] Animation animation, [UnityMarshalAs(NativeType.ScriptingObjectPtr)] AnimationClip[] clips);
+        extern public static void SetAnimationClips([NotNull] Animation animation, AnimationClip[] clips);
 
         public static EditorCurveBinding[] GetAnimatableBindings(GameObject targetObject, GameObject root)
         {
@@ -432,7 +432,7 @@ namespace UnityEditor
         extern public static void SetAnimationClipSettings([NotNull] AnimationClip clip, AnimationClipSettings srcClipInfo);
         extern internal static void SetAnimationClipSettingsNoDirty([NotNull] AnimationClip clip, AnimationClipSettings srcClipInfo);
 
-        extern public static void SetAdditiveReferencePose(AnimationClip clip, AnimationClip referenceClip, float time);
+        extern public static void SetAdditiveReferencePose([NotNull] AnimationClip clip, [NotNull] AnimationClip referenceClip, float time);
 
         extern internal static bool IsValidOptimizedPolynomialCurve(AnimationCurve curve);
         extern public static void ConstrainToPolynomialCurve(AnimationCurve curve);

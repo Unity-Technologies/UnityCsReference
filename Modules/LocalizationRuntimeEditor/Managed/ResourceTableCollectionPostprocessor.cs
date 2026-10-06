@@ -5,7 +5,6 @@
 using System;
 using System.Collections.Generic;
 using Object = UnityEngine.Object;
-using Unity.Scripting.LifecycleManagement;
 using UnityEditor;
 using UnityEngine;
 
@@ -15,29 +14,21 @@ class ResourceTableCollectionPostprocessor : AssetPostprocessor
 {
     static void OnPostprocessAllAssets(string[] importedAssets, string[] deletedAssets, string[] movedAssets, string[] movedFromAssetPaths)
     {
-        var changed = false;
-        changed |= RegisterOwningCollections(importedAssets);
-        changed |= RegisterOwningCollections(movedAssets);
+        var deletedLocalizationAsset = AssetProviderEditors.MayHaveDeletedCollectionAssets(deletedAssets);
+        var registered = new HashSet<ResourceTableCollection>();
+        var visited = new HashSet<SharedTableData>();
+        RegisterOwningCollections(importedAssets, registered, visited);
+        RegisterOwningCollections(movedAssets, registered, visited);
 
-        var deletedLocalizationAsset = ConsumeDeletedLocalizationAssets();
-        if (changed || deletedLocalizationAsset)
+        if (registered.Count > 0 || deletedLocalizationAsset)
             LocalizationEditorSettings.RaiseCollectionsChanged();
 
         if (deletedLocalizationAsset)
             AssetProviderEditors.RebuildRegistrations();
     }
 
-    static bool ConsumeDeletedLocalizationAssets()
+    static void RegisterOwningCollections(string[] paths, HashSet<ResourceTableCollection> registered, HashSet<SharedTableData> visited)
     {
-        var pending = LocalizationDeletionWatcher.Pending;
-        var any = pending.Count > 0;
-        pending.Clear();
-        return any;
-    }
-
-    static bool RegisterOwningCollections(string[] paths)
-    {
-        var registered = new HashSet<ResourceTableCollection>();
         foreach (var path in paths)
         {
             if (!LocalizationAssetPaths.IsLocalizationAsset(path))
@@ -46,27 +37,72 @@ class ResourceTableCollectionPostprocessor : AssetPostprocessor
             switch (AssetDatabase.LoadAssetAtPath<Object>(path))
             {
                 case ResourceTableCollection collection:
-                    Register(collection, registered);
+                    Register(collection, registered, visited);
                     break;
                 case SharedTableData shared:
-                    foreach (var owner in CollectionsUsing(shared))
-                        Register(owner, registered);
+                    EnsureUniqueEntries(shared, visited);
+                    foreach (var owner in AssetProviderEditors.CollectionsUsing(shared))
+                        Register(owner, registered, visited);
                     break;
                 case ResourceTable table:
-                    foreach (var owner in CollectionsWith(table))
-                        Register(owner, registered);
+                    foreach (var owner in AssetProviderEditors.CollectionsWith(table))
+                        Register(owner, registered, visited);
                     break;
             }
         }
-        return registered.Count > 0;
     }
 
-    static void Register(ResourceTableCollection collection, HashSet<ResourceTableCollection> registered)
+    static void Register(ResourceTableCollection collection, HashSet<ResourceTableCollection> registered, HashSet<SharedTableData> visited)
     {
         if (collection == null || !registered.Add(collection))
             return;
+        if (collection.SharedData == null)
+            Debug.LogWarning($"'{AssetDatabase.GetAssetPath(collection)}' has no shared key table, so it holds no keys and importing into it does nothing.", collection);
         EnsureCollectionGuid(collection);
+        EnsureUniqueEntries(collection.SharedData, visited);
         AssetProviderEditors.RegisterCollection(collection);
+    }
+
+    // Renaming rather than dropping keeps each id, so the values stored against it in every locale table survive.
+    internal static void EnsureUniqueEntries(SharedTableData shared, HashSet<SharedTableData> visited)
+    {
+        // One import reaches a shared table through its own path and through every collection using it.
+        if (shared == null || !visited.Add(shared))
+            return;
+
+        var renamed = false;
+        var seen = new HashSet<string>();
+        var byId = new Dictionary<long, SharedTableData.SharedTableEntry>();
+        foreach (var entry in shared.Entries)
+        {
+            if (entry == null)
+                continue;
+
+            // Every locale table stores its values against the id, so two entries holding one id share one value.
+            if (entry.Id != 0 && !byId.TryAdd(entry.Id, entry))
+                Debug.LogWarning($"'{AssetDatabase.GetAssetPath(shared)}' has two keys holding id {entry.Id}, '{byId[entry.Id].Key}' and '{entry.Key}', so they share one value in every locale. Remove one of them and add it again to give it a fresh id.", shared);
+
+            if (string.IsNullOrEmpty(entry.Key) || seen.Add(entry.Key))
+                continue;
+
+            var key = entry.Key;
+            var free = key;
+            for (var n = 1; shared.GetEntry(free) != null; n++)
+                free = $"{key} ({n})";
+
+            // Renaming reaches the entry through its id, so an id that resolves elsewhere would rename the wrong key.
+            if (shared.GetEntry(entry.Id) == entry && shared.RenameKey(entry.Id, free))
+            {
+                renamed = true;
+                Debug.LogWarning($"'{AssetDatabase.GetAssetPath(shared)}' had more than one key named '{key}'; renamed one of them to '{free}'.", shared);
+            }
+            else
+            {
+                Debug.LogWarning($"'{AssetDatabase.GetAssetPath(shared)}' has more than one key named '{key}' and the duplicate cannot be renamed, so only one of them answers to that key.", shared);
+            }
+        }
+        if (renamed)
+            EditorUtility.SetDirty(shared);
     }
 
     static void EnsureCollectionGuid(ResourceTableCollection collection)
@@ -95,61 +131,6 @@ class ResourceTableCollectionPostprocessor : AssetPostprocessor
             return false;
         var other = AssetDatabase.LoadAssetAtPath<ResourceTableCollection>(path);
         return other != null && other != except && other.SharedData == shared;
-    }
-
-    static IEnumerable<ResourceTableCollection> CollectionsUsing(SharedTableData shared)
-    {
-        foreach (var collection in AssetProviderEditors.FindAllCollections())
-        {
-            if (collection != null && collection.SharedData == shared)
-                yield return collection;
-        }
-    }
-
-    static IEnumerable<ResourceTableCollection> CollectionsWith(ResourceTable table)
-    {
-        foreach (var collection in AssetProviderEditors.FindAllCollections())
-        {
-            if (collection == null)
-                continue;
-            if (collection.SharedData != null && collection.SharedData == table.SharedData)
-            {
-                yield return collection;
-                continue;
-            }
-            foreach (var owned in collection.Tables)
-            {
-                if (owned == table)
-                {
-                    yield return collection;
-                    break;
-                }
-            }
-        }
-    }
-}
-
-partial class LocalizationDeletionWatcher : AssetModificationProcessor
-{
-    [AutoStaticsCleanup] // pending deletions for the current import; a reload abandons them
-    internal static readonly HashSet<string> Pending = new();
-
-    static AssetDeleteResult OnWillDeleteAsset(string path, RemoveAssetOptions options)
-    {
-        if (LocalizationAssetPaths.IsLocalizationAsset(path) || FolderHasLocalizationAsset(path))
-            Pending.Add(path);
-        return AssetDeleteResult.DidNotDelete;
-    }
-
-    // A folder delete only reports the folder path, so look inside it before it goes.
-    static bool FolderHasLocalizationAsset(string path)
-    {
-        if (!AssetDatabase.IsValidFolder(path))
-            return false;
-        var scope = new[] { path };
-        return AssetDatabase.FindAssets($"t:{nameof(ResourceTableCollection)}", scope).Length > 0
-            || AssetDatabase.FindAssets($"t:{nameof(ResourceTable)}", scope).Length > 0
-            || AssetDatabase.FindAssets($"t:{nameof(SharedTableData)}", scope).Length > 0;
     }
 }
 

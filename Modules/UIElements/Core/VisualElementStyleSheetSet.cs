@@ -39,16 +39,17 @@ namespace UnityEngine.UIElements
             if (styleSheet == null)
                 throw new ArgumentNullException(nameof(styleSheet));
 
-            if (m_Element.styleSheetList == null)
+            var sheets = m_Element.styleSheetList;
+            if (sheets == null)
             {
-                m_Element.styleSheetList = new List<StyleSheet>();
+                m_Element.styleSheetList = sheets = new List<StyleSheet>();
             }
-            else if (m_Element.styleSheetList.Contains(styleSheet))
+            else if (sheets.Contains(styleSheet))
             {
                 return;
             }
 
-            m_Element.styleSheetList.Insert(index, styleSheet);
+            sheets.Insert(index, styleSheet);
             m_Element.IncrementVersion(VersionChangeType.StyleSheet);
 
             m_Element.elementPanel?.liveReloadSystem.StartStyleSheetAssetTracking(styleSheet);
@@ -59,13 +60,14 @@ namespace UnityEngine.UIElements
         /// </summary>
         public void Clear()
         {
-            if (m_Element.styleSheetList == null)
+            var sheets = m_Element.styleSheetList;
+            if (sheets == null)
                 return;
 
             if (m_Element.elementPanel != null)
             {
                 var liveReloadSystem = m_Element.elementPanel.liveReloadSystem;
-                foreach (var styleSheet in m_Element.styleSheetList)
+                foreach (var styleSheet in sheets)
                 {
                     liveReloadSystem.StopStyleSheetAssetTracking(styleSheet);
                 }
@@ -83,9 +85,10 @@ namespace UnityEngine.UIElements
             if (styleSheet == null)
                 throw new ArgumentNullException(nameof(styleSheet));
 
-            if (m_Element.styleSheetList != null && m_Element.styleSheetList.Remove(styleSheet))
+            var sheets = m_Element.styleSheetList;
+            if (sheets != null && sheets.Remove(styleSheet))
             {
-                if (m_Element.styleSheetList.Count == 0)
+                if (sheets.Count == 0)
                 {
                     m_Element.styleSheetList = null;
                 }
@@ -106,16 +109,17 @@ namespace UnityEngine.UIElements
             if (@new == null)
                 throw new ArgumentNullException(nameof(@new));
 
-            if (m_Element.styleSheetList == null)
+            var sheets = m_Element.styleSheetList;
+            if (sheets == null)
             {
                 return;
             }
 
-            int index = m_Element.styleSheetList.IndexOf(old);
+            int index = sheets.IndexOf(old);
             if (index >= 0)
             {
                 m_Element.IncrementVersion(VersionChangeType.StyleSheet);
-                m_Element.styleSheetList[index] = @new;
+                sheets[index] = @new;
 
                 if (m_Element.elementPanel != null)
                 {
@@ -135,11 +139,8 @@ namespace UnityEngine.UIElements
             if (styleSheet == null)
                 throw new ArgumentNullException(nameof(styleSheet));
 
-            if (m_Element.styleSheetList != null)
-            {
-                return m_Element.styleSheetList.Contains(styleSheet);
-            }
-            return false;
+            var sheets = m_Element.styleSheetList;
+            return sheets != null && sheets.Contains(styleSheet);
         }
 
         /// <summary>
@@ -150,10 +151,7 @@ namespace UnityEngine.UIElements
         {
             get
             {
-                if (m_Element.styleSheetList == null)
-                    return 0;
-
-                return m_Element.styleSheetList.Count;
+                return m_Element.styleSheetList?.Count ?? 0;
             }
         }
 
@@ -165,10 +163,11 @@ namespace UnityEngine.UIElements
         {
             get
             {
-                if (m_Element.styleSheetList == null)
+                var sheets = m_Element.styleSheetList;
+                if (sheets == null)
                     throw new ArgumentOutOfRangeException(nameof(index));
 
-                return m_Element.styleSheetList[index];
+                return sheets[index];
             }
         }
 

@@ -141,6 +141,8 @@ namespace UnityEngine
     [NativeHeader("Modules/Animation/Animation.h")]
     public sealed class Animation : Behaviour, IEnumerable
     {
+        internal Animation(global::UnityEngine.EntityId id) : base(id) {}
+        public Animation() {}
         ///<summary>The default animation.</summary>
         public extern AnimationClip clip { get; set; }
         ///<summary>Should the default animation clip (the <see cref="Animation.clip" /> property) automatically start playing on startup?</summary>

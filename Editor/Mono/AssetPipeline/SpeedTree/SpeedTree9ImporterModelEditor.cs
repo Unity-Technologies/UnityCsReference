@@ -641,7 +641,7 @@ namespace UnityEditor.SpeedTree.Importer
             else
             {
                 // Toggle
-                GUIContent customizationLabel = EditorGUIUtility.TrTextContent(String.Format("Customize {0} options", lods[lodIndex].LODName), "To override options for a certain LOD, check this box and select the LOD from the LOD slider above");
+                GUIContent customizationLabel = L10n.TextContent(String.Format("Customize {0} options", lods[lodIndex].LODName), "To override options for a certain LOD, check this box and select the LOD from the LOD slider above", null, null);
                 EditorGUILayout.PropertyField(lodSettingOverride, customizationLabel);
 
                 // Warning

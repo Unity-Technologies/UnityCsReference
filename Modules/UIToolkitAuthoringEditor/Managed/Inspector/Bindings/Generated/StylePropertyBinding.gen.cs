@@ -825,9 +825,28 @@ namespace Unity.UIToolkit.Editor
             targetElement.UnregisterCallback<PropertyChangedEvent, CallbackContext>(binding.ProcessChange);
         }
 
+        internal static Dimension.Unit GetFloatUnit(StylePropertyId id)
+        {
+            switch (id)
+            {
+                case StylePropertyId.BorderBottomWidth:
+                case StylePropertyId.BorderLeftWidth:
+                case StylePropertyId.BorderRightWidth:
+                case StylePropertyId.BorderTopWidth:
+                case StylePropertyId.UnitySliceScale:
+                case StylePropertyId.UnityTextOutlineWidth:
+                    return Dimension.Unit.Pixel;
+                case StylePropertyId.AnimationDelay:
+                case StylePropertyId.AnimationDuration:
+                    return Dimension.Unit.Second;
+                default:
+                    return Dimension.Unit.Unitless;
+            }
+        }
+
         internal static void SetFloatList(StyleProperty property, StyleSheet sheet, List<float> value)
         {
-            property.SetFloatList(sheet, value);
+            WriteFloatList(property, sheet, value);
         }
 
         internal static void SetFloatList(StyleProperty property, StyleSheet sheet, StyleList<float> styleValue)
@@ -957,7 +976,7 @@ namespace Unity.UIToolkit.Editor
 
         internal static void SetFloat(StyleProperty property, StyleSheet sheet, float value)
         {
-            property.SetFloat(sheet, value);
+            WriteFloat(property, sheet, value);
         }
 
         internal static void SetFloat(StyleProperty property, StyleSheet sheet, StyleFloat styleValue)
@@ -1159,7 +1178,8 @@ namespace Unity.UIToolkit.Editor
 
         private static void ProcessChange(ChangeEvent<StyleList<float>> evt, CallbackContext ctx)
         {
-            ProcessChange(evt, ctx, SetFloatList);
+            var setterOverride = (ctx.element as IStylePropertyDataField<StyleList<float>, List<float>>)?.setterOverride;
+            ProcessChange(evt, ctx, setterOverride ?? SetFloatList);
         }
 
         private void ProcessChange(CompositeStylePropertyChangeEvent<List<float>> evt, CallbackContext ctx)
@@ -1169,7 +1189,8 @@ namespace Unity.UIToolkit.Editor
 
         private void ProcessChange(CompositeStylePropertyChangeEvent<StyleList<float>> evt, CallbackContext ctx)
         {
-            ProcessChange(evt, ctx, SetFloatList);
+            var setterOverride = (ctx.element as IStylePropertyDataField<StyleList<float>, List<float>>)?.setterOverride;
+            ProcessChange(evt, ctx, setterOverride ?? SetFloatList);
         }
 
         private static void ProcessChange(ChangeEvent<List<AnimationDirection>> evt, CallbackContext ctx)
@@ -1179,7 +1200,8 @@ namespace Unity.UIToolkit.Editor
 
         private static void ProcessChange(ChangeEvent<StyleList<AnimationDirection>> evt, CallbackContext ctx)
         {
-            ProcessChange(evt, ctx, SetAnimationDirectionList);
+            var setterOverride = (ctx.element as IStylePropertyDataField<StyleList<AnimationDirection>, List<AnimationDirection>>)?.setterOverride;
+            ProcessChange(evt, ctx, setterOverride ?? SetAnimationDirectionList);
         }
 
         private void ProcessChange(CompositeStylePropertyChangeEvent<List<AnimationDirection>> evt, CallbackContext ctx)
@@ -1189,7 +1211,8 @@ namespace Unity.UIToolkit.Editor
 
         private void ProcessChange(CompositeStylePropertyChangeEvent<StyleList<AnimationDirection>> evt, CallbackContext ctx)
         {
-            ProcessChange(evt, ctx, SetAnimationDirectionList);
+            var setterOverride = (ctx.element as IStylePropertyDataField<StyleList<AnimationDirection>, List<AnimationDirection>>)?.setterOverride;
+            ProcessChange(evt, ctx, setterOverride ?? SetAnimationDirectionList);
         }
 
         private static void ProcessChange(ChangeEvent<List<AnimationIterationCount>> evt, CallbackContext ctx)
@@ -1199,7 +1222,8 @@ namespace Unity.UIToolkit.Editor
 
         private static void ProcessChange(ChangeEvent<StyleList<AnimationIterationCount>> evt, CallbackContext ctx)
         {
-            ProcessChange(evt, ctx, SetAnimationIterationCountList);
+            var setterOverride = (ctx.element as IStylePropertyDataField<StyleList<AnimationIterationCount>, List<AnimationIterationCount>>)?.setterOverride;
+            ProcessChange(evt, ctx, setterOverride ?? SetAnimationIterationCountList);
         }
 
         private void ProcessChange(CompositeStylePropertyChangeEvent<List<AnimationIterationCount>> evt, CallbackContext ctx)
@@ -1209,7 +1233,8 @@ namespace Unity.UIToolkit.Editor
 
         private void ProcessChange(CompositeStylePropertyChangeEvent<StyleList<AnimationIterationCount>> evt, CallbackContext ctx)
         {
-            ProcessChange(evt, ctx, SetAnimationIterationCountList);
+            var setterOverride = (ctx.element as IStylePropertyDataField<StyleList<AnimationIterationCount>, List<AnimationIterationCount>>)?.setterOverride;
+            ProcessChange(evt, ctx, setterOverride ?? SetAnimationIterationCountList);
         }
 
         private static void ProcessChange(ChangeEvent<List<UIAnimationClip>> evt, CallbackContext ctx)
@@ -1219,7 +1244,8 @@ namespace Unity.UIToolkit.Editor
 
         private static void ProcessChange(ChangeEvent<StyleList<UIAnimationClip>> evt, CallbackContext ctx)
         {
-            ProcessChange(evt, ctx, SetUIAnimationClipList);
+            var setterOverride = (ctx.element as IStylePropertyDataField<StyleList<UIAnimationClip>, List<UIAnimationClip>>)?.setterOverride;
+            ProcessChange(evt, ctx, setterOverride ?? SetUIAnimationClipList);
         }
 
         private void ProcessChange(CompositeStylePropertyChangeEvent<List<UIAnimationClip>> evt, CallbackContext ctx)
@@ -1229,7 +1255,8 @@ namespace Unity.UIToolkit.Editor
 
         private void ProcessChange(CompositeStylePropertyChangeEvent<StyleList<UIAnimationClip>> evt, CallbackContext ctx)
         {
-            ProcessChange(evt, ctx, SetUIAnimationClipList);
+            var setterOverride = (ctx.element as IStylePropertyDataField<StyleList<UIAnimationClip>, List<UIAnimationClip>>)?.setterOverride;
+            ProcessChange(evt, ctx, setterOverride ?? SetUIAnimationClipList);
         }
 
         private static void ProcessChange(ChangeEvent<List<AnimationPlayState>> evt, CallbackContext ctx)
@@ -1239,7 +1266,8 @@ namespace Unity.UIToolkit.Editor
 
         private static void ProcessChange(ChangeEvent<StyleList<AnimationPlayState>> evt, CallbackContext ctx)
         {
-            ProcessChange(evt, ctx, SetAnimationPlayStateList);
+            var setterOverride = (ctx.element as IStylePropertyDataField<StyleList<AnimationPlayState>, List<AnimationPlayState>>)?.setterOverride;
+            ProcessChange(evt, ctx, setterOverride ?? SetAnimationPlayStateList);
         }
 
         private void ProcessChange(CompositeStylePropertyChangeEvent<List<AnimationPlayState>> evt, CallbackContext ctx)
@@ -1249,7 +1277,8 @@ namespace Unity.UIToolkit.Editor
 
         private void ProcessChange(CompositeStylePropertyChangeEvent<StyleList<AnimationPlayState>> evt, CallbackContext ctx)
         {
-            ProcessChange(evt, ctx, SetAnimationPlayStateList);
+            var setterOverride = (ctx.element as IStylePropertyDataField<StyleList<AnimationPlayState>, List<AnimationPlayState>>)?.setterOverride;
+            ProcessChange(evt, ctx, setterOverride ?? SetAnimationPlayStateList);
         }
 
         private static void ProcessChange(ChangeEvent<Ratio> evt, CallbackContext ctx)
@@ -1259,7 +1288,8 @@ namespace Unity.UIToolkit.Editor
 
         private static void ProcessChange(ChangeEvent<StyleRatio> evt, CallbackContext ctx)
         {
-            ProcessChange(evt, ctx, SetRatio);
+            var setterOverride = (ctx.element as IStylePropertyDataField<StyleRatio, Ratio>)?.setterOverride;
+            ProcessChange(evt, ctx, setterOverride ?? SetRatio);
         }
 
         private void ProcessChange(CompositeStylePropertyChangeEvent<Ratio> evt, CallbackContext ctx)
@@ -1269,7 +1299,8 @@ namespace Unity.UIToolkit.Editor
 
         private void ProcessChange(CompositeStylePropertyChangeEvent<StyleRatio> evt, CallbackContext ctx)
         {
-            ProcessChange(evt, ctx, SetRatio);
+            var setterOverride = (ctx.element as IStylePropertyDataField<StyleRatio, Ratio>)?.setterOverride;
+            ProcessChange(evt, ctx, setterOverride ?? SetRatio);
         }
 
         private static void ProcessChange(ChangeEvent<List<FilterFunction>> evt, CallbackContext ctx)
@@ -1279,7 +1310,8 @@ namespace Unity.UIToolkit.Editor
 
         private static void ProcessChange(ChangeEvent<StyleList<FilterFunction>> evt, CallbackContext ctx)
         {
-            ProcessChange(evt, ctx, SetFilterFunctionList);
+            var setterOverride = (ctx.element as IStylePropertyDataField<StyleList<FilterFunction>, List<FilterFunction>>)?.setterOverride;
+            ProcessChange(evt, ctx, setterOverride ?? SetFilterFunctionList);
         }
 
         private void ProcessChange(CompositeStylePropertyChangeEvent<List<FilterFunction>> evt, CallbackContext ctx)
@@ -1289,7 +1321,8 @@ namespace Unity.UIToolkit.Editor
 
         private void ProcessChange(CompositeStylePropertyChangeEvent<StyleList<FilterFunction>> evt, CallbackContext ctx)
         {
-            ProcessChange(evt, ctx, SetFilterFunctionList);
+            var setterOverride = (ctx.element as IStylePropertyDataField<StyleList<FilterFunction>, List<FilterFunction>>)?.setterOverride;
+            ProcessChange(evt, ctx, setterOverride ?? SetFilterFunctionList);
         }
 
         private static void ProcessChange(ChangeEvent<Color> evt, CallbackContext ctx)
@@ -1299,7 +1332,8 @@ namespace Unity.UIToolkit.Editor
 
         private static void ProcessChange(ChangeEvent<StyleColor> evt, CallbackContext ctx)
         {
-            ProcessChange(evt, ctx, SetColor);
+            var setterOverride = (ctx.element as IStylePropertyDataField<StyleColor, Color>)?.setterOverride;
+            ProcessChange(evt, ctx, setterOverride ?? SetColor);
         }
 
         private void ProcessChange(CompositeStylePropertyChangeEvent<Color> evt, CallbackContext ctx)
@@ -1309,7 +1343,8 @@ namespace Unity.UIToolkit.Editor
 
         private void ProcessChange(CompositeStylePropertyChangeEvent<StyleColor> evt, CallbackContext ctx)
         {
-            ProcessChange(evt, ctx, SetColor);
+            var setterOverride = (ctx.element as IStylePropertyDataField<StyleColor, Color>)?.setterOverride;
+            ProcessChange(evt, ctx, setterOverride ?? SetColor);
         }
 
         private static void ProcessChange(ChangeEvent<Background> evt, CallbackContext ctx)
@@ -1319,7 +1354,8 @@ namespace Unity.UIToolkit.Editor
 
         private static void ProcessChange(ChangeEvent<StyleBackground> evt, CallbackContext ctx)
         {
-            ProcessChange(evt, ctx, SetBackground);
+            var setterOverride = (ctx.element as IStylePropertyDataField<StyleBackground, Background>)?.setterOverride;
+            ProcessChange(evt, ctx, setterOverride ?? SetBackground);
         }
 
         private void ProcessChange(CompositeStylePropertyChangeEvent<Background> evt, CallbackContext ctx)
@@ -1329,7 +1365,8 @@ namespace Unity.UIToolkit.Editor
 
         private void ProcessChange(CompositeStylePropertyChangeEvent<StyleBackground> evt, CallbackContext ctx)
         {
-            ProcessChange(evt, ctx, SetBackground);
+            var setterOverride = (ctx.element as IStylePropertyDataField<StyleBackground, Background>)?.setterOverride;
+            ProcessChange(evt, ctx, setterOverride ?? SetBackground);
         }
 
         private static void ProcessChange(ChangeEvent<BackgroundPosition> evt, CallbackContext ctx)
@@ -1339,7 +1376,8 @@ namespace Unity.UIToolkit.Editor
 
         private static void ProcessChange(ChangeEvent<StyleBackgroundPosition> evt, CallbackContext ctx)
         {
-            ProcessChange(evt, ctx, SetBackgroundPosition);
+            var setterOverride = (ctx.element as IStylePropertyDataField<StyleBackgroundPosition, BackgroundPosition>)?.setterOverride;
+            ProcessChange(evt, ctx, setterOverride ?? SetBackgroundPosition);
         }
 
         private void ProcessChange(CompositeStylePropertyChangeEvent<BackgroundPosition> evt, CallbackContext ctx)
@@ -1349,7 +1387,8 @@ namespace Unity.UIToolkit.Editor
 
         private void ProcessChange(CompositeStylePropertyChangeEvent<StyleBackgroundPosition> evt, CallbackContext ctx)
         {
-            ProcessChange(evt, ctx, SetBackgroundPosition);
+            var setterOverride = (ctx.element as IStylePropertyDataField<StyleBackgroundPosition, BackgroundPosition>)?.setterOverride;
+            ProcessChange(evt, ctx, setterOverride ?? SetBackgroundPosition);
         }
 
         private static void ProcessChange(ChangeEvent<BackgroundRepeat> evt, CallbackContext ctx)
@@ -1359,7 +1398,8 @@ namespace Unity.UIToolkit.Editor
 
         private static void ProcessChange(ChangeEvent<StyleBackgroundRepeat> evt, CallbackContext ctx)
         {
-            ProcessChange(evt, ctx, SetBackgroundRepeat);
+            var setterOverride = (ctx.element as IStylePropertyDataField<StyleBackgroundRepeat, BackgroundRepeat>)?.setterOverride;
+            ProcessChange(evt, ctx, setterOverride ?? SetBackgroundRepeat);
         }
 
         private void ProcessChange(CompositeStylePropertyChangeEvent<BackgroundRepeat> evt, CallbackContext ctx)
@@ -1369,7 +1409,8 @@ namespace Unity.UIToolkit.Editor
 
         private void ProcessChange(CompositeStylePropertyChangeEvent<StyleBackgroundRepeat> evt, CallbackContext ctx)
         {
-            ProcessChange(evt, ctx, SetBackgroundRepeat);
+            var setterOverride = (ctx.element as IStylePropertyDataField<StyleBackgroundRepeat, BackgroundRepeat>)?.setterOverride;
+            ProcessChange(evt, ctx, setterOverride ?? SetBackgroundRepeat);
         }
 
         private static void ProcessChange(ChangeEvent<BackgroundSize> evt, CallbackContext ctx)
@@ -1379,7 +1420,8 @@ namespace Unity.UIToolkit.Editor
 
         private static void ProcessChange(ChangeEvent<StyleBackgroundSize> evt, CallbackContext ctx)
         {
-            ProcessChange(evt, ctx, SetBackgroundSize);
+            var setterOverride = (ctx.element as IStylePropertyDataField<StyleBackgroundSize, BackgroundSize>)?.setterOverride;
+            ProcessChange(evt, ctx, setterOverride ?? SetBackgroundSize);
         }
 
         private void ProcessChange(CompositeStylePropertyChangeEvent<BackgroundSize> evt, CallbackContext ctx)
@@ -1389,7 +1431,8 @@ namespace Unity.UIToolkit.Editor
 
         private void ProcessChange(CompositeStylePropertyChangeEvent<StyleBackgroundSize> evt, CallbackContext ctx)
         {
-            ProcessChange(evt, ctx, SetBackgroundSize);
+            var setterOverride = (ctx.element as IStylePropertyDataField<StyleBackgroundSize, BackgroundSize>)?.setterOverride;
+            ProcessChange(evt, ctx, setterOverride ?? SetBackgroundSize);
         }
 
         private static void ProcessChange(ChangeEvent<Length> evt, CallbackContext ctx)
@@ -1399,7 +1442,8 @@ namespace Unity.UIToolkit.Editor
 
         private static void ProcessChange(ChangeEvent<StyleLength> evt, CallbackContext ctx)
         {
-            ProcessChange(evt, ctx, SetLength);
+            var setterOverride = (ctx.element as IStylePropertyDataField<StyleLength, Length>)?.setterOverride;
+            ProcessChange(evt, ctx, setterOverride ?? SetLength);
         }
 
         private void ProcessChange(CompositeStylePropertyChangeEvent<Length> evt, CallbackContext ctx)
@@ -1409,7 +1453,8 @@ namespace Unity.UIToolkit.Editor
 
         private void ProcessChange(CompositeStylePropertyChangeEvent<StyleLength> evt, CallbackContext ctx)
         {
-            ProcessChange(evt, ctx, SetLength);
+            var setterOverride = (ctx.element as IStylePropertyDataField<StyleLength, Length>)?.setterOverride;
+            ProcessChange(evt, ctx, setterOverride ?? SetLength);
         }
 
         private static void ProcessChange(ChangeEvent<float> evt, CallbackContext ctx)
@@ -1419,7 +1464,8 @@ namespace Unity.UIToolkit.Editor
 
         private static void ProcessChange(ChangeEvent<StyleFloat> evt, CallbackContext ctx)
         {
-            ProcessChange(evt, ctx, SetFloat);
+            var setterOverride = (ctx.element as IStylePropertyDataField<StyleFloat, float>)?.setterOverride;
+            ProcessChange(evt, ctx, setterOverride ?? SetFloat);
         }
 
         private void ProcessChange(CompositeStylePropertyChangeEvent<float> evt, CallbackContext ctx)
@@ -1429,7 +1475,8 @@ namespace Unity.UIToolkit.Editor
 
         private void ProcessChange(CompositeStylePropertyChangeEvent<StyleFloat> evt, CallbackContext ctx)
         {
-            ProcessChange(evt, ctx, SetFloat);
+            var setterOverride = (ctx.element as IStylePropertyDataField<StyleFloat, float>)?.setterOverride;
+            ProcessChange(evt, ctx, setterOverride ?? SetFloat);
         }
 
         private static void ProcessChange(ChangeEvent<UnityEngine.UIElements.Cursor> evt, CallbackContext ctx)
@@ -1439,7 +1486,8 @@ namespace Unity.UIToolkit.Editor
 
         private static void ProcessChange(ChangeEvent<StyleCursor> evt, CallbackContext ctx)
         {
-            ProcessChange(evt, ctx, SetCursor);
+            var setterOverride = (ctx.element as IStylePropertyDataField<StyleCursor, UnityEngine.UIElements.Cursor>)?.setterOverride;
+            ProcessChange(evt, ctx, setterOverride ?? SetCursor);
         }
 
         private void ProcessChange(CompositeStylePropertyChangeEvent<UnityEngine.UIElements.Cursor> evt, CallbackContext ctx)
@@ -1449,7 +1497,8 @@ namespace Unity.UIToolkit.Editor
 
         private void ProcessChange(CompositeStylePropertyChangeEvent<StyleCursor> evt, CallbackContext ctx)
         {
-            ProcessChange(evt, ctx, SetCursor);
+            var setterOverride = (ctx.element as IStylePropertyDataField<StyleCursor, UnityEngine.UIElements.Cursor>)?.setterOverride;
+            ProcessChange(evt, ctx, setterOverride ?? SetCursor);
         }
 
         private static void ProcessChange(ChangeEvent<List<GridTrackSize>> evt, CallbackContext ctx)
@@ -1459,7 +1508,8 @@ namespace Unity.UIToolkit.Editor
 
         private static void ProcessChange(ChangeEvent<StyleList<GridTrackSize>> evt, CallbackContext ctx)
         {
-            ProcessChange(evt, ctx, SetGridTrackSizeList);
+            var setterOverride = (ctx.element as IStylePropertyDataField<StyleList<GridTrackSize>, List<GridTrackSize>>)?.setterOverride;
+            ProcessChange(evt, ctx, setterOverride ?? SetGridTrackSizeList);
         }
 
         private void ProcessChange(CompositeStylePropertyChangeEvent<List<GridTrackSize>> evt, CallbackContext ctx)
@@ -1469,7 +1519,8 @@ namespace Unity.UIToolkit.Editor
 
         private void ProcessChange(CompositeStylePropertyChangeEvent<StyleList<GridTrackSize>> evt, CallbackContext ctx)
         {
-            ProcessChange(evt, ctx, SetGridTrackSizeList);
+            var setterOverride = (ctx.element as IStylePropertyDataField<StyleList<GridTrackSize>, List<GridTrackSize>>)?.setterOverride;
+            ProcessChange(evt, ctx, setterOverride ?? SetGridTrackSizeList);
         }
 
         private static void ProcessChange(ChangeEvent<GridLine> evt, CallbackContext ctx)
@@ -1479,7 +1530,8 @@ namespace Unity.UIToolkit.Editor
 
         private static void ProcessChange(ChangeEvent<StyleGridLine> evt, CallbackContext ctx)
         {
-            ProcessChange(evt, ctx, SetGridLine);
+            var setterOverride = (ctx.element as IStylePropertyDataField<StyleGridLine, GridLine>)?.setterOverride;
+            ProcessChange(evt, ctx, setterOverride ?? SetGridLine);
         }
 
         private void ProcessChange(CompositeStylePropertyChangeEvent<GridLine> evt, CallbackContext ctx)
@@ -1489,7 +1541,8 @@ namespace Unity.UIToolkit.Editor
 
         private void ProcessChange(CompositeStylePropertyChangeEvent<StyleGridLine> evt, CallbackContext ctx)
         {
-            ProcessChange(evt, ctx, SetGridLine);
+            var setterOverride = (ctx.element as IStylePropertyDataField<StyleGridLine, GridLine>)?.setterOverride;
+            ProcessChange(evt, ctx, setterOverride ?? SetGridLine);
         }
 
         private static void ProcessChange(ChangeEvent<Rotate> evt, CallbackContext ctx)
@@ -1499,7 +1552,8 @@ namespace Unity.UIToolkit.Editor
 
         private static void ProcessChange(ChangeEvent<StyleRotate> evt, CallbackContext ctx)
         {
-            ProcessChange(evt, ctx, SetRotate);
+            var setterOverride = (ctx.element as IStylePropertyDataField<StyleRotate, Rotate>)?.setterOverride;
+            ProcessChange(evt, ctx, setterOverride ?? SetRotate);
         }
 
         private void ProcessChange(CompositeStylePropertyChangeEvent<Rotate> evt, CallbackContext ctx)
@@ -1509,7 +1563,8 @@ namespace Unity.UIToolkit.Editor
 
         private void ProcessChange(CompositeStylePropertyChangeEvent<StyleRotate> evt, CallbackContext ctx)
         {
-            ProcessChange(evt, ctx, SetRotate);
+            var setterOverride = (ctx.element as IStylePropertyDataField<StyleRotate, Rotate>)?.setterOverride;
+            ProcessChange(evt, ctx, setterOverride ?? SetRotate);
         }
 
         private static void ProcessChange(ChangeEvent<Scale> evt, CallbackContext ctx)
@@ -1519,7 +1574,8 @@ namespace Unity.UIToolkit.Editor
 
         private static void ProcessChange(ChangeEvent<StyleScale> evt, CallbackContext ctx)
         {
-            ProcessChange(evt, ctx, SetScale);
+            var setterOverride = (ctx.element as IStylePropertyDataField<StyleScale, Scale>)?.setterOverride;
+            ProcessChange(evt, ctx, setterOverride ?? SetScale);
         }
 
         private void ProcessChange(CompositeStylePropertyChangeEvent<Scale> evt, CallbackContext ctx)
@@ -1529,7 +1585,8 @@ namespace Unity.UIToolkit.Editor
 
         private void ProcessChange(CompositeStylePropertyChangeEvent<StyleScale> evt, CallbackContext ctx)
         {
-            ProcessChange(evt, ctx, SetScale);
+            var setterOverride = (ctx.element as IStylePropertyDataField<StyleScale, Scale>)?.setterOverride;
+            ProcessChange(evt, ctx, setterOverride ?? SetScale);
         }
 
         private static void ProcessChange(ChangeEvent<TextShadow> evt, CallbackContext ctx)
@@ -1539,7 +1596,8 @@ namespace Unity.UIToolkit.Editor
 
         private static void ProcessChange(ChangeEvent<StyleTextShadow> evt, CallbackContext ctx)
         {
-            ProcessChange(evt, ctx, SetTextShadow);
+            var setterOverride = (ctx.element as IStylePropertyDataField<StyleTextShadow, TextShadow>)?.setterOverride;
+            ProcessChange(evt, ctx, setterOverride ?? SetTextShadow);
         }
 
         private void ProcessChange(CompositeStylePropertyChangeEvent<TextShadow> evt, CallbackContext ctx)
@@ -1549,7 +1607,8 @@ namespace Unity.UIToolkit.Editor
 
         private void ProcessChange(CompositeStylePropertyChangeEvent<StyleTextShadow> evt, CallbackContext ctx)
         {
-            ProcessChange(evt, ctx, SetTextShadow);
+            var setterOverride = (ctx.element as IStylePropertyDataField<StyleTextShadow, TextShadow>)?.setterOverride;
+            ProcessChange(evt, ctx, setterOverride ?? SetTextShadow);
         }
 
         private static void ProcessChange(ChangeEvent<TransformOrigin> evt, CallbackContext ctx)
@@ -1559,7 +1618,8 @@ namespace Unity.UIToolkit.Editor
 
         private static void ProcessChange(ChangeEvent<StyleTransformOrigin> evt, CallbackContext ctx)
         {
-            ProcessChange(evt, ctx, SetTransformOrigin);
+            var setterOverride = (ctx.element as IStylePropertyDataField<StyleTransformOrigin, TransformOrigin>)?.setterOverride;
+            ProcessChange(evt, ctx, setterOverride ?? SetTransformOrigin);
         }
 
         private void ProcessChange(CompositeStylePropertyChangeEvent<TransformOrigin> evt, CallbackContext ctx)
@@ -1569,7 +1629,8 @@ namespace Unity.UIToolkit.Editor
 
         private void ProcessChange(CompositeStylePropertyChangeEvent<StyleTransformOrigin> evt, CallbackContext ctx)
         {
-            ProcessChange(evt, ctx, SetTransformOrigin);
+            var setterOverride = (ctx.element as IStylePropertyDataField<StyleTransformOrigin, TransformOrigin>)?.setterOverride;
+            ProcessChange(evt, ctx, setterOverride ?? SetTransformOrigin);
         }
 
         private static void ProcessChange(ChangeEvent<List<TimeValue>> evt, CallbackContext ctx)
@@ -1579,7 +1640,8 @@ namespace Unity.UIToolkit.Editor
 
         private static void ProcessChange(ChangeEvent<StyleList<TimeValue>> evt, CallbackContext ctx)
         {
-            ProcessChange(evt, ctx, SetTimeValueList);
+            var setterOverride = (ctx.element as IStylePropertyDataField<StyleList<TimeValue>, List<TimeValue>>)?.setterOverride;
+            ProcessChange(evt, ctx, setterOverride ?? SetTimeValueList);
         }
 
         private void ProcessChange(CompositeStylePropertyChangeEvent<List<TimeValue>> evt, CallbackContext ctx)
@@ -1589,7 +1651,8 @@ namespace Unity.UIToolkit.Editor
 
         private void ProcessChange(CompositeStylePropertyChangeEvent<StyleList<TimeValue>> evt, CallbackContext ctx)
         {
-            ProcessChange(evt, ctx, SetTimeValueList);
+            var setterOverride = (ctx.element as IStylePropertyDataField<StyleList<TimeValue>, List<TimeValue>>)?.setterOverride;
+            ProcessChange(evt, ctx, setterOverride ?? SetTimeValueList);
         }
 
         private static void ProcessChange(ChangeEvent<List<StylePropertyName>> evt, CallbackContext ctx)
@@ -1599,7 +1662,8 @@ namespace Unity.UIToolkit.Editor
 
         private static void ProcessChange(ChangeEvent<StyleList<StylePropertyName>> evt, CallbackContext ctx)
         {
-            ProcessChange(evt, ctx, SetStylePropertyNameList);
+            var setterOverride = (ctx.element as IStylePropertyDataField<StyleList<StylePropertyName>, List<StylePropertyName>>)?.setterOverride;
+            ProcessChange(evt, ctx, setterOverride ?? SetStylePropertyNameList);
         }
 
         private void ProcessChange(CompositeStylePropertyChangeEvent<List<StylePropertyName>> evt, CallbackContext ctx)
@@ -1609,7 +1673,8 @@ namespace Unity.UIToolkit.Editor
 
         private void ProcessChange(CompositeStylePropertyChangeEvent<StyleList<StylePropertyName>> evt, CallbackContext ctx)
         {
-            ProcessChange(evt, ctx, SetStylePropertyNameList);
+            var setterOverride = (ctx.element as IStylePropertyDataField<StyleList<StylePropertyName>, List<StylePropertyName>>)?.setterOverride;
+            ProcessChange(evt, ctx, setterOverride ?? SetStylePropertyNameList);
         }
 
         private static void ProcessChange(ChangeEvent<List<EasingFunction>> evt, CallbackContext ctx)
@@ -1619,7 +1684,8 @@ namespace Unity.UIToolkit.Editor
 
         private static void ProcessChange(ChangeEvent<StyleList<EasingFunction>> evt, CallbackContext ctx)
         {
-            ProcessChange(evt, ctx, SetEasingFunctionList);
+            var setterOverride = (ctx.element as IStylePropertyDataField<StyleList<EasingFunction>, List<EasingFunction>>)?.setterOverride;
+            ProcessChange(evt, ctx, setterOverride ?? SetEasingFunctionList);
         }
 
         private void ProcessChange(CompositeStylePropertyChangeEvent<List<EasingFunction>> evt, CallbackContext ctx)
@@ -1629,7 +1695,8 @@ namespace Unity.UIToolkit.Editor
 
         private void ProcessChange(CompositeStylePropertyChangeEvent<StyleList<EasingFunction>> evt, CallbackContext ctx)
         {
-            ProcessChange(evt, ctx, SetEasingFunctionList);
+            var setterOverride = (ctx.element as IStylePropertyDataField<StyleList<EasingFunction>, List<EasingFunction>>)?.setterOverride;
+            ProcessChange(evt, ctx, setterOverride ?? SetEasingFunctionList);
         }
 
         private static void ProcessChange(ChangeEvent<Translate> evt, CallbackContext ctx)
@@ -1639,7 +1706,8 @@ namespace Unity.UIToolkit.Editor
 
         private static void ProcessChange(ChangeEvent<StyleTranslate> evt, CallbackContext ctx)
         {
-            ProcessChange(evt, ctx, SetTranslate);
+            var setterOverride = (ctx.element as IStylePropertyDataField<StyleTranslate, Translate>)?.setterOverride;
+            ProcessChange(evt, ctx, setterOverride ?? SetTranslate);
         }
 
         private void ProcessChange(CompositeStylePropertyChangeEvent<Translate> evt, CallbackContext ctx)
@@ -1649,7 +1717,8 @@ namespace Unity.UIToolkit.Editor
 
         private void ProcessChange(CompositeStylePropertyChangeEvent<StyleTranslate> evt, CallbackContext ctx)
         {
-            ProcessChange(evt, ctx, SetTranslate);
+            var setterOverride = (ctx.element as IStylePropertyDataField<StyleTranslate, Translate>)?.setterOverride;
+            ProcessChange(evt, ctx, setterOverride ?? SetTranslate);
         }
 
         private static void ProcessChange(ChangeEvent<Curvature> evt, CallbackContext ctx)
@@ -1659,7 +1728,8 @@ namespace Unity.UIToolkit.Editor
 
         private static void ProcessChange(ChangeEvent<StyleCurvature> evt, CallbackContext ctx)
         {
-            ProcessChange(evt, ctx, SetCurvature);
+            var setterOverride = (ctx.element as IStylePropertyDataField<StyleCurvature, Curvature>)?.setterOverride;
+            ProcessChange(evt, ctx, setterOverride ?? SetCurvature);
         }
 
         private void ProcessChange(CompositeStylePropertyChangeEvent<Curvature> evt, CallbackContext ctx)
@@ -1669,7 +1739,8 @@ namespace Unity.UIToolkit.Editor
 
         private void ProcessChange(CompositeStylePropertyChangeEvent<StyleCurvature> evt, CallbackContext ctx)
         {
-            ProcessChange(evt, ctx, SetCurvature);
+            var setterOverride = (ctx.element as IStylePropertyDataField<StyleCurvature, Curvature>)?.setterOverride;
+            ProcessChange(evt, ctx, setterOverride ?? SetCurvature);
         }
 
         private static void ProcessChange(ChangeEvent<Font> evt, CallbackContext ctx)
@@ -1679,7 +1750,8 @@ namespace Unity.UIToolkit.Editor
 
         private static void ProcessChange(ChangeEvent<StyleFont> evt, CallbackContext ctx)
         {
-            ProcessChange(evt, ctx, SetFont);
+            var setterOverride = (ctx.element as IStylePropertyDataField<StyleFont, Font>)?.setterOverride;
+            ProcessChange(evt, ctx, setterOverride ?? SetFont);
         }
 
         private void ProcessChange(CompositeStylePropertyChangeEvent<Font> evt, CallbackContext ctx)
@@ -1689,7 +1761,8 @@ namespace Unity.UIToolkit.Editor
 
         private void ProcessChange(CompositeStylePropertyChangeEvent<StyleFont> evt, CallbackContext ctx)
         {
-            ProcessChange(evt, ctx, SetFont);
+            var setterOverride = (ctx.element as IStylePropertyDataField<StyleFont, Font>)?.setterOverride;
+            ProcessChange(evt, ctx, setterOverride ?? SetFont);
         }
 
         private static void ProcessChange(ChangeEvent<FontDefinition> evt, CallbackContext ctx)
@@ -1699,7 +1772,8 @@ namespace Unity.UIToolkit.Editor
 
         private static void ProcessChange(ChangeEvent<StyleFontDefinition> evt, CallbackContext ctx)
         {
-            ProcessChange(evt, ctx, SetFontDefinition);
+            var setterOverride = (ctx.element as IStylePropertyDataField<StyleFontDefinition, FontDefinition>)?.setterOverride;
+            ProcessChange(evt, ctx, setterOverride ?? SetFontDefinition);
         }
 
         private void ProcessChange(CompositeStylePropertyChangeEvent<FontDefinition> evt, CallbackContext ctx)
@@ -1709,7 +1783,8 @@ namespace Unity.UIToolkit.Editor
 
         private void ProcessChange(CompositeStylePropertyChangeEvent<StyleFontDefinition> evt, CallbackContext ctx)
         {
-            ProcessChange(evt, ctx, SetFontDefinition);
+            var setterOverride = (ctx.element as IStylePropertyDataField<StyleFontDefinition, FontDefinition>)?.setterOverride;
+            ProcessChange(evt, ctx, setterOverride ?? SetFontDefinition);
         }
 
         private static void ProcessChange(ChangeEvent<MaterialDefinition> evt, CallbackContext ctx)
@@ -1719,7 +1794,8 @@ namespace Unity.UIToolkit.Editor
 
         private static void ProcessChange(ChangeEvent<StyleMaterialDefinition> evt, CallbackContext ctx)
         {
-            ProcessChange(evt, ctx, SetMaterialDefinition);
+            var setterOverride = (ctx.element as IStylePropertyDataField<StyleMaterialDefinition, MaterialDefinition>)?.setterOverride;
+            ProcessChange(evt, ctx, setterOverride ?? SetMaterialDefinition);
         }
 
         private void ProcessChange(CompositeStylePropertyChangeEvent<MaterialDefinition> evt, CallbackContext ctx)
@@ -1729,7 +1805,8 @@ namespace Unity.UIToolkit.Editor
 
         private void ProcessChange(CompositeStylePropertyChangeEvent<StyleMaterialDefinition> evt, CallbackContext ctx)
         {
-            ProcessChange(evt, ctx, SetMaterialDefinition);
+            var setterOverride = (ctx.element as IStylePropertyDataField<StyleMaterialDefinition, MaterialDefinition>)?.setterOverride;
+            ProcessChange(evt, ctx, setterOverride ?? SetMaterialDefinition);
         }
 
         private static void ProcessChange(ChangeEvent<int> evt, CallbackContext ctx)
@@ -1739,7 +1816,8 @@ namespace Unity.UIToolkit.Editor
 
         private static void ProcessChange(ChangeEvent<StyleInt> evt, CallbackContext ctx)
         {
-            ProcessChange(evt, ctx, SetInt);
+            var setterOverride = (ctx.element as IStylePropertyDataField<StyleInt, int>)?.setterOverride;
+            ProcessChange(evt, ctx, setterOverride ?? SetInt);
         }
 
         private void ProcessChange(CompositeStylePropertyChangeEvent<int> evt, CallbackContext ctx)
@@ -1749,7 +1827,8 @@ namespace Unity.UIToolkit.Editor
 
         private void ProcessChange(CompositeStylePropertyChangeEvent<StyleInt> evt, CallbackContext ctx)
         {
-            ProcessChange(evt, ctx, SetInt);
+            var setterOverride = (ctx.element as IStylePropertyDataField<StyleInt, int>)?.setterOverride;
+            ProcessChange(evt, ctx, setterOverride ?? SetInt);
         }
 
         private static void ProcessChange(ChangeEvent<TextAutoSize> evt, CallbackContext ctx)
@@ -1759,7 +1838,8 @@ namespace Unity.UIToolkit.Editor
 
         private static void ProcessChange(ChangeEvent<StyleTextAutoSize> evt, CallbackContext ctx)
         {
-            ProcessChange(evt, ctx, SetTextAutoSize);
+            var setterOverride = (ctx.element as IStylePropertyDataField<StyleTextAutoSize, TextAutoSize>)?.setterOverride;
+            ProcessChange(evt, ctx, setterOverride ?? SetTextAutoSize);
         }
 
         private void ProcessChange(CompositeStylePropertyChangeEvent<TextAutoSize> evt, CallbackContext ctx)
@@ -1769,7 +1849,8 @@ namespace Unity.UIToolkit.Editor
 
         private void ProcessChange(CompositeStylePropertyChangeEvent<StyleTextAutoSize> evt, CallbackContext ctx)
         {
-            ProcessChange(evt, ctx, SetTextAutoSize);
+            var setterOverride = (ctx.element as IStylePropertyDataField<StyleTextAutoSize, TextAutoSize>)?.setterOverride;
+            ProcessChange(evt, ctx, setterOverride ?? SetTextAutoSize);
         }
 
         private static void ProcessChange(ChangeEvent<System.Enum> evt, CallbackContext ctx)

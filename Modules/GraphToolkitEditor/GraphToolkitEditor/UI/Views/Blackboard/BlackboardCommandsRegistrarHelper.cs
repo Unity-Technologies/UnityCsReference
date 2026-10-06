@@ -3,7 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
-using Unity.GraphToolkit.CSO;
+using Unity.CSO;
 
 namespace Unity.GraphToolkit.Editor
 {
@@ -37,7 +37,12 @@ namespace Unity.GraphToolkit.Editor
             registrar.AddStateComponent(blackboardViewState);
             registrar.AddStateComponent(blackboardContentState);
             registrar.AddStateComponent(graphTool.UndoState);
+            if (registrar is CSO.Editor.CommandHandlerRegistrar editorRegistrar)
+                RegisterEditorCommands(editorRegistrar);
+        }
 
+        static void RegisterEditorCommands(CSO.Editor.CommandHandlerRegistrar registrar)
+        {
             registrar.RegisterDefaultCommandHandler<CreateGraphVariableDeclarationCommand>();
 
             registrar.RegisterDefaultCommandHandler<ReorderGroupItemsCommand>();
@@ -53,7 +58,8 @@ namespace Unity.GraphToolkit.Editor
             registrar.RegisterDefaultCommandHandler<UpdateTooltipCommand>();
 
             registrar.RegisterCommandHandler<UndoStateComponent, GraphModelStateComponent, SelectionStateComponent,
-                BlackboardViewStateComponent, PasteDataCommand>(BlackboardViewCommandHandlers.PasteSerializedDataCommandHandler);
+                BlackboardViewStateComponent, PasteDataCommand>(BlackboardViewCommandHandlers
+                .PasteSerializedDataCommandHandler);
 
             registrar.RegisterDefaultCommandHandler<DisplayInInspectorCommand>();
 

@@ -199,8 +199,13 @@ namespace Unity.U2D.Physics
         }
 
         /// <summary>
-        /// Check if the geometry is valid or not.
+        /// Whether the geometry describes a polygon that can be used.
         /// </summary>
+        /// <remarks>
+        /// The vertex count must be from 3 to <see cref="PhysicsConstants.MaxPolygonVertices"/>, the radius must be finite and zero or greater, and the centroid, every vertex and every normal must be finite.
+        /// The vertices must also form a convex hull that keeps every one of them, so a vertex that would be welded away or dropped makes the geometry invalid.
+        /// See <see cref="PolygonGeometry.areEdgesValid"/> for the rules that decide which vertices survive.
+        /// </remarks>
         public readonly bool isValid => PolygonGeometry_IsValid(this);
 
         /// <summary>
@@ -350,9 +355,15 @@ namespace Unity.U2D.Physics
         public readonly ReadOnlySpan<Vector2> AsReadOnlySpan() => vertices.AsReadOnlySpan(m_Count);
 
         /// <summary>
-        /// Get a validated version of the geometry, if possible.
+        /// Rebuild the polygon from its vertices.
         /// </summary>
-        /// <returns>A validated copy of the geometry with updated normals, centroid etc. Depending on the current geometry, the returned geometry may not be valid. See <see cref="PolygonGeometry.isValid"/>.</returns>
+        /// <remarks>
+        /// The normals and the centroid are calculated from the vertices, replacing whatever they were set to, and the radius is kept as it is.
+        /// They must still be finite to begin with, along with the radius and every vertex, because a non-finite value stops the rebuild rather than being replaced.
+        /// The vertices are replaced by the convex hull of themselves, so a vertex that is concave, duplicated or too close to its neighbor is welded away or dropped.
+        /// The result can therefore have fewer vertices than the geometry it was rebuilt from.
+        /// </remarks>
+        /// <returns>The rebuilt polygon, or an empty geometry when it cannot be rebuilt. See <see cref="PolygonGeometry.isValid"/>.</returns>
         public readonly PolygonGeometry Validate() => PolygonGeometry_Validate(this);
 
         /// <summary>

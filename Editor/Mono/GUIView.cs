@@ -21,6 +21,17 @@ namespace UnityEditor
         [AutoStaticsCleanupOnCodeReload]
         internal static event Action<GUIView> positionChanged = null;
 
+        // Test-only focus override
+        [AutoStaticsCleanupOnCodeReload]
+        internal static bool s_UseDesignatedFocusedView;
+        [AutoStaticsCleanupOnCodeReload]
+        internal static GUIView s_DesignatedFocusedView;
+
+        public static GUIView focusedView => s_UseDesignatedFocusedView ? s_DesignatedFocusedView : focusedViewNative;
+
+        // Unity's == treats a destroyed object as null; use identity and reject a destroyed view instead.
+        public bool hasFocus => s_UseDesignatedFocusedView ? this != null && ReferenceEquals(this, s_DesignatedFocusedView) : hasFocusNative;
+
         int m_DepthBufferBits = 0;
         int m_AntiAliasing = 1;
         bool m_ResetPanelRenderingOnAssetChange = true;
@@ -63,6 +74,9 @@ namespace UnityEditor
         // are processed in order to clean any dangling state left after
         // an event was unexpectedly used.
         [AutoStaticsCleanupOnCodeReload]
+        // Subscribers attach through their own lifecycle: ShortcutIntegration re-adds its handler when the
+        // enabled flag is set again while lazily recreating its controller.
+        [IgnoreForUAL0015("Event whose subscribers re-register through their own lifecycle after a code reload")]
         internal static Action<EventType, KeyCode, EventModifiers> beforeEventProcessed;
 
         // Instead of allocating a new Event object every time

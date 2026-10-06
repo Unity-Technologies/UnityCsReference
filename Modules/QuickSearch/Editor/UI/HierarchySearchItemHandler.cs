@@ -8,6 +8,7 @@ using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Text;
 using Unity.Hierarchy;
+using UnityEngine;
 using UnityEngine.Pool;
 using UnityEngine.UIElements;
 
@@ -36,6 +37,12 @@ namespace UnityEditor.Search
         readonly SearchItemHierarchyNodeMap m_SearchItemHierarchyNodeMap = new();
         readonly List<SearchItem> m_ItemsMissingParents = new();
         readonly Dictionary<SearchProvider, SearchProvider> m_TokenSeparatedParentProviders = new();
+        // parentId alone can collide across providers with the same category name (e.g. two different
+        // token-separated parent providers both having a "General" category), so parent nodes are cached
+        // per provider instead of under a single shared key. Keyed by provider reference (cheap, no
+        // allocation) with a nested StringView-keyed lookup, so an already-created category costs no
+        // allocation to find, unlike building a combined string key on every lookup would.
+        readonly Dictionary<SearchProvider, Dictionary<StringView, HierarchyNode>> m_ScopedParentNodesByProvider = new();
         SearchItemHierarchySorting m_HierarchySorting;
         UpdateStage m_CurrentUpdateStage = UpdateStage.MissingParents;
         HashSet<SearchItem> m_VisitedForCycleSet = new();
@@ -64,6 +71,10 @@ namespace UnityEditor.Search
         }
 
         public event Action<SearchItem> ItemDoubleClicked;
+
+        // Null by default; returning null for an item means no toggle is shown for that row.
+        public Func<SearchItem, bool?> RowToggleStateProvider { get; set; }
+        public Action<SearchItem> RowToggleClicked { get; set; }
 
         public void Setup(ISearchView viewModel)
         {
@@ -115,10 +126,16 @@ namespace UnityEditor.Search
 
             // If the item is a builtin parent, the button container should not be visible since they don't have any actions
             // and can't be favorite.
-            item.RightCustomContainer.EnableInClassList(SearchTreeView.SearchTreeViewItemButtonContainerDisabledClassName, IsBuiltinParentSearchItem(searchItem));
+            var isBuiltinParent = IsBuiltinParentSearchItem(searchItem);
+            item.RightCustomContainer.EnableInClassList(SearchTreeView.SearchTreeViewItemButtonContainerDisabledClassName, isBuiltinParent);
 
-            var tex = searchItem.GetThumbnail(Context);
+            // Builtin parents (categories) reuse their child provider's thumbnail fetcher, which would make
+            // them indistinguishable from real items; suppress their icon so only actual items show one.
+            var tex = isBuiltinParent ? null : searchItem.GetThumbnail(Context);
             item.Icon.style.backgroundImage = tex;
+            item.Icon.style.unityBackgroundImageTintColor = new Color(1f, 1f, 1f, isBuiltinParent ? 1f : searchItem.thumbnailAlpha);
+            // Icon has a fixed 16px box regardless of background image; collapse it when there's no icon.
+            item.Icon.style.display = tex != null ? DisplayStyle.Flex : DisplayStyle.None;
 
             if (!m_ViewModel.IsPicker())
             {
@@ -152,6 +169,33 @@ namespace UnityEditor.Search
 
             favoriteButton.BoundItem = searchItem;
             UpdateFavoriteImage(favoriteButton, searchItem);
+
+            if (RowToggleStateProvider != null)
+            {
+                var toggleState = RowToggleStateProvider(searchItem);
+                var toggleButton =
+                    item.RightCustomContainer.Q<SearchViewItemButtonWithContext>(name: SearchTreeView.RowToggleButtonName);
+                if (toggleState.HasValue)
+                {
+                    if (toggleButton == null)
+                    {
+                        toggleButton = new SearchViewItemButtonWithContext(SearchTreeView.RowToggleButtonName,
+                            string.Empty,
+                            L10n.Tr("Show/Hide", null),
+                            OnRowToggleButtonClicked,
+                            SearchElement.baseIconButtonClassName,
+                            SearchTreeView.RowToggleButtonClassName);
+                        item.RightCustomContainer.Add(toggleButton);
+                    }
+                    toggleButton.BoundItem = searchItem;
+                    toggleButton.SetActivePseudoState(toggleState.Value);
+                    toggleButton.style.display = DisplayStyle.Flex;
+                }
+                else if (toggleButton != null)
+                {
+                    toggleButton.style.display = DisplayStyle.None;
+                }
+            }
         }
 
         /// <summary>
@@ -307,12 +351,19 @@ namespace UnityEditor.Search
             return m_SearchItemHierarchyNodeMap.TryGetSearchItem(in node, out searchItem);
         }
 
-        public bool IsBuiltinParentSearchItem(SearchItem searchItem)
+        public static bool IsBuiltinParentSearchItem(SearchItem searchItem)
         {
             var itemProvider = searchItem?.provider;
             if (itemProvider == null)
                 return false;
             return itemProvider.id.EndsWith(k_TokenSeparatedParentProviderSuffix, StringComparison.Ordinal);
+        }
+
+        // Same as IsBuiltinParentSearchItem, but also checks the parent belongs to a specific original provider.
+        public static bool IsBuiltinParentSearchItemForProvider(SearchItem searchItem, string providerId)
+        {
+            return searchItem?.provider != null &&
+                searchItem.provider.id == providerId + k_TokenSeparatedParentProviderSuffix;
         }
 
         public void SetSearchItemComparer(IComparer<SearchItem> comparer)
@@ -408,6 +459,7 @@ namespace UnityEditor.Search
             m_SearchItemHierarchyNodeMap.Clear();
             m_ItemsMissingParents.Clear();
             m_VisitedForCycleSet.Clear();
+            m_ScopedParentNodesByProvider.Clear();
         }
 
         bool UpdateItemsMissingParents()
@@ -573,7 +625,13 @@ namespace UnityEditor.Search
 
         HierarchyNode GetOrCreateParentNodeFromDescriptor(SearchProvider parentProvider, StringView parentId, StringView parentLabel, StringView grandParentId, in HierarchyNode childNode)
         {
-            if (!m_SearchItemHierarchyNodeMap.TryGetNode(parentId, out var parentNode))
+            if (!m_ScopedParentNodesByProvider.TryGetValue(parentProvider, out var parentNodesForProvider))
+            {
+                parentNodesForProvider = new Dictionary<StringView, HierarchyNode>(SearchItemHierarchyNodeMap.StringViewComparer);
+                m_ScopedParentNodesByProvider[parentProvider] = parentNodesForProvider;
+            }
+
+            if (!parentNodesForProvider.TryGetValue(parentId, out var parentNode))
             {
                 CommandList.Add(Hierarchy.Root, out parentNode);
                 var parentSearchItem = parentProvider.CreateItem(Context, parentId.ToString(), parentLabel.ToString(), null, null, null);
@@ -581,6 +639,10 @@ namespace UnityEditor.Search
                 {
                     parentSearchItem.SetParentDescriptor(new SearchItemParentDescriptor(grandParentId.ToString(), SearchItemParentType.TokenSeparatedId));
                 }
+                parentNodesForProvider[parentId] = parentNode;
+                // Also key it in the shared map by the raw parentId so callers that only have the id (context
+                // menus, TryGetNode(SearchItem)) can still resolve it; the per-provider cache above remains
+                // authoritative for cross-provider tree structure.
                 m_SearchItemHierarchyNodeMap.Add(parentSearchItem, in parentNode);
             }
 
@@ -592,7 +654,7 @@ namespace UnityEditor.Search
         {
             if (!m_TokenSeparatedParentProviders.TryGetValue(childProvider, out var tokenSeparatedProvider))
             {
-                tokenSeparatedProvider = new SearchProvider(childProvider + k_TokenSeparatedParentProviderSuffix, childProvider.name + " (Token Separated Parent)")
+                tokenSeparatedProvider = new SearchProvider(childProvider.id + k_TokenSeparatedParentProviderSuffix, childProvider.name + " (Token Separated Parent)")
                 {
                     priority = childProvider.priority,
                     fetchLabel = (item, context) => item.label ?? item.id,
@@ -609,6 +671,14 @@ namespace UnityEditor.Search
 
             // If we were doing sorting, go back to the missing parents stage.
             m_CurrentUpdateStage = UpdateStage.MissingParents;
+        }
+
+        void OnRowToggleButtonClicked(SearchViewItemButtonWithContext button, SearchItem searchItem)
+        {
+            if (searchItem == null)
+                return;
+
+            RowToggleClicked?.Invoke(searchItem);
         }
 
         static void OnFavoriteButtonClicked(SearchViewItemButtonWithContext button, SearchItem searchItem)

@@ -2,7 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: UIToolkitAuthoringFramework not yet converted
 using System;
 using UnityEditor.UIElements;
 using UnityEngine.Bindings;
@@ -43,9 +42,24 @@ namespace Unity.UIToolkit.Editor
         internal BaseField<UnityEngine.Object> itemAssetField;
         internal ContextualMenuManipulator contextualMenuManipulator;
 
-        public VariablesListItem()
+        readonly OverrideBarManipulator m_OverrideBar;
+
+        /// <summary>
+        /// Creates a variable row. <paramref name="overrideBarTarget"/> is the element that paints the row's
+        /// override bar, and is normally the list view holding the rows: the bar is drawn in the inspector's
+        /// left gutter, which a row cannot reach because the list clips whatever its rows paint out there.
+        /// This is how <see cref="FoldoutLonghandField{TData}"/> draws the bars of the transition rows.
+        /// </summary>
+        public VariablesListItem(VisualElement overrideBarTarget = null)
         {
             AddToClassList(k_ListViewItemClassName);
+
+            if (overrideBarTarget != null)
+            {
+                m_OverrideBar = new OverrideBarManipulator { target = overrideBarTarget, OverrideContainer = this };
+                RegisterCallback<DetachFromPanelEvent>(_ => showOverrideBar = false);
+            }
+
             fieldsGroup = new VisualElement().WithClassList(k_FieldGroupName);
             fieldsGroup.Add(itemLabel = new Label(VariablesInspector.k_VariablePrefix)
                 { name = k_PrefixClassName }.WithClassList(k_PrefixClassName));
@@ -87,6 +101,27 @@ namespace Unity.UIToolkit.Editor
         {
             return new ObjectField() { name = k_AssetFieldName, allowBuiltinResources = false }.WithClassList(k_HiddenFieldClassName);
         }
+
+        internal VisualElement overrideBarTarget => m_OverrideBar?.target;
+
+        // Only a bound row stands for a variable, so a recycled one must not leave its bar behind.
+        internal bool showOverrideBar
+        {
+            get => m_OverrideBar is { IsOverridden: true };
+            set
+            {
+                if (m_OverrideBar != null)
+                    m_OverrideBar.IsOverridden = value;
+            }
+        }
+
+        internal void DetachOverrideBar()
+        {
+            if (m_OverrideBar == null)
+                return;
+
+            showOverrideBar = false;
+            m_OverrideBar.target = null;
+        }
     }
 }
-#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

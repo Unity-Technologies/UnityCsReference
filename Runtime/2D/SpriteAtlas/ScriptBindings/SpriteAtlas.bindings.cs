@@ -123,8 +123,12 @@ namespace UnityEngine.U2D
     [NativeClass("SpriteAtlas", PersistentTypeId = 0x28F3FDEF)]
     public class SpriteAtlas : UnityEngine.Object
     {
-        public SpriteAtlas() { Internal_Create(this); }
-        extern private static void Internal_Create([Writable] SpriteAtlas self);
+        internal SpriteAtlas(global::UnityEngine.EntityId id) : base(id) {}
+        public SpriteAtlas()
+        {
+            SetEntityIdFromConstructor(Internal_Create());
+        }
+        extern private static EntityId Internal_Create();
 
         extern public bool isVariant {[NativeMethod("IsVariant")] get; }
         extern public string tag { get; }

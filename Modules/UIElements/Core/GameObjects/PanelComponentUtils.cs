@@ -11,6 +11,12 @@ namespace UnityEngine.UIElements
     [UnityEngine.Bindings.VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
     internal static class PanelComponentUtils
     {
+        public static bool IsAlive(this IPanelComponent panelComponent)
+            => panelComponent is UnityEngine.Object obj ? obj != null : panelComponent != null;
+
+        public static IPanelComponent AliveOrNull(this IPanelComponent panelComponent)
+            => panelComponent.IsAlive() ? panelComponent : null;
+
         public static bool IsTransformControlledByGameObject(IPanelComponent panelComponent)
         {
             var panelSettings = panelComponent.panelSettings;

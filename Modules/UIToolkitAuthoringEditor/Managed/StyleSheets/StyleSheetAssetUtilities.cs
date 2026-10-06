@@ -6,6 +6,7 @@ using System;
 using System.IO;
 using System.Text.RegularExpressions;
 using UnityEditor;
+using UnityEditor.Utils;
 using UnityEngine;
 using UnityEngine.Bindings;
 using UnityEngine.UIElements;
@@ -90,7 +91,7 @@ namespace Unity.UIToolkit.Editor
         public static string DisplaySaveFileDialogForUSS()
         {
             var directory = Application.dataPath;
-            var newPath = EditorUtility.SaveFilePanel( "Save USS File", directory, null, "uss");
+            var newPath = EditorUtility.SaveFilePanel( "Save USS File", directory, "New USS", "uss");
 
             if (string.IsNullOrWhiteSpace(newPath))
                 return null;
@@ -138,8 +139,8 @@ namespace Unity.UIToolkit.Editor
 
         static string GetPathRelativeToProject(string path)
         {
-            var fullPath = Path.GetFullPath(path).Replace("\\", "/");
-            var projectPath = Path.GetFullPath(Application.dataPath).Replace("\\", "/");
+            var fullPath = Path.GetFullPath(path).ConvertSeparatorsToUnity();
+            var projectPath = Path.GetFullPath(Application.dataPath).ConvertSeparatorsToUnity();
             projectPath = projectPath.Substring(0, projectPath.Length - "/Assets".Length);
 
             var assetsPath = projectPath + "/Assets";

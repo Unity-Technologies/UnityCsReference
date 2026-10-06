@@ -12,8 +12,8 @@ namespace UnityEditor.PackageManager.UI.Internal
     {
         event Action<IReadOnlyCollection<AssetStoreLocalInfo> /*addedOrUpdated*/, IReadOnlyCollection<AssetStoreLocalInfo> /*removed*/> onLocalInfosChanged;
         event Action<AssetStoreProductInfo> onProductInfoChanged;
-        event Action<IReadOnlyCollection<AssetStorePurchaseInfo>> onPurchaseInfosChanged;
-        event Action<IReadOnlyCollection<AssetStoreUpdateInfo>> onUpdateInfosChanged;
+        event Action<IReadOnlyList<AssetStorePurchaseInfo>> onPurchaseInfosChanged;
+        event Action<IReadOnlyList<AssetStoreUpdateInfo>> onUpdateInfosChanged;
         event Action<IReadOnlyCollection<AssetStoreImportedPackage> /*addedOrUpdated*/, IReadOnlyCollection<AssetStoreImportedPackage> /*removed*/> onImportedPackagesChanged;
 
         IReadOnlyCollection<AssetStoreLocalInfo> localInfos { get; }
@@ -30,7 +30,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         AssetStoreImportedPackage GetImportedPackage(long? productId);
         void SetPurchaseInfos(IEnumerable<AssetStorePurchaseInfo> purchaseInfos);
         void SetProductInfo(AssetStoreProductInfo productInfo);
-        void SetLocalInfos(IReadOnlyCollection<AssetStoreLocalInfo> newLocalInfos);
+        void SetLocalInfos(IReadOnlyList<AssetStoreLocalInfo> newLocalInfos);
         void SetLocalInfo(AssetStoreLocalInfo localInfo);
         void SetUpdateInfos(IEnumerable<AssetStoreUpdateInfo> updateInfos);
         void UpdateImportedAssets(IEnumerable<Asset> addedOrUpdatedAssets, IEnumerable<string> removedAssetPaths);
@@ -63,8 +63,8 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         public event Action<IReadOnlyCollection<AssetStoreLocalInfo> /*addedOrUpdated*/, IReadOnlyCollection<AssetStoreLocalInfo> /*removed*/> onLocalInfosChanged;
         public event Action<AssetStoreProductInfo> onProductInfoChanged;
-        public event Action<IReadOnlyCollection<AssetStorePurchaseInfo>> onPurchaseInfosChanged;
-        public event Action<IReadOnlyCollection<AssetStoreUpdateInfo>> onUpdateInfosChanged;
+        public event Action<IReadOnlyList<AssetStorePurchaseInfo>> onPurchaseInfosChanged;
+        public event Action<IReadOnlyList<AssetStoreUpdateInfo>> onUpdateInfosChanged;
         public event Action<IReadOnlyCollection<AssetStoreImportedPackage> /*addedOrUpdated*/, IReadOnlyCollection<AssetStoreImportedPackage> /*removed*/> onImportedPackagesChanged;
 
         public IReadOnlyCollection<AssetStoreLocalInfo> localInfos => m_LocalInfos.Values;
@@ -230,7 +230,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                 onProductInfoChanged?.Invoke(productInfo);
         }
 
-        public void SetLocalInfos(IReadOnlyCollection<AssetStoreLocalInfo> newLocalInfos)
+        public void SetLocalInfos(IReadOnlyList<AssetStoreLocalInfo> newLocalInfos)
         {
             var oldLocalInfos = m_LocalInfos;
             m_LocalInfos = new Dictionary<long, AssetStoreLocalInfo>();

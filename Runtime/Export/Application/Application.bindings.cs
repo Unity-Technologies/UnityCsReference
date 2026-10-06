@@ -146,6 +146,15 @@ namespace UnityEngine
             set;
         }
 
+        // Should the Back button hand control to the OS? Android and UWP only, no-op elsewhere.
+        extern public static bool backButtonLeavesApp
+        {
+            [FreeFunction("GetBackButtonLeavesApp")]
+            get;
+            [FreeFunction("SetBackButtonLeavesApp")]
+            set;
+        }
+
         /// Is Unity activated with the Pro License?
         [FreeFunction("GetBuildSettings().GetHasPROVersion")]
         extern public static bool HasProLicense();
@@ -356,9 +365,9 @@ namespace UnityEngine
         // Priority of background loading thread.
         extern public static ThreadPriority backgroundLoadingPriority
         {
-            [FreeFunction("GetPreloadManager().GetThreadPriority")]
+            [FreeFunction("Application_Bindings::GetBackgroundLoadingPriority")]
             get;
-            [FreeFunction("GetPreloadManager().SetThreadPriority")]
+            [FreeFunction("Application_Bindings::SetBackgroundLoadingPriority")]
             set;
         }
 

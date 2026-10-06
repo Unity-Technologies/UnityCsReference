@@ -14,5 +14,6 @@ namespace UnityEditor
     [ExcludeFromPreset]
     internal partial class PreviewImporter : AssetImporter
     {
+        internal PreviewImporter(global::UnityEngine.EntityId id) : base(id) {}
     }
 }

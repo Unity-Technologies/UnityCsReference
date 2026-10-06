@@ -13,6 +13,9 @@ namespace UnityEngine
         [FreeFunction("TransformHierarchyBindings::SetUpdateTransformUnionsCallback", HasExplicitThis = false)]
         internal static extern void SetUpdateTransformUnionsCallback(IntPtr callback);
 
+        [FreeFunction("TransformHierarchyBindings::SetAssignTransformHierarchyToEntityCallback", HasExplicitThis = false)]
+        internal static extern void SetAssignTransformHierarchyToEntityCallback(IntPtr callback);
+
         [FreeFunction("TransformHierarchyBindings::CreateNewHierarchy", HasExplicitThis = false)]
         internal static extern UnsafeTransformAccess CreateHierarchy(IntPtr entityComponentStore,
             Vector3 worldPosition, Quaternion rotation, Vector3 scale, UInt64 entity, uint capacity);

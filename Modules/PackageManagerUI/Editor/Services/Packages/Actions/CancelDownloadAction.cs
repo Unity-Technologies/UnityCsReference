@@ -20,7 +20,7 @@ internal class CancelDownloadAction : PackageAction
 
     public override Icon icon => Icon.Cancel;
 
-    protected override bool TriggerActionImplementation(IReadOnlyCollection<IPackage> packages)
+    protected override bool TriggerActionImplementation(IReadOnlyList<IPackage> packages)
     {
         m_OperationDispatcher.AbortDownload(packages);
         PackageManagerWindowAnalytics.SendEvent("abortDownload", packages);

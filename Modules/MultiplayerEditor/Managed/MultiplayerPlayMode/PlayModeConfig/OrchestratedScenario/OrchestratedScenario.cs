@@ -27,7 +27,8 @@ namespace Unity.Multiplayer.PlayMode.Editor
         const string k_ValidationDialogTitle = "Play Mode Scenario - Validation Failed";
         const string k_ValidationDialogScenarioMessage = "The scenario cannot be started because validation failed with the following message:";
         const string k_ValidationDialogInstanceMessage = "The scenario instance cannot be started because validation failed with the following message:";
-        const string k_ValidationDialogOKLabel = "OK";
+        const string k_ValidationDialogEditScenarioLabel = "Edit Scenario";
+        const string k_ValidationDialogCancelLabel = "Cancel";
         const int k_CurrentSerializedVersion = 2;
         const string k_MainEditorName = "Main Editor";
         internal const string k_SettingsPropertyName = nameof(m_Settings);
@@ -68,7 +69,16 @@ namespace Unity.Multiplayer.PlayMode.Editor
 
         internal override IEnumerable<MainToolbarElement> CreateTopbarUI()
         {
-            yield return new MainToolbarDropdown(MultiplayerStatusToolbarUtilities.GetStatusDropdownContent(), MultiplayerStatusToolbarUtilities.ShowStatusPopup);
+            // A configuration that fails validation has no Scenario,
+            // and therefore no instance status to show. Warn in place of the status and disable the dropdown.
+            var isValid = IsValid(out _);
+
+            yield return new MainToolbarDropdown(
+                MultiplayerStatusToolbarUtilities.GetStatusDropdownContent(isValid),
+                MultiplayerStatusToolbarUtilities.ShowStatusPopup)
+            {
+                enabled = isValid
+            };
         }
 
         public void OnBeforeSerialize()
@@ -114,7 +124,7 @@ namespace Unity.Multiplayer.PlayMode.Editor
 
                 return new SerializedObject(this)
                     .FindProperty(k_SettingsPropertyName)
-                    .FindPropertyRelative(OrchestratedScenarioSettings.k_ControllerItemsPropertyName)
+                    .FindPropertyRelative(OrchestratedScenarioSettings.k_InstanceItemsPropertyName)
                     .GetArrayElementAtIndex(i);
             }
 
@@ -213,8 +223,8 @@ namespace Unity.Multiplayer.PlayMode.Editor
             // guard-revert paths that bypass the WantsToDeselect prompt (UUM-138111).
             if (m_Scenario != null)
             {
-                foreach (var instance in m_Scenario.GetAllInstances())
-                    instance.TearDown();
+                foreach (var runtime in m_Scenario.GetAllRuntimes())
+                    runtime.TearDown();
             }
 
             // Clear any loaded scenario from the scenario runner
@@ -234,9 +244,9 @@ namespace Unity.Multiplayer.PlayMode.Editor
 
             // Only confirm the switch here; the teardown itself runs in OnDeselected (UUM-138111).
             var reasons = new List<string>();
-            foreach (var instance in m_Scenario.GetAllInstances())
+            foreach (var runtime in m_Scenario.GetAllRuntimes())
             {
-                if (instance.NeedsTearDown(out var reason))
+                if (runtime.NeedsTearDown(out var reason))
                     reasons.Add(reason);
             }
 
@@ -290,7 +300,7 @@ namespace Unity.Multiplayer.PlayMode.Editor
             // The settings internal hash comparison should take care of most common cases of it needing a refresh,
             // but to cover potential external edits to the scenario asset (e.g. git merges)
             // we force a refresh when the object is loaded (OnEnable), which happens less often.
-            m_Settings.RefreshDecorators(force: true);
+            m_Settings.RefreshItems(force: true);
 
             if (m_Scenario != null)
                 SetupEvents();
@@ -331,15 +341,15 @@ namespace Unity.Multiplayer.PlayMode.Editor
 
         Scenario CreateScenario()
         {
-            return ScenarioFactory.CreateScenario(this, GetAllInstances());
+            return ScenarioFactory.CreateScenario(this, GetAllInstances(), m_Settings.GetAllScenarioItems());
         }
 
         private void OnValidate()
         {
-            // Validation happens very often, so we don't want to force a refresh of the decorators every time.
-            // As long as the file is not externally edited, the hash comparison inside RefreshDecorators will prevent unnecessary refreshes,
+            // Validation happens very often, so we don't want to force a refresh of the items every time.
+            // As long as the file is not externally edited, the hash comparison inside RefreshItems will prevent unnecessary refreshes,
             // still, for potential external edits, we force a refresh when the object is loaded (OnEnable), which happens less often.
-            m_Settings.RefreshDecorators(force: false);
+            m_Settings.RefreshItems(force: false);
 
             // Avoid re-creating the scenario if the scenario is running
             if (ScenarioRunner.GetScenarioStatus().OverallStatus.State == ExecutionState.Running)
@@ -529,17 +539,16 @@ namespace Unity.Multiplayer.PlayMode.Editor
                 return false;
             }
 
-            var localMobileDevicesSelected = IsConditionMetForAll(
-                instance => instance != null && instance.GetSettings<LocalPlayerController.InstanceSettings>().BuildProfile != null && !string.IsNullOrEmpty(OrchestratedScenarioUserSettings.GetSettings(this, instance, LocalPlayerController.DefaultUserSettings).DeviceID),
-                localMobileInstances);
-            if (!localMobileDevicesSelected)
-                reasonForInvalidConfiguration += "\nLocal mobile device instance(s) must have a device selected.";
-
             List<string> takenIDs = new List<string>();
             bool containsTakenDeviceID = false;
             foreach (var instance in localMobileInstances)
             {
                 var deviceID = OrchestratedScenarioUserSettings.GetSettings(this, instance, LocalPlayerController.DefaultUserSettings).DeviceID;
+
+                // Instances that have no device yet are not sharing one. ValidateRunDeviceNode reports those.
+                if (string.IsNullOrEmpty(deviceID))
+                    continue;
+
                 if (takenIDs.Contains(deviceID))
                 {
                     reasonForInvalidConfiguration = "Device must be associated with only a single instance.";
@@ -571,7 +580,7 @@ namespace Unity.Multiplayer.PlayMode.Editor
 
             reasonForInvalidConfiguration = reasonForInvalidConfiguration.Trim('\n');
             return localBuildTargetsAreSupported && localBuildTargetsCanRunOnPlatform &&
-                   configHasMoreServerInstances && localMobileDevicesSelected && !containsTakenDeviceID && !duplicateNamesFound;
+                   configHasMoreServerInstances && !containsTakenDeviceID && !duplicateNamesFound;
         }
 
         bool ConfigurationHasMaxOneServer()
@@ -620,17 +629,23 @@ namespace Unity.Multiplayer.PlayMode.Editor
         }
 
         internal static void NotifyValidationFailure(Scenario scenario)
-        {
-            ScenarioDialog.DisplayDialog(k_ValidationDialogTitle,
-                GetValidationMessage(k_ValidationDialogScenarioMessage, scenario.GetNodes(ExecutionStage.Validate)),
-                k_ValidationDialogOKLabel);
-        }
+            => ShowValidationFailureDialog(k_ValidationDialogScenarioMessage, scenario.GetNodes(ExecutionStage.Validate));
 
-        internal static void NotifyValidationFailure(Instance instance)
+        internal static void NotifyValidationFailure(ControllerRuntime instance)
+            => ShowValidationFailureDialog(k_ValidationDialogInstanceMessage, instance.GetExecutionGraph().GetNodes(ExecutionStage.Validate));
+
+        // The run is cancelled by the caller either way, so the button only decides whether
+        // to open the Play Mode Scenarios window that can fix what was reported.
+        static void ShowValidationFailureDialog(string prefix, IEnumerable<ExecutionNode> nodes)
         {
-            ScenarioDialog.DisplayDialog(k_ValidationDialogTitle,
-                GetValidationMessage(k_ValidationDialogInstanceMessage, instance.GetExecutionGraph().GetNodes(ExecutionStage.Validate)),
-                k_ValidationDialogOKLabel);
+            var editScenario = ScenarioDialog.DisplayDialog(
+                k_ValidationDialogTitle,
+                GetValidationMessage(prefix, nodes),
+                k_ValidationDialogEditScenarioLabel,
+                k_ValidationDialogCancelLabel);
+
+            if (editScenario)
+                PlayModeScenariosWindow.ShowWindow();
         }
 
         static string GetValidationMessage(string prefix, IEnumerable<ExecutionNode> nodes)

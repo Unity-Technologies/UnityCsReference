@@ -8,17 +8,33 @@
 
 using UnityEngine;
 using System;
+using System.Collections.Generic;
 using System.Globalization;
 using Unity.SmartStrings.Core.Extensions;
 using Unity.SmartStrings.Core.Formatting;
+using Unity.SmartStrings.Core.Parsing;
 using Unity.SmartStrings.Extensions.Time.Utilities;
 using Unity.SmartStrings.Utilities;
 
 namespace Unity.SmartStrings.Extensions;
 
 /// <summary>
-/// A formatter that outputs <see cref="TimeSpan"/> values as human-readable text.
+/// Formats time spans as human-readable text, such as 1 day 2 hours.
 /// </summary>
+/// <remarks>
+/// Call the formatter by name, as in <c>{0:time:}</c>. It accepts <see cref="TimeSpan"/>, <see cref="DateTime"/>
+/// and <see cref="DateTimeOffset"/> values. For a <see cref="DateTime"/> or <see cref="DateTimeOffset"/>, it shows
+/// the time between that value and now. Words in the format text, such as <c>short</c> or <c>noless</c>, set
+/// <see cref="TimeSpanFormatOptions"/> for that placeholder. Without a nested format, the formatter joins the unit
+/// texts with spaces. When the format holds a nested placeholder, the formatter passes the list of unit texts to it
+/// instead, so a nested list format can choose the separators, as in <c>{0:time:abbr {:list:|, | and }}</c>. Only
+/// the words before the nested placeholder set options.
+/// </remarks>
+/// <example>
+/// <code source="../../../../Modules/SmartStrings/Tests/UTFTests/SmartFormat.Samples/TimeFormatterExample.cs"/>
+/// </example>
+/// <seealso cref="TimeSpanFormatOptions"/>
+/// <seealso cref="ListFormatter"/>
 [Serializable]
 public class TimeFormatter : FormatterBase
 {
@@ -73,55 +89,68 @@ public class TimeFormatter : FormatterBase
                 throw new ArgumentException($"No {nameof(TimeTextInfo)} found for language '{value}'.");
         }
     }
-
-    /// <summary>
-    /// The ISO language name, which will be used for getting the <see cref="TimeTextInfo"/>.
-    /// </summary>
-    /// <remarks>
-    /// Culture is now determined in this sequence:<br/>
-    /// 1. Get the culture from the <see cref="FormattingInfo.FormatterOptions"/>.<br/>
-    /// 2. Get the culture from the <see cref="IFormatProvider"/> argument (which may be a <see cref="CultureInfo"/>) to <see cref="SmartFormatter.Format(IFormatProvider, string, object?[])"/><br/>
-    /// 3. The <see cref="CultureInfo.CurrentUICulture"/>.<br/>
-    /// </remarks>
-    [Obsolete("This property is not supported any more. Changed process to get or set the default culture.", true)]
-    public string DefaultTwoLetterISOLanguageName { get; set; } = "en";
-
     ///<inheritdoc />
     public override bool TryEvaluateFormat(IFormattingInfo formattingInfo)
+    {
+        var format = formattingInfo.Format;
+        var isNested = format is { HasNested: true };
+
+        // Only a named call hands time parts to a nested format; auto-detection leaves nested formats to other formatters
+        if (isNested && string.IsNullOrEmpty(formattingInfo.Placeholder?.FormatterName)) return false;
+
+        var nestedStart = isNested
+            ? format.Items[format.Items.FindIndex(item => item is Placeholder)].StartIndex - format.StartIndex
+            : -1;
+
+        var timeParts = GetTimeParts(formattingInfo, nestedStart);
+        if (timeParts is null) return false;
+
+        // A nested format, such as a list, receives the time parts instead of the joined text
+        if (nestedStart == 0)
+        {
+            formattingInfo.FormatAsChild(format, timeParts);
+            return true;
+        }
+
+        if (nestedStart > 0)
+        {
+            using var nested = format.Substring(nestedStart);
+            formattingInfo.FormatAsChild(nested, timeParts);
+            return true;
+        }
+
+        formattingInfo.Write(string.Join(" ", timeParts));
+        return true;
+    }
+
+    List<string> GetTimeParts(IFormattingInfo formattingInfo, int nestedStart)
     {
         var format = formattingInfo.Format;
         var formatterName = formattingInfo.Placeholder?.FormatterName ?? string.Empty;
         var current = formattingInfo.CurrentValue;
 
-        // Check whether arguments can be handled by this formatter
-        if (format is {HasNested : true})
-        {
-            // Auto detection calls just return a failure to evaluate
-            if (formatterName == string.Empty)
-                return false;
-
-            // throw, if the formatter has been called explicitly
-            throw new FormatException($"Formatter named '{formatterName}' cannot handle nested formats.");
-        }
-
         var options = formattingInfo.FormatterOptions.Trim();
         var formatText = format?.RawText.Trim() ?? string.Empty;
 
         // Not clear, whether we can process this format
-        if (formatterName == string.Empty && options == string.Empty && formatText == string.Empty) return false;
+        if (formatterName == string.Empty && options == string.Empty && formatText == string.Empty) return null;
 
         // In SmartFormat 2.x, the format could be included in options, with empty format.
         // Using compatibility with v2, there is no reliable way to set a language as an option
         var v2Compatibility = options != string.Empty && formatText == string.Empty;
         var formattingOptions = v2Compatibility ? options : formatText;
 
-        var fromTime = GetFromTime(current, formattingOptions);
+        // Words from the first nested placeholder on belong to the nested format, not to the time options
+        if (nestedStart >= 0)
+            formattingOptions = format.BaseString.Substring(format.StartIndex, nestedStart).Trim();
+
+        var fromTime = GetFromTime(current);
 
         if (fromTime is null)
         {
             // Auto detection calls just return a failure to evaluate
             if (formatterName == string.Empty)
-                return false;
+                return null;
 
             // throw, if the formatter has been called explicitly
             throw new FormatException(
@@ -130,13 +159,11 @@ public class TimeFormatter : FormatterBase
 
         var timeTextInfo = GetTimeTextInfo(formattingInfo, v2Compatibility);
 
-        var timeSpanFormatOptions = TimeSpanFormatOptionsConverter.Parse(v2Compatibility ? options : formatText);
-        var timeString = fromTime.Value.ToTimeString(timeSpanFormatOptions, timeTextInfo);
-        formattingInfo.Write(timeString);
-        return true;
+        var timeSpanFormatOptions = TimeSpanFormatOptionsConverter.Parse(formattingOptions);
+        return fromTime.Value.ToTimeParts(timeSpanFormatOptions, timeTextInfo);
     }
 
-    static TimeSpan? GetFromTime(object current, string formattingOptions)
+    static TimeSpan? GetFromTime(object current)
     {
         TimeSpan? fromTime = null;
 
@@ -146,16 +173,10 @@ public class TimeFormatter : FormatterBase
                 fromTime = timeSpan;
                 break;
             case DateTime dateTime:
-                if (formattingOptions != string.Empty)
-                {
-                    fromTime = SystemTime.Now().ToUniversalTime().Subtract(dateTime.ToUniversalTime());
-                }
+                fromTime = SystemTime.Now().ToUniversalTime().Subtract(dateTime.ToUniversalTime());
                 break;
             case DateTimeOffset dateTimeOffset:
-                if (formattingOptions != string.Empty)
-                {
-                    fromTime = SystemTime.OffsetNow().UtcDateTime.Subtract(dateTimeOffset.UtcDateTime);
-                }
+                fromTime = SystemTime.OffsetNow().UtcDateTime.Subtract(dateTimeOffset.UtcDateTime);
                 break;
         }
 

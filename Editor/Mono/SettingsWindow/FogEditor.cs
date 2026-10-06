@@ -11,13 +11,13 @@ namespace UnityEditor
     {
         internal class Styles
         {
-            public static readonly GUIContent FogWarning = EditorGUIUtility.TrTextContent("Fog has no effect on opaque objects when using Deferred Shading rendering. Use the Global Fog image effect instead, which supports opaque objects.");
-            public static readonly GUIContent FogDensity = EditorGUIUtility.TrTextContent("Density", "Controls the density of the fog effect in the Scene when using Exponential or Exponential Squared modes.");
-            public static readonly GUIContent FogLinearStart = EditorGUIUtility.TrTextContent("Start", "Controls the distance from the camera where the fog will start in the Scene.");
-            public static readonly GUIContent FogLinearEnd = EditorGUIUtility.TrTextContent("End", "Controls the distance from the camera where the fog will completely obscure objects in the Scene.");
-            public static readonly GUIContent FogEnable = EditorGUIUtility.TrTextContent("Fog", "Specifies whether fog is used in the Scene or not.");
-            public static readonly GUIContent FogColor = EditorGUIUtility.TrTextContent("Color", "Controls the color of the fog drawn in the Scene.");
-            public static readonly GUIContent FogMode = EditorGUIUtility.TrTextContent("Mode", "Controls the mathematical function determining the way fog accumulates with distance from the camera. Options are Linear, Exponential, and Exponential Squared.");
+            public static readonly GUIContent FogWarning = L10n.TextContent("Fog has no effect on opaque objects when using Deferred Shading rendering. Use the Global Fog image effect instead, which supports opaque objects.", null, null, null);
+            public static readonly GUIContent FogDensity = L10n.TextContent("Density", "Controls the density of the fog effect in the Scene when using Exponential or Exponential Squared modes.", null, null);
+            public static readonly GUIContent FogLinearStart = L10n.TextContent("Start", "Controls the distance from the camera where the fog will start in the Scene.", null, null);
+            public static readonly GUIContent FogLinearEnd = L10n.TextContent("End", "Controls the distance from the camera where the fog will completely obscure objects in the Scene.", null, null);
+            public static readonly GUIContent FogEnable = L10n.TextContent("Fog", "Specifies whether fog is used in the Scene or not.", null, null);
+            public static readonly GUIContent FogColor = L10n.TextContent("Color", "Controls the color of the fog drawn in the Scene.", null, null);
+            public static readonly GUIContent FogMode = L10n.TextContent("Mode", "Controls the mathematical function determining the way fog accumulates with distance from the camera. Options are Linear, Exponential, and Exponential Squared.", null, null);
         }
 
         protected SerializedProperty m_Fog;

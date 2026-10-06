@@ -458,6 +458,12 @@ namespace UnityEngine.UIElements
 
         internal void Refresh(VisualElement element, StyleSheet styleSheet, StyleRule styleRule, ContextType type, StyleDiffAdditionalDataFlags flags = StyleDiffAdditionalDataFlags.All)
         {
+            if (element is { resourcesReleased: true })
+            {
+                Clear();
+                return;
+            }
+
             currentContextType = type;
             currentTarget = element;
             currentStyleSheet = styleSheet;

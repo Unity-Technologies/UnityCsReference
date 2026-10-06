@@ -37,18 +37,18 @@ namespace UnityEditor
 
         private static class Styles
         {
-            public static readonly GUIContent eventCamera = EditorGUIUtility.TrTextContent("Event Camera", "The Camera which the events are triggered through. This is used to determine clicking and hover positions if the Canvas is in World Space render mode.");
-            public static readonly GUIContent renderCamera = EditorGUIUtility.TrTextContent("Render Camera", "The Camera which will render the canvas. This is also the camera used to send events.");
-            public static readonly GUIContent sortingOrder = EditorGUIUtility.TrTextContent("Sort Order", "The order in which Screen Space - Overlay canvas will render");
+            public static readonly GUIContent eventCamera = L10n.TextContent("Event Camera", "The Camera which the events are triggered through. This is used to determine clicking and hover positions if the Canvas is in World Space render mode.", null, null);
+            public static readonly GUIContent renderCamera = L10n.TextContent("Render Camera", "The Camera which will render the canvas. This is also the camera used to send events.", null, null);
+            public static readonly GUIContent sortingOrder = L10n.TextContent("Sort Order", "The order in which Screen Space - Overlay canvas will render", null, null);
             public static readonly string s_RootAndNestedMessage = "Cannot multi-edit root Canvas together with nested Canvas.";
-            public static readonly GUIContent m_SortingLayerStyle = EditorGUIUtility.TrTextContent("Sorting Layer", "Name of the Renderer's sorting layer");
-            public static readonly GUIContent targetDisplay = EditorGUIUtility.TrTextContent("Target Display", "Display on which to render the canvas when in overlay mode");
-            public static readonly GUIContent m_SortingOrderStyle = EditorGUIUtility.TrTextContent("Order in Layer", "Renderer's order within a sorting layer");
-            public static readonly GUIContent m_ShaderChannel = EditorGUIUtility.TrTextContent("Additional Shader Channels");
-            public static readonly GUIContent pixelPerfectContent = EditorGUIUtility.TrTextContent("Pixel Perfect");
-            public static readonly GUIContent standaloneRenderResize = EditorGUIUtility.TrTextContent("Resize Canvas", "For manual Camera.Render calls should the canvas resize to match the destination target.");
-            public static readonly GUIContent vertexColorAlwaysGammaSpace = EditorGUIUtility.TrTextContent("Vertex Color Always In Gamma Color Space", "UI vertex colors are always in gamma color space disregard of the player settings");
-            public static readonly GUIContent useReflectionProbes = EditorGUIUtility.TrTextContent("Reflection Probes", "Allows shaders in the canvas to access data from Reflection Probes");
+            public static readonly GUIContent m_SortingLayerStyle = L10n.TextContent("Sorting Layer", "Name of the Renderer's sorting layer", null, null);
+            public static readonly GUIContent targetDisplay = L10n.TextContent("Target Display", "Display on which to render the canvas when in overlay mode", null, null);
+            public static readonly GUIContent m_SortingOrderStyle = L10n.TextContent("Order in Layer", "Renderer's order within a sorting layer", null, null);
+            public static readonly GUIContent m_ShaderChannel = L10n.TextContent("Additional Shader Channels", null, null, null);
+            public static readonly GUIContent pixelPerfectContent = L10n.TextContent("Pixel Perfect", null, null, null);
+            public static readonly GUIContent standaloneRenderResize = L10n.TextContent("Resize Canvas", "For manual Camera.Render calls should the canvas resize to match the destination target.", null, null);
+            public static readonly GUIContent vertexColorAlwaysGammaSpace = L10n.TextContent("Vertex Color Always In Gamma Color Space", "UI vertex colors are always in gamma color space disregard of the player settings", null, null);
+            public static readonly GUIContent useReflectionProbes = L10n.TextContent("Reflection Probes", "Allows shaders in the canvas to access data from Reflection Probes", null, null);
         }
 
         private bool m_AllNested = false;

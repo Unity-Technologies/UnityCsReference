@@ -1557,7 +1557,39 @@ namespace UnityEditor
 
             public virtual void StartDrag(EntityId draggedInstanceID, List<EntityId> selectedInstanceIDs)
             {
-                ProjectWindowUtil.StartDrag(draggedInstanceID, selectedInstanceIDs);
+                var itemCenters = BuildItemCenters(draggedInstanceID, selectedInstanceIDs);
+                var itemSize = ListMode ? m_Grid.itemSize.y : m_Grid.itemSize.x;
+
+                var previewData = new DragAndDrop.PreviewData
+                {
+                    ownerId = m_Owner.GetAssetPreviewManagerID(),
+                    itemCenters = itemCenters,
+                    itemSize = itemSize,
+                    listMode = ListMode,
+                    visibleRect = m_Owner.gridVisibleRect,
+                    labelStyle = ListMode ? Styles.resultsLabel : Styles.resultsGridLabel
+                };
+                ProjectWindowUtil.StartDrag(draggedInstanceID, selectedInstanceIDs, previewData);
+            }
+
+            // Grid center of each dragged item, in the group's draw order so the positions line up with
+            // what the view shows.
+            Dictionary<EntityId, Vector2> BuildItemCenters(EntityId draggedInstanceID, List<EntityId> selectedInstanceIDs)
+            {
+                var wanted = new HashSet<EntityId>(selectedInstanceIDs) { draggedInstanceID };
+                var itemCenters = new Dictionary<EntityId, Vector2>(wanted.Count);
+
+                foreach (var item in EnumerateItemsInDrawOrder())
+                {
+                    // An asset can't be created or renamed mid-drag, so the placeholder is never dragged.
+                    if (item.IsNewAssetPlaceholder || !wanted.Contains(item.EntityId))
+                        continue;
+
+                    // First occurrence wins, matching IndexOf.
+                    if (!itemCenters.ContainsKey(item.EntityId))
+                        itemCenters[item.EntityId] = m_Grid.CalcRect(item.Index, 0f).center;
+                }
+                return itemCenters;
             }
 
             public DragAndDropVisualMode DoDrag(EntityId dragToInstanceID, bool perform)

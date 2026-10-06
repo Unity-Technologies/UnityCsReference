@@ -106,6 +106,7 @@ namespace UnityEditor.Audio
     [ExcludeFromPreset]
     sealed partial class AudioMixerController : AudioMixer
     {
+        internal AudioMixerController(global::UnityEngine.EntityId id) : base(id) {}
         public const float kMinVolume = -80.0f; // The minimum volume is the level at which sends and effects can be bypassed
         public const float kMaxEffect = 0.0f;
         public const float kVolumeWarp = 1.7f;

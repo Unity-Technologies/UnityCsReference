@@ -2,7 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: HeadlessRuntime not yet converted
 using System;
 using System.Collections.Generic;
 using UnityEditor;
@@ -17,7 +16,8 @@ class AdbDeviceField : VisualElement
     const string k_NoDeviceItem = "<None>";
     const string k_NoAdbConnectedTooltip = "Cannot fetch device list. Please ensure the Android SDK path is correctly set in Preferences > External Tools.";
     const string k_NoDeviceConnectedTooltip = "No device connected. Please go to https://docs.unity3d.com/Manual/android-debugging-on-an-android-device.html for more information on how to connect a device.";
-    const string k_NoDeviceSelectedTooltip = "Please select a device to run the instance on before running the scenario.";
+    // Shared with LocalPlayerInstanceStatusElement so both surfaces say the same thing about a missing device.
+    internal const string k_NoDeviceSelectedTooltip = "Please select a device to run the instance on before running the scenario.";
 
     PopupField<string> m_DeviceField;
     SerializedProperty m_DeviceNameProperty;
@@ -137,4 +137,3 @@ class AdbDeviceField : VisualElement
         return deviceLabel.Substring(openParenIndex + 1, closeParenIndex - openParenIndex - 1);
     }
 }
-#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

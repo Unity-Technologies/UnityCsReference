@@ -15,7 +15,7 @@ namespace UnityEditor.UIElements.StyleSheets
     // Make sure style sheets importer after allowed dependent assets: textures, fonts and json
     // Has to be higher then AssetImportOrder.kImportOrderLate
     [HelpURL("UIE-USS")]
-    [ScriptedImporter(version: 23, ext: "uss", importQueueOffset: 1100)]
+    [ScriptedImporter(version: 24, ext: "uss", importQueueOffset: 1100)]
     [ExcludeFromPreset]
     class StyleSheetImporter : ScriptedImporter
     {
@@ -42,7 +42,7 @@ namespace UnityEditor.UIElements.StyleSheets
 
         static string[] GatherDependenciesFromSourceFile(string assetPath)
         {
-            var contents = File.ReadAllText(FileUtil.PathToAbsolutePath(assetPath));
+            var contents = File.ReadAllText(FileUtil.PathToAbsolutePathForFileIO(assetPath));
             if (string.IsNullOrEmpty(contents))
             {
                 return Array.Empty<string>();
@@ -66,7 +66,7 @@ namespace UnityEditor.UIElements.StyleSheets
 
             try
             {
-                contents = File.ReadAllText(FileUtil.PathToAbsolutePath(ctx.assetPath));
+                contents = File.ReadAllText(FileUtil.PathToAbsolutePathForFileIO(ctx.assetPath));
             }
             catch (IOException exc)
             {

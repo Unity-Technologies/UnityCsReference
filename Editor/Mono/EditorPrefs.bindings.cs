@@ -17,6 +17,9 @@ namespace UnityEditor
         //  long term solution is to make editor prefs read/writes threadsafe
         internal delegate void ValueWasUpdated(string key);
         [AutoStaticsCleanupOnCodeReload]
+        // PlayModeTintResolver re-subscribes from its [OnCodeLoaded] Initialize() on every code load, so
+        // the invocation list cleared here is repopulated before any pref can change.
+        [IgnoreForUAL0015("Event re-subscribed on every code load by PlayModeTintResolver.Initialize()")]
         internal static event ValueWasUpdated onValueWasUpdated;
 
         // Sets the value of the preference identified by /key/.

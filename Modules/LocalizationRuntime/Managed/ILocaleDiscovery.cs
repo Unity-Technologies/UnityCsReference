@@ -19,7 +19,7 @@ namespace Unity.Localization;
 /// that only serve the locales shipped with the project do not need this interface.
 /// </remarks>
 /// <example>
-/// <para>Discover locales from installed data files and register each one at startup.</para>
+/// Discover locales from installed data files and register each one at startup.
 /// <code source="../../../Modules/LocalizationRuntime/Tests/UTFTests/Localization.Samples/Components/DiskLocaleProviderExample.cs"/>
 /// </example>
 /// <seealso cref="LocalizationSettings"/>
@@ -33,6 +33,9 @@ public interface ILocaleDiscovery
     /// <remarks>
     /// Called during <see cref="LocalizationSettings.InitializeAsync"/>. Add each discovered locale with
     /// <see cref="LocalizationSettings.AddLocale"/>, and honor <paramref name="cancellationToken"/> for long-running discovery.
+    /// Initialization waits for this method, so nothing inside it can wait for initialization. Awaiting
+    /// <see cref="LocalizationSettings.InitializeAsync"/>, or a value in the selected locale, waits for this method to
+    /// return, so it never finishes. To read a value here, pass the locale to read it in.
     /// </remarks>
     /// <param name="settings">The settings to register discovered locales on.</param>
     /// <param name="cancellationToken">The token that signals the discovery should be canceled.</param>

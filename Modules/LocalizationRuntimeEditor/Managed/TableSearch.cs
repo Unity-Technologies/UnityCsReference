@@ -39,7 +39,10 @@ class TableSearch
         try
         {
             foreach (var sharedEntry in m_Collection.SharedData.Entries)
-                allKeys.Add(sharedEntry.Id);
+            {
+                if (LocalizationTableAuthoring.IsAddressableKey(sharedEntry))
+                    allKeys.Add(sharedEntry.Id);
+            }
             return new HashSet<long>(parsed.Apply(allKeys));
         }
         finally

@@ -2,7 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: UIToolkitAuthoringFramework not yet converted
 using System.Collections.Generic;
 using UnityEngine.UIElements;
 using Unity.Scripting.LifecycleManagement;
@@ -12,10 +11,11 @@ namespace Unity.UIToolkit.Editor
     // Inner value field for a GridLine placement, built like the length fields: a text
     // value showing "auto" or the line/span number, with a flush auto / line / span unit popup on the right.
     [UxmlElement]
-    [NoAutoStaticsCleanup] // Immutable USS-class/unit lookup constants; safe to persist across reloads.
     internal partial class GridLineValueField : BaseField<GridLine>
     {
         static readonly string k_UssClassName = "unity-grid-line-field";
+        const string k_StyleFieldUssPath = "UIToolkitAuthoring/Inspector/Controls/StyleField.uss";
+        [NoAutoStaticsCleanup] // immutable unit lookup list, safe to persist across reloads
         static readonly List<string> k_Units = new() { "auto", "line", "span" };
 
         readonly TextField m_Text;
@@ -27,6 +27,10 @@ namespace Unity.UIToolkit.Editor
         public GridLineValueField(string label) : base(label, new VisualElement())
         {
             AddToClassList(k_UssClassName);
+
+            if (UnityEditor.EditorGUIUtility.Load(k_StyleFieldUssPath) is StyleSheet uss)
+                styleSheets.Add(uss);
+
             visualInput.style.flexDirection = FlexDirection.Row;
 
             m_Text = new TextField { isDelayed = true };
@@ -35,16 +39,19 @@ namespace Unity.UIToolkit.Editor
 
             // Like StyleLengthField: the unit popup floats in an absolutely-positioned container over the
             // right edge of the full-width text field so it sits flush, reusing the same USS classes.
-            m_Unit = new PopupField<string>(k_Units, 0);
+            // The keyword collapses to "-" in the closed popup, as in LengthField; the text reads "auto".
+            m_Unit = new PopupField<string>(k_Units, 0, u => u == "auto" ? "-" : u);
             m_Unit.AddToClassList("unity-style-field__options-popup");
-            m_Unit.style.width = 46; // wider than the length unit (24px) to fit "span" / "line" / "auto"
+            m_Unit.style.width = 46; // wider than the length unit (24px) to fit "span" / "line"
 
             var popupContainer = new VisualElement();
             popupContainer.AddToClassList("unity-style-field__options-popup-container");
             popupContainer.Add(m_Unit);
 
             visualInput.Add(m_Text);
-            visualInput.Add(popupContainer);
+            // Sibling of the input at the field root, like LengthField: the absolutely-positioned
+            // container anchors to the field's right edge so the popup overlays the text field.
+            hierarchy.Add(popupContainer);
 
             m_Text.RegisterValueChangedCallback(OnTextChanged);
             m_Unit.RegisterValueChangedCallback(OnUnitChanged);
@@ -129,4 +136,3 @@ namespace Unity.UIToolkit.Editor
         internal override bool EqualsCurrentValue(StyleGridLine v) => v == value;
     }
 }
-#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

@@ -52,6 +52,7 @@ namespace UnityEditor.Animations
     public partial class AnimatorTransitionBase : Object
     {
         protected AnimatorTransitionBase() {}
+        internal AnimatorTransitionBase(global::UnityEngine.EntityId id) : base(id) {}
 
         public string GetDisplayName(Object source)
         {
@@ -99,13 +100,14 @@ namespace UnityEditor.Animations
     [HelpURL("StateMachineTransitions")]
     public class AnimatorTransition : AnimatorTransitionBase
     {
+        internal AnimatorTransition(global::UnityEngine.EntityId id) : base(id) {}
         public AnimatorTransition()
         {
-            Internal_CreateAnimatorTransition(this);
+            SetEntityIdFromConstructor(Internal_CreateAnimatorTransition());
         }
 
         [FreeFunction("StateMachineBindings::Internal_CreateAnimatorTransition")]
-        extern private static void Internal_CreateAnimatorTransition([Writable] AnimatorTransition mono);
+        extern private static EntityId Internal_CreateAnimatorTransition();
     }
 
     [NativeHeader("Editor/Src/Animation/Transition.h")]
@@ -114,13 +116,14 @@ namespace UnityEditor.Animations
     [HelpURL("class-Transition")]
     public class AnimatorStateTransition : AnimatorTransitionBase
     {
+        internal AnimatorStateTransition(global::UnityEngine.EntityId id) : base(id) {}
         public AnimatorStateTransition()
         {
-            Internal_CreateAnimatorStateTransition(this);
+            SetEntityIdFromConstructor(Internal_CreateAnimatorStateTransition());
         }
 
         [FreeFunction("StateMachineBindings::Internal_CreateAnimatorStateTransition")]
-        extern private static void Internal_CreateAnimatorStateTransition([Writable] AnimatorStateTransition self);
+        extern private static EntityId Internal_CreateAnimatorStateTransition();
 
         extern public float                           duration
         {
@@ -156,13 +159,14 @@ namespace UnityEditor.Animations
     [NativeHeader("Editor/Src/Animation/StateMachineBehaviourScripting.h")]
     public sealed partial class AnimatorState : Object
     {
+        internal AnimatorState(global::UnityEngine.EntityId id) : base(id) {}
         public AnimatorState()
         {
-            Internal_CreateAnimatorState(this);
+            SetEntityIdFromConstructor(Internal_CreateAnimatorState());
         }
 
         [FreeFunction("StateMachineBindings::Internal_CreateAnimatorState")]
-        extern private static void Internal_CreateAnimatorState([Writable] AnimatorState self);
+        extern private static EntityId Internal_CreateAnimatorState();
 
         extern public int             nameHash
         {
@@ -267,13 +271,14 @@ namespace UnityEditor.Animations
     [NativeHeader("Editor/Src/Animation/StateMachineBehaviourScripting.h")]
     public sealed partial class AnimatorStateMachine : Object
     {
+        internal AnimatorStateMachine(global::UnityEngine.EntityId id) : base(id) {}
         public AnimatorStateMachine()
         {
-            Internal_CreateAnimatorStateMachine(this);
+            SetEntityIdFromConstructor(Internal_CreateAnimatorStateMachine());
         }
 
         [FreeFunction("StateMachineBindings::Internal_CreateAnimatorStateMachine")]
-        extern private static void Internal_CreateAnimatorStateMachine([Writable] AnimatorStateMachine self);
+        extern private static EntityId Internal_CreateAnimatorStateMachine();
 
         extern public ChildAnimatorState[] states { get; set; }
 

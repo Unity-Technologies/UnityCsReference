@@ -141,6 +141,24 @@ namespace UnityEditor
                 SetScaleValue(Vector3.Scale(scale, scaleDelta));
             }
 
+            public void SetRotationDelta(float angleDelta, Vector3 axis)
+            {
+                bool rotateAroundHandle = Tools.pivotMode != PivotMode.Pivot;
+                Vector3 worldAxis = individualSpace ? rotation * axis : mouseDownHandleRotation * axis;
+                Quaternion rot = Quaternion.AngleAxis(angleDelta, worldAxis);
+
+                if (rotateAroundHandle)
+                    transform.position = rot * (position - mouseDownHandlePosition) + mouseDownHandlePosition;
+
+                transform.rotation = rot * rotation;
+
+                // sync euler hints after a rotate tool update to fake continuous rotation
+                transform.SetLocalEulerHint(transform.GetLocalEulerAngles(transform.rotationOrder));
+
+                if (transform.parent != null)
+                    transform.SendTransformChangedScale(); // force scale update, needed if tr has non-uniformly scaled parent.
+            }
+
             private void SetPosition(Vector3 newPosition)
             {
                 SetPositionDelta(newPosition - position, true);
@@ -344,6 +362,31 @@ namespace UnityEditor
             }
             if (undoObjects.Length == 1)
                 Undo.SetCurrentGroupName("Scale " + undoName);
+        }
+
+        public static void SetRotateDelta(float angleDelta, Vector3 axis)
+        {
+            if (s_MouseDownState == null)
+                return;
+
+            Object[] undoObjects = new Object[s_MouseDownState.Length];
+            string undoName = "";
+
+            for (int i = 0; i < s_MouseDownState.Length; i++)
+            {
+                var cur = s_MouseDownState[i];
+                undoObjects[i] = cur.transform;
+                undoName = cur.transform.name;
+            }
+
+            Undo.RecordObjects(undoObjects, "Rotate Selected Objects");
+            for (int i = 0; i < s_MouseDownState.Length; i++)
+            {
+                s_MouseDownState[i].SetRotationDelta(angleDelta, axis);
+            }
+
+            if (undoObjects.Length == 1)
+                Undo.SetCurrentGroupName("Rotate " + undoName);
         }
 
         public static void SetResizeDelta(Vector3 scaleDelta, Vector3 pivotPosition, Quaternion pivotRotation)

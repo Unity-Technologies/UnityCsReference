@@ -136,7 +136,16 @@ namespace UnityEditor.AdaptivePerformance.Simulator.Editor
         }
 
         /// <summary>
-        /// This property is a wrapper around an internal PerformanceDataRecord object. For more details, see <see cref="PerformanceDataRecord.PerformanceMode"/>.
+        /// Helper for the device simulator to change energy usage settings. These settings are usually reported by a device directly.
+        /// </summary>
+        /// <param name="energyUsage">New per-subsystem energy usage values.</param>
+        public void SetEnergyUsage(EnergyUsage energyUsage)
+        {
+            ((SimulatorProvider)provider).SetEnergyUsage(energyUsage);
+        }
+
+        /// <summary>
+        /// This property is a wrapper around an internal PerformanceDataRecord object. For more details, refer to <see cref="PerformanceDataRecord.PerformanceMode"/>.
         /// </summary>
         public PerformanceMode PerformanceMode
         {
@@ -147,7 +156,7 @@ namespace UnityEditor.AdaptivePerformance.Simulator.Editor
         /// <summary>
         /// The Simulator Provider controls Subsystems needed to access Adaptive Performance features and the systems lifecycle.
         /// </summary>
-        public class SimulatorProvider : APProvider, IApplicationLifecycle, IDevicePerformanceLevelControl
+        public class SimulatorProvider : APProvider, IApplicationLifecycle, IDevicePerformanceLevelControl, IEnergyUsageProvider
         {
             PerformanceDataRecord updateResult = new PerformanceDataRecord();
             float resetCpuBoostMode = 0;
@@ -160,10 +169,19 @@ namespace UnityEditor.AdaptivePerformance.Simulator.Editor
             {
                 Capabilities = Feature.CpuPerformanceLevel | Feature.GpuPerformanceLevel | Feature.PerformanceLevelControl |
                     Feature.TemperatureLevel | Feature.WarningLevel | Feature.TemperatureTrend | Feature.CpuFrameTime | Feature.GpuFrameTime |
-                    Feature.OverallFrameTime | Feature.CpuPerformanceBoost | Feature.GpuPerformanceBoost | Feature.ClusterInfo | Feature.PerformanceMode;
+                    Feature.OverallFrameTime | Feature.CpuPerformanceBoost | Feature.GpuPerformanceBoost | Feature.ClusterInfo | Feature.PerformanceMode |
+                    Feature.EnergyUsage;
                 updateResult.PerformanceLevelControlAvailable = true;
                 updateResult.ClusterInfo = new ClusterInfo { BigCore = 1, MediumCore = 3, LittleCore = 4 }; // define as useful numbers for the device simulator (and to not throw off tests)
                 updateResult.ChangeFlags |= Provider.Feature.ClusterInfo;
+                // Useful default energy readings for the device simulator (µWs over a ~20s interval).
+                updateResult.EnergyUsage = new EnergyUsage(
+                    (EnergyUsageSubsystem.Cpu, new EnergyUsageReading(true, 1500000, 20000)),
+                    (EnergyUsageSubsystem.Gpu, new EnergyUsageReading(true, 2500000, 20000)),
+                    (EnergyUsageSubsystem.Tpu, new EnergyUsageReading(false, 0, 0)),
+                    (EnergyUsageSubsystem.Display, new EnergyUsageReading(true, 1000000, 20000)),
+                    (EnergyUsageSubsystem.Memory, new EnergyUsageReading(true, 500000, 20000)));
+                updateResult.ChangeFlags |= Provider.Feature.EnergyUsage;
             }
 
             /// <summary>
@@ -472,6 +490,34 @@ namespace UnityEditor.AdaptivePerformance.Simulator.Editor
             {
                 updateResult.ClusterInfo = clusterInfo;
                 updateResult.ChangeFlags |= Provider.Feature.ClusterInfo;
+            }
+
+            /// <summary>
+            /// Helper for the device simulator to change energy usage settings. Those settings are usually reported by a device directly.
+            /// </summary>
+            /// <param name="energyUsage">New per-subsystem energy usage values.</param>
+            public virtual void SetEnergyUsage(EnergyUsage energyUsage)
+            {
+                updateResult.EnergyUsage = energyUsage;
+                updateResult.ChangeFlags |= Provider.Feature.EnergyUsage;
+            }
+
+            /// <summary>
+            /// Simulated energy-usage tracking. Re-publishes the current readings so that
+            /// <see cref="PerformanceMetrics.EnergyUsage"/> reflects them after (re)starting.
+            /// </summary>
+            /// <returns>Always true; the simulator always supports energy usage tracking.</returns>
+            public bool StartEnergyUsageTracking()
+            {
+                updateResult.ChangeFlags |= Provider.Feature.EnergyUsage;
+                return true;
+            }
+
+            /// <summary>
+            /// Simulated energy-usage tracking stop. No-op in the simulator.
+            /// </summary>
+            public void StopEnergyUsageTracking()
+            {
             }
 
             /// <summary>

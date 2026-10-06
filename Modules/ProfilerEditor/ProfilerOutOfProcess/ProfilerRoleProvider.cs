@@ -121,6 +121,20 @@ namespace UnityEditor
                 profilerWindow.memoryRecordingModeChanged += OnProfilerWindowMemoryRecordModeChanged;
             }
 
+            // s_OOPProfilerWindow can go stale: e.g. toggling "UI Toolkit Live Reload" makes
+            // HostView.Reload destroy the ProfilerWindow instance and replace it with a new one,
+            // which this cached reference never learns about. Re-acquire it when that happens.
+            static ProfilerWindow GetValidOOPProfilerWindow()
+            {
+                if (s_OOPProfilerWindow == null)
+                {
+                    s_OOPProfilerWindow = EditorWindow.GetWindow<ProfilerWindow>();
+                    SetupProfilerWindow(s_OOPProfilerWindow);
+                }
+
+                return s_OOPProfilerWindow;
+            }
+
             static void SetupProfilerDriver()
             {
                 if (s_ProfilerDriverSetup)
@@ -241,13 +255,13 @@ namespace UnityEditor
             [UsedImplicitly, CommandHandler("Profiler/OpenProfileData", CommandHint.Menu)]
             static void OnLoadProfileDataFileCommand(CommandExecuteContext ctx)
             {
-                s_OOPProfilerWindow.LoadProfilingData(false);
+                GetValidOOPProfilerWindow().LoadProfilingData(false);
             }
 
             [UsedImplicitly, CommandHandler("Profiler/SaveProfileData", CommandHint.Menu)]
             static void OnSaveProfileDataFileCommand(CommandExecuteContext ctx)
             {
-                s_OOPProfilerWindow.SaveProfilingData();
+                GetValidOOPProfilerWindow().SaveProfilingData();
             }
 
             [UsedImplicitly, CommandHandler("Profiler/Record", CommandHint.Menu)]

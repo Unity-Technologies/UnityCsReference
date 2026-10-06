@@ -136,15 +136,20 @@ namespace Unity.GraphToolkit.Editor
                             Collapsible = true,
                             SectionType = SectionType.Properties
                         });
-                        m_SectionModels.Add(new InspectorSectionModel()
-                        {
-                            Title = k_AdvancedNodePropertiesTitle,
-                            Collapsed = false,
-                            Collapsible = true,
-                            SectionType = SectionType.Advanced
-                        });
 
-                        if (inspectedModel is StateModel)
+                        // StateModel has no advanced properties by design, and its CreateBaseStateInspector
+                        // doesn't produce any content for SectionType.Advanced — so showing the section would
+                        // just render an empty "Advanced Properties" foldout. See GTF-2429.
+                        if (inspectedModel is not StateModel)
+                        {
+                            m_SectionModels.Add(new InspectorSectionModel()
+                            {
+                                Title = k_AdvancedNodePropertiesTitle,
+                                Collapsed = false,
+                                SectionType = SectionType.Advanced
+                            });
+                        }
+                        else
                         {
                             m_SectionModels.Add(new InspectorSectionModel()
                             {
@@ -269,13 +274,19 @@ namespace Unity.GraphToolkit.Editor
                         Collapsible = true,
                         SectionType = SectionType.Properties
                     });
-                    m_SectionModels.Add(new InspectorSectionModel()
+
+                    // Mirror the single-model branch above: StateModel has no advanced
+                    // properties, so a multi-state selection would otherwise still show
+                    // an empty "Advanced Properties" foldout. See GTF-2429.
+                    if (!typeof(StateModel).IsAssignableFrom(type))
                     {
-                        Title = k_AdvancedNodePropertiesTitle,
-                        Collapsed = false,
-                        Collapsible = true,
-                        SectionType = SectionType.Advanced
-                    });
+                        m_SectionModels.Add(new InspectorSectionModel()
+                        {
+                            Title = k_AdvancedNodePropertiesTitle,
+                            Collapsed = false,
+                            SectionType = SectionType.Advanced
+                        });
+                    }
                 }
                 else if (typeof(VariableDeclarationModelBase).IsAssignableFrom(type))
                 {

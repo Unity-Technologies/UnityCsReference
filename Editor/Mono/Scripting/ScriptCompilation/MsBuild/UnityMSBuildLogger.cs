@@ -13,6 +13,9 @@ namespace UnityEditor.Scripting.ScriptCompilation.MsBuild;
 
 class UnityMSBuildLogger
 {
+    // Must match Unity.BuildService.ProjectCache.ProjectCacheSummary.LogCode.
+    const string k_ProjectCacheSummaryLogCode = "UnityProjectCacheSummary";
+
     public static void LogBuildFailedWithoutResult(Exception exception, TimeSpan elapsed, string lastProgressText, string configuration, bool generateBinLog)
     {
         var binLog = generateBinLog
@@ -74,6 +77,12 @@ class UnityMSBuildLogger
         {
             if (logMessage.MessageType == LogMessageType.Message)
             {
+                if (logMessage.Code == k_ProjectCacheSummaryLogCode)
+                {
+                    // stdout, so it reaches Editor.log without a Console entry on every compile.
+                    Console.WriteLine(logMessage.Message);
+                }
+
                 continue;
             }
 

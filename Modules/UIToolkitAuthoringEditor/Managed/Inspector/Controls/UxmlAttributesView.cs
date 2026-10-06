@@ -2,8 +2,8 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: UIToolkitAuthoringFramework not yet converted
 using System;
+using Unity.Profiling;
 using UnityEditor.UIElements;
 using UnityEngine.UIElements;
 
@@ -16,6 +16,9 @@ namespace Unity.UIToolkit.Editor;
 partial class UxmlAttributesView : VisualElement
 {
     public const string UssClassName = "unity-uxml-attributes-view";
+
+    internal const string rebindMarkerName = "UxmlAttributesView.Rebind";
+    static readonly ProfilerMarker k_RebindMarker = new(rebindMarkerName);
 
     UxmlAttributesEditingContext m_Context;
     readonly UxmlSerializedDataPropertyView m_RootPropertyView;
@@ -35,6 +38,7 @@ partial class UxmlAttributesView : VisualElement
             if (m_Context != null)
             {
                 m_Context.contextChanged -= OnContextChanged;
+                m_Context.documentReshaped -= OnDocumentReshaped;
             }
 
             m_Context = value;
@@ -43,6 +47,7 @@ partial class UxmlAttributesView : VisualElement
             if (m_Context != null)
             {
                 m_Context.contextChanged += OnContextChanged;
+                m_Context.documentReshaped += OnDocumentReshaped;
             }
             Rebind();
             UpdateEnabledState();
@@ -82,6 +87,16 @@ partial class UxmlAttributesView : VisualElement
 
     public void Rebind()
     {
+        using var _ = k_RebindMarker.Auto();
+
+        // Binding writes the bound value into a field, which resets the text of a delayed field still being typed in.
+        var editedText = panel?.focusController?.GetLeafFocusedElement() as TextElement;
+        var editedField = editedText?.GetFirstAncestorOfType<TextField>();
+        if (editedField == null || !Contains(editedField))
+            editedText = null;
+        var pendingText = editedText?.text;
+        var valueBefore = editedField?.value;
+
         m_RootPropertyView.Unbind();
 
         if (Context != null && Context.rootSerializedObject != null)
@@ -89,6 +104,9 @@ partial class UxmlAttributesView : VisualElement
             m_RootPropertyView.bindingPath = m_Context.serializedBasePath;
             m_RootPropertyView.Bind(m_Context.rootSerializedObject);
         }
+
+        if (editedText != null && editedField.value == valueBefore)
+            ((INotifyValueChanged<string>)editedText).SetValueWithoutNotify(pendingText);
     }
 
     void OnContextChanged(object sender, UxmlAttributesEditingContext.ContextChangedEventArgs args)
@@ -98,9 +116,20 @@ partial class UxmlAttributesView : VisualElement
         Rebind();
     }
 
+    // The consumers that own a root field of their own read the base path off the context when this view
+    // reports a change, so a reshape has to reach them too and not just this view's own rebind.
+    void OnDocumentReshaped()
+    {
+        var element = m_Context.element;
+        var isReadOnly = m_Context.isReadOnly;
+
+        NotifyContextChanged(new UxmlAttributesEditingContext.ContextChangedEventArgs(
+            element, isReadOnly, element, isReadOnly));
+        Rebind();
+    }
+
     void NotifyContextChanged(UxmlAttributesEditingContext.ContextChangedEventArgs args)
     {
         ContextChanged?.Invoke(this, args);
     }
 }
-#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

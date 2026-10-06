@@ -246,7 +246,6 @@ namespace UnityEngine.TextCore
     /// </summary>
     [Serializable]
     [UsedByNativeCode]
-    [StructLayout(LayoutKind.Sequential)]
     public class Glyph
     {
         /// <summary>

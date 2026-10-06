@@ -2,7 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: BuildSettingsWindow not yet converted
 using UnityEngine;
 using Unity.Scripting.LifecycleManagement;
 using System.Collections.Generic;
@@ -65,7 +64,9 @@ namespace UnityEditor
         public BuildPlayerSceneTreeView(TreeViewState state) : base(state)
         {
             showBorder = true;
+#pragma warning disable UAL0015 // unsubscribed by UnsubscribeListChange before this view can outlive the current CodeLoaded scope
             EditorBuildSettings.sceneListChanged += HandleExternalSceneListChange;
+#pragma warning restore UAL0015
         }
 
         internal void UnsubscribeListChange()
@@ -306,7 +307,7 @@ namespace UnityEditor
             if (GetSelection().Count > 0)
             {
                 GenericMenu menu = new GenericMenu();
-                menu.AddItem(EditorGUIUtility.TrTextContent("Remove Selection"), false, RemoveSelection);
+                menu.AddItem(L10n.TextContent("Remove Selection", null, null, null), false, RemoveSelection);
                 menu.ShowAsContext();
             }
         }
@@ -342,4 +343,3 @@ namespace UnityEditor
         }
     }
 }
-#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

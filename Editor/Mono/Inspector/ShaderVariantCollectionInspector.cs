@@ -2,7 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: ShaderSystem not yet converted
 using UnityEngine;
 using System.Collections.Generic;
 
@@ -13,8 +12,8 @@ namespace UnityEditor
     {
         private class Styles
         {
-            public static readonly GUIContent iconAdd    = EditorGUIUtility.TrIconContent("Toolbar Plus", "Add variant");
-            public static readonly GUIContent iconRemove = EditorGUIUtility.TrIconContent("Toolbar Minus", "Remove entry");
+            public static readonly GUIContent iconAdd    = L10n.IconContent("Toolbar Plus", "Add variant", null);
+            public static readonly GUIContent iconRemove = L10n.IconContent("Toolbar Minus", "Remove entry", null);
             public static readonly GUIStyle invisibleButton = "InvisibleButton";
         }
 
@@ -392,4 +391,3 @@ namespace UnityEditor
         }
     }
 }
-#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

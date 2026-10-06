@@ -22,7 +22,9 @@ namespace UnityEngine
     {
         public MonoBehaviour()
         {
-            ConstructorCheck(this);
+            // A MonoBehaviour created by native already has its EntityId when the constructor runs; a user
+            // `new MyBehaviour()` does not.
+            ConstructorCheck(GetEntityId());
         }
 
 
@@ -169,7 +171,7 @@ namespace UnityEngine
         }
 
         [NativeMethod(IsThreadSafe = true)]
-        extern static void ConstructorCheck([Writable] Object self);
+        extern static void ConstructorCheck(EntityId entityId);
 
         [FreeFunction("CancelInvoke")]
         extern static void Internal_CancelInvokeAll([NotNull] MonoBehaviour self);

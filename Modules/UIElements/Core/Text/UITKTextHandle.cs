@@ -2,8 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: UIToolkitFramework not yet converted
-#pragma warning disable UAL0010,UAL0011,UAL0012,UAL0013,UAL0014 // AutoStaticsCleanup: UIToolkitFramework not yet converted
 using Unity.Scripting.LifecycleManagement;
 using System;
 using System.Collections.Generic;
@@ -212,7 +210,9 @@ namespace UnityEngine.UIElements
 
             tgs.text = string.Empty;
             tgs.isIMGUI = false;
+#pragma warning disable UAL0018 // tgs is a per-call settings struct consumed by this generation pass; the captured settings do not outlive it
             tgs.textSettings = TextUtilities.GetTextSettingsFrom(m_TextElement);
+#pragma warning restore UAL0018
             if (tgs.textSettings == null)
                 return false;
 
@@ -264,7 +264,9 @@ namespace UnityEngine.UIElements
             tgs.wordSpacing = style.wordSpacing.value;
             tgs.paragraphSpacing = style.unityParagraphSpacing.value;
             tgs.color = style.color;
+#pragma warning disable UAL0018 // tgs is a per-call settings struct consumed by this generation pass; the tint does not outlive it
             tgs.color *= m_TextElement.playModeTintColor;
+#pragma warning restore UAL0018
             tgs.shouldConvertToLinearSpace = false;
             tgs.parseControlCharacters = m_TextElement.parseEscapeSequences;
             tgs.isRightToLeft = m_TextElement.localLanguageDirection == LanguageDirection.RTL;
@@ -399,5 +401,3 @@ namespace UnityEngine.UIElements
 
     }
 }
-#pragma warning restore UAL0010,UAL0011,UAL0012,UAL0013,UAL0014
-#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

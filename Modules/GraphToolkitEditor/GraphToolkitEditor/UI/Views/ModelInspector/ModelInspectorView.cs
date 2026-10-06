@@ -7,7 +7,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using Unity.Collections;
-using Unity.GraphToolkit.CSO;
+using Unity.CSO;
 using Unity.Scripting.LifecycleManagement;
 using UnityEditor;
 using UnityEngine;
@@ -130,7 +130,12 @@ namespace Unity.GraphToolkit.Editor
             registrar.AddStateComponent(ModelInspectorViewModel.GraphModelState);
             registrar.AddStateComponent(ModelInspectorViewModel.ModelInspectorState);
             registrar.AddStateComponent(ModelInspectorViewModel.TransitionInspectorState);
+            if (registrar is CSO.Editor.CommandHandlerRegistrar editorRegistrar)
+                RegisterEditorHandlers(editorRegistrar);
+        }
 
+        void RegisterEditorHandlers(CSO.Editor.CommandHandlerRegistrar registrar)
+        {
             registrar.RegisterDefaultCommandHandler<SetInspectedGraphModelFieldCommand>();
 
             registrar.RegisterDefaultCommandHandler<SetInspectedModelFieldCommand>();
@@ -607,7 +612,7 @@ namespace Unity.GraphToolkit.Editor
             // If we display transitions, there will be changes on transitions and conditions which wouldn't be updated by the optimized partial update
             if (m_DisplayingTransitions)
             {
-                bool inspectedModelChanged = false;
+                bool transitionModelChanged = false;
 
                 foreach (var sectionView in SectionViews)
                 {
@@ -618,7 +623,7 @@ namespace Unity.GraphToolkit.Editor
                 }
                 foreach (var guid in changeset.ChangedModels)
                 {
-                    inspectedModelChanged = true;
+                    transitionModelChanged = true;
                     ViewForModel.AppendAllViews(guid, this, null, k_UpdateAllUIs);
 
                     var visitor = new UpdateFromModelVisitor(changeset.ChangedModelsAndHints[guid]);
@@ -629,38 +634,43 @@ namespace Unity.GraphToolkit.Editor
                     k_UpdateAllUIs.Clear();
                 }
 
-                if (inspectedModelChanged)
+                if (transitionModelChanged)
                 {
                     UpdateTitle();
                 }
             }
-            else
+
+            UpdateInspectedModelViews(changeset);
+        }
+
+        // Inspecting a state always turns on the transition display, so this must run in both cases: it is what
+        // refreshes the fields of the inspected models themselves, such as their node options.
+        void UpdateInspectedModelViews(GraphModelStateComponent.Changeset changeset)
+        {
+            var inspectedModelChanged = false;
+            foreach (var guid in changeset.ChangedModels)
             {
-                bool inspectedModelChanged = false;
-                foreach (var guid in changeset.ChangedModels)
-                {
-                    inspectedModelChanged = IsChangedModelVisible(guid);
-                    if (inspectedModelChanged)
-                        break;
-                }
-
+                inspectedModelChanged = IsChangedModelVisible(guid);
                 if (inspectedModelChanged)
+                    break;
+            }
+
+            if (!inspectedModelChanged)
+                return;
+
+            UpdateTitle();
+
+            foreach (var inspectedModel in ModelInspectorViewModel.ModelInspectorState.InspectedModels)
+            {
+                inspectedModel.AppendAllViews(this, null, k_UpdateAllUIs);
+
+                if (inspectedModel is IHasDeclarationModel hasDeclaration)
+                    hasDeclaration.DeclarationModel.AppendAllViews(this, null, k_UpdateAllUIs);
+                foreach (var ui in k_UpdateAllUIs)
                 {
-                    UpdateTitle();
-
-                    foreach (var inspectedModel in ModelInspectorViewModel.ModelInspectorState.InspectedModels)
-                    {
-                        inspectedModel.AppendAllViews(this, null, k_UpdateAllUIs);
-
-                        if (inspectedModel is IHasDeclarationModel hasDeclaration)
-                            hasDeclaration.DeclarationModel.AppendAllViews(this, null, k_UpdateAllUIs);
-                        foreach (var ui in k_UpdateAllUIs)
-                        {
-                            ui.UpdateView(UpdateFromModelVisitor.genericUpdateFromModelVisitor);
-                        }
-                        k_UpdateAllUIs.Clear();
-                    }
+                    ui.UpdateView(UpdateFromModelVisitor.genericUpdateFromModelVisitor);
                 }
+                k_UpdateAllUIs.Clear();
             }
         }
 
@@ -762,14 +772,12 @@ namespace Unity.GraphToolkit.Editor
                         }
                     }
 
-                    if (portNodeModel is InputOutputPortsNodeModel inoutPortsNodeModel)
+                    // Node option ports are deliberately absent from GetPorts(), so they must be checked separately.
+                    foreach (var option in portNodeModel.NodeOptions)
                     {
-                        foreach (var option in inoutPortsNodeModel.NodeOptions)
+                        if (option.PortModel.Guid == guid)
                         {
-                            if (option.PortModel.Guid == guid)
-                            {
-                                return true;
-                            }
+                            return true;
                         }
                     }
                 }

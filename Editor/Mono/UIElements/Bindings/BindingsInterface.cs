@@ -60,6 +60,9 @@ namespace UnityEditor.UIElements
         internal static readonly string s_SerializedBindingContextUpdaterId = "--unity-serialized-object-bindings-context-updater";
 
         [AutoStaticsCleanupOnCodeReload]
+        // Installed by RetainedMode.Initialize(), which runs on every code load, so the slot cleared by
+        // cleanup is wired again before any editor UI uses it.
+        [IgnoreForUAL0015("Editor IoC slot reinstalled on every code load by RetainedMode.Initialize()")]
         internal static ISerializedObjectBindingImplementation bindingImpl = null;
 
         /// <summary>

@@ -14,8 +14,8 @@ namespace UnityEditor
     {
         private static class Styles
         {
-            public static readonly GUIContent m_SortAtRootStyle = EditorGUIUtility.TrTextContent("Sort At Root"
-                , "Ignores all parent Sorting Groups and sorts at the root level against other Sorting Groups and Renderers");
+            public static readonly GUIContent m_SortAtRootStyle = L10n.TextContent("Sort At Root"
+                , "Ignores all parent Sorting Groups and sorts at the root level against other Sorting Groups and Renderers", null, null);
         }
 
 

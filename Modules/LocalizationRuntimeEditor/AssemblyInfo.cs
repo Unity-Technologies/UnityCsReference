@@ -5,3 +5,10 @@
 using System.Runtime.CompilerServices;
 
 [assembly: InternalsVisibleTo("Unity.Modules.LocalizationRuntimeEditor.Tests.Editor")]
+
+// The Android platform support writes the localized launcher resources this module resolves.
+[assembly: InternalsVisibleTo("UnityEditor.Android.Extensions")]
+
+// The bundled com.unity.localization package drives its upgrade-to-module path through these internals.
+[assembly: InternalsVisibleTo("Unity.Localization.Editor")]
+[assembly: InternalsVisibleTo("Unity.Localization.Editor.Tests")]

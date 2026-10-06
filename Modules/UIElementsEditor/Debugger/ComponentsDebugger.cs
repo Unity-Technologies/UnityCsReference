@@ -2,11 +2,9 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: UIToolkitFramework not yet converted
 using System;
 using System.Collections.Generic;
 using System.Reflection;
-using Unity.Scripting.LifecycleManagement;
 using UnityEditor;
 using UnityEngine.UIElements;
 
@@ -18,8 +16,7 @@ namespace UnityEditor.UIElements.Debugger
     /// <c>[StyleProperty]</c> fields (read-only resolved values). Lives in the debugger's detail ScrollView
     /// next to the styles section. Reads/writes the live component through VisualElement's debug API.
     /// </summary>
-    [NoAutoStaticsCleanup] // the shown-in-debugger cache derives from immutable type attributes
-    internal class ComponentsDebugger : UIElementsDebuggerImpl.DebuggerFoldout
+    internal partial class ComponentsDebugger : UIElementsDebuggerImpl.DebuggerFoldout
     {
         static readonly string k_StyleSourceTooltip = L10n.Tr("Where this style value comes from.", null);
         static readonly string k_ResolvedFromFormat = L10n.Tr("{0} — resolved from {1}", null);
@@ -38,29 +35,13 @@ namespace UnityEditor.UIElements.Debugger
         public ComponentsDebugger(DebuggerSelection debuggerSelection)
             : base("Components", debuggerSelection, isLowLevel: false) { }
 
-        // Code-only components ([VisualElementComponent(exposeToUxml: false)]) are hidden from the
-        // debugger for now. Cached per type: the attribute cannot change at runtime.
-        static readonly Dictionary<Type, bool> s_ShownInDebugger = new();
-
-        internal static bool IsShownInDebugger(Type componentType)
-        {
-            if (s_ShownInDebugger.TryGetValue(componentType, out var shown))
-                return shown;
-
-            var attribute = (VisualElementComponentAttribute)Attribute.GetCustomAttribute(
-                componentType, typeof(VisualElementComponentAttribute));
-            shown = attribute == null || attribute.exposeToUxml;
-            s_ShownInDebugger[componentType] = shown;
-            return shown;
-        }
-
         // The debugger's view of an element's components: the runtime debug API stays complete,
-        // the editor filters code-only components out of every debugger surface.
+        // the editor filters [HideInInspector] components out of every debugger surface.
         internal static IEnumerable<Type> EnumerateShownComponentTypes(VisualElement element)
         {
             foreach (var type in element.EnumerateComponentTypesForDebug())
             {
-                if (IsShownInDebugger(type))
+                if (!VisualElementComponentVisibility.IsHidden(type))
                     yield return type;
             }
         }
@@ -77,7 +58,7 @@ namespace UnityEditor.UIElements.Debugger
         protected override void UpdateVisiblity()
         {
             style.display = UIToolkitProjectSettings.enableUIComponents
-                && m_SelectedElement != null && HasShownComponents(m_SelectedElement)
+                && m_SelectedElement.IsLive() && HasShownComponents(m_SelectedElement)
                 ? DisplayStyle.Flex
                 : DisplayStyle.None;
         }
@@ -247,4 +228,3 @@ namespace UnityEditor.UIElements.Debugger
         }
     }
 }
-#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

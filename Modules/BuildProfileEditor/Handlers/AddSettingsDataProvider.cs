@@ -2,7 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: BuildSettingsWindow not yet converted
 using System;
 using System.Collections.Generic;
 using UnityEditor.Build.Profile.AdaptivePerformance;
@@ -32,6 +31,7 @@ namespace UnityEditor.Build.Profile.Handlers
         };
 
         [AutoStaticsCleanupOnCodeReload]
+        [IgnoreForUAL0015("Lazily rebuilt when the next provider is constructed after reload")]
         static IList<IBuildProfileSettingsProvider> s_GenericSettingProviders = null;
 
         readonly BuildProfile m_BuildProfile;
@@ -53,9 +53,7 @@ namespace UnityEditor.Build.Profile.Handlers
             var genericSettingProviders = new List<IBuildProfileSettingsProvider>(foundPackageProviders.Count);
             for (int i = 0; i < foundPackageProviders.Count; i++)
             {
-                var found = foundPackageProviders[i];
-                var typedInternalProvider = typeof(ScriptableObjectSettingsProvider<>).MakeGenericType(found.settingsType);
-                genericSettingProviders.Add((IBuildProfileSettingsProvider)Activator.CreateInstance(typedInternalProvider, found));
+                genericSettingProviders.Add(CreateGenericProvider(foundPackageProviders[i]));
             }
             genericSettingProviders.Sort((a, b) => a.GetDisplayOrder().CompareTo(b.GetDisplayOrder()));
             s_GenericSettingProviders = genericSettingProviders;
@@ -149,6 +147,14 @@ namespace UnityEditor.Build.Profile.Handlers
 
             return true;
         }
+
+        internal static IBuildProfileSettingsProvider CreateGenericProvider(BuildProfileSettingsProvider found)
+        {
+            var providerType = found.isStandaloneAsset
+                ? typeof(ReferenceComponentSettingsProvider<>)
+                : typeof(ScriptableObjectSettingsProvider<>);
+            var typedInternalProvider = providerType.MakeGenericType(found.settingsType);
+            return (IBuildProfileSettingsProvider)Activator.CreateInstance(typedInternalProvider, found);
+        }
     }
 }
-#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

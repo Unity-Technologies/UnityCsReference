@@ -23,9 +23,6 @@ namespace Unity.UIToolkit.Editor
         // surfaces the window.
         internal static bool TryOpen(Object asset)
         {
-            if (!UIToolkitProjectSettings.s_EnablePanelRendererAnimationAtBoot)
-                return false;
-
             if (asset is not UIAnimationClip)
                 return false;
 

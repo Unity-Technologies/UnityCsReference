@@ -2,7 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: MecanimAnimation not yet converted
 using UnityEngine;
 using UnityEditor.Animations;
 using System;
@@ -59,101 +58,101 @@ namespace UnityEditor
 
         internal static class Styles
         {
-            public static readonly GUIContent StartFrame = EditorGUIUtility.TrTextContent("Start", "Start frame of the clip.");
-            public static readonly GUIContent EndFrame = EditorGUIUtility.TrTextContent("End", "End frame of the clip.");
+            public static readonly GUIContent StartFrame = L10n.TextContent("Start", "Start frame of the clip.", null, null);
+            public static readonly GUIContent EndFrame = L10n.TextContent("End", "End frame of the clip.", null, null);
             public static readonly string AverageVelocity = L10n.Tr("Average Velocity: {0}\nAverage Angular Y Speed: {1} deg/s", null);
 
-            public static readonly GUIContent HasAdditiveReferencePose = EditorGUIUtility.TrTextContent("Additive Reference Pose", "Enable to define the additive reference pose frame.");
-            public static readonly GUIContent AdditiveReferencePoseFrame = EditorGUIUtility.TrTextContent("Pose Frame", "Pose Frame.");
-            public static readonly GUIContent LoopTime = EditorGUIUtility.TrTextContent("Loop Time", "Enable to make the animation play through and then restart when the end is reached.");
-            public static readonly GUIContent LoopPose = EditorGUIUtility.TrTextContent("Loop Pose", "Enable to make the animation loop seamlessly.");
-            public static readonly GUIContent LoopCycleOffset = EditorGUIUtility.TrTextContent("Cycle Offset", "Offset to the cycle of a looping animation, if we want to start it at a different time.");
-            public static readonly GUIContent RootTransformRotation = EditorGUIUtility.TrTextContent("Root Transform Rotation");
-            public static readonly GUIContent RootTransformRotationY = EditorGUIUtility.TrTextContent("Root Transform Position (Y)");
-            public static readonly GUIContent RootTransformPositionXZ = EditorGUIUtility.TrTextContent("Root Transform Position (XZ)");
+            public static readonly GUIContent HasAdditiveReferencePose = L10n.TextContent("Additive Reference Pose", "Enable to define the additive reference pose frame.", null, null);
+            public static readonly GUIContent AdditiveReferencePoseFrame = L10n.TextContent("Pose Frame", "Pose Frame.", null, null);
+            public static readonly GUIContent LoopTime = L10n.TextContent("Loop Time", "Enable to make the animation play through and then restart when the end is reached.", null, null);
+            public static readonly GUIContent LoopPose = L10n.TextContent("Loop Pose", "Enable to make the animation loop seamlessly.", null, null);
+            public static readonly GUIContent LoopCycleOffset = L10n.TextContent("Cycle Offset", "Offset to the cycle of a looping animation, if we want to start it at a different time.", null, null);
+            public static readonly GUIContent RootTransformRotation = L10n.TextContent("Root Transform Rotation", null, null, null);
+            public static readonly GUIContent RootTransformRotationY = L10n.TextContent("Root Transform Position (Y)", null, null, null);
+            public static readonly GUIContent RootTransformPositionXZ = L10n.TextContent("Root Transform Position (XZ)", null, null, null);
 
-            public static readonly GUIContent BakeIntoPoseOrientation = EditorGUIUtility.TrTextContent("Bake Into Pose", "Enable to make root rotation be baked into the movement of the bones. Disable to make root rotation be stored as root motion.");
-            public static readonly GUIContent OrientationOffsetY = EditorGUIUtility.TrTextContent("Offset", "Offset to the root rotation (in degrees).");
+            public static readonly GUIContent BakeIntoPoseOrientation = L10n.TextContent("Bake Into Pose", "Enable to make root rotation be baked into the movement of the bones. Disable to make root rotation be stored as root motion.", null, null);
+            public static readonly GUIContent OrientationOffsetY = L10n.TextContent("Offset", "Offset to the root rotation (in degrees).", null, null);
 
-            public static readonly GUIContent BasedUponOrientation = EditorGUIUtility.TrTextContent("Based Upon", "What the root rotation is based upon.");
-            public static readonly GUIContent BasedUponStartOrientation = EditorGUIUtility.TrTextContent("Based Upon (at Start)", "What the root rotation is based upon.");
+            public static readonly GUIContent BasedUponOrientation = L10n.TextContent("Based Upon", "What the root rotation is based upon.", null, null);
+            public static readonly GUIContent BasedUponStartOrientation = L10n.TextContent("Based Upon (at Start)", "What the root rotation is based upon.", null, null);
 
             public static readonly GUIContent[] BasedUponRotationHumanOpt =
             {
-                EditorGUIUtility.TrTextContent("Original", "Keeps the rotation as it is authored in the source file."),
-                EditorGUIUtility.TrTextContent("Body Orientation", "Keeps the upper body pointing forward.")
+                L10n.TextContent("Original", "Keeps the rotation as it is authored in the source file.", null, null),
+                L10n.TextContent("Body Orientation", "Keeps the upper body pointing forward.", null, null)
             };
 
             public static readonly GUIContent[] BasedUponRotationOpt =
             {
-                EditorGUIUtility.TrTextContent("Original", "Keeps the rotation as it is authored in the source file."),
-                EditorGUIUtility.TrTextContent("Root Node Rotation", "Keeps the upper body pointing forward.")
+                L10n.TextContent("Original", "Keeps the rotation as it is authored in the source file.", null, null),
+                L10n.TextContent("Root Node Rotation", "Keeps the upper body pointing forward.", null, null)
             };
 
-            public static readonly GUIContent BakeIntoPosePositionY = EditorGUIUtility.TrTextContent("Bake Into Pose", "Enable to make vertical root motion be baked into the movement of the bones. Disable to make vertical root motion be stored as root motion.");
-            public static readonly GUIContent PositionOffsetY = EditorGUIUtility.TrTextContent("Offset", "Offset to the vertical root position.");
+            public static readonly GUIContent BakeIntoPosePositionY = L10n.TextContent("Bake Into Pose", "Enable to make vertical root motion be baked into the movement of the bones. Disable to make vertical root motion be stored as root motion.", null, null);
+            public static readonly GUIContent PositionOffsetY = L10n.TextContent("Offset", "Offset to the vertical root position.", null, null);
 
-            public static readonly GUIContent BasedUponPositionY = EditorGUIUtility.TrTextContent("Based Upon", "What the vertical root position is based upon.");
-            public static readonly GUIContent BasedUponStartPositionY = EditorGUIUtility.TrTextContent("Based Upon (at Start)", "What the vertical root position is based upon.");
+            public static readonly GUIContent BasedUponPositionY = L10n.TextContent("Based Upon", "What the vertical root position is based upon.", null, null);
+            public static readonly GUIContent BasedUponStartPositionY = L10n.TextContent("Based Upon (at Start)", "What the vertical root position is based upon.", null, null);
 
 
             public static readonly GUIContent[] BasedUponPositionYHumanOpt =
             {
-                EditorGUIUtility.TrTextContent("Original", "Keeps the vertical position as it is authored in the source file."),
-                EditorGUIUtility.TrTextContent("Center of Mass", "Keeps the center of mass aligned with root transform position."),
-                EditorGUIUtility.TrTextContent("Feet", "Keeps the feet aligned with the root transform position.")
+                L10n.TextContent("Original", "Keeps the vertical position as it is authored in the source file.", null, null),
+                L10n.TextContent("Center of Mass", "Keeps the center of mass aligned with root transform position.", null, null),
+                L10n.TextContent("Feet", "Keeps the feet aligned with the root transform position.", null, null)
             };
 
             public static readonly GUIContent[] BasedUponPositionYOpt =
             {
-                EditorGUIUtility.TrTextContent("Original", "Keeps the vertical position as it is authored in the source file."),
-                EditorGUIUtility.TrTextContent("Root Node Position")
+                L10n.TextContent("Original", "Keeps the vertical position as it is authored in the source file.", null, null),
+                L10n.TextContent("Root Node Position", null, null, null)
             };
 
-            public static readonly GUIContent BakeIntoPosePositionXZ = EditorGUIUtility.TrTextContent("Bake Into Pose", "Enable to make horizontal root motion be baked into the movement of the bones. Disable to make horizontal root motion be stored as root motion.");
+            public static readonly GUIContent BakeIntoPosePositionXZ = L10n.TextContent("Bake Into Pose", "Enable to make horizontal root motion be baked into the movement of the bones. Disable to make horizontal root motion be stored as root motion.", null, null);
 
-            public static readonly GUIContent BasedUponPositionXZ = EditorGUIUtility.TrTextContent("Based Upon", "What the horizontal root position is based upon.");
-            public static readonly GUIContent BasedUponStartPositionXZ = EditorGUIUtility.TrTextContent("Based Upon (at Start)", "What the horizontal root position is based upon.");
+            public static readonly GUIContent BasedUponPositionXZ = L10n.TextContent("Based Upon", "What the horizontal root position is based upon.", null, null);
+            public static readonly GUIContent BasedUponStartPositionXZ = L10n.TextContent("Based Upon (at Start)", "What the horizontal root position is based upon.", null, null);
 
             public static readonly GUIContent[] BasedUponPositionXZHumanOpt =
             {
-                EditorGUIUtility.TrTextContent("Original", "Keeps the horizontal position as it is authored in the source file."),
-                EditorGUIUtility.TrTextContent("Center of Mass", "Keeps the center of mass aligned with root transform position.")
+                L10n.TextContent("Original", "Keeps the horizontal position as it is authored in the source file.", null, null),
+                L10n.TextContent("Center of Mass", "Keeps the center of mass aligned with root transform position.", null, null)
             };
 
             public static readonly GUIContent[] BasedUponPositionXZOpt =
             {
-                EditorGUIUtility.TrTextContent("Original", "Keeps the horizontal position as it is authored in the source file."),
-                EditorGUIUtility.TrTextContent("Root Node Position")
+                L10n.TextContent("Original", "Keeps the horizontal position as it is authored in the source file.", null, null),
+                L10n.TextContent("Root Node Position", null, null, null)
             };
 
-            public static readonly GUIContent Mirror = EditorGUIUtility.TrTextContent("Mirror", "Mirror left and right in this clip.");
+            public static readonly GUIContent Mirror = L10n.TextContent("Mirror", "Mirror left and right in this clip.", null, null);
 
-            public static readonly GUIContent Curves = EditorGUIUtility.TrTextContent("Curves", "Parameter-related curves.");
-            public static readonly GUIContent Length = EditorGUIUtility.TrTextContent("Length");
-            public static readonly GUIContent AddLoopFrame = EditorGUIUtility.TrTextContent("Add Loop Frame");
-            public static readonly GUIContent WrapMode = EditorGUIUtility.TrTextContent("Wrap Mode");
-            public static readonly GUIContent Events = EditorGUIUtility.TrTextContent("Events");
-            public static readonly GUIContent LoopMatch = EditorGUIUtility.TrTextContent("loop match");
+            public static readonly GUIContent Curves = L10n.TextContent("Curves", "Parameter-related curves.", null, null);
+            public static readonly GUIContent Length = L10n.TextContent("Length", null, null, null);
+            public static readonly GUIContent AddLoopFrame = L10n.TextContent("Add Loop Frame", null, null, null);
+            public static readonly GUIContent WrapMode = L10n.TextContent("Wrap Mode", null, null, null);
+            public static readonly GUIContent Events = L10n.TextContent("Events", null, null, null);
+            public static readonly GUIContent LoopMatch = L10n.TextContent("loop match", null, null, null);
 
             public static readonly string InvalidMultiSelection = L10n.Tr("Both legacy and non legacy Animation Clips have been selected. This combination cannot be edited together. Select either legacy or non legacy Animation Clips.", null);
 
-            public static readonly GUIContent AddEventContent = EditorGUIUtility.TrIconContent("Animation.AddEvent", "Add Event.");
+            public static readonly GUIContent AddEventContent = L10n.IconContent("Animation.AddEvent", "Add Event.", null);
 
             public static readonly GUIContent GreenLightIcon = EditorGUIUtility.IconContent("lightMeter/greenLight");
             public static readonly GUIContent LightRimIcon = EditorGUIUtility.IconContent("lightMeter/lightRim");
             public static readonly GUIContent OrangeLightIcon = EditorGUIUtility.IconContent("lightMeter/orangeLight");
             public static readonly GUIContent RedLightIcon = EditorGUIUtility.IconContent("lightMeter/redLight");
 
-            public static readonly GUIContent PrevKeyContent = EditorGUIUtility.TrIconContent("Animation.PrevKey", "Go to previous key frame.");
-            public static readonly GUIContent NextKeyContent = EditorGUIUtility.TrIconContent("Animation.NextKey", "Go to next key frame.");
-            public static readonly GUIContent AddKeyframeContent = EditorGUIUtility.TrIconContent("Animation.AddKeyframe", "Add Keyframe.");
+            public static readonly GUIContent PrevKeyContent = L10n.IconContent("Animation.PrevKey", "Go to previous key frame.", null);
+            public static readonly GUIContent NextKeyContent = L10n.IconContent("Animation.NextKey", "Go to next key frame.", null);
+            public static readonly GUIContent AddKeyframeContent = L10n.IconContent("Animation.AddKeyframe", "Add Keyframe.", null);
 
-            public static readonly GUIContent AddEvent = EditorGUIUtility.TrTextContent("Add Animation Event");
-            public static readonly GUIContent DeleteEvents = EditorGUIUtility.TrTextContent("Delete Animation Events");
-            public static readonly GUIContent DeleteEvent = EditorGUIUtility.TrTextContent("Delete Animation Event");
-            public static readonly GUIContent CopyEvents = EditorGUIUtility.TrTextContent("Copy Animation Events");
-            public static readonly GUIContent PasteEvents = EditorGUIUtility.TrTextContent("Paste Animation Events");
+            public static readonly GUIContent AddEvent = L10n.TextContent("Add Animation Event", null, null, null);
+            public static readonly GUIContent DeleteEvents = L10n.TextContent("Delete Animation Events", null, null, null);
+            public static readonly GUIContent DeleteEvent = L10n.TextContent("Delete Animation Event", null, null, null);
+            public static readonly GUIContent CopyEvents = L10n.TextContent("Copy Animation Events", null, null, null);
+            public static readonly GUIContent PasteEvents = L10n.TextContent("Paste Animation Events", null, null, null);
         }
 
         static readonly string s_LoopMeterStr = "LoopMeter";
@@ -2172,4 +2171,3 @@ namespace UnityEditor
         }
     }
 }
-#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

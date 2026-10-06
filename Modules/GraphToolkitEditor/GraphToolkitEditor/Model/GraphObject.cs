@@ -5,6 +5,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Text.RegularExpressions;
 using Unity.GraphToolsAuthoringFramework.InternalEditorBridge;
 using UnityEditor;
 using UnityEditorInternal;
@@ -21,6 +22,19 @@ namespace Unity.GraphToolkit.Editor
     internal abstract class GraphObject : ScriptableObject, ISerializationCallbackReceiver, IObjectClonedCallbackReceiver
     {
         static readonly byte[] s_ComputeFileHashBuffer = new byte[1024];
+        static readonly bool k_IsCoreCLR = typeof(int).Assembly.GetName().Name == "System.Private.CoreLib";
+        static readonly Regex k_SystemAssemblyVersionRegex = new(
+            @"(, (?:System\.Private\.CoreLib|mscorlib))(?:, Version=[^,\]'\r\n""]+)?(?:, Culture=[^,\]'\r\n""]+)?(?:, PublicKeyToken=[^,\]'\r\n""]+)?");
+
+        // Handles YAML multi-line wrap: ", CoreLib,\n  Culture=..." left by prior partial migrations.
+        static readonly Regex k_SystemAssemblyMultiLineRegex = new(
+            @"(, (?:System\.Private\.CoreLib|mscorlib)),\r?\n[ \t]+(?:(?:Version|Culture|PublicKeyToken)=[^\r\n]*)");
+
+        // Restricts corelib name replacement to m_Identification: lines (TypeHandle fields)
+        // so user-authored string values that happen to contain assembly names are not mutated.
+        static readonly Regex k_IdentificationLineRegex = new(
+            @"^\s+m_Identification: .+$",
+            RegexOptions.Multiline);
 
         [SerializeReference, HideInInspector]
         GraphModel m_GraphModel;
@@ -676,10 +690,11 @@ namespace Unity.GraphToolkit.Editor
         }
 
         /// <summary>
-        /// Apply all change needed for migration:
-        /// assembly Unity.GraphToolkit.Internal renamed to UnityEditor.GraphToolkitModule
+        /// Renames assembly references left by the old com.unity.graphtoolkit package so they match
+        /// the current UnityEditor.GraphToolkitModule assembly. Only needed for assets authored
+        /// with the pre-module package; intended to be invoked from the manual migration menu items,
+        /// not from the automatic import pipeline.
         /// </summary>
-        /// <param name="filePath"></param>
         public static bool MigrateFile(string filePath)
         {
             if (!File.Exists(filePath))
@@ -687,21 +702,102 @@ namespace Unity.GraphToolkit.Editor
 
             var fullFile = File.ReadAllText(filePath);
 
-            if (fullFile.Contains("asm: Unity.GraphToolkit.Editor}") ||
-                fullFile.Contains("asm: Unity.GraphToolkit.Internal.Editor}") ||
-                fullFile.Contains("asm: Unity.GraphToolkit.Editor.Tests}") ||
-                fullFile.Contains("asm: Unity.GraphToolkit.Internal.Editor.Tests}"))
-            {
-                fullFile = fullFile.Replace("asm: Unity.GraphToolkit.Editor}", "asm: UnityEditor.GraphToolkitModule}");
-                fullFile = fullFile.Replace("asm: Unity.GraphToolkit.Internal.Editor}", "asm: UnityEditor.GraphToolkitModule}");
-                fullFile = fullFile.Replace("asm: Unity.GraphToolkit.Editor.Tests}", "asm: Unity.Modules.GraphToolkit.Internal.Tests.Editor}");
-                fullFile = fullFile.Replace("asm: Unity.GraphToolkit.Internal.Editor.Tests}", "asm: Unity.Modules.GraphToolkit.Internal.Tests.Editor}");
-                File.WriteAllText(filePath, fullFile);
-                Debug.Log("GraphObject File has been migrated: " + filePath);
-                return true;
-            }
-            return false;
+            if (!fullFile.Contains("asm: Unity.GraphToolkit.Editor}") &&
+                !fullFile.Contains("asm: Unity.GraphToolkit.Internal.Editor}") &&
+                !fullFile.Contains("asm: Unity.GraphToolkit.Editor.Tests}") &&
+                !fullFile.Contains("asm: Unity.GraphToolkit.Internal.Editor.Tests}"))
+                return false;
 
+            fullFile = fullFile.Replace("asm: Unity.GraphToolkit.Editor}", "asm: UnityEditor.GraphToolkitModule}");
+            fullFile = fullFile.Replace("asm: Unity.GraphToolkit.Internal.Editor}", "asm: UnityEditor.GraphToolkitModule}");
+            fullFile = fullFile.Replace("asm: Unity.GraphToolkit.Editor.Tests}", "asm: Unity.Modules.GraphToolkit.Internal.Tests.Editor}");
+            fullFile = fullFile.Replace("asm: Unity.GraphToolkit.Internal.Editor.Tests}", "asm: Unity.Modules.GraphToolkit.Internal.Tests.Editor}");
+            File.WriteAllText(filePath, fullFile);
+            Debug.Log("GraphObject File has been migrated: " + filePath);
+            return true;
+        }
+
+        // Normalizes mscorlib/System.Private.CoreLib names in TypeHandle and SerializeReference
+        // fields so graph assets are portable between Mono and CoreCLR editors.
+        // Called automatically from OnOpenAsset and InitializeOnLoad.
+        internal static bool MigrateTypeHandles(string filePath)
+        {
+            if (!File.Exists(filePath))
+                return false;
+
+            var fullFile = File.ReadAllText(filePath);
+
+            if (!fullFile.Contains("Unity.GraphToolkit"))
+                return false;
+
+            var migrated = false;
+
+            if (k_IsCoreCLR)
+            {
+                // [[...]] brackets in SerializeReference type qualifiers
+                if (fullFile.Contains(", mscorlib]]"))
+                {
+                    fullFile = fullFile.Replace(", mscorlib]]", ", System.Private.CoreLib]]");
+                    migrated = true;
+                }
+
+                // m_Identification: field lines (TypeHandle) — replace all occurrences per line
+                var normalized = k_IdentificationLineRegex.Replace(fullFile,
+                    m => m.Value.Replace(", mscorlib", ", System.Private.CoreLib"));
+                if (normalized != fullFile)
+                {
+                    fullFile = normalized;
+                    migrated = true;
+                }
+            }
+            else
+            {
+                if (fullFile.Contains(", System.Private.CoreLib]]"))
+                {
+                    fullFile = fullFile.Replace(", System.Private.CoreLib]]", ", mscorlib]]");
+                    migrated = true;
+                }
+
+                var normalized = k_IdentificationLineRegex.Replace(fullFile,
+                    m => m.Value.Replace(", System.Private.CoreLib", ", mscorlib"));
+                if (normalized != fullFile)
+                {
+                    fullFile = normalized;
+                    migrated = true;
+                }
+            }
+
+            // Strip Version/Culture/PublicKeyToken that may follow the corelib assembly name in type metadata.
+            var stripped = k_SystemAssemblyVersionRegex.Replace(fullFile, "$1");
+            if (stripped != fullFile)
+            {
+                fullFile = stripped;
+                migrated = true;
+            }
+
+            // Strip orphaned Culture=/PublicKeyToken= continuation lines left by prior migrations that removed Version= but left the rest on a YAML line-wrapped continuation.
+            stripped = k_SystemAssemblyMultiLineRegex.Replace(fullFile, "$1");
+            if (stripped != fullFile)
+            {
+                fullFile = stripped;
+                migrated = true;
+            }
+
+            if (migrated)
+            {
+                try
+                {
+                    File.WriteAllText(filePath, fullFile);
+                }
+                catch (UnauthorizedAccessException)
+                {
+                    Debug.LogWarning("GraphObject: Cannot migrate type handles in read-only file: " + filePath);
+                    return false;
+                }
+                Debug.Log("GraphObject type handles migrated: " + filePath);
+            }
+
+            return migrated;
         }
 
     }

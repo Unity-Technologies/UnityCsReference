@@ -2,7 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: Terrain not yet converted
 using UnityEngine;
 using UnityEditor.Overlays;
 using UnityEditor.Toolbars;
@@ -30,6 +29,9 @@ namespace UnityEditor.TerrainTools
         }
 
         [AutoStaticsCleanupOnCodeReload] // overlay instance; drop the stale one on reload (overlay system recreates it)
+        // Points at the live overlay: the overlay system constructs this overlay again for each SceneView
+        // after a code reload and the constructor re-assigns the slot.
+        [IgnoreForUAL0015("Overlay instance slot re-assigned by the constructor when the overlay is recreated")]
         internal static BrushAttributes s_Instance;
         BrushAttributes() : base(
 
@@ -440,4 +442,3 @@ namespace UnityEditor.TerrainTools
         }
     }
 }
-#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

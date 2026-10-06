@@ -43,6 +43,8 @@ namespace UnityEditor.Build.Reporting
     [NativeClass("BuildReporting::PackedAssets", PersistentTypeId = 1126)]
     public sealed class PackedAssets : Object
     {
+        internal PackedAssets(global::UnityEngine.EntityId id) : base(id) {}
+        public PackedAssets() {}
         private const string fileObsoleteMessage = "Report file index is no longer available. To find the matching report file for a particular asset the recommended way is to do a filename lookup in the report.";
         [Obsolete(fileObsoleteMessage, true)]
         public uint file => throw new NotSupportedException(fileObsoleteMessage);

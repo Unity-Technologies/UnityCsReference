@@ -186,6 +186,9 @@ namespace UnityEditor
         bool m_ApplyingCustomSelection;
 
         [AutoStaticsCleanupOnCodeReload]
+        // Notification hook whose listeners attach through their own lifecycle and re-subscribe after a
+        // code reload, so the cleared invocation list refills itself.
+        [IgnoreForUAL0015("Event whose subscribers re-register through their own lifecycle after a code reload")]
         public static EditorApplication.CallbackFunction indexChanged;
 
         [MenuItem("Edit/Previous Selection %#[", priority = 70)]

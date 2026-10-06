@@ -2,7 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: UIToolkitFramework not yet converted
 using System;
 using UnityEditor;
 using UnityEngine;
@@ -11,7 +10,7 @@ using Object = UnityEngine.Object;
 
 namespace Unity.Localization.Editor;
 
-class MetadataPopup : EditorWindow
+class MetadataPopup : AnchoredPopupWindow
 {
     const string k_Uxml = "LocalizationRuntime/UXML/MetadataPopup.uxml";
 
@@ -21,20 +20,21 @@ class MetadataPopup : EditorWindow
     MetadataType m_Target;
     Action m_OnChanged;
 
-    public static void Show(Rect activatorWorldBound, string title, Object owner, string metadataPath, MetadataType target, Action onChanged)
+    public static void Show(Rect activatorWorldBound, VisualElement view, string title, Object owner, string metadataPath, MetadataType target, Action onChanged)
     {
         var window = CreateInstance<MetadataPopup>();
         window.m_Title = title;
         window.m_SerializedObject = owner != null ? new SerializedObject(owner) : null;
         window.m_MetadataPath = metadataPath;
         window.m_Target = target;
-        window.m_OnChanged = onChanged;
-        var screenRect = GUIUtility.GUIToScreenRect(activatorWorldBound);
-        window.ShowAsDropDown(screenRect, new Vector2(320, 220));
+        // Metadata is shown in more than one window at a time, so every edit has to reach the others.
+        window.m_OnChanged = () => { onChanged?.Invoke(); LocalizationEditorSettings.RaiseCollectionsChanged(); };
+        window.ShowUnder(activatorWorldBound, view, new Vector2(320, 220));
     }
 
-    void OnDisable()
+    protected override void OnDisable()
     {
+        base.OnDisable();
         m_SerializedObject?.Dispose();
         m_SerializedObject = null;
     }
@@ -50,4 +50,3 @@ class MetadataPopup : EditorWindow
             root.Q<VisualElement>("body").Add(MetadataEditor.Create(prop, m_Target, m_OnChanged));
     }
 }
-#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

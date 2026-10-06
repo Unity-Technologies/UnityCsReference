@@ -2,7 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: SceneTooling not yet converted
 using UnityEngine;
 using UnityEngine.Scripting;
 using UnityEditorInternal;
@@ -108,13 +107,18 @@ namespace UnityEditor
         [EditorBrowsable(EditorBrowsableState.Never)]
         internal static readonly string editModeName = L10n.Tr("Edit Mode", null);
         [EditorBrowsable(EditorBrowsableState.Never)]
-        internal static readonly string menuItemSearchName = L10n.Tr("Add Menu Item Shortcut", null);
+        internal static readonly string menuItemSearchName = L10n.Tr("Menu Items", null);
         [EditorBrowsable(EditorBrowsableState.Never)]
         internal static readonly string showAllName = L10n.Tr("Show All", null);
+        [EditorBrowsable(EditorBrowsableState.Never)]
+        internal static readonly string mainToolbarElementSearchName = L10n.Tr("Toolbar Elements", null);
         [EditorBrowsable(EditorBrowsableState.Never)]
         internal static readonly string hideAllName = L10n.Tr("Hide All", null);
 
         [AutoStaticsCleanupOnCodeReload]
+        // Points at the live main toolbar window: Toolbar.OnEnable creates it again after a code reload and
+        // the MainToolbarWindow constructor re-assigns the slot.
+        [IgnoreForUAL0015("Window instance slot re-assigned by the constructor when Toolbar.OnEnable recreates it")]
         internal static MainToolbarWindow instance;
 
         MainToolbarAnalytics m_Analytics;
@@ -130,22 +134,22 @@ namespace UnityEditor
             #pragma warning restore UAL0015
         }
 
+        // UUM-116278: re-normalizes '\\' to '/' on every iteration, since Path.GetDirectoryName reintroduces it each call.
+        static void AddAncestorPaths(string leafPath, HashSet<string> paths)
+        {
+            var path = Path.GetDirectoryName(leafPath)?.Replace(Path.DirectorySeparatorChar, '/');
+            while (!string.IsNullOrEmpty(path))
+            {
+                paths.Add(path);
+                path = Path.GetDirectoryName(path)?.Replace(Path.DirectorySeparatorChar, '/');
+            }
+        }
+
         string[] GetAllUniquePaths()
         {
             HashSet<string> uniquePaths = new HashSet<string>();
             foreach (var def in MainToolbar.GetAllElementDefinitions())
-            {
-                var path = Path.GetDirectoryName(def.attr.path);
-                // UUM-116278: On Windows leaving the '\\' will result in a new empty menu later in
-                // the menu creation as dropdown.AddItem uses '/' as a submenu separator.
-                path = path.Replace(Path.DirectorySeparatorChar, '/');
-
-                while (!string.IsNullOrEmpty(path))
-                {
-                    uniquePaths.Add(path);
-                    path = Path.GetDirectoryName(path);
-                }
-            }
+                AddAncestorPaths(def.attr.path, uniquePaths);
 
             string[] results = new string[uniquePaths.Count];
             int count = 0;
@@ -160,9 +164,9 @@ namespace UnityEditor
 
         void OnEnable()
         {
-            #pragma warning disable UAL0018 // rebuilt/resubscribed wholesale on the next reload via this object's own lifecycle; a stale value in the interim is never observed
+#pragma warning disable UAL0018 // m_Parent lives on this MainToolbarWindow, which a code reload recreates; OnEnable runs again on the new instance and re-reads the toolbar rebuilt by the same reload
             m_Parent = Toolbar.instance;
-            #pragma warning restore UAL0018
+#pragma warning restore UAL0018
 
             m_UniqueMenuCategories = GetAllUniquePaths();
 
@@ -255,75 +259,46 @@ namespace UnityEditor
         }
 
         [AutoStaticsCleanupOnCodeReload]
-        internal static event Action menuItemSearchRequested;
+        internal static event Action<MainToolbar.PickerMode, string> pickerRequested;
 
         void OpenMenuItemSearch()
         {
-            menuItemSearchRequested?.Invoke();
+            RaisePickerRequested(MainToolbar.PickerMode.MenuItems, string.Empty);
         }
+
+        void OpenMainToolbarElementSearch()
+        {
+            RaisePickerRequested(MainToolbar.PickerMode.ToolbarElements, string.Empty);
+        }
+
+        internal static void RaisePickerRequested(MainToolbar.PickerMode mode, string filter) => pickerRequested?.Invoke(mode, filter);
 
         [NoAutoStaticsCleanup] // Scratch set of menu category paths, rebuilt (??= / Clear) each menu population; strings only, safe to persist.
         static HashSet<string> s_UsedMenuCategoryPaths;
         void PopulateMenuWithOverlays(AbstractGenericMenu dropdown, bool includeUtilityFunctions = true)
         {
-            var overlays = new List<(Overlay overlay, MainToolbarElementAttribute attrib)>();
-
-            s_UnityOnlyOverlays.Clear();
-            foreach (var overlay in overlayCanvas.overlays)
-            {
-                var mto = overlay as MainToolbarOverlay;
-                if (mto.createElementMethod == null)
-                    continue; // Dynamically-created overlay (e.g. a pinned menu item); not managed from this menu.
-
-                if (!mto.IsAvailable())
-                    continue;
-
-                overlays.Add((overlay, mto.createElementMethod.GetCustomAttribute<MainToolbarElementAttribute>()));
-                if (mto.createElementMethod.GetCustomAttribute<UnityOnlyMainToolbarPresetAttribute>() != null)
-                    s_UnityOnlyOverlays.Add(overlay);
-            }
-
-            overlays.Sort((a, b) =>
-            {
-                // Group into unity vs non-unity first
-                if (s_UnityOnlyOverlays.Contains(a.overlay) && !s_UnityOnlyOverlays.Contains(b.overlay))
-                    return -1;
-                if (s_UnityOnlyOverlays.Contains(b.overlay) && !s_UnityOnlyOverlays.Contains(a.overlay))
-                    return 1;
-
-                // Sort by menu priority first
-                var result = a.attrib.menuPriority.CompareTo(b.attrib.menuPriority);
-                if (result != 0)
-                    return result;
-
-                // Then alphabetically by path
-                result = String.Compare(a.attrib.path, b.attrib.path, StringComparison.OrdinalIgnoreCase);
-                if (result != 0)
-                    return result;
-
-                // Then by dock position and index
-                return ((int)a.attrib.defaultDockPosition * 100 + a.attrib.defaultDockIndex)
-                    .CompareTo((int)b.attrib.defaultDockPosition * 100 + b.attrib.defaultDockIndex);
-            });
+            var overlays = MainToolbar.GetSortedAvailableOverlays();
 
             s_UsedMenuCategoryPaths ??= new();
             s_UsedMenuCategoryPaths.Clear();
-            Overlay prevOverlay = null;
-            foreach (var pair in overlays)
+            (Overlay overlay, bool isUnityOnly)? prev = null;
+            foreach (var entry in overlays)
             {
-                if (s_UnityOnlyOverlays.Contains(prevOverlay) && !s_UnityOnlyOverlays.Contains(pair.overlay))
+                if (prev.HasValue && prev.Value.isUnityOnly && !entry.isUnityOnly)
                     dropdown.AddSeparator("");
 
-                if (pair.attrib.path != Toolbar.deprecatedElementsId || Toolbar.instance.deprecatedElements.Count > 0)
+                if (entry.attrib.path != Toolbar.deprecatedElementsId || Toolbar.instance.deprecatedElements.Count > 0)
                 {
-                    dropdown.AddItem(pair.attrib.path, pair.overlay.displayed, () =>
+                    var overlay = entry.overlay;
+                    dropdown.AddItem(entry.attrib.path, overlay.displayed, () =>
                     {
-                        pair.overlay.displayed = !pair.overlay.displayed;
+                        overlay.displayed = !overlay.displayed;
                     });
 
-                    s_UsedMenuCategoryPaths.Add(Path.GetDirectoryName(pair.attrib.path));
+                    // Marks every ancestor category used, not just the immediate one, so a category holding only subcategories still gets Show/Hide All.
+                    AddAncestorPaths(entry.attrib.path, s_UsedMenuCategoryPaths);
                 }
-                prevOverlay = pair.overlay;
+                prev = (entry.overlay, entry.isUnityOnly);
             }
 
             if (includeUtilityFunctions)
@@ -349,14 +324,13 @@ namespace UnityEditor
             PopulateMenuWithOverlays(dropdown);
             dropdown.AddSeparator("");
 
+            dropdown.AddItem(mainToolbarElementSearchName, false, OpenMainToolbarElementSearch);
             dropdown.AddItem(menuItemSearchName, false, OpenMenuItemSearch);
             dropdown.AddSeparator("");
 
             OverlayPresetManager.GenerateMenu(dropdown, "Presets/", this, false, CheckIfCanvasChangedSinceLastPreset, new UnityOnlyToolbarPreset());
         }
 
-        [AutoStaticsCleanupOnCodeReload]
-        static HashSet<Overlay> s_UnityOnlyOverlays = new();
         internal void ShowMenu(Rect dropdownRect)
         {
             var dropdown = rootVisualElement.panel.CreateMenu();
@@ -375,6 +349,9 @@ namespace UnityEditor
     partial class Toolbar : HostView
     {
         [AutoStaticsCleanupOnCodeReload]
+        // Points at the live toolbar host view, which a code reload recreates; the Toolbar constructor
+        // re-assigns the slot and every reader null-checks it first.
+        [IgnoreForUAL0015("Toolbar instance slot re-assigned by the constructor when the host view is recreated")]
         static Toolbar s_Instance;
         public const float ToolbarHeight = 36f;
 
@@ -445,10 +422,18 @@ namespace UnityEditor
         internal const string deprecatedElementsId = "Unsupported User Elements";
         [Obsolete($"Use {nameof(instance)} instead")]
         [AutoStaticsCleanupOnCodeReload]
+        // Second slot pointing at the live toolbar host view, assigned alongside s_Instance by the Toolbar
+        // constructor when a code reload recreates the view.
+        [IgnoreForUAL0015("Toolbar instance slot re-assigned by the constructor when the host view is recreated")]
         internal static Toolbar get;
         List<VisualElement> m_DeprecatedElements = new List<VisualElement>();
         internal IReadOnlyList<VisualElement> deprecatedElements => m_DeprecatedElements;
+        // Legacy fake-toolbar population hook (deprecated AddSubToolbar path, same as s_SubToolbars above).
+        // Cleared on reload like the other toolbar events: the in-repo subscriber (DeprecatedElementsToolbar
+        // in SubToolbarZone.cs) re-subscribes from its [OnCodeLoaded] Initialize(); persisting the list would
+        // keep third-party delegates alive and pin their unloaded assemblies.
         [AutoStaticsCleanupOnCodeReload]
+        [IgnoreForUAL0015("Event re-subscribed on every code load by DeprecatedElementsToolbar's [OnCodeLoaded] Initialize()")]
         internal static event Action<MainToolbarDockPosition, VisualElement> populateFakeToolbar;
 
         void InitializeFakeHierarchyForDeprecatedToolbarHacks()
@@ -513,4 +498,3 @@ namespace UnityEditor
         }
     }
 }
-#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

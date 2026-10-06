@@ -2,10 +2,10 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: UIToolkitFramework not yet converted
 using System;
 using System.Diagnostics;
 using Unity.Properties;
+using Unity.Scripting.LifecycleManagement;
 using UnityEngine.Bindings;
 
 namespace UnityEngine.UIElements
@@ -297,7 +297,33 @@ namespace UnityEngine.UIElements
             hierarchy.Add(m_Container);
 
             RegisterCallback<AttachToPanelEvent>(OnAttachToPanel);
+            Callbacks.OnTooltip.Register(this);
             SetValueWithoutNotify(true);
+        }
+
+        void OnTooltip(TooltipEvent evt)
+        {
+            if (string.IsNullOrEmpty(tooltip))
+                return;
+
+            // The tooltip describes the header, so it must not apply to the content. (UUM-145747)
+            var hovered = evt.elementTarget;
+            var overHeader = hovered == this || hovered == m_Toggle || m_Toggle.Contains(hovered);
+            if (!overHeader)
+            {
+                evt.StopImmediatePropagation();
+                return;
+            }
+
+            if (evt.rect == Rect.zero)
+                evt.rect = m_Toggle.worldBound;
+        }
+
+        static class Callbacks
+        {
+            [NoAutoStaticsCleanup]
+            public static readonly EventCallbackDefinition<Foldout> OnTooltip =
+                EventCallback.Create<TooltipEvent, Foldout>(static (e, self) => self.OnTooltip(e));
         }
 
         void OnAttachToPanel(AttachToPanelEvent evt)
@@ -334,4 +360,3 @@ namespace UnityEngine.UIElements
         }
     }
 }
-#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

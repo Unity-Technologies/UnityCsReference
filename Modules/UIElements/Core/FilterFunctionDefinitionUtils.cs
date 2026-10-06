@@ -10,6 +10,9 @@ namespace UnityEngine.UIElements
 {
     internal static class FilterFunctionDefinitionUtils
     {
+        // Blur kernel cost and read margins are O(sigma); larger values hang the GPU (UUM-134044).
+        internal const float k_MaxBlurSigma = 100.0f;
+
         // These definition are initialized once at first use and are shared across all filter functions.
         [NoAutoStaticsCleanup]
         private static FilterFunctionDefinition s_BlurDef;
@@ -134,7 +137,10 @@ namespace UnityEngine.UIElements
                 // Gaussian-blur sigma
                 new FilterParameterDeclaration {
                     interpolationDefaultValue = new FilterParameter { type = FilterParameterType.Float, floatValue = 0.0f },
-                    defaultValue = new FilterParameter { type = FilterParameterType.Float, floatValue = 0.0f }
+                    defaultValue = new FilterParameter { type = FilterParameterType.Float, floatValue = 0.0f },
+                    hasFloatRange = true,
+                    minFloatValue = 0.0f,
+                    maxFloatValue = k_MaxBlurSigma
                 }
             };
 
@@ -249,22 +255,33 @@ namespace UnityEngine.UIElements
             filter.filterName = GetBuiltinFilterName(FilterFunctionType.DropShadow);
 
             // Parameter layout: [0] offsetX (px), [1] offsetY (px), [2] sigma (px), [3] color
+            // Offsets are range-limited to what the capped margins can express, so a large offset
+            // clamps instead of silently truncating against UIR.FilterHelper.k_MaxPostProcessingMargin.
             filter.parameters = new[]
             {
                 new FilterParameterDeclaration {
                     interpolationDefaultValue = new FilterParameter { type = FilterParameterType.Float, floatValue = 0.0f },
                     defaultValue = new FilterParameter { type = FilterParameterType.Float, floatValue = 0.0f },
-                    name = "X"
+                    name = "X",
+                    hasFloatRange = true,
+                    minFloatValue = -UIR.FilterHelper.k_MaxPostProcessingMargin,
+                    maxFloatValue = UIR.FilterHelper.k_MaxPostProcessingMargin
                 },
                 new FilterParameterDeclaration {
                     interpolationDefaultValue = new FilterParameter { type = FilterParameterType.Float, floatValue = 0.0f },
                     defaultValue = new FilterParameter { type = FilterParameterType.Float, floatValue = 0.0f },
-                    name = "Y"
+                    name = "Y",
+                    hasFloatRange = true,
+                    minFloatValue = -UIR.FilterHelper.k_MaxPostProcessingMargin,
+                    maxFloatValue = UIR.FilterHelper.k_MaxPostProcessingMargin
                 },
                 new FilterParameterDeclaration {
                     interpolationDefaultValue = new FilterParameter { type = FilterParameterType.Float, floatValue = 0.0f },
                     defaultValue = new FilterParameter { type = FilterParameterType.Float, floatValue = 0.0f },
-                    name = "Radius"
+                    name = "Radius",
+                    hasFloatRange = true,
+                    minFloatValue = 0.0f,
+                    maxFloatValue = k_MaxBlurSigma
                 },
                 new FilterParameterDeclaration {
                     interpolationDefaultValue = new FilterParameter { type = FilterParameterType.Color, colorValue = Color.clear },
@@ -337,8 +354,10 @@ namespace UnityEngine.UIElements
         static void ApplyBlurSettings(MaterialPropertyBlock mpb, FilterPassContext context)
         {
             float sigma = Math.Max(0.0f, context.filterFunction.parameters[0].floatValue);
-            // Scale the sigma by DPI to maintain consistent blur radius across different DPI settings
-            float scaledSigma = sigma * context.scaledPixelsPerPoint;
+            // Pass 0 blurs horizontally, pass 1 vertically: each takes its own points-to-pixels axis,
+            // so a non-uniform content scale yields the matching elliptical Gaussian.
+            var ppp = context.perAxisScaledPixelsPerPoint;
+            float scaledSigma = sigma * (context.filterPassIndex == 0 ? ppp.x : ppp.y);
             mpb.SetFloat("_Sigma", scaledSigma);
         }
 
@@ -359,7 +378,9 @@ namespace UnityEngine.UIElements
         static void ApplyDropShadowBlurSettings(MaterialPropertyBlock mpb, FilterPassContext context)
         {
             float sigma = Math.Max(0.0f, context.filterFunction.parameters[2].floatValue);
-            float scaledSigma = sigma * context.scaledPixelsPerPoint;
+            // Pass 0 = horizontal, pass 1 = vertical (see ApplyBlurSettings).
+            var ppp = context.perAxisScaledPixelsPerPoint;
+            float scaledSigma = sigma * (context.filterPassIndex == 0 ? ppp.x : ppp.y);
             mpb.SetFloat("_Sigma", scaledSigma);
         }
 
@@ -399,9 +420,11 @@ namespace UnityEngine.UIElements
             float oy = func.parameters[1].floatValue;
             Color color = func.parameters[3].colorValue;
 
-            // Offset is in points; the shader expects physical pixels (it converts to UV via _MainTex_TexelSize).
-            float scale = context.scaledPixelsPerPoint;
-            mpb.SetVector("_ShadowOffset", new Vector4(ox * scale, oy * scale, 0, 0));
+            // Offset is in points; the shader expects physical pixels (it converts to UV via
+            // _MainTex_TexelSize). Per-axis: a translation routed through the scalar approximation
+            // would visibly misplace the shadow under a non-uniform content scale.
+            var scale = context.perAxisScaledPixelsPerPoint;
+            mpb.SetVector("_ShadowOffset", new Vector4(ox * scale.x, oy * scale.y, 0, 0));
 
             if (!context.readsGamma)
                 color = color.linear;

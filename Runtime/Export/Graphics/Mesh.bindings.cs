@@ -18,12 +18,12 @@ namespace UnityEngine
     [NativeHeader("Runtime/Graphics/Mesh/MeshScriptBindings.h")]
     public sealed partial class Mesh
     {
-        [FreeFunction("MeshScripting::CreateMesh")] extern private static void Internal_Create([Writable] Mesh mono);
+        [FreeFunction("MeshScripting::CreateMesh")] extern private static EntityId Internal_Create();
 
         [RequiredByNativeCode] // Used by IMGUI (even on empty projects, it draws development console & watermarks)
         public Mesh()
         {
-            Internal_Create(this);
+            SetEntityIdFromConstructor(Internal_Create());
         }
 
         [FreeFunction("MeshScripting::MeshFromInstanceId")] extern internal static Mesh FromInstanceID(EntityId id);

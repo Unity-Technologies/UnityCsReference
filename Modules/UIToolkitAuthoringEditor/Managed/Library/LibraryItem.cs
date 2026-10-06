@@ -3,7 +3,6 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using Unity.Scripting.LifecycleManagement;
-#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: UIToolkitAuthoringFramework not yet converted
 using UnityEditor;
 using UnityEngine;
 using UnityEngine.Bindings;
@@ -25,6 +24,7 @@ namespace Unity.UIToolkit.Editor
         public bool isAsset => !string.IsNullOrEmpty(assetPath);
 
         [AutoStaticsCleanupOnCodeReload]
+        [IgnoreForUAL0015("Lazily re-created by GetAssetIcon on next access after reload")]
         static Background s_AssetIcon;
 
         VisualTreeAsset m_VisualTreeAsset;
@@ -100,4 +100,3 @@ namespace Unity.UIToolkit.Editor
         }
     }
 }
-#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

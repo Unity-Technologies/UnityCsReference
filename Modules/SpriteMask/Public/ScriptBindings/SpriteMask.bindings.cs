@@ -14,6 +14,8 @@ namespace UnityEngine
     [NativeHeader("Modules/SpriteMask/Public/SpriteMask.h")]
     public sealed partial class SpriteMask : Renderer
     {
+        internal SpriteMask(global::UnityEngine.EntityId id) : base(id) {}
+        public SpriteMask() {}
         ///<summary>Sets which source to use when generating the mask.</summary>
         public enum MaskSource
         {

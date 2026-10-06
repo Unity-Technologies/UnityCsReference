@@ -4,7 +4,7 @@
 
 using System;
 using System.Collections.Generic;
-using Unity.GraphToolkit.CSO;
+using Unity.CSO;
 using Unity.Scripting.LifecycleManagement;
 using UnityEditor;
 using UnityEngine;
@@ -109,8 +109,7 @@ namespace Unity.GraphToolkit.Editor
             InitDispatcher();
             Model?.AddToState(GraphTool?.State);
 
-            var registrar = new CommandHandlerRegistrar(this);
-            RegisterCommandHandlers(registrar);
+            RegisterCommandHandlers(new CSO.Editor.CommandHandlerRegistrar(this));
 
             RegisterModelObservers();
         }

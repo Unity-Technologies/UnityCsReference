@@ -255,11 +255,11 @@ namespace UnityEditor.Rendering
             }
 
             if (EditorApplication.isPlaying)
-                menu.AddDisabledItem(EditorGUIUtility.TrTextContent(k_Label), false);
+                menu.AddDisabledItem(L10n.TextContent(k_Label, null, null, null), false);
             else
             {
                 targets = new() { setting };
-                menu.AddItem(EditorGUIUtility.TrTextContent(k_Label), false, (implementation) => Reset((ResetImplementation)implementation), this);
+                menu.AddItem(L10n.TextContent(k_Label, null, null, null), false, (implementation) => Reset((ResetImplementation)implementation), this);
             }
         }
 

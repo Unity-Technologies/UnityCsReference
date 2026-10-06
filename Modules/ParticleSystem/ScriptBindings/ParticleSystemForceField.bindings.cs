@@ -162,6 +162,8 @@ namespace UnityEngine
     [RequireComponent(typeof(Transform))]
     public partial class ParticleSystemForceField : Behaviour
     {
+        internal ParticleSystemForceField(global::UnityEngine.EntityId id) : base(id) {}
+        public ParticleSystemForceField() {}
         ///<summary>Selects the type of shape used for influencing particles.</summary>
         ///<seealso cref="ParticleSystemForceField" />
         [NativeName("ForceShape")]

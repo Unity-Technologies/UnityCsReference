@@ -21,7 +21,7 @@ namespace UnityEditor
     [NativeHeader("Editor/Src/AssetPipeline/UnityExtensions.h")]
     [NativeHeader("Editor/Src/EditorHelperApple.h")]
     [NativeHeader("Runtime/Shaders/ShaderImpl/ShaderUtilities.h")]
-    partial class EditorUtility
+    public partial class EditorUtility
     {
         public static extern string OpenFilePanel(string title, string directory, string extension);
 
@@ -100,10 +100,9 @@ namespace UnityEditor
         [FreeFunction("CopySerializedIfDifferent")]
         private static extern void InternalCopySerializedIfDifferent([NotNull] Object source, [NotNull] Object dest);
 
-        [NativeMethod(ThrowsException = true)]
         [return: UnityMarshalAs(NativeType.ScriptingObjectPtr)]
-        public static extern Object[] CollectDependencies([UnityMarshalAs(NativeType.ScriptingObjectPtr)] Object[] roots);
-        public static extern Object[] CollectDeepHierarchy([UnityMarshalAs(NativeType.ScriptingObjectPtr)] Object[] roots);
+        public static extern Object[] CollectDependencies([NotNull] Object[] roots);
+        public static extern Object[] CollectDeepHierarchy(Object[] roots);
 
         [FreeFunction("InstantiateObjectRemoveAllNonAnimationComponents")]
         private static extern Object Internal_InstantiateRemoveAllNonAnimationComponentsSingle([NotNull] Object data, Vector3 pos, Quaternion rot);

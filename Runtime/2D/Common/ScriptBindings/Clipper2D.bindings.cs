@@ -125,9 +125,9 @@ namespace UnityEngine.U2D
                 }
                 else
                 {
-                    if (!solution.pathSizes.IsCreated)
-                        solution.points = new NativeArray<Vector2>(0, inSolutionAllocator);
                     if (!solution.points.IsCreated)
+                        solution.points = new NativeArray<Vector2>(0, inSolutionAllocator);
+                    if (!solution.pathSizes.IsCreated)
                         solution.pathSizes = new NativeArray<int>(0, inSolutionAllocator);
                 }
             }

@@ -2,7 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: SRPSettings not yet converted
 using System;
 using System.Collections.Generic;
 using Unity.Scripting.LifecycleManagement;
@@ -207,6 +206,9 @@ namespace UnityEditor.Inspector.GraphicsSettingsInspectors
         [NoAutoStaticsCleanup] // transient scope flag, reset to false by EndScope each use
         static bool s_Scoped = false;
         [AutoStaticsCleanupOnCodeReload]
+        // Holds SerializedObjects for the current render-pipeline settings, so it must be dropped on
+        // reload; every caller null-checks it and calls RecomputeDictionary to rebuild it.
+        [IgnoreForUAL0015("Rebuilt by RecomputeDictionary whenever a caller finds it null")]
         static Dictionary<Type, SerializedObject> s_SharedPreviousStates = null;
 
         [InitializeOnLoadMethod]
@@ -375,4 +377,3 @@ namespace UnityEditor.Inspector.GraphicsSettingsInspectors
         }
     }
 }
-#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

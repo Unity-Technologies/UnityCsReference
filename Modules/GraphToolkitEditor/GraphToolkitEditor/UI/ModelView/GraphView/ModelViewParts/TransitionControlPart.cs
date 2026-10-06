@@ -30,7 +30,7 @@ namespace Unity.GraphToolkit.Editor
             {
                 if (m_TransitionArrow == null)
                 {
-                    var wireControlPart = PartList.GetPart(Transition.transitionArrowPartName);
+                    var wireControlPart = PartList.GetPart(TransitionView.transitionArrowPartName);
                     m_TransitionArrow = wireControlPart?.Root as TransitionArrow;
                 }
 
@@ -66,13 +66,13 @@ namespace Unity.GraphToolkit.Editor
         protected TransitionControlPart(string name, Model model, ChildView ownerElement, string parentClassName)
             : base(name, model, ownerElement, parentClassName)
         {
-            PartList.AppendPart(TransitionArrowPart.Create(Transition.transitionArrowPartName, model, m_OwnerElement, ussClassName));
+            PartList.AppendPart(TransitionArrowPart.Create(TransitionView.transitionArrowPartName, model, m_OwnerElement, ussClassName));
         }
 
         /// <inheritdoc />
         protected override void BuildUI(VisualElement container)
         {
-            m_TransitionControl = new TransitionControl(m_OwnerElement as Transition) { name = PartName };
+            m_TransitionControl = new TransitionControl(m_OwnerElement as TransitionView) { name = PartName };
             m_TransitionControl.AddToClassList(ussClassName);
             m_TransitionControl.AddToClassList(m_ParentClassName.WithUssElement(PartName));
 
@@ -84,17 +84,28 @@ namespace Unity.GraphToolkit.Editor
         {
             base.PostBuildUI();
 
-            m_TransitionControl.TransitionArrow = (TransitionArrow)PartList.GetPart(Transition.transitionArrowPartName).Root;
+            m_TransitionControl.TransitionArrow = (TransitionArrow)PartList.GetPart(TransitionView.transitionArrowPartName).Root;
         }
 
         /// <inheritdoc />
         public override void UpdateUIFromModel(UpdateFromModelVisitor visitor)
         {
-            if (visitor.ChangeHints.HasChange(ChangeHint.Layout) || visitor.ChangeHints.HasChange(ChangeHint.Data))
+            var hasStyleChange = visitor.ChangeHints.HasChange(ChangeHint.Style);
+
+            if (hasStyleChange && m_Model is TransitionSupportModel transition)
+            {
+                m_TransitionControl.ModelColor = transition.LineColor == default ? null : transition.LineColor;
+                m_TransitionControl.ModelWidth = transition.WidthOverride == 0 ? null : transition.WidthOverride;
+            }
+
+            if (hasStyleChange || visitor.ChangeHints.HasChange(ChangeHint.Layout) || visitor.ChangeHints.HasChange(ChangeHint.Data))
             {
                 m_TransitionControl.UpdateLayout();
                 TransitionArrow?.UpdateLayout();
             }
+
+            if (hasStyleChange)
+                m_TransitionControl.MarkDirtyRepaint();
         }
 
         /// <inheritdoc />

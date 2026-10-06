@@ -2,7 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: Profiling not yet converted
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -37,10 +36,18 @@ namespace UnityEditor
     {
         internal static class Styles
         {
-            public static readonly GUIContent addArea = EditorGUIUtility.TrTextContent("Profiler Modules", "Add and remove profiler modules");
-            public static readonly GUIContent deepProfile = EditorGUIUtility.TrTextContent("Deep Profile", "Instrument all scripting method calls to investigate scripts");
-            public static readonly GUIContent deepProfileNotSupported = EditorGUIUtility.TrTextContent("Deep Profile", "Build a Player with Deep Profiling Support to be able to enable instrumentation of all scripting methods in a Player.");
-            public static readonly GUIContent noActiveModules = EditorGUIUtility.TrTextContent("No Profiler Modules are active. Activate modules from the top left-hand drop-down.");
+            public static readonly GUIContent addArea = L10n.TextContent("Profiler Modules", "Add and remove profiler modules", null, null);
+            const string k_DeepProfileLabel = "Deep Profile";
+            const string k_InstrumentEverythingScopeAndCostTooltip =
+                " Checking \"Instrument Everything\" in the dropdown also instruments System libraries, " +
+                "but requires an Editor restart to take effect and disables precompiled (ReadyToRun) code " +
+                "for the whole session, so its overhead is permanent even after Deep Profile is turned off.";
+            public static readonly GUIContent deepProfileEditor = L10n.TextContent(k_DeepProfileLabel, "Instrument Game and Editor managed code." + k_InstrumentEverythingScopeAndCostTooltip, null, null);
+            public static readonly GUIContent deepProfileNotSupportedPlayer = L10n.TextContent(k_DeepProfileLabel, "Build a Player with Deep Profiling Support to be able to enable instrumentation of all scripting methods in a Player.", null, null);
+            public static readonly GUIContent deepProfileSupportedPlayer = L10n.TextContent(k_DeepProfileLabel, "All managed code, including System libraries, is instrumented for this session because the Player was built with Deep Profiling Support. This toggle only enables or disables data collection; instrumentation stays on for the whole session.", null, null);
+            public static readonly GUIContent deepProfileEnabledAtStartupEditor = L10n.TextContent(k_DeepProfileLabel, "All managed code, including System libraries, is instrumented for this session because the Editor was launched with -deepprofiling. This toggle only enables or disables data collection; instrumentation stays on for the whole session.", null, null);
+            public static readonly GUIContent instrumentEverything = L10n.TextContent("Instrument Everything", "Instrument System libraries in addition to Game and Editor managed code. Requires restarting the Editor with the -deepprofiling command line argument; once active, instrumentation and its precompiled-code overhead stay on for the whole session.", null, null);
+            public static readonly GUIContent noActiveModules = L10n.TextContent("No Profiler Modules are active. Activate modules from the top left-hand drop-down.", null, null, null);
 
             public static readonly string enableDeepProfilingWarningDialogTitle = L10n.Tr("Enable deep script profiling", null);
             public static readonly string enableDeepProfilingWarningDialogContent = L10n.Tr("Enabling deep profiling requires reloading scripts.", null);
@@ -49,9 +56,15 @@ namespace UnityEditor
             public static readonly string domainReloadWarningDialogButton = L10n.Tr("Reload", null);
             public static readonly string cancelDialogButton = L10n.Tr("Cancel", null);
 
-            public static readonly GUIContent recordCallstacks = EditorGUIUtility.TrTextContent("Call Stacks", "Record call stacks for special samples such as \"GC.Alloc\". " +
+            public static readonly string enableInstrumentEverythingDialogTitle = L10n.Tr("Instrument Everything requires an Editor restart", null);
+            public static readonly string enableInstrumentEverythingDialogContent = L10n.Tr("Instrumenting System libraries in addition to Game and Editor managed code requires restarting the Editor with the -deepprofiling command line argument.", null);
+            public static readonly string disableInstrumentEverythingDialogTitle = L10n.Tr("Disabling Instrument Everything requires an Editor restart", null);
+            public static readonly string disableInstrumentEverythingDialogContent = L10n.Tr("Disabling instrumentation of System libraries requires restarting the Editor without the -deepprofiling command line argument.", null);
+            public static readonly string restartEditorDialogButton = L10n.Tr("Restart Editor", null);
+
+            public static readonly GUIContent recordCallstacks = L10n.TextContent("Call Stacks", "Record call stacks for special samples such as \"GC.Alloc\". " +
                 "To see the call stacks, select a sample in the CPU Usage module, e.g. in Timeline view. " +
-                "To also see call stacks in Hierarchy view, switch from \"No Details\" to \"Related Data\", select a \"GC.Alloc\" sample and select \"N/A\" items from the list.");
+                "To also see call stacks in Hierarchy view, switch from \"No Details\" to \"Related Data\", select a \"GC.Alloc\" sample and select \"N/A\" items from the list.", null, null);
             public static readonly string[] recordCallstacksOptions =
             {
                 L10n.Tr("GC.Alloc", null), L10n.Tr("UnsafeUtility.Malloc(Persistent)", null), L10n.Tr("JobHandle.Complete", null)
@@ -65,30 +78,30 @@ namespace UnityEditor
                 ProfilerMemoryRecordMode.GCAlloc, ProfilerMemoryRecordMode.UnsafeUtilityMalloc, ProfilerMemoryRecordMode.JobHandleComplete, ProfilerMemoryRecordMode.NativeAlloc
             };
 
-            public static readonly GUIContent profilerRecordOff = EditorGUIUtility.TrIconContent("Record Off", "Record profiling information (F9)");
-            public static readonly GUIContent profilerRecordOn = EditorGUIUtility.TrIconContent("Record On", "Record profiling information (F9)");
+            public static readonly GUIContent profilerRecordOff = L10n.IconContent("Record Off", "Record profiling information (F9)", null);
+            public static readonly GUIContent profilerRecordOn = L10n.IconContent("Record On", "Record profiling information (F9)", null);
 
             [NoAutoStaticsCleanup] // Fixed content, safe to persist
             public static SVC<Color> borderColor =
                 new SVC<Color>("--theme-profiler-border-color-darker", Color.black);
-            public static readonly GUIContent showHideCaptures = EditorGUIUtility.TrIconContent("LeftPanel", "Show/Hide Captures List");
-            public static readonly GUIContent prevFrame = EditorGUIUtility.TrIconContent("Animation.PrevKey", "Previous frame");
-            public static readonly GUIContent nextFrame = EditorGUIUtility.TrIconContent("Animation.NextKey", "Next frame");
-            public static readonly GUIContent currentFrame = EditorGUIUtility.TrIconContent("Animation.LastKey", "Current frame");
-            public static readonly GUIContent frame = EditorGUIUtility.TrTextContent("Frame: ", "Selected frame / Total number of frames");
-            public static readonly GUIContent clearOnPlay = EditorGUIUtility.TrTextContent("Clear on Play", "Clear the captured data on entering Play Mode, or connecting to a new Player");
-            public static readonly GUIContent clearData = EditorGUIUtility.TrTextContent("Clear", "Clear the captured data");
-            public static readonly GUIContent saveProfilingData = EditorGUIUtility.TrIconContent("SaveAs", "Save current profiling information to a binary file");
-            public static readonly GUIContent loadWindowTitle = EditorGUIUtility.TrTextContent("Load Window");
-            public static readonly GUIContent loadProfilingData = EditorGUIUtility.TrIconContent("Import", "Load binary profiling information from a file. Shift click to append to the existing data");
+            public static readonly GUIContent showHideCaptures = L10n.IconContent("LeftPanel", "Show/Hide Captures List", null);
+            public static readonly GUIContent prevFrame = L10n.IconContent("Animation.PrevKey", "Previous frame", null);
+            public static readonly GUIContent nextFrame = L10n.IconContent("Animation.NextKey", "Next frame", null);
+            public static readonly GUIContent currentFrame = L10n.IconContent("Animation.LastKey", "Current frame", null);
+            public static readonly GUIContent frame = L10n.TextContent("Frame: ", "Selected frame / Total number of frames", null, null);
+            public static readonly GUIContent clearOnPlay = L10n.TextContent("Clear on Play", "Clear the captured data on entering Play Mode, or connecting to a new Player", null, null);
+            public static readonly GUIContent clearData = L10n.TextContent("Clear", "Clear the captured data", null, null);
+            public static readonly GUIContent saveProfilingData = L10n.IconContent("SaveAs", "Save current profiling information to a binary file", null);
+            public static readonly GUIContent loadWindowTitle = L10n.TextContent("Load Window", null, null, null);
+            public static readonly GUIContent loadProfilingData = L10n.IconContent("Import", "Load binary profiling information from a file. Shift click to append to the existing data", null);
             public static readonly string[] loadProfilingDataFileFilters = new string[] { L10n.Tr("Profiler files", null), "data,raw", L10n.Tr("All files", null), "*" };
 
-            public static readonly GUIContent optionsButtonContent = EditorGUIUtility.TrIconContent("_Menu", "Additional Options");
-            public static readonly GUIContent helpButtonContent = EditorGUIUtility.TrIconContent("_Help", "Open Manual (in a web browser)");
-            public static readonly GUIContent preferencesButtonContent = EditorGUIUtility.TrTextContent("Preferences", "Open User Preferences for the Profiler");
+            public static readonly GUIContent optionsButtonContent = L10n.IconContent("_Menu", "Additional Options", null);
+            public static readonly GUIContent helpButtonContent = L10n.IconContent("_Help", "Open Manual (in a web browser)", null);
+            public static readonly GUIContent preferencesButtonContent = L10n.TextContent("Preferences", "Open User Preferences for the Profiler", null, null);
 
-            public static readonly GUIContent accessibilityModeLabel = EditorGUIUtility.TrTextContent("Color Blind Mode", "Switch the color scheme to color blind safe colors");
-            public static readonly GUIContent showStatsLabelsOnCurrentFrameLabel = EditorGUIUtility.TrTextContent("Show Stats for 'current frame'", "Show stats labels when the 'current frame' toggle is on.");
+            public static readonly GUIContent accessibilityModeLabel = L10n.TextContent("Color Blind Mode", "Switch the color scheme to color blind safe colors", null, null);
+            public static readonly GUIContent showStatsLabelsOnCurrentFrameLabel = L10n.TextContent("Show Stats for 'current frame'", "Show stats labels when the 'current frame' toggle is on.", null, null);
 
             public static readonly GUIStyle background = "OL box flat";
             public static readonly GUIStyle profilerGraphBackground = "ProfilerScrollviewBackground";
@@ -248,6 +261,7 @@ namespace UnityEditor
         const string kProfilerEnabledSessionKey = "ProfilerEnabled";
         const string kProfilerEditorTargetModeEnabledSessionKey = "ProfilerTargetMode";
         const string kProfilerDeepProfilingWarningSessionKey = "ProfilerDeepProfilingWarning";
+        const string kInstrumentEverythingPendingSessionKey = "ProfilerInstrumentEverythingPending";
 
         internal event Action<int, bool> currentFrameChanged = delegate {};
         internal event Action frameDataViewAboutToBeDisposed = delegate {};
@@ -261,9 +275,6 @@ namespace UnityEditor
         public string selectedModuleName => selectedModuleIdentifier;
 
         public string selectedModuleIdentifier => selectedModule?.Identifier ?? null;
-
-        const string kJobsProfilerIdentifier = "JobsProfilerModule, Unity.JobsProfiler.Editor, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null";
-        internal ProfilerModule jobsProfilerModule { get; private set; }
 
         internal ProfilerModule selectedModule
         {
@@ -462,6 +473,11 @@ namespace UnityEditor
         {
             m_WasCreateGUICalled = true;
 
+            // The frame count can change while the window is closed, when nothing is subscribed to
+            // settingsChanged. Reconcile before the restore below reads SelectedFrameRange, or the
+            // window comes back with a selection outside the displayed window.
+            ClearSelectedFrameIfOutsideDisplayWindow();
+
             // If there is already an open instance of the Module Editor window, resubscribe to the onChangesConfirmed event.
             if (ModuleEditorWindow.TryGetOpenInstance(out var moduleEditorWindow))
             {
@@ -495,6 +511,8 @@ namespace UnityEditor
                 else
                     SelectFirstActiveModule();
             }
+
+            RestorePersistedFrameSelection();
 
             // Restore the previously loaded capture file path to maintain Captures List highlight after window reload
             if (ProfilerHasAnyFrames())
@@ -602,10 +620,7 @@ namespace UnityEditor
                     var args = new ProfilerModule.InitializationArgs(moduleIdentifier, moduleMetadata.DisplayName, moduleMetadata.Tooltip, moduleMetadata.IconPath, this, m_PersistentSettingsService);
                     module.Initialize(args);
 
-                    if (moduleIdentifier == kJobsProfilerIdentifier)
-                        jobsProfilerModule = module;
-                    else
-                        modules.Add(module);
+                    modules.Add(module);
                 }
                 catch (Exception e)
                 {
@@ -884,6 +899,9 @@ namespace UnityEditor
 
         void ApplySettingsChange()
         {
+            // Before SaveViewSettings, so it persists the cleared selection rather than the stale one.
+            ClearSelectedFrameIfOutsideDisplayWindow();
+
             SaveViewSettings();
 
             foreach (var module in m_AllModules)
@@ -891,6 +909,82 @@ namespace UnityEditor
                 module.Rebuild();
             }
             Repaint();
+        }
+
+        // The selection is persisted per session and restored by the SelectedFrameRange getter, which
+        // is enough for the toolbar label - but nothing puts it back into m_CurrentFrame, because the
+        // responder that would is still creating the details view and returns early. Left alone, the
+        // window reports the latest frame while the label shows the persisted one.
+        void RestorePersistedFrameSelection()
+        {
+            // A clamp earlier in CreateGUI may already have set this; restoring would undo it.
+            if (m_CurrentFrame != FrameDataView.invalidOrCurrentFrameIndex)
+                return;
+
+            var persistedRange = SelectedFrameRange;
+            if (persistedRange == null)
+                return;
+
+            // Reading the property above has already restored the range, so an unusable one must be
+            // cleared rather than left behind: PickFrameLabel reads it directly and would keep
+            // reporting a frame this capture doesn't have.
+            var lastFrame = ProfilerDriver.lastFrameIndex;
+            var firstFrame = persistedRange.Value.Start.Value;
+            if (firstFrame < ProfilerDriver.firstFrameIndex || firstFrame > lastFrame)
+            {
+                ClearFrameSelection();
+                return;
+            }
+
+            // A range persisted against a longer capture can overhang this one; keep the part that
+            // still exists rather than discarding the whole selection.
+            var exclusiveEnd = Math.Min(persistedRange.Value.End.Value, lastFrame + 1);
+
+            // The range, not just its start, so a Highlights range selection survives the reopen.
+            SetCurrentFrameRangeDontPause(firstFrame..exclusiveEnd);
+        }
+
+        // The SelectedFrameRange getter restores from these keys whenever the field is null, and
+        // SetCurrentFrameDontPause nulls it before InvokeSelectedFrameIndexChangedEventIfNecessary
+        // reads the property - so without the sentinel the stale range comes straight back and the
+        // change event never fires.
+        void ClearFrameSelection()
+        {
+            SessionState.SetInt(k_FrameSelectionRangeStartKey, k_NoFrameSelectionSession);
+            SessionState.SetInt(k_FrameSelectionRangeEndKey, k_NoFrameSelectionSession);
+
+            SetCurrentFrameDontPause(FrameDataView.invalidOrCurrentFrameIndex);
+            m_CurrentFrameEnabled = true;
+        }
+
+        // Reducing the frame-count setting trims the displayed window without evicting anything from
+        // memory, so an already-selected frame can end up outside it while staying valid to the driver:
+        // the setters only guard ProfilerDriver's range and FrameNavigationControls only clamps upward.
+        void ClearSelectedFrameIfOutsideDisplayWindow()
+        {
+            // Prefer the range: it is what a window reload restores, while m_CurrentFrame isn't
+            // serialized. The two are otherwise kept in lockstep by SetCurrentFrameRangeDontPause.
+            var selectedRange = SelectedFrameRange;
+            var selectedFrame = selectedRange?.Start.Value ?? m_CurrentFrame;
+            if (selectedFrame == FrameDataView.invalidOrCurrentFrameIndex)
+                return;
+
+            // Shared with the chart data window and the screenshot strips, so they can't disagree about
+            // what is displayed. Not firstFrameIndexWithHistoryOffset, which is deliberately unclamped.
+            var firstDisplayedFrame = ScreenshotIndexCatalogue.FirstDisplayedFrameIndex();
+            if (selectedFrame >= firstDisplayedFrame)
+                return;
+
+            // A Highlights range can straddle the new boundary, so keep the part still displayed -
+            // as RestorePersistedFrameSelection does for a range overhanging the other end. A single
+            // frame is stored as [f, f + 1] and so can never straddle it: those always clear.
+            if (selectedRange != null && selectedRange.Value.End.Value > firstDisplayedFrame)
+            {
+                SetCurrentFrameRangeDontPause(firstDisplayedFrame..selectedRange.Value.End.Value);
+                return;
+            }
+
+            ClearFrameSelection();
         }
 
         void Clear()
@@ -1074,7 +1168,7 @@ namespace UnityEditor
 
         void OnFocus()
         {
-            // set the real state of profiler. OnDestroy is called not only when window is destroyed, but also when maximized state is changed
+            // Also runs when the window's maximized state changes, not just on focus, so this restores the real recording state each time.
             if (Profiler.supported)
             {
                 ProfilerDriver.enabled = m_Recording;
@@ -1378,6 +1472,12 @@ namespace UnityEditor
 
         internal void SaveProfilingData()
         {
+            // Matches the toolbar Save button's disabled state: an empty recording has no
+            // frame data for ProfilerDriver.SaveProfile to serialize, producing a capture file
+            // that cannot be loaded back.
+            if (!ProfilerHasAnyFrames())
+                return;
+
             var dateString = DateTime.Now.ToLocalTime().ToString("yyyy-MM-dd_HH-mm-ss", System.Globalization.CultureInfo.InvariantCulture);
             var prodName = Application.productName;
 
@@ -1449,11 +1549,10 @@ namespace UnityEditor
             else
                 CurrentLoadedCaptureFile = path;
 
-            // Stop current profiling if data was loaded successfully
-            ProfilerDriver.enabled = m_Recording = false;
-            SessionState.SetBool(kProfilerEnabledSessionKey, m_Recording);
-            if (ProfilerUserSettings.rememberLastRecordState)
-                EditorPrefs.SetBool(kProfilerEnabledSessionKey, m_Recording);
+            // Stop current profiling if data was loaded successfully. Through SetRecordingEnabled
+            // rather than inline, so recordingStateChanged fires: subscribers can only observe a stop
+            // through that event, and it must arrive once ProfilerDriver.enabled is already false.
+            SetRecordingEnabled(false);
 
             // If there's an existing screenshot, start with that. If the user adds to this capture and saves,
             // it'll be better to have the old screenshot to show than nothing.
@@ -1521,11 +1620,20 @@ namespace UnityEditor
             SetClearOnPlay(GUILayout.Toggle(GetClearOnPlay(), Styles.clearOnPlay, EditorStyles.toolbarButton));
 
             // Deep profiling
-            var deepProfilerSupported = m_AttachProfilerState.deepProfilingSupported;
-            using (new EditorGUI.DisabledScope(!deepProfilerSupported))
+            var deepProfilerSupported = ProfilerDriver.IsDeepProfilingSupported(ProfilerDriver.connectedProfiler);
+            var isConnectionEditor = ProfilerDriver.IsConnectionEditor();
+            // The Editor always supports Deep Profiling, though coverage depends on the startup option.
+            // A Player only supports it when built with Deep Profiling Support.
+            var deepProfilingEnabledAtStartup = isConnectionEditor && ProfilerDriver.deepProfilingEnabledAtStartup;
+            var deepProfileContent = isConnectionEditor
+                ? (deepProfilingEnabledAtStartup ? Styles.deepProfileEnabledAtStartupEditor : Styles.deepProfileEditor)
+                : (deepProfilerSupported ? Styles.deepProfileSupportedPlayer : Styles.deepProfileNotSupportedPlayer);
+            if (deepProfilingEnabledAtStartup)
             {
-                SetProfileDeepScripts(GUILayout.Toggle(ProfilerDriver.deepProfiling, deepProfilerSupported ? Styles.deepProfile : Styles.deepProfileNotSupported, EditorStyles.toolbarButton));
+                // -deepprofiling is unusual/heavier than a normal session - flag it on the toggle itself.
+                deepProfileContent = new GUIContent(deepProfileContent.text, EditorGUIUtility.IconContent("console.warnicon.sml").image, deepProfileContent.tooltip);
             }
+            DeepProfilingToolbarItem(deepProfilerSupported, isConnectionEditor, deepProfileContent);
 
             // Allocation call stacks
             AllocationCallstacksToolbarItem();
@@ -1655,6 +1763,90 @@ namespace UnityEditor
                 selectedMemRecordMode = m_CurrentCallstackRecordMode != ProfilerMemoryRecordMode.None ? ProfilerMemoryRecordMode.None : m_CallstackRecordMode;
                 SetCallstackRecordMode(selectedMemRecordMode);
             }
+        }
+
+        // Whether the user has requested full engine/BCL instrumentation, seeded from the actual
+        // startup state so a real Editor restart always starts from ground truth. Backed by
+        // SessionState (not [SerializeField]) so an unconfirmed choice survives a domain reload
+        // but never survives an Editor restart as stale state.
+        static bool instrumentEverythingPending
+        {
+            get => SessionState.GetBool(kInstrumentEverythingPendingSessionKey, ProfilerDriver.deepProfilingEnabledAtStartup);
+            set => SessionState.SetBool(kInstrumentEverythingPendingSessionKey, value);
+        }
+
+        void DeepProfilingToolbarItem(bool deepProfilerSupported, bool isConnectionEditor, GUIContent deepProfileContent)
+        {
+            var toggled = ProfilerDriver.deepProfiling;
+            var oldToggleState = toggled;
+            using (new EditorGUI.DisabledScope(!deepProfilerSupported))
+            {
+                if (EditorGUILayout.DropDownToggle(ref toggled, deepProfileContent, EditorStyles.toolbarDropDownToggle))
+                {
+                    var rect = GUILayoutUtility.topLevel.GetLast();
+                    var names = new[] { Styles.instrumentEverything.text };
+                    // Player: always checked (unconditional instrumentation) and non-interactive.
+                    // Editor: reflects the pending/actual choice and is always interactive.
+                    var pending = isConnectionEditor ? instrumentEverythingPending : deepProfilerSupported;
+                    var selected = pending ? new[] { 0 } : Array.Empty<int>();
+                    var enabled = new[] { isConnectionEditor };
+                    EditorUtility.DisplayCustomMenu(rect, names, enabled, selected, ToggleInstrumentEverything, null);
+                    GUIUtility.ExitGUI();
+                }
+            }
+            if (toggled != oldToggleState)
+            {
+                // Enabling Deep Profile with Instrument Everything checked (but not yet latched via
+                // -deepprofiling) needs a restart instead of today's live scoped enable; cancel aborts
+                // the whole action rather than falling back to a live scoped enable.
+                if (isConnectionEditor && toggled && !ProfilerDriver.deepProfilingEnabledAtStartup && instrumentEverythingPending)
+                    RequestInstrumentEverythingRestart(true);
+                else
+                    SetProfileDeepScripts(toggled);
+            }
+        }
+
+        bool m_InstrumentEverythingRestartDialogPending;
+
+        void ToggleInstrumentEverything(object userData, string[] options, int selected)
+        {
+            var wasChecked = instrumentEverythingPending;
+            var nowChecked = !wasChecked;
+
+            // Only takes effect (dialog + restart) once it would actually change coverage: checking
+            // it while Deep Profile is already on, or unchecking it while -deepprofiling is active.
+            // Checking it while Deep Profile is off just records the pending choice.
+            var takesEffectNow = nowChecked ? ProfilerDriver.deepProfiling : ProfilerDriver.deepProfilingEnabledAtStartup;
+            if (!takesEffectNow)
+            {
+                instrumentEverythingPending = nowChecked;
+                return;
+            }
+
+            // A repaint before the deferred call below fires can invoke this callback again.
+            if (m_InstrumentEverythingRestartDialogPending)
+                return;
+            m_InstrumentEverythingRestartDialogPending = true;
+            // A modal dialog shown before DisplayCustomMenu's own popup closes leaves the window
+            // unresponsive to mouse input on Windows, so defer it.
+            EditorApplication.delayCall += () =>
+            {
+                m_InstrumentEverythingRestartDialogPending = false;
+                RequestInstrumentEverythingRestart(nowChecked);
+            };
+        }
+
+        static void RequestInstrumentEverythingRestart(bool enable)
+        {
+            var title = enable ? Styles.enableInstrumentEverythingDialogTitle : Styles.disableInstrumentEverythingDialogTitle;
+            var content = enable ? Styles.enableInstrumentEverythingDialogContent : Styles.disableInstrumentEverythingDialogContent;
+            if (!EditorUtility.DisplayDialog(title, content, Styles.restartEditorDialogButton, Styles.cancelDialogButton))
+                return; // Cancel aborts the whole action - pending state and Deep Profile stay as they were.
+
+            instrumentEverythingPending = enable;
+            var toRemove = enable ? Array.Empty<string>() : new[] { "-deepprofiling" };
+            var toAdd = enable ? new[] { "-deepprofiling" } : Array.Empty<string>();
+            EditorApplication.RequestCloseAndRelaunchWithModifiedArguments(toRemove, toAdd);
         }
 
         void FrameNavigationControls()
@@ -1883,9 +2075,10 @@ namespace UnityEditor
             }
         }
 
-        void OnModuleEditorChangesConfirmed(ReadOnlyCollection<ModuleData> modules, ReadOnlyCollection<ModuleData> deletedModules)
+        // internal for tests: the production trigger is the Module Editor's confirm button.
+        internal void OnModuleEditorChangesConfirmed(ReadOnlyCollection<ModuleData> modules, ReadOnlyCollection<ModuleData> deletedModules)
         {
-            var selectedModuleIndexCached = m_SelectedModuleIndex;
+            var selectedModuleCached = selectedModule;
 
             int index = 0;
             foreach (var moduleData in modules)
@@ -1900,7 +2093,13 @@ namespace UnityEditor
 
                     case ModuleData.EditedState.Updated:
                     {
-                        UpdateProfilerModule(moduleData, index, selectedModuleIndexCached);
+                        UpdateProfilerModule(moduleData, index);
+                        break;
+                    }
+
+                    default:
+                    {
+                        SetProfilerModuleOrderIndex(moduleData, index);
                         break;
                     }
                 }
@@ -1913,7 +2112,11 @@ namespace UnityEditor
                 DeleteProfilerModule(moduleData);
             }
 
-            // If any modules were deleted, all existing modules should update/refresh their order index.
+            SortModuleCollectionInPlace(ref m_AllModules);
+
+            // Deleting leaves gaps in the order indices, so renumber to close them. This has to run
+            // after sorting: until then m_AllModules is still in its previous order, and renumbering
+            // by position would discard the indices a reorder in the same change just assigned.
             bool hasDeletedModules = deletedModules.Count > 0;
             if (hasDeletedModules)
             {
@@ -1924,7 +2127,17 @@ namespace UnityEditor
                 }
             }
 
-            SortModuleCollectionInPlace(ref m_AllModules);
+            // Deleting and sorting move modules within m_AllModules, so re-resolve the selection
+            // from the module itself, once, here. Setting it earlier would write a post-sort
+            // position while m_AllModules is still unsorted, and the deletions in between consult
+            // it. A deleted one is absent, leaving its replacement intact.
+            if (selectedModuleCached != null)
+            {
+                var reresolvedSelectedModuleIndex = IndexOfModule(selectedModuleCached);
+                if (reresolvedSelectedModuleIndex != k_NoModuleSelected)
+                    m_SelectedModuleIndex = reresolvedSelectedModuleIndex;
+            }
+
             UpdateVisualTreeModulesOrder();
             UpdatePinnedModulesOrder();
             PersistDynamicModulesToEditorPrefs();
@@ -1950,7 +2163,7 @@ namespace UnityEditor
             module.OnEnable();
         }
 
-        void UpdateProfilerModule(ModuleData moduleData, int orderIndex, int selectedModuleIndexCached)
+        void UpdateProfilerModule(ModuleData moduleData, int orderIndex)
         {
             var currentProfilerModuleIdentifier = moduleData.currentProfilerModuleIdentifier;
             int updatedModuleIndex = IndexOfModuleWithIdentifier(currentProfilerModuleIdentifier);
@@ -1960,7 +2173,6 @@ namespace UnityEditor
             }
 
             var module = m_AllModules[updatedModuleIndex];
-            var isSelectedIndex = (module.orderIndex == selectedModuleIndexCached);
 
             var chartCounters = new List<ProfilerCounterData>(moduleData.chartCounters);
             var detailCounters = new List<ProfilerCounterData>(moduleData.detailCounters);
@@ -1971,10 +2183,17 @@ namespace UnityEditor
                 legacyModule.SetCounters(chartCounters, detailCounters);
             }
             module.orderIndex = orderIndex;
+        }
 
-            if (isSelectedIndex)
+        // Unchanged modules carry a requested position too. Leaving them on their old order index
+        // lets one collide with the index given to a created or updated module, which the sort then
+        // resolves by name rather than by the order the Module Editor asked for.
+        void SetProfilerModuleOrderIndex(ModuleData moduleData, int orderIndex)
+        {
+            var moduleIndex = IndexOfModuleWithIdentifier(moduleData.currentProfilerModuleIdentifier);
+            if (moduleIndex >= 0)
             {
-                m_SelectedModuleIndex = orderIndex;
+                m_AllModules[moduleIndex].orderIndex = orderIndex;
             }
         }
 
@@ -2000,6 +2219,13 @@ namespace UnityEditor
             // Clears the reference as well as disposing, so nothing can reach the dead controller.
             moduleToDelete.DisposeChartViewController();
             m_AllModules.RemoveAt(index);
+
+            // m_SelectedModuleIndex is a position in m_AllModules, so removing an earlier
+            // element leaves it naming a different module (UUM-149160).
+            if (index < m_SelectedModuleIndex)
+                m_SelectedModuleIndex--;
+            else if (index == m_SelectedModuleIndex)
+                m_SelectedModuleIndex = k_NoModuleSelected;
         }
 
         int IndexOfModuleWithIdentifier(string moduleIdentifier)
@@ -2083,7 +2309,12 @@ namespace UnityEditor
         {
             var doApply = true;
 
-            if (ProcessService.level == ProcessLevel.Main)
+            // A session already enabled at startup has been instrumenting every method since boot
+            // (see ProfilerDriver.deepProfilingEnabledAtStartup); toggling here only enables or
+            // disables data collection, so no reload is needed and none is requested below.
+            var needsReload = !ProfilerDriver.deepProfilingEnabledAtStartup;
+
+            if (needsReload && ProcessService.level == ProcessLevel.Main)
             {
                 // When enabling / disabling deep script profiling we need to reload scripts.
                 // In play mode this might be intrusive. So ask the user first.
@@ -2099,7 +2330,7 @@ namespace UnityEditor
             if (doApply)
             {
                 ProfilerDriver.deepProfiling = deep;
-                if (ProcessService.level == ProcessLevel.Main)
+                if (needsReload && ProcessService.level == ProcessLevel.Main)
                     EditorUtility.RequestScriptReload();
             }
 
@@ -2304,7 +2535,6 @@ namespace UnityEditor
         long IProfilerWindowController.selectedFrameIndex { get => selectedFrameIndex; set => selectedFrameIndex = value; }
         ProfilerModule IProfilerWindowController.selectedModule { get => selectedModule; set => selectedModule = value; }
         ProfilerModule IProfilerWindowController.GetProfilerModuleByType(Type T) => GetProfilerModuleByType(T);
-        ProfilerModule IProfilerWindowController.GetJobsProfilerModule() => jobsProfilerModule;
         void IProfilerWindowController.Repaint() => Repaint();
 
 
@@ -2348,4 +2578,3 @@ namespace UnityEditor
         [Serializable] internal class ProfilerWindowControllerProxy {}
     }
 }
-#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

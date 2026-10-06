@@ -28,13 +28,25 @@ namespace Unity.GraphToolkit.Editor
     [Serializable]
     public abstract partial class SelfTransition : ISelfTransition
     {
-        /// <summary>
-        /// The default color of the transition.
-        /// </summary>
-        public Color DefaultColor
+        /// <inheritdoc cref="ITransition.Icon" />
+        public Texture2D Icon
+        {
+            get => GetImplementation().Icon;
+            set => GetImplementation().Icon = value;
+        }
+
+        /// <inheritdoc cref="ITransition.FillColor"/>
+        public Color FillColor
         {
             get => GetImplementation().DefaultColor;
             set => GetImplementation().DefaultColor = value;
+        }
+
+        /// <inheritdoc cref="ITransition.LineColor"/>
+        public Color LineColor
+        {
+            get => GetImplementation().LineColor;
+            set => GetImplementation().LineColor = value;
         }
 
         /// <summary>
@@ -46,6 +58,27 @@ namespace Unity.GraphToolkit.Editor
             set => GetImplementation().Tooltip = value;
         }
 
+        /// <inheritdoc cref="ITransition.WidthOverride"/>
+        public float WidthOverride
+        {
+            get => GetImplementation().WidthOverride;
+            set => GetImplementation().WidthOverride = value;
+        }
+
+        /// <inheritdoc cref="ITransition.Opacity"/>
+        public float Opacity
+        {
+            get => GetImplementation().Opacity;
+            set => GetImplementation().Opacity = value;
+        }
+
+        /// <inheritdoc cref="ITransition.IsDashed"/>
+        public bool IsDashed
+        {
+            get => GetImplementation().IsDashed;
+            set => GetImplementation().IsDashed = value;
+        }
+        
         /// <inheritdoc cref="ITransition.ID" />
         public Hash128 ID => GetImplementation().ID;
 

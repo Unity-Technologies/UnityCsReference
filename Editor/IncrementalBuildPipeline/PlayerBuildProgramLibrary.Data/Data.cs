@@ -69,6 +69,8 @@ namespace PlayerBuildProgramLibrary.Data
         public string[] LinkXmlFiles = new string[0];
         public string[] AssembliesToProcess = new string[0];
         public string EditorToLinkerData;
+        // Path to the ManagedCapture config file, or null when no config is supplied.
+        public string ManagedCaptureConfigFile;
         public string Runtime;
         public string Profile;
         public string Ruleset;
@@ -126,7 +128,6 @@ namespace PlayerBuildProgramLibrary.Data
 
     public enum ScriptingBackend
     {
-        Mono,
         IL2CPP,
         CoreCLR,
     }

@@ -257,7 +257,7 @@ namespace UnityEditor.Search
             }
 
             m_CurrentDescriptors.Sort((a, b) => a.SizeMin.CompareTo(b.SizeMin));
-            if (m_CurrentDescriptorIndex > m_CurrentDescriptors.Count || m_CurrentDescriptorIndex < 0)
+            if (m_CurrentDescriptorIndex >= m_CurrentDescriptors.Count || m_CurrentDescriptorIndex < 0)
                 m_CurrentDescriptorIndex = 0;
         }
 

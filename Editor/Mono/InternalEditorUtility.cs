@@ -96,10 +96,17 @@ namespace UnityEditorInternal
             }
         }
 
-        [RequiredByNativeCode]
         public static Texture2D GetIconForFile(string fileName)
         {
             return FindIconForFile(fileName) ?? EditorGUIUtility.FindTexture(typeof(DefaultAsset));
+        }
+
+        // Native-facing variant (asset preview fallback icons): native works with EntityIds, not wrappers.
+        [RequiredByNativeCode]
+        static EntityId GetIconForFileEntityId(string fileName)
+        {
+            var icon = GetIconForFile(fileName);
+            return ReferenceEquals(icon, null) ? EntityId.None : icon.GetEntityId();
         }
 
         [NoAutoStaticsCleanup] // lazy GUIContent cache built from fixed-name LoadIcon assets; re-inits on first access after reload
@@ -333,102 +340,20 @@ namespace UnityEditorInternal
                     return new List<T>();
                 }
 
-                int dir = 0;
-                if (prevIndex != -1)
-                    dir = (newIndex > prevIndex) ? 1 : -1;
-
-                int from = 0, to = 0;
-                var addExisting = false;
-
                 bool usingArrowKeys = Event.current != null ? Event.current.keyCode == KeyCode.DownArrow || Event.current.keyCode == KeyCode.UpArrow : false;
-                var clickedInTheMiddle = lastIndex > newIndex && firstIndex < newIndex;
+                var isInSelection = selectedIDs.Contains(allIDs[newIndex]);
 
-                if (selectedIDs.Count > 1)
-                {
-                    var newID = allIDs[newIndex];
-                    var noGapsInSelection = (allIDs.Count - firstIndex + selectedIDs.Count) == allIDs.Count - lastIndex;
-                    var isInSelection = selectedIDs.Contains(newID);
-                    // if the newly clicked item is already selected,
-                    // we treat this as a combination of selecting items from the highest selected item to the clicked item
-                    // or from the lowest selected item to the clicked item depending on the direction of the selection,
-                    // e.g. if we select item 1 and shift-select item 5, then shift-select item 3, we'll have items 1 to 3 selected
-                    if (isInSelection || noGapsInSelection || clickedInTheMiddle)
-                    {
-                        from = dir > 0 ? firstIndex : newIndex;
-                        to = dir > 0 ? newIndex : lastIndex;
-
-                        // if we clicked in-between the lowest and highest selected indices of a selection containing gaps
-                        // and the item was not already in the selection
-                        // make sure that the new selection is added to the currently existing one
-                        if (clickedInTheMiddle && !noGapsInSelection && !isInSelection)
-                            addExisting = true;
-                    }
-                    else if (dir > 0)
-                    {
-                        if (newIndex > lastIndex)
-                        {
-                            from = lastIndex + 1;
-                            to = newIndex;
-
-                            addExisting = true;
-                        }
-                        else
-                        {
-                            from = newIndex;
-                            to = lastIndex;
-                        }
-                    }
-                    else if (dir < 0)
-                    {
-                        if (newIndex < firstIndex)
-                        {
-                            from = newIndex;
-                            to = firstIndex - 1;
-
-                            addExisting = true;
-                        }
-                        else
-                        {
-                            from = firstIndex;
-                            to = newIndex;
-                        }
-                    }
-                }
-
-                if (!addExisting || usingArrowKeys)
-                {
-                    if (newIndex > lastIndex)
-                    {
-                        from = firstIndex;
-                        to = newIndex;
-                    }
-                    else if (newIndex >= firstIndex && newIndex < lastIndex)
-                    {
-                        if (dir > 0)
-                        {
-                            from = newIndex;
-                            to = lastIndex;
-                        }
-                        else
-                        {
-                            from = firstIndex;
-                            to = newIndex;
-                        }
-                    }
-                    else
-                    {
-                        from = newIndex;
-                        to = lastIndex;
-                    }
-                }
+                var range = RangeSelectionHelper.ComputeRangeSelection(newIndex, prevIndex, firstIndex, lastIndex,
+                    selectedIDs.Count, isInSelection, forceBoundsFallback: usingArrowKeys);
 
                 List<T> allSelectedInstanceIDs = new List<T>();
 
-                if (addExisting && !usingArrowKeys)
+                if (range.addToExisting)
                 {
                     allSelectedInstanceIDs.AddRange(selectedIDs.GetRange(0, selectedIDs.Count));
-                    allSelectedInstanceIDs.AddRange(allIDs.GetRange(from, to - from + 1));
+                    allSelectedInstanceIDs.AddRange(allIDs.GetRange(range.from, range.to - range.from + 1));
 
+                    var clickedInTheMiddle = lastIndex > newIndex && firstIndex < newIndex;
                     if (clickedInTheMiddle)
 #pragma warning disable UAC2001 // Avoid Linq
                         allSelectedInstanceIDs = allSelectedInstanceIDs.Distinct().ToList();
@@ -436,7 +361,7 @@ namespace UnityEditorInternal
                 }
                 else
                 {
-                    allSelectedInstanceIDs.AddRange(allIDs.GetRange(from, to - from + 1));
+                    allSelectedInstanceIDs.AddRange(allIDs.GetRange(range.from, range.to - range.from + 1));
                 }
 
                 if (EditorUtility.isInSafeMode && allSelectedInstanceIDs is List<EntityId>)

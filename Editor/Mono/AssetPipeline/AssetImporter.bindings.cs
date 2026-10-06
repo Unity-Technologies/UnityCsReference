@@ -22,6 +22,8 @@ namespace UnityEditor
     [UsedByNativeCode]
     public partial class AssetImporter : Object
     {
+        public AssetImporter() {}
+        protected internal AssetImporter(global::UnityEngine.EntityId id) : base(id) {}
         public struct SourceAssetIdentifier
         {
             public SourceAssetIdentifier(Object asset)

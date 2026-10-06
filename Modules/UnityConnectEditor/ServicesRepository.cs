@@ -2,7 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: UnityConnectHub not yet converted
 
 using System;
 using System.Collections.Generic;
@@ -30,9 +29,11 @@ namespace UnityEditor.Connect
         }
 
         [AutoStaticsCleanupOnCodeReload]
+        [IgnoreForUAL0015("Repopulated by InitializeServicesHandlers when EnsureInstanceInitialized recreates the repository after reload")]
         static readonly Dictionary<string, SingleService> k_Services = new Dictionary<string, SingleService>();
 
         [AutoStaticsCleanupOnCodeReload]
+        [IgnoreForUAL0015("Repopulated by InitializeServicesHandlers when EnsureInstanceInitialized recreates the repository after reload")]
         static readonly List<string> s_InitializedServices = new List<string>();
 
         const string k_serviceFlagsKey = "service_flags";
@@ -134,4 +135,3 @@ namespace UnityEditor.Connect
         }
     }
 }
-#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

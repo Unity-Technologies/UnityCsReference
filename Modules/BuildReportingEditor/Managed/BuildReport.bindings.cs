@@ -30,6 +30,7 @@ namespace UnityEditor.Build.Reporting
     [NativeClass("BuildReporting::BuildReport", PersistentTypeId = 1125)]
     public sealed class BuildReport : Object
     {
+        internal BuildReport(global::UnityEngine.EntityId id) : base(id) {}
         private BuildReport()
         {
         }

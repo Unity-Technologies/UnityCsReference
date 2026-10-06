@@ -6,6 +6,7 @@ using Unity.Scripting.LifecycleManagement;
 using System;
 using System.Collections.Generic;
 using UnityEngine.Bindings;
+using UnityEngine.UIElements.StyleSheets;
 using UnityEngine.UIElements.Unmanaged;
 
 namespace UnityEngine.UIElements;
@@ -14,6 +15,24 @@ namespace UnityEngine.UIElements;
 [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
 internal static class WorldSpaceInput
 {
+    private struct ChildPickEntry
+    {
+        public VisualElement child;
+        public int zIndex;
+        public int seq;
+    }
+
+    [ThreadStatic]
+    [NoAutoStaticsCleanup] // emptied by the end of every pick
+    private static ChildPickEntry[] s_PickScratch;
+
+    [ThreadStatic]
+    [NoAutoStaticsCleanup] // reset to the frame base by the end of every pick
+    private static int s_PickScratchCount;
+
+    [NoAutoStaticsCleanup] // static method reference; safe to persist
+    private static readonly RefComparison<ChildPickEntry> s_CompareEntries = CompareEntries;
+
     // We don't expose the Pick3D methods in a public class until all the pieces are in place
 
     /// <summary>
@@ -418,30 +437,150 @@ internal static class WorldSpaceInput
         }
 
         VisualElement returnedChild = default;
+        bool rootPicked = false;
 
-        // Depth first in reverse order, do children
         var cCount = root.hierarchy.childCount;
-        for (int i = cCount - 1; i >= 0; i--)
+        bool needsZIndexSort = cCount > 0 &&
+            (root.transformFlags & VisualElementTransformFlags.MayHaveZIndexedChildren) != 0;
+
+        if (needsZIndexSort)
         {
-            var child = root.hierarchy[i];
-            var childRay = root.ChangeCoordinatesTo(child, ray);
-            var result = PerformPick(child, childRay, outResults);
-            if (returnedChild == null && result != null)
+            if (PickChildrenInZIndexOrder(root, ray, containsPoint, outResults, ref returnedChild, ref rootPicked))
+                return returnedChild;
+        }
+        else
+        {
+            // Depth first in reverse order, do children
+            for (int i = cCount - 1; i >= 0; i--)
             {
-                if (outResults == null)
-                    return result;
-                returnedChild = result;
+                if (PickChild(root, root.hierarchy[i], ray, outResults, ref returnedChild))
+                    return returnedChild;
             }
         }
 
-        if (root.visible && root.pickingMode == PickingMode.Position && containsPoint)
-        {
-            outResults?.Add(root);
-            if (returnedChild == null)
-                returnedChild = root;
-        }
+        if (!rootPicked)
+            PickRoot(root, containsPoint, outResults, ref returnedChild);
 
         return returnedChild;
+    }
+
+    // Returns true when the pick is resolved and the root no longer needs to be tested.
+    private static bool PickChildrenInZIndexOrder(VisualElement root, Ray ray, bool containsPoint,
+        List<VisualElement> outResults, ref VisualElement returnedChild, ref bool rootPicked)
+    {
+        s_PickScratch ??= new ChildPickEntry[16];
+        int frameBase = s_PickScratchCount;
+        try
+        {
+            int minZIndex = int.MaxValue;
+            int maxZIndex = int.MinValue;
+
+            // Reverse order so equal z-index falls back to reverse paint order.
+            int seq = 0;
+            for (int i = root.hierarchy.childCount - 1; i >= 0; i--)
+            {
+                var child = root.hierarchy[i];
+                int z = child.computedStyle.zIndex;
+                if (z == int.MinValue)
+                    z = 0;
+                AddScratchEntry(new ChildPickEntry { child = child, zIndex = z, seq = seq++ });
+                if (z < minZIndex)
+                    minZIndex = z;
+                if (z > maxZIndex)
+                    maxZIndex = z;
+            }
+            int frameEnd = s_PickScratchCount;
+
+            // MayHaveZIndexedChildren is never cleared, so it outlives the z-indexed children that set it.
+            if (minZIndex != maxZIndex)
+                SpanSort.Sort(s_PickScratch.AsSpan(frameBase, frameEnd - frameBase), s_CompareEntries);
+
+            for (int i = frameBase; i < frameEnd; i++)
+            {
+                var entry = s_PickScratch[i];
+                var child = entry.child;
+
+                // Skip children reparented mid-pick by a ContainsPoint override; the ray transform below assumes the old parent.
+                if (child.hierarchy.parent != root)
+                    continue;
+
+                // A negative z-index child promoted to an ancestor stacking context paints behind this element;
+                // one that stayed under it paints on top of it, like any other child.
+                if (!rootPicked && entry.zIndex < 0 && IsPromotedOutOfParent(child))
+                {
+                    rootPicked = true;
+                    if (PickRoot(root, containsPoint, outResults, ref returnedChild))
+                        return true;
+                }
+
+                if (PickChild(root, child, ray, outResults, ref returnedChild))
+                    return true;
+            }
+
+            return false;
+        }
+        finally
+        {
+            for (int i = frameBase; i < s_PickScratchCount; i++)
+                s_PickScratch[i].child = null;
+            s_PickScratchCount = frameBase;
+        }
+    }
+
+    // Negative when a comes first: descending z-index, then ascending sequence.
+    private static int CompareEntries(ref ChildPickEntry a, ref ChildPickEntry b)
+    {
+        if (a.zIndex != b.zIndex)
+            return a.zIndex > b.zIndex ? -1 : 1;
+        return a.seq < b.seq ? -1 : a.seq > b.seq ? 1 : 0;
+    }
+
+    private static void AddScratchEntry(ChildPickEntry entry)
+    {
+        var scratch = s_PickScratch;
+        if (s_PickScratchCount == scratch.Length)
+        {
+            Array.Resize(ref scratch, scratch.Length * 2);
+            s_PickScratch = scratch;
+        }
+        scratch[s_PickScratchCount++] = entry;
+    }
+
+    private static bool IsPromotedOutOfParent(VisualElement child)
+    {
+        return (child.transformFlags & VisualElementTransformFlags.ZIndexPromotedOutOfParent) != 0;
+    }
+
+    // Returns true when the pick is resolved and the remaining children can be skipped.
+    private static bool PickRoot(VisualElement root, bool containsPoint, List<VisualElement> outResults,
+        ref VisualElement returnedChild)
+    {
+        if (!root.visible || root.pickingMode != PickingMode.Position || !containsPoint)
+            return false;
+
+        outResults?.Add(root);
+        if (returnedChild == null)
+        {
+            returnedChild = root;
+            return outResults == null;
+        }
+
+        return false;
+    }
+
+    // Returns true when the pick is resolved and the remaining children can be skipped.
+    private static bool PickChild(VisualElement root, VisualElement child, Ray ray, List<VisualElement> outResults,
+        ref VisualElement returnedChild)
+    {
+        var childRay = root.ChangeCoordinatesTo(child, ray);
+        var result = PerformPick(child, childRay, outResults);
+        if (returnedChild == null && result != null)
+        {
+            returnedChild = result;
+            return outResults == null;
+        }
+
+        return false;
     }
 
     [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]

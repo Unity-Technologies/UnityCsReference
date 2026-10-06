@@ -49,6 +49,8 @@ namespace Unity.Hierarchy.Editor
             { "sv_label_7", "Hv2/Pills/PillPurple" },
         };
 
+        static readonly UniqueStyleString s_MissingReferenceIconStyle = new("hierarchy-item__missing-component-reference");
+
         [AutoStaticsCleanupOnCodeReload] // Texture references could become stale, let's not hold on to them forever
         static readonly Dictionary<EntityId, Texture2D> s_Hv2IconByIconId = new(s_Hv2GizmoIconPaths.Count);
 
@@ -79,10 +81,12 @@ namespace Unity.Hierarchy.Editor
             {
                 HierarchyViewPrefabStyleUtility.SetBrokenPrefabStyle(item);
                 item.Icon.style.backgroundImage = StyleKeyword.Null;
+                item.EnableInClassList(s_MissingReferenceIconStyle, false);
                 return;
             }
 
             StyleBackground icon = StyleKeyword.Null;
+            bool isMissingComponentReference = false;
             HierarchyViewPrefabStyleUtility.SetNodePrefabGenericStyle(gameObject, item);
 
             // User Defined
@@ -109,12 +113,23 @@ namespace Unity.Hierarchy.Editor
                     gameObject.GetComponents(s_ComponentBuffer);
 
                     // Use topmost component, if none use transform
-                    var thumbnail = AssetPreview.GetMiniThumbnail(s_ComponentBuffer.Count > 1 ? s_ComponentBuffer[1] : s_ComponentBuffer[0]);
-                    if (thumbnail != null)
-                        icon = GetHierarchyIcon(item, thumbnail);
+                    var targetComponent = s_ComponentBuffer.Count > 1 ? s_ComponentBuffer[1] : s_ComponentBuffer[0];
+
+                    // Missing Component
+                    if (targetComponent == null)
+                    {
+                        isMissingComponentReference = true;   
+                    }
+                    else
+                    {
+                        var thumbnail = AssetPreview.GetMiniThumbnail(targetComponent);
+                        if (thumbnail != null)
+                            icon = GetHierarchyIcon(item, thumbnail);
+                    }
                 }
             }
 
+            item.EnableInClassList(s_MissingReferenceIconStyle, isMissingComponentReference);
             item.Icon.style.backgroundImage = icon;
         }
     }

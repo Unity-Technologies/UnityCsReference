@@ -42,6 +42,9 @@ namespace UnityEngine.Rendering
         [AutoStaticsCleanupOnCodeReload]
         public static event Action<ScriptableRenderContext, List<Camera>> beginContextRendering;
         [AutoStaticsCleanupOnCodeReload]
+        // Subscribers re-register after a code load: TMP's editor resource manager re-attaches from its
+        // per-load reset hook, and render-pipeline components re-subscribe from their own lifecycle.
+        [IgnoreForUAL0015("Event whose subscribers re-register after a code load")]
         public static event Action<ScriptableRenderContext, List<Camera>> endContextRendering;
         [AutoStaticsCleanupOnCodeReload]
         public static event Action<ScriptableRenderContext, Camera> beginCameraRendering;
@@ -51,6 +54,9 @@ namespace UnityEngine.Rendering
         [AutoStaticsCleanupOnCodeReload]
         public static event Action activeRenderPipelineTypeChanged;
         [AutoStaticsCleanupOnCodeReload]
+        // Editor subscribers all register from instance lifecycle code (the tier settings window OnEnable
+        // and the graphics settings inspector visibility controller), which runs again after a reload.
+        [IgnoreForUAL0015("Subscribers re-register from editor window and inspector lifecycle code")]
         public static event Action<RenderPipelineAsset, RenderPipelineAsset> activeRenderPipelineAssetChanged;
 
         [AutoStaticsCleanupOnCodeReload]

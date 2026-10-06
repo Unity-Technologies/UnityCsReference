@@ -94,7 +94,7 @@ namespace UnityEngine.UIElements
             get => id == StylePropertyId.Custom;
         }
 
-        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
+        [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
         [NonSerialized]
         internal bool requireVariableResolve;
 
@@ -446,6 +446,273 @@ namespace UnityEngine.UIElements
         /// </summary>
         public void SetBackgroundGradient(StyleSheet styleSheet, BackgroundGradient value)
         {
+            SetBackgroundGradient(styleSheet, value, GradientVarBindings.none);
+        }
+
+        // Maps gradient value slots to var() names so an edit through the resolved gradient
+        // can be written back without destroying the variable references. Slot scheme
+        // (assigned before any elision): linear - 0 = angle, stop i color = 1+2i,
+        // position = 2+2i; radial - 0 = shape, 1 = extent, 2 = pos x, 3 = pos y,
+        // stop i color = 4+2i, position = 5+2i.
+        public readonly struct GradientVarBindings
+        {
+            readonly string[] m_SlotNames;
+            // Raw handles of the whole var() construct captured at read time, so fallback
+            // arguments survive the write; null entries fall back to a bare var(name).
+            readonly StyleValueHandle[][] m_SlotHandles;
+            readonly bool m_HasAny;
+
+            [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
+            internal GradientVarBindings(string[] slotNames)
+                : this(slotNames, null)
+            {
+            }
+
+            internal GradientVarBindings(string[] slotNames, StyleValueHandle[][] slotHandles)
+            {
+                m_SlotNames = slotNames;
+                m_SlotHandles = slotHandles;
+                m_HasAny = false;
+                if (slotNames != null)
+                {
+                    foreach (var name in slotNames)
+                    {
+                        if (name != null)
+                        {
+                            m_HasAny = true;
+                            break;
+                        }
+                    }
+                }
+            }
+
+            public bool hasAny => m_HasAny;
+
+            public string GetName(int slot)
+                => m_SlotNames != null && slot >= 0 && slot < m_SlotNames.Length ? m_SlotNames[slot] : null;
+
+            internal StyleValueHandle[] GetHandles(int slot)
+                => m_SlotHandles != null && slot >= 0 && slot < m_SlotHandles.Length ? m_SlotHandles[slot] : null;
+
+            public static GradientVarBindings none => default;
+
+            // Returns a copy with the given slot cleared. Used to drop the var reference for a
+            // slot whose concrete value the user just changed, so the write emits the new value
+            // instead of re-emitting the (now stale) var().
+            public GradientVarBindings WithoutSlot(int slot)
+            {
+                if (m_SlotNames == null || slot < 0 || slot >= m_SlotNames.Length || m_SlotNames[slot] == null)
+                    return this;
+                var names = (string[])m_SlotNames.Clone();
+                names[slot] = null;
+                var handles = m_SlotHandles;
+                if (handles != null && slot < handles.Length && handles[slot] != null)
+                {
+                    handles = (StyleValueHandle[][])handles.Clone();
+                    handles[slot] = null;
+                }
+                return new GradientVarBindings(names, handles);
+            }
+
+            // Drops the raw handles captured at read time. Needed when bindings decoded from
+            // one sheet are re-emitted into another, where handle indices would be meaningless.
+            [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
+            internal GradientVarBindings WithoutHandles() => new GradientVarBindings(m_SlotNames);
+
+            // Restores the raw handles captured at read time for slots still bound to the same
+            // variable name; matched by name so bindings survive slot shifts.
+            [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
+            internal GradientVarBindings WithHandlesFrom(in GradientVarBindings source)
+            {
+                if (m_SlotNames == null || source.m_SlotHandles == null)
+                    return this;
+
+                StyleValueHandle[][] handles = null;
+                for (int i = 0; i < m_SlotNames.Length; ++i)
+                {
+                    if (m_SlotNames[i] == null)
+                        continue;
+                    var match = source.FindHandlesByName(m_SlotNames[i]);
+                    if (match == null)
+                        continue;
+                    handles ??= new StyleValueHandle[m_SlotNames.Length][];
+                    handles[i] = match;
+                }
+
+                return handles == null ? this : new GradientVarBindings(m_SlotNames, handles);
+            }
+
+            StyleValueHandle[] FindHandlesByName(string name)
+            {
+                if (m_SlotHandles == null || m_SlotNames == null)
+                    return null;
+                for (int i = 0; i < m_SlotHandles.Length && i < m_SlotNames.Length; ++i)
+                {
+                    if (m_SlotHandles[i] != null && m_SlotNames[i] == name)
+                        return m_SlotHandles[i];
+                }
+                return null;
+            }
+
+            // Slot indices per the scheme documented above the struct.
+            public static int AngleSlot() => 0;
+            public static int RadialShapeSlot() => 0;
+            public static int RadialExtentSlot() => 1;
+            public static int RadialPositionXSlot() => 2;
+            public static int RadialPositionYSlot() => 3;
+            public static int StopColorSlot(int stopIndex, bool isLinear) => (isLinear ? 1 : 4) + 2 * stopIndex;
+            public static int StopPositionSlot(int stopIndex, bool isLinear) => (isLinear ? 2 : 5) + 2 * stopIndex;
+        }
+
+        /// <summary>
+        /// Reads the var() references of the currently stored gradient value, keyed by the
+        /// slot scheme of <see cref="GradientVarBindings"/>. Uses <paramref name="value"/>
+        /// (the new gradient about to be written) to anchor the stop count; any structural
+        /// mismatch drops all bindings.
+        /// </summary>
+        public bool TryReadGradientVarBindings(StyleSheet styleSheet, in BackgroundGradient value, out GradientVarBindings bindings)
+        {
+            bindings = GradientVarBindings.none;
+
+            var stops = value.stops;
+            if (value.IsEmpty() || stops == null || stops.Length == 0)
+                return false;
+
+            if (handleCount < 2 || !styleSheet.TryReadFunction(m_Values[0], out var function))
+                return false;
+
+            bool isLinear = function == StyleValueFunction.LinearGradient;
+            if (function != StyleValueFunction.LinearGradient && function != StyleValueFunction.RadialGradient)
+                return false;
+            if (isLinear != (value.type == GradientType.Linear))
+                return false;
+
+            // Tokenize the flat args: a var() construct (Function(Var) + Float(n) + n handles,
+            // fallback commas included) collapses to a single token carrying its variable name.
+            var tokens = new List<(int handleIndex, string varName, int spanLength)>(handleCount - 2);
+            int cursor = 2;
+            while (cursor < handleCount)
+            {
+                if (m_Values[cursor].IsVarFunction())
+                {
+                    if (cursor + 2 >= handleCount ||
+                        !styleSheet.TryReadFloat(m_Values[cursor + 1], out var innerCount) ||
+                        !styleSheet.TryReadVariable(m_Values[cursor + 2], out var varName))
+                        return false;
+                    tokens.Add((cursor, varName, 2 + (int)innerCount));
+                    cursor += 2 + (int)innerCount;
+                }
+                else
+                {
+                    tokens.Add((cursor, null, 1));
+                    ++cursor;
+                }
+            }
+
+            bool IsComma(int t) => tokens[t].varName == null
+                && m_Values[tokens[t].handleIndex].valueType == StyleValueType.CommaSeparator;
+
+            // Split into comma-separated segments.
+            var segments = new List<(int start, int count)>();
+            int segStart = 0;
+            for (int t = 0; t <= tokens.Count; ++t)
+            {
+                if (t == tokens.Count || IsComma(t))
+                {
+                    segments.Add((segStart, t - segStart));
+                    segStart = t + 1;
+                }
+            }
+
+            // Anchor on the stop count to disambiguate a leading var (angle/prefix vs first
+            // stop color). Any other segment count means stops were added/removed - bail.
+            bool hasPrefix;
+            if (segments.Count == stops.Length + 1)
+                hasPrefix = true;
+            else if (segments.Count == stops.Length)
+                hasPrefix = false;
+            else
+                return false;
+
+            int stopSlotBase = isLinear ? 1 : 4;
+            var slotNames = new string[stopSlotBase + 2 * stops.Length];
+            var slotHandles = new StyleValueHandle[slotNames.Length][];
+
+            void Bind(int slot, int t)
+            {
+                var (handleIndex, varName, spanLength) = tokens[t];
+                slotNames[slot] = varName;
+                if (varName == null)
+                    return;
+                var copy = new StyleValueHandle[spanLength];
+                Array.Copy(m_Values, handleIndex, copy, 0, spanLength);
+                slotHandles[slot] = copy;
+            }
+
+            if (hasPrefix)
+            {
+                var (start, count) = segments[0];
+                if (isLinear)
+                {
+                    // Only a lone var binds; a keyword form (`to bottom`) has nothing to preserve.
+                    if (count == 1)
+                        Bind(0, start);
+                }
+                else
+                {
+                    int atIndex = -1;
+                    for (int t = start; t < start + count; ++t)
+                    {
+                        if (tokens[t].varName == null &&
+                            styleSheet.TryReadEnum(m_Values[tokens[t].handleIndex], out string ident) &&
+                            ident == "at")
+                        {
+                            atIndex = t;
+                            break;
+                        }
+                    }
+
+                    // A lone var before `at` is ambiguous (shape or extent) and stays unbound;
+                    // an extent var is unambiguous right after an explicit shape keyword.
+                    int prefixEnd = atIndex >= 0 ? atIndex : start + count;
+                    if (prefixEnd - start == 2 && tokens[start].varName == null
+                        && tokens[start + 1].varName != null
+                        && styleSheet.TryReadEnum(m_Values[tokens[start].handleIndex], out string shape)
+                        && (shape == "circle" || shape == "ellipse"))
+                    {
+                        Bind(GradientVarBindings.RadialExtentSlot(), start + 1);
+                    }
+
+                    if (atIndex >= 0)
+                    {
+                        if (atIndex + 1 < start + count)
+                            Bind(2, atIndex + 1);
+                        if (atIndex + 2 < start + count)
+                            Bind(3, atIndex + 2);
+                    }
+                }
+            }
+
+            for (int i = 0; i < stops.Length; ++i)
+            {
+                var (start, count) = segments[hasPrefix ? i + 1 : i];
+                if (count < 1 || count > 2)
+                    return false;
+                Bind(stopSlotBase + 2 * i, start);
+                if (count == 2)
+                    Bind(stopSlotBase + 2 * i + 1, start + 1);
+            }
+
+            bindings = new GradientVarBindings(slotNames, slotHandles);
+            return true;
+        }
+
+        /// <summary>
+        /// Same as <see cref="SetBackgroundGradient(StyleSheet, BackgroundGradient)"/>, but
+        /// re-emits a var() reference for every slot bound in <paramref name="bindings"/>.
+        /// </summary>
+        public void SetBackgroundGradient(StyleSheet styleSheet, BackgroundGradient value, in GradientVarBindings bindings)
+        {
             if (value.IsEmpty())
             {
                 SetSize(ref m_Values, 1);
@@ -455,6 +722,31 @@ namespace UnityEngine.UIElements
             }
 
             var plan = new List<HandleWriteOp>(8 + (value.stops?.Length ?? 0) * 3);
+
+            // Local copy: `in` parameters cannot be captured by local functions.
+            var boundNames = bindings;
+            bool hasVar = false;
+            bool hasRawVar = false;
+            bool TryAddVar(int slot)
+            {
+                // Raw handles captured at read time re-emit the whole construct verbatim,
+                // preserving var() fallback arguments.
+                var raw = boundNames.GetHandles(slot);
+                if (raw != null)
+                {
+                    plan.Add(HandleWriteOp.Raw(raw));
+                    hasVar = true;
+                    hasRawVar = true;
+                    return true;
+                }
+
+                var name = boundNames.GetName(slot);
+                if (name == null)
+                    return false;
+                plan.Add(HandleWriteOp.Var(name));
+                hasVar = true;
+                return true;
+            }
 
             plan.Add(HandleWriteOp.Function(value.type == GradientType.Linear
                 ? StyleValueFunction.LinearGradient
@@ -468,37 +760,50 @@ namespace UnityEngine.UIElements
             bool hasPrefix;
             if (value.type == GradientType.Linear)
             {
-                // Explicit `deg` — writer→parser stable, no `to bottom` guesswork.
-                float deg = value.angle * Mathf.Rad2Deg;
-                plan.Add(HandleWriteOp.Dimension(new Dimension(deg, Dimension.Unit.Degree)));
+                if (!TryAddVar(0))
+                {
+                    // Explicit `deg` — writer→parser stable, no `to bottom` guesswork.
+                    float deg = RoundUnitConversion(value.angle * (180.0 / Math.PI));
+                    plan.Add(HandleWriteOp.Dimension(new Dimension(deg, Dimension.Unit.Degree)));
+                }
                 hasPrefix = true;
             }
             else
             {
                 // Elide CSS defaults; the parser coerces `circle` to `ellipse`, so we never emit it.
-                bool sizeIsDefault = value.size == BackgroundGradientSize.FarthestCorner;
+                // A var-bound extent is always written out, even when it resolves to the default.
+                bool sizeIsDefault = value.size == BackgroundGradientSize.FarthestCorner
+                                  && boundNames.GetName(GradientVarBindings.RadialExtentSlot()) == null;
                 bool positionIsDefault = Mathf.Approximately(value.position.x, 0.5f)
-                                      && Mathf.Approximately(value.position.y, 0.5f);
+                                      && Mathf.Approximately(value.position.y, 0.5f)
+                                      && boundNames.GetName(GradientVarBindings.RadialPositionXSlot()) == null
+                                      && boundNames.GetName(GradientVarBindings.RadialPositionYSlot()) == null;
 
                 if (!sizeIsDefault)
                 {
-                    // Emit `ellipse` with the extent for clarity, even though the parser accepts extent alone.
+                    // Emit `ellipse` with the extent for clarity, even though the parser accepts
+                    // extent alone; the shape also anchors the extent var on the next read.
                     plan.Add(HandleWriteOp.EnumIdent("ellipse"));
-                    string extent = value.size switch
+                    if (!TryAddVar(GradientVarBindings.RadialExtentSlot()))
                     {
-                        BackgroundGradientSize.ClosestSide => "closest-side",
-                        BackgroundGradientSize.ClosestCorner => "closest-corner",
-                        BackgroundGradientSize.FarthestSide => "farthest-side",
-                        _ => "farthest-corner",
-                    };
-                    plan.Add(HandleWriteOp.EnumIdent(extent));
+                        string extent = value.size switch
+                        {
+                            BackgroundGradientSize.ClosestSide => "closest-side",
+                            BackgroundGradientSize.ClosestCorner => "closest-corner",
+                            BackgroundGradientSize.FarthestSide => "farthest-side",
+                            _ => "farthest-corner",
+                        };
+                        plan.Add(HandleWriteOp.EnumIdent(extent));
+                    }
                 }
 
                 if (!positionIsDefault)
                 {
                     plan.Add(HandleWriteOp.EnumIdent("at"));
-                    plan.Add(HandleWriteOp.Dimension(new Dimension(value.position.x * 100f, Dimension.Unit.Percent)));
-                    plan.Add(HandleWriteOp.Dimension(new Dimension(value.position.y * 100f, Dimension.Unit.Percent)));
+                    if (!TryAddVar(2))
+                        plan.Add(HandleWriteOp.Dimension(new Dimension(RoundUnitConversion(value.position.x * 100.0), Dimension.Unit.Percent)));
+                    if (!TryAddVar(3))
+                        plan.Add(HandleWriteOp.Dimension(new Dimension(RoundUnitConversion(value.position.y * 100.0), Dimension.Unit.Percent)));
                 }
 
                 hasPrefix = !sizeIsDefault || !positionIsDefault;
@@ -508,18 +813,27 @@ namespace UnityEngine.UIElements
             if (hasPrefix)
                 plan.Add(HandleWriteOp.CommaSeparator());
 
-            // Drop explicit positions when they match what the parser would auto-distribute.
-            bool omitPositions = AreStopsAutoDistributed(value.stops);
-
             var stops = value.stops;
+            int stopSlotBase = value.type == GradientType.Linear ? 1 : 4;
+
+            // Drop explicit positions when they match what the parser would auto-distribute,
+            // unless a position slot is var-bound and must be re-emitted.
+            bool omitPositions = AreStopsAutoDistributed(stops);
+            for (int i = 0; omitPositions && i < stops.Length; ++i)
+            {
+                if (boundNames.GetName(stopSlotBase + 2 * i + 1) != null)
+                    omitPositions = false;
+            }
+
             for (int i = 0; i < stops.Length; ++i)
             {
                 var stop = stops[i];
-                plan.Add(HandleWriteOp.Color(stop.color));
-                if (!omitPositions)
+                if (!TryAddVar(stopSlotBase + 2 * i))
+                    plan.Add(HandleWriteOp.Color(stop.color));
+                if (!omitPositions && !TryAddVar(stopSlotBase + 2 * i + 1))
                 {
                     plan.Add(stop.positionIsPercent
-                        ? HandleWriteOp.Dimension(new Dimension(stop.position * 100f, Dimension.Unit.Percent))
+                        ? HandleWriteOp.Dimension(new Dimension(RoundUnitConversion(stop.position * 100.0), Dimension.Unit.Percent))
                         : HandleWriteOp.Dimension(new Dimension(stop.position, Dimension.Unit.Pixel)));
                 }
                 if (i < stops.Length - 1)
@@ -529,12 +843,30 @@ namespace UnityEngine.UIElements
             int argCount = plan.Count - argStart;
             plan[argCountSlot] = HandleWriteOp.Float(argCount);
 
-            SetSize(ref m_Values, plan.Count);
+            int totalHandles = 0;
             for (int i = 0; i < plan.Count; ++i)
-                plan[i].Apply(styleSheet, ref m_Values[i]);
+                totalHandles += plan[i].handleCount;
 
-            requireVariableResolve = false;
+            SetSize(ref m_Values, totalHandles);
+            // Re-emitted raw var() handles alias value-table entries; stale recycled
+            // handles must not be written in place over them, so force the append path.
+            if (hasRawVar)
+                Array.Clear(m_Values, 0, m_Values.Length);
+            int index = 0;
+            for (int i = 0; i < plan.Count; ++i)
+                plan[i].Apply(styleSheet, m_Values, ref index);
+
+            requireVariableResolve = hasVar;
+
+            // Newly written var names must be re-registered in the sheet's variable-name id
+            // cache before the next apply, or the resolver won't find them until reimport.
+            if (hasVar)
+                styleSheet.RequestRebuild(StyleSheet.RebuildOptions.Synchronous);
         }
+
+        // Unit conversions amplify float noise (0.3f * 100f == 30.000002f); rounding in
+        // double keeps authored values stable under CoreCLR's round-trippable ToString.
+        static float RoundUnitConversion(double value) => (float)Math.Round(value, 4);
 
         // True when stops match the parser's auto-distribute (percent 0..100 evenly).
         static bool AreStopsAutoDistributed(BackgroundGradientStop[] stops)
@@ -562,6 +894,7 @@ namespace UnityEngine.UIElements
             Dimension m_Dim;
             Color m_Color;
             string m_Str;
+            StyleValueHandle[] m_RawHandles;
 
             public static HandleWriteOp Function(StyleValueFunction f)
                 => new() { m_Type = StyleValueType.Function, m_Func = f };
@@ -575,30 +908,47 @@ namespace UnityEngine.UIElements
                 => new() { m_Type = StyleValueType.Enum, m_Str = s };
             public static HandleWriteOp CommaSeparator()
                 => new() { m_Type = StyleValueType.CommaSeparator };
+            public static HandleWriteOp Var(string name)
+                => new() { m_Type = StyleValueType.Variable, m_Str = name };
+            public static HandleWriteOp Raw(StyleValueHandle[] handles)
+                => new() { m_Type = StyleValueType.Variable, m_RawHandles = handles };
 
-            public void Apply(StyleSheet sheet, ref StyleValueHandle handle)
+            // A var() reference expands to Function(Var) + Float(1) + Variable;
+            // raw handles re-emit a captured construct verbatim.
+            public int handleCount => m_Type == StyleValueType.Variable ? (m_RawHandles?.Length ?? 3) : 1;
+
+            public void Apply(StyleSheet sheet, StyleValueHandle[] values, ref int index)
             {
                 switch (m_Type)
                 {
                     case StyleValueType.Function:
-                        sheet.WriteFunction(ref handle, m_Func);
+                        sheet.WriteFunction(ref values[index++], m_Func);
                         break;
                     case StyleValueType.Float:
-                        sheet.WriteFloat(ref handle, m_Float);
+                        sheet.WriteFloat(ref values[index++], m_Float);
                         break;
                     case StyleValueType.Dimension:
-                        sheet.WriteDimension(ref handle, m_Dim);
+                        sheet.WriteDimension(ref values[index++], m_Dim);
                         break;
                     case StyleValueType.Color:
-                        sheet.WriteColor(ref handle, m_Color);
+                        sheet.WriteColor(ref values[index++], m_Color);
                         break;
                     case StyleValueType.Enum:
-                        // AddValue(string) is the internal append-and-return-index path (no dedup, fine here).
-                        int idx = sheet.AddValue(m_Str);
-                        handle = new StyleValueHandle(idx, StyleValueType.Enum);
+                        sheet.WriteEnumAsString(ref values[index++], m_Str);
                         break;
                     case StyleValueType.CommaSeparator:
-                        handle = new StyleValueHandle(0, StyleValueType.CommaSeparator);
+                        sheet.WriteCommaSeparator(ref values[index++]);
+                        break;
+                    case StyleValueType.Variable:
+                        if (m_RawHandles != null)
+                        {
+                            for (int i = 0; i < m_RawHandles.Length; ++i)
+                                values[index++] = m_RawHandles[i];
+                            break;
+                        }
+                        sheet.WriteFunction(ref values[index++], StyleValueFunction.Var);
+                        sheet.WriteFloat(ref values[index++], 1f);
+                        sheet.WriteVariable(ref values[index++], m_Str);
                         break;
                 }
             }
@@ -1177,8 +1527,7 @@ namespace UnityEngine.UIElements
             var val1 = new StylePropertyValue() { handle = values[0], sheet = styleSheet };
             var val2 = valCount > 1 ? new StylePropertyValue { handle = values[1], sheet = styleSheet } : default;
 
-            value = StylePropertyReader.ReadCurvature(valCount, val1, val2);
-            return true;
+            return StylePropertyReader.TryReadCurvature(valCount, val1, val2, out value);
         }
 
         /// <summary>
@@ -1704,7 +2053,7 @@ namespace UnityEngine.UIElements
             requireVariableResolve = false;
         }
 
-        
+
         // Writes one sizing value (the min or max side of a track, or a plain single track).
         static void WriteGridTrackPart(StyleSheet styleSheet, ref StyleValueHandle handle, float value, GridTrackSizeUnit unit)
         {
@@ -1774,7 +2123,9 @@ namespace UnityEngine.UIElements
                 {
                     bool minmaxPattern = IsMinmaxPattern(track);
                     styleSheet.WriteFunction(ref values[index++], StyleValueFunction.Repeat);
-                    styleSheet.WriteFloat(ref values[index++], 2 + (minmaxPattern ? (2 + 3) : 1)); // enum, comma, <pattern>
+                    // Top-level arg count (enum, comma, <pattern>): a nested function counts as one arg,
+                    // matching the USS importer and the exporter's walker.
+                    styleSheet.WriteFloat(ref values[index++], 3);
                     styleSheet.WriteEnumAsString(ref values[index++], track.m_Kind == GridTrackKind.AutoFill ? "auto-fill" : "auto-fit");
                     styleSheet.WriteCommaSeparator(ref values[index++]);
                     if (minmaxPattern)

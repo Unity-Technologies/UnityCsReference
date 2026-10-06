@@ -10,6 +10,7 @@ namespace UnityEditor
     [UnityEngine.NativeClass("BrokenPrefabAsset", PersistentTypeId = 0x672E287B)]
     public class BrokenPrefabAsset : DefaultAsset
     {
+        internal BrokenPrefabAsset(global::UnityEngine.EntityId id) : base(id) {}
         private BrokenPrefabAsset() {}
 
         public extern BrokenPrefabAsset brokenPrefabParent { get; }

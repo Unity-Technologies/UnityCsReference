@@ -381,15 +381,27 @@ namespace Unity.GraphToolkit.Editor
             p2d.Stroke();
         }
 
-        public override void SetFillAmount(float percentage)
+        public override void OverrideFillAmount(float percentage)
         {
-            base.SetFillAmount(percentage);
+            base.OverrideFillAmount(percentage);
 
             var part = PartList.GetPart(bottomColorLineContainerPartName) as NodeColorLinePart;
             if (part == null)
                 return;
 
-            part.SetFillAmount(percentage);
+            part.OverrideFillAmount(percentage);
+        }
+
+        /// <inheritdoc />
+        public override void ClearFillAmountOverride()
+        {
+            base.ClearFillAmountOverride();
+
+            var part = PartList.GetPart(bottomColorLineContainerPartName) as NodeColorLinePart;
+            if (part == null)
+                return;
+
+            part.ClearFillAmountOverride();
         }
 
         public override void BeginAnimating(float animationSpeed)

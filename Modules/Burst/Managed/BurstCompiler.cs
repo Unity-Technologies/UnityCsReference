@@ -2,7 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0010,UAL0011,UAL0012,UAL0013,UAL0014 // AutoStaticsCleanup: Burst not yet converted
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -12,6 +11,8 @@ using System.Runtime.InteropServices;
 using UnityEngine.Scripting;
 using System.Text;
 using System.Runtime.CompilerServices;
+using Unity.Scripting.LifecycleManagement;
+using Unity.Collections.LowLevel.Unsafe;
 
 
 using System.Linq;
@@ -24,7 +25,7 @@ namespace Unity.Burst
     /// The burst compiler runtime frontend.
     /// </summary>
     ///
-    public static class BurstCompiler
+    public static partial class BurstCompiler
     {
         /// <summary>
         /// Check if the LoadAdditionalLibrary API is supported by the current version of Unity
@@ -35,6 +36,9 @@ namespace Unity.Burst
             return IsApiAvailable("LoadBurstLibrary");
         }
 
+        // Pins the delegates backing the native callback pointers below; cleared by BurstLoader's
+        // [OnCodeUnloading] teardown (FreeGCHandles), which reruns AllocateDelegateHandles on reload.
+        [NoAutoStaticsCleanup] // cleared manually by FreeGCHandles(), called by BurstLoader's [OnCodeUnloading] teardown
         private static readonly List<GCHandle> DelegateGcHandles = new List<GCHandle>();
 
         private static GCHandle AllocGCHandle(object value)
@@ -135,6 +139,7 @@ namespace Unity.Burst
         }
 
         [ThreadStatic]
+        [NoAutoStaticsCleanup] // reusable scratch buffer, reset via Begin() before each command, holds no cross-call state
         private static CommandBuilder _cmdBuilder;
 
         private static CommandBuilder BeginCompilerCommand(string cmd)
@@ -151,6 +156,7 @@ namespace Unity.Burst
         /// <summary>
         /// Internal variable setup by BurstCompilerOptions.
         /// </summary>
+        [NoAutoStaticsCleanup] // mirrors BurstCompilerOptions.Options.EnableBurstCompilation, which itself persists across reload
         internal
             static bool _IsEnabled;
 
@@ -162,6 +168,7 @@ namespace Unity.Burst
         /// <summary>
         /// Gets the global options for the burst compiler.
         /// </summary>
+        [NoAutoStaticsCleanup] // singleton settings instance; its state is meant to persist across reload
         public static readonly BurstCompilerOptions Options = new BurstCompilerOptions(true);
 
         /// <summary>
@@ -215,7 +222,152 @@ namespace Unity.Burst
             return new FunctionPointer<T>(new IntPtr(function));
         }
 
+        // Called from IL-postprocessed direct calls.
+        [BurstDiscard]
+        internal static void CheckPendingException()
+        {
+            ExceptionMarshaller.CheckPendingException();
+        }
 
+        public unsafe delegate void BurstAbortUserDelegate(string exceptionKind, string message, string stackTrace, void* userData);
+
+        private static Exception ConstructException(string kind, string message, string callStack)
+        {
+            var getExceptionType = Type.GetType(kind);
+            if (getExceptionType != null)
+            {
+                var text = $"{message}\n{callStack}\nEnd of stack trace from the original location.\n";
+
+                // Prefer the (message, innerException) overload: it is consistently message-first across the BCL,
+                // whereas the single-string overload of e.g. ArgumentNullException takes a paramName, which would
+                // leave the exception reporting "Value cannot be null. (Parameter '<everything we passed>')".
+                var ctor = getExceptionType.GetConstructor(new Type[] { typeof(string), typeof(Exception) });
+                if (ctor != null)
+                {
+                    return (Exception)ctor.Invoke(new object[] { text, null });
+                }
+
+                ctor = getExceptionType.GetConstructor(new Type[] { typeof(string) });
+                if (ctor != null)
+                {
+                    return (Exception)ctor.Invoke(new object[] { text });
+                }
+            }
+            return new Exception($"{kind}: {message}\n{callStack}\nEnd of stack trace from the original location.\n");
+        }
+
+        [BurstDiscard]
+        private static unsafe void SafeInvokeDirectCallFreeAndReThrow(SafeInvoke info)
+        {
+            if (info.aborted == 0)
+            {
+                return;
+            }
+            var kind = Marshal.PtrToStringUni(info.kind);
+            var message = Marshal.PtrToStringUni(info.message);
+            var callStack = Marshal.PtrToStringUni(info.callStack);
+            Marshal.FreeHGlobal(info.kind);                         // If we threw, we allocated memory for the strings, free it
+            Marshal.FreeHGlobal(info.message);
+            Marshal.FreeHGlobal(info.callStack);
+            throw ConstructException(kind, message, callStack);
+        }
+
+        [BurstDiscard]
+        private static unsafe void DirectCallSafeAbort(string kind, string message, string callStack, void* user)
+        {
+            var safeInvoke = (SafeInvoke*)user;
+            safeInvoke->kind = Marshal.StringToHGlobalUni(kind);
+            safeInvoke->message = Marshal.StringToHGlobalUni(message);
+            safeInvoke->callStack = Marshal.StringToHGlobalUni(callStack);
+            safeInvoke->aborted = 1;
+        }
+
+        private unsafe struct CallbackData
+        {
+            public BurstAbortUserDelegate callback;
+            public void* userData;
+        }
+
+        private struct SafeInvoke
+        {
+            public IntPtr kind;
+            public IntPtr message;
+            public IntPtr callStack;
+            public byte aborted;
+        }
+
+        [ThreadStatic]
+        [NoAutoStaticsCleanup] // empty except while a single Push/Pop-bracketed call is on this thread's stack; holds no cross-call state
+        static Stack<CallbackData> threadUserCallbacks = null;
+
+        [NoAutoStaticsCleanup] // fixed delegate to this class's own DirectCallSafeAbort; never reassigned, not a user-registered callback
+        private static readonly unsafe BurstAbortUserDelegate SafeInvokeDelegate = DirectCallSafeAbort;
+
+        [VisibleToOtherModules("UnityEditor.BurstModule")]
+        internal static void ManagedBurstAbort(string kind, string message, string callstack)
+        {
+            if (kind == "*ThrowPendingException*" && message == "*ThrowPendingException*")
+            {
+                try
+                {
+                    BurstCompiler.CheckPendingException();
+                    return;
+                } catch (Exception e)
+                {
+                    if (Unity.Burst.LowLevel.BurstCompilerService.IsInBurstedJob())
+                    {
+                        Unity.Scripting.LowLevel.Debug.LogException(e, invokePostProcessCallbacks: true);
+                        return;
+                    } else
+                    {
+                        kind = e.GetType().FullName;
+                        message = e.Message;
+                        callstack = e.StackTrace;
+                    }
+                }
+            }
+
+            // Don't want to re-add the exception we are currently handling to BurstFPException
+            // if (!callstack.Contains("BurstFPException.CheckAndThrow")
+            //     && !callstack.Contains("burst.check_pending_exception"))
+            // {
+            //     BurstFPException.AddException(BurstFPException.GetID(), kind, message, callstack);
+            // }
+
+            if ((threadUserCallbacks != null) && (threadUserCallbacks.Count > 0))
+            {
+                var data = threadUserCallbacks.Peek();
+                unsafe
+                {
+                    data.callback(kind, message, callstack, data.userData);
+                }
+            }
+            else if (Unity.Burst.LowLevel.BurstCompilerService.IsInBurstedJob())
+            {
+                var e = ConstructException(kind, message, callstack);
+                Unity.Scripting.LowLevel.Debug.LogException(e, invokePostProcessCallbacks: true);
+            }
+            else
+            {
+                Unity.Scripting.LowLevel.Debug.LogError($"A method compiled with Burst, has thrown a Managed Exception - {kind}({message}) at :\n{callstack}");
+            }
+        }
+
+        [BurstDiscard]
+        public unsafe static void PushUserAbortCallbackForThread(BurstAbortUserDelegate callback, void* userData)
+        {
+            if (threadUserCallbacks == null)
+            {
+                threadUserCallbacks = new Stack<CallbackData>();
+            }
+            threadUserCallbacks.Push(new CallbackData { callback = callback, userData = userData });
+        }
+
+        [BurstDiscard]
+        public unsafe static void PopUserAbortCallbackForThread()
+        {
+            threadUserCallbacks.Pop();
+        }
 
         private static unsafe void* Compile(object delegateObj)
         {
@@ -308,6 +460,7 @@ namespace Unity.Burst
 
         [VisibleToOtherModules("UnityEditor.BurstModule")]
         // We need this to be queried each domain reload in a static constructor so that it is called on the main thread only!
+        [NoAutoStaticsCleanup] // reassigned by BurstLoader.InitBurstLoader on every domain reload before this is read
         internal static bool IsScriptDebugInfoEnabled { get; set; }
 
         [VisibleToOtherModules("UnityEditor.BurstModule")]
@@ -319,15 +472,11 @@ namespace Unity.Burst
             const string parameterSeparator = "***";
             const string assemblySeparator = "```";
 
-            var isScriptDebugInfoEnabled = IsScriptDebugInfoEnabled;
-
             var cmdBuilder =
                 BeginCompilerCommand(BurstCompilerOptions.CompilerCommandDomainReload)
                     .With(ProgressCallbackFunctionPointer)
                     .With(parameterSeparator)
                     .With(EagerCompileLogCallbackFunctionPointer)
-                    .With(parameterSeparator)
-                    .With(isScriptDebugInfoEnabled ? "Debug" : "Release")
                     .With(parameterSeparator);
 
             foreach (var (name, defines) in assemblyNamesAndDefines)
@@ -406,15 +555,6 @@ namespace Unity.Burst
         }
 
         [VisibleToOtherModules("UnityEditor.BurstModule")]
-        internal static void InitialiseDebuggerHooks()
-        {
-            if (IsApiAvailable("BurstManagedDebuggerPluginV1") && String.IsNullOrEmpty(Environment.GetEnvironmentVariable("BURST_DISABLE_DEBUGGER_HOOKS")))
-            {
-                SendCommandToCompiler(SendCommandToCompiler(BurstCompilerOptions.CompilerCommandRequestInitialiseDebuggerCommmand));
-            }
-        }
-
-        [VisibleToOtherModules("UnityEditor.BurstModule")]
         internal static bool IsApiAvailable(string apiName)
         {
             return SendCommandToCompiler(BurstCompilerOptions.CompilerCommandIsNativeApiAvailable, apiName) == "True";
@@ -442,16 +582,19 @@ namespace Unity.Burst
         }
 
         [VisibleToOtherModules("UnityEditor.BurstModule")]
+        [NoAutoStaticsCleanup] // unconditionally re-set true by BurstLoader.InitBurstLoader on every domain reload before use
         internal static bool EagerCompilationLoggingEnabled = false;
 
+        [NoAutoStaticsCleanup] // recomputed by AllocateDelegateHandles(), called by BurstLoader.InitBurstLoader on every domain reload before use
         private static string EagerCompileLogCallbackFunctionPointer;
+        [NoAutoStaticsCleanup] // see EagerCompileLogCallbackFunctionPointer above
         private static string ManagedResolverFunctionPointer;
 
         [VisibleToOtherModules("UnityEditor.BurstModule")]
         internal static void Initialize(string dotNetPath, string burstRuntimePath, string applicationContentsPath, string[] assemblyFolders, string[] ignoreAssemblies)
         {
             var glued = new string[6];
-            glued[0] = "NetFramework";
+            glued[0] = "CoreClr";
             glued[1] = dotNetPath;
             glued[2] = burstRuntimePath;
             glued[3] = applicationContentsPath;
@@ -502,6 +645,7 @@ namespace Unity.Burst
             return result;
         }
 
+        [NoAutoStaticsCleanup] // recomputed by AllocateDelegateHandles(), called by BurstLoader.InitBurstLoader on every domain reload before use
         private static string ProgressCallbackFunctionPointer;
 
         private delegate void ProgressCallbackDelegate(int current, int total);
@@ -512,6 +656,7 @@ namespace Unity.Burst
         }
 
         [VisibleToOtherModules("UnityEditor.BurstModule")]
+        [AutoStaticsCleanupOnCodeReload] // subscribers (BurstLoader) re-register on every reload; must not accumulate across reloads
         internal static event Action<int, int> OnProgress;
 
         [VisibleToOtherModules("UnityEditor.BurstModule")]
@@ -547,8 +692,11 @@ namespace Unity.Burst
         [VisibleToOtherModules("UnityEditor.BurstModule")]
         internal delegate void EndProgressDelegate();
 
+        [NoAutoStaticsCleanup] // recomputed by AllocateDelegateHandles(), called by BurstLoader.InitBurstLoader on every domain reload before use
         private static string ProfileBeginCallbackFunctionPointer;
+        [NoAutoStaticsCleanup] // see ProfileBeginCallbackFunctionPointer above
         private static string ProfileEndCallbackFunctionPointer;
+        [NoAutoStaticsCleanup] // see ProfileBeginCallbackFunctionPointer above
         private static string BurstAbortFunctionPointer;
 
         [VisibleToOtherModules("UnityEditor.BurstModule")]
@@ -558,14 +706,19 @@ namespace Unity.Burst
         private static void BurstAbort(string exceptionKind, string message, string stackTrace) => OnBurstAbort?.Invoke(exceptionKind, message, stackTrace);
 
         [VisibleToOtherModules("UnityEditor.BurstModule")]
+        [AutoStaticsCleanupOnCodeReload] // subscribers (BurstLoader) re-register on every reload; must not accumulate across reloads
         internal static event ProfileBeginCallbackDelegate OnProfileBegin;
         [VisibleToOtherModules("UnityEditor.BurstModule")]
+        [AutoStaticsCleanupOnCodeReload] // see OnProfileBegin above
         internal static event ProfileEndCallbackDelegate OnProfileEnd;
         [VisibleToOtherModules("UnityEditor.BurstModule")]
+        [AutoStaticsCleanupOnCodeReload] // see OnProfileBegin above
         internal static event BurstAbortDelegate OnBurstAbort;
         [VisibleToOtherModules("UnityEditor.BurstModule")]
+        [AutoStaticsCleanupOnCodeReload] // see OnProfileBegin above
         internal static event BeginProgressDelegate OnBeginProgressBar;
         [VisibleToOtherModules("UnityEditor.BurstModule")]
+        [AutoStaticsCleanupOnCodeReload] // see OnProfileBegin above
         internal static event EndProgressDelegate OnEndProgressBar;
 
         [VisibleToOtherModules("UnityEditor.BurstModule")]
@@ -630,7 +783,10 @@ namespace Unity.Burst
                 .SendToCompiler();
         }
 
-        private static readonly MethodInfo DummyMethodInfo = typeof(BurstCompiler).GetMethod(nameof(DummyMethod), BindingFlags.Static | BindingFlags.NonPublic);
+        // Reflection metadata pins the assembly/type it was resolved from, so it must be re-resolved
+        // against the freshly-reloaded type on every code reload.
+        [AutoStaticsCleanupOnCodeReload]
+        private static MethodInfo DummyMethodInfo = typeof(BurstCompiler).GetMethod(nameof(DummyMethod), BindingFlags.Static | BindingFlags.NonPublic);
 
         /// <summary>
         /// Dummy empty method for being able to send a command to the compiler
@@ -655,4 +811,3 @@ namespace Unity.Burst
         }
     }
 }
-#pragma warning restore UAL0010,UAL0011,UAL0012,UAL0013,UAL0014

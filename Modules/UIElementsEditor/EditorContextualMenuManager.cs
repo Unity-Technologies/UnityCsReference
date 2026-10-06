@@ -2,15 +2,19 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: UIToolkitFramework not yet converted
+using Unity.Scripting.LifecycleManagement;
 using UnityEngine;
 using UnityEngine.UIElements;
 
 namespace UnityEditor.UIElements
 {
-    class EditorContextualMenuManager : ContextualMenuManager
+    partial class EditorContextualMenuManager : ContextualMenuManager
     {
-        static EditorContextualMenuManager()
+        // onResetMouseDown is cleared on code reload, so this handler has to be re-registered on every
+        // load; a static constructor would only run once per domain, and after the first reload pointers
+        // would again be left stuck pressed by a native context menu (UUM-73201, UUM-138133).
+        [OnCodeLoaded]
+        static void Initialize()
         {
             EditorUtility.onResetMouseDown += () =>
             {
@@ -87,4 +91,3 @@ namespace UnityEditor.UIElements
         }
     }
 }
-#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

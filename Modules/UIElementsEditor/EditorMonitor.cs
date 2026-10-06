@@ -2,8 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: UIToolkitFramework not yet converted
-#pragma warning disable UAL0010,UAL0011,UAL0012,UAL0013,UAL0014 // AutoStaticsCleanup: UIToolkitFramework not yet converted
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UIElements;
 using Unity.Scripting.LifecycleManagement;
@@ -44,12 +43,28 @@ namespace UnityEditor.UIElements
 
             if (colorSpaceChanged || importCountChanged || renderTexturesTrashed)
             {
+                List<BaseRuntimePanel> resetPlayerPanels = null;
                 var it = UIElementsUtility.GetPanelsIterator();
                 while (it.MoveNext())
                 {
                     Panel panel = it.Current.Value;
                     if (colorSpaceChanged || (importCountChanged && panel.resetPanelRenderingOnAssetChange) || renderTexturesTrashed)
+                    {
                         panel.ResetRendering();
+                        if (panel is BaseRuntimePanel runtimePanel)
+                        {
+                            resetPlayerPanels ??= new List<BaseRuntimePanel>();
+                            resetPlayerPanels.Add(runtimePanel);
+                        }
+                    }
+                }
+
+                // Runtime panels are only updated by the player loop, which may not tick again before the
+                // next render (e.g. unfocused editor). Rebuild them now, before anything draws (UUM-146120).
+                if (resetPlayerPanels != null)
+                {
+                    foreach (var runtimePanel in resetPlayerPanels)
+                        UIElementsRuntimeUtility.RepaintPanel(runtimePanel);
                 }
             }
         }
@@ -106,5 +121,3 @@ namespace UnityEditor.UIElements
         public static void SetResetPanelRenderingOnAssetChange(EditorWindow window, bool reset) => window.resetPanelRenderingOnAssetChange = reset;
     }
 }
-#pragma warning restore UAL0010,UAL0011,UAL0012,UAL0013,UAL0014
-#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

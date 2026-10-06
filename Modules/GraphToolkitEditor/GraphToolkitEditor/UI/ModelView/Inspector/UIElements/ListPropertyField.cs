@@ -131,10 +131,11 @@ namespace Unity.GraphToolkit.Editor
                 : (m_ElementType.IsValueType ? Activator.CreateInstance(m_ElementType) : null);
             
             list.Add(itemToAdd);
-            
+
+            // Must dispatch before RefreshItems/ScrollToItem, which can re-enter SetValue and clear this list.
+            DispatchChange(list);
             RefreshItems();
             ScrollToItem(-1);
-            DispatchChange(list);
         }
 
         void DispatchChange(IList updatedList)
@@ -152,7 +153,7 @@ namespace Unity.GraphToolkit.Editor
                 var listType = typeof(List<>).MakeGenericType(m_ElementType);
                 finalValue = Activator.CreateInstance(listType, updatedList);
             }
-            
+
             m_OnListChanged?.Invoke(finalValue as IList);
         }
 

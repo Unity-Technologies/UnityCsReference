@@ -2,7 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: IMGUIFramework not yet converted
 // Use this define to debug who grabs and releases hotcontrol
 //#define DEBUG_HOTCONTROL
 // Use this define to debug controlID consistency together with 's_LogControlID' (default false) to enable logging in
@@ -54,6 +53,9 @@ namespace UnityEngine
         ///<exclude />
         [AutoStaticsCleanupOnCodeReload]
         [VisibleToOtherModules("UnityEngine.UIElementsModule")]
+        // Per-GUI-pass value: BeginGUI (and IMGUIContainer for UI Toolkit) assigns the owning view id at
+        // the start of every pass, so the value reset on reload is overwritten by the next pass.
+        [IgnoreForUAL0015("Per-GUI-pass owner id, reassigned by BeginGUI at the start of every pass")]
         internal static EntityId s_OriginalID;
 
         // IoC callbacks for UIElements
@@ -167,6 +169,10 @@ namespace UnityEngine
         public static object QueryStateObject(Type t, int controlID)       { return GUIStateObjects.QueryStateObject(t, controlID); }
 
         [AutoStaticsCleanupOnCodeReload]
+        // Per-GUI-pass flag: ResetGlobalState clears it at the start of every pass, so the value reset on
+        // reload is what the next pass expects. The IMGUI scope structs that trip this are frame-scoped
+        // IDisposables and cannot outlive the code-loaded scope.
+        [IgnoreForUAL0015("Per-GUI-pass flag cleared by ResetGlobalState at the start of every pass")]
         internal static bool guiIsExiting { get; set; }
 
 
@@ -717,4 +723,3 @@ namespace UnityEngine
         }
     }
 }
-#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

@@ -53,6 +53,8 @@ namespace UnityEditor
     [NativeHeader("Modules/SketchUpEditor/SketchUpImporter.h")]
     public sealed partial class SketchUpImporter : ModelImporter
     {
+        internal SketchUpImporter(global::UnityEngine.EntityId id) : base(id) {}
+        public SketchUpImporter() {}
         extern public SketchUpImportScene[] GetScenes();
 
         extern public SketchUpImportCamera GetDefaultCamera();

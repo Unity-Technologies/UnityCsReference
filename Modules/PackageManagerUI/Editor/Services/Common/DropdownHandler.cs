@@ -2,7 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: Packman not yet converted
 using System.Collections.Generic;
 using Unity.Scripting.LifecycleManagement;
 using UnityEditor.UIElements;
@@ -48,7 +47,7 @@ internal partial class DropdownHandler : BaseService<IDropdownHandler>, IDropdow
 
         public static void ShowDropdown(VisualElement anchorElement, DropdownContent content)
         {
-            if (anchorElement == null || content == null)
+            if (anchorElement?.panel == null || content == null)
                 return;
 
             if (float.IsNaN(anchorElement.rect.x) || float.IsNaN(anchorElement.rect.y) || float.IsNaN(anchorElement.rect.width) || float.IsNaN(anchorElement.rect.height))
@@ -129,4 +128,3 @@ internal partial class DropdownHandler : BaseService<IDropdownHandler>, IDropdow
         DropdownWindow.ShowDropdown(anchorElement, dropdown);
     }
 }
-#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

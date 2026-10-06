@@ -54,8 +54,9 @@ internal abstract class DesktopStandalonePostProcessor : BeeBuildPostprocessor
             config.AddKey("nolog");
         if (PlayerSettings.GetCaptureStartupLogs(NamedBuildTarget.FromActiveSettings(target)))
             config.Set("capture-startup-logs", "1");
-        if (PlayerSettings.enableDirectStorage)
-            config.Set("enable-directstorage", PlayerSettings.enableDirectStorage.ToString()); // Shared naming with other DirectStorage supported platforms
+
+        config.Set("enable-directstorage", PlayerSettings.enableDirectStorage.ToString()); // Shared naming with other DirectStorage supported platforms
+
     }
 
     public override ILaunchReport LaunchPlayer(BuildLaunchPlayerArgs args)

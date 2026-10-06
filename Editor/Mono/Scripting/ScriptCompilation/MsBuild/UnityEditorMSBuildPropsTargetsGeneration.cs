@@ -9,6 +9,7 @@ using System.Runtime.InteropServices;
 using Unity.AsmDefToCSProj;
 using UnityEditor.Build.Player;
 using UnityEditor.Compilation;
+using UnityEditor.Modules;
 using UnityEditor.MSBuild;
 using UnityEditorInternal;
 using UnityEngine;
@@ -97,7 +98,7 @@ class UnityEditorMSBuildPropsTargetsGeneration
         UpdateSystemSearchPaths(buildTarget);
         UpdateRoslynAnalyzersProps(globalAnalyzers);
 
-        PropsGenerator.Instance.UpdateUnityContentLocation(EditorApplication.applicationScriptingPath);
+        PropsGenerator.Instance.UpdateUnityContentLocation(EditorApplication.applicationScriptingPath, EditorApplication.applicationBuildPipelinePath, MsBuildProjectCacheSettings.effectiveCacheFolder);
         PropsGenerator.Instance.UpdateBuildConfigurationProperties(buildTarget.ToString(), CompilationPipeline.codeOptimization == CodeOptimization.Release);
     }
 
@@ -118,7 +119,10 @@ class UnityEditorMSBuildPropsTargetsGeneration
         if (s_builtinAnalyzerPaths != null)
             return s_builtinAnalyzerPaths;
 
-        var contentsPath = Path.GetFullPath(EditorApplication.applicationContentsPath);
+        // Trailing separator included so the prefix test cannot also match a sibling install folder
+        // whose name merely starts with the contents folder's name.
+        var contentsPath = Path.GetFullPath(EditorApplication.applicationContentsPath)
+            .TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar) + Path.DirectorySeparatorChar;
         var all = new PrecompiledAssemblyProvider().GetRoslynAnalyzerPaths();
         var builtins = new List<string>();
         foreach (var path in all)
@@ -147,7 +151,17 @@ class UnityEditorMSBuildPropsTargetsGeneration
 
         PropsGenerator.Instance.UpdateEssentialPropsOnly(
             EditorApplication.applicationScriptingPath,
-            editorVersion);
+            EditorApplication.applicationBuildPipelinePath,
+            editorVersion,
+            MsBuildProjectCacheSettings.effectiveCacheFolder);
+    }
+
+    public static void UpdateProjectCacheLocation()
+    {
+        PropsGenerator.Instance.UpdateUnityContentLocation(
+            EditorApplication.applicationScriptingPath,
+            EditorApplication.applicationBuildPipelinePath,
+            MsBuildProjectCacheSettings.effectiveCacheFolder);
     }
 
     /// <summary>
@@ -490,9 +504,32 @@ class UnityEditorMSBuildPropsTargetsGeneration
                     modulePaths.Add(assembly.Path);
                 }
             }
+
+            AddPlatformModuleReferencesForUserScripts(modulePaths);
         }
 
         return modulePaths.ToArray();
+    }
+
+    // Platform modules register these as internal precompiled assemblies, which GetAllPrecompiledAssemblies
+    // skips, so fetch them the same way the legacy pipeline does (EditorBuildRules.EditorAssemblyReferences).
+    private static void AddPlatformModuleReferencesForUserScripts(List<string> modulePaths)
+    {
+        // References are emitted by file name, and several platforms ship the same assembly (e.g. Xcode API)
+        var fileNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        foreach (var path in modulePaths)
+        {
+            fileNames.Add(Path.GetFileName(path));
+        }
+
+        foreach (var path in ModuleUtils.GetAdditionalReferencesForUserScripts())
+        {
+            if (string.IsNullOrEmpty(path) || !File.Exists(path))
+                continue;
+
+            if (fileNames.Add(Path.GetFileName(path)))
+                modulePaths.Add(path);
+        }
     }
 
 }

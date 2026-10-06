@@ -46,7 +46,7 @@ namespace Unity.GraphToolkit.Editor
             nodeColorLinePart.Root.AddToClassList(GraphElementHelper.colorLineDatatTypeClassPrefix + RootView.TypeHandleInfos.GetUssName(Constant.OutputPort.DataTypeHandle));
 
             bool overrideIcon = true;
-            (Texture2D icon, Color color)? typeStyle = GraphElementModel.GraphModel.GetDataTypeStyle(Constant.Type);
+            var typeStyle = GraphElementModel.GraphModel.GetDataTypeStyle(Constant.Type);
             if (!typeStyle.HasValue)
             {
                 typeStyle = GraphElementModel.GraphModel.GetDataTypeStyle(Constant.Type.GetCollectionElementType());
@@ -61,7 +61,15 @@ namespace Unity.GraphToolkit.Editor
                 {
                     icon.tintColor = typeStyle.Value.color;
                     if (typeStyle.Value.icon != null && overrideIcon)
+                    {
+                        icon.style.display = DisplayStyle.Flex;
                         icon.image = typeStyle.Value.icon;
+                    }
+                    else if (overrideIcon && typeStyle.Value.suppressIcon)
+                    {
+                        RootView.TypeHandleInfos.RemoveUssClasses(GraphElementHelper.iconDataTypeClassPrefix, icon, Constant.OutputPort.DataTypeHandle);
+                        icon.style.display = DisplayStyle.None;
+                    }
                 }
             }
             AddToClassList(constantCollectionName);

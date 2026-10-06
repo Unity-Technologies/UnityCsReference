@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using System.Runtime.CompilerServices;
 using Unity.Collections;
 using Unity.Collections.LowLevel.Unsafe;
 using Unity.Scripting.LifecycleManagement;
@@ -26,6 +27,75 @@ namespace UnityEngine.Tilemaps
         [NoAutoStaticsCleanup] // see stripping note above
         public static event Action<Tilemap, NativeArray<Vector3Int>> tilemapPositionsChanged;
 
+        ///<summary>Callback when Tiles on a Tilemap have changed, without allocating.</summary>
+        ///<remarks>This returns the cells which have been updated and why. The cells are only valid for the duration of the callback.</remarks>
+        ///<example>
+        ///  <code><![CDATA[
+        /// // Log the cells which have changed, ignoring changes which cannot affect collision
+        ///using Unity.Collections;
+        ///using UnityEngine;
+        ///using UnityEngine.Tilemaps;
+        ///
+        ///public class ExampleClass : MonoBehaviour
+        ///{
+        ///    void OnEnable()
+        ///    {
+        ///        Tilemap.tilemapTilesChanged += OnTilesChanged;
+        ///    }
+        ///
+        ///    void OnDisable()
+        ///    {
+        ///        Tilemap.tilemapTilesChanged -= OnTilesChanged;
+        ///    }
+        ///
+        ///    void OnTilesChanged(Tilemap tilemap, NativeArray<Tilemap.SyncTile> entries, TileChangeReason reason)
+        ///    {
+        ///        if ((reason & TileChangeReason.Physics) == 0)
+        ///            return;
+        ///
+        ///        for (var i = 0; i < entries.Length; ++i)
+        ///        {
+        ///            var entry = entries[i];
+        ///            Debug.Log(entry.hasTile ? $"{entry.position} has a Tile" : $"{entry.position} is empty");
+        ///        }
+        ///    }
+        ///}
+        ///]]></code>
+        ///</example>
+        [NoAutoStaticsCleanup] // see stripping note above
+        public static event Action<Tilemap, NativeArray<SyncTile>, TileChangeReason> tilemapTilesChanged;
+
+        ///<summary>Callback when a Tilemap itself has changed, rather than the Tiles on it.</summary>
+        ///<remarks>This returns why the Tilemap changed, for map-wide changes such as the tile anchor, orientation, cell layout, origin or size.</remarks>
+        ///<example>
+        ///  <code><![CDATA[
+        /// // Rebuild when a Tilemap changes in a way which moves the geometry of its cells
+        ///using UnityEngine;
+        ///using UnityEngine.Tilemaps;
+        ///
+        ///public class ExampleClass : MonoBehaviour
+        ///{
+        ///    void OnEnable()
+        ///    {
+        ///        Tilemap.tilemapChanged += OnTilemapChanged;
+        ///    }
+        ///
+        ///    void OnDisable()
+        ///    {
+        ///        Tilemap.tilemapChanged -= OnTilemapChanged;
+        ///    }
+        ///
+        ///    void OnTilemapChanged(Tilemap tilemap, TilemapChangeReason reason)
+        ///    {
+        ///        if ((reason & TilemapChangeReason.Geometry) != 0)
+        ///            Debug.Log($"{tilemap.name} changed: {reason}");
+        ///    }
+        ///}
+        ///]]></code>
+        ///</example>
+        [NoAutoStaticsCleanup] // see stripping note above
+        public static event Action<Tilemap, TilemapChangeReason> tilemapChanged;
+
         ///<summary>Callback when Tiles on a Tilemap have reached the end of their loop for their Tile Animation.</summary>
         ///<remarks>This returns the list of positions on the Tilemap which have ended their loop for their Tile Animation.</remarks>
         [NoAutoStaticsCleanup] // see stripping note above
@@ -37,10 +107,12 @@ namespace UnityEngine.Tilemaps
             get { return m_BufferSyncTile; }
             set
             {
-                if (value == false && m_BufferSyncTile != value
-                    && (HasSyncTileCallback() || HasPositionsChangedCallback()))
-                    SendAndClearSyncTileBuffer();
+                var sendAndClear = value == false && m_BufferSyncTile != value
+                    && (HasSyncTileCallback() || HasPositionsChangedCallback() || HasTilesChangedCallback());
+                // Cleared before the flush so an edit made from inside the callback notifies instead of re-buffering.
                 m_BufferSyncTile = value;
+                if (sendAndClear)
+                    SendAndClearSyncTileBuffer();
             }
         }
 
@@ -120,6 +192,54 @@ namespace UnityEngine.Tilemaps
 
             AtomicSafetyHandle.CheckDeallocateAndThrow(safety);
             AtomicSafetyHandle.Release(safety);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static bool HasTilesChangedCallback() => (Tilemap.tilemapTilesChanged != null);
+
+        private unsafe void HandleTilesChangedCallback(int count, IntPtr entriesIntPtr, TileChangeReason reason)
+        {
+            if (!HasTilesChangedCallback())
+                return;
+
+            void* entriesPtr = entriesIntPtr.ToPointer();
+            var entries = NativeArrayUnsafeUtility.ConvertExistingDataToNativeArray<SyncTile>(entriesPtr, count, Allocator.Invalid);
+            var safety = AtomicSafetyHandle.Create();
+            NativeArrayUnsafeUtility.SetAtomicSafetyHandle(ref entries, safety);
+
+            SendTilemapTilesChangedCallback(entries, reason);
+
+            AtomicSafetyHandle.CheckDeallocateAndThrow(safety);
+            AtomicSafetyHandle.Release(safety);
+        }
+
+        private void SendTilemapTilesChangedCallback(NativeArray<SyncTile> entries, TileChangeReason reason)
+        {
+            try
+            {
+                Tilemap.tilemapTilesChanged(this, entries, reason);
+            }
+            catch (Exception e)
+            {
+                // Case 1215834: Log user exception/s and ensure engine code continues to run
+                Debug.LogException(e, this);
+            }
+        }
+
+        private void HandleTilemapChangedCallback(TilemapChangeReason reason)
+        {
+            if (Tilemap.tilemapChanged == null)
+                return;
+
+            try
+            {
+                Tilemap.tilemapChanged(this, reason);
+            }
+            catch (Exception e)
+            {
+                // Case 1215834: Log user exception/s and ensure engine code continues to run
+                Debug.LogException(e, this);
+            }
         }
 
         private void SendTilemapTileChangedCallback(SyncTile[] syncTiles)

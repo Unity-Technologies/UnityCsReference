@@ -48,7 +48,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             if (version == null || version.HasTag(PackageTag.BuiltIn))
                 return false;
 
-            IReadOnlyCollection<Sample> samples = version.isInstalled || version.HasTag(PackageTag.Feature)
+            IReadOnlyList<Sample> samples = version.isInstalled || version.HasTag(PackageTag.Feature)
                 ? m_PackageDatabase.GetSamples(version.package.name)
                 : Array.Empty<Sample>();
 

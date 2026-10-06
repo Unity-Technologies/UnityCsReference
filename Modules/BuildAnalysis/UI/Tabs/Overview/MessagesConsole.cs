@@ -93,6 +93,9 @@ namespace UnityEditor.Build.Analysis
             m_FooterCountLabel = this.Q<Label>("footer-count-label");
 
             m_StepDropdown.choices = new List<string> { k_AllSteps };
+            // UUM-142156: step names arrive in sentence case, but the dropdown lists them as UI options, which Unity sets in title case.
+            m_StepDropdown.formatListItemCallback = ToTitleCase;
+            m_StepDropdown.formatSelectedValueCallback = ToTitleCase;
             SetStepDropdownValue(k_AllSteps);
 
             m_CollapseToggle = this.Q<ToolbarToggle>("collapse-toggle");
@@ -311,7 +314,35 @@ namespace UnityEditor.Build.Analysis
             m_StepDropdown.SetValueWithoutNotify(value);
             m_StepDropdown.tooltip = string.Equals(value, k_AllSteps, StringComparison.Ordinal)
                 ? k_StepFilterTooltip
-                : value;
+                : ToTitleCase(value);
+        }
+
+        // UUM-142156: capitalizes each word for display, leaving the stored step name untouched.
+        private static string ToTitleCase(string name)
+        {
+            if (string.IsNullOrEmpty(name))
+                return name;
+
+            var words = name.Split(' ');
+            for (var i = 0; i < words.Length; i++)
+            {
+                if (NeedsCapital(words[i]))
+                    words[i] = char.ToUpperInvariant(words[i][0]) + words[i].Substring(1);
+            }
+
+            return string.Join(" ", words);
+        }
+
+        // A word carrying its own casing is left alone: "resources.assets", "IL2CPP".
+        private static bool NeedsCapital(string word)
+        {
+            foreach (var c in word)
+            {
+                if (c == '.' || char.IsUpper(c))
+                    return false;
+            }
+
+            return word.Length > 0;
         }
 
         private void SetSearchText(string value)

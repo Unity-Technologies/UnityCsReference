@@ -16,6 +16,8 @@ namespace UnityEngine
     [NativeHeader("Modules/Physics/SphereCollider.h")]
     public class SphereCollider : Collider
     {
+        internal SphereCollider(global::UnityEngine.EntityId id) : base(id) {}
+        public SphereCollider() {}
         ///<summary>The center of the sphere in the object's local space.</summary>
         extern public Vector3 center { get; set; }
         ///<summary>The radius of the sphere measured in the object's local space.</summary>

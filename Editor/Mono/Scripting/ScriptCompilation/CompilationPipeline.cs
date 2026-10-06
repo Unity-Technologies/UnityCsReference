@@ -2,10 +2,10 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: ScriptingBuildtime not yet converted
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using UnityEditor.Modules;
 using UnityEditor.Scripting;
 using UnityEditor.Scripting.Compilers;
 using UnityEditor.Scripting.ScriptCompilation;
@@ -208,6 +208,7 @@ namespace UnityEditor.Compilation
         }
     }
 
+    [VisibleToOtherModules("UnityEditor.BurstModule")]
     internal struct CompilationDoneResult
     {
         internal CompilationDoneResult(bool isForEditor, bool isSuccessful, IReadOnlyList<string> updatedFiles, IReadOnlyList<string> deletedFiles, IReadOnlyDictionary<string, IReadOnlyList<string>> assemblyDefines)
@@ -251,6 +252,11 @@ namespace UnityEditor.Compilation
 
         [AutoStaticsCleanupOnCodeReload]
         public static event Action<CodeOptimization> codeOptimizationChanged;
+
+        [AutoStaticsCleanupOnCodeReload]
+        // New MSBuild events
+        [VisibleToOtherModules("UnityEditor.BurstModule")]
+        internal static event Action<CompilationDoneResult> buildFinished;
 
         public static CodeOptimization codeOptimization
         {
@@ -298,12 +304,7 @@ namespace UnityEditor.Compilation
 
         internal static void ReportBuildFinished(CompileTarget target, CompilationDoneResult compilationDoneResult)
         {
-
-        }
-
-        static CompilationPipeline()
-        {
-            SubscribeToEvents(EditorCompilationInterface.Instance);
+            buildFinished?.Invoke(compilationDoneResult);
         }
 
         internal static void SubscribeToEvents(EditorCompilation editorCompilation)
@@ -480,10 +481,15 @@ namespace UnityEditor.Compilation
             {
                 var assembly = editorCompilation.GetCustomTargetAssemblyFromName(assemblyName);
 
+                var buildTarget = EditorUserBuildSettings.activeBuildTarget;
+
                 var scriptAssemblySettings = new ScriptAssemblySettings()
                 {
-                    BuildTarget = EditorUserBuildSettings.activeBuildTarget,
-                    CompilationOptions = EditorScriptCompilationOptions.BuildingForEditor | EditorScriptCompilationOptions.BuildingWithAsserts | EditorScriptCompilationOptions.BuildingWithInstrumentation
+                    BuildTarget = buildTarget,
+                    CompilationOptions = EditorScriptCompilationOptions.BuildingForEditor | EditorScriptCompilationOptions.BuildingWithAsserts | EditorScriptCompilationOptions.BuildingWithInstrumentation,
+                    // Without this the platform's own defines are missing, so define constraints that depend on
+                    // them are reported as unsatisfied in the assembly definition Inspector.
+                    CompilationExtension = ModuleManager.FindPlatformSupportModule(ModuleManager.GetTargetStringFromBuildTarget(buildTarget))?.CreateCompilationExtension()
                 };
 
                 return editorCompilation.GetTargetAssemblyDefines(assembly, scriptAssemblySettings);
@@ -624,6 +630,19 @@ namespace UnityEditor.Compilation
             var assemblies = new Assembly[scriptAssemblies.Length];
 
             var targetingPackFiles = TargetingPackExtractor.GetAssembliesFromFrameworkList(BCLExtensions.NetstandardTargetingPackDirectory());
+            var targetingPackReferences = Array.ConvertAll(targetingPackFiles.referenceAssemblies, p => p.MakeAbsolute().ToString());
+            var targetingPackAnalyzers = Array.ConvertAll(targetingPackFiles.analyzers, p => p.MakeAbsolute().ToString());
+
+            var physicalPaths = new Dictionary<string, string>();
+            string GetPhysicalPath(string path)
+            {
+                if (!physicalPaths.TryGetValue(path, out var physicalPath))
+                {
+                    physicalPath = FileUtil.GetPhysicalPath(path);
+                    physicalPaths.Add(path, physicalPath);
+                }
+                return physicalPath;
+            }
 
             for (int i = 0; i < scriptAssemblies.Length; ++i)
             {
@@ -633,9 +652,13 @@ namespace UnityEditor.Compilation
                 var outputPath = scriptAssembly.FullPath;
                 var sourceFiles = scriptAssembly.Files;
                 var defines = scriptAssembly.Defines;
-#pragma warning disable UAC2001 // Avoid Linq
-                var compiledAssemblyReferences = scriptAssembly.References.Select(FileUtil.GetPhysicalPath).Concat(targetingPackFiles.referenceAssemblies.Select(p=>p.MakeAbsolute().ToString())).ToArray();
-#pragma warning restore UAC2001
+                var references = scriptAssembly.References;
+                var compiledAssemblyReferences = new string[references.Length + targetingPackReferences.Length];
+                for (int j = 0; j < references.Length; ++j)
+                {
+                    compiledAssemblyReferences[j] = GetPhysicalPath(references[j]);
+                }
+                targetingPackReferences.CopyTo(compiledAssemblyReferences, references.Length);
 
                 var flags = AssemblyFlags.None;
 
@@ -645,12 +668,11 @@ namespace UnityEditor.Compilation
                 var compilerOptions = scriptAssembly.CompilerOptions;
                 compilerOptions.ResponseFiles = scriptAssembly.GetResponseFiles();
                 // inject analyzers
-#pragma warning disable UAC2001 // Avoid Linq
-                compilerOptions.RoslynAnalyzerDllPaths = (compilerOptions.RoslynAnalyzerDllPaths ?? Array.Empty<string>()).Concat(
-#pragma warning restore UAC2001
-#pragma warning disable UAC2001 // Avoid Linq
-                    targetingPackFiles.analyzers.Select(p => p.MakeAbsolute().ToString())).ToArray();
-#pragma warning restore UAC2001
+                var analyzerDllPaths = compilerOptions.RoslynAnalyzerDllPaths ?? Array.Empty<string>();
+                var allAnalyzerDllPaths = new string[analyzerDllPaths.Length + targetingPackAnalyzers.Length];
+                analyzerDllPaths.CopyTo(allAnalyzerDllPaths, 0);
+                targetingPackAnalyzers.CopyTo(allAnalyzerDllPaths, analyzerDllPaths.Length);
+                compilerOptions.RoslynAnalyzerDllPaths = allAnalyzerDllPaths;
 
                 assemblies[i] = new Assembly(name,
                     outputPath,
@@ -712,6 +734,15 @@ namespace UnityEditor.Compilation
 
         internal static string GetAssemblyDefinitionFilePathFromAssemblyName(EditorCompilation editorCompilation, string assemblyName)
         {
+            // Under MSBuild the asmdef inventory is owned by MsBuildCompilation, not the legacy
+            // EditorCompilation, so route the lookup to the active pipeline.
+            if (MsBuildCompilationInterface.IsEnabled())
+            {
+                var name = AssetPath.GetAssemblyNameWithoutExtension(assemblyName);
+                return MsBuildCompilationInterface.Instance.TryGetAssemblyDefinitionFilePathFromReference(name);
+            }
+
+            // TODO: Remove once we migrate to MSBuild.
             if (editorCompilation.TryFindCustomScriptAssemblyFromAssemblyName(assemblyName, out var customScriptAssembly))
             {
                 return customScriptAssembly.FilePath;
@@ -729,6 +760,7 @@ namespace UnityEditor.Compilation
                 return MsBuildCompilationInterface.Instance.TryGetAssemblyDefinitionFilePathFromReference(reference);
             }
 
+            // TODO: Remove once we migrate to MSBuild.
             if (editorCompilation.TryFindCustomScriptAssemblyFromAssemblyReference(reference, out var customScriptAssembly))
             {
                 return customScriptAssembly.FilePath;
@@ -772,4 +804,3 @@ namespace UnityEditor.Compilation
         }
     }
 }
-#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

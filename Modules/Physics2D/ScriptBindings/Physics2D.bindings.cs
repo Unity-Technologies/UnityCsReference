@@ -8521,6 +8521,8 @@ namespace UnityEngine
     [RequireComponent(typeof(Transform))]
     public sealed partial class Rigidbody2D : Component
     {
+        internal Rigidbody2D(global::UnityEngine.EntityId id) : base(id) {}
+        public Rigidbody2D() {}
         ///<summary>The position of the rigidbody.</summary>
         ///<remarks>This is the position of the X and Y axis only.</remarks>
         extern public Vector2 position { get; set; }
@@ -9049,15 +9051,11 @@ namespace UnityEngine
             if (deltaTime < 0.0f)
                 throw new ArgumentException($"Time cannot be negative. It is {deltaTime}.", "deltaTime");
 
-            // Simply return if the time is zero.
-            if (Mathf.Approximately(deltaTime, 0f))
-                return new SlideResults() { position = slideMovement.useStartPosition ? slideMovement.startPosition : position, remainingVelocity = velocity };
-
             if (slideMovement.useSimulationMove && bodyType == RigidbodyType2D.Static)
-                throw new ArgumentException($"Cannot use simulation move when the body type is Static. It is {slideMovement.useSimulationMove}.", "SlideMovement.useSimulationMove");
+                throw new ArgumentException($"Cannot use simulation move when the body type is {bodyType}.", "SlideMovement.useSimulationMove");
 
             if (slideMovement.useNoMove && slideMovement.useSimulationMove)
-                throw new ArgumentException($"Cannot use no move and simulation move at the same time; the two are conflicting options. It is {slideMovement.useNoMove}.", "SlideMovement.useNoMove");
+                throw new ArgumentException("Cannot use no move and simulation move at the same time; the two are conflicting options.", "SlideMovement.useNoMove");
 
             if (slideMovement.maxIterations < 1)
                 throw new ArgumentException($"Maximum Iterations must be greater than zero. It is {slideMovement.maxIterations}.", "SlideMovement.maxIterations");
@@ -9077,11 +9075,15 @@ namespace UnityEngine
             if (!float.IsFinite(slideMovement.gravity.x) || !float.IsFinite(slideMovement.gravity.y))
                 throw new ArgumentException($"Gravity is invalid. It is {slideMovement.gravity}.", "SlideMovement.gravity");
 
-            if (!float.IsFinite(slideMovement.startPosition.x) || !float.IsFinite(slideMovement.startPosition.y))
-                throw new ArgumentException($"Start Position is invalid. It is {slideMovement.gravity}.", "SlideMovement.startPosition");
+            if (slideMovement.useStartPosition && (!float.IsFinite(slideMovement.startPosition.x) || !float.IsFinite(slideMovement.startPosition.y)))
+                throw new ArgumentException($"Start Position is invalid. It is {slideMovement.startPosition}.", "SlideMovement.startPosition");
 
             if (slideMovement.selectedCollider && slideMovement.selectedCollider.attachedRigidbody != this)
                 throw new ArgumentException($"Selected Collider must be attached to the Slide Rigidbody2D. It is {slideMovement.selectedCollider}.", "SlideMovement.selectedCollider");
+
+            // Simply return if the time is zero.
+            if (Mathf.Approximately(deltaTime, 0f))
+                return new SlideResults() { position = slideMovement.useStartPosition ? slideMovement.startPosition : position, remainingVelocity = velocity };
 
             return Slide_Internal(velocity, deltaTime, slideMovement);
         }
@@ -10358,6 +10360,8 @@ namespace UnityEngine
     [RequiredByNativeCode(Optional = true)]
     public partial class Collider2D : Behaviour
     {
+        public Collider2D() {}
+        protected internal Collider2D(global::UnityEngine.EntityId id) : base(id) {}
         // The composition operation.
         ///<summary>Specifies the composite operation to be used by a <see cref="Collider2D" />.</summary>
         public enum CompositeOperation { ///<summary>Indicates that a <see cref="CompositeCollider2D" /> will not be used i.e. no composite operation will take place.</summary>
@@ -11491,6 +11495,8 @@ Flip = 4 };
     [NativeClass("CustomCollider2D", PersistentTypeId = 0x3542D1C2)]
     public sealed partial class CustomCollider2D : Collider2D
     {
+        internal CustomCollider2D(global::UnityEngine.EntityId id) : base(id) {}
+        public CustomCollider2D() {}
         // Gets the number of custom shapes this collider will generate.
         ///<summary>The total number of custom <see cref="PhysicsShape2D" /> assigned to the Collider. (RO)</summary>
         ///<remarks>All the shapes represented here contain a total vertex count of <see cref="CustomCollider2D.customVertexCount">customVertexCount</see>.
@@ -12219,6 +12225,8 @@ Flip = 4 };
     [NativeHeader("Modules/Physics2D/Public/CircleCollider2D.h")]
     public sealed partial class CircleCollider2D : Collider2D
     {
+        internal CircleCollider2D(global::UnityEngine.EntityId id) : base(id) {}
+        public CircleCollider2D() {}
         // The radius of the circle.
         ///<summary>Radius of the circle.</summary>
         ///<seealso cref="center" />
@@ -12231,6 +12239,8 @@ Flip = 4 };
     [NativeHeader("Modules/Physics2D/Public/CapsuleCollider2D.h")]
     public sealed partial class CapsuleCollider2D : Collider2D
     {
+        internal CapsuleCollider2D(global::UnityEngine.EntityId id) : base(id) {}
+        public CapsuleCollider2D() {}
         // The size of the capsule.
         ///<summary>The width and height of the capsule area.</summary>
         ///<remarks>The capsule will alter its geometry to fit into this area as best it can.  A capsule will automatically adjust the radius of the capsule ends as well as the capsule sides to fit this area.  When the capsule area is a 1:1 ratio, the capsule ends will fit together exactly resulting in a circle only.</remarks>
@@ -12250,6 +12260,8 @@ Flip = 4 };
     [NativeHeader("Modules/Physics2D/Public/EdgeCollider2D.h")]
     public sealed partial class EdgeCollider2D : Collider2D
     {
+        internal EdgeCollider2D(global::UnityEngine.EntityId id) : base(id) {}
+        public EdgeCollider2D() {}
         // Reset to a single horizontal edge.
         ///<summary>Reset to a single edge consisting of two points.</summary>
         extern public void Reset();
@@ -12287,6 +12299,12 @@ Flip = 4 };
         [NativeMethod("SetPoints_Binding")]
         extern public bool SetPoints([NotNull] List<Vector2> points);
 
+        // Non-allocating variant for internal callers that already hold the points in native memory.
+        internal bool SetPoints(ReadOnlySpan<Vector2> points) => SetPointsSpan_Internal(points);
+
+        [NativeMethod("SetPointsSpan_Binding")]
+        extern private bool SetPointsSpan_Internal(ReadOnlySpan<Vector2> points);
+
         // Get or set the adjacent start/end points.
         ///<summary>Set this to true to use the <see cref="adjacentStartPoint" /> to form the collision normal that is used to calculate the collision response when a collision occurs at the Edge Collider's start point. Set this to false to not use the <see cref="adjacentStartPoint" />, and the collision normal becomes the direction of motion of the collision.</summary>
         ///<seealso cref="adjacentStartPoint" />
@@ -12322,6 +12340,8 @@ Flip = 4 };
     [NativeHeader("Modules/Physics2D/Public/BoxCollider2D.h")]
     public sealed partial class BoxCollider2D : Collider2D
     {
+        internal BoxCollider2D(global::UnityEngine.EntityId id) : base(id) {}
+        public BoxCollider2D() {}
         // The size of the box.
         ///<summary>The width and height of the rectangle.</summary>
         ///<remarks>The X coordinate of the vector represents the width while the Y represents the height. These values are specified relative to a center point, so the distance from the center to the left edge is actually width/2.</remarks>
@@ -12349,6 +12369,8 @@ Flip = 4 };
     [NativeHeader("Modules/Physics2D/Public/PolygonCollider2D.h")]
     public sealed partial class PolygonCollider2D : Collider2D
     {
+        internal PolygonCollider2D(global::UnityEngine.EntityId id) : base(id) {}
+        public PolygonCollider2D() {}
         // Get/Set Delaunay mesh usage.
         ///<summary>When the value is true, the Collider uses an additional Delaunay triangulation step to produce the Collider mesh. When the value is false, this additional step does not occur.</summary>
         ///<remarks>Using Delaunay triangulation can reduce the number of shapes created in the Collider mesh and reduce the number of small triangle fans produced, both of which can improve overall physics performance.</remarks>
@@ -12597,6 +12619,8 @@ Flip = 4 };
     [NativeHeader("Modules/Physics2D/Public/CompositeCollider2D.h")]
     public sealed partial class CompositeCollider2D : Collider2D
     {
+        internal CompositeCollider2D(global::UnityEngine.EntityId id) : base(id) {}
+        public CompositeCollider2D() {}
         ///<summary>Specifies the type of geometry the Composite Collider generates.</summary>
         ///<seealso cref="CompositeCollider2D.geometryType" />
         public enum GeometryType { ///<summary>Sets the Composite Collider 2D to generate closed outlines for the merged collider geometry consisting of only edges.</summary>
@@ -12784,6 +12808,8 @@ Manual = 1 }
     [RequireComponent(typeof(Transform), typeof(Rigidbody2D))]
     public partial class Joint2D : Behaviour
     {
+        public Joint2D() {}
+        internal Joint2D(global::UnityEngine.EntityId id) : base(id) {}
         // Gets the attached rigid-body.
         ///<summary>The <see cref="Rigidbody2D" /> attached to the <see cref="Joint2D" />.</summary>
         ///<remarks>
@@ -12902,6 +12928,8 @@ Manual = 1 }
     [NativeHeader("Modules/Physics2D/AnchoredJoint2D.h")]
     public partial class AnchoredJoint2D : Joint2D
     {
+        public AnchoredJoint2D() {}
+        internal AnchoredJoint2D(global::UnityEngine.EntityId id) : base(id) {}
         // The Position of the anchor around which the joints motion is constrained.
         ///<summary>The joint's anchor point on the object that has the joint component.</summary>
         ///<seealso cref="connectedAnchor" />
@@ -12930,6 +12958,8 @@ Manual = 1 }
     [NativeHeader("Modules/Physics2D/SpringJoint2D.h")]
     public sealed class SpringJoint2D : AnchoredJoint2D
     {
+        internal SpringJoint2D(global::UnityEngine.EntityId id) : base(id) {}
+        public SpringJoint2D() {}
         // Should the distance be automatically calculated from the relative distance between the anchor points?
         ///<summary>Should the <c>distance</c> be calculated automatically?</summary>
         ///<remarks>When true, the <c>distance</c> property will be calculated automatically to match the distance between the <c>anchor</c> and <c>connectedAnchor</c> properties.  When false, the distance can be configured using the <c>distance</c> property.</remarks>
@@ -12965,6 +12995,8 @@ Manual = 1 }
     [NativeHeader("Modules/Physics2D/DistanceJoint2D.h")]
     public sealed class DistanceJoint2D : AnchoredJoint2D
     {
+        internal DistanceJoint2D(global::UnityEngine.EntityId id) : base(id) {}
+        public DistanceJoint2D() {}
         // Should the distance be automatically calculated from the relative distance between the anchor points?
         ///<summary>Should the <c>distance</c> be calculated automatically?</summary>
         ///<remarks>When true, the <c>distance</c> property will be calculated automatically to match the distance between the <c>anchor</c> and <c>connectedAnchor</c> properties.  When false, the distance can be configured using the <c>distance</c> property.</remarks>
@@ -12996,6 +13028,8 @@ Manual = 1 }
     [NativeHeader("Modules/Physics2D/FrictionJoint2D.h")]
     public sealed class FrictionJoint2D : AnchoredJoint2D
     {
+        internal FrictionJoint2D(global::UnityEngine.EntityId id) : base(id) {}
+        public FrictionJoint2D() {}
         // The maximum force which the joint should use to adjust position.
         ///<summary>The maximum force that can be generated when trying to maintain the friction joint constraint.</summary>
         ///<remarks>The joint constantly tries to reduce the ::Rigidbody2D::velocity using the maximum force.  Because you can use very high force limit, you can essential reduce an objects movement to almost zero.</remarks>
@@ -13019,6 +13053,8 @@ Manual = 1 }
     [NativeHeader("Modules/Physics2D/HingeJoint2D.h")]
     public sealed class HingeJoint2D : AnchoredJoint2D
     {
+        internal HingeJoint2D(global::UnityEngine.EntityId id) : base(id) {}
+        public HingeJoint2D() {}
         // Setting the motor or limit automatically enabled them.
 
         // Enables the joint's motor.
@@ -13088,6 +13124,8 @@ Manual = 1 }
     [NativeHeader("Modules/Physics2D/RelativeJoint2D.h")]
     public sealed class RelativeJoint2D : Joint2D
     {
+        internal RelativeJoint2D(global::UnityEngine.EntityId id) : base(id) {}
+        public RelativeJoint2D() {}
         // The maximum motor force which the joint should use to adjust position.
         ///<summary>The maximum force that can be generated when trying to maintain the relative joint constraint.</summary>
         extern public float maxForce { get; set; }
@@ -13141,6 +13179,8 @@ Manual = 1 }
     [NativeHeader("Modules/Physics2D/SliderJoint2D.h")]
     public sealed class SliderJoint2D : AnchoredJoint2D
     {
+        internal SliderJoint2D(global::UnityEngine.EntityId id) : base(id) {}
+        public SliderJoint2D() {}
         // Should the angle be automatically calculated from the relative angle between the anchor points?
         ///<summary>Should the <c>angle</c> be calculated automatically?</summary>
         ///<remarks>When true, the <c>angle</c> property will be calculated automatically to match the relative angle between the <c>anchor</c> and <c>connectedAnchor</c> properties.  When false, the angle can be configured using the <c>angle</c> property.</remarks>
@@ -13212,6 +13252,8 @@ Manual = 1 }
     [NativeHeader("Modules/Physics2D/TargetJoint2D.h")]
     public sealed class TargetJoint2D : Joint2D
     {
+        internal TargetJoint2D(global::UnityEngine.EntityId id) : base(id) {}
+        public TargetJoint2D() {}
         // The Position of the anchor around which the joints motion is constrained.
         ///<summary>The local-space anchor on the rigid-body the joint is attached to.</summary>
         ///<remarks>The local-space anchor position is where the joint will apply forces to move the body to the specified <c>target</c> position.</remarks>
@@ -13250,6 +13292,8 @@ Manual = 1 }
     [NativeHeader("Modules/Physics2D/FixedJoint2D.h")]
     public sealed class FixedJoint2D : AnchoredJoint2D
     {
+        internal FixedJoint2D(global::UnityEngine.EntityId id) : base(id) {}
+        public FixedJoint2D() {}
         // The damping ratio for the oscillation whilst trying to achieve the fixed constraint.
         ///<summary>The amount by which the spring force is reduced in proportion to the movement speed.</summary>
         ///<remarks>The spring will oscillate with a certain frequency as it attempts to reestablish the desired distance between the objects. The higher the damping ratio, the quicker the oscillation will die down to zero.</remarks>
@@ -13274,6 +13318,8 @@ Manual = 1 }
     [NativeHeader("Modules/Physics2D/WheelJoint2D.h")]
     public sealed class WheelJoint2D : AnchoredJoint2D
     {
+        internal WheelJoint2D(global::UnityEngine.EntityId id) : base(id) {}
+        public WheelJoint2D() {}
         // The suspension for the joint.
         ///<summary>Set the joint suspension configuration.</summary>
         ///<seealso cref="JointSuspension2D" />
@@ -13321,6 +13367,8 @@ Manual = 1 }
     [NativeHeader("Modules/Physics2D/Effector2D.h")]
     public partial class Effector2D : Behaviour
     {
+        public Effector2D() {}
+        internal Effector2D(global::UnityEngine.EntityId id) : base(id) {}
         ///<summary>Should the collider-mask be used or the global collision matrix?</summary>
         ///<seealso cref="colliderMask" />
         extern public bool useColliderMask { get; set; }
@@ -13347,6 +13395,8 @@ Manual = 1 }
     [NativeHeader("Modules/Physics2D/AreaEffector2D.h")]
     public partial class AreaEffector2D : Effector2D
     {
+        internal AreaEffector2D(global::UnityEngine.EntityId id) : base(id) {}
+        public AreaEffector2D() {}
         ///<summary>The angle of the force to be applied.</summary>
         ///<remarks>The actual angle will be different depending on whether the <c>useGlobalAngle</c> is true or false.</remarks>
         extern public float forceAngle { get; set; }
@@ -13385,6 +13435,8 @@ Manual = 1 }
     [NativeHeader("Modules/Physics2D/BuoyancyEffector2D.h")]
     public partial class BuoyancyEffector2D : Effector2D
     {
+        internal BuoyancyEffector2D(global::UnityEngine.EntityId id) : base(id) {}
+        public BuoyancyEffector2D() {}
         // The local-space surface level that determines the 'surface' of the fluid.
         ///<summary>Defines an arbitrary horizontal line that represents the fluid surface level.</summary>
         ///<remarks>The <see cref="Collider2D" /> used by the effector only defines the overall area of effect for the buoyancy forces, but not the actual surface level of the fluid. Any 2D colliders that overlap this area of effect are then tested against the surface level. The surface level is a line which is used to determine if the <see cref="Collider2D" /> is submerged, not submerged or partially submerged.  Anything below this line is submerged, anything above this line isn't submerged and anything overlapping this line is partially submerged.
@@ -13460,6 +13512,8 @@ Manual = 1 }
     [NativeHeader("Modules/Physics2D/PointEffector2D.h")]
     public partial class PointEffector2D : Effector2D
     {
+        internal PointEffector2D(global::UnityEngine.EntityId id) : base(id) {}
+        public PointEffector2D() {}
         ///<summary>The magnitude of the force to be applied.</summary>
         extern public float forceMagnitude { get; set; }
 
@@ -13500,6 +13554,8 @@ Manual = 1 }
     [NativeHeader("Modules/Physics2D/PlatformEffector2D.h")]
     public partial class PlatformEffector2D : Effector2D
     {
+        internal PlatformEffector2D(global::UnityEngine.EntityId id) : base(id) {}
+        public PlatformEffector2D() {}
         // Whether to use one-way collision behaviour or not.
         ///<summary>Should the one-way collision behaviour be used?</summary>
         ///<remarks>When true, collisions are only allowed when the linear velocity, transformed into the local-space of the target <see cref="Collider2D" />, are less than zero.  For <see cref="Collider2D" /> that are not rotated in Z, this equates to a vertical velocity less than zero.</remarks>
@@ -13556,6 +13612,8 @@ Manual = 1 }
     [NativeHeader("Modules/Physics2D/SurfaceEffector2D.h")]
     public partial class SurfaceEffector2D : Effector2D
     {
+        internal SurfaceEffector2D(global::UnityEngine.EntityId id) : base(id) {}
+        public SurfaceEffector2D() {}
         ///<summary>The speed to be maintained along the surface.</summary>
         ///<remarks>This <c>speed</c> will be maintained by applying continually applying impulse forces to the target <see cref="Rigidbody2D" />.</remarks>
         extern public float speed { get; set; }
@@ -13592,6 +13650,8 @@ Manual = 1 }
     [NativeHeader("Modules/Physics2D/PhysicsUpdateBehaviour2D.h")]
     public partial class PhysicsUpdateBehaviour2D : Behaviour
     {
+        public PhysicsUpdateBehaviour2D() {}
+        internal PhysicsUpdateBehaviour2D(global::UnityEngine.EntityId id) : base(id) {}
     }
 
     // Applies constant forces to the Rigidbody2D.
@@ -13603,6 +13663,8 @@ Manual = 1 }
     [RequireComponent(typeof(Rigidbody2D))]
     public sealed partial class ConstantForce2D : PhysicsUpdateBehaviour2D
     {
+        internal ConstantForce2D(global::UnityEngine.EntityId id) : base(id) {}
+        public ConstantForce2D() {}
         // The force to apply globally each physics update.
         ///<summary>The linear force applied to the rigidbody each physics update.</summary>
         ///<remarks>The <c>force</c> is specified in the global coordinate frame i.e. independent of the rigid-body rotation and is applied to the center-of-mass therefore no torque is generated.</remarks>
@@ -13624,11 +13686,12 @@ Manual = 1 }
     [NativeHeader("Modules/Physics2D/Public/PhysicsMaterial2D.h")]
     public sealed partial class PhysicsMaterial2D : Object
     {
+        internal PhysicsMaterial2D(global::UnityEngine.EntityId id) : base(id) {}
         // Creates a new material.
-        public PhysicsMaterial2D() { Create_Internal(this, null); }
+        public PhysicsMaterial2D() { SetEntityIdFromConstructor(Create_Internal(null)); }
 
         // Creates a new material named /name/.
-        public PhysicsMaterial2D(string name) { Create_Internal(this, name); }
+        public PhysicsMaterial2D(string name) { SetEntityIdFromConstructor(Create_Internal(name)); }
 
         // Get combined values.
         ///<summary>Calculates the effective value used when two <see cref="Collider2D" /> come into contact with their own <see cref="PhysicsMaterial2D" />.</summary>
@@ -13641,7 +13704,7 @@ Manual = 1 }
         extern static public float GetCombinedValues(float valueA, float valueB, PhysicsMaterialCombine2D materialCombineA, PhysicsMaterialCombine2D materialCombineB);
 
         [NativeMethod("Create_Binding")]
-        extern static private void Create_Internal([Writable] PhysicsMaterial2D scriptMaterial, string name);
+        extern static private EntityId Create_Internal(string name);
 
         // Controls how bouncy the surface contact is. A value of 0 will not bounce whereas a value of 1 will bounce without any loss of energy.
         ///<summary>Coefficient of restitution.</summary>

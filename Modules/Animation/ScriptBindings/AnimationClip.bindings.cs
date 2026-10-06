@@ -73,6 +73,7 @@ namespace UnityEngine
     [NativeHeader("Modules/Animation/AnimationClip.h")]
     public sealed class AnimationClip : Motion
     {
+        internal AnimationClip(global::UnityEngine.EntityId id) : base(id) {}
         // Creates a new animation clip
         ///<summary>Creates a new animation clip.</summary>
         public AnimationClip()
@@ -80,6 +81,8 @@ namespace UnityEngine
             Internal_CreateAnimationClip(this);
         }
 
+        // [Writable]: native binds this object as the wrapper before AwakeFromLoad, whose editor callback
+        // (AnimationUtility.onCurveWasModified) hands the clip to managed code.
         [FreeFunction("AnimationClipBindings::Internal_CreateAnimationClip")]
         extern private static void Internal_CreateAnimationClip([Writable] AnimationClip self);
 

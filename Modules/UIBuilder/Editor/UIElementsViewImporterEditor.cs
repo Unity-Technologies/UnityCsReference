@@ -21,8 +21,8 @@ namespace UnityEditor.UIElements
         static readonly string k_ApplyUpgradesButtonLabel = L10n.Tr("Apply Upgrades (Overwrites File)", null);
         static readonly string k_ApplyUpgradesButtonLabelMultiple = L10n.Tr("Apply Upgrades (Overwrites Files)", null);
 
-        [AutoStaticsCleanupOnCodeReload]
-        static UxmlUpgradeService s_UpgradeService = new UxmlUpgradeService();
+        [IgnoreForUAL0015("Scoped lazy holder, value re-created by its factory in the next code-loaded scope")]
+        static readonly ScopedLazy<UxmlUpgradeService, CodeLoadedScope> s_UpgradeService = new(() => new UxmlUpgradeService());
 
         public override VisualElement CreateInspectorGUI()
         {
@@ -96,10 +96,11 @@ namespace UnityEditor.UIElements
                 enabledColumn
             };
 
+#pragma warning disable UAL0018 // The list view and its bind callbacks belong to this inspector's UI, which is rebuilt after every code reload
             var listView = new MultiColumnListView(columns)
             {
                 showBorder = true,
-                itemsSource = s_UpgradeService.m_Upgraders,
+                itemsSource = s_UpgradeService.Value.m_Upgraders,
                 fixedItemHeight = 20,
                 virtualizationMethod = CollectionVirtualizationMethod.DynamicHeight
             };
@@ -108,7 +109,7 @@ namespace UnityEditor.UIElements
             nameColumn.bindCell = (element, index) =>
             {
                 var label = (Label)element;
-                var upgrader = s_UpgradeService.upgraders[index];
+                var upgrader = s_UpgradeService.Value.upgraders[index];
                 label.text = upgrader.name;
                 label.tooltip = upgrader.description;
             };
@@ -117,14 +118,15 @@ namespace UnityEditor.UIElements
             enabledColumn.bindCell = (element, index)  =>
             {
                 var toggle = (Toggle)element;
-                var upgrader = s_UpgradeService.upgraders[index];
+                var upgrader = s_UpgradeService.Value.upgraders[index];
 
-                toggle.SetValueWithoutNotify(s_UpgradeService.IsUpgraderEnabled(upgrader));
+                toggle.SetValueWithoutNotify(s_UpgradeService.Value.IsUpgraderEnabled(upgrader));
                 toggle.RegisterValueChangedCallback(evt =>
                 {
-                    s_UpgradeService.SetUpgraderEnabled(upgrader, evt.newValue);
+                    s_UpgradeService.Value.SetUpgraderEnabled(upgrader, evt.newValue);
                 });
             };
+#pragma warning restore UAL0018
 
             section.Add(listView);
 
@@ -139,7 +141,7 @@ namespace UnityEditor.UIElements
                         assets.Add(vta);
                 }
 
-                s_UpgradeService.ApplyUpgrades(assets);
+                s_UpgradeService.Value.ApplyUpgrades(assets);
             })
             {
                 text = targets.Length > 1 ? k_ApplyUpgradesButtonLabelMultiple : k_ApplyUpgradesButtonLabel,

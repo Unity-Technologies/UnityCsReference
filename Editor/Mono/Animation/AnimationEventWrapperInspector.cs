@@ -15,9 +15,9 @@ namespace UnityEditor
     [CanEditMultipleObjects]
     internal partial class AnimationEventWrapperInspector : UnityEditor.Editor
     {
-        public static readonly GUIContent s_OverloadWarning = EditorGUIUtility.TrTextContent("Some functions were overloaded in MonoBehaviour components and may not work as intended if used with Animation Events!");
-        public static readonly GUIContent s_DuplicatesWarning = EditorGUIUtility.TrTextContent("Some functions have the same name across several MonoBehaviour components and may not work as intended if used with Animation Events!");
-        public static readonly GUIContent s_RequireMethod = EditorGUIUtility.TrTextContent("Require Receiver", "When enabled, an error will be emitted if there is no matching method on the GameObject.");
+        public static readonly GUIContent s_OverloadWarning = L10n.TextContent("Some functions were overloaded in MonoBehaviour components and may not work as intended if used with Animation Events!", null, null, null);
+        public static readonly GUIContent s_DuplicatesWarning = L10n.TextContent("Some functions have the same name across several MonoBehaviour components and may not work as intended if used with Animation Events!", null, null, null);
+        public static readonly GUIContent s_RequireMethod = L10n.TextContent("Require Receiver", "When enabled, an error will be emitted if there is no matching method on the GameObject.", null, null);
 
         const string kNotSupportedPostFix = " (Function Not Supported)";
         const string kNoneSelected = "(No Function Selected)";
@@ -180,7 +180,7 @@ namespace UnityEditor
             {
                 EditorGUI.showMixedValue = !singleFunctionName;
                 string oldFunctionName = singleFunctionName ? firstEvent.functionName : "";
-                string functionName = EditorGUILayout.TextField(EditorGUIUtility.TrTextContent("Function"), oldFunctionName).Replace(" ", "");
+                string functionName = EditorGUILayout.TextField(L10n.TextContent("Function", null, null, null), oldFunctionName).Replace(" ", "");
                 if (functionName != oldFunctionName)
                 {
                     foreach (var evt in data.selectedEvents)
@@ -267,7 +267,7 @@ namespace UnityEditor
 
             using (new EditorGUI.DisabledScope(true))
             {
-                dummyEvent.functionName = EditorGUILayout.TextField(EditorGUIUtility.TrTextContent("Function"), dummyEvent.functionName);
+                dummyEvent.functionName = EditorGUILayout.TextField(L10n.TextContent("Function", null, null, null), dummyEvent.functionName);
                 EditorGUI.indentLevel++;
                     dummyEvent.m_MessageOptions = EditorGUILayout.Toggle(s_RequireMethod, dummyEvent.messageOptions == SendMessageOptions.RequireReceiver) ? 0 : 1;
                 EditorGUI.indentLevel--;

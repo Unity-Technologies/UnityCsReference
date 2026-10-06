@@ -259,70 +259,77 @@ namespace UnityEditor.UIElements
             m_VisualTree.StretchToParentSize();
 
             // Create a transient panel to render the visual tree asset
+            var panelEntityId = m_VTA.GetEntityId();
             var panel = EditorPanel.FindOrCreate(m_VTA);
-            var visualTree = panel.visualTree;
-            visualTree.Add(m_VisualTree);
-            visualTree.style.unityTextGenerator = new StyleEnum<TextGeneratorType>(EditorTextSettings.GetEditorTextGeneratorType());
-
-            Binding.SetPanelLogLevel(panel, BindingLogLevel.None); // We don't want preview to log errors.
-            ApplyThemeToPreview(m_VisualTree);
-
-            var r = new Rect(0, 0, width, height);
-            var viewportRect = GUIClip.UnclipToWindow(r); // Still in points, not pixels
-            panel.pixelsPerPoint = 1;
-            panel.UpdateScalingFromEditorWindow = false;
-            panel.visualTree.SetSize(viewportRect.size); // We will draw relative to a viewport covering the preview area, so draw at 0,0
-            panel.visualTree.IncrementVersion(VersionChangeType.Repaint);
-
-            var backup = RenderTexture.active;
-            GL.PushMatrix();
-            var oldState = SavedGUIState.Create();
-            PanelClearSettings oldClearSettings = panel.clearSettings;
 
             try
             {
-                if (tex == null || tex.width != width || tex.height != height)
+                var visualTree = panel.visualTree;
+                visualTree.Add(m_VisualTree);
+                visualTree.style.unityTextGenerator = new StyleEnum<TextGeneratorType>(EditorTextSettings.GetEditorTextGeneratorType());
+
+                Binding.SetPanelLogLevel(panel, BindingLogLevel.None); // We don't want preview to log errors.
+                ApplyThemeToPreview(m_VisualTree);
+
+                var r = new Rect(0, 0, width, height);
+                var viewportRect = GUIClip.UnclipToWindow(r); // Still in points, not pixels
+                panel.pixelsPerPoint = 1;
+                panel.overrideScalingForTests = true;
+                panel.visualTree.SetSize(viewportRect.size); // We will draw relative to a viewport covering the preview area, so draw at 0,0
+                panel.visualTree.IncrementVersion(VersionChangeType.Repaint);
+
+                var backup = RenderTexture.active;
+                GL.PushMatrix();
+                var oldState = SavedGUIState.Create();
+                PanelClearSettings oldClearSettings = panel.clearSettings;
+
+                try
                 {
-                    if (tex != null)
+                    if (tex == null || tex.width != width || tex.height != height)
                     {
-                        tex.Release();
-                        tex.DiscardContents();
-                        DestroyImmediate(tex);
+                        if (tex != null)
+                        {
+                            tex.Release();
+                            tex.DiscardContents();
+                            DestroyImmediate(tex);
+                        }
+
+                        tex = new RenderTexture((int)viewportRect.size.x, (int)viewportRect.size.y, 24);
                     }
 
-                    tex = new RenderTexture((int)viewportRect.size.x, (int)viewportRect.size.y, 24);
+                    RenderTexture.active = tex;
+                    GL.LoadPixelMatrix();
+                    GL.Clear(true, true, Color.black, UIRUtility.k_ClearZ);
+
+                    int clips = GUIClip.Internal_GetCount();
+                    while (clips > 0)
+                    {
+                        GUIClip.Pop();
+                        clips--;
+                    }
+
+                    panel.clearSettings = new PanelClearSettings();
+
+                    panel.Repaint();
+
+                    // Repaint's filter passes leave the target/viewport on an atlas block, and editor panels don't set their own; restore ours before Render draws the root tree.
+                    RenderTexture.active = tex;
+                    GL.Viewport(new Rect(0, 0, tex.width, tex.height));
+
+                    panel.Render();
                 }
-
-                RenderTexture.active = tex;
-                GL.LoadPixelMatrix();
-                GL.Clear(true, true, Color.black, UIRUtility.k_ClearZ);
-
-                int clips = GUIClip.Internal_GetCount();
-                while (clips > 0)
+                finally
                 {
-                    GUIClip.Pop();
-                    clips--;
+                    panel.clearSettings = oldClearSettings;
+                    oldState.ApplyAndForget();
+                    GL.PopMatrix();
+                    RenderTexture.active = backup;
                 }
-
-                panel.clearSettings = new PanelClearSettings();
-
-                panel.Repaint();
-
-                // Repaint's filter passes leave the target/viewport on an atlas block, and editor panels don't set their own; restore ours before Render draws the root tree.
-                RenderTexture.active = tex;
-                GL.Viewport(new Rect(0, 0, tex.width, tex.height));
-
-                panel.Render();
-
-                panel.Dispose();
-                UIElementsUtility.RemoveCachedPanel(m_VTA.GetEntityId());
             }
             finally
             {
-                panel.clearSettings = oldClearSettings;
-                oldState.ApplyAndForget();
-                GL.PopMatrix();
-                RenderTexture.active = backup;
+                UIElementsUtility.RemoveCachedPanel(panelEntityId);
+                panel.Dispose();
             }
 
             // As stated above, viewport is not saved/restored.
@@ -351,6 +358,12 @@ namespace UnityEditor.UIElements
         internal bool UpdatePreviewTexture(int width, int height)
         {
             var vta = target as VisualTreeAsset;
+            if (!vta)
+            {
+                m_VTA = null;
+                return false;
+            }
+
             bool dirty = false;
             int currentDirtyCount = EditorUtility.GetDirtyCount(target);
             if (vta != m_VTA || !m_VTA || currentDirtyCount != m_LastDirtyCount || vta.contentHash != m_LastContentHash)

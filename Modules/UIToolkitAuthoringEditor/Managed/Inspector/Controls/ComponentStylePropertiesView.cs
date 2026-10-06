@@ -6,6 +6,7 @@ using System;
 using System.Collections.Generic;
 using System.Reflection;
 using Unity.Scripting.LifecycleManagement;
+using Unity.UIToolkit.Editor.Utilities;
 using UnityEditor;
 using UnityEditor.UIElements;
 using UnityEngine;
@@ -277,8 +278,7 @@ sealed class ComponentStylePropertiesView : VisualElement
 
         WriteValue(inlineSheet, property, valueType, variableType, value);
 
-        m_Target.UpdateInlineRule(inlineSheet, rule);
-        m_Target.IncrementVersion(VersionChangeType.Styles | VersionChangeType.StyleSheet);
+        VisualElementUtility.UpdateInlineRuleOnAllClones(m_Target, inlineSheet, rule);
         MarkDocumentChanged();
     }
 
@@ -311,8 +311,7 @@ sealed class ComponentStylePropertiesView : VisualElement
 
         RemoveStyleRulePropertyCommand.Execute(CommandSources.Inspector, inlineSheet, rule, property);
 
-        m_Target.UpdateInlineRule(inlineSheet, rule);
-        m_Target.IncrementVersion(VersionChangeType.Styles | VersionChangeType.StyleSheet);
+        VisualElementUtility.UpdateInlineRuleOnAllClones(m_Target, inlineSheet, rule);
         MarkDocumentChanged();
     }
 

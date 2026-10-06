@@ -192,5 +192,14 @@ namespace UnityEngine.UIElements
             m_DirtyElements ??= new HashSet<VisualElement>();
             m_DirtyElements.Add(ve);
         }
+
+        // Styles resolve after this phase; without this a style-sheet clip waits a frame for its player.
+        // Anchored to the animation clock, not the wall clock, so a clip and a transition started by
+        // the same rule share a t0 even when this runs from a ValidateLayout-driven style pass.
+        internal void FlushDirtyElementClips()
+        {
+            var styleAnim = panel.styleAnimationSystem;
+            ForwardDirtyElementsToStyleAnimation(styleAnim, styleAnim.currentTimeSeconds);
+        }
     }
 }

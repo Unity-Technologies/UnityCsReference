@@ -2,7 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: UIToolkitFramework not yet converted
 using System;
 using System.Collections.Generic;
 using Unity.Scripting.LifecycleManagement;
@@ -58,7 +57,10 @@ abstract class LocalizedReferenceElement : VisualElement
 
     ResourceTableCollection m_Collection;
     SharedTableData.SharedTableEntry m_SharedEntry;
+    TableReference m_ShownTable;
+    TableEntryReference m_ShownEntry;
     string m_SelectedLocaleCode;
+    bool m_RebuildPending;
 
     protected ResourceTableCollection Collection => m_Collection;
     protected SharedTableData.SharedTableEntry SharedEntry => m_SharedEntry;
@@ -120,19 +122,61 @@ abstract class LocalizedReferenceElement : VisualElement
         InjectReferenceButton(label);
         WireEntryName();
         BuildToggles();
+        this.TrackPropertyValue(m_TableRefProp, _ => OnReferenceChanged());
+        this.TrackPropertyValue(m_TableEntryRefProp, _ => OnReferenceChanged());
 
-        // Custom-built content is not auto-bound, so rebuild it when an undo/redo changes the underlying data.
-        RegisterCallback<AttachToPanelEvent>(_ => Undo.undoRedoPerformed += OnUndoRedo);
-        RegisterCallback<DetachFromPanelEvent>(_ => Undo.undoRedoPerformed -= OnUndoRedo);
+        // Custom-built content is not auto-bound, so rebuild it when the underlying data changes elsewhere.
+        RegisterCallback<AttachToPanelEvent>(_ =>
+        {
+            Undo.undoRedoPerformed += OnUndoRedo;
+            LocalizationEditorSettings.CollectionsChanged += RebuildOrDefer;
+        });
+        RegisterCallback<DetachFromPanelEvent>(_ =>
+        {
+            Undo.undoRedoPerformed -= OnUndoRedo;
+            LocalizationEditorSettings.CollectionsChanged -= RebuildOrDefer;
+        });
+        // Deferred so focus has settled on its new target; moving between two fields in here is not a flush point.
+        RegisterCallback<FocusOutEvent>(_ => { if (m_RebuildPending) schedule.Execute(RebuildOrDefer); });
         // Subclasses call RebuildBody() at the end of their constructor, once their own state is set.
     }
 
     bool SerializedDataAlive => m_Property.isValid && m_Object.targetObject != null;
 
+    void OnReferenceChanged()
+    {
+        if (SerializedDataAlive && (!TableRef().Equals(m_ShownTable) || !EntryRef().Equals(m_ShownEntry)))
+            RebuildBody();
+    }
+
     void OnUndoRedo()
     {
         if (SerializedDataAlive)
             RebuildBody();
+    }
+
+    void RebuildOrDefer()
+    {
+        if (!SerializedDataAlive)
+            return;
+        // An asset import raises this too, so a rebuild here would drop whatever the user is part way through typing.
+        if (TypingInside)
+            m_RebuildPending = true;
+        else
+            RebuildBody();
+    }
+
+    // Text inputs delegate focus, so the holder may be the field, its input container or the text element itself.
+    bool TypingInside
+    {
+        get
+        {
+            if (focusController?.focusedElement is not VisualElement focused || !Contains(focused))
+                return false;
+            if (focused is TextElement text)
+                return text is ITextEdition { isReadOnly: false };
+            return focused.Query<TextElement>().Where(static t => t is ITextEdition { isReadOnly: false }).First() != null;
+        }
     }
 
     void LoadSkeleton()
@@ -155,8 +199,8 @@ abstract class LocalizedReferenceElement : VisualElement
         m_ExtrasSlot = this.Q("extras-slot");
 
         // Static text lives in UXML but must translate with the editor language, so set it through L10n.Tr here.
-        this.Q<Label>("entry-name-label").text = L10n.Tr("Entry name", null);
-        this.Q<Label>("values-label").text = L10n.Tr("Values", null);
+        m_EntryNameField.label = LocLabels.EntryName;
+        this.Q<Label>("values-label").text = LocLabels.Values;
         m_EntryNameWarning.tooltip = L10n.Tr("Name is empty or already used; the key was not renamed.", null);
 
         ConfigureRail();
@@ -200,12 +244,18 @@ abstract class LocalizedReferenceElement : VisualElement
 
     void InjectReferenceButton(string label)
     {
-        if (m_Foldout != null)
-            m_Foldout.text = label;
-
         s_RefButton ??= EditorGUIUtility.LoadRequired(k_RefButtonUxml) as VisualTreeAsset;
         if (s_RefButton == null)
+        {
+            if (m_Foldout != null)
+            {
+                m_Foldout.text = label;
+                var headerText = m_Foldout.Q<Label>(className: Foldout.textUssClassName);
+                if (headerText != null)
+                    headerText.tooltip = m_Property.tooltip;
+            }
             return;
+        }
         m_RefButton = s_RefButton.Instantiate().Q<Button>("ref-button");
         m_RefButton.RemoveFromHierarchy();
         m_RefButton.clicked += OpenReferencePicker;
@@ -218,9 +268,21 @@ abstract class LocalizedReferenceElement : VisualElement
 
         var header = m_Foldout?.Q<Toggle>();
         if (header != null)
-            header.Add(m_RefButton);
+        {
+            var headerField = new HeaderField(label, m_RefButton);
+            headerField.AddToClassList(BaseField<string>.alignedFieldUssClassName);
+            headerField.AddToClassList(LocClasses.LsHeaderField);
+            // The reference button carries its own tooltip, so put the field's on the header label only.
+            headerField.labelElement.tooltip = m_Property.tooltip;
+            header.Add(headerField);
+        }
         else
             Insert(0, m_RefButton);
+    }
+
+    sealed class HeaderField : BaseField<string>
+    {
+        public HeaderField(string label, VisualElement input) : base(label, input) { }
     }
 
     void WireEntryName()
@@ -235,10 +297,13 @@ abstract class LocalizedReferenceElement : VisualElement
         m_EntryNameField.RegisterCallback<FocusOutEvent>(_ => CommitRename());
     }
 
-    protected void RebuildBody()
+    internal void RebuildBody()
     {
+        m_RebuildPending = false;
         m_Object.Update();
         var reference = TableRef();
+        m_ShownTable = reference;
+        m_ShownEntry = EntryRef();
         m_Collection = ResolveCollection(reference);
         m_SharedEntry = ResolveSharedEntry(m_Collection);
         UpdateRefButton();
@@ -324,6 +389,8 @@ abstract class LocalizedReferenceElement : VisualElement
 
     TableReference TableRef() => (TableReference)m_TableRefProp.boxedValue;
 
+    TableEntryReference EntryRef() => (TableEntryReference)m_TableEntryRefProp.boxedValue;
+
     ResourceTableCollection ResolveCollection(TableReference reference)
     {
         var guid = reference.TableCollectionNameGuid;
@@ -364,20 +431,20 @@ abstract class LocalizedReferenceElement : VisualElement
     {
         m_CreateRow.Clear();
 
-        var newEntry = new Button(OpenNewEntry) { text = L10n.Tr("New entry…", null) };
+        var newEntry = new Button(OpenNewEntry) { name = "new-entry", text = L10n.Tr("New entry…", null) };
         newEntry.tooltip = L10n.Tr("Create a new key in a table collection and point this reference at it.", null);
         m_CreateRow.Add(newEntry);
 
         if (m_Collection != null)
         {
-            var edit = new Button(() => ResourceTablesWindow.ShowWindow(m_Collection)) { text = L10n.Tr("Edit", null) };
+            var edit = new Button(() => ResourceTablesWindow.ShowWindow(m_Collection)) { text = LocLabels.Edit };
             edit.tooltip = L10n.Tr("Open the referenced collection in the Resource Tables window.", null);
             edit.AddToClassList(LocClasses.LsCreateRowTrailing);
             m_CreateRow.Add(edit);
         }
         else
         {
-            var create = new Button(() => ResourceTablesWindow.ShowWindow(null)) { text = L10n.Tr("Create table collection", null) };
+            var create = new Button(() => ResourceTablesWindow.ShowWindow(null)) { text = LocLabels.CreateTableCollection };
             create.AddToClassList(LocClasses.LsCreateRowTrailing);
             m_CreateRow.Add(create);
         }
@@ -385,7 +452,7 @@ abstract class LocalizedReferenceElement : VisualElement
 
     void OpenNewEntry()
     {
-        NewEntryPopup.Show(m_RefButton.worldBound, m_Collection, (collection, name) =>
+        NewEntryPopup.Show(m_RefButton.worldBound, this, m_Collection, (collection, name) =>
         {
             if (!SerializedDataAlive)
                 return;
@@ -403,7 +470,9 @@ abstract class LocalizedReferenceElement : VisualElement
     {
         m_TogglesRow.Clear();
 
-        var fallback = new Toggle(L10n.Tr("Enable fallback", null)) { tooltip = L10n.Tr("When the selected locale has no value, resolve through its fallback chain.", null) };
+        var fallback = new Toggle(LocLabels.EnableFallback) { tooltip = L10n.Tr("When the selected locale has no value, resolve through its fallback chain.", null) };
+        fallback.AddToClassList(BaseField<bool>.alignedFieldUssClassName);
+        fallback.AddToClassList(LocClasses.LsGrow);
         fallback.BindProperty(m_EnableFallback);
         m_TogglesRow.Add(fallback);
     }
@@ -508,7 +577,7 @@ abstract class LocalizedReferenceElement : VisualElement
         if (table == null)
         {
             detail.Add(new HelpBox(string.Format(L10n.Tr("No {0} table exists in this collection yet.", null), locale.Code), HelpBoxMessageType.Warning));
-            var createTable = new Button(() => { LocalizationTableAuthoring.EnsureLocaleTable(m_Collection, locale); RebuildBody(); }) { text = L10n.Tr("Create table", null) };
+            var createTable = new Button(() => { LocalizationTableAuthoring.EnsureLocaleTable(m_Collection, locale); RebuildBody(); }) { text = LocLabels.CreateTable };
             createTable.AddToClassList(LocClasses.LsDetailCreateTable);
             detail.Add(createTable);
             return;
@@ -517,7 +586,7 @@ abstract class LocalizedReferenceElement : VisualElement
         if (m_Collection.SharedData.IsVariant(m_SharedEntry.Id))
         {
             detail.Add(new HelpBox(L10n.Tr("This entry uses variants. Edit its per-variant values in the Resource Tables window.", null), HelpBoxMessageType.Info));
-            var open = new Button(() => ResourceTablesWindow.ShowWindow(m_Collection)) { text = L10n.Tr("Open Resource Tables", null) };
+            var open = new Button(() => ResourceTablesWindow.ShowWindow(m_Collection)) { text = LocLabels.OpenResourceTables };
             open.AddToClassList(LocClasses.LsDetailCreateTable);
             detail.Add(open);
             return;
@@ -543,9 +612,10 @@ abstract class LocalizedReferenceElement : VisualElement
 
     void WireMetadataButton(Button button)
     {
-        LocIcons.Apply(button, LocIcons.Metadata);
+        var hasData = m_SharedEntry.Metadata != null && m_SharedEntry.Metadata.HasData;
+        LocIcons.Apply(button, hasData ? LocIcons.MetadataOn : LocIcons.Metadata);
         button.tooltip = L10n.Tr("Metadata", null);
-        if (m_SharedEntry.Metadata != null && m_SharedEntry.Metadata.HasData)
+        if (hasData)
             button.AddToClassList(LocClasses.LocIconBtnActive);
         button.clicked += () =>
         {
@@ -556,8 +626,8 @@ abstract class LocalizedReferenceElement : VisualElement
             string path;
             using (var so = new SerializedObject(shared))
                 path = so.FindProperty("m_Entries").GetArrayElementAtIndex(index).FindPropertyRelative("m_Metadata").propertyPath;
-            MetadataPopup.Show(button.worldBound, $"{L10n.Tr("Metadata", null)}: {m_SharedEntry.Key}", shared, path, MetadataType.SharedTableEntry,
-                () => { EditorUtility.SetDirty(shared); RefreshDetail(); });
+            MetadataPopup.Show(button.worldBound, this, $"{L10n.Tr("Metadata", null)}: {m_SharedEntry.Key}", shared, path, MetadataType.SharedTableEntry,
+                () => EditorUtility.SetDirty(shared));
         };
     }
 
@@ -600,7 +670,16 @@ abstract class LocalizedReferenceElement : VisualElement
     protected IReadOnlyList<Locale> ProjectLocales()
     {
         var settings = LocalizationEditorSettings.ActiveSettings;
-        return settings != null ? settings.AvailableLocales : Array.Empty<Locale>();
+        if (settings == null)
+            return Array.Empty<Locale>();
+        // A pseudo locale transforms another locale's values, so it holds no values of its own to edit.
+        var locales = new List<Locale>(settings.AvailableLocales.Count);
+        foreach (var locale in settings.AvailableLocales)
+        {
+            if (locale != null && locale is not IPostProcessValueLocale)
+                locales.Add(locale);
+        }
+        return locales;
     }
 
     string DefaultLocaleCode(List<Locale> source)
@@ -648,4 +727,3 @@ static class LocalizedDrawerExtensions
         return element;
     }
 }
-#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

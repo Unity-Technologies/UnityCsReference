@@ -11,6 +11,9 @@ namespace Unity.GraphToolkit.Editor
     static partial class InterfaceGetterExtension
     {
         [AutoStaticsCleanupOnCodeReload]
+        // On-demand reflection memo: GetDirectInterfaces refills an entry on the next miss, and clearing is
+        // wanted here so the cache does not keep Types from the previous scope alive.
+        [IgnoreForUAL0015("On-demand reflection memo, refilled by GetDirectInterfaces on a miss")]
         static Dictionary<Type, IReadOnlyList<Type>> s_InterfacesCache = new();
         public static IReadOnlyList<Type> GetDirectInterfaces(this Type type)
         {

@@ -2,6 +2,8 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using UnityEngine;
+using UnityEngine.UIElements;
 
 namespace Unity.GraphToolkit.Editor
 {
@@ -14,6 +16,7 @@ namespace Unity.GraphToolkit.Editor
         ChildView m_LastUsedMainPort;
         NodeTitlePart m_NodeTitlePart;
         NodeColorLinePart m_NodeColorLinePart;
+        bool m_IconIsInline;
 
         /// <inheritdoc/>
         public override bool HasModelDependenciesChanged() => Model is VariableNodeModel;
@@ -89,40 +92,40 @@ namespace Unity.GraphToolkit.Editor
 
         void SetIconAndColor()
         {
-            // Set the icon and color of the node using USS classes based on the variable type first.
-            if (m_NodeTitlePart != null)
-            {
-                RootView.TypeHandleInfos.AddUssClasses(GraphElementHelper.iconDataTypeClassPrefix, m_NodeTitlePart.Icon, VariableNodeModel.DataType);
-            }
-
             if (m_NodeColorLinePart != null)
             {
                 m_NodeColorLinePart.OverrideColor();
                 m_NodeColorLinePart.Root.AddToClassList(GraphElementHelper.colorLineDatatTypeClassPrefix + RootView.TypeHandleInfos.GetUssName(VariableNodeModel.DataType));
             }
 
-            // If the type has a specific data type style, override the icon and color with it.
             var overrideIcon = true;
             var resolvedType = VariableNodeModel.DataType.Resolve();
             var typeStyle = GraphElementModel.GraphModel.GetDataTypeStyle(resolvedType);
 
-            if (!typeStyle.HasValue)
+            if (!typeStyle.HasValue && resolvedType.IsListOrArray())
             {
                 typeStyle = GraphElementModel.GraphModel.GetDataTypeStyle(resolvedType.GetCollectionElementType());
                 overrideIcon = false;
             }
+
             if (typeStyle.HasValue)
-            {
                 m_NodeColorLinePart?.OverrideColor(typeStyle.Value.color);
 
-                var icon = m_NodeTitlePart?.Icon;
-                if (icon != null)
-                {
-                    icon.tintColor = typeStyle.Value.color;
-                    if (typeStyle.Value.icon != null && overrideIcon)
-                        icon.image = typeStyle.Value.icon;
-                }
-            }
+            if (m_NodeTitlePart == null)
+                return;
+
+            var icon = m_NodeTitlePart.Icon;
+            if (icon == null)
+                return;
+
+            m_IconIsInline = DataTypeIconHelper.ApplyIconStyle(ref icon, typeStyle, overrideIcon, m_IconIsInline,
+                () => m_NodeTitlePart.ReplaceIcon());
+
+            // AddUssClasses after ApplyIconStyle so classes are on the (possibly recreated) icon element.
+            RootView.TypeHandleInfos.AddUssClasses(GraphElementHelper.iconDataTypeClassPrefix, icon, VariableNodeModel.DataType);
+
+            if (typeStyle.HasValue && overrideIcon && typeStyle.Value.suppressIcon)
+                RootView.TypeHandleInfos.RemoveUssClasses(GraphElementHelper.iconDataTypeClassPrefix, icon, VariableNodeModel.DataType);
         }
     }
 }

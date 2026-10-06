@@ -14,6 +14,7 @@ namespace UnityEditor.Presets
     [NativeClass("PresetManager", PersistentTypeId = 0x52A42F1F)]
     internal class PresetManager : ProjectSettingsBase
     {
+        internal PresetManager(global::UnityEngine.EntityId id) : base(id) {}
         internal extern void AddPresetType(PresetType presetType);
     }
 

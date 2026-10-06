@@ -12,15 +12,16 @@ namespace UnityEngine
     [NativeHeader("Runtime/Scripting/TextAsset.h")]
     public partial class TextAsset : Object
     {
+        protected internal TextAsset(global::UnityEngine.EntityId id) : base(id) {}
         // The raw bytes of the text asset. (RO)
         public extern byte[] bytes { [return:UnityMarshalAs(NativeType.ScriptingObjectPtr)] get; }
 
         [return: UnityMarshalAs(NativeType.ScriptingObjectPtr)]
         extern byte[] GetPreviewBytes(int maxByteCount);
 
-        extern static void Internal_CreateInstance([Writable] TextAsset self, string text);
+        extern static EntityId Internal_CreateInstance(string text);
 
-        extern static void Internal_CreateInstanceFromBytes([Writable] TextAsset self, ReadOnlySpan<byte> bytes);
+        extern static EntityId Internal_CreateInstanceFromBytes(ReadOnlySpan<byte> bytes);
 
         extern IntPtr GetDataPtr();
         extern long GetDataSize();

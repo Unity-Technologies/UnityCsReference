@@ -17,7 +17,7 @@ namespace Unity.SmartStrings.Core.Parsing;
 /// Represents a parsed format string.
 /// Contains a list of <see cref="FormatItem" />s,
 /// including <see cref="LiteralText" />s and <see cref="Placeholder" />s.
-/// <para>Note: <see cref="Format"/> is <see cref="IDisposable"/>.</para>
+/// Note: <see cref="Format"/> is <see cref="IDisposable"/>.
 /// </summary>
 public sealed class Format : FormatItem, IDisposable
 {
@@ -354,7 +354,7 @@ public sealed class Format : FormatItem, IDisposable
 
     /// <summary>
     /// Returns this instance to the object pool.
-    /// <para>Do not use this instance after calling.</para>
+    /// Do not use this instance after calling.
     /// </summary>
     /// <param name="disposing"></param>
     void Dispose(bool disposing)
@@ -372,7 +372,7 @@ public sealed class Format : FormatItem, IDisposable
 
     /// <summary>
     /// Returns this instance to the object pool, which also clears all objects it owns.
-    /// <para>Do not use this instance after calling <see cref="Dispose()"/></para>
+    /// Do not use this instance after calling <see cref="Dispose()"/>
     /// </summary>
     /// <code>
     /// // Example:

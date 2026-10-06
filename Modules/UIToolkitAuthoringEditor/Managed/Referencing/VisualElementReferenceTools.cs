@@ -90,11 +90,15 @@ static class VisualElementReferenceTools
         if (element == null)
             throw new ArgumentNullException(nameof(element));
 
-        var panelComponent = element.FindRootPanelComponent();
+        var panelComponent = element.FindRootPanelComponent().AliveOrNull();
         if (panelComponent is not PanelRenderer renderer)
         {
             if (!suppressWarnings)
-                Debug.LogWarning($"Cannot reference the element '{GenerateVisualElementLabel(element)}' because referencing requires it to be part of a PanelRenderer. It is currently part of a '{panelComponent.GetType().Name}' component.");
+            {
+                var owner = panelComponent == null ? "no panel component" : $"a '{panelComponent.GetType().Name}' component";
+                Debug.LogWarning($"Cannot reference the element '{GenerateVisualElementLabel(element)}' because referencing requires it to be part of a PanelRenderer. It is currently part of {owner}.");
+            }
+
             return false;
         }
 

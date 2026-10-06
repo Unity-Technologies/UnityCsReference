@@ -227,7 +227,7 @@ namespace UnityEditor
                 if (!useCreateEmptyParentMenuItem && path.ToLower() == "GameObject/Create Empty Parent".ToLower())
                 {
                     if (GOCreationCommands.ValidateCreateEmptyParent())
-                        menu.AddItem(EditorGUIUtility.TrTextContent("Create Empty Parent " + hotkey), false, GOCreationCommands.CreateEmptyParent);
+                        menu.AddItem(L10n.TextContent("Create Empty Parent " + hotkey, null, null, null), false, GOCreationCommands.CreateEmptyParent);
                     continue;
                 }
 

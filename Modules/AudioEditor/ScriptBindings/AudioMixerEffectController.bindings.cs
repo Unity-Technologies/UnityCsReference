@@ -22,16 +22,17 @@ namespace UnityEditor.Audio
     [NativeHeader("Modules/AudioEditor/ScriptBindings/AudioMixerEffectController.bindings.h")]
     internal class AudioMixerEffectController : Object
     {
+        internal AudioMixerEffectController(global::UnityEngine.EntityId id) : base(id) {}
         EntityId m_LastCachedGroupDisplayNameID;
         string m_DisplayName;
 
         public AudioMixerEffectController(string name)
         {
-            Internal_CreateAudioMixerEffectController(this, name);
+            SetEntityIdFromConstructor(Internal_CreateAudioMixerEffectController(name));
         }
 
         [FreeFunction("AudioMixerEffectControllerBindings::Internal_CreateAudioMixerEffectController")]
-        private extern static void Internal_CreateAudioMixerEffectController([Writable] AudioMixerEffectController mono, string name);
+        private extern static EntityId Internal_CreateAudioMixerEffectController(string name);
 
         public extern GUID effectID { get; }
 

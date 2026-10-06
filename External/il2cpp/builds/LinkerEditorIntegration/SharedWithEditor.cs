@@ -36,8 +36,8 @@ namespace UnityEditorInternal
 
         /// <summary>
         /// ManagedCapture config JSON string supplied by the Editor at build time (Option D2).
-        /// When non-null it drives ManagedCapture injection; this is the only mechanism for
-        /// supplying the config.
+        /// Used as a fallback source for ManagedCapture injection when the
+        /// --managed-capture-config-file CLI option is not supplied (that file takes priority).
         /// </summary>
         [UnityEngine.SerializeField]
         public string managedCaptureConfig;

@@ -30,9 +30,9 @@ namespace UnityEditorInternal.Profiling
 
         static readonly GUIContent[] kDetailedViewTypeNames =
         {
-            EditorGUIUtility.TrTextContent("No Details"),
-            EditorGUIUtility.TrTextContent("Related Data"),
-            EditorGUIUtility.TrTextContent("Calls")
+            L10n.TextContent("No Details", null, null, null),
+            L10n.TextContent("Related Data", null, null, null),
+            L10n.TextContent("Calls", null, null, null)
         };
 
         static readonly int[] kDetailedViewTypes =

@@ -109,11 +109,11 @@ namespace UnityEditor
 
         private static class Styles
         {
-            public static readonly GUIContent sizeContent = EditorGUIUtility.TrTextContent("Size", "The size of the Collider in the X, Y, Z directions.");
-            public static readonly GUIContent fitToSelfContent = EditorGUIUtility.TrTextContent("Fit to Self", "Resize the collider to match this GameObject's renderer bounds.");
-            public static readonly GUIContent fitToSelfDisabledContent = EditorGUIUtility.TrTextContent("Fit to Self", "No renderer to fit to.");
-            public static readonly GUIContent fitToChildrenContent = EditorGUIUtility.TrTextContent("Fit to Children", "Resize the collider to match the combined renderer bounds of this GameObject and its children.");
-            public static readonly GUIContent fitToChildrenDisabledContent = EditorGUIUtility.TrTextContent("Fit to Children", "No children to fit to.");
+            public static readonly GUIContent sizeContent = L10n.TextContent("Size", "The size of the Collider in the X, Y, Z directions.", null, null);
+            public static readonly GUIContent fitToSelfContent = L10n.TextContent("Fit to Self", "Resize the collider to match this GameObject's renderer bounds.", null, null);
+            public static readonly GUIContent fitToSelfDisabledContent = L10n.TextContent("Fit to Self", "No renderer to fit to.", null, null);
+            public static readonly GUIContent fitToChildrenContent = L10n.TextContent("Fit to Children", "Resize the collider to match the combined renderer bounds of this GameObject and its children.", null, null);
+            public static readonly GUIContent fitToChildrenDisabledContent = L10n.TextContent("Fit to Children", "No children to fit to.", null, null);
         }
 
         public override void OnEnable()
@@ -128,7 +128,7 @@ namespace UnityEditor
         {
             serializedObject.Update();
 
-            EditorGUILayout.EditorToolbarForTarget(EditorGUIUtility.TrTempContent("Edit Collider"), this);
+            EditorGUILayout.EditorToolbarForTarget(L10n.TempContent("Edit Collider", null), this);
             GUILayout.Space(5);
             EditorGUILayout.PropertyField(m_IsTrigger, BaseStyles.triggerContent);
             EditorGUILayout.PropertyField(m_ProvidesContacts, BaseStyles.providesContacts);

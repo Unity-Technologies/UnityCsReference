@@ -13,6 +13,7 @@ namespace Unity.SmartStrings.PersistentVariables;
 /// <summary>
 /// Provides a reference to a <see cref="VariablesGroupAsset"/>.
 /// </summary>
+[Serializable]
 public class NestedVariablesGroup : Variable<VariablesGroupAsset>, IVariableGroup
 {
     /// <inheritdoc/>
@@ -213,15 +214,6 @@ public class VariablesGroupAsset : ScriptableObject, IVariableGroup, IVariable, 
             yield return new KeyValuePair<string, IVariable>(v.Key, v.Value.variable);
         }
     }
-
-    /// <summary>
-    /// <inheritdoc cref="ContainsKey(string)"/>
-    /// </summary>
-    /// <param name="name">Name of the variable to check for.</param>
-    /// <returns><see langword="true"/> if a matching variable exists, or <see langword="false"/> if one does not.</returns>
-    [Obsolete("Please use ContainsKey instead.", false)]
-    public bool ContainsName(string name) => ContainsKey(name);
-
     /// <summary>
     /// Removes all variables in the group.
     /// </summary>

@@ -4,6 +4,7 @@
 
 using System;
 using System.Text.RegularExpressions;
+using UnityEditor.UIElements.StyleSheets;
 using UnityEngine;
 using UnityEngine.Bindings;
 using UnityEngine.Pool;
@@ -117,7 +118,7 @@ namespace UnityEditor.UIElements
             return true;
         }
 
-        static bool ValidateSingleSelector(string selectorString, out string errorMessage)
+        public static bool ValidateSingleSelector(string selectorString, out string errorMessage)
         {
             errorMessage = null;
 
@@ -127,7 +128,12 @@ namespace UnityEditor.UIElements
                 return false;
             }
 
-            return SelectorUtility.ExtractSelectorsAndSpecificityFromString(selectorString, out _, out _, out errorMessage);
+            var complexSelector = new StyleComplexSelector();
+            if (!complexSelector.TrySetSelectorsFromString(selectorString, out errorMessage))
+                return false;
+
+            // A save writes the parsed selector, not the typed text.
+            return StyleSheetImporterImpl.IsSelectorSupported(s_Exporter.ToUssString(null, complexSelector), out errorMessage);
         }
     }
 }

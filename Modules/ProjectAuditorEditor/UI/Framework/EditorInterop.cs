@@ -122,5 +122,10 @@ namespace Unity.ProjectAuditor.Editor.UI.Framework
             var window = UserPreferences.OpenPreferencesWindow();
             window.Repaint();
         }
+
+        public static void OpenBuildAnalysisWindow()
+        {
+            EditorApplication.ExecuteMenuItem("Window/Analysis/Build Analysis");
+        }
     }
 }

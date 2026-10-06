@@ -2,8 +2,11 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System;
 using System.Collections.Generic;
+using System.Reflection;
 using Unity.Collections;
+using Unity.Scripting.LifecycleManagement;
 
 namespace Unity.ProjectAuditor.Editor
 {
@@ -24,7 +27,7 @@ namespace Unity.ProjectAuditor.Editor
         /// <summary>
         /// Category for General statistics about the analysis process and its results.
         /// </summary>
-        [System.Obsolete("Use OptimizationSummary instead (UnityUpgradable) -> OptimizationSummary", true)]
+        [Obsolete("Use OptimizationSummary instead (UnityUpgradable) -> OptimizationSummary", true)]
         Metadata = 0,
 
         /// <summary>
@@ -60,11 +63,13 @@ namespace Unity.ProjectAuditor.Editor
         /// <summary>
         /// Category for displaying information about files created during the project build process
         /// </summary>
+        [Obsolete("Build analysis has moved to the Build Analysis window.", false)]
         BuildFile,
 
         /// <summary>
         /// Category for displaying information about the steps of the build process and how long they took
         /// </summary>
+        [Obsolete("Build analysis has moved to the Build Analysis window.", false)]
         BuildStep,
 
         /// <summary>
@@ -145,6 +150,7 @@ namespace Unity.ProjectAuditor.Editor
         /// <summary>
         /// Issues that could result in undesired behavior if domain reloading is disabled
         /// </summary>
+        [Obsolete("Domain Reload issues are now reported in the Code category. Use Code instead (UnityUpgradable) -> Code", true)]
         DomainReload,
 
         /// <summary>
@@ -180,8 +186,33 @@ namespace Unity.ProjectAuditor.Editor
 
     internal static class IssueCategoryExtensions
     {
-        public static bool IsSummary(this IssueCategory category) => category == IssueCategory.OptimizationSummary || category == IssueCategory.UpgradeSummary || category == IssueCategory.MigrateToURPSummary || category == IssueCategory.MigrateToCoreCLRSummary;
+        public static bool IsSummary(this IssueCategory category) => category == IssueCategory.OptimizationSummary || category == IssueCategory.UpgradeSummary || category == IssueCategory.MigrateToURPSummary || category == IssueCategory.MigrateToCoreCLRSummary || category == IssueCategory.BuildSummary;
+
+        public static bool IsObsolete(this IssueCategory category) => k_ObsoleteCategories.Contains(category);
+
         public static bool IsPopulatedByPlayerBuild(this IssueCategory category) => category == IssueCategory.ShaderVariant || category == IssueCategory.ComputeShaderVariant;
-        public static readonly IssueCategory FirstCustomCategory = ((IReadOnlyList<IssueCategory>)System.Enum.GetValues(typeof(IssueCategory))).Max() + 1;
+        public static readonly IssueCategory FirstCustomCategory = ((IReadOnlyList<IssueCategory>)Enum.GetValues(typeof(IssueCategory))).Max() + 1;
+
+        [NoAutoStaticsCleanup]
+        static readonly HashSet<IssueCategory> k_ObsoleteCategories = BuildObsoleteCategories();
+
+        static HashSet<IssueCategory> BuildObsoleteCategories()
+        {
+            // Several names can share one value, so a value is only obsolete when every name for it is
+            var obsolete = new HashSet<IssueCategory>();
+            var inUse = new HashSet<IssueCategory>();
+
+            foreach (var field in typeof(IssueCategory).GetFields(BindingFlags.Public | BindingFlags.Static))
+            {
+                var category = (IssueCategory)field.GetValue(null);
+                if (field.GetCustomAttribute<ObsoleteAttribute>() != null)
+                    obsolete.Add(category);
+                else
+                    inUse.Add(category);
+            }
+
+            obsolete.ExceptWith(inUse);
+            return obsolete;
+        }
     }
 }

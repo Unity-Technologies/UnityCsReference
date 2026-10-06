@@ -37,8 +37,10 @@ static partial class ElementConfiguratorRegistry
     }
 
     [AutoStaticsCleanupOnCodeReload] // reset to null; EnsureInitialized rebuilds from TypeCache with the new domain's types
+    [IgnoreForUAL0015("Lazily rebuilt by EnsureInitialized on next access after reload")]
     static Dictionary<Type, List<DefaultConfigurator>> s_DefaultConfigurators;
     [AutoStaticsCleanupOnCodeReload] // reset to null; EnsureInitialized rebuilds from TypeCache with the new domain's types
+    [IgnoreForUAL0015("Lazily rebuilt by EnsureInitialized on next access after reload")]
     static Dictionary<Type, List<Variant>> s_AttributeVariants;
 
     static void EnsureInitialized()

@@ -71,6 +71,7 @@ namespace UnityEngine.Audio
     [NativeHeader("Modules/Audio/Public/AudioMixerGroup.h")]
     public class AudioMixerGroup : Object, ISubAssetNotDuplicatable
     {
+        protected internal AudioMixerGroup(global::UnityEngine.EntityId id) : base(id) {}
         // Make constructor internal
         internal AudioMixerGroup() {}
 

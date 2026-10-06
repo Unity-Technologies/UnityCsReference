@@ -19,10 +19,10 @@ namespace UnityEditorInternal.Profiling
 
         static class Content
         {
-            public static readonly string k_NoScreenshotAvailableFormat = L10n.Tr("Frame {0} - No screenshot available");
-            public static readonly string k_FrameResolutionFormat = L10n.Tr("Frame {0} - {1}x{2}");
-            public static readonly string k_ShowingFromFrameOneAgoFormat = L10n.Tr("Frame {0} - Showing screenshot from frame {1} (1 frame ago)");
-            public static readonly string k_ShowingFromFrameManyAgoFormat = L10n.Tr("Frame {0} - Showing screenshot from frame {1} ({2} frames ago)");
+            public static readonly string k_NoScreenshotAvailableFormat = L10n.Tr("Frame {0} - No screenshot available", null);
+            public static readonly string k_FrameResolutionFormat = L10n.Tr("Frame {0} - {1}x{2}", null);
+            public static readonly string k_ShowingFromFrameOneAgoFormat = L10n.Tr("Frame {0} - Showing screenshot from frame {1} (1 frame ago)", null);
+            public static readonly string k_ShowingFromFrameManyAgoFormat = L10n.Tr("Frame {0} - Showing screenshot from frame {1} ({2} frames ago)", null);
         }
 
         readonly ScreenshotIndexCatalogue m_Catalogue;
@@ -89,6 +89,14 @@ namespace UnityEditorInternal.Profiling
         void SetInfoText(string text)
         {
             InfoTextChanged?.Invoke(text);
+        }
+
+        // Resets to the no-data state. Nothing else overwrites the info text once the profile is
+        // cleared, so the last resolved frame's text would otherwise stay on screen.
+        public void Clear()
+        {
+            ClearCurrentTexture();
+            SetInfoText(string.Empty);
         }
 
         public void LoadScreenshot(int logicalFrame, int firstAvailableFrame)

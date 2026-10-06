@@ -2,7 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: Search not yet converted
 using System;
 using System.Collections.Generic;
 using Unity.Scripting.LifecycleManagement;
@@ -398,9 +397,9 @@ namespace UnityEditor.Search
 
     static partial class ObjectFieldGUI
     {
-        static private readonly GUIContent s_SceneMismatch = EditorGUIUtility.TrTextContent("Scene mismatch (cross scene references not supported)");
-        static private readonly GUIContent s_TypeMismatch = EditorGUIUtility.TrTextContent("Type mismatch");
-        static private readonly GUIContent s_Select = EditorGUIUtility.TrTextContent("Select");
+        static private readonly GUIContent s_SceneMismatch = L10n.TextContent("Scene mismatch (cross scene references not supported)", null, null, null);
+        static private readonly GUIContent s_TypeMismatch = L10n.TextContent("Type mismatch", null, null, null);
+        static private readonly GUIContent s_Select = L10n.TextContent("Select", null, null, null);
 
         const string k_PickerClosedCommand = "SearchPickerClosed";
         const string k_PickerUpdatedCommand = "SearchPickerUpdated";
@@ -1086,4 +1085,3 @@ namespace UnityEditor.Search
 
     }
 }
-#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

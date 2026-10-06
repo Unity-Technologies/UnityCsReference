@@ -2,7 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: Mesh not yet converted
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -72,15 +71,15 @@ namespace UnityEditor
             public readonly int[] lodContributeGIValues = { -1, 0, 1, 2, 3, 4, 5, 6, 7 };
             public readonly GUIContent[] lodContributeGIStrings =
             {
-                EditorGUIUtility.TrTextContent("None"),
-                EditorGUIUtility.TrTextContent("LOD 0"),
-                EditorGUIUtility.TrTextContent("LOD 1"),
-                EditorGUIUtility.TrTextContent("LOD 2"),
-                EditorGUIUtility.TrTextContent("LOD 3"),
-                EditorGUIUtility.TrTextContent("LOD 4"),
-                EditorGUIUtility.TrTextContent("LOD 5"),
-                EditorGUIUtility.TrTextContent("LOD 6"),
-                EditorGUIUtility.TrTextContent("LOD 7"),
+                L10n.TextContent("None", null, null, null),
+                L10n.TextContent("LOD 0", null, null, null),
+                L10n.TextContent("LOD 1", null, null, null),
+                L10n.TextContent("LOD 2", null, null, null),
+                L10n.TextContent("LOD 3", null, null, null),
+                L10n.TextContent("LOD 4", null, null, null),
+                L10n.TextContent("LOD 5", null, null, null),
+                L10n.TextContent("LOD 6", null, null, null),
+                L10n.TextContent("LOD 7", null, null, null),
             };
 
             public readonly GUIStyle m_LODSliderBG = "LODSliderBG";
@@ -99,45 +98,45 @@ namespace UnityEditor
             public readonly GUIStyle m_LODRenderersText = "LODRenderersText";
             public readonly GUIStyle m_LODLevelNotifyText = "LODLevelNotifyText";
 
-            public readonly GUIContent m_IconRendererPlus                   = EditorGUIUtility.TrIconContent("Toolbar Plus", "Add New Renderers");
-            public readonly GUIContent m_IconRendererMinus                  = EditorGUIUtility.TrIconContent("Toolbar Minus", "Remove Renderer");
+            public readonly GUIContent m_IconRendererPlus                   = L10n.IconContent("Toolbar Plus", "Add New Renderers", null);
+            public readonly GUIContent m_IconRendererMinus                  = L10n.IconContent("Toolbar Minus", "Remove Renderer", null);
             public readonly GUIContent m_CameraIcon                         = EditorGUIUtility.IconContent<Camera>();
 
-            public readonly GUIContent m_LodContributeGITitle               = EditorGUIUtility.TrTextContent("Global Illumination LOD", "The level of detail that contributes to global illumination calculations.");
-            public readonly GUIContent m_UploadToImporter                   = EditorGUIUtility.TrTextContent("Upload to Importer", "Upload the modified screen percentages to the model importer.");
-            public readonly GUIContent m_UploadToImporterDisabled           = EditorGUIUtility.TrTextContent("Upload to Importer", "Number of LOD's in the scene instance differ from the number of LOD's in the imported model.");
-            public readonly GUIContent m_RecalculateBounds                  = EditorGUIUtility.TrTextContent("Recalculate Bounds", "Recalculate bounds to encapsulate all child renderers.");
-            public readonly GUIContent m_RecalculateBoundsDisabled          = EditorGUIUtility.TrTextContent("Recalculate Bounds", "Bounds are already up-to-date.");
-            public readonly GUIContent m_LightmapScale                      = EditorGUIUtility.TrTextContent("Recalculate Lightmap Scale", "Set the lightmap scale to match the LOD percentages.");
-            public readonly GUIContent m_RendersTitle                       = EditorGUIUtility.TrTextContent("Renderers");
+            public readonly GUIContent m_LodContributeGITitle               = L10n.TextContent("Global Illumination LOD", "The level of detail that contributes to global illumination calculations.", null, null);
+            public readonly GUIContent m_UploadToImporter                   = L10n.TextContent("Upload to Importer", "Upload the modified screen percentages to the model importer.", null, null);
+            public readonly GUIContent m_UploadToImporterDisabled           = L10n.TextContent("Upload to Importer", "Number of LOD's in the scene instance differ from the number of LOD's in the imported model.", null, null);
+            public readonly GUIContent m_RecalculateBounds                  = L10n.TextContent("Recalculate Bounds", "Recalculate bounds to encapsulate all child renderers.", null, null);
+            public readonly GUIContent m_RecalculateBoundsDisabled          = L10n.TextContent("Recalculate Bounds", "Bounds are already up-to-date.", null, null);
+            public readonly GUIContent m_LightmapScale                      = L10n.TextContent("Recalculate Lightmap Scale", "Set the lightmap scale to match the LOD percentages.", null, null);
+            public readonly GUIContent m_RendersTitle                       = L10n.TextContent("Renderers", null, null, null);
 
-            public readonly GUIContent m_AnimatedCrossFadeInvalidText       = EditorGUIUtility.TrTextContent("Animated cross-fading is currently disabled. Please enable \"Animate Between Next LOD\" on either the current or the previous LOD.");
-            public readonly GUIContent m_AnimatedCrossFadeInconsistentText  = EditorGUIUtility.TrTextContent("Animated cross-fading is currently disabled. \"Animate Between Next LOD\" is enabled but the next LOD is not in Animated Cross Fade mode.");
-            public readonly GUIContent m_AnimateBetweenPreviousLOD          = EditorGUIUtility.TrTextContent("Animate Between Previous LOD", "Cross-fade animation plays when transits between this LOD and the previous (lower) LOD.");
+            public readonly GUIContent m_AnimatedCrossFadeInvalidText       = L10n.TextContent("Animated cross-fading is currently disabled. Please enable \"Animate Between Next LOD\" on either the current or the previous LOD.", null, null, null);
+            public readonly GUIContent m_AnimatedCrossFadeInconsistentText  = L10n.TextContent("Animated cross-fading is currently disabled. \"Animate Between Next LOD\" is enabled but the next LOD is not in Animated Cross Fade mode.", null, null, null);
+            public readonly GUIContent m_AnimateBetweenPreviousLOD          = L10n.TextContent("Animate Between Previous LOD", "Cross-fade animation plays when transits between this LOD and the previous (lower) LOD.", null, null);
 
-            public readonly GUIContent m_LODObjectSizeLabel = EditorGUIUtility.TrTextContent("Object Size", "The Object size in local space. This is used to calculate the relative screen height for the object.");
-            public readonly GUIContent m_ResetObjectSizeLabel = EditorGUIUtility.TrTextContent("Reset Object Size", "Resets the Object Size in Local Space to 1 and preserves LOD distances.");
-            public readonly GUIContent m_LODDistancesInRelativeSizeLabel = EditorGUIUtility.TrTextContent("LOD Distances in Screen Relative Size");
-            public readonly GUIContent m_LODSetToCameraLabel = EditorGUIUtility.TrTextContent("Set to Camera");
+            public readonly GUIContent m_LODObjectSizeLabel = L10n.TextContent("Object Size", "The Object size in local space. This is used to calculate the relative screen height for the object.", null, null);
+            public readonly GUIContent m_ResetObjectSizeLabel = L10n.TextContent("Reset Object Size", "Resets the Object Size in Local Space to 1 and preserves LOD distances.", null, null);
+            public readonly GUIContent m_LODDistancesInRelativeSizeLabel = L10n.TextContent("LOD Distances in Screen Relative Size", null, null, null);
+            public readonly GUIContent m_LODSetToCameraLabel = L10n.TextContent("Set to Camera", null, null, null);
 
-            public readonly GUIContent m_LODTransitionPercentageLabel = EditorGUIUtility.TrTextContent("Transition (% Screen Size)", "This value marks where LOD level transitions into a lower LOD level.");
+            public readonly GUIContent m_LODTransitionPercentageLabel = L10n.TextContent("Transition (% Screen Size)", "This value marks where LOD level transitions into a lower LOD level.", null, null);
             [NoAutoStaticsCleanup] // Whitelisted GUIContent label; safe to persist across reload.
-            public static GUIContent m_TriangleCountLabel = EditorGUIUtility.TrTextContent("Triangles");
+            public static GUIContent m_TriangleCountLabel = L10n.TextContent("Triangles", null, null, null);
             [NoAutoStaticsCleanup] // Whitelisted GUIContent label; safe to persist across reload.
-            public static GUIContent m_VertexCountLabel = EditorGUIUtility.TrTextContent("Vertices");
+            public static GUIContent m_VertexCountLabel = L10n.TextContent("Vertices", null, null, null);
 
             [NoAutoStaticsCleanup] // Whitelisted GUIContent label (its .text is overwritten per-frame); safe to persist.
-            public static GUIContent m_DistanceInMetersLabel = EditorGUIUtility.TrTextContent("-", "The displayed distance depends on the current Scene View camera settings and might be different in Game View.");
+            public static GUIContent m_DistanceInMetersLabel = L10n.TextContent("-", "The displayed distance depends on the current Scene View camera settings and might be different in Game View.", null, null);
 
             [NoAutoStaticsCleanup] // Whitelisted GUIStyle wrapping an editor style; recreated with s_Styles on first access.
             public static GUIStyle m_InspectorTitlebarFlat;
 
             [NoAutoStaticsCleanup] // Whitelisted GUIContent icon loaded by fixed name; asset survives reload.
-            public static GUIContent m_BlueBorderTextureSelected = EditorGUIUtility.TrIconContent("AnimationRowOddSelected");
+            public static GUIContent m_BlueBorderTextureSelected = L10n.IconContent("AnimationRowOddSelected", null, null);
             [NoAutoStaticsCleanup] // Whitelisted GUIContent icon loaded by fixed name; asset survives reload.
-            public static GUIContent m_BlueBorderTextureNormal = EditorGUIUtility.TrIconContent("OL title act");
+            public static GUIContent m_BlueBorderTextureNormal = L10n.IconContent("OL title act", null, null);
             [NoAutoStaticsCleanup] // Whitelisted GUIContent label; safe to persist across reload.
-            public static GUIContent m_MeshLodInfo = EditorGUIUtility.TrTextContent("Mesh LOD is active and has been applied to ");
+            public static GUIContent m_MeshLodInfo = L10n.TextContent("Mesh LOD is active and has been applied to ", null, null, null);
 
             public GUIStyles()
             {
@@ -612,4 +611,3 @@ internal static class LODGroupExtensions
         return DistanceToRelativeHeight(camera, distance, lodGroup.GetWorldSpaceSize()) * QualitySettings.lodBias;
     }
 }
-#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

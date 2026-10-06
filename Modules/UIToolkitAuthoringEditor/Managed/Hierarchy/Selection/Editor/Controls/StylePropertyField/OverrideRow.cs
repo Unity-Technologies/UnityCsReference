@@ -6,6 +6,7 @@ using System;
 using System.Collections.Generic;
 using UnityEditor;
 using UnityEngine;
+using UnityEngine.Bindings;
 using UnityEngine.Pool;
 using UnityEngine.UIElements;
 using Unity.Scripting.LifecycleManagement;
@@ -13,6 +14,7 @@ using Unity.Scripting.LifecycleManagement;
 namespace Unity.UIToolkit.Editor
 {
     [UxmlElement]
+    [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
     internal partial class OverrideRow : VisualElement
     {
         internal static readonly string ussClassName = "unity-override-row";
@@ -195,6 +197,25 @@ namespace Unity.UIToolkit.Editor
                 EnsureTrackedPropertiesAllocated();
                 trackedProperties.Add(propertyName);
             }
+        }
+
+        // Sources that report their state directly instead of through a TrackPropertyEvent provider
+        // (the variables list) use these. Unlike UpdateTrackedProperties they merge with the properties
+        // reported by other sources, so a row shared by both keeps its bar until all of them are unset.
+        internal void MarkPropertyOverride(ITrackablePropertyProvider provider, string propertyName)
+        {
+            AddTrackedProperty(propertyName);
+            AddToTrackedProperties(provider, propertyName);
+        }
+
+        internal void ClearPropertyOverride(ITrackablePropertyProvider provider, string propertyName)
+        {
+            // Only drop it from the search set once this was the last provider still claiming it.
+            if (m_TrackedProviders.TryGetValue(propertyName, out var providerSet) &&
+                providerSet.Count == 1 && providerSet.Contains(provider))
+                trackedProperties?.Remove(propertyName);
+
+            RemoveFromTrackedProperties(provider, propertyName);
         }
 
         void AddToTrackedProperties(ITrackablePropertyProvider provider, string propertyName)

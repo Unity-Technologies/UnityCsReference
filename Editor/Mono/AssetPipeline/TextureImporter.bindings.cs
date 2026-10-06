@@ -10,6 +10,7 @@ using UnityEditor.AssetImporters;
 using UnityEngine;
 using UnityEngine.Bindings;
 using UnityEngine.Scripting;
+using UnityEditor.Experimental.AssetImporters.ImportBlocks;
 
 namespace UnityEditor
 {
@@ -20,8 +21,26 @@ namespace UnityEditor
     [NativeHeader("Editor/Src/AssetPipeline/TextureImporting/TextureImporterPlatformSettingsUtils.h")]
     [global::UnityEngine.NativeClass("TextureImporter", PersistentTypeId = 1006)]
     [NativeHeader("Editor/Src/EditorUserBuildSettings.h")]
-    public sealed partial class TextureImporter : AssetImporter
+    [UnityEngine.ExtensionOfNativeClass]
+    public sealed partial class TextureImporter : AssetImporter, IBlockImporter
     {
+        [SerializeField]
+        BlockCollection<ITextureImporterBlock> m_BlockCollection = new BlockCollection<ITextureImporterBlock>();
+
+        /// <summary>
+        /// The import block collection associated with this texture importer.
+        /// Blocks run during import to customize the texture import pipeline.
+        /// </summary>
+        [UnityEngine.Internal.ExcludeFromDocs]
+        public BlockCollection<ITextureImporterBlock> blockCollection
+        {
+            get => m_BlockCollection ??= new BlockCollection<ITextureImporterBlock>();
+        }
+
+        IBlockCollection IBlockImporter.Blocks => blockCollection;
+
+        internal TextureImporter(global::UnityEngine.EntityId id) : base(id) {}
+        public TextureImporter() {}
         [FreeFunction]
         internal static extern string GetTexturePlatformSerializationName(string platformName);
 

@@ -8,7 +8,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using Unity.Collections;
-using Unity.GraphToolkit.CSO;
+using Unity.CSO;
 using Unity.GraphToolkit.InternalBridge;
 using Unity.Scripting.LifecycleManagement;
 using UnityEditor;
@@ -37,6 +37,9 @@ namespace Unity.GraphToolkit.Editor
         public static readonly string multilineUssClassName = ussClassName.WithUssModifier(GraphElementHelper.multilineUssModifier);
 
         [AutoStaticsCleanupOnCodeReload]
+        // Rebuilt by the custom-builder reflection scan the next time a field is created, since that path
+        // rescans whenever this is null.
+        [IgnoreForUAL0015("Custom-builder table rebuilt by its reflection scan when null")]
         static Dictionary<Type, Type> s_CustomPropertyFieldBuilders;
 
         Func<object, object> m_ValueToDisplay = null;
@@ -207,16 +210,16 @@ namespace Unity.GraphToolkit.Editor
             Action<IList> onListChange = (newList) =>
             {
                 var evt = (EventBase)getPooledMethod.Invoke(null, new object[] { newList, newList });
-                evt.target = listPropertyField; 
+                evt.target = listPropertyField;
                 listPropertyField.SendEvent(evt);
             };
 
             listPropertyField = new ListPropertyField(type, onListChange);
-            
+
             var labelElement = new Label(Label);
             labelElement.tooltip = fieldTooltip;
             labelElement.AddToClassList(BaseField<object>.labelUssClassName);
-            
+
             Setup(labelElement, listPropertyField, fieldTooltip);
         }
 

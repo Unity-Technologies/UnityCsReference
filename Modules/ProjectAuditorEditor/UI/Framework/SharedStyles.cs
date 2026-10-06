@@ -31,6 +31,8 @@ namespace Unity.ProjectAuditor.Editor.UI.Framework
         static GUIStyle s_LinkLabel;
         [NoAutoStaticsCleanup] // Lazily wraps EditorStyles; style survives code reload
         static GUIStyle s_TextArea;
+        [NoAutoStaticsCleanup] // Lazily wraps EditorStyles; style survives code reload
+        static GUIStyle s_TextAreaCentered;
 
         [NoAutoStaticsCleanup] // Lazily wraps EditorStyles; style survives code reload
         static GUIStyle s_LabelWithDynamicSize;
@@ -43,8 +45,6 @@ namespace Unity.ProjectAuditor.Editor.UI.Framework
         [NoAutoStaticsCleanup] // Lazily wraps EditorStyles; style survives code reload
         static GUIStyle s_WelcomeTextArea;
 
-        [NoAutoStaticsCleanup] // Lazily wraps EditorStyles; style survives code reload
-        static GUIStyle s_TitleLabel;
         [NoAutoStaticsCleanup] // Lazily wraps EditorStyles; style survives code reload
         static GUIStyle s_MediumTitleLabel;
         [NoAutoStaticsCleanup] // Lazily wraps EditorStyles; style survives code reload
@@ -80,9 +80,13 @@ namespace Unity.ProjectAuditor.Editor.UI.Framework
         static GUIStyle s_CopyToClipboardButtonClickedDark;
         [NoAutoStaticsCleanup] // Background loaded from asset database by fixed path; survives code reload
         static GUIStyle s_CopyToClipboardButtonClickedLight;
+        [NoAutoStaticsCleanup] // Background loaded from asset database by fixed path; survives code reload
+        static GUIStyle s_TabButtonDark;
+        [NoAutoStaticsCleanup] // Background loaded from asset database by fixed path; survives code reload
+        static GUIStyle s_TabButtonLight;
         [AutoStaticsCleanupOnCodeReload] // Embeds a MakeColorTexture Texture2D which is destroyed on domain reload
         static GUIStyle s_TabBackgroundDark;
-        [NoAutoStaticsCleanup] // No embedded Texture2D; pure style settings survive code reload
+        [AutoStaticsCleanupOnCodeReload] // Embeds a MakeColorTexture Texture2D which is destroyed on domain reload
         static GUIStyle s_TabBackgroundLight;
 
         [NoAutoStaticsCleanup] // Lazily wraps EditorStyles; style survives code reload
@@ -265,6 +269,44 @@ namespace Unity.ProjectAuditor.Editor.UI.Framework
             }
         }
 
+        public static GUIStyle TabButton
+        {
+            get
+            {
+                if (IsDarkMode)
+                {
+                    if (s_TabButtonDark == null)
+                    {
+                        s_TabButtonDark = new GUIStyle()
+                        {
+                            normal = { textColor = Color.white },
+                            hover = { textColor = Color.white },
+                            active = { textColor = Color.white },
+                            margin = new RectOffset(0, 0, 0, 0),
+                            alignment = TextAnchor.MiddleCenter,
+                            fontSize = 14
+                        };
+                    }
+
+                    return s_TabButtonDark;
+                }
+                else
+                {
+                    if (s_TabButtonLight == null)
+                    {
+                        s_TabButtonLight = new GUIStyle()
+                        {
+                            margin = new RectOffset(0, 0, 0, 0),
+                            alignment = TextAnchor.MiddleCenter,
+                            fontSize = 14
+                        };
+                    }
+
+                    return s_TabButtonLight;
+                }
+            }
+        }
+
         public static GUIStyle TabBackground
         {
             get
@@ -273,12 +315,13 @@ namespace Unity.ProjectAuditor.Editor.UI.Framework
                 {
                     if (s_TabBackgroundDark == null || s_TabBackgroundDark.normal.background == null)
                     {
-                        var darkBackgroundTex = Utility.MakeColorTexture(new Color(0.173f, 0.173f, 0.173f, 1));
+                        var darkBackgroundTex = Utility.MakeColorTexture(new Color(0.173f, 0.173f, 0.173f, 1.0f));
 
                         s_TabBackgroundDark = new GUIStyle()
                         {
                             normal = { background = darkBackgroundTex },
-                            border = new RectOffset(2, 2, 2, 2),
+                            margin = new RectOffset(0, 0, 0, 0),
+                            border = new RectOffset(0, 0, 0, 0),
                         };
                     }
 
@@ -286,9 +329,16 @@ namespace Unity.ProjectAuditor.Editor.UI.Framework
                 }
                 else
                 {
-                    if (s_TabBackgroundLight == null)
+                    if (s_TabBackgroundLight == null || s_TabBackgroundLight.normal.background == null)
                     {
-                        s_TabBackgroundLight = new GUIStyle();
+                        var lightBackgroundTex = Utility.MakeColorTexture(new Color(0.81f, 0.81f, 0.81f, 1.0f));
+
+                        s_TabBackgroundLight = new GUIStyle()
+                        {
+                            normal = { background = lightBackgroundTex },
+                            margin = new RectOffset(0, 0, 0, 0),
+                            border = new RectOffset(0, 0, 0, 0),
+                        };
                     }
 
                     return s_TabBackgroundLight;
@@ -421,6 +471,22 @@ namespace Unity.ProjectAuditor.Editor.UI.Framework
             }
         }
 
+        public static GUIStyle TextAreaCentered
+        {
+            get
+            {
+                if (s_TextAreaCentered == null)
+                {
+                    s_TextAreaCentered = new GUIStyle(EditorStyles.label);
+                    s_TextAreaCentered.richText = true;
+                    s_TextAreaCentered.wordWrap = true;
+                    s_TextAreaCentered.alignment = TextAnchor.MiddleCenter;
+                }
+
+                return s_TextAreaCentered;
+            }
+        }
+
         public static GUIStyle LabelWithDynamicSize
         {
             get
@@ -491,21 +557,6 @@ namespace Unity.ProjectAuditor.Editor.UI.Framework
                 }
 
                 return s_WelcomeTextArea;
-            }
-        }
-
-        public static GUIStyle TitleLabel
-        {
-            get
-            {
-                if (s_TitleLabel == null)
-                {
-                    s_TitleLabel = new GUIStyle(EditorStyles.boldLabel);
-                    s_TitleLabel.fontSize = 26;
-                    s_TitleLabel.fixedHeight = 34;
-                    s_TitleLabel.alignment = TextAnchor.MiddleCenter;
-                }
-                return s_TitleLabel;
             }
         }
 

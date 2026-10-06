@@ -15,8 +15,8 @@ namespace UnityEditor
 
         class Texts
         {
-            public GUIContent speed = EditorGUIUtility.TrTextContent("Multiplier", "Controls the initial lifetime of particles based on the speed of the emitter.");
-            public GUIContent speedRange = EditorGUIUtility.TrTextContent("Speed Range", "Maps the speed to a value along the curve, when using one of the curve modes.");
+            public GUIContent speed = L10n.TextContent("Multiplier", "Controls the initial lifetime of particles based on the speed of the emitter.", null, null);
+            public GUIContent speedRange = L10n.TextContent("Speed Range", "Maps the speed to a value along the curve, when using one of the curve modes.", null, null);
         }
         [NoAutoStaticsCleanup] // lazy-initialized UI text cache
         static Texts s_Texts;

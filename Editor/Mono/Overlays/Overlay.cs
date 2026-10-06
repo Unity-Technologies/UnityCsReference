@@ -162,6 +162,8 @@ namespace UnityEditor.Overlays
         internal string ussName => m_RootVisualElementName;
 
         [AutoStaticsCleanupOnCodeReload]
+        // Lazily reloaded with EditorGUIUtility.Load on the next access after cleanup nulls it.
+        [IgnoreForUAL0015("Lazy VisualTreeAsset cache, reloaded on demand after cleanup nulls it")]
         static VisualTreeAsset s_TreeAsset;
         event Action displayNameChanged;
         VisualElement m_ContentRoot;

@@ -16,6 +16,8 @@ namespace UnityEngine
     [NativeHeader("Modules/Terrain/Public/TerrainData.h")]
     public class TerrainCollider : Collider
     {
+        internal TerrainCollider(global::UnityEngine.EntityId id) : base(id) {}
+        public TerrainCollider() {}
         ///<summary>The terrain that stores the heightmap.</summary>
         public extern TerrainData terrainData { get; set; }
 

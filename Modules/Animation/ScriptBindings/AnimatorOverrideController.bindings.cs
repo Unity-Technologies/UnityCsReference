@@ -143,10 +143,11 @@ namespace UnityEngine
     [HelpURL("AnimatorOverrideController")]
     public class AnimatorOverrideController : RuntimeAnimatorController
     {
+        internal AnimatorOverrideController(global::UnityEngine.EntityId id) : base(id) {}
         ///<summary>Creates an empty Animator Override Controller.</summary>
         public AnimatorOverrideController()
         {
-            Internal_Create(this, null);
+            SetEntityIdFromConstructor(Internal_Create(null));
             OnOverrideControllerDirty = null;
         }
 
@@ -174,12 +175,12 @@ namespace UnityEngine
         ///</example>
         public AnimatorOverrideController(RuntimeAnimatorController controller)
         {
-            Internal_Create(this, controller);
+            SetEntityIdFromConstructor(Internal_Create(controller));
             OnOverrideControllerDirty = null;
         }
 
         [FreeFunction("AnimationBindings::CreateAnimatorOverrideController")]
-        extern private static void Internal_Create([Writable] AnimatorOverrideController self, RuntimeAnimatorController controller);
+        extern private static EntityId Internal_Create(RuntimeAnimatorController controller);
 
         // The runtime representation of AnimatorController that controls the Animator
         ///<summary>The Runtime Animator Controller that the Animator Override Controller overrides.</summary>

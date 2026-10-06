@@ -2,7 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: Terrain not yet converted
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Rendering;
@@ -22,9 +21,9 @@ namespace UnityEditor.TerrainTools
         private static bool s_ShowTooManyDetailText = false;
         [NoAutoStaticsCleanup] // value-typed memoization cache (Vector2Int->Vector2); no user refs, invalidated via dirty-count check
         private static Dictionary<Vector2Int, Vector2> s_CachedPatchHeightMinMax = new Dictionary<Vector2Int, Vector2>();
-        private static readonly GUIContent k_TooManyDetails = EditorGUIUtility.TrTextContent(
+        private static readonly GUIContent k_TooManyDetails = L10n.TextContent(
             "This area contains too many detail objects.\nDecrease the detail object density or remove some by pressing Ctrl while you paint.",
-            EditorGUIUtility.GetHelpIcon(MessageType.Warning));
+            EditorGUIUtility.GetHelpIcon(MessageType.Warning), null);
 
         private const float k_IconSize = 24;
 
@@ -481,4 +480,3 @@ namespace UnityEditor.TerrainTools
         }
     }
 }
-#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

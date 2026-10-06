@@ -66,6 +66,9 @@ namespace Unity.ProjectAuditor.Editor.AssemblyUtils
 
         public Action<AssemblyCompilationResult> OnAssemblyCompilationFinished;
 
+        readonly HashSet<string> m_ResponseFileReferenceDirectories = new HashSet<string>();
+        public IReadOnlyCollection<string> ResponseFileReferenceDirectories => m_ResponseFileReferenceDirectories;
+
         public void Dispose()
         {
             if (!string.IsNullOrEmpty(m_OutputFolder) && Directory.Exists(m_OutputFolder))
@@ -107,6 +110,11 @@ namespace Unity.ProjectAuditor.Editor.AssemblyUtils
                 editorAssemblies = CollectAssemblyDependencies(editorAssemblies);
                 playerAssemblies = CollectAssemblyDependencies(playerAssemblies);
             }
+
+            // Editor assemblies are read directly from their already-compiled outputPath rather than
+            // rebuilt through PrepareAssemblyBuilders, so their csc.rsp references need parsing here instead
+            foreach (var assembly in editorAssemblies)
+                AddResponseFileReferenceDirectories(ParseResponseFiles(assembly));
 
             IEnumerable<string> compiledPlayerPaths = null;
             yield return CompilePlayerAssemblies(playerAssemblies, (paths) => compiledPlayerPaths = paths, progress);
@@ -323,9 +331,17 @@ namespace Unity.ProjectAuditor.Editor.AssemblyUtils
                     AnalyzerConfigPath = globalConfigPath
                 };
 
+                // AssemblyBuilder doesn't resolve csc.rsp files the way a normal compile does, so parse and apply them ourselves
+                var responseFileData = ParseResponseFiles(assembly);
+                assemblyBuilder.compilerOptions.AllowUnsafeCode |= responseFileData.Unsafe;
+
+                var additionalCompilerArguments = new List<string>(assemblyBuilder.compilerOptions.AdditionalCompilerArguments ?? Array.Empty<string>());
+                additionalCompilerArguments.AddRange(responseFileData.OtherArguments);
+                assemblyBuilder.compilerOptions.AdditionalCompilerArguments = additionalCompilerArguments.ToArray();
+
                 // add asmdef-specific defines
                 #pragma warning disable UAC2001 // Avoid Linq
-                var additionalDefines = new List<string>(assembly.defines.Except(assemblyBuilder.defaultDefines));
+                var additionalDefines = new List<string>(assembly.defines.Except(assemblyBuilder.defaultDefines).Concat(responseFileData.Defines));
 #pragma warning restore UAC2001
 
                 // DEVELOPMENT_BUILD
@@ -359,7 +375,14 @@ namespace Unity.ProjectAuditor.Editor.AssemblyUtils
                 assemblyBuilder.additionalDefines = additionalDefines.ToArray();
 
                 // add references to assemblies we need to build
-                assemblyBuilder.additionalReferences = Array.ConvertAll(assembly.assemblyReferences, r => Path.Combine(m_OutputFolder, Path.GetFileName(r.outputPath)));
+                var additionalReferences = new List<string>(assembly.assemblyReferences.Length);
+                foreach (var reference in assembly.assemblyReferences)
+                    additionalReferences.Add(Path.Combine(m_OutputFolder, Path.GetFileName(reference.outputPath)));
+                additionalReferences.AddRange(responseFileData.FullPathReferences);
+                assemblyBuilder.additionalReferences = additionalReferences.ToArray();
+
+                // Mono.Cecil needs these directories, so IL analysis can resolve the same references
+                AddResponseFileReferenceDirectories(responseFileData);
 
                 // exclude all assemblies that we are building ourselves to a Temp folder
                 assemblyBuilder.excludeReferences =
@@ -393,6 +416,47 @@ namespace Unity.ProjectAuditor.Editor.AssemblyUtils
 
                 m_AssemblyCompilationTasks[assembly.name].AddDependencies(dependencies.ToArray());
             }
+        }
+
+        static ResponseFileData ParseResponseFiles(Assembly assembly)
+        {
+            var responseFiles = assembly.compilerOptions.ResponseFiles;
+            var defines = new List<string>();
+            var references = new List<string>();
+            var otherArguments = new List<string>();
+            var isUnsafe = false;
+
+            if (responseFiles != null && responseFiles.Length > 0)
+            {
+                var systemReferenceDirectories = UnityEditor.Compilation.CompilationPipeline.GetSystemAssemblyDirectories(assembly.compilerOptions.ApiCompatibilityLevel);
+
+                foreach (var responseFile in responseFiles)
+                {
+                    var data = UnityEditor.Compilation.CompilationPipeline.ParseResponseFile(responseFile, ProjectAuditor.ProjectPath, systemReferenceDirectories);
+                    foreach (var error in data.Errors)
+                        Debug.LogError(error);
+
+                    defines.AddRange(data.Defines);
+                    references.AddRange(data.FullPathReferences);
+                    otherArguments.AddRange(data.OtherArguments);
+                    isUnsafe |= data.Unsafe;
+                }
+            }
+
+            return new ResponseFileData
+            {
+                Defines = defines.ToArray(),
+                FullPathReferences = references.ToArray(),
+                OtherArguments = otherArguments.ToArray(),
+                Unsafe = isUnsafe,
+                Errors = Array.Empty<string>()
+            };
+        }
+
+        void AddResponseFileReferenceDirectories(ResponseFileData responseFileData)
+        {
+            foreach (var reference in responseFileData.FullPathReferences)
+                m_ResponseFileReferenceDirectories.Add(Path.GetDirectoryName(reference));
         }
 
         IEnumerator UpdateAssemblyBuilders(IProgress progress)

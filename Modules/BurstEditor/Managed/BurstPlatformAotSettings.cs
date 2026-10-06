@@ -2,7 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: Burst not yet converted
 using System.Collections.Generic;
 using System.Reflection;
 using System.IO;
@@ -201,13 +200,16 @@ namespace Unity.Burst.Editor
         internal static readonly string CpuTargetsX64_ToolTip = "Use this to specify the target architectures to support for the currently selected platform.";
         internal static bool CpuTargetsX64_Display(BuildTarget selectedTarget, string architecture)
         {
+            // macOS is Apple Silicon only, so it has no selectable x64 CPU targets.
             return (IsStandalone(selectedTarget) || selectedTarget == BuildTarget.WSAPlayer)
                 && Has64BitSupport(selectedTarget)
+                && selectedTarget != BuildTarget.StandaloneOSX
                 && architecture != "arm64";
         }
         internal static bool CpuTargetsX64_Serialise(BuildTarget selectedTarget)
         {
-            return IsStandalone(selectedTarget) || selectedTarget == BuildTarget.WSAPlayer;
+            return (IsStandalone(selectedTarget) || selectedTarget == BuildTarget.WSAPlayer)
+                && selectedTarget != BuildTarget.StandaloneOSX;
         }
 
         internal static readonly string CpuTargetsArm64_DisplayName = "Target Arm 64Bit CPU Architectures";
@@ -804,7 +806,7 @@ namespace Unity.Burst.Editor
                     m_PlatformProperties[platform][i] = m_PlatformSettings[platform].FindProperty(platformFields[i].Name);
                     var displayName = typeof(BurstPlatformAotSettings).GetField(platformFields[i].Name + "_DisplayName", BindingFlags.Static | BindingFlags.NonPublic)?.GetValue(null) as string;
                     var toolTip = typeof(BurstPlatformAotSettings).GetField(platformFields[i].Name + "_ToolTip", BindingFlags.Static | BindingFlags.NonPublic)?.GetValue(null) as string;
-                    m_PlatformToolTips[platform][i] = EditorGUIUtility.TrTextContent(displayName, toolTip);
+                    m_PlatformToolTips[platform][i] = L10n.TextContent(displayName, toolTip, null, null);
 
                     var method = typeof(BurstPlatformAotSettings).GetMethod(platformFields[i].Name + "_Display", BindingFlags.Static | BindingFlags.NonPublic);
                     if (method == null)
@@ -872,7 +874,7 @@ namespace Unity.Burst.Editor
                 {
                     // Note burst treats Windows and Windows32 as the same target from a settings point of view (same for linux)
                     // So we only display the standalone platform
-                    EditorGUILayout.LabelField(EditorGUIUtility.TrTextContent("Target Platform", "Shows the currently selected standalone build target, can be switched in the Build Settings dialog"), EditorGUIUtility.TrTextContent(FetchStandaloneTargetName()));
+                    EditorGUILayout.LabelField(L10n.TextContent("Target Platform", "Shows the currently selected standalone build target, can be switched in the Build Settings dialog", null, null), L10n.TextContent(FetchStandaloneTargetName(), null, null, null));
                 }
 
                 for (int i = 0; i < m_PlatformProperties[selectedPlatform].Length; i++)
@@ -927,4 +929,3 @@ namespace Unity.Burst.Editor
         }
     }
 }
-#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

@@ -42,10 +42,12 @@ namespace UnityEngine.Rendering
     }
 
     [NativeHeader("Runtime/Camera/GraphicsSettings.h")]
+    [NativeHeader("Runtime/Camera/RenderManager.h")]
     [global::UnityEngine.NativeClass("GraphicsSettings", PersistentTypeId = 30)]
     [StaticAccessor("GetGraphicsSettings()", StaticAccessorType.Dot)]
     public sealed partial class GraphicsSettings : Object
     {
+        internal GraphicsSettings(global::UnityEngine.EntityId id) : base(id) {}
         private GraphicsSettings() {}
 
         extern public static TransparencySortMode   transparencySortMode { get; set; }
@@ -81,6 +83,14 @@ namespace UnityEngine.Rendering
         public static bool isScriptableRenderPipelineEnabled => INTERNAL_currentRenderPipeline != null;
 
         public static Type currentRenderPipelineAssetType => isScriptableRenderPipelineEnabled ? INTERNAL_currentRenderPipeline.GetType() : null;
+
+        // Same effect as -enable-builtin-rp-fallback, for tests that cannot pass the argument to the
+        // process that runs them.
+        [StaticAccessor("RenderManager", StaticAccessorType.DoubleColon)]
+        extern internal static bool GetBuiltInRenderPipelineFallbackEnabled();
+
+        [StaticAccessor("RenderManager", StaticAccessorType.DoubleColon)]
+        extern internal static void SetBuiltInRenderPipelineFallbackEnabled(bool enabled);
 
         [Obsolete("renderPipelineAsset has been deprecated. Use defaultRenderPipeline instead (UnityUpgradable) -> defaultRenderPipeline", false)]
         public static RenderPipelineAsset renderPipelineAsset
@@ -122,7 +132,21 @@ namespace UnityEngine.Rendering
         extern public static bool cameraRelativeLightCulling { get; set; }
         extern public static bool cameraRelativeShadowCulling { get; set; }
 
+        // Native-facing variants: native works with EntityIds, not managed wrappers (see GraphicsSettings.cpp).
         [RequiredByNativeCode]
+        static EntityId GetDefaultShaderEntityId(DefaultShaderType type)
+        {
+            var shader = GetDefaultShader(type);
+            return ReferenceEquals(shader, null) ? EntityId.None : shader.GetEntityId();
+        }
+
+        [RequiredByNativeCode]
+        static EntityId GetDefaultMaterialEntityId(DefaultMaterialType type)
+        {
+            var material = GetDefaultMaterial(type);
+            return ReferenceEquals(material, null) ? EntityId.None : material.GetEntityId();
+        }
+
         [VisibleToOtherModules]
         internal static Shader GetDefaultShader(DefaultShaderType type)
         {
@@ -146,7 +170,6 @@ namespace UnityEngine.Rendering
             };
         }
 
-        [RequiredByNativeCode]
         [VisibleToOtherModules]
         internal static Material GetDefaultMaterial(DefaultMaterialType type)
         {

@@ -26,8 +26,8 @@ namespace UnityEditor
 
         private static class Styles
         {
-            public static readonly GUIContent materialLabel = EditorGUIUtility.TrTextContent("Material", "Material to be used by TilemapRenderer");
-            public static readonly GUIContent maskInteractionLabel = EditorGUIUtility.TrTextContent("Mask Interaction", "TilemapRenderer's interaction with a Sprite Mask");
+            public static readonly GUIContent materialLabel = L10n.TextContent("Material", "Material to be used by TilemapRenderer", null, null);
+            public static readonly GUIContent maskInteractionLabel = L10n.TextContent("Mask Interaction", "TilemapRenderer's interaction with a Sprite Mask", null, null);
         }
 
         public override void OnEnable()

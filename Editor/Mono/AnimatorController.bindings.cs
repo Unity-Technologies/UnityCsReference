@@ -19,11 +19,11 @@ namespace UnityEditor.Animations
     {
         public AnimatorController()
         {
-            Internal_Create(this);
+            SetEntityIdFromConstructor(Internal_Create());
         }
 
         [FreeFunction("AnimatorControllerBindings::Internal_Create")]
-        private static extern void Internal_Create([Writable] AnimatorController self);
+        private static extern EntityId Internal_Create();
 
         public extern AnimatorControllerLayer[] layers
         {
@@ -76,7 +76,7 @@ namespace UnityEditor.Animations
         extern internal static StateMachineBehaviourContext[] Internal_FindStateMachineBehaviourContext(ScriptableObject behaviour);
 
         [FreeFunction("AnimatorControllerBindings::Internal_CreateNewStateMachineBehaviour")]
-        extern public static EntityId CreateNewStateMachineBehaviour(MonoScript script);
+        extern public static EntityId CreateNewStateMachineBehaviour([NotNull] MonoScript script);
 
         [Obsolete("CreateStateMachineBehaviour is deprecated. Use CreateNewStateMachineBehaviour instead.", true)]
         public static int CreateStateMachineBehaviour(MonoScript script) => (int)CreateNewStateMachineBehaviour(script);
@@ -135,7 +135,7 @@ namespace UnityEditor.Animations
         extern internal ScriptableObject[] Internal_GetEffectiveBehaviours([NotNull] AnimatorState state, int layerIndex);
 
         [FreeFunction(Name = "AnimatorControllerBindings::Internal_SetEffectiveBehaviours", HasExplicitThis = true)]
-        extern internal void Internal_SetEffectiveBehaviours([NotNull] AnimatorState state, int layerIndex, [UnityMarshalAs(NativeType.ScriptingObjectPtr)] ScriptableObject[] behaviours);
+        extern internal void Internal_SetEffectiveBehaviours([NotNull] AnimatorState state, int layerIndex, ScriptableObject[] behaviours);
 
         extern public bool evaluateEntryTransitionsOnStart { get; set; }
     }

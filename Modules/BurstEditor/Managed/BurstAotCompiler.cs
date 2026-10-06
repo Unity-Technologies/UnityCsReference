@@ -412,39 +412,6 @@ namespace Unity.Burst.Editor
             }
         }
 
-        static void CopyDirectory(string sourceDir, string destinationDir, bool recursive)
-        {
-            // Get information about the source directory
-            var dir = new DirectoryInfo(sourceDir);
-
-            // Check if the source directory exists
-            if (!dir.Exists)
-                throw new DirectoryNotFoundException($"Source directory not found: {dir.FullName}");
-
-            // Cache directories before we start copying
-            DirectoryInfo[] dirs = dir.GetDirectories();
-
-            // Create the destination directory
-            Directory.CreateDirectory(destinationDir);
-
-            // Get the files in the source directory and copy to the destination directory
-            foreach (FileInfo file in dir.GetFiles())
-            {
-                string targetFilePath = Path.Combine(destinationDir, file.Name);
-                file.CopyTo(targetFilePath);
-            }
-
-            // If recursive and copying subdirectories, recursively call this method
-            if (recursive)
-            {
-                foreach (DirectoryInfo subDir in dirs)
-                {
-                    string newDestinationDir = Path.Combine(destinationDir, subDir.Name);
-                    CopyDirectory(subDir.FullName, newDestinationDir, true);
-                }
-            }
-        }
-
         internal static IGenerateNativePluginsForAssemblies.GenerateResult OnPostBuildPlayerScriptDLLsImpl(BurstAOTSettings settings, Assembly[] playerAssemblies)
         {
             var buildTarget = settings.summary.platform;
@@ -807,8 +774,6 @@ namespace Unity.Burst.Editor
                 }
             }
 
-            PostProcessCombinations(settings.targetPlatform, settings.combinations, settings.summary);
-
             var pdbsRemainInBuild = isDevelopmentBuild || settings.aotSettingsForTarget.EnableDebugInAllBuilds || settings.targetPlatform == TargetPlatform.UWP;
 
             // Finally move out any symbols/misc files from the final output
@@ -1069,14 +1034,6 @@ static void BurstSetup()
         {
             var combinations = new List<BurstOutputCombination>();
 
-#pragma warning disable CS0618
-            if (scriptingImplementation == ScriptingImplementation.CoreCLR
-                || (scriptingImplementation == ScriptingImplementation.IL2CPP && apiCompatibilityLevel == ApiCompatibilityLevel.NET))
-#pragma warning restore CS0618
-            {
-                return combinations;
-            }
-
             if (targetPlatform == TargetPlatform.macOS)
             {
                 // NOTE: OSX has a special folder for the plugin
@@ -1084,27 +1041,11 @@ static void BurstSetup()
                 // PlatformDependent\OSXPlayer\Extensions\Managed\OSXDesktopStandalonePostProcessor.cs
                 var outputPath = Path.Combine(Path.GetFileName(summary.outputPath), "Contents", "Plugins");
 
-                // Based on : PlatformDependent/OSXPlayer/Extension/OSXStandaloneBuildWindowExtension.cs
-                var aotSettings = BurstPlatformAotSettings.GetOrCreateSettings(BuildTarget.StandaloneOSX);
-                var buildTargetName = BuildPipeline.GetBuildTargetName(BuildTarget.StandaloneOSX);
-                var architecture = EditorUserBuildSettings.GetPlatformSettings(buildTargetName, "Architecture").ToLowerInvariant();
-                switch (architecture)
-                {
-                    case "x64":
-                        combinations.Add(new BurstOutputCombination(outputPath, aotSettings.GetDesktopCpu64Bit()));
-                        break;
-                    case "arm64":
-                        // According to
-                        // https://web.archive.org/web/20220504192056/https://github.com/llvm/llvm-project/blob/main/llvm/include/llvm/Support/AArch64TargetParser.def#L240
-                        // M1 is equivalent to Armv8.5-A, so it supports everything from HALFFP target
-                        // (there's no direct confirmation on crypto because it's not mandatory)
-                        combinations.Add(new BurstOutputCombination(outputPath, new TargetCpus(BurstTargetCpu.ARMV8A_AARCH64_HALFFP)));
-                        break;
-                    default:
-                        combinations.Add(new BurstOutputCombination(Path.Combine(outputPath, "x64"), aotSettings.GetDesktopCpu64Bit()));
-                        combinations.Add(new BurstOutputCombination(Path.Combine(outputPath, "arm64"), new TargetCpus(BurstTargetCpu.ARMV8A_AARCH64_HALFFP)));
-                        break;
-                }
+                // According to
+                // https://web.archive.org/web/20220504192056/https://github.com/llvm/llvm-project/blob/main/llvm/include/llvm/Support/AArch64TargetParser.def#L240
+                // M1 is equivalent to Armv8.5-A, so it supports everything from HALFFP target
+                // (there's no direct confirmation on crypto because it's not mandatory)
+                combinations.Add(new BurstOutputCombination(outputPath, new TargetCpus(BurstTargetCpu.ARMV8A_AARCH64_HALFFP)));
             }
             else if (targetPlatform == TargetPlatform.iOS || targetPlatform == TargetPlatform.iOSSimulator || targetPlatform == TargetPlatform.tvOS || targetPlatform == TargetPlatform.tvOSSimulator || targetPlatform == TargetPlatform.visionOS || targetPlatform == TargetPlatform.visionSimulator)
             {
@@ -1194,14 +1135,7 @@ static void BurstSetup()
 
                 environment["BURST_ANDROID_MIN_API_LEVEL"] = $"{targetAPILevel}";
 
-                // Mono for Android is only supported on ARMv7. So if we're building for Mono, we need to filter out
-                // other architectures from the values in PlayerSettings.Android.targetArchitectures.
                 var androidTargetArch = PlayerSettings.Android.targetArchitectures;
-                var isMono = scriptingImplementation == ScriptingImplementation.Mono2x;
-                if (isMono)
-                {
-                    androidTargetArch &= AndroidArchitecture.ARMv7;
-                }
 
                 // Setting tempburstlibs/ as the interim target directory
                 // Don't target libs/ directly because incremental build pipeline doesn't expect the so's at that path
@@ -1281,99 +1215,6 @@ static void BurstSetup()
             }
 
             return combinations;
-        }
-
-        private static void PostProcessCombinations(TargetPlatform targetPlatform, List<BurstOutputCombination> combinations, BuildSummary summary)
-        {
-            if (targetPlatform == TargetPlatform.macOS && combinations.Count > 1)
-            {
-                // Figure out which files we need to lipo
-                string outputSymbolsDir = null;
-                var outputDir = Path.Combine(OutputBaseFolder, Path.GetFileName(summary.outputPath), "Contents", "Plugins");
-
-                var sliceCount = combinations.Count;
-                var binarySlices = new string[sliceCount];
-                var debugSymbolSlices = new string[sliceCount];
-
-                for (int i = 0; i < sliceCount; i++)
-                {
-                    var slice = combinations[i];
-
-                    var binaryFileName = slice.LibraryName + ".bundle";
-                    var binaryPath = Path.Combine(OutputBaseFolder, slice.OutputPath, binaryFileName);
-                    binarySlices[i] = binaryPath;
-
-                    // Only attempt to lipo symbols if they actually exist
-                    var dsymPath = binaryPath + ".dsym";
-                    var debugSymbolsPath = Path.Combine(dsymPath, "Contents", "Resources", "DWARF", binaryFileName);
-                    if (File.Exists(debugSymbolsPath))
-                    {
-                        if (string.IsNullOrWhiteSpace(outputSymbolsDir))
-                        {
-                            // Copy over the symbols from the first combination for metadata files which we aren't merging, like Info.plist
-                            var outputDsymPath = Path.Combine(outputDir, binaryFileName + ".dsym");
-                            CopyDirectory(dsymPath, outputDsymPath, true);
-
-                            outputSymbolsDir = Path.Combine(outputDsymPath, "Contents", "Resources", "DWARF");
-                        }
-
-                        debugSymbolSlices[i] = debugSymbolsPath;
-                    }
-                }
-
-                // lipo combinations together
-                var outBinaryFileName = combinations[0].LibraryName + ".bundle";
-                RunLipo(binarySlices, Path.Combine(outputDir, outBinaryFileName));
-
-                if (!string.IsNullOrWhiteSpace(outputSymbolsDir))
-                    RunLipo(debugSymbolSlices, Path.Combine(outputSymbolsDir, outBinaryFileName));
-
-                // Remove single-slice binary so they don't end up in the build
-                for (int i = 0; i < sliceCount; i++)
-                    Directory.Delete(Path.GetDirectoryName(binarySlices[i]), true);
-
-                // Since we have combined the files, we need to adjust combinations for the next step
-                var outFolder = Path.GetDirectoryName(combinations[0].OutputPath);  // remove platform folder
-                combinations.Clear();
-                combinations.Add(new BurstOutputCombination(outFolder, new TargetCpus()));
-            }
-        }
-
-        private static void RunLipo(string[] inputFiles, string outputFile)
-        {
-            var outputDir = Path.GetDirectoryName(outputFile);
-            Directory.CreateDirectory(outputDir);
-
-#pragma warning disable UAC2001 // The Banned API Analyzer produces compile errors for any new Linq code.
-            var args = inputFiles.Where(input => !string.IsNullOrEmpty(input)).ToList();
-#pragma warning restore UAC2001
-
-            args.Add("-create");
-            args.Add("-output");
-            args.Add(outputFile);
-
-            string lipoPath;
-
-            var currentEditorPlatform = Application.platform;
-            switch (currentEditorPlatform)
-            {
-                case RuntimePlatform.LinuxEditor:
-                    lipoPath = Path.Combine(BurstLoader.BclConfiguration.FolderPath, "hostlin", "llvm-lipo");
-                    break;
-
-                case RuntimePlatform.OSXEditor:
-                    lipoPath = Path.Combine(BurstLoader.BclConfiguration.FolderPath, "hostmac", "llvm-lipo");
-                    break;
-
-                case RuntimePlatform.WindowsEditor:
-                    lipoPath = Path.Combine(BurstLoader.BclConfiguration.FolderPath, "hostwin", "llvm-lipo.exe");
-                    break;
-
-                default:
-                    throw new NotSupportedException("Unknown Unity editor platform: " + currentEditorPlatform);
-            }
-
-            BclRunner.RunNativeProgram(lipoPath, args, null);
         }
 
         internal static Assembly[] GetPlayerAssemblies(BuildReport report)
@@ -1807,19 +1648,6 @@ static void BurstSetup()
 
             private static void RunNativeProgram(string exePath, List<string> arguments, string workingDirectory, CompilerOutputParserBase parser)
             {
-                // On non Windows platform, make sure that the command is executable
-                // This is a workaround - occasionally the execute bits are lost from our package
-                if (Application.platform != RuntimePlatform.WindowsEditor && Path.IsPathRooted(exePath))
-                {
-                    var escapedExePath = EscapeForShell(exePath, singleQuoteWrapped: true);
-                    var shArgs = $"-c '[ ! -x {escapedExePath} ] && chmod 755 {escapedExePath}'";
-
-                    var p = new Program(new ProcessStartInfo("sh", shArgs) { CreateNoWindow = true});
-                    p.GetProcessStartInfo().WorkingDirectory = workingDirectory;
-                    p.Start();
-                    p.WaitForExit();
-                }
-
                 var startInfo = new ProcessStartInfo(exePath)
                 {
                     CreateNoWindow = true
@@ -1911,6 +1739,9 @@ static void BurstSetup()
                         errorMessageBuilder.Append(matchVersion.Success ?
                             "Burst compiler (" + matchVersion.Groups[1].Value + ") failed running" :
                             "Burst compiler failed running");
+                        // On Unix a signalled process reports 128+signal, so this separates
+                        // SIGSEGV (139) and an OOM SIGKILL (137) from bcl's own failure exits
+                        errorMessageBuilder.Append(" with exit code ").Append(p.ExitCode);
                         errorMessageBuilder.AppendLine();
                         errorMessageBuilder.AppendLine();
                         // Don't output the path if we are not burst-debugging or the exe exist

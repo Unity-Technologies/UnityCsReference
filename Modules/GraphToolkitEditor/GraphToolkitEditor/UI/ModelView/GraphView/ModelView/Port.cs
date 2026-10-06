@@ -211,6 +211,12 @@ namespace Unity.GraphToolkit.Editor
                 GraphView.RemoveElement(m_PortPreview);
             else
             {
+                if (GraphView is { GraphViewModel: { SpacePartitioningState: { } } })
+                {
+                    using var updater = GraphView.GraphViewModel.SpacePartitioningState.UpdateScope;
+                    updater.MarkGraphElementForRemoval(m_PortPreview);
+                }
+
                 // When the port is culled, Marker.OnTargetDetachedFromPanel already removed the preview
                 // from the hierarchy and registered OnTargetAttachedToPanel on the port. Without
                 // DisconnectFromTarget(), OnTargetAttachedToPanel would re-add the preview as a ghost
@@ -302,11 +308,9 @@ namespace Unity.GraphToolkit.Editor
         /// <inheritdoc />
         protected override void BuildPartList()
         {
-            var connectionPart = PortModel.IsPolymorphic
-                ? PortConnectorPolymorphicPart.Create(connectorPartName, Model, this, ussClassName)
-                : PortConnectorWithIconPart.Create(connectorPartName, Model, this, ussClassName);
-
-            PartList.AppendPart(connectionPart);
+            // Always use the polymorphic part so the port view can transition between polymorphic and non-polymorphic
+            // states without being rebuilt. The dropdown arrow is hidden via USS when the port isn't polymorphic.
+            PartList.AppendPart(PortConnectorPolymorphicPart.Create(connectorPartName, Model, this, ussClassName));
             PartList.AppendPart(PortConstantEditorPart.Create(constantEditorPartName, Model, this, ussClassName));
         }
 
@@ -491,7 +495,7 @@ namespace Unity.GraphToolkit.Editor
                 EnableClass(capacityNoneUssClassName, PortModel.Capacity == PortCapacity.None);
                 EnableClass(verticalUssClassName, PortModel.Orientation == PortOrientation.Vertical);
                 EnableClass(expandableUssClassName, PortModel.IsExpandable);
-                EnableClass(polymorphicUssClassName, PortModel.PolymorphicPortHandler != null);
+                EnableClass(polymorphicUssClassName, PortModel.IsPolymorphic);
 
                 if (!wasUpdatedAtLeastOnce || m_CurrentTypeHandle != PortModel.DataTypeHandle)
                 {
@@ -666,10 +670,10 @@ namespace Unity.GraphToolkit.Editor
         /// <inheritdoc />
         public override void RemoveFromRootView()
         {
-            base.RemoveFromRootView();
+            // RemovePortPreview needs GraphView, which base.RemoveFromRootView() nulls.
+            RemovePortPreview();
 
-            // When a port is removed, its marker should be removed as well.
-            m_PortPreview?.RemoveFromRootView();
+            base.RemoveFromRootView();
         }
 
         void PopulateMenuActionMap(Dictionary<string, Action> menuActionMap, ContextualMenuPopulateEvent evt)
@@ -829,7 +833,10 @@ namespace Unity.GraphToolkit.Editor
                         // If the port has no icon, use the connector to compute the hit box.
                         var portPos = portConnectorPart.Connector.worldBound;
                         var margin = minWorldHitBoxSize.x * 0.5f;
-                        x = direction == PortDirection.Input ? node.worldBound.xMin : portPos.center.x - margin;
+                        // For polymorphic output ports the button (icon+arrow) sits between the label and the connector.
+                        // Start the hit box at the connector's left edge so it does not overlap the button.
+                        var outputX = port.PortModel.IsPolymorphic ? portPos.xMin : portPos.center.x - margin;
+                        x = direction == PortDirection.Input ? node.worldBound.xMin : outputX;
                         y = portConnector.worldBound.yMin;
                         hitBoxSize = new Vector2(direction == PortDirection.Input ? portPos.center.x + margin - x : node.worldBound.xMax - x, portConnector.worldBound.size.y);
                     }
@@ -1070,6 +1077,7 @@ namespace Unity.GraphToolkit.Editor
             }
 
             public bool HasContextualMenuBeenBuilt => m_Port.m_HasContextualMenuBeenBuilt;
+            public bool HasPortPreview => m_Port.m_PortPreview != null;
             public void CallBuildContextualMenu(ContextualMenuPopulateEvent e) => m_Port.BuildContextualMenu(e);
         }
     }

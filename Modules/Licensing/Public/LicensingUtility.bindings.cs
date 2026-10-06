@@ -3,15 +3,16 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using System.Globalization;
 using System.Runtime.InteropServices;
-using System.Collections.Generic;
-using UnityEditor.Experimental.Licensing;
 using UnityEngine;
 using UnityEngine.Bindings;
+using UnityEngine.Scripting.APIUpdating;
 using RequiredByNativeCodeAttribute = UnityEngine.Scripting.RequiredByNativeCodeAttribute;
 
-namespace UnityEditor.Experimental.Licensing
+namespace UnityEditor.Licensing
 {
+    [MovedFrom("UnityEditor.Experimental.Licensing")]
     [Serializable]
     [StructLayout(LayoutKind.Sequential)]
     [RequiredByNativeCode]
@@ -20,7 +21,28 @@ namespace UnityEditor.Experimental.Licensing
     {
         [SerializeField]
         private string m_Expiration_ts;
+
+        // Milliseconds since the Unix epoch, as sent by the licensing client.
+        // Empty or "0" means the entitlement group does not expire.
         public string Expiration_ts { get { return m_Expiration_ts;  } }
+
+        // False when the entitlement group does not expire, or when the value could not be read as a date.
+        public bool TryGetExpirationUtc(out DateTime expirationUtc)
+        {
+            expirationUtc = default;
+
+            if (string.IsNullOrEmpty(m_Expiration_ts) || m_Expiration_ts == "0")
+                return false;
+
+            if (!long.TryParse(m_Expiration_ts, NumberStyles.None, CultureInfo.InvariantCulture, out var milliseconds))
+                return false;
+
+            if (milliseconds > DateTimeOffset.MaxValue.ToUnixTimeMilliseconds())
+                return false;
+
+            expirationUtc = DateTimeOffset.FromUnixTimeMilliseconds(milliseconds).UtcDateTime;
+            return true;
+        }
 
         [SerializeField]
         string m_EntitlementGroupId;
@@ -35,14 +57,16 @@ namespace UnityEditor.Experimental.Licensing
         public string LicenseType { get { return m_LicenseType;  } }
     }
 
+    [MovedFrom("UnityEditor.Experimental.Licensing")]
     public enum EntitlementStatus
     {
-        Unknown,
-        Granted,
-        NotGranted,
-        Free
+        Unknown = 0,
+        Granted = 1,
+        NotGranted = 2,
+        Free = 3,
     }
 
+    [MovedFrom("UnityEditor.Experimental.Licensing")]
     [Serializable]
     [StructLayout(LayoutKind.Sequential)]
     [RequiredByNativeCode]
@@ -74,10 +98,11 @@ namespace UnityEditor.Experimental.Licensing
         public EntitlementGroupInfo[] EntitlementGroupsData { get { return m_EntitlementGroupsData;  } }
     }
 
+    [MovedFrom("UnityEditor.Experimental.Licensing")]
     [NativeHeader("Modules/Licensing/Public/LicensingUtility.bindings.h")]
-    public static class LicensingUtility
+    public static partial class LicensingUtility
     {
-        [NativeMethod("HasEntitlement")]
+        [NativeMethod("HasEntitlement", IsThreadSafe = true)]
         public extern static bool HasEntitlement(string entitlement);
 
         [NativeMethod("HasEntitlements")]
@@ -88,6 +113,27 @@ namespace UnityEditor.Experimental.Licensing
 
         [NativeMethod("HasEntitlementsExtended")]
         public extern static EntitlementInfo[] HasEntitlementsExtended(string[] entitlements, bool includeCustomData);
+
+        [NativeMethod("GetEditorLicenseIdentifier")]
+        internal extern static string GetEditorLicenseIdentifier(bool displayFormat);
+
+        [NativeMethod("GetAuthToken")]
+        public extern static string GetAuthToken();
+
+
+        public static bool HasPro() { return HasEntitlement(CommonEntitlements.UseLegacyProFlag); }
+
+        public static bool HasEduLicense() { return HasEntitlement(CommonEntitlements.UseEduWatermark); }
+
+        // Mirrors ILicensing::EntitlementResultMap::IsPersonal; a requested entitlement is always
+        // present in the native result map, so absent from the granted ids means not granted
+        public static bool IsPersonal()
+        {
+            var granted = HasEntitlements(new[] { CommonEntitlements.UseEditorUI, CommonEntitlements.DisableSplashScreen });
+
+            return Array.IndexOf(granted, CommonEntitlements.UseEditorUI) >= 0
+                && Array.IndexOf(granted, CommonEntitlements.DisableSplashScreen) < 0;
+        }
 
         public static extern void InvokeLicenseUpdateCallbacks();
 

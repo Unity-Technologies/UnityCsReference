@@ -2,10 +2,12 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System;
 using UnityEngine;
 using UnityEditor;
 using UnityEditorInternal;
 using Unity.Scripting.LifecycleManagement;
+using Object = UnityEngine.Object;
 
 namespace UnityEditor
 {
@@ -84,12 +86,17 @@ namespace UnityEditor
         }
 
         public static void ScreenShotComponent(Rect contentRect, Object target)
+            => ScreenShotComponent(contentRect, target != null ? target.GetType() : null);
+
+        internal static void ScreenShotComponent(Rect contentRect, Type type)
         {
             s_TakeComponentScreenshot = false;
+            if (type == null)
+                return;
 
             contentRect.yMax += 2;
             contentRect.xMin += 1;
-            ScreenShots.SaveScreenShotWithBorder(contentRect, kWindowBorderColor, target.GetType().Name + "Inspector");
+            ScreenShots.SaveScreenShotWithBorder(contentRect, kWindowBorderColor, type.Name + "Inspector");
         }
 
         [MenuItem("Window/Internal/Screenshot/Snap Game View Content", false, 1000, true, secondaryPriority = 7)]

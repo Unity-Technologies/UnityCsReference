@@ -2,15 +2,19 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: UIToolkitFramework not yet converted
+using Unity.Scripting.LifecycleManagement;
 using UnityEngine.UIElements;
 
 namespace UnityEditor.UIElements
 {
-    [InitializeOnLoad]
-    internal static class LiveReloadTrackerCreator
+    internal static partial class LiveReloadTrackerCreator
     {
-        static LiveReloadTrackerCreator()
+        // These factory slots are cleared on code reload, so they have to be reinstalled on every load.
+        // A static constructor would only run once per domain, after which UXML live reload silently stops
+        // working for UIDocument and PanelRenderer — and UIDocument invokes the factory without a null
+        // check, so it would throw rather than degrade.
+        [OnCodeLoaded]
+        static void Initialize()
         {
             UIDocument.CreateLiveReloadVisualTreeAssetTracker = CreateVisualTreeAssetTrackerInstance;
             PanelRenderer.CreateLiveReloadVisualTreeAssetTracker = CreateVisualTreeAssetTrackerInstance;
@@ -42,4 +46,3 @@ namespace UnityEditor.UIElements
         }
     }
 }
-#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

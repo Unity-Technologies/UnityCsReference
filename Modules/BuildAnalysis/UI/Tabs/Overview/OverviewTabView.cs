@@ -5,6 +5,7 @@
 using System.Globalization;
 using System.IO;
 using UnityEditor;
+using UnityEditor.Build.Reporting;
 using UnityEngine;
 using UnityEngine.UIElements;
 
@@ -28,7 +29,9 @@ namespace UnityEditor.Build.Analysis
         private Label m_CacheReuseValue;
         private Label m_OutputPathValue;
         private Button m_OutputPathOpenButton;
+        private Label m_BuildOptionsLabel;
         private Label m_BuildOptionsValue;
+        private Label m_ContentOptionsLabel;
         private Label m_ContentOptionsValue;
         private Label m_BuildProfileValue;
         private string m_CurrentOutputPath = string.Empty;
@@ -61,7 +64,9 @@ namespace UnityEditor.Build.Analysis
             m_CacheReuseValue = m_Root.Q<Label>("cache-reuse-value");
             m_OutputPathValue = m_Root.Q<Label>("output-path-value");
             m_OutputPathOpenButton = m_Root.Q<Button>("output-path-open-button");
+            m_BuildOptionsLabel = m_Root.Q<Label>("build-options-label");
             m_BuildOptionsValue = m_Root.Q<Label>("build-options-value");
+            m_ContentOptionsLabel = m_Root.Q<Label>("content-options-label");
             m_ContentOptionsValue = m_Root.Q<Label>("content-options-value");
             m_BuildProfileValue = m_Root.Q<Label>("build-profile-value");
             m_OutputPathOpenButton.clicked += OnOutputPathOpenClicked;
@@ -106,6 +111,8 @@ namespace UnityEditor.Build.Analysis
             m_OutputPathOpenButton.SetEnabled(!string.IsNullOrEmpty(m_CurrentOutputPath));
             m_BuildOptionsValue.text = FormatOptions(summary.BuildOptions);
             m_ContentOptionsValue.text = FormatOptions(summary.BuildContentOptions);
+            SetRowVisible(m_BuildOptionsLabel, m_BuildOptionsValue, selection.BuildType == BuildType.Player);
+            SetRowVisible(m_ContentOptionsLabel, m_ContentOptionsValue, selection.BuildType == BuildType.ContentDirectory);
             m_BuildProfileValue.text = FormatBuildProfile(summary.BuildProfilePath);
 
             m_Steps.Bind(analysis, messages);
@@ -137,6 +144,14 @@ namespace UnityEditor.Build.Analysis
             return null;
         }
 
+        // Label and value live in separate grid columns, so both must be hidden to keep rows aligned.
+        private static void SetRowVisible(VisualElement label, VisualElement value, bool visible)
+        {
+            var display = visible ? DisplayStyle.Flex : DisplayStyle.None;
+            label.style.display = display;
+            value.style.display = display;
+        }
+
         private static string FormatOptions(string[] options)
         {
             if (options == null || options.Length == 0)
@@ -158,16 +173,25 @@ namespace UnityEditor.Build.Analysis
             if (string.IsNullOrEmpty(m_CurrentOutputPath))
                 return;
 
+            if (!Directory.Exists(m_CurrentOutputPath))
+            {
+                Debug.LogWarning($"{BuildAnalysisConstants.k_ConsoleLogPrefix} Build output folder no longer exists: {m_CurrentOutputPath}");
+                return;
+            }
+
             EditorUtility.OpenWithDefaultApp(m_CurrentOutputPath);
         }
 
-        // OutputPath from BuildReportSummary may be a file (e.g. .exe for a Player build).
-        // We only show the directory in the UI and open the directory when the user clicks the button, so we need to normalize it here.
+        // Leave an already-missing path unchanged so the existence check below still reports it.
         private static string NormalizeToDirectory(string path)
         {
             if (string.IsNullOrEmpty(path))
                 return string.Empty;
-            return Directory.Exists(path) ? path : (Path.GetDirectoryName(path) ?? string.Empty);
+            if (Directory.Exists(path))
+                return path;
+            if (File.Exists(path))
+                return Path.GetDirectoryName(path) ?? string.Empty;
+            return path;
         }
     }
 }

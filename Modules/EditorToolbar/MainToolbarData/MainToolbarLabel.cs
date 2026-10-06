@@ -2,10 +2,12 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using UnityEngine;
 using UnityEngine.UIElements;
 
 namespace UnityEditor.Toolbars
 {
+    [Icon("UIToolkit/Icons/Label.png")]
     public sealed class MainToolbarLabel : MainToolbarElement
     {
         const string k_ToolbarLabelClassName = "unity-editor-toolbar-label";

@@ -46,6 +46,10 @@ namespace Unity.ProjectAuditor.Editor.Modules
             var analyzers = GetCompatibleAnalyzers(analysisParams);
             if (analyzers.Length > 0)
             {
+                // Lazily load the combined-manifest database on the first audit; it's cached and
+                // reused for subsequent audits.
+                var manifestDatabase = PackageManifestDatabase.Instance;
+
                 var packages = PackageInfo.GetAllRegisteredPackages();
                 var packageCount = packages.Length;
 
@@ -55,7 +59,8 @@ namespace Unity.ProjectAuditor.Editor.Modules
 
                 var context = new PackageAnalysisContext
                 {
-                    Params = analysisParams
+                    Params = analysisParams,
+                    ManifestDatabase = manifestDatabase
                 };
 
                 foreach (var package in packages)

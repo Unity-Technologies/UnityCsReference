@@ -10,6 +10,30 @@ namespace Unity.Localization.Editor;
 
 static class CollectionMutation
 {
+    /// <summary>
+    /// Returns whether an imported file's key ids belong to the collection it is being imported into.
+    /// </summary>
+    /// <remarks>
+    /// Only formats that record the collection they were exported from can answer this, by writing the collection's
+    /// <see cref="SharedTableData.TableCollectionNameGuid"/> into the file and passing it back here on import. When
+    /// either side has no readable guid there is nothing to compare, so the answer is
+    /// <paramref name="ambiguous"/> and the caller keeps whatever it would have done otherwise.
+    /// Key ids are only unique within one collection, so a caller that gets <see langword="false"/> back must pass
+    /// <c>0</c> to <see cref="ResolveKey"/> in place of the file's id. Passing it through would let a row rename or
+    /// overwrite whichever unrelated key in the destination happens to hold the same number.
+    /// </remarks>
+    /// <param name="collection">The collection being imported into.</param>
+    /// <param name="collectionGuid">The collection guid recorded in the file, in its 32-character hexadecimal form.</param>
+    /// <param name="ambiguous">The answer to give when either guid is missing or unreadable.</param>
+    /// <returns><c>true</c> when the file's ids can be trusted against this collection; otherwise, <c>false</c>.</returns>
+    public static bool CameFrom(ResourceTableCollection collection, string collectionGuid, bool ambiguous)
+    {
+        var destination = collection.SharedData.TableCollectionNameGuid;
+        if (destination.Empty() || string.IsNullOrEmpty(collectionGuid) || !UnityEngine.GUID.TryParse(collectionGuid, out var source))
+            return ambiguous;
+        return source == destination;
+    }
+
     // Finds or (per options) creates the shared key for a row, honoring an id hint for renames.
     public static SharedTableData.SharedTableEntry ResolveKey(ResourceTableCollection collection, string keyName, long id, TableImportOptions options)
     {

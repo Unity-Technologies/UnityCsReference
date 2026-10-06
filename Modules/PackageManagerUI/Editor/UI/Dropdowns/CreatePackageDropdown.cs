@@ -12,7 +12,6 @@ internal class CreatePackageDropdown : DropdownContent
 {
     private static readonly Vector2 k_DefaultWindowSize = new(320, 52);
     private static readonly Vector2 k_WindowSizeWithError = new(320, 94);
-    private static readonly string k_GeneralExceptionErrorMessage = L10n.Tr("An error occured while creating the package. See console for more details.", null);
 
     public override Vector2 windowSize => string.IsNullOrEmpty(errorInfoBox.text) ? k_DefaultWindowSize : k_WindowSizeWithError;
 
@@ -88,21 +87,10 @@ internal class CreatePackageDropdown : DropdownContent
         }
 
         inputForm.SetEnabled(false);
-        try
-        {
-            m_PackageCreator.CreatePackage(packageDisplayName);
-        }
-        catch (ArgumentException e)
-        {
-            RefreshErrors(e.Message);
-        }
-        catch (Exception)
-        {
-            RefreshErrors(k_GeneralExceptionErrorMessage);
-        }
+        m_PackageCreator.CreatePackage(packageDisplayName, RefreshErrors);
     }
 
-    private void RefreshErrors(string errorMessage = null)
+    private void RefreshErrors(string errorMessage)
     {
         AddToClassList("inputError");
         errorInfoBox.text = errorMessage;

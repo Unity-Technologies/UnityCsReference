@@ -24,6 +24,8 @@ namespace UnityEditor.AssetImporters
     [ExcludeFromObjectFactory]
     public sealed class ImportLog : Object
     {
+        internal ImportLog(global::UnityEngine.EntityId id) : base(id) {}
+        public ImportLog() {}
         internal struct Filters
         {
             public const string SearchToken = "i";

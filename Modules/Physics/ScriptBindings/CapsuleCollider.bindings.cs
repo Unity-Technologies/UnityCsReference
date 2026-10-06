@@ -17,6 +17,8 @@ namespace UnityEngine
     [NativeHeader("Modules/Physics/CapsuleCollider.h")]
     public class CapsuleCollider : Collider
     {
+        internal CapsuleCollider(global::UnityEngine.EntityId id) : base(id) {}
+        public CapsuleCollider() {}
         ///<summary>The center of the capsule, measured in the object's local space.</summary>
         extern public Vector3 center { get; set; }
         ///<summary>The radius of the sphere, measured in the object's local space.</summary>

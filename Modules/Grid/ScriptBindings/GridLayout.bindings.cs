@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System;
 using RequiredByNativeCodeAttribute = UnityEngine.Scripting.RequiredByNativeCodeAttribute;
 
 using UnityEngine.Bindings;
@@ -16,6 +17,8 @@ namespace UnityEngine
     [NativeClass("GridLayout", PersistentTypeId = 0x67E12204)]
     public partial class GridLayout : Behaviour
     {
+        public GridLayout() {}
+        protected internal GridLayout(global::UnityEngine.EntityId id) : base(id) {}
         // Enums.
         ///<summary>The layout of the <see cref="GridLayout" />.</summary>
         ///<remarks>The layout determines the conversion of positions from cell space to local space and vice versa.</remarks>
@@ -247,6 +250,40 @@ namespace UnityEngine
         ///<returns>Cell Center coordinate.</returns>
         [FreeFunction("GridLayoutBindings::GetLayoutCellCenter", HasExplicitThis = true)]
         public extern Vector3 GetLayoutCellCenter();
+
+        ///<summary>Gets the points which outline a cell of the <see cref="GridLayout" />.</summary>
+        ///<remarks>The points are in cell space, so they describe a cell before <see cref="cellSize" /> is applied. Scale them by
+        ///<see cref="cellSize" /> for the shape of a cell, then <see cref="Grid.Swizzle" /> that by
+        ///<see cref="Grid.cellSwizzle" /> and offset it by <see cref="CellToLocal" /> to place it on a given cell.
+        ///They trace the cell's outline clockwise, so consecutive points are the cell's edges.
+        ///The same points serve every cell of the <see cref="GridLayout" />, so they are read straight from the engine and
+        ///nothing is copied or allocated.</remarks>
+        ///<returns>The points which outline a cell, in cell space.</returns>
+        ///<example>
+        ///  <code><![CDATA[
+        /// // Draw the outline of the cell at the origin
+        ///using System;
+        ///using UnityEngine;
+        ///
+        ///public class ExampleClass : MonoBehaviour
+        ///{
+        ///    void OnDrawGizmos()
+        ///    {
+        ///        Grid grid = GetComponent<Grid>();
+        ///        ReadOnlySpan<Vector3> points = grid.GetCellPoints();
+        ///        Vector3 origin = grid.CellToLocal(Vector3Int.zero);
+        ///        for (int i = 0; i < points.Length; ++i)
+        ///        {
+        ///            Vector3 from = origin + Grid.Swizzle(grid.cellSwizzle, Vector3.Scale(points[i], grid.cellSize));
+        ///            Vector3 to = origin + Grid.Swizzle(grid.cellSwizzle, Vector3.Scale(points[(i + 1) % points.Length], grid.cellSize));
+        ///            Gizmos.DrawLine(grid.LocalToWorld(from), grid.LocalToWorld(to));
+        ///        }
+        ///    }
+        ///}
+        ///]]></code>
+        ///</example>
+        [FreeFunction("GridLayoutBindings::GetCellPoints", HasExplicitThis = true)]
+        public extern ReadOnlySpan<Vector3> GetCellPoints();
 
         [RequiredByNativeCode]
         private void DoNothing() {}

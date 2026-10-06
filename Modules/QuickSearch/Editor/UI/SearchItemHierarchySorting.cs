@@ -180,7 +180,7 @@ namespace UnityEditor.Search
                 m_ChildrenNodesStack.Push(childrenEnumerable);
             }
 
-            using var _ = ListPool<SearchItem>.Get(out var childrenList);
+            using var _ = ListPool<(SearchItem item, HierarchyNode node)>.Get(out var childrenList);
             while (m_ChildrenNodesStack.Count > 0)
             {
                 var childrenEnumerable = m_ChildrenNodesStack.Pop();
@@ -191,14 +191,19 @@ namespace UnityEditor.Search
                 foreach (var childNode in childrenEnumerable)
                 {
                     if (m_SearchItemHierarchyNodeMap.TryGetSearchItem(in childNode, out var childItem))
-                        childrenList.Add(childItem);
+                        childrenList.Add((childItem, childNode));
                 }
 
-                childrenList.Sort(m_SearchItemComparer);
+                // List<T>.Sort(IComparer<T>) falls back to Comparer<T>.Default when given null; replicate that
+                // here since we now sort via a Comparison<T> lambda, which would otherwise NRE on a null comparer.
+                var comparer = m_SearchItemComparer ?? Comparer<SearchItem>.Default;
+                childrenList.Sort((a, b) => comparer.Compare(a.item, b.item));
                 for (var i = 0; i < childrenList.Count; ++i)
                 {
-                    if (!m_SearchItemHierarchyNodeMap.TryGetNode(childrenList[i], out var childNode))
-                        continue;
+                    // Use the node already paired with this item instead of looking it back up by id - a
+                    // synthesized parent's node is only guaranteed to be keyed by its provider-scoped id,
+                    // which a plain id-based lookup here would miss.
+                    var childNode = childrenList[i].node;
                     var grandChildrenEnumerator = m_Hierarchy.EnumerateChildren(in childNode);
                     if (grandChildrenEnumerator.Count > 0)
                         m_ChildrenNodesStack.Push(grandChildrenEnumerator);

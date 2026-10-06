@@ -11,7 +11,7 @@ namespace UnityEditor.PackageManager.UI.Internal
     internal interface IUpmCache : IService
     {
         event Action<string, bool> onLoadAllVersionsChanged;
-        event Action<IReadOnlyCollection<(PackageInfo oldInfo, PackageInfo newInfo)>, PackagesChangedSource> onPackageInfosUpdated;
+        event Action<IReadOnlyList<(PackageInfo oldInfo, PackageInfo newInfo)>, PackagesChangedSource> onPackageInfosUpdated;
         event Action<PackageInfo> onExtraPackageInfoFetched;
         event Action onScopedRegistriesPotentiallyChanged;
 
@@ -25,7 +25,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         void AddExtraFetchResult(PackageInfo packageInfo);
         PackageInfo GetExtraPackageInfo(string packageId);
         PackageInfo GetInstalledPackageInfo(string packageName);
-        IReadOnlyCollection<(PackageInfo oldInfo, PackageInfo newInfo)> SetInstalledPackageInfos(IEnumerable<PackageInfo> packageInfos, long timestamp = 0, PackagesChangedSource changedSource = PackagesChangedSource.Other);
+        IReadOnlyList<(PackageInfo oldInfo, PackageInfo newInfo)> SetInstalledPackageInfos(IEnumerable<PackageInfo> packageInfos, long timestamp = 0, PackagesChangedSource changedSource = PackagesChangedSource.Other);
         PackageInfo GetSearchPackageInfo(string packageName);
         PackageInfo GetBestMatchPackageInfo(string packageName, bool isInstalled, string version = null);
         IUpmPackageData GetPackageData(string packageName);
@@ -60,7 +60,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         private string[] m_SerializedLoadAllVersions;
 
         public event Action<string, bool> onLoadAllVersionsChanged = delegate {};
-        public event Action<IReadOnlyCollection<(PackageInfo oldInfo, PackageInfo newInfo)>, PackagesChangedSource> onPackageInfosUpdated;
+        public event Action<IReadOnlyList<(PackageInfo oldInfo, PackageInfo newInfo)>, PackagesChangedSource> onPackageInfosUpdated;
         public event Action<PackageInfo> onExtraPackageInfoFetched;
         public event Action onScopedRegistriesPotentiallyChanged;
 
@@ -149,7 +149,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         public PackageInfo GetInstalledPackageInfo(string packageName) => m_InstalledPackageInfos.GetByName(packageName);
 
-        public IReadOnlyCollection<(PackageInfo oldInfo, PackageInfo newInfo)> SetInstalledPackageInfos(IEnumerable<PackageInfo> packageInfos, long timestamp = 0, PackagesChangedSource changedSource = PackagesChangedSource.Other)
+        public IReadOnlyList<(PackageInfo oldInfo, PackageInfo newInfo)> SetInstalledPackageInfos(IEnumerable<PackageInfo> packageInfos, long timestamp = 0, PackagesChangedSource changedSource = PackagesChangedSource.Other)
         {
             var updatedInfos = m_InstalledPackageInfos.ReplaceAll(packageInfos, timestamp);
             if (updatedInfos.Count > 0)
@@ -207,7 +207,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         // This is to detected changes to the scoped registry compliance data, as that is something that will change without the users modifying the project manifest.
         // We don't want to call the API to get the registry list all the time, instead, we want to take a look at the packages we receive from List and Search calls and
         // detect changes to the scoped registries that way.
-        private void DetectScopedRegistriesChanges(IReadOnlyCollection<(PackageInfo oldInfo, PackageInfo newInfo)> packageInfos, bool isSearchResult)
+        private void DetectScopedRegistriesChanges(IReadOnlyList<(PackageInfo oldInfo, PackageInfo newInfo)> packageInfos, bool isSearchResult)
         {
             if (m_SettingsProxy.scopedRegistries == null || m_SettingsProxy.scopedRegistries.Count == 0)
                 return;
@@ -254,7 +254,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             }
         }
 
-        private void TriggerOnPackageInfosUpdated(IReadOnlyCollection<(PackageInfo oldInfo, PackageInfo newInfo)> packageInfos, PackagesChangedSource changedSource = PackagesChangedSource.Other)
+        private void TriggerOnPackageInfosUpdated(IReadOnlyList<(PackageInfo oldInfo, PackageInfo newInfo)> packageInfos, PackagesChangedSource changedSource = PackagesChangedSource.Other)
         {
             foreach (var (oldInfo, newInfo) in packageInfos)
             {

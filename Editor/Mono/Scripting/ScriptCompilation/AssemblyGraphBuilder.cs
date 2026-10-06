@@ -118,6 +118,12 @@ namespace UnityEditor.Scripting.ScriptCompilation
 
             foreach (var assemblyReference in customScriptAssemblyReferences)
             {
+                if (string.IsNullOrEmpty(assemblyReference.Reference))
+                {
+                    Console.WriteLine($"Assembly reference {assemblyReference.FilePath} has no Reference value");
+                    continue;
+                }
+
                 CustomScriptAssembly foundAssemblyDef = null;
                 var foundAssemblyDefinition = GUIDReference.IsGUIDReference(assemblyReference.Reference)
                     ? assemblyByGuidLookup.TryGetValue(GUIDReference.GUIDReferenceToGUID(assemblyReference.Reference),

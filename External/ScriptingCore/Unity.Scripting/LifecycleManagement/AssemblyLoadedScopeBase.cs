@@ -26,7 +26,7 @@ internal abstract class AssemblyLoadedScopeBase : LifecycleScopeWithContext<Read
         EnterManaged(scopeTransitionHelper);
     }
 
-    private void EnterManaged(ScopeTransitionHelper scopeTransitionHelper)
+    protected virtual void EnterManaged(ScopeTransitionHelper scopeTransitionHelper)
     {
         scopeTransitionHelper.ExecuteMethodsInOrder<OnAssemblyLoadedAttribute>(OrderedAssemblies);
     }
@@ -43,7 +43,7 @@ internal abstract class AssemblyLoadedScopeBase : LifecycleScopeWithContext<Read
         LifecycleController.Instance.OnAssemblyLoadedScopeExited(OrderedAssemblies);
     }
 
-    private void ExitManaged(ScopeTransitionHelper scopeTransitionHelper)
+    protected virtual void ExitManaged(ScopeTransitionHelper scopeTransitionHelper)
     {
         scopeTransitionHelper.ExecuteMethodsInReverseOrder<OnAssemblyUnloadingAttribute>(OrderedAssemblies);
     }

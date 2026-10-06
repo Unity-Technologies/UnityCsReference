@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using UnityEngine;
 using UnityEngine.UIElements;
 
 namespace Unity.GraphToolkit.Editor
@@ -38,6 +39,7 @@ namespace Unity.GraphToolkit.Editor
 
         TypeHandle m_CurrentTypeHandle;
         bool m_IconIsInline;
+        bool m_WasIconUpdatedAtLeastOnce;
 
         /// <summary>
         /// The icon of the <see cref="PortConnectorWithIconPart"/>.
@@ -77,47 +79,36 @@ namespace Unity.GraphToolkit.Editor
         {
             base.UpdateUIFromModel(visitor);
 
-            if (m_Model is PortModel portModel && m_CurrentTypeHandle != portModel.DataTypeHandle)
+            if (m_Model is PortModel portModel && (!m_WasIconUpdatedAtLeastOnce || m_CurrentTypeHandle != portModel.DataTypeHandle))
             {
+                m_WasIconUpdatedAtLeastOnce = true;
                 m_OwnerElement.RootView.TypeHandleInfos.RemoveUssClasses(GraphElementHelper.iconDataTypeClassPrefix, m_Icon, m_CurrentTypeHandle);
                 m_CurrentTypeHandle = portModel.DataTypeHandle;
 
-                // Use registered style for the type if any.
                 bool overrideIcon = true;
                 Type elementStyle = portModel.PortDataType;
                 var typeStyle = portModel.GraphModel?.GetDataTypeStyle(elementStyle);
 
-                if (!typeStyle.HasValue && portModel.PortDataType.IsListOrArray())
+                if (!typeStyle.HasValue && elementStyle.IsListOrArray())
                 {
                     typeStyle = portModel.GraphModel?.GetDataTypeStyle(elementStyle.GetCollectionElementType());
                     overrideIcon = false;
                 }
 
-                if (typeStyle.HasValue)
-                {
-                    m_Icon.tintColor = typeStyle.Value.color;
-                    if (overrideIcon)
+                m_IconIsInline = DataTypeIconHelper.ApplyIconStyle(ref m_Icon, typeStyle, overrideIcon, m_IconIsInline,
+                    () =>
                     {
-                        m_IconIsInline = true;
-                        m_Icon.image = typeStyle.Value.icon;
-                    }
-                }
-                else
-                {
-                    // If the icon was previously set inline by a registered type style, we need to remove it and create a new Image so that Image.m_TintColorIsInline and Image.m_ImageIsInline are reset to enable USS styling.
-                    if (m_IconIsInline)
-                    {
-                        // Remove old icon
-                        var index = Root.IndexOf(m_Icon);
-                        Root.Remove(m_Icon);
+                        // Swap the icon inside its actual parent — subclasses may nest it (e.g. PortConnectorPolymorphicPart wraps it in a button).
+                        var iconParent = m_Icon.parent ?? Root;
+                        var index = iconParent.IndexOf(m_Icon);
+                        iconParent.Remove(m_Icon);
 
-                        // Create and assign new icon
-                        m_Icon = new Image();
-                        m_Icon.AddToClassList(m_ParentClassName.WithUssElement(GraphElementHelper.iconName));
-                        Root.Insert(index, m_Icon);
-                        m_IconIsInline = false;
-                    }
-                }
+                        var fresh = new Image();
+                        fresh.AddToClassList(m_ParentClassName.WithUssElement(GraphElementHelper.iconName));
+                        iconParent.Insert(index, fresh);
+                        return fresh;
+                    });
+
                 m_OwnerElement.RootView.TypeHandleInfos.AddUssClasses(GraphElementHelper.iconDataTypeClassPrefix, m_Icon, m_CurrentTypeHandle);
             }
         }

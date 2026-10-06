@@ -19,6 +19,10 @@ namespace UnityEngine.UIElements.UIR
         const int k_RightMargin = 5;
         const int k_BottomMargin = 5;
 
+        // Largest block content size whose texture (content + internal margins) stays within the GPU limit.
+        static public int maxBlockWidth => SystemInfo.maxRenderTextureSize - k_LeftMargin - k_RightMargin;
+        static public int maxBlockHeight => SystemInfo.maxRenderTextureSize - k_TopMargin - k_BottomMargin;
+
         public struct AtlasBlock
         {
             public int width;
@@ -42,6 +46,17 @@ namespace UnityEngine.UIElements.UIR
         {
             // This is a placeholder implementation that uses temporary RenderTextures.
             // In the future, a real atlas management system should be implemented.
+
+            // The compositor crops oversized content and reports it; this is the last guard before we ask for
+            // a texture beyond the GPU limit, which fails to create and then composites stale VRAM (UUM-147797).
+            // Non-positive limits mean the graphics caps aren't usable yet: let the allocation fail instead.
+            int maxWidth = maxBlockWidth;
+            int maxHeight = maxBlockHeight;
+            if (maxWidth > 0 && maxHeight > 0)
+            {
+                width = Mathf.Min(width, maxWidth);
+                height = Mathf.Min(height, maxHeight);
+            }
 
             int texWidth = width + k_LeftMargin + k_RightMargin;
             int texHeight = height + k_TopMargin + k_BottomMargin;
@@ -76,16 +91,25 @@ namespace UnityEngine.UIElements.UIR
             descriptor.useMipMap = false;
 
             block.texture = RenderTexture.GetTemporary(descriptor);
-            allocatedNewTexture = true; // Eventually, we may reuse previously allocated textures
+
+            allocatedNewTexture = false;
 
             if (block.texture == null)
+                return false;
+
+            // An uncreated texture would composite stale VRAM (UUM-147797)
+            if (!block.texture.IsCreated() && !block.texture.Create())
             {
-                Debug.LogError($"Failed to allocate RenderTexture of size {block.width}x{block.height}.");
+                RenderTexture.ReleaseTemporary(block.texture);
+                block.texture = null;
                 return false;
             }
 
+            allocatedNewTexture = true; // Eventually, we may reuse previously allocated textures
+
             var old = RenderTexture.active;
             RenderTexture.active = block.texture;
+
             GL.Clear(true, true, Color.clear, UIRUtility.k_ClearZ);
 
             // To remind custom filter creators to use the atlas UVs, we draw a colored margin around the texture.

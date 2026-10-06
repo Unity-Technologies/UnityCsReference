@@ -20,8 +20,14 @@ namespace UnityEditor.UIElements
         internal static readonly string s_DefaultCommonLightStyleSheetPath = "StyleSheets/Generated/DefaultCommonLight.uss.asset";
 
         [AutoStaticsCleanupOnCodeReload]
+        // GetCommonDarkStyleSheet reloads the style sheet whenever this is null, so it comes back on the
+        // next request.
+        [IgnoreForUAL0015("Lazy style sheet cache, reloaded on demand by GetCommonDarkStyleSheet")]
         static StyleSheet s_DefaultCommonDarkStyleSheet;
         [AutoStaticsCleanupOnCodeReload]
+        // GetCommonLightStyleSheet reloads the style sheet whenever this is null, so it comes back on the
+        // next request.
+        [IgnoreForUAL0015("Lazy style sheet cache, reloaded on demand by GetCommonLightStyleSheet")]
         static StyleSheet s_DefaultCommonLightStyleSheet;
 
         [OnCodeLoaded]
@@ -62,7 +68,7 @@ namespace UnityEditor.UIElements
             {
                 s_DefaultCommonDarkStyleSheet = LoadSkinnedStyleSheetForFont(EditorResources.darkSkinIndex, EditorResources.currentFontName);
                 if (s_DefaultCommonDarkStyleSheet != null)
-                    s_DefaultCommonDarkStyleSheet.isDefaultStyleSheet = true;
+                    s_DefaultCommonDarkStyleSheet.priority = UnityEngine.UIElements.StyleSheetPriority.Builtin;
             }
 
             return s_DefaultCommonDarkStyleSheet;
@@ -79,14 +85,10 @@ namespace UnityEditor.UIElements
             {
                 s_DefaultCommonLightStyleSheet = LoadSkinnedStyleSheetForFont(EditorResources.normalSkinIndex, EditorResources.currentFontName);
                 if (s_DefaultCommonLightStyleSheet != null)
-                    s_DefaultCommonLightStyleSheet.isDefaultStyleSheet = true;
+                    s_DefaultCommonLightStyleSheet.priority = UnityEngine.UIElements.StyleSheetPriority.Builtin;
             }
 
             return s_DefaultCommonLightStyleSheet;
-        }
-
-        static UIElementsEditorUtility()
-        {
         }
 
         internal static int GetCursorId(StyleSheet sheet, StyleValueHandle handle)

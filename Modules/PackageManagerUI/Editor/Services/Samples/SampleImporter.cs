@@ -12,7 +12,7 @@ namespace UnityEditor.PackageManager.UI.Internal
     internal interface ISampleImporter : IService
     {
         bool Import(Sample sample, Sample.ImportOptions options = Sample.ImportOptions.None);
-        void Import(IReadOnlyCollection<Sample> samples, Sample.ImportOptions options = Sample.ImportOptions.None);
+        void Import(IReadOnlyList<Sample> samples, Sample.ImportOptions options = Sample.ImportOptions.None);
     }
 
     internal class SampleImporter : BaseService<ISampleImporter>, ISampleImporter
@@ -52,7 +52,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             }
         }
 
-        public void Import(IReadOnlyCollection<Sample> samples, Sample.ImportOptions options = Sample.ImportOptions.None)
+        public void Import(IReadOnlyList<Sample> samples, Sample.ImportOptions options = Sample.ImportOptions.None)
         {
             if (samples == null || samples.Count == 0)
                 return;

@@ -2,7 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: Search not yet converted
 // #define QUICKSEARCH_DEBUG
 // #define QUICKSEARCH_ANALYTICS_LOGGING
 using System;
@@ -50,7 +49,9 @@ namespace UnityEditor.Search
             {
                 startTime = DateTime.Now;
                 package = Package;
+#pragma warning disable UAL0018 // string snapshot on an analytics payload that is filled in and sent within one window session; the version string is re-read into the payload built after a reload
                 package_ver = PackageVersion;
+#pragma warning restore UAL0018
             }
 
             public void Success(SearchItem item, SearchAction action = null)
@@ -146,7 +147,9 @@ namespace UnityEditor.Search
                     categoryId = (int)type,
                     name = name,
                     package = Package,
+#pragma warning disable UAL0018 // string snapshot on a per-call event struct that is sent immediately; the version string is re-read for every event created after a reload
                     package_ver = PackageVersion
+#pragma warning restore UAL0018
                 };
             }
 
@@ -529,4 +532,3 @@ namespace UnityEditor.Search
         }
     }
 }
-#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

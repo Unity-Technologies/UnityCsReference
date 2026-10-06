@@ -166,6 +166,14 @@ namespace UnityEditor
             instance.Initialize();
         }
 
+        // An instance not created yet builds its cache lazily in the constructor
+        [OnCodeLoaded]
+        static void RebuildIfCreated()
+        {
+            if (k_Instance.IsValueCreated)
+                k_Instance.Value.Initialize();
+        }
+
         void Initialize()
         {
             m_Cache.Clear();

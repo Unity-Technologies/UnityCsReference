@@ -127,6 +127,14 @@ namespace Unity.GraphToolkit.Editor.Implementation
             ((IUserNodeModelImp)this).CustomOnDefineNode(definitionScope);
         }
 
+        internal override void OnPortDataTypeChanged(PortModel portModel, TypeHandle previousType, TypeHandle dataTypeHandle)
+        {
+            base.OnPortDataTypeChanged(portModel, previousType, dataTypeHandle);
+            // Only forward to user code for user-visible type changes, not for transient DefineNode setup.
+            if (!IsInDefineNode)
+                ((IUserNodeModelImp)this).CallOnPortDataTypeChanged(portModel, previousType, dataTypeHandle);
+        }
+
         public override void OnAfterDeserialize()
         {
             base.OnAfterDeserialize();
@@ -263,6 +271,14 @@ namespace Unity.GraphToolkit.Editor.Implementation
         protected override void OnDefineNode(NodeDefinitionScope definitionScope)
         {
             ((IUserNodeModelImp)this).CustomOnDefineNode(definitionScope);
+        }
+
+        internal override void OnPortDataTypeChanged(PortModel portModel, TypeHandle previousType, TypeHandle dataTypeHandle)
+        {
+            base.OnPortDataTypeChanged(portModel, previousType, dataTypeHandle);
+            // Only forward to user code for user-visible type changes, not for transient DefineNode setup.
+            if (!IsInDefineNode)
+                ((IUserNodeModelImp)this).CallOnPortDataTypeChanged(portModel, previousType, dataTypeHandle);
         }
 
         public override void OnAfterDeserialize()
@@ -404,6 +420,14 @@ namespace Unity.GraphToolkit.Editor.Implementation
         {
             ((IUserNodeModelImp)this).CustomOnDefineNode(definitionScope);
 			base.OnDefineNode(definitionScope);
+        }
+
+        internal override void OnPortDataTypeChanged(PortModel portModel, TypeHandle previousType, TypeHandle dataTypeHandle)
+        {
+            base.OnPortDataTypeChanged(portModel, previousType, dataTypeHandle);
+            // Only forward to user code for user-visible type changes, not for transient DefineNode setup.
+            if (!IsInDefineNode)
+                ((IUserNodeModelImp)this).CallOnPortDataTypeChanged(portModel, previousType, dataTypeHandle);
         }
 
         public override void OnAfterDeserialize()

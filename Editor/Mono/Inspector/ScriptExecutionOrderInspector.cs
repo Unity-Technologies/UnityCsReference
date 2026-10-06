@@ -2,7 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: ScriptingRuntime not yet converted
 using UnityEngine;
 using UnityEditor.VersionControl;
 using System.Collections.Generic;
@@ -92,11 +91,11 @@ namespace UnityEditor
 
         public class Content
         {
-            public static readonly GUIContent helpText = EditorGUIUtility.TrTextContent("Add scripts to the custom order and drag them to reorder.\n\nScripts in the custom order can execute before or after the default time and are executed from top to bottom. All other scripts execute at the default time in the order they are loaded.\n\n(Changing the order of a script may modify the meta data for more than one script.)");
-            public static readonly GUIContent iconToolbarPlus = EditorGUIUtility.TrIconContent("Toolbar Plus", "Add script to custom order");
-            public static readonly GUIContent iconToolbarMinus = EditorGUIUtility.TrIconContent("Toolbar Minus", "Remove script from custom order");
-            public static readonly GUIContent defaultTimeContent = EditorGUIUtility.TrTextContent("Default Time", "All scripts not in the custom order are executed at the default time.");
-            public static readonly GUIContent[] emptyMenuOptions = { EditorGUIUtility.TrTextContent("Empty") };
+            public static readonly GUIContent helpText = L10n.TextContent("Add scripts to the custom order and drag them to reorder.\n\nScripts in the custom order can execute before or after the default time and are executed from top to bottom. All other scripts execute at the default time in the order they are loaded.\n\n(Changing the order of a script may modify the meta data for more than one script.)", null, null, null);
+            public static readonly GUIContent iconToolbarPlus = L10n.IconContent("Toolbar Plus", "Add script to custom order", null);
+            public static readonly GUIContent iconToolbarMinus = L10n.IconContent("Toolbar Minus", "Remove script from custom order", null);
+            public static readonly GUIContent defaultTimeContent = L10n.TextContent("Default Time", "All scripts not in the custom order are executed at the default time.", null, null);
+            public static readonly GUIContent[] emptyMenuOptions = { L10n.TextContent("Empty", null, null, null) };
         }
 
         public static class Styles
@@ -895,4 +894,3 @@ namespace UnityEditor
         }
     }
 }
-#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

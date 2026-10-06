@@ -2,7 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: UIToolkitFramework not yet converted
 using System;
 using System.Collections.Generic;
 using UnityEditor;
@@ -13,7 +12,7 @@ using UnityEngine.UIElements;
 namespace Unity.Localization.Editor;
 
 /// <summary>Small form for creating a new table entry: a name plus the collection to add it to, validated before creation.</summary>
-class NewEntryPopup : EditorWindow
+class NewEntryPopup : AnchoredPopupWindow
 {
     const string k_Uxml = "LocalizationRuntime/UXML/NewEntryPopup.uxml";
 
@@ -24,16 +23,15 @@ class NewEntryPopup : EditorWindow
     Label m_Message;
     Button m_Create;
 
-    /// <summary>Shows the form below <paramref name="activatorWorldBound"/>, preselecting <paramref name="preferred"/> when given.</summary>
-    public static void Show(Rect activatorWorldBound, ResourceTableCollection preferred, Action<ResourceTableCollection, string> onCreate)
+    /// <summary>Shows the form below <paramref name="activatorWorldBound"/>, preselecting <paramref name="preferred"/> when given, and closes it with <paramref name="view"/>.</summary>
+    public static void Show(Rect activatorWorldBound, VisualElement view, ResourceTableCollection preferred, Action<ResourceTableCollection, string> onCreate)
     {
         var window = CreateInstance<NewEntryPopup>();
         window.m_OnCreate = onCreate;
         window.m_Collections = AssetProviderEditors.GetKnownCollections();
         window.m_Selected = preferred != null ? preferred : (window.m_Collections.Count > 0 ? window.m_Collections[0] : null);
-        window.titleContent = new GUIContent(L10n.Tr("New table entry", null));
-        var screenRect = GUIUtility.GUIToScreenRect(activatorWorldBound);
-        window.ShowAsDropDown(screenRect, new Vector2(260, 240));
+        window.titleContent = new GUIContent(LocLabels.NewTableEntry);
+        window.ShowUnder(activatorWorldBound, view, new Vector2(260, 240));
     }
 
     void CreateGUI()
@@ -66,10 +64,10 @@ class NewEntryPopup : EditorWindow
         }
 
         var cancel = root.Q<Button>("cancel");
-        cancel.text = L10n.Tr("Cancel", null);
+        cancel.text = LocLabels.Cancel;
         cancel.clicked += Close;
         m_Create = root.Q<Button>("create");
-        m_Create.text = L10n.Tr("Create", null);
+        m_Create.text = LocLabels.Create;
         m_Create.clicked += Create;
 
         nameField.schedule.Execute(() => nameField.Focus());
@@ -112,4 +110,3 @@ class NewEntryPopup : EditorWindow
         Close();
     }
 }
-#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

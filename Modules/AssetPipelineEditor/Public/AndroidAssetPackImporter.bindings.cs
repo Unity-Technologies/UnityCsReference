@@ -12,6 +12,8 @@ namespace UnityEditor
     [ExcludeFromPreset]
     public class AndroidAssetPackImporter : AssetImporter
     {
+        internal AndroidAssetPackImporter(global::UnityEngine.EntityId id) : base(id) {}
+        public AndroidAssetPackImporter() {}
         extern public static AndroidAssetPackImporter[] GetAllImporters();
     }
 }

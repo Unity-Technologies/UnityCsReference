@@ -13,7 +13,7 @@ namespace UnityEditorInternal.VersionControl
     // Display hooks for the main project window.  Icons are overlayed to show the version control state.
     internal class ProjectHooks
     {
-        static readonly GUIContent s_NotImportedAssetTooltip = EditorGUIUtility.TrTextContent(string.Empty, "Asset is not available because Unity is in Safe Mode");
+        static readonly GUIContent s_NotImportedAssetTooltip = L10n.TextContent(string.Empty, "Asset is not available because Unity is in Safe Mode", null, null);
 
         // GUI callback for each item visible in the project window
         public static void OnProjectWindowItem(string guid, Rect drawRect, Action repaintAction)

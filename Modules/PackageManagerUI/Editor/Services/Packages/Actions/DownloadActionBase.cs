@@ -26,7 +26,7 @@ internal abstract class DownloadActionBase : PackageAction
 
     protected abstract string analyticEventName { get; }
 
-    protected override bool TriggerActionImplementation(IReadOnlyCollection<IPackage> packages)
+    protected override bool TriggerActionImplementation(IReadOnlyList<IPackage> packages)
     {
         var canDownload = m_OperationDispatcher.Download(packages);
         if (canDownload)

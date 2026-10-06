@@ -37,13 +37,8 @@ internal static class NativeSelectorMatcher
     [FreeFunction("UIToolkit::NativeSelectorMatcher::MatchSheetFlat", IsThreadSafe = true)]
     internal static extern unsafe int MatchSheetFlat(
         VisualElementSelectorData* element,
-        SelectorRangeDescriptor* allDescriptors,
-        int descriptorCount,
-        SelectorKeyIndexEntry* keyIndex,
-        FlattenedSelector* allSelectors,
-        FlattenedSelectorPart* allParts,
+        SelectorAccelerationCacheCore* core,
         CountingBloomFilter* ancestorFilter,
-        SelectorMatcherRanges* ranges,
         bool applyPseudoMasks,
         bool testRootRange,
         int* matchedIndices,

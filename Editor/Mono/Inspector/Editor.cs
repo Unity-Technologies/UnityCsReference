@@ -379,6 +379,18 @@ namespace UnityEditor
 
         // The object currently inspected by this editor.
         UnityObject[] m_Targets;
+        // EntityIds of the targets. Populated for both Object and data-component editors:
+        // for Object editors these are the EntityIds of m_Targets; for data-component
+        // editors m_Targets is null and this array carries the component EntityIds
+        // (TypeId != 0 on each entry).
+        internal EntityId[] m_TargetEntityIds;
+        // AssemblyQualifiedName of the data-component type. The only anchor that survives a domain reload.
+        // OnForceReloadInspector uses this to re-resolve m_DataComponentType and the typeIds of the m_TargetEntityIds.
+        string m_DataComponentTypeName;
+        // Managed System.Type of a data component. Null for Object-target editors.
+        // Populated at creation by InternalSetDataComponentType and, after a domain
+        // reload, by RepairDataComponentAfterReload.
+        internal Type m_DataComponentType;
         // The context object with which this Editor was created
         internal UnityObject m_Context;
         // Note that m_Dirty is not only set through 'isInspectorDirty' but also from C++ in 'SetCustomEditorIsDirty (MonoBehaviour* inspector, bool dirty)'
@@ -500,7 +512,7 @@ namespace UnityEditor
 
         internal virtual bool HasLargeHeader()
         {
-            return AssetDatabase.IsMainAsset(target) || AssetDatabase.IsSubAsset(target);
+            return AssetDatabase.IsMainAsset(targetEntityId) || AssetDatabase.IsSubAsset(targetEntityId);
         }
 
         internal bool canEditMultipleObjects
@@ -531,7 +543,7 @@ namespace UnityEditor
 
         static class BaseStyles
         {
-            public static readonly GUIContent open = EditorGUIUtility.TrTextContent("Open");
+            public static readonly GUIContent open = L10n.TextContent("Open", null, null, null);
             public static readonly GUIStyle inspectorBig = new GUIStyle(EditorStyles.inspectorBig);
             public static readonly GUIStyle centerStyle = new GUIStyle();
             public static readonly GUIStyle postLargeHeaderBackground = "IN BigTitle Post";
@@ -577,11 +589,28 @@ namespace UnityEditor
             get
             {
                 if (m_Targets.Length == 1 || !m_AllowMultiObjectAccess)
-                    return ObjectNames.GetInspectorTitle(target);
-                else
-                    return m_Targets.Length + " " + ObjectNames.NicifyVariableName(ObjectNames.GetTypeName(target)) + "s";
+                    return GetSingleTargetInspectorTitle();
+                return m_Targets.Length + " " + ObjectNames.NicifyVariableName(GetMultiTargetTypeName()) + "s";
             }
         }
+
+        internal string GetInspectorTitle(bool multiEditing)
+            => isDataComponentEditor ? targetTitle : ObjectNames.GetInspectorTitle(target, multiEditing);
+
+        string GetSingleTargetInspectorTitle()
+            => isDataComponentEditor
+                ? (m_DataComponentType != null ? ObjectNames.GetInspectorTitle(m_DataComponentType) : "Component")
+                : ObjectNames.GetInspectorTitle(target);
+
+        string GetMultiTargetTypeName()
+            => isDataComponentEditor
+                ? (m_DataComponentType != null ? m_DataComponentType.Name : "Component")
+                : ObjectNames.GetTypeName(target);
+
+        // Effective System.Type of the inspected target for display / lookup purposes.
+        // Data component: m_DataComponentType. Object: target.GetType().
+        internal Type targetType
+            => isDataComponentEditor ? m_DataComponentType : target?.GetType();
 
         // A [[SerializedObject]] representing the object or objects being inspected.
         public SerializedObject serializedObject
@@ -711,7 +740,7 @@ namespace UnityEditor
         {
             try
             {
-                m_SerializedObject = new SerializedObject(targets, m_Context);
+                m_SerializedObject = new SerializedObject(m_TargetEntityIds, m_Context);
                 m_SerializedObject.inspectorMode = inspectorMode;
                 if (m_SerializedObject.inspectorDataMode != dataMode)
                     m_SerializedObject.inspectorDataMode = dataMode;
@@ -776,9 +805,60 @@ namespace UnityEditor
             }
         }
 
-        internal void InternalSetTargets(UnityObject[] t) { m_Targets = t; }
+        internal void InternalSetTargets(UnityObject[] t)
+        {
+            m_Targets = t;
+            // ReferenceEquals so fake-null wrappers keep their real EntityId.
+            if (t == null)
+            {
+                m_TargetEntityIds = null;
+            }
+            else
+            {
+                var ids = new EntityId[t.Length];
+                for (int i = 0; i < t.Length; ++i)
+                    ids[i] = !object.ReferenceEquals(null, t[i]) ? t[i].GetEntityId() : EntityId.None;
+                m_TargetEntityIds = ids;
+            }
+        }
+
+        // Called from native. Data-component editors get a null-filled m_Targets
+        // of the right length so downstream target iteration sees a proper array.
+        internal void InternalSetTargetEntityIds(EntityId[] ids)
+        {
+            m_TargetEntityIds = ids;
+            if (ids != null && ids.Length > 0 && IsDataComponentEntityId(ids[0]))
+                m_Targets = new UnityObject[ids.Length];
+        }
+
         internal void InternalSetHidden(bool hidden) { hideInspector = hidden; }
         internal void InternalSetContextObject(UnityObject context) { m_Context = context; }
+        internal void InternalSetDataComponentType(Type t)
+        {
+            m_DataComponentType = t;
+            m_DataComponentTypeName = t?.AssemblyQualifiedName;
+        }
+
+        private static bool IsDataComponentEntityId(EntityId id) => ((EntityId.ToULong(id) >> 28) & 0xFFFUL) != 0;
+
+        internal bool isDataComponentEditor
+            => m_TargetEntityIds != null && m_TargetEntityIds.Length > 0 && IsDataComponentEntityId(m_TargetEntityIds[0]);
+
+        internal EntityId targetEntityId => m_TargetEntityIds != null && m_TargetEntityIds.Length > 0
+            ? m_TargetEntityIds[0]
+            : EntityId.None;
+
+        internal EntityId[] targetEntityIds => m_TargetEntityIds;
+
+        internal bool IsInspectorExpanded()
+            => targetEntityId != EntityId.None && UnityEditorInternal.InternalEditorUtility.GetIsInspectorExpanded(targetEntityId);
+
+        internal void SetInspectorExpanded(bool expanded)
+        {
+            if (targetEntityId == EntityId.None)
+                return;
+            UnityEditorInternal.InternalEditorUtility.SetIsInspectorExpanded(targetEntityId, expanded);
+        }
 
         Bounds IToolModeOwner.GetWorldBoundsOfTargets()
         {
@@ -818,11 +898,53 @@ namespace UnityEditor
             if (m_SerializedObject != null)
             {
                 m_SerializedObject.SetIsDifferentCacheDirty();
-                // Need to make sure internal target list PPtr have been updated from a native memory
-                // When assets are reloaded they are destroyed and recreated and the managed list does not get updated
-                // The m_SerializedObject is a native object thus its targetObjects is a native memory PPtr list which have the new PPtr ids.
-                InternalSetTargets(m_SerializedObject.targetObjects);
+                if (m_SerializedObject.isTargetDataComponent)
+                {
+                    // Native SerializedObject caches a ScriptingClass* that went stale when
+                    // the managed domain unloaded. Dispose so the lazy getter rebuilds
+                    // against the current TypeManager. m_DataComponentType is re-resolved
+                    // lazily by its accessor.
+                    m_SerializedObject.Dispose();
+                    m_SerializedObject = null;
+                    RepairDataComponentAfterReload();
+                }
+                else
+                {
+                    // Native memory PPtr list holds new EntityIds after reload; sync managed
+                    // m_Targets so the C# and native views agree.
+                    InternalSetTargets(m_SerializedObject.targetObjects);
+                }
+                return;
             }
+
+            // Post-reload repair for data-component editors.
+            if (isDataComponentEditor && !string.IsNullOrEmpty(m_DataComponentTypeName))
+                RepairDataComponentAfterReload();
+        }
+
+        private void RepairDataComponentAfterReload()
+        {
+            var freshType = Type.GetType(m_DataComponentTypeName, throwOnError: false);
+            if (freshType == null)
+                return;
+
+            uint freshTypeId = SerializedObject.LookupDataComponentTypeId(freshType);
+            if (freshTypeId == 0)
+                return;
+
+            // Rewrite each EntityId's TypeId slice (bits 28..39), preserving the parent bits, so
+            // subsequent SerializedObject construction sees TypeIds that match TypeManager.
+            const ulong kTypeIdMask = 0xFFFUL << 28;
+            for (int i = 0; i < m_TargetEntityIds.Length; ++i)
+            {
+                ulong raw = EntityId.ToULong(m_TargetEntityIds[i]);
+                ulong parentRaw = raw & ~kTypeIdMask;
+                uint staleTypeId = (uint)((raw & kTypeIdMask) >> 28);
+                EntityComponentDataAccessTestBridge.RemapDataComponentTypeId(
+                    EntityId.FromULong(parentRaw), staleTypeId, freshTypeId);
+                m_TargetEntityIds[i] = EntityId.FromULong(parentRaw | ((ulong)freshTypeId << 28));
+            }
+            m_DataComponentType = freshType;
         }
 
         internal virtual bool GetOptimizedGUIBlock(bool isDirty, bool isVisible, out float height)
@@ -1326,7 +1448,7 @@ namespace UnityEditor
             Rect renderRect = EditorGUI.GetInspectorTitleBarObjectFoldoutRenderRect(titleRect);
             renderRect.y = titleRect.yMax - 17f; // align with bottom
             bool oldVisible = UnityEditorInternal.InternalEditorUtility.GetIsInspectorExpanded(target);
-            bool newVisible = EditorGUI.DoObjectFoldout(oldVisible, titleRect, renderRect, editor.targets, id);
+            bool newVisible = EditorGUI.DoObjectFoldout(oldVisible, titleRect, renderRect, editor.targets, id, editor);
 
             if (newVisible != oldVisible)
                 UnityEditorInternal.InternalEditorUtility.SetIsInspectorExpanded(target, newVisible);
@@ -1471,8 +1593,12 @@ namespace UnityEditor
             return true;
         }
 
+        // Data-component editors short-circuit to true here and in IsOpenForEdit.
         internal virtual bool IsEnabled()
         {
+            if (isDataComponentEditor)
+                return true;
+
             // disable editor if any objects in the editor are not editable
             foreach (UnityObject target in targets)
             {
@@ -1490,6 +1616,9 @@ namespace UnityEditor
 
         internal bool IsOpenForEdit()
         {
+            if (isDataComponentEditor)
+                return true;
+
             foreach (UnityObject target in targets)
             {
                 if (EditorUtility.IsPersistent(target) && !IsAppropriateFileOpenForEdit(target))

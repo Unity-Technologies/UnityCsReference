@@ -14,6 +14,29 @@ namespace Unity.U2D.Physics
     /// <summary>
     /// A <see cref="PhysicsWorld"/> definition used to specify important initial properties.
     /// </summary>
+    /// <remarks>
+    /// For more information about definitions, refer to <see cref="PhysicsBodyDefinition"/>.
+    /// </remarks>
+    /// <example>
+    /// <code lang="cs">
+    /// <![CDATA[
+    /// // Create a world definition, configure it, then create a world from it.
+    /// using UnityEngine;
+    /// using Unity.U2D.Physics;
+    ///
+    /// public class WorldDefinitionExample : MonoBehaviour
+    /// {
+    ///     void Start()
+    ///     {
+    ///         PhysicsWorldDefinition worldDefinition = new PhysicsWorldDefinition();
+    ///         worldDefinition.gravity = new Vector2(0f, -9.81f);
+    ///         PhysicsWorld world = PhysicsWorld.Create(worldDefinition);
+    ///     }
+    /// }
+    /// ]]>
+    /// </code>
+    /// </example>
+    /// <seealso cref="PhysicsBodyDefinition"/>
     [Serializable]
     [StructLayout(LayoutKind.Sequential)]
     [MovedFrom(autoUpdateAPI: ScriptUpdateConstants.AutoUpdateAPI, sourceNamespace: ScriptUpdateConstants.SourceNamespace, sourceAssembly: ScriptUpdateConstants.SourceAssembly)]
@@ -116,10 +139,13 @@ namespace Unity.U2D.Physics
 
         /// <summary>
         /// Controls if contact and trigger begin/end events for shapes assigned a group are marked as being the first or last event between the two groups involved.
-        /// This allows the many events produced between two groups of shapes to be reduced to a single begin and end, such as when treating multiple shapes as a single object.
+        /// This allows the many events produced between two groups of shapes to be reduced to a single begin and end, such as when treating multiple shapes on one body as a single object.
         /// The marking is only calculated for shapes assigned a group and only when a begin or end event is produced, so the cost of leaving this enabled is minor.
-        /// See <see cref="PhysicsWorld.eventGroupingAllowed"/>
         /// </summary>
+        /// <remarks>
+        /// Every shape in a group must belong to the same body; see <see cref="PhysicsWorld.PhysicsGroup"/> for the limitations.
+        /// See <see cref="PhysicsWorld.eventGroupingAllowed"/>.
+        /// </remarks>
         public bool eventGroupingAllowed { readonly get => m_EventGroupingAllowed; set => m_EventGroupingAllowed = value; }
 
         /// <summary>
@@ -132,12 +158,15 @@ namespace Unity.U2D.Physics
         public bool contactFilterCallbacks { readonly get => m_ContactFilterCallbacks; set => m_ContactFilterCallbacks = value; }
 
         /// <summary>
-        /// Controls if pre-solve callbacks will be called.
+        /// Controls if pre-contact and pre-continuous callbacks will be called.
         /// This only applies to Dynamic bodies and is ignored for triggers.
         /// These are relatively expensive so disabling them can provide a significant performance benefit.
-        /// A pre-solve callback will call the <see cref="PhysicsShape.callbackTarget"/> for both shapes involved if they implement <see cref="PhysicsCallbacks.IPreSolveCallback"/>.
         /// </summary>
-        public bool preSolveCallbacks { readonly get => m_PreSolveCallbacks; set => m_PreSolveCallbacks = value; }
+        /// <remarks>
+        /// A shape only produces these callbacks if its own <see cref="PhysicsShape.preContactCallbacks"/> is also set.
+        /// The deprecated <see cref="PhysicsCallbacks.IPreSolveCallback"/> is also driven by this switch, for targets that only implement it.
+        /// </remarks>
+        public bool preContactCallbacks { readonly get => m_PreContactCallbacks; set => m_PreContactCallbacks = value; }
 
         /// <summary>
         /// Controls if body update callback targets are automatically called.
@@ -156,6 +185,33 @@ namespace Unity.U2D.Physics
         /// See <see cref="PhysicsWorld.bounceThreshold"/>.
         /// </summary>
         public float bounceThreshold { readonly get => m_BounceThreshold; set => m_BounceThreshold = Mathf.Max(0f, value); }
+
+        /// <summary>
+        /// The number of bounce passes the world runs each simulation step, after contacts and joints have been solved.
+        /// Each pass pushes apart the bodies of every contact that struck with a bounciness above zero, at the speed its bounciness allows, and never adds energy.
+        /// More passes let a bounce settle more accurately, which reduces unwanted spinning of bouncing boxes, and each pass adds work for every bouncy contact in the world.
+        /// The value must be from zero up to the maximum bounce pass count.
+        /// With zero, contacts never bounce whatever their bounciness.
+        /// </summary>
+        /// <remarks>
+        /// The maximum bounce pass count is <see cref="PhysicsConstants.MaxBounceIterations"/>.
+        /// Setting a value outside zero to that maximum clamps it into that range.
+        /// See <see cref="PhysicsWorld.bounceIterations"/>.
+        /// </remarks>
+        public int bounceIterations { readonly get => m_BounceIterations; set => m_BounceIterations = Mathf.Clamp(value, 0, PhysicsConstants.MaxBounceIterations); }
+
+        /// <summary>
+        /// Controls whether the bounce passes also solve contacts that have no bounciness.
+        /// With this disabled, only contacts with a bounciness above zero take part in the bounce passes.
+        /// A bounce then does not carry through neighboring bodies in the same pass, so a stack of boxes on a bouncy surface bounces from the bottom box up rather than together.
+        /// With this enabled, every contact takes part, so a bounce carries through groups of touching bodies within the same simulation step.
+        /// This visits every contact in the world on every bounce pass, which is significantly more expensive, so only enable it when bodies in contact must bounce together.
+        /// Carrying a bounce through a taller group of bodies needs more bounce passes.
+        /// </summary>
+        /// <remarks>
+        /// See <see cref="PhysicsWorld.bouncePropagation"/>.
+        /// </remarks>
+        public bool bouncePropagation { readonly get => m_BouncePropagation; set => m_BouncePropagation = value; }
 
         /// <summary>
         /// The contact hit event threshold controls the collision speed needed to generate a contact hit event, usually in meters per second.
@@ -194,10 +250,14 @@ namespace Unity.U2D.Physics
         public float contactRecycleDistance { readonly get => m_ContactRecycleDistance; set => m_ContactRecycleDistance = Mathf.Max(0f, value); }
 
         /// <summary>
-        /// Get/Set the maximum linear speed.
-        /// See <see cref="PhysicsWorld.maximumLinearSpeed"/>.
+        /// The fastest any body in the world can move, in meters per second.
+        /// Each simulation step, a body moving faster than this is slowed to it, which stops a body covering so much distance in one step that the simulation becomes unstable.
         /// </summary>
-        public float maximumLinearSpeed { readonly get => m_MaximumLinearSpeed; set => m_MaximumLinearSpeed = Mathf.Max(0f, value); }
+        /// <remarks>
+        /// A value below <see cref="PhysicsConstants.MinMaximumLinearSpeed"/> is raised to that minimum.
+        /// See <see cref="PhysicsWorld.maximumLinearSpeed"/>.
+        /// </remarks>
+        public float maximumLinearSpeed { readonly get => m_MaximumLinearSpeed; set => m_MaximumLinearSpeed = Mathf.Max(PhysicsConstants.MinMaximumLinearSpeed, value); }
 
         /// <summary>
         /// Limits what gets drawn to a broad selection.
@@ -270,6 +330,21 @@ namespace Unity.U2D.Physics
         public int drawOrder { readonly get => m_DrawOrder; set => m_DrawOrder = value; }
 
         /// <summary>
+        /// Draws a body, its shapes and its joints at its assigned Transform's current world pose instead of its
+        /// simulated physics pose, whenever that body is writing its pose to the Transform.
+        /// Turning this on costs extra computation for every body drawn, and what gets drawn is no longer a picture
+        /// of the simulation: shapes can appear to be touching, overlapping, or separated from each other when the
+        /// simulation itself says otherwise.
+        /// </summary>
+        /// <remarks>
+        /// Only affects a body whose write mode produces a pose that can differ from the simulated one,
+        /// <see cref="PhysicsBody.TransformWriteMode.Interpolate"/> or <see cref="PhysicsBody.TransformWriteMode.Extrapolate"/>.
+        /// A body left at <see cref="PhysicsBody.TransformWriteMode.Current"/> or <see cref="PhysicsBody.TransformWriteMode.Off"/>
+        /// keeps drawing from its simulated pose either way. See <see cref="PhysicsBody.transformWriteMode"/>.
+        /// </remarks>
+        public bool drawAtTransform { readonly get => m_DrawAtTransform; set => m_DrawAtTransform = value; }
+
+        /// <summary>
         /// Controls what colors are used to draw <see cref="PhysicsBody"/>, <see cref="PhysicsShape"/>, <see cref="PhysicsJoint"/> etc.
         /// See <see cref="PhysicsWorld.DrawColors"/>.
         /// </summary>
@@ -301,16 +376,18 @@ namespace Unity.U2D.Physics
         [SerializeField] bool m_ContinuousAllowed;
         [SerializeField] bool m_EventGroupingAllowed;
         [SerializeField] bool m_ContactFilterCallbacks;
-        [SerializeField] bool m_PreSolveCallbacks;
+        [SerializeField] [FormerlySerializedAs("m_PreSolveCallbacks")] bool m_PreContactCallbacks;
         [SerializeField] bool m_AutoBodyUpdateCallbacks;
         [SerializeField] bool m_AutoJointThresholdCallbacks;
+        [SerializeField] bool m_BouncePropagation;
         [SerializeField] [Min(0.0f)] float m_BounceThreshold;
+        [SerializeField] [Range(0, PhysicsConstants.MaxBounceIterations)] int m_BounceIterations;
         [SerializeField] [Min(0.0f)] float m_ContactHitEventThreshold;
         [SerializeField] [Min(0.0f)] float m_ContactFrequency;
         [SerializeField] [Min(0.0f)] float m_ContactDamping;
         [SerializeField] [Min(0.0f)] float m_ContactSpeed;
         [SerializeField] [Min(0.0f)] float m_ContactRecycleDistance;
-        [SerializeField] [Min(0.0f)] float m_MaximumLinearSpeed;
+        [SerializeField] [Min(PhysicsConstants.MinMaximumLinearSpeed)] float m_MaximumLinearSpeed;
         [SerializeField] PhysicsWorld.DrawOptions m_DrawOptions;
         [SerializeField] PhysicsWorld.DrawFillOptions m_DrawFillOptions;
         [SerializeField] PhysicsWorld.DrawContactType m_DrawContactType;
@@ -322,6 +399,7 @@ namespace Unity.U2D.Physics
         [SerializeField] [Range(0.0001f, 10f)] float m_DrawNormalScale;
         [SerializeField] [FormerlySerializedAs("m_DrawImpulseScale")] [Range(0.0001f, 10f)] float m_DrawForceScale;
         [SerializeField] int m_DrawOrder;
+        [SerializeField] bool m_DrawAtTransform;
         [SerializeField] PhysicsWorld.DrawColors m_DrawColors;
         [SerializeField] PhysicsWorld.WorldCapacity m_Capacity;
 

@@ -131,13 +131,13 @@ namespace UnityEditor
 
             foreach (var typeHandlePtr in typeHandles)
             {
-                var typeHandle = SystemReflectionMarshalling.UnmarshalRuntimeTypeHandle(typeHandlePtr);
+                var type = SystemReflectionMarshalling.UnmarshalSystemType(typeHandlePtr);
                 using (_profilerMarkerProcessInitializeOnLoadAttributes.Auto(reportTimes,
-                           () => Type.GetTypeFromHandle(typeHandle).AssemblyQualifiedName))
+                           () => type.AssemblyQualifiedName))
                 {
                     try
                     {
-                        RuntimeHelpers.RunClassConstructor(typeHandle);
+                        RuntimeHelpers.RunClassConstructor(type.TypeHandle);
                     }
                     catch (TypeLoadException x)
                     {

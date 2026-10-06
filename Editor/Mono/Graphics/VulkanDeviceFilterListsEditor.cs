@@ -14,21 +14,21 @@ namespace UnityEditor
     {
         internal static class Styles
         {
-            public static readonly GUIContent conversionButton = EditorGUIUtility.TrTextContent("Import Legacy Player Settings Filter Lists", "Imports the 'Android Vulkan Deny Filter List' and 'Android Vulkan Allow Filter List' Player Settings fields to a standalone Vulkan Device Filtering Asset. Once imported, this button and the Android Vulkan Deny/Allow Filter List fields will be disabled.");
+            public static readonly GUIContent conversionButton = L10n.TextContent("Import Legacy Player Settings Filter Lists", "Imports the 'Android Vulkan Deny Filter List' and 'Android Vulkan Allow Filter List' Player Settings fields to a standalone Vulkan Device Filtering Asset. Once imported, this button and the Android Vulkan Deny/Allow Filter List fields will be disabled.", null, null);
 
-            public static readonly GUIContent preferredGraphicsJobsMode = EditorGUIUtility.TrTextContent("Preferred Graphics Jobs Mode", "Indicates which graphics jobs mode this filter will enforce at runtime.");
+            public static readonly GUIContent preferredGraphicsJobsMode = L10n.TextContent("Preferred Graphics Jobs Mode", "Indicates which graphics jobs mode this filter will enforce at runtime.", null, null);
 
-            public static readonly GUIContent filterList = EditorGUIUtility.TrTextContent("Filters", "List of filters");
-            public static readonly GUIContent vendor = EditorGUIUtility.TrTextContent("Vendor", "Use a regular expression to specify the vendor name of a device");
-            public static readonly GUIContent deviceName = EditorGUIUtility.TrTextContent("Device Name", "Use a regular expression to specify the device name of a device");
-            public static readonly GUIContent brand = EditorGUIUtility.TrTextContent("Brand", "Use a regular expression to specify the device brand of a device");
-            public static readonly GUIContent product = EditorGUIUtility.TrTextContent("Product Name", "Use a regular expression to specify the product name of a device");
+            public static readonly GUIContent filterList = L10n.TextContent("Filters", "List of filters", null, null);
+            public static readonly GUIContent vendor = L10n.TextContent("Vendor", "Use a regular expression to specify the vendor name of a device", null, null);
+            public static readonly GUIContent deviceName = L10n.TextContent("Device Name", "Use a regular expression to specify the device name of a device", null, null);
+            public static readonly GUIContent brand = L10n.TextContent("Brand", "Use a regular expression to specify the device brand of a device", null, null);
+            public static readonly GUIContent product = L10n.TextContent("Product Name", "Use a regular expression to specify the product name of a device", null, null);
             public static readonly GUIContent osVersion =
-                EditorGUIUtility.TrTextContent("Android OS Version", "Use a regular expression to specify the OS version of a device");
+                L10n.TextContent("Android OS Version", "Use a regular expression to specify the OS version of a device", null, null);
             public static readonly GUIContent vulkanApiVersion =
-                EditorGUIUtility.TrTextContent("Vulkan API Version", "Specify the Vulkan API version for a device using the format MajorVersion.MinorVersion(optional).PatchVersion(optional)");
+                L10n.TextContent("Vulkan API Version", "Specify the Vulkan API version for a device using the format MajorVersion.MinorVersion(optional).PatchVersion(optional)", null, null);
             public static readonly GUIContent driverVersion =
-                EditorGUIUtility.TrTextContent("Driver Version", "Specify the driver version for a device using the format MajorVersion.MinorVersion(optional).PatchVersion(optional)");
+                L10n.TextContent("Driver Version", "Specify the driver version for a device using the format MajorVersion.MinorVersion(optional).PatchVersion(optional)", null, null);
 
             // Text
             public static readonly string filterText = "filter";

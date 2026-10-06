@@ -177,7 +177,8 @@ unsafe struct UnmanagedDataStore : IDisposable
         // So we prioritize not growing the chunk-base storage too fast,
         // especially considering it never shrinks automatically at the moment.
         const float growRate = 1.5f;
-        ResizeCapacity((int)(m_Data->Capacity * growRate));
+        // Floor of one slot: (int)(1 * 1.5f) is 1, and a resize that adds none leaves the end marker in place.
+        ResizeCapacity(Math.Max(m_Data->Capacity + 1, (int)(m_Data->Capacity * growRate)));
     }
 
     void ResizeCapacity(int capacity)
@@ -190,16 +191,16 @@ unsafe struct UnmanagedDataStore : IDisposable
         for (var i=0; i<m_Data->ComponentCount; i++)
             m_Data->Components[i].ResizeCapacity(capacity);
 
-        // Start one element back to maintain the linked list.
-        var start = m_Data->Capacity > 0 ? m_Data->Capacity - 1 : 0;
+        // Start one element back to relink the slot that carried the end marker.
+        var oldCapacity = m_Data->Capacity;
+        var start = oldCapacity > 0 ? oldCapacity - 1 : 0;
 
+        // Create a linked list of free elements.
         for (var i = start; i < capacity; i++)
-        {
-            m_Data->Versions[i] = 1;
-
-            // Create a linked list of free elements.
             SetNextFreeIndex(i, i + 1);
-        }
+
+        for (var i = oldCapacity; i < capacity; i++)
+            m_Data->Versions[i] = 1;
 
         // The last element receives a special index indicating we are at the end of the array and should resize.
         SetNextFreeIndex(capacity - 1, -1);
@@ -248,9 +249,9 @@ internal unsafe struct ComponentDataStore : IDisposable
     public int Align;
 
     /// <summary>
-    /// The number of elements per chunk.
+    /// The log2 of the number of elements per chunk.
     /// </summary>
-    public int ComponentCountPerChunk;
+    public int ComponentCountPerChunkLog2;
 
     /// <summary>
     /// The number of allocated chunks.
@@ -268,15 +269,21 @@ internal unsafe struct ComponentDataStore : IDisposable
     [NativeDisableUnsafePtrRestriction] public byte* InitialData;
 
     /// <summary>
+    /// The number of elements per chunk. Always a power of two.
+    /// </summary>
+    public int ComponentCountPerChunk => 1 << ComponentCountPerChunkLog2;
+
+    /// <summary>
     /// The current capacity, considering <see cref="ChunkCount"/> and <see cref="ComponentCountPerChunk"/>.
     /// </summary>
-    public int Capacity => ComponentCountPerChunk * ChunkCount;
+    public int Capacity => ChunkCount << ComponentCountPerChunkLog2;
 
     public ComponentDataStore(int size, int align, MemoryLabel allocLabel, byte* initialData)
     {
         Size = size;
         Align = align;
-        ComponentCountPerChunk = k_ChunkSize / size;
+        // Largest power of two that fits a chunk, floored at one so an oversized element still stores.
+        ComponentCountPerChunkLog2 = FloorLog2(k_ChunkSize / size);
         ChunkCount = 0;
         MemoryLabel = allocLabel;
         m_Chunks = null;
@@ -302,15 +309,30 @@ internal unsafe struct ComponentDataStore : IDisposable
 
     public byte* GetComponentDataPtr(int index)
     {
-        var chunkIndex = index / ComponentCountPerChunk;
-        var indexInChunk = index % ComponentCountPerChunk;
+        // The count is a power of two, so the divide and the modulo are a shift and a mask.
+        var chunkIndex = index >> ComponentCountPerChunkLog2;
+        var indexInChunk = index & (ComponentCountPerChunk - 1);
 
         return m_Chunks[chunkIndex].Buffer + indexInChunk * Size;
     }
 
+    // Floor(log2(value)), returning 0 below 2 so the per-chunk count never drops under one element.
+    static int FloorLog2(int value)
+    {
+        var log2 = 0;
+
+        while (value > 1)
+        {
+            value >>= 1;
+            log2++;
+        }
+
+        return log2;
+    }
+
     public void ResizeCapacity(int capacity)
     {
-        var newChunkCount = capacity / ComponentCountPerChunk + 1;
+        var newChunkCount = (capacity >> ComponentCountPerChunkLog2) + 1;
 
         if (newChunkCount > ChunkCount)
         {
@@ -322,7 +344,8 @@ internal unsafe struct ComponentDataStore : IDisposable
             {
                 m_Chunks[i] = new Chunk
                 {
-                    Buffer = (byte*)UnsafeUtility.Malloc(k_ChunkSize, Align, MemoryLabel)
+                    // Sized to the element count rather than a fixed chunk, so there is no unused tail.
+                    Buffer = (byte*)UnsafeUtility.Malloc(ComponentCountPerChunk * Size, Align, MemoryLabel)
                 };
 
                 UnsafeUtility.MemCpyReplicate(m_Chunks[i].Buffer, InitialData, Size, ComponentCountPerChunk);

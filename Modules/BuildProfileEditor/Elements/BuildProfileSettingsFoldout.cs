@@ -2,7 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: BuildSettingsWindow not yet converted
 using System;
 using UnityEngine;
 using UnityEngine.UIElements;
@@ -17,10 +16,10 @@ namespace UnityEditor.Build.Profile.Elements
         const string k_Uxml = "BuildProfile/UXML/BuildProfileSettingsFoldout.uxml";
         const string k_FoldoutRoot = "bp-settings-foldout";
         const string k_FoldoutOptions = "bp-settings-foldout-options";
-        static readonly GUIContent s_ResetContent = EditorGUIUtility.TrTextContent("Reset");
-        static readonly GUIContent s_RemoveContent = EditorGUIUtility.TrTextContent("Remove");
-        static readonly GUIContent s_Copy = EditorGUIUtility.TrTextContent("Copy");
-        static readonly GUIContent s_Paste = EditorGUIUtility.TrTextContent("Paste");
+        static readonly GUIContent s_ResetContent = L10n.TextContent("Reset", null, null, null);
+        static readonly GUIContent s_RemoveContent = L10n.TextContent("Remove", null, null, null);
+        static readonly GUIContent s_Copy = L10n.TextContent("Copy", null, null, null);
+        static readonly GUIContent s_Paste = L10n.TextContent("Paste", null, null, null);
 
         readonly string m_Tooltip;
         Vector2 m_TooltipPosVector;
@@ -161,4 +160,3 @@ namespace UnityEditor.Build.Profile.Elements
         }
     }
 }
-#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

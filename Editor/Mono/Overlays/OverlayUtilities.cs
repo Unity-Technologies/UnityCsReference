@@ -41,8 +41,14 @@ namespace UnityEditor.Overlays
         }
 
         [AutoStaticsCleanupOnCodeReload]
+        // The overlays getter rebuilds the associations from TypeCache whenever this is null, so the array
+        // cleared on reload is recollected on the next access.
+        [IgnoreForUAL0015("Overlay/window association array rebuilt from TypeCache by the overlays getter")]
         static OverlayEditorWindowAssociation[] s_Overlays;
         [AutoStaticsCleanupOnCodeReload]
+        // Per-window-type memo: a miss re-derives the overlay list and adds it back, so the map cleared on
+        // reload (it must not keep old Type keys alive) refills on demand.
+        [IgnoreForUAL0015("Per-window-type overlay memo, re-derived on the next miss")]
         static readonly Dictionary<Type, List<Type>> s_OverlaysTypeAssociations = new Dictionary<Type, List<Type>>();
         internal const string nullWindowTypeErrorMsg = "{0} editor window type cannot be null.";
         // used by tests

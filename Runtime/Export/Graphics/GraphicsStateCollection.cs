@@ -60,8 +60,8 @@ namespace UnityEngine.Rendering
             }
         }
 
-        public GraphicsStateCollection() { Internal_Create(this); }
-        public GraphicsStateCollection(string filePath) { Internal_Create(this); LoadFromFile(filePath); }
+        public GraphicsStateCollection() { SetEntityIdFromConstructor(Internal_Create()); }
+        public GraphicsStateCollection(string filePath) { SetEntityIdFromConstructor(Internal_Create()); LoadFromFile(filePath); }
 
         public void GetGraphicsStatesForVariant(ShaderVariant variant, List<GraphicsState> results)
         {

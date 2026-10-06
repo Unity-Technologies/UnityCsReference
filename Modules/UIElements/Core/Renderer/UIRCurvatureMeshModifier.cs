@@ -19,7 +19,7 @@ namespace UnityEngine.UIElements.UIR
     // a shared registration is added to its modifier list; when it returns to flat it is removed.
     //
     // SyncState runs from DepthFirstOnVisualsChanged immediately before RebuildEffectiveModifiers in the SAME
-    // visuals pass, so it mutates owner.m_MeshModifiers directly rather than going through the public
+    // visuals pass, so it mutates the owner's modifier list directly rather than going through the public
     // AddMeshModifier/RemoveMeshModifier API — those dirty the render tree (UIEOnVisualsChanged), which is
     // illegal while the visual tree is being processed. The same-pass rebuild folds the change into the
     // effective chain without a re-dirty.
@@ -52,7 +52,7 @@ namespace UnityEngine.UIElements.UIR
         internal static void SyncState(RenderData renderData)
         {
             // A filtered element owns TWO renderData (the composite quad in the outer tree + the nested
-            // tree root) but ONE m_MeshModifiers list: arm only via the outer one, or the registration
+            // tree root) but ONE modifier list: arm only via the outer one, or the registration
             // is added twice.
             if (renderData.isNestedRenderTreeRoot)
                 return;
@@ -67,9 +67,9 @@ namespace UnityEngine.UIElements.UIR
             // Mutate the owner's modifier list directly (no dirty): RebuildEffectiveModifiers runs next,
             // in this same pass, and reads it fresh.
             if (isEnabled)
-                (ve.m_MeshModifiers ??= new List<MeshModifierRegistration>()).Add(s_Registration);
+                ve.GetOrCreateMeshModifiers().Add(s_Registration);
             else
-                RemoveRegistration(ve.m_MeshModifiers);
+                RemoveRegistration(ve.meshModifiers);
 
             renderData.hasCurvatureModifier = isEnabled;
         }

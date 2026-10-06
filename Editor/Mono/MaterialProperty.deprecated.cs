@@ -6,7 +6,7 @@ using System;
 
 namespace UnityEditor
 {
-    partial class MaterialProperty
+    public partial class MaterialProperty
     {
         [Obsolete("Use UnityEngine.Rendering.ShaderPropertyType instead. (UnityUpgradable) -> UnityEngine.Rendering.ShaderPropertyType", false)]
         public enum PropType

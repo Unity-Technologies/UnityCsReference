@@ -12,7 +12,6 @@ using UnityEditor.Compilation;
 using UnityEditor.MSBuild;
 using Unity.AsmDefToCSProj;
 using UnityEditor.Build;
-using Unity.Scripting;
 using Unity.Scripting.LifecycleManagement;
 using UnityEngine;
 using UnityEngine.Bindings;
@@ -38,6 +37,7 @@ enum CompileTarget
 [VisibleToOtherModules("UnityEditor.ProjectAuditorModule")]
 partial class MsBuildCompilation
 {
+    [VisibleToOtherModules("UnityEditor.ProjectAuditorModule")]
     internal class CompilationMessage
     {
         public string AssemblyName;
@@ -45,10 +45,17 @@ partial class MsBuildCompilation
     }
 
     [VisibleToOtherModules("UnityEditor.ProjectAuditorModule")]
+    internal class CompilationAssembly
+    {
+        public string Name;
+        public List<string> ReferencedAssemblyNames;
+    }
+
+    [VisibleToOtherModules("UnityEditor.ProjectAuditorModule")]
     internal class CompilationMessages
     {
         public bool Success;
-        public string[] Assemblies = Array.Empty<string>();
+        public CompilationAssembly[] Assemblies = Array.Empty<CompilationAssembly>();
         public CompilationMessage[] Messages = Array.Empty<CompilationMessage>();
     }
 
@@ -207,9 +214,10 @@ partial class MsBuildCompilation
             {
                 if (!_currentBuildState.ProgressEvents.TryDequeue(out var buildEvent))
                 {
-                    //This delay is required to fix the endless loop on macOS when debugger is attached
-                    //JIRA: https://jira.unity3d.com/browse/MSBU-530
-                    Task.Delay(1);
+                    // Must block: an unawaited Task.Delay spins this loop, and the timer and thread-pool
+                    // work it queues starves the continuations that drain the build stream.
+                    // JIRA: https://jira.unity3d.com/browse/MSBU-530
+                    Thread.Sleep(1);
                     continue;
                 }
                 // Cancelling aborts the call, which lands the task as Canceled and is the only way
@@ -438,9 +446,16 @@ partial class MsBuildCompilation
 
     private async Task<CompilationMessages> RunScriptCompilationAsync(string configuration)
     {
+        // Derive BuildTarget from configuration string for Player analysis (Editor analysis uses the active target)
+        BuildTarget buildTarget = EditorUserBuildSettings.activeBuildTarget;
+        if (configuration.EndsWith("+Analysis", StringComparison.Ordinal))
+        {
+            if (!Enum.TryParse(configuration.Substring(0, configuration.Length - "+Analysis".Length), out buildTarget))
+                throw new ArgumentException($"{configuration} does not map to a known BuildTarget", "configuration");
+        }
+
         // Mirror the regular compilation path (TickCompilationPipeline): refresh the deferrable
         // props (defines, references, plugins, search paths, analyzers) before building.
-        var buildTarget = EditorUserBuildSettings.activeBuildTarget;
         var globalAnalyzers = _globalAnalyzers.Length > 0
             ? _globalAnalyzers
             : UnityEditorMSBuildPropsTargetsGeneration.GetBuiltinRoslynAnalyzerPaths();
@@ -499,14 +514,22 @@ partial class MsBuildCompilation
 
     private static CompilationMessages BuildScriptCompilationMessages(BuildResultMessage buildResult)
     {
-        var assemblies = new List<string>();
+        var assemblies = new List<CompilationAssembly>();
         var messages = new List<CompilationMessage>();
 
         foreach (var kvp in buildResult.GetProjectResults())
         {
             var projectResult = kvp.Value;
-            if (!string.IsNullOrEmpty(projectResult.AssemblyName))
-                assemblies.Add(projectResult.AssemblyName);
+
+            // ILPostProcessors are build-time tools, not script assemblies, so they don't belong in the assembly list.
+            if (!string.IsNullOrEmpty(projectResult.AssemblyName) && !projectResult.IsILPostProcessor)
+            {
+                assemblies.Add(new CompilationAssembly
+                {
+                    Name = projectResult.AssemblyName,
+                    ReferencedAssemblyNames = new List<string>(projectResult.GetReferencedAssemblyNames())
+                });
+            }
 
             foreach (var msg in projectResult.GetLogMessages())
             {

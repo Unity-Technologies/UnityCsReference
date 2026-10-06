@@ -12,7 +12,6 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using Unity.Scripting.LifecycleManagement;
-using UnityEditorInternal;
 using UnityEngine;
 
 
@@ -155,7 +154,18 @@ namespace UnityEditor.Search
         PropertyStringTable m_StringTable;
         PropertyDatabaseLock m_PropertyDatabaseLock;
 
-        internal static readonly int version = ((0x50 << 24) | (0x44 << 16) | 0x0007) ^ PropertyStringTable.version ^ ((InternalEditorUtility.GetUnityVersion().Major & 0xffff) << 16 | InternalEditorUtility.GetUnityVersion().Minor);
+        internal static readonly int version = ((0x50 << 24) | (0x44 << 16) | 0x0007) ^ PropertyStringTable.version ^ ((GetUnityVersionMajorMinor().major & 0xffff) << 16 | GetUnityVersionMajorMinor().minor);
+
+        // This is used from the "version" field initializer above, which can run on a background thread the first
+        // time PropertyDatabase is touched off the main thread (see TriggerBackgroundUpdate). Unlike
+        // InternalEditorUtility.GetUnityVersion(), Application.unityVersion is safe to call from any thread.
+        static (int major, int minor) GetUnityVersionMajorMinor()
+        {
+            var versionParts = Application.unityVersion.Split('.');
+            var major = versionParts.Length > 0 ? int.Parse(versionParts[0]) : 0;
+            var minor = versionParts.Length > 1 ? int.Parse(versionParts[1]) : 0;
+            return (major, minor);
+        }
 
         public string filePath { get; }
         internal string stringTableFilePath { get; }

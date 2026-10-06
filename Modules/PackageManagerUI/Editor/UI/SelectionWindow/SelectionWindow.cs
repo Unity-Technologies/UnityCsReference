@@ -2,7 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: Packman not yet converted
 using System;
 using System.Collections.Generic;
 using Unity.Scripting.LifecycleManagement;
@@ -12,9 +11,6 @@ namespace UnityEditor.PackageManager.UI.Internal;
 
 internal partial class SelectionWindow : EditorWindow
 {
-    #pragma warning disable UAL0015 // this side effect does not outlive the current call (global trigger / lazily-loaded asset re-fetched on next access); a stale reference is harmlessly replaced
-    internal SelectionWindow() {}
-    #pragma warning restore UAL0015
 
     public static void Open(SelectionWindowData data)
     {
@@ -25,7 +21,7 @@ internal partial class SelectionWindow : EditorWindow
     }
 
     [AutoStaticsCleanupOnCodeReload]
-    public static event Action<IReadOnlyCollection<Asset>> onRemoveSelectionDone = delegate {};
+    public static event Action<IReadOnlyList<Asset>> onRemoveSelectionDone = delegate {};
 
     private SelectionWindowRoot m_Root;
     private bool m_SelectionCompleted;
@@ -62,11 +58,10 @@ internal partial class SelectionWindow : EditorWindow
             onRemoveSelectionDone?.Invoke(Array.Empty<Asset>());
     }
 
-    private void OnSelectionCompleted(IReadOnlyCollection<Asset> selections)
+    private void OnSelectionCompleted(IReadOnlyList<Asset> selections)
     {
         m_SelectionCompleted = true;
         onRemoveSelectionDone?.Invoke(selections);
         Close();
     }
 }
-#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

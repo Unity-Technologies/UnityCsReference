@@ -11,11 +11,14 @@ namespace UnityEditorInternal
     [NativeClass("PackageManifestImporter", PersistentTypeId = 0x710E27E6)]
     public sealed class PackageManifestImporter : AssetImporter
     {
+        internal PackageManifestImporter(global::UnityEngine.EntityId id) : base(id) {}
+        public PackageManifestImporter() {}
     }
 
     [NativeClass("PackageManifest", PersistentTypeId = 0x710E27E5)]
     public sealed class PackageManifest : TextAsset
     {
+        internal PackageManifest(global::UnityEngine.EntityId id) : base(id) {}
         private PackageManifest() {}
 
         private PackageManifest(string text) {}

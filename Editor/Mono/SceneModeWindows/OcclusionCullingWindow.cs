@@ -2,16 +2,18 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: Culling not yet converted
+#pragma warning disable CS0618
 using System;
 using UnityEngine;
 using UnityEditor.Overlays;
+using UnityEngine.UIElements;
 using UnityEngine.Scripting;
 using Unity.Scripting.LifecycleManagement;
 
 namespace UnityEditor
 {
     [EditorWindowTitle(title = "Occlusion", icon = "Occlusion")]
+    [UIFramework(UIFrameworkUsage.Mixed)]
     internal partial class OcclusionCullingWindow : EditorWindow
     {
         [NoAutoStaticsCleanup] // Window visibility flag; guarded by ms_OcclusionCullingWindow null-check, safe to persist across reload.
@@ -34,21 +36,21 @@ namespace UnityEditor
         {
             public GUIContent[] ModeToggles =
             {
-                EditorGUIUtility.TrTextContent("Object"),
-                EditorGUIUtility.TrTextContent("Bake"),
-                EditorGUIUtility.TrTextContent("Visualization")
+                L10n.TextContent("Object", null, null, null),
+                L10n.TextContent("Bake", null, null, null),
+                L10n.TextContent("Visualization", null, null, null)
             };
             public GUIStyle labelStyle = EditorStyles.wordWrappedMiniLabel;
-            public GUIContent emptyAreaSelection = EditorGUIUtility.TrTextContent("Select a Mesh Renderer or an Occlusion Area from the scene.");
-            public GUIContent emptyCameraSelection = EditorGUIUtility.TrTextContent("Select a Camera from the scene.");
-            public GUIContent visualizationNote = EditorGUIUtility.TrTextContent("The visualization may not correspond to current bake settings and Occlusion Area placements if they have been changed since last bake.");
-            public GUIContent seeVisualizationInScene = EditorGUIUtility.TrTextContent("See the occlusion culling visualization in the Scene View based on the selected Camera.");
-            public GUIContent noOcclusionData = EditorGUIUtility.TrTextContent("No occlusion data has been baked.");
-            public GUIContent smallestHole = EditorGUIUtility.TrTextContent("Smallest Hole", "Smallest hole in the geometry through which the camera is supposed to see. The single float value of the parameter represents the diameter of the imaginary smallest hole, i.e. the maximum extent of a 3D object that fits through the hole.");
-            public GUIContent backfaceThreshold = EditorGUIUtility.TrTextContent("Backface Threshold", "The backface threshold is a size optimization that reduces unnecessary details by testing backfaces. A value of 100 is robust and never removes any backfaces. A value of 5 aggressively reduces the data based on locations with visible backfaces. The idea is that typically valid camera positions cannot see many backfaces. For example, geometry under terrain and inside solid objects can be removed.");
-            public GUIContent farClipPlane = EditorGUIUtility.TrTextContent("Far Clip Plane", "Far Clip Plane used during baking. This should match the largest far clip plane used by any camera in the scene. A value of 0.0 sets the far plane to Infinity.");
-            public GUIContent smallestOccluder = EditorGUIUtility.TrTextContent("Smallest Occluder", "The size of the smallest object that will be used to hide other objects when doing occlusion culling. For example, if a value of 4 is chosen, then all the objects that are higher or wider than 4 meters will block visibility and the objects that are smaller than that will not. This value is a tradeoff between occlusion accuracy and storage size.");
-            public GUIContent defaultParameterText = EditorGUIUtility.TrTextContent("Default Parameters", "The default parameters guarantee that any given scene computes fast and the occlusion culling results are good. As the parameters are always scene specific, better results will be achieved when fine tuning the parameters on a scene to scene basis. All the parameters are dependent on the unit scale of the scene and it is imperative that the unit scale parameter is set correctly before setting the default values.");
+            public GUIContent emptyAreaSelection = L10n.TextContent("Select a Mesh Renderer or an Occlusion Area from the scene.", null, null, null);
+            public GUIContent emptyCameraSelection = L10n.TextContent("Select a Camera from the scene.", null, null, null);
+            public GUIContent visualizationNote = L10n.TextContent("The visualization may not correspond to current bake settings and Occlusion Area placements if they have been changed since last bake.", null, null, null);
+            public GUIContent seeVisualizationInScene = L10n.TextContent("See the occlusion culling visualization in the Scene View based on the selected Camera.", null, null, null);
+            public GUIContent noOcclusionData = L10n.TextContent("No occlusion data has been baked.", null, null, null);
+            public GUIContent smallestHole = L10n.TextContent("Smallest Hole", "Smallest hole in the geometry through which the camera is supposed to see. The single float value of the parameter represents the diameter of the imaginary smallest hole, i.e. the maximum extent of a 3D object that fits through the hole.", null, null);
+            public GUIContent backfaceThreshold = L10n.TextContent("Backface Threshold", "The backface threshold is a size optimization that reduces unnecessary details by testing backfaces. A value of 100 is robust and never removes any backfaces. A value of 5 aggressively reduces the data based on locations with visible backfaces. The idea is that typically valid camera positions cannot see many backfaces. For example, geometry under terrain and inside solid objects can be removed.", null, null);
+            public GUIContent farClipPlane = L10n.TextContent("Far Clip Plane", "Far Clip Plane used during baking. This should match the largest far clip plane used by any camera in the scene. A value of 0.0 sets the far plane to Infinity.", null, null);
+            public GUIContent smallestOccluder = L10n.TextContent("Smallest Occluder", "The size of the smallest object that will be used to hide other objects when doing occlusion culling. For example, if a value of 4 is chosen, then all the objects that are higher or wider than 4 meters will block visibility and the objects that are smaller than that will not. This value is a tradeoff between occlusion accuracy and storage size.", null, null);
+            public GUIContent defaultParameterText = L10n.TextContent("Default Parameters", "The default parameters guarantee that any given scene computes fast and the occlusion culling results are good. As the parameters are always scene specific, better results will be achieved when fine tuning the parameters on a scene to scene basis. All the parameters are dependent on the unit scale of the scene and it is imperative that the unit scale parameter is set correctly before setting the default values.", null, null);
         }
 
         enum Mode
@@ -88,6 +90,12 @@ namespace UnityEditor
 
         void OnEnable()
         {
+            if (!EditorSettings.enableLegacyUmbraCulling)
+            {
+                EditorApplication.delayCall += Close;
+                return;
+            }
+
             titleContent = GetLocalizedTitleContent();
             ms_OcclusionCullingWindow = this;
             autoRepaintOnSceneChange = true;
@@ -310,7 +318,7 @@ namespace UnityEditor
 
         private bool CustomDropdownButton(string name, float width, params GUILayoutOption[] options)
         {
-            var content = EditorGUIUtility.TrTextContent(name);
+            var content = L10n.TextContent(name, null, null, null);
             var rect = GUILayoutUtility.GetRect(content, EditorStyles.dropDownList, options);
 
             var halfDiff = (width - rect.width) / 2f;
@@ -374,7 +382,16 @@ namespace UnityEditor
             EditorGUILayout.EndHorizontal();
         }
 
-        void OnGUI()
+        void CreateGUI()
+        {
+            var documentationUrl = Help.FindHelpNamed("urp/gpu-culling");
+            var message = string.Format(L10n.Tr("Baked Occlusion Culling is deprecated. Consider migrating to GPU Occlusion Culling. <a href=\"{0}\">Learn more...</a>", null), documentationUrl);
+            rootVisualElement.Add(new IMGUIContainer(DrawToolbar));
+            rootVisualElement.Add(new HelpBox(message, HelpBoxMessageType.Info));
+            rootVisualElement.Add(new IMGUIContainer(DrawContent) { style = { flexGrow = 1 } });
+        }
+
+        void DrawToolbar()
         {
             if (s_Styles == null)
                 s_Styles = new Styles();
@@ -390,7 +407,10 @@ namespace UnityEditor
             EditorGUILayout.Space();
             ModeToggle();
             EditorGUILayout.Space();
+        }
 
+        void DrawContent()
+        {
             m_ScrollPosition = EditorGUILayout.BeginScrollView(m_ScrollPosition);
             switch (m_Mode)
             {
@@ -607,4 +627,4 @@ namespace UnityEditor
         }
     }
 }
-#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021
+#pragma warning restore CS0618

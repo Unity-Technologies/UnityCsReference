@@ -11,11 +11,14 @@ namespace UnityEditorInternal
     [NativeClass("AssemblyDefinitionReferenceImporter", PersistentTypeId = 0x118A83A3)]
     public sealed partial class AssemblyDefinitionReferenceImporter : AssetImporter
     {
+        internal AssemblyDefinitionReferenceImporter(global::UnityEngine.EntityId id) : base(id) {}
+        public AssemblyDefinitionReferenceImporter() {}
     }
 
     [NativeClass("AssemblyDefinitionReferenceAsset", PersistentTypeId = 0x277E3BD6)]
     public sealed partial class AssemblyDefinitionReferenceAsset : TextAsset
     {
+        internal AssemblyDefinitionReferenceAsset(global::UnityEngine.EntityId id) : base(id) {}
         private AssemblyDefinitionReferenceAsset() {}
 
         private AssemblyDefinitionReferenceAsset(string text) {}

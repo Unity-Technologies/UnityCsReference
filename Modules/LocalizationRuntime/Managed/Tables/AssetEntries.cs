@@ -24,7 +24,7 @@ namespace Unity.Localization;
 /// </remarks>
 /// <typeparam name="TStore">The stored reference kind, for example a direct object or a <c>Resources</c> path. A package can add other kinds, such as an Addressables handle.</typeparam>
 /// <example>
-/// <para>Read the base members through a concrete asset entry.</para>
+/// Read the base members through a concrete asset entry.
 /// <code source="../../../../Modules/LocalizationRuntime/Tests/UTFTests/Localization.Samples/Tables/AssetEntryBaseOverviewExample.cs"/>
 /// </example>
 /// <seealso cref="AssetEntry"/>
@@ -107,7 +107,7 @@ public abstract class AssetEntryBase<TStore> : ResourceEntryBase, IAssetEntry, I
 /// with <see cref="ResourceTable.AddEntry(IResourceEntry)"/>.
 /// </remarks>
 /// <example>
-/// <para>Add a direct asset entry to a table and check its state.</para>
+/// Add a direct asset entry to a table and check its state.
 /// <code source="../../../../Modules/LocalizationRuntime/Tests/UTFTests/Localization.Samples/Tables/AssetEntryOverviewExample.cs"/>
 /// </example>
 /// <seealso cref="ResourceAssetEntry"/>
@@ -166,7 +166,7 @@ public class AssetEntry : AssetEntryBase<Object>
 /// reference packed with the table.
 /// </remarks>
 /// <example>
-/// <para>Add a Resources-backed asset entry and confirm it has a path.</para>
+/// Add a Resources-backed asset entry and confirm it has a path.
 /// <code source="../../../../Modules/LocalizationRuntime/Tests/UTFTests/Localization.Samples/Tables/ResourceAssetEntryOverviewExample.cs"/>
 /// </example>
 /// <seealso cref="AssetEntry"/>
@@ -193,7 +193,10 @@ public class ResourceAssetEntry : AssetEntryBase<string>, IFileDataEntry
     /// <inheritdoc/>
     protected override bool TryLoadSync(string store, out Object asset)
     {
-        asset = string.IsNullOrEmpty(store) ? null : Resources.Load<Object>(store);
+        asset = null;
+        if (string.IsNullOrEmpty(store))
+            return false;
+        asset = SubAssetAddress.LoadFromResources(store);
         return asset != null;
     }
 

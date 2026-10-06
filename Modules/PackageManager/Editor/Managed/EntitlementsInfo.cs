@@ -4,7 +4,7 @@
 
 using System;
 using System.Runtime.InteropServices;
-using UnityEditor.Experimental.Licensing;
+using UnityEditor.Licensing;
 using UnityEngine;
 using UnityEngine.Bindings;
 using RequiredByNativeCodeAttribute = UnityEngine.Scripting.RequiredByNativeCodeAttribute;

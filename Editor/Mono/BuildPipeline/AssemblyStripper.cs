@@ -279,11 +279,31 @@ namespace UnityEditorInternal
                 typesInScenes = typesInScenes,
                 allNativeTypes = CollectNativeTypeData().ToArray(),
                 forceIncludeModules = forceIncludeModules.ToArray(),
-                forceExcludeModules = forceExcludeModules.ToArray()
+                forceExcludeModules = forceExcludeModules.ToArray(),
             };
 
             var path = linkerInputDirectory.Combine("EditorToUnityLinkerData.json");
             File.WriteAllText(path.ToString(), JsonUtility.ToJson(editorToLinkerData, true));
+            return path.MakeAbsolute().ToString();
+        }
+
+        /// <summary>
+        /// Writes the ManagedCapture config (from <see cref="onProvideManagedCaptureConfig"/>) to
+        /// its own file and returns the absolute path, or null when no module supplies a config.
+        /// Passing the config in a dedicated file (via LinkRequest.ManagedCaptureConfigFile) rather
+        /// than embedding it in the editor-to-linker data isolates it: a bad or oversized capture
+        /// config can't corrupt the shared editor data the rest of engine stripping depends on.
+        /// The payload is base64 so the intermediate artifact is not casually readable or editable;
+        /// the linker accepts either form.
+        /// </summary>
+        public static string WriteManagedCaptureConfig(NPath linkerInputDirectory)
+        {
+            var config = onProvideManagedCaptureConfig?.Invoke();
+            if (string.IsNullOrEmpty(config))
+                return null;
+
+            var path = linkerInputDirectory.Combine("ManagedCapture.dat");
+            File.WriteAllText(path.ToString(), Convert.ToBase64String(Encoding.UTF8.GetBytes(config)));
             return path.MakeAbsolute().ToString();
         }
 
@@ -372,6 +392,14 @@ namespace UnityEditorInternal
 
         [AutoStaticsCleanupOnCodeReload]
         public static event Action<IPreStrippingModuleAdder> onCollectIncludedModules;
+
+        /// <summary>
+        /// Event for modules to provide ManagedCapture configuration JSON.
+        /// Invoked during WriteManagedCaptureConfig to write the config to its own linker input
+        /// file, passed to the linker via LinkRequest.ManagedCaptureConfigFile.
+        /// </summary>
+        [AutoStaticsCleanupOnCodeReload]
+        public static event Func<string> onProvideManagedCaptureConfig;
 
         static void CollectIncludedAndExcludedModules(out List<string> forceInclude, out List<string> forceExclude)
         {

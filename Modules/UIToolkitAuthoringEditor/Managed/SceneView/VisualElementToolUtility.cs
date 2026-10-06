@@ -50,15 +50,10 @@ namespace Unity.UIToolkit.Editor
         // Prevent scientific notation values for UXML/USS serialization
         const float k_CleanFloatEpsilon = 1e-4f;
 
-        // Transform gizmos operate wherever the element's document is editable: in the authoring
-        // stage, and in a scene stage when in-scene authoring is enabled.
+        // Transform gizmos operate wherever the element's document is editable: the authoring stage and
+        // the scene stages.
         public static bool CanUseTransformTools()
-            => StageUtility.GetCurrentStage() switch
-            {
-                VisualElementEditingStage => true,
-                MainStage or PrefabStage => UIToolkitStageUtility.IsAuthoringEnabledInMainStage,
-                _ => false,
-            };
+            => StageUtility.GetCurrentStage() is VisualElementEditingStage or MainStage or PrefabStage;
 
         // In a scene stage only world-space panels give their elements a meaningful 3D transform.
         public static bool IsGizmoTarget(IPanelComponent panelComponent)
@@ -168,14 +163,14 @@ namespace Unity.UIToolkit.Editor
             if (stagePanel == null || element.panel != stagePanel)
                 return element;
 
-            return FindFirstSceneInstanceOfAsset(element.visualElementAsset);
+            return FindFirstSceneInstanceOfAsset(element);
         }
 
-        public static VisualElement FindFirstSceneInstanceOfAsset(VisualElementAsset asset)
+        public static VisualElement FindFirstSceneInstanceOfAsset(VisualElement cloneElement)
         {
-            // First live scene-panel instance of the given asset, or null. Use this to recover from
-            // stale element refs (panel rebuilt after undo) or to redirect a stage clone to scene.
-            foreach (var (_, sceneElement) in EnumerateScenePanelInstancesOfAsset(asset))
+            // First live scene-panel instance corresponding to the given clone, or null. Use this to recover
+            // from stale element refs (panel rebuilt after undo) or to redirect a stage clone to scene.
+            foreach (var (_, sceneElement) in EnumerateScenePanelInstancesOfAsset(cloneElement))
                 return sceneElement;
             return null;
         }
@@ -230,31 +225,60 @@ namespace Unity.UIToolkit.Editor
             return initialized ? bounds.center : Vector3.zero;
         }
 
-        public static IEnumerable<(IPanelComponent panel, VisualElement element)> EnumerateScenePanelInstancesOfAsset(VisualElementAsset asset)
+        public static IEnumerable<(IPanelComponent panel, VisualElement element)> EnumerateScenePanelInstancesOfAsset(VisualElement cloneElement)
         {
             // Active, enabled, world-space scene panels currently displaying the given UXML asset,
-            // paired with the matching scene element
-            if (asset == null)
+            // paired with the matching scene element(s)
+            if (cloneElement?.visualElementAsset == null)
                 yield break;
 
+            // A context reached from within an isolation stage is rooted at the isolated document, not any scene panel's own top-level asset.
+            var stage = StageUtility.GetCurrentStage() as VisualElementEditingStage;
+            var rootVta = stage != null && !IsWithinIsolatedTrail(stage)
+                ? stage.Context.RootVisualTreeAsset
+                : null;
+
             foreach (var doc in UnityEngine.Object.FindObjectsByType<UIDocument>())
-                if (TryGetSceneInstance(doc, asset, out var element))
+                foreach (var element in GetSceneInstances(doc, cloneElement, rootVta))
                     yield return (doc, element);
             foreach (var renderer in UnityEngine.Object.FindObjectsByType<PanelRenderer>())
-                if (TryGetSceneInstance(renderer, asset, out var element))
+                foreach (var element in GetSceneInstances(renderer, cloneElement, rootVta))
                     yield return (renderer, element);
         }
 
-        static bool TryGetSceneInstance(IPanelComponent panelComponent, VisualElementAsset asset, out VisualElement sceneElement)
+        static IEnumerable<VisualElement> GetSceneInstances(IPanelComponent panelComponent, VisualElement cloneElement, VisualTreeAsset rootVta)
         {
-            sceneElement = null;
             if (!panelComponent.gameObject.activeInHierarchy || !panelComponent.GetComponentEnabled())
-                return false;
+                yield break;
             var panelSettings = panelComponent.panelSettings;
             if (panelSettings == null || panelSettings.renderMode != PanelRenderMode.WorldSpace)
-                return false;
-            sceneElement = panelComponent.GetRootVisualElement()?.FindElementByAsset(asset);
-            return sceneElement != null;
+                yield break;
+            if (rootVta != null && panelComponent.visualTreeAsset != rootVta)
+                yield break;
+
+            var root = panelComponent.GetRootVisualElement();
+            if (root == null)
+                yield break;
+
+            foreach (var element in root.FindCorrespondingElements(cloneElement, requireExactLength: rootVta != null))
+                yield return element;
+        }
+
+        static bool IsWithinIsolatedTrail(VisualElementEditingStage stage)
+        {
+            var history = StageNavigationManager.instance.stageHistory;
+            var current = stage;
+            while (true)
+            {
+                if (current.Context.SubDocumentOptions == SubDocumentOptions.Isolation)
+                    return true;
+
+                var index = history.IndexOf(current);
+                if (index <= 0 || history[index - 1] is not VisualElementEditingStage parentStage)
+                    return false;
+
+                current = parentStage;
+            }
         }
 
         public static IPanelComponent FindTransformOwner(IPanelComponent panelComponent)

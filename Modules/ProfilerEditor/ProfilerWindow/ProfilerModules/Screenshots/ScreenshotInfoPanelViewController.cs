@@ -38,20 +38,20 @@ namespace UnityEditorInternal.Profiling
 
         static class Content
         {
-            public static readonly string k_ResolutionLabel = L10n.Tr("Resolution");
-            public static readonly string k_SourceLabel = L10n.Tr("Source");
-            public static readonly string k_TimingsHeader = L10n.Tr("Frame timings");
-            public static readonly string k_CpuLabel = L10n.Tr("CPU active time");
-            public static readonly string k_GpuLabel = L10n.Tr("GPU time");
-            public static readonly string k_NoValue = L10n.Tr("No value");
-            public static readonly string k_NoScreenshot = L10n.Tr("No screenshot");
-            public static readonly string k_ThisFrame = L10n.Tr("This frame");
-            public static readonly string k_NoFrameSelected = L10n.Tr("No frame selected");
-            public static readonly string k_FrameNumberFormat = L10n.Tr("Frame {0}");
-            public static readonly string k_ResolutionFormat = L10n.Tr("{0}x{1}");
-            public static readonly string k_StaleHelpOneFrame = L10n.Tr("Showing the screenshot from frame {0} (1 frame ago). No screenshot was captured on the selected frame.");
-            public static readonly string k_StaleHelpManyFrames = L10n.Tr("Showing the screenshot from frame {0} ({1} frames ago). No screenshot was captured on the selected frame.");
-            public static readonly string k_OverBudgetTooltipFormat = L10n.Tr("Exceeds target frame duration ({0})");
+            public static readonly string k_ResolutionLabel = L10n.Tr("Resolution", null);
+            public static readonly string k_SourceLabel = L10n.Tr("Source", null);
+            public static readonly string k_TimingsHeader = L10n.Tr("Frame timings", null);
+            public static readonly string k_CpuLabel = L10n.Tr("CPU active time", null);
+            public static readonly string k_GpuLabel = L10n.Tr("GPU time", null);
+            public static readonly string k_NoValue = L10n.Tr("No value", null);
+            public static readonly string k_NoScreenshot = L10n.Tr("No screenshot", null);
+            public static readonly string k_ThisFrame = L10n.Tr("This frame", null);
+            public static readonly string k_NoFrameSelected = L10n.Tr("No frame selected", null);
+            public static readonly string k_FrameNumberFormat = L10n.Tr("Frame {0}", null);
+            public static readonly string k_ResolutionFormat = L10n.Tr("{0}x{1}", null);
+            public static readonly string k_StaleHelpOneFrame = L10n.Tr("Showing the screenshot from frame {0} (1 frame ago). No screenshot was captured on the selected frame.", null);
+            public static readonly string k_StaleHelpManyFrames = L10n.Tr("Showing the screenshot from frame {0} ({1} frames ago). No screenshot was captured on the selected frame.", null);
+            public static readonly string k_OverBudgetTooltipFormat = L10n.Tr("Exceeds target frame duration ({0})", null);
         }
 
         readonly ScreenshotIndexCatalogue m_Catalogue;

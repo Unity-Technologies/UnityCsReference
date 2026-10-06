@@ -12,7 +12,7 @@ using UnityEngine.Bindings;
 
 namespace UnityEditor.ShaderApiReflection
 {
-    public struct ReflectedFunction
+    public struct ReflectedFunction : IHasFunctionSignature
     {
         // Public API
 

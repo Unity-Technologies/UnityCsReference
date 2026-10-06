@@ -11,12 +11,13 @@ namespace UnityEditor.Web
     [NativeClass("EditorProjectAccess", PersistentTypeId = 0x1968D9A2)]
     internal partial class EditorProjectAccess : Object
     {
+        internal EditorProjectAccess(global::UnityEngine.EntityId id) : base(id) {}
         public EditorProjectAccess()
         {
-            Internal_Create(this);
+            SetEntityIdFromConstructor(Internal_Create());
         }
 
-        extern private static void Internal_Create([Writable] EditorProjectAccess self);
+        extern private static EntityId Internal_Create();
         extern public string GetProjectEditorVersion();
     }
 }

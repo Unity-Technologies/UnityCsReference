@@ -10,7 +10,7 @@ namespace UnityEditor
     [CustomEditor(typeof(HingeJoint)), CanEditMultipleObjects]
     class HingeJointEditor : JointEditor<HingeJoint>
     {
-        static readonly GUIContent s_WarningMessage = EditorGUIUtility.TrTextContent("Min and max limits must be within the range ");
+        static readonly GUIContent s_WarningMessage = L10n.TextContent("Min and max limits must be within the range ", null, null, null);
         SerializedProperty m_MinLimit;
         SerializedProperty m_MaxLimit;
         SerializedProperty m_ExtendedLimits;

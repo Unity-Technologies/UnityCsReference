@@ -220,6 +220,7 @@ namespace UnityEngine
     [NativeHeader("AudioScriptingClasses.h")]
     public sealed class WebCamTexture : Texture
     {
+        internal WebCamTexture(global::UnityEngine.EntityId id) : base(id) {}
         ///<summary>Return a list of available devices.</summary>
         ///<remarks>This queries the system for the list of devices connected and it can be slow.
         ///You should cache this value by keeping a copy of the result if you want to use it repeatedly.
@@ -271,7 +272,7 @@ namespace UnityEngine
         ///<param name="requestedFPS">The requested frame rate of the texture.</param>
         public WebCamTexture(string deviceName, int requestedWidth, int requestedHeight, int requestedFPS)
         {
-            Internal_CreateWebCamTexture(this, deviceName, requestedWidth, requestedHeight, requestedFPS);
+            SetEntityIdFromConstructor(Internal_CreateWebCamTexture(deviceName, requestedWidth, requestedHeight, requestedFPS));
         }
 
         ///<summary>Create a WebCamTexture.</summary>
@@ -294,7 +295,7 @@ namespace UnityEngine
         ///<param name="requestedHeight">The requested height of the texture.</param>
         public WebCamTexture(string deviceName, int requestedWidth, int requestedHeight)
         {
-            Internal_CreateWebCamTexture(this, deviceName, requestedWidth, requestedHeight, 0);
+            SetEntityIdFromConstructor(Internal_CreateWebCamTexture(deviceName, requestedWidth, requestedHeight, 0));
         }
 
         ///<summary>Create a WebCamTexture.</summary>
@@ -315,7 +316,7 @@ namespace UnityEngine
         ///<param name="deviceName">The name of the video input device to be used.</param>
         public WebCamTexture(string deviceName)
         {
-            Internal_CreateWebCamTexture(this, deviceName, 0, 0, 0);
+            SetEntityIdFromConstructor(Internal_CreateWebCamTexture(deviceName, 0, 0, 0));
         }
 
         ///<summary>Create a WebCamTexture.</summary>
@@ -338,7 +339,7 @@ namespace UnityEngine
         ///<param name="requestedFPS">The requested frame rate of the texture.</param>
         public WebCamTexture(int requestedWidth, int requestedHeight, int requestedFPS)
         {
-            Internal_CreateWebCamTexture(this, "", requestedWidth, requestedHeight, requestedFPS);
+            SetEntityIdFromConstructor(Internal_CreateWebCamTexture("", requestedWidth, requestedHeight, requestedFPS));
         }
 
         ///<summary>Create a WebCamTexture.</summary>
@@ -360,7 +361,7 @@ namespace UnityEngine
         ///<param name="requestedHeight">The requested height of the texture.</param>
         public WebCamTexture(int requestedWidth, int requestedHeight)
         {
-            Internal_CreateWebCamTexture(this, "", requestedWidth, requestedHeight, 0);
+            SetEntityIdFromConstructor(Internal_CreateWebCamTexture("", requestedWidth, requestedHeight, 0));
         }
 
         ///<summary>Create a WebCamTexture.</summary>
@@ -380,7 +381,7 @@ namespace UnityEngine
         ///Currently, iOS supports only limited combinations of color/depth data resolutions. **requestedWidth** and **requestedHeight** parameters are ignored, when creating WebCamTexture instances for ColorAndDepth devices. For iPhone 7+/8+ dual back cameras, the size of the WebCamTexture for color data is 1440x1080 and for iPhone X dual back and front true depth cameras, it is 1500x1126. The depth data resolution is always a maximum of 320x240 for iPhone 4+/8+/X dual back cameras and 640x480 for iPhone X front true depth cameras.</remarks>
         public WebCamTexture()
         {
-            Internal_CreateWebCamTexture(this, "", 0, 0, 0);
+            SetEntityIdFromConstructor(Internal_CreateWebCamTexture("", 0, 0, 0));
         }
 
         ///<summary>Starts the camera.</summary>
@@ -740,7 +741,7 @@ namespace UnityEngine
         public extern bool isDepth { get; }
 
         [StaticAccessor("WebCamTextureBindings", StaticAccessorType.DoubleColon)]
-        private static extern void Internal_CreateWebCamTexture([Writable] WebCamTexture self, string scriptingDevice, int requestedWidth, int requestedHeight, int maxFramerate);
+        private static extern EntityId Internal_CreateWebCamTexture(string scriptingDevice, int requestedWidth, int requestedHeight, int maxFramerate);
     }
 
 }

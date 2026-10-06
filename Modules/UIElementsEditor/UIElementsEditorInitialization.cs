@@ -23,16 +23,16 @@ namespace UnityEditor.UIElements
             {
                 UxmlSerializedDataRegistry.RegisterUxmlSerializedDataTypes();
                 UxmlSerializedDataRegistry.RegisterCustomDependencies();
+                // Push before RegisterCustomDependencies so the published hash reflects the value.
+                // This init also runs in import worker processes, so workers pick up the on-disk
+                // value here before any .tss import.
+                ThemeRegistry.legacyThemePriority = UIToolkitProjectSettings.enableLegacyThemePriority;
                 ThemeRegistry.RegisterCustomDependencies();
                 RegisterSerializationLayoutDependency();
                 UnityEngine.UIElements.UIElementsInitialization.InitializeUIElementsManaged();
                 VisualTreeAssetHierarchyDropHandler.Register();
 
-                UIToolkitProjectSettings.CaptureBootValues();
-                // The setter pushes on change; also apply the persisted value at editor load so a saved setting takes effect.
-                UnityEngine.UIElements.Layout.LayoutNative.SetGridLayoutEnabled(UIToolkitProjectSettings.enableGridLayout);
-                if (UIToolkitProjectSettings.enablePanelRendererAnimation)
-                    UnityEngine.UIElements.PanelRenderer.RegisterPanelRendererAnimationBinding();
+                UnityEngine.UIElements.PanelRenderer.RegisterPanelRendererAnimationBinding();
             }
             catch (Exception ex)
             {

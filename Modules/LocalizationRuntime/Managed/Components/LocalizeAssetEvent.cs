@@ -21,7 +21,7 @@ namespace Unity.Localization.Components;
 /// </remarks>
 /// <typeparam name="TObject">The asset type to resolve, which must derive from <see cref="UnityEngine.Object"/>.</typeparam>
 /// <example>
-/// <para>Forward the resolved asset to a consumer.</para>
+/// Forward the resolved asset to a consumer.
 /// <code source="../../../../Modules/LocalizationRuntime/Tests/UTFTests/Localization.Samples/Components/LocalizeTextureEventBindingExample.cs"/>
 /// </example>
 /// <seealso cref="LocalizeTextureEvent"/>

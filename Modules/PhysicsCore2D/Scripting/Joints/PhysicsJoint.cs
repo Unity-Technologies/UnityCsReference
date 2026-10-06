@@ -114,6 +114,56 @@ namespace Unity.U2D.Physics
     /// A joint is used to constrain bodies to the world or to each other in various ways.
     /// A joint is automatically destroyed when either body it is attached to is destroyed. A joint cannot exist unattached from a body.
     /// </summary>
+    /// <remarks>
+    /// Connect or constrain two bodies by creating a joint between them. For example, create a fixed joint to weld two bodies together, or a distance joint to keep them a set distance apart. Use joints to simulate real-world mechanical behaviors like a spring or a hinge.
+    /// All joints let you set the anchor points on the bodies they connect, and limits on the force and torque they apply.
+    /// Create two <see cref="PhysicsBody"/> objects, create a definition object for the joint type you want, for example <see cref="PhysicsDistanceJointDefinition"/>, then pass the definition into <see cref="PhysicsWorld.CreateJoint(PhysicsDistanceJointDefinition)"/>. If you destroy a body, Unity also destroys any joints connected to it.
+    /// </remarks>
+    /// <example>
+    /// <code lang="cs">
+    /// <![CDATA[
+    /// // Use a fixed distance joint to create a fixed point that a large circle swings from.
+    /// using UnityEngine;
+    /// using Unity.U2D.Physics;
+    ///
+    /// public class CreateJointExample : MonoBehaviour
+    /// {
+    ///     public PhysicsDistanceJointDefinition jointDefinition = new PhysicsDistanceJointDefinition();
+    ///
+    ///     void Awake()
+    ///     {
+    ///         PhysicsWorld world = PhysicsWorld.defaultWorld;
+    ///
+    ///         // Create a static fixed body.
+    ///         PhysicsBodyDefinition bodyDefinition1 = new PhysicsBodyDefinition
+    ///         {
+    ///             type = PhysicsBody.BodyType.Static,
+    ///             position = new Vector2(-5f, 0f),
+    ///         };
+    ///         PhysicsBody object1 = world.CreateBody(bodyDefinition1);
+    ///
+    ///         // Create a large circle below the fixed body.
+    ///         PhysicsBodyDefinition bodyDefinition2 = new PhysicsBodyDefinition
+    ///         {
+    ///             type = PhysicsBody.BodyType.Dynamic,
+    ///             position = new Vector2(5f, 0f),
+    ///         };
+    ///         PhysicsBody object2 = world.CreateBody(bodyDefinition2);
+    ///         object2.CreateShape(new CircleGeometry { radius = 3f });
+    ///
+    ///         // Add the bodies to the joint definition.
+    ///         jointDefinition.bodyA = object1;
+    ///         jointDefinition.bodyB = object2;
+    ///
+    ///         // Add the joint to the world.
+    ///         world.CreateJoint(jointDefinition);
+    ///     }
+    /// }
+    /// ]]>
+    /// </code>
+    /// </example>
+    /// <seealso cref="PhysicsJoint.JointType"/>
+    /// <seealso cref="PhysicsDistanceJointDefinition"/>
     [StructLayout(LayoutKind.Sequential)]
     [MovedFrom(autoUpdateAPI: ScriptUpdateConstants.AutoUpdateAPI, sourceNamespace: ScriptUpdateConstants.SourceNamespace, sourceAssembly: ScriptUpdateConstants.SourceAssembly)]
     public readonly struct PhysicsJoint : IPhysicsJoint<PhysicsJoint>, IPhysicsHandle<PhysicsJoint>, IEquatable<PhysicsJoint>
@@ -284,11 +334,7 @@ namespace Unity.U2D.Physics
         /// </summary>
         /// <param name="owner">The object that owns this key. This can be NULL if not required but is recommended as the key is formed in part by the hash-code of the owner object.</param>
         /// <param name="ownerKey">The owner key to be used. If zero then a new owner key is created. You can use <see cref="PhysicsWorld.CreateOwnerKey(UnityEngine.Object)"/> for this value although any non-zero integer will work.</param>
-        public unsafe readonly void SetOwner(UnityEngine.Object owner, int ownerKey)
-        {
-            var joint = this;
-            SetOwner(new ReadOnlySpan<PhysicsJoint>(&joint, 1), owner, ownerKey);
-        }
+        public readonly void SetOwner(UnityEngine.Object owner, int ownerKey) => SetOwner(stackalloc PhysicsJoint[1] { this }, owner, ownerKey);
 
         /// <summary>
         /// Set the owner object using the specified owner key.
@@ -376,14 +422,16 @@ namespace Unity.U2D.Physics
         /// </summary>
         /// <param name="joints">The joints to set the user data on.</param>
         /// <param name="userDatas">The user data to set, one entry per joint.</param>
-        public static void SetUserData(ReadOnlySpan<PhysicsJoint> joints, ReadOnlySpan<PhysicsUserData> userDatas) => PhysicsJoint_SetUserDataSpan(joints, userDatas);
+        /// <returns>The number of joints that were ignored (not set because the joint was invalid). A single warning is logged when any are ignored. If the spans are different lengths, nothing is set and every joint is counted as ignored.</returns>
+        public static int SetUserData(ReadOnlySpan<PhysicsJoint> joints, ReadOnlySpan<PhysicsUserData> userDatas) => PhysicsJoint_SetUserDataSpan(joints, userDatas);
 
         /// <summary>
         /// Set the same <see cref="PhysicsUserData"/> on a batch of joints that can be used for any purpose.
         /// </summary>
         /// <param name="joints">The joints to set the user data on.</param>
         /// <param name="physicsUserData">The user data to set on every joint.</param>
-        public static void SetUserData(ReadOnlySpan<PhysicsJoint> joints, PhysicsUserData physicsUserData) => PhysicsJoint_SetUserDataSpanAll(joints, physicsUserData);
+        /// <returns>The number of joints that were ignored (not set because the joint was invalid). A single warning is logged when any are ignored.</returns>
+        public static int SetUserData(ReadOnlySpan<PhysicsJoint> joints, PhysicsUserData physicsUserData) => PhysicsJoint_SetUserDataSpanAll(joints, physicsUserData);
 
         /// <summary>
         /// Controls whether this joint is automatically drawn when the world is drawn.
@@ -398,13 +446,12 @@ namespace Unity.U2D.Physics
         /// The state persists until set to false, the joint is destroyed, or <see cref="PhysicsWorld.ClearDrawSelected"/> clears the whole world.
         /// The joint must also have <see cref="worldDrawing"/> enabled to be drawn.
         /// </remarks>
-        public unsafe readonly bool selectedDrawing
+        public readonly bool selectedDrawing
         {
             get => PhysicsJoint_GetSelectedDrawing(this);
             set
             {
-                var joint = this;
-                PhysicsJoint_SetSelectedDrawing(new ReadOnlySpan<PhysicsJoint>(&joint, 1), value);
+                PhysicsJoint_SetSelectedDrawing(stackalloc PhysicsJoint[1] { this }, value);
             }
         }
 
@@ -428,7 +475,8 @@ namespace Unity.U2D.Physics
         /// </remarks>
         /// <param name="joints">The joints to set the selected drawing state on.</param>
         /// <param name="selected">The selected drawing state to set on every joint.</param>
-        public static void SetSelectedDrawing(ReadOnlySpan<PhysicsJoint> joints, bool selected) => PhysicsJoint_SetSelectedDrawing(joints, selected);
+        /// <returns>The number of joints that were ignored (not set because the joint was invalid). A single warning is logged when any are ignored.</returns>
+        public static int SetSelectedDrawing(ReadOnlySpan<PhysicsJoint> joints, bool selected) => PhysicsJoint_SetSelectedDrawing(joints, selected);
 
         /// <summary>
         /// Draw this joint's current state once, as custom drawing.
@@ -443,6 +491,38 @@ namespace Unity.U2D.Physics
         /// <summary>
         /// The type of joint.
         /// </summary>
+        /// <remarks>
+        /// Get <see cref="PhysicsJoint.jointType"/> to determine which joint type a <see cref="PhysicsJoint"/> handle represents, for example when you iterate over the joints connected to a body.
+        /// Create the corresponding definition, for example <see cref="PhysicsDistanceJointDefinition"/> for `DistanceJoint`, and pass it into <see cref="PhysicsWorld.CreateJoint(PhysicsDistanceJointDefinition)"/> to create a joint of that type.
+        /// </remarks>
+        /// <example>
+        /// <code lang="cs">
+        /// <![CDATA[
+        /// // Check the type of an existing joint before deciding how to handle it.
+        /// using UnityEngine;
+        /// using Unity.U2D.Physics;
+        ///
+        /// public class CheckJointTypeExample : MonoBehaviour
+        /// {
+        ///     void Start()
+        ///     {
+        ///         PhysicsWorld world = PhysicsWorld.defaultWorld;
+        ///         PhysicsJoint myJoint = world.CreateJoint(new PhysicsDistanceJointDefinition
+        ///         {
+        ///             bodyA = world.CreateBody(),
+        ///             bodyB = world.CreateBody(),
+        ///             distance = 2f
+        ///         });
+        ///
+        ///         if (myJoint.jointType == PhysicsJoint.JointType.DistanceJoint)
+        ///         {
+        ///             Debug.Log("This is a distance joint.");
+        ///         }
+        ///     }
+        /// }
+        /// ]]>
+        /// </code>
+        /// </example>
         public enum JointType
         {
             /// <summary>

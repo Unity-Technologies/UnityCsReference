@@ -10,6 +10,11 @@ partial class InitialStyle
     // teardown by dropping the ComputedStyle native refcount.
     static InitialStyle()
     {
+        UnloadingUtility.InitializeOnEveryCodeLoad(UnloadingSubscriber.InitialStyle, Reinitialize);
+    }
+
+    static void Reinitialize()
+    {
         UnloadingUtility.SubscribeToUnloading(UnloadingSubscriber.InitialStyle, Release);
         Initialize();
     }

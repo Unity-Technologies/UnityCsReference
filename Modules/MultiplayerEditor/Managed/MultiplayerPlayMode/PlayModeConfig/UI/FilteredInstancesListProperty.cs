@@ -176,7 +176,7 @@ class FilteredInstancesListProperty<TController, TSettings> : FilteredInstancesL
     IEnumerable<Item> GetAllInstancesOfType()
     {
         var index = 0;
-        foreach (var item in m_Scenario.Settings.GetAllControllerItems())
+        foreach (var item in m_Scenario.Settings.GetAllInstanceItems())
         {
             if (item is PlayModeControllerItem<TController, TSettings>
                 && m_Scenario.IsInstanceEnabled(item))

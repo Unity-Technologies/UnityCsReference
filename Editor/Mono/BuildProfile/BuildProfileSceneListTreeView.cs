@@ -2,7 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: BuildSettingsWindow not yet converted
 using System.Collections.Generic;
 using UnityEditor.IMGUI.Controls;
 using UnityEditor.SceneManagement;
@@ -24,8 +23,10 @@ namespace UnityEditor.Build.Profile
         readonly bool m_IsEditorBuildSettingsSceneList;
         readonly BuildProfile m_Target;
 
+#pragma warning disable UAL0015 // chains into BuildPlayerSceneTreeView's ctor, whose subscription is unsubscribed by UnsubscribeListChange before this view can outlive the current CodeLoaded scope
         public BuildProfileSceneTreeView(TreeViewState state, BuildProfile target) : base(state)
         {
+#pragma warning restore UAL0015
             showBorder = false;
             m_Target = target;
             m_IsEditorBuildSettingsSceneList = target == null;
@@ -52,8 +53,7 @@ namespace UnityEditor.Build.Profile
                 if (list.Exists(s => s.path == scene.path))
                     continue;
 
-                GUID newGUID;
-                GUID.TryParse(scene.guid, out newGUID);
+                var newGUID = scene.guid;
                 var buildSettingsScene = (newGUID == default(GUID)) ?
                     new EditorBuildSettingsScene(scene.path, true) :
                     new EditorBuildSettingsScene(newGUID, true);
@@ -91,4 +91,3 @@ namespace UnityEditor.Build.Profile
         }
     }
 }
-#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

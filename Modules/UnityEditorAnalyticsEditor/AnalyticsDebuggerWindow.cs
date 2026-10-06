@@ -18,6 +18,7 @@ namespace UnityEditor.EditorAnalyticsDebugger
     {
         const string k_RecordPrefKey = "AnalyticsDebugger.RecordEvents";
         const string k_GroupPrefKey = "AnalyticsDebugger.GroupByEvent";
+        const string k_SessionHeaderPrefKey = "AnalyticsDebugger.ShowSessionHeader";
         const string k_ResourcePath = "EditorAnalyticsDebugger/analytics-debugger";
         const double k_BannerRefreshIntervalSeconds = 1;
 
@@ -25,6 +26,7 @@ namespace UnityEditor.EditorAnalyticsDebugger
         readonly List<AnalyticsEventRecord> m_RecordBuffer = new List<AnalyticsEventRecord>();
         readonly List<AnalyticsEventEntry> m_EntryBuffer = new List<AnalyticsEventEntry>();
         readonly HashSet<int> m_ExpandedGroupIds = new HashSet<int>();
+        readonly AnalyticsRecordReader m_Reader = new AnalyticsRecordReader();
 
         bool m_RecordEvents;
         bool m_PendingEnableNativeRecording;
@@ -32,13 +34,15 @@ namespace UnityEditor.EditorAnalyticsDebugger
         AnalyticsEventEntry m_SelectedEntry;
 
         [SerializeField] bool m_HasBeenEnabledBefore;
+        [SerializeField] long m_SelectedSequence;
 
         TreeView m_TreeView;
         Label m_NoDataMessage;
         Label m_StatusLine;
         HelpBox m_AnalyticsDisabledBanner;
-        HelpBox m_DroppedBanner;
         TextField m_DetailText;
+        Foldout m_SessionHeader;
+        TextField m_SessionHeaderText;
         Button m_CopyDetail;
 
         [MenuItem("Window/Internal/Analytics Debugger", false, 3000, true)]
@@ -56,13 +60,19 @@ namespace UnityEditor.EditorAnalyticsDebugger
             ResolveElements();
             RestorePreferences(newlyOpened);
             RegisterCallbacks();
+
+            m_Reader.Reset(m_Log.newestSequence);
+            ReadPendingRecords();
             RefreshTree();
+            RestoreSelection();
         }
 
         public void OnDisable()
         {
             EditorPrefs.SetBool(k_RecordPrefKey, m_RecordEvents);
             EditorPrefs.SetBool(k_GroupPrefKey, m_Log.groupByEvent);
+            if (m_SessionHeader != null)
+                EditorPrefs.SetBool(k_SessionHeaderPrefKey, m_SessionHeader.value);
         }
 
         void LoadAssets()
@@ -88,8 +98,9 @@ namespace UnityEditor.EditorAnalyticsDebugger
             m_NoDataMessage = rootVisualElement.Q<Label>("no-data-message");
             m_StatusLine = rootVisualElement.Q<Label>("status-line");
             m_AnalyticsDisabledBanner = rootVisualElement.Q<HelpBox>("analytics-disabled-banner");
-            m_DroppedBanner = rootVisualElement.Q<HelpBox>("dropped-banner");
             m_DetailText = rootVisualElement.Q<TextField>("prettified-event");
+            m_SessionHeader = rootVisualElement.Q<Foldout>("session-header");
+            m_SessionHeaderText = rootVisualElement.Q<TextField>("session-header-json");
             m_CopyDetail = rootVisualElement.Q<Button>("copy-pretty");
         }
 
@@ -102,6 +113,7 @@ namespace UnityEditor.EditorAnalyticsDebugger
 
             rootVisualElement.Q<Toggle>("record-toggle")?.SetValueWithoutNotify(m_RecordEvents);
             rootVisualElement.Q<Toggle>("group-toggle")?.SetValueWithoutNotify(m_Log.groupByEvent);
+            m_SessionHeader?.SetValueWithoutNotify(EditorPrefs.GetBool(k_SessionHeaderPrefKey, true));
         }
 
         void RegisterCallbacks()
@@ -168,27 +180,38 @@ namespace UnityEditor.EditorAnalyticsDebugger
             if (!m_RecordEvents)
                 return;
 
+            if (ReadPendingRecords())
+                RefreshTree();
+        }
+
+        bool ReadPendingRecords()
+        {
             m_RecordBuffer.Clear();
-            DebuggerEventListHandler.DrainRecords(m_RecordBuffer, out int dropped);
-            m_Log.NoteDropped(dropped);
+            DebuggerEventListHandler.ReadRecords(m_RecordBuffer, m_Reader, out int discarded);
+            m_Log.NoteDiscarded(discarded);
 
             if (m_RecordBuffer.Count == 0)
-            {
-                if (dropped > 0)
-                    RefreshBanners();
-                return;
-            }
+                return discarded > 0;
 
             m_EntryBuffer.Clear();
             for (int i = 0; i < m_RecordBuffer.Count; i++)
             {
                 AnalyticsEventRecord record = m_RecordBuffer[i];
-                m_EntryBuffer.Add(new AnalyticsEventEntry(record.eventName, record.payloadJson, record.fate,
-                    new DateTime(record.timestampTicks, DateTimeKind.Utc)));
+                m_EntryBuffer.Add(new AnalyticsEventEntry(record.sequence, record.eventName, record.payloadJson,
+                    record.fate, new DateTime(record.timestampTicks, DateTimeKind.Utc), record.sessionHeaderJson));
             }
 
-            if (m_Log.Add(m_EntryBuffer))
-                RefreshTree();
+            return m_Log.Add(m_EntryBuffer) || discarded > 0;
+        }
+
+        void RestoreSelection()
+        {
+            if (m_SelectedSequence == 0 || m_TreeView == null)
+                return;
+
+            int id = m_Log.FindRowId(m_SelectedSequence);
+            if (id >= 0)
+                m_TreeView.SetSelectionById(id);
         }
 
         VisualElement MakeRow()
@@ -327,10 +350,6 @@ namespace UnityEditor.EditorAnalyticsDebugger
             SetBanner(m_AnalyticsDisabledBanner, !EditorAnalytics.enabled,
                 "Editor analytics are disabled, so no events are being sent. Events recorded while disabled are " +
                 "still listed here and marked as not sent, so you can see what would have been collected.");
-
-            SetBanner(m_DroppedBanner, m_Log.droppedEventCount > 0,
-                $"{m_Log.droppedEventCount} events were discarded before the debugger could read them because they " +
-                "arrived faster than the window drained them.");
         }
 
         static void SetBanner(HelpBox banner, bool visible, string message)
@@ -365,10 +384,18 @@ namespace UnityEditor.EditorAnalyticsDebugger
             }
 
             m_SelectedEntry = first;
+            m_SelectedSequence = first.sequence;
             if (m_DetailText != null)
             {
                 m_DetailText.style.display = DisplayStyle.Flex;
                 m_DetailText.value = Prettify(first.payloadJson);
+            }
+            if (m_SessionHeader != null)
+            {
+                bool hasHeader = !string.IsNullOrEmpty(first.sessionHeaderJson);
+                m_SessionHeader.style.display = hasHeader ? DisplayStyle.Flex : DisplayStyle.None;
+                if (m_SessionHeaderText != null)
+                    m_SessionHeaderText.value = Prettify(first.sessionHeaderJson);
             }
             if (m_CopyDetail != null)
                 m_CopyDetail.style.display = DisplayStyle.Flex;
@@ -377,12 +404,19 @@ namespace UnityEditor.EditorAnalyticsDebugger
         void ClearSelection()
         {
             m_SelectedEntry = null;
+            m_SelectedSequence = 0;
             m_TreeView?.ClearSelection();
 
             if (m_DetailText != null)
             {
                 m_DetailText.value = "";
                 m_DetailText.style.display = DisplayStyle.None;
+            }
+            if (m_SessionHeader != null)
+            {
+                m_SessionHeader.style.display = DisplayStyle.None;
+                if (m_SessionHeaderText != null)
+                    m_SessionHeaderText.value = "";
             }
             if (m_CopyDetail != null)
                 m_CopyDetail.style.display = DisplayStyle.None;
@@ -408,6 +442,7 @@ namespace UnityEditor.EditorAnalyticsDebugger
         {
             m_Log.Clear();
             DebuggerEventListHandler.ClearRecords();
+            m_Reader.Reset(0);
             ClearSelection();
             RefreshTree();
         }

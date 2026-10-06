@@ -105,10 +105,6 @@ namespace Unity.ProjectAuditor.Editor
         [NonSerialized]
         internal Report ExistingReport;
 
-        // Passed along by the UI to ensure the session info is updated when we analyze extra areas after the initial analysis
-        [NonSerialized]
-        internal ProjectAreaFlags ExistingReportProjectAreas;
-
         [NonSerialized]
         internal Predicate<string> AssetPathFilter;
 
@@ -129,6 +125,10 @@ namespace Unity.ProjectAuditor.Editor
 
                 Rules = new SeverityRules(ProjectAuditorSettings.instance.Rules);
                 DiagnosticParams = new DiagnosticParams(ProjectAuditorSettings.instance.DiagnosticParams);
+            }
+            else
+            {
+                DiagnosticParams = new DiagnosticParams();
             }
 
             Platform = BuildTarget.NoTarget;

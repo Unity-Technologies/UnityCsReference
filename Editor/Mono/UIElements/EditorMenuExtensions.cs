@@ -4,6 +4,7 @@
 
 using System;
 using UnityEngine;
+using UnityEngine.Bindings;
 using UnityEngine.UIElements;
 
 namespace UnityEditor.UIElements
@@ -111,6 +112,7 @@ namespace UnityEditor.UIElements
         }
     }
 
+    [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
     internal class GenericOSMenu : AbstractGenericMenu
     {
         GenericMenu m_GenericMenu;

@@ -2,7 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: uGUIFramework not yet converted
 using System;
 using System.Collections.Generic;
 using System.Globalization;
@@ -84,11 +83,11 @@ namespace UnityEditor
         {
             public GUIStyle measuringLabelStyle = "PreOverlayLabel";
 
-            public GUIContent anchorsContent = EditorGUIUtility.TrTextContent("Anchors");
-            public GUIContent anchorMinContent = EditorGUIUtility.TrTextContent("Min", "The normalized position in the parent rectangle that the lower left corner is anchored to.");
-            public GUIContent anchorMaxContent = EditorGUIUtility.TrTextContent("Max", "The normalized position in the parent rectangle that the upper right corner is anchored to.");
-            public GUIContent pivotContent = EditorGUIUtility.TrTextContent("Pivot", "The pivot point specified in normalized values between 0 and 1. The pivot point is the origin of this rectangle. Rotation and scaling are around this point.");
-            public GUIContent transformScaleContent = EditorGUIUtility.TrTextContent("Scale", "The local scaling of this Game Object relative to the parent. This scales everything including image borders and text.");
+            public GUIContent anchorsContent = L10n.TextContent("Anchors", null, null, null);
+            public GUIContent anchorMinContent = L10n.TextContent("Min", "The normalized position in the parent rectangle that the lower left corner is anchored to.", null, null);
+            public GUIContent anchorMaxContent = L10n.TextContent("Max", "The normalized position in the parent rectangle that the upper right corner is anchored to.", null, null);
+            public GUIContent pivotContent = L10n.TextContent("Pivot", "The pivot point specified in normalized values between 0 and 1. The pivot point is the origin of this rectangle. Rotation and scaling are around this point.", null, null);
+            public GUIContent transformScaleContent = L10n.TextContent("Scale", "The local scaling of this Game Object relative to the parent. This scales everything including image borders and text.", null, null);
             public GUIContent rawEditContent;
             public GUIContent blueprintContent;
 
@@ -166,7 +165,7 @@ namespace UnityEditor
             m_LocalScale = serializedObject.FindProperty("m_LocalScale");
             if (m_RotationGUI == null)
                 m_RotationGUI = new TransformRotationGUI();
-            m_RotationGUI.OnEnable(serializedObject.FindProperty("m_LocalRotation"), EditorGUIUtility.TrTextContent("Rotation"));
+            m_RotationGUI.OnEnable(serializedObject.FindProperty("m_LocalRotation"), L10n.TextContent("Rotation", null, null, null));
 
             m_ConstrainProportionsScale = new ConstrainProportionsTransformScale(m_LocalScale.vector3Value);
 
@@ -478,7 +477,7 @@ namespace UnityEditor
                     rectTransform => rectTransform.anchoredPosition.x,
                     (rectTransform, val) => rectTransform.anchoredPosition = new Vector2(val, rectTransform.anchoredPosition.y),
                     DrivenTransformProperties.AnchoredPositionX,
-                    EditorGUIUtility.TrTextContent("Pos X"));
+                    L10n.TextContent("Pos X", null, null, null));
                 SetFadingBasedOnControlID(ref m_ChangingPosX, EditorGUIUtility.s_LastControlID);
                 EditorGUI.EndProperty();
             }
@@ -491,7 +490,7 @@ namespace UnityEditor
                     rectTransform => rectTransform.offsetMin.x,
                     (rectTransform, val) => rectTransform.offsetMin = new Vector2(val, rectTransform.offsetMin.y),
                     DrivenTransformProperties.None,
-                    EditorGUIUtility.TrTextContent("Left"));
+                    L10n.TextContent("Left", null, null, null));
                 SetFadingBasedOnControlID(ref m_ChangingLeft, EditorGUIUtility.s_LastControlID);
                 EditorGUI.EndProperty();
                 EditorGUI.EndProperty();
@@ -505,7 +504,7 @@ namespace UnityEditor
                     rectTransform => rectTransform.anchoredPosition.y,
                     (rectTransform, val) => rectTransform.anchoredPosition = new Vector2(rectTransform.anchoredPosition.x, val),
                     DrivenTransformProperties.AnchoredPositionY,
-                    EditorGUIUtility.TrTextContent("Pos Y"));
+                    L10n.TextContent("Pos Y", null, null, null));
                 SetFadingBasedOnControlID(ref m_ChangingPosY, EditorGUIUtility.s_LastControlID);
                 EditorGUI.EndProperty();
             }
@@ -518,7 +517,7 @@ namespace UnityEditor
                     rectTransform => - rectTransform.offsetMax.y,
                     (rectTransform, val) => rectTransform.offsetMax = new Vector2(rectTransform.offsetMax.x, -val),
                     DrivenTransformProperties.None,
-                    EditorGUIUtility.TrTextContent("Top"));
+                    L10n.TextContent("Top", null, null, null));
                 SetFadingBasedOnControlID(ref m_ChangingTop, EditorGUIUtility.s_LastControlID);
                 EditorGUI.EndProperty();
                 EditorGUI.EndProperty();
@@ -530,7 +529,7 @@ namespace UnityEditor
                 rectTransform => rectTransform.transform.localPosition.z,
                 (rectTransform, val) => rectTransform.transform.localPosition = new Vector3(rectTransform.transform.localPosition.x, rectTransform.transform.localPosition.y, val),
                 DrivenTransformProperties.AnchoredPositionZ,
-                EditorGUIUtility.TrTextContent("Pos Z"));
+                L10n.TextContent("Pos Z", null, null, null));
             EditorGUI.EndProperty();
 
             rect.y += EditorGUIUtility.singleLineHeight * 2;
@@ -543,7 +542,7 @@ namespace UnityEditor
                     rectTransform => rectTransform.sizeDelta.x,
                     (rectTransform, val) => rectTransform.sizeDelta = new Vector2(val, rectTransform.sizeDelta.y),
                     DrivenTransformProperties.SizeDeltaX,
-                    anyStretchX ? EditorGUIUtility.TrTextContent("W Delta") : EditorGUIUtility.TrTextContent("Width"));
+                    anyStretchX ? L10n.TextContent("W Delta", null, null, null) : L10n.TextContent("Width", null, null, null));
                 SetFadingBasedOnControlID(ref m_ChangingWidth, EditorGUIUtility.s_LastControlID);
                 EditorGUI.EndProperty();
             }
@@ -556,7 +555,7 @@ namespace UnityEditor
                     rectTransform => - rectTransform.offsetMax.x,
                     (rectTransform, val) => rectTransform.offsetMax = new Vector2(-val, rectTransform.offsetMax.y),
                     DrivenTransformProperties.None,
-                    EditorGUIUtility.TrTextContent("Right"));
+                    L10n.TextContent("Right", null, null, null));
                 SetFadingBasedOnControlID(ref m_ChangingRight, EditorGUIUtility.s_LastControlID);
                 EditorGUI.EndProperty();
                 EditorGUI.EndProperty();
@@ -570,7 +569,7 @@ namespace UnityEditor
                     rectTransform => rectTransform.sizeDelta.y,
                     (rectTransform, val) => rectTransform.sizeDelta = new Vector2(rectTransform.sizeDelta.x, val),
                     DrivenTransformProperties.SizeDeltaY,
-                    anyStretchY ? EditorGUIUtility.TrTextContent("H Delta") : EditorGUIUtility.TrTextContent("Height"));
+                    anyStretchY ? L10n.TextContent("H Delta", null, null, null) : L10n.TextContent("Height", null, null, null));
                 SetFadingBasedOnControlID(ref m_ChangingHeight, EditorGUIUtility.s_LastControlID);
                 EditorGUI.EndProperty();
             }
@@ -583,7 +582,7 @@ namespace UnityEditor
                     rectTransform => rectTransform.offsetMin.y,
                     (rectTransform, val) => rectTransform.offsetMin = new Vector2(rectTransform.offsetMin.x, val),
                     DrivenTransformProperties.None,
-                    EditorGUIUtility.TrTextContent("Bottom"));
+                    L10n.TextContent("Bottom", null, null, null));
                 SetFadingBasedOnControlID(ref m_ChangingBottom, EditorGUIUtility.s_LastControlID);
                 EditorGUI.EndProperty();
                 EditorGUI.EndProperty();
@@ -1571,4 +1570,3 @@ namespace UnityEditor
         }
     }
 }
-#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

@@ -2,7 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: IMGUIFramework not yet converted
 using System;
 using Unity.Scripting.LifecycleManagement;
 using UnityEngine.Scripting;
@@ -4763,6 +4762,9 @@ namespace UnityEngine
         }
 
         [AutoStaticsCleanupOnCodeReload]
+        // Per-GUI-pass stack: ResetGlobalState clears it at the start of every pass and BeginScrollView
+        // pushes the state the matching EndScrollView pops, so nothing survives a pass anyway.
+        [IgnoreForUAL0015("Per-GUI-pass scroll-view stack, cleared by ResetGlobalState at the start of every pass")]
         internal static UnityEngineInternal.GenericStack scrollViewStates { get; set; } = new UnityEngineInternal.GenericStack();
 
         ///<summary>Begin a scrolling view inside your GUI.</summary>
@@ -6715,4 +6717,3 @@ namespace UnityEngine
         }
     }
 }
-#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

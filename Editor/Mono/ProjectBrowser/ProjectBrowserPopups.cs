@@ -14,8 +14,6 @@ namespace UnityEditor
     internal partial class PopupList : PopupWindowContent
     {
         public delegate void OnSelectCallback(ListElement element);
-        [AutoStaticsCleanupOnCodeReload]
-        static EditorGUI.RecycledTextEditor s_RecycledEditor = new EditorGUI.RecycledTextEditor();
         static readonly string s_TextFieldName = "ProjectBrowserPopupsTextField";
         static readonly int s_TextFieldHash = s_TextFieldName.GetHashCode();
         public enum Gravity
@@ -410,7 +408,7 @@ namespace UnityEditor
                 if (GUIUtility.keyboardControl == 0)
                     GUIUtility.keyboardControl = id;
 
-                textFieldText =  EditorGUI.DoTextField(s_RecycledEditor, id, pos, textBeforeEdit, s_Styles.customTextField, null, out dummy, false, false, false);
+                textFieldText =  EditorGUI.DoTextField(EditorGUI.s_RecycledEditor, id, pos, textBeforeEdit, s_Styles.customTextField, null, out dummy, false, false, false);
                 Rect buttonRect = pos;
                 buttonRect.x += pos.width;
                 buttonRect.width = 14;
@@ -418,9 +416,9 @@ namespace UnityEditor
                 if ((GUI.Button(buttonRect, GUIContent.none, textFieldText != "" ? s_Styles.customTextFieldCancelButton : s_Styles.customTextFieldCancelButtonEmpty) && textFieldText != "")
                     || clearText)
                 {
-                    textFieldText = EditorGUI.s_OriginalText = s_RecycledEditor.text = "";
-                    s_RecycledEditor.cursorIndex = 0;
-                    s_RecycledEditor.selectIndex = 0;
+                    textFieldText = EditorGUI.s_OriginalText = EditorGUI.s_RecycledEditor.text = "";
+                    EditorGUI.s_RecycledEditor.cursorIndex = 0;
+                    EditorGUI.s_RecycledEditor.selectIndex = 0;
                     enableAutoCompletion = false;
                 }
             }
@@ -428,7 +426,7 @@ namespace UnityEditor
             // Handle autocompletion
             if (textBeforeEdit != textFieldText)
             {
-                m_EnteredText = (0 <= s_RecycledEditor.cursorIndex && s_RecycledEditor.cursorIndex < textFieldText.Length) ? textFieldText.Substring(0, s_RecycledEditor.cursorIndex) : textFieldText;
+                m_EnteredText = (0 <= EditorGUI.s_RecycledEditor.cursorIndex && EditorGUI.s_RecycledEditor.cursorIndex < textFieldText.Length) ? textFieldText.Substring(0, EditorGUI.s_RecycledEditor.cursorIndex) : textFieldText;
 
                 if (enableAutoCompletion)
                     UpdateCompletion();
@@ -507,10 +505,10 @@ namespace UnityEditor
         {
             if (m_EnteredTextCompletion != "")
             {
-                s_RecycledEditor.text = m_EnteredTextCompletion;
+                EditorGUI.s_RecycledEditor.text = m_EnteredTextCompletion;
                 EditorGUI.s_OriginalText = m_EnteredTextCompletion;
-                s_RecycledEditor.cursorIndex = m_EnteredText.Length;
-                s_RecycledEditor.selectIndex = m_EnteredTextCompletion.Length; //the selection goes from s_RecycledEditor.cursorIndex (already set by DoTextField) to s_RecycledEditor.selectIndex
+                EditorGUI.s_RecycledEditor.cursorIndex = m_EnteredText.Length;
+                EditorGUI.s_RecycledEditor.selectIndex = m_EnteredTextCompletion.Length; //the selection goes from EditorGUI.s_RecycledEditor.cursorIndex (already set by DoTextField) to EditorGUI.s_RecycledEditor.selectIndex
             }
         }
 

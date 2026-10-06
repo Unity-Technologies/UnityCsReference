@@ -117,6 +117,9 @@ namespace UnityEditor.PackageManager.UI.Internal
             RegisterCallback<DetachFromPanelEvent>(OnDetachFromPanel);
 
             focusable = true;
+            tabIndex = -1;
+            horizontalScroller.slider.tabIndex = -1;
+            verticalScroller.slider.tabIndex = -1;
         }
 
         private void OnAttachToPanel(AttachToPanelEvent evt)
@@ -125,6 +128,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             RegisterCallback<KeyDownEvent>(OnKeyDownShortcut);
             // Trickle down so the list handles arrow keys before the base ScrollView's nav-scroll (UUM-147017).
             RegisterCallback<NavigationMoveEvent>(OnNavigationMoveShortcut, TrickleDown.TrickleDown);
+            evt.destinationPanel.visualTree.RegisterCallback<FocusInEvent>(OnPanelFocusIn);
 
             m_PageManager.onFiltersChange += OnFiltersChange;
             m_PageManager.onTrimmedSearchTextChanged += OnTrimmedSearchTextChanged;
@@ -135,9 +139,16 @@ namespace UnityEditor.PackageManager.UI.Internal
             UnregisterCallback<MouseDownEvent>(OnMouseDown);
             UnregisterCallback<KeyDownEvent>(OnKeyDownShortcut);
             UnregisterCallback<NavigationMoveEvent>(OnNavigationMoveShortcut, TrickleDown.TrickleDown);
+            evt.originPanel.visualTree.UnregisterCallback<FocusInEvent>(OnPanelFocusIn);
 
             m_PageManager.onFiltersChange -= OnFiltersChange;
             m_PageManager.onTrimmedSearchTextChanged -= OnTrimmedSearchTextChanged;
+        }
+
+        private void OnPanelFocusIn(FocusInEvent evt)
+        {
+            var itemHasFocus = evt.target is IListItem item && Contains(item.element);
+            EnableInClassList("list-focused", itemHasFocus);
         }
 
         private void OnFiltersChange(PageFiltersChangeArgs args)
@@ -355,7 +366,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         public void OnKeyDownShortcut(KeyDownEvent evt)
         {
-            if (!UIUtils.IsElementVisible(this))
+            if (!UIUtils.IsElementVisible(this) || evt.target is not IListItem)
                 return;
 
             switch (evt.keyCode)
@@ -363,6 +374,22 @@ namespace UnityEditor.PackageManager.UI.Internal
                 case KeyCode.A when evt.actionKey:
                     SelectAllVisible();
                     evt.StopPropagation();
+                    break;
+                case KeyCode.Home:
+                    if (SelectFirstVisible(reverse: false, evt.shiftKey))
+                        evt.StopPropagation();
+                    break;
+                case KeyCode.End:
+                    if (SelectFirstVisible(reverse: true, evt.shiftKey))
+                        evt.StopPropagation();
+                    break;
+                case KeyCode.PageUp:
+                    if (SelectByPage(reverse: true, evt.shiftKey))
+                        evt.StopPropagation();
+                    break;
+                case KeyCode.PageDown:
+                    if (SelectByPage(reverse: false, evt.shiftKey))
+                        evt.StopPropagation();
                     break;
                 // On macOS moving up and down will trigger the sound of an incorrect key being pressed
                 // This should be fixed in UUM-26264 by the UIToolkit team
@@ -373,10 +400,73 @@ namespace UnityEditor.PackageManager.UI.Internal
             }
         }
 
+        private bool SelectFirstVisible(bool reverse, bool shiftKey)
+        {
+            var visualStates = m_PageManager.activePage.visualStates;
+            if (visualStates.Count == 0)
+                return false;
+            var target = visualStates[reverse ? visualStates.Count - 1 : 0];
+            while (target != null && (!target.visible || !UIUtils.IsElementVisible(GetListItem(target.itemUniqueId)?.element)))
+                target = visualStates.GetNext(target.itemUniqueId, reverse);
+            if (target == null)
+                return false;
+            HandleSelectionAndScroll(target.itemUniqueId, shiftKey);
+            return true;
+        }
+
+        private bool SelectByPage(bool reverse, bool shiftKey)
+        {
+            var page = m_PageManager.activePage;
+            var visualStates = page.visualStates;
+            var currentId = page.GetSelection().last;
+            if (string.IsNullOrEmpty(currentId) || !visualStates.Contains(currentId))
+                return SelectFirstVisible(reverse, shiftKey);
+
+            var pageSize = PageStepCount();
+            var targetId = currentId;
+            for (var i = 0; i < pageSize; i++)
+            {
+                var next = visualStates.GetNext(targetId, reverse);
+                while (next != null && !next.visible)
+                    next = visualStates.GetNext(next.itemUniqueId, reverse);
+                if (next == null)
+                    break;
+                targetId = next.itemUniqueId;
+            }
+
+            if (targetId == currentId)
+                return false;
+
+            HandleSelectionAndScroll(targetId, shiftKey);
+            return true;
+        }
+
+        private void HandleSelectionAndScroll(string targetItemUniqueId, bool shiftKey)
+        {
+            var page = m_PageManager.activePage;
+            if (shiftKey)
+                SelectAllBetween(page.GetSelection().first, targetItemUniqueId);
+            else
+                page.SetNewSelection(targetItemUniqueId, false);
+            var target = GetListItem(targetItemUniqueId)?.element;
+            if (target != null)
+            {
+                target.Focus();
+                UIUtils.ScrollToWhenReady(target);
+            }
+        }
+
+        // The internal modifier is used (instead of private) to give our test project access to these properties/methods
+        internal int PageStepCount()
+        {
+            // We do a `-1` to an estimated page size because we overlap by approximately one row when paging so the previous edge row stays as an anchor.
+            return Math.Max(1, Mathf.FloorToInt(worldBound.height / PackageItem.k_MainItemHeight) - 1);
+        }
+
         public void OnNavigationMoveShortcut(NavigationMoveEvent evt)
         {
-            // Only when the list itself is focused; let focusable children (e.g. group carets) handle their own navigation.
-            if (evt.target != (object)this)
+            // Only when a list item is the focused target; other focusable descendants (e.g. group carets) handle their own navigation.
+            if (evt.target is not IListItem)
                 return;
 
             if (!UIUtils.IsElementVisible(this))
@@ -408,6 +498,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             if (nextItem != null)
             {
                 activePage.SetNewSelection(nextItem.itemUniqueId, false);
+                GetListItem(nextItem.itemUniqueId)?.element.Focus();
                 return true;
             }
             return false;

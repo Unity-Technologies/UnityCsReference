@@ -28,6 +28,10 @@ namespace Shaders
         RayTracingAccelerationStructure,
         // Framebuffer input
         InputTarget,
+        // Specialization constant
+        SpecializationConstant,
+        // Unknown
+        Unknown
     }
 
     [Flags]
@@ -37,6 +41,8 @@ namespace Shaders
 
         Readable = 1 << 0,
         Writable = 1 << 1,
+
+        CounterBuffer = 1 << 2,
     }
 } // namespace Shaders
 } // namespace UnityEngine

@@ -58,40 +58,25 @@ class UxmlAttributesEditingContext : IDisposable
     // For when we need to view read only attributes from a visual element, such as one created by script.
     internal class TempSerializedData : VisualTreeAsset
     {
-        public static TempSerializedData Create(VisualElement element, bool isTemplateInstance)
+        public static TempSerializedData Create(VisualElement element)
         {
             var instance = ScriptableObject.CreateInstance<TempSerializedData>();
             instance.hideFlags = HideFlags.DontSaveInEditor | HideFlags.DontSaveInBuild;
 
             var type = element.GetType();
             var elementAsset = new VisualElementAsset(type.FullName);
-
-            instance.visualTree.Add(elementAsset);
-            instance.ResetData(element, isTemplateInstance);
-            element.SetProperty(k_TempSerializedDataPropertyName, instance);
-            return instance;
-        }
-
-        public void ResetData(VisualElement element, bool isTemplateInstance)
-        {
             var desc = UxmlSerializedDataRegistry.GetDescription(element.fullTypeName);
 
+            instance.visualTree.Add(elementAsset);
             elementAsset.serializedData = desc.CreateDefaultSerializedData();
 
-            // In staging mode we want to show only the UXML data, Pulling from the live element will copy values
-            // that may be different in the serialized UXML.
-            // We currently make an exception for templates: rebuilding them solely from serialized data would
-            // require walking and reassembling the entire asset, which is complex and error‑prone.
-            // This is a temporary workaround limited to templates and may be removed once we have a better approach.
-            if (isTemplateInstance)
-                desc.SyncSerializedData(element, elementAsset.serializedData);
+            return instance;
         }
 
         public VisualElementAsset elementAsset => visualTree[0] as VisualElementAsset;
         public UxmlSerializedData serializedData => elementAsset.serializedData;
     }
 
-    internal static readonly string k_TempSerializedDataPropertyName = "__TempSerializedData";
     internal static readonly string k_UxmlSerializedDataFieldName = "m_SerializedData";
 
     bool m_UndoEnabledExplicit = true;
@@ -227,7 +212,8 @@ class UxmlAttributesEditingContext : IDisposable
     /// </summary>
     public bool isReadOnly { get; private set; }
 
-    bool m_StageShowsAncestorOverrides;
+    bool m_ShowsAncestorOverrides;
+    bool m_StageLocksAncestorDrivenFields;
 
     /// <summary>
     /// True where fields never surface ancestor Attribute Overrides, such as the binding editor.
@@ -237,11 +223,14 @@ class UxmlAttributesEditingContext : IDisposable
     /// <summary>
     /// Whether fields in this context surface Attribute Overrides declared by ancestor UXML instances.
     /// </summary>
-    /// <remarks>
-    /// Snapshot taken when the context is set, so the answer stays consistent with the document chosen
-    /// for editing when a stage opens or closes afterwards.
-    /// </remarks>
-    internal bool showsAncestorOverrides => m_StageShowsAncestorOverrides && !suppressAncestorOverrides;
+    internal bool showsAncestorOverrides => m_ShowsAncestorOverrides && !suppressAncestorOverrides;
+
+    /// <summary>
+    /// Whether an ancestor-driven field is locked as well as marked. Only the Main Stage locks, where the
+    /// edit would write an override the outer instance already shadows; an editing stage edits the
+    /// document's own value, which does take effect.
+    /// </summary>
+    internal bool locksAncestorDrivenFields => showsAncestorOverrides && m_StageLocksAncestorDrivenFields;
 
     internal TempSerializedData tempSerializedData { get; set; }
 
@@ -254,6 +243,11 @@ class UxmlAttributesEditingContext : IDisposable
     /// Event sent when the context changes.
     /// </summary>
     public event EventHandler<ContextChangedEventArgs> contextChanged;
+
+    /// <summary>
+    /// Event sent when the edited document changed shape and the views have to bind again.
+    /// </summary>
+    public event Action documentReshaped;
 
     /// <summary>
     /// Creates a UxmlAttributesAuthoringContext with the specified authoring controller.
@@ -286,6 +280,62 @@ class UxmlAttributesEditingContext : IDisposable
     public void Set(VisualTreeAsset editedVisualTreeAsset, VisualElement element, bool isReadOnly = false)
     {
         SetInternal(editedVisualTreeAsset, element, isReadOnly);
+    }
+
+    /// <summary>
+    /// Re-resolves the serialized path and object after the edited document changed shape, and asks the views
+    /// to bind again.
+    /// </summary>
+    /// <remarks>
+    /// <see cref="serializedBasePath"/> addresses the element by its child indices, so any change to the tree
+    /// above it moves the data the views are bound to. Call this while the serialized object still holds the
+    /// shape the current bindings recorded, before anything re-reads it.
+    /// </remarks>
+    internal void RebuildForDocumentChange()
+    {
+        if (element == null || rootSerializedObject == null)
+            return;
+
+        if (!IsPartOfADocument(elementAsset))
+        {
+            Clear();
+            return;
+        }
+
+        if (!HasElementMoved())
+            return;
+
+        // Tearing the driven values down restores the serialized data from its snapshot, so this only runs
+        // for a command that actually moved this element.
+        editingController.liveAttributePropertyController.RemoveLiveProperties();
+
+        Init(editedVisualTreeAsset);
+
+        editingController.liveAttributePropertyController.SyncLiveProperties(!isReadOnly);
+        documentReshaped?.Invoke();
+    }
+
+    /// <summary>
+    /// Whether the element now sits at a different serialized path than the one the views are bound to.
+    /// </summary>
+    internal bool HasElementMoved()
+    {
+        if (element == null || rootSerializedObject == null || !IsPartOfADocument(elementAsset))
+            return false;
+
+        return GetSerializedPath(elementAsset) != serializedBasePath;
+    }
+
+    // GetSerializedPath throws for an asset the document no longer holds, which a removal leaves behind.
+    static bool IsPartOfADocument(UxmlAsset asset)
+    {
+        for (var current = asset; current != null; current = current.parentAsset)
+        {
+            if (current.isRoot)
+                return true;
+        }
+
+        return false;
     }
 
     /// <summary>
@@ -327,7 +377,8 @@ class UxmlAttributesEditingContext : IDisposable
     {
         this.editedVisualTreeAsset = editedVisualTreeAsset;
         isInTemplateInstance = false;
-        m_StageShowsAncestorOverrides = StageUtility.GetCurrentStage() is not VisualElementEditingStage;
+        m_ShowsAncestorOverrides = true;
+        m_StageLocksAncestorDrivenFields = StageUtility.GetCurrentStage() is not VisualElementEditingStage;
 
         if (element != null)
         {
@@ -344,16 +395,16 @@ class UxmlAttributesEditingContext : IDisposable
 
             if (elementAsset == null || isInTemplateInstance)
             {
-                tempSerializedData = element.GetProperty(k_TempSerializedDataPropertyName) as TempSerializedData;
+                tempSerializedData = TempSerializedData.Create(element);
 
-                if (tempSerializedData == null)
-                {
-                    tempSerializedData = TempSerializedData.Create(element, isInTemplateInstance);
-                }
-                else
-                {
-                    tempSerializedData.ResetData(element, isInTemplateInstance);
-                }
+                // In staging mode we want to show only the UXML data, Pulling from the live element will copy values
+                // that may be different in the serialized UXML.
+                // We currently make an exception for templates: rebuilding them solely from serialized data would
+                // require walking and reassembling the entire asset, which is complex and error‑prone.
+                // This is a temporary workaround limited to templates and may be removed once we have a better approach.
+                if (isInTemplateInstance)
+                    uxmlSerializedDataDescription.SyncSerializedData(element, tempSerializedData.serializedData);
+
                 visualTreeAsset = tempSerializedData;
                 this.elementAsset = tempSerializedData.elementAsset;
                 rootSerializedObject = new SerializedObject(tempSerializedData);
@@ -405,6 +456,8 @@ class UxmlAttributesEditingContext : IDisposable
         element = null;
         elementAsset = null;
         uxmlSerializedDataDescription = null;
+        if (tempSerializedData != null)
+            UnityEngine.Object.DestroyImmediate(tempSerializedData);
         tempSerializedData = null;
         rootSerializedObject = null;
         serializedBasePath = string.Empty;

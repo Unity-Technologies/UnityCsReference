@@ -10,5 +10,6 @@ namespace UnityEditor.Build.Content
     [NativeClass("SinglePassShaderImporter", PersistentTypeId = 0x1805dbbf)]
     internal sealed partial class SinglePassShaderImporter : AssetImporter
     {
+        internal SinglePassShaderImporter(global::UnityEngine.EntityId id) : base(id) {}
     }
 }

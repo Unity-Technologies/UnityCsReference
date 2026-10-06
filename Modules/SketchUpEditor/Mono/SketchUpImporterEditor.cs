@@ -4,6 +4,7 @@
 
 using UnityEngine;
 using UnityEditor;
+using UnityEditor.Experimental.AssetImporters.ImportBlocks;
 
 namespace UnityEditor
 {
@@ -15,8 +16,16 @@ namespace UnityEditor
         {
             if (tabs == null)
             {
-                tabs = new BaseAssetImporterTabUI[] { new SketchUpImporterModelEditor(this), new ModelImporterMaterialEditor(this) };
-                m_TabNames = new string[] {"Sketch Up", "Materials"};
+                if (ImportBlocksToggle.IsEnabled)
+                {
+                    tabs = new BaseAssetImporterTabUI[] { new SketchUpImporterModelEditor(this), new ModelImporterMaterialEditor(this), new BlocksTabUI(this) };
+                    m_TabNames = new string[] {"Sketch Up", "Materials", "Blocks"};
+                }
+                else
+                {
+                    tabs = new BaseAssetImporterTabUI[] { new SketchUpImporterModelEditor(this), new ModelImporterMaterialEditor(this) };
+                    m_TabNames = new string[] {"Sketch Up", "Materials"};
+                }
             }
             base.OnEnable();
         }

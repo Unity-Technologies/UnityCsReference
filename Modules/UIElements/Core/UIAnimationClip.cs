@@ -21,16 +21,17 @@ namespace UnityEngine.UIElements
     [NativeClass("UIAnimationClip", PersistentTypeId = 0x175EDA4B)]
     public sealed class UIAnimationClip : Object
     {
+        internal UIAnimationClip(global::UnityEngine.EntityId id) : base(id) {}
         /// <summary>
         /// Creates a new empty UIAnimationClip.
         /// </summary>
         public UIAnimationClip()
         {
-            Internal_Create(this);
+            SetEntityIdFromConstructor(Internal_Create());
         }
 
         [FreeFunction("UIAnimationClipBindings::Internal_Create")]
-        extern private static void Internal_Create([Writable] UIAnimationClip self);
+        extern private static EntityId Internal_Create();
 
         [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule", "UnityEditor.UIBuilderModule")]
         internal extern AnimationClip animationClip

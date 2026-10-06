@@ -43,6 +43,8 @@ namespace UnityEngine
     [StaticAccessor("GetLODGroupManager()", StaticAccessorType.Dot)]
     public class LODGroup : Component
     {
+        internal LODGroup(global::UnityEngine.EntityId id) : base(id) {}
+        public LODGroup() {}
         // The local reference point against which the LOD distance is calculated.
         extern public Vector3 localReferencePoint { get; set; }
 
@@ -66,7 +68,8 @@ namespace UnityEngine
             set;
         }
 
-        internal int globalIlluminationLOD
+        // The LOD level used for global illumination (-1 means the LODGroup does not contribute to GI)
+        public int globalIlluminationLOD
         {
             get
             {

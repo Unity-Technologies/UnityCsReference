@@ -69,11 +69,14 @@ namespace UnityEditor.PackageManager.UI.Internal
         private bool m_IsActive;
         public bool isActive => m_IsActive;
 
+        [SerializeField]
+        protected VisualStateList m_VisualStateList = new();
+        public virtual IVisualStateList visualStates => m_VisualStateList;
+
         public abstract string id { get; }
         public abstract string displayName { get; }
         public abstract Icon icon { get; }
         public abstract RefreshOptions refreshOptions { get; }
-        public abstract IVisualStateList visualStates { get; }
 
         public virtual RegistryInfo scopedRegistry => null;
 
@@ -327,6 +330,6 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         public virtual void LoadMore(long numberOfItems) {}
         public virtual void Load(string itemUniqueId) {}
-        public virtual void LoadExtraItems(IEnumerable<string> itemUniqueIds) {}
+        public virtual void LoadTemporaryItems(IEnumerable<string> itemUniqueIds) {}
     }
 }

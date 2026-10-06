@@ -133,9 +133,9 @@ namespace UnityEditor.Toolbars
 
         protected override GUIContent GetGUIContentForPivotSetting(PivotSettingDefinition pivotSettingDef)
         {
-            var guiContent = EditorGUIUtility.TrTextContentWithIcon(pivotSettingDef.attribute.displayName,
+            var guiContent = L10n.TextContentWithIcon(pivotSettingDef.attribute.displayName,
                 $"Toggle Tool Handle Position\n\n{pivotSettingDef.attribute.tooltip}",
-                pivotSettingDef.icon);
+                pivotSettingDef.icon, null);
 
             return guiContent;
         }
@@ -200,9 +200,9 @@ namespace UnityEditor.Toolbars
 
         protected override GUIContent GetGUIContentForPivotSetting(PivotSettingDefinition pivotSettingDef)
         {
-            var guiContent = EditorGUIUtility.TrTextContentWithIcon(pivotSettingDef.attribute.displayName,
+            var guiContent = L10n.TextContentWithIcon(pivotSettingDef.attribute.displayName,
                 $"Toggle Tool Handle Rotation\n\n{pivotSettingDef.attribute.tooltip}",
-                pivotSettingDef.icon);
+                pivotSettingDef.icon, null);
 
             return guiContent;
         }

@@ -266,6 +266,7 @@ namespace UnityEngine.Rendering
     {
         None = 0,
         ForceEvenIfCameraIsNotActive = 1 << 0,
+        [Obsolete("CullingOptions.OcclusionCull is deprecated and will be removed in a future release. Consider migrating to GPU Occlusion Culling where your target platform supports it. #from(6000.7)", false)]
         OcclusionCull = 1 << 1,
         NeedsLighting = 1 << 2,
         NeedsReflectionProbes = 1 << 3,
@@ -445,12 +446,14 @@ namespace UnityEngine.Rendering
             set { m_StereoSeparationDistance = value; }
         }
 
+        [Obsolete("ScriptableCullingParameters.accurateOcclusionThreshold is deprecated and will be removed in a future release. Consider migrating to GPU Occlusion Culling where your target platform supports it. #from(6000.7)", false)]
         public float accurateOcclusionThreshold
         {
             get { return m_AccurateOcclusionThreshold; }
             set { m_AccurateOcclusionThreshold = Mathf.Max(-1f, value); }
         }
 
+        [Obsolete("ScriptableCullingParameters.maximumPortalCullingJobs is deprecated and will be removed in a future release. Consider migrating to GPU Occlusion Culling where your target platform supports it. #from(6000.7)", false)]
         public int maximumPortalCullingJobs
         {
             get { return m_MaximumPortalCullingJobs; }
@@ -462,11 +465,13 @@ namespace UnityEngine.Rendering
             }
         }
 
+        [Obsolete("ScriptableCullingParameters.cullingJobsLowerLimit is deprecated and will be removed in a future release. Consider migrating to GPU Occlusion Culling where your target platform supports it. #from(6000.7)", false)]
         public static int cullingJobsLowerLimit
         {
             get { return k_CullingJobCountLowerLimit; }
         }
 
+        [Obsolete("ScriptableCullingParameters.cullingJobsUpperLimit is deprecated and will be removed in a future release. Consider migrating to GPU Occlusion Culling where your target platform supports it. #from(6000.7)", false)]
         public static int cullingJobsUpperLimit
         {
             get { return k_CullingJobCountUpperLimit; }

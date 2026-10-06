@@ -15,8 +15,8 @@ namespace UnityEditor
 
         private static class Styles
         {
-            public static readonly GUIContent terrainContent = EditorGUIUtility.TrTextContent("Terrain Data", "The TerrainData asset that stores heightmaps, terrain textures, detail meshes and trees.");
-            public static readonly GUIContent treeColliderContent = EditorGUIUtility.TrTextContent("Enable Tree Colliders", "When selected, Tree Colliders will be enabled.");
+            public static readonly GUIContent terrainContent = L10n.TextContent("Terrain Data", "The TerrainData asset that stores heightmaps, terrain textures, detail meshes and trees.", null, null);
+            public static readonly GUIContent treeColliderContent = L10n.TextContent("Enable Tree Colliders", "When selected, Tree Colliders will be enabled.", null, null);
         }
         public override void OnEnable()
         {

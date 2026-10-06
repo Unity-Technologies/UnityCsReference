@@ -4,6 +4,7 @@
 
 using System;
 using System.Collections.Generic;
+using UnityEditor.AdaptivePerformance.Editor.Metadata;
 using UnityEditor.AdaptivePerformance.UI.Editor;
 using UnityEngine;
 using UnityEngine.AdaptivePerformance;
@@ -74,9 +75,15 @@ internal class AdaptivePerformanceSettingProvider : IBuildProfileSettingsProvide
     [Serializable]
     class ClipboardPayload
     {
+        public string format;
         public bool adaptivePerformanceEnabled;
         public List<ClipboardEntry> entries = new();
     }
+
+    const string k_PayloadFormat = "UnityEditor.Build.Profile.AdaptivePerformance/1";
+
+    const string k_ForeignClipboardMessage =
+        "Adaptive Performance paste: the clipboard does not contain Adaptive Performance settings.";
 
     internal static void OnCopyProfile(BuildProfile profile)
     {
@@ -93,6 +100,7 @@ internal class AdaptivePerformanceSettingProvider : IBuildProfileSettingsProvide
 
         var payload = new ClipboardPayload
         {
+            format = k_PayloadFormat,
             adaptivePerformanceEnabled = profile.platformBuildProfile?.adaptivePerformanceEnabled ?? false
         };
 
@@ -163,10 +171,17 @@ internal class AdaptivePerformanceSettingProvider : IBuildProfileSettingsProvide
         }
         catch
         {
+            Debug.LogWarning(k_ForeignClipboardMessage);
             return;
         }
-        if (payload.entries == null || payload.entries.Count == 0)
+
+        if (payload.format != k_PayloadFormat)
+        {
+            Debug.LogWarning(k_ForeignClipboardMessage);
             return;
+        }
+
+        payload.entries ??= new List<ClipboardEntry>();
 
         var entryTypes = new Type[payload.entries.Count];
         for (int i = 0; i < payload.entries.Count; i++)
@@ -175,6 +190,12 @@ internal class AdaptivePerformanceSettingProvider : IBuildProfileSettingsProvide
             if (type == null || !typeof(ScriptableObject).IsAssignableFrom(type))
             {
                 Debug.LogWarning($"Adaptive Performance paste: could not resolve type '{payload.entries[i].typeName}'; skipping paste.");
+                return;
+            }
+
+            if (type.IsAbstract || type.ContainsGenericParameters)
+            {
+                Debug.LogWarning($"Adaptive Performance paste: type '{type.FullName}' cannot be instantiated; skipping paste.");
                 return;
             }
             entryTypes[i] = type;
@@ -187,12 +208,37 @@ internal class AdaptivePerformanceSettingProvider : IBuildProfileSettingsProvide
             var type = entryTypes[i];
             var isLoader = typeof(AdaptivePerformanceLoader).IsAssignableFrom(type);
             var isProvider = typeof(IAdaptivePerformanceSettings).IsAssignableFrom(type);
-            if (!isLoader && !isProvider) continue;
+            if (!isLoader && !isProvider)
+            {
+                // Anything BuildPayload cannot have produced is someone else's object.
+                if (!IsAdaptivePerformancePayloadType(type))
+                {
+                    Debug.LogWarning($"Adaptive Performance paste: '{type.FullName}' is not an Adaptive Performance type; skipping paste.");
+                    return;
+                }
+                continue;
+            }
             if (!BuildProfileAdaptivePerformanceToggle.IsLoaderOrProviderSettingsSupportedForBuildTarget(type.FullName, profile.buildTarget))
             {
                 Debug.LogWarning($"Adaptive Performance paste: '{type.FullName}' is not supported on the destination profile's target platform ({profile.buildTarget}); skipping paste.");
                 return;
             }
+        }
+
+        // Build every replacement instance BEFORE touching the profile since CreateInstance can still return null
+        var newInstances = new ScriptableObject[payload.entries.Count];
+        for (int i = 0; i < payload.entries.Count; i++)
+        {
+            var created = ScriptableObject.CreateInstance(entryTypes[i]);
+            if (created == null)
+            {
+                // Nothing has been mutated yet, so discarding what we made leaves the profile intact.
+                for (int j = 0; j < i; j++)
+                    UnityEngine.Object.DestroyImmediate(newInstances[j]);
+                Debug.LogWarning($"Adaptive Performance paste: could not create an instance of '{entryTypes[i].FullName}'; skipping paste.");
+                return;
+            }
+            newInstances[i] = created;
         }
 
         // Group every mutation below into a single undo step so Ctrl+Z after a paste
@@ -209,13 +255,11 @@ internal class AdaptivePerformanceSettingProvider : IBuildProfileSettingsProvide
         if (profile.platformBuildProfile != null)
             profile.platformBuildProfile.adaptivePerformanceEnabled = payload.adaptivePerformanceEnabled;
 
-        var newInstances = new ScriptableObject[payload.entries.Count];
-        // Paste over the ScriptableObjects in the same order as they were copied
+        // Attach the instances built above, in the same order as they were copied.
         // This will also paste over the original references, which will be restored in the next loop.
         for (int i = 0; i < payload.entries.Count; i++)
         {
-            var so = ScriptableObject.CreateInstance(entryTypes[i]);
-            newInstances[i] = so;
+            var so = newInstances[i];
             AssetDatabase.AddObjectToAsset(so, profile);
             so.hideFlags |= HideFlags.HideInHierarchy;
             EditorJsonUtility.FromJsonOverwrite(payload.entries[i].json, so);
@@ -245,4 +289,11 @@ internal class AdaptivePerformanceSettingProvider : IBuildProfileSettingsProvide
         EditorUtility.SetDirty(profile);
         AssetDatabase.SaveAssetIfDirty(profile);
     }
+
+    // The non-loader, non-provider types EnumerateAdaptivePerformanceSubAssets can yield.
+    static bool IsAdaptivePerformancePayloadType(Type type) =>
+        typeof(AdaptivePerformanceGeneralSettings).IsAssignableFrom(type) ||
+        typeof(AdaptivePerformanceManagerSettings).IsAssignableFrom(type) ||
+        typeof(BuildProfileProviderContainer).IsAssignableFrom(type) ||
+        typeof(AdaptivePerformanceScaler).IsAssignableFrom(type);
 }

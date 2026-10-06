@@ -2,7 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: UIToolkitAuthoringFramework not yet converted
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -19,6 +18,18 @@ namespace Unity.UIToolkit.Editor;
 internal partial class VisualElementNodeHandler : IHierarchyEditorNodeTypeHandler
 {
     readonly List<WeakReference<HierarchyView>> m_Views = new();
+
+    /// <summary>Whether <paramref name="view"/> is one of the views this handler is bound to.</summary>
+    bool IsBoundView(HierarchyView view)
+    {
+        foreach (var weakRef in m_Views)
+        {
+            if (weakRef.TryGetTarget(out var stored) && ReferenceEquals(stored, view))
+                return true;
+        }
+
+        return false;
+    }
 
     bool IHierarchyEditorNodeTypeHandler.CanCut(HierarchyView view)
     {
@@ -164,29 +175,6 @@ internal partial class VisualElementNodeHandler : IHierarchyEditorNodeTypeHandle
         ClearCutFlags();
     }
 
-    void OnElementsDuplicated(in CommandContext context)
-    {
-        if (context.Status != CommandExecutionStatus.Success)
-            return;
-
-        var cmd = (DuplicateElementsCommand)context.Command;
-
-        // TODO: ScopePendingSelectionRequestsTo relies on the live element mapping maintained by
-        // this handler, so it only works when the hierarchy is open. Duplicating from UIViewport
-        // while the hierarchy is closed will still create the element but won't auto-select it.
-        // The selection request issued by the command itself (RequestSelectionOnNextUpdate) should
-        // eventually be made viewport-aware so it resolves without the hierarchy being present.
-        using var parentsHandle = ListPool<VisualElement>.Get(out var parents);
-        foreach (var asset in cmd.ElementsToDuplicate)
-        {
-            var element = FindElementFromAsset(asset);
-            parents.Add(element?.parent);
-        }
-        ScopePendingSelectionRequestsTo(parents);
-
-        ClearCutFlags();
-    }
-
     bool IHierarchyEditorNodeTypeHandler.CanPaste(HierarchyView view)
     {
         if (StageStrategy.IsReadOnly)
@@ -196,7 +184,8 @@ internal partial class VisualElementNodeHandler : IHierarchyEditorNodeTypeHandle
         if (!CanResolvePasteTarget(view, in selection))
             return false;
 
-        return VisualElementEditingUtility.CanPasteContent();
+        return TryResolvePasteParent(in selection, out var parentElement, out var parentAsset)
+            && VisualElementEditingUtility.CanPasteContent(parentElement, parentAsset);
     }
 
     /// <summary>
@@ -209,8 +198,8 @@ internal partial class VisualElementNodeHandler : IHierarchyEditorNodeTypeHandle
     /// </para>
     /// <para>
     /// Looser than what <c>OnPaste</c> goes on to resolve: <see cref="CanDoHierarchyOperation"/> is satisfied by
-    /// any editable row of the selection, while the paste itself only ever uses the first. A selection whose
-    /// first row cannot take the content is still offered the menu item, and pasting then does nothing.
+    /// any editable row of the selection, while the paste itself only ever uses the first. <c>CanPaste</c>
+    /// therefore also resolves the first row's paste parent before it offers the menu item.
     /// </para>
     /// </remarks>
     bool CanResolvePasteTarget(HierarchyView view, in SelectionContext selection)
@@ -229,13 +218,8 @@ internal partial class VisualElementNodeHandler : IHierarchyEditorNodeTypeHandle
                    && StageStrategy.TryResolvePasteParent(selected, out _, out _));
     }
 
-    bool IHierarchyEditorNodeTypeHandler.OnPaste(HierarchyView view)
+    bool TryResolvePasteParent(in SelectionContext selection, out VisualElement parentElement, out VisualElementAsset parentAsset)
     {
-        if (StageStrategy.IsReadOnly)
-            return false;
-
-        using var memoryOwner = GetSelection(view, out var selection);
-
         // Resolve the paste target through the stage strategy: as a sibling of the first selected element, or —
         // when nothing is selected — a stage-specific fallback (the main stage has none and declines; the UI
         // stage falls back to the local root of the document being edited).
@@ -243,26 +227,25 @@ internal partial class VisualElementNodeHandler : IHierarchyEditorNodeTypeHandle
         if (selection.SelectionCount > 0)
             TryGetElementFromNode(in selection.Selection[0], out selected);
 
-        if (!StageStrategy.TryResolvePasteParent(selected, out var parentElement, out var parentAsset))
+        return StageStrategy.TryResolvePasteParent(selected, out parentElement, out parentAsset);
+    }
+
+    bool IHierarchyEditorNodeTypeHandler.OnPaste(HierarchyView view)
+    {
+        if (StageStrategy.IsReadOnly)
             return false;
 
-        var targetDocument = parentAsset.visualTreeAsset;
+        using var memoryOwner = GetSelection(view, out var selection);
+
+        if (!TryResolvePasteParent(in selection, out var parentElement, out var parentAsset))
+            return false;
 
         // Cut (move) branch: move the live elements into the new parent and reparent their assets in place.
         var cutElements = Clipboard.GetClipboardForStage().GetCutElements();
         if (cutElements.Count > 0)
         {
-            // Pasting a cut element into another document re-homes it, template instances and all, exactly like a
-            // drag does — and can close the same cycle.
-            for (var i = 0; i < cutElements.Count; ++i)
-            {
-                var cutAsset = cutElements[i];
-                if (cutAsset == null || cutAsset.visualTreeAsset == targetDocument)
-                    continue;
-
-                if (VisualElementEditingUtility.WouldCauseCircularDependency(targetDocument, parentElement, cutAsset))
-                    return false;
-            }
+            if (!VisualElementEditingUtility.CanMoveCutElements(cutElements, parentElement, parentAsset))
+                return false;
 
             using var toPasteHandle = ListPool<VisualElementAsset>.Get(out var toPasteList);
             for (var i = 0; i < cutElements.Count; ++i)
@@ -288,7 +271,7 @@ internal partial class VisualElementNodeHandler : IHierarchyEditorNodeTypeHandle
             RequestSelectionOnNextUpdate(toPaste);
             ReparentElementsCommand.Execute(CommandSources.Hierarchy, parentAsset, -1, toPaste);
             ScopePendingSelectionRequestsTo(parentElement);
-            Clipboard.GetClipboardForStage().ClearCutElements();
+            Clipboard.GetClipboardForStage().Clear();
             return true;
         }
 
@@ -330,8 +313,23 @@ internal partial class VisualElementNodeHandler : IHierarchyEditorNodeTypeHandle
     /// <returns><see langword="true"/> if action is executed, <see langword="false"/> otherwise.</returns>
     protected virtual bool OnPasteAsChild(HierarchyView view, in SelectionContext selection) => false;
 
+    /// <summary>
+    /// Called to determine whether the row of a node can be renamed.
+    /// </summary>
+    /// <param name="view">The <see cref="HierarchyView"/>.</param>
+    /// <param name="node">The node.</param>
+    /// <returns><see langword="true"/> if the row can be renamed; <see langword="false"/> otherwise.</returns>
+    /// <remarks>
+    /// A handler that borrows these rows to show a document rather than author one turns this off, so that the
+    /// edit flags it reports for styling do not also open the rename field onto live elements.
+    /// </remarks>
+    protected virtual bool CanRename(HierarchyView view, in HierarchyNode node) => true;
+
     bool IHierarchyEditorNodeTypeHandler.CanSetName(HierarchyView view, in HierarchyNode node)
     {
+        if (!CanRename(view, in node))
+            return false;
+
         if (StageStrategy.IsReadOnly)
             return false;
 
@@ -339,7 +337,11 @@ internal partial class VisualElementNodeHandler : IHierarchyEditorNodeTypeHandle
             return false;
 
         if (element is IPanelComponentRootElement rootElement)
-            return !string.IsNullOrEmpty(AssetDatabase.GetAssetPath(rootElement.panelComponent?.visualTreeAsset));
+        {
+            var panelComponent = rootElement.panelComponent;
+            var document = panelComponent.IsAlive() ? panelComponent.visualTreeAsset : null;
+            return !string.IsNullOrEmpty(AssetDatabase.GetAssetPath(document));
+        }
 
         return StageStrategy.GetEditFlags(element).IsFullyEditable();
     }
@@ -355,6 +357,11 @@ internal partial class VisualElementNodeHandler : IHierarchyEditorNodeTypeHandle
         if (element is IPanelComponentRootElement rootElement)
             return TryRenameDocumentAsset(rootElement, name);
 
+        // The row displays the name as "#name". It is not part of the name and never valid in one, so it is dropped
+        // rather than rejected.
+        if (name.StartsWith('#'))
+            name = name[1..];
+
         if (!ValidateName(name))
         {
             CommandList.SetDirty();
@@ -367,18 +374,24 @@ internal partial class VisualElementNodeHandler : IHierarchyEditorNodeTypeHandle
             CommandList.SetDirty();
             return false;
         }
+
+        // Name has not changed. A null name seeds the field as an empty one, so it has to compare as empty too.
+        if (string.CompareOrdinal(element.name ?? string.Empty, name) == 0)
+            return true;
+
         SetElementNameCommand.Execute(CommandSources.Hierarchy, elementVea, name);
         element.name = name;
         return true;
     }
 
-    // The rename field is seeded with the row label, so the file extension and the unsaved marker it shows are
-    // tolerated and stripped before the asset file is renamed. ObjectNames.SetNameSmart renames through the same
-    // undoable path as the Project window, unlike AssetDatabase.RenameAsset which is not on the Undo stack; it
+    // The rename field seeds only the file name, but a user can still type the extension or the unsaved marker, so
+    // both are tolerated and stripped before the asset file is renamed. ObjectNames.SetNameSmart renames through the
+    // same undoable path as the Project window, unlike AssetDatabase.RenameAsset which is not on the Undo stack; it
     // keeps the extension the asset already has and warns on failure itself.
     bool TryRenameDocumentAsset(IPanelComponentRootElement rootElement, string name)
     {
-        var document = rootElement.panelComponent?.visualTreeAsset;
+        var panelComponent = rootElement.panelComponent;
+        var document = panelComponent.IsAlive() ? panelComponent.visualTreeAsset : null;
         var path = document != null ? AssetDatabase.GetAssetPath(document) : null;
         if (string.IsNullOrEmpty(path))
         {
@@ -413,9 +426,13 @@ internal partial class VisualElementNodeHandler : IHierarchyEditorNodeTypeHandle
     /// </summary>
     /// <param name="name">The new name.</param>
     /// <returns><see langword="true"/> if the name is valid; <see langword="false"/> otherwise.</returns>
+    /// <remarks>
+    /// An element with no name is a state a user can author, so the empty string is valid. Anything else,
+    /// whitespace included, has to be a name the element could carry.
+    /// </remarks>
     protected virtual bool ValidateName(string name)
     {
-        return elementNameRegex.IsMatch(name);
+        return name.Length == 0 || elementNameRegex.IsMatch(name);
     }
 
     string IHierarchyEditorNodeTypeHandler.GetDisplayNameOverride(HierarchyView view, in HierarchyNode node)
@@ -425,27 +442,26 @@ internal partial class VisualElementNodeHandler : IHierarchyEditorNodeTypeHandle
 
         switch (element)
         {
+            // Only the file name; the extension and unsaved marker are added as a separate label in Bind.
             case IPanelComponentRootElement rootElement:
-                var vta = rootElement.panelComponent.visualTreeAsset;
-                if (!vta)
-                    return "<none>.uxml";
-
-                var path = AssetDatabase.GetAssetPath(vta);
-                var fileName = !string.IsNullOrEmpty(path)
-                    ? Path.GetFileName(path)
-                    : string.IsNullOrEmpty(vta.name)
-                        ? "<unsaved file>.uxml"
-                        : $"{vta.name}.uxml";
-
-                return UIAssetRegistry.LiveInstance?.IsDirty(vta) == true
-                    ? fileName + "*"
-                    : fileName;
+                GetDocumentRowParts(rootElement, out var name, out _);
+                return name;
 
             default:
                 return string.IsNullOrEmpty(element.name)
                     ? string.Empty
                     : $"#{element.name}";
         }
+    }
+
+    string IHierarchyEditorNodeTypeHandler.GetRenameTextOverride(HierarchyView view, in HierarchyNode node)
+    {
+        if (!m_Mappings.TryGetValue(node, out var element) || element == null)
+            return null;
+
+        // A document row renames its .uxml file starting from the file name the row already shows; an element row
+        // edits the raw name, without the "#" the row prefixes it with.
+        return element is IPanelComponentRootElement ? null : element.name ?? string.Empty;
     }
 
     bool IHierarchyEditorNodeTypeHandler.CanDuplicate(HierarchyView view)
@@ -476,11 +492,18 @@ internal partial class VisualElementNodeHandler : IHierarchyEditorNodeTypeHandle
         if (elements.Count == 0)
             return false;
 
+        using var parentsHandle = ListPool<VisualElement>.Get(out var parents);
         var toDuplicate = new VisualElementAsset[elements.Count];
         for (var i = 0; i < elements.Count; ++i)
+        {
             toDuplicate[i] = elements[i].visualElementAsset;
+            parents.Add(elements[i].parent);
+        }
 
         DuplicateElementsCommand.Execute(CommandSources.Hierarchy, toDuplicate);
+
+        // The rows duplicated name the instance; the asset alone matches every instance of the document.
+        ScopePendingSelectionRequestsTo(parents);
 
         return true;
     }
@@ -718,4 +741,3 @@ internal partial class VisualElementNodeHandler : IHierarchyEditorNodeTypeHandle
         }
     }
 }
-#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

@@ -36,6 +36,8 @@ namespace UnityEngine
     [UIModuleHelpURL("class-CanvasGroup")]
     public sealed class CanvasGroup : Behaviour, ICanvasRaycastFilter
     {
+        internal CanvasGroup(global::UnityEngine.EntityId id) : base(id) {}
+        public CanvasGroup() {}
         ///<summary>Set the alpha of the group.</summary>
         [NativeProperty("Alpha", false, TargetType.Function)] public extern float alpha { get; set; }
         ///<summary>Is the group interactable (are the elements beneath the group enabled).</summary>

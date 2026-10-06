@@ -22,7 +22,10 @@ namespace UnityEngine.AdaptivePerformance
         /// Prioritizes battery life over performance.
         /// </summary>
         BatteryMode, // target battery duration
-        //StableFramerateMode, // target stable framerate.
+        /// <summary>
+        /// Prioritizes a stable frame time by minimizing frame time variance.
+        /// </summary>
+        StableFrameMode, // target stable frame time (minimize variance).
         //DetailMode // target the highest quality.
     }
 

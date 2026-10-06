@@ -2,7 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: SceneManagement not yet converted
 using System;
 using UnityEngine;
 using System.Collections.Generic;
@@ -625,13 +624,13 @@ namespace UnityEditor
                 public const string headerButtonClass = "unity-prefab-compare__header-buttons";
 
                 public static readonly GUIStyle headerGroupStyle = new GUIStyle();
-                public static readonly GUIContent sourceContent = EditorGUIUtility.TrTextContent("Prefab Source");
-                public static readonly GUIContent instanceContent = EditorGUIUtility.TrTextContent("Override");
-                public static readonly GUIContent removedContent = EditorGUIUtility.TrTextContent("Removed");
-                public static readonly GUIContent addedContent = EditorGUIUtility.TrTextContent("Added");
-                public static readonly GUIContent noModificationsContent = EditorGUIUtility.TrTextContent("No Overrides");
-                public static readonly GUIContent applyContent = EditorGUIUtility.TrTextContent("Apply", "Apply overrides on this object.");
-                public static readonly GUIContent revertContent = EditorGUIUtility.TrTextContent("Revert", "Revert overrides on this object.");
+                public static readonly GUIContent sourceContent = L10n.TextContent("Prefab Source", null, null, null);
+                public static readonly GUIContent instanceContent = L10n.TextContent("Override", null, null, null);
+                public static readonly GUIContent removedContent = L10n.TextContent("Removed", null, null, null);
+                public static readonly GUIContent addedContent = L10n.TextContent("Added", null, null, null);
+                public static readonly GUIContent noModificationsContent = L10n.TextContent("No Overrides", null, null, null);
+                public static readonly GUIContent applyContent = L10n.TextContent("Apply", "Apply overrides on this object.", null, null);
+                public static readonly GUIContent revertContent = L10n.TextContent("Revert", "Revert overrides on this object.", null, null);
 
                 static Styles()
                 {
@@ -894,4 +893,3 @@ namespace UnityEditor
         }
     }
 }
-#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

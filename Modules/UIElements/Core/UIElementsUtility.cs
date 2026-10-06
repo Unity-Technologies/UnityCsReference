@@ -18,10 +18,19 @@ namespace UnityEngine.UIElements
 
 
         [AutoStaticsCleanupOnCodeReload]
+        // Installed by RetainedMode.Initialize(), which runs on every code load, so the slot cleared by
+        // cleanup is wired again before any editor UI uses it.
+        [IgnoreForUAL0015("Editor IoC slot reinstalled on every code load by RetainedMode.Initialize()")]
         internal static Action<IMGUIContainer> s_BeginContainerCallback;
         [AutoStaticsCleanupOnCodeReload]
+        // Installed by RetainedMode.Initialize(), which runs on every code load, so the slot cleared by
+        // cleanup is wired again before any editor UI uses it.
+        [IgnoreForUAL0015("Editor IoC slot reinstalled on every code load by RetainedMode.Initialize()")]
         internal static Action<IMGUIContainer> s_EndContainerCallback;
         [AutoStaticsCleanupOnCodeReload]
+        // Installed by RetainedMode.Initialize(), which runs on every code load, so the slot cleared by
+        // cleanup is wired again before any editor UI uses it.
+        [IgnoreForUAL0015("Editor IoC slot reinstalled on every code load by RetainedMode.Initialize()")]
         internal static Action<IMGUIContainer> s_FocusOutContainerCallback;
 
 
@@ -106,6 +115,7 @@ namespace UnityEngine.UIElements
 
     }
 
+    // Declaration order is the reinitialization order on code load.
     enum UnloadingSubscriber
     {
         StyleCache,
@@ -113,8 +123,10 @@ namespace UnityEngine.UIElements
         LayoutManager,
         SelectorAccelerationCache,
         StyleClassList,
-        NativeTextBufferReclaimer,
+        TextBufferStore,
         ComponentManager,
+        ComponentTypeSet,
+        NativeTransformUtils, // holds a pointer into InitialStyle data, so it must stay after it
         Count
     }
 
@@ -122,6 +134,12 @@ namespace UnityEngine.UIElements
     {
         [NoAutoStaticsCleanup]
         static readonly Action[] s_Subscribers = new Action[(int)UnloadingSubscriber.Count];
+
+        [NoAutoStaticsCleanup]
+        static readonly Action[] s_Reinitializers = new Action[(int)UnloadingSubscriber.Count];
+
+        [NoAutoStaticsCleanup]
+        static readonly Action[] s_ReinitializePass = new Action[(int)UnloadingSubscriber.Count];
 
         static readonly ProfilerMarker s_CodeUnloadingMarker = new ProfilerMarker(ProfilerCategory.UIToolkit, "UIElements.OnCodeUnloading");
 
@@ -132,6 +150,12 @@ namespace UnityEngine.UIElements
         static void OnCodeLoaded()
         {
             isUnloaded = false;
+
+            // Copied because a reinitializer can trip an unregistered site's static constructor, which
+            // registers and initializes it mid-pass; running it again here would double-initialize it.
+            Array.Copy(s_Reinitializers, s_ReinitializePass, s_Reinitializers.Length);
+            for (int i = 0; i < s_ReinitializePass.Length; i++)
+                s_ReinitializePass[i]?.Invoke();
         }
 
         internal static bool LogErrorIfShutdown()
@@ -170,6 +194,15 @@ namespace UnityEngine.UIElements
         {
             Debug.Assert(s_Subscribers[(int)subscriber] == null);
             s_Subscribers[(int)subscriber] = callback;
+        }
+
+        // Call from a static constructor: keeps first initialization lazy, and the registration is what
+        // reinitializes the site on later code loads, which the constructor no longer runs for.
+        internal static void InitializeOnEveryCodeLoad(UnloadingSubscriber subscriber, Action initialize)
+        {
+            Debug.Assert(s_Reinitializers[(int)subscriber] == null);
+            s_Reinitializers[(int)subscriber] = initialize;
+            initialize();
         }
     }
 
@@ -233,6 +266,9 @@ namespace UnityEngine.UIElements
             s_EnableOSXContextualMenuEventsOnNonOSXPlatforms = false;
         }
 
+        // The host OS, not Application.platform: Web builds report WebGLPlayer on every host.
+        internal static bool isCommandActionKeyPlatform => SystemInfo.operatingSystemFamily == OperatingSystemFamily.MacOSX;
+
         [AutoStaticsCleanupOnCodeReload]
         static internal List<Panel> s_PanelsIterationList = new List<Panel>();
 
@@ -266,8 +302,15 @@ namespace UnityEngine.UIElements
             {
                 ComponentManager.SharedManager.Collect();
             }
-			
-            NativeTextBufferReclaimer.Collect();
+
+            // Not inside ComponentManager.Collect: that manager exists only once an unmanaged component
+            // does, while a managed-only composition still queues finalizer releases.
+            ComponentTypeSet.DrainPendingReleases();
+
+            if (TextBufferStore.IsSharedManagerCreated)
+            {
+                TextBufferStore.SharedManager.Collect();
+            }
 
             // Since updating schedulers jumps into user code, the panels list might change while we're iterating,
             // we make a copy first.

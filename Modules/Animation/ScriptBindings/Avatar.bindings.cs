@@ -608,6 +608,7 @@ namespace UnityEngine
     [UsedByNativeCode]
     public class Avatar : Object
     {
+        internal Avatar(global::UnityEngine.EntityId id) : base(id) {}
         private Avatar()
         {
         }

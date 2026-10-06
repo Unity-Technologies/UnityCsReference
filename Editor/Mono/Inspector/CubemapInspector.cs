@@ -27,7 +27,7 @@ namespace UnityEditor
             public static readonly int[] faceSizeOptionValues = { 16, 32, 64, 128, 256, 512, 1024, 2048 };
 
             public static readonly string generateMipmapLabel = L10n.Tr("Generate Mipmap", null);
-            public static readonly GUIContent streamingMipmapLevelsContent = EditorGUIUtility.TrTextContent("Stream Mipmap Levels", "Don't load image data immediately but wait till image data is requested from script.");
+            public static readonly GUIContent streamingMipmapLevelsContent = L10n.TextContent("Stream Mipmap Levels", "Don't load image data immediately but wait till image data is requested from script.", null, null);
 
             public static readonly string linearLabel = L10n.Tr("Linear", null);
 

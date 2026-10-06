@@ -27,7 +27,7 @@ namespace UnityEditor
 
             using (new EditorGUI.DisabledScope(!System.Array.Exists(targets, x => (x as HingeJoint2D).gameObject.activeInHierarchy)))
             {
-                EditorGUILayout.EditorToolbarForTarget(EditorGUIUtility.TrTempContent("Edit Angular Limits"), this);
+                EditorGUILayout.EditorToolbarForTarget(L10n.TempContent("Edit Angular Limits", null), this);
                 GUILayout.Space(5);
             }
 

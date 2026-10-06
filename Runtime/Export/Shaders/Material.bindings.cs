@@ -16,14 +16,26 @@ namespace UnityEngine
     [NativeHeader("Runtime/Shaders/Material.h")]
     public partial class Material : Object
     {
-        [FreeFunction("MaterialScripting::CreateWithShader")]   extern private static void CreateWithShader([Writable] Material self, [NotNull] Shader shader);
-        [FreeFunction("MaterialScripting::CreateWithMaterial")] extern private static void CreateWithMaterial([Writable] Material self, [NotNull] Material source);
+        internal Material(global::UnityEngine.EntityId id) : base(id) {}
+        [FreeFunction("MaterialScripting::CreateWithShader")]   extern private static EntityId CreateWithShader([NotNull] Shader shader);
+        [FreeFunction("MaterialScripting::CreateWithMaterial")] extern private static EntityId CreateWithMaterial([NotNull] Material source);
+        // Runs the MaterialPropertyDrawers (a managed callback with this material), so it has to happen after
+        // the constructor has assigned the EntityId, not inside the native constructor binding.
+        [NativeName("ApplyMaterialPropertyDrawers")] extern private void ApplyMaterialPropertyDrawers();
 
-        public Material(Shader shader)   { CreateWithShader(this, shader); }
+        public Material(Shader shader)
+        {
+            SetEntityIdFromConstructor(CreateWithShader(shader));
+            ApplyMaterialPropertyDrawers();
+        }
         // will otherwise be stripped if scene only uses default materials not explicitly referenced
         // (ie some components will get a default material if a material reference is null)
         [RequiredByNativeCode]
-        public Material(Material source) { CreateWithMaterial(this, source); }
+        public Material(Material source)
+        {
+            SetEntityIdFromConstructor(CreateWithMaterial(source));
+            ApplyMaterialPropertyDrawers();
+        }
 
         // TODO: is it time to make it deprecated with error?
         [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
@@ -200,6 +212,10 @@ namespace UnityEngine
 
         [FreeFunction("MaterialScripting::GetPropertyCount", HasExplicitThis = true)]
         extern internal int GetPropertyCount();
+
+        extern internal bool changeTrackingEnabled { get; set; }
+        extern internal void GetTrackedChangedPropertyNameIdsAndClear([Out,NotNull] List<int> nameIds);
+        extern internal void GetTrackedChangedKeywordsAndClear([Out,NotNull] List<string> keywords);
 
         extern public int ComputeCRC();
 

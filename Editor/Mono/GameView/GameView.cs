@@ -2,7 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: GameView not yet converted
 using System;
 using UnityEngine;
 using UnityEngine.Bindings;
@@ -11,7 +10,6 @@ using UnityEditor.SceneManagement;
 using UnityEditor.Modules;
 using System.Globalization;
 using UnityEngine.Rendering;
-using System.Linq;
 using System.Collections.Generic;
 using JetBrains.Annotations;
 using UnityEngine.XR;
@@ -47,7 +45,6 @@ namespace UnityEditor
         const int kScaleSliderMaxWidth = 150;
         const int kScaleSliderSnapThreshold = 4;
         const int kScaleLabelWidth = 40;
-        readonly Vector2 kWarningSize = new Vector2(400f, 140f);
         readonly Color kClearBlack = new Color(0, 0 , 0, 0);
         const float kMinScale = 1f;
         const float kMaxScale = 5f;
@@ -102,19 +99,19 @@ namespace UnityEditor
 
         internal static class Styles
         {
-            public static readonly GUIContent gizmosContent = EditorGUIUtility.TrTextContent("Gizmos", "Activate / Deactivate gizmos in the GameView");
-            public static readonly GUIContent zoomSliderContent = EditorGUIUtility.TrTextContent("Scale", "Size of the game view on the screen.");
-            public static readonly GUIContent muteOffContent = EditorGUIUtility.TrIconContent("GameViewAudio On", "Mute Audio");
-            public static readonly GUIContent muteOnContent = EditorGUIUtility.TrIconContent("GameViewAudio", "Mute Audio");
-            public static readonly GUIContent shortcutsOnContent = EditorGUIUtility.TrIconContent("Keyboard", "Unity Shortcuts");
-            public static readonly GUIContent shortcutsOffContent = EditorGUIUtility.TrIconContent("KeyboardShortcutsDisabled", "Unity Shortcuts");
-            public static readonly GUIContent statsContent = EditorGUIUtility.TrTextContent("Stats");
-            public static readonly GUIContent frameDebuggerOnContent = EditorGUIUtility.TrTextContent("Frame Debugger On");
-            public static readonly GUIContent noCameraWarningContextMenuContent = EditorGUIUtility.TrTextContent("Warn if No Cameras Rendering");
-            public static readonly GUIContent clearEveryFrameContextMenuContent = EditorGUIUtility.TrTextContent("Clear Every Frame in Edit Mode");
-            public static readonly GUIContent lowResAspectRatiosContextMenuContent = EditorGUIUtility.TrTextContent("Low Resolution Aspect Ratios");
-            public static readonly GUIContent metalFrameCaptureContent = EditorGUIUtility.TrIconContent("FrameCapture", "Capture the current view and open in Xcode frame debugger");
-            public static readonly GUIContent frameDebuggerContent = EditorGUIUtility.TrIconContent("Debug", "Opens the Frame Debugger");
+            public static readonly GUIContent gizmosContent = L10n.TextContent("Gizmos", "Activate / Deactivate gizmos in the GameView", null, null);
+            public static readonly GUIContent zoomSliderContent = L10n.TextContent("Scale", "Size of the game view on the screen.", null, null);
+            public static readonly GUIContent muteOffContent = L10n.IconContent("GameViewAudio On", "Mute Audio", null);
+            public static readonly GUIContent muteOnContent = L10n.IconContent("GameViewAudio", "Mute Audio", null);
+            public static readonly GUIContent shortcutsOnContent = L10n.IconContent("Keyboard", "Unity Shortcuts", null);
+            public static readonly GUIContent shortcutsOffContent = L10n.IconContent("KeyboardShortcutsDisabled", "Unity Shortcuts", null);
+            public static readonly GUIContent statsContent = L10n.TextContent("Stats", null, null, null);
+            public static readonly GUIContent frameDebuggerOnContent = L10n.TextContent("Frame Debugger On", null, null, null);
+            public static readonly GUIContent noCameraWarningContextMenuContent = L10n.TextContent("Warn if No Cameras Rendering", null, null, null);
+            public static readonly GUIContent clearEveryFrameContextMenuContent = L10n.TextContent("Clear Every Frame in Edit Mode", null, null, null);
+            public static readonly GUIContent lowResAspectRatiosContextMenuContent = L10n.TextContent("Low Resolution Aspect Ratios", null, null, null);
+            public static readonly GUIContent metalFrameCaptureContent = L10n.IconContent("FrameCapture", "Capture the current view and open in Xcode frame debugger", null);
+            public static readonly GUIContent frameDebuggerContent = L10n.IconContent("Debug", "Opens the Frame Debugger", null);
 
             public const string k_StatsShortcutID = "Game View/Toggle Stats";
             public const string k_StatsTooltip = "View general rendering information";
@@ -129,7 +126,7 @@ namespace UnityEditor
             static Styles()
             {
                 gameViewBackgroundStyle = "GameViewBackground";
-                renderdocContent = EditorGUIUtility.TrIconContent("FrameCapture", RenderDocUtil.openInRenderDocTooltip);
+                renderdocContent = L10n.IconContent("FrameCapture", RenderDocUtil.openInRenderDocTooltip, null);
             }
         }
 
@@ -227,9 +224,30 @@ namespace UnityEditor
             return new Rect(0, 0, pos.width, pos.height);
         }
 
+        // Device pixels the view rect converts to per editor point.
+        float viewPixelsPerPoint => lowResolutionForAspectRatios ? 1f : backingScale;
+
+        float renderTargetPixelsPerPoint
+        {
+            get
+            {
+                var size = currentGameViewSize;
+                var followsViewRect = size.isFreeAspectRatio || size.sizeType == GameViewSizeType.AspectRatio;
+                return followsViewRect ? viewPixelsPerPoint : backingScale;
+            }
+        }
+
         Rect GetViewPixelRect(Rect viewRectInWindow)
         {
-            return lowResolutionForAspectRatios? viewRectInWindow : EditorGUIUtility.PointsToPixels(viewRectInWindow);
+            var scale = viewPixelsPerPoint;
+            return new Rect(viewRectInWindow.x * scale, viewRectInWindow.y * scale,
+                viewRectInWindow.width * scale, viewRectInWindow.height * scale);
+        }
+
+        protected override float GetGameViewDpiForPhysicalSize()
+        {
+            // Low resolution allocates the target in points, so a render pixel covers backingScale device pixels.
+            return base.GetGameViewDpiForPhysicalSize() * renderTargetPixelsPerPoint / backingScale;
         }
 
         // The area of the window that the rendered game view is limited to
@@ -314,11 +332,16 @@ namespace UnityEditor
         }
 
         // Area for warnings such as no cameras rendering
-        Rect warningPosition => new Rect(
-            Mathf.Max((viewInWindow.size.x - kWarningSize.x) * 0.5f, viewInWindow.x),
-            Mathf.Max((viewInWindow.size.y - kWarningSize.y) * 0.5f, viewInWindow.y),
-            kWarningSize.x,
-            kWarningSize.y);
+        Rect GetWarningPosition(GUIContent content)
+        {
+            var size = EditorStyles.notificationText.CalcSize(content);
+            size.x += EditorStyles.notificationText.margin.horizontal;
+            return new Rect(
+                Mathf.Max((viewInWindow.size.x - size.x) * 0.5f, viewInWindow.x),
+                Mathf.Max((viewInWindow.size.y - size.y) * 0.5f, viewInWindow.y),
+                size.x,
+                size.y);
+        }
 
         Vector2 gameMouseOffset { get { return -viewInWindow.position - targetInView.position; } }
 
@@ -591,6 +614,27 @@ namespace UnityEditor
                 || FrameCapture.IsDestinationSupported(FrameCaptureDestination.GPUTraceDocument);
         }
 
+        // Matched by type: the window tab carries the translated title, so matching by name misses it.
+        internal int GetPlayModeViewTypePopup(out Type[] types, out string[] names)
+        {
+            var availableTypes = GetAvailableWindowTypes();
+            types = new Type[availableTypes.Count];
+            names = new string[availableTypes.Count];
+
+            var selectedIndex = 0;
+            var i = 0;
+            foreach (var availableType in availableTypes)
+            {
+                types[i] = availableType.Key;
+                names[i] = GetLocalizedWindowTitle(availableType.Key);
+                if (availableType.Key == GetType())
+                    selectedIndex = i;
+                i++;
+            }
+
+            return selectedIndex;
+        }
+
         private void DoToolbarGUI()
         {
             if (Event.current.isKey || Event.current.type == EventType.Used)
@@ -600,23 +644,15 @@ namespace UnityEditor
 
             GUILayout.BeginHorizontal(EditorStyles.toolbar);
             {
-                var availableTypes = GetAvailableWindowTypes();
-                if (availableTypes.Count > 1)
+                if (GetAvailableWindowTypes().Count > 1)
                 {
-#pragma warning disable UAC2001 // Avoid Linq
-                    var typeNames = availableTypes.Values.ToList();
-#pragma warning restore UAC2001
-#pragma warning disable UAC2001 // Avoid Linq
-                    var types = availableTypes.Keys.ToList();
-#pragma warning restore UAC2001
-                    int viewIndex = EditorGUILayout.Popup(typeNames.IndexOf(titleContent.text), typeNames.ToArray(),
+                    var selectedIndex = GetPlayModeViewTypePopup(out var types, out var typeNames);
+                    int viewIndex = EditorGUILayout.Popup(selectedIndex, typeNames,
                         EditorStyles.toolbarPopup,
                         GUILayout.Width(90));
-                    if (viewIndex == -1)
-                        viewIndex = 0;
 
                     EditorGUILayout.Space();
-                    if (types[viewIndex] != typeof(GameView))
+                    if (viewIndex != selectedIndex)
                     {
                         SwapMainWindow(types[viewIndex]);
                     }
@@ -1150,12 +1186,19 @@ namespace UnityEditor
                 }
             }
 
-            if (m_NoCameraWarning && !EditorGUIUtility.IsDisplayReferencedByCameras(targetDisplay))
+            string warningMessage = null;
+            if (UnityEditor.Rendering.EditorGraphicsSettings.IsRenderingBlockedWithoutRenderPipelineAsset())
+                warningMessage = L10n.Tr("Your project has no render pipeline asset.\nAssign one in Project Settings > Graphics.", null);
+            else if (m_NoCameraWarning && !EditorGUIUtility.IsDisplayReferencedByCameras(targetDisplay))
+                warningMessage = L10n.Tr("No cameras rendering", null);
+
+            if (warningMessage != null)
             {
-                GUI.Label(warningPosition, GUIContent.none, EditorStyles.notificationBackground);
                 var displayName = ModuleManager.ShouldShowMultiDisplayOption() ? DisplayUtility.GetDisplayNames()[targetDisplay].text : string.Empty;
-                var cameraWarning = string.Format("{0}\nNo cameras rendering", displayName);
-                EditorGUI.DoDropShadowLabel(warningPosition, EditorGUIUtility.TempContent(cameraWarning), EditorStyles.notificationText, .3f);
+                var warning = EditorGUIUtility.TempContent(string.Format("{0}\n{1}", displayName, warningMessage));
+                var position = GetWarningPosition(warning);
+                GUI.Label(position, GUIContent.none, EditorStyles.notificationBackground);
+                EditorGUI.DoDropShadowLabel(position, warning, EditorStyles.notificationText, .3f);
             }
 
             if (m_Stats)
@@ -1186,7 +1229,7 @@ namespace UnityEditor
             if (statsWindowAsset != null)
             {
                 m_StatsWindowInstance = statsWindowAsset.CloneTree();
-                
+
                 // We set picking mode to ignore so that it doesn't interfere with mouse events in the game view. (UUM-143196)
                 m_StatsWindowInstance.pickingMode = PickingMode.Ignore;
 
@@ -1307,4 +1350,3 @@ namespace UnityEditor
         }
     }
 }
-#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

@@ -28,7 +28,7 @@ internal class CloneEditorInstanceStatusElement : VisualElement
     private const string k_InstanceCancelText = "Cancel";
     private const string k_LogsContainerClass = "unity-instance-status__log-container";
 
-    private Instance m_Instance;
+    private ControllerRuntime m_Instance;
     private Button m_ActivateButton;
     private Button m_DeactivateButton;
 
@@ -39,7 +39,7 @@ internal class CloneEditorInstanceStatusElement : VisualElement
     private int m_PlayerInstanceIndex;
     private UnityPlayer m_Player;
 
-    internal CloneEditorInstanceStatusElement(Instance instance, CloneEditorController.InstanceSettings settings, SerializedProperty usersettings)
+    internal CloneEditorInstanceStatusElement(ControllerRuntime instance, CloneEditorController.InstanceSettings settings, SerializedProperty usersettings)
     {
         RegisterCallback<AttachToPanelEvent>(OnAttachToPanel);
         RegisterCallback<DetachFromPanelEvent>(OnDetachFromPanel);

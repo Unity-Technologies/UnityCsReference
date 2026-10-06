@@ -62,7 +62,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             }
         }
 
-        private void RemoveAssetsAndCleanUpEmptyFolders(IReadOnlyCollection<Asset> assets)
+        private void RemoveAssetsAndCleanUpEmptyFolders(IReadOnlyList<Asset> assets)
         {
             const string assetsPath = "Assets";
             var foldersToRemove = new HashSet<string>();
@@ -150,7 +150,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                 RemoveAssetsAndCleanUpEmptyFolders(assetsToRemove);
         }
 
-        private void OnRemoveSelectionDone(IReadOnlyCollection<Asset> selections)
+        private void OnRemoveSelectionDone(IReadOnlyList<Asset> selections)
         {
             if (selections.Count > 0)
                 RemoveAssetsAndCleanUpEmptyFolders(selections);

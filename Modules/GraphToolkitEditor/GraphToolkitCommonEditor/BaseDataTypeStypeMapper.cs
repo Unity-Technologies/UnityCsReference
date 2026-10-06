@@ -15,9 +15,9 @@ partial class BaseDataTypeStyleMapper
     public static readonly string k_BuiltInTypeOverrideWarning = "Attempting to override built-in data type style for type {0}. This is not supported and will be ignored.";
 
     [AutoStaticsCleanupOnCodeReload]
-    static readonly Dictionary<Type, (Texture2D icon, Color color)> k_TypeStylesForAllGraphTypes = new();
+    static readonly Dictionary<Type, (Texture2D icon, Color color, bool suppressIcon)> k_TypeStylesForAllGraphTypes = new();
     [AutoStaticsCleanupOnCodeReload]
-    static readonly Dictionary<Type, Dictionary<Type, (Texture2D icon, Color color)>> k_TypeStylesPerGraphType = new();
+    static readonly Dictionary<Type, Dictionary<Type, (Texture2D icon, Color color, bool suppressIcon)>> k_TypeStylesPerGraphType = new();
 
     [AutoStaticsCleanupOnCodeReload]
     static bool s_Initialized;
@@ -67,8 +67,9 @@ partial class BaseDataTypeStyleMapper
     /// <param name="dataType">The type of data to associate with the style.</param>
     /// <param name="icon">The icon representing the data type.</param>
     /// <param name="color">The color representing the data type.</param>
+    /// <param name="suppressIcon">Whether to suppress the icon entirely, hiding it rather than falling back to the default USS icon.</param>
     /// <param name="graphTypes">Array of graph types to scope the style registration. If null or empty, the style applies to all graph types.</param>
-    internal static void Register(Type dataType, Texture2D icon, Color color, Type[] graphTypes)
+    internal static void Register(Type dataType, Texture2D icon, Color color, bool suppressIcon, Type[] graphTypes)
     {
         if (dataType == null)
             throw new ArgumentNullException(nameof(dataType));
@@ -85,13 +86,16 @@ partial class BaseDataTypeStyleMapper
         {
             foreach (var graphType in graphTypes)
             {
-                if (!k_TypeStylesPerGraphType.ContainsKey(graphType))
-                    k_TypeStylesPerGraphType.Add(graphType, new Dictionary<Type, (Texture2D icon, Color color)>());
+                if (!k_TypeStylesPerGraphType.TryGetValue(graphType, out var perGraphTypeStyles))
+                {
+                    perGraphTypeStyles = new Dictionary<Type, (Texture2D icon, Color color, bool suppressIcon)>();
+                    k_TypeStylesPerGraphType[graphType] = perGraphTypeStyles;
+                }
 
-                if (k_TypeStylesPerGraphType.ContainsKey(dataType))
+                if (perGraphTypeStyles.ContainsKey(dataType))
                     Debug.LogWarning("Attempting to override existing data type style for type " + dataType.Name + " in graph type " + graphType.Name);
 
-                k_TypeStylesPerGraphType[graphType][dataType] = (icon, color);
+                perGraphTypeStyles[dataType] = (icon, color, suppressIcon);
             }
 
             return;
@@ -101,7 +105,7 @@ partial class BaseDataTypeStyleMapper
         if (k_TypeStylesForAllGraphTypes.ContainsKey(dataType))
             Debug.LogWarning("Attempting to override existing data type style for type " + dataType.Name + " for all graph types.");
 
-        k_TypeStylesForAllGraphTypes[dataType] = (icon, color);
+        k_TypeStylesForAllGraphTypes[dataType] = (icon, color, suppressIcon);
     }
 
     /// <summary>
@@ -109,8 +113,8 @@ partial class BaseDataTypeStyleMapper
     /// </summary>
     /// <param name="dataType">The type of data to get the style for.</param>
     /// <param name="graphType">The graph type to search for a style. If null, returns the style registered for all graph types.</param>
-    /// <returns>The icon and color for the specified data type and graph type, if available.</returns>
-    internal static (Texture2D icon, Color color)? GetDataTypeStyle(Type dataType, Type graphType = null)
+    /// <returns>The icon, color, and suppress flag for the specified data type and graph type, if available.</returns>
+    internal static (Texture2D icon, Color color, bool suppressIcon)? GetDataTypeStyle(Type dataType, Type graphType = null)
     {
         if (dataType == null)
             return null;

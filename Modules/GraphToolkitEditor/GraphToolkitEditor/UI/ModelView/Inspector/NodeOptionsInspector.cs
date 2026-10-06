@@ -147,7 +147,7 @@ namespace Unity.GraphToolkit.Editor
 
             for (var i = 0; i < m_Models.Count; i++)
             {
-                if (m_Models[i] is NodeModel nodeModel)
+                if (m_Models[i] is PortNodeModel nodeModel)
                 {
                     if (i == 0)
                     {
@@ -203,7 +203,7 @@ namespace Unity.GraphToolkit.Editor
         {
             if (m_Models.Count != 1)
                 return false;
-            var nodeModel = m_Models[0] as NodeModel;
+            var nodeModel = m_Models[0] as PortNodeModel;
 
             if (nodeModel == null)
                 return false;

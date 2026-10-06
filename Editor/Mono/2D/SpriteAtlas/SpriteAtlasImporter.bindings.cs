@@ -20,6 +20,8 @@ namespace UnityEditor.U2D
     [NativeClass("SpriteAtlasImporter", PersistentTypeId = 0x482BD57E)]
     public sealed partial class SpriteAtlasImporter : AssetImporter
     {
+        internal SpriteAtlasImporter(global::UnityEngine.EntityId id) : base(id) {}
+        public SpriteAtlasImporter() {}
         extern internal static void MigrateAllSpriteAtlases();
         extern public float variantScale { get; set; }
         extern public bool includeInBuild { get; set; }

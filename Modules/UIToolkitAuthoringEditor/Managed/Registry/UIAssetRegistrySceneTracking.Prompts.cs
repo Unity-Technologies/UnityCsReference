@@ -44,7 +44,7 @@ static partial class UIAssetRegistrySceneTracking
     {
         // Entering and leaving play mode tears scenes down and rebuilds them; those edits are not being
         // abandoned by the user and the registry re-baselines them itself on the way back to edit mode.
-        if (EditorApplication.isPlayingOrWillChangePlaymode)
+        if (EditorApplication.isPlaying || EditorApplication.isPlayingOrWillChangePlaymode)
             return;
 
         using var _ = ListPool<UnityEngine.Object>.Get(out var dirty);
@@ -60,7 +60,7 @@ static partial class UIAssetRegistrySceneTracking
     internal static void CollectDirtyScenePanelAssets(List<UnityEngine.Object> results)
     {
         var registry = UIAssetRegistry.LiveInstance;
-        if (registry == null || !UIToolkitStageUtility.IsAuthoringEnabledInMainStage)
+        if (registry == null)
             return;
 
         registry.CollectDirtyAssetsHeldOnlyBy(IsTrackedScenePanel, results);

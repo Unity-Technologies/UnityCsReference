@@ -82,6 +82,9 @@ namespace UnityEditor
 
 #pragma warning disable 0618
         [AutoStaticsCleanupOnCodeReload]
+        // The AssetModificationProcessors getter rebuilds this from TypeCache whenever it is null, so the
+        // list cleared on reload is recollected on the next use.
+        [IgnoreForUAL0015("Processor type list rebuilt from TypeCache by the AssetModificationProcessors getter")]
         static System.Collections.Generic.IEnumerable<System.Type> assetModificationProcessors = null;
         static System.Collections.Generic.IEnumerable<System.Type> AssetModificationProcessors
         {
@@ -584,6 +587,9 @@ namespace UnityEditor
         }
 
         [AutoStaticsCleanupOnCodeReload]
+        // GetMakeEditableMethods re-reflects the MakeEditable methods whenever this is null, so the array
+        // cleared on reload is rebuilt on the next use.
+        [IgnoreForUAL0015("Reflected method array rebuilt by GetMakeEditableMethods when null")]
         static MethodInfo[] s_MakeEditableMethods;
 
         static MethodInfo[] GetMakeEditableMethods()

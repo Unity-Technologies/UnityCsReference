@@ -2,7 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: UIToolkitFramework not yet converted
 using System;
 using System.Collections.Generic;
 using System.Globalization;
@@ -13,15 +12,20 @@ using Unity.Scripting.LifecycleManagement;
 namespace UnityEditor.UIElements
 {
     [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
-    [NoAutoStaticsCleanup] // Immutable unit lookup tables; safe to persist across reloads.
     internal class GridTrackSizeField : VisualElement
     {
         // Unit popup values. "min"/"max"/"fit" are short labels for min-content/max-content/fit-content.
         const string k_Px = "px", k_Pct = "%", k_Fr = "fr", k_Auto = "auto",
             k_Min = "min", k_Max = "max", k_Minmax = "minmax", k_Fit = "fit";
         const int k_UnitWidth = 54;
+        const int k_NestedUnitWidth = 34;
+        const int k_NestedMinWidth = 64;
 
+        // Immutable unit lookup table of string constants; safe to keep for the process.
+        [NoAutoStaticsCleanup]
         static readonly List<string> k_FullUnits = new() { k_Px, k_Pct, k_Fr, k_Auto, k_Min, k_Max, k_Minmax, k_Fit };
+        // Immutable unit lookup table of string constants; safe to keep for the process.
+        [NoAutoStaticsCleanup]
         static readonly List<string> k_SimpleUnits = new() { k_Px, k_Pct, k_Fr, k_Auto, k_Min, k_Max };
 
         readonly VisualElement m_ValueArea;
@@ -61,7 +65,7 @@ namespace UnityEditor.UIElements
             unitContainer.AddToClassList("unity-style-field__options-popup-container");
             m_Unit = new PopupField<string>(allowFunctions ? k_FullUnits : k_SimpleUnits, k_Fr);
             m_Unit.AddToClassList("unity-style-field__options-popup");
-            m_Unit.style.width = k_UnitWidth; // wider than the length unit (24px) to fit "minmax" / "auto"
+            m_Unit.style.width = allowFunctions ? k_UnitWidth : k_NestedUnitWidth; // wider than the length unit (24px) to fit "minmax" / "auto"
             m_Unit.RegisterValueChangedCallback(OnUnitChanged);
             unitContainer.Add(m_Unit);
             Add(unitContainer);
@@ -79,6 +83,15 @@ namespace UnityEditor.UIElements
                 m_Arrow.style.marginLeft = 3;
                 m_Arrow.style.marginRight = 3;
                 m_Arrow.style.flexShrink = 0;
+
+                m_ValueArea.style.flexWrap = Wrap.Wrap;
+            }
+            else
+            {
+                // Nested min/max/limit fields are too narrow for the unit to overlay the text box.
+                unitContainer.style.position = Position.Relative;
+                unitContainer.style.flexShrink = 0;
+                style.minWidth = k_NestedMinWidth;
             }
 
             UpdateLayout();
@@ -168,6 +181,19 @@ namespace UnityEditor.UIElements
             Notify();
         }
 
+        static string UnitTooltip(string unit) => unit switch
+        {
+            k_Px => "Pixels",
+            k_Pct => "Percent of the container's size",
+            k_Fr => "Fraction: a share of the remaining free space",
+            k_Auto => "Sized by content, growing to fill free space",
+            k_Min => "min-content: the smallest size the content allows",
+            k_Max => "max-content: the content's preferred size",
+            k_Minmax => "minmax(min, max): sized within a range",
+            k_Fit => "fit-content(limit): content size clamped to a limit",
+            _ => string.Empty
+        };
+
         void UpdateLayout()
         {
             var unit = m_Unit.value;
@@ -175,6 +201,7 @@ namespace UnityEditor.UIElements
             bool isFit = unit == k_Fit;
             bool isNumeric = unit is k_Px or k_Pct or k_Fr;
 
+            m_Unit.tooltip = UnitTooltip(unit);
             m_ValueArea.Clear();
             // Reserve room for the (absolutely positioned) unit popup only when the nested fields fill the
             // value area; a plain text box intentionally runs under the unit for the flush look.
@@ -227,4 +254,3 @@ namespace UnityEditor.UIElements
         public static readonly string valueAreaUssClassName = ussClassName + "__value-area";
     }
 }
-#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

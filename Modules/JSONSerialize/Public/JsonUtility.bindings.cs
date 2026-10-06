@@ -68,6 +68,10 @@ namespace UnityEngine
         [FreeFunction("FromJsonInternal", true, ThrowsException = true, IsThreadSafe = true)]
         private static extern object FromJsonInternal(string json, object objectToOverwrite, Type type);
 
+        // False means the walker diverged or never engaged; test link.xml keeps this in stripped players
+        [FreeFunction("CheckJsonFromBinaryByteIdenticalInternal")]
+        internal static extern bool CheckJsonFromBinaryByteIdentical([NotNull] object obj, bool prettyPrint);
+
         ///<summary>Generate a JSON representation of the public fields of an object.</summary>
         ///<remarks>Internally, this method uses the Unity serializer. The object you pass in and all its fields must meet the requirements for serialization by the Unity serializer. For the full list of these requirements, refer to [Serialization rules](xref:script-serialization-rules) in the manual.
         ///

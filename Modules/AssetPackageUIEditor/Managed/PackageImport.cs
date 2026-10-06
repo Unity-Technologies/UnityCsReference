@@ -2,7 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: Packman not yet converted
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -90,9 +89,7 @@ namespace UnityEditor
             PackageImportWizard.instance.StartImport(packagePath, items, packageIconPath, origin, packageExtractedPath, assetPackageInfo);
         }
 
-        #pragma warning disable UAL0015 // this side effect does not outlive the current call (global trigger / lazily-loaded asset re-fetched on next access); a stale reference is harmlessly replaced
         public PackageImport()
-        #pragma warning restore UAL0015
         {
             minSize = new Vector2(350, 350);
         }
@@ -375,11 +372,11 @@ namespace UnityEditor
             {
                 var subtitleRect = new Rect(textAreaX + 1f, textAreaY + rowHeight * 2, textContentWidth, rowHeight);
                 var subtitleText = packageImportWizard.IsProjectSettingStep ? "Import Settings Overrides" : "Import Content";
-                GUI.Label(subtitleRect, EditorGUIUtility.TrTextContent(subtitleText), ms_Constants.subtitle);
+                GUI.Label(subtitleRect, L10n.TextContent(subtitleText, null, null, null), ms_Constants.subtitle);
 
                 var stepInfoRect = new Rect(textAreaX, textAreaY + rowHeight * 3, textContentWidth, rowHeight);
                 var stepInfoText = packageImportWizard.IsProjectSettingStep ? "Step 2 of 2" : "Step 1 of 2";
-                GUI.Label(stepInfoRect, EditorGUIUtility.TrTextContent(stepInfoText), ms_Constants.stepInfo);
+                GUI.Label(stepInfoRect, L10n.TextContent(stepInfoText, null, null, null), ms_Constants.stepInfo);
             }
         }
 
@@ -391,14 +388,14 @@ namespace UnityEditor
             GUILayout.Space(10);
 
             GUI.enabled = !m_Tree.isAllItemsEnabled;
-            if (GUILayout.Button(EditorGUIUtility.TrTextContent("All"), GUILayout.Width(50)))
+            if (GUILayout.Button(L10n.TextContent("All", null, null, null), GUILayout.Width(50)))
             {
                 m_Tree.SetAllEnabled(PackageImportTreeView.EnabledState.All);
             }
             GUI.enabled = true;
 
             GUI.enabled = m_Tree.isAnyItemEnabled;
-            if (GUILayout.Button(EditorGUIUtility.TrTextContent("None"), GUILayout.Width(50)))
+            if (GUILayout.Button(L10n.TextContent("None", null, null, null), GUILayout.Width(50)))
             {
                 m_Tree.SetAllEnabled(PackageImportTreeView.EnabledState.None);
             }
@@ -423,12 +420,12 @@ namespace UnityEditor
             var hasTrustIssue = trustAndSignature is TrustAndSignature.LimitedTrust or TrustAndSignature.UntrustedInvalidSignature or TrustAndSignature.UntrustedNoSignature;
             if (hasTrustIssue)
             {
-                if (GUILayout.Button(EditorGUIUtility.TrTextContent("Learn More"), EditorStyles.linkLabel))
+                if (GUILayout.Button(L10n.TextContent("Learn More", null, null, null), EditorStyles.linkLabel))
                     Application.OpenURL("https://docs.unity3d.com/Manual/upm-signature.html");
                 EditorGUIUtility.AddCursorRect(GUILayoutUtility.GetLastRect(), MouseCursor.Link);
             }
             GUILayout.FlexibleSpace();
-            if (GUILayout.Button(EditorGUIUtility.TrTextContent("Cancel")))
+            if (GUILayout.Button(L10n.TextContent("Cancel", null, null, null)))
             {
                 packageImportWizard.CancelImport();
             }
@@ -436,16 +433,16 @@ namespace UnityEditor
             var hasPreviousStep = packageImportWizard.IsMultiStepWizard && packageImportWizard.IsProjectSettingStep;
             var hasNextStep = packageImportWizard.IsMultiStepWizard && !packageImportWizard.IsProjectSettingStep;
             var anyElementsSelected = packageImportWizard.AreAnyElementsSelected();
-            if (hasPreviousStep && GUILayout.Button(EditorGUIUtility.TrTextContent("Back")))
+            if (hasPreviousStep && GUILayout.Button(L10n.TextContent("Back", null, null, null)))
             {
                 packageImportWizard.DoPreviousStep(m_ImportPackageItems);
             }
-            if (hasNextStep && GUILayout.Button(EditorGUIUtility.TrTextContent("Next")))
+            if (hasNextStep && GUILayout.Button(L10n.TextContent("Next", null, null, null)))
             {
                 packageImportWizard.DoNextStep(m_ImportPackageItems);
             }
             GUI.enabled = anyElementsSelected;
-            if (!hasNextStep && GUILayout.Button(hasTrustIssue ? EditorGUIUtility.TrTextContent("Import Anyway") : EditorGUIUtility.TrTextContent("Import")))
+            if (!hasNextStep && GUILayout.Button(hasTrustIssue ? L10n.TextContent("Import Anyway", null, null, null) : L10n.TextContent("Import", null, null, null)))
             {
                 packageImportWizard.DoImportStep(m_ImportPackageItems);
             }
@@ -747,4 +744,3 @@ namespace UnityEditor
         }
     }
 }
-#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

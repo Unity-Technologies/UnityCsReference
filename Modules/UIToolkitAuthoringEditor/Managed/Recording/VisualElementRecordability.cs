@@ -4,7 +4,6 @@
 
 using UnityEditor;
 using UnityEditor.SceneManagement;
-using UnityEditor.UIElements;
 using UnityEngine.UIElements;
 using UnityEngine.UIElements.StyleSheets;
 
@@ -12,9 +11,9 @@ namespace Unity.UIToolkit.Editor
 {
     /// <summary>
     /// Why a <see cref="VisualElement"/> + <see cref="StylePropertyId"/> pair cannot be
-    /// recorded. The set is intentionally small and user-actionable: the project setting
-    /// can be toggled, the property can be replaced with a recordable one, and the
-    /// element can be given a name. <see cref="NoBinderAvailable"/> is the degenerate
+    /// recorded. The set is intentionally small and user-actionable: the property can be
+    /// replaced with a recordable one, and the element can be given a name.
+    /// <see cref="NoBinderAvailable"/> is the degenerate
     /// "not recording into anything" case (no ancestor <see cref="PanelRenderer"/>):
     /// call sites typically treat it the same as "recording is not applicable here".
     /// <see cref="NoElementSelected"/> is the selection-shape case (probe called with
@@ -28,7 +27,6 @@ namespace Unity.UIToolkit.Editor
     {
         Ok,
         NoElementSelected,
-        ProjectSettingDisabled,
         PropertyNotRecordable,
         ElementHasNoName,
         NoBinderAvailable,
@@ -54,8 +52,6 @@ namespace Unity.UIToolkit.Editor
         // "give this element a name") so the user knows what to change.
         internal static readonly string k_NoElementSelectedMessage =
             L10n.Tr("Recording disabled: No element selected.", null);
-        internal static readonly string k_ProjectSettingDisabledMessage =
-            L10n.Tr("Recording disabled: Enable PanelRenderer animation in UI Toolkit project settings.", null);
         internal static readonly string k_NoBinderAvailableMessage =
             L10n.Tr("Recording disabled: Add a PanelRenderer component to display this element and enable recording.", null);
         internal static readonly string k_NoAnimationClipMessage =
@@ -87,8 +83,6 @@ namespace Unity.UIToolkit.Editor
                     return null;
                 case RecordabilityReason.NoElementSelected:
                     return k_NoElementSelectedMessage;
-                case RecordabilityReason.ProjectSettingDisabled:
-                    return k_ProjectSettingDisabledMessage;
                 case RecordabilityReason.NoBinderAvailable:
                     return k_NoBinderAvailableMessage;
                 case RecordabilityReason.NoAnimationClip:
@@ -126,9 +120,6 @@ namespace Unity.UIToolkit.Editor
         {
             if (element == null)
                 return new VisualElementRecordability(RecordabilityReason.NoElementSelected, null, null);
-
-            if (!UIToolkitProjectSettings.enablePanelRendererAnimation)
-                return new VisualElementRecordability(RecordabilityReason.ProjectSettingDisabled, null, null);
 
             if (TryFindBinder(element, out var panelBinder))
                 return ResolvePath(element, panelBinder);

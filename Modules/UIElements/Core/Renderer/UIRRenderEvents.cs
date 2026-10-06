@@ -74,11 +74,14 @@ namespace UnityEngine.UIElements.UIR
 
             var groupTransformAncestor = renderData.groupTransformAncestor;
             if (groupTransformAncestor != null)
-                VisualElement.MultiplyMatrix34(ref groupTransformAncestor.owner.worldTransformInverse, ref renderData.owner.worldTransformRef, out transform);
+                UIRUtility.ComputeMatrixRelativeToAncestor(renderData, groupTransformAncestor, out transform);
             else
                 UIRUtility.ComputeMatrixRelativeToRenderTree(renderData, out transform);
 
-            transform.m22 = 1.0f; // Once world-space mode is introduced, this should become conditional
+            if (renderData.owner.elementPanel is { isFlat: true })
+                UIRUtility.NeutralizeZ(ref transform);
+            else
+                transform.m22 = 1.0f;
         }
 
         static Vector4 GetClipRectIDClipInfo(RenderData renderData)
@@ -118,6 +121,7 @@ namespace UnityEngine.UIElements.UIR
             if (zIndex != int.MinValue && parent != null)
                 parent.transformFlags |= VisualElementTransformFlags.MayHaveZIndexedChildren;
             bool isReparentedAcrossDepth = false;
+            ve.transformFlags &= ~VisualElementTransformFlags.ZIndexPromotedOutOfParent;
 
             // Regular RenderData
             renderData = renderTreeManager.GetPooledRenderData();
@@ -129,6 +133,9 @@ namespace UnityEngine.UIElements.UIR
 
             if (ve.useRenderTexture)
                 renderData.flags |= RenderDataFlags.IsSubTreeQuad;
+
+            if (ve.isWorldSpaceRootPanelComponent)
+                renderData.flags |= RenderDataFlags.CutsRenderChain;
 
             if (parent == null)
             {
@@ -147,6 +154,8 @@ namespace UnityEngine.UIElements.UIR
                 }
 
                 isReparentedAcrossDepth = parentRenderData != visualParentRenderData;
+                if (isReparentedAcrossDepth)
+                    ve.transformFlags |= VisualElementTransformFlags.ZIndexPromotedOutOfParent;
 
                 renderData.parent = parentRenderData;
                 renderData.renderTree = renderData.parent.renderTree;
@@ -157,8 +166,6 @@ namespace UnityEngine.UIElements.UIR
                 else
                     renderData.groupTransformAncestor = parentRenderData.groupTransformAncestor;
             }
-
-            renderData.renderTree.dirtyTracker.EnsureFits(renderData.depthInRenderTree);
 
             if ((ve.renderHints & RenderHints.GroupTransform) != 0 && !renderData.isSubTreeQuad && !renderTreeManager.drawInCameras)
                 // TODO: For SubTreeQuads, we should convert this to a DynamicTransform
@@ -174,11 +181,6 @@ namespace UnityEngine.UIElements.UIR
                 nestedData.transformID = ShaderInfoAllocator.identityTransform; // This is defining a new coordinate space
 
                 nestedData.renderTree = renderTreeManager.GetPooledRenderTree(renderTreeManager, nestedData);
-                nestedData.renderTree.dirtyTracker.EnsureFits(nestedData.depthInRenderTree);
-
-                renderTreeManager.UIEOnClippingChanged(ve, true);
-                renderTreeManager.UIEOnOpacityChanged(ve);
-                renderTreeManager.UIEOnVisualsChanged(ve, true);
 
                 var parentTree = renderData.renderTree;
                 Debug.Assert(parentTree != null); // Because we're in the nested case
@@ -251,6 +253,14 @@ namespace UnityEngine.UIElements.UIR
             }
 
             renderData.zIndex = zIndex;
+
+            // Registered once linked: the parent's tracker orders its dirty children by their place among their siblings.
+            if (renderData.isSubTreeQuad)
+            {
+                renderTreeManager.UIEOnClippingChanged(ve, true);
+                renderTreeManager.UIEOnOpacityChanged(ve);
+                renderTreeManager.UIEOnVisualsChanged(ve, true);
+            }
 
             // TransformID
             // Non-identity rotation/scale or a Z-translation makes this a sticky bone, since the ElementInfo offset only carries X/Y.
@@ -388,6 +398,8 @@ namespace UnityEngine.UIElements.UIR
 
                 if (renderData.nextSibling == null)
                     parentRenderData.lastChild = renderData.prevSibling;
+
+                ChildrenDirtyTracker.OnChildUnlinked(parentRenderData, renderData);
             }
 
             if (renderData.prevSibling != null)
@@ -402,7 +414,8 @@ namespace UnityEngine.UIElements.UIR
             while (renderData.parent != null)
             {
                 // A group transform is a coordinate and scissor-clip boundary; a z-index element must not escape it or its draw commands fall outside the group's scissor range.
-                if (renderData.zIndex != int.MinValue || renderData.isGroupTransform || EstablishesStatefulClipBoundary(renderTreeManager, renderData))
+                // A world-space root panel component cuts the render chain into a per-renderer command list; escaping it would send the draws to another component's renderer, or to the discarded default command list.
+                if (renderData.zIndex != int.MinValue || renderData.isGroupTransform || renderData.cutsRenderChain || EstablishesStatefulClipBoundary(renderTreeManager, renderData))
                     return renderData;
                 renderData = renderData.parent;
             }
@@ -423,11 +436,16 @@ namespace UnityEngine.UIElements.UIR
                 || renderTreeManager.elementBuilder.RequiresStencilMask(ve);
         }
 
-        static bool IsReparentedZIndexChild(RenderData childRenderData, RenderData visualParentRenderData)
+        static bool IsReparentedZIndexChild(RenderData childRenderData)
         {
             return childRenderData != null
-                && childRenderData.hasZIndex
-                && childRenderData.parent != visualParentRenderData;
+                && (childRenderData.owner.transformFlags & VisualElementTransformFlags.ZIndexPromotedOutOfParent) != 0;
+        }
+
+        public static class Testing
+        {
+            public static bool IsReparentedZIndexChild(RenderData childRenderData) =>
+                RenderEvents.IsReparentedZIndexChild(childRenderData);
         }
 
         internal static void InsertAtZIndexPosition(RenderData renderData, RenderData parentRenderData, int zIndex)
@@ -476,6 +494,8 @@ namespace UnityEngine.UIElements.UIR
             }
             else
                 parent.lastChild = node;
+
+            ChildrenDirtyTracker.OnChildLinked(parent, node, insertAfter, nextSibling);
         }
 
         static void DisconnectRenderTreeFromParent(RenderTree parentTree, RenderTree nestedTree)
@@ -499,10 +519,17 @@ namespace UnityEngine.UIElements.UIR
             if (renderData.hasZIndex)
                 --renderTreeManager.zIndexElementCount;
 
-            // Captured before renderData.renderTree is cleared below; the backdrop-filter teardown needs it. UI-5170.
             RenderTree renderTree = renderData.renderTree;
-            renderTree.ChildWillBeRemoved(renderData);
             CommandManipulator.ResetCommands(renderTreeManager, renderData);
+
+            // Ahead of every teardown it depends on: the state lives in the extra data freed below, and a root
+            // render data's tree is pooled just below too, which would clear the registry we unregister from.
+            if (renderData.hasBackdropFilterAllocated)
+            {
+                BackdropFilterHelper.ReleaseBackdropFilterResources(renderTreeManager, renderData);
+                renderTreeManager.panel?.DecrementBackdropFilterCount();
+                renderTree.UnregisterBackdropFilter(renderData);
+            }
 
             if (renderData.parent == null)
             {
@@ -516,6 +543,7 @@ namespace UnityEngine.UIElements.UIR
             renderData.nextSibling = null;
             renderData.firstChild = null;
             renderData.lastChild = null;
+            renderData.childCount = 0;
             renderData.renderTree = null;
 
             renderTreeManager.ResetGraphicEntries(renderData);
@@ -596,15 +624,8 @@ namespace UnityEngine.UIElements.UIR
             }
             renderTreeManager.visualChangesProcessor.ReleaseChainRef(renderData.m_EffectiveModifiers);
 
-            if (renderData.hasBackdropFilterAllocated)
-            {
-                BackdropFilterHelper.ReleaseBackdropFilterResources(renderTreeManager, renderData);
-                renderTreeManager.panel?.DecrementBackdropFilterCount();
-                renderTree.UnregisterBackdropFilter(renderData);
-            }
-
             // Removal can occur without the chain ever becoming empty, so drop any registration the
-            // sync paths didn't; the blocks themselves were already returned by FreeExtraData above.
+            // sync paths didn't; the blocks themselves were already returned by the backdrop release above.
             if (renderData.isRegisteredForFilterCallbacks)
                 renderTreeManager.UnregisterFilterCallbackElement(renderData, RenderDataFlags.RegisteredForFilterCallbacks);
             if (renderData.isRegisteredForBackdropFilterCallbacks)
@@ -709,9 +730,16 @@ namespace UnityEngine.UIElements.UIR
                     // We need to add/remove scissor push/pop commands
                     mustRepaintThis = true;
 
-                if (newClippingMethod == ClipMethod.ShaderDiscard || oldClippingMethod == ClipMethod.ShaderDiscard && RenderData.AllocatesID(renderData.clipRectID))
-                    // We must update the clipping rects.
+                // A group transform keeps an owned clipRectID here (the else above skips its reassignment), so the
+                // second term is live for one.
+                if (newClippingMethod == ClipMethod.ShaderDiscard
+                    || oldClippingMethod == ClipMethod.ShaderDiscard && RenderData.AllocatesID(renderData.clipRectID))
                     mustProcessSizeChange = true;
+
+                // The transition changes what this element clips its descendants to, and their backdrop-filter
+                // meshes bake that clip into their recorded rect. Scissor and group transitions get no
+                // hierarchical repaint, so re-record just those elements rather than walking the whole subtree.
+                renderData.renderTree.RefreshBackdropFilterDescendantsOf(renderData);
             }
 
             if (clipRectIDChanged)
@@ -811,7 +839,7 @@ namespace UnityEngine.UIElements.UIR
                     for (int i = 0; i < childCount; i++)
                     {
                         var childRD = ve.hierarchy[i].renderData;
-                        if (IsReparentedZIndexChild(childRD, renderData))
+                        if (IsReparentedZIndexChild(childRD))
                         {
                             DepthFirstOnClippingChanged(
                                 renderTreeManager,
@@ -948,7 +976,7 @@ namespace UnityEngine.UIElements.UIR
                     for (int i = 0; i < childCount; i++)
                     {
                         var childRD = ve.hierarchy[i].renderData;
-                        if (IsReparentedZIndexChild(childRD, renderData))
+                        if (IsReparentedZIndexChild(childRD))
                             DepthFirstOnOpacityChanged(renderTreeManager, newOpacity, childRD, dirtyID, hierarchical, propagateOpacityChange, ref stats);
                     }
                 }
@@ -1016,9 +1044,7 @@ namespace UnityEngine.UIElements.UIR
 
             if (transformChanged)
             {
-                promotedToBone = !RenderData.AllocatesID(renderData.transformID)
-                    && !renderData.isGroupTransform
-                    && !renderData.isNestedRenderTreeRoot
+                promotedToBone = !renderData.isBoneBarrier
                     && (!renderData.owner.hasDefaultRotationAndScale || renderData.owner.has3DTranslation)
                     && PromoteToBone(renderTreeManager, renderData);
 
@@ -1027,11 +1053,11 @@ namespace UnityEngine.UIElements.UIR
                     // TODO: Optimized flip-winding instead of a full repaint
                     renderData.renderTree.OnRenderDataVisualsChanged(renderData, true);
                 }
-                UpdateZeroScaling(renderData);
             }
 
-            // Backdrop-filter UVs depend on world transform, so meshes regen on transform change.
-            // Gate on the allocated flag so panels with no backdrop-filter (e.g. world-space) skip this.
+            // The recorded rect bakes in both the world transform and the clip, so it goes stale on a size-only
+            // change as well -- hence outside the transformChanged check above. Re-recording is what this walk
+            // uniquely provides; clippingRect is already invalidated subtree-wide by the hierarchy flags updater.
             if (renderData.hasBackdropFilterAllocated &&
                 (renderData.dirtiedValues & (RenderDataDirtyTypes.Visuals | RenderDataDirtyTypes.VisualsHierarchy)) == 0)
                 renderData.renderTree.OnRenderDataVisualsChanged(renderData, false);
@@ -1045,12 +1071,11 @@ namespace UnityEngine.UIElements.UIR
                 isAncestorOfChangeSkinned = true;
                 stats.boneTransformed++;
             }
-            else if (parentBoneChanged)
+            else if (parentBoneChanged && !renderData.isBoneBarrier)
             {
-                // An ancestor was promoted: re-point to the new nearest bone (the parent's bone) and rewrite the record.
-                var bone = RenderData.AllocatesID(renderData.parent.transformID) ? renderData.parent : renderData.parent.boneTransformAncestor;
-                renderData.boneTransformAncestor = bone;
-                renderData.transformID = bone.transformID;
+                // An ancestor was promoted: inherit the parent's bone, or whatever the parent inherits when it has none, and rewrite the record.
+                renderData.boneTransformAncestor = RenderData.AllocatesID(renderData.parent.transformID) ? renderData.parent : renderData.parent.boneTransformAncestor;
+                renderData.transformID = renderData.parent.transformID;
                 renderData.transformID.ownedState = OwnedState.Inherited;
                 renderTreeManager.MarkElementInfoDirty(renderData);
             }
@@ -1058,9 +1083,11 @@ namespace UnityEngine.UIElements.UIR
             {
                 // Only the clip info had to be updated, we can skip the other cases which are for transform changes only.
             }
-            else if (renderData.isGroupTransform)
+            else if (renderData.isBoneBarrier)
             {
-                stats.groupTransformElementsChanged++;
+                Debug.Assert(renderData.transformID.Equals(ShaderInfoAllocator.identityTransform) && renderData.boneTransformAncestor == null); // A group or nested root defines its own transform space and never inherits a bone
+                if (renderData.isGroupTransform)
+                    stats.groupTransformElementsChanged++;
             }
             else if (isAncestorOfChangeSkinned)
             {
@@ -1086,8 +1113,7 @@ namespace UnityEngine.UIElements.UIR
 
             if (!renderData.isGroupTransform)
             {
-                bool childParentBoneChanged = promotedToBone
-                    || (parentBoneChanged && !RenderData.AllocatesID(renderData.transformID) && !renderData.isNestedRenderTreeRoot);
+                bool childParentBoneChanged = promotedToBone || (parentBoneChanged && !renderData.isBoneBarrier);
 
                 // Recurse on children
                 var child = renderData.firstChild;
@@ -1113,15 +1139,16 @@ namespace UnityEngine.UIElements.UIR
                     for (int i = 0; i < childCount; i++)
                     {
                         var childRD = ve.hierarchy[i].renderData;
-                        if (IsReparentedZIndexChild(childRD, renderData))
+                        if (IsReparentedZIndexChild(childRD))
                             DepthFirstOnTransformOrSizeChanged(renderTreeManager, childRD, dirtyID, isAncestorOfChangeSkinned, transformChanged, childParentBoneChanged, ref stats);
                     }
                 }
             }
-            else if (transformChanged)
+            else
             {
-                // Recursion stops at group transforms (descendants ride the group matrix). Backdrop-filters are
-                // the exception: their UVs track the world transform, which moved — refresh them via the registry. UI-5170.
+                // Recursion stops at group transforms (descendants ride the group matrix). Backdrop-filters are the
+                // exception: their recorded rect bakes both the world transform and this group's clip, so a size
+                // change here invalidates it just as a transform change does. UI-5170.
                 renderData.renderTree.RefreshBackdropFilterDescendantsOfGroup(renderData);
             }
         }
@@ -1240,22 +1267,6 @@ namespace UnityEngine.UIElements.UIR
             }
 
             return false;
-        }
-
-        static void UpdateZeroScaling(RenderData renderData)
-        {
-            if (renderData.isNestedRenderTreeRoot) // Otherwise, the transform is an identity
-                return;
-
-            var ve = renderData.owner;
-            bool transformScaleZero = Math.Abs(ve.resolvedStyle.scale.value.x * ve.resolvedStyle.scale.value.y) < 0.001f;
-
-            bool parentTransformScaleZero = false;
-            VisualElement parent = ve.hierarchy.parent;
-            if (parent != null)
-                parentTransformScaleZero = parent.renderData.worldTransformScaleZero;
-
-            renderData.worldTransformScaleZero = parentTransformScaleZero | transformScaleZero;
         }
 
         static bool NeedsTransformID(VisualElement ve)

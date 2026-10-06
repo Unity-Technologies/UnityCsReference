@@ -153,8 +153,6 @@ namespace UnityEditor.Build
                     return new NamedBuildTarget("GameCoreXboxOne");
                 case BuildTargetGroup.PS5:
                     return new NamedBuildTarget("PS5");
-                case BuildTargetGroup.Kepler:
-                    return new NamedBuildTarget("Kepler");
             }
 
             throw new ArgumentException($"There is no a valid NamedBuildTarget for BuildTargetGroup '{buildTargetGroup}'");

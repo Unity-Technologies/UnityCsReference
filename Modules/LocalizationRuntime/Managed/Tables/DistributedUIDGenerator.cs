@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using Unity.Scripting.LifecycleManagement;
 using UnityEngine;
 
 namespace Unity.Localization;
@@ -14,36 +15,57 @@ namespace Unity.Localization;
 /// <remarks>
 /// The generated ids are non-sequential, so several users can add keys to the same table without id collisions. The id
 /// packs a per-millisecond sequence (12 bits), a machine id (10 bits), and a timestamp measured from
-/// <see cref="CustomEpoch"/> (41 bits). The machine id is derived from <see cref="UnityEngine.SystemInfo.deviceUniqueIdentifier"/>
-/// so it is stable per machine. Assign an instance to <see cref="SharedTableData.KeyGenerator"/> to control how a
-/// collection assigns key ids, or implement <see cref="IKeyGenerator"/> for a different scheme.
+/// <see cref="CustomEpoch"/> (41 bits). Timestamps count from a fixed default epoch of 2020-01-01T00:00:00Z, and every
+/// generator in the process draws from one sequence counter, so two default generators created at the same moment
+/// still hand out different ids. The machine id is derived from
+/// <see cref="UnityEngine.SystemInfo.deviceUniqueIdentifier"/> so it is stable per machine. Assign an instance to
+/// <see cref="SharedTableData.KeyGenerator"/> to control how a collection assigns key ids, or implement
+/// <see cref="IKeyGenerator"/> for a different scheme.
 /// </remarks>
 /// <example>
-/// <para>Generate two ids and confirm they differ.</para>
+/// Generate two ids and confirm they differ.
 /// <code source="../../../../Modules/LocalizationRuntime/Tests/UTFTests/Localization.Samples/Tables/DistributedUIDGeneratorOverviewExample.cs"/>
 /// </example>
 /// <seealso cref="IKeyGenerator"/>
 /// <seealso cref="SharedTableData"/>
 [Serializable]
-public class DistributedUIDGenerator : IKeyGenerator
+public class DistributedUIDGenerator : IKeyGenerator, ISerializationCallbackReceiver
 {
     const int k_MachineIdBits = 10;
     const int k_SequenceBits = 12;
 
     const int k_MaxMachineId = (1 << k_MachineIdBits) - 1;
     const int k_MaxSequence = (1 << k_SequenceBits) - 1;
+    // What is left of a long once the machine id, the sequence and the sign bit are taken.
+    const long k_MaxTimestamp = (1L << (63 - k_MachineIdBits - k_SequenceBits)) - 1;
     // How far behind the recorded timestamp the clock may run before waiting for it stops being reasonable.
     const int k_MaxSpinMilliseconds = 100;
 
-    [SerializeField, HideInInspector] long m_CustomEpoch = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
+    // 2020-01-01T00:00:00Z. A fixed epoch keeps every default generator on one timeline.
+    internal const long k_DefaultEpoch = 1577836800000;
 
-    long m_LastTimestamp = -1;
-    long m_Sequence;
+    [NoAutoStaticsCleanup] // a monitor with no state to clear
+    static readonly object s_SequenceLock = new();
+
+    // Absolute Unix milliseconds, so instances with different epochs still share one counter.
+    [NoAutoStaticsCleanup] // reissuing a timestamp and sequence after a reload would hand out an id already in use
+    static long s_LastTimestamp = -1;
+    [NoAutoStaticsCleanup] // mirrors s_LastTimestamp
+    static long s_Sequence;
+
+    [SerializeField, HideInInspector] long m_CustomEpoch = k_DefaultEpoch;
+
     int m_MachineId;
 
     /// <summary>
     /// The epoch, in Unix milliseconds, that timestamps are measured from.
     /// </summary>
+    /// <remarks>
+    /// Defaults to 2020-01-01T00:00:00Z, which every generator built by the default constructor shares. The 41-bit
+    /// timestamp covers 69 years from the epoch. A generator restored from a saved
+    /// <see cref="SharedTableData"/> always measures from the default epoch, so an epoch passed to the constructor
+    /// lasts only for the life of that instance.
+    /// </remarks>
     public long CustomEpoch => m_CustomEpoch;
 
     /// <summary>
@@ -61,7 +83,12 @@ public class DistributedUIDGenerator : IKeyGenerator
                 m_MachineId = DeriveMachineId();
             return m_MachineId;
         }
-        set => m_MachineId = Mathf.Clamp(value, 1, k_MaxMachineId);
+        set
+        {
+            if (value < 1 || value > k_MaxMachineId)
+                Debug.LogWarning($"Machine id {value} is outside the range 1 to {k_MaxMachineId} and was clamped.");
+            m_MachineId = Mathf.Clamp(value, 1, k_MaxMachineId);
+        }
     }
 
     static int DeriveMachineId()
@@ -77,14 +104,14 @@ public class DistributedUIDGenerator : IKeyGenerator
     }
 
     /// <summary>
-    /// Creates a generator that measures timestamps from the current time.
+    /// Creates a generator that measures timestamps from the default epoch.
     /// </summary>
     /// <remarks>
-    /// The current UTC time becomes the <see cref="CustomEpoch"/>. Use the <see cref="DistributedUIDGenerator(long)"/>
-    /// overload to pin the epoch to a fixed point instead.
+    /// The <see cref="CustomEpoch"/> is 2020-01-01T00:00:00Z, shared by every generator built this way. Use the
+    /// <see cref="DistributedUIDGenerator(long)"/> overload to measure from a different point instead.
     /// </remarks>
     /// <example>
-    /// <para>Assign a default generator to a collection's shared data.</para>
+    /// Assign a default generator to a collection's shared data.
     /// <code source="../../../../Modules/LocalizationRuntime/Tests/UTFTests/Localization.Samples/Tables/DistributedUIDGeneratorConstructorExample.cs"/>
     /// </example>
     public DistributedUIDGenerator() {}
@@ -93,60 +120,83 @@ public class DistributedUIDGenerator : IKeyGenerator
     /// Creates a generator that measures timestamps from a specific epoch.
     /// </summary>
     /// <remarks>
-    /// Because the timestamp portion of each id counts from <paramref name="customEpoch"/>, a later epoch keeps ids
-    /// smaller for longer before the 41-bit timestamp range is exhausted.
+    /// The timestamp portion of each id counts from <paramref name="customEpoch"/> instead of the default epoch, which
+    /// takes the generator off the timeline the default generators share, so its ids can collide with theirs. For that
+    /// reason a generator restored from a saved <see cref="SharedTableData"/> reverts to the default epoch, and an
+    /// epoch set here lasts only for the life of the instance.
     /// </remarks>
     /// <param name="customEpoch">The epoch, in Unix milliseconds, that timestamps are measured from.</param>
+    /// <exception cref="ArgumentOutOfRangeException">
+    /// Thrown when the time elapsed since <paramref name="customEpoch"/> does not fit the 41-bit timestamp: an epoch
+    /// later than now would make the id negative, and one more than 69 years ago would overflow into the sign bit.
+    /// An epoch before 1970, and so negative, is a valid date and is accepted.
+    /// </exception>
     /// <example>
-    /// <para>Create a generator pinned to a fixed epoch.</para>
+    /// Create a generator pinned to a fixed epoch.
     /// <code source="../../../../Modules/LocalizationRuntime/Tests/UTFTests/Localization.Samples/Tables/DistributedUIDGeneratorCustomEpochExample.cs"/>
     /// </example>
-    public DistributedUIDGenerator(long customEpoch) => m_CustomEpoch = customEpoch;
+    public DistributedUIDGenerator(long customEpoch)
+    {
+        var elapsed = UtcMilliseconds() - customEpoch;
+        if (elapsed < 0 || elapsed > k_MaxTimestamp)
+            throw new ArgumentOutOfRangeException(nameof(customEpoch), customEpoch, "The epoch must be a Unix time in milliseconds that is in the past and within 69 years of now.");
+        m_CustomEpoch = customEpoch;
+    }
 
     /// <summary>
     /// Returns the next distributed unique id.
     /// </summary>
     /// <remarks>
-    /// Combines the current timestamp, the <see cref="MachineId"/>, and a per-millisecond sequence. The sequence keeps
-    /// ids unique and increasing even when the clock moves backwards or several ids are requested within the same
-    /// millisecond.
+    /// Combines the current timestamp, the <see cref="MachineId"/>, and a per-millisecond sequence. Every generator in
+    /// the process shares that sequence, so ids stay unique when the clock moves backwards, when several ids are
+    /// requested within the same millisecond, and when two generators are asked for a key at the same moment.
     /// </remarks>
     /// <returns>A distributed unique id suitable for a table key.</returns>
     /// <example>
-    /// <para>Generate a single id.</para>
+    /// Generate a single id.
     /// <code source="../../../../Modules/LocalizationRuntime/Tests/UTFTests/Localization.Samples/Tables/DistributedUIDGeneratorGetNextKeyExample.cs"/>
     /// </example>
     public long GetNextKey()
     {
-        var timestamp = TimeStamp();
-        if (timestamp <= m_LastTimestamp)
+        lock (s_SequenceLock)
         {
-            m_Sequence = (m_Sequence + 1) & k_MaxSequence;
-            timestamp = m_Sequence == 0 ? WaitNextMillis() : m_LastTimestamp; // sequence exhausted; wait for the next millisecond
-        }
-        else
-        {
-            m_Sequence = 0;
-        }
-        m_LastTimestamp = timestamp;
+            var timestamp = UtcMilliseconds();
+            if (timestamp <= s_LastTimestamp)
+            {
+                s_Sequence = (s_Sequence + 1) & k_MaxSequence;
+                timestamp = s_Sequence == 0 ? WaitNextMillis() : s_LastTimestamp; // sequence exhausted; wait for the next millisecond
+            }
+            else
+            {
+                s_Sequence = 0;
+            }
+            s_LastTimestamp = timestamp;
 
-        var id = timestamp << (k_MachineIdBits + k_SequenceBits);
-        id |= (uint)MachineId << k_SequenceBits;
-        id |= m_Sequence;
-        return id;
+            var id = (timestamp - m_CustomEpoch) << (k_MachineIdBits + k_SequenceBits);
+            id |= (uint)MachineId << k_SequenceBits;
+            id |= s_Sequence;
+            return id;
+        }
     }
 
-    long TimeStamp() => DateTimeOffset.UtcNow.ToUnixTimeMilliseconds() - m_CustomEpoch;
+    void ISerializationCallbackReceiver.OnBeforeSerialize() {}
 
-    long WaitNextMillis()
+    // A saved epoch is whatever the generator was built with, which puts it off the timeline the defaults share.
+    void ISerializationCallbackReceiver.OnAfterDeserialize() => m_CustomEpoch = k_DefaultEpoch;
+
+    static long UtcMilliseconds() => DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
+
+    static long WaitNextMillis()
     {
-        var timestamp = TimeStamp();
-        if (timestamp <= m_LastTimestamp - k_MaxSpinMilliseconds)
+        var timestamp = UtcMilliseconds();
+        if (timestamp <= s_LastTimestamp - k_MaxSpinMilliseconds)
         {
-            return m_LastTimestamp + 1;
+            return s_LastTimestamp + 1;
         }
-        while (timestamp <= m_LastTimestamp)
-            timestamp = TimeStamp();
+        while (timestamp <= s_LastTimestamp)
+        {
+            timestamp = UtcMilliseconds();
+        }
         return timestamp;
     }
 }

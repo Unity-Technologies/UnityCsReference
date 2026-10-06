@@ -101,7 +101,7 @@ namespace UnityEngine
         }
 
         [FreeFunction(Name = "GameObjectBindings::GetComponentsInternal", HasExplicitThis = true, ThrowsException = true)]
-        private extern System.Array GetComponentsInternal(Type type, bool useSearchTypeAsArrayReturnType, bool recursive, bool includeInactive, bool reverse, object resultList);
+        private extern System.Array GetComponentsInternal(Type type, bool useSearchTypeAsArrayReturnType, bool recursive, bool includeInactive, bool reverse, [Out] List<Component> resultList);
 
         private System.Array GetComponentsInternal<T>(bool useSearchTypeAsArrayReturnType, bool recursive, bool includeInactive, bool reverse, [Out] List<T> resultList)
         {
@@ -407,6 +407,8 @@ namespace UnityEngine
             Internal_CreateGameObject(this, name);
         }
 
+        internal GameObject(global::UnityEngine.EntityId id) : base(id) {}
+
         public GameObject()
         {
             Internal_CreateGameObject(this, null);
@@ -419,6 +421,8 @@ namespace UnityEngine
                 AddComponent(t);
         }
 
+        // [Writable]: native binds this object as the wrapper before adding the Transform, so callbacks that run
+        // while the component is added (e.g. ObjectFactory.componentWasAdded) see this instance as the GameObject.
         [FreeFunction(Name = "GameObjectBindings::Internal_CreateGameObject")]
         static extern void Internal_CreateGameObject([Writable] GameObject self, string name);
 

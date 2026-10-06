@@ -29,9 +29,8 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         public abstract IEnumerator<IPackageVersion> GetEnumerator();
 
-        IEnumerator IEnumerable.GetEnumerator()
-        {
-            return GetEnumerator();
-        }
+        IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
+        public abstract int Count { get; }
+        public abstract IPackageVersion this[int index] { get; }
     }
 }

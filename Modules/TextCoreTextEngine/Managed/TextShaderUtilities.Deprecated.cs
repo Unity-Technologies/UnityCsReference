@@ -231,6 +231,8 @@ namespace UnityEngine.TextCore.Text
             }
         }
         [AutoStaticsCleanupOnCodeReload]
+        // Lazily resolved via Shader.Find on the next access after cleanup nulls it.
+        [IgnoreForUAL0015("Lazy Shader.Find cache, re-resolved on demand after cleanup")]
         static Shader k_ShaderRef_MobileSDF;
 
         /// <summary>
@@ -247,6 +249,8 @@ namespace UnityEngine.TextCore.Text
             }
         }
         [AutoStaticsCleanupOnCodeReload]
+        // Lazily resolved via Shader.Find on the next access after cleanup nulls it.
+        [IgnoreForUAL0015("Lazy Shader.Find cache, re-resolved on demand after cleanup")]
         static Shader k_ShaderRef_MobileBitmap;
 
 
@@ -265,6 +269,8 @@ namespace UnityEngine.TextCore.Text
             }
         }
         [AutoStaticsCleanupOnCodeReload]
+        // Lazily resolved via Shader.Find on the next access after cleanup nulls it.
+        [IgnoreForUAL0015("Lazy Shader.Find cache, re-resolved on demand after cleanup")]
         static Shader k_ShaderRef_Sprite;
 
 

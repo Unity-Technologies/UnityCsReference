@@ -22,12 +22,6 @@ static partial class LayoutNative
         IntPtr state,
         IntPtr exceptionGCHandle);
 
-    // CSS Grid feature flag. Pushed from UIToolkitProjectSettings at editor boot;
-    // layout tests opt in. When disabled, display:grid falls back to the flex algorithm.
-    [VisibleToOtherModules("UnityEditor.UIElementsModule")]
-    [NativeMethod(IsThreadSafe = false)]
-    internal static extern void SetGridLayoutEnabled(bool enabled);
-
     [NativeMethod(IsThreadSafe = false)]
     internal static extern void MeasureNode(
         IntPtr node,

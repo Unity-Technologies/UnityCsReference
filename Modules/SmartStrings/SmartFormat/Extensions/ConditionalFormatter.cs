@@ -9,6 +9,7 @@
 using UnityEngine;
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Text.RegularExpressions;
 using Unity.SmartStrings.Core.Extensions;
 using Unity.SmartStrings.Core.Parsing;
@@ -28,7 +29,7 @@ public class ConditionalFormatter : FormatterBase, IFormatterLiteralExtractor
     static readonly Regex m_ComplexConditionPattern
         = new(@"^  (?:   ([&/]?)   ([<>=!]=?)   ([0-9.-]+)   )+   \?",
         //   Description:      and/or    comparator     value
-        RegexOptions.IgnorePatternWhitespace | RegexOptions.Compiled);
+        RegexOptions.IgnorePatternWhitespace | RegexOptions.Compiled, TimeSpan.FromMilliseconds(500));
 
     /// <inheritdoc/>
     public override string DefaultName => "cond";
@@ -206,7 +207,7 @@ public class ConditionalFormatter : FormatterBase, IFormatterLiteralExtractor
 
         for (var i = 0; i < andOrs.Count; i++)
         {
-            var v = decimal.Parse(values[i].Value);
+            var v = decimal.Parse(values[i].Value, CultureInfo.InvariantCulture);
             var exp = false;
             switch (comps[i].Value)
             {

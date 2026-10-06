@@ -2,7 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: SceneTemplate not yet converted
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -101,6 +100,9 @@ namespace UnityEditor.SceneTemplate
     partial class SceneTemplateProjectSettings
     {
         [AutoStaticsCleanupOnCodeReload]
+        // Lazy singleton: Get() reloads the settings from ProjectSettings/SceneTemplateSettings.json (or
+        // creates a fresh instance) whenever this is null, which is the same path Reset() already relies on.
+        [IgnoreForUAL0015("Lazy settings singleton reloaded from disk by Get() on the next access")]
         static SceneTemplateProjectSettings m_Instance;
         [AutoStaticsCleanupOnCodeReload]
         static List<SearchProposition> m_AllTypesPropositions;
@@ -130,6 +132,9 @@ namespace UnityEditor.SceneTemplate
 
         public List<PinState> templatePinStates = new List<PinState>();
         [AutoStaticsCleanupOnCodeReload]
+        // Rebuilt from scratch by InitDefaultDependencyTypeInfos(), which Get() calls whenever the settings
+        // singleton is missing - so the table is always repopulated before anything reads it.
+        [IgnoreForUAL0015("Default dependency table rebuilt by InitDefaultDependencyTypeInfos() via the Get() lazy path")]
         public static List<DependencyTypeInfo> defaultDependencyTypeInfos = new List<DependencyTypeInfo>();
         public List<DependencyTypeInfo> dependencyTypeInfos = new List<DependencyTypeInfo>();
         public DependencyTypeInfo defaultDependencyTypeInfo;
@@ -442,9 +447,9 @@ namespace UnityEditor.SceneTemplate
             using (new SettingsWindow.GUIScope())
             {
                 var oldLabelWidth = EditorGUIUtility.labelWidth;
-                #pragma warning disable UAL0018 // rebuilt/resubscribed wholesale on the next reload via this object's own lifecycle; a stale value in the interim is never observed
+#pragma warning disable UAL0018 // float snapshot into per-frame IMGUI state that this method restores before returning; the width is recomputed on the first draw after a reload
                 EditorGUIUtility.labelWidth = m_MaxLabelWidth;
-                #pragma warning restore UAL0018
+#pragma warning restore UAL0018
 
                 if (Unsupported.IsDeveloperMode())
                 {
@@ -597,4 +602,3 @@ namespace UnityEditor.SceneTemplate
         }
     }
 }
-#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

@@ -7,11 +7,14 @@ using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Xml;
 using Mono.Cecil;
 using Mono.Cecil.Cil;
+using Unity.BuildService;
 using Unity.Collections;
 using Unity.ProjectAuditor.Editor.AssemblyUtils;
 using Unity.ProjectAuditor.Editor.CodeAnalysis;
@@ -29,7 +32,6 @@ namespace Unity.ProjectAuditor.Editor.Modules
     enum AssemblyProperty
     {
         ReadOnly = 0,
-        CompileTime,
         CodeLocation,
         Num
     }
@@ -77,7 +79,6 @@ namespace Unity.ProjectAuditor.Editor.Modules
             {
                 new PropertyDefinition { Type = PropertyType.LogLevel, Name = "Log Level"},
                 new PropertyDefinition { Type = PropertyType.Description, Name = "Name", MaxAutoWidth = 800},
-                new PropertyDefinition { Type = PropertyTypeUtil.FromCustom(AssemblyProperty.CompileTime), Format = PropertyFormat.String, Name = "Compile Time"},
                 new PropertyDefinition { Type = PropertyTypeUtil.FromCustom(AssemblyProperty.ReadOnly), Format = PropertyFormat.Bool, Name = "Read Only", IsDefaultGroup = true},
                 new PropertyDefinition { Type = PropertyType.Path, Name = "Asmdef Path"},
                 new PropertyDefinition { Type = PropertyTypeUtil.FromCustom(AssemblyProperty.CodeLocation), Format = PropertyFormat.String, Name = "Location", LongName = "Code Location" },
@@ -127,21 +128,6 @@ namespace Unity.ProjectAuditor.Editor.Modules
             }
         };
 
-        static readonly IssueLayout k_DomainReloadIssueLayout = new IssueLayout
-        {
-            Category = IssueCategory.DomainReload,
-            Properties = new[]
-            {
-                new PropertyDefinition { Type = PropertyTypeUtil.FromCustom(CompilerMessageProperty.Code), Format = PropertyFormat.String, Name = "Code", IsDefaultGroup = true},
-                new PropertyDefinition { Type = PropertyType.Description, Name = "Issue", LongName = "Issue description", MaxAutoWidth = 800 },
-                new PropertyDefinition { Type = PropertyType.Filename, Name = "Filename", LongName = "Filename and line number"},
-                new PropertyDefinition { Type = PropertyTypeUtil.FromCustom(CompilerMessageProperty.Assembly), Format = PropertyFormat.String, Name = "Assembly", LongName = "Managed Assembly name" },
-                new PropertyDefinition { Type = PropertyTypeUtil.FromCustom(CompilerMessageProperty.CodeLocation), Format = PropertyFormat.String, Name = "Location", LongName = "Code Location" },
-                new PropertyDefinition { Type = PropertyType.Descriptor, Name = "Descriptor"},
-                new PropertyDefinition { Type = PropertyType.IsIgnored, Name = "Ignored"},
-            }
-        };
-
         static readonly IssueLayout k_ObsoleteApiLayout = new IssueLayout
         {
             Category = IssueCategory.ObsoleteAPI,
@@ -158,14 +144,14 @@ namespace Unity.ProjectAuditor.Editor.Modules
         List<int>[] m_OpCodeAnalyzers = new List<int>[ushort.MaxValue];
         List<CodeModuleInstructionAnalyzer> m_CodeAnalyzers;
         List<CodeModulePrecompiledAssemblyAnalyzer> m_PrecompiledAssemblyAnalyzers;
+        List<CodeModuleCompilerMessageAnalyzer> m_CompilerMessageAnalyzers;
 
         Thread m_AssemblyAnalysisThread;
 
         public override string Name => "Code";
 
         // Match a whole "word", starting with UDR and ending with exactly 4 digits, e.g. UDR1234
-        static readonly Regex s_RegEx = new Regex(@"\bUDR\d{4}\b");
-        static readonly Regex s_RegEx2 = new Regex(@"\bUAL\d{4}\b");
+        static readonly Regex s_RegEx = new Regex(@"\bUAL\d{4}\b");
 
         public override IReadOnlyCollection<IssueLayout> SupportedLayouts => new IssueLayout[]
         {
@@ -173,7 +159,6 @@ namespace Unity.ProjectAuditor.Editor.Modules
             k_AssemblyLayout,
             k_PrecompiledAssemblyLayout,
             k_CompilerMessageLayout,
-            k_DomainReloadIssueLayout,
             k_ObsoleteApiLayout
         };
 
@@ -187,24 +172,11 @@ namespace Unity.ProjectAuditor.Editor.Modules
 #pragma warning disable UAC2001 // Avoid Linq
             m_OpCodes = new List<OpCode>(GetAnalyzers().OfType<CodeModuleInstructionAnalyzer>().Select(a => a.opCodes).SelectMany(c => c).Distinct());
 #pragma warning restore UAC2001
-
-            ProjectIssueExtensions.AddCustomComparer(IssueCategory.Assembly, PropertyTypeUtil.FromCustom(AssemblyProperty.CompileTime),
-                (a, b) =>
-                {
-                    var strA = a.GetProperty(PropertyTypeUtil.FromCustom(AssemblyProperty.CompileTime));
-                    var strB = b.GetProperty(PropertyTypeUtil.FromCustom(AssemblyProperty.CompileTime));
-
-                    // Cut off the ' ms' at the end, and ignore editor entries
-                    var longA = strA.Contains("Editor") ? -1 : long.Parse(strA.Substring(0, strA.Length - 3));
-                    var longB = strB.Contains("Editor") ? -1 : long.Parse(strB.Substring(0, strB.Length - 3));
-
-                    return longA < longB ? -1 : longA > longB ? 1 : 0;
-                });
         }
 
         // Compiles all scripts using an MSBuild analysis configuration ("Analysis" for the editor target, or
         // "<Target>+Analysis" for a player target) and returns a report of the compiler messages produced.
-        static Task<MsBuildCompilation.CompilationMessages> RequestCompilationAsync(string analysisConfiguration, CancellationToken cancellationToken = default)
+        static Task<MsBuildCompilation.CompilationMessages> RequestCompilationAsync(string analysisConfiguration, CancellationToken cancellationToken)
         {
             if (!MsBuildCompilationInterface.IsEnabled())
                 throw new InvalidOperationException($"{nameof(RequestCompilationAsync)} is only supported when the MSBuild compilation pipeline is enabled.");
@@ -242,12 +214,15 @@ namespace Unity.ProjectAuditor.Editor.Modules
             var compatibleAnalyzers = GetCompatibleAnalyzers(analysisParams);
             m_CodeAnalyzers = new List<CodeModuleInstructionAnalyzer>();
             m_PrecompiledAssemblyAnalyzers = new List<CodeModulePrecompiledAssemblyAnalyzer>();
+            m_CompilerMessageAnalyzers = new List<CodeModuleCompilerMessageAnalyzer>();
             foreach (var analyzer in compatibleAnalyzers)
             {
                 if (analyzer is CodeModuleInstructionAnalyzer codeAnalyzer)
                     m_CodeAnalyzers.Add(codeAnalyzer);
                 else if (analyzer is CodeModulePrecompiledAssemblyAnalyzer precompiledAssemblyAnalyzer)
                     m_PrecompiledAssemblyAnalyzers.Add(precompiledAssemblyAnalyzer);
+                else if (analyzer is CodeModuleCompilerMessageAnalyzer compilerMessageAnalyzer)
+                    m_CompilerMessageAnalyzers.Add(compilerMessageAnalyzer);
             }
 
             for (var i = 0; i < m_OpCodeAnalyzers.Length; i++)
@@ -270,12 +245,21 @@ namespace Unity.ProjectAuditor.Editor.Modules
             AsyncProgressState progressState = progress?.Start("Analyzing Precompiled Assemblies", precompiledAssemblyPaths.Count);
 
             long threadExecutionTimeMs = 0;
+            var analysisSucceeded = true;
 
             // Analyze precompiled assemblies
             m_AssemblyAnalysisThread = new Thread(() =>
             {
                 var startTime = DateTime.UtcNow;
-                AnalyzePrecompiledAssemblies(analysisParams, precompiledAssemblyPaths, onPrecompiledAssemblyIssueFoundInternal, progress, progressState);
+                try
+                {
+                    AnalyzePrecompiledAssemblies(analysisParams, precompiledAssemblyPaths, onPrecompiledAssemblyIssueFoundInternal, progress, progressState);
+                }
+                catch (Exception e)
+                {
+                    analysisSucceeded = false;
+                    Debug.LogError($"[{ProjectAuditor.DisplayName}] Precompiled assembly analysis failed: {e}");
+                }
                 threadExecutionTimeMs += (long)(DateTime.UtcNow - startTime).TotalMilliseconds;
             });
             m_AssemblyAnalysisThread.Name = "Precompiled Assembly Analysis";
@@ -285,6 +269,7 @@ namespace Unity.ProjectAuditor.Editor.Modules
             // wait for thread
             while (m_AssemblyAnalysisThread.IsAlive)
                 yield return new WaitForEndOfFrame();
+            m_AssemblyAnalysisThread.Join();
 
             progress?.Clear(progressState);
 
@@ -316,6 +301,15 @@ namespace Unity.ProjectAuditor.Editor.Modules
             analysisParams.OnIncomingIssues(roslynAnalyzerIssues);
 
             yield return null;
+
+            // The MSBuild pipeline builds the whole project in a single out-of-band "Analysis" configuration
+            // with the Roslyn analyzers already wired up, and reports their diagnostics directly. None of the
+            // per-assembly AssemblyBuilder compilation below applies, so finish the module here.
+            if (MsBuildCompilationInterface.IsEnabled())
+            {
+                yield return AuditWithMsBuild(context, analysisParams, progress, threadExecutionTimeMs, analysisSucceeded, roslynAnalyzerAssets);
+                yield break;
+            }
 
             var compilationPipeline = new AssemblyCompilation
             {
@@ -361,7 +355,6 @@ namespace Unity.ProjectAuditor.Editor.Modules
                     .WithCustomProperties(
                     [
                         assemblyInfo.IsReadOnly,
-                        "0 ms (Compiled by Editor)",
                         assemblyInfo.GetTypeString()
                     ])
                     .WithLocation(assemblyInfo.AsmDefPath))
@@ -380,7 +373,6 @@ namespace Unity.ProjectAuditor.Editor.Modules
                     .WithCustomProperties(
                     [
                         assemblyInfo.IsReadOnly,
-                        "0 ms (Compiled by Editor)",
                         assemblyInfo.GetTypeString()
                     ])
                     .WithLocation(assemblyInfo.AsmDefPath))
@@ -414,6 +406,7 @@ namespace Unity.ProjectAuditor.Editor.Modules
             assemblyDirectories.AddRange(AssemblyInfoProvider.GetPrecompiledAssemblyDirectories(PrecompiledAssemblyTypes.UserAssembly | PrecompiledAssemblyTypes.UnityEngine | PrecompiledAssemblyTypes.SystemAssembly));
             if ((analysisParams.CodeAnalysisFlags & CodeAnalysisFlags.Editor) != 0)
                 assemblyDirectories.AddRange(AssemblyInfoProvider.GetPrecompiledAssemblyDirectories(PrecompiledAssemblyTypes.UnityEditor));
+            assemblyDirectories.AddRange(compilationPipeline.ResponseFileReferenceDirectories);
 
             yield return null;
 
@@ -424,8 +417,16 @@ namespace Unity.ProjectAuditor.Editor.Modules
                 // Run analysis on the background thread
                 var startTime = DateTime.UtcNow;
 
-                AnalyzeAssemblies(localAssemblyInfos, analysisParams, assemblyDirectories, onIssueFoundInternal, progress, assemblyProgressState);
-                AnalyzeAssemblies(readOnlyAssemblyInfos, analysisParams, assemblyDirectories, onIssueFoundInternal, progress, assemblyProgressState);
+                try
+                {
+                    AnalyzeAssemblies(localAssemblyInfos, analysisParams, assemblyDirectories, onIssueFoundInternal, progress, assemblyProgressState);
+                    AnalyzeAssemblies(readOnlyAssemblyInfos, analysisParams, assemblyDirectories, onIssueFoundInternal, progress, assemblyProgressState);
+                }
+                catch (Exception e)
+                {
+                    analysisSucceeded = false;
+                    Debug.LogError($"[{ProjectAuditor.DisplayName}] Assembly analysis failed: {e}");
+                }
 
                 threadExecutionTimeMs += (long)(DateTime.UtcNow - startTime).TotalMilliseconds;
             });
@@ -436,6 +437,7 @@ namespace Unity.ProjectAuditor.Editor.Modules
             // wait for thread
             while (m_AssemblyAnalysisThread.IsAlive)
                 yield return new WaitForEndOfFrame();
+            m_AssemblyAnalysisThread.Join();
 
             // remove issues if platform does not match
             foundIssues.RemoveAll(i => i.Id.IsValid() &&
@@ -448,7 +450,288 @@ namespace Unity.ProjectAuditor.Editor.Modules
                 analysisParams.OnIncomingIssues(foundIssues);
 
             progress?.Clear(assemblyProgressState);
-            analysisParams.OnModuleCompleted?.Invoke(Name, AnalysisResult.Success, threadExecutionTimeMs);
+            analysisParams.OnModuleCompleted?.Invoke(Name, analysisSucceeded ? AnalysisResult.Success : AnalysisResult.Failure, threadExecutionTimeMs);
+        }
+
+        // Runs the analysis compilation(s) through the MSBuild pipeline and reports the resulting diagnostics.
+        // One build per requested target: "Analysis" for editor code, "<Platform>+Analysis" for player code.
+        IEnumerator AuditWithMsBuild(AnalysisContext context, AnalysisParams analysisParams, IProgress progress, long threadExecutionTimeMs, bool analysisSucceeded, IReadOnlyCollection<string> roslynAnalyzerAssets)
+        {
+            var configurations = new List<(string Configuration, bool EditorAssemblies)>(2);
+            if ((analysisParams.CodeAnalysisFlags & CodeAnalysisFlags.Editor) != 0)
+                configurations.Add(("Analysis", true));
+            if ((analysisParams.CodeAnalysisFlags & CodeAnalysisFlags.Player) != 0)
+                configurations.Add(($"{analysisParams.Platform}+Analysis", false));
+
+            AsyncProgressState progressState = progress?.Start("Analyzing Code", configurations.Count);
+
+            WriteGlobalConfig();
+            WriteAnalyzerProps(roslynAnalyzerAssets);
+
+            using (var cancellationSource = new CancellationTokenSource())
+            {
+                foreach (var (configuration, editorAssemblies) in configurations)
+                {
+                    if (AdvanceAsyncProgress(progress, progressState, configuration) == false)
+                        break;
+
+                    var compilationTask = RequestCompilationAsync(configuration, cancellationSource.Token);
+                    while (!compilationTask.IsCompleted)
+                    {
+                        if ((progress?.IsCancelled ?? false) && !cancellationSource.IsCancellationRequested)
+                            cancellationSource.Cancel();
+
+                        yield return new WaitForEndOfFrame();
+                    }
+
+                    if (compilationTask.IsCanceled || (progress?.IsCancelled ?? false))
+                    {
+                        analysisParams.OnModuleCompleted?.Invoke(Name, AnalysisResult.Cancelled, threadExecutionTimeMs);
+                        yield break;
+                    }
+
+                    if (compilationTask.IsFaulted)
+                    {
+                        Debug.LogError($"Project Auditor: '{configuration}' compilation failed: {compilationTask.Exception?.GetBaseException().Message}");
+                        analysisParams.OnModuleCompleted?.Invoke(Name, AnalysisResult.Failure, threadExecutionTimeMs);
+                        yield break;
+                    }
+
+                    var issues = new List<ReportItem>(compilationTask.Result.Assemblies.Length);
+                    yield return AnalyzeCompilerMessages(context, compilationTask.Result, editorAssemblies, issues.Add);
+                    if (issues.Count > 0)
+                        analysisParams.OnIncomingIssues(issues);
+
+                    yield return null;
+                }
+            }
+
+            progress?.Clear(progressState);
+            analysisParams.OnModuleCompleted?.Invoke(Name, analysisSucceeded ? AnalysisResult.Success : AnalysisResult.Failure, threadExecutionTimeMs);
+        }
+
+        static void WriteGlobalConfig()
+        {
+            var globalConfigPath = Path.Combine(ProjectAuditor.ProjectPath, "Library", "ScriptAnalysis.globalconfig");
+
+            var globalConfig = new StringBuilder();
+            globalConfig.Append(
+                "is_global = true\n" +
+                "build_property.UnityEnableAutoStaticsCleanupAnalysis = true\n" +
+                // Report the statics-cleanup diagnostics as warnings rather than the analyzer's
+                // default Error severity, so that referenced assemblies still compile and dependent
+                // assemblies don't cascade into CS0006 (missing metadata) failures.
+                "dotnet_diagnostic.UAL0010.severity = warning\n" +
+                "dotnet_diagnostic.UAL0011.severity = warning\n" +
+                "dotnet_diagnostic.UAL0012.severity = warning\n" +
+                "dotnet_diagnostic.UAL0013.severity = warning\n" +
+                "dotnet_diagnostic.UAL0014.severity = warning\n");
+
+            // Enable all known code diagnostics, except those we have suppressed
+            var diagnostics = RoslynDiagnosticsLibrary.Diagnostics;
+            if (diagnostics != null)
+            {
+                var suppressedDiagnostics = UserPreferences.BuildSuppressedDiagnosticsSet();
+
+                foreach (var diagnostic in diagnostics)
+                {
+                    if (!suppressedDiagnostics.Contains(diagnostic.Id))
+                        globalConfig.Append($"dotnet_diagnostic.{diagnostic.Id}.severity = warning\n");
+                }
+            }
+
+            File.WriteAllText(globalConfigPath, globalConfig.ToString());
+        }
+
+        // Feeds every analyzer found by label into the Analysis build.
+        static void WriteAnalyzerProps(IReadOnlyCollection<string> analyzerAssetPaths)
+        {
+            var propsPath = Path.Combine(ProjectAuditor.ProjectPath, "Library", "ScriptAnalysis.props");
+
+            var settings = new XmlWriterSettings { Indent = true, IndentChars = "  ", OmitXmlDeclaration = true };
+            using (var writer = XmlWriter.Create(propsPath, settings))
+            {
+                writer.WriteComment(" This file is auto-generated. Do not edit ");
+                writer.WriteStartElement("Project");
+                writer.WriteStartElement("ItemGroup");
+                writer.WriteAttributeString("Condition", "'$(IsEntryPointProject)' != 'true'");
+
+                foreach (var assetPath in analyzerAssetPaths)
+                {
+                    var analyzerPath = PathUtils.ReplaceSeparators(Path.GetFullPath(FileUtil.GetPhysicalPath(assetPath)));
+
+                    WriteAnalyzerPropsItem(writer, "Analyzer", analyzerPath);
+
+                    foreach (var additionalFile in FindAnalyzerAdditionalFiles(analyzerPath))
+                        WriteAnalyzerPropsItem(writer, "AdditionalFiles", additionalFile);
+                }
+
+                writer.WriteEndElement();
+                writer.WriteEndElement();
+            }
+        }
+
+        // Removes before including, so an analyzer the converter already resolved isn't passed to csc twice.
+        static void WriteAnalyzerPropsItem(XmlWriter writer, string itemType, string path)
+        {
+            var value = EscapeMsBuildItemValue(path);
+
+            foreach (var attribute in new[] { "Remove", "Include" })
+            {
+                writer.WriteStartElement(itemType);
+                writer.WriteAttributeString(attribute, value);
+                writer.WriteEndElement();
+            }
+        }
+
+        // MSBuild reads these characters as syntax inside an item value: '$'/'@'/'%' introduce property, item
+        // and metadata expansion, ';' separates list entries, '*'/'?' glob, and the quotes delimit attributes
+        // and conditions. Escaping each as %XX keeps a path containing one a single literal item; MSBuild
+        // unescapes it when the item is created. '%' must be replaced first, as it introduces the escape.
+        static string EscapeMsBuildItemValue(string value)
+        {
+            var escaped = new StringBuilder(value.Length);
+
+            foreach (var character in value)
+            {
+                if ("%$@;?*'\"".IndexOf(character) >= 0)
+                    escaped.Append('%').Append(((int)character).ToString("X2"));
+                else
+                    escaped.Append(character);
+            }
+
+            return escaped.ToString();
+        }
+
+        // Analyzer databases ship beside their analyzer as "<Name>.<AnalyzerAssemblyName>.additionalfile",
+        // the convention AnalyzerResolver reads. Without them the database-driven rules report nothing.
+        static string[] FindAnalyzerAdditionalFiles(string analyzerPath)
+        {
+            var directory = Path.GetDirectoryName(analyzerPath);
+            if (string.IsNullOrEmpty(directory) || !Directory.Exists(directory))
+                return Array.Empty<string>();
+
+            var pattern = "*." + Path.GetFileNameWithoutExtension(analyzerPath) + ".additionalfile";
+            return Array.ConvertAll(Directory.GetFiles(directory, pattern), PathUtils.ReplaceSeparators);
+        }
+
+        // Converts the compiler/analyzer diagnostics reported by an MSBuild analysis build into report items.
+        IEnumerator AnalyzeCompilerMessages(AnalysisContext context, MsBuildCompilation.CompilationMessages compilationMessages, bool editorAssemblies, Action<ReportItem> onAddIssue)
+        {
+            int count = 0;
+            var includeTests = (context.Params.CodeAnalysisFlags & CodeAnalysisFlags.Tests) != 0;
+
+            // Assemblies
+            var assemblyInfos = new Dictionary<string, AssemblyInfo>(compilationMessages.Assemblies.Length);
+            foreach (var assembly in compilationMessages.Assemblies)
+            {
+                ProcessAssembly(context, assembly.Name, assembly.ReferencedAssemblyNames, editorAssemblies, assemblyInfos, onAddIssue, includeTests);
+                if (count++ % 100 == 0)
+                    yield return null;
+            }
+
+            // Compilation messages
+            foreach (var compilationMessage in compilationMessages.Messages)
+            {
+                var logMessage = compilationMessage.Msg;
+                var assemblyName = compilationMessage.AssemblyName ?? string.Empty;
+                var messageType = logMessage.MessageType == LogMessageType.Error ? CompilerMessageType.Error : CompilerMessageType.Warning;
+
+                if (count++ % 100 == 0)
+                    yield return null;
+
+                // Messages emitted by the build itself rather than by the compiler (e.g. a project failed to
+                // load) have no source location, so there's nothing to resolve an assembly or a path against.
+                if (string.IsNullOrEmpty(logMessage.File))
+                {
+                    onAddIssue(context.CreateInsight(IssueCategory.CodeCompilerMessage, logMessage.Message)
+                        .WithCustomProperties([logMessage.Code ?? string.Empty, assemblyName, string.Empty])
+                        .WithLogLevel(CompilerMessageTypeToLogLevel(messageType)));
+                    continue;
+                }
+
+                // Package code is filtered by file rather than by assembly, because package types can be
+                // forwarded into the default assemblies during compilation.
+                if (!PathPackageFilter(logMessage.File, context.Params.CodeAnalysisFlags, context.Params.CodeOwnerFlags))
+                    continue;
+
+                // Get/register assembly info
+                if (!assemblyInfos.TryGetValue(assemblyName, out var assemblyInfo))
+                    assemblyInfo = ProcessAssembly(context, assemblyName, null, editorAssemblies, assemblyInfos, onAddIssue, includeTests);
+
+                // Skip tests
+                if (!includeTests && assemblyInfo.IsTestAssembly)
+                    continue;
+
+                var message = new AssemblyUtils.CompilerMessage
+                {
+                    Code = logMessage.Code ?? string.Empty,
+                    Message = logMessage.Message,
+                    File = logMessage.File,
+                    Line = logMessage.LineNumber,
+                    Type = messageType
+                };
+
+                var messageContext = new CompilerMessageAnalysisContext
+                {
+                    Message = message,
+                    Params = context.Params
+                };
+
+                bool handled = false;
+                var relativePath = AssemblyInfoProvider.ResolveAssetPath(assemblyInfo, message.File);
+
+                foreach (var analyzer in m_CompilerMessageAnalyzers)
+                {
+                    foreach (var issue in analyzer.Analyze(messageContext))
+                    {
+                        handled = true;
+                        onAddIssue.Invoke(issue
+                            .WithLocation(relativePath, message.Line)
+                            .WithCustomProperties([assemblyInfo.Name, assemblyInfo.GetTypeString(), false]));
+                    }
+                }
+
+                // If no analyzer handled the message, add it to the list of code compiler messages
+                if (!handled)
+                {
+                    onAddIssue.Invoke(context.CreateInsight(IssueCategory.CodeCompilerMessage, message.Message)
+                        .WithLocation(relativePath, message.Line)
+                        .WithCustomProperties([message.Code, assemblyInfo.Name, assemblyInfo.GetTypeString()])
+                        .WithLogLevel(CompilerMessageTypeToLogLevel(message.Type)));
+                }
+            }
+        }
+
+        static AssemblyInfo ProcessAssembly(AnalysisContext context, string assemblyName, List<string> referencedAssemblyNames, bool editorAssemblies, Dictionary<string, AssemblyInfo> assemblyInfos, Action<ReportItem> onAddIssue, bool includeTests)
+        {
+            var assemblyInfo = assemblyName.Length == 0
+                ? new AssemblyInfo { Name = string.Empty, RelativePath = "Assets", IsEditorAssembly = editorAssemblies }
+                : AssemblyInfoProvider.GetAssemblyInfoFromAssemblyName(assemblyName, editorAssemblies, reportErrors: false);
+
+            assemblyInfos.Add(assemblyName, assemblyInfo);
+
+            if (!includeTests && assemblyInfo.IsTestAssembly)
+                return assemblyInfo;
+
+            var severity = Severity.None;
+            // TODO: MSBuild doesn't tell us this, but the old AssemblyBuilder path did. Can MSBuild tell us?
+            //if (compilationResult.Status == CompilationStatus.MissingDependency)
+            //    severity = Severity.Warning;
+            //else if (!compilationMessages.Assembly[name].Success)
+            //    severity = Severity.Error;
+
+            onAddIssue(context.CreateInsight(IssueCategory.Assembly, assemblyInfo.Name)
+                .WithCustomProperties(
+                [
+                    assemblyInfo.IsReadOnly,
+                    assemblyInfo.GetTypeString(),
+                ])
+                .WithDependencies(new AssemblyDependencyNode(assemblyInfo.Name, referencedAssemblyNames))
+                .WithLocation(assemblyInfo.AsmDefPath)
+                .WithSeverity(severity));
+
+            return assemblyInfo;
         }
 
         bool AssemblyPackageFilter(AssemblyInfo assemblyInfo, AnalysisParams analysisParams)
@@ -742,7 +1025,6 @@ namespace Unity.ProjectAuditor.Editor.Modules
                 .WithCustomProperties(
                 [
                     assemblyInfo.IsReadOnly,
-                    compilationResult.DurationInMs + " ms",
                     assemblyInfo.GetTypeString(),
                 ])
                 .WithDependencies(new AssemblyDependencyNode(assemblyInfo.Name, compilationResult.DependentAssemblyNames))
@@ -815,28 +1097,28 @@ namespace Unity.ProjectAuditor.Editor.Modules
             var relativePath = AssemblyInfoProvider.ResolveAssetPath(assemblyInfo, message.File);
 
             // stephenm TODO - A more data-driven way to specify which view Roslyn messages should be sent to, depending on their code.
-            if (s_RegEx.IsMatch(message.Code) || s_RegEx2.IsMatch(message.Code))
+            if (s_RegEx.IsMatch(message.Code))
             {
-                if (!RoslynTextLookup.GetDescription(message.Code, out var description, out var recommendation))
-                    description = message.Message;
+                var description = message.Message;
+                string title = "Lifecycle API issue"; // Temporary until we move to MSBuild path.
 
                 var descriptor = new Descriptor(
                     message.Code,
-                    message.Message,
-                    Areas.IterationTime,
+                    title,
+                    Areas.IterationTime | Areas.MigrationToCoreCLR,
                     description,
-                    recommendation);
+                    string.Empty);
 
                 DescriptorLibrary.RegisterDescriptor(descriptor.Id, descriptor);
 
-                return context.CreateIssue(IssueCategory.DomainReload, descriptor.Id)
+                return context.CreateIssue(IssueCategory.Code, descriptor.Id)
                     .WithLocation(relativePath, message.Line)
                     .WithLogLevel(CompilerMessageTypeToLogLevel(message.Type))
                     .WithCustomProperties(
                     [
-                        message.Code,
                         assemblyInfo.Name,
-                        assemblyInfo.GetTypeString()
+                        assemblyInfo.GetTypeString(),
+                        false
                     ]);
             }
             else

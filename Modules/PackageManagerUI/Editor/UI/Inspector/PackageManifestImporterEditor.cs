@@ -53,6 +53,8 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         private const string k_DefaultDependencyVersion = "0.1.0";
 
+        private const string k_ReenterPlayModeSessionKey = "PackageManifestImporterEditor.reenterPlayMode";
+
         [NoAutoStaticsCleanup]
         private static List<string> s_MajorUnityVersions;
         private static List<string> MajorUnityVersions
@@ -151,44 +153,60 @@ namespace UnityEditor.PackageManager.UI.Internal
 
             [System.NonSerialized]
             public bool inspectorHasErrors = false;
+
+            [System.NonSerialized]
+            public string originalTechnicalName;
+
+            [System.NonSerialized]
+            public bool renameFolderOnApply = true;
+
+            [System.NonSerialized]
+            public bool didLogPlayModeWarning;
+
+            [System.NonSerialized]
+            public bool hasTechnicalNameChanged;
         }
 
         PackageManifestState packageState => extraDataTarget as PackageManifestState;
 
         private static class Styles
         {
-            public static readonly GUIContent information = EditorGUIUtility.TrTextContent("Information");
-            public static readonly GUIContent technicalName = EditorGUIUtility.TrTextContent("Technical Name", "A unique multi-part identifier in lowercase, using reverse domain name notation. Example: com.companyname.packagename");
+            public static readonly GUIContent information = L10n.TextContent("Information", null, null, null);
+            public static readonly GUIContent technicalName = L10n.TextContent("Technical Name", "A unique multi-part identifier in lowercase, using reverse domain name notation. Example: com.companyname.packagename", null, null);
 
-            public static readonly GUIContent displayName = EditorGUIUtility.TrTextContent("Display Name", "A user-friendly name that appears in the Unity Editor, such as in the Project window and the Package Manager window.");
-            public static readonly GUIContent version = EditorGUIUtility.TrTextContent("Version", "Must follow Semantic Versioning conventions. For example, 1.2.2 or 1.0.0-pre.2.");
-            public static readonly GUIContent type = EditorGUIUtility.TrTextContent("Type", "Type (optional).");
+            public static readonly GUIContent displayName = L10n.TextContent("Display Name", "A user-friendly name that appears in the Unity Editor, such as in the Project window and the Package Manager window.", null, null);
+            public static readonly GUIContent version = L10n.TextContent("Version", "Must follow Semantic Versioning conventions. For example, 1.2.2 or 1.0.0-pre.2.", null, null);
+            public static readonly GUIContent type = L10n.TextContent("Type", "Type (optional).", null, null);
 
-            public static readonly GUIContent showAdvanced = EditorGUIUtility.TrTextContent("Advanced", "Show advanced settings.");
+            public static readonly GUIContent showAdvanced = L10n.TextContent("Advanced", "Show advanced settings.", null, null);
 
-            public static readonly GUIContent visibility = EditorGUIUtility.TrTextContent("Visibility in Editor", "Determines the visibility of the package in the Project window and the object picker of the Inspector window.");
+            public static readonly GUIContent visibility = L10n.TextContent("Visibility in Editor", "Determines the visibility of the package in the Project window and the object picker of the Inspector window.", null, null);
 
-            public static readonly GUIContent author = EditorGUIUtility.TrTextContent("Author", "The author of the package.");
-            public static readonly GUIContent authorName = EditorGUIUtility.TrTextContent("Name", "Author name.");
-            public static readonly GUIContent authorUrl = EditorGUIUtility.TrTextContent("URL", "Author's website.");
-            public static readonly GUIContent authorEmail = EditorGUIUtility.TrTextContent("Email", "Author's email address.");
+            public static readonly GUIContent author = L10n.TextContent("Author", "The author of the package.", null, null);
+            public static readonly GUIContent authorName = L10n.TextContent("Name", "Author name.", null, null);
+            public static readonly GUIContent authorUrl = L10n.TextContent("URL", "Author's website.", null, null);
+            public static readonly GUIContent authorEmail = L10n.TextContent("Email", "Author's email address.", null, null);
 
-            public static readonly GUIContent unityVersion = EditorGUIUtility.TrTextContent("Minimum Unity version", "The minimum Unity version this package supports.");
-            public static readonly GUIContent unityMajor = EditorGUIUtility.TrTextContent("Major", "Major version of Unity");
-            public static readonly GUIContent unityMinor = EditorGUIUtility.TrTextContent("Minor", "Minor version of Unity");
-            public static readonly GUIContent unityRelease = EditorGUIUtility.TrTextContent("Release", "Specific release (ex: 0a9)");
+            public static readonly GUIContent unityVersion = L10n.TextContent("Minimum Unity version", "The minimum Unity version this package supports.", null, null);
+            public static readonly GUIContent unityMajor = L10n.TextContent("Major", "Major version of Unity", null, null);
+            public static readonly GUIContent unityMinor = L10n.TextContent("Minor", "Minor version of Unity", null, null);
+            public static readonly GUIContent unityRelease = L10n.TextContent("Release", "Specific release (ex: 0a9)", null, null);
 
-            public static readonly GUIContent documentationUrl = EditorGUIUtility.TrTextContent("Documentation URL", "Custom location for this package’s documentation, specified as a URL.");
-            public static readonly GUIContent licensesUrl = EditorGUIUtility.TrTextContent("Licenses URL", "Custom location for this package’s license information, specified as a URL.");
-            public static readonly GUIContent changelogUrl = EditorGUIUtility.TrTextContent("Changelog URL", "Custom location for this package’s changelog, specified as a URL.");
+            public static readonly GUIContent documentationUrl = L10n.TextContent("Documentation URL", "Custom location for this package’s documentation, specified as a URL.", null, null);
+            public static readonly GUIContent licensesUrl = L10n.TextContent("Licenses URL", "Custom location for this package’s license information, specified as a URL.", null, null);
+            public static readonly GUIContent changelogUrl = L10n.TextContent("Changelog URL", "Custom location for this package’s changelog, specified as a URL.", null, null);
 
-            public static readonly GUIContent description = EditorGUIUtility.TrTextContent("Brief description", "Descriptive text that appears in the details panel of the Package Manager window. This field supports rich text formatting tags.");
+            public static readonly GUIContent description = L10n.TextContent("Brief description", "Descriptive text that appears in the details panel of the Package Manager window. This field supports rich text formatting tags.", null, null);
 
-            public static readonly GUIContent dependenciesAsPackage = EditorGUIUtility.TrTextContent("Dependencies", "Other packages that this package depends on.");
-            public static readonly GUIContent dependenciesAsFeatureset = EditorGUIUtility.TrTextContent("Packages included", "Packages that are part of this feature set.");
-            public static readonly GUIContent package = EditorGUIUtility.TrTextContent("Technical Name of package", "A unique multi-part identifier in lowercase, using reverse domain name notation. Example: com.companyname.packagename");
+            public static readonly GUIContent dependenciesAsPackage = L10n.TextContent("Dependencies", "Other packages that this package depends on.", null, null);
+            public static readonly GUIContent dependenciesAsFeatureset = L10n.TextContent("Packages included", "Packages that are part of this feature set.", null, null);
+            public static readonly GUIContent package = L10n.TextContent("Technical Name of package", "A unique multi-part identifier in lowercase, using reverse domain name notation. Example: com.companyname.packagename", null, null);
 
-            public static readonly GUIContent viewInPackageManager = EditorGUIUtility.TrTextContent("View in Package Manager");
+            public static readonly GUIContent viewInPackageManager = L10n.TextContent("View in Package Manager", null, null, null);
+
+            public static readonly GUIContent renameFolderOption = L10n.TextContent(
+                "Update folder name to match",
+                "Rename the package folder to match the new technical name when applying.", null, null);
         }
 
         public override bool showImportedObject => false;
@@ -245,7 +263,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                     return string.Format(s_LocalizedMultipleTitle, targets.Length);
                 }
 
-                var packageDescriptor = EditorGUIUtility.TrTextContent(isFeatureSet ? "Feature" : "Package");
+                var packageDescriptor = L10n.TextContent(isFeatureSet ? "Feature" : "Package", null, null, null);
                 return string.Format(s_LocalizedTitle, packageDescriptor,
                     packageState != null && packageState.isValidFile ? !string.IsNullOrWhiteSpace(packageState.info.displayName) ? packageState.info.displayName.Trim() : packageState.info.technicalName : s_LocalizedInvalidPackageManifest);
             }
@@ -284,6 +302,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             }
 
             Undo.undoRedoPerformed += OnUndoRedoPerformed;
+            EditorApplication.playModeStateChanged += OnPlayModeStateChanged;
 
             m_IsValidFile = extraDataSerializedObject.FindProperty("isValidFile");
             m_TechnicalName = extraDataSerializedObject.FindProperty("info.technicalName");
@@ -316,14 +335,21 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         public override void OnDisable()
         {
+            // Discard before base.OnDisable() so the base's unconditional SaveChanges()
+            // call (when hasUnsavedChanges is true) never writes the file to disk or shows
+            // unexpected dialogs during domain reloads or tracker rebuilds.
+            if (hasUnsavedChanges)
+                DiscardChanges();
             base.OnDisable();
             Undo.undoRedoPerformed -= OnUndoRedoPerformed;
+            EditorApplication.playModeStateChanged -= OnPlayModeStateChanged;
         }
 
         protected override void InitializeExtraDataInstance(Object extraData, int targetIndex)
         {
             var data = (PackageManifestState)extraData;
             ReadPackageManifest(targets[targetIndex], data);
+            data.originalTechnicalName = data.info?.technicalName;
             data.propertiesErrorsAndWarnings.Clear();
             data.inspectorHasErrors = false;
         }
@@ -384,6 +410,71 @@ namespace UnityEditor.PackageManager.UI.Internal
             }
         }
 
+        private bool ConfirmTechnicalNameChange(string originalName, string newName)
+        {
+            var sb = new System.Text.StringBuilder();
+            sb.AppendFormat(L10n.Tr("Change the technical name from: '{0}' to: '{1}'.", null), originalName, newName);
+            sb.AppendLine();
+            sb.AppendLine(L10n.Tr("Important: The technical name uniquely identifies this package.", null));
+            sb.AppendLine(L10n.Tr("Changing it might break references to the package or cause other unexpected issues.", null));
+            sb.AppendLine();
+
+            if (packageState.renameFolderOnApply)
+                sb.AppendLine(L10n.Tr("The package folder will also be renamed to match the new technical name.", null));
+            else
+                sb.AppendLine(L10n.Tr("The package folder name will remain unchanged.", null));
+
+            return ServicesContainer.instance.Resolve<IApplicationProxy>().DisplayDialog(
+                "confirmPackageTechnicalNameChange",
+                L10n.Tr("Change package technical name?", null),
+                sb.ToString().TrimEnd(),
+                L10n.Tr("Apply", null),
+                L10n.Tr("Cancel", null));
+        }
+
+        private void KeepUnsaveChanges()
+        {
+            // PropertyEditor.SaveChanges() calls base.SaveChanges() (Editor.SaveChanges())
+            // before dispatching to each editor, which clears the window-level hasUnsavedChanges.
+            // Re-firing UnsavedChangesStateChanged directly re-syncs the tracker without
+            // disturbing our own hasUnsavedChanges state, so AskToClose still sees the window as dirty.
+            propertyViewer?.UnsavedChangesStateChanged(this, true);
+        }
+
+        private bool ShowInspectorHasErrorsDialog()
+        {
+            if (packageState.inspectorHasErrors)
+            {
+                var errors = new List<string>();
+                foreach (var entry in packageState.propertiesErrorsAndWarnings)
+                    errors.AddRange(entry.Value.m_ErrorMessages);
+
+                ServicesContainer.instance.Resolve<IApplicationProxy>().DisplayAlertDialog(
+                    "ErrorsEditManifest",
+                    L10n.Tr("Inspector - Can’t apply changes", null),
+                    string.Format(L10n.Tr("Correct the following before applying your changes:\n{0}", null), String.Join("\n", errors)),
+                    L10n.Tr("OK", null));
+                return true;
+            }
+            return false;
+        }
+
+        public override void SaveChanges()
+        {
+            if (ShowInspectorHasErrorsDialog())
+            {
+                KeepUnsaveChanges();
+                return;
+            }
+            if (packageState.hasTechnicalNameChanged && !ConfirmTechnicalNameChange(packageState.originalTechnicalName, packageState.info.technicalName?.Trim()))
+            {
+                KeepUnsaveChanges();
+                return;
+            }
+
+            base.SaveChanges();
+        }
+
         protected override bool CanApply()
         {
             return !packageState.inspectorHasErrors;
@@ -392,15 +483,6 @@ namespace UnityEditor.PackageManager.UI.Internal
         protected override void Apply()
         {
             base.Apply();
-
-            if (packageState.inspectorHasErrors)
-            {
-                var errors = new List<string>();
-                foreach (var entry in packageState.propertiesErrorsAndWarnings)
-                    errors.AddRange(entry.Value.m_ErrorMessages);
-                throw new InvalidOperationException(string.Format(L10n.Tr("The Inspector window contains errors, information can't be saved.\n{0}", null), String.Join("\n", errors)));
-            }
-
 
             for (int i = 0; i < targets.Length; i++)
             {
@@ -419,6 +501,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                     if (buttonState.changed)
                         packageState.propertiesErrorsAndWarnings.Clear();
                 }
+
                 using (new EditorGUI.DisabledScope(packageState.inspectorHasErrors))
                 {
                     return ApplyButton();
@@ -433,6 +516,75 @@ namespace UnityEditor.PackageManager.UI.Internal
                 packageState.inspectorHasErrors = false;
                 packageState.propertiesErrorsAndWarnings.Clear();
             }
+        }
+
+        private bool ShouldLogPlayModeWarningForPackageState()
+        {
+            if (packageState.didLogPlayModeWarning)
+                return false;
+
+            packageState.didLogPlayModeWarning = true;
+            var state = packageState;
+            EditorApplication.delayCall += () =>
+            {
+                if (state != null)
+                    state.didLogPlayModeWarning = false;
+            };
+            return true;
+        }
+
+        [InitializeOnLoadMethod]
+        static void EnterPlayModeAfterApplyChanges()
+        {
+            if (!SessionState.GetBool(k_ReenterPlayModeSessionKey, false))
+                return;
+            SessionState.EraseBool(k_ReenterPlayModeSessionKey);
+            if (!EditorApplication.isPlayingOrWillChangePlaymode)
+                EditorApplication.delayCall += () => EditorApplication.isPlaying = true;
+        }
+
+        private void OnPlayModeStateChanged(PlayModeStateChange state)
+        {
+            if (state != PlayModeStateChange.ExitingEditMode || packageState == null || !hasUnsavedChanges)
+                return;
+
+            EditorApplication.isPlaying = false;
+
+            // Because we can have multiple inspectors open, we only want to show the warning once per package state, not once per inspector.
+            if (!ShouldLogPlayModeWarningForPackageState())
+                return;
+
+            // We show the same dialog as the one in SaveChanges(), but with different buttons. The "Apply" button will save the changes and enter Play Mode, while the "Discard" button will discard the changes and enter Play Mode.
+            var result = ServicesContainer.instance.Resolve<IApplicationProxy>().DisplayDialogComplex(
+                "unsavedChangesEnterPlayMode",
+                L10n.Tr("Unapplied Changes", null),
+                string.Format(L10n.Tr("Package '{0}' has unapplied changes. Apply or discard them before entering Play Mode.", null), packageState.originalTechnicalName),
+                L10n.Tr("Apply", null),
+                L10n.Tr("Cancel", null),
+                L10n.Tr("Discard", null));
+
+            if (result == 0) // Apply
+            {
+                if (ShowInspectorHasErrorsDialog())
+                    return;
+
+                if (packageState.hasTechnicalNameChanged && !ConfirmTechnicalNameChange(packageState.originalTechnicalName, packageState.info.technicalName?.Trim()))
+                    return;
+
+                // Persist intent across domain reloads (handled by EnterPlayModeAfterApplyChanges).
+                // Some changes may require a domain reload to take effect, so we need to re-enter Play Mode after the reload.
+                SessionState.SetBool(k_ReenterPlayModeSessionKey, true);
+
+                EditorApplication.delayCall += () => EnterPlayModeAfterApplyChanges();
+                
+                base.SaveChanges();
+            }
+            else if (result == 2) // Discard
+            {
+                DiscardChanges();
+                EditorApplication.isPlaying = true;
+            }
+            // result == 1 (Cancel): stay in edit mode
         }
 
         private void DoPropertyFieldLayoutErrors(List<string> errorMessages)
@@ -472,8 +624,18 @@ namespace UnityEditor.PackageManager.UI.Internal
             using (new EditorGUILayout.VerticalScope(GUI.skin.box, GUILayout.ExpandWidth(true)))
             {
                 if (DoPropertyFieldLayout(m_TechnicalName, Styles.technicalName))
+                {
                     ValidateTechnicalNameProperty(m_TechnicalName, m_UpmCache.GetInstalledPackageInfo(m_TechnicalName.stringValue), m_AssetPath);
+                    packageState.hasTechnicalNameChanged = packageState.originalTechnicalName != null && m_TechnicalName.stringValue?.Trim() != packageState.originalTechnicalName;
+                }
                 DoPropertyFieldLayoutErrorsAndWarnings(m_TechnicalName);
+
+                if (packageState.hasTechnicalNameChanged)
+                {
+                    EditorGUI.indentLevel++;
+                    packageState.renameFolderOnApply = EditorGUILayout.Toggle(Styles.renameFolderOption, packageState.renameFolderOnApply);
+                    EditorGUI.indentLevel--;
+                }
 
                 GUILayout.Space(10);
 
@@ -818,11 +980,8 @@ namespace UnityEditor.PackageManager.UI.Internal
             var newTechnicalName = packageState.info.technicalName?.Trim();
             if (!string.IsNullOrEmpty(newTechnicalName))
             {
-                renameFolder = newTechnicalName != json[k_ManifestFieldName] as string
-                               && ServicesContainer.instance.Resolve<IApplicationProxy>().DisplayDialog(
-                                   "matchPackageFolderName",
-                                   L10n.Tr("Update Folder Name to Match", null),
-                                   L10n.Tr("You changed the package’s technical name. Do you also want to update the package’s folder to match the technical name?", null), "Update Name", "Keep Current");
+                if (newTechnicalName != json[k_ManifestFieldName] as string)
+                    renameFolder = packageState.renameFolderOnApply;
                 json[k_ManifestFieldName] = newTechnicalName;
             }
 
@@ -937,6 +1096,8 @@ namespace UnityEditor.PackageManager.UI.Internal
                 Debug.LogError(string.Format(L10n.Tr("Access denied when accessing package manifest file {0}. Please make sure the file is not read-only.", null), assetPath));
             }
 
+            if (packageState.hasTechnicalNameChanged)
+                Client.AddAndRemove(packagesToRemove: new[] { packageState.originalTechnicalName });
             Client.Resolve();
         }
 

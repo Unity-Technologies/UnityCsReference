@@ -19,9 +19,9 @@ namespace UnityEditor.TerrainTools
 
         private class Styles
         {
-            public GUIContent fillHeightmapUsingNeighbors = EditorGUIUtility.TrTextContent("Fill Heightmap Using Neighbors", "If selected, it will fill heightmap of the new terrain performing cross blend of heightmaps of its neighbors.");
-            public GUIContent fillAddressMode = EditorGUIUtility.TrTextContent("Fill Heightmap Address Mode", "Type of the terrain's neighbors sampling address mode.");
-            public GUIContent terrainToolPropertyChange = EditorGUIUtility.TrTextContent("Terrain tool property change");
+            public GUIContent fillHeightmapUsingNeighbors = L10n.TextContent("Fill Heightmap Using Neighbors", "If selected, it will fill heightmap of the new terrain performing cross blend of heightmaps of its neighbors.", null, null);
+            public GUIContent fillAddressMode = L10n.TextContent("Fill Heightmap Address Mode", "Type of the terrain's neighbors sampling address mode.", null, null);
+            public GUIContent terrainToolPropertyChange = L10n.TextContent("Terrain tool property change", null, null, null);
         }
 
         private enum FillAddressMode
@@ -134,12 +134,11 @@ namespace UnityEditor.TerrainTools
             terrainData.baseMapResolution = parent.terrainData.baseMapResolution;
             terrainData.heightmapResolution = parent.terrainData.heightmapResolution;
             terrainData.alphamapResolution = parent.terrainData.alphamapResolution;
-            if (parent.terrainData.terrainLayers != null && parent.terrainData.terrainLayers.Length > 0)
-            {
-                var newarray = new TerrainLayer[1];
-                newarray[0] = parent.terrainData.terrainLayers[0];
-                terrainData.terrainLayers = newarray;
-            }
+            // Not the reference copy this would be between managed objects: terrainLayers is an extern
+            // property, so the setter marshals the array into this TerrainData's own native storage.
+            var parentLayers = parent.terrainData.terrainLayers;
+            if (parentLayers != null && parentLayers.Length > 0)
+                terrainData.terrainLayers = parentLayers;
             terrainData.SetDetailResolution(parent.terrainData.detailResolution, parent.terrainData.detailResolutionPerPatch);
             terrainData.SetDetailScatterMode(parent.terrainData.detailScatterMode);
             terrainData.wavingGrassSpeed = parent.terrainData.wavingGrassSpeed;

@@ -104,6 +104,8 @@ namespace UnityEngine.U2D
     [MovedFrom("UnityEngine.Experimental.U2D")]
     public class SpriteShapeRenderer : Renderer
     {
+        internal SpriteShapeRenderer(global::UnityEngine.EntityId id) : base(id) {}
+        public SpriteShapeRenderer() {}
         ///<summary>Rendering color for the SpriteShape.</summary>
         ///<remarks>The selected vertex color becomes the rendering color, and is accessible in a pixel shader. The default color is white when no color is selected.</remarks>
         public extern Color color

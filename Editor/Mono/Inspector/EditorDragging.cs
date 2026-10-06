@@ -37,6 +37,9 @@ namespace UnityEditor
 
         public void HandleDraggingToEditor(Editor[] editors, int editorIndex, Rect dragRect, Rect contentRect)
         {
+            if (editors[editorIndex] != null && editors[editorIndex].isDataComponentEditor)
+                return;
+
             if (dragRect.height == 0f)
                 return;
 

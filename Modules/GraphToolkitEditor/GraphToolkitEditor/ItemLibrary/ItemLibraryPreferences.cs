@@ -2,7 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: GraphToolkit not yet converted
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -167,6 +166,9 @@ namespace Unity.GraphToolkit.ItemLibrary.Editor
         public string Context { get; }
 
         [AutoStaticsCleanupOnCodeReload]
+        // Read-through cache over EditorPrefs: each ItemLibraryPreferences constructor calls Load(), which
+        // re-reads the stored JSON for its tool when no entry is cached, and every write goes to EditorPrefs.
+        [IgnoreForUAL0015("Read-through EditorPrefs cache, re-read by Load() when the tool entry is missing")]
         static Dictionary<string, DataPerTool> s_CachedPrefs = new Dictionary<string, DataPerTool>();
 
         /// <summary>
@@ -321,4 +323,3 @@ namespace Unity.GraphToolkit.ItemLibrary.Editor
         }
     }
 }
-#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

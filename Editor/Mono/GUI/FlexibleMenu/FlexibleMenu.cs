@@ -13,7 +13,7 @@ namespace UnityEditor
         class Styles
         {
             public GUIStyle menuItem = "MenuItem";
-            public GUIContent plusButtonText = EditorGUIUtility.TrTextContent("", "Add New Item");
+            public GUIContent plusButtonText = L10n.TextContent("", "Add New Item", null, null);
         }
         [NoAutoStaticsCleanup] // lazy GUIStyle/GUIContent cache; re-created on first access, safe to persist
         static Styles s_Styles;
@@ -307,8 +307,8 @@ namespace UnityEditor
             {
                 s_Caller = caller;
                 GenericMenu menu = new GenericMenu();
-                menu.AddItem(EditorGUIUtility.TrTextContent("Edit..."), false, Edit, itemIndex);
-                menu.AddItem(EditorGUIUtility.TrTextContent("Delete"), false, Delete, itemIndex);
+                menu.AddItem(L10n.TextContent("Edit...", null, null, null), false, Edit, itemIndex);
+                menu.AddItem(L10n.TextContent("Delete", null, null, null), false, Delete, itemIndex);
                 menu.ShowAsContext();
                 EditorGUIUtility.ExitGUI();
             }

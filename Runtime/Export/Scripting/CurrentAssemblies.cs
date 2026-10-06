@@ -11,6 +11,7 @@ using System.Reflection.PortableExecutable;
 using Unity.Scripting.LifecycleManagement;
 using UnityEngine.Bindings;
 
+using Unity.Scripting.AssemblyManagement;
 
 namespace UnityEngine.Assemblies;
 
@@ -20,6 +21,50 @@ namespace UnityEngine.Assemblies;
 [VisibleToOtherModules]
 public static partial class CurrentAssemblies
 {
+    private struct AssemblyLoadContextStateHelper
+    {
+        public MethodInfo GetAssemblyLoadContextMethod;
+        public FieldInfo AssemblyLoadContextStateField;
+    }
+
+    [NoAutoStaticsCleanup] //k_AssemblyLoadContextStateHelper can be kept alive accross code reloads
+    private static readonly AssemblyLoadContextStateHelper k_AssemblyLoadContextStateHelper = GetAssemblyLoadContextStateHelperImpl();
+    private static AssemblyLoadContextStateHelper GetAssemblyLoadContextStateHelperImpl()
+    {
+        var method = Type.GetType("System.Runtime.Loader.AssemblyLoadContext")?.GetMethod("GetLoadContext", BindingFlags.Static | BindingFlags.Public);
+        if (method == null)
+            return default;
+
+        var field = method.DeclaringType?.GetField("_state", BindingFlags.Instance | BindingFlags.NonPublic);
+        var result = new AssemblyLoadContextStateHelper
+        {
+            GetAssemblyLoadContextMethod = method,
+            AssemblyLoadContextStateField = field
+        };
+        return result;
+    }
+
+    /// <summary>
+    /// Validate whether the assembly is loaded from still live AssemblyLoadContext.
+    /// On NETCore when AssemblyLoadContexts are being used it is possible that some assemblies are in the "being unloaded" state.
+    /// That causes exceptions in code which uses such assemblies and that code should be wrapped in try/catch.
+    /// Alternatively we can filter out assemblies which are not in the "live" state and return only valid for iteration assemblies.
+    /// This allows to have a filtering boilerplate in a common utility method which can be used when code is used within Unity Editor
+    /// (and thus relying on AssemblyLoader infrastructure) and out-of-process (e.g. ILPP).
+    /// Since we still use Mono (ENABLE_CORECLR_FIXME) which requires netstandard we can't use AssemblyLoadContext API directly and use reflection.
+    /// </summary>
+    /// <param name="assembly">Assembly instance to check a liveness state</param>
+    /// <returns>True is assembly belongs to live context, false otherwise</returns>
+    private static bool IsFromLiveAssemblyLoadContext(Assembly assembly)
+    {
+        var assemblyLoadContext = k_AssemblyLoadContextStateHelper.GetAssemblyLoadContextMethod.Invoke(null, new object[] { assembly });
+        if (assemblyLoadContext == null)
+            return true;
+
+        var state = k_AssemblyLoadContextStateHelper.AssemblyLoadContextStateField?.GetValue(assemblyLoadContext);
+        var result = 0 == Convert.ToInt32(state);
+        return result;
+    }
 
     /// <summary>
     /// Gets the assemblies that have been loaded by Unity into the current execution context.
@@ -36,10 +81,36 @@ public static partial class CurrentAssemblies
     [VisibleToOtherModules]
     public static IReadOnlyList<Assembly> GetLoadedAssemblies()
     {
+        // The code path only relevant when running in ALC mode in Unity Editor or Player.
+        if (ICurrentAssemblyLoadContext.Instance != null)
+            return ICurrentAssemblyLoadContext.Instance.GetLoadedAssemblies();
 
         // Fallback to AppDomain.CurrentDomain.GetAssemblies() if we are not running in ALC mode.
         var allAssemblies = AppDomain.CurrentDomain.GetAssemblies();
-        return allAssemblies;
+        if (k_AssemblyLoadContextStateHelper.GetAssemblyLoadContextMethod == null)
+            return allAssemblies;
+
+        // But filter to only return assemblies that are loaded from still live ALC.
+        // This is done to be able to use the GetLoadedAssemblies method in out-of-process code such as ILPP.
+        var liveAssemblies = new List<Assembly>();
+        foreach (var assembly in allAssemblies) // and we don't use LINQ
+        {
+            if (IsFromLiveAssemblyLoadContext(assembly))
+                liveAssemblies.Add(assembly);
+        }
+
+        return liveAssemblies;
+    }
+
+    /// <summary>
+    /// Raised for an assembly Unity has no resolution for, when the load originates from the current contextual
+    /// reflection context. A handler returns the assembly to use, or null to decline.
+    /// </summary>
+    [VisibleToOtherModules]
+    internal static event Func<AssemblyName, Assembly> AssemblyResolve
+    {
+        add => ICurrentAssemblyLoadContext.Instance.AssemblyResolve += value;
+        remove => ICurrentAssemblyLoadContext.Instance.AssemblyResolve -= value;
     }
 
     /// <summary>
@@ -55,6 +126,11 @@ public static partial class CurrentAssemblies
             throw new ArgumentException($"Assembly path must be fully qualified", nameof(assemblyPath));
         }
 
+        // The code path only relevant when running in ALC mode in Unity Editor or Player.
+        if (ICurrentAssemblyLoadContext.Instance != null)
+        {
+            return ICurrentAssemblyLoadContext.Instance.LoadFromPath(assemblyPath);
+        }
 
         return Assembly.LoadFrom(assemblyPath);
     }
@@ -87,6 +163,18 @@ public static partial class CurrentAssemblies
         if (rawSymbolStore != null && rawSymbolStore.Length == 0)
             throw new BadImageFormatException("Empty raw assembly symbols byte array");
 
+        // The code path only relevant when running in ALC mode in Unity Editor or Player.
+        if (ICurrentAssemblyLoadContext.Instance != null)
+        {
+            using var assemblyStream = new MemoryStream(rawAssembly);
+            if (rawSymbolStore != null)
+            {
+                using var symbolsStream = new MemoryStream(rawSymbolStore);
+                return ICurrentAssemblyLoadContext.Instance.LoadFromStream(assemblyStream, symbolsStream);
+            }
+
+            return ICurrentAssemblyLoadContext.Instance.LoadFromStream(assemblyStream, null);
+        }
 
         var assemblyName = GetAssemblyNameFromBytes(rawAssembly);
 

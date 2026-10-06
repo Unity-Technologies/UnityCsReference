@@ -38,7 +38,7 @@ struct InstanceStatusData
 
     public bool IsExecutingRunningStage()
     {
-        return IsExecuting() &&
-            CurrentStage is ExecutionStage.Run;
+        return CurrentStage is ExecutionStage.Run &&
+            StageStatuses[(int)ExecutionStage.Run].State is ExecutionState.Running;
     }
 }

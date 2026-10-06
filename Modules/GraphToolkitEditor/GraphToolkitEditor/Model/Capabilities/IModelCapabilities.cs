@@ -20,19 +20,6 @@ namespace Unity.GraphToolkit.Editor
     }
 
     /// <summary>
-    /// Interface for elements that can track their progression.
-    /// </summary>
-    [UnityRestricted]
-    internal interface IHasProgress
-    {
-        /// <summary>
-        /// The progress value.
-        /// </summary>
-        /// <remarks>No units are implied. The model and the UI must agree on the meaning of the value. Percent (0-100) are often used.</remarks>
-        int Progress { get; }
-    }
-
-    /// <summary>
     /// Interface for elements that have an <see cref="ElementColor"/>.
     /// </summary>
     interface IHasElementColor

@@ -29,6 +29,7 @@ namespace UnityEngine.Animations
     [NativeClass("AimConstraint", PersistentTypeId = 0x35606F27)]
     public sealed partial class AimConstraint : Behaviour, IConstraint, IConstraintInternal
     {
+        internal AimConstraint(global::UnityEngine.EntityId id) : base(id) {}
         ///<summary>Specifies how the world up vector used by the aim constraint is defined.</summary>
         public enum WorldUpType
         {
@@ -50,10 +51,10 @@ namespace UnityEngine.Animations
 
         AimConstraint()
         {
-            Internal_Create(this);
+            SetEntityIdFromConstructor(Internal_Create());
         }
 
-        private static extern void Internal_Create([Writable] AimConstraint self);
+        private static extern EntityId Internal_Create();
 
         ///<summary>The weight of the constraint component.</summary>
         public extern float weight { get; set; }

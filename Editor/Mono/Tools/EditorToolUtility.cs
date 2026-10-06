@@ -26,17 +26,32 @@ namespace UnityEditor.EditorTools
         static readonly Regex k_TrailingForwardSlashOrWhiteSpace = new Regex(@"[/|\s]*\Z", RegexOptions.Compiled);
 
         [AutoStaticsCleanupOnCodeReload]
+        // Per-owner tool cache: GetToolCache re-creates a missing EditorToolCache entry on the next lookup,
+        // so the cache emptied on reload refills on demand.
+        [IgnoreForUAL0015("Per-owner tool cache, re-created on the next lookup")]
         static Dictionary<Type, EditorToolCache> s_ToolCache = new();
         [AutoStaticsCleanupOnCodeReload]
         static Dictionary<Type, EditorToolCache> s_ContextCache = new();
         [AutoStaticsCleanupOnCodeReload]
+        // Cleared on reload; GetEditorToolAssociations null-checks and lazily rebuilds it via
+        // InitializeEditorTypeAssociations() below on the next tool lookup.
+        [IgnoreForUAL0015("Association table lazily rebuilt on the next lookup by InitializeEditorTypeAssociations()")]
         static Dictionary<Type, List<EditorTypeAssociation>> s_EditorToolAssociations;
         [AutoStaticsCleanupOnCodeReload]
+        // Cleared on reload; GetEditorToolContextAssociations null-checks and lazily rebuilds it via
+        // InitializeEditorTypeAssociations() below on the next context lookup.
+        [IgnoreForUAL0015("Association table lazily rebuilt on the next lookup by InitializeEditorTypeAssociations()")]
         static Dictionary<Type, List<EditorTypeAssociation>> s_EditorToolContextAssociations;
 
         [AutoStaticsCleanupOnCodeReload]
+        // On-demand icon memo: GetIcon rebuilds the GUIContent from the tool type on a miss and re-adds it,
+        // so the cache cleared on reload refills itself.
+        [IgnoreForUAL0015("On-demand toolbar icon memo, rebuilt by GetIcon on a miss")]
         static Dictionary<Type, GUIContent> s_ToolbarIcons = new();
         [AutoStaticsCleanupOnCodeReload]
+        // InitializeToolOwnerDefinitions rebuilds this from TypeCache whenever it is null or empty, and
+        // every accessor checks for that first, so an emptied map is refilled on the next use.
+        [IgnoreForUAL0015("Tool owner definitions rebuilt from TypeCache when the map is null or empty")]
         static Dictionary<Type, ToolOwnerDefinition> s_ToolOwnerDefinitions = new();
 
         internal readonly struct ToolOwnerDefinition
@@ -119,7 +134,13 @@ namespace UnityEditor.EditorTools
             return false;
         }
 
-        [InitializeOnLoadMethod]
+        // No lifecycle attribute needed: the two association dictionaries this rebuilds are cleared on code
+        // reload, and GetEditorToolAssociations/GetEditorToolContextAssociations already null-check and call
+        // this lazily on the next lookup, same as the other caches in this file (s_ToolCache, s_ContextCache,
+        // s_ToolOwnerDefinitions). Do not switch this to an eager [OnCodeInitializing] hook: that lifecycle
+        // phase runs before managed objects (EditorWindow instances included) are reawoken after a reload, and
+        // this method's TypeCache walk touches EditorWindow-derived types — triggering it eagerly there caused
+        // a reproducible Editor crash when entering Play Mode with Inspector windows open.
         static void InitializeEditorTypeAssociations()
         {
             s_EditorToolAssociations = new Dictionary<Type, List<EditorTypeAssociation>>();
@@ -141,6 +162,9 @@ namespace UnityEditor.EditorTools
             BuildToolContextAssociations(s_EditorToolContextAssociations);
         }
 
+        // Same hazard as InitializeEditorTypeAssociations above: the TypeCache walk touches
+        // EditorWindow-derived types, so this must stay lazy — do not trigger it from an eager
+        // [OnCodeInitializing] hook.
         static void InitializeToolOwnerDefinitions()
         {
             if (s_ToolOwnerDefinitions == null)

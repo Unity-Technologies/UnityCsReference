@@ -13,7 +13,7 @@ namespace UnityEditor
 
         private static class Styles
         {
-            public static readonly GUIContent DistortionLevelTooltip = EditorGUIUtility.TrTextContent("Distortion Level", "Distortion value");
+            public static readonly GUIContent DistortionLevelTooltip = L10n.TextContent("Distortion Level", "Distortion value", null, null);
         }
 
         private void OnEnable()

@@ -41,6 +41,7 @@ namespace UnityEngine.Video
     [NativeHeader("Modules/Video/Public/VideoClip.h")]
     public sealed class VideoClip : Object
     {
+        internal VideoClip(global::UnityEngine.EntityId id) : base(id) {}
         private VideoClip() {}
 
         ///<summary>Gets the original video clip file path as it was imported into Unity. (Read Only).</summary>

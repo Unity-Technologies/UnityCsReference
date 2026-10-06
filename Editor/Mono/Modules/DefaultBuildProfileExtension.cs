@@ -15,20 +15,20 @@ namespace UnityEditor.Modules
 {
     internal abstract class DefaultBuildProfileExtension : IBuildProfileExtension
     {
-        static readonly GUIContent k_DevelopmentBuild = EditorGUIUtility.TrTextContent("Development Build");
-        static readonly GUIContent k_AutoconnectProfiler = EditorGUIUtility.TrTextContent("Autoconnect Profiler", "When the build is started, an open Profiler Window will automatically connect to the Player and start profiling. The \"Build And Run\" option will also automatically open the Profiler Window.");
-        static readonly GUIContent k_AutoconnectProfilerDisabled = EditorGUIUtility.TrTextContent("Autoconnect Profiler", "Profiling is only enabled in a Development Player.");
-        static readonly GUIContent k_BuildWithDeepProfiler = EditorGUIUtility.TrTextContent("Deep Profiling Support", "Build Player with Deep Profiling Support. This might affect Player performance.");
-        static readonly GUIContent k_BuildWithDeepProfilerDisabled = EditorGUIUtility.TrTextContent("Deep Profiling Support", "Profiling is only enabled in a Development Player.");
-        static readonly GUIContent k_BuildWithCodeCoverage = EditorGUIUtility.TrTextContent("Code Coverage Support", "Build Player with Code Coverage Support. This might affect Player performance.");
-        static readonly GUIContent k_BuildWithCodeCoverageDisabled = EditorGUIUtility.TrTextContent("Code Coverage Support", "Code Coverage is only enabled in a Development Player.");
-        static readonly GUIContent k_AllowDebugging = EditorGUIUtility.TrTextContent("Script Debugging", "Enable this setting to allow your script code to be debugged.");
-        static readonly GUIContent k_WaitForManagedDebugger = EditorGUIUtility.TrTextContent("Wait For Managed Debugger", "Show a dialog where you can attach a managed debugger before any script execution. Can also use volume Up or Down button to confirm on Android.");
-        static readonly GUIContent k_ManagedDebuggerFixedPort = EditorGUIUtility.TrTextContent("Managed Debugger Fixed Port", "Use the specified port to attach to the managed debugger. If 0, the port will be automatically selected.");
-        static readonly GUIContent k_CompressionMethod = EditorGUIUtility.TrTextContent("Compression Method", "Compression applied to Player data (scenes and resources).\nDefault - none or default platform compression.\nLZ4 - fast compression suitable for Development Builds.\nLZ4HC - higher compression rate variance of LZ4, causes longer build times. Works best for Release Builds.");
-        static readonly GUIContent k_ExplicitNullChecks = EditorGUIUtility.TrTextContent("Explicit Null Checks");
-        static readonly GUIContent k_ExplicitDivideByZeroChecks = EditorGUIUtility.TrTextContent("Divide By Zero Checks");
-        static readonly GUIContent k_ExplicitArrayBoundsChecks = EditorGUIUtility.TrTextContent("Array Bounds Checks");
+        static readonly GUIContent k_DevelopmentBuild = L10n.TextContent("Development Build", null, null, null);
+        static readonly GUIContent k_AutoconnectProfiler = L10n.TextContent("Autoconnect Profiler", "When the build is started, an open Profiler Window will automatically connect to the Player and start profiling. The \"Build And Run\" option will also automatically open the Profiler Window.", null, null);
+        static readonly GUIContent k_AutoconnectProfilerDisabled = L10n.TextContent("Autoconnect Profiler", "Profiling is only enabled in a Development Player.", null, null);
+        static readonly GUIContent k_BuildWithDeepProfiler = L10n.TextContent("Deep Profiling Support", "Build Player with Deep Profiling Support. This might affect Player performance.", null, null);
+        static readonly GUIContent k_BuildWithDeepProfilerDisabled = L10n.TextContent("Deep Profiling Support", "Profiling is only enabled in a Development Player.", null, null);
+        static readonly GUIContent k_BuildWithCodeCoverage = L10n.TextContent("Code Coverage Support", "Build Player with Code Coverage Support. This might affect Player performance.", null, null);
+        static readonly GUIContent k_BuildWithCodeCoverageDisabled = L10n.TextContent("Code Coverage Support", "Code Coverage is only enabled in a Development Player.", null, null);
+        static readonly GUIContent k_AllowDebugging = L10n.TextContent("Script Debugging", "Enable this setting to allow your script code to be debugged.", null, null);
+        static readonly GUIContent k_WaitForManagedDebugger = L10n.TextContent("Wait For Managed Debugger", "Show a dialog where you can attach a managed debugger before any script execution. Can also use volume Up or Down button to confirm on Android.", null, null);
+        static readonly GUIContent k_ManagedDebuggerFixedPort = L10n.TextContent("Managed Debugger Fixed Port", "Use the specified port to attach to the managed debugger. If 0, the port will be automatically selected.", null, null);
+        static readonly GUIContent k_CompressionMethod = L10n.TextContent("Compression Method", "Compression applied to Player data (scenes and resources).\nDefault - none or default platform compression.\nLZ4 - fast compression suitable for Development Builds.\nLZ4HC - higher compression rate variance of LZ4, causes longer build times. Works best for Release Builds.", null, null);
+        static readonly GUIContent k_ExplicitNullChecks = L10n.TextContent("Explicit Null Checks", null, null, null);
+        static readonly GUIContent k_ExplicitDivideByZeroChecks = L10n.TextContent("Divide By Zero Checks", null, null, null);
+        static readonly GUIContent k_ExplicitArrayBoundsChecks = L10n.TextContent("Array Bounds Checks", null, null, null);
         static readonly Compression[] k_CompressionTypes =
         {
             Compression.None,
@@ -37,11 +37,11 @@ namespace UnityEditor.Modules
         };
         static readonly GUIContent[] k_CompressionStrings =
         {
-            EditorGUIUtility.TrTextContent("Default"),
-            EditorGUIUtility.TrTextContent("LZ4"),
-            EditorGUIUtility.TrTextContent("LZ4HC"),
+            L10n.TextContent("Default", null, null, null),
+            L10n.TextContent("LZ4", null, null, null),
+            L10n.TextContent("LZ4HC", null, null, null),
         };
-        static readonly GUIContent k_InstallInBuildFolder = EditorGUIUtility.TrTextContent("Install into source code 'build' folder", "Install into source checkout 'build' folder, for debugging with source code");
+        static readonly GUIContent k_InstallInBuildFolder = L10n.TextContent("Install into source code 'build' folder", "Install into source checkout 'build' folder, for debugging with source code", null, null);
 
         // Development build infobox
         static readonly string developmentBuildInfoBoxText = string.Format(L10n.Tr("Starting in Unity 6.6, part of the Development Build setting has been split out into the Managed Code Variant player setting. <a href={0}>Click here</a> for more information.", null), kDevelopmentBuildInfoBoxUrl);

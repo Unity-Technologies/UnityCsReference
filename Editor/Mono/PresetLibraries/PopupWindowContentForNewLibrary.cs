@@ -20,10 +20,10 @@ namespace UnityEditor
 
         class Texts
         {
-            public GUIContent header = EditorGUIUtility.TrTextContent("Create New Library");
-            public GUIContent name = EditorGUIUtility.TrTextContent("Name");
-            public GUIContent location = EditorGUIUtility.TrTextContent("Location");
-            public GUIContent[] fileLocations = new[] {EditorGUIUtility.TrTextContent("Preferences Folder"), EditorGUIUtility.TrTextContent("Project Folder")};
+            public GUIContent header = L10n.TextContent("Create New Library", null, null, null);
+            public GUIContent name = L10n.TextContent("Name", null, null, null);
+            public GUIContent location = L10n.TextContent("Location", null, null, null);
+            public GUIContent[] fileLocations = new[] {L10n.TextContent("Preferences Folder", null, null, null), L10n.TextContent("Project Folder", null, null, null)};
             public PresetFileLocation[] fileLocationOrder = new[] { PresetFileLocation.PreferencesFolder, PresetFileLocation.ProjectFolder }; // must match order of fileLocations above
         }
         [NoAutoStaticsCleanup] // Lazy Styles/Texts cache of GUIContent (whitelisted, asset-backed); safe to persist across code reload

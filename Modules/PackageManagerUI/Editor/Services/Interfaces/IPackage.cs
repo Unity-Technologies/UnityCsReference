@@ -12,7 +12,7 @@ namespace UnityEditor.PackageManager.UI
 
         string name { get; }
 
-        IEnumerable<IPackageVersion> versions { get; }
+        IReadOnlyList<IPackageVersion> versions { get; }
     }
 }
 
@@ -33,7 +33,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         bool isDiscoverable { get; }
 
         // package level errors (for upm this refers to operation errors that are separate from the package info)
-        IEnumerable<UIError> errors { get; }
+        IReadOnlyList<UIError> errors { get; }
 
         bool hasEntitlementsError { get; }
 

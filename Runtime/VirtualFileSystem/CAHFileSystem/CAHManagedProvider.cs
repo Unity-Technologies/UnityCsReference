@@ -41,6 +41,10 @@ namespace UnityEngine
                 s_Handlers.Clear();
                 CAHFileSystem.SetHasManagedHandlers(false);
             }
+
+            // Outside the write lock: the async read thread takes the open-file cache mutex and then this
+            // lock when it opens through a handler, so flushing while holding it would invert that order.
+            CAHFileSystem.InvalidateManagedFileHandles();
         }
 
         internal static void RegisterHandler(ICAHArtifactHandler handler)
@@ -62,6 +66,9 @@ namespace UnityEngine
                 if (s_Handlers.Count == 0)
                     CAHFileSystem.SetHasManagedHandlers(false);
             }
+
+            // Unconditional, and outside the write lock for the lock ordering reason above: this handler's
+            CAHFileSystem.InvalidateManagedFileHandles();
         }
 
         [RequiredByNativeCode]

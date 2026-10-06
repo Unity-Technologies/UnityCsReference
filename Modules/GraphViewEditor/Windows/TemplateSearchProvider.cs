@@ -2,13 +2,13 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: GraphView not yet converted
 using System;
 using System.Collections.Generic;
 using System.Text;
 
 using UnityEngine;
 using UnityEditor.Search;
+using UnityEditor.Search.Providers;
 
 namespace UnityEditor.Experimental.GraphView
 {
@@ -46,44 +46,86 @@ namespace UnityEditor.Experimental.GraphView
                 searchQuery = searchQuery.Replace("*adbonly*", "");
             }
 
-            // We can use asset provider only when the indexing is complete
-            var isIndexingComplete = !adbOnlyQuery && IsIndexingComplete();
-            var canUseAssetProvider = !adbOnlyQuery && isIndexingComplete;
+            var packagesIndexed = SearchDatabase.GetDefaultSearchDatabase()?.settings.IsPackagesIndexingEnabled() ?? false;
+            var canUseAssetProvider = !adbOnlyQuery && packagesIndexed && IsIndexingComplete();
             var defaultQuery = $"t:{m_TemplateHelper.assetType.Name}";
 
-            if (!string.IsNullOrEmpty(searchQuery))
+            if (canUseAssetProvider)
             {
-                // ADB doesn't support ( ) or boolean operator
-                defaultQuery += $" {searchQuery}";
-            }
-
-            if (!string.IsNullOrEmpty(m_HiddenSearchQuery))
-            {
-                if (canUseAssetProvider)
+                if (!string.IsNullOrEmpty(searchQuery))
+                    defaultQuery += $" {searchQuery}";
+                if (!string.IsNullOrEmpty(m_HiddenSearchQuery))
                     defaultQuery = $"({m_HiddenSearchQuery}) and ({defaultQuery})";
-                else
-                {
-                    // ADB doesn't support ( ) or boolean operator
-                    defaultQuery += $" {m_HiddenSearchQuery}";
-                }
+
+                using var assetContext = Search.SearchService.CreateContext(new [] { "adb", "asset" }, defaultQuery, SearchFlags.Packages);
+                assetContext.useExplicitProvidersAsNormalProviders = true;
+                using var request = Search.SearchService.Request(assetContext);
+                foreach (var item in request)
+                    yield return item;
+
+                IsSearching = false;
+                yield break;
             }
 
-            // ADB provider is always available, but does not provide search and filter capabilities
-            var providerIds = canUseAssetProvider ? new [] { "adb", "asset" } : new [] { "adb" };
-            using var assetContext = Search.SearchService.CreateContext(providerIds, defaultQuery, SearchFlags.Packages);
-            assetContext.useExplicitProvidersAsNormalProviders = true;
-            using var request = Search.SearchService.Request(assetContext);
-            foreach (var item in request)
+            // QuickSearch's index isn't ready, so match the templates ourselves instead of querying it.
+            var toolKey = m_TemplateHelper.toolKey.ToLowerInvariant();
+            var hiddenMatcher = TemplateQueryMatcher.Parse(m_HiddenSearchQuery, toolKey);
+            var userMatcher = TemplateQueryMatcher.Parse(searchQuery, toolKey);
+            var matchesEverything = hiddenMatcher.IsMatchAll && userMatcher.IsMatchAll;
+
+            using (var assetContext = Search.SearchService.CreateContext(new [] { "adb" }, defaultQuery, SearchFlags.Packages))
             {
-                if (item == null)
-                    yield return null;
-                else
+                assetContext.useExplicitProvidersAsNormalProviders = true;
+                using var request = Search.SearchService.Request(assetContext);
+                foreach (var item in request)
                 {
-                    yield return item;
+                    if (item == null)
+                    {
+                        yield return null;
+                        continue;
+                    }
+
+                    if (item.data is not AssetProvider.AssetMetaInfo meta)
+                        continue;
+
+                    var path = AssetDatabase.GUIDToAssetPath(meta.guid);
+                    if (string.IsNullOrEmpty(path))
+                        continue;
+
+                    // area in pre-filter means that a search shouldn't reach outside the area
+                    if (!MatchesArea(path, hiddenMatcher.Area) || !MatchesArea(path, userMatcher.Area))
+                        continue;
+
+                    // Skips non-templates and gives us the template's search terms.
+                    if (!m_TemplateHelper.TryGetTemplate(path, out var descriptor))
+                        continue;
+
+                    if (matchesEverything)
+                    {
+                        yield return item;
+                        continue;
+                    }
+
+                    var labels = AssetDatabase.GetLabels(new GUID(meta.guid));
+                    var document = GraphViewIndexerExtension.BuildSearchDocument(descriptor, labels);
+                    if (hiddenMatcher.Matches(document) && userMatcher.Matches(document))
+                        yield return item;
                 }
             }
 
             IsSearching = false;
+        }
+
+        // Options a:asset, a:packages, a:all or none
+        internal static bool MatchesArea(string assetPath, string area)
+        {
+            if (string.IsNullOrEmpty(area))
+                return true;
+            if (area == "assets")
+                return assetPath.StartsWith("Assets/", StringComparison.Ordinal);
+            if (area == "packages")
+                return assetPath.StartsWith("Packages/", StringComparison.Ordinal);
+            return true;
         }
 
         // Note: this is a way to open the search window with only your provider.
@@ -206,7 +248,10 @@ namespace UnityEditor.Experimental.GraphView
             }
         }
 
-        private bool IsIndexingComplete() => SearchDatabase.GetDefaultSearchDatabase().ready;
+        private bool IsIndexingComplete()
+        {
+            var db = SearchDatabase.GetDefaultSearchDatabase();
+            return db != null && db.ready && !db.updating;
+        }
     }
 }
-#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

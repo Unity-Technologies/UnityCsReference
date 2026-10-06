@@ -23,12 +23,12 @@ internal class JobsMenuProvider: SettingsProvider
 
     class JobsProperties
     {
-        public static readonly GUIContent jobSystem = EditorGUIUtility.TrTextContent("Job System");
-        public static readonly GUIContent useJobThreads = EditorGUIUtility.TrTextContent("Use Job Threads");
-        public static readonly GUIContent enableJobsDebugger = EditorGUIUtility.TrTextContent("Enable Jobs Debugger");
-        public static readonly GUIContent leakDetectionLevel = EditorGUIUtility.TrTextContent("Leak Detection Level");
-        public static readonly GUIContent graphicsThreadingMode = EditorGUIUtility.TrTextContent("Graphics Threading Mode");
-        public static readonly GUIContent allowGraphicsJobsInEditor = EditorGUIUtility.TrTextContent("Allow Graphics Jobs in Editor");
+        public static readonly GUIContent jobSystem = L10n.TextContent("Job System", null, null, null);
+        public static readonly GUIContent useJobThreads = L10n.TextContent("Use Job Threads", null, null, null);
+        public static readonly GUIContent enableJobsDebugger = L10n.TextContent("Enable Jobs Debugger", null, null, null);
+        public static readonly GUIContent leakDetectionLevel = L10n.TextContent("Leak Detection Level", null, null, null);
+        public static readonly GUIContent graphicsThreadingMode = L10n.TextContent("Graphics Threading Mode", null, null, null);
+        public static readonly GUIContent allowGraphicsJobsInEditor = L10n.TextContent("Allow Graphics Jobs in Editor", null, null, null);
     }
 
     [SettingsProvider]

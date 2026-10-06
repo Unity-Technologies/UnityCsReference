@@ -115,6 +115,8 @@ namespace UnityEditor.Actions
             var editors = ActiveEditorTracker.sharedTracker.activeEditors;
             foreach (var editor in editors)
             {
+                if (editor.target == null)
+                    continue;
                 var type = editor.target.GetType();
                 if (type == typeof(GameObject) || type == typeof(Material))
                     continue;

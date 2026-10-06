@@ -33,6 +33,7 @@ namespace UnityEngine
     [NativeHeader("Modules/Physics/PhysicsMaterial.h")]
     public class PhysicsMaterial : UnityEngine.Object
     {
+        internal PhysicsMaterial(global::UnityEngine.EntityId id) : base(id) {}
         ///<summary>Creates a new material.</summary>
         ///<remarks>Note that although this function lets you create a new physics material from a script, it is generally easier to create and assign the material from the editor.</remarks>
         ///<example>
@@ -54,10 +55,10 @@ namespace UnityEngine
         ///}
         ///]]></code>
         ///</example>
-        public PhysicsMaterial() { Internal_CreateDynamicsMaterial(this, "DynamicMaterial"); }
+        public PhysicsMaterial() { SetEntityIdFromConstructor(Internal_CreateDynamicsMaterial("DynamicMaterial")); }
         ///<summary>Creates a new material named <c>name</c>.</summary>
-        public PhysicsMaterial(string name) { Internal_CreateDynamicsMaterial(this, name); }
-        extern private static void Internal_CreateDynamicsMaterial([Writable] PhysicsMaterial mat, string name);
+        public PhysicsMaterial(string name) { SetEntityIdFromConstructor(Internal_CreateDynamicsMaterial(name)); }
+        extern private static EntityId Internal_CreateDynamicsMaterial(string name);
 
         ///<summary>How bouncy is the surface? A value of 0 will not bounce. A value of 1 will bounce without any loss of energy.</summary>
         extern public float bounciness { get; set; }

@@ -43,6 +43,8 @@ internal class ExportAction : PackageAction
     }
 
     protected override DisableConditionList<IPackageVersion> CreateDisableConditions() => new(
+        new DisableIfPackageIsNotLoaded(),
+        new DisableIfPackageIsInInvalidLocation(),
         new DisableIfExportingInProgress()
     );
 }

@@ -2,7 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: BuildSettingsWindow not yet converted
 using System;
 using UnityEngine.UIElements;
 using PlatformPackageList = UnityEditor.BuildTargetDiscovery.PlatformPackageList;
@@ -31,6 +30,9 @@ namespace UnityEditor.Build.Profile
         readonly VisualElement m_PublisherPlaceholder;
         readonly VisualElement m_ThumbnailPlaceholder;
 
+        internal delegate void OnPackageSelectionChanged();
+        OnPackageSelectionChanged m_SelectionChanged;
+
         internal PlatformPackageItem()
         {
             var uxml = EditorGUIUtility.LoadRequired(k_Uxml) as VisualTreeAsset;
@@ -43,6 +45,7 @@ namespace UnityEditor.Build.Profile
             {
                 if (m_Entry != null)
                     m_Entry.shouldInstalled = evt.newValue;
+                m_SelectionChanged?.Invoke();
             });
             m_DisplayName = this.Q<Label>("package-list-label-name");
             m_RequiredIndicator = this.Q<Label>("package-list-label-required");
@@ -64,9 +67,10 @@ namespace UnityEditor.Build.Profile
             m_ThumbnailPlaceholder.Q<Image>("package-thumbnail-placeholder-icon").image = BuildProfileModuleUtil.GetRawImageIcon();
         }
 
-        internal void Set(PlatformPackageEntry entry)
+        internal void Set(PlatformPackageEntry entry, OnPackageSelectionChanged selectionChanged = null)
         {
             m_Entry = entry;
+            m_SelectionChanged = selectionChanged;
 
             switch (BuildProfileContext.packageServiceInfoProvider.currentRequestState)
             {
@@ -221,4 +225,3 @@ namespace UnityEditor.Build.Profile
         }
     }
 }
-#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

@@ -70,7 +70,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             HandleSpecialInstall(packageName, L10n.Tr("Creating a new package", null), PackageTag.Custom);
         }
 
-        private void OnPackagesReadyToReevaluate(IReadOnlyCollection<string> packageNames)
+        private void OnPackagesReadyToReevaluate(IReadOnlyList<string> packageNames)
         {
             GeneratePackagesAndTriggerChangeEvent(packageNames);
         }
@@ -107,7 +107,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                 GeneratePackagesAndTriggerChangeEvent(new[] { packageInfo.name });
         }
 
-        private void OnPackageInfosUpdated(IReadOnlyCollection<(PackageInfo oldInfo, PackageInfo newInfo)> updatedInfos, PackagesChangedSource changedSource)
+        private void OnPackageInfosUpdated(IReadOnlyList<(PackageInfo oldInfo, PackageInfo newInfo)> updatedInfos, PackagesChangedSource changedSource)
         {
             // The `GeneratePackagesAndTriggerChangeEvent` call here already handles cases where an added/updated packageInfo contains product id.
             // We only need to pass packageNames because the packageInfo is still in the UpmCache, so we'll know when there is a productId linked to it

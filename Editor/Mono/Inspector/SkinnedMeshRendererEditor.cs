@@ -16,13 +16,13 @@ namespace UnityEditor
     {
         protected class Styles
         {
-            public static readonly GUIContent legacyClampBlendShapeWeightsInfo = EditorGUIUtility.TrTextContent("Note that BlendShape weight range is clamped. This can be disabled in Player Settings.");
-            public static readonly GUIContent meshNotSupportingSkinningInfo = EditorGUIUtility.TrTextContent("The assigned mesh is missing either bone weights with bind pose, or blend shapes. This might cause the mesh not to render in the Player. If your mesh does not have either bone weights with bind pose, or blend shapes, use a Mesh Renderer instead of Skinned Mesh Renderer.");
-            public static readonly GUIContent bounds = EditorGUIUtility.TrTextContent("Bounds", "The bounding box that encapsulates the mesh.");
-            public static readonly GUIContent quality = EditorGUIUtility.TrTextContent("Quality", "Number of bones to use per vertex during skinning.");
-            public static readonly GUIContent updateWhenOffscreen = EditorGUIUtility.TrTextContent("Update When Offscreen", "If an accurate bounding volume representation should be calculated every frame. ");
-            public static readonly GUIContent mesh = EditorGUIUtility.TrTextContent("Mesh", "The mesh used by this renderer.");
-            public static readonly GUIContent rootBone = EditorGUIUtility.TrTextContent("Root Bone", "Transform with which the bounds move, and the space in which skinning is computed.");
+            public static readonly GUIContent legacyClampBlendShapeWeightsInfo = L10n.TextContent("Note that BlendShape weight range is clamped. This can be disabled in Player Settings.", null, null, null);
+            public static readonly GUIContent meshNotSupportingSkinningInfo = L10n.TextContent("The assigned mesh is missing either bone weights with bind pose, or blend shapes. This might cause the mesh not to render in the Player. If your mesh does not have either bone weights with bind pose, or blend shapes, use a Mesh Renderer instead of Skinned Mesh Renderer.", null, null, null);
+            public static readonly GUIContent bounds = L10n.TextContent("Bounds", "The bounding box that encapsulates the mesh.", null, null);
+            public static readonly GUIContent quality = L10n.TextContent("Quality", "Number of bones to use per vertex during skinning.", null, null);
+            public static readonly GUIContent updateWhenOffscreen = L10n.TextContent("Update When Offscreen", "If an accurate bounding volume representation should be calculated every frame. ", null, null);
+            public static readonly GUIContent mesh = L10n.TextContent("Mesh", "The mesh used by this renderer.", null, null);
+            public static readonly GUIContent rootBone = L10n.TextContent("Root Bone", "Transform with which the bounds move, and the space in which skinning is computed.", null, null);
         }
 
         private SerializedProperty m_AABB;

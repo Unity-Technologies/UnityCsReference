@@ -303,6 +303,8 @@ namespace UnityEngine
     [NativeHeader("Modules/Physics/CharacterController.h")]
     public class CharacterController : Collider
     {
+        internal CharacterController(global::UnityEngine.EntityId id) : base(id) {}
+        public CharacterController() {}
         ///<summary>Moves the character with <c>speed</c>.</summary>
         ///<remarks>Velocity along the y-axis is ignored.
         ///Speed is in units/s. Gravity is automatically applied.
@@ -665,5 +667,8 @@ namespace UnityEngine
         ///Overlap recovery currently works with all geometries except heightfields.</remarks>
         extern public bool enableOverlapRecovery { get; set; }
         extern internal bool isSupported { get; }
+
+        [StaticAccessor("CharacterController", StaticAccessorType.DoubleColon)]
+        extern internal static float deltaTimeOverride { get; set; }
     }
 }

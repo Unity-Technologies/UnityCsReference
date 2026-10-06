@@ -14,13 +14,14 @@ namespace UnityEditor.Audio
     [NativeHeader("Modules/AudioEditor/ScriptBindings/AudioMixerGroupController.bindings.h")]
     internal partial class AudioMixerGroupController : AudioMixerGroup
     {
+        internal AudioMixerGroupController(global::UnityEngine.EntityId id) : base(id) {}
         public AudioMixerGroupController(AudioMixer owner)
         {
-            Internal_CreateAudioMixerGroupController(this, owner);
+            SetEntityIdFromConstructor(Internal_CreateAudioMixerGroupController(owner));
         }
 
         [FreeFunction("AudioMixerGroupControllerBindings::Internal_CreateAudioMixerGroupController")]
-        private extern static void Internal_CreateAudioMixerGroupController([Writable] AudioMixerGroupController mono, AudioMixer owner);
+        private extern static EntityId Internal_CreateAudioMixerGroupController(AudioMixer owner);
 
         public extern GUID groupID { get; }
 

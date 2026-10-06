@@ -86,26 +86,26 @@ namespace UnityEditor
         internal static class Styles
         {
             public static readonly GUIStyle labelStyle = "ProfilerBadge";
-            public static readonly GUIContent rolloffLabel =  EditorGUIUtility.TrTextContent("Volume Rolloff", "Which type of rolloff curve to use");
+            public static readonly GUIContent rolloffLabel =  L10n.TextContent("Volume Rolloff", "Which type of rolloff curve to use", null, null);
             public const string controlledByCurveLabel = "Controlled by curve";
-            public static readonly GUIContent audioGeneratorLabel = EditorGUIUtility.TrTextContent("Audio Generator", $"The Audio Generator object played by the {nameof(AudioSource)}, which can be assets like {nameof(AudioClip)}, {nameof(AudioRandomContainer)} or scripting {nameof(IAudioGenerator)} assets / components. Can be undefined if the {nameof(AudioSource)} is generating a live stream of audio via OnAudioFilterRead.");
-            public static readonly GUIContent panStereoLabel = EditorGUIUtility.TrTextContent("Stereo Pan", "Only valid for Mono and Stereo AudioClips. Mono sounds will be panned at constant power left and right. Stereo sounds will have each left/right value faded up and down according to the specified pan value.");
-            public static readonly GUIContent spatialBlendLabel = EditorGUIUtility.TrTextContent("Spatial Blend", "Sets how much this AudioSource is treated as a 3D source. 3D sources are affected by spatial position and spread. If 3D Pan Level is 0, all spatial attenuation is ignored.");
-            public static readonly GUIContent reverbZoneMixLabel = EditorGUIUtility.TrTextContent("Reverb Zone Mix", "Sets how much of the signal this AudioSource is mixing into the global reverb associated with the zones. [0, 1] is a linear range (like volume) while [1, 1.1] lets you boost the reverb mix by 10 dB.");
-            public static readonly GUIContent dopplerLevelLabel = EditorGUIUtility.TrTextContent("Doppler Level", "Specifies how much the pitch is changed based on the relative velocity between AudioListener and AudioSource.");
-            public static readonly GUIContent spreadLabel = EditorGUIUtility.TrTextContent("Spread", "Sets the spread of a 3d sound in speaker space");
-            public static readonly GUIContent outputMixerGroupLabel = EditorGUIUtility.TrTextContent("Output", "Set whether the sound should play through an Audio Mixer first or directly to the Audio Listener");
-            public static readonly GUIContent volumeLabel = EditorGUIUtility.TrTextContent("Volume", "Sets the overall volume of the sound.");
-            public static readonly GUIContent pitchLabel = EditorGUIUtility.TrTextContent("Pitch", "Sets the frequency of the sound. Use this to slow down or speed up the sound.");
-            public static readonly GUIContent priorityLabel = EditorGUIUtility.TrTextContent("Priority", "Sets the priority of the source. Note that a sound with a larger priority value will more likely be stolen by sounds with smaller priority values.");
-            public static readonly GUIContent spatializeLabel = EditorGUIUtility.TrTextContent("Spatialize", "Enables or disables custom spatialization for the AudioSource.");
-            public static readonly GUIContent spatializePostEffectsLabel = EditorGUIUtility.TrTextContent("Spatialize Post Effects", "Determines if the custom spatializer is applied before or after the effect filters attached to the AudioSource. This flag only has an effect if the spatialize flag is enabled on the AudioSource.");
-            public static readonly GUIContent priorityLeftLabel = EditorGUIUtility.TrTextContent("High");
-            public static readonly GUIContent priorityRightLabel = EditorGUIUtility.TrTextContent("Low");
-            public static readonly GUIContent spatialLeftLabel = EditorGUIUtility.TrTextContent("2D");
-            public static readonly GUIContent spatialRightLabel = EditorGUIUtility.TrTextContent("3D");
-            public static readonly GUIContent panLeftLabel = EditorGUIUtility.TrTextContent("Left");
-            public static readonly GUIContent panRightLabel = EditorGUIUtility.TrTextContent("Right");
+            public static readonly GUIContent audioGeneratorLabel = L10n.TextContent("Audio Generator", $"The Audio Generator object played by the {nameof(AudioSource)}, which can be assets like {nameof(AudioClip)}, {nameof(AudioRandomContainer)} or scripting {nameof(IAudioGenerator)} assets / components. Can be undefined if the {nameof(AudioSource)} is generating a live stream of audio via OnAudioFilterRead.", null, null);
+            public static readonly GUIContent panStereoLabel = L10n.TextContent("Stereo Pan", "Only valid for Mono and Stereo AudioClips. Mono sounds will be panned at constant power left and right. Stereo sounds will have each left/right value faded up and down according to the specified pan value.", null, null);
+            public static readonly GUIContent spatialBlendLabel = L10n.TextContent("Spatial Blend", "Sets how much this AudioSource is treated as a 3D source. 3D sources are affected by spatial position and spread. If 3D Pan Level is 0, all spatial attenuation is ignored.", null, null);
+            public static readonly GUIContent reverbZoneMixLabel = L10n.TextContent("Reverb Zone Mix", "Sets how much of the signal this AudioSource is mixing into the global reverb associated with the zones. [0, 1] is a linear range (like volume) while [1, 1.1] lets you boost the reverb mix by 10 dB.", null, null);
+            public static readonly GUIContent dopplerLevelLabel = L10n.TextContent("Doppler Level", "Specifies how much the pitch is changed based on the relative velocity between AudioListener and AudioSource.", null, null);
+            public static readonly GUIContent spreadLabel = L10n.TextContent("Spread", "Sets the spread of a 3d sound in speaker space", null, null);
+            public static readonly GUIContent outputMixerGroupLabel = L10n.TextContent("Output", "Set whether the sound should play through an Audio Mixer first or directly to the Audio Listener", null, null);
+            public static readonly GUIContent volumeLabel = L10n.TextContent("Volume", "Sets the overall volume of the sound.", null, null);
+            public static readonly GUIContent pitchLabel = L10n.TextContent("Pitch", "Sets the frequency of the sound. Use this to slow down or speed up the sound.", null, null);
+            public static readonly GUIContent priorityLabel = L10n.TextContent("Priority", "Sets the priority of the source. Note that a sound with a larger priority value will more likely be stolen by sounds with smaller priority values.", null, null);
+            public static readonly GUIContent spatializeLabel = L10n.TextContent("Spatialize", "Enables or disables custom spatialization for the AudioSource.", null, null);
+            public static readonly GUIContent spatializePostEffectsLabel = L10n.TextContent("Spatialize Post Effects", "Determines if the custom spatializer is applied before or after the effect filters attached to the AudioSource. This flag only has an effect if the spatialize flag is enabled on the AudioSource.", null, null);
+            public static readonly GUIContent priorityLeftLabel = L10n.TextContent("High", null, null, null);
+            public static readonly GUIContent priorityRightLabel = L10n.TextContent("Low", null, null, null);
+            public static readonly GUIContent spatialLeftLabel = L10n.TextContent("2D", null, null, null);
+            public static readonly GUIContent spatialRightLabel = L10n.TextContent("3D", null, null, null);
+            public static readonly GUIContent panLeftLabel = L10n.TextContent("Left", null, null, null);
+            public static readonly GUIContent panRightLabel = L10n.TextContent("Right", null, null, null);
             public static readonly string xAxisLabel = L10n.Tr("Distance", null);
         }
 

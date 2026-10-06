@@ -41,6 +41,10 @@ namespace UnityEditor.UIElements
             get { return base.value; }
             set
             {
+                // Assign m_Choices directly: the choices property setter would recurse via SetValueWithoutNotify
+                if (!m_Choices.Contains(value))
+                    m_Choices = InitializeTags();
+
                 // Allow the setting of value outside of Tags, but do nothing with them...
                 if (m_Choices.Contains(value))
                 {
@@ -51,6 +55,10 @@ namespace UnityEditor.UIElements
 
         public override void SetValueWithoutNotify(string newValue)
         {
+            // Assign m_Choices directly: the choices property setter would recurse via SetValueWithoutNotify
+            if (!m_Choices.Contains(newValue))
+                m_Choices = InitializeTags();
+
             // Allow the setting of value outside of Tags, but do nothing with them...
             if (m_Choices.Contains(newValue))
             {

@@ -124,7 +124,7 @@ namespace UnityEditor
                 element.CreateInspectorElement();
 
                 // If this element contributes to the layout, re-compute it immediately to measure how tall the content is.
-                if (element.editor != null && InternalEditorUtility.GetIsInspectorExpanded(element.editor.target) && contentContainer.childCount > 0)
+                if (element.editor != null && element.editor.IsInspectorExpanded() && contentContainer.childCount > 0)
                 {
                     Panel?.UpdateWithoutRepaint();
 
@@ -161,7 +161,7 @@ namespace UnityEditor
                     break;
 
                 // If this element contributes to the layout, re-compute it immediately to determine how much of the viewport is occupied.
-                if (element.editor != null && InternalEditorUtility.GetIsInspectorExpanded(element.editor.target))
+                if (element.editor != null && element.editor.IsInspectorExpanded())
                     Panel?.UpdateWithoutRepaint();
             }
         }

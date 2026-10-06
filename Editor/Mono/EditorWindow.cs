@@ -2,7 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: EditorWindowManagement not yet converted
 using UnityEngine;
 using Unity.Scripting.LifecycleManagement;
 using System.Linq;
@@ -120,7 +119,9 @@ namespace UnityEditor
                 if (m_EnableViewDataPersistence && m_ViewDataDictionary == null)
                 {
                     string editorPrefFileName = this.GetType().ToString();
+#pragma warning disable UAL0018 // m_ViewDataDictionary lives on the EditorWindow instance, which a code reload recreates along with this cache; the fresh window re-resolves its entry from the new view-data singleton on first access
                     m_ViewDataDictionary = UIElements.EditorWindowViewData.instance[editorPrefFileName];
+#pragma warning restore UAL0018
                 }
                 return m_ViewDataDictionary;
             }
@@ -193,6 +194,10 @@ namespace UnityEditor
         [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
         [NonSerialized]
         internal HostView m_Parent;
+
+        // Set for the duration of Close(), which tears the window down before destroying it.
+        [NonSerialized]
+        bool m_IsClosing;
 
         // Overlay a notification message over the window.
         const double kWarningFadeoutWait = 4;
@@ -304,10 +309,10 @@ namespace UnityEditor
                 if (!string.IsNullOrEmpty(iconName) && EditorGUIUtility.LoadIcon(iconName))
                 {
                     // This should error msg if icon is not found since icon has been explicitly requested by the user
-                    return EditorGUIUtility.TrTextContentWithIcon(attr.title, iconName);
+                    return L10n.TextContentWithIcon(attr.title, null, iconName, null);
                 }
 
-                return EditorGUIUtility.TrTextContent(attr.title);
+                return L10n.TextContent(attr.title, null, null, null);
             }
 
             // Fallback to type name (Do not localize type name)
@@ -466,6 +471,9 @@ namespace UnityEditor
         static public Action focusedWindowChanged;
 
         [AutoStaticsCleanupOnCodeReload]
+        // Subscribers attach through their own lifecycle and re-subscribe after a code reload, so the
+        // cleared invocation list refills itself.
+        [IgnoreForUAL0015("Event whose subscribers re-register through their own lifecycle after a code reload")]
         static public event Action windowFocusChanged;
 
         static internal void OnWindowFocusChanged()
@@ -791,25 +799,28 @@ namespace UnityEditor
         }
 
         // Returns the first EditorWindow of type /t/ which is currently on the screen.
+        static EditorWindow FindOpenInstance(System.Type t, bool includeInheritingClasses = true)
+        {
+            foreach (var win in Resources.FindObjectsOfTypeAll(t))
+            {
+                if (win is not EditorWindow candidate || candidate.m_IsClosing)
+                    continue;
+
+                if (includeInheritingClasses || !candidate.GetType().IsSubclassOf(t))
+                    return candidate;
+            }
+
+            return null;
+        }
+
+        static T FindOpenInstance<T>() where T : EditorWindow
+        {
+            return (T)FindOpenInstance(typeof(T));
+        }
+
         static EditorWindow GetWindowPrivate(System.Type t, bool utility, string title, bool focus, bool includeInheritingClasses = true)
         {
-            UnityEngine.Object[] wins = Resources.FindObjectsOfTypeAll(t);
-            EditorWindow win = wins.Length > 0 ? (EditorWindow)(wins[0]) : null;
-
-            if(win != null && !includeInheritingClasses)
-            {
-                if(win.GetType().IsSubclassOf(t))
-                {
-                    win = null;
-                    for(int i = 1; i<wins.Length && win == null; ++i)
-                    {
-                        if(wins[i] != null && !wins[i].GetType().IsSubclassOf(t))
-                        {
-                            win = (EditorWindow)(wins[i]);
-                        }
-                    }
-                }
-            }
+            EditorWindow win = FindOpenInstance(t, includeInheritingClasses);
 
             if (!win)
             {
@@ -927,8 +938,7 @@ namespace UnityEditor
         // Returns the first EditorWindow of type /T/ which is currently on the screen.
         public static T GetWindow<T>(string title, bool focus, params System.Type[] desiredDockNextTo) where T : EditorWindow
         {
-            var wins = Resources.FindObjectsOfTypeAll(typeof(T)) as T[];
-            T win = wins.Length > 0 ? wins[0] : null;
+            T win = FindOpenInstance<T>();
 
             //If the window already exists just focus then return it...
             if (win != null)
@@ -975,17 +985,12 @@ namespace UnityEditor
             return win;
         }
 
-        public static bool HasOpenInstances<T>() where T : UnityEditor.EditorWindow
-        {
-            UnityEngine.Object[] wins = Resources.FindObjectsOfTypeAll(typeof(T));
-            return wins != null && wins.Length > 0;
-        }
+        public static bool HasOpenInstances<T>() where T : EditorWindow => FindOpenInstance<T>() != null;
 
         // Focuses the first found EditorWindow of specified type if it is open.
         public static void FocusWindowIfItsOpen(System.Type t)
         {
-            UnityEngine.Object[] wins = Resources.FindObjectsOfTypeAll(t);
-            EditorWindow win = wins.Length > 0 ? (wins[0] as EditorWindow) : null;
+            EditorWindow win = FindOpenInstance(t);
             if (win)
                 win.Focus();
         }
@@ -1008,8 +1013,7 @@ namespace UnityEditor
         // Returns the first EditorWindow of type /t/ which is currently on the screen.
         static EditorWindow GetWindowWithRectPrivate(System.Type t, Rect rect, bool utility, string title)
         {
-            UnityEngine.Object[] wins = Resources.FindObjectsOfTypeAll(t);
-            EditorWindow win = wins.Length > 0 ? (EditorWindow)(wins[0]) : null;
+            EditorWindow win = FindOpenInstance(t);
 
             if (!win)
             {
@@ -1047,12 +1051,10 @@ namespace UnityEditor
         // Returns the first EditorWindow of type /t/ which is currently on the screen.
         public static T GetWindowWithRect<T>(Rect rect, bool utility, string title, bool focus) where T : EditorWindow
         {
-            UnityEngine.Object[] windows = Resources.FindObjectsOfTypeAll(typeof(T));
-            T window;
+            T window = FindOpenInstance<T>();
 
-            if (windows.Length > 0)
+            if (window != null)
             {
-                window = (T)windows[0];
                 if (focus)
                     window.Focus();
             }
@@ -1074,8 +1076,7 @@ namespace UnityEditor
 
         internal static T GetWindowDontShow<T>() where T : EditorWindow
         {
-            UnityEngine.Object[] windows = Resources.FindObjectsOfTypeAll(typeof(T));
-            return (windows.Length > 0) ? (T)windows[0] : ScriptableObject.CreateInstance<T>();
+            return FindOpenInstance<T>() ?? ScriptableObject.CreateInstance<T>();
         }
 
         bool m_HasUnsavedChanges = false;
@@ -1107,6 +1108,8 @@ namespace UnityEditor
             hasUnsavedChanges = false;
         }
 
+        internal void MarkClosing() => m_IsClosing = true;
+
         // Close the editor window.
         public void Close()
         {
@@ -1115,27 +1118,40 @@ namespace UnityEditor
             if (!this)
                 return;
 
-            // Ensure to restore normal workspace before destroying. Fix case 406657.
-            if (WindowLayout.IsMaximized(this))
-                WindowLayout.Unmaximize(this);
+            m_IsClosing = true;
+            try
+            {
+                // Ensure to restore normal workspace before destroying. Fix case 406657.
+                if (WindowLayout.IsMaximized(this))
+                    WindowLayout.Unmaximize(this);
 
-            // [UUM-58449] If the focused window got closed, reset the IME composition mode to the default value. The normal codepaths may not run since this object is immediately destroyed.
-            if (focusedWindow == this)
+                // [UUM-58449] If the focused window got closed, reset the IME composition mode to the default value. The normal codepaths may not run since this object is immediately destroyed.
+                if (focusedWindow == this)
+                {
+                    GUIUtility.imeCompositionMode = IMECompositionMode.Auto;
+                }
+
+                if (m_Parent && m_Parent is DockArea dockArea)
+                {
+                    m_Parent.Focus();
+                    dockArea.RemoveTab(this, true);
+                }
+                // A window whose Show() threw was never parented, and GetWindowPrivate closes it to clean up.
+                else if (m_Parent && m_Parent.window != null)
+                {
+                    m_Parent.window.Close();
+                }
+                UnityEngine.Object.DestroyImmediate(this, true);
+            }
+            catch
             {
-                GUIUtility.imeCompositionMode = IMECompositionMode.Auto;
+                // Teardown runs user callbacks that can throw. A window that survives one must not stay
+                // marked as closing.
+                if (this)
+                    m_IsClosing = false;
+                throw;
             }
 
-            DockArea da = m_Parent as DockArea;
-            if (da)
-            {
-                m_Parent.Focus();
-                da.RemoveTab(this, true);
-            }
-            else
-            {
-                m_Parent.window.Close();
-            }
-            UnityEngine.Object.DestroyImmediate(this, true);
             UpdateWindowMenuListing();
         }
 
@@ -1333,9 +1349,7 @@ namespace UnityEditor
             titleContent.text = GetType().ToString();
             saveChangesMessage = $"{GetType()} has unsaved changes.";
 
-            #pragma warning disable UAL0015 // this side effect does not outlive the current call (global trigger / lazily-loaded asset re-fetched on next access); a stale reference is harmlessly replaced
             UpdateWindowMenuListing();
-            #pragma warning restore UAL0015
         }
 
         void InitializeOverlayCanvas()
@@ -1716,4 +1730,3 @@ namespace UnityEditor
         }
     }
 } //namespace
-#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

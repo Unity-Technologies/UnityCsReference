@@ -9,6 +9,7 @@ using UnityEngine.UIElements;
 
 namespace Unity.UIToolkit.Editor;
 
+[HelpURL("ui-systems/in-scene-ui-authoring")]
 internal abstract class UISelectionObject : ScriptableObject, INotifyBindablePropertyChanged
 {
     public static readonly BindingId IsReadOnlyProperty = nameof(IsReadOnly);

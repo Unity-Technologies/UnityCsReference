@@ -11,28 +11,19 @@ using Unity.Profiling;
 
 namespace UnityEngine.UIElements.UIR
 {
-    struct DepthOrderedDirtyTracking // Depth then register-time order
+    // Elements dirty for a class are found by walking the render tree from the root, guided by the
+    // per-class subtree-dirty bits this tracker sets on their ancestors.
+    struct RenderTreeDirtyTracker
     {
         public RenderTree owner;
 
-        // For each depth level, we keep a double linked list of VisualElements that are dirty for some reason.
-        // The actual reason is stored in renderChainData.dirtiedValues.
-        public List<RenderData> heads, tails; // Indexed by VE hierarchy depth
-
-        // The following two arrays store, for each dirty type class, the range of depth levels
-        // where we have elements that are dirty with that dirty type class.
-        public int[] minDepths, maxDepths; // Indexed per dirty type class
-
         public uint dirtyID; // A monotonically increasing ID used to avoid double processing of some elements
 
-        // As the depth of the hierarchy grows, we need to enlarge as many double linked lists
-        public void EnsureFits(int maxDepth)
+        // The bit an element carries when one of its descendants is dirty for this class.
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static RenderDataFlags ConvertDirtyClassToFlags(RenderDataDirtyTypeClasses dirtyTypeClass)
         {
-            while (heads.Count <= maxDepth)
-            {
-                heads.Add(null);
-                tails.Add(null);
-            }
+            return (RenderDataFlags)((int)RenderDataFlags.SubtreeDirtyClipping << (int)dirtyTypeClass);
         }
 
         public void RegisterDirty(RenderData renderData, RenderDataDirtyTypes dirtyTypes, RenderDataDirtyTypeClasses dirtyTypeClass)
@@ -40,65 +31,35 @@ namespace UnityEngine.UIElements.UIR
             Debug.Assert(renderData.renderTree == owner);
             Debug.Assert(dirtyTypes != 0);
 
-            int depth = renderData.depthInRenderTree;
-            int dirtyTypeClassIndex = (int)dirtyTypeClass;
-            minDepths[dirtyTypeClassIndex] = depth < minDepths[dirtyTypeClassIndex] ? depth : minDepths[dirtyTypeClassIndex];
-            maxDepths[dirtyTypeClassIndex] = depth > maxDepths[dirtyTypeClassIndex] ? depth : maxDepths[dirtyTypeClassIndex];
-            if (renderData.dirtiedValues != 0)
-            {
-                renderData.dirtiedValues |= dirtyTypes;
-                return;
-            }
+            renderData.dirtiedValues |= dirtyTypes;
 
-            renderData.dirtiedValues = dirtyTypes;
-            if (tails[depth] != null)
+            // Mark ancestors dirty
+            RenderDataFlags dirtyFlags = ConvertDirtyClassToFlags(dirtyTypeClass);
+            for (RenderData node = renderData; node.parent != null; node = node.parent)
             {
-                tails[depth].nextDirty = renderData;
-                renderData.prevDirty = tails[depth];
-                tails[depth] = renderData;
+                RenderData parent = node.parent;
+
+                if (ChildrenDirtyTracker.NeedsTracking(parent, node))
+                    ChildrenDirtyTracker.AddDirtyChild(parent, node);
+
+                if ((parent.flags & dirtyFlags) != 0)
+                    break;
+
+                parent.flags |= dirtyFlags;
             }
-            else heads[depth] = tails[depth] = renderData;
         }
 
         public void ClearDirty(RenderData renderData, RenderDataDirtyTypes dirtyTypesInverse)
         {
             Debug.Assert(renderData.dirtiedValues != 0);
             renderData.dirtiedValues &= dirtyTypesInverse;
-            if (renderData.dirtiedValues == 0)
-            {
-                // Mend the chain
-                if (renderData.prevDirty != null)
-                    renderData.prevDirty.nextDirty = renderData.nextDirty;
-                if (renderData.nextDirty != null)
-                    renderData.nextDirty.prevDirty = renderData.prevDirty;
-                if (tails[renderData.depthInRenderTree] == renderData)
-                {
-                    Debug.Assert(renderData.nextDirty == null);
-                    tails[renderData.depthInRenderTree] = renderData.prevDirty;
-                }
-                if (heads[renderData.depthInRenderTree] == renderData)
-                {
-                    Debug.Assert(renderData.prevDirty == null);
-                    heads[renderData.depthInRenderTree] = renderData.nextDirty;
-                }
-                renderData.prevDirty = renderData.nextDirty = null;
-            }
-        }
-
-        public void Reset()
-        {
-            for (int i = 0; i < minDepths.Length; i++)
-            {
-                minDepths[i] = int.MaxValue;
-                maxDepths[i] = int.MinValue;
-            }
         }
     }
 
     class RenderTree
     {
         RenderTreeManager m_RenderTreeManager;
-        DepthOrderedDirtyTracking m_DirtyTracker;
+        RenderTreeDirtyTracker m_DirtyTracker;
         RenderChainCommand m_FirstCommand; // Not necessarily the root command, which may not create any commands
         RenderData m_RootRenderData;
 
@@ -107,7 +68,7 @@ namespace UnityEngine.UIElements.UIR
         HashSet<RenderData> m_BackdropFilterRenderDatas;
 
         public TextureId quadTextureId;
-        public RectInt quadRect;
+        public Rect quadRect;
         public Rect quadUVRect;
         // Gamma-encoded quad (force-gamma); the parent samples it without re-encoding (UI-5094).
         public bool quadIsGammaEncoded;
@@ -121,7 +82,7 @@ namespace UnityEngine.UIElements.UIR
         internal RenderTree firstChild;
         internal RenderTree nextSibling;
 
-        internal ref DepthOrderedDirtyTracking dirtyTracker { get { return ref m_DirtyTracker; } }
+        internal ref RenderTreeDirtyTracker dirtyTracker { get { return ref m_DirtyTracker; } }
         internal RenderChainCommand firstCommand { get { return m_FirstCommand; } }
 
         internal bool isRootRenderTree
@@ -152,13 +113,6 @@ namespace UnityEngine.UIElements.UIR
             parent = null;
             firstChild = null;
             nextSibling = null;
-
-            // A reasonable starting depth level suggested here
-            m_DirtyTracker.heads = new List<RenderData>(8);
-            m_DirtyTracker.tails = new List<RenderData>(8);
-            m_DirtyTracker.minDepths = new int[(int)RenderDataDirtyTypeClasses.Count];
-            m_DirtyTracker.maxDepths = new int[(int)RenderDataDirtyTypeClasses.Count];
-            m_DirtyTracker.Reset();
 
             m_BackdropFilterRenderDatas ??= new HashSet<RenderData>(); // reused across pooled acquires (Reset clears it)
         }
@@ -209,6 +163,8 @@ namespace UnityEngine.UIElements.UIR
             All = Clipping | Opacity | Color | TransformSize | Visuals
         }
 
+        // Nothing can be dirtied for a class while it is processed, which the walks rely on: ProcessChanges removes the
+        // class from here before its walk, and changes from outside the renderer throw (m_BlockDirtyRegistration).
         AllowedClasses m_AllowedDirtyClasses = AllowedClasses.All;
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -259,6 +215,28 @@ namespace UnityEngine.UIElements.UIR
             m_BackdropFilterRenderDatas.Remove(renderData);
         }
 
+        // Re-record the backdrop-filters at or under this element, whose recorded rect bakes in its clip.
+        // Testing each registered entry's parent chain is cheaper than walking the subtree.
+        public void RefreshBackdropFilterDescendantsOf(RenderData ancestor)
+        {
+            if (m_BackdropFilterRenderDatas.Count == 0)
+                return;
+
+            foreach (RenderData rd in m_BackdropFilterRenderDatas)
+            {
+                for (RenderData p = rd; p != null; p = p.parent)
+                {
+                    if (p != ancestor)
+                        continue;
+
+                    // Skip if already scheduled to regenerate this pass.
+                    if ((rd.dirtiedValues & (RenderDataDirtyTypes.Visuals | RenderDataDirtyTypes.VisualsHierarchy)) == 0)
+                        OnRenderDataVisualsChanged(rd, false);
+                    break;
+                }
+            }
+        }
+
         // Re-tessellate the backdrop-filters nested under the moved group (their world-derived UVs went stale).
         // Testing each registered entry's group-ancestor chain is cheaper than walking the subtree. UI-5170.
         public void RefreshBackdropFilterDescendantsOfGroup(RenderData group)
@@ -278,136 +256,95 @@ namespace UnityEngine.UIElements.UIR
             }
         }
 
+        // Walks the elements dirty for one class in draw order (UUM-154188)
+        void ProcessDirtyClass(RenderDataDirtyTypeClasses dirtyClass, RenderDataDirtyTypes dirtyFlags, ref ChainBuilderStats stats)
+        {
+            DepthFirstProcessDirty(m_RootRenderData, dirtyClass, dirtyFlags, RenderTreeDirtyTracker.ConvertDirtyClassToFlags(dirtyClass), ref stats);
+        }
+
+        void DepthFirstProcessDirty(RenderData renderData, RenderDataDirtyTypeClasses dirtyClass, RenderDataDirtyTypes dirtyFlags, RenderDataFlags subtreeDirty, ref ChainBuilderStats stats)
+        {
+            if ((renderData.dirtiedValues & dirtyFlags) != 0)
+            {
+                if (renderData.dirtyID != m_DirtyTracker.dirtyID)
+                {
+                    switch (dirtyClass)
+                    {
+                        case RenderDataDirtyTypeClasses.Clipping:
+                            RenderEvents.ProcessOnClippingChanged(m_RenderTreeManager, renderData, m_DirtyTracker.dirtyID, ref stats);
+                            break;
+                        case RenderDataDirtyTypeClasses.Opacity:
+                            RenderEvents.ProcessOnOpacityChanged(m_RenderTreeManager, renderData, m_DirtyTracker.dirtyID, ref stats);
+                            break;
+                        case RenderDataDirtyTypeClasses.Color:
+                            RenderEvents.ProcessOnColorChanged(m_RenderTreeManager, renderData, m_DirtyTracker.dirtyID, ref stats);
+                            break;
+                        case RenderDataDirtyTypeClasses.TransformSize:
+                            RenderEvents.ProcessOnTransformOrSizeChanged(m_RenderTreeManager, renderData, m_DirtyTracker.dirtyID, ref stats);
+                            break;
+                        case RenderDataDirtyTypeClasses.Visuals:
+                            m_RenderTreeManager.visualChangesProcessor.ProcessOnVisualsChanged(renderData, m_DirtyTracker.dirtyID, ref stats);
+                            break;
+                    }
+                }
+                m_DirtyTracker.ClearDirty(renderData, ~dirtyFlags);
+                stats.dirtyProcessed++;
+            }
+
+            if ((renderData.flags & subtreeDirty) == 0)
+                return;
+            renderData.flags &= ~subtreeDirty;
+
+            if (ChildrenDirtyTracker.TryIterateTracked(renderData, out var trackedChildren))
+            {
+                while (trackedChildren.MoveNext())
+                {
+                    RenderData child = trackedChildren.current;
+                    if ((child.dirtiedValues & dirtyFlags) != 0 || (child.flags & subtreeDirty) != 0)
+                        DepthFirstProcessDirty(child, dirtyClass, dirtyFlags, subtreeDirty, ref stats);
+                }
+                trackedChildren.End();
+            }
+            else
+            {
+                var siblings = ChildrenDirtyTracker.BeginSiblingWalk(renderData);
+                for (RenderData child = renderData.firstChild; child != null; child = child.nextSibling)
+                {
+                    siblings.Visit(child);
+                    if ((child.dirtiedValues & dirtyFlags) != 0 || (child.flags & subtreeDirty) != 0)
+                        DepthFirstProcessDirty(child, dirtyClass, dirtyFlags, subtreeDirty, ref stats);
+                }
+                siblings.End();
+            }
+        }
+
         public void ProcessChanges(ref ChainBuilderStats stats)
         {
-            int dirtyClass;
-            RenderDataDirtyTypes dirtyFlags;
-            RenderDataDirtyTypes clearDirty;
-
             m_DirtyTracker.dirtyID++;
-            dirtyClass = (int)RenderDataDirtyTypeClasses.Clipping;
-            dirtyFlags = RenderDataDirtyTypes.Clipping | RenderDataDirtyTypes.ClippingHierarchy;
-            clearDirty = ~dirtyFlags;
             m_AllowedDirtyClasses &= ~AllowedClasses.Clipping;
             using (k_MarkerClipProcessing.Auto())
-            {
-                for (int depth = m_DirtyTracker.minDepths[dirtyClass]; depth <= m_DirtyTracker.maxDepths[dirtyClass]; depth++)
-                {
-                    var renderData = m_DirtyTracker.heads[depth];
-                    while (renderData != null)
-                    {
-                        var nextRenderData = renderData.nextDirty;
-                        if ((renderData.dirtiedValues & dirtyFlags) != 0)
-                        {
-                            if (renderData.dirtyID != m_DirtyTracker.dirtyID)
-                                RenderEvents.ProcessOnClippingChanged(m_RenderTreeManager, renderData, m_DirtyTracker.dirtyID, ref stats);
-                            m_DirtyTracker.ClearDirty(renderData, clearDirty);
-                        }
-                        renderData = nextRenderData;
-                        stats.dirtyProcessed++;
-                    }
-                }
-            }
-
+                ProcessDirtyClass(RenderDataDirtyTypeClasses.Clipping, RenderDataDirtyTypes.Clipping | RenderDataDirtyTypes.ClippingHierarchy, ref stats);
 
             m_DirtyTracker.dirtyID++;
-            dirtyClass = (int)RenderDataDirtyTypeClasses.Opacity;
-            dirtyFlags = RenderDataDirtyTypes.Opacity | RenderDataDirtyTypes.OpacityHierarchy;
-            clearDirty = ~dirtyFlags;
             m_AllowedDirtyClasses &= ~AllowedClasses.Opacity;
             using (k_MarkerOpacityProcessing.Auto())
-            {
-                for (int depth = m_DirtyTracker.minDepths[dirtyClass]; depth <= m_DirtyTracker.maxDepths[dirtyClass]; depth++)
-                {
-                    var renderData = m_DirtyTracker.heads[depth];
-                    while (renderData != null)
-                    {
-                        var nextRenderData = renderData.nextDirty;
-                        if ((renderData.dirtiedValues & dirtyFlags) != 0)
-                        {
-                            if (renderData.dirtyID != m_DirtyTracker.dirtyID)
-                                RenderEvents.ProcessOnOpacityChanged(m_RenderTreeManager, renderData, m_DirtyTracker.dirtyID, ref stats);
-                            m_DirtyTracker.ClearDirty(renderData, clearDirty);
-                        }
-                        renderData = nextRenderData;
-                        stats.dirtyProcessed++;
-                    }
-                }
-            }
+                ProcessDirtyClass(RenderDataDirtyTypeClasses.Opacity, RenderDataDirtyTypes.Opacity | RenderDataDirtyTypes.OpacityHierarchy, ref stats);
 
             m_DirtyTracker.dirtyID++;
-            dirtyClass = (int)RenderDataDirtyTypeClasses.Color;
-            dirtyFlags = RenderDataDirtyTypes.Color;
-            clearDirty = ~dirtyFlags;
             m_AllowedDirtyClasses &= ~AllowedClasses.Color;
             using (k_MarkerColorsProcessing.Auto())
-            {
-                for (int depth = m_DirtyTracker.minDepths[dirtyClass]; depth <= m_DirtyTracker.maxDepths[dirtyClass]; depth++)
-                {
-                    var renderData = m_DirtyTracker.heads[depth];
-                    while (renderData != null)
-                    {
-                        var nextRenderData = renderData.nextDirty;
-                        if ((renderData.dirtiedValues & dirtyFlags) != 0)
-                        {
-                            if (renderData != null && renderData.dirtyID != m_DirtyTracker.dirtyID)
-                                RenderEvents.ProcessOnColorChanged(m_RenderTreeManager, renderData, m_DirtyTracker.dirtyID, ref stats);
-                            m_DirtyTracker.ClearDirty(renderData, clearDirty);
-                        }
-                        renderData = nextRenderData;
-                        stats.dirtyProcessed++;
-                    }
-                }
-            }
+                ProcessDirtyClass(RenderDataDirtyTypeClasses.Color, RenderDataDirtyTypes.Color, ref stats);
 
             m_DirtyTracker.dirtyID++;
-            dirtyClass = (int)RenderDataDirtyTypeClasses.TransformSize;
-            dirtyFlags = RenderDataDirtyTypes.Transform | RenderDataDirtyTypes.ClipRectSize;
-            clearDirty = ~dirtyFlags;
             m_AllowedDirtyClasses &= ~AllowedClasses.TransformSize;
             using (k_MarkerTransformProcessing.Auto())
-            {
-                for (int depth = m_DirtyTracker.minDepths[dirtyClass]; depth <= m_DirtyTracker.maxDepths[dirtyClass]; depth++)
-                {
-                    var renderData = m_DirtyTracker.heads[depth];
-                    while (renderData != null)
-                    {
-                        var nextRenderData = renderData.nextDirty;
-                        if ((renderData.dirtiedValues & dirtyFlags) != 0)
-                        {
-                            if (renderData.dirtyID != m_DirtyTracker.dirtyID)
-                                RenderEvents.ProcessOnTransformOrSizeChanged(m_RenderTreeManager, renderData, m_DirtyTracker.dirtyID, ref stats);
-                            m_DirtyTracker.ClearDirty(renderData, clearDirty);
-                        }
-                        renderData = nextRenderData;
-                        stats.dirtyProcessed++;
-                    }
-                }
-            }
+                ProcessDirtyClass(RenderDataDirtyTypeClasses.TransformSize, RenderDataDirtyTypes.Transform | RenderDataDirtyTypes.ClipRectSize, ref stats);
 
             m_DirtyTracker.dirtyID++;
-            dirtyClass = (int)RenderDataDirtyTypeClasses.Visuals;
-            dirtyFlags = RenderDataDirtyTypes.AllVisuals;
-            clearDirty = ~dirtyFlags;
             m_AllowedDirtyClasses &= ~AllowedClasses.Visuals;
             using (k_MarkerVisualsProcessing.Auto())
             {
-                for (int depth = m_DirtyTracker.minDepths[dirtyClass]; depth <= m_DirtyTracker.maxDepths[dirtyClass]; depth++)
-                {
-                    var renderData = m_DirtyTracker.heads[depth];
-                    while (renderData != null)
-                    {
-                        var nextRenderData = renderData.nextDirty;
-                        if ((renderData.dirtiedValues & dirtyFlags) != 0)
-                        {
-                            if (renderData.dirtyID != m_DirtyTracker.dirtyID)
-                                m_RenderTreeManager.visualChangesProcessor.ProcessOnVisualsChanged(renderData, m_DirtyTracker.dirtyID, ref stats);
-                            m_DirtyTracker.ClearDirty(renderData, clearDirty);
-                        }
-                        renderData = nextRenderData;
-                        stats.dirtyProcessed++;
-                    }
-                }
+                ProcessDirtyClass(RenderDataDirtyTypeClasses.Visuals, RenderDataDirtyTypes.AllVisuals, ref stats);
 
                 m_RenderTreeManager.meshGenerationDeferrer.ProcessDeferredWork(m_RenderTreeManager.visualChangesProcessor.meshGenerationContext);
 
@@ -430,9 +367,6 @@ namespace UnityEngine.UIElements.UIR
 
             m_RenderTreeManager.UpdateElementInfoRecords();
 
-            // Done with all dirtied elements
-            m_DirtyTracker.Reset();
-
             m_AllowedDirtyClasses = AllowedClasses.All;
         }
 
@@ -446,15 +380,6 @@ namespace UnityEngine.UIElements.UIR
         {
             if (firstCommand.prev == null)
                 m_FirstCommand = lastCommand.next;
-        }
-
-        internal void ChildWillBeRemoved(RenderData renderData)
-        {
-            if (renderData.dirtiedValues != 0)
-                m_DirtyTracker.ClearDirty(renderData, ~renderData.dirtiedValues);
-            Debug.Assert(renderData.dirtiedValues == 0);
-            Debug.Assert(renderData.prevDirty == null);
-            Debug.Assert(renderData.nextDirty == null);
         }
     }
 }

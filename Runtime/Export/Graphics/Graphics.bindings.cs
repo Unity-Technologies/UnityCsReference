@@ -716,9 +716,12 @@ namespace UnityEngine
         extern internal static OpenGLESVersion GetMinOpenGLESVersion();
         public static OpenGLESVersion minOpenGLESVersion { get { return GetMinOpenGLESVersion(); } }
 
-
         [FreeFunction("GraphicsScripting::GetActiveColorBuffer")] extern private static RenderBuffer GetActiveColorBuffer();
         [FreeFunction("GraphicsScripting::GetActiveDepthBuffer")] extern private static RenderBuffer GetActiveDepthBuffer();
+
+        [FreeFunction("GraphicsScripting::HasBackBufferDepthStencil")]
+        extern private static bool HasBackBufferDepthStencil();
+        internal static bool backBufferHasDepthStencil { get { return HasBackBufferDepthStencil(); } }
 
         [FreeFunction("GraphicsScripting::SetNullRT")] extern private static void Internal_SetNullRT();
         [NativeMethod(Name = "GraphicsScripting::SetGfxRT", IsFreeFunction = true, ThrowsException = true)]
@@ -1102,6 +1105,7 @@ namespace UnityEngine
     [StaticAccessor("GetLightmapSettings()")]
     public sealed partial class LightmapSettings : Object
     {
+        internal LightmapSettings(global::UnityEngine.EntityId id) : base(id) {}
         private LightmapSettings() {}
 
         // Lightmap array.
@@ -1240,6 +1244,7 @@ namespace UnityEngine
     [NativeHeader("Runtime/Export/Graphics/Graphics.bindings.h")]
     public sealed partial class LightProbes : Object
     {
+        internal LightProbes(global::UnityEngine.EntityId id) : base(id) {}
         internal struct Hash128IntPair
         {
             internal Hash128 Hash;
@@ -1251,15 +1256,15 @@ namespace UnityEngine
             if (size < 0)
                 throw new ArgumentOutOfRangeException(nameof(size), "Size must be non-negative.");
 
-            Internal_Create(this, size);
+            SetEntityIdFromConstructor(Internal_Create(size));
         }
 
         internal LightProbes()
         {
-            Internal_Create(this, 0);
+            SetEntityIdFromConstructor(Internal_Create(0));
         }
 
-        extern static void Internal_Create([Writable] LightProbes self, int size);
+        extern static EntityId Internal_Create(int size);
 
         [FreeFunction]
         [NativeName("AppendLightProbes")]

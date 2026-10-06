@@ -18,7 +18,7 @@ namespace Unity.Localization.UI;
 /// appear. Only the locales whose <see cref="Locale.Enabled"/> is true are offered.
 /// </remarks>
 /// <example>
-/// <para>Adds a language dropdown to a panel from code.</para>
+/// Adds a language dropdown to a panel from code.
 /// <code source="../../../../Modules/LocalizationRuntime/Tests/UTFTests/Localization.Samples/UI/LanguageDropdownExample.cs"/>
 /// </example>
 /// <seealso cref="LanguageRadioButtonGroup"/>
@@ -39,6 +39,7 @@ public partial class LanguageDropdown : PopupField<Locale>
     /// </summary>
 #pragma warning disable UAL0015 // LocaleSelectionBridge only (un)subscribes on AttachToPanelEvent/DetachFromPanelEvent, so it re-syncs on the next attach after any reload
     public LanguageDropdown() : this(null)
+#pragma warning restore UAL0015
     {
     }
 
@@ -50,7 +51,11 @@ public partial class LanguageDropdown : PopupField<Locale>
     {
         formatListItemCallback = LocaleName;
         formatSelectedValueCallback = LocaleName;
+        // The bridge subscribes to the localization events on panel attach and unsubscribes on detach,
+        // so nothing is subscribed here and the subscription cannot outlive this element's panel.
+#pragma warning disable UAL0015 // bridge defers its subscription to panel attach
         m_Bridge = new LocaleSelectionBridge(this, Refresh);
+#pragma warning restore UAL0015
         this.RegisterValueChangedCallback(evt => m_Bridge.Select(evt.newValue));
     }
 #pragma warning restore UAL0015

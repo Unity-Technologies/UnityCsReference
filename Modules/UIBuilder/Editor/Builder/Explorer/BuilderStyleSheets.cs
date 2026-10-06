@@ -2,7 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: UIBuilder not yet converted
 using System;
 using UnityEngine.UIElements;
 using System.Collections.Generic;
@@ -152,8 +151,6 @@ namespace Unity.UI.Builder
             if (string.IsNullOrEmpty(evt.selectorStr))
                 return;
 
-            // TODO: Add validation
-
             var sheet = m_PaneWindow.document.activeStyleSheet;
 
             if (sheet == null && !TryCreateNewUSSAsset(out sheet))
@@ -216,16 +213,19 @@ namespace Unity.UI.Builder
             if (!BuilderNameUtilities.styleSelectorRegex.IsMatch(newSelectorStr))
             {
                 Builder.ShowWarning(BuilderConstants.StyleSelectorValidationSpacialCharacters);
-                m_NewSelectorField.schedule.Execute(() =>
-                {
-                    m_NewSelectorField.value = selectorStr;
-                    m_NewSelectorField.SelectAll();
-                });
+                RestoreNewSelectorField(selectorStr);
                 return false;
             }
 
             var selectorContainerElement = m_Viewport.styleSelectorElementContainer;
             var newComplexSelector = BuilderSharedStyles.CreateNewSelector(selectorContainerElement, styleSheet, newSelectorStr);
+
+            // AddSelector has already shown the parse error.
+            if (newComplexSelector == null)
+            {
+                RestoreNewSelectorField(selectorStr);
+                return false;
+            }
 
             m_Selection.NotifyOfStylingChange();
 
@@ -238,6 +238,15 @@ namespace Unity.UI.Builder
             return true;
         }
 
+        void RestoreNewSelectorField(string selectorStr)
+        {
+            m_NewSelectorField.schedule.Execute(() =>
+            {
+                m_NewSelectorField.value = selectorStr;
+                m_NewSelectorField.SelectAll();
+            });
+        }
+
         void SetUpAddUSSMenu()
         {
             if (m_AddUSSMenu == null)
@@ -246,18 +255,23 @@ namespace Unity.UI.Builder
             m_AddUSSMenu.menu.MenuItems().Clear();
 
             {
+                // Disabled in StyleSheet Editing Mode: the stylesheet set is fixed to the opened sheet.
                 m_AddUSSMenu.menu.AppendAction(
                     BuilderConstants.ExplorerStyleSheetsPaneCreateNewUSSMenu,
                     action =>
                     {
                         BuilderStyleSheetsUtilities.CreateNewUSSAsset(m_PaneWindow);
-                    });
+                    },
+                    action => m_PaneWindow.document.isStyleSheetEditingMode
+                        ? DropdownMenuAction.Status.Disabled : DropdownMenuAction.Status.Normal);
                 m_AddUSSMenu.menu.AppendAction(
                     BuilderConstants.ExplorerStyleSheetsPaneAddExistingUSSMenu,
                     action =>
                     {
                         BuilderStyleSheetsUtilities.AddExistingUSSToAsset(m_PaneWindow);
-                    });
+                    },
+                    action => m_PaneWindow.document.isStyleSheetEditingMode
+                        ? DropdownMenuAction.Status.Disabled : DropdownMenuAction.Status.Normal);
             }
         }
 
@@ -375,4 +389,3 @@ namespace Unity.UI.Builder
         }
     }
 }
-#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

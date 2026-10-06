@@ -18,16 +18,16 @@ namespace UnityEditor
 
         private class Styles
         {
-            public GUIContent s_MaxRecursionDepthText = EditorGUIUtility.TrTextContent("Max. Recursion Depth", "Limit on ray recursion for the Ray Tracing pipeline. This is defined in the shader by using max_recursion_depth pragma(e.g. \"#pragma max_recursion_depth 5\"). Applications should pick a limit that is as low as absolutely necessary. A value of 1 means that only primary rays can be cast.");
-            public GUIContent s_PlatformList = EditorGUIUtility.TrTextContent("Platforms:");
-            public GUIContent s_NotSupported = EditorGUIUtility.TrTextContent("Ray Tracing Shader not supported! No graphics APIs with Ray Tracing support found in the graphics APIs list or the importing process failed.");
-            public GUIContent s_Name = EditorGUIUtility.TrTextContent("Name");
-            public GUIContent s_PayloadSize = EditorGUIUtility.TrTextContent("Payload Size (Bytes)");
-            public GUIContent s_ParamSize = EditorGUIUtility.TrTextContent("Param. Size (Bytes)");
-            public GUIContent s_RayGenShaderNames = EditorGUIUtility.TrTextContent("Ray Generation Shaders", "The list of all ray generation shaders in the shader file. Only one ray generation shader can be executed at a time.");
-            public GUIContent s_MissShaderNames = EditorGUIUtility.TrTextContent("Miss Shaders", "The list of all miss shaders in the shader file. The index of the miss shader to execute is specified when calling TraceRay HLSL function.");
-            public GUIContent s_DefaultHitGroupShaderNames = EditorGUIUtility.TrTextContent("Default Hit Shaders", "The list of all hit shaders in the shader file.");
-            public GUIContent s_CallableShaderNames = EditorGUIUtility.TrTextContent("Callable Shaders", "The list of all callable shaders in the shader file. The index of the callable shader to execute is specified when calling CallShader HLSL function.");
+            public GUIContent s_MaxRecursionDepthText = L10n.TextContent("Max. Recursion Depth", "Limit on ray recursion for the Ray Tracing pipeline. This is defined in the shader by using max_recursion_depth pragma(e.g. \"#pragma max_recursion_depth 5\"). Applications should pick a limit that is as low as absolutely necessary. A value of 1 means that only primary rays can be cast.", null, null);
+            public GUIContent s_PlatformList = L10n.TextContent("Platforms:", null, null, null);
+            public GUIContent s_NotSupported = L10n.TextContent("Ray Tracing Shader not supported! No graphics APIs with Ray Tracing support found in the graphics APIs list or the importing process failed.", null, null, null);
+            public GUIContent s_Name = L10n.TextContent("Name", null, null, null);
+            public GUIContent s_PayloadSize = L10n.TextContent("Payload Size (Bytes)", null, null, null);
+            public GUIContent s_ParamSize = L10n.TextContent("Param. Size (Bytes)", null, null, null);
+            public GUIContent s_RayGenShaderNames = L10n.TextContent("Ray Generation Shaders", "The list of all ray generation shaders in the shader file. Only one ray generation shader can be executed at a time.", null, null);
+            public GUIContent s_MissShaderNames = L10n.TextContent("Miss Shaders", "The list of all miss shaders in the shader file. The index of the miss shader to execute is specified when calling TraceRay HLSL function.", null, null);
+            public GUIContent s_DefaultHitGroupShaderNames = L10n.TextContent("Default Hit Shaders", "The list of all hit shaders in the shader file.", null, null);
+            public GUIContent s_CallableShaderNames = L10n.TextContent("Callable Shaders", "The list of all callable shaders in the shader file. The index of the callable shader to execute is specified when calling CallShader HLSL function.", null, null);
             public GUIStyle s_LabelStyle = new GUIStyle(EditorStyles.boldLabel);
             public Styles()
             {

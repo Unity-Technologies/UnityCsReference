@@ -4,6 +4,7 @@
 
 using System;
 using System.Collections.Generic;
+using Unity.Scripting.LifecycleManagement;
 using UnityEngine.Scripting;
 using UnityEngine.Scripting.APIUpdating;
 using UnityEngine.Bindings;
@@ -372,7 +373,7 @@ namespace UnityEngine.LowLevel
     }
 
     [MovedFrom("UnityEngine.Experimental.LowLevel")]
-    public class PlayerLoop
+    public partial class PlayerLoop
     {
         public static PlayerLoopSystem GetDefaultPlayerLoop()
         {
@@ -388,11 +389,15 @@ namespace UnityEngine.LowLevel
             return InternalToPlayerLoopSystem(intSys, ref offset);
         }
 
+        [AutoStaticsCleanupOnCodeReload]
+        internal static int Version { get; private set; }
+
         public static void SetPlayerLoop(PlayerLoopSystem loop)
         {
             var intSys = new List<PlayerLoopSystemInternal>();
             PlayerLoopSystemToInternal(loop, ref intSys);
             SetPlayerLoopInternal(intSys.ToArray());
+            Version++;
         }
 
         static int PlayerLoopSystemToInternal(PlayerLoopSystem sys, ref List<PlayerLoopSystemInternal> internalSys)

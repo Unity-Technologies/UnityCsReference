@@ -2,7 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: ShaderSystem not yet converted
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEditorInternal;
@@ -81,20 +80,20 @@ namespace UnityEditor
 
         public static class Styles
         {
-            public static readonly GUIContent rootLabel = EditorGUIUtility.TrTextContent("Root", "The root of the hierarchy.");
-            public static readonly GUIContent selectedLabel = EditorGUIUtility.TrTextContent("Current", "The currently selected Material.");
+            public static readonly GUIContent rootLabel = L10n.TextContent("Root", "The root of the hierarchy.", null, null);
+            public static readonly GUIContent selectedLabel = L10n.TextContent("Current", "The currently selected Material.", null, null);
 
-            public static readonly GUIContent instanceLabel = EditorGUIUtility.TrTextContent("Variant Family of");
-            public static readonly GUIContent ancestorLabel = EditorGUIUtility.TrTextContent("Ancestors");
-            public static readonly GUIContent overridesLabel = EditorGUIUtility.TrTextContent("Overrides");
-            public static readonly GUIContent locksLabel = EditorGUIUtility.TrTextContent("Locks");
-            public static readonly GUIContent childrenLabel = EditorGUIUtility.TrTextContent("Children");
-            public static readonly GUIContent noResultsLabel = EditorGUIUtility.TrTextContent("No results");
-            public static readonly GUIContent noChildrenLabel = EditorGUIUtility.TrTextContent("This Material doesn't have any children.\nMaterial Variants created from this Material\nwill be listed here.");
+            public static readonly GUIContent instanceLabel = L10n.TextContent("Variant Family of", null, null, null);
+            public static readonly GUIContent ancestorLabel = L10n.TextContent("Ancestors", null, null, null);
+            public static readonly GUIContent overridesLabel = L10n.TextContent("Overrides", null, null, null);
+            public static readonly GUIContent locksLabel = L10n.TextContent("Locks", null, null, null);
+            public static readonly GUIContent childrenLabel = L10n.TextContent("Children", null, null, null);
+            public static readonly GUIContent noResultsLabel = L10n.TextContent("No results", null, null, null);
+            public static readonly GUIContent noChildrenLabel = L10n.TextContent("This Material doesn't have any children.\nMaterial Variants created from this Material\nwill be listed here.", null, null, null);
 
             public static readonly string[] headerPopupOptions = new string[] { "Material", "Material Variant" };
-            public static readonly GUIContent convertingLabel = EditorGUIUtility.TrTextContent("Converting to Material Variant");
-            public static readonly GUIContent conversionHelpLabel = EditorGUIUtility.TrTextContent("To convert, select a Parent Material");
+            public static readonly GUIContent convertingLabel = L10n.TextContent("Converting to Material Variant", null, null, null);
+            public static readonly GUIContent conversionHelpLabel = L10n.TextContent("To convert, select a Parent Material", null, null, null);
 
             public static readonly GUIStyle searchBackground = new GUIStyle("ProjectBrowserIconAreaBg");
             public static readonly GUIStyle centered = new GUIStyle(EditorStyles.label) { alignment = TextAnchor.MiddleCenter };
@@ -594,4 +593,3 @@ namespace UnityEditor
         }
     }
 }
-#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

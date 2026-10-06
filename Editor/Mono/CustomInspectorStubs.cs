@@ -13,6 +13,7 @@ namespace UnityEditor
     [ExcludeFromPreset]
     internal sealed class AudioManager : ProjectSettingsBase
     {
+        internal AudioManager(global::UnityEngine.EntityId id) : base(id) {}
         private AudioManager() {}
     }
 
@@ -20,6 +21,7 @@ namespace UnityEditor
     [NativeClass(null, PersistentTypeId = 19)]
     internal sealed class Physics2DSettings : ProjectSettingsBase
     {
+        internal Physics2DSettings(global::UnityEngine.EntityId id) : base(id) {}
         private Physics2DSettings() {}
     }
 
@@ -27,6 +29,7 @@ namespace UnityEditor
     [NativeClass(null, PersistentTypeId = 0x0A86CE7B)]
     internal sealed class PhysicsCoreProjectSettings2D : ProjectSettingsBase
     {
+        internal PhysicsCoreProjectSettings2D(global::UnityEngine.EntityId id) : base(id) {}
         private PhysicsCoreProjectSettings2D() { }
     }
 
@@ -35,6 +38,7 @@ namespace UnityEditor
     [ExcludeFromPreset]
     internal sealed class MonoManager : ProjectSettingsBase
     {
+        internal MonoManager(global::UnityEngine.EntityId id) : base(id) {}
         private MonoManager() {}
     }
 
@@ -43,6 +47,7 @@ namespace UnityEditor
     [ExcludeFromPreset]
     internal sealed class VFXManager : ProjectSettingsBase
     {
+        internal VFXManager(global::UnityEngine.EntityId id) : base(id) {}
         private VFXManager()
         {
         }
@@ -63,6 +68,7 @@ namespace UnityEditor
     [NativeClass(null, PersistentTypeId = 13)]
     internal sealed class InputManager : ProjectSettingsBase
     {
+        internal InputManager(global::UnityEngine.EntityId id) : base(id) {}
         private InputManager() {}
 
         [SettingsProvider]
@@ -101,6 +107,7 @@ namespace UnityEditor
     [NativeClass(null, PersistentTypeId = 5)]
     internal sealed class TimeManager : ProjectSettingsBase
     {
+        internal TimeManager(global::UnityEngine.EntityId id) : base(id) {}
         private TimeManager() {}
     }
 
@@ -108,6 +115,7 @@ namespace UnityEditor
     [NativeClass(null, PersistentTypeId = 0x1715D37E)]
     internal sealed class MemorySettings : ProjectSettingsBase
     {
+        internal MemorySettings(global::UnityEngine.EntityId id) : base(id) {}
         private MemorySettings() {}
     }
 
@@ -116,6 +124,7 @@ namespace UnityEditor
     [NativeClass(null, PersistentTypeId = 310)]
     internal sealed class UnityConnectSettings : ProjectSettingsBase
     {
+        internal UnityConnectSettings(global::UnityEngine.EntityId id) : base(id) {}
         private UnityConnectSettings() {}
     }
 

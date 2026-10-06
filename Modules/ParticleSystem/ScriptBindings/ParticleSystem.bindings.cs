@@ -11,6 +11,7 @@ using UnityEngine.Scripting;
 using RequiredByNativeCodeAttribute = UnityEngine.Scripting.RequiredByNativeCodeAttribute;
 using Unity.Collections;
 using Unity.Collections.LowLevel.Unsafe;
+using Unity.Scripting.LifecycleManagement;
 
 using Unity.Jobs;
 using Unity.Jobs.LowLevel.Unsafe;
@@ -27,6 +28,8 @@ namespace UnityEngine
     [RequireComponent(typeof(Transform))]
     public sealed partial class ParticleSystem : Component
     {
+        internal ParticleSystem(global::UnityEngine.EntityId id) : base(id) {}
+        public ParticleSystem() {}
         // Properties
         ///<summary>Determines whether the Particle System is playing.</summary>
         ///<remarks>::ref::isPlaying is <c>true</c> from when the Particle System begins to play until its last live particle dies. <see cref="isPlaying" /> is <c>false</c> when the Particle System is no longer spawning particles and is not simulating any live particles. (RO).</remarks>
@@ -1405,11 +1408,31 @@ namespace UnityEngine
         ///<returns>True if the Particle System contains live particles or is still creating new particles. False if the Particle System has stopped emitting particles and all particles are dead.</returns>
         public bool IsAlive() { return IsAlive(true); }
 
+        /// <summary>
+        /// A callback used by polyspatial to capture emits driven by script and replay it.
+        /// </summary>
+        /// <remarks>
+        /// Arguments, in order:
+        /// <list type="number">
+        /// <item><description>The ParticleSystem that emitted.</description></item>
+        /// <item><description>The EmitParams that were passed, or default when Emit(int) was called.</description></item>
+        /// <item><description>The number of particles requested.</description></item>
+        /// <item><description>True when the call supplied EmitParams. The two overloads do not share a start path, so a consumer replaying the call needs to know which one to use.</description></item>
+        /// </list>
+        /// </remarks>
+        [AutoStaticsCleanupOnCodeReload]
+        internal static event Action<ParticleSystem, EmitParams, int, bool> onEmit;
+
         // Emission
         ///<summary>Emit <c>count</c> particles immediately.</summary>
         ///<param name="count">Number of particles to emit.</param>
         [RequiredByNativeCode]
-        public void Emit(int count) { Emit_Internal(count); }
+        public void Emit(int count)
+        {
+            Emit_Internal(count);
+            onEmit?.Invoke(this, default, count, false);
+        }
+
         [NativeName("SyncJobs()->Emit")]
         extern private void Emit_Internal(int count);
 
@@ -1456,8 +1479,14 @@ namespace UnityEngine
         ///}
         ///]]></code>
         ///</example>
+        public void Emit(EmitParams emitParams, int count)
+        {
+            EmitWithParams_Internal(emitParams, count);
+            onEmit?.Invoke(this, emitParams, count, true);
+        }
+
         [NativeName("SyncJobs()->EmitParticlesExternal")]
-        extern public void Emit(EmitParams emitParams, int count);
+        extern private void EmitWithParams_Internal(EmitParams emitParams, int count);
 
         [NativeName("SyncJobs()->EmitParticleExternal")]
         extern private void EmitOld_Internal(ref ParticleSystem.Particle particle);

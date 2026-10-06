@@ -2,7 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: MecanimAnimation not yet converted
 using UnityEngine;
 using UnityEditor;
 using System;
@@ -33,35 +32,35 @@ namespace UnityEditor
         {
             public GUIContent[] BodyPartMapping =
             {
-                EditorGUIUtility.TrTextContent("Avatar"),
-                EditorGUIUtility.TrTextContent("Body"),
-                EditorGUIUtility.TrTextContent("Head"),
-                EditorGUIUtility.TrTextContent("Left Arm"),
-                EditorGUIUtility.TrTextContent("Left Fingers"),
-                EditorGUIUtility.TrTextContent("Right Arm"),
-                EditorGUIUtility.TrTextContent("Right Fingers"),
-                EditorGUIUtility.TrTextContent("Left Leg"),
-                EditorGUIUtility.TrTextContent("Right Leg")
+                L10n.TextContent("Avatar", null, null, null),
+                L10n.TextContent("Body", null, null, null),
+                L10n.TextContent("Head", null, null, null),
+                L10n.TextContent("Left Arm", null, null, null),
+                L10n.TextContent("Left Fingers", null, null, null),
+                L10n.TextContent("Right Arm", null, null, null),
+                L10n.TextContent("Right Fingers", null, null, null),
+                L10n.TextContent("Left Leg", null, null, null),
+                L10n.TextContent("Right Leg", null, null, null)
             };
 
-            public GUIContent RequiredBone = EditorGUIUtility.TrTextContent("Optional Bones");
-            public GUIContent DoneCharacter = EditorGUIUtility.TrTextContent("Done");
+            public GUIContent RequiredBone = L10n.TextContent("Optional Bones", null, null, null);
+            public GUIContent DoneCharacter = L10n.TextContent("Done", null, null, null);
 
-            public GUIContent mapping = EditorGUIUtility.TrTextContent("Mapping");
-            public GUIContent clearMapping = EditorGUIUtility.TrTextContent("Clear");
-            public GUIContent autoMapping = EditorGUIUtility.TrTextContent("Automap");
-            public GUIContent bipedMapping = EditorGUIUtility.TrTextContent("Biped");
-            public GUIContent loadMapping = EditorGUIUtility.TrTextContent("Load");
-            public GUIContent saveMapping = EditorGUIUtility.TrTextContent("Save");
+            public GUIContent mapping = L10n.TextContent("Mapping", null, null, null);
+            public GUIContent clearMapping = L10n.TextContent("Clear", null, null, null);
+            public GUIContent autoMapping = L10n.TextContent("Automap", null, null, null);
+            public GUIContent bipedMapping = L10n.TextContent("Biped", null, null, null);
+            public GUIContent loadMapping = L10n.TextContent("Load", null, null, null);
+            public GUIContent saveMapping = L10n.TextContent("Save", null, null, null);
 
-            public GUIContent pose = EditorGUIUtility.TrTextContent("Pose");
-            public GUIContent resetPose = EditorGUIUtility.TrTextContent("Reset");
-            public GUIContent sampleBindPose = EditorGUIUtility.TrTextContent("Sample Bind-Pose");
-            public GUIContent enforceTPose = EditorGUIUtility.TrTextContent("Enforce T-Pose");
-            public GUIContent bipedPose = EditorGUIUtility.TrTextContent("Biped Pose");
+            public GUIContent pose = L10n.TextContent("Pose", null, null, null);
+            public GUIContent resetPose = L10n.TextContent("Reset", null, null, null);
+            public GUIContent sampleBindPose = L10n.TextContent("Sample Bind-Pose", null, null, null);
+            public GUIContent enforceTPose = L10n.TextContent("Enforce T-Pose", null, null, null);
+            public GUIContent bipedPose = L10n.TextContent("Biped Pose", null, null, null);
 
-            public GUIContent ShowError = EditorGUIUtility.TrTextContent("Show Error(s)...");
-            public GUIContent CloseError = EditorGUIUtility.TrTextContent("Close Error(s)");
+            public GUIContent ShowError = L10n.TextContent("Show Error(s)...", null, null, null);
+            public GUIContent CloseError = L10n.TextContent("Close Error(s)", null, null, null);
 
             public GUIContent dotFill = EditorGUIUtility.IconContent("AvatarInspector/DotFill");
             public GUIContent dotFrame = EditorGUIUtility.IconContent("AvatarInspector/DotFrame");
@@ -899,4 +898,3 @@ namespace UnityEditor
         }
     }
 }
-#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

@@ -2,7 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: Packman not yet converted
 using System;
 using System.Collections.Generic;
 using Unity.Scripting.LifecycleManagement;
@@ -31,9 +30,6 @@ namespace UnityEditor.PackageManager.UI.Internal
 
     internal partial class PageFiltersWindow : EditorWindow
     {
-        #pragma warning disable UAL0015 // this side effect does not outlive the current call (global trigger / lazily-loaded asset re-fetched on next access); a stale reference is harmlessly replaced
-        internal PageFiltersWindow() {}
-        #pragma warning restore UAL0015
 
         internal enum FoldoutType
         {
@@ -162,7 +158,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                 }
             }
 
-            private void CreateOrUpdateFoldoutHelper(FoldoutType foldoutType,IReadOnlyCollection<string> supportedFilters, List<FilterToggle> filterToggles,
+            private void CreateOrUpdateFoldoutHelper(FoldoutType foldoutType,IReadOnlyList<string> supportedFilters, List<FilterToggle> filterToggles,
                 Func<string, bool> isFilterSelectedFunc, Func<IReadOnlyList<string>, PageFilters.ChangedTypes> updateFiltersFunc, Func<string, string> getFilterDisplayString = null)
             {
                 var foldoutIndex = (int)foldoutType;
@@ -277,6 +273,9 @@ namespace UnityEditor.PackageManager.UI.Internal
         }
 
         [AutoStaticsCleanupOnCodeReload]
+        // Cache of the open filters dropdown; ShowAtPosition only creates one when this is null, and
+        // closing it nulls it, so the next open rebuilds the window.
+        [IgnoreForUAL0015("Dropdown instance recreated on the next open when the cache is null")]
         private static PageFiltersWindow s_Window;
         public static PageFiltersWindow instance => s_Window;
 
@@ -324,6 +323,13 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_Content = content;
             m_Content.onSizeChanged += HandleContentSizeChange;
             rootVisualElement.Add(m_Content);
+            rootVisualElement.RegisterCallback<KeyDownEvent>(evt =>
+            {
+                if (evt.keyCode != KeyCode.Escape)
+                    return;
+                Close();
+                evt.StopPropagation();
+            });
             ShowAsDropDown(rect, m_Content.CalculateSize(), new[] { PopupLocation.Below });
         }
 
@@ -345,4 +351,3 @@ namespace UnityEditor.PackageManager.UI.Internal
         }
     }
 }
-#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

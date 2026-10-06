@@ -80,6 +80,7 @@ namespace UnityEditor
     [NativeHeader("Editor/Src/EditorUserSettings.h")]
     public sealed partial class EditorSettings : Object
     {
+        internal EditorSettings(global::UnityEngine.EntityId id) : base(id) {}
         internal enum Bc7TextureCompressor
         {
             Default = 0,
@@ -366,6 +367,10 @@ namespace UnityEditor
 
         [VisibleToOtherModules]
         [AutoStaticsCleanupOnCodeReload]
+        // The hierarchy windows subscribe in OnEnable and unsubscribe in OnDisable, and the
+        // HierarchyPreferences relay re-subscribes from its [OnCodeLoaded] Initialize() on every code
+        // load, so all handlers are restored after a reload.
+        [IgnoreForUAL0015("Subscribers re-register via OnEnable or [OnCodeLoaded] after a code reload")]
         internal static Action useLegacyHierarchyChanged;
 
         [StaticAccessor("GetEditorSettings()", StaticAccessorType.Dot)]
@@ -376,5 +381,8 @@ namespace UnityEditor
 
         [StaticAccessor("GetEditorSettings()", StaticAccessorType.Dot)]
         public static extern bool hideBuildProfileClassicPlatforms { get; set; }
+
+        [StaticAccessor("GetEditorSettings()", StaticAccessorType.Dot)]
+        internal static extern bool enableLegacyUmbraCulling { get; }
     }
 }

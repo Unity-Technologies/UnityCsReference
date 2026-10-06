@@ -2,7 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: SceneTooling not yet converted
 using System;
 using System.Collections.Generic;
 using UnityEditor.Overlays;
@@ -431,10 +430,10 @@ namespace UnityEditor
             albedoSpecificContent.Add(m_SelectedAlbedoPopup);
             albedoSpecificContent.Add(m_AlbedoContent = SceneViewLightingColors.CreateColorSwatch("magenta", null));
 
-            var hue = EditorGUIUtility.TrTextContent("Hue Tolerance:", "Check that the hue of the albedo value of a " +
-                "material is within the tolerance of the hue of the albedo swatch being validated against");
-            var sat = EditorGUIUtility.TrTextContent("Saturation Tolerance:", "Check that the saturation of the albedo " +
-                "value of a material is within the tolerance of the saturation of the albedo swatch being validated against");
+            var hue = L10n.TextContent("Hue Tolerance:", "Check that the hue of the albedo value of a " +
+                "material is within the tolerance of the hue of the albedo swatch being validated against", null, null);
+            var sat = L10n.TextContent("Saturation Tolerance:", "Check that the saturation of the albedo " +
+                "value of a material is within the tolerance of the saturation of the albedo swatch being validated against", null, null);
 
             m_AlbedoHueTolerance = CreateSliderWithField(hue, m_AlbedoSwatchHueTolerance, k_AlbedoHueToleranceMin, k_AlbedoHueToleranceMax, SetAlbedoHueTolerance);
             albedoSpecificContent.Add(m_AlbedoHueTolerance);
@@ -927,4 +926,3 @@ namespace UnityEditor
         }
     }
 }
-#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

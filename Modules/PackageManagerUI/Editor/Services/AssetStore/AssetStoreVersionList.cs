@@ -85,10 +85,8 @@ namespace UnityEditor.PackageManager.UI.Internal
             ));
         }
 
-        public override IEnumerator<IPackageVersion> GetEnumerator()
-        {
-            foreach (var version in m_Versions)
-                yield return version;
-        }
+        public override IEnumerator<IPackageVersion> GetEnumerator() => m_Versions.GetEnumerator();
+        public override int Count => m_Versions.Count;
+        public override IPackageVersion this[int index] => m_Versions[index];
     }
 }

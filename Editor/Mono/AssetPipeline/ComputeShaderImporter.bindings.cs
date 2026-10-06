@@ -11,6 +11,8 @@ namespace UnityEditor
     [NativeHeader("Editor/Src/AssetPipeline/ComputeShaderImporter.h")]
     public sealed partial class ComputeShaderImporter : AssetImporter
     {
+        internal ComputeShaderImporter(global::UnityEngine.EntityId id) : base(id) {}
+        public ComputeShaderImporter() {}
         public PreprocessorOverride preprocessorOverride { get { return PreprocessorOverride.UseProjectSettings; } set {} }
     }
 }

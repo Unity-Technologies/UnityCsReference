@@ -28,6 +28,7 @@ namespace UnityEditor.Animations
     [NativeClass("GameObjectRecorder", PersistentTypeId = 0x4B9842BC)]
     public class GameObjectRecorder : Object
     {
+        internal GameObjectRecorder(global::UnityEngine.EntityId id) : base(id) {}
         readonly static CurveFilterOptions k_DefaultCurveFilterOptions = new CurveFilterOptions()
         {
             unrollRotation = true,
@@ -40,7 +41,7 @@ namespace UnityEditor.Animations
 
         public GameObjectRecorder(GameObject root)
         {
-            Internal_Create(this, root);
+            SetEntityIdFromConstructor(Internal_Create(root));
         }
 
         public void BindComponentsOfType<T>(GameObject target, bool recursive)
@@ -61,7 +62,7 @@ namespace UnityEditor.Animations
                 BindComponent(components[i]);
         }
 
-        extern private static void Internal_Create([Writable] GameObjectRecorder self, [NotNull] GameObject root);
+        extern private static EntityId Internal_Create([NotNull] GameObject root);
 
         // Root.
         extern public GameObject root { get; }

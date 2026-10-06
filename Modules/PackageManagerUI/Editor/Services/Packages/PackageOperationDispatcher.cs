@@ -17,15 +17,15 @@ namespace UnityEditor.PackageManager.UI.Internal
         bool IsInstallInProgress(IPackageVersion version);
 
         bool Install(IPackageVersion version, OperationType operationType);
-        bool Install(IReadOnlyCollection<IPackageVersion> versions, OperationType operationType);
+        bool Install(IReadOnlyList<IPackageVersion> versions, OperationType operationType);
         bool Install(string packageId, OperationType operationType);
         bool InstallFromUrl(string url);
         bool InstallFromPath(string path, out string tempPackageId);
         void Uninstall(IPackage package);
-        void Uninstall(IReadOnlyCollection<IPackage> packages);
+        void Uninstall(IReadOnlyList<IPackage> packages);
 
-        void InstallAndResetDependencies(IPackageVersion version, IReadOnlyCollection<IPackage> dependenciesToReset);
-        void ResetDependencies(IPackageVersion version, IReadOnlyCollection<IPackage> dependenciesToReset);
+        void InstallAndResetDependencies(IPackageVersion version, IReadOnlyList<IPackage> dependenciesToReset);
+        void ResetDependencies(IPackageVersion version, IReadOnlyList<IPackage> dependenciesToReset);
 
         bool Embed(IPackage package);
         void RemoveEmbedded(IPackage package);
@@ -37,13 +37,13 @@ namespace UnityEditor.PackageManager.UI.Internal
         bool Download(IPackage package);
         bool Download(IEnumerable<IPackage> packages);
         void AbortDownload(IPackage package);
-        void AbortDownload(IReadOnlyCollection<IPackage> packages);
+        void AbortDownload(IReadOnlyList<IPackage> packages);
         void PauseDownload(IPackage package);
         void ResumeDownload(IPackage package);
 
         void Import(IPackage package);
         void RemoveImportedAssets(IPackage package);
-        void RemoveImportedAssets(IReadOnlyCollection<IPackage> packages);
+        void RemoveImportedAssets(IReadOnlyList<IPackage> packages);
     }
 
     internal class PackageOperationDispatcher : BaseService<IPackageOperationDispatcher>, IPackageOperationDispatcher
@@ -92,7 +92,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             return true;
         }
 
-        public bool Install(IReadOnlyCollection<IPackageVersion> versions, OperationType operationType)
+        public bool Install(IReadOnlyList<IPackageVersion> versions, OperationType operationType)
         {
             if (versions == null || versions.Count == 0)
                 return false;
@@ -141,19 +141,19 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_UpmClient.RemoveByName(package.name, OperationType.Remove);
         }
 
-        public void Uninstall(IReadOnlyCollection<IPackage> packages)
+        public void Uninstall(IReadOnlyList<IPackage> packages)
         {
             if (packages == null || packages.Count == 0)
                 return;
             m_UpmClient.RemoveByNames(packages.SelectToNewArray(p => p.name), OperationType.Remove);
         }
 
-        public void InstallAndResetDependencies(IPackageVersion version, IReadOnlyCollection<IPackage> dependenciesToReset)
+        public void InstallAndResetDependencies(IPackageVersion version, IReadOnlyList<IPackage> dependenciesToReset)
         {
             m_UpmClient.AddAndResetDependencies(version.packageId, dependenciesToReset?.SelectToNewArray(package => package.name), OperationType.Install);
         }
 
-        public void ResetDependencies(IPackageVersion version, IReadOnlyCollection<IPackage> dependenciesToReset)
+        public void ResetDependencies(IPackageVersion version, IReadOnlyList<IPackage> dependenciesToReset)
         {
             m_UpmClient.ResetDependencies(version.packageId, dependenciesToReset?.SelectToNewArray(package => package.name), OperationType.Reset);
         }
@@ -224,7 +224,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             AbortDownload(new[] { package });
         }
 
-        public void AbortDownload(IReadOnlyCollection<IPackage> packages)
+        public void AbortDownload(IReadOnlyList<IPackage> packages)
         {
             // We use ToNewArray here as the original collection might be modified in the for loop
             foreach (var package in packages.ToNewArray())
@@ -268,7 +268,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_AssetStorePackageInstaller.Uninstall(package.product.id, true);
         }
 
-        public void RemoveImportedAssets(IReadOnlyCollection<IPackage> packages)
+        public void RemoveImportedAssets(IReadOnlyList<IPackage> packages)
         {
             if (packages == null || packages.Count == 0)
                 return;

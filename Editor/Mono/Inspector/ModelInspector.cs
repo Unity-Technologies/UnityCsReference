@@ -36,8 +36,8 @@ namespace UnityEditor
 
         // ShowCollisionInfo strings
         static readonly string s_CollisionLabel = "Collision";
-        static readonly GUIContent s_PreBakeConvexCollisionMeshContent = EditorGUIUtility.TrTextContent("Bake Convex Collision Mesh", "Pre-bake convex collision mesh data during player build for use with convex MeshColliders. This improves runtime performance.");
-        static readonly GUIContent s_PreBakeTriangleCollisionMeshContent = EditorGUIUtility.TrTextContent("Bake Triangle Collision Mesh", "Pre-bake triangle collision mesh data during player build for use with non convex MeshColliders. This improves runtime performance.");
+        static readonly GUIContent s_PreBakeConvexCollisionMeshContent = L10n.TextContent("Bake Convex Collision Mesh", "Pre-bake convex collision mesh data during player build for use with convex MeshColliders. This improves runtime performance.", null, null);
+        static readonly GUIContent s_PreBakeTriangleCollisionMeshContent = L10n.TextContent("Bake Triangle Collision Mesh", "Pre-bake triangle collision mesh data during player build for use with non convex MeshColliders. This improves runtime performance.", null, null);
         static readonly string s_ImportedMeshCollisionHelpBox = "Collision baking for imported meshes is configured in the Model Import Settings.";
 
         void OnEnable()

@@ -8,6 +8,7 @@ using Object = UnityEngine.Object;
 using UnityEditor;
 using System.Reflection;
 using UnityEngine.Bindings;
+using UnityEditor.Licensing;
 using UnityEditor.Scripting.ScriptCompilation;
 using System.Globalization;
 using Unity.CodeEditor;
@@ -93,7 +94,7 @@ namespace UnityEditorInternal
     [NativeHeader("Editor/Src/AssetPipeline/UnityExtensions.h")]
     [NativeHeader("Editor/Src/Windowing/AuxWindowManager.h")]
     [NativeHeader("Editor/Src/DisplayDialog.h")]
-    [NativeHeader("Editor/Src/DragAndDropForwarding.h")]
+    [NativeHeader("Editor/Src/DragAndDrop/DragAndDropForwarding.h")]
     [NativeHeader("Editor/Src/EditorHelper.h")]
     [NativeHeader("Editor/Src/EditorUserBuildSettings.h")]
     [NativeHeader("Editor/Src/EditorWindowController.h")]
@@ -103,7 +104,6 @@ namespace UnityEditorInternal
     [NativeHeader("Editor/Src/HierarchyState.h")]
     [NativeHeader("Editor/Src/InspectorExpandedState.h")]
     [NativeHeader("Editor/Src/LoadFileAndForgetOperation.h")]
-    [NativeHeader("Runtime/Interfaces/ILicensing.h")]
     [NativeHeader("Editor/Src/RemoteInput/RemoteInput.h")]
     [NativeHeader("Editor/Src/ShaderMenu.h")]
     [NativeHeader("Editor/Src/Undo/ObjectUndo.h")]
@@ -370,8 +370,8 @@ namespace UnityEditorInternal
             if (CanMeshBeModifiedFromCode(meshPath))
             {
                 if (DrawWarningHelpBoxWithButton(
-                    EditorGUIUtility.TrTextContent(message),
-                    EditorGUIUtility.TrTextContent("Enable")))
+                    L10n.TextContent(message, null, null, null),
+                    L10n.TextContent("Enable", null, null, null)))
                 {
                     ImportMeshAsReadable(mesh);
                 }
@@ -379,8 +379,8 @@ namespace UnityEditorInternal
             else
             {
                 if (DrawWarningHelpBoxWithButton(
-                    EditorGUIUtility.TrTextContent(message),
-                    EditorGUIUtility.TrTextContent("View")))
+                    L10n.TextContent(message, null, null, null),
+                    L10n.TextContent("View", null, null, null)))
                 {
                     Selection.objects = new UnityEngine.Object[] { mesh };
                 }
@@ -515,12 +515,18 @@ namespace UnityEditorInternal
         extern public static void RepaintAllViews();
 
         [StaticAccessor("GetInspectorExpandedState()", StaticAccessorType.Dot)]
-        [NativeMethod("IsInspectorExpanded")]
-        extern public static bool GetIsInspectorExpanded(Object obj);
+        [NativeMethod("IsInspectorExpandedForEntityId")]
+        extern public static bool GetIsInspectorExpanded(EntityId entityId);
 
         [StaticAccessor("GetInspectorExpandedState()", StaticAccessorType.Dot)]
-        [NativeMethod("SetInspectorExpanded")]
-        extern public static void SetIsInspectorExpanded(Object obj, bool isExpanded);
+        [NativeMethod("SetInspectorExpandedForEntityId")]
+        extern public static void SetIsInspectorExpanded(EntityId entityId, bool isExpanded);
+
+        public static bool GetIsInspectorExpanded(Object obj)
+            => GetIsInspectorExpanded(obj != null ? obj.GetEntityId() : EntityId.None);
+
+        public static void SetIsInspectorExpanded(Object obj, bool isExpanded)
+            => SetIsInspectorExpanded(obj != null ? obj.GetEntityId() : EntityId.None, isExpanded);
 
         [Obsolete("expandedProjectWindowItems is deprecated. Use expandedProjectWindowItemIds instead", true)]
         public static int[] expandedProjectWindowItems
@@ -604,17 +610,14 @@ namespace UnityEditorInternal
         [Obsolete("HasTeamLicense always returns true, no need to call it")]
         public static bool HasTeamLicense() { return true; }
 
-        [FreeFunction("InternalEditorUtilityBindings::HasPro", IsThreadSafe = true)]
-        extern public static bool HasPro();
+        [Obsolete("HasPro has been deprecated. Use UnityEditor.Licensing.LicensingUtility.HasPro instead (UnityUpgradable) -> [UnityEditor] UnityEditor.Licensing.LicensingUtility.HasPro(*)")]
+        public static bool HasPro() { return LicensingUtility.HasPro(); }
 
-        [FreeFunction("InternalEditorUtilityBindings::HasFreeLicense", IsThreadSafe = true)]
-        extern public static bool HasFreeLicense();
+        [Obsolete("HasFreeLicense has been deprecated. Use UnityEditor.Licensing.LicensingUtility.IsPersonal instead (UnityUpgradable) -> [UnityEditor] UnityEditor.Licensing.LicensingUtility.IsPersonal(*)")]
+        public static bool HasFreeLicense() { return LicensingUtility.IsPersonal(); }
 
-        [FreeFunction("InternalEditorUtilityBindings::HasEduLicense", IsThreadSafe = true)]
-        extern public static bool HasEduLicense();
-
-        [FreeFunction("InternalEditorUtilityBindings::HasUFSTLicense", IsThreadSafe = true)]
-        extern internal static bool HasUFSTLicense();
+        [Obsolete("HasEduLicense has been deprecated. Use UnityEditor.Licensing.LicensingUtility.HasEduLicense instead (UnityUpgradable) -> [UnityEditor] UnityEditor.Licensing.LicensingUtility.HasEduLicense(*)")]
+        public static bool HasEduLicense() { return LicensingUtility.HasEduLicense(); }
 
         [FreeFunction]
         extern public static bool HasAdvancedLicenseOnBuildTarget(BuildTarget target);
@@ -825,21 +828,11 @@ namespace UnityEditorInternal
         [FreeFunction("InternalEditorUtilityBindings::GetUnityCopyright", true)]
         extern public static string GetUnityCopyright();
 
-        [FreeFunction("InternalEditorUtilityBindings::GetLicenseInfoText")]
-        extern public static string GetLicenseInfo();
+        [Obsolete("GetLicenseInfo has been deprecated and returns an empty string. Query the entitlements you need with UnityEditor.Licensing.LicensingUtility instead")]
+        public static string GetLicenseInfo() { return string.Empty; }
 
-        [FreeFunction("InternalEditorUtilityBindings::GetLicenseInfoTypeText")]
-        extern internal static string GetLicenseInfoType();
-
-        [FreeFunction("InternalEditorUtilityBindings::GetLicenseInfoSerialText")]
-        extern internal static string GetLicenseInfoSerial();
-
-        [Obsolete("GetLicenseFlags is no longer supported", error: true)]
-        [FreeFunction("InternalEditorUtilityBindings::GetLicenseFlags")]
-        extern public static int[] GetLicenseFlags();
-
-        [FreeFunction("InternalEditorUtilityBindings::GetAuthToken")]
-        extern public static string GetAuthToken();
+        [Obsolete("GetAuthToken has been deprecated. Use UnityEditor.Licensing.LicensingUtility.GetAuthToken instead (UnityUpgradable) -> [UnityEditor] UnityEditor.Licensing.LicensingUtility.GetAuthToken(*)")]
+        public static string GetAuthToken() { return LicensingUtility.GetAuthToken(); }
 
         [FreeFunction("InternalEditorUtilityBindings::OpenEditorConsole")]
         extern public static void OpenEditorConsole();
@@ -1006,7 +999,7 @@ namespace UnityEditorInternal
 
         [StaticAccessor("CustomLighting::Get()", StaticAccessorType.Dot)]
         [NativeMethod("SetCustomLighting")]
-        extern public static void SetCustomLightingInternal([UnityMarshalAs(NativeType.ScriptingObjectPtr)] Light[] lights, Color ambient);
+        extern public static void SetCustomLightingInternal(Light[] lights, Color ambient);
 
         public static void SetCustomLighting(Light[] lights, Color ambient)
         {

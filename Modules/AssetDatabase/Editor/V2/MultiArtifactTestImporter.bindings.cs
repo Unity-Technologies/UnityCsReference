@@ -13,5 +13,6 @@ namespace UnityEditor.Experimental
     [ExcludeFromPreset]
     internal partial class MultiArtifactTestImporter : AssetImporter
     {
+        internal MultiArtifactTestImporter(global::UnityEngine.EntityId id) : base(id) {}
     }
 }

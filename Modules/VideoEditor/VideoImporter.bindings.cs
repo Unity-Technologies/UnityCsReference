@@ -116,6 +116,8 @@ namespace UnityEditor
     [NativeHeader("Modules/VideoEditor/VideoClipImporter.bindings.h")]
     public partial class VideoClipImporter : AssetImporter
     {
+        internal VideoClipImporter(global::UnityEngine.EntityId id) : base(id) {}
+        public VideoClipImporter() {}
         [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
         [Obsolete("VideoClipImporter.quality has no effect anymore (was only used for MovieTexture which is removed)", false)]
         public float quality { get { return 1.0f; } set {} }

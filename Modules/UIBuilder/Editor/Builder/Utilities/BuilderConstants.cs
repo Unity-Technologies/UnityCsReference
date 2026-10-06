@@ -58,6 +58,7 @@ namespace Unity.UI.Builder
         public const string LibraryUIPath = UIBuilderPackagePath + "/Library";
         public const string LibraryUssPathNoExt = UIBuilderPackagePath + "/Library/BuilderLibrary";
         public const string InspectorUssPathNoExt = UIBuilderPackagePath + "/Inspector/BuilderInspector";
+        public const string StyleSheetEditingPreviewUxmlPath = UIBuilderPackagePath + "/PreviewTemplates/StyleSheetEditingPreview.uxml";
 
         public const string UIBuilderTestsTestFilesPath = UIBuilderTestsRootPath + "/TestFiles";
         const string BuilderDocumentDiskJsonFileName = "UIBuilderDocument.json";
@@ -88,6 +89,8 @@ namespace Unity.UI.Builder
         public static readonly string ElementAttachedStyleSheetClassName = "unity-builder-code-label--element-attached-stylesheet";
         public static readonly string ElementPseudoStateClassName = "unity-builder-code-label--element-pseudo-state";
         public static readonly string TagPillClassName = "unity-tag-pill";
+        public static readonly string CanvasEditorModeTagText = "Editor Mode";
+        public static readonly string CanvasStyleSheetEditingModeTagText = "StyleSheet Editing Mode";
         public static readonly string StyleSelectorBelongsParent = "unity-selector-parent-subdocument";
         public static readonly string SeparatorLineStyleClassName = "unity-builder-separator-line";
 
@@ -152,6 +155,9 @@ namespace Unity.UI.Builder
         public static readonly string InspectorFlexColumnReverseModeClassName = "unity-builder-inspector--flex-column-reverse";
         public static readonly string InspectorFlexRowModeClassName = "unity-builder-inspector--flex-row";
         public static readonly string InspectorFlexRowReverseModeClassName = "unity-builder-inspector--flex-row-reverse";
+        // Added to the display button strip when the CSS Grid flag is on: the strip goes all-text
+        // (None / Flex / Grid), so the flex/none icons are suppressed by USS keyed on this class.
+        public static readonly string InspectorDisplayStripTextModifierClassName = "unity-builder-inspector_display-field--text";
         public static readonly UniqueStyleString InspectorStyleCategoryFoldoutOverrideClassName = new("unity-builder-inspector__style-category-foldout--override");
         public static readonly UniqueStyleString InspectorCategoryFoldoutBindingClassName = new("unity-builder-inspector__style-category-foldout--binding");
         public static readonly UniqueStyleString InspectorLocalStyleOverrideClassName = new("unity-builder-inspector__style--override");
@@ -579,7 +585,7 @@ namespace Unity.UI.Builder
         public static readonly string ExplorerHierarchyUnpackTemplate = "Unpack Instance";
         public static readonly string ExplorerHierarchyUnpackCompletely = "Unpack Instance Completely";
         public static readonly string ExplorerHierarchyCreateTemplate = "Create Template";
-        public static readonly string ExplorerHierarchyAddSelector = "Add selector...";
+        public static readonly string ExplorerHierarchyAddSelector = "Generate Selector From Element...";
 
         // Explorer Messages
         public static readonly string ExplorerInExplorerNewClassSelectorInfoMessage = "Add new selector...";
@@ -651,7 +657,9 @@ namespace Unity.UI.Builder
 
         // Toolbar Messages
         public static readonly string ToolbarLoadUxmlDialogTitle = "Load UXML File";
+        public static readonly string ToolbarLoadDocumentDialogTitle = "Load UXML, USS or TSS File";
         public static readonly string ToolbarCannotLoadUxmlOutsideProjectMessage = "UI Builder: Cannot load .uxml files outside the Project.";
+        public static readonly string ToolbarCannotLoadStyleSheetEditingPreviewMessage = "UI Builder: Could not load the StyleSheet editing preview document.";
         public static readonly string ToolbarSelectedAssetIsInvalidMessage = "UI Builder: The asset selected was not a valid UXML asset.";
         public static readonly string ToolbarUnsavedFileSuffix = "*";
         public static readonly string ToolbarUnsavedFileDisplayText = "<unsaved file>";

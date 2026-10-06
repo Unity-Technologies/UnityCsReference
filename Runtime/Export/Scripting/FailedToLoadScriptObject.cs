@@ -19,6 +19,7 @@ namespace UnityEngine
     [ExcludeFromObjectFactory]
     class FailedToLoadScriptObject : Object
     {
+        internal FailedToLoadScriptObject(global::UnityEngine.EntityId id) : base(id) {}
         private FailedToLoadScriptObject() {}
     }
 }

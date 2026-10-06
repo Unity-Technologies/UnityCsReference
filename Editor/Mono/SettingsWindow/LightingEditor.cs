@@ -23,33 +23,33 @@ namespace UnityEditor
         {
             static Styles() {}
 
-            public static readonly GUIContent env_top = EditorGUIUtility.TrTextContent("Environment");
-            public static readonly GUIContent env_skybox_mat = EditorGUIUtility.TrTextContent("Skybox Material", "Specifies the material that is used to simulate the sky or other distant background in the Scene.");
-            public static readonly GUIContent env_skybox_sun = EditorGUIUtility.TrTextContent("Sun Source", "Specifies the directional light that is used to indicate the direction of the sun when a procedural skybox is used. If set to None, the brightest directional light in the Scene is used to represent the sun.");
-            public static readonly GUIContent env_amb_top = EditorGUIUtility.TrTextContent("Environment Lighting");
-            public static readonly GUIContent env_amb_src = EditorGUIUtility.TrTextContent("Source", "Specifies whether to use a skybox, gradient, or color for ambient light contributed to the Scene.");
-            public static readonly GUIContent env_amb_int = EditorGUIUtility.TrTextContent("Intensity Multiplier", "Controls the brightness of the skybox lighting in the Scene.");
-            public static readonly GUIContent env_refl_top = EditorGUIUtility.TrTextContent("Environment Reflections");
-            public static readonly GUIContent env_refl_src = EditorGUIUtility.TrTextContent("Source", "Specifies whether to use the skybox or a custom cube map for reflection effects in the Scene.");
-            public static readonly GUIContent env_refl_res = EditorGUIUtility.TrTextContent("Resolution", "Controls the resolution for the cube map assigned to the skybox material for reflection effects in the Scene.");
-            public static readonly GUIContent env_refl_cmp = EditorGUIUtility.TrTextContent("Compression", "Controls how Unity compresses the reflection cube maps. Options are Auto, Compressed, and Uncompressed. Auto compresses the cube maps if the compression format is suitable.");
-            public static readonly GUIContent env_refl_int = EditorGUIUtility.TrTextContent("Intensity Multiplier", "Controls how much the skybox or custom cubemap affects reflections in the Scene. A value of 1 produces physically correct results.");
-            public static readonly GUIContent env_refl_bnc = EditorGUIUtility.TrTextContent("Bounces", "Controls how many times a reflection includes other reflections. A value of 1 results in the Scene being rendered once so mirrored reflections will be black. A value of 2 results in mirrored reflections being visible in the Scene.");
-            public static readonly GUIContent skyboxWarning = EditorGUIUtility.TrTextContent("Shader of this material does not support skybox rendering.");
-            public static readonly GUIContent createLight = EditorGUIUtility.TrTextContent("Create Light");
-            public static readonly GUIContent ambientUp = EditorGUIUtility.TrTextContent("Sky Color", "Controls the color of light emitted from the sky in the Scene.");
-            public static readonly GUIContent ambientMid = EditorGUIUtility.TrTextContent("Equator Color", "Controls the color of light emitted from the sides of the Scene.");
-            public static readonly GUIContent ambientDown = EditorGUIUtility.TrTextContent("Ground Color", "Controls the color of light emitted from the ground of the Scene.");
-            public static readonly GUIContent ambient = EditorGUIUtility.TrTextContent("Ambient Color", "Controls the color of the ambient light contributed to the Scene.");
-            public static readonly GUIContent customReflection = EditorGUIUtility.TrTextContent("Cubemap", "Specifies the custom cube map used for reflection effects in the Scene.");
-            public static readonly GUIContent unusedCustomReflectionWarning = EditorGUIUtility.TrTextContent("A custom cubemap is still assigned and included in builds, even though Source is set to Skybox. To remove it, set Source to Custom and clear the Cubemap field.");
-            public static readonly GUIContent SubtractiveColor = EditorGUIUtility.TrTextContent("Realtime Shadow Color", "The color used for mixing realtime shadows with baked lightmaps in Subtractive lighting mode. The color defines the darkest point of the realtime shadow.");
+            public static readonly GUIContent env_top = L10n.TextContent("Environment", null, null, null);
+            public static readonly GUIContent env_skybox_mat = L10n.TextContent("Skybox Material", "Specifies the material that is used to simulate the sky or other distant background in the Scene.", null, null);
+            public static readonly GUIContent env_skybox_sun = L10n.TextContent("Sun Source", "Specifies the directional light that is used to indicate the direction of the sun when a procedural skybox is used. If set to None, the brightest directional light in the Scene is used to represent the sun.", null, null);
+            public static readonly GUIContent env_amb_top = L10n.TextContent("Environment Lighting", null, null, null);
+            public static readonly GUIContent env_amb_src = L10n.TextContent("Source", "Specifies whether to use a skybox, gradient, or color for ambient light contributed to the Scene.", null, null);
+            public static readonly GUIContent env_amb_int = L10n.TextContent("Intensity Multiplier", "Controls the brightness of the skybox lighting in the Scene.", null, null);
+            public static readonly GUIContent env_refl_top = L10n.TextContent("Environment Reflections", null, null, null);
+            public static readonly GUIContent env_refl_src = L10n.TextContent("Source", "Specifies whether to use the skybox or a custom cube map for reflection effects in the Scene.", null, null);
+            public static readonly GUIContent env_refl_res = L10n.TextContent("Resolution", "Controls the resolution for the cube map assigned to the skybox material for reflection effects in the Scene.", null, null);
+            public static readonly GUIContent env_refl_cmp = L10n.TextContent("Compression", "Controls how Unity compresses the reflection cube maps. Options are Auto, Compressed, and Uncompressed. Auto compresses the cube maps if the compression format is suitable.", null, null);
+            public static readonly GUIContent env_refl_int = L10n.TextContent("Intensity Multiplier", "Controls how much the skybox or custom cubemap affects reflections in the Scene. A value of 1 produces physically correct results.", null, null);
+            public static readonly GUIContent env_refl_bnc = L10n.TextContent("Bounces", "Controls how many times a reflection includes other reflections. A value of 1 results in the Scene being rendered once so mirrored reflections will be black. A value of 2 results in mirrored reflections being visible in the Scene.", null, null);
+            public static readonly GUIContent skyboxWarning = L10n.TextContent("Shader of this material does not support skybox rendering.", null, null, null);
+            public static readonly GUIContent createLight = L10n.TextContent("Create Light", null, null, null);
+            public static readonly GUIContent ambientUp = L10n.TextContent("Sky Color", "Controls the color of light emitted from the sky in the Scene.", null, null);
+            public static readonly GUIContent ambientMid = L10n.TextContent("Equator Color", "Controls the color of light emitted from the sides of the Scene.", null, null);
+            public static readonly GUIContent ambientDown = L10n.TextContent("Ground Color", "Controls the color of light emitted from the ground of the Scene.", null, null);
+            public static readonly GUIContent ambient = L10n.TextContent("Ambient Color", "Controls the color of the ambient light contributed to the Scene.", null, null);
+            public static readonly GUIContent customReflection = L10n.TextContent("Cubemap", "Specifies the custom cube map used for reflection effects in the Scene.", null, null);
+            public static readonly GUIContent unusedCustomReflectionWarning = L10n.TextContent("A custom cubemap is still assigned and included in builds, even though Source is set to Skybox. To remove it, set Source to Custom and clear the Cubemap field.", null, null, null);
+            public static readonly GUIContent SubtractiveColor = L10n.TextContent("Realtime Shadow Color", "The color used for mixing realtime shadows with baked lightmaps in Subtractive lighting mode. The color defines the darkest point of the realtime shadow.", null, null);
 
             public static readonly GUIContent[] kFullAmbientSource =
             {
-                EditorGUIUtility.TrTextContent("Skybox"),
-                EditorGUIUtility.TrTextContent("Gradient"),
-                EditorGUIUtility.TrTextContent("Color"),
+                L10n.TextContent("Skybox", null, null, null),
+                L10n.TextContent("Gradient", null, null, null),
+                L10n.TextContent("Color", null, null, null),
             };
 
             public static readonly int[] kFullAmbientSourceValues = { (int)AmbientMode.Skybox, (int)AmbientMode.Trilight, (int)AmbientMode.Flat };

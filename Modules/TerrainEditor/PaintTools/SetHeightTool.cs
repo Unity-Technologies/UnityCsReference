@@ -35,11 +35,11 @@ namespace UnityEditor.TerrainTools
 
         class Styles
         {
-            public readonly GUIContent description = EditorGUIUtility.TrTextContent("Left click to set the height.\n\nHold shift and left click to sample the target height.");
-            public readonly GUIContent space = EditorGUIUtility.TrTextContent("Space", "The heightmap space in which the painting operates.");
-            public readonly GUIContent height = EditorGUIUtility.TrTextContent("Height", "You can set the Height property manually or you can shift-click on the terrain to sample the height at the mouse position (rather like the 'eyedropper' tool in an image editor).");
-            public readonly GUIContent flatten = EditorGUIUtility.TrTextContent("Flatten Tile", "The Flatten button levels the whole terrain to the chosen height.");
-            public readonly GUIContent flattenAll = EditorGUIUtility.TrTextContent("Flatten All", "If selected, it will traverse all neighbors and flatten them too");
+            public readonly GUIContent description = L10n.TextContent("Left click to set the height.\n\nHold shift and left click to sample the target height.", null, null, null);
+            public readonly GUIContent space = L10n.TextContent("Space", "The heightmap space in which the painting operates.", null, null);
+            public readonly GUIContent height = L10n.TextContent("Height", "You can set the Height property manually or you can shift-click on the terrain to sample the height at the mouse position (rather like the 'eyedropper' tool in an image editor).", null, null);
+            public readonly GUIContent flatten = L10n.TextContent("Flatten Tile", "The Flatten button levels the whole terrain to the chosen height.", null, null);
+            public readonly GUIContent flattenAll = L10n.TextContent("Flatten All", "If selected, it will traverse all neighbors and flatten them too", null, null);
         }
 
         [NoAutoStaticsCleanup] // lazy GUIContent/GUIStyle styles holder; editor infra, no user refs

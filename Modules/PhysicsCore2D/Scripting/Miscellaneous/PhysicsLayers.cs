@@ -22,9 +22,32 @@ namespace Unity.U2D.Physics
         /// <summary>
         /// Get a <see cref="PhysicsMask"/> for the specified layer name(s).
         /// </summary>
+        /// <remarks>
+        /// Use this method to build the category and contact masks for a <see cref="PhysicsShape.ContactFilter"/> so a shape only collides with the layers it needs to.
+        /// Create the layers in a <see cref="PhysicsCoreSettings2D"/> asset first.
+        /// </remarks>
         /// <param name="layerNames">The layer names (case sensitive) to find a combined physics mask for.</param>
-        /// <returns>The combined physics mask associated with the specified layer names or, if not found, <see cref="PhysicsMask.None"/> will be returned in which case a console warning will also be produced.</returns>
+        /// <returns>The combined physics mask associated with the specified layer names. If a layer name isn't found, Unity produces a console warning and returns <see cref="PhysicsMask.None"/>.</returns>
         /// <exception cref="System.ArgumentException">Thrown if no layer names are provided.</exception>
+        /// <example>
+        /// <code lang="cs">
+        /// <![CDATA[
+        /// // Get a physics mask for a single layer, and another for a group of layers
+        /// // that the object should collide with.
+        /// using UnityEngine;
+        /// using Unity.U2D.Physics;
+        ///
+        /// public class GetLayerMaskExample : MonoBehaviour
+        /// {
+        ///     void Start()
+        ///     {
+        ///         PhysicsMask objectLayer = PhysicsLayers.GetLayerMask("Car");
+        ///         PhysicsMask contactLayer = PhysicsLayers.GetLayerMask("Walls");
+        ///     }
+        /// }
+        /// ]]>
+        /// </code>
+        /// </example>
         public static PhysicsMask GetLayerMask(params string[] layerNames)
         {
             // Throw if not layer names provided.

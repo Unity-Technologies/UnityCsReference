@@ -113,6 +113,13 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_MainButton.AddToClassList(Button.ussClassName);
             m_MainButtonClickable = new Clickable(OnMainButtonClicked);
             m_MainButton.AddManipulator(m_MainButtonClickable);
+            m_MainButton.focusable = true;
+            m_MainButton.tabIndex = 0;
+            m_MainButton.RegisterCallback<NavigationSubmitEvent>(evt =>
+            {
+                OnMainButtonClicked();
+                evt.StopPropagation();
+            });
             Add(m_MainButton);
 
             m_Label = new TextElement { name = "label" };
@@ -196,6 +203,13 @@ namespace UnityEditor.PackageManager.UI.Internal
                     m_SeparateDropdownArea = new VisualElement { name = "dropdownArea" };
                     m_SeparateDropdownArea.AddToClassList(Button.ussClassName);
                     m_SeparateDropdownArea.AddManipulator(new Clickable(ShowDropdown));
+                    m_SeparateDropdownArea.focusable = true;
+                    m_SeparateDropdownArea.tabIndex = 0;
+                    m_SeparateDropdownArea.RegisterCallback<NavigationSubmitEvent>(evt =>
+                    {
+                        ShowDropdown();
+                        evt.StopPropagation();
+                    });
                     Add(m_SeparateDropdownArea);
                 }
                 m_SeparateDropdownArea.Add(m_DropdownIcon);

@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System.IO;
 using UnityEditor;
 using UnityEditor.UIElements;
 using UnityEngine.Pool;
@@ -76,8 +77,16 @@ sealed class CreateTemplateFromElementCommand : Command<CreateTemplateFromElemen
         templateAsset.serializedData = new TemplateContainer.UxmlSerializedData();
         var typeDesc = UxmlSerializedDataRegistry.GetDescription(typeof(TemplateContainer).FullName);
         var attr = typeDesc.FindAttributeWithPropertyName(nameof(TemplateContainer.templateUXML));
-        var uxmlValue = new TemplateContainer.TemplateUXML { templateId = vta.GetTemplateNameFromPath(assetPath) };
+        var uxmlValue = new TemplateContainer.TemplateUXML
+        {
+            templateAsset = m_Template,
+            templateId = vta.GetTemplateNameFromPath(assetPath)
+        };
         attr.SetSerializedValue(templateAsset.serializedData, uxmlValue, UxmlSerializedData.UxmlAttributeFlags.OverriddenInUxml);
+
+        UxmlAssetUtilities.SetAttributeAndSyncSerializedData(
+            templateAsset, nameof(VisualElement.name), Path.GetFileNameWithoutExtension(assetPath));
+
         vta.ReparentElementInDocument(templateAsset, m_ParentAsset, insertionIndex);
 
         using var toSelectHandle = ListPool<VisualElementAsset>.Get(out var toSelect);

@@ -41,6 +41,7 @@ namespace Unity.GraphToolkit.Editor
         public new static readonly string labelUssClassName = ussClassName.WithUssElement(labelName);
 
         Image m_Icon;
+        bool m_IconIsInline;
 
         IReadOnlyList<IHasTitle> m_Models;
 
@@ -168,25 +169,51 @@ namespace Unity.GraphToolkit.Editor
                 m_Icon.AddToClassList(emptyIconUssClassName);
             }
 
-            var model = m_Models[0] as VariableDeclarationModel;
-            if (model != null)
+            Type dataTypeForStyle = null;
+            GraphModel graphModelForStyle = null;
+
+            switch (m_Models[0])
+            {
+                case ConstantNodeModel constantNode:
+                    dataTypeForStyle = constantNode.Type;
+                    graphModelForStyle = constantNode.GraphModel;
+                    break;
+                case VariableNodeModel variableNode:
+                    dataTypeForStyle = variableNode.VariableDeclarationModel?.DataType.Resolve();
+                    graphModelForStyle = variableNode.GraphModel;
+                    break;
+                case VariableDeclarationModelBase variable:
+                    dataTypeForStyle = variable.DataType.Resolve();
+                    graphModelForStyle = variable.GraphModel;
+                    break;
+            }
+
+            if (dataTypeForStyle != null && graphModelForStyle != null)
             {
                 bool overrideIcon = true;
-                Type elementStyle = model.DataType.Resolve();
-                (Texture2D icon, Color color)? typeStyle = model.GraphModel.GetDataTypeStyle(elementStyle);
+                var typeStyle = graphModelForStyle.GetDataTypeStyle(dataTypeForStyle);
 
-                if (!typeStyle.HasValue && elementStyle.IsListOrArray())
+                if (!typeStyle.HasValue && dataTypeForStyle.IsListOrArray())
                 {
-                    typeStyle = model.GraphModel.GetDataTypeStyle(elementStyle.GetCollectionElementType());
+                    typeStyle = graphModelForStyle.GetDataTypeStyle(dataTypeForStyle.GetCollectionElementType());
                     overrideIcon = false;
                 }
 
-                if (typeStyle.HasValue)
-                {
-                    if (overrideIcon)
-                        m_Icon.image = typeStyle.Value.icon;
-                    m_Icon.tintColor = typeStyle.Value.color;
-                }
+                m_IconIsInline = DataTypeIconHelper.ApplyIconStyle(ref m_Icon, typeStyle, overrideIcon, m_IconIsInline,
+                    () =>
+                    {
+                        var idx = IndexOf(m_Icon);
+                        Remove(m_Icon);
+                        var fresh = new Image();
+                        fresh.AddToClassList(iconUssClassName);
+                        if (m_CurrentIconClasses != null)
+                            foreach (var c in m_CurrentIconClasses)
+                                fresh.AddToClassList(c);
+                        Insert(idx, fresh);
+                        return fresh;
+                    });
+                if (!typeStyle.HasValue)
+                    m_Icon.style.display = DisplayStyle.Flex;
             }
 
             if (allRenamable)

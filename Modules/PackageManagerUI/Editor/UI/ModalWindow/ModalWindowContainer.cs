@@ -2,7 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: Packman not yet converted
 using Unity.Scripting.LifecycleManagement;
 using UnityEngine;
 
@@ -10,9 +9,6 @@ namespace UnityEditor.PackageManager.UI.Internal;
 
 internal partial class ModalWindowContainer : EditorWindow
 {
-    #pragma warning disable UAL0015 // this side effect does not outlive the current call (global trigger / lazily-loaded asset re-fetched on next access); a stale reference is harmlessly replaced
-    internal ModalWindowContainer() {}
-    #pragma warning restore UAL0015
 
     [AutoStaticsCleanupOnCodeReload]
     private static ModalWindowContainer instance { get; set; }
@@ -27,9 +23,9 @@ internal partial class ModalWindowContainer : EditorWindow
         instance.rootVisualElement.Add(content);
         instance.titleContent = new GUIContent(content.windowTitle);
         instance.m_Content = content;
-        #pragma warning disable UAL0018 // rebuilt/resubscribed wholesale on the next reload via this object's own lifecycle; a stale value in the interim is never observed
+#pragma warning disable UAL0018 // the content lives in this window's visual tree only: closing the modal clears both the window reference and the content, so the back-reference cannot outlive the window
         content.container = instance;
-        #pragma warning restore UAL0018
+#pragma warning restore UAL0018
 
         instance.m_Content?.OnBeforeShowModal();
         instance.ShowModal();
@@ -46,4 +42,3 @@ internal partial class ModalWindowContainer : EditorWindow
 
     internal override bool CanMaximize() => false;
 }
-#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

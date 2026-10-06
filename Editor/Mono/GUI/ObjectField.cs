@@ -13,9 +13,9 @@ namespace UnityEditor
 {
     public sealed partial class EditorGUI
     {
-        static private readonly GUIContent s_SceneMismatch = EditorGUIUtility.TrTextContent("Scene mismatch (cross scene references not supported)");
-        static private readonly GUIContent s_TypeMismatch = EditorGUIUtility.TrTextContent("Type mismatch");
-        static private readonly GUIContent s_Select = EditorGUIUtility.TrTextContent("Select");
+        static private readonly GUIContent s_SceneMismatch = L10n.TextContent("Scene mismatch (cross scene references not supported)", null, null, null);
+        static private readonly GUIContent s_TypeMismatch = L10n.TextContent("Type mismatch", null, null, null);
+        static private readonly GUIContent s_Select = L10n.TextContent("Select", null, null, null);
 
         const float k_NullObjectReferenceOpacity = 0.7f;
 

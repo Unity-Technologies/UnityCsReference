@@ -12,12 +12,15 @@ namespace UnityEditor
     [NativeClass("ShaderIncludeImporter", PersistentTypeId = 0x7D5EBFAD)]
     internal sealed partial class ShaderIncludeImporter : AssetImporter
     {
+        internal ShaderIncludeImporter(global::UnityEngine.EntityId id) : base(id) {}
     }
 
     [global::UnityEngine.NativeClass("ShaderInclude", PersistentTypeId = 109)]
     [NativeHeader("Editor/Src/Shaders/ShaderInclude.h")]
     public sealed partial class ShaderInclude : TextAsset
     {
+        internal ShaderInclude(global::UnityEngine.EntityId id) : base(id) {}
+        public ShaderInclude() {}
         public ShaderApiReflection.ShaderIncludeReflection Reflection => GetReflection();
 
         private ShaderApiReflection.ShaderIncludeReflection GetReflection()

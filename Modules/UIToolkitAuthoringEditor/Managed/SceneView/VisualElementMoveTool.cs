@@ -2,8 +2,8 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: UIToolkitAuthoringFramework not yet converted
 using System;
+using Unity.Scripting.LifecycleManagement;
 using UnityEditor;
 using UnityEditor.EditorTools;
 using UnityEditor.SceneManagement;
@@ -30,23 +30,52 @@ namespace Unity.UIToolkit.Editor
                 _ => base.GetEditorToolType(tool),
             };
         }
+
+        public override void PopulateMenu(DropdownMenu menu)
+        {
+            UIViewportContextMenuUtility.PopulateMenu(menu, CommandSources.Menus);
+        }
     }
 
-    [InitializeOnLoad]
-    static class SelectionContextRouter
+    static partial class SelectionContextRouter
     {
-        static SelectionContextRouter()
+        // Reset per code load, so the teardown below cannot force stage-navigation init when the
+        // deferred wiring never got to run.
+        [AutoStaticsCleanupOnCodeReload]
+        static bool s_Subscribed;
+
+        // Subscribing to UIStageNavigation brings up StageNavigationManager (a ScriptableSingleton),
+        // MainStage and its disk-backed StateCache. That must not happen inside the code-load window,
+        // where the editor-resources bake has no asset database yet and loading one asserts. Defer the
+        // wiring to the first editor tick instead.
+        [OnCodeLoaded]
+        static void Initialize()
+        {
+            EditorApplication.delayCall += Subscribe;
+        }
+
+        [OnCodeUnloading]
+        static void Shutdown()
+        {
+            EditorApplication.delayCall -= Subscribe;
+            if (!s_Subscribed)
+                return;
+
+            EditorApplication.delayCall -= ApplyContextSwitch;
+            Selection.selectionChanged -= OnStateChanged;
+            UIStageNavigation.StageSettled -= OnStageChanged;
+            s_Subscribed = false;
+        }
+
+        static void Subscribe()
         {
             Selection.selectionChanged += OnStateChanged;
-            StageNavigationManager.instance.afterSuccessfullySwitchedToStage += OnStageChanged;
-            UIToolkitAuthoringSettings.MainStageAuthoringChanged += OnAuthoringSettingChanged;
-            UIToolkitAuthoringSettings.EnableInSceneAuthoringChanged += OnAuthoringSettingChanged;
+            UIStageNavigation.StageSettled += OnStageChanged;
+            s_Subscribed = true;
             OnStateChanged();
         }
 
         static void OnStageChanged(Stage _) => OnStateChanged();
-
-        static void OnAuthoringSettingChanged(bool _) => OnStateChanged();
 
         static void OnStateChanged()
         {
@@ -184,4 +213,3 @@ namespace Unity.UIToolkit.Editor
         }
     }
 }
-#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

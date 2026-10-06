@@ -15,13 +15,14 @@ namespace UnityEngine
     [NativeHeader("Runtime/Export/Graphics/BillboardRenderer.bindings.h")]
     public sealed class BillboardAsset : Object
     {
+        internal BillboardAsset(global::UnityEngine.EntityId id) : base(id) {}
         public BillboardAsset()
         {
-            Internal_Create(this);
+            SetEntityIdFromConstructor(Internal_Create());
         }
 
         [FreeFunction(Name = "BillboardRenderer_Bindings::Internal_Create")]
-        extern private static void Internal_Create([Writable] BillboardAsset obj);
+        extern private static EntityId Internal_Create();
 
         extern public float width { get; set; }
         extern public float height { get; set; }
@@ -167,6 +168,8 @@ namespace UnityEngine
     [NativeHeader("Runtime/Graphics/Billboard/BillboardRenderer.h")]
     public sealed class BillboardRenderer : Renderer
     {
+        internal BillboardRenderer(global::UnityEngine.EntityId id) : base(id) {}
+        public BillboardRenderer() {}
         extern public BillboardAsset billboard { get; set; }
     }
 }

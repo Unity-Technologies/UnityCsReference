@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System;
 using UnityEngine.Bindings;
 
 namespace UnityEngine
@@ -12,6 +13,8 @@ namespace UnityEngine
     [NativeClass("Grid", PersistentTypeId = 0x094D1FCA)]
     public sealed partial class Grid : GridLayout
     {
+        internal Grid(global::UnityEngine.EntityId id) : base(id) {}
+        public Grid() {}
         ///<summary>The size of each cell in the <see cref="Grid" />.</summary>
         public new extern Vector3 cellSize
         {
@@ -67,5 +70,16 @@ namespace UnityEngine
         ///<seealso cref="GridLayout.CellSwizzle" />
         [FreeFunction("GridBindings::InverseCellSwizzle")]
         public extern static Vector3 InverseSwizzle(GridLayout.CellSwizzle swizzle, Vector3 position);
+
+        ///<summary>Gets the points which outline a cell of the given <see cref="GridLayout.CellLayout" />.</summary>
+        ///<remarks>The points are in cell space, so they describe a cell before any cell size is applied.
+        ///They trace the cell's outline clockwise, so consecutive points are the cell's edges.
+        ///The same points serve every cell of the layout, so they are read straight from the engine and nothing is copied or
+        ///allocated.</remarks>
+        ///<param name="layout">The layout of the cell.</param>
+        ///<returns>The points which outline a cell, in cell space.</returns>
+        ///<seealso cref="GridLayout.GetCellPoints" />
+        [FreeFunction("GridBindings::GetCellPointsForLayout")]
+        public extern static ReadOnlySpan<Vector3> GetCellPoints(GridLayout.CellLayout layout);
     }
 }

@@ -12,6 +12,8 @@ namespace UnityEngine
     [UnityEngine.Scripting.RequiresEngineModule("Tetgen")]
     public sealed partial class LightProbeGroup : Behaviour
     {
+        internal LightProbeGroup(global::UnityEngine.EntityId id) : base(id) {}
+        public LightProbeGroup() {}
         [NativeName("Positions")]
         public extern Vector3[] probePositions { get; set; }
         [NativeName("Dering")]

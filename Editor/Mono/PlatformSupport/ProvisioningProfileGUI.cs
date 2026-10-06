@@ -20,7 +20,7 @@ namespace UnityEditor.PlatformSupport
             GUILayout.Label(titleWithToolTip, EditorStyles.label);
 
             Rect controlRect = EditorGUILayout.GetControlRect(false, 0);
-            GUIContent labelID = EditorGUIUtility.TrTextContent("Profile ID:");
+            GUIContent labelID = L10n.TextContent("Profile ID:", null, null, null);
             EditorGUI.BeginProperty(controlRect, labelID, profileIDProp);
 
             if (GUILayout.Button("Browse", EditorStyles.miniButton))
@@ -48,7 +48,7 @@ namespace UnityEditor.PlatformSupport
             profile.UUID = EditorGUILayout.TextField(labelID, profile.UUID);
             EditorGUI.EndProperty();
 
-            GUIContent labelType = EditorGUIUtility.TrTextContent("Profile Type:");
+            GUIContent labelType = L10n.TextContent("Profile Type:", null, null, null);
 
             EditorGUI.BeginProperty(controlRect, labelType, profileTypeProp);
             profile.type = (ProvisioningProfileType)EditorGUILayout.EnumPopup(labelType, profile.type);
@@ -86,8 +86,8 @@ namespace UnityEditor.PlatformSupport
             EditorGUI.BeginChangeCheck();
             EditorGUI.indentLevel++;
 
-            GUIContent labelID = EditorGUIUtility.TrTextContent("Profile ID:");
-            GUIContent labelType = EditorGUIUtility.TrTextContent("Profile Type:");
+            GUIContent labelID = L10n.TextContent("Profile ID:", null, null, null);
+            GUIContent labelType = L10n.TextContent("Profile Type:", null, null, null);
 
             profile.UUID = EditorGUILayout.TextField(labelID, profile.UUID);
             profile.type = (ProvisioningProfileType)EditorGUILayout.EnumPopup(labelType, profile.type);

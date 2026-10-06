@@ -16,7 +16,7 @@ namespace Unity.Localization.Components;
 /// localized artwork per locale.
 /// </remarks>
 /// <example>
-/// <para>Forward the resolved texture to a UI image.</para>
+/// Forward the resolved texture to a UI image.
 /// <code source="../../../../Modules/LocalizationRuntime/Tests/UTFTests/Localization.Samples/Components/LocalizeTextureEventBindingExample.cs"/>
 /// </example>
 /// <seealso cref="LocalizeAssetEvent{TObject}"/>

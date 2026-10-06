@@ -36,8 +36,8 @@ namespace UnityEditorInternal.Profiling
         static readonly string k_GpuProfilingNotSupportedWithVulkan = L10n.Tr("GPU Profiling is currently not supported when using Vulkan.", null);
         static readonly string k_GpuProfilingNotSupportedWithMetal = L10n.Tr("GPU Profiling is currently not supported when using Metal.", null);
         static readonly string k_GpuProfilingNotSupportedWithOpenGLGPURecorders = L10n.Tr("GPU Profiling is currently not supported in OpenGL when PlayerSettings.\nenableOpenGLProfilerGPURecorders is enabled. (<a playersettingslink=\"Project/Player\" playersettingssearchstring=\"OpenGL: Profiler GPU Recorders\">Click here to edit</a>)", null);
-        static readonly string k_PerformanceWarningMessage = L10n.Tr("Collecting GPU Profiler data disables graphics jobs, causes overhead and reduces the accuracy of the CPU Module. Close this module if you don't need this data.\n\n" +
-            "HDRP and URP Renderers are currently not supported: the profiler won't show most GPU markers if these renderers are enabled.", null);
+        static readonly string k_PerformanceWarningMessage = L10n.Tr("Collecting GPU Profiler data causes overhead and reduces the accuracy of the CPU Module. Close this module if you don't need this data.\n\n" +
+            "Metal is currently not supported: the profiler won't show GPU markers on this graphics API.", null);
 
         [NoAutoStaticsCleanup] // Fixed content, safe to persist
         static readonly Dictionary<GpuProfilingStatisticsAvailabilityStates, string> s_StatisticsAvailabilityStateReason
@@ -81,7 +81,7 @@ namespace UnityEditorInternal.Profiling
             }
         }
 
-        static string GetStatisticsAvailabilityStateReason(int statisticsAvailabilityState)
+        internal static string GetStatisticsAvailabilityStateReason(int statisticsAvailabilityState)
         {
             GpuProfilingStatisticsAvailabilityStates state = (GpuProfilingStatisticsAvailabilityStates)statisticsAvailabilityState;
 
@@ -101,7 +101,7 @@ namespace UnityEditorInternal.Profiling
                                 || (state & GpuProfilingStatisticsAvailabilityStates.NotSupportedWithVulkan) != 0
                             )
                         )
-                            continue; // no need to war about the general case, when a more specific reason was given.
+                            continue; // no need to warn about the general case, when a more specific reason was given.
                         if (s_StatisticsAvailabilityStateReason.ContainsKey(currentBit))
                         {
                             if (string.IsNullOrEmpty(combinedReason))

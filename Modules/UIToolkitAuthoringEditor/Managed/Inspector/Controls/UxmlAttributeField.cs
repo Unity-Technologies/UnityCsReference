@@ -2,7 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: UIToolkitAuthoringFramework not yet converted
 using System;
 using System.Collections.Generic;
 using UnityEditor;
@@ -426,6 +425,7 @@ public partial class UxmlAttributeFieldDecorator : VisualElement, ITrackableProp
         m_OverrideRow.Add(m_ContentContainer);
         RegisterCallback<AttachToPanelEvent>(OnAttachedToPanel);
         RegisterCallback<DetachFromPanelEvent>(OnDetachedFromPanel);
+        RegisterCallback<ChangeEvent<UnityEngine.Object>>(RefuseCircularTemplate, TrickleDown.TrickleDown);
 
         m_RefreshBinding = new RefreshBinding(this);
         this.SetBinding(k_RefreshBindingId, m_RefreshBinding);
@@ -434,9 +434,41 @@ public partial class UxmlAttributeFieldDecorator : VisualElement, ITrackableProp
         SetupContextMenu();
     }
 
+    void RefuseCircularTemplate(ChangeEvent<UnityEngine.Object> evt)
+    {
+        if (evt.newValue is not VisualTreeAsset template || context?.element == null)
+            return;
+
+        // Only the decorator nearest the field handles it, so the warning names the right attribute.
+        if (evt.target is VisualElement field && field.GetFirstAncestorOfType<UxmlAttributeFieldDecorator>() != this)
+            return;
+
+        var editedVta = context.rootSerializedObject?.targetObject as VisualTreeAsset;
+        if (!VisualElementEditingUtility.WillCauseCircularDependency(editedVta, context.element, template))
+            return;
+
+        Debug.LogWarning($"Cannot assign '{template.name}' to '{boundAttributeDescription?.name}' because it would create a circular reference.");
+        evt.StopPropagation();
+        (evt.target as INotifyValueChanged<UnityEngine.Object>)?.SetValueWithoutNotify(evt.previousValue);
+    }
+
     internal void RebindProperty(SerializedProperty property)
     {
         boundProperty = property;
+    }
+
+    /// <summary>
+    /// Drops the properties this decorator tracks, for a document whose shape has changed under them.
+    /// </summary>
+    internal void ReleaseBoundProperties()
+    {
+        // Kept off the boundProperty setter, which also clears the attribute description and would empty
+        // every field label until the rebind that follows this.
+        UntrackPropertyValueChange();
+
+        m_BoundProperty = null;
+        m_BoundPropertyFlags = null;
+        m_BoundPropertyArraySize = null;
     }
 
     void SetupContextMenu()
@@ -517,16 +549,14 @@ public partial class UxmlAttributeFieldDecorator : VisualElement, ITrackableProp
                     }
                 }
             }
+
+            if (context.showsAncestorOverrides && boundAttributeDescription != null)
+                AttributeOverridesMenu.Append(menu, this);
+
             menu.AppendSeparator();
 
             menu.AppendAction(k_UnsetText, (_) => UnsetAttribute(), (_) => CanUnsetAttribute() ? DropdownMenuAction.Status.Normal : DropdownMenuAction.Status.Disabled);
             menu.AppendAction(k_UnsetAllText, (_) => UnsetAllAttributes(), (_) => CanUnsetAllAttributes() ? DropdownMenuAction.Status.Normal : DropdownMenuAction.Status.Disabled);
-
-            if (context.showsAncestorOverrides && boundAttributeDescription != null)
-            {
-                menu.AppendSeparator();
-                AttributeOverridesMenu.Append(menu, context, boundAttributeDescription);
-            }
         };
     }
 
@@ -553,6 +583,9 @@ public partial class UxmlAttributeFieldDecorator : VisualElement, ITrackableProp
 
     void UnsetAttribute()
     {
+        if (!HasLiveContext())
+            return;
+
         var result = UxmlAssetUtilities.SynchronizePath(context, boundProperty.propertyPath, false);
 
         if (!result.success)
@@ -567,8 +600,17 @@ public partial class UxmlAttributeFieldDecorator : VisualElement, ITrackableProp
             context.isInTemplateInstance,
             true);
 
-        context.rootSerializedObject.UpdateIfRequiredOrScript();
+        SyncRootSerializedObjectAfterCommand();
         ScheduleRefresh();
+    }
+
+    bool HasLiveContext() => context?.element != null && boundProperty is { isValid: true };
+
+    // The command can re-clone from inside, which detaches the inspector and nulls the context.
+    void SyncRootSerializedObjectAfterCommand()
+    {
+        if (context?.rootSerializedObject?.isValid == true)
+            context.rootSerializedObject.UpdateIfRequiredOrScript();
     }
 
     readonly record struct UnsetAllAttributesContext(
@@ -651,6 +693,9 @@ public partial class UxmlAttributeFieldDecorator : VisualElement, ITrackableProp
 
     bool CanUnsetAllAttributes()
     {
+        if (!HasLiveContext())
+            return false;
+
         var resolvedContext = ResolveUnsetAllAttributesContext();
 
         return !context.isReadOnly && UxmlAssetUtilities.IsAnyAttributeSet(
@@ -665,6 +710,9 @@ public partial class UxmlAttributeFieldDecorator : VisualElement, ITrackableProp
 
     void UnsetAllAttributes()
     {
+        if (!HasLiveContext())
+            return;
+
         var resolvedContext = ResolveUnsetAllAttributesContext();
 
         if (!resolvedContext.success)
@@ -678,8 +726,8 @@ public partial class UxmlAttributeFieldDecorator : VisualElement, ITrackableProp
             context.isInTemplateInstance,
             resolvedContext.ignoredAttributeNames);
 
-        context.rootSerializedObject.UpdateIfRequiredOrScript();
-        context.editingController.RefreshAllDecorators();
+        SyncRootSerializedObjectAfterCommand();
+        context?.editingController.RefreshAllDecorators();
     }
 
     void UpdateBoundAttribute()
@@ -838,14 +886,52 @@ public partial class UxmlAttributeFieldDecorator : VisualElement, ITrackableProp
         EnableInClassList(s_BoundFieldUssClassName, binding != null);
         OnTrackedPropertySourceChanged?.Invoke(this, boundProperty.propertyPath, false, binding != null, false);
 
+        var isLockedByAncestorOverride = isDrivenByAncestorOverride && context.locksAncestorDrivenFields;
+
         if (m_ContentContainer.bindable is VisualElement bindableElement)
         {
-            bindableElement.SetEnabled(!isBindingSuccessful && !isDrivenByAncestorOverride);
+            bindableElement.SetEnabled(!isBindingSuccessful && !isLockedByAncestorOverride);
         }
+
+        // The first moment a request filed before the selection changed can be honoured.
+        if (AttributeFieldFocusRequest.TryConsume(context.element, GetFullBindingPath(), panel))
+            RevealAndFocus();
     }
 
     internal BindingId GetFullBindingPath() =>
         m_CachedFullBindingPath ??= m_BoundProperty?.GetFullBindingPath() ?? string.Empty;
+
+    /// <summary>
+    /// Brings this field into view and puts the keyboard focus on it, for a caller that sent the user here to
+    /// edit this one attribute.
+    /// </summary>
+    internal void RevealAndFocus()
+    {
+        ExpandEnclosingFoldouts();
+
+        // Scrolling needs the layout the expansion produces, which the next panel update is the first to have.
+        schedule.Execute(() =>
+        {
+            GetFirstAncestorOfType<ScrollView>()?.ScrollTo(this);
+            m_BoundField?.Focus();
+        });
+    }
+
+    void ExpandEnclosingFoldouts()
+    {
+        for (var ancestor = hierarchy.parent; ancestor != null; ancestor = ancestor.hierarchy.parent)
+        {
+            switch (ancestor)
+            {
+                case OverrideFoldout overrideFoldout:
+                    overrideFoldout.value = true;
+                    break;
+                case Foldout foldout:
+                    foldout.value = true;
+                    break;
+            }
+        }
+    }
 
     void OnAttachedToPanel(AttachToPanelEvent evt)
     {
@@ -975,4 +1061,3 @@ public partial class UxmlAttributeFieldDecorator : VisualElement, ITrackableProp
         UxmlAssetUtilities.RemoveArrayItemFromSerializedData(context, boundProperty, index);
     }
 }
-#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

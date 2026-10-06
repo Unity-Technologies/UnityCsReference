@@ -31,12 +31,42 @@ namespace UnityEditor.UIElements.Debugger
 
         DynamicAtlasPage m_SelectedAtlasPage;
 
+        // Debuggers get recreated as new instances nobody caches (UUM-150663), and several can be open at once,
+        // so prefer one that inspects a panel. Never open one here.
+        static UIElementsDebugger FindDebugger()
+        {
+            if (UIElementsDebugger != null && HasSelectedPanel(UIElementsDebugger))
+                return UIElementsDebugger;
+
+            UIElementsDebugger firstOpenDebugger = null;
+            foreach (var debugger in Resources.FindObjectsOfTypeAll<UIElementsDebugger>())
+            {
+                if (HasSelectedPanel(debugger))
+                {
+                    UIElementsDebugger = debugger;
+                    return debugger;
+                }
+
+                if (firstOpenDebugger == null)
+                    firstOpenDebugger = debugger;
+            }
+
+            // No debugger inspects a panel: keep the cached one while it is open, so the choice stays stable.
+            if (UIElementsDebugger == null)
+                UIElementsDebugger = firstOpenDebugger;
+
+            return UIElementsDebugger;
+        }
+
+        static bool HasSelectedPanel(UIElementsDebugger debugger) => debugger.debuggerContext?.selection?.panel != null;
+
         public DynamicAtlas GetDynamicAtlas()
         {
-            if (null == UIElementsDebugger)
+            var debugger = FindDebugger();
+            if (debugger == null)
                 return null;
 
-            var panel = UIElementsDebugger.debuggerContext?.selection?.panel as BaseVisualElementPanel;
+            var panel = debugger.debuggerContext?.selection?.panel as BaseVisualElementPanel;
 
             return panel?.atlas as DynamicAtlas;
         }
@@ -44,14 +74,6 @@ namespace UnityEditor.UIElements.Debugger
         void FetchAtlasPage(AtlasType atlasType)
         {
             m_SelectedAtlasPage = null;
-
-            if (null == UIElementsDebugger)
-                return;
-
-            // This code could probably be dropped right into the final product
-            var debuggerContext = UIElementsDebugger.debuggerContext;
-            if (null == debuggerContext)
-                return;
 
             DynamicAtlas atlas = GetDynamicAtlas();
             if (atlas == null)

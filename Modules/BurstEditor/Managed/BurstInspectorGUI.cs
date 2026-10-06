@@ -2,8 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: Burst not yet converted
-#pragma warning disable UAL0010,UAL0011,UAL0012,UAL0013,UAL0014 // AutoStaticsCleanup: Burst not yet converted
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -16,6 +14,7 @@ using UnityEditor.IMGUI.Controls;
 using UnityEngine;
 using TreeViewItem = UnityEditor.IMGUI.Controls.TreeViewItem<int>;
 using TreeViewState = UnityEditor.IMGUI.Controls.TreeViewState<int>;
+using Unity.Scripting.LifecycleManagement;
 
 [assembly: InternalsVisibleTo("Unity.Burst.Editor.Tests")]
 [assembly: InternalsVisibleTo("Unity.Burst.Tester.Editor.Tests")]
@@ -23,8 +22,9 @@ using TreeViewState = UnityEditor.IMGUI.Controls.TreeViewState<int>;
 
 namespace Unity.Burst.Editor
 {
-    internal class BurstInspectorGUI : EditorWindow
+    internal partial class BurstInspectorGUI : EditorWindow
     {
+        [AutoStaticsCleanupOnCodeReload]
         private static bool Initialized;
 
         private static void EnsureInitialized()
@@ -72,6 +72,7 @@ namespace Unity.Burst.Editor
 
         private bool SupportsEnhancedRendering => _disasmKind == DisassemblyKind.Asm || _disasmKind == DisassemblyKind.OptimizedIR || _disasmKind == DisassemblyKind.UnoptimizedIR;
 
+        [NoAutoStaticsCleanup] // lazily rebuilt on demand by GetDisasmOptions() when null; not dependent on reload-sensitive state
         private static string[] DisasmOptions;
 
         internal static string[] GetDisasmOptions()
@@ -93,6 +94,7 @@ namespace Unity.Burst.Editor
             return DisasmOptions;
         }
 
+        [NoAutoStaticsCleanup] // UI layout state only, safe to persist across reload
         private static readonly SplitterState TreeViewSplitterState = new SplitterState(new float[] { 30, 70 }, new int[] { 155, 128 }, null);
 
         private static readonly string[] TargetCpuNames = Enum.GetNames(typeof(BurstTargetCpu));
@@ -103,6 +105,7 @@ namespace Unity.Burst.Editor
             8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 20
         };
 
+        [NoAutoStaticsCleanup] // lazily rebuilt on demand when null; not dependent on reload-sensitive state
         private static string[] _fontSizesText;
         internal const int _scrollbarThickness = 14;
 
@@ -1144,10 +1147,10 @@ namespace Unity.Burst.Editor
                     {
                         GenericMenu menu = new GenericMenu();
 
-                        menu.AddItem(EditorGUIUtility.TrTextContent("Copy Selection"), false, _textArea.DoSelectionCopy);
-                        menu.AddItem(EditorGUIUtility.TrTextContent("Copy Color Tags"), _textArea.CopyColorTags, _textArea.ChangeCopyMode);
-                        menu.AddItem(EditorGUIUtility.TrTextContent("Select All"), false, _textArea.SelectAll);
-                        menu.AddItem(EditorGUIUtility.TrTextContent($"Find in {DisassemblyKindContents[(int)_disasmKind].text}"), _searchBarVisible, EnableDisableSearchBar);
+                        menu.AddItem(L10n.TextContent("Copy Selection", null, null, null), false, _textArea.DoSelectionCopy);
+                        menu.AddItem(L10n.TextContent("Copy Color Tags", null, null, null), _textArea.CopyColorTags, _textArea.ChangeCopyMode);
+                        menu.AddItem(L10n.TextContent("Select All", null, null, null), false, _textArea.SelectAll);
+                        menu.AddItem(L10n.TextContent($"Find in {DisassemblyKindContents[(int)_disasmKind].text}", null, null, null), _searchBarVisible, EnableDisableSearchBar);
                         menu.ShowAsContext();
 
                         _leftClicked = false;
@@ -1590,5 +1593,3 @@ namespace Unity.Burst.Editor
         }
     }
 }
-#pragma warning restore UAL0010,UAL0011,UAL0012,UAL0013,UAL0014
-#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

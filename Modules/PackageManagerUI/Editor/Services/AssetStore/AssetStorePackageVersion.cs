@@ -46,7 +46,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         public override bool isFullyFetched => true;
 
-        public override IReadOnlyCollection<UIError> errors => Array.Empty<UIError>();
+        public override IReadOnlyList<UIError> errors => Array.Empty<UIError>();
 
         public override bool isDirectDependency => true;
 
@@ -62,7 +62,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         public override IReadOnlyList<PackageSizeInfo> sizes => m_SizeInfos;
 
-        public override IReadOnlyCollection<Asset> importedAssets => m_ImportedPackage;
+        public override IReadOnlyList<Asset> importedAssets => m_ImportedPackage;
 
         public AssetStorePackageVersion(AssetStoreProductInfo productInfo, long uploadId = 0, AssetStoreLocalInfo localInfo = null, AssetStoreImportedPackage importedPackage = null)
         {

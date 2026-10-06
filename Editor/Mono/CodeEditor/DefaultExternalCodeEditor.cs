@@ -15,7 +15,7 @@ namespace UnityEditor
 {
     internal class DefaultExternalCodeEditor : IExternalCodeEditor
     {
-        static readonly GUIContent k_ResetArguments = EditorGUIUtility.TrTextContent("Reset argument");
+        static readonly GUIContent k_ResetArguments = L10n.TextContent("Reset argument", null, null, null);
         static readonly string[] supportedExtensions = { "json", "asmdef", "log", "cs", "uxml", "uss", "shader", "compute", "cginc", "hlsl", "glslinc", "template", "raytrace" };
         static bool IsOSX => Application.platform == RuntimePlatform.OSXEditor;
         static bool IsWindows => Application.platform == RuntimePlatform.WindowsEditor;

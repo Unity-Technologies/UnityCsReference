@@ -2,7 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: AssetImporters not yet converted
 using System;
 using UnityEngine;
 using UnityEngine.Pool;
@@ -161,78 +160,78 @@ namespace UnityEditor
 
         private class Styles
         {
-            public GUIContent ErrorsFoundWhileImportingThisAnimation = EditorGUIUtility.TrTextContentWithIcon("Error(s) found while importing this animation file. Open \"Import Messages\" foldout below for more details.", MessageType.Error);
-            public GUIContent WarningsFoundWhileImportingRig = EditorGUIUtility.TrTextContentWithIcon("Warning(s) found while importing rig in this animation file. Open \"Rig\" tab for more details.", MessageType.Warning);
-            public GUIContent WarningsFoundWhileImportingThisAnimation = EditorGUIUtility.TrTextContentWithIcon("Warning(s) found while importing this animation file. Open \"Import Messages\" foldout below for more details.", MessageType.Warning);
-            public GUIContent ImportAnimations = EditorGUIUtility.TrTextContent("Import Animation", "Controls if animations are imported.");
+            public GUIContent ErrorsFoundWhileImportingThisAnimation = L10n.TextContentWithIcon("Error(s) found while importing this animation file. Open \"Import Messages\" foldout below for more details.", MessageType.Error, null);
+            public GUIContent WarningsFoundWhileImportingRig = L10n.TextContentWithIcon("Warning(s) found while importing rig in this animation file. Open \"Rig\" tab for more details.", MessageType.Warning, null);
+            public GUIContent WarningsFoundWhileImportingThisAnimation = L10n.TextContentWithIcon("Warning(s) found while importing this animation file. Open \"Import Messages\" foldout below for more details.", MessageType.Warning, null);
+            public GUIContent ImportAnimations = L10n.TextContent("Import Animation", "Controls if animations are imported.", null, null);
 
             public GUIStyle numberStyle = new GUIStyle(EditorStyles.label);
 
-            public GUIContent AnimWrapModeLabel = EditorGUIUtility.TrTextContent("Wrap Mode", "The default Wrap Mode for the animation in the mesh being imported.");
+            public GUIContent AnimWrapModeLabel = L10n.TextContent("Wrap Mode", "The default Wrap Mode for the animation in the mesh being imported.", null, null);
 
             public GUIContent[] AnimWrapModeOpt =
             {
-                EditorGUIUtility.TrTextContent("Default", "The animation plays as specified in the animation splitting options below."),
-                EditorGUIUtility.TrTextContent("Once", "The animation plays through to the end once and then stops."),
-                EditorGUIUtility.TrTextContent("Loop", "The animation plays through and then restarts when the end is reached."),
-                EditorGUIUtility.TrTextContent("PingPong", "The animation plays through and then plays in reverse from the end to the start, and so on."),
-                EditorGUIUtility.TrTextContent("ClampForever", "The animation plays through, but the last frame is repeated indefinitely. This is not the same as Once mode because playback does not technically stop at the last frame (which is useful when blending animations).")
+                L10n.TextContent("Default", "The animation plays as specified in the animation splitting options below.", null, null),
+                L10n.TextContent("Once", "The animation plays through to the end once and then stops.", null, null),
+                L10n.TextContent("Loop", "The animation plays through and then restarts when the end is reached.", null, null),
+                L10n.TextContent("PingPong", "The animation plays through and then plays in reverse from the end to the start, and so on.", null, null),
+                L10n.TextContent("ClampForever", "The animation plays through, but the last frame is repeated indefinitely. This is not the same as Once mode because playback does not technically stop at the last frame (which is useful when blending animations).", null, null)
             };
 
-            public GUIContent BakeIK = EditorGUIUtility.TrTextContent("Bake Animations", "Enable this when using IK or simulation in your animation package. Unity will convert to forward kinematics on import. This option is available only for Maya, 3dsMax and Cinema4D files.");
-            public GUIContent ResampleCurves = EditorGUIUtility.TrTextContent("Resample Curves ", " Curves will be resampled on every frame. Use this if you're having issues with the interpolation between keys in your original animation. Disable this to keep curves as close as possible to how they were originally authored.");
-            public GUIContent AnimCompressionLabel = EditorGUIUtility.TrTextContent("Anim. Compression", "The type of compression that will be applied to this mesh's animation(s).");
+            public GUIContent BakeIK = L10n.TextContent("Bake Animations", "Enable this when using IK or simulation in your animation package. Unity will convert to forward kinematics on import. This option is available only for Maya, 3dsMax and Cinema4D files.", null, null);
+            public GUIContent ResampleCurves = L10n.TextContent("Resample Curves ", " Curves will be resampled on every frame. Use this if you're having issues with the interpolation between keys in your original animation. Disable this to keep curves as close as possible to how they were originally authored.", null, null);
+            public GUIContent AnimCompressionLabel = L10n.TextContent("Anim. Compression", "The type of compression that will be applied to this mesh's animation(s).", null, null);
             public GUIContent[] AnimCompressionOptLegacy =
             {
-                EditorGUIUtility.TrTextContent("Off", "Disables animation compression. This means that Unity doesn't reduce keyframe count on import, which leads to the highest precision animations, but slower performance and bigger file and runtime memory size. It is generally not advisable to use this option - if you need higher precision animation, you should enable keyframe reduction and lower allowed Animation Compression Error values instead."),
-                EditorGUIUtility.TrTextContent("Keyframe Reduction", "Reduces keyframes on import. If selected, the Animation Compression Errors options are displayed."),
-                EditorGUIUtility.TrTextContent("Keyframe Reduction and Compression", "Reduces keyframes on import and compresses keyframes when storing animations in files. This affects only file size - the runtime memory size is the same as Keyframe Reduction. If selected, the Animation Compression Errors options are displayed.")
+                L10n.TextContent("Off", "Disables animation compression. This means that Unity doesn't reduce keyframe count on import, which leads to the highest precision animations, but slower performance and bigger file and runtime memory size. It is generally not advisable to use this option - if you need higher precision animation, you should enable keyframe reduction and lower allowed Animation Compression Error values instead.", null, null),
+                L10n.TextContent("Keyframe Reduction", "Reduces keyframes on import. If selected, the Animation Compression Errors options are displayed.", null, null),
+                L10n.TextContent("Keyframe Reduction and Compression", "Reduces keyframes on import and compresses keyframes when storing animations in files. This affects only file size - the runtime memory size is the same as Keyframe Reduction. If selected, the Animation Compression Errors options are displayed.", null, null)
             };
             public GUIContent[] AnimCompressionOpt =
             {
-                EditorGUIUtility.TrTextContent("Off", "Disables animation compression. This means that Unity doesn't reduce keyframe count on import, which leads to the highest precision animations, but slower performance and bigger file and runtime memory size. It is generally not advisable to use this option - if you need higher precision animation, you should enable keyframe reduction and lower allowed Animation Compression Error values instead."),
-                EditorGUIUtility.TrTextContent("Keyframe Reduction", "Reduces keyframes on import. If selected, the Animation Compression Errors options are displayed."),
-                EditorGUIUtility.TrTextContent("Optimal", "Reduces keyframes on import and choose between different curve representations to reduce memory usage at runtime. This affects the runtime memory size and how curves are evaluated.")
+                L10n.TextContent("Off", "Disables animation compression. This means that Unity doesn't reduce keyframe count on import, which leads to the highest precision animations, but slower performance and bigger file and runtime memory size. It is generally not advisable to use this option - if you need higher precision animation, you should enable keyframe reduction and lower allowed Animation Compression Error values instead.", null, null),
+                L10n.TextContent("Keyframe Reduction", "Reduces keyframes on import. If selected, the Animation Compression Errors options are displayed.", null, null),
+                L10n.TextContent("Optimal", "Reduces keyframes on import and choose between different curve representations to reduce memory usage at runtime. This affects the runtime memory size and how curves are evaluated.", null, null)
             };
 
-            public GUIContent AnimRotationErrorLabel = EditorGUIUtility.TrTextContent("Rotation Error", "Defines how much rotation curves should be reduced. The smaller value you use - the higher precision you get.");
-            public GUIContent AnimPositionErrorLabel = EditorGUIUtility.TrTextContent("Position Error", "Defines how much position curves should be reduced. The smaller value you use - the higher precision you get.");
-            public GUIContent AnimScaleErrorLabel = EditorGUIUtility.TrTextContent("Scale Error", "Defines how much scale curves should be reduced. The smaller value you use - the higher precision you get.");
-            public GUIContent AnimationCompressionHelp = EditorGUIUtility.TrTextContent("Rotation error is defined as maximum angle deviation allowed in degrees, for others it is defined as maximum distance/delta deviation allowed in percents");
-            public GUIContent clipMultiEditInfo = EditorGUIUtility.TrTextContent("Multi-object editing of clips not supported.");
+            public GUIContent AnimRotationErrorLabel = L10n.TextContent("Rotation Error", "Defines how much rotation curves should be reduced. The smaller value you use - the higher precision you get.", null, null);
+            public GUIContent AnimPositionErrorLabel = L10n.TextContent("Position Error", "Defines how much position curves should be reduced. The smaller value you use - the higher precision you get.", null, null);
+            public GUIContent AnimScaleErrorLabel = L10n.TextContent("Scale Error", "Defines how much scale curves should be reduced. The smaller value you use - the higher precision you get.", null, null);
+            public GUIContent AnimationCompressionHelp = L10n.TextContent("Rotation error is defined as maximum angle deviation allowed in degrees, for others it is defined as maximum distance/delta deviation allowed in percents", null, null, null);
+            public GUIContent clipMultiEditInfo = L10n.TextContent("Multi-object editing of clips not supported.", null, null, null);
 
-            public GUIContent updateMuscleDefinitionFromSource = EditorGUIUtility.TrTextContent("Update", "Update the copy of the muscle definition from the source.");
+            public GUIContent updateMuscleDefinitionFromSource = L10n.TextContent("Update", "Update the copy of the muscle definition from the source.", null, null);
 
-            public GUIContent MotionSetting = EditorGUIUtility.TrTextContent("Motion", "Advanced setting for root motion and blending pivot");
-            public GUIContent MotionNode = EditorGUIUtility.TrTextContent("Root Motion Node", "Define a transform node that will be used to create root motion curves");
-            public GUIContent ImportMessages = EditorGUIUtility.TrTextContent("Import Messages");
+            public GUIContent MotionSetting = L10n.TextContent("Motion", "Advanced setting for root motion and blending pivot", null, null);
+            public GUIContent MotionNode = L10n.TextContent("Root Motion Node", "Define a transform node that will be used to create root motion curves", null, null);
+            public GUIContent ImportMessages = L10n.TextContent("Import Messages", null, null, null);
 
-            public GUIContent GenerateRetargetingWarnings = EditorGUIUtility.TrTextContent("Generate Retargeting Quality Report");
-            public GUIContent RetargetingQualityCompares = EditorGUIUtility.TrTextContentWithIcon("Retargeting Quality compares retargeted with original animation. It reports average and maximum position/orientation difference for body parts. It may slow down import time of this file.", MessageType.Info);
-            public GUIContent AnimationDataWas = EditorGUIUtility.TrTextContentWithIcon("Animation data was imported using a deprecated Generation option in the Rig tab. Please switch to a non-deprecated import mode in the Rig tab to be able to edit the animation import settings.", MessageType.Info);
-            public GUIContent TheAnimationsSettingsCanBe = EditorGUIUtility.TrTextContentWithIcon("The animations settings can be edited after clicking Apply.", MessageType.Info);
-            public GUIContent ErrorsFoundWhileImporting = EditorGUIUtility.TrTextContentWithIcon("Error(s) found while importing rig in this animation file. Open \"Rig\" tab for more details.", MessageType.Error);
-            public GUIContent NoAnimationDataAvailable = EditorGUIUtility.TrTextContentWithIcon("No animation data available in this model.", MessageType.Info);
-            public GUIContent TheRigsOfTheSelectedModelsHave = EditorGUIUtility.TrTextContentWithIcon("The rigs of the selected models have different Animation Types.", MessageType.Info);
-            public GUIContent TheRigsOfTheSelectedModelsAre = EditorGUIUtility.TrTextContentWithIcon("The rigs of the selected models are not setup to handle animation. Change the Animation Type in the Rig tab and click Apply.", MessageType.Info);
-            public GUIContent Clips = EditorGUIUtility.TrTextContent("Clips");
-            public GUIContent ClipName = EditorGUIUtility.TrTextContent("Clip Name");
-            public GUIContent TakeName = EditorGUIUtility.TrTextContent("Take Reference Name", "Defines the name of the referenced clip that these values will be applied to. If referenced clip is not present, these clip values will be ignored.");
-            public GUIContent Start = EditorGUIUtility.TrTextContent("Start");
-            public GUIContent End = EditorGUIUtility.TrTextContent("End");
-            public GUIContent MaskHasAPath = EditorGUIUtility.TrTextContent("Mask has a path that does not match the transform hierarchy. Animation may not import correctly.");
-            public GUIContent UpdateMask = EditorGUIUtility.TrTextContent("Update Mask");
-            public GUIContent SourceMaskHasChanged = EditorGUIUtility.TrTextContent("Source Mask has changed since last import and must be updated.");
-            public GUIContent SourceMaskHasAPath = EditorGUIUtility.TrTextContent("Source Mask has a path that does not match the transform hierarchy. Animation may not import correctly.");
+            public GUIContent GenerateRetargetingWarnings = L10n.TextContent("Generate Retargeting Quality Report", null, null, null);
+            public GUIContent RetargetingQualityCompares = L10n.TextContentWithIcon("Retargeting Quality compares retargeted with original animation. It reports average and maximum position/orientation difference for body parts. It may slow down import time of this file.", MessageType.Info, null);
+            public GUIContent AnimationDataWas = L10n.TextContentWithIcon("Animation data was imported using a deprecated Generation option in the Rig tab. Please switch to a non-deprecated import mode in the Rig tab to be able to edit the animation import settings.", MessageType.Info, null);
+            public GUIContent TheAnimationsSettingsCanBe = L10n.TextContentWithIcon("The animations settings can be edited after clicking Apply.", MessageType.Info, null);
+            public GUIContent ErrorsFoundWhileImporting = L10n.TextContentWithIcon("Error(s) found while importing rig in this animation file. Open \"Rig\" tab for more details.", MessageType.Error, null);
+            public GUIContent NoAnimationDataAvailable = L10n.TextContentWithIcon("No animation data available in this model.", MessageType.Info, null);
+            public GUIContent TheRigsOfTheSelectedModelsHave = L10n.TextContentWithIcon("The rigs of the selected models have different Animation Types.", MessageType.Info, null);
+            public GUIContent TheRigsOfTheSelectedModelsAre = L10n.TextContentWithIcon("The rigs of the selected models are not setup to handle animation. Change the Animation Type in the Rig tab and click Apply.", MessageType.Info, null);
+            public GUIContent Clips = L10n.TextContent("Clips", null, null, null);
+            public GUIContent ClipName = L10n.TextContent("Clip Name", null, null, null);
+            public GUIContent TakeName = L10n.TextContent("Take Reference Name", "Defines the name of the referenced clip that these values will be applied to. If referenced clip is not present, these clip values will be ignored.", null, null);
+            public GUIContent Start = L10n.TextContent("Start", null, null, null);
+            public GUIContent End = L10n.TextContent("End", null, null, null);
+            public GUIContent MaskHasAPath = L10n.TextContent("Mask has a path that does not match the transform hierarchy. Animation may not import correctly.", null, null, null);
+            public GUIContent UpdateMask = L10n.TextContent("Update Mask", null, null, null);
+            public GUIContent SourceMaskHasChanged = L10n.TextContent("Source Mask has changed since last import and must be updated.", null, null, null);
+            public GUIContent SourceMaskHasAPath = L10n.TextContent("Source Mask has a path that does not match the transform hierarchy. Animation may not import correctly.", null, null, null);
 
-            public GUIContent Mask = EditorGUIUtility.TrTextContent("Mask", "Configure the mask for this clip to remove unnecessary curves.");
+            public GUIContent Mask = L10n.TextContent("Mask", "Configure the mask for this clip to remove unnecessary curves.", null, null);
 
-            public GUIContent ImportAnimatedCustomProperties = EditorGUIUtility.TrTextContent("Import Animated Custom Properties", "Controls if animated custom properties are imported.");
-            public GUIContent ImportConstraints = EditorGUIUtility.TrTextContent("Import Constraints", "Controls if the constraints are imported.");
-            public GUIContent RemoveConstantScaleCurves = EditorGUIUtility.TrTextContent("Remove Constant Scale Curves", "Removes constant animation curves with values identical to the object initial scale value.");
-            public GUIContent ClipList = EditorGUIUtility.TrTextContent("Animation Clip List", "List of animation clips included in the model.");
-            public GUIContent UnreferencedTakesMessage = EditorGUIUtility.TrTextContentWithIcon("This file contains animation take(s) that are not in the Clips list. You can add them using the Source Take dropdown on each clip, or import all unreferenced takes below.", MessageType.Info);
-            public GUIContent ImportUnreferencedTakes = EditorGUIUtility.TrTextContent("Import Unreferenced Takes", "Add clips for all takes from the file that are not yet in the Clips list.");
+            public GUIContent ImportAnimatedCustomProperties = L10n.TextContent("Import Animated Custom Properties", "Controls if animated custom properties are imported.", null, null);
+            public GUIContent ImportConstraints = L10n.TextContent("Import Constraints", "Controls if the constraints are imported.", null, null);
+            public GUIContent RemoveConstantScaleCurves = L10n.TextContent("Remove Constant Scale Curves", "Removes constant animation curves with values identical to the object initial scale value.", null, null);
+            public GUIContent ClipList = L10n.TextContent("Animation Clip List", "List of animation clips included in the model.", null, null);
+            public GUIContent UnreferencedTakesMessage = L10n.TextContentWithIcon("This file contains animation take(s) that are not in the Clips list. You can add them using the Source Take dropdown on each clip, or import all unreferenced takes below.", MessageType.Info, null);
+            public GUIContent ImportUnreferencedTakes = L10n.TextContent("Import Unreferenced Takes", "Add clips for all takes from the file that are not yet in the Clips list.", null, null);
 
             public Styles()
             {
@@ -304,9 +303,9 @@ namespace UnityEditor
             string[] transformPaths = singleImporter.transformPaths;
             m_MotionNodeList = new GUIContent[transformPaths.Length + 1];
 
-            m_MotionNodeList[0] = EditorGUIUtility.TrTextContent("<None>");
+            m_MotionNodeList[0] = L10n.TextContent("<None>", null, null, null);
             if (m_MotionNodeList.Length > 1)
-                m_MotionNodeList[1] = EditorGUIUtility.TrTextContent("<Root Transform>");
+                m_MotionNodeList[1] = L10n.TextContent("<Root Transform>", null, null, null);
 
             for (int i = 1; i < transformPaths.Length; i++)
                 m_MotionNodeList[i + 1] = new GUIContent(transformPaths[i]);
@@ -1277,4 +1276,3 @@ namespace UnityEditor
         }
     }
 }
-#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

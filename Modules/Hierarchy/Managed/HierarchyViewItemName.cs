@@ -2,7 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: NativeHierarchyContainer not yet converted
 using System;
 using UnityEngine;
 using UnityEngine.Bindings;
@@ -30,6 +29,10 @@ namespace Unity.Hierarchy
         TextField TextField { get; } = new();
 
         bool m_PrewarmControl;
+        string m_InitialText;
+
+        /// <summary>Whether the field holds anything other than the text <see cref="BeginRename"/> seeded it with.</summary>
+        internal bool TextWasEdited => !string.Equals(TextField.value, m_InitialText, StringComparison.Ordinal);
 
         public HierarchyViewItemName()
         {
@@ -52,7 +55,9 @@ namespace Unity.Hierarchy
             TextField.RegisterCallback<BlurEvent>(OnBlurEvent);
         }
 
-        public void BeginRename()
+        public void BeginRename() => BeginRename(Text);
+
+        internal void BeginRename(string initialText)
         {
             if (IsRenaming)
                 return;
@@ -64,7 +69,8 @@ namespace Unity.Hierarchy
             Label.style.display = DisplayStyle.None;
             TextField.style.display = DisplayStyle.Flex;
 
-            TextField.value = Text;
+            m_InitialText = initialText;
+            TextField.value = initialText;
             TextField.Q<TextElement>().Focus();
 
             OnBeginRename?.Invoke();
@@ -89,7 +95,7 @@ namespace Unity.Hierarchy
             if (!canceled && !string.IsNullOrEmpty(TextField.value))
                 Label.text = TextField.value;
 
-            OnEndRename?.Invoke(Text, canceled);
+            OnEndRename?.Invoke(canceled ? Text : TextField.value, canceled);
         }
 
         void OnMouseUpEvent(MouseUpEvent evt)
@@ -147,4 +153,3 @@ namespace Unity.Hierarchy
         }
     }
 }
-#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

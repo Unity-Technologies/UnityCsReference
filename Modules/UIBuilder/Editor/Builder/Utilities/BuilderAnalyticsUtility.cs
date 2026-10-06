@@ -60,8 +60,14 @@ namespace Unity.UI.Builder
         public static BuilderSaveEventData cachedSaveEventData { get; private set; }
 
         [AutoStaticsCleanupOnCodeReload]
+        // Rebuilt together with typeCache the next time an analytics event is sent, since that path
+        // re-queries the user assemblies whenever the cache is null.
+        [IgnoreForUAL0015("User-assembly set rebuilt with typeCache on the next analytics event")]
         static HashSet<string> userAssemblies;
         [AutoStaticsCleanupOnCodeReload]
+        // Rebuilt by scanning the loaded user assemblies the next time an analytics event is sent, which is
+        // exactly what should happen after a code load since the type set may have changed.
+        [IgnoreForUAL0015("Type lookup rebuilt from the loaded user assemblies on the next analytics event")]
         internal static Dictionary<string, Type> typeCache;
 
         /// <summary>

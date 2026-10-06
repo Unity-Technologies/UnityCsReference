@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System.Linq;
+using Unity.ProjectAuditor.Editor.UI.Framework;
 using Unity.ProjectAuditor.Editor.Utils;
 using Unity.Scripting.LifecycleManagement;
 using UnityEditor;
@@ -39,7 +40,7 @@ namespace Unity.ProjectAuditor.Editor
             if (IsInstalled)
             {
                 LatestVersion = packageInfo.versions.latest;
-                IsLatest = LatestVersion == packageInfo.version;
+                IsLatest = Utility.CompareVersions(LatestVersion, packageInfo.version) <= 0;
                 IsLocal = packageInfo.source == PackageSource.Local;
                 Version = packageInfo.version;
                 var splitVersion = packageInfo.version.Split('.');

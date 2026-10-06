@@ -16,8 +16,9 @@ namespace Unity.ProjectAuditor.Editor.UI
         private bool m_ShowBeforeUpgrade = true;
         private bool m_ShowAfterUpgrade = true;
 
-        Stats m_BeforeUpgradeStats;
-        Stats m_AfterUpgradeStats;
+        StatSeverities m_CombinedSeverities;
+        StatSeverities m_BeforeUpgradeSeverities;
+        StatSeverities m_AfterUpgradeSeverities;
 
         TopTen m_BeforeUpgradeTopTen = NewTopTen();
         TopTen m_AfterUpgradeTopTen = NewTopTen();
@@ -52,8 +53,9 @@ namespace Unity.ProjectAuditor.Editor.UI
         {
             base.ResetStats();
 
-            m_BeforeUpgradeStats = NewStats();
-            m_AfterUpgradeStats = NewStats();
+            m_CombinedSeverities = new StatSeverities();
+            m_BeforeUpgradeSeverities = new StatSeverities();
+            m_AfterUpgradeSeverities = new StatSeverities();
         }
 
         protected override void RefreshStats()
@@ -69,10 +71,12 @@ namespace Unity.ProjectAuditor.Editor.UI
                 if (!MatchesSummaryFilter(issue))
                     continue;
 
+                AddSeverityStats(issue, ref m_CombinedSeverities);
+
                 if (CanFixBeforeUpgrade(issue))
-                    AccumulateStat(issue, ref m_BeforeUpgradeStats);
+                    AddSeverityStats(issue, ref m_BeforeUpgradeSeverities);
                 else
-                    AccumulateStat(issue, ref m_AfterUpgradeStats);
+                    AddSeverityStats(issue, ref m_AfterUpgradeSeverities);
             }
         }
 
@@ -89,11 +93,6 @@ namespace Unity.ProjectAuditor.Editor.UI
             return Utility.VersionToInt(minVersion) <= kUnityVersionInt;
         }
 
-        static int TotalIssues(Stats stats)
-        {
-            return stats.NumCodeIssues + stats.NumAssetIssues + stats.NumGameObjectIssues + stats.NumSettingIssues;
-        }
-
         public override void DrawContent()
         {
             RefreshIfDirty();
@@ -105,9 +104,16 @@ namespace Unity.ProjectAuditor.Editor.UI
             EditorGUILayout.Space();
             DrawUpgradeVersions();
             EditorGUILayout.Space();
-            DrawBeforeUpgradeSection();
-            EditorGUILayout.Space();
-            DrawAfterUpgradeSection();
+            DrawSeverityBreakdown();
+
+            if (!m_ViewManager.HasPendingCategories() && m_CombinedSeverities.TotalExcludingIgnored > 0)
+            {
+                EditorGUILayout.Space();
+                DrawBeforeUpgradeSection();
+                EditorGUILayout.Space();
+                DrawAfterUpgradeSection();
+            }
+
             EditorGUILayout.Space();
             DrawSessionInformationSection();
         }
@@ -187,11 +193,55 @@ namespace Unity.ProjectAuditor.Editor.UI
             EditorGUILayout.EndVertical();
         }
 
+        void DrawSeverityBreakdown()
+        {
+            EditorGUILayout.BeginVertical(GUI.skin.box);
+
+            EditorGUILayout.LabelField(SharedContents.Summary, SharedStyles.BoldLabel);
+
+            // In progress
+            if (m_ViewManager.HasPendingCategories())
+            {
+                DrawAnalysisInProgress();
+                EditorGUILayout.EndVertical();
+                return;
+            }
+
+            // No issues
+            if (m_CombinedSeverities.Total == 0)
+            {
+                EditorGUILayout.LabelField(Contents.NoIssuesText, SharedStyles.Label);
+                EditorGUILayout.EndVertical();
+                return;
+            }
+
+            // Major issue count
+            if (m_CombinedSeverities.MajorAndCritical == 0)
+                EditorGUILayout.LabelField(Contents.NoMajorIssuesText, SharedStyles.Label);
+            else
+                EditorGUILayout.LabelField(string.Format(m_CombinedSeverities.MajorAndCritical == 1 ? Contents.SevereCountFormat : Contents.SevereCountPluralFormat, m_CombinedSeverities.MajorAndCritical), SharedStyles.Label);
+
+            GUILayout.Space(6);
+
+            DrawSeverityBar(m_CombinedSeverities, horizontalPadding: 2);
+
+            EditorGUILayout.EndVertical();
+        }
+
+        static void DrawAnalysisInProgress()
+        {
+            using (new EditorGUILayout.HorizontalScope())
+            {
+                GUILayout.Space(20);
+                DrawAnalysisInProgressLabel(Contents.Upgrade);
+            }
+        }
+
         void DrawBeforeUpgradeSection()
         {
             EditorGUILayout.BeginVertical(GUI.skin.box);
 
-            var issueCount = TotalIssues(m_BeforeUpgradeStats);
+            var issueCount = m_BeforeUpgradeSeverities.TotalExcludingIgnored;
             var foldoutLabel = (issueCount == 1) ? Contents.BeforeUpgrade : Contents.BeforeUpgradePlural;
             m_ShowBeforeUpgrade = Utility.BoldFoldout(m_ShowBeforeUpgrade, Utility.TempContent(string.Format(foldoutLabel, issueCount)));
             if (m_ShowBeforeUpgrade)
@@ -210,7 +260,7 @@ namespace Unity.ProjectAuditor.Editor.UI
         {
             EditorGUILayout.BeginVertical(GUI.skin.box);
 
-            var issueCount = TotalIssues(m_AfterUpgradeStats);
+            var issueCount = m_AfterUpgradeSeverities.TotalExcludingIgnored;
             var foldoutLabel = (issueCount == 1) ? Contents.AfterUpgrade : Contents.AfterUpgradePlural;
             m_ShowAfterUpgrade = Utility.BoldFoldout(m_ShowAfterUpgrade, Utility.TempContent(string.Format(foldoutLabel, issueCount)));
             if (m_ShowAfterUpgrade)
@@ -227,18 +277,23 @@ namespace Unity.ProjectAuditor.Editor.UI
 
         static class Contents
         {
-            public static readonly GUIContent CurrentVersion = EditorGUIUtility.TrTextContent("Current Unity version:");
-            public static readonly GUIContent TargetVersion = EditorGUIUtility.TrTextContent("Target Unity version:");
-            public static readonly GUIContent TargetVersionWhatsNew = EditorGUIUtility.TrTextContent("What's new?");
-            public static readonly GUIContent BeforeUpgradeDescription = EditorGUIUtility.TrTextContent("These issues can be fixed before you upgrade.");
-            public static readonly GUIContent AfterUpgradeDescription = EditorGUIUtility.TrTextContent("These issues cannot be fixed until after you upgrade.");
-            public static readonly GUIContent BeforeUpgradeNoIssuesDescription = EditorGUIUtility.TrTextContent("There are no known issues to fix before you upgrade!");
-            public static readonly GUIContent AfterUpgradeNoIssuesDescription = EditorGUIUtility.TrTextContent("There are no known issues to fix after you upgrade!");
+            public static readonly GUIContent CurrentVersion = L10n.TextContent("Current Unity version:", null, null, null);
+            public static readonly GUIContent TargetVersion = L10n.TextContent("Target Unity version:", null, null, null);
+            public static readonly GUIContent TargetVersionWhatsNew = L10n.TextContent("What's new?", null, null, null);
+            public static readonly GUIContent BeforeUpgradeDescription = L10n.TextContent("These issues can be fixed before you upgrade.", null, null, null);
+            public static readonly GUIContent AfterUpgradeDescription = L10n.TextContent("These issues cannot be fixed until after you upgrade.", null, null, null);
+            public static readonly GUIContent BeforeUpgradeNoIssuesDescription = L10n.TextContent("There are no known issues to fix before you upgrade!", null, null, null);
+            public static readonly GUIContent AfterUpgradeNoIssuesDescription = L10n.TextContent("There are no known issues to fix after you upgrade!", null, null, null);
 
+            public static readonly string SevereCountFormat = L10n.Tr("{0} issue might prevent your project from functioning.", null);
+            public static readonly string SevereCountPluralFormat = L10n.Tr("{0} issues might prevent your project from functioning.", null);
+            public static readonly string NoIssuesText = L10n.Tr("No upgrade issues found.", null);
+            public static readonly string NoMajorIssuesText = L10n.Tr("No major upgrade issues found.", null);
             public static readonly string BeforeUpgrade = L10n.Tr("Before you upgrade ({0} issue)", null);
             public static readonly string BeforeUpgradePlural = L10n.Tr("Before you upgrade ({0} issues)", null);
             public static readonly string AfterUpgrade = L10n.Tr("After you upgrade ({0} issue)", null);
             public static readonly string AfterUpgradePlural = L10n.Tr("After you upgrade ({0} issues)", null);
+            public static readonly string Upgrade = L10n.Tr("Upgrade", null);
         }
     }
 }

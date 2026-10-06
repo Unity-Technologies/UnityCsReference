@@ -44,6 +44,8 @@ namespace UnityEngine.VFX
     [NativeClass("VisualEffectObject", PersistentTypeId = 0x7AC43185)]
     public abstract class VisualEffectObject : Object
     {
+        protected VisualEffectObject() {}
+        protected internal VisualEffectObject(global::UnityEngine.EntityId id) : base(id) {}
     }
 
     ///<summary>This class contains a graph of the elements needed to describe a visual effect. These include: the visual effects system, generated shaders, and compiled data.</summary>
@@ -54,6 +56,8 @@ namespace UnityEngine.VFX
     [NativeClass("VisualEffectAsset", PersistentTypeId = 0x7AB43185)]
     public class VisualEffectAsset : VisualEffectObject
     {
+        internal VisualEffectAsset(global::UnityEngine.EntityId id) : base(id) {}
+        public VisualEffectAsset() {}
         ///<summary>The default name of the play event.</summary>
         ///<seealso cref="VFX.VisualEffectAsset.PlayEventID" />
         public const string PlayEventName = "OnPlay";
@@ -215,6 +219,8 @@ namespace UnityEngine.VFX
     [RequireComponent(typeof(Transform))]
     public class VisualEffect : Behaviour
     {
+        internal VisualEffect(global::UnityEngine.EntityId id) : base(id) {}
+        public VisualEffect() {}
         ///<summary>Use this property to set the pause state of the visual effect.</summary>
         ///<remarks>Unity does not serialize this property. This means that, after loading, it automatically resets to the default value.</remarks>
         extern public bool pause { get; set; }
@@ -1447,6 +1453,7 @@ namespace UnityEngine.VFX
     [NativeClass("VFXRenderer", PersistentTypeId = 0x045FFA89)]
     public sealed partial class VFXRenderer : Renderer
     {
+        internal VFXRenderer(global::UnityEngine.EntityId id) : base(id) {}
         ///<exclude />
         [UnityEngine.Scripting.RequiredMember]
         public VFXRenderer()

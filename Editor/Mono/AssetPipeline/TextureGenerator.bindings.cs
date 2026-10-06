@@ -25,8 +25,10 @@ namespace UnityEditor.AssetImporters
         private string m_CustomData;
         private float m_TessellationDetail;
         private string m_SpriteID;
-        [UnityMarshalAs(NativeType.ScriptingObjectPtr)]
+        [UnityMarshalAs(NativeType.Custom, CustomMarshaller = typeof(BlittableNestedCollectionMarshaller<Vector2>))]
         private List<Vector2[]> m_Outline;
+        private Vector2[] m_Vertices;
+        private int[] m_Indices;
 
         public string name { get { return m_Name; } set { m_Name = value; } }
         public Rect rect { get { return m_Rect; } set { m_Rect = value; } }
@@ -35,6 +37,8 @@ namespace UnityEditor.AssetImporters
         public Vector4 border { get { return m_Border; } set { m_Border = value; } }
         internal string customData { get { return m_CustomData; } set { m_CustomData = value; } }
         public List<Vector2[]> outline { get { return m_Outline; } set { m_Outline = value; } }
+        public Vector2[] vertices { get { return m_Vertices; } set { m_Vertices = value; } }
+        public int[] indices { get { return m_Indices; } set { m_Indices = value; } }
         public float tessellationDetail {get { return m_TessellationDetail; } set { m_TessellationDetail = value; } }
         public string spriteID {get { return m_SpriteID; } set { m_SpriteID = value; } }
     }

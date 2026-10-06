@@ -215,54 +215,28 @@ class PortPreview : Marker
 
         RootView.TypeHandleInfos.RemoveUssClasses(GraphElementHelper.iconDataTypeClassPrefix, m_DataTypeIcon, m_CurrentPortDataTypeHandle);
 
-        // Use registered style for the type if any.
         bool overrideIcon = true;
         var newPortDataType = PortModel.PortDataType;
         var typeStyle = PortModel.GraphModel?.GetDataTypeStyle(newPortDataType);
 
-        if (!typeStyle.HasValue && PortModel.PortDataType.IsListOrArray())
+        if (!typeStyle.HasValue && newPortDataType.IsListOrArray())
         {
             typeStyle = PortModel.GraphModel?.GetDataTypeStyle(newPortDataType.GetCollectionElementType());
             overrideIcon = false;
         }
 
-        if (typeStyle.HasValue)
-        {
-            if (!overrideIcon)
-                CreateNewImageWhenIconIsInline();
-
-            m_DataTypeIcon.tintColor = typeStyle.Value.color;
-
-            if (overrideIcon)
+        m_IconIsInline = DataTypeIconHelper.ApplyIconStyle(ref m_DataTypeIcon, typeStyle, overrideIcon, m_IconIsInline,
+            () =>
             {
-                m_IconIsInline = true;
-                m_DataTypeIcon.image = typeStyle.Value.icon;
-            }
-        }
-        else
-        {
-            // If the icon was previously set inline by a registered type style, we need to remove it and create a new Image so that Image.m_TintColorIsInline and Image.m_ImageIsInline are reset to enable USS styling.
-            CreateNewImageWhenIconIsInline();
-        }
+                var index = IndexOf(m_DataTypeIcon);
+                Remove(m_DataTypeIcon);
+                var fresh = new Image { name = GraphElementHelper.iconName };
+                fresh.AddToClassList(iconUssClassName);
+                Insert(index, fresh);
+                return fresh;
+            });
 
         RootView.TypeHandleInfos.AddUssClasses(GraphElementHelper.iconDataTypeClassPrefix, m_DataTypeIcon, PortModel.DataTypeHandle);
-        return;
-
-        void CreateNewImageWhenIconIsInline()
-        {
-            if (!m_IconIsInline)
-                return;
-
-            // Remove old icon
-            var index = IndexOf(m_DataTypeIcon);
-            Remove(m_DataTypeIcon);
-
-            // Create and assign new icon
-            m_DataTypeIcon = new Image();
-            m_DataTypeIcon.AddToClassList(iconUssClassName);
-            Insert(index, m_DataTypeIcon);
-            m_IconIsInline = false;
-        }
     }
 
     protected override void OnGeometryChanged(GeometryChangedEvent evt)

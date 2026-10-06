@@ -12,10 +12,6 @@ namespace Unity.UIToolkit.Editor;
 [UsedImplicitly]
 internal class UIToolkitAuthoringSettingsProvider : IUIToolkitSettingsProviderExtension
 {
-    private const string k_SettingsPath = "Project/UI Toolkit";
-
-    private const string k_EnableUIInSceneAuthoring = "Enable in Scene UI Authoring";
-    private const string k_EnableMainStageAuthoring = "Enable Main Stage Authoring";
     private const string k_HierarchyDisplayOptionsText = "Hierarchy Display Options";
     private const string k_DisplayTypenameOptionsText = "Always Display Typename";
     private const string k_DisplayUssClassOptionsText = "Display USS classes";
@@ -29,21 +25,13 @@ internal class UIToolkitAuthoringSettingsProvider : IUIToolkitSettingsProviderEx
 
     private const string k_VisualTreeAsset = "UIToolkitAuthoring/Settings/UIToolkitAuthoringSettings.uxml";
 
-    VisualElement UIAuthoringSection;
+    private const string k_DocumentationTopic = "ui-systems/in-scene-ui-authoring";
+    private const string k_DocumentationTooltip = "Open the in-scene UI Authoring documentation.";
 
     int IUIToolkitSettingsProviderExtension.order => 100;
 
-    internal static void OpenSettings()
-    {
-        SettingsService.OpenProjectSettings(k_SettingsPath);
-    }
-
     bool IUIToolkitSettingsProviderExtension.HasSearchInterestHandler(string searchContext)
     {
-        if (k_EnableUIInSceneAuthoring.IndexOf(searchContext, System.StringComparison.OrdinalIgnoreCase) != -1)
-            return true;
-        if (k_EnableMainStageAuthoring.IndexOf(searchContext, System.StringComparison.OrdinalIgnoreCase) != -1)
-            return true;
         if (k_HierarchyDisplayOptionsText.IndexOf(searchContext, System.StringComparison.OrdinalIgnoreCase) != -1)
             return true;
         if (k_DisplayTypenameOptionsText.IndexOf(searchContext, System.StringComparison.OrdinalIgnoreCase) != -1)
@@ -77,6 +65,9 @@ internal class UIToolkitAuthoringSettingsProvider : IUIToolkitSettingsProviderEx
         var vta = EditorGUIUtility.Load(k_VisualTreeAsset) as VisualTreeAsset;
         vta.CloneTree(rootElement);
 
+        var headerLabel = rootElement.Q<Label>("uitoolkit-authoring-settings__header-label");
+        DocumentationLinkIcon.AddAfterLabel(headerLabel, k_DocumentationTooltip, Help.FindHelpNamed(k_DocumentationTopic));
+
         var newHierarchyHelpBox = rootElement.Q<HelpBox>("EnableHv2HelpBox");
         newHierarchyHelpBox.onButtonClicked += () =>
         {
@@ -84,26 +75,7 @@ internal class UIToolkitAuthoringSettingsProvider : IUIToolkitSettingsProviderEx
             UpdateNewHierarchyHelpBox();
         };
 
-        var enableInSceneAuthoring = rootElement.Q<Toggle>("uitoolkit-authoring-settings__enable-scene-authoring");
-        enableInSceneAuthoring.value = UIToolkitAuthoringSettings.EnableInSceneUIAuthoring;
-        enableInSceneAuthoring.RegisterValueChangedCallback(evt =>
-        {
-            UIToolkitAuthoringSettings.EnableInSceneUIAuthoring = evt.newValue;
-            UpdateNewHierarchyHelpBox();
-        });
         UpdateNewHierarchyHelpBox();
-
-        UIAuthoringSection = rootElement.Q("uitoolkit-authoring-settings__settings-container");
-
-        UIToolkitAuthoringSettings.EnableInSceneAuthoringChanged += CheckUIAuthoringOptions;
-        CheckUIAuthoringOptions(UIToolkitAuthoringSettings.EnableInSceneUIAuthoring);
-
-        var enableMainStageAuthoring = rootElement.Q<Toggle>("uitoolkit-authoring-settings__enable-main-stage-authoring");
-        enableMainStageAuthoring.value = UIToolkitAuthoringSettings.EnableMainStageAuthoring;
-        enableMainStageAuthoring.RegisterValueChangedCallback(evt =>
-        {
-            UIToolkitAuthoringSettings.EnableMainStageAuthoring = evt.newValue;
-        });
 
         var displayTypenameOptions = rootElement.Q<Toggle>("uitoolkit-authoring-settings__always-display-typename");
         displayTypenameOptions.value = UIToolkitAuthoringSettings.DisplayOptions.HasFlag(UIHierarchyDisplayOptions.Typename);
@@ -155,19 +127,11 @@ internal class UIToolkitAuthoringSettingsProvider : IUIToolkitSettingsProviderEx
 
         void UpdateNewHierarchyHelpBox()
         {
-            var show = UIToolkitAuthoringSettings.EnableInSceneUIAuthoring
-                       && EditorSettings.useLegacyHierarchy;
-            newHierarchyHelpBox.style.display = show ? DisplayStyle.Flex : DisplayStyle.None;
+            newHierarchyHelpBox.style.display = EditorSettings.useLegacyHierarchy ? DisplayStyle.Flex : DisplayStyle.None;
         }
     }
 
     void IUIToolkitSettingsProviderExtension.OnDeactivate()
     {
-        UIToolkitAuthoringSettings.EnableInSceneAuthoringChanged -= CheckUIAuthoringOptions;
-    }
-
-    void CheckUIAuthoringOptions(bool enabled)
-    {
-        UIAuthoringSection.SetEnabled(enabled);
     }
 }

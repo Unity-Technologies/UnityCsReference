@@ -39,16 +39,17 @@ enum AudioRandomContainerLoopMode
 [NativeClass("AudioContainerElement", PersistentTypeId = 0x49805FF5)]
 sealed class AudioContainerElement : Object
 {
+    internal AudioContainerElement(global::UnityEngine.EntityId id) : base(id) {}
     internal AudioContainerElement()
     {
-        Internal_Create(this);
+        SetEntityIdFromConstructor(Internal_Create());
     }
 
     internal extern AudioClip audioClip { get; set; }
     internal extern float volume { get; set; }
     internal extern bool enabled { get; set; }
 
-    static extern void Internal_Create([Writable] AudioContainerElement self);
+    static extern EntityId Internal_Create();
 }
 
 [NativeHeader("Modules/Audio/Public/AudioRandomContainer.h")]
@@ -57,6 +58,7 @@ sealed class AudioContainerElement : Object
 [ExcludeFromPreset]
 sealed class AudioRandomContainer : AudioResource, IAudioGenerator
 {
+    internal AudioRandomContainer(global::UnityEngine.EntityId id) : base(id) {}
     internal enum ChangeEventType
     {
         Volume,
@@ -66,7 +68,7 @@ sealed class AudioRandomContainer : AudioResource, IAudioGenerator
 
     internal AudioRandomContainer()
     {
-        Internal_Create(this);
+        SetEntityIdFromConstructor(Internal_Create());
     }
 
     internal extern float volume { get; set; }
@@ -97,7 +99,7 @@ sealed class AudioRandomContainer : AudioResource, IAudioGenerator
     // Note: list changes will implicitly stop and reset playback
     internal extern void NotifyObservers(ChangeEventType eventType);
 
-    static extern void Internal_Create([Writable] AudioRandomContainer self);
+    static extern EntityId Internal_Create();
 
     #region IAudioGenerator
 

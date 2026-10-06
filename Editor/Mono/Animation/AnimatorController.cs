@@ -14,6 +14,7 @@ namespace UnityEditor.Animations
     [NativeClass(null, PersistentTypeId = 91)]
     public sealed partial class AnimatorController : RuntimeAnimatorController
     {
+        internal AnimatorController(global::UnityEngine.EntityId id) : base(id) {}
         internal System.Action OnAnimatorControllerDirty;
 
         private const string kControllerExtension = "controller";
@@ -235,7 +236,14 @@ namespace UnityEditor.Animations
             return clip;
         }
 
+        // Native-facing variant (drag and drop of a clip onto a GameObject): native works with EntityIds, not wrappers.
         [RequiredByNativeCode]
+        static EntityId CreateAnimatorControllerForClipEntityId(AnimationClip clip, GameObject animatedObject)
+        {
+            var controller = CreateAnimatorControllerForClip(clip, animatedObject);
+            return ReferenceEquals(controller, null) ? EntityId.None : controller.GetEntityId();
+        }
+
         internal static AnimatorController CreateAnimatorControllerForClip(AnimationClip clip, GameObject animatedObject)
         {
             string path = AssetDatabase.GetAssetPath(clip);

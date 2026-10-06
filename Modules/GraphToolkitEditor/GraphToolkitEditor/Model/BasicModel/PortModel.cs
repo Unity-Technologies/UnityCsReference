@@ -77,7 +77,9 @@ namespace Unity.GraphToolkit.Editor
         bool m_IsExpandable;
         PortOrientation m_Orientation;
         IReadOnlyList<Attribute> m_Attributes;
-        IPolymorphicPortHandler m_PolymorphicPortHandler;
+
+        [SerializeField]
+        TypeHandle[] m_AllowedTypes;
 
         List<PortModel> m_SubPorts = new List<PortModel>();
 
@@ -279,18 +281,25 @@ namespace Unity.GraphToolkit.Editor
         /// <remarks>Setter implementations must set the <see cref="ChangeHint.Data"/> change hint.</remarks>
         public virtual TypeHandle DataTypeHandle
         {
-            get => IsAutomatic ? PolymorphicPortHandler.ResolvedType : m_DataTypeHandle;
+            get => m_DataTypeHandle;
             set
             {
                 if (m_DataTypeHandle == value)
                     return;
+                var previousType = m_DataTypeHandle;
                 m_DataTypeHandle = value;
                 m_PortDataTypeCache = null;
                 m_TooltipCache = null;
-                if (IsPolymorphic && !IsAutomatic)
-                    PolymorphicPortHandler.Unresolve();
 
                 GraphModel?.CurrentGraphChangeDescription.AddChangedModel(this, ChangeHint.Data);
+
+                // Always notify the owning NodeModel — even during DefineNode — so that internal bookkeeping (e.g. the
+                // input port's constant) stays in sync with the new data type. User-facing callbacks are gated further
+                // downstream (see UserNodeModelImp.OnPortDataTypeChanged) so they don't fire during redefine.
+                // We don't fire when the port is being reused as changing the input constant in this phase
+                // can lead to an index out of range in the OrderedPort.
+                if (NodeModel is { IsPortBeingReused: false })
+                    NodeModel.OnPortDataTypeChanged(this, previousType, m_DataTypeHandle);
             }
         }
 
@@ -313,8 +322,8 @@ namespace Unity.GraphToolkit.Editor
         /// <summary>
         /// Whether the port is polymorphic.
         /// </summary>
-        /// <remarks>A polymorphic port is a flexible port that can accept multiple data types, allowing dynamic connections based on context.</remarks>
-        public virtual bool IsPolymorphic => PolymorphicPortHandler != null;
+        /// <remarks>A polymorphic port is a flexible port that can accept multiple data types. The current selection is the value of <see cref="DataTypeHandle"/>; the set of choices is <see cref="AllowedTypes"/>.</remarks>
+        public virtual bool IsPolymorphic => m_AllowedTypes != null && m_AllowedTypes.Length > 1;
 
         /// <summary>
         /// Whether the port is expandable.
@@ -322,24 +331,53 @@ namespace Unity.GraphToolkit.Editor
         public bool IsExpandable => m_IsExpandable;
 
         /// <summary>
-        /// Whether the port is polymorphic and its currently selected type is <see cref="TypeHandle.Automatic"/>.
+        /// The set of types the port can be assigned. When the port has more than one entry it is considered polymorphic and a dropdown lets the user pick one.
         /// </summary>
-        /// <remarks>Only polymorphic ports can have the type <see cref="TypeHandle.Automatic"/>, which automatically adjusts the port data type based on the connection.</remarks>
-        public virtual bool IsAutomatic => PolymorphicPortHandler?.SelectedType == TypeHandle.Automatic;
+        /// <remarks>The currently selected type is <see cref="DataTypeHandle"/>. Set this list with <see cref="SetAllowedTypes"/>.</remarks>
+        public IReadOnlyList<TypeHandle> AllowedTypes => m_AllowedTypes;
 
         /// <summary>
-        /// The polymorphic handler used to configure supported types and the currently selected type of the polymorphic port.
+        /// Sets the list of types this polymorphic port supports.
         /// </summary>
-        /// <remarks>A polymorphic port has a list of supported data types that can be selected as its current data type.
-        /// The list includes <see cref="TypeHandle.Automatic"/>, which allows the data type to change automatically based on the connection.</remarks>
-        public virtual IPolymorphicPortHandler PolymorphicPortHandler
+        /// <param name="types">The supported types. Must contain at least one entry. The first entry is used as the initial <see cref="DataTypeHandle"/> unless the current <see cref="DataTypeHandle"/> is already in the list.</param>
+        public void SetAllowedTypes(IReadOnlyList<TypeHandle> types)
         {
-            get => m_PolymorphicPortHandler;
-            set
+            if (types == null || types.Count == 0)
             {
-                m_PolymorphicPortHandler = value;
-                UpdateDatatypeHandler();
+                if (m_AllowedTypes == null)
+                    return;
+
+                m_AllowedTypes = null;
+                GraphModel?.CurrentGraphChangeDescription.AddChangedModel(this, ChangeHint.Data);
+                return;
             }
+
+            // Deduplicate while preserving order.
+            var seen = new HashSet<TypeHandle>(types.Count);
+            var array = new TypeHandle[types.Count];
+            int uniqueCount = 0;
+            foreach (var t in types)
+            {
+                if (seen.Add(t))
+                    array[uniqueCount++] = t;
+            }
+            if (uniqueCount < types.Count)
+                Array.Resize(ref array, uniqueCount);
+            m_AllowedTypes = array;
+
+            // Apply the persisted selection (if any) so it's live before user code reads DataType, e.g. from OnDefinePorts.
+            if (NodeModel is NodeModel node && node.TryGetPolymorphicPortSelection(UniqueName, out var stored)
+                && Array.IndexOf(m_AllowedTypes, stored) >= 0)
+            {
+                DataTypeHandle = stored;
+                return;
+            }
+
+            var currentIndex = Array.IndexOf(m_AllowedTypes, m_DataTypeHandle);
+            if (currentIndex < 0)
+                DataTypeHandle = m_AllowedTypes[0];
+            else
+                GraphModel?.CurrentGraphChangeDescription.AddChangedModel(this, ChangeHint.Data);
         }
 
         /// <summary>
@@ -436,52 +474,13 @@ namespace Unity.GraphToolkit.Editor
         /// Called when a wire is disconnected from one of the node's port
         /// </summary>
         /// <param name="otherPort">The port mode that was previously connected to this port</param>
-        public virtual void OnDisconnection(PortModel otherPort)
-        {
-            if (IsAutomatic)
-            {
-                PolymorphicPortHandler.Unresolve();
-                GraphModel?.CurrentGraphChangeDescription?.AddChangedModel(this, ChangeHint.Data);
-            }
-        }
+        public virtual void OnDisconnection(PortModel otherPort) { }
 
         /// <summary>
         /// Called when a new wire connects this port to another port
         /// </summary>
         /// <param name="otherPort">The other port to which this port is connected to.</param>
-        public virtual void OnConnection(PortModel otherPort)
-        {
-            if (IsAutomatic)
-            {
-                PolymorphicPortHandler.Resolve(otherPort.DataTypeHandle);
-                GraphModel?.CurrentGraphChangeDescription?.AddChangedModel(this, ChangeHint.Data);
-            }
-        }
-
-        /// <summary>
-        /// Updates the port data type after the polymorphic port handle has changed.
-        /// </summary>
-        public void UpdateDatatypeHandler()
-        {
-            if (IsPolymorphic)
-            {
-                var previousType = DataTypeHandle;
-                DataTypeHandle = PolymorphicPortHandler.SelectedType;
-                if (!IsAutomatic)
-                {
-                    PolymorphicPortHandler.Unresolve();
-                }
-                else if (GetConnectedPorts() is { Count: > 0 } connectedPorts)
-                {
-                    PolymorphicPortHandler.Resolve(connectedPorts[0].DataTypeHandle);
-                }
-
-                if (previousType != DataTypeHandle)
-                {
-                    NodeModel.OnPortDataTypeChanged(this, previousType, DataTypeHandle);
-                }
-            }
-        }
+        public virtual void OnConnection(PortModel otherPort) { }
 
         /// <summary>
         /// Notifies the graph model that the port unique name has changed. Derived implementations of PortModel
@@ -522,21 +521,7 @@ namespace Unity.GraphToolkit.Editor
         /// <returns>True if it can be connected, false otherwise</returns>
         public bool CanConnectPort(PortModel otherPort)
         {
-            if (DataTypeHandle.IsAssignableFrom(otherPort.DataTypeHandle))
-            {
-                return true;
-            }
-            if (IsAutomatic)
-            {
-                return PolymorphicPortHandler.CanConnect(otherPort.DataTypeHandle);
-            }
-
-            if (otherPort.IsAutomatic)
-            {
-                return otherPort.PolymorphicPortHandler.CanConnect(DataTypeHandle);
-            }
-
-            return false;
+            return DataTypeHandle.IsAssignableFrom(otherPort.DataTypeHandle);
         }
 
         /// <summary>
@@ -634,7 +619,7 @@ namespace Unity.GraphToolkit.Editor
                 {
                     return m_ComputedConstant;
                 }
-                if (Direction == PortDirection.Input && NodeModel is NodeModel node && node.InputConstantsById.TryGetValue(UniqueName, out var inputModel))
+                if (Direction == PortDirection.Input && NodeModel?.ConstantsByPortName is { } constants && constants.TryGetValue(UniqueName, out var inputModel))
                 {
                     return inputModel;
                 }
@@ -938,6 +923,35 @@ namespace Unity.GraphToolkit.Editor
         }
 
         Type IPort.DataType => PortDataType;
+
+        bool IPort.TrySetDataType(Type type)
+        {
+            if (type == null)
+                return false;
+
+            if (!IsPolymorphic)
+            {
+                Debug.LogWarning($"Cannot change the data type of port '{UniqueName}': the port is not polymorphic. " +
+                    $"Declare it with WithDataTypes to allow multiple types.");
+                return false;
+            }
+
+            CheckModificationLock();
+
+            var newHandle = type.GenerateTypeHandle();
+            foreach (var t in m_AllowedTypes)
+            {
+                if (t == newHandle)
+                {
+                    DataTypeHandle = newHandle;
+                    return true;
+                }
+            }
+
+            Debug.LogWarning($"Cannot change the data type of port '{UniqueName}': {type} is not a type supported by this port. " +
+                $"Add {type} when building the port with WithDataTypes.");
+            return false;
+        }
 
         /// <inheritdoc />
         public override IReadOnlyList<ContextualMenuItem> ContextualMenuItems => k_ContextualMenuItems;

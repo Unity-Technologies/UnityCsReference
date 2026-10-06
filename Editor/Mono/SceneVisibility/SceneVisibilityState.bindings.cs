@@ -20,6 +20,7 @@ namespace UnityEditor
     [ExcludeFromPreset]
     internal partial class SceneVisibilityState : Object
     {
+        internal SceneVisibilityState(global::UnityEngine.EntityId id) : base(id) {}
         [FreeFunction("GetSceneVisibilityState")]
         public static extern Object GetInstance();
 
@@ -71,6 +72,7 @@ namespace UnityEditor
         public static extern int GetHiddenObjectCountWithoutCacheUpdate();
         public static extern int GetPickingDisabledObjectCount();
         public static extern void ForceDataUpdate();
+        public static extern void UpdateCacheIfNeeded();
         public static extern void CleanTempScenes();
 
         [AutoStaticsCleanupOnCodeReload]

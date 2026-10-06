@@ -17,7 +17,7 @@ namespace Unity.SmartStrings.Core.Formatting;
 /// <summary>
 /// The class contains the fields and methods which are necessary for formatting.
 /// </summary>
-public class FormattingInfo : IFormattingInfo, ISelectorInfo
+public class FormattingInfo : IFormattingInfo, ISelectorInfo, IFormattingExtensionsToggle
 {
     /// <summary>
     /// Initializes this formatting info with the details required for formatting.
@@ -45,6 +45,7 @@ public class FormattingInfo : IFormattingInfo, ISelectorInfo
         CurrentValue = currentValue;
         FormatDetails = formatDetails;
         Format = format;
+        DisableFormattingExtensions = false;
         // inherit alignment
         if (parent != null) Alignment = parent.Alignment;
         else if (format.ParentPlaceholder != null) Alignment = format.ParentPlaceholder.Alignment;
@@ -67,6 +68,7 @@ public class FormattingInfo : IFormattingInfo, ISelectorInfo
         FormatDetails = formatDetails;
         Placeholder = placeholder;
         Format = placeholder.Format;
+        DisableFormattingExtensions = false;
         CurrentValue = currentValue;
         // inherit alignment
         Alignment = placeholder.Alignment;
@@ -88,6 +90,7 @@ public class FormattingInfo : IFormattingInfo, ISelectorInfo
         Alignment = 0;
 
         Format = null;
+        DisableFormattingExtensions = false;
         CurrentValue = null;
 
         // Children can safely be returned
@@ -217,6 +220,9 @@ public class FormattingInfo : IFormattingInfo, ISelectorInfo
     /// The result after an <see cref="ISource"/> has assigned a value.
     /// </summary>
     public object Result { get; set; }
+
+    /// <inheritdoc />
+    public bool DisableFormattingExtensions { get; set; }
 
     FormattingInfo CreateChild(Format format, object currentValue)
     {

@@ -4,6 +4,7 @@
 
 using System;
 using System.Collections.Generic;
+using UnityEngine.Bindings;
 
 namespace UnityEngine.UIElements
 {
@@ -250,6 +251,7 @@ namespace UnityEngine.UIElements
 
         internal int Count => m_MenuItems.Count;
 
+        [VisibleToOtherModules("UnityEngine.HierarchyModule")]
         internal bool repaintPanelBeforeDisplay { get; set; }
 
         /// <summary>

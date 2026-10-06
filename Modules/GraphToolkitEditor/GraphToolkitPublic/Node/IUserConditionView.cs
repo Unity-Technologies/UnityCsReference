@@ -47,5 +47,13 @@ namespace Unity.GraphToolkit.Editor
         /// a matching <see cref="OnViewAttached"/> may follow.
         /// </remarks>
         public void OnViewDetached();
+
+        /// <summary>
+        /// Called after the condition's data changes and the built-in UI has refreshed to reflect it.
+        /// </summary>
+        /// <remarks>
+        /// Can fire many times over a condition view's lifetime.
+        /// </remarks>
+        public void OnConditionChanged();
     }
 }

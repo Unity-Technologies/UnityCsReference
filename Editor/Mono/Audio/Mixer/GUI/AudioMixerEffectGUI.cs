@@ -55,22 +55,22 @@ namespace UnityEditor
 
                     GenericMenu pm = new GenericMenu();
                     if (!exposed)
-                        pm.AddItem(EditorGUIUtility.TrTextContent("Expose '" + path.ResolveStringPath(false) + "' to script"), false, ExposePopupCallback, new ExposedParamContext(controller, path));
+                        pm.AddItem(L10n.TextContent("Expose '" + path.ResolveStringPath(false) + "' to script", null, null, null), false, ExposePopupCallback, new ExposedParamContext(controller, path));
                     else
-                        pm.AddItem(EditorGUIUtility.TrTextContent("Unexpose"), false, UnexposePopupCallback, new ExposedParamContext(controller, path));
+                        pm.AddItem(L10n.TextContent("Unexpose", null, null, null), false, UnexposePopupCallback, new ExposedParamContext(controller, path));
 
                     ParameterTransitionType existingType;
                     bool overrideExists = controller.TargetSnapshot.GetTransitionTypeOverride(path.parameter, out existingType);
                     System.Diagnostics.Debug.Assert(!overrideExists || existingType == ParameterTransitionType.Lerp);
 
                     pm.AddSeparator(string.Empty);
-                    pm.AddItem(EditorGUIUtility.TrTextContent("Linear Snapshot Transition"), existingType == ParameterTransitionType.Lerp, ParameterTransitionOverrideCallback, new ParameterTransitionOverrideContext(controller, path.parameter, ParameterTransitionType.Lerp));
-                    pm.AddItem(EditorGUIUtility.TrTextContent("Smoothstep Snapshot Transition"), existingType == ParameterTransitionType.Smoothstep, ParameterTransitionOverrideCallback, new ParameterTransitionOverrideContext(controller, path.parameter, ParameterTransitionType.Smoothstep));
-                    pm.AddItem(EditorGUIUtility.TrTextContent("Squared Snapshot Transition"), existingType == ParameterTransitionType.Squared, ParameterTransitionOverrideCallback, new ParameterTransitionOverrideContext(controller, path.parameter, ParameterTransitionType.Squared));
-                    pm.AddItem(EditorGUIUtility.TrTextContent("SquareRoot Snapshot Transition"), existingType == ParameterTransitionType.SquareRoot, ParameterTransitionOverrideCallback, new ParameterTransitionOverrideContext(controller, path.parameter, ParameterTransitionType.SquareRoot));
-                    pm.AddItem(EditorGUIUtility.TrTextContent("BrickwallStart Snapshot Transition"), existingType == ParameterTransitionType.BrickwallStart, ParameterTransitionOverrideCallback, new ParameterTransitionOverrideContext(controller, path.parameter, ParameterTransitionType.BrickwallStart));
-                    pm.AddItem(EditorGUIUtility.TrTextContent("BrickwallEnd Snapshot Transition"), existingType == ParameterTransitionType.BrickwallEnd, ParameterTransitionOverrideCallback, new ParameterTransitionOverrideContext(controller, path.parameter, ParameterTransitionType.BrickwallEnd));
-                    pm.AddItem(EditorGUIUtility.TrTextContent("Attenuation Snapshot Transition"), existingType == ParameterTransitionType.Attenuation, ParameterTransitionOverrideCallback, new ParameterTransitionOverrideContext(controller, path.parameter, ParameterTransitionType.Attenuation));
+                    pm.AddItem(L10n.TextContent("Linear Snapshot Transition", null, null, null), existingType == ParameterTransitionType.Lerp, ParameterTransitionOverrideCallback, new ParameterTransitionOverrideContext(controller, path.parameter, ParameterTransitionType.Lerp));
+                    pm.AddItem(L10n.TextContent("Smoothstep Snapshot Transition", null, null, null), existingType == ParameterTransitionType.Smoothstep, ParameterTransitionOverrideCallback, new ParameterTransitionOverrideContext(controller, path.parameter, ParameterTransitionType.Smoothstep));
+                    pm.AddItem(L10n.TextContent("Squared Snapshot Transition", null, null, null), existingType == ParameterTransitionType.Squared, ParameterTransitionOverrideCallback, new ParameterTransitionOverrideContext(controller, path.parameter, ParameterTransitionType.Squared));
+                    pm.AddItem(L10n.TextContent("SquareRoot Snapshot Transition", null, null, null), existingType == ParameterTransitionType.SquareRoot, ParameterTransitionOverrideCallback, new ParameterTransitionOverrideContext(controller, path.parameter, ParameterTransitionType.SquareRoot));
+                    pm.AddItem(L10n.TextContent("BrickwallStart Snapshot Transition", null, null, null), existingType == ParameterTransitionType.BrickwallStart, ParameterTransitionOverrideCallback, new ParameterTransitionOverrideContext(controller, path.parameter, ParameterTransitionType.BrickwallStart));
+                    pm.AddItem(L10n.TextContent("BrickwallEnd Snapshot Transition", null, null, null), existingType == ParameterTransitionType.BrickwallEnd, ParameterTransitionOverrideCallback, new ParameterTransitionOverrideContext(controller, path.parameter, ParameterTransitionType.BrickwallEnd));
+                    pm.AddItem(L10n.TextContent("Attenuation Snapshot Transition", null, null, null), existingType == ParameterTransitionType.Attenuation, ParameterTransitionOverrideCallback, new ParameterTransitionOverrideContext(controller, path.parameter, ParameterTransitionType.Attenuation));
                     pm.AddSeparator(string.Empty);
 
                     pm.ShowAsContext();

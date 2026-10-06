@@ -191,9 +191,23 @@ namespace Unity.GraphToolkit.Editor
 
         void ScopeImageStyleResolved(CustomStyleResolvedEvent e)
         {
-            // First try to get registered type style. If none found, use custom style or default color set by USS.
-            if (TrySetIconAndScopeFromTypeStyle())
-                return;
+            // Only set the scope image color here. Icon styling (m_Icon) is managed exclusively by
+            // UpdateUIFromModel so that USS classes added after TrySetIconAndScopeFromTypeStyle are
+            // never lost to a stale-inline recreation triggered by this callback.
+            if (Model is VariableDeclarationModelBase vdm)
+            {
+                Type resolvedType = vdm.DataType.Resolve();
+                var typeStyle = vdm.GraphModel?.GetDataTypeStyle(resolvedType);
+
+                if (!typeStyle.HasValue && resolvedType.IsListOrArray())
+                    typeStyle = vdm.GraphModel?.GetDataTypeStyle(resolvedType.GetCollectionElementType());
+
+                if (typeStyle.HasValue)
+                {
+                    m_ScopeImage.Color = typeStyle.Value.color;
+                    return;
+                }
+            }
 
             if (!e.customStyle.TryGetValue(k_ScopeImageColorProperty, out var tintColor))
                 if (!e.customStyle.TryGetValue(k_IconColorProperty, out tintColor))
@@ -381,26 +395,9 @@ namespace Unity.GraphToolkit.Editor
                         m_CurrentTypeHandle = variableDeclarationModel.DataType;
 
                         // Try to get registered type style. If none found, use default color and icon set by USS.
-                        if (!TrySetIconAndScopeFromTypeStyle())
-                        {
-                            // If the icon was previously set inline by a registered type style, we need to remove it and create a new Image so that Image.m_TintColorIsInline and Image.m_ImageIsInline are reset to enable USS styling.
-                            if (m_IconIsInline)
-                            {
-                                // Remove old icon
-                                var index = m_Capsule.IndexOf(m_Icon);
-                                m_Capsule.Remove(m_Icon);
-
-                                // Create and assign new icon
-                                m_Icon = new Image();
-                                m_Icon.AddToClassList(iconUssClassName);
-                                m_Icon.pickingMode = PickingMode.Ignore;
-                                m_Capsule.Insert(index, m_Icon);
-                                m_IconIsInline = false;
-                            }
-
-                            RootView.TypeHandleInfos.AddUssClasses(VariableScopeImage.scopeImageDataTypeClassNamePrefix, m_ScopeImage, m_CurrentTypeHandle);
-                            RootView.TypeHandleInfos.AddUssClasses(GraphElementHelper.iconDataTypeClassPrefix, m_Icon, m_CurrentTypeHandle);
-                        }
+                        TrySetIconAndScopeFromTypeStyle();
+                        RootView.TypeHandleInfos.AddUssClasses(VariableScopeImage.scopeImageDataTypeClassNamePrefix, m_ScopeImage, m_CurrentTypeHandle);
+                        RootView.TypeHandleInfos.AddUssClasses(GraphElementHelper.iconDataTypeClassPrefix, m_Icon, m_CurrentTypeHandle);
                     }
 
                     switch (NameLabel)
@@ -526,24 +523,22 @@ namespace Unity.GraphToolkit.Editor
                 overrideIcon = false;
             }
 
-            if (!typeStyle.HasValue)
-                return false;
+            if (typeStyle.HasValue)
+                m_ScopeImage.Color = typeStyle.Value.color;
 
+            m_IconIsInline = DataTypeIconHelper.ApplyIconStyle(ref m_Icon, typeStyle, overrideIcon, m_IconIsInline,
+                () =>
+                {
+                    var index = m_Capsule.IndexOf(m_Icon);
+                    m_Capsule.Remove(m_Icon);
+                    var fresh = new Image();
+                    fresh.AddToClassList(iconUssClassName);
+                    fresh.pickingMode = PickingMode.Ignore;
+                    m_Capsule.Insert(index, fresh);
+                    return fresh;
+                });
 
-            // Color for the type.
-            m_IconIsInline = true;
-            m_ScopeImage.Color = typeStyle.Value.color;
-            m_Icon.tintColor = typeStyle.Value.color;
-
-            // Icon
-            if (overrideIcon && typeStyle.Value.icon != null)
-            {
-                m_Icon.image = typeStyle.Value.icon;
-            }
-            else
-                return false;
-
-            return true;
+            return typeStyle.HasValue;
         }
     }
 }

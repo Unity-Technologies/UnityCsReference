@@ -228,6 +228,8 @@ namespace UnityEngine
 
         public virtual bool supportsMachineLearning => UnityEngine.SystemInfo.supportsMachineLearning;
 
+        public virtual bool supportsPrecompiledGraphicsStateStats => UnityEngine.SystemInfo.supportsPrecompiledGraphicsStateStats;
+
         public virtual bool supportsMemorylessTextures => UnityEngine.SystemInfo.supportsMemorylessTextures;
 
         public virtual bool supportsBackbufferDepthMemoryless => UnityEngine.SystemInfo.supportsBackbufferDepthMemoryless;
@@ -262,6 +264,12 @@ namespace UnityEngine
         public virtual bool supportsMultisampleResolveStencil => UnityEngine.SystemInfo.supportsMultisampleResolveStencil;
 
         public virtual bool supportsIndirectArgumentsBuffer => UnityEngine.SystemInfo.supportsIndirectArgumentsBuffer;
+
+        public virtual bool supportsMultiDrawIndirect => UnityEngine.SystemInfo.supportsMultiDrawIndirect;
+
+        public virtual bool supportsMultiDrawIndirectCountBuffer => UnityEngine.SystemInfo.supportsMultiDrawIndirectCountBuffer;
+
+        public virtual uint maxDrawIndirectCount => UnityEngine.SystemInfo.maxDrawIndirectCount;
 
         public virtual bool supportsDepthFetchInRenderPass => UnityEngine.SystemInfo.supportsDepthFetchInRenderPass;
 

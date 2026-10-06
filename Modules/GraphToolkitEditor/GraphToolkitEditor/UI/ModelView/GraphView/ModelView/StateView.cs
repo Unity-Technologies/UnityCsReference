@@ -35,12 +35,12 @@ namespace Unity.GraphToolkit.Editor
     /// Class for a state node UI.
     /// </summary>
     [UnityRestricted]
-    internal class StateView : NodeView, INodeWithConnector, IStateView
+    internal class StateView : NodeView, INodeWithConnector, IStateView, IAccentAnimatableView
     {
         /// <summary>
-        /// The name of the <see cref="ModelViewPart"/> for the progress bar.
+        /// The name of the <see cref="ModelViewPart"/> for the accent color line.
         /// </summary>
-        public static readonly string progressBarPartName = "progress-bar";
+        public static readonly string colorLinePartName = "color-line-container";
 
         /// <summary>
         /// The USS class name of a <see cref="StateView"/>.
@@ -48,6 +48,7 @@ namespace Unity.GraphToolkit.Editor
         public new static readonly string ussClassName = "ge-state";
 
         TransitionConnector m_TransitionConnector;
+        bool m_AnchorPreviewShown;
 
         /// <summary>
         /// The state model.
@@ -130,13 +131,47 @@ namespace Unity.GraphToolkit.Editor
             }
         }
 
+        void OnMouseMoveForAnchorPreview(MouseMoveEvent evt)
+        {
+            UpdateAnchorPreview(TransitionConnector.MatchesCreateTransitionBinding(evt, GraphView?.GraphTool), evt.mousePosition);
+        }
+
+        void OnMouseLeaveForAnchorPreview(MouseLeaveEvent evt)
+        {
+            UpdateAnchorPreview(false, evt.mousePosition);
+        }
+
+        // Previews where a transition would start from, so that holding the modifier shows the user
+        // the anchor point before they commit to it.
+        void UpdateAnchorPreview(bool modifierHeld, Vector2 worldPosition)
+        {
+            if (Border is not StateBorder stateBorder)
+                return;
+
+            // Once a transition is being created the connector belongs to the manipulator.
+            if (TransitionConnector is { IsActive: true })
+                return;
+
+            var showPreview = modifierHeld && !PlaceholderModelHelper.IsMissingTypeModel(StateModel);
+
+            // Only ever take back a preview this actually started. The border shows the connector by
+            // itself while the pointer is over the edge of the state, and clearing it from here on every
+            // mouse move would undo that as soon as it appeared.
+            if (showPreview)
+                stateBorder.ShowAnchorPreview(worldPosition);
+            else if (m_AnchorPreviewShown)
+                stateBorder.HideAnchorPreview(worldPosition);
+
+            m_AnchorPreviewShown = showPreview;
+        }
+
         /// <inheritdoc />
         protected override DynamicBorder CreateDynamicBorder() => new StateBorder(this);
 
         /// <inheritdoc />
         protected override void BuildPartList()
         {
-            PartList.AppendPart(ProgressBarPart.Create(progressBarPartName, GraphElementModel, this, ussClassName));
+            PartList.AppendPart(StateColorLinePart.Create(colorLinePartName, GraphElementModel, this, ussClassName));
             PartList.AppendPart(NodeTitlePart.Create(titleContainerPartName, GraphElementModel, this, ussClassName,
                 EditableTitlePart.Options.UseEllipsis | NodeTitlePart.Options.HasIcon));
         }
@@ -147,6 +182,11 @@ namespace Unity.GraphToolkit.Editor
             base.PostBuildUI();
 
             TransitionConnector = new TransitionConnector();
+
+            // The border only sees the mouse when it is over the edge of the state, but the create
+            // transition modifier works anywhere on the state, so the preview is driven from here.
+            RegisterCallback<MouseMoveEvent>(OnMouseMoveForAnchorPreview);
+            RegisterCallback<MouseLeaveEvent>(OnMouseLeaveForAnchorPreview);
 
             AddToClassList(ussClassName);
             this.AddPackageStylesheet("State.uss");
@@ -159,19 +199,72 @@ namespace Unity.GraphToolkit.Editor
             }
         }
 
+        /// <inheritdoc />
+        public virtual void BeginAnimating(float animationSpeed)
+        {
+            var part = PartList.GetPart(colorLinePartName) as NodeColorLinePart;
+            if (part == null)
+                return;
+
+            part.PlayAnimation(animationSpeed);
+        }
+
+        /// <inheritdoc />
+        public virtual void StopAnimating()
+        {
+            var part = PartList.GetPart(colorLinePartName) as NodeColorLinePart;
+            if (part == null)
+                return;
+
+            part.StopAnimation();
+        }
+
+        /// <inheritdoc />
+        public virtual void AnimationUpdate(double deltaTime)
+        {
+            var part = PartList.GetPart(colorLinePartName) as NodeColorLinePart;
+            if (part == null)
+                return;
+
+            part.UpdateAnimation(deltaTime);
+        }
+
+        /// <summary>
+        /// Sets the fill amount displayed on the state's accent bar.
+        /// </summary>
+        /// <param name="percentage">The fill amount, in percent, in the range [-100, 100].</param>
+        public virtual void OverrideFillAmount(float percentage)
+        {
+            var part = PartList.GetPart(colorLinePartName) as NodeColorLinePart;
+            if (part == null)
+                return;
+
+            part.OverrideFillAmount(percentage);
+        }
+
+        /// <inheritdoc />
+        public virtual void ClearFillAmountOverride()
+        {
+            var part = PartList.GetPart(colorLinePartName) as NodeColorLinePart;
+            if (part == null)
+                return;
+
+            part.ClearFillAmountOverride();
+        }
+
         internal bool PasteAsNew()
         {
             using var copyPaste = GraphView.GraphTool.ClipboardProvider.DeserializeDataFromClipboard();
-            return HandlePasteOperation(PasteOperation.Paste, Transition.pasteTransitionsAsNewCommandName, new Vector2(0, 0), copyPaste);
+            return HandlePasteOperation(PasteOperation.Paste, TransitionView.pasteTransitionsAsNewCommandName, new Vector2(0, 0), copyPaste);
         }
 
         /// <inheritdoc />
         public override bool HandlePasteOperation(PasteOperation operation, string operationName, Vector2 delta, CopyPasteData copyPasteData)
         {
-            if (!Transition.CanPasteTransitionsAsNew(copyPasteData))
+            if (!TransitionView.CanPasteTransitionsAsNew(copyPasteData))
                 return false;
 
-            var additivePaste = operationName == Transition.pasteTransitionsAsNewCommandName;
+            var additivePaste = operationName == TransitionView.pasteTransitionsAsNewCommandName;
             var transitionsToPaste = new List<TransitionSupportModel>();
             foreach (var wire in copyPasteData.Wires)
             {

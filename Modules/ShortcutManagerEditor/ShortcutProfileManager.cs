@@ -125,7 +125,17 @@ namespace UnityEditor.ShortcutManagement
 
         public void ReloadProfiles()
         {
-            InitializeLoadedProfilesDictionary();
+            try
+            {
+                InitializeLoadedProfilesDictionary();
+            }
+
+            // Prevent the profile from being overritten when there's a file load issue
+            catch (Exception e) when (e is IOException || e is UnauthorizedAccessException)
+            {
+                Debug.LogWarning($"Failed to load shortcut profiles because of a shortcut file error. Skipping file reload.");
+                return;
+            }
 
             // Update active profile from store (it might be changed or deleted)
             if (activeProfile != null)
@@ -558,10 +568,12 @@ namespace UnityEditor.ShortcutManagement
             if (m_ProfileStore.ProfileExists(id))
             {
                 ShortcutProfile tmpProfile = new ShortcutProfile(id);
-                LoadAndApplyJsonFile(id, tmpProfile);
-                return tmpProfile;
+                if (LoadAndApplyJsonFile(id, tmpProfile))
+                    return tmpProfile;
             }
-            throw new FileNotFoundException(string.Format("'{0}.shortcut' does not exist!", id));
+
+            Debug.LogWarning($"Failed to load shortcut file: '{id}.shortcut'");
+            return null;
         }
 
         List<ShortcutProfile> LoadProfiles()
@@ -570,24 +582,32 @@ namespace UnityEditor.ShortcutManagement
             var shortcutProfiles = new List<ShortcutProfile>();
             foreach (var id in shortcutIds)
             {
-                shortcutProfiles.Add(LoadProfile(id));
+                var profile = LoadProfile(id);
+                if (profile != null)
+                    shortcutProfiles.Add(profile);
             }
+
             return shortcutProfiles;
         }
 
-        void LoadAndApplyJsonFile(string id, ShortcutProfile instance)
+        bool LoadAndApplyJsonFile(string id, ShortcutProfile instance)
         {
             if (!m_ProfileStore.ProfileExists(id))
             {
-                return;
+                return false;
             }
 
             var json = m_ProfileStore.LoadShortcutProfileJson(id);
+            if (string.IsNullOrEmpty(json))
+                return false;
+
             JsonUtility.FromJsonOverwrite(json, instance);
             if (id != instance.id)
             {
                 Debug.LogWarning(string.Format("The identifier '{0}' doesn't match the filename of '{1}.shortcut'!", id, instance.id));
             }
+
+            return true;
         }
 
         public string GetProfileId(string path)

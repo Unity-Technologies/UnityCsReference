@@ -52,7 +52,7 @@ namespace Unity.Multiplayer.PlayMode.Editor
                 { LayoutFlags.SceneHierarchyWindow, "UnityEditor.SceneHierarchyWindow" },
                 { LayoutFlags.ConsoleWindow, "UnityEditor.ConsoleWindow" },
                 { LayoutFlags.SceneView, "UnityEditor.SceneView" },
-                { LayoutFlags.EntitiesPlayModeToolsWindow, "Unity.NetCode.Editor.MultiplayerPlayModeWindow" },
+                { LayoutFlags.EntitiesPlayModeToolsWindow, "Unity.Netcode.Editor.MultiplayerPlayModeWindow" },
                 { LayoutFlags.EntitiesHierarchyWindow, "Unity.Entities.Editor.HierarchyWindow"},
                 { LayoutFlags.ProfilerWindow, "UnityEditor.ProfilerWindow"},
             };

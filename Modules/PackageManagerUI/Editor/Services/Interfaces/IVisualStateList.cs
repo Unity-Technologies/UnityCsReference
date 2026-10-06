@@ -6,12 +6,12 @@ using System.Collections.Generic;
 
 namespace UnityEditor.PackageManager.UI.Internal
 {
-    internal interface IVisualStateList : IEnumerable<VisualState>
+    internal interface IVisualStateList : IReadOnlyList<VisualState>
     {
         long countLoaded { get; }
         long countTotal { get; }
 
-        IReadOnlyCollection<string> orderedGroupNames { get; }
+        IReadOnlyList<string> orderedGroupNames { get; }
 
         VisualState Get(string itemUniqueId);
         bool Contains(string itemUniqueId);

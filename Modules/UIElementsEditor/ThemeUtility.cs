@@ -34,6 +34,9 @@ namespace UnityEditor.UIElements
     internal static partial class ThemeUtility
     {
         [AutoStaticsCleanupOnCodeReload]
+        // Subscribers attach through their own lifecycle - inspector OnEnable, element AttachToPanelEvent and
+        // BuilderToolbar construction - so the cleared invocation list refills itself.
+        [IgnoreForUAL0015("Event whose subscribers re-register through their own lifecycle after a code reload")]
         public static event Action themeFilesChanged;
 
         // Internal for tests

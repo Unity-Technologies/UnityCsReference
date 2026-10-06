@@ -409,14 +409,20 @@ namespace UnityEditor.UIElements
             }
         }
 
+        // A UxmlTypeReference attribute is a Type on the element but a string in the serialized data, so it can not be
+        // written to the serialized field or its SerializedProperty as is.
+        public object ConvertToSerializedFieldValue(object value)
+        {
+            if (serializedField.FieldType == typeof(string) && value is Type &&
+                UxmlAttributeConverter.TryConvertToString<Type>(value, null, out var stringValue))
+                return stringValue;
+
+            return value;
+        }
+
         public void SetSerializedValue(object uxmlSerializedData, object value)
         {
-            if (serializedField.FieldType == typeof(string) && value is Type)
-            {
-                // Attempt to convert the field to a string
-                if (UxmlAttributeConverter.TryConvertToString<Type>(value, null, out var stringValue))
-                    value = stringValue;
-            }
+            value = ConvertToSerializedFieldValue(value);
 
             if (isUnityObject && value is Object obj && obj.GetType() != serializedField.FieldType)
             {

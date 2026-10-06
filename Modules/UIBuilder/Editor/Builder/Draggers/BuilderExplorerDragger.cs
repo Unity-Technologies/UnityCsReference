@@ -205,6 +205,11 @@ namespace Unity.UI.Builder
 
         bool VerifyExternalDrag()
         {
+            // While a stylesheet is open by itself, the canvas hierarchy and the stylesheet set are
+            // fixed: dropping project assets in would mutate the throwaway preview host.
+            if (paneWindow.document.isCanvasReadOnly)
+                return false;
+
             bool isStyleSheetsDragger = this is BuilderStyleSheetsDragger;
             bool isHierarchyDragger = this is BuilderHierarchyDragger;
 

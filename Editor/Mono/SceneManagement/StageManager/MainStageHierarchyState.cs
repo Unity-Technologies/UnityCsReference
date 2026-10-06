@@ -21,7 +21,7 @@ namespace UnityEditor
         [SerializeField]
         EntityId m_LastClickedEntityId;
         [SerializeField]
-        string[] m_OpenSceneGUIDs = null;
+        GUID[] m_OpenSceneGUIDs = null;
 
         public void SaveStateFromHierarchy(SceneHierarchyWindow hierarchy, Stage stage)
         {
@@ -83,10 +83,10 @@ namespace UnityEditor
                 stage.setSelectionAndScrollWhenBecomingCurrentStage));
         }
 
-        string[] GetCurrentSceneGUIDs()
+        GUID[] GetCurrentSceneGUIDs()
         {
             int count = SceneManager.sceneCount;
-            string[] sceneGUIDs = new string[count];
+            GUID[] sceneGUIDs = new GUID[count];
             for (int i = 0; i < count; i++)
                 sceneGUIDs[i] = SceneManager.GetSceneAt(i).guid;
             return sceneGUIDs;

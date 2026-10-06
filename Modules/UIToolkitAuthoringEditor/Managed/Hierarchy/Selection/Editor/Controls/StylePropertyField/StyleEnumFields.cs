@@ -9,14 +9,17 @@ using UnityEngine.UIElements;
 namespace Unity.UIToolkit.Editor
 {
     [UxmlElement]
-    internal partial class DisplayStyleEnumField : StyleEnumField<DisplayStyle>
+    internal partial class DisplayStyleEnumField : StylePropertyField<StyleEnum<DisplayStyle>, DisplayStyleToggleField, DisplayStyle>
     {
         public DisplayStyleEnumField()
-            : base(true)
-        {
-            valueField.SetTooltipForEnumValue(DisplayStyle.Flex, "Turns the element into a flexible container for aligning and distributing items.");
-            valueField.SetTooltipForEnumValue(DisplayStyle.None, "Hides the element in the container. This might have an impact on the layout.");
-        }
+            : this(null) { }
+
+        public DisplayStyleEnumField(string label)
+            : base(label, new DisplayStyleToggleField()) { }
+
+        protected override DisplayStyleToggleField CreateValueField() => new DisplayStyleToggleField();
+
+        protected override StyleEnum<DisplayStyle> CreateStyleValue(DisplayStyle v) => v;
     }
 
     [UxmlElement]

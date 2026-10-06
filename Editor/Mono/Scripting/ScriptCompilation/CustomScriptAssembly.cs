@@ -2,8 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: ScriptingBuildtime not yet converted
-#pragma warning disable UAL0010,UAL0011,UAL0012,UAL0013,UAL0014 // AutoStaticsCleanup: ScriptingBuildtime not yet converted
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -236,8 +234,6 @@ namespace UnityEditor.Scripting.ScriptCompilation
     [DebuggerDisplay("{Name}")]
     class CustomScriptAssembly
     {
-        static readonly bool k_CompilerWarningsForImmutablePackages = Environment.GetEnvironmentVariable("UNITY_INTERNAL_NOSUPPRESSWARNINGS") == "1";
-
         // Whitelisted packages that should not have analyzer rules applied
         // All package names should have "com.unity." prefix
         static readonly string[] k_WhitelistedPackages = new string[]
@@ -328,6 +324,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
             "ui.test-framework",
             "visualeffectgraph",
             "xr.core-utils",
+            "xr.openxr",
         };
 
         [NoAutoStaticsCleanup] // immutable package ruleset file path computed once, safe to persist across reload
@@ -418,8 +415,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
                     assemblyFlags |= AssemblyFlags.NoEngineReferences;
                 }
 
-                bool rootFolder, immutable;
-                bool imported = AssetDatabase.TryGetAssetFolderInfo(PathPrefix, out rootFolder, out immutable);
+                var imported = AssetDatabase.TryGetAssetFolderInfo(PathPrefix, out _, out var immutable);
 
                 // Decide whether this assembly is subject to editor/FEP code-reload (AutoStatics) analysis:
                 //   - Immutable (read-only) packages are always excluded here; enable their area in the build
@@ -428,21 +424,14 @@ namespace UnityEditor.Scripting.ScriptCompilation
                 //     yet annotated for AutoStatics cleanup (e.g. when referenced as mutable "file:" packages in
                 //     Unity's own test projects). Remove a package from that list once it has been fixed.
                 //   - The user's own code (Assets) and their own mutable/local packages are analyzed.
-                bool excludedFromAnalysis = (imported && immutable) || IsInAutoStaticsCleanupExcludedPackage();
+                var excludedFromAnalysis = (imported && immutable) || IsInAutoStaticsCleanupExcludedPackage();
                 if (excludedFromAnalysis)
                     assemblyFlags |= AssemblyFlags.ExcludedFromCodeReloadAnalysis;
 
-                if (imported && immutable)
+                if (imported && immutable && IsUnityPackage() && !IsInWhitelistedPackage())
                 {
-                    if (IsUnityPackage() && !IsInWhitelistedPackage())
-                    {
-                        // Non-whitelisted Unity packages: Apply analyzer rules as errors
-                        CompilerOptions.RoslynAnalyzerRulesetPath = ImmutablePackageRulesetPath;
-                    }
-                    else if (!k_CompilerWarningsForImmutablePackages)
-                    {
-                        assemblyFlags |= AssemblyFlags.SuppressCompilerWarnings;
-                    }
+                    // Non-whitelisted Unity packages: Apply analyzer rules as errors
+                    CompilerOptions.RoslynAnalyzerRulesetPath = ImmutablePackageRulesetPath;
                 }
                 // User code uses the default Warning severity from the analyzer
 
@@ -519,6 +508,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
                 new CustomScriptAssemblyPlatform("LinuxStandaloneUniversal", BuildTarget.StandaloneLinuxUniversal),
                 new CustomScriptAssemblyPlatform("Lumin", BuildTarget.Lumin),
                 new CustomScriptAssemblyPlatform("Stadia", BuildTarget.Stadia),
+                new CustomScriptAssemblyPlatform("Kepler", BuildTarget.Kepler),
             };
             RenamedPlatforms = new string[]
             {
@@ -762,10 +752,20 @@ namespace UnityEditor.Scripting.ScriptCompilation
             var rulesetDirectory = System.IO.Path.Combine(projectPath, "Library");
             ImmutablePackageRulesetPath = System.IO.Path.Combine(rulesetDirectory, "ImmutablePackage.ruleset");
 
-            var rulesetContent = GenerateImmutablePackageRulesetContent();
+            const string rulesetContent = /* lang=xml */ """
+                <?xml version="1.0" encoding="utf-8"?>
+                <RuleSet Name="Immutable Package Rules" Description="Errors for Forbidden API rules" ToolsVersion="16.0">
+                  <Rules AnalyzerId="Unity.Analyzers" RuleNamespace="Unity.Analyzers">
+                    <Rule Id="UAC0005" Action="Error" />
+                    <Rule Id="UAC0006" Action="Error" />
+                    <Rule Id="UAC0007" Action="Error" />
+                    <Rule Id="UAC0020" Action="Error" />
+                    <Rule Id="UAC0023" Action="Error" />
+                  </Rules>
+                </RuleSet>
+                """;
 
             // Check if file exists with correct content before writing.
-            // Content may differ based on UNITY_INTERNAL_NOSUPPRESSWARNINGS environment variable.
             if (System.IO.File.Exists(ImmutablePackageRulesetPath))
             {
                 var existingContent = System.IO.File.ReadAllText(ImmutablePackageRulesetPath, System.Text.Encoding.UTF8);
@@ -776,32 +776,5 @@ namespace UnityEditor.Scripting.ScriptCompilation
             System.IO.Directory.CreateDirectory(rulesetDirectory);
             System.IO.File.WriteAllText(ImmutablePackageRulesetPath, rulesetContent, System.Text.Encoding.UTF8);
         }
-
-        private static string GenerateImmutablePackageRulesetContent()
-        {
-            var includeAllLine = k_CompilerWarningsForImmutablePackages ? "" : "  <IncludeAll Action=\"None\" />";
-            var suppressedRules = k_CompilerWarningsForImmutablePackages ? "" : @"
-    <Rule Id=""UAC1001"" Action=""None"" />
-    <Rule Id=""UAC1002"" Action=""None"" />
-    <Rule Id=""UAC1004"" Action=""None"" />
-    <Rule Id=""UAC1008"" Action=""None"" />
-    <Rule Id=""UAC1009"" Action=""None"" />
-    <Rule Id=""UAC1010"" Action=""None"" />
-    <Rule Id=""UAC1011"" Action=""None"" />";
-
-            return $@"<?xml version=""1.0"" encoding=""utf-8""?>
-<RuleSet Name=""Immutable Package Rules"" Description=""Errors for Forbidden API rules"" ToolsVersion=""16.0"">
-{includeAllLine}
-  <Rules AnalyzerId=""Unity.Analyzers"" RuleNamespace=""Unity.Analyzers"">
-    <Rule Id=""UAC0005"" Action=""Error"" />
-    <Rule Id=""UAC0006"" Action=""Error"" />
-    <Rule Id=""UAC0007"" Action=""Error"" />
-    <Rule Id=""UAC0020"" Action=""Error"" />
-    <Rule Id=""UAC0023"" Action=""Error"" />{suppressedRules}
-  </Rules>
-</RuleSet>";
-        }
     }
 }
-#pragma warning restore UAL0010,UAL0011,UAL0012,UAL0013,UAL0014
-#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

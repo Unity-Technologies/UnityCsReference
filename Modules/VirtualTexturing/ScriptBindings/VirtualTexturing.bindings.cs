@@ -55,7 +55,7 @@ namespace UnityEngine.Rendering
             ///<param name="textures">Textures making up the stack.</param>
             ///<param name="errorMessage">Possible error message if the stack is not valid.</param>
             ///<returns>If the given stack is valid or not.</returns>
-            [NativeMethod(ThrowsException = true)] extern public static bool ValidateTextureStack([NotNull][UnityMarshalAs(NativeType.ScriptingObjectPtr)] Texture[] textures, out string errorMessage);
+            [NativeMethod(ThrowsException = true)] extern public static bool ValidateTextureStack([NotNull] Texture[] textures, out string errorMessage);
 
             [NativeMethod(ThrowsException = true)] extern internal static StackValidationResult[] ValidateMaterialTextureStacks([NotNull] Material mat);
 

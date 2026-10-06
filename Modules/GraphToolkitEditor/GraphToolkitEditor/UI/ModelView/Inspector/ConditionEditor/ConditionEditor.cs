@@ -5,7 +5,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using Unity.GraphToolkit.CSO;
+using Unity.CSO;
 using Unity.GraphToolkit.Editor.ContextualMenuItems;
 using Unity.GraphToolkit.InternalBridge;
 using Unity.Scripting.LifecycleManagement;

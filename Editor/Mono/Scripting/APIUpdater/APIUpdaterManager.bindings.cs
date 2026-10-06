@@ -133,41 +133,22 @@ namespace UnityEditorInternal.APIUpdating
             PersistListOfAssembliesToUpdate();
         }
 
+        // CoreCLR rejects WaitHandle.WaitAll on an STA thread, which the Windows editor main thread
+        // is. Waiting per handle against a shared deadline is equivalent. Mono accepts the call and
+        // keeps the original batched WaitAll.
         internal static bool WaitOnManyEvents(IEnumerable<WaitHandle> waitEvents, TimeSpan timeout)
         {
-            var timeBomb = DateTime.Now + timeout;
-            foreach (var batch in BatchWaitHandles(waitEvents))
+            var elapsed = Stopwatch.StartNew();
+            foreach (var waitEvent in waitEvents)
             {
-                if (!WaitHandle.WaitAll(batch, timeBomb - DateTime.Now))
-                {
+                var remaining = timeout - elapsed.Elapsed;
+                if (remaining <= TimeSpan.Zero || !waitEvent.WaitOne(remaining))
                     return false;
-                }
             }
 
             return true;
         }
 
-        private static IEnumerable<WaitHandle[]> BatchWaitHandles(IEnumerable<WaitHandle> handles)
-        {
-            // According to documentation (https://docs.microsoft.com/en-us/dotnet/api/system.threading.waithandle.waitall?view=net-5.0#System_Threading_WaitHandle_WaitAll_System_Threading_WaitHandle___System_Int32)
-            // WaitAll accepts a maximum of 64 handles. So the max size of the returned batch will be 64
-            const int batchMaxSize = 64;
-            var currentBatch = new List<WaitHandle>(batchMaxSize);
-            foreach (var handle in handles)
-            {
-                currentBatch.Add(handle);
-                if (currentBatch.Count == batchMaxSize)
-                {
-                    yield return currentBatch.ToArray();
-                    currentBatch = new List<WaitHandle>(batchMaxSize);
-                }
-            }
-
-            if (currentBatch.Count > 0)
-            {
-                yield return currentBatch.ToArray();
-            }
-        }
 
         /*
          * We store this list at native side so it don't get lost at domain reloads
@@ -493,7 +474,7 @@ namespace UnityEditorInternal.APIUpdating
 
             var waitEvents = Array.ConvertAll(tasks, t => t.Event);
             var timeout = TimeSpan.FromSeconds(30);
-            if (!WaitHandle.WaitAll(waitEvents, timeout))
+            if (!WaitOnManyEvents(waitEvents, timeout))
             {
                 LogTimeoutError(tasks, timeout);
             }
@@ -515,6 +496,7 @@ namespace UnityEditorInternal.APIUpdating
                 }
             }
         }
+
 
         private static bool HandleCheckAssemblyPublishUpdaterConfigErrors(AssemblyUpdaterCheckAssemblyPublishConfigsTask[] nonTimedOutTasks)
         {

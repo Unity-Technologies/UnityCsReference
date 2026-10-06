@@ -2,9 +2,9 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: NativeHierarchyContainer not yet converted
 using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Runtime.InteropServices;
 using System.Text;
 using Unity.Scripting.LifecycleManagement;
@@ -48,8 +48,6 @@ namespace Unity.Hierarchy.Editor
 
         HierarchyNodeType m_NodeType;
         HierarchyNodeType m_SubSceneNodeType;
-        ParsedQuery<GameObject> m_ParsedQuery;
-        SearchMonitorView m_SearchMonitorView;
         Transform m_CustomParentForNewGameObjects;
         SceneQueryEngine m_QueryEngine;
 
@@ -66,7 +64,17 @@ namespace Unity.Hierarchy.Editor
             }
         }
 
-        internal HierarchySearchQueryDescriptor CurrentFilter { get; set; }
+        // Per search state, kept on the view model running the pass so two of them never share a parsed query
+        sealed class SearchState : IHierarchyNodeTypeHandlerViewModelState
+        {
+            public HierarchySearchQueryDescriptor Filter;
+            public ParsedQuery<GameObject> ParsedQuery;
+            public SearchMonitorView MonitorView;
+            public string ParsedFrom;
+
+            public void Dispose() => MonitorView.Dispose();
+
+        }
 
         HierarchyGameObjectHandler()
         {
@@ -118,6 +126,24 @@ namespace Unity.Hierarchy.Editor
         /// </summary>
         /// <param name="node">The <see cref="HierarchyNode"/> to get the <see cref="GameObject"/> for.</param>
         /// <returns>The <see cref="GameObject"/> that corresponds to the specified <see cref="HierarchyNode"/>.</returns>
+        /// <example>
+        /// The following example changes the icon a GameObject uses in the Hierarchy window if it has a specified tag. It uses `GetGameObject` to retrieve the GameObject for each bound item and applies a custom USS icon class to GameObjects with the `Favorite` tag. 
+        ///
+        /// The example requires a USS file called `ChangeNodeIcon.uss` and a tag called `Favorite`.
+        ///
+        /// To use this example:
+        ///
+        ///1. Save this script in a folder called `Assets/Editor/ChangeNodeIcon`. Scripts in an `Editor` folder can use the Hierarchy module API without additional setup. If you save the script outside of an `Editor` folder, you must enable the Hierarchy built-in module in the **Package Manager** window, which also adds the module to your Player builds.
+        ///2. Copy the styles from the USS example on this page. Save them in a USS file called `ChangeNodeIcon.uss` in the same `Assets/Editor/ChangeNodeIcon` folder. 
+        ///3. Create a tag called `Favorite`: select a GameObject, open the **Tag** dropdown in the **Inspector** window, and select **Add Tag**.
+        ///4. Assign the `Favorite` tag to a GameObject to change the icon it displays.
+        ///
+        /// <code source="../../../Tests/EditModeAndPlayModeTests/HierarchySamples/Assets/Editor/ChangeNodeIcon/ChangeNodeIcon.cs"/>
+        /// </example>
+        /// <example>
+        /// The following example shows how to style `ChangeNodeIcon.uss`.
+        /// <code source="../../../Tests/EditModeAndPlayModeTests/HierarchySamples/Assets/Editor/ChangeNodeIcon/ChangeNodeIcon.uss"/>
+        /// </example>
         [NativeMethod(IsThreadSafe = true)]
         public extern GameObject GetGameObject(in HierarchyNode node);
 
@@ -170,13 +196,24 @@ namespace Unity.Hierarchy.Editor
             HierarchyViewPrefabStyleUtility.ClearNavigationButton(item);
         }
 
-        // A stage with no scene, such as the UI Toolkit authoring stage, has nowhere to put a GameObject.
+        // A stage that shows no scene, such as the UI Toolkit authoring stage, has nowhere to put a GameObject.
+        // Only the scenes a stage exposes count: a stage may hold a hidden preview scene for its own bookkeeping.
         static bool StageHasGameObjects
         {
             get
             {
                 var stage = StageNavigationManager.instance.currentStage;
-                return stage is MainStage || (stage is PreviewSceneStage previewStage && previewStage.scene.IsValid());
+                if (stage is MainStage)
+                    return true;
+                if (stage is not PreviewSceneStage previewStage)
+                    return false;
+
+                for (int i = 0; i < previewStage.sceneCount; ++i)
+                {
+                    if (previewStage.GetSceneAt(i).IsValid())
+                        return true;
+                }
+                return false;
             }
         }
 
@@ -248,6 +285,10 @@ namespace Unity.Hierarchy.Editor
 
         bool IHierarchyEditorNodeTypeHandler.OnSetName(HierarchyView view, in HierarchyNode node, string name)
         {
+            // A GameObject always shows a name, so an emptied field is a cancel rather than a new name.
+            if (string.IsNullOrEmpty(name))
+                return false;
+
             var go = GetGameObject(in node);
             if (go == null)
                 return false;
@@ -722,7 +763,7 @@ namespace Unity.Hierarchy.Editor
             return GetOrCreateNode(m_CustomParentForNewGameObjects.gameObject);
         }
 
-        protected override void SearchBegin(HierarchySearchQueryDescriptor query)
+        protected override void SearchBegin(HierarchySearchQueryDescriptor query, HierarchyViewModel viewModel)
         {
             // We know all the filter have been processed natively.
             var nonNativeFilters = new List<HierarchySearchFilter>(query.Filters.Length);
@@ -731,37 +772,56 @@ namespace Unity.Hierarchy.Editor
                 if (f.Name != "t" || k_SpecialTypes.Contains(f.Value))
                     nonNativeFilters.Add(f);
             }
-            CurrentFilter = new HierarchySearchQueryDescriptor(nonNativeFilters.ToArray());
-            var queryStr = CurrentFilter.BuildFilterQuery();
-            m_ParsedQuery = QueryEngine.engine.ParseQuery(queryStr);
-            // TODO Search: GetView needs to be per Window id.
-            m_SearchMonitorView = SearchMonitor.GetView();
+
+            var filter = new HierarchySearchQueryDescriptor(nonNativeFilters.ToArray());
+            var queryStr = filter.BuildFilterQuery();
+
+            var state = viewModel.GetOrCreateHandlerState<SearchState>(GetNodeType());
+            state.Filter = filter;
+            if (state.ParsedFrom != queryStr)
+            {
+                state.ParsedQuery = QueryEngine.engine.ParseQuery(queryStr);
+                state.ParsedFrom = queryStr;
+            }
+
+            // Only ParsedQuery.Test reads the monitor view, and acquiring one opens the property database file
+            // stream, whose path allocations are enough to trigger a collection, so an empty filter must not pay it
+#pragma warning disable UAL0018 // the view is scoped to a single search: it is acquired here and disposed in SearchEnd, so the property stores it wraps are never held past the search
+            state.MonitorView = filter.IsEmpty ? default : SearchMonitor.GetView();
+#pragma warning restore UAL0018
         }
 
-        protected override bool SearchMatch(in HierarchyNode node)
+        protected override bool SearchMatch(in HierarchyNode node, HierarchyViewModel viewModel)
         {
-            if (CurrentFilter != null && CurrentFilter.IsEmpty)
+            if (!viewModel.TryGetHandlerState<SearchState>(GetNodeType(), out var state))
+                return false;
+
+            if (state.Filter != null && state.Filter.IsEmpty)
             {
                 // Filter is empty, accept anything.
                 return true;
             }
 
-            if (CurrentFilter.Invalid || !m_ParsedQuery.valid)
+            if (state.Filter.Invalid || !state.ParsedQuery.valid)
                 return false;
 
             var go = GetGameObject(in node);
-            return IsGameObjectSearchMatch(go);
+            return state.ParsedQuery.Test(go);
         }
 
-        protected override void SearchEnd()
+        protected override void SearchEnd(HierarchyViewModel viewModel)
         {
-            m_SearchMonitorView.Dispose();
+            // Only the monitor view has to go, it is a view onto the property database and cannot outlive the pass
+            if (viewModel.TryGetHandlerState<SearchState>(GetNodeType(), out var state))
+            {
+                state.MonitorView.Dispose();
+                state.MonitorView = default;
+            }
         }
 
-        internal bool IsGameObjectSearchMatch(GameObject go)
-        {
-            return m_ParsedQuery.Test(go);
-        }
+        // The filter is per view model now, so tests need to say which one they are asking about
+        internal HierarchySearchQueryDescriptor GetCurrentFilter(HierarchyViewModel viewModel)
+            => viewModel.TryGetHandlerState<SearchState>(GetNodeType(), out var state) ? state.Filter : null;
 
         #region IHierarchySearchPropositionProvider
         IEnumerable<SearchProposition> IHierarchySearchPropositionProvider.FetchPropositions(HierarchyViewModel viewModel, SearchContext context, SearchPropositionOptions options)
@@ -1087,6 +1147,24 @@ namespace Unity.Hierarchy.Editor
         [FreeFunction("HierarchyGameObjectHandlerBindings::SetPendingExternalDrop", HasExplicitThis = true)]
         extern void SetPendingExternalDrop(HierarchyNode parentNode, int dropIndex);
 
+        #region Marked as obsolete warning in 6.7
+        [Obsolete("Use the overload that takes a HierarchyViewModel.", false)]
+        [EditorBrowsable(EditorBrowsableState.Never)]
+        protected override void SearchBegin(HierarchySearchQueryDescriptor query)
+        {
+        }
+
+        [Obsolete("Use the overload that takes a HierarchyViewModel.", false)]
+        [EditorBrowsable(EditorBrowsableState.Never)]
+        protected override bool SearchMatch(in HierarchyNode node) => false;
+
+        [Obsolete("Use the overload that takes a HierarchyViewModel.", false)]
+        [EditorBrowsable(EditorBrowsableState.Never)]
+        protected override void SearchEnd()
+        {
+        }
+        #endregion
+
         #region Called from native
         [RequiredByNativeCode(Optional = true)]
         static IntPtr CreateGameObjectHandler(IntPtr nativePtr, IntPtr hierarchyPtr, IntPtr cmdListPtr)
@@ -1107,4 +1185,3 @@ namespace Unity.Hierarchy.Editor
         #endregion
     }
 }
-#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

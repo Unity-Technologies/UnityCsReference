@@ -2,7 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: IMGUIControls not yet converted
 using UnityEditorInternal;
 using UnityEngine;
 using Unity.Scripting.LifecycleManagement;
@@ -27,6 +26,9 @@ namespace UnityEditor
     internal partial class GradientPicker : EditorWindow
     {
         [AutoStaticsCleanupOnCodeReload]
+        // Shared window cache: PrepareShow re-acquires the gradient editor window through GetWindow whenever
+        // this is null, so the next Show call restores it.
+        [IgnoreForUAL0015("Shared window cache re-acquired by PrepareShow through GetWindow")]
         private static GradientPicker s_GradientPicker;
         public static string presetsEditorPrefID { get { return "Gradient"; } }
 
@@ -171,11 +173,14 @@ namespace UnityEditor
             if (m_GradientLibraryEditorState != null)
                 m_GradientLibraryEditorState.TransferEditorPrefsState(false);
 
-            m_OnClosed?.Invoke();
+            var onClosed = m_OnClosed;
             m_OnClosed = null;
 
+            // Clear before notifying, or `visible` reports an already-closing picker as open. (UUM-152938)
             s_GradientPicker?.UnregisterEvents();
             s_GradientPicker = null;
+
+            onClosed?.Invoke();
         }
 
         public void OnDestroy()
@@ -320,4 +325,3 @@ namespace UnityEditor
         }
     }
 } // namespace
-#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

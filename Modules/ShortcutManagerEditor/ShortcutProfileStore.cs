@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System;
 using System.Collections.Generic;
 using System.IO;
 using UnityEditor.Utils;
@@ -58,19 +59,31 @@ namespace UnityEditor.ShortcutManagement
         public string LoadShortcutProfileJson(string id)
         {
             var path = GetPathForProfile(id);
-            return File.ReadAllText(path);
+
+            try
+            {
+                return File.ReadAllText(path);
+            }
+            catch (Exception e) when (e is FileNotFoundException || e is DirectoryNotFoundException)
+            {
+                return string.Empty;
+            }
         }
 
         public string[] LoadAllShortcutProfilesJsonFromDisk()
         {
             string[] profilePaths = GetAllShortcutProfilePaths();
-            string[] filesJson = new string[profilePaths.Length];
+            var filesJson = new List<string>(profilePaths.Length);
             for (int i = 0; i < profilePaths.Length; ++i)
             {
-                filesJson[i] = File.ReadAllText(profilePaths[i]);
+                try
+                {
+                    filesJson.Add(File.ReadAllText(profilePaths[i]));
+                }
+                catch (Exception e) when (e is FileNotFoundException || e is DirectoryNotFoundException) { }
             }
 
-            return filesJson;
+            return filesJson.ToArray();
         }
 
         public IReadOnlyList<string> GetAllProfileIds()

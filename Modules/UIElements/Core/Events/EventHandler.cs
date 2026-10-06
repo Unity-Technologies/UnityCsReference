@@ -64,9 +64,24 @@ namespace UnityEngine.UIElements
     /// </summary>
     public abstract class CallbackEventHandler : IEventHandler
     {
+        // Seeded before every constructor body in the chain, so assigning the whole word later would discard
+        // the bits those constructors set.
+        private protected VisualElementFlags m_Flags = VisualElementFlags.Init;
+
+        [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
+        private protected bool GetFlag(VisualElementFlags flag) => (m_Flags & flag) == flag;
+
+        [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
+        private protected void SetFlag(VisualElementFlags flag, bool value) =>
+            m_Flags = value ? m_Flags | flag : m_Flags & ~flag;
+
         // IMGUIContainers are special snowflakes that need custom treatment regarding events.
         // This enables early outs in some dispatching strategies.
-        internal bool isIMGUIContainer = false;
+        internal bool isIMGUIContainer
+        {
+            get => GetFlag(VisualElementFlags.IsIMGUIContainer);
+            set => SetFlag(VisualElementFlags.IsIMGUIContainer, value);
+        }
 
         internal EventCallbackRegistry m_CallbackRegistry;
 

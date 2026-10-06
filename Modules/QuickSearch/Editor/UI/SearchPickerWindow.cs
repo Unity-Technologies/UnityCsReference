@@ -2,7 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: Search not yet converted
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Search;
@@ -147,7 +146,8 @@ namespace UnityEditor.Search
             return position.size;
         }
 
-        private Rect RestoreWindowPosition(SearchViewState viewState)
+        // protected so a picker that builds its own window (not via ShowPicker) can still restore the saved position.
+        protected Rect RestoreWindowPosition(SearchViewState viewState)
         {
             Rect windowPosition = default;
             if (Utils.IsRunningTests() || viewState.HasFlag(SearchViewFlags.Centered))
@@ -170,7 +170,7 @@ namespace UnityEditor.Search
             return windowPosition;
         }
 
-        static void InjectDefaultRuntimeContext(SearchContext context)
+        protected static void InjectDefaultRuntimeContext(SearchContext context)
         {
             context.runtimeContext ??= new RuntimeSearchContext();
             if (context.runtimeContext.pickerType == SearchPickerType.None)
@@ -183,4 +183,3 @@ namespace UnityEditor.Search
         }
     }
 }
-#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

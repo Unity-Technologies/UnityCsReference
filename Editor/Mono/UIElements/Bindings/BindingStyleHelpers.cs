@@ -2,8 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: UIToolkitFramework not yet converted
-#pragma warning disable UAL0010,UAL0011,UAL0012,UAL0013,UAL0014 // AutoStaticsCleanup: UIToolkitFramework not yet converted
 using System;
 using System.Collections.Generic;
 using UnityEditor.SceneManagement;
@@ -30,10 +28,19 @@ namespace UnityEditor.UIElements
         internal static event Action<VisualElement, SerializedProperty> updateBindingStateStyle;
 
         [AutoStaticsCleanupOnCodeReload]
+        // Re-created on every code load by Initialize() below, so the cleared slot is filled again before
+        // any field styling or right-click menu runs.
+        [IgnoreForUAL0015("Cached delegate re-created on every code load by BindingsStyleHelpers.Initialize()")]
         static EventCallback<PointerUpEvent> s_RightClickMenuCallback;
         [AutoStaticsCleanupOnCodeReload]
+        // Re-created on every code load by Initialize() below, so the cleared slot is filled again before
+        // any field styling or right-click menu runs.
+        [IgnoreForUAL0015("Cached delegate re-created on every code load by BindingsStyleHelpers.Initialize()")]
         static Action<VisualElement, SerializedProperty> s_UpdateElementStyleFromProperty;
         [AutoStaticsCleanupOnCodeReload]
+        // Re-created on every code load by Initialize() below, so the cleared slot is filled again before
+        // any field styling or right-click menu runs.
+        [IgnoreForUAL0015("Cached delegate re-created on every code load by BindingsStyleHelpers.Initialize()")]
         static Action<VisualElement, SerializedProperty> s_UpdatePrefabStateStyleFromProperty;
 
         const string k_ScrollTrackingHookedKey = "unity-prefab-override-scroll-tracked";
@@ -44,9 +51,16 @@ namespace UnityEditor.UIElements
         // Lets us bypass the default right click menu to show our own.
         [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
         [AutoStaticsCleanupOnCodeReload]
+        // Optional hook installed by the inspector UIs that provide their own context menu; each of them
+        // re-installs it through its own lifecycle after a code reload.
+        [IgnoreForUAL0015("Optional delegate hook re-installed by its owners through their own lifecycle")]
         internal static HandleRightClickMenuDelegate HandleRightClickMenu;
 
-        static BindingsStyleHelpers()
+        // These cached delegates are cleared on code reload, so they have to be re-created on every load.
+        // A static constructor would only run once per domain, leaving them null and breaking field
+        // right-click menus and prefab-override/animation styling after the first reload.
+        [OnCodeLoaded]
+        static void Initialize()
         {
             s_RightClickMenuCallback = RightClickFieldMenuEvent;
             s_UpdateElementStyleFromProperty = UpdateElementStyleFromProperty;
@@ -626,12 +640,23 @@ namespace UnityEditor.UIElements
             return dropdownMenu;
         }
 
+        // The container persists, but MenuItemToActionStatusCallback below memoises a closure per status
+        // value into it, and those closures belong to the outgoing code-loaded scope. CleanupStatusCallbacks
+        // drops them on unload and re-seeds the two built-in entries.
         [NoAutoStaticsCleanup]
         static readonly Dictionary<DropdownMenuAction.Status, Func<DropdownMenuAction, DropdownMenuAction.Status>> s_StatusCallbacks = new()
         {
             { DropdownMenuAction.Status.Normal, DropdownMenuAction.AlwaysEnabled },
             { DropdownMenuAction.Status.Disabled, DropdownMenuAction.AlwaysDisabled },
         };
+
+        [OnCodeUnloading]
+        static void CleanupStatusCallbacks()
+        {
+            s_StatusCallbacks.Clear();
+            s_StatusCallbacks.Add(DropdownMenuAction.Status.Normal, DropdownMenuAction.AlwaysEnabled);
+            s_StatusCallbacks.Add(DropdownMenuAction.Status.Disabled, DropdownMenuAction.AlwaysDisabled);
+        }
 
         static Func<DropdownMenuAction, DropdownMenuAction.Status> MenuItemToActionStatusCallback(GenericMenu.MenuItem menuItem)
         {
@@ -660,5 +685,3 @@ namespace UnityEditor.UIElements
         }
     }
 }
-#pragma warning restore UAL0010,UAL0011,UAL0012,UAL0013,UAL0014
-#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

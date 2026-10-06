@@ -40,14 +40,14 @@ namespace Unity.Multiplayer.PlayMode.Editor
         private string m_ButtonCallToActionStartText;
         private string m_ButtonCallToActionStopText;
 
-        private Instance m_Instance;
+        private ControllerRuntime m_Instance;
         private PopupField<string> m_DropDown;
         private Image m_DropdownRunModeImage = null;
         private bool m_IsRunModeBound;
         private Button m_FreeRunButton;
         private HelpBox m_DisabledFreeRunButtonHelpbox;
 
-        public FreeRunningStatusElement(Instance instance)
+        public FreeRunningStatusElement(ControllerRuntime instance)
         {
             m_Instance = instance;
 

@@ -240,8 +240,8 @@ namespace UnityEngine.Rendering
         {
             var isSupported = (bool*)isSupportedPtr;
 
-            // 0 = Enlighten
-            *isSupported = lightmapper != 0;
+            // 0 = Enlighten (removed), 1 = Progressive CPU (removed)
+            *isSupported = lightmapper > 1;
         }
 
         [RequiredByNativeCode]
@@ -290,7 +290,7 @@ namespace UnityEngine.Rendering
         {
             var lightmapper = (int*)lightmapperPtr;
 
-            *lightmapper = 1; // Progressive CPU
+            *lightmapper = 2; // Progressive GPU
         }
 
         [RequiredByNativeCode]

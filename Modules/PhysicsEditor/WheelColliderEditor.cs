@@ -34,15 +34,15 @@ namespace UnityEditor
 
         private static class Styles
         {
-            public static readonly GUIContent forceAppPointDistanceContent = EditorGUIUtility.TrTextContent("Force App Point Distance", "The point where the wheel forces are applied");
-            public static readonly GUIContent centerContent = EditorGUIUtility.TrTextContent("Center", "The position of the Collider in the GameObject's local space.");
-            public static readonly GUIContent suspensionDistanceContent = EditorGUIUtility.TrTextContent("Suspension Distance", "Maximum extension distance of wheel suspension, measured in local space. Suspension always extends downwards through the local Y-axis.");
-            public static readonly GUIContent suspensionSpringContent = EditorGUIUtility.TrTextContent("Suspension Spring", "The suspension attempts to reach a Target Position by adding spring and damping forces.");
-            public static readonly GUIContent forwardFrictionContent = EditorGUIUtility.TrTextContent("Forward Friction", "Tire friction properties when the wheel is rolling forward.");
-            public static readonly GUIContent sidewaysFrictionContent = EditorGUIUtility.TrTextContent("Sideways Friction", "Tire friction properties when the wheel is rolling sideways.");
-            public static readonly GUIContent layerOverridePriority = EditorGUIUtility.TrTextContent("Layer Override Priority", "When 2 colliders have conflicting overrides, the settings of the collider with the higher priority are taken.");
-            public static readonly GUIContent includeLayers = EditorGUIUtility.TrTextContent("Include Layers", "Layers to include when producing collisions");
-            public static readonly GUIContent excludeLayers = EditorGUIUtility.TrTextContent("Exclude Layers", "Layers to exclude when producing collisions");
+            public static readonly GUIContent forceAppPointDistanceContent = L10n.TextContent("Force App Point Distance", "The point where the wheel forces are applied", null, null);
+            public static readonly GUIContent centerContent = L10n.TextContent("Center", "The position of the Collider in the GameObject's local space.", null, null);
+            public static readonly GUIContent suspensionDistanceContent = L10n.TextContent("Suspension Distance", "Maximum extension distance of wheel suspension, measured in local space. Suspension always extends downwards through the local Y-axis.", null, null);
+            public static readonly GUIContent suspensionSpringContent = L10n.TextContent("Suspension Spring", "The suspension attempts to reach a Target Position by adding spring and damping forces.", null, null);
+            public static readonly GUIContent forwardFrictionContent = L10n.TextContent("Forward Friction", "Tire friction properties when the wheel is rolling forward.", null, null);
+            public static readonly GUIContent sidewaysFrictionContent = L10n.TextContent("Sideways Friction", "Tire friction properties when the wheel is rolling sideways.", null, null);
+            public static readonly GUIContent layerOverridePriority = L10n.TextContent("Layer Override Priority", "When 2 colliders have conflicting overrides, the settings of the collider with the higher priority are taken.", null, null);
+            public static readonly GUIContent includeLayers = L10n.TextContent("Include Layers", "Layers to include when producing collisions", null, null);
+            public static readonly GUIContent excludeLayers = L10n.TextContent("Exclude Layers", "Layers to exclude when producing collisions", null, null);
         }
 
         public void OnEnable()

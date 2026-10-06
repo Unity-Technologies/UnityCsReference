@@ -14,6 +14,8 @@ namespace UnityEditor.Build.Reporting
     [NativeClass("BuildReporting::ScenesUsingAssets", PersistentTypeId = 0x0953BED7)]
     public sealed class ScenesUsingAssets : Object
     {
+        internal ScenesUsingAssets(global::UnityEngine.EntityId id) : base(id) {}
+        public ScenesUsingAssets() {}
         ///<summary>An array of <see cref="ScenesUsingAsset" /> that holds information about the Assets that are included in the build.</summary>
         public ScenesUsingAsset[] list
         {

@@ -281,6 +281,8 @@ namespace UnityEngine
     [NativeClass("Physics::ArticulationBody", PersistentTypeId = 0x0A3C9234)]
     public partial class ArticulationBody : Behaviour
     {
+        internal ArticulationBody(global::UnityEngine.EntityId id) : base(id) {}
+        public ArticulationBody() {}
         ///<summary>The type of joint connecting this body to its parent body.</summary>
         ///<remarks>Changing the joint type can affect the valid range for drive limits. If existing drive limits fall outside the new joint type's valid range, they are automatically clamped and a warning is logged.</remarks>
         extern public ArticulationJointType jointType { get; set; }

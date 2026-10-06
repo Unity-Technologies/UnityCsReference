@@ -106,49 +106,49 @@ namespace UnityEditor
 
         static class Styles
         {
-            public static readonly GUIContent AnimationType = EditorGUIUtility.TrTextContent("Animation Type", "The type of animation to support / import.");
+            public static readonly GUIContent AnimationType = L10n.TextContent("Animation Type", "The type of animation to support / import.", null, null);
             public static readonly GUIContent[] AnimationTypeOpt =
             {
-                EditorGUIUtility.TrTextContent("None", "No animation present."),
-                EditorGUIUtility.TrTextContent("Legacy", "Legacy animation system."),
-                EditorGUIUtility.TrTextContent("Generic", "Generic Mecanim animation."),
-                EditorGUIUtility.TrTextContent("Humanoid", "Humanoid Mecanim animation system.")
+                L10n.TextContent("None", "No animation present.", null, null),
+                L10n.TextContent("Legacy", "Legacy animation system.", null, null),
+                L10n.TextContent("Generic", "Generic Mecanim animation.", null, null),
+                L10n.TextContent("Humanoid", "Humanoid Mecanim animation system.", null, null)
             };
 
-            public static readonly GUIContent SaveAvatar = EditorGUIUtility.TrTextContent("Save Avatar", "Saves the generated Avatar as a sub-asset.");
+            public static readonly GUIContent SaveAvatar = L10n.TextContent("Save Avatar", "Saves the generated Avatar as a sub-asset.", null, null);
 
-            public static readonly GUIContent AnimLabel = EditorGUIUtility.TrTextContent("Generation", "Controls how animations are imported.");
+            public static readonly GUIContent AnimLabel = L10n.TextContent("Generation", "Controls how animations are imported.", null, null);
             public static readonly GUIContent[] AnimationsOpt =
             {
-                EditorGUIUtility.TrTextContent("Don't Import", "No animation or skinning is imported."),
-                EditorGUIUtility.TrTextContent("Store in Original Roots (Deprecated)", "Animations are stored in the root objects of your animation package (these might be different from the root objects in Unity)."),
-                EditorGUIUtility.TrTextContent("Store in Nodes (Deprecated)", "Animations are stored together with the objects they animate. Use this when you have a complex animation setup and want full scripting control."),
-                EditorGUIUtility.TrTextContent("Store in Root (Deprecated)", "Animations are stored in the scene's transform root objects. Use this when animating anything that has a hierarchy."),
-                EditorGUIUtility.TrTextContent("Store in Root (New)")
+                L10n.TextContent("Don't Import", "No animation or skinning is imported.", null, null),
+                L10n.TextContent("Store in Original Roots (Deprecated)", "Animations are stored in the root objects of your animation package (these might be different from the root objects in Unity).", null, null),
+                L10n.TextContent("Store in Nodes (Deprecated)", "Animations are stored together with the objects they animate. Use this when you have a complex animation setup and want full scripting control.", null, null),
+                L10n.TextContent("Store in Root (Deprecated)", "Animations are stored in the scene's transform root objects. Use this when animating anything that has a hierarchy.", null, null),
+                L10n.TextContent("Store in Root (New)", null, null, null)
             };
 
-            public static readonly GUIContent avatar = EditorGUIUtility.TrTextContent("Animator");
-            public static readonly GUIContent configureAvatar = EditorGUIUtility.TrTextContent("Configure...");
+            public static readonly GUIContent avatar = L10n.TextContent("Animator", null, null, null);
+            public static readonly GUIContent configureAvatar = L10n.TextContent("Configure...", null, null, null);
 
-            public static readonly GUIContent UpdateMuscleDefinitionFromSource = EditorGUIUtility.TrTextContent("Update", "Update the copy of the muscle definition from the source.");
-            public static readonly GUIContent RootNode = EditorGUIUtility.TrTextContent("Root node", "Specify the root node used to extract the animation translation.");
+            public static readonly GUIContent UpdateMuscleDefinitionFromSource = L10n.TextContent("Update", "Update the copy of the muscle definition from the source.", null, null);
+            public static readonly GUIContent RootNode = L10n.TextContent("Root node", "Specify the root node used to extract the animation translation.", null, null);
 
-            public static readonly GUIContent AvatarDefinition = EditorGUIUtility.TrTextContent("Avatar Definition", "Choose between Create From This Model or Copy From Other Avatar. The first one creates an Avatar for this file and the second one uses an Avatar from another file to import animation.");
+            public static readonly GUIContent AvatarDefinition = L10n.TextContent("Avatar Definition", "Choose between Create From This Model or Copy From Other Avatar. The first one creates an Avatar for this file and the second one uses an Avatar from another file to import animation.", null, null);
 
-            public static readonly GUIContent SkinWeightsMode = EditorGUIUtility.TrTextContent("Skin Weights", "Control how many bone weights are imported.");
+            public static readonly GUIContent SkinWeightsMode = L10n.TextContent("Skin Weights", "Control how many bone weights are imported.", null, null);
             public static readonly GUIContent[] SkinWeightsModeOpt =
             {
-                EditorGUIUtility.TrTextContent("Standard (4 Bones)", "Import a maximum of 4 bones per vertex."),
-                EditorGUIUtility.TrTextContent("Custom", "Import a custom number of bones per vertex.")
+                L10n.TextContent("Standard (4 Bones)", "Import a maximum of 4 bones per vertex.", null, null),
+                L10n.TextContent("Custom", "Import a custom number of bones per vertex.", null, null)
             };
-            public static readonly GUIContent MaxBonesPerVertex = EditorGUIUtility.TrTextContent("Max Bones/Vertex", "Number of bones that can affect each vertex.");
-            public static readonly GUIContent MinBoneWeight = EditorGUIUtility.TrTextContent("Min Bone Weight", "Bone weights smaller than this value are rejected. The remaining weights are scaled to add up to 1.0.");
-            public static readonly GUIContent OptimizeBones = EditorGUIUtility.TrTextContent("Strip Bones", "Only adds bones to SkinnedMeshRenderers that have skin weights assigned to them.");
+            public static readonly GUIContent MaxBonesPerVertex = L10n.TextContent("Max Bones/Vertex", "Number of bones that can affect each vertex.", null, null);
+            public static readonly GUIContent MinBoneWeight = L10n.TextContent("Min Bone Weight", "Bone weights smaller than this value are rejected. The remaining weights are scaled to add up to 1.0.", null, null);
+            public static readonly GUIContent OptimizeBones = L10n.TextContent("Strip Bones", "Only adds bones to SkinnedMeshRenderers that have skin weights assigned to them.", null, null);
 
-            public static readonly GUIContent UpdateReferenceClips = EditorGUIUtility.TrTextContent("Update referenced clips", "Click on this button to update all the referenced clips matching this model. This will set all these clips to Copy From Other Avatar, set the source Avatar to this one and reimport all these files. See the documentation for EditorSettings.referenceClipsExactNaming for more details about how models are matched to referenced clips.");
+            public static readonly GUIContent UpdateReferenceClips = L10n.TextContent("Update referenced clips", "Click on this button to update all the referenced clips matching this model. This will set all these clips to Copy From Other Avatar, set the source Avatar to this one and reimport all these files. See the documentation for EditorSettings.referenceClipsExactNaming for more details about how models are matched to referenced clips.", null, null);
 
-            public static readonly GUIContent ImportMessages = EditorGUIUtility.TrTextContent("Import Messages");
-            public static readonly GUIContent ExtraExposedTransform = EditorGUIUtility.TrTextContent("Extra Transforms to Expose", "Select the list of transforms to expose in the optimized GameObject hierarchy.");
+            public static readonly GUIContent ImportMessages = L10n.TextContent("Import Messages", null, null, null);
+            public static readonly GUIContent ExtraExposedTransform = L10n.TextContent("Extra Transforms to Expose", "Select the list of transforms to expose in the optimized GameObject hierarchy.", null, null);
         }
 
         public ModelImporterRigEditor(AssetImporterEditor panelContainer)
@@ -178,7 +178,7 @@ namespace UnityEditor
                 m_RootMotionBoneList[i] = new GUIContent(transformPaths[i]);
 
             if (m_RootMotionBoneList.Length > 0)
-                m_RootMotionBoneList[0] = EditorGUIUtility.TrTextContent("None");
+                m_RootMotionBoneList[0] = L10n.TextContent("None", null, null, null);
 
             m_ExposeTransformEditor.OnEnable(singleImporter.transformPaths, serializedObject);
 

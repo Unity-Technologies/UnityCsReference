@@ -2,7 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: VisualEffects not yet converted
 using UnityEngine;
 using UnityEditor;
 using System.Collections.Generic;
@@ -29,9 +28,9 @@ internal class ParticleSystemCurveEditor
         public GUIStyle curveSwatch = "PopupCurveEditorSwatch";
         public GUIStyle curveSwatchArea = "PopupCurveSwatchBackground";
         public GUIStyle yAxisHeader = new GUIStyle(ParticleSystemStyles.Get().label);
-        public GUIContent optimizeCurveText = EditorGUIUtility.TrTextContent("Optimize", "Click to optimize curve. Optimized curves are defined by having at most 3 keys, with a key at both ends, and do not support loop or ping pong wrapping.");
-        public GUIContent removeCurveText = EditorGUIUtility.TrTextContent("Remove", "Remove selected curve(s)");
-        public GUIContent curveLibraryPopup = EditorGUIUtility.TrTextContent("", "Open curve library");
+        public GUIContent optimizeCurveText = L10n.TextContent("Optimize", "Click to optimize curve. Optimized curves are defined by having at most 3 keys, with a key at both ends, and do not support loop or ping pong wrapping.", null, null);
+        public GUIContent removeCurveText = L10n.TextContent("Remove", "Remove selected curve(s)", null, null);
+        public GUIContent curveLibraryPopup = L10n.TextContent("", "Open curve library", null, null);
         public GUIContent presetTooltip = new GUIContent();
     }
     [NoAutoStaticsCleanup] // lazy-initialized UI styles cache
@@ -819,4 +818,3 @@ internal class ParticleSystemCurveEditor
         m_CurveEditorSettings.showAxisLabels = m_CurveEditor.animationCurves.Length > 0;
     }
 }
-#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

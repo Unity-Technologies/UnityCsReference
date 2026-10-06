@@ -2,7 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: SceneView not yet converted
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -88,6 +87,9 @@ namespace UnityEditor
         }
 
         [AutoStaticsCleanupOnCodeReload]
+        // Last-active cache: the lastActiveSceneView getter falls back to the first entry of the live scene
+        // view list when this is null, and it is reassigned as scene views are focused.
+        [IgnoreForUAL0015("Last-active cache re-derived from the live scene view list by the getter")]
         static SceneView s_LastActiveSceneView;
 
         [RequiredByNativeCode]
@@ -255,6 +257,7 @@ namespace UnityEditor
 
         internal bool showLightingVisualizationPanel => this.showExposureSettings || this.showBackfaceHighlightsToggle || this.showLightmapResolutionToggle || this.currentDrawModeMayUseInteractiveLightBakingData;
 
+        [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
         internal static Transform GetDefaultParentObjectIfSet()
         {
             Transform parentObject = null;
@@ -400,6 +403,7 @@ namespace UnityEditor
         }
 
         [SerializeField] ulong m_OverrideSceneCullingMask;
+        [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
         internal ulong overrideSceneCullingMask
         {
             get { return m_OverrideSceneCullingMask; }
@@ -656,6 +660,9 @@ namespace UnityEditor
         }
 
         [AutoStaticsCleanupOnCodeReload]
+        // Latch recording which scene view currently owns audio preview; RefreshAudioPlay re-establishes it
+        // on the next audio toggle or stage change, and the per-view flag driving it is serialized.
+        [IgnoreForUAL0015("Audio-preview owner latch, re-established by the next RefreshAudioPlay")]
         static SceneView s_AudioSceneView;
 
         [SerializeField]
@@ -698,6 +705,9 @@ namespace UnityEditor
         [AutoStaticsCleanupOnCodeReload]
         public static event Action<SceneView> beforeSceneGui;
         [AutoStaticsCleanupOnCodeReload]
+        // Subscribers are inspectors, tools and overlays that subscribe in OnEnable and unsubscribe in
+        // OnDisable, so the cleared invocation list refills as those editors are enabled again.
+        [IgnoreForUAL0015("Event whose subscribers re-register from inspector and overlay OnEnable")]
         public static event Action<SceneView> duringSceneGui;
 
         [AutoStaticsCleanupOnCodeReload]
@@ -726,8 +736,6 @@ namespace UnityEditor
 
         [SerializeField]
         CameraMode m_CameraMode;
-
-        internal SceneOrientationGizmo m_OrientationGizmo;
 
         public CameraMode cameraMode
         {
@@ -1048,6 +1056,7 @@ namespace UnityEditor
                 set => m_DynamicClip = value;
             }
 
+            [Obsolete("SceneView.CameraSettings.occlusionCulling is deprecated and will be removed in a future release. Consider migrating to GPU Occlusion Culling where your target platform supports it. #from(6000.7)", false)]
             public bool occlusionCulling
             {
                 get => m_OcclusionCulling;
@@ -1351,20 +1360,20 @@ namespace UnityEditor
 
         internal static class Styles
         {
-            public static readonly GUIContent toolsContent = EditorGUIUtility.TrIconContent("SceneViewTools", "Hide or show the Component Editor Tools panel in the Scene view.");
-            public static readonly GUIContent lighting = EditorGUIUtility.TrIconContent("SceneviewLighting", "When toggled on, the Scene lighting is used. When toggled off, a light attached to the Scene view camera is used.");
-            public static readonly GUIContent fx = EditorGUIUtility.TrIconContent("SceneviewFx", "Toggle skybox, fog, and various other effects.");
-            public static readonly GUIContent audioPlayContent = EditorGUIUtility.TrIconContent("SceneviewAudio", "Toggle audio on or off.");
-            public static readonly GUIContent gizmosContent = EditorGUIUtility.TrTextContent("Gizmos", "Toggle visibility of all Gizmos in the Scene view");
-            public static readonly GUIContent gizmosDropDownContent = EditorGUIUtility.TrTextContent("", "Toggle the visibility of different Gizmos in the Scene view.");
-            public static readonly GUIContent mode2DContent = EditorGUIUtility.TrIconContent("SceneView2D", "When toggled on, the Scene is in 2D view. When toggled off, the Scene is in 3D view.");
-            public static readonly GUIContent gridXToolbarContent = EditorGUIUtility.TrIconContent("GridAxisX", "Toggle the visibility of the grid");
-            public static readonly GUIContent gridYToolbarContent = EditorGUIUtility.TrIconContent("GridAxisY", "Toggle the visibility of the grid");
-            public static readonly GUIContent gridZToolbarContent = EditorGUIUtility.TrIconContent("GridAxisZ", "Toggle the visibility of the grid");
-            public static readonly GUIContent metalFrameCaptureContent = EditorGUIUtility.TrIconContent("FrameCapture", "Capture the current view and open in Xcode frame debugger");
-            public static readonly GUIContent sceneVisToolbarButtonContent = EditorGUIUtility.TrIconContent("SceneViewVisibility", "Number of hidden objects, click to toggle scene visibility");
+            public static readonly GUIContent toolsContent = L10n.IconContent("SceneViewTools", "Hide or show the Component Editor Tools panel in the Scene view.", null);
+            public static readonly GUIContent lighting = L10n.IconContent("SceneviewLighting", "When toggled on, the Scene lighting is used. When toggled off, a light attached to the Scene view camera is used.", null);
+            public static readonly GUIContent fx = L10n.IconContent("SceneviewFx", "Toggle skybox, fog, and various other effects.", null);
+            public static readonly GUIContent audioPlayContent = L10n.IconContent("SceneviewAudio", "Toggle audio on or off.", null);
+            public static readonly GUIContent gizmosContent = L10n.TextContent("Gizmos", "Toggle visibility of all Gizmos in the Scene view", null, null);
+            public static readonly GUIContent gizmosDropDownContent = L10n.TextContent("", "Toggle the visibility of different Gizmos in the Scene view.", null, null);
+            public static readonly GUIContent mode2DContent = L10n.IconContent("SceneView2D", "When toggled on, the Scene is in 2D view. When toggled off, the Scene is in 3D view.", null);
+            public static readonly GUIContent gridXToolbarContent = L10n.IconContent("GridAxisX", "Toggle the visibility of the grid", null);
+            public static readonly GUIContent gridYToolbarContent = L10n.IconContent("GridAxisY", "Toggle the visibility of the grid", null);
+            public static readonly GUIContent gridZToolbarContent = L10n.IconContent("GridAxisZ", "Toggle the visibility of the grid", null);
+            public static readonly GUIContent metalFrameCaptureContent = L10n.IconContent("FrameCapture", "Capture the current view and open in Xcode frame debugger", null);
+            public static readonly GUIContent sceneVisToolbarButtonContent = L10n.IconContent("SceneViewVisibility", "Number of hidden objects, click to toggle scene visibility", null);
             public static readonly GUIStyle gizmoButtonStyle;
-            public static readonly GUIContent sceneViewCameraContent = EditorGUIUtility.TrIconContent("SceneViewCamera", "Settings for the Scene view camera.");
+            public static readonly GUIContent sceneViewCameraContent = L10n.IconContent("SceneViewCamera", "Settings for the Scene view camera.", null);
 
             static Styles()
             {
@@ -1502,7 +1511,17 @@ namespace UnityEditor
             return s_AllSceneCameraList;
         }
 
+        // Native-facing variant (TextureStreamingManager): native works with EntityIds, not wrappers.
         [RequiredByNativeCode]
+        static EntityId[] GetAllSceneCameraEntityIds()
+        {
+            var cameras = GetAllSceneCameras();
+            var entityIds = new EntityId[cameras.Length];
+            for (int i = 0; i < cameras.Length; ++i)
+                entityIds[i] = cameras[i] != null ? cameras[i].GetEntityId() : EntityId.None;
+            return entityIds;
+        }
+
         public static Camera[] GetAllSceneCameras()
         {
             List<Camera> newSceneCameras = GetAllSceneCamerasAsList();
@@ -1576,10 +1595,6 @@ namespace UnityEditor
             rootVisualElement.RegisterCallback<MouseEnterWindowEvent>(e => m_SceneViewMotion.viewportsUnderMouse = true);
             rootVisualElement.RegisterCallback<MouseLeaveWindowEvent>(e => m_SceneViewMotion.viewportsUnderMouse = false);
 
-#pragma warning disable UAC2001 // Avoid Linq
-            m_OrientationGizmo = overlayCanvas.overlays.FirstOrDefault(x => x is SceneOrientationGizmo) as SceneOrientationGizmo;
-#pragma warning restore UAC2001
-
             titleContent = GetLocalizedTitleContent();
 
             m_RectSelection = new RectSelection();
@@ -1648,8 +1663,10 @@ namespace UnityEditor
             if (m_2DMode)
                 LookAt(pivot, Quaternion.identity, size, true, true);
 
+#pragma warning disable UAC2015 // CameraMode should implement IEquatable to avoid boxing, but it is public API so may be a breaking change
             if (m_CameraMode.drawMode == DrawCameraMode.UserDefined && !userDefinedModes.Contains(m_CameraMode))
                 AddCameraMode(m_CameraMode.name, m_CameraMode.section);
+#pragma warning restore UAC2015
 
             base.OnEnable();
 
@@ -1772,12 +1789,10 @@ namespace UnityEditor
 
         public SceneView()
         {
-        #pragma warning disable UAL0015 // this side effect does not outlive the current call (global trigger / lazily-loaded asset re-fetched on next access); a stale reference is harmlessly replaced
             m_HierarchyType = HierarchyType.GameObjects;
 
             // Note: Rendering for Scene view picking depends on the depth buffer of the window
             depthBufferBits = 32;
-        #pragma warning restore UAL0015
         }
 
         internal void Awake()
@@ -1824,9 +1839,9 @@ namespace UnityEditor
                     Tools.current = Tool.Rect;
             }
 
-            #pragma warning disable UAL0018 // rebuilt/resubscribed wholesale on the next reload via this object's own lifecycle; a stale value in the interim is never observed
+#pragma warning disable UAL0018 // the back-reference is held by this scene view, which is recreated on code reload along with the view it points at
             m_PreviousScene = lastActiveSceneView;
-            #pragma warning restore UAL0018
+#pragma warning restore UAL0018
         }
 
         internal static void AlignCameraWithView(Camera camera)
@@ -1860,11 +1875,18 @@ namespace UnityEditor
             }
         }
 
-        [RequiredByNativeCode]
         internal static Camera GetLastActiveSceneViewCamera()
         {
             SceneView view = lastActiveSceneView;
             return view ? view.camera : null;
+        }
+
+        // Native-facing variant (EditorHelper.cpp): native works with EntityIds, not wrappers.
+        [RequiredByNativeCode]
+        static EntityId GetLastActiveSceneViewCameraEntityId()
+        {
+            var camera = GetLastActiveSceneViewCamera();
+            return ReferenceEquals(camera, null) ? EntityId.None : camera.GetEntityId();
         }
 
         public override void OnDisable()
@@ -3038,13 +3060,18 @@ namespace UnityEditor
             GUI.EndGroup();
             GUI.BeginGroup(windowSpaceCameraRect);
 
-            if (evt.type == EventType.Repaint)
+            bool renderingBlocked = Rendering.EditorGraphicsSettings.IsRenderingBlockedWithoutRenderPipelineAsset();
+            if (evt.type == EventType.Repaint && !renderingBlocked)
             {
                 // Blit the results with a pre-multiplied alpha shader to compose them correctly on top of the 3D scene on the back buffer
                 Graphics.DrawTexture(groupSpaceCameraRect, m_SceneTargetTexture, new Rect(0, 0, 1, 1), 0, 0, 0, 0, GUI.color, EditorGUIUtility.GUITextureBlitSceneGUIMaterial);
             }
 
             GUI.EndGroup();
+
+            if (renderingBlocked)
+                DrawNoRenderPipelineAssetWarning(windowSpaceCameraRect);
+
             GUI.color = origColor;
 
             // Reset label width (UUM-110450)
@@ -3063,6 +3090,22 @@ namespace UnityEditor
             onGUIEnded?.Invoke(this);
             if (m_StageHandling != null)
                 m_StageHandling.EndOnGUI();
+        }
+
+        static void DrawNoRenderPipelineAssetWarning(Rect windowSpaceCameraRect)
+        {
+            var warning = EditorGUIUtility.TempContent(L10n.Tr("Your project has no render pipeline asset.\nAssign one in Project Settings > Graphics.", null));
+            var size = EditorStyles.notificationText.CalcSize(warning);
+            size.x += EditorStyles.notificationText.margin.horizontal;
+
+            var warningPosition = new Rect(
+                windowSpaceCameraRect.x + Mathf.Max((windowSpaceCameraRect.width - size.x) * 0.5f, 0f),
+                windowSpaceCameraRect.y + Mathf.Max((windowSpaceCameraRect.height - size.y) * 0.5f, 0f),
+                size.x,
+                size.y);
+
+            GUI.Label(warningPosition, GUIContent.none, EditorStyles.notificationBackground);
+            EditorGUI.DoDropShadowLabel(warningPosition, warning, EditorStyles.notificationText, .3f);
         }
 
         [Shortcut("Scene View/Menu", typeof(SceneViewViewport), KeyCode.Mouse1)]
@@ -3177,6 +3220,12 @@ namespace UnityEditor
                 window.in2DMode = !window.in2DMode;
         }
 
+        // axisIndex indexes OrientationGizmoUtility.AxisDirections (0-5: Right/Top/Front/Left/Bottom/Back).
+        static void AlignToAxis(SceneView view, int axisIndex, bool orthographic)
+        {
+            view.LookAt(view.pivot, OrientationGizmoUtility.RotationForAxis(OrientationGizmoUtility.AxisDirections[axisIndex]), view.size, orthographic);
+        }
+
         [Shortcut("Scene View/Toggle Orthographic Projection", typeof(SceneView))]
         static void ToggleOrthoView(ShortcutArguments args)
         {
@@ -3184,7 +3233,7 @@ namespace UnityEditor
             if (view != null)
             {
                 if (!view.isRotationLocked)
-                    view.m_OrientationGizmo?.ViewSetOrtho(view, !view.orthographic);
+                    view.LookAt(view.pivot, view.rotation, view.size, !view.orthographic);
             }
         }
 
@@ -3195,7 +3244,18 @@ namespace UnityEditor
             if (view != null)
             {
                 if (!view.isRotationLocked)
-                    view.m_OrientationGizmo?.ViewAxisDirection(view, 0, true);
+                    AlignToAxis(view, 0, true);
+            }
+        }
+
+        [Shortcut("Scene View/Set Perspective Right View", typeof(SceneView))]
+        static void SetPerspectiveRightView(ShortcutArguments args)
+        {
+            var view = args.context as SceneView;
+            if (view != null)
+            {
+                if (!view.isRotationLocked)
+                    AlignToAxis(view, 0, false);
             }
         }
 
@@ -3206,7 +3266,7 @@ namespace UnityEditor
             if (view != null)
             {
                 if (!view.isRotationLocked)
-                    view.m_OrientationGizmo?.ViewAxisDirection(view, 0, view.orthographic);
+                    AlignToAxis(view, 0, view.orthographic);
             }
         }
 
@@ -3217,7 +3277,7 @@ namespace UnityEditor
             if (view != null)
             {
                 if (!view.isRotationLocked)
-                    view.m_OrientationGizmo?.ViewAxisDirection(view, 1, view.orthographic);
+                    AlignToAxis(view, 1, view.orthographic);
             }
         }
 
@@ -3228,7 +3288,18 @@ namespace UnityEditor
             if (view != null)
             {
                 if (!view.isRotationLocked)
-                    view.m_OrientationGizmo?.ViewAxisDirection(view, 1, true);
+                    AlignToAxis(view, 1, true);
+            }
+        }
+
+        [Shortcut("Scene View/Set Perspective Top View", typeof(SceneView))]
+        static void SetPerspectiveTopView(ShortcutArguments args)
+        {
+            var view = args.context as SceneView;
+            if (view != null)
+            {
+                if (!view.isRotationLocked)
+                    AlignToAxis(view, 1, false);
             }
         }
 
@@ -3239,7 +3310,7 @@ namespace UnityEditor
             if (view != null)
             {
                 if (!view.isRotationLocked)
-                    view.m_OrientationGizmo?.ViewAxisDirection(view, 2, view.orthographic);
+                    AlignToAxis(view, 2, view.orthographic);
             }
         }
 
@@ -3250,7 +3321,18 @@ namespace UnityEditor
             if (view != null)
             {
                 if (!view.isRotationLocked)
-                    view.m_OrientationGizmo?.ViewAxisDirection(view, 2, true);
+                    AlignToAxis(view, 2, true);
+            }
+        }
+
+        [Shortcut("Scene View/Set Perspective Front View", typeof(SceneView))]
+        static void SetPerspectiveFrontView(ShortcutArguments args)
+        {
+            var view = args.context as SceneView;
+            if (view != null)
+            {
+                if (!view.isRotationLocked)
+                    AlignToAxis(view, 2, false);
             }
         }
 
@@ -3261,7 +3343,7 @@ namespace UnityEditor
             if (view != null)
             {
                 if (!view.isRotationLocked)
-                    view.m_OrientationGizmo?.ViewAxisDirection(view, 3, view.orthographic);
+                    AlignToAxis(view, 3, view.orthographic);
             }
         }
 
@@ -3272,7 +3354,18 @@ namespace UnityEditor
             if (view != null)
             {
                 if (!view.isRotationLocked)
-                    view.m_OrientationGizmo?.ViewAxisDirection(view, 3, true);
+                    AlignToAxis(view, 3, true);
+            }
+        }
+
+        [Shortcut("Scene View/Set Perspective Left View", typeof(SceneView))]
+        static void SetPerspectiveLeftView(ShortcutArguments args)
+        {
+            var view = args.context as SceneView;
+            if (view != null)
+            {
+                if (!view.isRotationLocked)
+                    AlignToAxis(view, 3, false);
             }
         }
 
@@ -3283,7 +3376,7 @@ namespace UnityEditor
             if (view != null)
             {
                 if (!view.isRotationLocked)
-                    view.m_OrientationGizmo?.ViewAxisDirection(view, 4, view.orthographic);
+                    AlignToAxis(view, 4, view.orthographic);
             }
         }
 
@@ -3294,7 +3387,18 @@ namespace UnityEditor
             if (view != null)
             {
                 if (!view.isRotationLocked)
-                    view.m_OrientationGizmo?.ViewAxisDirection(view, 4, true);
+                    AlignToAxis(view, 4, true);
+            }
+        }
+
+        [Shortcut("Scene View/Set Perspective Bottom View", typeof(SceneView))]
+        static void SetPerspectiveBottomView(ShortcutArguments args)
+        {
+            var view = args.context as SceneView;
+            if (view != null)
+            {
+                if (!view.isRotationLocked)
+                    AlignToAxis(view, 4, false);
             }
         }
 
@@ -3305,7 +3409,7 @@ namespace UnityEditor
             if (view != null)
             {
                 if (!view.isRotationLocked)
-                    view.m_OrientationGizmo?.ViewAxisDirection(view, 5, view.orthographic);
+                    AlignToAxis(view, 5, view.orthographic);
             }
         }
 
@@ -3316,7 +3420,18 @@ namespace UnityEditor
             if (view != null)
             {
                 if (!view.isRotationLocked)
-                    view.m_OrientationGizmo?.ViewAxisDirection(view, 5, true);
+                    AlignToAxis(view, 5, true);
+            }
+        }
+
+        [Shortcut("Scene View/Set Perspective Back View", typeof(SceneView))]
+        static void SetPerspectiveBackView(ShortcutArguments args)
+        {
+            var view = args.context as SceneView;
+            if (view != null)
+            {
+                if (!view.isRotationLocked)
+                    AlignToAxis(view, 5, false);
             }
         }
 
@@ -3327,7 +3442,7 @@ namespace UnityEditor
             if (view != null)
             {
                 if (!view.isRotationLocked)
-                    view.m_OrientationGizmo?.ViewFromNiceAngle(view, false);
+                    view.LookAt(view.pivot, OrientationGizmoUtility.NiceAngleRotation(view.rotation), view.size, view.orthographic);
             }
         }
 
@@ -3465,11 +3580,7 @@ namespace UnityEditor
         public bool orthographic
         {
             get { return m_Ortho.value; }
-            set
-            {
-                m_Ortho.value = value;
-                m_OrientationGizmo?.UpdateGizmoLabel(this, m_Rotation.target * Vector3.forward, m_Ortho.target);
-            }
+            set { m_Ortho.value = value; }
         }
 
         public void FixNegativeSize()
@@ -3719,7 +3830,9 @@ namespace UnityEditor
                 m_Camera.farClipPlane = m_CameraSettings.farClip;
             }
 
+            #pragma warning disable CS0618
             m_Camera.useOcclusionCulling = m_CameraSettings.occlusionCulling;
+            #pragma warning restore CS0618
         }
 
         void OnBecameVisible()
@@ -3822,7 +3935,6 @@ namespace UnityEditor
             FixNegativeSize();
             m_Position.target = point;
             m_Rotation.target = direction;
-            m_OrientationGizmo?.UpdateGizmoLabel(this, direction * Vector3.forward, m_Ortho.target);
         }
 
         // Look directly at a specific point from a given direction.
@@ -3831,7 +3943,6 @@ namespace UnityEditor
             FixNegativeSize();
             m_Position.value = point;
             m_Rotation.value = direction;
-            m_OrientationGizmo?.UpdateGizmoLabel(this, direction * Vector3.forward, m_Ortho.target);
         }
 
         // Look at a specific point from a given direction with a given zoom level.
@@ -3841,7 +3952,6 @@ namespace UnityEditor
             m_Position.target = point;
             m_Rotation.target = direction;
             m_Size.target = ValidateSceneSize(Mathf.Abs(newSize));
-            m_OrientationGizmo?.UpdateGizmoLabel(this, direction * Vector3.forward, m_Ortho.target);
         }
 
         // Look directionally at a specific point from a given direction with a given zoom level.
@@ -3851,7 +3961,6 @@ namespace UnityEditor
             m_Position.value = point;
             m_Rotation.value = direction;
             size = Mathf.Abs(newSize);
-            m_OrientationGizmo?.UpdateGizmoLabel(this, direction * Vector3.forward, m_Ortho.target);
         }
 
         // Look at a specific point from a given direction with a given zoom level, enabling and disabling perspective
@@ -3881,13 +3990,6 @@ namespace UnityEditor
                 m_Size.target = ValidateSceneSize(Mathf.Abs(newSize));
                 m_Ortho.target = ortho;
             }
-
-            m_OrientationGizmo?.UpdateGizmoLabel(this, direction * Vector3.forward, m_Ortho.target);
-        }
-
-        internal void UpdateOrientationGizmos()
-        {
-            m_OrientationGizmo?.UpdateGizmoLabel(this, rotation * Vector3.forward, m_Ortho.target);
         }
 
         void DefaultHandles()
@@ -4580,7 +4682,7 @@ namespace UnityEditor
             // In this case, we want to explicitly try the GameView before passing it on to whatever notificationView we have
             var playModeView = (PlayModeView)WindowLayout.FindEditorWindowOfType(typeof(PlayModeView));
             if (playModeView != null && playModeView.hasFocus)
-                playModeView.ShowNotification(EditorGUIUtility.TrTextContent("You must exit play mode to save the scene!"));
+                playModeView.ShowNotification(L10n.TextContent("You must exit play mode to save the scene!", null, null, null));
             else
                 ShowNotification("You must exit play mode to save the scene!");
         }
@@ -4649,8 +4751,10 @@ namespace UnityEditor
             if (string.IsNullOrEmpty(section))
                 throw new ArgumentException("Cannot be null or empty", "section");
             var newMode = new CameraMode(DrawCameraMode.UserDefined, name, section);
+#pragma warning disable UAC2015 // CameraMode should implement IEquatable to avoid boxing, but it is public API so may be a breaking change
             if (userDefinedModes.Contains(newMode))
                 throw new InvalidOperationException(string.Format("A mode named {0} already exists in section {1}", name, section));
+#pragma warning restore UAC2015
             userDefinedModes.Add(newMode);
             return newMode;
         }
@@ -4730,4 +4834,3 @@ namespace UnityEditor
         }
     }
 } // namespace
-#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

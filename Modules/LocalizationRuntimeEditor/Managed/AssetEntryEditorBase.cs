@@ -79,7 +79,12 @@ class ResourceAssetEntryEditor : AssetEntryEditorBase<ResourceAssetEntry, string
     public override string KindLabel => L10n.Tr("Resources", null);
     public override string KindTooltip => L10n.Tr("Stores the asset in a Resources folder and loads it on demand.", null);
 
-    protected override Object ToObject(string store) => string.IsNullOrEmpty(store) ? null : Resources.Load(store);
+    protected override Object ToObject(string store)
+    {
+        if (string.IsNullOrEmpty(store))
+            return null;
+        return SubAssetAddress.LoadFromResources(store);
+    }
 
     protected override string FromObject(Object asset)
     {
@@ -87,8 +92,11 @@ class ResourceAssetEntryEditor : AssetEntryEditorBase<ResourceAssetEntry, string
             return null;
         var relative = AssetProviderEditors.ResourcesRelativePath(AssetDatabase.GetAssetPath(asset));
         if (relative == null)
+        {
             Debug.LogWarning($"'{asset.name}' is not under a Resources folder; a Resource entry loads by Resources path.");
-        return relative;
+            return null;
+        }
+        return AssetDatabase.IsSubAsset(asset) ? SubAssetAddress.Format(relative, asset.name) : relative;
     }
 
     protected override List<Variant<string>> Variants(IAssetEntry entry) => (entry as VariantResourceAssetEntry)?.Variants;

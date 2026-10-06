@@ -18,13 +18,37 @@ namespace Unity.U2D.Physics
 {
     /// <summary>
     /// A shape is attached to a body and defines an area to which two distinct types of behaviour are handled:
-    /// 
+    ///
     ///- Collision: Contacts between shapes produce a collision response on their respective bodies, assuming their body type is Dynamic.
     ///- Trigger: Contacts between shapes do not produce a collision response, only the fact that they're overlapping is reported.
     ///
     /// An unlimited number of shapes can be attached to a single body, known as a compound body.
     /// A shape is automatically destroyed when the body it is attached to is destroyed. A shape cannot exist unattached from a body.
     /// </summary>
+    /// <remarks>
+    /// Collisions between shapes are enabled by default. Create a shape with <see cref="PhysicsBody.CreateShape(CircleGeometry, PhysicsShapeDefinition)"/> and configure it with <see cref="PhysicsShapeDefinition"/>.
+    /// </remarks>
+    /// <example>
+    /// <code lang="cs">
+    /// <![CDATA[
+    /// // Attach a circle shape to a body.
+    /// using UnityEngine;
+    /// using Unity.U2D.Physics;
+    ///
+    /// public class CreateShapeExample : MonoBehaviour
+    /// {
+    ///     void Start()
+    ///     {
+    ///         PhysicsWorld world = PhysicsWorld.defaultWorld;
+    ///         PhysicsBody body = world.CreateBody();
+    ///         PhysicsShape shape = body.CreateShape(new CircleGeometry { radius = 1.5f });
+    ///     }
+    /// }
+    /// ]]>
+    /// </code>
+    /// </example>
+    /// <seealso cref="PhysicsBody"/>
+    /// <seealso cref="PhysicsShapeDefinition"/>
     [StructLayout(LayoutKind.Sequential)]
     [MovedFrom(autoUpdateAPI: ScriptUpdateConstants.AutoUpdateAPI, sourceNamespace: ScriptUpdateConstants.SourceNamespace, sourceAssembly: ScriptUpdateConstants.SourceAssembly)]
     public readonly partial struct PhysicsShape : IPhysicsHandle<PhysicsShape>, IEquatable<PhysicsShape>
@@ -239,12 +263,15 @@ namespace Unity.U2D.Physics
         /// Speculative collision is used so some contact points may be separated, a property available per-contact.
         /// </summary>
         [StructLayout(LayoutKind.Sequential)]
-        public readonly record struct ContactManifold : IEnumerable<ContactManifold.ManifoldPoint>
+        public record struct ContactManifold : IEnumerable<ContactManifold.ManifoldPoint>
         {
             /// <summary>
-            /// The unit normal vector in world space, points from shape A to bodyB
+            /// The unit normal vector in world space, pointing from shape A to shape B.
+            /// During a pre-contact callback this may be modified, and the solver uses the new value this step.
+            /// It must stay unit length.
+            /// If the callback leaves the manifold invalid, whether a non-unit normal, a non-finite value, or a point count outside [0, 2], the whole edit is discarded and the manifold is restored for that step.
             /// </summary>
-            public readonly Vector2 normal => m_Normal;
+            public Vector2 normal { readonly get => m_Normal; set => m_Normal = value; }
 
             /// <summary>
 	        /// Angular impulse applied for rolling resistance (N * m * s = kg * m^2 / s).
@@ -253,13 +280,15 @@ namespace Unity.U2D.Physics
 
             /// <summary>
             /// The manifold points, up to two are possible.
+            /// This is a read-only view of the points, so use the indexer on the manifold to change one during a pre-contact callback.
             /// </summary>
             public readonly ManifoldPointArray points => m_Points;
 
             /// <summary>
             /// The number of manifold points available, in the range [0, 2].
+            /// During a pre-contact callback this may be lowered, and setting it to zero cancels the contact so it is not solved this step.
             /// </summary>
-            public readonly int pointCount => m_PointCount;
+            public int pointCount { readonly get => m_PointCount; set => m_PointCount = value; }
 
             /// <summary>
             /// The number of manifold points available that are speculative, in the range [0, 2].
@@ -271,41 +300,61 @@ namespace Unity.U2D.Physics
             /// You may use the <see cref="ManifoldPoint.totalNormalImpulse"/> to determine if there was an interaction during the time step.
             /// </summary>
             [StructLayout(LayoutKind.Sequential)]
-            public readonly record struct ManifoldPoint
+            public record struct ManifoldPoint
             {
                 /// <summary>
-                /// Location of the contact point in world space.
-                /// Subject to precision loss at large coordinates.
-                /// This point lags behind when contact recycling is used.
-                /// Preference should be to use anchorA and/or anchorB for game logic.
-                /// This is also known as the "clip" point.
+                /// The contact point on the first shape's surface, in world space.
+                /// Sampled when the contact is updated, so it lags behind when contact recycling is used.
                 /// </summary>
-                public readonly Vector2 point => m_Point;
+                /// <remarks>
+                /// This is read-only during a pre-contact callback, as the solver does not read it.
+                /// </remarks>
+                public readonly Vector2 pointA => m_PointA;
+
+                /// <summary>
+                /// The contact point on the second shape's surface, in world space.
+                /// Sampled when the contact is updated, so it lags behind when contact recycling is used.
+                /// </summary>
+                /// <remarks>
+                /// This is read-only during a pre-contact callback, as the solver does not read it.
+                /// </remarks>
+                public readonly Vector2 pointB => m_PointB;
+
+                /// <summary>
+                /// Location of the contact point in world space.
+                /// </summary>
+                [Obsolete("point has been deprecated. Use pointA or pointB instead. (UnityUpgradable) -> pointA", false)]
+                public readonly Vector2 point => m_PointA;
 
                 /// <summary>
                 /// Location of the contact point relative to shapeA's origin in world space.
+                /// During a pre-contact callback this may be modified, and the solver uses the new value this step.
                 /// </summary>
-                public readonly Vector2 anchorA => m_AnchorA;
+                public Vector2 anchorA { readonly get => m_AnchorA; set => m_AnchorA = value; }
 
                 /// <summary>
                 /// Location of the contact point relative to shapeB's origin in world space.
+                /// During a pre-contact callback this may be modified, and the solver uses the new value this step.
                 /// </summary>
-                public readonly Vector2 anchorB => m_AnchorB;
+                public Vector2 anchorB { readonly get => m_AnchorB; set => m_AnchorB = value; }
 
                 /// <summary>
                 /// The separation of the contact point, negative if penetrating.
+                /// During a pre-contact callback this may be modified, and the solver uses the new value this step.
                 /// </summary>
-                public readonly float separation => m_Separation;
+                public float separation { readonly get => m_Separation; set => m_Separation = value; }
 
                 /// <summary>
                 /// The impulse along the manifold normal vector.
+                /// During a pre-contact callback this may be modified to seed the solver's warm start for this step.
                 /// </summary>
-                public readonly float normalImpulse => m_NormalImpulse;
+                public float normalImpulse { readonly get => m_NormalImpulse; set => m_NormalImpulse = value; }
 
                 /// <summary>
                 /// The friction impulse.
+                /// During a pre-contact callback this may be modified to seed the solver's warm start for this step.
                 /// </summary>
-                public readonly float tangentImpulse => m_TangentImpulse;
+                public float tangentImpulse { readonly get => m_TangentImpulse; set => m_TangentImpulse = value; }
 
                 /// <summary>
                 /// The total normal impulse applied across sub-stepping and restitution.
@@ -315,8 +364,10 @@ namespace Unity.U2D.Physics
                 public readonly float totalNormalImpulse => m_TotalNormalImpulse;
 
                 /// <summary>
-                /// Relative normal velocity pre-solve. Used for hit events.
-                /// If the normal impulse is zero then there was no hit. Negative means shapes are approaching.
+                /// The speed the two shapes were moving towards or away from each other along the manifold normal at the start of the simulation step, in meters per second.
+                /// A negative value means the shapes were approaching.
+                /// This is always measured when the contact is bouncy (a bounciness above zero) or either shape has hit events enabled.
+                /// Otherwise it is usually zero but can hold a measured value, so only rely on it under those conditions.
                 /// </summary>
                 public readonly float normalVelocity => m_NormalVelocity;
 
@@ -338,17 +389,19 @@ namespace Unity.U2D.Physics
 
                 #region Internal
 
-                readonly Vector2 m_Point;
-                readonly Vector2 m_AnchorA;
-                readonly Vector2 m_AnchorB;
-                readonly float m_Separation;
-                readonly float m_BaseSeparation; // We don't want to expose this as it's not that useful.
-                readonly float m_NormalImpulse;
-                readonly float m_TangentImpulse;
-	            readonly float m_TotalNormalImpulse;
+                // Field order mirrors the native b2ManifoldPoint memory layout exactly and must change with it.
+                Vector2 m_AnchorA;
+                Vector2 m_AnchorB;
+                float m_Separation;
+                float m_NormalImpulse;
+                float m_TangentImpulse;
+                readonly float m_TotalNormalImpulse;
                 readonly float m_NormalVelocity;
+                readonly float m_BaseSeparation; // We don't want to expose this as it's not that useful.
                 readonly UInt16 m_Id;
                 readonly bool m_Persisted;
+                readonly Vector2 m_PointA;
+                readonly Vector2 m_PointB;
 
                 #endregion
             }
@@ -357,7 +410,7 @@ namespace Unity.U2D.Physics
             /// Fixed-sized manifold point array.
             /// </summary>
             [StructLayout(LayoutKind.Sequential)]
-            public readonly record struct ManifoldPointArray
+            public record struct ManifoldPointArray
             {
                 /// <summary>
                 /// Manifold Point #0.
@@ -372,19 +425,37 @@ namespace Unity.U2D.Physics
                 /// <summary>
                 /// Indexer to access the manifold points in the array.
                 /// </summary>
+                /// <remarks>
+                /// The setter is only useful during a pre-contact callback, where writing a point back applies the change to the contact this step.
+                /// </remarks>
                 /// <param name="index">The index of the manifold point required (must be 0 or 1).</param>
                 /// <returns>The specified manifold point.</returns>
                 /// <exception cref="System.IndexOutOfRangeException">Thrown if the index is not 0 or 1.</exception>
-                public readonly unsafe ManifoldPoint this[int index]
+                public unsafe ManifoldPoint this[int index]
                 {
                     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-                    get
+                    readonly get
                     {
                         if (index >= 0 && index < 2)
                         {
                             fixed (ManifoldPoint* pThis = &m_ContactInfo0)
                             {
                                 return pThis[index];
+                            }
+                        }
+
+                        throw new IndexOutOfRangeException($"{index} must be in the range [0, 1]");
+                    }
+
+                    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+                    set
+                    {
+                        if (index >= 0 && index < 2)
+                        {
+                            fixed (ManifoldPoint* pThis = &m_ContactInfo0)
+                            {
+                                pThis[index] = value;
+                                return;
                             }
                         }
 
@@ -399,8 +470,8 @@ namespace Unity.U2D.Physics
 
                 #region Internal
 
-                readonly ManifoldPoint m_ContactInfo0;
-                readonly ManifoldPoint m_ContactInfo1;
+                ManifoldPoint m_ContactInfo0;
+                ManifoldPoint m_ContactInfo1;
 
                 #endregion
             }
@@ -408,27 +479,42 @@ namespace Unity.U2D.Physics
             /// <summary>
             /// Indexer to access the manifold points.
             /// </summary>
-            /// <param name="index">The index of the manifold point required (must be 0 or 1).</param>
+            /// <remarks>
+            /// The getter is bounded by the current point count, while the setter accepts index 0 or 1 so a point can be written during a pre-contact callback.
+            /// </remarks>
+            /// <param name="index">The index of the manifold point required. The getter requires an index below the point count, the setter requires 0 or 1.</param>
             /// <returns>The specified manifold point.</returns>
-            /// <exception cref="System.IndexOutOfRangeException">Thrown if the index is not 0 or 1.</exception>
-            public readonly ManifoldPoint this[int index]
+            /// <exception cref="System.IndexOutOfRangeException">Thrown if the index is out of range.</exception>
+            public ManifoldPoint this[int index]
             {
                 [MethodImpl(MethodImplOptions.AggressiveInlining)]
-                get
+                readonly get
                 {
                     if (index >= 0 && index < pointCount)
                         return points[index];
 
                     throw new IndexOutOfRangeException($"{index} is not valid. The current number of valid points is {pointCount}");
                 }
+
+                [MethodImpl(MethodImplOptions.AggressiveInlining)]
+                set
+                {
+                    if (index >= 0 && index < 2)
+                    {
+                        m_Points[index] = value;
+                        return;
+                    }
+
+                    throw new IndexOutOfRangeException($"{index} must be in the range [0, 1]");
+                }
             }
 
             #region Internal
 
-            readonly Vector2 m_Normal;
+            Vector2 m_Normal;
 	        readonly float m_RollingImpulse;
-            readonly ManifoldPointArray m_Points;
-            readonly int m_PointCount;
+            ManifoldPointArray m_Points;
+            int m_PointCount;
 
             #endregion
 
@@ -601,6 +687,66 @@ namespace Unity.U2D.Physics
         ///
         /// See <see cref="ContactFilterMode"/>.
         /// </summary>
+        /// <remarks>
+        /// Build a `PhysicsMask` for the layer the object is on and another `PhysicsMask` for the layers it collides with. Pass both into a `ContactFilter` and assign it to <see cref="PhysicsShapeDefinition.contactFilter"/> before you create the shape.
+        /// `PhysicsLayers.GetLayerMask` gets the layer mask whether the project uses GameObject layers or the Physics Core 2D API layers.
+        /// Use <see cref="PhysicsMask.All"/> to represent all layers, or <see cref="PhysicsMask.None"/> to represent no layers.
+        /// </remarks>
+        /// <example>
+        /// <code lang="cs">
+        /// <![CDATA[
+        /// // The following example sets a falling circle to be on the MyNewLayer layer
+        /// // and collide only with other MyNewLayer layer objects. Create a Physics Core
+        /// // Settings 2D asset, enable Use Physics Layers, and add a layer called MyNewLayer
+        /// // before you enter Play mode.
+        /// using UnityEngine;
+        /// using Unity.U2D.Physics;
+        ///
+        /// public class ContactFilters : MonoBehaviour
+        /// {
+        ///     void Start()
+        ///     {
+        ///         CircleGeometry smallCircleShape = new CircleGeometry { radius = 0.5f };
+        ///         CircleGeometry largeCircleShape = new CircleGeometry { radius = 3f };
+        ///
+        ///         PhysicsWorld world = PhysicsWorld.defaultWorld;
+        ///
+        ///         // Create a small falling circle.
+        ///         PhysicsBody object1 = world.CreateBody(new PhysicsBodyDefinition
+        ///         {
+        ///             position = new Vector2(0.5f, 8f),
+        ///             type = PhysicsBody.BodyType.Dynamic
+        ///         });
+        ///
+        ///         // Create a shape on the MyNewLayer layer, which only collides with the MyNewLayer layer.
+        ///         PhysicsMask objectLayer = PhysicsLayers.GetLayerMask("MyNewLayer");
+        ///         PhysicsMask collisionLayer = PhysicsLayers.GetLayerMask("MyNewLayer");
+        ///         PhysicsShape.ContactFilter contactFilter = new PhysicsShape.ContactFilter
+        ///         {
+        ///             categories = objectLayer,
+        ///             contacts = collisionLayer
+        ///         };
+        ///         PhysicsShapeDefinition smallCircleDefinition = new PhysicsShapeDefinition
+        ///         {
+        ///             contactFilter = contactFilter
+        ///         };
+        ///         object1.CreateShape(smallCircleShape, smallCircleDefinition);
+        ///
+        ///         // Create a larger static circle below, on the default layer.
+        ///         PhysicsBody object2 = world.CreateBody(new PhysicsBodyDefinition
+        ///         {
+        ///             position = new Vector2(0f, 0f),
+        ///             type = PhysicsBody.BodyType.Static
+        ///         });
+        ///         object2.CreateShape(largeCircleShape);
+        ///     }
+        /// }
+        /// ]]>
+        /// </code>
+        /// </example>
+        /// <seealso cref="PhysicsMask"/>
+        /// <seealso cref="PhysicsLayers.GetLayerMask"/>
+        /// <seealso cref="PhysicsShapeDefinition.contactFilter"/>
         [Serializable]
         [StructLayout(LayoutKind.Sequential)]
         public record struct ContactFilter
@@ -1497,11 +1643,7 @@ namespace Unity.U2D.Physics
         /// </summary>
         /// <param name="input">The fluid and force configuration. See <see cref="PhysicsBody.BuoyancyInput"/>.</param>
         /// <param name="deltaTime">The simulation step duration in seconds. Used to clamp damping so it cannot overshoot in a single step.</param>
-        public unsafe readonly void ApplyBuoyancy(PhysicsBody.BuoyancyInput input, float deltaTime)
-        {
-            var shape = this;
-            ApplyBuoyancy(input, new ReadOnlySpan<PhysicsShape>(&shape, 1), deltaTime);
-        }
+        public readonly void ApplyBuoyancy(PhysicsBody.BuoyancyInput input, float deltaTime) => ApplyBuoyancy(input, stackalloc PhysicsShape[1] { this }, deltaTime);
 
         /// <summary>
         /// Apply buoyancy, flow and damping forces to every shape in <paramref name="shapes"/> based on how each is submerged in a fluid plane.
@@ -1532,11 +1674,7 @@ namespace Unity.U2D.Physics
         /// Sleeping bodies are woken automatically by Box2D when the per-shape force is non-trivial.
         /// </summary>
         /// <param name="input">The wind configuration. See <see cref="PhysicsBody.WindInput"/>.</param>
-        public unsafe readonly void ApplyWind(PhysicsBody.WindInput input)
-        {
-            var shape = this;
-            ApplyWind(input, new ReadOnlySpan<PhysicsShape>(&shape, 1));
-        }
+        public readonly void ApplyWind(PhysicsBody.WindInput input) => ApplyWind(input, stackalloc PhysicsShape[1] { this });
 
         /// <summary>
         /// Apply wind forces to every shape in <paramref name="shapes"/>.
@@ -1581,6 +1719,9 @@ namespace Unity.U2D.Physics
         /// Changing the state here is relatively expensive and should be avoided.
         /// See <see cref="PhysicsShapeDefinition.isTrigger"/>.
         /// </summary>
+        /// <remarks>
+        /// A trigger shape doesn't collide with other shapes. Other shapes pass through it instead, and Unity reports the overlap to an <see cref="PhysicsCallbacks.ITriggerCallback"/> when <see cref="PhysicsShape.triggerEvents"/> is `true`.
+        /// </remarks>
         public readonly bool isTrigger { get => PhysicsShape_GetIsTrigger(this); set => PhysicsShape_SetIsTrigger(this, value); }
 
         /// <summary>
@@ -1723,12 +1864,16 @@ namespace Unity.U2D.Physics
         public readonly bool contactFilterCallbacks { get => PhysicsShape_GetContactFilterCallbacks(this); set => PhysicsShape_SetContactFilterCallbacks(this, value); }
 
         /// <summary>
-        /// Controls whether this shape produces pre-solve callbacks.
+        /// Controls whether this shape produces pre-contact and pre-continuous callbacks.
         /// This only applies to Dynamic bodies and is ignored for triggers.
         /// These are relatively expensive so disabling them can provide a significant performance benefit.
-        /// A pre-solve callback will call the <see cref="PhysicsShape.callbackTarget"/> for both shapes involved if they implement <see cref="PhysicsCallbacks.IPreSolveCallback"/>.
         /// </summary>
-        public readonly bool preSolveCallbacks { get => PhysicsShape_GetPreSolveCallbacks(this); set => PhysicsShape_SetPreSolveCallbacks(this, value); }
+        /// <remarks>
+        /// A pre-contact callback calls the <see cref="PhysicsShape.callbackTarget"/> for both shapes involved if they implement <see cref="PhysicsCallbacks.IPreContactCallback"/>.
+        /// A pre-continuous callback calls it if they implement <see cref="PhysicsCallbacks.IPreContinuousCallback"/>.
+        /// The deprecated <see cref="PhysicsCallbacks.IPreSolveCallback"/> is also driven by this switch, for targets that only implement it.
+        /// </remarks>
+        public readonly bool preContactCallbacks { get => PhysicsShape_GetPreContactCallbacks(this); set => PhysicsShape_SetPreContactCallbacks(this, value); }
 
         /// <summary>
         /// Normally shapes on Static bodies don't create contacts when they are added to the world.
@@ -1804,7 +1949,7 @@ namespace Unity.U2D.Physics
         /// <param name="otherShape">The other shape to check the distance of.</param>
         /// <param name="useRadii">Whether to use the radii of both shapes or not.</param>
         /// <returns>The distance result.</returns>
-        public unsafe readonly PhysicsQuery.DistanceResult Distance(PhysicsShape otherShape, bool useRadii = true) => Distance(otherShape, otherShape.body.transform, useRadii);
+        public readonly PhysicsQuery.DistanceResult Distance(PhysicsShape otherShape, bool useRadii = true) => Distance(otherShape, otherShape.body.transform, useRadii);
 
         /// <summary>
         /// Get the minimum distance between this shape and the specified shape.
@@ -2006,11 +2151,7 @@ namespace Unity.U2D.Physics
         /// </summary>
         /// <param name="owner">The object that owns this key. This can be NULL if not required but is recommended as the key is formed in part by the hash-code of the owner object.</param>
         /// <param name="ownerKey">The owner key to be used. If zero then a new owner key is created. You can use <see cref="PhysicsWorld.CreateOwnerKey(UnityEngine.Object)"/> for this value although any non-zero integer will work.</param>
-        public unsafe readonly void SetOwner(UnityEngine.Object owner, int ownerKey)
-        {
-            var shape = this;
-            SetOwner(new ReadOnlySpan<PhysicsShape>(&shape, 1), owner, ownerKey);
-        }
+        public readonly void SetOwner(UnityEngine.Object owner, int ownerKey) => SetOwner(stackalloc PhysicsShape[1] { this }, owner, ownerKey);
 
         /// <summary>
         /// Set the owner object using the specified owner key.
@@ -2046,12 +2187,13 @@ namespace Unity.U2D.Physics
         public readonly bool isOwned => PhysicsShape_IsOwned(this);
 
         /// <summary>
-        /// The group this shape belongs to.
-        /// A shape starts with no group and can be assigned a group once only; the group then cannot be changed for the lifetime of the shape.
+        /// The group this shape belongs to, used to treat a set of shapes on one body as a single object when reporting contact and trigger begin and end events.
         /// Grouping marks the shape's contact and trigger begin/end events with whether they are the first or last event between the two groups involved.
+        /// A shape starts with no group and can be assigned a group once only; the group then cannot be changed for the lifetime of the shape.
+        /// Every shape given the same group must belong to the same body, otherwise the first and last marking of their events is unreliable.
         /// </summary>
         /// <remarks>
-        /// See <see cref="PhysicsWorld.CreateGroup"/> and <see cref="PhysicsWorld.eventGroupingAllowed"/>.
+        /// See <see cref="PhysicsWorld.PhysicsGroup"/> for why grouping exists and its limitations, <see cref="PhysicsWorld.CreateGroup"/> and <see cref="PhysicsWorld.eventGroupingAllowed"/>.
         /// Attempting to assign an empty group, or assign to a shape that already has a group, produces a warning and leaves the shape unchanged.
         /// </remarks>
         public readonly PhysicsWorld.PhysicsGroup physicsGroup { get => PhysicsShape_GetPhysicsGroup(this); set => PhysicsShape_SetPhysicsGroup(this, value); }
@@ -2065,7 +2207,8 @@ namespace Unity.U2D.Physics
         /// This includes the following events:
         /// 
         ///- A <see cref="PhysicsEvents.ContactFilterEvent"/> with call <see cref="PhysicsCallbacks.IContactFilterCallback"/>.
-        ///- A <see cref="PhysicsEvents.PreSolveEvent"/> with call <see cref="PhysicsCallbacks.IPreSolveCallback"/>.
+        ///- A <see cref="PhysicsEvents.PreContactEvent"/> with call <see cref="PhysicsCallbacks.IPreContactCallback"/>.
+        ///- A <see cref="PhysicsEvents.PreContinuousEvent"/> with call <see cref="PhysicsCallbacks.IPreContinuousCallback"/>.
         ///- A <see cref="PhysicsEvents.TriggerBeginEvent"/> with call <see cref="PhysicsCallbacks.ITriggerCallback"/>.
         ///- A <see cref="PhysicsEvents.TriggerEndEvent"/> with call <see cref="PhysicsCallbacks.ITriggerCallback"/>.
         ///- A <see cref="PhysicsEvents.ContactBeginEvent"/> with call <see cref="PhysicsCallbacks.IContactCallback"/>.
@@ -2114,14 +2257,16 @@ namespace Unity.U2D.Physics
         /// </summary>
         /// <param name="shapes">The shapes to set the user data on.</param>
         /// <param name="userDatas">The user data to set, one entry per shape.</param>
-        public static void SetUserData(ReadOnlySpan<PhysicsShape> shapes, ReadOnlySpan<PhysicsUserData> userDatas) => PhysicsShape_SetUserDataSpan(shapes, userDatas);
+        /// <returns>The number of shapes that were ignored (not set because the shape was invalid). A single warning is logged when any are ignored. If the spans are different lengths, nothing is set and every shape is counted as ignored.</returns>
+        public static int SetUserData(ReadOnlySpan<PhysicsShape> shapes, ReadOnlySpan<PhysicsUserData> userDatas) => PhysicsShape_SetUserDataSpan(shapes, userDatas);
 
         /// <summary>
         /// Set the same <see cref="PhysicsUserData"/> on a batch of shapes that can be used for any purpose.
         /// </summary>
         /// <param name="shapes">The shapes to set the user data on.</param>
         /// <param name="physicsUserData">The user data to set on every shape.</param>
-        public static void SetUserData(ReadOnlySpan<PhysicsShape> shapes, PhysicsUserData physicsUserData) => PhysicsShape_SetUserDataSpanAll(shapes, physicsUserData);
+        /// <returns>The number of shapes that were ignored (not set because the shape was invalid). A single warning is logged when any are ignored.</returns>
+        public static int SetUserData(ReadOnlySpan<PhysicsShape> shapes, PhysicsUserData physicsUserData) => PhysicsShape_SetUserDataSpanAll(shapes, physicsUserData);
 
         /// <summary>
         /// Set the <see cref="ContactFilter"/> on a batch of shapes.
@@ -2129,14 +2274,16 @@ namespace Unity.U2D.Physics
         /// </summary>
         /// <param name="shapes">The shapes to set the contact filter on.</param>
         /// <param name="filters">The contact filters to set, one entry per shape.</param>
-        public static void SetContactFilter(ReadOnlySpan<PhysicsShape> shapes, ReadOnlySpan<ContactFilter> filters) => PhysicsShape_SetContactFilterSpan(shapes, filters);
+        /// <returns>The number of shapes that were ignored (not set because the shape was invalid). A single warning is logged when any are ignored. If the spans are different lengths, nothing is set and every shape is counted as ignored.</returns>
+        public static int SetContactFilter(ReadOnlySpan<PhysicsShape> shapes, ReadOnlySpan<ContactFilter> filters) => PhysicsShape_SetContactFilterSpan(shapes, filters);
 
         /// <summary>
         /// Set the same <see cref="ContactFilter"/> on a batch of shapes.
         /// </summary>
         /// <param name="shapes">The shapes to set the contact filter on.</param>
         /// <param name="contactFilter">The contact filter to set on every shape.</param>
-        public static void SetContactFilter(ReadOnlySpan<PhysicsShape> shapes, ContactFilter contactFilter) => PhysicsShape_SetContactFilterSpanAll(shapes, contactFilter);
+        /// <returns>The number of shapes that were ignored (not set because the shape was invalid). A single warning is logged when any are ignored.</returns>
+        public static int SetContactFilter(ReadOnlySpan<PhysicsShape> shapes, ContactFilter contactFilter) => PhysicsShape_SetContactFilterSpanAll(shapes, contactFilter);
 
         /// <summary>
         /// Set the <see cref="SurfaceMaterial"/> on a batch of shapes.
@@ -2144,14 +2291,16 @@ namespace Unity.U2D.Physics
         /// </summary>
         /// <param name="shapes">The shapes to set the surface material on.</param>
         /// <param name="surfaceMaterials">The surface materials to set, one entry per shape.</param>
-        public static void SetSurfaceMaterial(ReadOnlySpan<PhysicsShape> shapes, ReadOnlySpan<SurfaceMaterial> surfaceMaterials) => PhysicsShape_SetSurfaceMaterialSpan(shapes, surfaceMaterials);
+        /// <returns>The number of shapes that were ignored (not set because the shape was invalid). A single warning is logged when any are ignored. If the spans are different lengths, nothing is set and every shape is counted as ignored.</returns>
+        public static int SetSurfaceMaterial(ReadOnlySpan<PhysicsShape> shapes, ReadOnlySpan<SurfaceMaterial> surfaceMaterials) => PhysicsShape_SetSurfaceMaterialSpan(shapes, surfaceMaterials);
 
         /// <summary>
         /// Set the same <see cref="SurfaceMaterial"/> on a batch of shapes.
         /// </summary>
         /// <param name="shapes">The shapes to set the surface material on.</param>
         /// <param name="surfaceMaterial">The surface material to set on every shape.</param>
-        public static void SetSurfaceMaterial(ReadOnlySpan<PhysicsShape> shapes, SurfaceMaterial surfaceMaterial) => PhysicsShape_SetSurfaceMaterialSpanAll(shapes, surfaceMaterial);
+        /// <returns>The number of shapes that were ignored (not set because the shape was invalid). A single warning is logged when any are ignored.</returns>
+        public static int SetSurfaceMaterial(ReadOnlySpan<PhysicsShape> shapes, SurfaceMaterial surfaceMaterial) => PhysicsShape_SetSurfaceMaterialSpanAll(shapes, surfaceMaterial);
 
         /// <summary>
         /// Create a shape proxy from the shape.
@@ -2240,14 +2389,10 @@ namespace Unity.U2D.Physics
         /// The state persists until set to false, the shape is destroyed, or <see cref="PhysicsWorld.ClearDrawSelected"/> clears the whole world.
         /// The shape must also have <see cref="worldDrawing"/> enabled to be drawn.
         /// </remarks>
-        public unsafe readonly bool selectedDrawing
+        public readonly bool selectedDrawing
         {
             get => PhysicsShape_GetSelectedDrawing(this);
-            set
-            {
-                var shape = this;
-                PhysicsShape_SetSelectedDrawing(new ReadOnlySpan<PhysicsShape>(&shape, 1), value);
-            }
+            set => PhysicsShape_SetSelectedDrawing(stackalloc PhysicsShape[1] { this }, value);
         }
 
         /// <summary>
@@ -2270,7 +2415,8 @@ namespace Unity.U2D.Physics
         /// </remarks>
         /// <param name="shapes">The shapes to set the selected drawing state on.</param>
         /// <param name="selected">The selected drawing state to set on every shape.</param>
-        public static void SetSelectedDrawing(ReadOnlySpan<PhysicsShape> shapes, bool selected) => PhysicsShape_SetSelectedDrawing(shapes, selected);
+        /// <returns>The number of shapes that were ignored (not set because the shape was invalid). A single warning is logged when any are ignored.</returns>
+        public static int SetSelectedDrawing(ReadOnlySpan<PhysicsShape> shapes, bool selected) => PhysicsShape_SetSelectedDrawing(shapes, selected);
 
         /// <summary>
         /// Draw this shape's current state once, as custom drawing.

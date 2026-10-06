@@ -2,7 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: Profiling not yet converted
 using System;
 using System.Collections.Generic;
 using System.Text;
@@ -26,6 +25,10 @@ namespace Unity.ProjectAuditor.Editor.UI.Framework
         private const string k_SuppressedYes = "Yes";
         private const string k_SuppressedNo = "No";
 
+        private static readonly Regex k_AreaFilter = SearchFilterUtility.CreateFilterRegex("area");
+        private static readonly Regex k_SeverityFilter = SearchFilterUtility.CreateFilterRegex("severity");
+        private static readonly Regex k_SuppressedFilter = SearchFilterUtility.CreateFilterRegex("suppressed");
+
         [AutoStaticsCleanupOnCodeReload]
         private static Texture2D s_SearchIcon;
 
@@ -33,9 +36,11 @@ namespace Unity.ProjectAuditor.Editor.UI.Framework
         {
             isExplicitProvider = true;
             filterId = kProviderFilterId;
+#pragma warning disable UAL0018 // these hold method references, not the icon: every call routes through GetSearchIcon(), which reloads the built-in icon by name whenever the cache is empty, so a reload cannot leave a stale icon behind
             fetchItems = FetchItems;
             fetchPropositions = FetchPropositions;
             fetchThumbnail = FetchThumbnail;
+#pragma warning restore UAL0018
             fetchColumns = FetchColumns;
             tableConfig = GetDefaultTableConfig;
         }
@@ -93,24 +98,24 @@ namespace Unity.ProjectAuditor.Editor.UI.Framework
             bool? suppressedFilter = null;
             var textQuery = context.searchQuery ?? "";
 
-            var areaMatch = Regex.Match(textQuery, @"area=([^;\s]+)", RegexOptions.IgnoreCase);
-            if (areaMatch.Success)
+            var areaMatch = k_AreaFilter.Match(textQuery);
+            if (areaMatch.Success && AreasExtensions.TryParseFrontendString(SearchFilterUtility.GetFilterValue(areaMatch), out var parsedAreas))
             {
-                Enum.TryParse(areaMatch.Groups[1].Value.Trim('\"'), true, out areaFilter);
+                areaFilter = parsedAreas;
                 textQuery = textQuery.Replace(areaMatch.Value, "");
             }
 
-            var severityMatch = Regex.Match(textQuery, @"severity=([^;\s]+)", RegexOptions.IgnoreCase);
-            if (severityMatch.Success)
+            var severityMatch = k_SeverityFilter.Match(textQuery);
+            if (severityMatch.Success && SearchFilterUtility.TryParseDisplayedEnum(SearchFilterUtility.GetFilterValue(severityMatch), out Severity parsedSeverity))
             {
-                Enum.TryParse(severityMatch.Groups[1].Value.Trim('\"'), true, out severity);
+                severity = parsedSeverity;
                 textQuery = textQuery.Replace(severityMatch.Value, "");
             }
 
-            var suppressedMatch = Regex.Match(textQuery, @"suppressed=([^;\s]+)", RegexOptions.IgnoreCase);
+            var suppressedMatch = k_SuppressedFilter.Match(textQuery);
             if (suppressedMatch.Success)
             {
-                suppressedFilter = ParseSuppressedFilter(suppressedMatch.Groups[1].Value.Trim('\"'));
+                suppressedFilter = ParseSuppressedFilter(SearchFilterUtility.GetFilterValue(suppressedMatch));
                 textQuery = textQuery.Replace(suppressedMatch.Value, "");
             }
 
@@ -255,4 +260,3 @@ namespace Unity.ProjectAuditor.Editor.UI.Framework
         }
     }
 }
-#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

@@ -32,10 +32,10 @@ namespace UnityEditor.TerrainTools
 
         class Styles
         {
-            public readonly GUIContent description = EditorGUIUtility.TrTextContent("Left click to stamp the brush onto the terrain.\n\nHold control and mousewheel to adjust height.\nHold shift to invert the stamp.");
-            public readonly GUIContent height = EditorGUIUtility.TrTextContent("Stamp Height", "You can set the Stamp Height manually or you can hold shift and mouse wheel on the terrain to adjust it.");
-            public readonly GUIContent down = EditorGUIUtility.TrTextContent("Subtract", "Subtract the stamp from the terrain.");
-            public readonly GUIContent maxadd = EditorGUIUtility.TrTextContent("Max <--> Add", "Blend between adding the heights and taking the maximum.");
+            public readonly GUIContent description = L10n.TextContent("Left click to stamp the brush onto the terrain.\n\nHold control and mousewheel to adjust height.\nHold shift to invert the stamp.", null, null, null);
+            public readonly GUIContent height = L10n.TextContent("Stamp Height", "You can set the Stamp Height manually or you can hold shift and mouse wheel on the terrain to adjust it.", null, null);
+            public readonly GUIContent down = L10n.TextContent("Subtract", "Subtract the stamp from the terrain.", null, null);
+            public readonly GUIContent maxadd = L10n.TextContent("Max <--> Add", "Blend between adding the heights and taking the maximum.", null, null);
         }
 
         [NoAutoStaticsCleanup] // lazy GUIContent/GUIStyle styles holder; editor infra, no user refs

@@ -18,18 +18,32 @@ namespace Unity.GraphToolkit.Editor
         /// </summary>
         public static readonly string colorLineName = "color-line";
 
-        AbstractNodeModel nodeModel => m_Model as AbstractNodeModel;
-        VisualElement m_Root;
-        string[] m_AdditionalUSS = null;
-        bool m_OverriddenByCaller = false;
+        /// <summary>
+        /// The name of the <see cref="VisualElement"/> of the bar drawn on top of the color line.
+        /// </summary>
+        public static readonly string fillAmountName = "colorLineFill";
+
+        public static readonly string fillName = "fill";
+        public static readonly string fillMarkerUssClassName = ussClassName.WithUssElement(fillName).WithUssModifier("marker");
+        public static readonly string fillMarkerReversedUssClassName = ussClassName.WithUssElement(fillName).WithUssModifier("marker-reversed");
 
         const int k_SegmentWidth = 60;
-        const float k_AnimationSpeedMultiplier = 0.5f;
-        float m_AnimationSpeed;
-        VisualElement m_MovingSegment;
-        bool m_IsAnimating = false;
 
-        float m_FillAmount = 0;
+        AbstractNodeModel nodeModel => m_Model as AbstractNodeModel;
+        VisualElement m_Root;
+        VisualElement m_MovingSegment;
+
+        string[] m_AdditionalUSS = null;
+
+        float m_AnimationSpeed;
+        float m_FillAmount;
+        internal float FillAmount => m_FillAmount; // Used by unit tests
+
+        bool m_IsAnimating;
+        bool m_ColorOverridden;
+        bool m_FillAmountOverridden;
+
+        protected virtual bool HasMarker => false;
 
         // for testing
         internal Action onUpdateCallback;
@@ -65,51 +79,54 @@ namespace Unity.GraphToolkit.Editor
                     m_Root.AddToClassList(uss);
             }
 
-            m_MovingSegment = new VisualElement { name = "colorLineFillAmount" };
+            m_MovingSegment = new VisualElement { name = fillAmountName };
+            m_MovingSegment.AddToClassList(ussClassName.WithUssElement(fillName));
             m_MovingSegment.AddToClassList(m_ParentClassName.WithUssElement(colorLineName));
 
-            m_MovingSegment.style.width = k_SegmentWidth;
             m_Root.Add(m_MovingSegment);
 
-            m_Root.RegisterCallbackOnce<GeometryChangedEvent>(OnGeometryChanged);
             container.Add(m_Root);
 
-            HideFillAmount();
-        }
-
-        void OnGeometryChanged(GeometryChangedEvent evt)
-        {
-            SetFillAmount(nodeModel.FillAmount);
+            ApplyFillAmount(nodeModel?.FillAmount ?? 0f);
         }
 
         /// <inheritdoc />
         public override void UpdateUIFromModel(UpdateFromModelVisitor visitor)
         {
-            if (m_Root == null || m_OverriddenByCaller || nodeModel == null)
+            if (m_Root == null || nodeModel == null)
                 return;
 
             if (visitor.ChangeHints.HasChange(ChangeHint.Style))
             {
-                SetColor(nodeModel.ElementColor.Color);
-                SetFillAmount(nodeModel.FillAmount);
+                if (!m_ColorOverridden)
+                    SetColor(nodeModel.ElementColor.Color);
+
+                if (!m_FillAmountOverridden)
+                    ApplyFillAmount(nodeModel.FillAmount);
+
                 onUpdateCallback?.Invoke();
             }
         }
 
-        internal void SetFillAmount(float fillAmount)
+        internal void OverrideFillAmount(float fillAmount)
         {
+            m_FillAmountOverridden = true;
+            ApplyFillAmount(fillAmount);
+        }
+
+        void ApplyFillAmount(float fillAmount)
+        {
+            if (m_IsAnimating)
+                return;
+
             m_FillAmount = Mathf.Clamp(fillAmount, -100f, 100f);
+
             if (m_FillAmount == 0f)
             {
-                if (nodeModel.FillAmount != 0)
-                    SetFillAmount(nodeModel.FillAmount);
-                else
-                    HideFillAmount();
+                HideFillAmount();
+                UpdateMarker();
                 return;
             }
-
-            float colorLineWidth = m_Root.resolvedStyle.width;
-            float width = colorLineWidth * (Mathf.Abs(m_FillAmount)/ 100f);
 
             // When fill amount is between [-100, 0], accent fills from right to left.
             // When fill amount is between [0, 100], accent fills from left to right.
@@ -117,10 +134,11 @@ namespace Unity.GraphToolkit.Editor
                 SetFillAmountFromRightToLeft();
             else SetFillAmountFromLeftToRight();
 
-            m_MovingSegment.style.width = width;
+            m_MovingSegment.style.width = new StyleLength(Length.Percent(Mathf.Abs(m_FillAmount)));
             m_MovingSegment.style.translate = new Translate( 0, 0, 0);
 
             ShowFillAmount();
+            UpdateMarker();
             m_MovingSegment.MarkDirtyRepaint();
         }
 
@@ -134,10 +152,10 @@ namespace Unity.GraphToolkit.Editor
             m_Root.style.alignItems = Align.FlexEnd;
         }
 
-        internal void ResetFillAmount()
+        internal void ClearFillAmountOverride()
         {
-            m_FillAmount = 0f;
-            HideFillAmount();
+            m_FillAmountOverridden = false;
+            ApplyFillAmount(nodeModel?.FillAmount ?? 0f);
         }
 
         void SetColor(Color color)
@@ -168,7 +186,7 @@ namespace Unity.GraphToolkit.Editor
         /// </remarks>
         public void OverrideColor()
         {
-            m_OverriddenByCaller = true;
+            m_ColorOverridden = true;
         }
 
         /// <summary>
@@ -182,15 +200,24 @@ namespace Unity.GraphToolkit.Editor
         public void OverrideColor(Color color)
         {
             SetColor(color);
-            m_OverriddenByCaller = true;
+            m_ColorOverridden = true;
         }
 
+        /// <summary>
+        /// Starts the looping animation, in which a segment travels across the colored line.
+        /// </summary>
         public void PlayAnimation(float animationSpeed)
         {
             m_AnimationSpeed = animationSpeed;
             SetFillAmountFromLeftToRight();
+
+            m_MovingSegment.style.width = k_SegmentWidth;
             m_MovingSegment.style.translate = new Translate(-k_SegmentWidth, 0, 0);
+            m_MovingSegment.usageHints |= UsageHints.DynamicTransform;
+
             m_IsAnimating = true;
+
+            UpdateMarker();
             ShowFillAmount();
         }
 
@@ -209,14 +236,24 @@ namespace Unity.GraphToolkit.Editor
             }
         }
 
+        /// <summary>
+        /// Stops the looping animation and restores the fill amount defined on the model, if any.
+        /// </summary>
         public void StopAnimation()
         {
             m_IsAnimating = false;
             m_MovingSegment.style.translate = new Translate(-k_SegmentWidth, 0, 0);
-            if (nodeModel != null && nodeModel.FillAmount != 0f)
-                SetFillAmount(nodeModel.FillAmount);
-            else
-                HideFillAmount();
+            m_MovingSegment.usageHints &= ~UsageHints.DynamicTransform;
+
+            ApplyFillAmount(m_FillAmountOverridden ? m_FillAmount : (nodeModel?.FillAmount ?? 0f));
+        }
+
+        void UpdateMarker()
+        {
+            var showMarker = HasMarker && !m_IsAnimating && Mathf.Abs(m_FillAmount) > 0f && Mathf.Abs(m_FillAmount) < 100f;
+
+            m_MovingSegment.EnableInClassList(fillMarkerUssClassName, showMarker && m_FillAmount > 0f);
+            m_MovingSegment.EnableInClassList(fillMarkerReversedUssClassName, showMarker && m_FillAmount < 0f);
         }
 
         void ShowFillAmount()

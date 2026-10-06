@@ -47,7 +47,7 @@ namespace UnityEngine.UIElements
         Mirror
     }
 
-    [VisibleToOtherModules("UnityEngine.VectorGraphicsModule", "UnityEditor.VectorGraphicsModule")]
+    [VisibleToOtherModules("UnityEngine.VectorGraphicsModule", "UnityEditor.VectorGraphicsModule", "UnityEditor.Android.Extensions")]
     [Serializable]
     internal struct VectorImageVertex
     {
@@ -93,7 +93,7 @@ namespace UnityEngine.UIElements
         [VisibleToOtherModules("UnityEngine.VectorGraphicsModule", "UnityEditor.VectorGraphicsModule")]
         [SerializeField] internal Texture2D atlas = null;
 
-        [VisibleToOtherModules("UnityEngine.VectorGraphicsModule", "UnityEditor.VectorGraphicsModule")]
+        [VisibleToOtherModules("UnityEngine.VectorGraphicsModule", "UnityEditor.VectorGraphicsModule", "UnityEditor.Android.Extensions")]
         [SerializeField] internal VectorImageVertex[] vertices = null;
 
         [VisibleToOtherModules("UnityEngine.VectorGraphicsModule")]

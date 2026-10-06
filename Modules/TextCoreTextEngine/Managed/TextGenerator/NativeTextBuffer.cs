@@ -15,9 +15,6 @@ namespace UnityEngine.TextCore
     {
         NativeArray<char> m_Buffer;
         int m_Length;
-        Allocator m_Allocator;
-
-        Allocator effectiveAllocator => m_Allocator != Allocator.Invalid ? m_Allocator : Allocator.Persistent;
 
         public NativeArray<char> buffer => m_Buffer;
 
@@ -35,16 +32,6 @@ namespace UnityEngine.TextCore
             set => m_Buffer[index] = value;
         }
 
-        /// <summary>
-        /// Creates a buffer whose backing NativeArray uses <see cref="Allocator.Domain"/>
-        /// so that it is automatically freed on domain unload. Use for static buffers
-        /// that have no guaranteed Dispose path before domain reload.
-        /// </summary>
-        public static NativeTextBuffer CreateDomainScoped()
-        {
-            return new NativeTextBuffer { m_Allocator = Allocator.Domain };
-        }
-
         public void EnsureCapacity(int requiredLength, bool preserveContent = false)
         {
             if (m_Buffer.IsCreated && m_Buffer.Length >= requiredLength)
@@ -54,7 +41,7 @@ namespace UnityEngine.TextCore
             while (newCapacity < requiredLength)
                 newCapacity *= 2;
 
-            var newBuffer = new NativeArray<char>(newCapacity, effectiveAllocator, NativeArrayOptions.UninitializedMemory);
+            var newBuffer = new NativeArray<char>(newCapacity, Allocator.Persistent, NativeArrayOptions.UninitializedMemory);
             if (m_Buffer.IsCreated)
             {
                 if (preserveContent && m_Length > 0)
@@ -211,17 +198,6 @@ namespace UnityEngine.TextCore
                 m_Buffer = default;
             }
             m_Length = 0;
-        }
-
-        /// <summary>
-        /// Hands off the backing allocation to the caller and resets this buffer
-        /// </summary>
-        public NativeArray<char> ReleaseBuffer()
-        {
-            var buffer = m_Buffer;
-            m_Buffer = default;
-            m_Length = 0;
-            return buffer;
         }
     }
 }

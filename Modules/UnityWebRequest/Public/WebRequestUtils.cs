@@ -282,23 +282,33 @@ namespace UnityEngine
             types.Add(mimeType);
         }
 
-        ///<summary>(RO) Returns the correct request headers for posting the form using the <see cref="T:UnityEngine.WWW" /> class.</summary>
-        ///<remarks>This field only contains one header, /"Content-Type"/,
-        ///which is set to the correct mime type for the form: "<c>application/x-www-form-urlencoded</c>" for normal
-        ///forms and "<c>multipart/form-data</c>" for forms containing data added using <see cref="AddBinaryData" />.</remarks>
+        ///<summary>Request headers to use when posting the form.</summary>
+        ///<remarks>This field only contains one header, `Content-Type`,
+        ///which is set to the correct "MIME type" for the form: `application/x-www-form-urlencoded` for normal
+        ///forms and `multipart/form-data` for forms containing data added using <see cref="AddBinaryData" />.
+        ///
+        ///<c>UnityWebRequest.Post</c> copies these headers onto the request it creates, so you only need this property when you
+        ///build the request yourself.</remarks>
         ///<example>
-        ///  <code><![CDATA[using System.Collections;
-        ///using System.Collections.Generic;
+        ///  <code><![CDATA[using System.Collections.Generic;
         ///using UnityEngine;
         ///
         ///public class Example : MonoBehaviour {
         ///
-        ///    IEnumerator Start () {
-        ///        Dictionary<string, string> headers = new Dictionary<string,string>();
-        ///        headers.Add("header-name", "header content");
-        ///        WWW www = new WWW("https://example.com", null, headers);
-        ///        yield return www;
-        ///        Debug.Log (www.text);
+        ///    void Start () {
+        ///        WWWForm form = new WWWForm();
+        ///        form.AddField("name", "value");
+        ///
+        ///        // Logs "Content-Type: application/x-www-form-urlencoded".
+        ///        foreach (KeyValuePair<string, string> header in form.headers)
+        ///            Debug.Log(header.Key + ": " + header.Value);
+        ///
+        ///        form.AddBinaryData("file", new byte[] { 1, 2, 3 }, "data.bin");
+        ///
+        ///        // The form now contains a file, so this logs
+        ///        // "Content-Type: multipart/form-data; boundary=..." instead.
+        ///        foreach (KeyValuePair<string, string> header in form.headers)
+        ///            Debug.Log(header.Key + ": " + header.Value);
         ///    }
         ///
         ///}

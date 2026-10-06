@@ -14,15 +14,16 @@ namespace UnityEditor
     [ExcludeFromPreset]
     public sealed partial class LightingDataAsset : Object
     {
+        internal LightingDataAsset(global::UnityEngine.EntityId id) : base(id) {}
         private LightingDataAsset() {}
 
         public LightingDataAsset(Scene scene)
         {
-            Internal_Create(this, scene);
+            SetEntityIdFromConstructor(Internal_Create(scene));
         }
 
         [NativeMethod(ThrowsException = true)]
-        private extern static void Internal_Create([Writable] LightingDataAsset self, Scene scene);
+        private extern static EntityId Internal_Create(Scene scene);
 
         public extern void SetLights(Light[] lights);
 

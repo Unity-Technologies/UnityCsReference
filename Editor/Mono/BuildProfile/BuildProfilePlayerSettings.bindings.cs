@@ -15,28 +15,40 @@ namespace UnityEditor.Build.Profile;
 [VisibleToOtherModules]
 internal class BuildProfilePlayerSettings : UnityEngine.Object
 {
-    private extern static void Internal_Create([Writable] BuildProfilePlayerSettings self);
+    internal BuildProfilePlayerSettings(global::UnityEngine.EntityId id) : base(id) {}
+    private extern static EntityId Internal_Create();
 
     internal SerializedObject GetSerializedObject() => new SerializedObject(this);
 
     [RequiredByNativeCode]
     public BuildProfilePlayerSettings()
     {
-        Internal_Create(this);
+        SetEntityIdFromConstructor(Internal_Create());
+    }
+
+    [NativeMethod("GetPlatformGraphicsAPIsWithUGKVariants")]
+    internal extern GraphicsDeviceType[] GetGraphicsAPIsWithUGKVariants(BuildTarget platform);
+
+    [NativeMethod("GetPlatformGraphicsAPIUGKFlags")]
+    internal extern int[] GetGraphicsAPIUGKFlags(BuildTarget platform);
+
+    [NativeMethod("SetPlatformGraphicsAPIs")]
+    private extern void SetGraphicsAPIsImpl(BuildTarget platform, GraphicsDeviceType[] apis, bool skipValidation, int[] ugkFlags);
+
+    internal void SetGraphicsAPIs(BuildTarget platform, GraphicsDeviceType[] apis, int[] ugkFlags, bool shouldSync)
+    {
+        SetGraphicsAPIsImpl(platform, apis, false, ugkFlags);
+        // we do cache api list in player settings editor, so if we update from script we should forcibly update cache
+        if (shouldSync)
+            PlayerSettingsEditor.SyncEditors(platform);
     }
 
     [NativeMethod("GetPlatformGraphicsAPIs")]
     internal extern GraphicsDeviceType[] GetGraphicsAPIs(BuildTarget platform);
 
-    [NativeMethod("SetPlatformGraphicsAPIs")]
-    private extern void SetGraphicsAPIsImpl(BuildTarget platform, GraphicsDeviceType[] apis, bool skipValidation);
-
     internal void SetGraphicsAPIs(BuildTarget platform, GraphicsDeviceType[] apis, bool shouldSync)
     {
-        SetGraphicsAPIsImpl(platform, apis, false);
-        // we do cache api list in player settings editor, so if we update from script we should forcibly update cache
-        if (shouldSync)
-            PlayerSettingsEditor.SyncEditors(platform);
+        SetGraphicsAPIs(platform, apis, null, shouldSync);
     }
 
     [NativeMethod("GetPlatformAutomaticGraphicsAPIs")]

@@ -91,6 +91,8 @@ namespace UnityEngine
     [NativeHeader("PhysicsScriptingClasses.h")]
     public class WheelCollider : Collider
     {
+        internal WheelCollider(global::UnityEngine.EntityId id) : base(id) {}
+        public WheelCollider() {}
         ///<summary>The center of the wheel, measured in the object's local space.</summary>
         ///<remarks>The center of the wheel describes the coordinate that the wheel would achieve if the car was suspended in mid-air.  This is equivalent to the coordinate of the wheel center when the spring is at maximum elongation.</remarks>
         public extern Vector3 center {get; set; }

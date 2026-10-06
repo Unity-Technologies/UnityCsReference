@@ -13,6 +13,7 @@ namespace UnityEngine
     [NativeHeader("Modules/AssetBundle/Public/AssetBundleManifest.h")]
     public class AssetBundleManifest : Object
     {
+        internal AssetBundleManifest(global::UnityEngine.EntityId id) : base(id) {}
         private AssetBundleManifest() {}
 
         ///<summary>Get all the AssetBundles in the manifest.</summary>

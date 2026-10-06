@@ -2,7 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: ProjectBrowser not yet converted
 using System;
 using Unity.Scripting.LifecycleManagement;
 using System.Collections.Generic;
@@ -17,6 +16,7 @@ using UnityEditor.UIElements;
 using UnityEditorInternal;
 using UnityEngine;
 using UnityEngine.Audio;
+using UnityEngine.Bindings;
 using UnityEngine.UIElements;
 using UnityObject = UnityEngine.Object;
 using Scene = UnityEngine.SceneManagement.Scene;
@@ -30,6 +30,7 @@ namespace UnityEditor
         public abstract void OnSelectionClosed(UnityObject selection);
     }
 
+    [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
     internal partial class ObjectSelector : EditorWindow
     {
         // Styles used in the object selector
@@ -42,10 +43,10 @@ namespace UnityEditor
             public static readonly GUIStyle previewBackground = "PopupCurveSwatchBackground"; // TODO: Make dedicated style
             public static readonly GUIStyle previewTextureBackground = "ObjectPickerPreviewBackground"; // TODO: Make dedicated style
 
-            public static readonly GUIContent assetsTabLabel = EditorGUIUtility.TrTextContent("Assets");
-            public static readonly GUIContent sceneTabLabel = EditorGUIUtility.TrTextContent("Scene");
+            public static readonly GUIContent assetsTabLabel = L10n.TextContent("Assets", null, null, null);
+            public static readonly GUIContent sceneTabLabel = L10n.TextContent("Scene", null, null, null);
 
-            public static readonly GUIContent packagesVisibilityContent = EditorGUIUtility.TrIconContent("SceneViewVisibility", "Number of hidden packages, click to toggle packages visibility");
+            public static readonly GUIContent packagesVisibilityContent = L10n.IconContent("SceneViewVisibility", "Number of hidden packages, click to toggle packages visibility", null);
 
             public const string rootName = "unity-object-selector";
             public const string headerName = rootName + "__header";
@@ -243,6 +244,9 @@ namespace UnityEditor
 
         // get an existing ObjectSelector or create one
         [AutoStaticsCleanupOnCodeReload]
+        // Shared window cache: the get accessor rediscovers an existing ObjectSelector with
+        // FindObjectsOfTypeAll and otherwise creates one, so it comes back on the next access.
+        [IgnoreForUAL0015("Shared window cache rediscovered or recreated on demand by the get accessor")]
         static ObjectSelector s_SharedObjectSelector = null;
         public static ObjectSelector get
         {
@@ -613,6 +617,7 @@ namespace UnityEditor
             SharedShow(obj, new RequiredTypeList(requiredTypes, property), objectBeingEdited, allowSceneObjects, allowedEntityIds, onObjectSelectorClosed, onObjectSelectedUpdated, true, allowBuiltinResources, excludeSceneAssets);
         }
 
+        [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
         internal void Show(UnityObject obj, Type requiredType, UnityObject objectBeingEdited, bool allowSceneObjects, List<EntityId> allowedEntityIds = null, Action<UnityObject> onObjectSelectorClosed = null, Action<UnityObject> onObjectSelectedUpdated = null, bool showNoneItem = true, bool allowBuiltinResources = true, bool excludeSceneAssets = false)
         {
             Show(obj, new Type[] { requiredType }, objectBeingEdited, allowSceneObjects, allowedEntityIds, onObjectSelectorClosed, onObjectSelectedUpdated, showNoneItem, allowBuiltinResources, excludeSceneAssets);
@@ -760,7 +765,7 @@ namespace UnityEditor
             var shouldRepositionWindow = m_Parent != null;
             ShowWithMode(ShowMode.AuxWindow);
 
-            titleContent = EditorGUIUtility.TrTextContent(typeList.GenerateTitleContent());
+            titleContent = L10n.TextContent(typeList.GenerateTitleContent(), null, null, null);
 
             // Deal with window size
             if (shouldRepositionWindow)
@@ -1448,4 +1453,3 @@ namespace UnityEditor
         }
     }
 }
-#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

@@ -14,5 +14,6 @@ namespace UnityEditor
     [ExcludeFromPreset]
     internal class PrefabImporter : AssetImporter
     {
+        internal PrefabImporter(global::UnityEngine.EntityId id) : base(id) {}
     }
 }

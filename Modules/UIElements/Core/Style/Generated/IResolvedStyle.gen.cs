@@ -336,6 +336,11 @@ namespace UnityEngine.UIElements
         float opacity => default;
 
         /// <summary>
+        /// How a container behaves if its content overflows its own box.
+        /// </summary>
+        Overflow overflow => default;
+
+        /// <summary>
         /// Space reserved for the bottom edge of the padding during the layout phase.
         /// </summary>
         float paddingBottom => default;

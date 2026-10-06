@@ -167,7 +167,7 @@ namespace UnityEditor.Search.Providers
 
         private bool GetScene(GameObject obj, QueryFilterOperator op, GUID sceneGuid)
         {
-            return new GUID(obj.scene.guid) == sceneGuid;
+            return obj.scene.guid == sceneGuid;
         }
 
         private static ParseResult<GUID> SceneTypeParser(string sceneFilterValue)
@@ -194,7 +194,7 @@ namespace UnityEditor.Search.Providers
                     var scene = stage.GetSceneAt(i);
                     if (scene.name.Equals(sceneFilterValue, StringComparison.InvariantCultureIgnoreCase))
                     {
-                        return new ParseResult<GUID>(true, new GUID(scene.guid));
+                        return new ParseResult<GUID>(true, scene.guid);
                     }
                 }
             }
@@ -206,11 +206,11 @@ namespace UnityEditor.Search.Providers
                     if (scenePath != null)
                     {
                         if (scene.path.Equals(scenePath, StringComparison.InvariantCultureIgnoreCase))
-                            return new ParseResult<GUID>(true, new GUID(scene.guid));
+                            return new ParseResult<GUID>(true, scene.guid);
                     }
                     else if (scene.name.Equals(sceneFilterValue, StringComparison.InvariantCultureIgnoreCase))
                     {
-                        return new ParseResult<GUID>(true, new GUID(scene.guid));
+                        return new ParseResult<GUID>(true, scene.guid);
                     }
                 }
             }

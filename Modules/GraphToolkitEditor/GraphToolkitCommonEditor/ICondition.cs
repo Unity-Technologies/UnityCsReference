@@ -33,5 +33,15 @@ namespace Unity.GraphToolkit.Editor
         /// has no rule yet.
         /// </remarks>
         ITransitionRule Rule { get; }
+
+        /// <summary>
+        /// The icon displayed for this condition in the transition inspector, or <see langword="null"/> if none is set.
+        /// </summary>
+        /// <remarks>
+        /// This is the condition's own icon, not persisted with the graph. A visualization tool that doesn't own
+        /// the graph asset can override it for its own display without changing this value; see
+        /// <see cref="Unity.GraphToolkit.Editor.GraphVisualization.ConditionReference.Icon"/>.
+        /// </remarks>
+        Texture2D Icon { get; set; }
     }
 }

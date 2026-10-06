@@ -13,11 +13,15 @@ using Unity.Collections;
 
 namespace UnityEditor.Utils
 {
-    [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
+    [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
     internal static class Paths
     {
         internal static readonly char[] invalidFilenameChars;
         internal static readonly char[] invalidPathChars;
+        // Mirrors Mono's own Path.PathSeparatorChars (directory, alt-directory and volume separator), so
+        // splitting by hand below yields exactly what Mono's Path.GetFileName yielded. On Unix all three
+        // are '/', which LastIndexOfAny handles fine.
+        internal static readonly char[] pathSeparatorChars = { Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar, Path.VolumeSeparatorChar };
         internal const int kMaxPathComponentLength = 255;
 
         static Paths()
@@ -237,7 +241,13 @@ namespace UnityEditor.Utils
                     return false;
                 }
 
-                fileName = Path.GetFileName(assetPath);
+                // Split by hand instead of using Path.GetFileName: on Windows .NET Core, a path starting
+                // with two or three separators (e.g. "///asset") is misread as a "\\server\share" prefix,
+                // consuming the whole string as the root and leaving an empty file name. Asset paths are
+                // virtual project-relative strings, so they need no OS root/UNC parsing - see
+                // pathSeparatorChars, which reproduces Mono's Path.GetFileName exactly.
+                int lastSeparatorIndex = assetPath.LastIndexOfAny(pathSeparatorChars);
+                fileName = lastSeparatorIndex >= 0 ? assetPath.Substring(lastSeparatorIndex + 1) : assetPath;
 
                 if (fileName.Length > kMaxPathComponentLength)
                 {

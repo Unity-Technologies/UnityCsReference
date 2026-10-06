@@ -2,7 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: UIToolkitFramework not yet converted
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -84,6 +83,7 @@ namespace UnityEditor.UIElements
             // Holds prefixes declared by user-assembly [UxmlNamespacePrefix] attributes, so it is
             // cleared on code reload and lazily rebuilt from the current assemblies on next use.
             [AutoStaticsCleanupOnCodeReload]
+            [IgnoreForUAL0015("Lazily rebuilt by the namespacePrefix getter (??=) on next access after reload")]
             static Dictionary<string, string> s_NamespacePrefix;
 
             static Dictionary<string, string> namespacePrefix => s_NamespacePrefix ??= BuildNamespacePrefixes();
@@ -1119,4 +1119,3 @@ namespace UnityEditor.UIElements
         }
     }
 }
-#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

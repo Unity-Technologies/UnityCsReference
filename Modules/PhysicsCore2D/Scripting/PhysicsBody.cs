@@ -24,6 +24,43 @@ namespace Unity.U2D.Physics
     ///
     /// A body is automatically destroyed when the world it is in is destroyed. A body cannot exist outside a world.
     /// </summary>
+    /// <remarks>
+    /// Create a body with <see cref="PhysicsWorld.CreateBody(PhysicsBodyDefinition)"/>, then attach a shape with <see cref="PhysicsBody.CreateShape(CircleGeometry, PhysicsShapeDefinition)"/>. After you create a shape from a geometry object, the shape doesn't change if you later change the geometry object.
+    /// Unity draws shapes as a debug visualization in the Scene view and Game view, with a line indicating the shape's  rotation direction.
+    /// </remarks>
+    /// <example>
+    /// <code lang="cs">
+    /// <![CDATA[
+    /// // Create a body, then attach a circle shape to it.
+    /// using UnityEngine;
+    /// using Unity.U2D.Physics;
+    ///
+    /// public class CreateWorldAndObjects : MonoBehaviour
+    /// {
+    ///     // Declare definitions that contain default properties for the body and shape.
+    ///     public PhysicsBodyDefinition bodyDefinition = PhysicsBodyDefinition.defaultDefinition;
+    ///     public PhysicsShapeDefinition shapeDefinition = PhysicsShapeDefinition.defaultDefinition;
+    ///
+    ///     void Start()
+    ///     {
+    ///         // Get the default world.
+    ///         PhysicsWorld world = PhysicsWorld.defaultWorld;
+    ///
+    ///         // Create the physics body with the body definition.
+    ///         PhysicsBody myObject = world.CreateBody(bodyDefinition);
+    ///
+    ///         // Create the circle geometry.
+    ///         CircleGeometry circleGeometry = new CircleGeometry { radius = 1.5f };
+    ///
+    ///         // Create the shape with both the geometry and the shape definition.
+    ///         myObject.CreateShape(circleGeometry, shapeDefinition);
+    ///     }
+    /// }
+    /// ]]>
+    /// </code>
+    /// </example>
+    /// <seealso cref="PhysicsShape"/>
+    /// <seealso cref="PhysicsWorld"/>
     [StructLayout(LayoutKind.Sequential)]
     [MovedFrom(autoUpdateAPI: ScriptUpdateConstants.AutoUpdateAPI, sourceNamespace: ScriptUpdateConstants.SourceNamespace, sourceAssembly: ScriptUpdateConstants.SourceAssembly)]
     public readonly partial struct PhysicsBody : IPhysicsHandle<PhysicsBody>, IEquatable<PhysicsBody>
@@ -164,6 +201,49 @@ namespace Unity.U2D.Physics
         /// The method used to Write the body pose to the Transform.
         /// See <see cref="PhysicsWorld.transformWriteMode"/>.
         /// </summary>
+        /// <remarks>
+        /// By default, Unity writes the Transform component after it finishes calculating the physics simulation. Set this mode to `Interpolate` or `Extrapolate` instead to interpolate positions between simulation steps.
+        /// <see cref="PhysicsBody.transformObject"/> is available only in a C# script, not in the Inspector window of a public <see cref="PhysicsBodyDefinition"/> object.
+        /// </remarks>
+        /// <example>
+        /// <code lang="cs">
+        /// <![CDATA[
+        /// // Move a GameObject by creating a dynamic body and writing its Transform.
+        /// using UnityEngine;
+        /// using Unity.U2D.Physics;
+        ///
+        /// public class MoveGameObject : MonoBehaviour
+        /// {
+        ///     public PhysicsWorld world;
+        ///     public PhysicsWorldDefinition worldDefinition = PhysicsWorldDefinition.defaultDefinition;
+        ///
+        ///     void Awake()
+        ///     {
+        ///         // Enable physics bodies updating transforms.
+        ///         worldDefinition.transformWriteMode = PhysicsWorld.TransformWriteMode.Fast2D;
+        ///         world = PhysicsWorld.Create(worldDefinition);
+        ///     }
+        ///
+        ///     void Start()
+        ///     {
+        ///         // Create a body and shape.
+        ///         PhysicsBody circleBody = world.CreateBody();
+        ///         CircleGeometry circleGeometry = new CircleGeometry { radius = 2f };
+        ///         circleBody.CreateShape(circleGeometry);
+        ///
+        ///         // Set body to dynamic so it falls under gravity.
+        ///         circleBody.type = PhysicsBody.BodyType.Dynamic;
+        ///
+        ///         // Enable this physics body updating transforms.
+        ///         circleBody.transformWriteMode = PhysicsBody.TransformWriteMode.Current;
+        ///
+        ///         // Set the updated transform as the transform of this GameObject.
+        ///         circleBody.transformObject = transform;
+        ///     }
+        /// }
+        /// ]]>
+        /// </code>
+        /// </example>
         public enum TransformWriteMode
         {
             /// <summary>
@@ -480,7 +560,7 @@ namespace Unity.U2D.Physics
             public float angularDamping { readonly get => m_AngularDamping; set => m_AngularDamping = Mathf.Max(0f, value); }
 
             /// <summary>
-            /// When true, trigger shapes contribute to buoyancy alongside solid shapes.
+            /// When true, trigger shapes contribute to buoyancy alongside non-trigger shapes.
             /// When false, trigger shapes are skipped.
             /// </summary>
             public bool useTriggers { readonly get => m_UseTriggers; set => m_UseTriggers = value; }
@@ -553,7 +633,7 @@ namespace Unity.U2D.Physics
             public float lift { readonly get => m_Lift; set => m_Lift = Mathf.Max(0f, value); }
 
             /// <summary>
-            /// When true, trigger shapes contribute to wind alongside solid shapes.
+            /// When true, trigger shapes contribute to wind alongside non-trigger shapes.
             /// When false, trigger shapes are skipped.
             /// </summary>
             public bool useTriggers { readonly get => m_UseTriggers; set => m_UseTriggers = value; }
@@ -880,6 +960,28 @@ namespace Unity.U2D.Physics
         /// <param name="world">The world to create the body in.</param>
         /// <param name="definition">The body definition to use.</param>
         /// <returns>The created body.</returns>
+        /// <example>
+        /// <code lang="cs">
+        /// <![CDATA[
+        /// // Create a body with a body definition, then attach a circle shape to it.
+        /// using UnityEngine;
+        /// using Unity.U2D.Physics;
+        ///
+        /// public class CreateBodyExample : MonoBehaviour
+        /// {
+        ///     void Start()
+        ///     {
+        ///         PhysicsWorld world = PhysicsWorld.defaultWorld;
+        ///         PhysicsBody myObject = PhysicsBody.Create(world, new PhysicsBodyDefinition
+        ///         {
+        ///             position = new Vector2(0f, 5f)
+        ///         });
+        ///         myObject.CreateShape(new CircleGeometry { radius = 1.5f });
+        ///     }
+        /// }
+        /// ]]>
+        /// </code>
+        /// </example>
         public static PhysicsBody Create(PhysicsWorld world, PhysicsBodyDefinition definition) => PhysicsBody_Create(world, definition);
 
         /// <summary>
@@ -903,7 +1005,7 @@ namespace Unity.U2D.Physics
         /// <param name="allocator">The memory allocator to use for the results. This can only be <see cref="Unity.Collections.Allocator.Temp"/>, <see cref="Unity.Collections.Allocator.TempJob"/> or <see cref="Unity.Collections.Allocator.Persistent"/>.</param>
         /// <remarks>See <see cref="PhysicsBody.SetOwner(UnityEngine.Object)"/>.</remarks>
         /// <returns>The created bodies. This NativeArray must be disposed of after use otherwise leaks will occur. The exception to this is if the array is empty.</returns>
-        public static unsafe NativeArray<PhysicsBody> CreateBatch(PhysicsWorld world, PhysicsBodyDefinition definition, int bodyCount, UnityEngine.Object owner, int ownerKey, Allocator allocator = Unity.Collections.Allocator.Temp) => PhysicsBody_CreateBatch(world, new ReadOnlySpan<PhysicsBodyDefinition>(&definition, 1), bodyCount, owner, ownerKey, allocator).ToNativeArray<PhysicsBody>();
+        public static NativeArray<PhysicsBody> CreateBatch(PhysicsWorld world, PhysicsBodyDefinition definition, int bodyCount, UnityEngine.Object owner, int ownerKey, Allocator allocator = Unity.Collections.Allocator.Temp) => PhysicsBody_CreateBatch(world, stackalloc PhysicsBodyDefinition[1] { definition }, bodyCount, owner, ownerKey, allocator).ToNativeArray<PhysicsBody>();
 
         /// <summary>
         /// Create a batch of bodies in the specified world.
@@ -930,8 +1032,31 @@ namespace Unity.U2D.Physics
         /// Destroy a body, destroying all attached <see cref="PhysicsShape"/> and <see cref="PhysicsJoint"/>.
         /// If the object is owned with <see cref="PhysicsBody.SetOwner(UnityEngine.Object)"/> then you must provide the owner key it returned. Failing to do so will return a warning and the body will not be destroyed.
         /// </summary>
+        /// <remarks>
+        /// Unity produces an error in the Console window if you try to destroy a body that no longer exists. Check <see cref="PhysicsBody.isValid"/> first.
+        /// </remarks>
         /// <param name="ownerKey">Optional owner key returned when using <see cref="PhysicsBody.SetOwner(UnityEngine.Object)"/>.</param>
-        /// <returns>If the body was destroyed or not.</returns>
+        /// <returns>Returns `true` if the body was successfully destroyed. Otherwise, `false`.</returns>
+        /// <example>
+        /// <code lang="cs">
+        /// <![CDATA[
+        /// // Create a physics body, then destroy it when it's no longer needed.
+        /// using UnityEngine;
+        /// using Unity.U2D.Physics;
+        ///
+        /// public class DestroyBodyExample : MonoBehaviour
+        /// {
+        ///     void Start()
+        ///     {
+        ///         PhysicsWorld world = PhysicsWorld.defaultWorld;
+        ///         PhysicsBody myBody = world.CreateBody();
+        ///         myBody.Destroy();
+        ///     }
+        /// }
+        /// ]]>
+        /// </code>
+        /// </example>
+        /// <seealso cref="PhysicsWorld.DestroyBodyBatch(ReadOnlySpan{PhysicsBody})"/>
         public readonly bool Destroy(int ownerKey = 0) => PhysicsBody_Destroy(this, ownerKey);
 
         /// <summary>
@@ -940,6 +1065,29 @@ namespace Unity.U2D.Physics
         /// Owned bodies will produce a warning and will not be destroyed (See <see cref="PhysicsBody.SetOwner(UnityEngine.Object)"/>).
         /// </summary>
         /// <param name="bodies">The bodies to destroy.</param>
+        /// <example>
+        /// <code lang="cs">
+        /// <![CDATA[
+        /// // Destroy every body returned by a batch creation call.
+        /// using UnityEngine;
+        /// using Unity.Collections;
+        /// using Unity.U2D.Physics;
+        ///
+        /// public class DestroyBatchExample : MonoBehaviour
+        /// {
+        ///     public PhysicsBodyDefinition bodyDefinition = PhysicsBodyDefinition.defaultDefinition;
+        ///
+        ///     void Start()
+        ///     {
+        ///         PhysicsWorld world = PhysicsWorld.defaultWorld;
+        ///         NativeArray<PhysicsBody> bodies = world.CreateBodyBatch(bodyDefinition, 500);
+        ///         PhysicsBody.DestroyBatch(bodies);
+        ///         bodies.Dispose();
+        ///     }
+        /// }
+        /// ]]>
+        /// </code>
+        /// </example>
         public static void DestroyBatch(ReadOnlySpan<PhysicsBody> bodies) => DestroyBatch(bodies, 0);
 
         /// <summary>
@@ -960,7 +1108,8 @@ namespace Unity.U2D.Physics
         /// If the bodies in the batch are not contained in the same <see cref="PhysicsWorld"/>, the batch should be sorted by the <see cref="PhysicsWorld"/> the bodies are contained within.
         /// </summary>
         /// <param name="batch">The batch of bodies and values to set.</param>
-        public static void SetBatchVelocity(ReadOnlySpan<BatchVelocity> batch) => PhysicsBody_SetBatchVelocity(batch);
+        /// <returns>The number of bodies that were ignored (not set because the body was invalid). A single warning is logged when any are ignored.</returns>
+        public static int SetBatchVelocity(ReadOnlySpan<BatchVelocity> batch) => PhysicsBody_SetBatchVelocity(batch);
 
         /// <summary>
         /// Get the velocity for a batch of <see cref="PhysicsBody"/>.
@@ -977,7 +1126,8 @@ namespace Unity.U2D.Physics
         /// If the bodies in the batch are not contained in the same <see cref="PhysicsWorld"/>, the batch should be sorted by the <see cref="PhysicsWorld"/> the bodies are contained within.
         /// </summary>
         /// <param name="batch">The batch of bodies and values to set.</param>
-        public static void SetBatchForce(ReadOnlySpan<BatchForce> batch) => PhysicsBody_SetBatchForce(batch);
+        /// <returns>The number of bodies that were ignored (not applied because the body was invalid). A single warning is logged when any are ignored.</returns>
+        public static int SetBatchForce(ReadOnlySpan<BatchForce> batch) => PhysicsBody_SetBatchForce(batch);
 
         /// <summary>
         /// Apply an impulse for a batch of <see cref="PhysicsBody"/> using a span of <see cref="PhysicsBody.BatchImpulse"/>.
@@ -986,7 +1136,8 @@ namespace Unity.U2D.Physics
         /// If the bodies in the batch are not contained in the same <see cref="PhysicsWorld"/>, the batch should be sorted by the <see cref="PhysicsWorld"/> the bodies are contained within.
         /// </summary>
         /// <param name="batch">The batch of bodies and values to set.</param>
-        public static void SetBatchImpulse(ReadOnlySpan<BatchImpulse> batch) => PhysicsBody_SetBatchImpulse(batch);
+        /// <returns>The number of bodies that were ignored (not applied because the body was invalid). A single warning is logged when any are ignored.</returns>
+        public static int SetBatchImpulse(ReadOnlySpan<BatchImpulse> batch) => PhysicsBody_SetBatchImpulse(batch);
 
         /// <summary>
         /// Set the transform for a batch of <see cref="PhysicsBody"/> using a span of <see cref="PhysicsBody.BatchTransform"/>.
@@ -995,7 +1146,8 @@ namespace Unity.U2D.Physics
         /// If the bodies in the batch are not contained in the same <see cref="PhysicsWorld"/>, the batch should be sorted by the <see cref="PhysicsWorld"/> the bodies are contained within.
         /// </summary>
         /// <param name="batch">The batch of bodies and values to set.</param>
-        public static void SetBatchTransform(ReadOnlySpan<BatchTransform> batch) => PhysicsBody_SetBatchTransform(batch);
+        /// <returns>The number of bodies that were ignored (not set because the body was invalid). A single warning is logged when any are ignored.</returns>
+        public static int SetBatchTransform(ReadOnlySpan<BatchTransform> batch) => PhysicsBody_SetBatchTransform(batch);
 
         /// <summary>
         /// Set the transform for a batch of <see cref="PhysicsBody"/> using a span of <see cref="PhysicsBody.BatchTransform"/>, optionally writing each pose to the <see cref="PhysicsBody.transformObject"/> of its body.
@@ -1008,25 +1160,24 @@ namespace Unity.U2D.Physics
         /// </summary>
         /// <param name="batch">The batch of bodies and values to set.</param>
         /// <param name="writePoses">Whether to also write the poses to the <see cref="PhysicsBody.transformObject"/> of each body in the batch.</param>
+        /// <returns>The number of bodies that were ignored (not set because the body was invalid). A single warning is logged when any are ignored.</returns>
         /// <exception cref="ArgumentException">Thrown when <paramref name="writePoses"/> is true and the valid bodies in the batch are not all in the same <see cref="PhysicsWorld"/> or do not each have a unique <see cref="PhysicsBody.transformObject"/> assigned. Nothing is changed when this is thrown.</exception>
-        public static void SetBatchTransform(ReadOnlySpan<BatchTransform> batch, bool writePoses)
+        public static int SetBatchTransform(ReadOnlySpan<BatchTransform> batch, bool writePoses)
         {
             // Only write poses when requested, otherwise this is the plain batch transform set.
             if (!writePoses)
-            {
-                PhysicsBody_SetBatchTransform(batch);
-                return;
-            }
+                return PhysicsBody_SetBatchTransform(batch);
 
-            SetBatchTransformWritePoses(batch);
+            return SetBatchTransformWritePoses(batch);
         }
 
         // Set the body poses for the batch and write each pose to the transform object of its body.
         // The gather validates the batch and fills the transform-access-array without changing any state, so a throw here leaves everything untouched.
-        static unsafe void SetBatchTransformWritePoses(ReadOnlySpan<BatchTransform> batch)
+        // Returns the number of bodies ignored because they were invalid.
+        static unsafe int SetBatchTransformWritePoses(ReadOnlySpan<BatchTransform> batch)
         {
             if (batch.IsEmpty)
-                return;
+                return 0;
 
             // Gather the transform objects to write, densely packed, with a map recording the batch item each packed transform came from.
             // An invalid body contributes no transform, so the packed count can be smaller than the batch.
@@ -1042,14 +1193,14 @@ namespace Unity.U2D.Physics
             }
 
             // Set the body poses.
-            PhysicsBody_SetBatchTransform(batch);
+            var ignoredCount = PhysicsBody_SetBatchTransform(batch);
 
             // With nothing to write (no valid body with a transform) the body poses are still set, but there is no transform work.
             if (writeCount == 0)
             {
                 batchIndexMap.Dispose();
                 transformAccessArray.Dispose();
-                return;
+                return ignoredCount;
             }
 
             // The world configuration is per-world and every written body shares one world, so read it from the first written body.
@@ -1077,10 +1228,12 @@ namespace Unity.U2D.Physics
             // We're finished so dispose.
             poses.Dispose();
             transformAccessArray.Dispose();
+
+            return ignoredCount;
         }
 
         /// <undoc/>
-        struct WriteBatchPosesJob : IJobParallelForTransform
+        internal struct WriteBatchPosesJob : IJobParallelForTransform
         {
             [ReadOnly] public NativeArray<BatchTransform> batch;
             [ReadOnly] public PhysicsWorld.TransformPlane transformPlane;
@@ -1470,6 +1623,9 @@ namespace Unity.U2D.Physics
         /// This allows this body to bypass rotational speed limits.
         /// This should only be used for circular objects, such as wheels, balls etc.
         /// </summary>
+        /// <remarks>
+        /// By default, Unity limits how fast a body rotates to avoid forces becoming too large and objects passing through each other incorrectly. Set this property to `true` to remove that limit for this body.
+        /// </remarks>
         public readonly bool fastRotationAllowed { get => PhysicsBody_GetFastRotationAllowed(this); set => PhysicsBody_SetFastRotationAllowed(this, value); }
 
         /// <summary>
@@ -1488,6 +1644,10 @@ namespace Unity.U2D.Physics
         /// They are not a solution for general dynamic-versus-dynamic continuous collision.
         /// They also may interfere with joint constraints.
         /// </summary>
+        /// <remarks>
+        /// The 2D physics system already uses continuous collision detection automatically to prevent tunneling when dynamic bodies approach static bodies.
+        /// If a very fast-moving object still passes through another object, set this property to `true` to force fast collision detection. Enabling this setting can reduce performance, so use it only for the bodies that need it.
+        /// </remarks>
         public readonly bool fastCollisionsAllowed { get => PhysicsBody_GetFastCollisionsAllowed(this); set => PhysicsBody_SetFastCollisionsAllowed(this, value); }
 
         /// <summary>
@@ -1551,11 +1711,7 @@ namespace Unity.U2D.Physics
         /// </summary>
         /// <param name="input">The fluid and force configuration. See <see cref="BuoyancyInput"/>.</param>
         /// <param name="deltaTime">The simulation step duration in seconds. Used to clamp damping so it cannot overshoot in a single step.</param>
-        public unsafe readonly void ApplyBuoyancy(BuoyancyInput input, float deltaTime)
-        {
-            var body = this;
-            ApplyBuoyancy(input, new ReadOnlySpan<PhysicsBody>(&body, 1), deltaTime);
-        }
+        public readonly void ApplyBuoyancy(BuoyancyInput input, float deltaTime) => ApplyBuoyancy(input, stackalloc PhysicsBody[1] { this }, deltaTime);
 
         /// <summary>
         /// Apply buoyancy, flow and damping forces to every body in <paramref name="bodies"/> based on how their attached shapes are submerged in a fluid plane.
@@ -1605,11 +1761,7 @@ namespace Unity.U2D.Physics
         /// Sleeping bodies are woken automatically by Box2D when the per-shape force is non-trivial.
         /// </summary>
         /// <param name="input">The wind configuration. See <see cref="WindInput"/>.</param>
-        public unsafe readonly void ApplyWind(WindInput input)
-        {
-            var body = this;
-            ApplyWind(input, new ReadOnlySpan<PhysicsBody>(&body, 1));
-        }
+        public readonly void ApplyWind(WindInput input) => ApplyWind(input, stackalloc PhysicsBody[1] { this });
 
         /// <summary>
         /// Apply wind forces to every body in <paramref name="bodies"/> by iterating each body's attached shapes.
@@ -1699,11 +1851,7 @@ namespace Unity.U2D.Physics
         /// </summary>
         /// <param name="owner">The object that owns this key. This can be NULL if not required but is recommended as the key is formed in part by the hash-code of the owner object.</param>
         /// <param name="ownerKey">The owner key to be used. If zero then a new owner key is created. You can use <see cref="PhysicsWorld.CreateOwnerKey(UnityEngine.Object)"/> for this value although any non-zero integer will work.</param>
-        public unsafe readonly void SetOwner(UnityEngine.Object owner, int ownerKey)
-        {
-            var body = this;
-            SetOwner(new ReadOnlySpan<PhysicsBody>(&body, 1), owner, ownerKey);
-        }
+        public readonly void SetOwner(UnityEngine.Object owner, int ownerKey) => SetOwner(stackalloc PhysicsBody[1] { this }, owner, ownerKey);
 
         /// <summary>
         /// Set the owner object using the specified owner key.
@@ -1791,14 +1939,16 @@ namespace Unity.U2D.Physics
         /// </summary>
         /// <param name="bodies">The bodies to set the user data on.</param>
         /// <param name="userDatas">The user data to set, one entry per body.</param>
-        public static void SetUserData(ReadOnlySpan<PhysicsBody> bodies, ReadOnlySpan<PhysicsUserData> userDatas) => PhysicsBody_SetUserDataSpan(bodies, userDatas);
+        /// <returns>The number of bodies that were ignored (not set because the body was invalid). A single warning is logged when any are ignored. If the spans are different lengths, nothing is set and every body is counted as ignored.</returns>
+        public static int SetUserData(ReadOnlySpan<PhysicsBody> bodies, ReadOnlySpan<PhysicsUserData> userDatas) => PhysicsBody_SetUserDataSpan(bodies, userDatas);
 
         /// <summary>
         /// Set the same <see cref="PhysicsUserData"/> on a batch of bodies that can be used for any purpose.
         /// </summary>
         /// <param name="bodies">The bodies to set the user data on.</param>
         /// <param name="physicsUserData">The user data to set on every body.</param>
-        public static void SetUserData(ReadOnlySpan<PhysicsBody> bodies, PhysicsUserData physicsUserData) => PhysicsBody_SetUserDataSpanAll(bodies, physicsUserData);
+        /// <returns>The number of bodies that were ignored (not set because the body was invalid). A single warning is logged when any are ignored.</returns>
+        public static int SetUserData(ReadOnlySpan<PhysicsBody> bodies, PhysicsUserData physicsUserData) => PhysicsBody_SetUserDataSpanAll(bodies, physicsUserData);
 
         /// <summary>
         /// Get/Set the transform object associated with the body.
@@ -2076,14 +2226,10 @@ namespace Unity.U2D.Physics
         /// The state persists until set to false, the body is destroyed, or <see cref="PhysicsWorld.ClearDrawSelected"/> clears the whole world.
         /// The body must also have <see cref="worldDrawing"/> enabled to be drawn.
         /// </remarks>
-        public unsafe readonly bool selectedDrawing
+        public readonly bool selectedDrawing
         {
             get => PhysicsBody_GetSelectedDrawing(this);
-            set
-            {
-                var body = this;
-                PhysicsBody_SetSelectedDrawing(new ReadOnlySpan<PhysicsBody>(&body, 1), value);
-            }
+            set => PhysicsBody_SetSelectedDrawing(stackalloc PhysicsBody[1] { this }, value);
         }
 
         /// <summary>
@@ -2091,10 +2237,47 @@ namespace Unity.U2D.Physics
         /// </summary>
         /// <remarks>
         /// This filters on top of the world's own <see cref="PhysicsWorld.drawTarget"/>: the world decides whether it draws into a view at all, and this decides whether this body is included when it does.
-        /// The state is not part of the body definition and is never recorded, because it describes how the body is being looked at rather than what it is.
         /// A player build has no Scene view, so a body set to <see cref="PhysicsWorld.DrawTarget.SceneView"/> is never drawn in a build.
+        /// See <see cref="PhysicsBodyDefinition.drawTarget"/>.
         /// </remarks>
         public readonly PhysicsWorld.DrawTarget drawTarget { get => PhysicsBody_GetDrawTarget(this); set => PhysicsBody_SetDrawTarget(this, value); }
+
+        /// <summary>
+        /// The depth this body is drawn at, in world space, along the axis perpendicular to the world's transform plane.
+        /// </summary>
+        /// <remarks>
+        /// Bodies are drawn in two dimensions, so the depth is what places a body in front of or behind other things in the scene.
+        /// The depth axis is Z for <see cref="PhysicsWorld.TransformPlane.XY"/>, Y for <see cref="PhysicsWorld.TransformPlane.XZ"/> and X for <see cref="PhysicsWorld.TransformPlane.ZY"/>.
+        /// The depth is only used when the body has no <see cref="transformObject"/>.
+        /// A body with a transform object is always drawn at the depth of that transform.
+        /// Everything drawn for the body, such as its shapes and its transform axis, uses this depth.
+        /// A joint is drawn at the depth of its first body, <see cref="PhysicsJoint.bodyA"/>.
+        /// A value that is not finite is rejected and leaves the depth unchanged.
+        /// The depth only changes how the body is drawn and never affects the simulation.
+        /// See <see cref="PhysicsBodyDefinition.drawDepth"/>.
+        /// To set the depth for custom drawing that is not tied to a body, use <see cref="PhysicsWorld.drawDepth"/>.
+        /// </remarks>
+        public readonly float drawDepth { get => PhysicsBody_GetDrawDepth(this); set => PhysicsBody_SetDrawDepth(this, value); }
+
+        /// <summary>
+        /// Sets the draw depth from a 3D position, using the axis that matches the transform plane of the world this body is in.
+        /// </summary>
+        /// <remarks>
+        /// The relevant axis is taken from the position using the <see cref="PhysicsWorld.transformPlane"/> of the body's world.
+        /// If <see cref="PhysicsWorld.TransformPlane.Custom"/> is used, the draw depth is set to zero.
+        /// If the body is not valid, nothing happens.
+        /// See <see cref="PhysicsBody.drawDepth"/>.
+        /// </remarks>
+        /// <param name="position">The 3D position to take the draw depth from.</param>
+        public readonly void SetDrawDepth3D(Vector3 position)
+        {
+            var bodyWorld = world;
+            if (!bodyWorld.isValid)
+                return;
+
+            var bodyTransformPlane = bodyWorld.transformPlane;
+            drawDepth = bodyTransformPlane != PhysicsWorld.TransformPlane.Custom ? PhysicsMath.GetTranslationIgnoredAxis(position, bodyTransformPlane) : 0.0f;
+        }
 
         /// <summary>
         /// Set the selected drawing state on a batch of bodies.
@@ -2106,7 +2289,8 @@ namespace Unity.U2D.Physics
         /// </remarks>
         /// <param name="bodies">The bodies to set the selected drawing state on.</param>
         /// <param name="selected">The selected drawing state to set on every body.</param>
-        public static void SetSelectedDrawing(ReadOnlySpan<PhysicsBody> bodies, bool selected) => PhysicsBody_SetSelectedDrawing(bodies, selected);
+        /// <returns>The number of bodies that were ignored (not set because the body was invalid). A single warning is logged when any are ignored.</returns>
+        public static int SetSelectedDrawing(ReadOnlySpan<PhysicsBody> bodies, bool selected) => PhysicsBody_SetSelectedDrawing(bodies, selected);
 
         /// <summary>
         /// Draw this body's current state once, as custom drawing.

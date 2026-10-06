@@ -16,7 +16,7 @@ namespace Unity.Localization;
 /// provider), the accessor falls back to an asynchronous load.
 /// </remarks>
 /// <example>
-/// <para>Choose synchronous resolution as the default loading behaviour.</para>
+/// Choose synchronous resolution as the default loading behaviour.
 /// <code source="../../../../Modules/LocalizationRuntime/Tests/UTFTests/Localization.Samples/Settings/PreferredLoadingExample.cs"/>
 /// </example>
 /// <seealso cref="LocalizationSettings.PreferredLoading"/>

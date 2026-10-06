@@ -21,6 +21,8 @@ namespace UnityEngine
     [NativeHeader("Modules/Physics/Collider.h")]
     public partial class Collider : Component
     {
+        public Collider() {}
+        protected internal Collider(global::UnityEngine.EntityId id) : base(id) {}
         ///<summary>Enabled Colliders will collide with other Colliders, disabled Colliders won't.</summary>
         ///<remarks>This is shown as the small checkbox in the inspector of the Colliders. It decides if a GameObject can collide with other Colliders.</remarks>
         ///<example>

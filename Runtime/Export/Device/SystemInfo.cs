@@ -212,6 +212,8 @@ namespace UnityEngine.Device
 
         public static bool supportsMachineLearning => ShimManager.systemInfoShim.supportsMachineLearning;
 
+        public static bool supportsPrecompiledGraphicsStateStats => ShimManager.systemInfoShim.supportsPrecompiledGraphicsStateStats;
+
         public static bool supportsMemorylessTextures => ShimManager.systemInfoShim.supportsMemorylessTextures;
 
         public static bool supportsBackbufferDepthMemoryless => ShimManager.systemInfoShim.supportsBackbufferDepthMemoryless;
@@ -243,6 +245,12 @@ namespace UnityEngine.Device
         public static bool supportsMultisampleResolveStencil => ShimManager.systemInfoShim.supportsMultisampleResolveStencil;
 
         public static bool supportsIndirectArgumentsBuffer => ShimManager.systemInfoShim.supportsIndirectArgumentsBuffer;
+
+        public static bool supportsMultiDrawIndirect => ShimManager.systemInfoShim.supportsMultiDrawIndirect;
+
+        public static bool supportsMultiDrawIndirectCountBuffer => ShimManager.systemInfoShim.supportsMultiDrawIndirectCountBuffer;
+
+        public static uint maxDrawIndirectCount => ShimManager.systemInfoShim.maxDrawIndirectCount;
 
         public static bool supportsDepthFetchInRenderPass => ShimManager.systemInfoShim.supportsDepthFetchInRenderPass;
 
