@@ -31,7 +31,7 @@ namespace UnityEditor.UIElements
             {
                 cached = EditorGUIUtility.Load(UIElementsEditorUtility.GetStyleSheetPathForCurrentFont(path)) as StyleSheet;
                 if (cached != null)
-                    cached.isDefaultStyleSheet = true;
+                    cached.priority = UnityEngine.UIElements.StyleSheetPriority.Builtin;
             }
             return cached;
         }

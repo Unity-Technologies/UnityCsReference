@@ -54,7 +54,7 @@ namespace UnityEngine.UIElements.UIR
                 return ve.worldTransformInverse * wf;
             }
             if (rd.groupTransformAncestor != null)
-                T = rd.groupTransformAncestor.owner.worldTransformInverse * ve.worldTransform;
+                UIRUtility.ComputeMatrixRelativeToAncestor(rd, rd.groupTransformAncestor, out T);
             else
                 UIRUtility.ComputeMatrixRelativeToRenderTree(rd, out T);
             Matrix4x4 Tf = T; Tf.m22 = 1f;

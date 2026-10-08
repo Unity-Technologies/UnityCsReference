@@ -33,4 +33,23 @@ namespace UnityEditor
             Menu.RemoveMenuItem("Component/Effects/Halo");
         }
     }
+
+    [InitializeOnLoad]
+    static class RemoveLegacyUmbraMenuItems
+    {
+        static RemoveLegacyUmbraMenuItems()
+        {
+            EditorApplication.delayCall += RemoveMenuItems;
+        }
+
+        static void RemoveMenuItems()
+        {
+            if (EditorSettings.enableLegacyUmbraCulling)
+                return;
+
+            Menu.RemoveMenuItem("Component/Rendering/Occlusion Area");
+            Menu.RemoveMenuItem("Component/Rendering/Occlusion Portal");
+            Menu.RemoveMenuItem("Window/Rendering/Occlusion Culling");
+        }
+    }
 }

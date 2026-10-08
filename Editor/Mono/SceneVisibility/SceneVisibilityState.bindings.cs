@@ -71,6 +71,7 @@ namespace UnityEditor
         public static extern int GetHiddenObjectCountWithoutCacheUpdate();
         public static extern int GetPickingDisabledObjectCount();
         public static extern void ForceDataUpdate();
+        public static extern void UpdateCacheIfNeeded();
         public static extern void CleanTempScenes();
 
         [AutoStaticsCleanupOnCodeReload]

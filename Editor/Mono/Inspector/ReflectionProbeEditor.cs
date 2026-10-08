@@ -563,7 +563,8 @@ namespace UnityEditor
                 EditorGUILayout.IntPopup(m_ClearFlags, Styles.clearFlags, Styles.clearFlagsValues, Styles.clearFlagsText);
                 EditorGUILayout.PropertyField(m_BackgroundColor, Styles.backgroundColorText);
                 EditorGUILayout.PropertyField(m_CullingMask, Styles.cullingMaskText);
-                EditorGUILayout.PropertyField(m_UseOcclusionCulling, Styles.useOcclusionCulling);
+                if (EditorSettings.enableLegacyUmbraCulling)
+                    EditorGUILayout.PropertyField(m_UseOcclusionCulling, Styles.useOcclusionCulling);
                 EditorGUILayout.PropertiesField(EditorGUI.s_ClipingPlanesLabel, m_NearAndFarProperties, EditorGUI.s_NearAndFarLabels, EditorGUI.kNearFarLabelsWidth);
 
                 EditorGUI.indentLevel--;

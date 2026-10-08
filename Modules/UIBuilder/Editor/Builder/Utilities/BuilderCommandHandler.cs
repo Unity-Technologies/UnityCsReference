@@ -252,6 +252,15 @@ namespace Unity.UI.Builder
             return false;
         }
 
+        public bool CanPaste(VisualElement target)
+        {
+            if (!BuilderEditorUtility.CopyBufferMatchesTarget(target))
+                return false;
+
+            return !m_PaneWindow.document.isCanvasReadOnly
+                || !BuilderEditorUtility.IsUxml(BuilderEditorUtility.systemCopyBuffer);
+        }
+
         public void CutSelection()
         {
             if (IsReadOnlyCanvasSelection())
@@ -287,11 +296,6 @@ namespace Unity.UI.Builder
 
         void PasteUXML(string copyBuffer)
         {
-            // Pasting elements mutates the canvas hierarchy; blocked while it is a read-only preview.
-            // (USS paste routes through PasteUSS, which stays allowed.)
-            if (m_PaneWindow.document.isCanvasReadOnly)
-                return;
-
             var importer = new BuilderVisualTreeAssetImporter(); // Cannot be cached because the StyleBuilder never gets reset.
             importer.ImportXmlFromString(copyBuffer, out var pasteVta);
 
@@ -346,10 +350,10 @@ namespace Unity.UI.Builder
             pasteStyleSheet.Destroy();
         }
 
-        public void Paste()
+        public void Paste(VisualElement target = null)
         {
-            var focused = m_PaneWindow.rootVisualElement.focusController.focusedElement as VisualElement;
-            if (!BuilderEditorUtility.CopyBufferMatchesTarget(focused))
+            target ??= m_PaneWindow.rootVisualElement.focusController.focusedElement as VisualElement;
+            if (!CanPaste(target))
                 return;
 
             var copyBuffer = BuilderEditorUtility.systemCopyBuffer;
@@ -558,6 +562,13 @@ namespace Unity.UI.Builder
             var isRootElement = true;
             VisualElementAsset rootUnpackedVEA = null;
             elementsToUnpack.Add(templateContainer);
+
+            // Unpacking swallows the template's inline rules into the document sheet and rewrites
+            // ruleIndex, so both must roll back together. The transfers below opt out of their own undo.
+            var documentVta = m_PaneWindow.document.visualTreeAsset;
+            Undo.RegisterCompleteObjectUndo(
+                new UnityEngine.Object[] { documentVta, documentVta.GetOrCreateInlineStyleSheet() },
+                BuilderConstants.CreateUIElementUndoMessage);
 
             while (elementsToUnpack.Count > 0)
             {

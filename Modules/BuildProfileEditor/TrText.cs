@@ -126,7 +126,10 @@ namespace UnityEditor.Build.Profile
         public static readonly string licenseContainerTitle = L10n.Tr("License and Entitlements", null);
         public static readonly string licenseLineSingular = L10n.Tr("{0} is under the license {1}.", null);
         public static readonly string licenseLinePlural = L10n.Tr("{0} are under the license {1}.", null);
-        public static readonly string licenseAgreement = L10n.Tr("By clicking \"Add Build Profile\" I agree to the {0}.", null);
+        public static readonly string licenseAgreement = L10n.Tr("I agree to the {0}.", null);
+        // Names the checkbox for assistive technology, which cannot read the sentence beside it.
+        public static readonly string licenseAgreementTooltip = L10n.Tr("Agree to the licenses covering the selected packages.", null);
+        public static readonly string licenseAgreementRequiredTooltip = L10n.Tr("Agree to the package licenses to add a build profile.", null);
         // Stand in for packages whose product info names no license, by how the package was obtained.
         public static readonly string unityEulaName = L10n.Tr("Unity EULA", null);
         public static readonly string unityTermsOfServiceName = L10n.Tr("Unity Terms of Service", null);

@@ -204,6 +204,23 @@ namespace Unity.U2D.Physics
         /// </summary>
         public PhysicsBody.MassConfiguration massConfiguration { readonly get => m_MassConfiguration; set => m_MassConfiguration = value; }
 
+        /// <summary>
+        /// Controls which Unity editor views this body is drawn into.
+        /// </summary>
+        /// <remarks>
+        /// See <see cref="PhysicsBody.drawTarget"/>.
+        /// </remarks>
+        public PhysicsWorld.DrawTarget drawTarget { readonly get => m_DrawTarget; set => m_DrawTarget = value; }
+
+        /// <summary>
+        /// The depth this body is drawn at, in world space, along the axis perpendicular to the world's transform plane.
+        /// </summary>
+        /// <remarks>
+        /// The depth is only used when the body has no <see cref="PhysicsBody.transformObject"/>.
+        /// See <see cref="PhysicsBody.drawDepth"/>.
+        /// </remarks>
+        public float drawDepth { readonly get => m_DrawDepth; set => m_DrawDepth = value; }
+
         #region Internal
 
         [SerializeField] PhysicsBody.BodyType m_BodyType;
@@ -227,6 +244,8 @@ namespace Unity.U2D.Physics
         [SerializeField] bool m_WorldDrawing;
         [SerializeField] PhysicsBody.MassOverride m_MassOverride;
         [SerializeField] PhysicsBody.MassConfiguration m_MassConfiguration;
+        [SerializeField] PhysicsWorld.DrawTarget m_DrawTarget;
+        [SerializeField] float m_DrawDepth;
 
         #endregion
     }

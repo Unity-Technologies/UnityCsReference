@@ -205,6 +205,13 @@ namespace UnityEditor.Scripting.ScriptCompilation
 
         public void RequestScriptCompilation(string reason = null, RequestScriptCompilationOptions options = RequestScriptCompilationOptions.None)
         {
+            // Secondary UMPE processes (e.g. the standalone Profiler) share Library/Bee with the main process and must never compile.
+            if (UnityEditor.MPE.ProcessService.level == UnityEditor.MPE.ProcessLevel.Secondary)
+            {
+                Console.WriteLine($"[ScriptCompilation] NOT recompiling scripts because this is a secondary process. Reason to compile was: {reason}");
+                return;
+            }
+
             if (reason != null)
             {
                 Console.WriteLine($"[ScriptCompilation] Requested script compilation because: {reason}");
@@ -275,7 +282,8 @@ namespace UnityEditor.Scripting.ScriptCompilation
             referencesWithMissingAssemblies = new List<CustomScriptAssemblyReference>();
             foreach (var asmref in loadingAssemblyDefinition.CustomScriptAssemblyReferences)
             {
-                if (!nameLookup.ContainsKey(asmref.Reference))
+                // An asmref whose JSON omits the reference field produces asmref.Reference == null, and Dictionary<string, ...>.ContainsKey(null) throws ArgumentNullException. Short-circuit null/empty so the null asmref is reported through the existing missing-reference warning path in EditorCompilationInterface, which already has a dedicated message for this case.
+                if (string.IsNullOrEmpty(asmref.Reference) || !nameLookup.ContainsKey(asmref.Reference))
                 {
                     referencesWithMissingAssemblies.Add(asmref);
                 }

@@ -24,6 +24,7 @@ namespace UnityEditor.Shaders
         private Label m_VariantGenerationModeLabel;
         private Label m_NumKeywordsLabel;
         private HelpBox m_ErrorBox;
+        private HelpBox m_WarnBox;
         private bool m_IsReadOnly;
 
         public ShaderKeywordDeclarationOverrideFoldout() : base()
@@ -39,7 +40,7 @@ namespace UnityEditor.Shaders
             // The Foldout's header is a Toggle element.
             var toggleElement = this.Q<Toggle>();
 
-            // The Toggle element contains an "input" VisualElement containing the checkmark (arrow) 
+            // The Toggle element contains an "input" VisualElement containing the checkmark (arrow)
             // and the original text label. We want to add our custom header into this "input" container.
             var inputContainer = toggleElement.Q(className: inputUssClassName);
 
@@ -59,6 +60,8 @@ namespace UnityEditor.Shaders
             m_ErrorBox = m_Header.Q<HelpBox>("KeywordDeclarationOverrideError");
             m_ErrorBox.AddToClassList("keyword-declaration-override-error");
 
+            m_WarnBox = m_Header.Q<HelpBox>("KeywordDeclarationOverrideWarning");
+            m_WarnBox.AddToClassList("keyword-declaration-override-warning");
 
             // Register state change callbacks on the UI elements in the header
             m_KeywordsField = m_Header.Q<TextField>("KeywordListField");
@@ -158,7 +161,8 @@ namespace UnityEditor.Shaders
             }
 
             string validationMsg;
-            if (!dataItem.IsValid(out validationMsg))
+            bool isValid = dataItem.IsValid(out validationMsg);
+            if (!isValid)
             {
                 m_ErrorBox.text = validationMsg;
                 m_ErrorBox.style.display = DisplayStyle.Flex;
@@ -166,6 +170,17 @@ namespace UnityEditor.Shaders
             else
             {
                 m_ErrorBox.style.display = DisplayStyle.None;
+            }
+
+            if (isValid && !ParentShaderBuildSettingsUI.IsKeywordOverrideUsedInProject(DataIndex))
+            {
+                m_WarnBox.text = "No match found for this keyword declaration in the project.";
+                m_WarnBox.tooltip = "Keyword declaration overrides must match a declaration in the project exactly (including the empty keyword '_') or the override has no effect.";
+                m_WarnBox.style.display = DisplayStyle.Flex;
+            }
+            else
+            {
+                m_WarnBox.style.display = DisplayStyle.None;
             }
 
             m_NumKeywordsLabel.text = numIncludedKeywords + "/" + keywords.Length;

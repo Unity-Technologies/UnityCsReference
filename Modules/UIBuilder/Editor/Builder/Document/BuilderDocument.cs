@@ -143,11 +143,6 @@ namespace Unity.UI.Builder
                     ThemeUtility.SetRuntimeThemeOverride(canvasTheme, themeSheet);
             }
 
-            if (themeSheet)
-            {
-                themeSheet.isDefaultStyleSheet = true;
-            }
-
             RefreshStyle(documentElement);
         }
 
@@ -544,6 +539,11 @@ namespace Unity.UI.Builder
 
             if (!skipUnsavedChangesCheck && !CheckForUnsavedChanges())
                 return;
+
+            for (var level = activeOpenUXMLFile.openSubDocumentParent; level != null && level != targetDocument; level = level.openSubDocumentParent)
+            {
+                level.ReleaseWithoutRestoring();
+            }
 
             NewDocument(documentRootElement);
             documentRootElement.SetProperty(BuilderConstants.ElementLinkedVisualTreeAssetVEPropertyName, null);

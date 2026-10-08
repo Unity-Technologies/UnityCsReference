@@ -241,6 +241,8 @@ namespace Unity.Multiplayer.PlayMode.Editor
 
             RefreshStatusData();
 
+            Controller?.RefreshExecutionGraphInputs(m_ExecutionGraph);
+
             var validationSuccess = await RunOrResumeAsync(ExecutionStage.Validate, m_FreeRunCancelTokenSource.Token);
             if (!validationSuccess)
             {

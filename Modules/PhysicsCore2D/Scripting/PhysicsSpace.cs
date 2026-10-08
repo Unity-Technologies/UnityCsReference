@@ -633,7 +633,8 @@ namespace Unity.U2D.Physics
         /// <param name="proxyHandles">The proxies to set.</param>
         /// <param name="aabbs">The AABB to set on each corresponding proxy.</param>
         /// <param name="updateAncestors">If the AABB have simply moved then this should be false however if you have changed their size then you should update the space ancestors which takes more time. This applies to the whole batch.</param>
-        public readonly void SetBatchProxyAABB(ReadOnlySpan<ProxyHandle> proxyHandles, ReadOnlySpan<PhysicsAABB> aabbs, bool updateAncestors) => PhysicsSpace_SetBatchProxyAABB(this, proxyHandles, aabbs, updateAncestors);
+        /// <returns>The number of proxies that were ignored (not set because the proxy handle or AABB was invalid). If the space is invalid or the spans are different lengths, nothing is set and every proxy is counted as ignored.</returns>
+        public readonly int SetBatchProxyAABB(ReadOnlySpan<ProxyHandle> proxyHandles, ReadOnlySpan<PhysicsAABB> aabbs, bool updateAncestors) => PhysicsSpace_SetBatchProxyAABB(this, proxyHandles, aabbs, updateAncestors);
 
         /// <summary>
         /// Set the proxy physics AABB.
@@ -676,7 +677,8 @@ namespace Unity.U2D.Physics
         /// </summary>
         /// <param name="proxyHandles">The proxies to set.</param>
         /// <param name="categories">The categories as a physics mask to set on each corresponding proxy.</param>
-        public readonly void SetBatchProxyCategories(ReadOnlySpan<ProxyHandle> proxyHandles, ReadOnlySpan<PhysicsMask> categories) => PhysicsSpace_SetBatchProxyCategories(this, proxyHandles, categories);
+        /// <returns>The number of proxies that were ignored (not set because the proxy handle was invalid). If the space is invalid or the spans are different lengths, nothing is set and every proxy is counted as ignored.</returns>
+        public readonly int SetBatchProxyCategories(ReadOnlySpan<ProxyHandle> proxyHandles, ReadOnlySpan<PhysicsMask> categories) => PhysicsSpace_SetBatchProxyCategories(this, proxyHandles, categories);
 
         /// <summary>
         /// Get the proxy categories.

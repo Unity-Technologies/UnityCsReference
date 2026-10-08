@@ -752,11 +752,11 @@ namespace UnityEditor
         }
 
         [RequiredByNativeCode]
-        static void SinglePassBuildProcessScene(AssetImportContext assetImportContext, Scene scene, SceneImportContext sceneContext)
+        static bool SinglePassBuildProcessScene(AssetImportContext assetImportContext, Scene scene, SceneImportContext sceneContext)
         {
             assetImportContext.DependsOnCustomDependency(kSinglePassBuildSceneProcessorDependencyName);
             object[] args = { scene, sceneContext };
-            CallPostProcessMethods("OnProcessScene", args);
+            return CallPostProcessMethods_HandlingExceptions("OnProcessScene", args);
         }
 
         [RequiredByNativeCode]
@@ -930,6 +930,75 @@ namespace UnityEditor
         internal static bool IsAssetPostprocessorAnalyticsEnabled()
         {
             return EditorAnalytics.enabled;
+        }
+
+        /// <summary>
+        /// Call each <paramref name="methodName"/> in current <see cref="m_ImportProcessors"/> list.
+        /// </summary>
+        /// <remarks>
+        /// This method does not stop if any of the <paramref name="methodName"/> throws.
+        /// All available methods will always be called.
+        /// </remarks>
+        /// <param name="methodName">The name of the method to call.</param>
+        /// <param name="args">List of arguments <paramref name="methodName"/> requires.</param>
+        /// <returns>True if nothing have thrown, false otherwise.</returns>
+        static bool CallPostProcessMethods_HandlingExceptions(string methodName, object[] args)
+        {
+            if (m_ImportProcessors == null)
+            {
+                Debug.LogException(new Exception("m_ImportProcessors is null, InitPostProcessors should be called before any of the post process methods are called."));
+                return false;
+            }
+
+            bool noError = true;
+            if (IsAssetPostprocessorAnalyticsEnabled())
+            {
+                int invocationCount = 0;
+                float startTime = Time.realtimeSinceStartup;
+                foreach (AssetPostprocessor inst in m_ImportProcessors)
+                {
+                    try
+                    {
+                        if (InvokeMethodIfAvailable(inst, methodName, args))
+                            invocationCount++;
+                    }
+                    catch (Exception e)
+                    {
+                        if(e is TargetInvocationException te && te.InnerException != null)
+                            e = te.InnerException;
+                        Debug.LogException(e);
+                        noError = false;
+                    }
+                }
+
+                if (invocationCount > 0)
+                {
+                    var methodCallAnalytics = new AssetPostProcessorMethodCallAnalyticsData();
+                    methodCallAnalytics.invocationCount = invocationCount;
+                    methodCallAnalytics.methodName = methodName;
+                    methodCallAnalytics.duration_sec = Time.realtimeSinceStartup - startTime;
+                    s_AnalyticsEventsStack.Peek().postProcessorCalls.Add(methodCallAnalytics);
+                }
+            }
+            else
+            {
+                foreach (AssetPostprocessor inst in m_ImportProcessors)
+                {
+                    try
+                    {
+                        InvokeMethodIfAvailable(inst, methodName, args);
+                    }
+                    catch (Exception e)
+                    {
+                        if(e is TargetInvocationException te && te.InnerException != null)
+                            e = te.InnerException;
+                        Debug.LogException(e);
+                        noError = false;
+                    }
+                }
+            }
+
+            return noError;
         }
 
         static void CallPostProcessMethods(string methodName, object[] args)

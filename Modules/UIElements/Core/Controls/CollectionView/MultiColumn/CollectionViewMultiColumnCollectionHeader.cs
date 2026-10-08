@@ -960,12 +960,7 @@ internal class CollectionViewMultiColumnCollectionHeader : VisualElement, IDispo
         }
 
         // If multi sort is not active then clear
-        EventModifiers multiSortingModifier = EventModifiers.Control;
-
-        if (Application.platform is RuntimePlatform.OSXEditor or RuntimePlatform.OSXPlayer)
-        {
-            multiSortingModifier = EventModifiers.Command;
-        }
+        var multiSortingModifier = UIElementsUtility.isCommandActionKeyPlatform ? EventModifiers.Command : EventModifiers.Control;
 
         if (modifiers != multiSortingModifier)
         {

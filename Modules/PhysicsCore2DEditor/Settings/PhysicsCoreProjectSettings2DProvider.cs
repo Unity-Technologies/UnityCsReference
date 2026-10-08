@@ -196,7 +196,7 @@ namespace Unity.U2D.Physics.Editor
                             tooltip = "The active Physics Core Settings 2D.",
                             objectType = typeof(PhysicsCoreSettings2D),
                             bindingPath = "m_PhysicsCoreSettings",
-                            style = { flexGrow = 1 }
+                            style = { flexGrow = 1, flexShrink = 1, minWidth = 0 }
                         };
 
                         // Align the label to the shared inspector column.

@@ -31,6 +31,8 @@ namespace UnityEditor.UIElements
         const string k_EnableAbsolutePositionPlacementToggleName = "enable-absolute-position-placement";
         const string k_EnableFilterShaderGraphToggleName = "enable-filter-shader-graph";
         const string k_ConsistentAttributeOrdering = "consistent-attribute-ordering-toggle";
+        const string k_LegacyThemePriorityToggleName = "legacy-theme-priority-toggle";
+        const string k_ScanAffectedThemesButtonName = "scan-affected-themes-button";
         const string k_EnableMultiWindowBuilder = "enable-multi-window-builder";
         const string k_EnableStyleSheetEditingMode = "enable-stylesheet-editing-mode";
         const string k_StyleSheetEditingPreviewDocument = "stylesheet-editing-preview-document";
@@ -158,6 +160,16 @@ namespace UnityEditor.UIElements
             {
                 UIToolkitProjectSettings.enableEditorExtensionModeByDefault = e.newValue;
             });
+
+            var legacyThemePriorityToggle = rootElement.Q<Toggle>(k_LegacyThemePriorityToggleName);
+            legacyThemePriorityToggle.SetValueWithoutNotify(UIToolkitProjectSettings.enableLegacyThemePriority);
+            legacyThemePriorityToggle.RegisterValueChangedCallback(e =>
+            {
+                UIToolkitProjectSettings.enableLegacyThemePriority = e.newValue;
+            });
+
+            rootElement.Q<Button>(k_ScanAffectedThemesButtonName).clicked += () =>
+                ThemePriorityUpgradeNotice.LogAffectedThemes(onDemand: true);
 
             var zoomToggle = rootElement.Q<Toggle>(k_DisableMouseWheelZoomingToggleName);
             zoomToggle.SetValueWithoutNotify(UIToolkitProjectSettings.disableMouseWheelZooming);

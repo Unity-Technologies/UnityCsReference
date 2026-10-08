@@ -483,7 +483,7 @@ namespace Unity.Collections
                     var sizeOf = sizeof(T);
                     void* dst = Buffer + index * sizeOf;
                     void* src = Buffer + copyFrom * sizeOf;
-                    UnsafeUtility.MemCpy(dst, src, (Length - copyFrom) * sizeOf);
+                    UnsafeUtility.MemMove(dst, src, (Length - copyFrom) * sizeOf);
                 }
 
                 Length -= count;
@@ -1032,7 +1032,7 @@ namespace Unity.Collections
                     var sizeOf = sizeof(T);
                     void* dst = Buffer + index * sizeOf;
                     void* src = Buffer + copyFrom * sizeOf;
-                    UnsafeUtility.MemCpy(dst, src, (Length - copyFrom) * sizeOf);
+                    UnsafeUtility.MemMove(dst, src, (Length - copyFrom) * sizeOf);
                 }
 
                 Length -= count;
@@ -2273,7 +2273,7 @@ namespace Unity.Collections
                     var sizeOf = sizeof(T);
                     void* dst = Buffer + index * sizeOf;
                     void* src = Buffer + copyFrom * sizeOf;
-                    UnsafeUtility.MemCpy(dst, src, (Length - copyFrom) * sizeOf);
+                    UnsafeUtility.MemMove(dst, src, (Length - copyFrom) * sizeOf);
                 }
 
                 Length -= count;
@@ -3514,7 +3514,7 @@ namespace Unity.Collections
                     var sizeOf = sizeof(T);
                     void* dst = Buffer + index * sizeOf;
                     void* src = Buffer + copyFrom * sizeOf;
-                    UnsafeUtility.MemCpy(dst, src, (Length - copyFrom) * sizeOf);
+                    UnsafeUtility.MemMove(dst, src, (Length - copyFrom) * sizeOf);
                 }
 
                 Length -= count;
@@ -4755,7 +4755,7 @@ namespace Unity.Collections
                     var sizeOf = sizeof(T);
                     void* dst = Buffer + index * sizeOf;
                     void* src = Buffer + copyFrom * sizeOf;
-                    UnsafeUtility.MemCpy(dst, src, (Length - copyFrom) * sizeOf);
+                    UnsafeUtility.MemMove(dst, src, (Length - copyFrom) * sizeOf);
                 }
 
                 Length -= count;
@@ -5996,7 +5996,7 @@ namespace Unity.Collections
                     var sizeOf = sizeof(T);
                     void* dst = Buffer + index * sizeOf;
                     void* src = Buffer + copyFrom * sizeOf;
-                    UnsafeUtility.MemCpy(dst, src, (Length - copyFrom) * sizeOf);
+                    UnsafeUtility.MemMove(dst, src, (Length - copyFrom) * sizeOf);
                 }
 
                 Length -= count;

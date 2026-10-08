@@ -422,14 +422,16 @@ namespace Unity.U2D.Physics
         /// </summary>
         /// <param name="joints">The joints to set the user data on.</param>
         /// <param name="userDatas">The user data to set, one entry per joint.</param>
-        public static void SetUserData(ReadOnlySpan<PhysicsJoint> joints, ReadOnlySpan<PhysicsUserData> userDatas) => PhysicsJoint_SetUserDataSpan(joints, userDatas);
+        /// <returns>The number of joints that were ignored (not set because the joint was invalid). A single warning is logged when any are ignored. If the spans are different lengths, nothing is set and every joint is counted as ignored.</returns>
+        public static int SetUserData(ReadOnlySpan<PhysicsJoint> joints, ReadOnlySpan<PhysicsUserData> userDatas) => PhysicsJoint_SetUserDataSpan(joints, userDatas);
 
         /// <summary>
         /// Set the same <see cref="PhysicsUserData"/> on a batch of joints that can be used for any purpose.
         /// </summary>
         /// <param name="joints">The joints to set the user data on.</param>
         /// <param name="physicsUserData">The user data to set on every joint.</param>
-        public static void SetUserData(ReadOnlySpan<PhysicsJoint> joints, PhysicsUserData physicsUserData) => PhysicsJoint_SetUserDataSpanAll(joints, physicsUserData);
+        /// <returns>The number of joints that were ignored (not set because the joint was invalid). A single warning is logged when any are ignored.</returns>
+        public static int SetUserData(ReadOnlySpan<PhysicsJoint> joints, PhysicsUserData physicsUserData) => PhysicsJoint_SetUserDataSpanAll(joints, physicsUserData);
 
         /// <summary>
         /// Controls whether this joint is automatically drawn when the world is drawn.
@@ -473,7 +475,8 @@ namespace Unity.U2D.Physics
         /// </remarks>
         /// <param name="joints">The joints to set the selected drawing state on.</param>
         /// <param name="selected">The selected drawing state to set on every joint.</param>
-        public static void SetSelectedDrawing(ReadOnlySpan<PhysicsJoint> joints, bool selected) => PhysicsJoint_SetSelectedDrawing(joints, selected);
+        /// <returns>The number of joints that were ignored (not set because the joint was invalid). A single warning is logged when any are ignored.</returns>
+        public static int SetSelectedDrawing(ReadOnlySpan<PhysicsJoint> joints, bool selected) => PhysicsJoint_SetSelectedDrawing(joints, selected);
 
         /// <summary>
         /// Draw this joint's current state once, as custom drawing.

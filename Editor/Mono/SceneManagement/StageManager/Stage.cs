@@ -52,7 +52,7 @@ namespace UnityEditor.SceneManagement
 
         internal virtual bool showOptionsButton { get { return false; } }
 
-        internal abstract int sceneCount { get; }
+        internal abstract int sceneCount { [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")] get; }
 
         [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
         internal abstract Scene GetSceneAt(int index);

@@ -29,12 +29,24 @@ namespace UnityEditor
 {
     public sealed partial class EditorGUIUtility : GUIUtility
     {
+        [NoAutoStaticsCleanup] // drained by DestroyResourcesRegisteredForCleanup on code unload
+        static readonly List<UnityObject> s_ResourcesRegisteredForCleanup = new List<UnityObject>();
+
         [VisibleToOtherModules("UnityEditor.VectorGraphicsModule")]
         internal static void RegisterResourceForCleanupOnDomainReload(UnityObject obj)
         {
-#pragma warning disable UAC0006 // CORECLR_FIXME: CoreCLR would handle this using OnCodeUnloading/OnCodeLoaded
-            AppDomain.CurrentDomain.DomainUnload += (object sender, EventArgs e) => { UnityObject.DestroyImmediate(obj); };
-#pragma warning restore UAC0006
+            s_ResourcesRegisteredForCleanup.Add(obj);
+        }
+
+        [OnCodeUnloading]
+        static void DestroyResourcesRegisteredForCleanup()
+        {
+            foreach (var obj in s_ResourcesRegisteredForCleanup)
+            {
+                if (obj)
+                    UnityObject.DestroyImmediate(obj);
+            }
+            s_ResourcesRegisteredForCleanup.Clear();
         }
 
         public class PropertyCallbackScope : IDisposable
@@ -74,7 +86,7 @@ namespace UnityEditor
             }
         }
 
-        [NoAutoStaticsCleanup] // registered with RegisterResourceForCleanupOnDomainReload — cleaned up by engine on domain reload, not UAL
+        [NoAutoStaticsCleanup] // destroyed on code unload by RegisterResourceForCleanupOnDomainReload
         internal static Material s_GUITextureBlit2SRGBMaterial;
         internal static Material GUITextureBlit2SRGBMaterial
         {
@@ -92,7 +104,7 @@ namespace UnityEditor
             }
         }
 
-        [NoAutoStaticsCleanup] // registered with RegisterResourceForCleanupOnDomainReload — cleaned up by engine on domain reload, not UAL
+        [NoAutoStaticsCleanup] // destroyed on code unload by RegisterResourceForCleanupOnDomainReload
         internal static Material s_GUITextureBlitSceneGUI;
         internal static Material GUITextureBlitSceneGUIMaterial
         {

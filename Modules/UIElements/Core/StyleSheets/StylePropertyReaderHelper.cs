@@ -656,6 +656,11 @@ namespace UnityEngine.UIElements.StyleSheets
                 case StyleValueType.MissingAssetReference:
                     return false;
 
+                case StyleValueType.Keyword:
+                    if (propertyValue.handle.valueIndex != (int)StyleValueKeyword.None)
+                        Debug.LogWarning("Invalid keyword for image texture " + (StyleValueKeyword)propertyValue.handle.valueIndex);
+                    return false;
+
                 case StyleValueType.ScalableImage:
                 {
                     var img = propertyValue.sheet.ReadScalableImage(propertyValue.handle);

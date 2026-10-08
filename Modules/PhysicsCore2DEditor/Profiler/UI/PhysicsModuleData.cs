@@ -39,6 +39,7 @@ namespace UnityEditor.U2D.PhysicsCore2D.Profiler
                 new PhysicsTimingNode("Solve Impulses", profile.solveImpulses),
                 new PhysicsTimingNode("Integrate Transforms", profile.integrateTransforms),
                 new PhysicsTimingNode("Relax Impulses", profile.relaxImpulses),
+                new PhysicsTimingNode("Bounce Impulses", profile.bounceImpulses),
                 new PhysicsTimingNode("Store Impulses", profile.storeImpulses)
             };
 

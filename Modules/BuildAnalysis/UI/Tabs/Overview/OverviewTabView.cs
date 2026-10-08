@@ -5,6 +5,7 @@
 using System.Globalization;
 using System.IO;
 using UnityEditor;
+using UnityEditor.Build.Reporting;
 using UnityEngine;
 using UnityEngine.UIElements;
 
@@ -28,7 +29,9 @@ namespace UnityEditor.Build.Analysis
         private Label m_CacheReuseValue;
         private Label m_OutputPathValue;
         private Button m_OutputPathOpenButton;
+        private Label m_BuildOptionsLabel;
         private Label m_BuildOptionsValue;
+        private Label m_ContentOptionsLabel;
         private Label m_ContentOptionsValue;
         private Label m_BuildProfileValue;
         private string m_CurrentOutputPath = string.Empty;
@@ -61,7 +64,9 @@ namespace UnityEditor.Build.Analysis
             m_CacheReuseValue = m_Root.Q<Label>("cache-reuse-value");
             m_OutputPathValue = m_Root.Q<Label>("output-path-value");
             m_OutputPathOpenButton = m_Root.Q<Button>("output-path-open-button");
+            m_BuildOptionsLabel = m_Root.Q<Label>("build-options-label");
             m_BuildOptionsValue = m_Root.Q<Label>("build-options-value");
+            m_ContentOptionsLabel = m_Root.Q<Label>("content-options-label");
             m_ContentOptionsValue = m_Root.Q<Label>("content-options-value");
             m_BuildProfileValue = m_Root.Q<Label>("build-profile-value");
             m_OutputPathOpenButton.clicked += OnOutputPathOpenClicked;
@@ -106,6 +111,8 @@ namespace UnityEditor.Build.Analysis
             m_OutputPathOpenButton.SetEnabled(!string.IsNullOrEmpty(m_CurrentOutputPath));
             m_BuildOptionsValue.text = FormatOptions(summary.BuildOptions);
             m_ContentOptionsValue.text = FormatOptions(summary.BuildContentOptions);
+            SetRowVisible(m_BuildOptionsLabel, m_BuildOptionsValue, selection.BuildType == BuildType.Player);
+            SetRowVisible(m_ContentOptionsLabel, m_ContentOptionsValue, selection.BuildType == BuildType.ContentDirectory);
             m_BuildProfileValue.text = FormatBuildProfile(summary.BuildProfilePath);
 
             m_Steps.Bind(analysis, messages);
@@ -135,6 +142,14 @@ namespace UnityEditor.Build.Analysis
             }
 
             return null;
+        }
+
+        // Label and value live in separate grid columns, so both must be hidden to keep rows aligned.
+        private static void SetRowVisible(VisualElement label, VisualElement value, bool visible)
+        {
+            var display = visible ? DisplayStyle.Flex : DisplayStyle.None;
+            label.style.display = display;
+            value.style.display = display;
         }
 
         private static string FormatOptions(string[] options)

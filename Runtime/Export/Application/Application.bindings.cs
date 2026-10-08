@@ -365,9 +365,9 @@ namespace UnityEngine
         // Priority of background loading thread.
         extern public static ThreadPriority backgroundLoadingPriority
         {
-            [FreeFunction("GetPreloadManager().GetThreadPriority")]
+            [FreeFunction("Application_Bindings::GetBackgroundLoadingPriority")]
             get;
-            [FreeFunction("GetPreloadManager().SetThreadPriority")]
+            [FreeFunction("Application_Bindings::SetBackgroundLoadingPriority")]
             set;
         }
 

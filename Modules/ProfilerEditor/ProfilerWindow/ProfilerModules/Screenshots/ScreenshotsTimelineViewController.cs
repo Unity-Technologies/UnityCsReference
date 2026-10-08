@@ -30,6 +30,8 @@ namespace UnityEditorInternal.Profiling
         const int k_ThumbnailWidth = 128;
         const int k_ThumbnailHeight = 72;
         const int k_Spacing = 4;
+        // Floor for ActualWidth so the frame-number label below a thumbnail always has room.
+        const int k_MinThumbnailWidth = 40;
 
         // Switching modules tears this controller down and recreates it on return. The centred frame
         // index lives on the per-window ScreenshotsProfilerModule (see LastCentredScreenshotFrameIndex)
@@ -339,6 +341,7 @@ namespace UnityEditorInternal.Profiling
             if (!ScreenshotIndexCatalogue.TryReadScreenshotDimensions(frameIndex, out int srcWidth, out int srcHeight, out _))
                 return false;
             ComputeScaledDimensions(srcWidth, srcHeight, k_ThumbnailWidth, k_ThumbnailHeight, out width, out height);
+            width = Mathf.Max(width, k_MinThumbnailWidth);
             return true;
         }
 
@@ -566,7 +569,7 @@ namespace UnityEditorInternal.Profiling
 
                         item.Frame.AtlasTexture = slot.Atlas;
                         item.Frame.AtlasUv = ThumbnailAtlasPool.ComputeUv(slot, scaled.Width, scaled.Height);
-                        item.Frame.ActualWidth = scaled.Width;
+                        item.Frame.ActualWidth = Mathf.Max(scaled.Width, k_MinThumbnailWidth);
                         item.Frame.ActualHeight = scaled.Height;
                         AssignThumbnailToElement(item.Frame);
                     }
@@ -664,7 +667,9 @@ namespace UnityEditorInternal.Profiling
             var shouldScroll = !m_SuppressAutoScroll;
             m_SuppressAutoScroll = false;
 
-            var frameInfo = FindClosestVisibleThumbnail(logicalFrame);
+            // A negative frame means there's nothing to highlight. FindClosestVisibleThumbnail would
+            // resolve it to the lowest visible frame, so it has to be skipped rather than passed through.
+            var frameInfo = logicalFrame < 0 ? null : FindClosestVisibleThumbnail(logicalFrame);
 
             if (m_SelectedFrameIndex >= 0)
             {

@@ -235,8 +235,7 @@ public static partial class PluralRules
         return n switch {
             0 => 0,
             > 0 and < 2 => 1,
-            > 2 => 2,
-            _ => -1
+            _ => 2
         };
     }
 
@@ -246,8 +245,7 @@ public static partial class PluralRules
             < 0 => 0,
             0 => 1,
             > 0 and < 2 => 2,
-            > 2 => 3,
-            _ => -1
+            _ => 3
         };
     }
     

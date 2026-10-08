@@ -1058,6 +1058,7 @@ namespace UnityEditor
                 set => m_DynamicClip = value;
             }
 
+            [Obsolete("SceneView.CameraSettings.occlusionCulling is deprecated and will be removed in a future release. Consider migrating to GPU Occlusion Culling where your target platform supports it. #from(6000.7)", false)]
             public bool occlusionCulling
             {
                 get => m_OcclusionCulling;
@@ -1658,8 +1659,10 @@ namespace UnityEditor
             if (m_2DMode)
                 LookAt(pivot, Quaternion.identity, size, true, true);
 
+#pragma warning disable UAC2015 // CameraMode should implement IEquatable to avoid boxing, but it is public API so may be a breaking change
             if (m_CameraMode.drawMode == DrawCameraMode.UserDefined && !userDefinedModes.Contains(m_CameraMode))
                 AddCameraMode(m_CameraMode.name, m_CameraMode.section);
+#pragma warning restore UAC2015
 
             base.OnEnable();
 
@@ -3727,7 +3730,9 @@ namespace UnityEditor
                 m_Camera.farClipPlane = m_CameraSettings.farClip;
             }
 
+            #pragma warning disable CS0618
             m_Camera.useOcclusionCulling = m_CameraSettings.occlusionCulling;
+            #pragma warning restore CS0618
         }
 
         void OnBecameVisible()
@@ -4657,8 +4662,10 @@ namespace UnityEditor
             if (string.IsNullOrEmpty(section))
                 throw new ArgumentException("Cannot be null or empty", "section");
             var newMode = new CameraMode(DrawCameraMode.UserDefined, name, section);
+#pragma warning disable UAC2015 // CameraMode should implement IEquatable to avoid boxing, but it is public API so may be a breaking change
             if (userDefinedModes.Contains(newMode))
                 throw new InvalidOperationException(string.Format("A mode named {0} already exists in section {1}", name, section));
+#pragma warning restore UAC2015
             userDefinedModes.Add(newMode);
             return newMode;
         }

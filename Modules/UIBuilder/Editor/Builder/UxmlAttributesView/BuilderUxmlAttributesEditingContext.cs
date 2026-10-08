@@ -102,6 +102,11 @@ namespace Unity.UI.Builder
         internal TempSerializedData tempSerializedData { get; private set; }
 
         /// <summary>
+        /// Indicates whether the serialized object can still resolve serialized attribute properties.
+        /// </summary>
+        internal bool hasLiveSerializedObject => rootSerializedObject != null && rootSerializedObject.targetObject != null;
+
+        /// <summary>
         /// Indicates whether the undo system is enabled for this context.
         /// </summary>
         public bool undoEnabled { get; set; } = true;
@@ -161,6 +166,18 @@ namespace Unity.UI.Builder
             this.isInTemplateInstance = isInTemplateInstance;
             this.batchedChangesController = batchedChangesController;
             Init();
+        }
+
+        /// <summary>
+        /// Rebuilds the serialized object of an element that has no UXML asset, when the temporary object backing it has been destroyed.
+        /// </summary>
+        public void Revalidate()
+        {
+            // Init resolves an element that has a UXML asset against the VisualTreeAsset, which it cannot walk once destroyed.
+            if (elementAsset != null || rootSerializedObject == null || hasLiveSerializedObject)
+                return;
+
+            Set(document, visualTree, element, batchedChangesController, isInTemplateInstance);
         }
 
         void Init()

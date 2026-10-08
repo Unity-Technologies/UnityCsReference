@@ -20,6 +20,11 @@ namespace Unity.Multiplayer.PlayMode.Editor
 
         protected internal virtual void SetupExecutionGraph(ExecutionGraphBuilder graph) { }
 
+        // Re-applies whatever the graph captured from live state when it was built.
+        // The scenario path rebuilds the graph before every run, so it never needs this;
+        // the free-run path reuses an existing graph and refreshes it instead.
+        protected internal virtual void RefreshExecutionGraphInputs(ExecutionGraph graph) { }
+
         protected internal virtual VisualElement CreateControllerUI(ControllerRuntime runtime) => null;
         protected internal virtual VisualElement CreateTitleBarUI(ControllerRuntime runtime) => null;
 
@@ -35,7 +40,7 @@ namespace Unity.Multiplayer.PlayMode.Editor
         internal virtual void TearDown(ControllerRuntime runtime) { }
 
         // Returns controller-type-specific analytics data for the OnPlayFromScenario event,
-        // or null when the controller has no extra data to report. 
+        // or null when the controller has no extra data to report.
         protected internal virtual ICustomInstanceAnalyticsData GetCustomAnalyticsData(ExecutionGraph graph) => null;
 
         // Everything below is keyed on the item's id, so a controller built without one - a scenario-scoped

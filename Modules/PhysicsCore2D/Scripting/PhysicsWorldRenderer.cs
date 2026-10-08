@@ -18,7 +18,7 @@ namespace Unity.U2D.Physics
 {
     /// <undoc/>
     [StructLayout(LayoutKind.Sequential)]
-    static class PhysicsWorldRenderer
+    static partial class PhysicsWorldRenderer
     {
         static readonly string s_RenderCommandBufferName = "PhysicsCore2D.PhysicsWorld.Renderer";
         // Engine-internal renderer state. This class lives in an engine module (not reloadable user code) and holds no references to user code:
@@ -70,9 +70,13 @@ namespace Unity.U2D.Physics
         }
 
         /// <undoc/>
+        [OnCodeUnloading]
         [RequiredByNativeCode]
         static void ShutdownRendering()
         {
+            // Runs on code unloading so the Unity objects used for rendering are released while they are still valid.
+            // Native calls it outside a code reload, such as when rendering is disabled or the editor quits.
+
             // Finish if not initialized.
             if (!s_IsInitialized)
                 return;

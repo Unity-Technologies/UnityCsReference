@@ -4,6 +4,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.IO;
 using Unity.Localization.Providers;
 using Unity.Localization.Providers.FileTables;
 using Unity.Scripting.LifecycleManagement;
@@ -32,6 +33,9 @@ internal static partial class AssetProviderEditors
     // same way whenever the localization collections change.
     [IgnoreForUAL0015("Collection scan result, re-scanned by ScanCollections() when null")]
     static List<ResourceTableCollection> s_Collections;
+    [AutoStaticsCleanup] // asset scan cache; CollectionsChanged already drops it
+    [IgnoreForUAL0015("Asset paths of the collection scan result, refilled with it by ScanCollections()")]
+    static HashSet<string> s_CollectionAssetPaths;
 
     sealed class DefaultAssetProviderEditor : AssetProviderEditor { }
 
@@ -42,7 +46,11 @@ internal static partial class AssetProviderEditors
     static void Initialize()
     {
         // Dropped on CollectionsChanged, so the per-repaint scans below stay a memory lookup.
-        LocalizationEditorSettings.CollectionsChanged += () => s_Collections = null;
+        LocalizationEditorSettings.CollectionsChanged += () =>
+        {
+            s_Collections = null;
+            s_CollectionAssetPaths = null;
+        };
     }
 
     /// <summary>
@@ -148,15 +156,49 @@ internal static partial class AssetProviderEditors
     static List<ResourceTableCollection> ScanCollections()
     {
         var result = new List<ResourceTableCollection>();
+        var paths = new HashSet<string>();
         var guids = AssetDatabase.FindAssets($"t:{nameof(ResourceTableCollection)}");
         for (var i = 0; i < guids.Length; i++)
         {
             var path = AssetDatabase.GUIDToAssetPath(guids[i]);
             var collection = AssetDatabase.LoadAssetAtPath<ResourceTableCollection>(path);
-            if (collection != null)
-                result.Add(collection);
+            if (collection == null)
+                continue;
+            result.Add(collection);
+            AddWithParentFolders(paths, path);
+            foreach (var sibling in ResourceTableCollectionModificationProcessor.CollectionSiblingAssetPaths(collection))
+                AddWithParentFolders(paths, sibling);
         }
+        s_CollectionAssetPaths = paths;
         return result;
+    }
+
+    // Parent folders go in too, so a deleted folder that held a table is found with one lookup.
+    static void AddWithParentFolders(HashSet<string> paths, string path)
+    {
+        while (!string.IsNullOrEmpty(path) && paths.Add(path))
+        {
+            var slash = path.LastIndexOf('/');
+            path = slash > 0 ? path.Substring(0, slash) : null;
+        }
+    }
+
+    // A deleted asset's type is unreadable, so match against the paths the last scan recorded.
+    internal static bool MayHaveDeletedCollectionAssets(string[] deletedAssets)
+    {
+        foreach (var deleted in deletedAssets)
+        {
+            if (s_CollectionAssetPaths == null)
+            {
+                // Before the first scan there is nothing to match, so assume any asset file or folder held a table.
+                if (deleted.EndsWith(".asset", StringComparison.Ordinal) || !Path.HasExtension(deleted))
+                    return true;
+                continue;
+            }
+            if (s_CollectionAssetPaths.Contains(deleted))
+                return true;
+        }
+        return false;
     }
 
     /// <summary>

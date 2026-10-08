@@ -835,7 +835,7 @@ namespace Unity.Collections.LowLevel.Unsafe
                 var sizeOf = (long)sizeof(T);
                 void* dst = (byte*)Ptr + (long)index * sizeOf;
                 void* src = (byte*)Ptr + (long)copyFrom * sizeOf;
-                UnsafeUtility.MemCpy(dst, src, (long)(m_length - copyFrom) * sizeOf);
+                UnsafeUtility.MemMove(dst, src, (long)(m_length - copyFrom) * sizeOf);
                 m_length -= count;
             }
         }

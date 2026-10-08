@@ -10,6 +10,7 @@ using UnityEngine.Rendering;
 
 namespace UnityEngine
 {
+    [System.Obsolete("Occlusion Portal is deprecated. Use GPU Occlusion Culling instead. #from(6000.7)", false)]
     [global::UnityEngine.NativeClass("OcclusionPortal", PersistentTypeId = 41)]
     [NativeHeader("Runtime/Camera/OcclusionPortal.h")]
     public sealed partial class OcclusionPortal : Component
@@ -17,6 +18,7 @@ namespace UnityEngine
         [NativeProperty("IsOpen")] public extern bool open { get; set; }
     }
 
+    [System.Obsolete("Occlusion Area is deprecated. Use GPU Occlusion Culling instead. #from(6000.7)", false)]
     [global::UnityEngine.NativeClass("OcclusionArea", PersistentTypeId = 192)]
     [NativeHeader("Runtime/Camera/OcclusionArea.h")]
     public sealed partial class OcclusionArea : Component

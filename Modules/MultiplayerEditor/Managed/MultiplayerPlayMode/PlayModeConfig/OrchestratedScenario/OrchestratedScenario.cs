@@ -27,7 +27,8 @@ namespace Unity.Multiplayer.PlayMode.Editor
         const string k_ValidationDialogTitle = "Play Mode Scenario - Validation Failed";
         const string k_ValidationDialogScenarioMessage = "The scenario cannot be started because validation failed with the following message:";
         const string k_ValidationDialogInstanceMessage = "The scenario instance cannot be started because validation failed with the following message:";
-        const string k_ValidationDialogOKLabel = "OK";
+        const string k_ValidationDialogEditScenarioLabel = "Edit Scenario";
+        const string k_ValidationDialogCancelLabel = "Cancel";
         const int k_CurrentSerializedVersion = 2;
         const string k_MainEditorName = "Main Editor";
         internal const string k_SettingsPropertyName = nameof(m_Settings);
@@ -538,17 +539,16 @@ namespace Unity.Multiplayer.PlayMode.Editor
                 return false;
             }
 
-            var localMobileDevicesSelected = IsConditionMetForAll(
-                instance => instance != null && instance.GetSettings<LocalPlayerController.InstanceSettings>().BuildProfile != null && !string.IsNullOrEmpty(OrchestratedScenarioUserSettings.GetSettings(this, instance, LocalPlayerController.DefaultUserSettings).DeviceID),
-                localMobileInstances);
-            if (!localMobileDevicesSelected)
-                reasonForInvalidConfiguration += "\nLocal mobile device instance(s) must have a device selected.";
-
             List<string> takenIDs = new List<string>();
             bool containsTakenDeviceID = false;
             foreach (var instance in localMobileInstances)
             {
                 var deviceID = OrchestratedScenarioUserSettings.GetSettings(this, instance, LocalPlayerController.DefaultUserSettings).DeviceID;
+
+                // Instances that have no device yet are not sharing one. ValidateRunDeviceNode reports those.
+                if (string.IsNullOrEmpty(deviceID))
+                    continue;
+
                 if (takenIDs.Contains(deviceID))
                 {
                     reasonForInvalidConfiguration = "Device must be associated with only a single instance.";
@@ -580,7 +580,7 @@ namespace Unity.Multiplayer.PlayMode.Editor
 
             reasonForInvalidConfiguration = reasonForInvalidConfiguration.Trim('\n');
             return localBuildTargetsAreSupported && localBuildTargetsCanRunOnPlatform &&
-                   configHasMoreServerInstances && localMobileDevicesSelected && !containsTakenDeviceID && !duplicateNamesFound;
+                   configHasMoreServerInstances && !containsTakenDeviceID && !duplicateNamesFound;
         }
 
         bool ConfigurationHasMaxOneServer()
@@ -629,17 +629,23 @@ namespace Unity.Multiplayer.PlayMode.Editor
         }
 
         internal static void NotifyValidationFailure(Scenario scenario)
-        {
-            ScenarioDialog.DisplayDialog(k_ValidationDialogTitle,
-                GetValidationMessage(k_ValidationDialogScenarioMessage, scenario.GetNodes(ExecutionStage.Validate)),
-                k_ValidationDialogOKLabel);
-        }
+            => ShowValidationFailureDialog(k_ValidationDialogScenarioMessage, scenario.GetNodes(ExecutionStage.Validate));
 
         internal static void NotifyValidationFailure(ControllerRuntime instance)
+            => ShowValidationFailureDialog(k_ValidationDialogInstanceMessage, instance.GetExecutionGraph().GetNodes(ExecutionStage.Validate));
+
+        // The run is cancelled by the caller either way, so the button only decides whether
+        // to open the Play Mode Scenarios window that can fix what was reported.
+        static void ShowValidationFailureDialog(string prefix, IEnumerable<ExecutionNode> nodes)
         {
-            ScenarioDialog.DisplayDialog(k_ValidationDialogTitle,
-                GetValidationMessage(k_ValidationDialogInstanceMessage, instance.GetExecutionGraph().GetNodes(ExecutionStage.Validate)),
-                k_ValidationDialogOKLabel);
+            var editScenario = ScenarioDialog.DisplayDialog(
+                k_ValidationDialogTitle,
+                GetValidationMessage(prefix, nodes),
+                k_ValidationDialogEditScenarioLabel,
+                k_ValidationDialogCancelLabel);
+
+            if (editScenario)
+                PlayModeScenariosWindow.ShowWindow();
         }
 
         static string GetValidationMessage(string prefix, IEnumerable<ExecutionNode> nodes)

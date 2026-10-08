@@ -245,6 +245,8 @@ namespace UnityEditor.Rendering
                 Debug.LogWarning("SetShaderBuildSettings: dropped invalid or duplicate shader compiler settings rows.");
             settings.compilerSettings = sanitized;
 
+            ShaderBuildSettings.CheckKeywordDeclarationOverridesHaveMatches(settings.keywordDeclarationOverrides);
+
             SetShaderBuildSettingsImpl(settings);
         }
         extern public static bool ShouldValidateGraphicsForActiveBuildTarget();

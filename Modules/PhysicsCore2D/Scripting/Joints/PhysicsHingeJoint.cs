@@ -369,6 +369,17 @@ namespace Unity.U2D.Physics
         public readonly float currentMotorTorque { get => HingeJoint_GetCurrentMotorTorque(this); }
 
         /// <summary>
+        /// The torque the spring applied around the hinge during the last simulation step, usually in newton-meters.
+        /// A positive value turns body B counter-clockwise relative to body A and a negative value turns it clockwise.
+        /// This is zero when the spring is disabled.
+        /// Unlike the current constraint torque, it excludes the torque from the angle limits and the motor.
+        /// </summary>
+        /// <remarks>
+        /// See <see cref="enableSpring"/> and <see cref="springTargetAngle"/>.
+        /// </remarks>
+        public readonly float currentSpringTorque { get => HingeJoint_GetCurrentSpringTorque(this); }
+
+        /// <summary>
         /// Enable/Disable the joint rotation limit.
         /// </summary>
         public readonly bool enableLimit { get => HingeJoint_GetEnableLimit(this); set => HingeJoint_SetEnableLimit(this, value); }

@@ -121,6 +121,18 @@ namespace Unity.ProjectAuditor.Editor
             return frontendString;
         }
 
+        // The inverse of ToFrontendString: also accepts the enum spelling, and combinations of either
+        internal static bool TryParseFrontendString(string value, out Areas areas)
+        {
+            if (string.Equals(value, "All", StringComparison.OrdinalIgnoreCase))
+            {
+                areas = All;
+                return true;
+            }
+
+            return Enum.TryParse(value.Replace(" ", ""), true, out areas);
+        }
+
         static string BuildFrontendString(Areas areas)
         {
             var sb = new StringBuilder();

@@ -130,6 +130,9 @@ namespace Unity.UI.Builder
         internal void ResetGradientToAuthoringDefault()
         {
             m_GradientField.SetValueWithoutNotify(BackgroundGradientField.defaultAuthoringGradient);
+            // Also drop var bindings carried over from the previous element, so a later
+            // switch to Gradient doesn't write its variable names into this one.
+            m_GradientField.SetVarBindings(StyleProperty.GradientVarBindings.none);
         }
 
         void UpdateGradientVisibility()

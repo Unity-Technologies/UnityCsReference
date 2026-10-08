@@ -170,6 +170,9 @@ internal static partial class MenuItemGenerator
 
         // Add separator after the "Project Elements" subgroup
         Menu.AddSeparator($"{k_GameObjectMenuPath}/", k_DefaultProjectElementsPriority);
+
+        // The restricted mode keeps only these entries under GameObject, so it must not rebuild before they exist.
+        UIStageEditorMode.ApplyToCurrentStage();
     }
 
     public static void UnregisterMenuItems()

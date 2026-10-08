@@ -283,7 +283,7 @@ namespace Unity.Hierarchy
             }
             else
             {
-                m_Ptr = (Pair*)Realloc(m_Ptr, capacity * sizeOf, alignOf, m_Allocator);
+                m_Ptr = (Pair*)Realloc(m_Ptr, m_Capacity * sizeOf, capacity * sizeOf, alignOf, m_Allocator);
                 if (capacity > m_Capacity)
                 {
                     fixed (Pair* initValuePtr = &m_InitValue)
@@ -339,13 +339,13 @@ namespace Unity.Hierarchy
                 throw new InvalidOperationException($"key index [{index}] is out of range [0, {m_Capacity}]");
         }
 
-        static void* Realloc(void* ptr, long size, int alignment, Allocator allocator)
+        static void* Realloc(void* ptr, long oldSize, long newSize, int alignment, Allocator allocator)
         {
             if (ptr == null)
-                return UnsafeUtility.Malloc(size, alignment, allocator);
+                return UnsafeUtility.Malloc(newSize, alignment, allocator);
 
-            var newPtr = UnsafeUtility.Malloc(size, alignment, allocator);
-            UnsafeUtility.MemCpy(newPtr, ptr, size);
+            var newPtr = UnsafeUtility.Malloc(newSize, alignment, allocator);
+            UnsafeUtility.MemCpy(newPtr, ptr, Math.Min(oldSize, newSize));
             UnsafeUtility.Free(ptr, allocator);
             return newPtr;
         }

@@ -58,40 +58,25 @@ class UxmlAttributesEditingContext : IDisposable
     // For when we need to view read only attributes from a visual element, such as one created by script.
     internal class TempSerializedData : VisualTreeAsset
     {
-        public static TempSerializedData Create(VisualElement element, bool isTemplateInstance)
+        public static TempSerializedData Create(VisualElement element)
         {
             var instance = ScriptableObject.CreateInstance<TempSerializedData>();
             instance.hideFlags = HideFlags.DontSaveInEditor | HideFlags.DontSaveInBuild;
 
             var type = element.GetType();
             var elementAsset = new VisualElementAsset(type.FullName);
-
-            instance.visualTree.Add(elementAsset);
-            instance.ResetData(element, isTemplateInstance);
-            element.SetProperty(k_TempSerializedDataPropertyName, instance);
-            return instance;
-        }
-
-        public void ResetData(VisualElement element, bool isTemplateInstance)
-        {
             var desc = UxmlSerializedDataRegistry.GetDescription(element.fullTypeName);
 
+            instance.visualTree.Add(elementAsset);
             elementAsset.serializedData = desc.CreateDefaultSerializedData();
 
-            // In staging mode we want to show only the UXML data, Pulling from the live element will copy values
-            // that may be different in the serialized UXML.
-            // We currently make an exception for templates: rebuilding them solely from serialized data would
-            // require walking and reassembling the entire asset, which is complex and error‑prone.
-            // This is a temporary workaround limited to templates and may be removed once we have a better approach.
-            if (isTemplateInstance)
-                desc.SyncSerializedData(element, elementAsset.serializedData);
+            return instance;
         }
 
         public VisualElementAsset elementAsset => visualTree[0] as VisualElementAsset;
         public UxmlSerializedData serializedData => elementAsset.serializedData;
     }
 
-    internal static readonly string k_TempSerializedDataPropertyName = "__TempSerializedData";
     internal static readonly string k_UxmlSerializedDataFieldName = "m_SerializedData";
 
     bool m_UndoEnabledExplicit = true;
@@ -410,16 +395,16 @@ class UxmlAttributesEditingContext : IDisposable
 
             if (elementAsset == null || isInTemplateInstance)
             {
-                tempSerializedData = element.GetProperty(k_TempSerializedDataPropertyName) as TempSerializedData;
+                tempSerializedData = TempSerializedData.Create(element);
 
-                if (tempSerializedData == null)
-                {
-                    tempSerializedData = TempSerializedData.Create(element, isInTemplateInstance);
-                }
-                else
-                {
-                    tempSerializedData.ResetData(element, isInTemplateInstance);
-                }
+                // In staging mode we want to show only the UXML data, Pulling from the live element will copy values
+                // that may be different in the serialized UXML.
+                // We currently make an exception for templates: rebuilding them solely from serialized data would
+                // require walking and reassembling the entire asset, which is complex and error‑prone.
+                // This is a temporary workaround limited to templates and may be removed once we have a better approach.
+                if (isInTemplateInstance)
+                    uxmlSerializedDataDescription.SyncSerializedData(element, tempSerializedData.serializedData);
+
                 visualTreeAsset = tempSerializedData;
                 this.elementAsset = tempSerializedData.elementAsset;
                 rootSerializedObject = new SerializedObject(tempSerializedData);
@@ -471,6 +456,8 @@ class UxmlAttributesEditingContext : IDisposable
         element = null;
         elementAsset = null;
         uxmlSerializedDataDescription = null;
+        if (tempSerializedData != null)
+            UnityEngine.Object.DestroyImmediate(tempSerializedData);
         tempSerializedData = null;
         rootSerializedObject = null;
         serializedBasePath = string.Empty;

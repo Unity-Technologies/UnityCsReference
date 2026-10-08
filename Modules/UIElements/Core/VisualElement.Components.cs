@@ -243,9 +243,13 @@ namespace UnityEngine.UIElements
         /// A reference to the live component data. Like <see cref="GetComponent{T}"/>, the reference is
         /// valid until a component is added to or removed from this element.
         /// </returns>
+        /// <exception cref="InvalidOperationException">
+        /// Thrown if this element's resources have been released, or if called from a
+        /// <see cref="ReleaseComponentResourcesAttribute">[ReleaseComponentResources]</see> method.
+        /// </exception>
         public ref T GetOrAddComponent<T>() where T : struct, IVisualElementComponent
         {
-            ThrowIfRunningReleaseHook();
+            ThrowIfComponentMutationForbidden();
 
             var typeHandle = typeof(T).TypeHandle;
             var index = FindComponentIndex(typeHandle);
@@ -361,12 +365,12 @@ namespace UnityEngine.UIElements
         /// <typeparam name="T">A struct decorated with <see cref="VisualElementComponentAttribute"/>.</typeparam>
         /// <returns>
         /// A reference to the live component data, or a null reference when the component is not
-        /// attached. A valid reference stays valid until a component is added to or removed from
-        /// this element.
+        /// attached or this element's resources have been released. A valid reference stays valid
+        /// until a component is added to or removed from this element.
         /// </returns>
         public ref T GetComponentRefOrNullRef<T>() where T : struct, IVisualElementComponent
         {
-            var index = FindComponentIndex(typeof(T).TypeHandle);
+            var index = FindLiveComponentIndex(typeof(T).TypeHandle);
             if (index < 0)
                 return ref UnsafeUtilityInternal.NullRef<T>();
 
@@ -380,7 +384,7 @@ namespace UnityEngine.UIElements
         /// <returns><see langword="true"/> if the component is attached; otherwise <see langword="false"/>.</returns>
         public bool HasComponent<T>() where T : struct, IVisualElementComponent
         {
-            return FindComponentIndex(typeof(T).TypeHandle) >= 0;
+            return FindLiveComponentIndex(typeof(T).TypeHandle) >= 0;
         }
 
         /// <summary>
@@ -504,6 +508,16 @@ namespace UnityEngine.UIElements
         {
             var index = FindComponentIndex(typeHandle);
             return index >= 0 ? m_ComponentSlots[index].bindingDispatcher : null;
+        }
+
+        // The non-throwing reads answer "absent" on a released element. ReleaseResourcesNoChecks sets the
+        // flag before it detaches, so between the two the slots are already promised back to the store.
+        int FindLiveComponentIndex(RuntimeTypeHandle typeHandle)
+        {
+            if ((m_Flags & VisualElementFlags.Released) != 0)
+                return -1;
+
+            return FindComponentIndex(typeHandle);
         }
 
         int FindComponentIndex(RuntimeTypeHandle typeHandle)

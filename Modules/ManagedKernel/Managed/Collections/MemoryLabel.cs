@@ -112,6 +112,23 @@ public readonly struct MemoryLabel
         this.allocator = nativeData.allocator;
     }
 
+    ///<summary>Creates a memory label with the specified area name, object name, and allocator.</summary>
+    ///<remarks>This method can be used in Burst-compiled code with names that are not compile-time string literals.
+    ///
+    /// Attempting to create a memory label with empty strings for the area name or object name, or with an unsupported allocator, throws an exception.</remarks>
+    ///<param name="areaName">The name of the memory area.</param>
+    ///<param name="objectName">The name of the object being labeled.</param>
+    ///<param name="allocator">The allocator to use. Defaults to <see cref="Allocator.Persistent" />. Only <see cref="Allocator.Persistent" /> and <see cref="Allocator.Domain" /> support memory labeling.</param>
+    ///<returns>The created memory label.</returns>
+    [GenerateTestsForBurstCompatibility]
+    public static unsafe MemoryLabel Create(FixedString32Bytes areaName, FixedString64Bytes objectName, Allocator allocator = Allocator.Persistent)
+    {
+        return new MemoryLabel(
+            areaName.GetUnsafePtr(), areaName.Length,
+            objectName.GetUnsafePtr(), objectName.Length,
+            allocator);
+    }
+
     ///<summary>Determines whether the specified allocator supports memory labeling.</summary>
     ///<param name="allocator">The allocator to check.</param>
     ///<returns>True if the allocator supports labeling; otherwise, false.</returns>

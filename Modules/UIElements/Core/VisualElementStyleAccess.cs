@@ -248,6 +248,18 @@ namespace UnityEngine.UIElements
             return length.value * parentSize / 100;
         }
 
+        internal float ResolveGapValue(Length gap, bool isColumnGap)
+        {
+            var value = gap.value;
+            if (gap.unit == LengthUnit.Percent)
+            {
+                var contentSize = isColumnGap ? contentRect.width : contentRect.height;
+                value = value * contentSize / 100;
+            }
+
+            return value > 0 ? value : 0;
+        }
+
         internal Vector3 ResolveTranslate()
         {
             var translationOperation = computedStyle.translate;

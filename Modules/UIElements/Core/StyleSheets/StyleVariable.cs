@@ -22,6 +22,10 @@ namespace UnityEngine.UIElements
         public readonly int hash;
         public readonly StyleSheet sheet;
         public readonly StyleValueHandle[] handles;
+        // Effective tier of the match that declared the variable — a property of the use, not of
+        // the asset (a plain USS imported by a theme carries the theme's tier here even though the
+        // sheet itself is Default). Editor authoring code keys "theme content" off this.
+        public readonly StyleSheetPriority tier;
 
         // Recovered from nameId via UniqueStyleString's id→string table; kept as a
         // computed property for inspector / authoring callers that still want the name.
@@ -29,16 +33,18 @@ namespace UnityEngine.UIElements
         // null rather than indexing out of range.
         public string name => nameId < 0 ? null : new UniqueStyleString(nameId).value;
 
-        public StyleVariable(int nameId, StyleSheet sheet, StyleValueHandle[] handles)
+        public StyleVariable(int nameId, StyleSheet sheet, StyleValueHandle[] handles, StyleSheetPriority tier)
         {
             this.nameId = nameId;
             this.sheet = sheet;
             this.handles = handles;
+            this.tier = tier;
             unchecked
             {
                 int h = nameId;
                 h = (h * 397) ^ sheet.GetHashCode();
                 h = (h * 397) ^ handles.GetHashCode();
+                h = (h * 397) ^ (int)tier;
                 this.hash = h;
             }
         }

@@ -330,7 +330,6 @@ internal class VisualElementEditingStage : PreviewSceneStage, ISerializationCall
         UICommandQueue.RegisterHandlerForCategory(k_ExternalChangesTrackedCategories, CheckForBuilderChanges);
         UICommandQueue.RegisterHandlerForCategory(CommandCategory.Save, OnBuilderSave);
         UIAssetRegistry.instance.AssetReloaded += OnRegistryAssetReloaded;
-        UIAssetRegistry.instance.AssetDirtyStateChanged += OnAssetDirtyStateChanged;
 
         // A stage whose document could not be resolved is torn down by the next stage tick, so nothing should
         // start resolving live elements against it.
@@ -358,7 +357,6 @@ internal class VisualElementEditingStage : PreviewSceneStage, ISerializationCall
         UICommandQueue.GroupBegan -= OnGroupBegan;
         UICommandQueue.GroupEnded -= OnGroupEnded;
         UIAssetRegistry.LiveInstance?.AssetReloaded -= OnRegistryAssetReloaded;
-        UIAssetRegistry.LiveInstance?.AssetDirtyStateChanged -= OnAssetDirtyStateChanged;
     }
 
     protected internal override bool OnOpenStage()
@@ -450,16 +448,9 @@ internal class VisualElementEditingStage : PreviewSceneStage, ISerializationCall
     protected internal override GUIContent CreateHeaderContent()
     {
         if (EditedVisualTreeAsset != null)
-            m_HeaderContent.text = hasUnsavedChanges ? EditedVisualTreeAsset.name + "*" : EditedVisualTreeAsset.name;
+            m_HeaderContent.text = EditedVisualTreeAsset.name;
 
         return m_HeaderContent;
-    }
-
-    // The SceneView breadcrumb holds m_HeaderContent by reference, so refreshing its text updates it in place.
-    void OnAssetDirtyStateChanged(UnityEngine.Object asset)
-    {
-        CreateHeaderContent();
-        SceneView.RepaintAll();
     }
 
     internal override bool SupportsSaving()

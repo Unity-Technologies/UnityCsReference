@@ -194,17 +194,7 @@ namespace UnityEngine.UIElements
         /// </remarks>
         public bool actionKey
         {
-            get
-            {
-                if (Application.platform == RuntimePlatform.OSXEditor || Application.platform == RuntimePlatform.OSXPlayer)
-                {
-                    return commandKey;
-                }
-                else
-                {
-                    return ctrlKey;
-                }
-            }
+            get { return UIElementsUtility.isCommandActionKeyPlatform ? commandKey : ctrlKey; }
         }
 
         // FIXME: see https://www.w3.org/TR/DOM-Level-3-Events/#interface-keyboardevent for key, code and location values.

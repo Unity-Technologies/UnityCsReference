@@ -1108,7 +1108,8 @@ namespace Unity.U2D.Physics
         /// If the bodies in the batch are not contained in the same <see cref="PhysicsWorld"/>, the batch should be sorted by the <see cref="PhysicsWorld"/> the bodies are contained within.
         /// </summary>
         /// <param name="batch">The batch of bodies and values to set.</param>
-        public static void SetBatchVelocity(ReadOnlySpan<BatchVelocity> batch) => PhysicsBody_SetBatchVelocity(batch);
+        /// <returns>The number of bodies that were ignored (not set because the body was invalid). A single warning is logged when any are ignored.</returns>
+        public static int SetBatchVelocity(ReadOnlySpan<BatchVelocity> batch) => PhysicsBody_SetBatchVelocity(batch);
 
         /// <summary>
         /// Get the velocity for a batch of <see cref="PhysicsBody"/>.
@@ -1125,7 +1126,8 @@ namespace Unity.U2D.Physics
         /// If the bodies in the batch are not contained in the same <see cref="PhysicsWorld"/>, the batch should be sorted by the <see cref="PhysicsWorld"/> the bodies are contained within.
         /// </summary>
         /// <param name="batch">The batch of bodies and values to set.</param>
-        public static void SetBatchForce(ReadOnlySpan<BatchForce> batch) => PhysicsBody_SetBatchForce(batch);
+        /// <returns>The number of bodies that were ignored (not applied because the body was invalid). A single warning is logged when any are ignored.</returns>
+        public static int SetBatchForce(ReadOnlySpan<BatchForce> batch) => PhysicsBody_SetBatchForce(batch);
 
         /// <summary>
         /// Apply an impulse for a batch of <see cref="PhysicsBody"/> using a span of <see cref="PhysicsBody.BatchImpulse"/>.
@@ -1134,7 +1136,8 @@ namespace Unity.U2D.Physics
         /// If the bodies in the batch are not contained in the same <see cref="PhysicsWorld"/>, the batch should be sorted by the <see cref="PhysicsWorld"/> the bodies are contained within.
         /// </summary>
         /// <param name="batch">The batch of bodies and values to set.</param>
-        public static void SetBatchImpulse(ReadOnlySpan<BatchImpulse> batch) => PhysicsBody_SetBatchImpulse(batch);
+        /// <returns>The number of bodies that were ignored (not applied because the body was invalid). A single warning is logged when any are ignored.</returns>
+        public static int SetBatchImpulse(ReadOnlySpan<BatchImpulse> batch) => PhysicsBody_SetBatchImpulse(batch);
 
         /// <summary>
         /// Set the transform for a batch of <see cref="PhysicsBody"/> using a span of <see cref="PhysicsBody.BatchTransform"/>.
@@ -1143,7 +1146,8 @@ namespace Unity.U2D.Physics
         /// If the bodies in the batch are not contained in the same <see cref="PhysicsWorld"/>, the batch should be sorted by the <see cref="PhysicsWorld"/> the bodies are contained within.
         /// </summary>
         /// <param name="batch">The batch of bodies and values to set.</param>
-        public static void SetBatchTransform(ReadOnlySpan<BatchTransform> batch) => PhysicsBody_SetBatchTransform(batch);
+        /// <returns>The number of bodies that were ignored (not set because the body was invalid). A single warning is logged when any are ignored.</returns>
+        public static int SetBatchTransform(ReadOnlySpan<BatchTransform> batch) => PhysicsBody_SetBatchTransform(batch);
 
         /// <summary>
         /// Set the transform for a batch of <see cref="PhysicsBody"/> using a span of <see cref="PhysicsBody.BatchTransform"/>, optionally writing each pose to the <see cref="PhysicsBody.transformObject"/> of its body.
@@ -1156,25 +1160,24 @@ namespace Unity.U2D.Physics
         /// </summary>
         /// <param name="batch">The batch of bodies and values to set.</param>
         /// <param name="writePoses">Whether to also write the poses to the <see cref="PhysicsBody.transformObject"/> of each body in the batch.</param>
+        /// <returns>The number of bodies that were ignored (not set because the body was invalid). A single warning is logged when any are ignored.</returns>
         /// <exception cref="ArgumentException">Thrown when <paramref name="writePoses"/> is true and the valid bodies in the batch are not all in the same <see cref="PhysicsWorld"/> or do not each have a unique <see cref="PhysicsBody.transformObject"/> assigned. Nothing is changed when this is thrown.</exception>
-        public static void SetBatchTransform(ReadOnlySpan<BatchTransform> batch, bool writePoses)
+        public static int SetBatchTransform(ReadOnlySpan<BatchTransform> batch, bool writePoses)
         {
             // Only write poses when requested, otherwise this is the plain batch transform set.
             if (!writePoses)
-            {
-                PhysicsBody_SetBatchTransform(batch);
-                return;
-            }
+                return PhysicsBody_SetBatchTransform(batch);
 
-            SetBatchTransformWritePoses(batch);
+            return SetBatchTransformWritePoses(batch);
         }
 
         // Set the body poses for the batch and write each pose to the transform object of its body.
         // The gather validates the batch and fills the transform-access-array without changing any state, so a throw here leaves everything untouched.
-        static unsafe void SetBatchTransformWritePoses(ReadOnlySpan<BatchTransform> batch)
+        // Returns the number of bodies ignored because they were invalid.
+        static unsafe int SetBatchTransformWritePoses(ReadOnlySpan<BatchTransform> batch)
         {
             if (batch.IsEmpty)
-                return;
+                return 0;
 
             // Gather the transform objects to write, densely packed, with a map recording the batch item each packed transform came from.
             // An invalid body contributes no transform, so the packed count can be smaller than the batch.
@@ -1190,14 +1193,14 @@ namespace Unity.U2D.Physics
             }
 
             // Set the body poses.
-            PhysicsBody_SetBatchTransform(batch);
+            var ignoredCount = PhysicsBody_SetBatchTransform(batch);
 
             // With nothing to write (no valid body with a transform) the body poses are still set, but there is no transform work.
             if (writeCount == 0)
             {
                 batchIndexMap.Dispose();
                 transformAccessArray.Dispose();
-                return;
+                return ignoredCount;
             }
 
             // The world configuration is per-world and every written body shares one world, so read it from the first written body.
@@ -1225,6 +1228,8 @@ namespace Unity.U2D.Physics
             // We're finished so dispose.
             poses.Dispose();
             transformAccessArray.Dispose();
+
+            return ignoredCount;
         }
 
         /// <undoc/>
@@ -1934,14 +1939,16 @@ namespace Unity.U2D.Physics
         /// </summary>
         /// <param name="bodies">The bodies to set the user data on.</param>
         /// <param name="userDatas">The user data to set, one entry per body.</param>
-        public static void SetUserData(ReadOnlySpan<PhysicsBody> bodies, ReadOnlySpan<PhysicsUserData> userDatas) => PhysicsBody_SetUserDataSpan(bodies, userDatas);
+        /// <returns>The number of bodies that were ignored (not set because the body was invalid). A single warning is logged when any are ignored. If the spans are different lengths, nothing is set and every body is counted as ignored.</returns>
+        public static int SetUserData(ReadOnlySpan<PhysicsBody> bodies, ReadOnlySpan<PhysicsUserData> userDatas) => PhysicsBody_SetUserDataSpan(bodies, userDatas);
 
         /// <summary>
         /// Set the same <see cref="PhysicsUserData"/> on a batch of bodies that can be used for any purpose.
         /// </summary>
         /// <param name="bodies">The bodies to set the user data on.</param>
         /// <param name="physicsUserData">The user data to set on every body.</param>
-        public static void SetUserData(ReadOnlySpan<PhysicsBody> bodies, PhysicsUserData physicsUserData) => PhysicsBody_SetUserDataSpanAll(bodies, physicsUserData);
+        /// <returns>The number of bodies that were ignored (not set because the body was invalid). A single warning is logged when any are ignored.</returns>
+        public static int SetUserData(ReadOnlySpan<PhysicsBody> bodies, PhysicsUserData physicsUserData) => PhysicsBody_SetUserDataSpanAll(bodies, physicsUserData);
 
         /// <summary>
         /// Get/Set the transform object associated with the body.
@@ -2230,10 +2237,47 @@ namespace Unity.U2D.Physics
         /// </summary>
         /// <remarks>
         /// This filters on top of the world's own <see cref="PhysicsWorld.drawTarget"/>: the world decides whether it draws into a view at all, and this decides whether this body is included when it does.
-        /// The state is not part of the body definition and is never recorded, because it describes how the body is being looked at rather than what it is.
         /// A player build has no Scene view, so a body set to <see cref="PhysicsWorld.DrawTarget.SceneView"/> is never drawn in a build.
+        /// See <see cref="PhysicsBodyDefinition.drawTarget"/>.
         /// </remarks>
         public readonly PhysicsWorld.DrawTarget drawTarget { get => PhysicsBody_GetDrawTarget(this); set => PhysicsBody_SetDrawTarget(this, value); }
+
+        /// <summary>
+        /// The depth this body is drawn at, in world space, along the axis perpendicular to the world's transform plane.
+        /// </summary>
+        /// <remarks>
+        /// Bodies are drawn in two dimensions, so the depth is what places a body in front of or behind other things in the scene.
+        /// The depth axis is Z for <see cref="PhysicsWorld.TransformPlane.XY"/>, Y for <see cref="PhysicsWorld.TransformPlane.XZ"/> and X for <see cref="PhysicsWorld.TransformPlane.ZY"/>.
+        /// The depth is only used when the body has no <see cref="transformObject"/>.
+        /// A body with a transform object is always drawn at the depth of that transform.
+        /// Everything drawn for the body, such as its shapes and its transform axis, uses this depth.
+        /// A joint is drawn at the depth of its first body, <see cref="PhysicsJoint.bodyA"/>.
+        /// A value that is not finite is rejected and leaves the depth unchanged.
+        /// The depth only changes how the body is drawn and never affects the simulation.
+        /// See <see cref="PhysicsBodyDefinition.drawDepth"/>.
+        /// To set the depth for custom drawing that is not tied to a body, use <see cref="PhysicsWorld.drawDepth"/>.
+        /// </remarks>
+        public readonly float drawDepth { get => PhysicsBody_GetDrawDepth(this); set => PhysicsBody_SetDrawDepth(this, value); }
+
+        /// <summary>
+        /// Sets the draw depth from a 3D position, using the axis that matches the transform plane of the world this body is in.
+        /// </summary>
+        /// <remarks>
+        /// The relevant axis is taken from the position using the <see cref="PhysicsWorld.transformPlane"/> of the body's world.
+        /// If <see cref="PhysicsWorld.TransformPlane.Custom"/> is used, the draw depth is set to zero.
+        /// If the body is not valid, nothing happens.
+        /// See <see cref="PhysicsBody.drawDepth"/>.
+        /// </remarks>
+        /// <param name="position">The 3D position to take the draw depth from.</param>
+        public readonly void SetDrawDepth3D(Vector3 position)
+        {
+            var bodyWorld = world;
+            if (!bodyWorld.isValid)
+                return;
+
+            var bodyTransformPlane = bodyWorld.transformPlane;
+            drawDepth = bodyTransformPlane != PhysicsWorld.TransformPlane.Custom ? PhysicsMath.GetTranslationIgnoredAxis(position, bodyTransformPlane) : 0.0f;
+        }
 
         /// <summary>
         /// Set the selected drawing state on a batch of bodies.
@@ -2245,7 +2289,8 @@ namespace Unity.U2D.Physics
         /// </remarks>
         /// <param name="bodies">The bodies to set the selected drawing state on.</param>
         /// <param name="selected">The selected drawing state to set on every body.</param>
-        public static void SetSelectedDrawing(ReadOnlySpan<PhysicsBody> bodies, bool selected) => PhysicsBody_SetSelectedDrawing(bodies, selected);
+        /// <returns>The number of bodies that were ignored (not set because the body was invalid). A single warning is logged when any are ignored.</returns>
+        public static int SetSelectedDrawing(ReadOnlySpan<PhysicsBody> bodies, bool selected) => PhysicsBody_SetSelectedDrawing(bodies, selected);
 
         /// <summary>
         /// Draw this body's current state once, as custom drawing.

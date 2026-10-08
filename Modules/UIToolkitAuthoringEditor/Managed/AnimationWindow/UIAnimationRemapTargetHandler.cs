@@ -27,8 +27,10 @@ namespace Unity.UIToolkit.Editor
         protected override NodeHandlerStageStrategy CreateStageStrategy() => new RemapPickerStrategy();
 
         // The strategy declares rows fully editable so they render undimmed, which would also open the
-        // drag gates that key off the same flags. Picking is selection only.
+        // drag and rename gates that key off the same flags. Picking is selection only.
         protected override bool CanStartDrag(HierarchyView view, in SelectionContext selection) => false;
+
+        protected override bool CanRename(HierarchyView view, in HierarchyNode node) => false;
 
         sealed class RemapPickerStrategy() : NodeHandlerStageStrategy(null)
         {
@@ -39,6 +41,10 @@ namespace Unity.UIToolkit.Editor
 
             public override VisualElementEditFlags GetEditFlags(VisualElement element) =>
                 VisualElementEditFlags.FullyEditable;
+
+            // This picker's tree has no GameObject behind it at all: the scope root's own ancestors,
+            // climbed all the way to the panel root, are the only path TryGetParentNode has to it.
+            public override bool AcceptRootAsParent => true;
         }
 
         /// <summary>

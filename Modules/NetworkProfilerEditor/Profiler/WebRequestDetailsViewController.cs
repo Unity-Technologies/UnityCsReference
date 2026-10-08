@@ -24,6 +24,7 @@ namespace UnityEditor.Networking
         const string k_UssResourceName = "WebRequest/StyleSheets/Profiler/WebRequestDetailsView.uss";
         const string k_UssLightResourceName = "WebRequest/StyleSheets/Profiler/WebRequestDetailsViewLight.uss";
         const string k_UssDarkResourceName = "WebRequest/StyleSheets/Profiler/WebRequestDetailsViewDark.uss";
+        const string k_InsecureIconResourceName = "WebRequest/Icons/UnsafeConnection.png";
 
         const string k_OrderColumn = "order-column";
         const string k_StatusColumn = "status-column";
@@ -313,7 +314,7 @@ namespace UnityEditor.Networking
                 // the far edge, away from the URL it refers to.
                 var warning = new Image { name = "insecure" };
                 warning.AddToClassList(k_InsecureIconClass);
-                warning.image = EditorGUIUtility.LoadIcon("console.warnicon.sml");
+                warning.image = EditorGUIUtility.LoadIcon(k_InsecureIconResourceName);
                 cell.Add(warning);
 
                 var label = new Label();
@@ -774,7 +775,7 @@ namespace UnityEditor.Networking
         }
 
         // Parsed rather than captured: the url is already on the record, so this half of the Payload
-        // tab works with body capture off, which is how a user first opens it.
+        // tab needs no captured body.
         internal static List<KeyValuePair<string, string>> ParseQueryParameters(string url)
         {
             var parameters = new List<KeyValuePair<string, string>>();
@@ -854,27 +855,27 @@ namespace UnityEditor.Networking
         {
             if (!body.captured)
             {
-                // The row says from its first frame whether a body is coming, so an in-flight request
-                // is not told to wait for one that never will.
-                var enabled = (record.bodyCapture & WebRequestProfilerBodyCapture.Enabled) != 0;
+                var known = (record.bodyCapture & WebRequestProfilerBodyCapture.TransportKnown) != 0;
                 var supported = (record.bodyCapture & WebRequestProfilerBodyCapture.Supported) != 0;
 
-                if (!enabled)
-                {
-                    // Named rather than described: the switch is the whole answer.
-                    empty.text = "Not captured: body capture was off when this request started. Set UnityWebRequest.enableProfilerBodyCapture to true in the player you are profiling, then capture again.";
-                }
-                else if (!supported && (record.bodyCapture & WebRequestProfilerBodyCapture.TransportKnown) != 0)
+                if (known && !supported)
                 {
                     // Once a transport has answered, a request still running on it will never produce a
                     // body. Before that, Supported is clear only because nothing has been asked.
                     empty.text = "Not captured: the transport that ran this request cannot report bodies.";
                 }
-                else
+                else if (record.state == WebRequestProfilerState.InFlight)
                 {
                     empty.text = "Bodies are recorded when a request finishes.";
                 }
-
+                else if (!known)
+                {
+                    empty.text = "Not captured: nothing was sent for this request, so there is no body to record.";
+                }
+                else
+                {
+                    empty.text = "Not captured: this capture was recorded with body capture turned off.";
+                }
                 empty.style.display = DisplayStyle.Flex;
                 text.style.display = DisplayStyle.None;
                 text.SetValueWithoutNotify(string.Empty);

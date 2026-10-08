@@ -13,6 +13,7 @@ namespace Unity.SmartStrings.PersistentVariables;
 /// <summary>
 /// Provides a reference to a <see cref="VariablesGroupAsset"/>.
 /// </summary>
+[Serializable]
 public class NestedVariablesGroup : Variable<VariablesGroupAsset>, IVariableGroup
 {
     /// <inheritdoc/>

@@ -45,6 +45,10 @@ namespace Unity.U2D.Physics
         [NativeMethod(Name = "PhysicsWorld::GetAutoJointThresholdCallbacks", IsThreadSafe = true)] extern internal static bool PhysicsWorld_GetAutoJointThresholdCallbacks(PhysicsWorld world);
         [NativeMethod(Name = "PhysicsWorld::SetBounceThreshold", IsThreadSafe = true)] extern internal static void PhysicsWorld_SetBounceThreshold(PhysicsWorld world, float value);
         [NativeMethod(Name = "PhysicsWorld::GetBounceThreshold", IsThreadSafe = true)] extern internal static float PhysicsWorld_GetBounceThreshold(PhysicsWorld world);
+        [NativeMethod(Name = "PhysicsWorld::SetBounceIterations", IsThreadSafe = true)] extern internal static void PhysicsWorld_SetBounceIterations(PhysicsWorld world, int value);
+        [NativeMethod(Name = "PhysicsWorld::GetBounceIterations", IsThreadSafe = true)] extern internal static int PhysicsWorld_GetBounceIterations(PhysicsWorld world);
+        [NativeMethod(Name = "PhysicsWorld::SetBouncePropagation", IsThreadSafe = true)] extern internal static void PhysicsWorld_SetBouncePropagation(PhysicsWorld world, bool value);
+        [NativeMethod(Name = "PhysicsWorld::GetBouncePropagation", IsThreadSafe = true)] extern internal static bool PhysicsWorld_GetBouncePropagation(PhysicsWorld world);
         [NativeMethod(Name = "PhysicsWorld::SetContactHitEventThreshold", IsThreadSafe = true)] extern internal static void PhysicsWorld_SetContactHitEventThreshold(PhysicsWorld world, float value);
         [NativeMethod(Name = "PhysicsWorld::GetContactHitEventThreshold", IsThreadSafe = true)] extern internal static float PhysicsWorld_GetContactHitEventThreshold(PhysicsWorld world);
         [NativeMethod(Name = "PhysicsWorld::SetContactFrequency", IsThreadSafe = true)] extern internal static void PhysicsWorld_SetContactFrequency(PhysicsWorld world, float contactFrequency);
@@ -84,7 +88,7 @@ namespace Unity.U2D.Physics
         [NativeMethod(Name = "PhysicsWorld::GetTransformWriteTweens", IsThreadSafe = true)] extern internal static PhysicsBuffer PhysicsWorld_GetTransformWriteTweens(PhysicsWorld world);
         [NativeMethod(Name = "PhysicsWorld::SetTransform")] extern internal static void PhysicsWorld_SetTransform(Transform transform, ref Vector3 position, ref Quaternion rotation, bool transformChangedEvent);
         [NativeMethod(Name = "PhysicsWorld::SetTransformAccess", IsThreadSafe = true, ThrowsException = true)] extern internal static void PhysicsWorld_SetTransformAccess(ref TransformAccess access, ref Vector3 position, ref Quaternion rotation, bool transformChangedEvent);
-        [NativeMethod(Name = "PhysicsWorld::Simulate")] extern internal static void PhysicsWorld_Simulate(ReadOnlySpan<PhysicsWorld> worlds, float timeStep);
+        [NativeMethod(Name = "PhysicsWorld::Simulate")] extern internal static int PhysicsWorld_Simulate(ReadOnlySpan<PhysicsWorld> worlds, float timeStep);
         [NativeMethod(Name = "PhysicsWorld::Explode", IsThreadSafe = true)] extern internal static void PhysicsWorld_Explode(PhysicsWorld world, PhysicsWorld.ExplosionDefinition definition);
         [NativeMethod(Name = "PhysicsWorld::GetBodyUpdateUserData", IsThreadSafe = true)] extern internal static PhysicsBuffer PhysicsWorld_GetBodyUpdateUserData(PhysicsWorld world, bool ownerUserData, Allocator allocator);
         [NativeMethod(Name = "PhysicsWorld::GetBodyUpdateEvents", IsThreadSafe = true)] extern internal static PhysicsBuffer PhysicsWorld_GetBodyUpdateEvents(PhysicsWorld world);
@@ -165,8 +169,8 @@ namespace Unity.U2D.Physics
         [NativeMethod(Name = "PhysicsWorld::GetDrawForceScale", IsThreadSafe = true)] extern internal static float PhysicsWorld_GetDrawForceScale(PhysicsWorld world);
         [NativeMethod(Name = "PhysicsWorld::SetDrawContactType", IsThreadSafe = true)] extern internal static void PhysicsWorld_SetDrawContactType(PhysicsWorld world, PhysicsWorld.DrawContactType drawContactType);
         [NativeMethod(Name = "PhysicsWorld::GetDrawContactType", IsThreadSafe = true)] extern internal static PhysicsWorld.DrawContactType PhysicsWorld_GetDrawContactType(PhysicsWorld world);
-        [NativeMethod(Name = "PhysicsWorld::SetDrawElementDepth", IsThreadSafe = true)] extern internal static void PhysicsWorld_SetElementDepth(PhysicsWorld world, float elementDepth);
-        [NativeMethod(Name = "PhysicsWorld::GetDrawElementDepth", IsThreadSafe = true)] extern internal static float PhysicsWorld_GetElementDepth(PhysicsWorld world);
+        [NativeMethod(Name = "PhysicsWorld::SetDrawDepth", IsThreadSafe = true)] extern internal static void PhysicsWorld_SetDrawDepth(PhysicsWorld world, float drawDepth);
+        [NativeMethod(Name = "PhysicsWorld::GetDrawDepth", IsThreadSafe = true)] extern internal static float PhysicsWorld_GetDrawDepth(PhysicsWorld world);
         [NativeMethod(Name = "PhysicsWorld::ClearDraw", IsThreadSafe = true)] extern internal static void PhysicsWorld_ClearDraw(PhysicsWorld world, bool clearWorldDraw, bool clearCustomDraw, bool clearTimedDraw);
         [NativeMethod(Name = "PhysicsWorld::DrawCircleGeometrySpan", IsThreadSafe = true)] extern internal static void PhysicsWorld_DrawCircleGeometrySpan(PhysicsWorld world, ReadOnlySpan<CircleGeometry> geometry, PhysicsTransform transform, Color color, float lifetime, PhysicsWorld.DrawFillOptions drawFillOptions);
         [NativeMethod(Name = "PhysicsWorld::DrawCapsuleGeometrySpan", IsThreadSafe = true)] extern internal static void PhysicsWorld_DrawCapsuleGeometrySpan(PhysicsWorld world, ReadOnlySpan<CapsuleGeometry> geometry, PhysicsTransform transform, Color color, float lifetime, PhysicsWorld.DrawFillOptions drawFillOptions);
@@ -199,7 +203,7 @@ namespace Unity.U2D.Physics
         [NativeMethod(Name = "PhysicsWorld::GetName", IsThreadSafe = true)] extern internal static string PhysicsWorld_GetName(PhysicsWorld world);
         [NativeMethod(Name = "PhysicsWorld::IsDefaultWorld", IsThreadSafe = true)] extern internal static bool PhysicsWorld_IsDefaultWorld(PhysicsWorld world);
         [NativeMethod(Name = "PhysicsWorld::ClearDrawSelected", IsThreadSafe = true)] extern internal static void PhysicsWorld_ClearDrawSelected(PhysicsWorld world);
-        [NativeMethod(Name = "PhysicsWorld::DrawShapes", IsThreadSafe = true)] extern internal static void PhysicsWorld_DrawShapes(ReadOnlySpan<PhysicsShape> shapes);
+        [NativeMethod(Name = "PhysicsWorld::DrawShapes", IsThreadSafe = true)] extern internal static int PhysicsWorld_DrawShapes(ReadOnlySpan<PhysicsShape> shapes);
         [NativeMethod(Name = "PhysicsWorld::DrawAllWorlds")] extern internal static void PhysicsWorld_DrawAllWorlds(PhysicsAABB drawAABB, PhysicsWorld.DrawTarget cameraTarget);
     }
 }

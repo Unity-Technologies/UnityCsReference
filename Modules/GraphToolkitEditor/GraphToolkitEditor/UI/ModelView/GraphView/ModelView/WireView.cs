@@ -45,6 +45,7 @@ namespace Unity.GraphToolkit.Editor
         WireModel m_LastUsedWireModel;
 
         bool m_VisuallySelected;
+        bool m_IsOverrideAnimationPlaying;
 
         protected WireManipulator WireManipulator
         {
@@ -319,29 +320,36 @@ namespace Unity.GraphToolkit.Editor
                 if (WireModel is { IsAnimating: true })
                     GraphView.Animator.Play(this, WireModel.AnimationSpeed);
                 else
-                    GraphView.Animator.Stop(this);
+                    TryStopAnimation();
             }
 
             UpdateWireControlColors();
             m_WireControl.MarkDirtyRepaint();
         }
 
+        void TryStopAnimation()
+        {
+            if (WireModel is not { IsAnimating: true } && !m_IsOverrideAnimationPlaying)
+                GraphView.Animator.Stop(this);
+        }
+
         public void SetAppearance(WireVisualData appearance)
         {
+            m_IsOverrideAnimationPlaying = appearance?.IsAnimating ?? false;
+
+            if (m_IsOverrideAnimationPlaying)
+                GraphView.Animator.Play(this, appearance.AnimationSpeed);
+            else
+                TryStopAnimation();
+
             if (appearance == null)
             {
-                GraphView.Animator.Stop(this);
                 m_WireControl.ResetIsDashed();
                 m_WireControl.ResetLineWidth();
                 m_WireControl.OpacityMultiplier = 1f;
             }
             else
             {
-                if (appearance.IsAnimating)
-                    GraphView.Animator.Play(this, appearance.AnimationSpeed);
-                else
-                    GraphView.Animator.Stop(this);
-
                 if (appearance.IsDashed.HasValue)
                     m_WireControl.IsDashed = appearance.IsDashed.Value;
                 else

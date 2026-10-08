@@ -177,7 +177,8 @@ unsafe struct UnmanagedDataStore : IDisposable
         // So we prioritize not growing the chunk-base storage too fast,
         // especially considering it never shrinks automatically at the moment.
         const float growRate = 1.5f;
-        ResizeCapacity((int)(m_Data->Capacity * growRate));
+        // Floor of one slot: (int)(1 * 1.5f) is 1, and a resize that adds none leaves the end marker in place.
+        ResizeCapacity(Math.Max(m_Data->Capacity + 1, (int)(m_Data->Capacity * growRate)));
     }
 
     void ResizeCapacity(int capacity)
@@ -190,16 +191,16 @@ unsafe struct UnmanagedDataStore : IDisposable
         for (var i=0; i<m_Data->ComponentCount; i++)
             m_Data->Components[i].ResizeCapacity(capacity);
 
-        // Start one element back to maintain the linked list.
-        var start = m_Data->Capacity > 0 ? m_Data->Capacity - 1 : 0;
+        // Start one element back to relink the slot that carried the end marker.
+        var oldCapacity = m_Data->Capacity;
+        var start = oldCapacity > 0 ? oldCapacity - 1 : 0;
 
+        // Create a linked list of free elements.
         for (var i = start; i < capacity; i++)
-        {
-            m_Data->Versions[i] = 1;
-
-            // Create a linked list of free elements.
             SetNextFreeIndex(i, i + 1);
-        }
+
+        for (var i = oldCapacity; i < capacity; i++)
+            m_Data->Versions[i] = 1;
 
         // The last element receives a special index indicating we are at the end of the array and should resize.
         SetNextFreeIndex(capacity - 1, -1);

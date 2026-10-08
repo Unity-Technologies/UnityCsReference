@@ -226,10 +226,7 @@ namespace Unity.Collections
         [GenerateTestsForBurstCompatibility]
         internal static MemoryLabel CreateLabel(FixedString32Bytes category, FixedString64Bytes name, Allocator allocator = Allocator.Persistent)
         {
-            return new MemoryLabel(
-                category.GetUnsafePtr(), category.Length,
-                name.GetUnsafePtr(), name.Length,
-                allocator);
+            return MemoryLabel.Create(category, name, allocator);
         }
     }
 }

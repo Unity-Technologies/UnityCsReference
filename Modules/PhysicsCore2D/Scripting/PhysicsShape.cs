@@ -364,8 +364,10 @@ namespace Unity.U2D.Physics
                 public readonly float totalNormalImpulse => m_TotalNormalImpulse;
 
                 /// <summary>
-                /// Relative normal velocity pre-solve. Used for hit events.
-                /// If the normal impulse is zero then there was no hit. Negative means shapes are approaching.
+                /// The speed the two shapes were moving towards or away from each other along the manifold normal at the start of the simulation step, in meters per second.
+                /// A negative value means the shapes were approaching.
+                /// This is always measured when the contact is bouncy (a bounciness above zero) or either shape has hit events enabled.
+                /// Otherwise it is usually zero but can hold a measured value, so only rely on it under those conditions.
                 /// </summary>
                 public readonly float normalVelocity => m_NormalVelocity;
 
@@ -393,7 +395,6 @@ namespace Unity.U2D.Physics
                 float m_Separation;
                 float m_NormalImpulse;
                 float m_TangentImpulse;
-                readonly float m_RestitutionVelocity; // We don't want to expose this as it's not that useful.
                 readonly float m_TotalNormalImpulse;
                 readonly float m_NormalVelocity;
                 readonly float m_BaseSeparation; // We don't want to expose this as it's not that useful.
@@ -2186,12 +2187,13 @@ namespace Unity.U2D.Physics
         public readonly bool isOwned => PhysicsShape_IsOwned(this);
 
         /// <summary>
-        /// The group this shape belongs to.
-        /// A shape starts with no group and can be assigned a group once only; the group then cannot be changed for the lifetime of the shape.
+        /// The group this shape belongs to, used to treat a set of shapes on one body as a single object when reporting contact and trigger begin and end events.
         /// Grouping marks the shape's contact and trigger begin/end events with whether they are the first or last event between the two groups involved.
+        /// A shape starts with no group and can be assigned a group once only; the group then cannot be changed for the lifetime of the shape.
+        /// Every shape given the same group must belong to the same body, otherwise the first and last marking of their events is unreliable.
         /// </summary>
         /// <remarks>
-        /// See <see cref="PhysicsWorld.CreateGroup"/> and <see cref="PhysicsWorld.eventGroupingAllowed"/>.
+        /// See <see cref="PhysicsWorld.PhysicsGroup"/> for why grouping exists and its limitations, <see cref="PhysicsWorld.CreateGroup"/> and <see cref="PhysicsWorld.eventGroupingAllowed"/>.
         /// Attempting to assign an empty group, or assign to a shape that already has a group, produces a warning and leaves the shape unchanged.
         /// </remarks>
         public readonly PhysicsWorld.PhysicsGroup physicsGroup { get => PhysicsShape_GetPhysicsGroup(this); set => PhysicsShape_SetPhysicsGroup(this, value); }
@@ -2255,14 +2257,16 @@ namespace Unity.U2D.Physics
         /// </summary>
         /// <param name="shapes">The shapes to set the user data on.</param>
         /// <param name="userDatas">The user data to set, one entry per shape.</param>
-        public static void SetUserData(ReadOnlySpan<PhysicsShape> shapes, ReadOnlySpan<PhysicsUserData> userDatas) => PhysicsShape_SetUserDataSpan(shapes, userDatas);
+        /// <returns>The number of shapes that were ignored (not set because the shape was invalid). A single warning is logged when any are ignored. If the spans are different lengths, nothing is set and every shape is counted as ignored.</returns>
+        public static int SetUserData(ReadOnlySpan<PhysicsShape> shapes, ReadOnlySpan<PhysicsUserData> userDatas) => PhysicsShape_SetUserDataSpan(shapes, userDatas);
 
         /// <summary>
         /// Set the same <see cref="PhysicsUserData"/> on a batch of shapes that can be used for any purpose.
         /// </summary>
         /// <param name="shapes">The shapes to set the user data on.</param>
         /// <param name="physicsUserData">The user data to set on every shape.</param>
-        public static void SetUserData(ReadOnlySpan<PhysicsShape> shapes, PhysicsUserData physicsUserData) => PhysicsShape_SetUserDataSpanAll(shapes, physicsUserData);
+        /// <returns>The number of shapes that were ignored (not set because the shape was invalid). A single warning is logged when any are ignored.</returns>
+        public static int SetUserData(ReadOnlySpan<PhysicsShape> shapes, PhysicsUserData physicsUserData) => PhysicsShape_SetUserDataSpanAll(shapes, physicsUserData);
 
         /// <summary>
         /// Set the <see cref="ContactFilter"/> on a batch of shapes.
@@ -2270,14 +2274,16 @@ namespace Unity.U2D.Physics
         /// </summary>
         /// <param name="shapes">The shapes to set the contact filter on.</param>
         /// <param name="filters">The contact filters to set, one entry per shape.</param>
-        public static void SetContactFilter(ReadOnlySpan<PhysicsShape> shapes, ReadOnlySpan<ContactFilter> filters) => PhysicsShape_SetContactFilterSpan(shapes, filters);
+        /// <returns>The number of shapes that were ignored (not set because the shape was invalid). A single warning is logged when any are ignored. If the spans are different lengths, nothing is set and every shape is counted as ignored.</returns>
+        public static int SetContactFilter(ReadOnlySpan<PhysicsShape> shapes, ReadOnlySpan<ContactFilter> filters) => PhysicsShape_SetContactFilterSpan(shapes, filters);
 
         /// <summary>
         /// Set the same <see cref="ContactFilter"/> on a batch of shapes.
         /// </summary>
         /// <param name="shapes">The shapes to set the contact filter on.</param>
         /// <param name="contactFilter">The contact filter to set on every shape.</param>
-        public static void SetContactFilter(ReadOnlySpan<PhysicsShape> shapes, ContactFilter contactFilter) => PhysicsShape_SetContactFilterSpanAll(shapes, contactFilter);
+        /// <returns>The number of shapes that were ignored (not set because the shape was invalid). A single warning is logged when any are ignored.</returns>
+        public static int SetContactFilter(ReadOnlySpan<PhysicsShape> shapes, ContactFilter contactFilter) => PhysicsShape_SetContactFilterSpanAll(shapes, contactFilter);
 
         /// <summary>
         /// Set the <see cref="SurfaceMaterial"/> on a batch of shapes.
@@ -2285,14 +2291,16 @@ namespace Unity.U2D.Physics
         /// </summary>
         /// <param name="shapes">The shapes to set the surface material on.</param>
         /// <param name="surfaceMaterials">The surface materials to set, one entry per shape.</param>
-        public static void SetSurfaceMaterial(ReadOnlySpan<PhysicsShape> shapes, ReadOnlySpan<SurfaceMaterial> surfaceMaterials) => PhysicsShape_SetSurfaceMaterialSpan(shapes, surfaceMaterials);
+        /// <returns>The number of shapes that were ignored (not set because the shape was invalid). A single warning is logged when any are ignored. If the spans are different lengths, nothing is set and every shape is counted as ignored.</returns>
+        public static int SetSurfaceMaterial(ReadOnlySpan<PhysicsShape> shapes, ReadOnlySpan<SurfaceMaterial> surfaceMaterials) => PhysicsShape_SetSurfaceMaterialSpan(shapes, surfaceMaterials);
 
         /// <summary>
         /// Set the same <see cref="SurfaceMaterial"/> on a batch of shapes.
         /// </summary>
         /// <param name="shapes">The shapes to set the surface material on.</param>
         /// <param name="surfaceMaterial">The surface material to set on every shape.</param>
-        public static void SetSurfaceMaterial(ReadOnlySpan<PhysicsShape> shapes, SurfaceMaterial surfaceMaterial) => PhysicsShape_SetSurfaceMaterialSpanAll(shapes, surfaceMaterial);
+        /// <returns>The number of shapes that were ignored (not set because the shape was invalid). A single warning is logged when any are ignored.</returns>
+        public static int SetSurfaceMaterial(ReadOnlySpan<PhysicsShape> shapes, SurfaceMaterial surfaceMaterial) => PhysicsShape_SetSurfaceMaterialSpanAll(shapes, surfaceMaterial);
 
         /// <summary>
         /// Create a shape proxy from the shape.
@@ -2407,7 +2415,8 @@ namespace Unity.U2D.Physics
         /// </remarks>
         /// <param name="shapes">The shapes to set the selected drawing state on.</param>
         /// <param name="selected">The selected drawing state to set on every shape.</param>
-        public static void SetSelectedDrawing(ReadOnlySpan<PhysicsShape> shapes, bool selected) => PhysicsShape_SetSelectedDrawing(shapes, selected);
+        /// <returns>The number of shapes that were ignored (not set because the shape was invalid). A single warning is logged when any are ignored.</returns>
+        public static int SetSelectedDrawing(ReadOnlySpan<PhysicsShape> shapes, bool selected) => PhysicsShape_SetSelectedDrawing(shapes, selected);
 
         /// <summary>
         /// Draw this shape's current state once, as custom drawing.

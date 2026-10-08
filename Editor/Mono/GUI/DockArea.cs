@@ -64,6 +64,9 @@ namespace UnityEditor
         // Which pane window would we drop the currently dragged pane over
         [NoAutoStaticsCleanup] // transient drag-state index; value type, safe to persist across code reload
         static int s_PlaceholderPos;
+        // Which dock area would we drop the currently dragged pane over
+        [AutoStaticsCleanupOnCodeReload]
+        static DockArea s_PlaceholderDockArea;
         // Which pane is currently being dragged around
         [AutoStaticsCleanupOnCodeReload]
         static EditorWindow s_DragPane;
@@ -330,7 +333,15 @@ namespace UnityEditor
             var tabWidth = GetTabWidth(tabStyle, window);
             int mPos = GetTabAtMousePos(tabStyle, pos);
 
-            if (s_PlaceholderPos != mPos)
+            if (!ReferenceEquals(this, s_PlaceholderDockArea))
+            {
+                Repaint();
+                if (s_PlaceholderDockArea)
+                    s_PlaceholderDockArea.Repaint();
+                s_PlaceholderPos = mPos;
+                s_PlaceholderDockArea = this;
+            }
+            else if (s_PlaceholderPos != mPos)
             {
                 Repaint();
                 s_PlaceholderPos = mPos;

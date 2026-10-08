@@ -40,6 +40,8 @@ namespace UnityEditor.UIElements
         [SerializeField] CanvasTheme m_DefaultRuntimeCanvasTheme;
         [SerializeField] CanvasTheme m_DefaultEditorCanvasTheme;
         [SerializeField] bool m_ConsistentAttributeOrderingWhenExporting;
+        [SerializeField] bool m_EnableLegacyThemePriority;
+        [SerializeField] int m_ThemePriorityNoticeVersion;
 
         /// <summary>
         /// Invoked when any theme setting changes (runtime/editor theme or canvas theme).
@@ -109,6 +111,42 @@ namespace UnityEditor.UIElements
                     instance.Save();
                     onThemeChanged?.Invoke();
                 }
+            }
+        }
+
+        /// Restores the pre-UUM-108227 tiering where user themes rank with Unity's builtin styles
+        /// and ties resolve by specificity. Consumed at import time through a custom dependency,
+        /// so toggling reimports every theme style sheet (version controlled).
+        internal static bool enableLegacyThemePriority
+        {
+            get => instance.m_EnableLegacyThemePriority;
+            set
+            {
+                if (instance.m_EnableLegacyThemePriority == value)
+                    return;
+
+                instance.m_EnableLegacyThemePriority = value;
+                instance.Save();
+                StyleSheets.ThemeRegistry.legacyThemePriority = value;
+                StyleSheets.ThemeRegistry.RegisterPriorityModeDependency();
+                // Synchronous so the resulting theme reimports run in this process: a warm import
+                // worker only picks up the new value at its next domain load.
+                AssetDatabase.Refresh(ImportAssetOptions.ForceSynchronousImport);
+            }
+        }
+
+        /// Highest ThemePriorityUpgradeNotice version already shown for this project
+        /// (version controlled, so a team is only notified once).
+        internal static int themePriorityNoticeVersion
+        {
+            get => instance.m_ThemePriorityNoticeVersion;
+            set
+            {
+                if (instance.m_ThemePriorityNoticeVersion == value)
+                    return;
+
+                instance.m_ThemePriorityNoticeVersion = value;
+                instance.Save();
             }
         }
 

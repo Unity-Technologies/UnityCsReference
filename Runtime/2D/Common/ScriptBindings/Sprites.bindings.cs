@@ -263,11 +263,19 @@ namespace UnityEngine
         public extern bool RemoveScriptableObjectAt(uint i);
         public extern bool SetScriptableObjectAt([NotNull]ScriptableObject obj, uint i);
 
-        public int GetPhysicsOutlinePointCount(int outlineIndex)
+        void ValidatePhysicsOutlineIndex(int outlineIndex)
         {
             int physicsOutlineCount = GetPhysicsOutlineCount();
+            if (physicsOutlineCount == 0)
+                throw new IndexOutOfRangeException("No outlines are available to be retrieved.");
+
             if (outlineIndex < 0 || outlineIndex >= physicsOutlineCount)
                 throw new IndexOutOfRangeException(String.Format("Index({0}) is out of bounds(0 - {1})", outlineIndex, physicsOutlineCount - 1));
+        }
+
+        public int GetPhysicsOutlinePointCount(int outlineIndex)
+        {
+            ValidatePhysicsOutlineIndex(outlineIndex);
 
             return Internal_GetPhysicsOutlinePointCount(outlineIndex);
         }
@@ -282,9 +290,7 @@ namespace UnityEngine
 
         public int GetPhysicsOutline(int outlineIndex, List<Vector2> physicsOutline)
         {
-            int physicsOutlineCount = GetPhysicsOutlineCount();
-            if (outlineIndex < 0 || outlineIndex >= physicsOutlineCount)
-                throw new IndexOutOfRangeException(String.Format("Index({0}) is out of bounds(0 - {1})", outlineIndex, physicsOutlineCount - 1));
+            ValidatePhysicsOutlineIndex(outlineIndex);
 
             GetPhysicsOutlineImpl(this, outlineIndex, physicsOutline);
             return physicsOutline.Count;
@@ -292,9 +298,7 @@ namespace UnityEngine
 
         public ReadOnlySpan<Vector2> GetPhysicsOutline(int outlineIndex)
         {
-            int physicsOutlineCount = GetPhysicsOutlineCount();
-            if (outlineIndex < 0 || outlineIndex >= physicsOutlineCount)
-                throw new IndexOutOfRangeException(String.Format("Index({0}) is out of bounds(0 - {1})", outlineIndex, physicsOutlineCount - 1));
+            ValidatePhysicsOutlineIndex(outlineIndex);
 
             return GetPhysicsOutlineSpanImpl(this, outlineIndex);
         }

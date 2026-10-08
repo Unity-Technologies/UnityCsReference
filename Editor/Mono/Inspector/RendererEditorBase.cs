@@ -713,7 +713,8 @@ namespace UnityEditor
                         EditorGUILayout.PropertyField(m_SkinnedMotionVectors, Styles.skinnedMotionVectors, true);
                 }
 
-                EditorGUILayout.PropertyField(m_DynamicOccludee, Styles.dynamicOcclusion);
+                if (EditorSettings.enableLegacyUmbraCulling)
+                    EditorGUILayout.PropertyField(m_DynamicOccludee, Styles.dynamicOcclusion);
 
 
                 if (showSortingLayerFields)

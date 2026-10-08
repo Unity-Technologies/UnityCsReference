@@ -574,7 +574,7 @@ namespace UnityEngine.UIElements.StyleSheets
                     break;
                 }
 
-                if (vt == StyleValueType.Dimension && TryReadAngle(value, out var dirAngle))
+                if ((vt == StyleValueType.Dimension || vt == StyleValueType.Float) && TryReadAngle(value, out var dirAngle))
                 {
                     angle = dirAngle;
                     cursor++;
@@ -885,10 +885,12 @@ namespace UnityEngine.UIElements.StyleSheets
         static bool TryReadAngle(StylePropertyValue value, out float radians)
         {
             radians = 0f;
-            // CSS treats a bare `0` (a plain float, no unit) as a valid <angle>.
-            if (value.handle.valueType == StyleValueType.Float
-                && Mathf.Approximately(value.sheet.ReadFloat(value.handle), 0f))
+            // A unitless number (e.g. from `--angle: 45`) reads as degrees, matching `rotate`.
+            if (value.handle.valueType == StyleValueType.Float)
+            {
+                radians = value.sheet.ReadFloat(value.handle) * Mathf.Deg2Rad;
                 return true;
+            }
             if (value.handle.valueType != StyleValueType.Dimension) return false;
             var dim = value.sheet.ReadDimension(value.handle);
             switch (dim.unit)
@@ -979,15 +981,16 @@ namespace UnityEngine.UIElements.StyleSheets
             using var list = new UnmanagedTempList<EasingFunction>(4);
             do
             {
-                var value = m_Values[m_CurrentValueIndex + index];
-                var handle = value.handle;
-                if (handle.valueType == StyleValueType.Enum)
+                if (GetValueType(index) != StyleValueType.Enum
+                    || !StylePropertyUtil.TryGetEnumIntValue(StyleEnumType.EasingMode, ReadAsString(index), out var mode))
                 {
-                    var enumString = value.sheet.ReadEnum(handle);
-                    StylePropertyUtil.TryGetEnumIntValue(StyleEnumType.EasingMode, enumString, out var intValue);
-                    list.Add(new EasingFunction((EasingMode)intValue));
-                    ++index;
+                    // Malformed values survive import with only a warning.
+                    result.CopyFrom(InitialStyle.transitionTimingFunction);
+                    return;
                 }
+
+                list.Add(new EasingFunction((EasingMode)mode));
+                ++index;
 
                 if (index < valueCount)
                 {
@@ -1170,12 +1173,25 @@ namespace UnityEngine.UIElements.StyleSheets
         public void ReadListUnmanagedFilterFunction(ref UnmanagedRefCountedList<UnmanagedFilterFunction> result, int index)
         {
             using var list = new UnmanagedTempList<UnmanagedFilterFunction>(4);
+            bool malformed = false;
             do
             {
                 var value = m_Values[m_CurrentValueIndex + index];
 
                 if (value.handle.valueType == StyleValueType.Keyword)
                 {
+                    break;
+                }
+
+                // Valid filter values are serialized as [Function][Float arg count][args...]
+                // sequences, but malformed values survive import with only a validation warning
+                // (e.g. "filter: 5px", UUM-153734). Apply a malformed declaration as an empty
+                // list instead of reading garbage handles.
+                if (value.handle.valueType != StyleValueType.Function ||
+                    index + 1 >= valueCount ||
+                    GetValueType(index + 1) != StyleValueType.Float)
+                {
+                    malformed = true;
                     break;
                 }
 
@@ -1186,19 +1202,44 @@ namespace UnityEngine.UIElements.StyleSheets
                 FilterFunctionDefinition filterDef = null;
                 if (filterType == StyleValueFunction.CustomFilter && argCount > 0)
                 {
+                    if (index >= valueCount)
+                    {
+                        malformed = true;
+                        break;
+                    }
                     isCustom = true;
                     filterDef = ReadAsset(index++) as FilterFunctionDefinition;
                     --argCount;
                 }
 
+                if (argCount < 0 || index + argCount > valueCount)
+                {
+                    malformed = true;
+                    break;
+                }
+
                 var args = new FixedBuffer4<FilterParameter>();
+                int writtenArgs = 0;
                 for (int i = 0; i < argCount; i++)
                 {
                     var valueType = GetValueType(index);
+                    if (valueType == StyleValueType.CommaSeparator)
+                    {
+                        // Not technically a valid syntax, but we'll allow it
+                        ++index;
+                        continue;
+                    }
+
+                    if (writtenArgs == FixedBuffer4<FilterParameter>.Length)
+                    {
+                        malformed = true;
+                        break;
+                    }
+
                     if (valueType == StyleValueType.Color || valueType == StyleValueType.Enum)
                     {
                         var color = ReadColor(index++);
-                        args[i] = new FilterParameter()
+                        args[writtenArgs++] = new FilterParameter()
                         {
                             type = FilterParameterType.Color,
                             colorValue = color
@@ -1208,31 +1249,31 @@ namespace UnityEngine.UIElements.StyleSheets
                     {
                         var dimValue = GetValue(index++);
                         var dim = dimValue.sheet.ReadDimension(dimValue.handle);
-                        args[i] = new FilterParameter()
+                        args[writtenArgs++] = new FilterParameter()
                         {
                             type = FilterParameterType.Float,
                             floatValue = StyleProperty.ConvertDimensionToFilterFloat(dim)
                         };
                     }
-                    else if (valueType == StyleValueType.CommaSeparator)
-                    {
-                        // Not technically a valid syntax, but we'll allow it
-                        continue;
-                    }
                     else
                     {
                         Debug.LogError($"Unexpected value type {valueType} in filter function argument");
+                        malformed = true;
+                        break;
                     }
                 }
 
+                if (malformed)
+                    break;
+
                 if (isCustom)
-                    list.Add(new FilterFunction(filterDef, args, argCount));
+                    list.Add(new FilterFunction(filterDef, args, writtenArgs));
                 else
-                    list.Add(new FilterFunction(StyleProperty.ToFilterFunctionType(filterType), args, argCount));
+                    list.Add(new FilterFunction(StyleProperty.ToFilterFunctionType(filterType), args, writtenArgs));
             }
             while (index < valueCount);
 
-            result.CopyFrom(list.Span);
+            result.CopyFrom(malformed ? default : list.Span);
         }
 
         public void ReadListStylePropertyId(ref UnmanagedRefCountedList<StylePropertyId> result, int index)

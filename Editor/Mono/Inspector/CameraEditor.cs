@@ -237,6 +237,7 @@ namespace UnityEditor
             public SerializedProperty depth { get; private set; }
             public SerializedProperty cullingMask { get; private set; }
             public SerializedProperty renderingPath { get; private set; }
+            [Obsolete("CameraEditor.Settings.occlusionCulling is deprecated and will be removed in a future release. Consider migrating to GPU Occlusion Culling where your target platform supports it. #from(6000.7)", false)]
             public SerializedProperty occlusionCulling { get; private set; }
             public SerializedProperty targetTexture { get; private set; }
             public SerializedProperty HDR { get; private set; }
@@ -279,7 +280,9 @@ namespace UnityEditor
                 depth = m_SerializedObject.FindProperty("m_Depth");
                 cullingMask = m_SerializedObject.FindProperty("m_CullingMask");
                 renderingPath = m_SerializedObject.FindProperty("m_RenderingPath");
+                #pragma warning disable CS0618
                 occlusionCulling = m_SerializedObject.FindProperty("m_OcclusionCulling");
+                #pragma warning restore CS0618
                 targetTexture = m_SerializedObject.FindProperty("m_TargetTexture");
                 HDR = m_SerializedObject.FindProperty("m_HDR");
                 allowMSAA = m_SerializedObject.FindProperty("m_AllowMSAA");
@@ -499,6 +502,7 @@ namespace UnityEditor
                     EditorGUILayout.HelpBox(Styles.deferredMSAAWarning.text, MessageType.Warning, true);
             }
 
+            [Obsolete("CameraEditor.Settings.DrawOcclusionCulling is deprecated and will be removed in a future release. Consider migrating to GPU Occlusion Culling where your target platform supports it. #from(6000.7)", false)]
             public void DrawOcclusionCulling()
             {
                 EditorGUILayout.PropertyField(occlusionCulling, Styles.allowOcclusionCulling);
@@ -832,7 +836,10 @@ namespace UnityEditor
                 EditorGUILayout.HelpBox(Styles.orthoDeferredWarning.text, MessageType.Warning, true);
 
             settings.DrawTargetTexture(wantsDeferredRendering);
-            settings.DrawOcclusionCulling();
+            #pragma warning disable CS0618
+            if (EditorSettings.enableLegacyUmbraCulling)
+                settings.DrawOcclusionCulling();
+            #pragma warning restore CS0618
             settings.DrawHDR();
             settings.DrawMSAA();
             settings.DrawDynamicResolution();
@@ -999,7 +1006,9 @@ namespace UnityEditor
             var deferredMSAACheck = UIElementsEditorUtility.CreateDynamicVisibilityCallback(deferredMSAAWarning, () => showDeferredMSAAWarning);
 
             ExtendedQuery<PropertyField>(editor, Styles.k_TargetTextureElementName, settings.targetTexture);
-            ExtendedQuery<PropertyField>(editor, Styles.k_OcclusionCullingElementName, Styles.allowOcclusionCulling);
+            var occlusionCulling = ExtendedQuery<PropertyField>(editor, Styles.k_OcclusionCullingElementName, Styles.allowOcclusionCulling);
+            if (!EditorSettings.enableLegacyUmbraCulling)
+                occlusionCulling.style.display = DisplayStyle.None;
 
             var hdr = ExtendedQuery<DropdownField>(editor, Styles.k_HdrElementName, Styles.allowHDR);
             var msaa = ExtendedQuery<DropdownField>(editor, Styles.k_MsaaElementName, Styles.allowMSAA);

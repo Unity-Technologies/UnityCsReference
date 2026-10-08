@@ -225,17 +225,15 @@ namespace Unity.UI.Builder
             if (!IsRenameTextValid() && (selection.isEmpty || selection.selectionCount > 1 || selection.GetFirstSelectedElement() != documentElement))
             {
                 // Selection changed while renaming and renaming is invalid. Cancel renaming.
-                HideRenameTextField();
+                CancelRenaming();
                 if (documentElement.IsSelector())
                 {
                     Builder.ShowWarning(string.Format(BuilderConstants.StyleSelectorValidationSpacialCharacters, "Name"));
-                    selection.NotifyOfStylingChange();
                 }
                 else
                 {
                     Builder.ShowWarning(string.Format(BuilderConstants.AttributeValidationSpacialCharacters, "Name"));
                 }
-                selection.NotifyOfHierarchyChange(null, null, BuilderHierarchyChangeType.ElementName);
                 return;
             }
 
@@ -249,25 +247,25 @@ namespace Unity.UI.Builder
                     return;
                 }
 
-                if (!string.IsNullOrEmpty(m_RenameTextField.text))
+                if (string.IsNullOrEmpty(value))
                 {
-                    if (!BuilderNameUtilities.styleSelectorRegex.IsMatch(value))
-                    {
-                        Builder.ShowWarning(string.Format(BuilderConstants.StyleSelectorValidationSpacialCharacters, "Name"));
-                        ScheduleRenameRetry(value);
-                        return;
-                    }
+                    CancelRenaming();
+                    return;
+                }
 
-                    var styleSheet = documentElement.GetClosestStyleSheet();
-                    Undo.RegisterCompleteObjectUndo(
-                        styleSheet, BuilderConstants.RenameSelectorUndoMessage);
+                if (!BuilderNameUtilities.styleSelectorRegex.IsMatch(value))
+                {
+                    Builder.ShowWarning(string.Format(BuilderConstants.StyleSelectorValidationSpacialCharacters, "Name"));
+                    ScheduleRenameRetry(value);
+                    return;
+                }
 
-                    if (!BuilderSharedStyles.SetSelectorString(documentElement, styleSheet, value, out var error))
-                    {
-                        Builder.ShowWarning(error);
-                        ScheduleRenameRetry(value);
-                        return;
-                    }
+                var styleSheet = documentElement.GetClosestStyleSheet();
+                if (!BuilderSharedStyles.SetSelectorString(documentElement, styleSheet, value, out var error))
+                {
+                    Builder.ShowWarning(error);
+                    ScheduleRenameRetry(value);
+                    return;
                 }
 
                 selection.NotifyOfStylingChange();

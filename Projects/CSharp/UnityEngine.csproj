@@ -1594,6 +1594,9 @@
     <Compile Include="..\..\Modules\LocalizationRuntime\AssemblyInfo.cs">
       <Link>Modules\LocalizationRuntime\AssemblyInfo.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\LocalizationRuntime\Bindings\SystemLocale.bindings.cs">
+      <Link>Modules\LocalizationRuntime\Bindings\SystemLocale.bindings.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\LocalizationRuntime\Managed\AwaitableUtility.cs">
       <Link>Modules\LocalizationRuntime\Managed\AwaitableUtility.cs</Link>
     </Compile>
@@ -5485,6 +5488,9 @@
     <Compile Include="..\..\Modules\UIElements\Core\StyleSheets\StyleSheetExtensions.cs">
       <Link>Modules\UIElements\Core\StyleSheets\StyleSheetExtensions.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\StyleSheets\StyleSheetPriority.cs">
+      <Link>Modules\UIElements\Core\StyleSheets\StyleSheetPriority.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\UIElements\Core\StyleSheets\StyleSheetUtility.cs">
       <Link>Modules\UIElements\Core\StyleSheets\StyleSheetUtility.cs</Link>
     </Compile>
@@ -8061,7 +8067,7 @@
     </PropertyGroup>
   </Target>
   <ItemGroup>
-    <Analyzer Include="/tmp/uitoolkit_gen_i4j7lbsg/Unity.UIToolkit.SourceGenerator.dll" />
+    <Analyzer Include="/tmp/uitoolkit_gen_q59wzsjg/Unity.UIToolkit.SourceGenerator.dll" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="10.0.8" />

@@ -16,17 +16,66 @@ namespace UnityEngine.UIElements.StyleSheets
     // (sorting + ProcessMatchedRules); SelectorMatchRecord is the form used everywhere else.
     internal readonly struct StyleSelectorMatch
     {
+        // Tier rank sits above Specificity's three byte scores, so tier and specificity compare
+        // as one int. Packed values stay below 2^26, keeping the raw subtractions overflow-free.
+        internal const int tierRankShift = 24;
+
         public readonly StyleSheet sheet;
         public readonly int styleSheetIndexInStack;
         public readonly int importedStyleSheetIndex;
         public readonly StyleComplexSelector complexSelector;
 
-        public StyleSelectorMatch(StyleSheet sheet, int styleSheetIndexInStack, int importedStyleSheetIndex, StyleComplexSelector complexSelector)
+        // (tier rank << tierRankShift) | specificity — resolved per use in the constructor
+        public readonly int sortKey;
+
+        // Effective tier of this match, recovered from the packed sort key.
+        public StyleSheetPriority tier => GetTierPriority(sortKey >> tierRankShift);
+
+        public StyleSelectorMatch(StyleSheet sheet, int styleSheetIndexInStack, int importedStyleSheetIndex, StyleComplexSelector complexSelector, int entryTierRank)
         {
             this.sheet = sheet;
             this.styleSheetIndexInStack = styleSheetIndexInStack;
             this.importedStyleSheetIndex = importedStyleSheetIndex;
             this.complexSelector = complexSelector;
+
+            // The tier is a property of the use, not of the asset: the same sheet can rank
+            // differently in different stacks, so the rank comes from the stack entry that pulled
+            // the rule in (entryTierRank) rather than from global sheet state. The one sticky tier
+            // is Builtin — it holds the builtin theme copy embedded inside a user theme at Builtin
+            // rank while the surrounding theme's own rules rank UserTheme. Everything else,
+            // including a theme imported by a regular sheet (an unsupported shape the importer
+            // warns about), ranks as ordinary imported content of its entry.
+            int tierRank = sheet.priority == StyleSheetPriority.Builtin
+                ? GetTierRank(StyleSheetPriority.Builtin)
+                : entryTierRank;
+            sortKey = (tierRank << tierRankShift) | (int)complexSelector.specificity;
+        }
+
+        internal static int GetTierRank(StyleSheetPriority priority)
+        {
+            // Default (unset) ranks highest: regular sheets override themes, themes override builtin.
+            // No discard arm: adding a StyleSheetPriority value must fail compilation here (CS8509)
+            // so the new tier gets an explicit rank. CS8524 (a cast like (StyleSheetPriority)3) is
+            // irrelevant for this internal enum and would force the discard arm back.
+#pragma warning disable CS8524
+            return priority switch
+            {
+                StyleSheetPriority.Builtin => 0,
+                StyleSheetPriority.UserTheme => 1,
+                StyleSheetPriority.Default => 2,
+            };
+#pragma warning restore CS8524
+        }
+
+        internal static StyleSheetPriority GetTierPriority(int tierRank)
+        {
+            return tierRank switch
+            {
+                0 => StyleSheetPriority.Builtin,
+                1 => StyleSheetPriority.UserTheme,
+                2 => StyleSheetPriority.Default,
+                _ => throw new ArgumentOutOfRangeException(nameof(tierRank)),
+            };
         }
 
         // Cached comparison delegate. This is the only allocation-free way to sort a
@@ -43,26 +92,11 @@ namespace UnityEngine.UIElements.StyleSheets
         [Il2CppSetOption(Option.NullChecks, false)]
         static int Compare(in StyleSelectorMatch a, in StyleSelectorMatch b)
         {
-            // Cache the chased fields once so we don't re-deref the `in` parameter on every step,
-            // and don't call into the StyleSheet property getter twice on the default-sheet branch.
-            var sheetA = a.sheet;
-            var sheetB = b.sheet;
+            // Use direct int subtraction rather than int.CompareTo: all operands are non-negative
+            // and below 2^26 (packed sort key) or plain array indices — no diff can overflow.
 
-            // First compare absolute priority (Unity style sheets are always lower priority)
-            bool aDefault = sheetA.isDefaultStyleSheet;
-            bool bDefault = sheetB.isDefaultStyleSheet;
-            if (aDefault != bDefault)
-                return aDefault ? -1 : 1;
-
-            var csA = a.complexSelector;
-            var csB = b.complexSelector;
-
-            // Use direct int subtraction rather than int.CompareTo / Specificity.CompareTo: Specificity packs
-            // three byte-sized scores into a 24-bit non-negative int, and the index fields below are non-negative
-            // array indices — no diff can overflow. This skips the per-call IComparable<int>.CompareTo branching.
-
-            // Then use selector specificity according to standards
-            int res = (int)csA.specificity - (int)csB.specificity;
+            // Tier first, then selector specificity — one comparison, thanks to the packed key
+            int res = a.sortKey - b.sortKey;
             if (res != 0) return res;
 
             // If they are same, use the order into which stylesheets were added to the element or its parents (later wins)
@@ -79,7 +113,7 @@ namespace UnityEngine.UIElements.StyleSheets
             if (res != 0) return res;
 
             // All else being equal, use the order in the style sheet itself
-            return csA.orderInStyleSheet - csB.orderInStyleSheet;
+            return a.complexSelector.orderInStyleSheet - b.complexSelector.orderInStyleSheet;
         }
     }
 
@@ -114,7 +148,8 @@ namespace UnityEngine.UIElements.StyleSheets
             List<StyleSelectorMatch> matchedSelectors,
             StyleMatchingContext context,
             int currentStyleSheetIndexInStack,
-            bool testRootRange)
+            bool testRootRange,
+            int entryTierRank)
         {
             var core = cacheEntry.m_Core;
             if (core == null || core->allDescriptorsCount == 0)
@@ -165,7 +200,8 @@ namespace UnityEngine.UIElements.StyleSheets
                     complexSelector.rule.styleSheet,
                     currentStyleSheetIndexInStack,
                     descriptor.importedStyleSheetIndex,
-                    complexSelector
+                    complexSelector,
+                    entryTierRank
                 ));
             }
         }
@@ -231,7 +267,8 @@ namespace UnityEngine.UIElements.StyleSheets
                     else
                         element.pseudoStates &= ~PseudoStates.Root;
 
-                    MatchSheetNative(in accelerationCacheEntry, matchedSelectors, context, i, toggleRoot);
+                    MatchSheetNative(in accelerationCacheEntry, matchedSelectors, context, i, toggleRoot,
+                        StyleSelectorMatch.GetTierRank(styleSheet.priority));
 
                     profiler.EndMatchingStyleSheet(styleSheet);
                 }

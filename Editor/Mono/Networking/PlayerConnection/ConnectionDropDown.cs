@@ -769,7 +769,7 @@ namespace UnityEditor.Networking.PlayerConnection
             rect.y += ConnectionDropDownStyles.troubleShootBtnPadding / 2f;
             if (EditorGUI.Button(rect, Content.TroubleShoot, ConnectionDropDownStyles.sConnectionTrouble))
             {
-                var help = Help.FindHelpNamed("profiler-profiling-applications");
+                var help = Help.FindHelpNamed("profiling-target-device");
                 Help.BrowseURL(help);
             }
 

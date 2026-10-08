@@ -343,6 +343,9 @@ namespace Unity.ProjectAuditor.Editor
             // Unsubscribe before auditing in case an exception is thrown.
             EditorApplication.update -= DelayedPostBuildAudit;
 
+            if (!ProjectAuditorRulesPackage.IsInstalled)
+                return;
+
             var report = Audit();
 
             var numIssues = report.NumTotalIssues;

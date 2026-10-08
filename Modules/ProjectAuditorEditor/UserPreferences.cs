@@ -23,7 +23,6 @@ namespace Unity.ProjectAuditor.Editor
         ProjectSettings = 1 << 1,
         Assets = 1 << 2,
         Shaders = 1 << 3,
-        Build = 1 << 4,
         GameObjects = 1 << 5,
 
         // this is just helper enum to display All instead of Every
@@ -51,7 +50,7 @@ namespace Unity.ProjectAuditor.Editor
             public static readonly GUIContent Report = L10n.TextContent("Report", null, null, null);
             public static readonly GUIContent PrettifyJSONOutput = L10n.TextContent("Prettify saved .projectauditor files", null, null, null);
             public static readonly GUIContent UseBuildSettings = L10n.TextContent("Use Build Settings", null, null, null);
-            public static readonly GUIContent SuppressedDiagnostics = L10n.TextContent("Suppressed Issues", "A comma- or semicolon-delimited list of issue IDs to exclude from analysis. Use the search button to add/browse IDs from the list of known issues.", null, null);
+            public static readonly GUIContent SuppressedDiagnostics = L10n.TextContent("Suppressed Issues", "A comma-, semicolon- or space-delimited list of issue IDs to exclude from analysis. Use the search button to add/browse IDs from the list of known issues.", null, null);
             public static readonly GUIContent Manage = L10n.TextContent("Manage", "Open in Search", null, null);
             public static readonly GUIContent ManageDisabled = L10n.TextContent("Manage", "Open the Project Auditor window to enable browsing.", null, null);
         }
@@ -63,7 +62,8 @@ namespace Unity.ProjectAuditor.Editor
         const string k_SuppressedDiagnosticsDefault = "";
 
         // Characters accepted as delimiters between issue IDs in the suppressed-issues list.
-        static readonly char[] k_SuppressedDiagnosticsSeparators = { ',', ';' };
+        // Same set the C# compiler accepts in its /nowarn list, so both suppression lists behave alike.
+        static readonly char[] k_SuppressedDiagnosticsSeparators = { ',', ';', ' ' };
 
         [AutoStaticsCleanupOnCodeReload]
         internal static string LoadSavePath = string.Empty;
@@ -328,15 +328,22 @@ namespace Unity.ProjectAuditor.Editor
         /// </summary>
         public static HashSet<string> BuildSuppressedDiagnosticsSet()
         {
-            var suppressed = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            return new HashSet<string>(ParseSuppressedDiagnostics(), StringComparer.OrdinalIgnoreCase);
+        }
+
+        // Every write to SuppressedDiagnostics must be re-joined from this list, or malformed input survives.
+        static List<string> ParseSuppressedDiagnostics()
+        {
+            var ids = new List<string>();
+            var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
             foreach (var token in ((string)SuppressedDiagnostics).Split(k_SuppressedDiagnosticsSeparators, StringSplitOptions.RemoveEmptyEntries))
             {
                 var id = token.Trim();
-                if (id.Length > 0)
-                    suppressed.Add(id);
+                if (id.Length > 0 && seen.Add(id))
+                    ids.Add(id);
             }
 
-            return suppressed;
+            return ids;
         }
 
         public static void WarnOnInvalidSuppressedDiagnostics(HashSet<string> suppressed)
@@ -402,9 +409,10 @@ namespace Unity.ProjectAuditor.Editor
             if (suppressedDiagnostics.Contains(id))
                 return false; // already suppressed
 
-            string current = SuppressedDiagnostics;
-            var separator = string.IsNullOrEmpty(current.Trim()) ? string.Empty : ", ";
-            SuppressedDiagnostics.Set($"{current.TrimEnd()}{separator}{id}");
+            var ids = ParseSuppressedDiagnostics();
+            ids.Add(id);
+
+            SuppressedDiagnostics.Set(string.Join(", ", ids));
             suppressedDiagnostics.Add(id);
             return true;
         }
@@ -415,13 +423,8 @@ namespace Unity.ProjectAuditor.Editor
             if (!suppressedDiagnostics.Contains(id))
                 return false; // not suppressed
 
-            var kept = new List<string>();
-            foreach (var token in ((string)SuppressedDiagnostics).Split(k_SuppressedDiagnosticsSeparators, StringSplitOptions.RemoveEmptyEntries))
-            {
-                var trimmed = token.Trim();
-                if (trimmed.Length > 0 && !string.Equals(trimmed, id, StringComparison.OrdinalIgnoreCase))
-                    kept.Add(trimmed);
-            }
+            var kept = ParseSuppressedDiagnostics();
+            kept.RemoveAll(existing => string.Equals(existing, id, StringComparison.OrdinalIgnoreCase));
 
             SuppressedDiagnostics.Set(string.Join(", ", kept));
             suppressedDiagnostics.Remove(id);

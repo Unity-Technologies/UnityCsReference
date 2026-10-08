@@ -69,7 +69,7 @@ class RestrictedApisValidator
 
             if (completed.IsCompletedSuccessfully)
             {
-                results.Add(new (state.AssemblyPath, (long) TimeSpan.FromTicks(Stopwatch.GetTimestamp() - state.StartTime).TotalMilliseconds , completed.Result));
+                results.Add(new (state.AssemblyPath, (Stopwatch.GetTimestamp() - state.StartTime) * 1000 / Stopwatch.Frequency, completed.Result));
             }
             else if (completed.IsFaulted)
             {

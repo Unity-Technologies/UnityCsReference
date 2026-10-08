@@ -1314,9 +1314,15 @@ namespace UnityEditor
             }
             k_CreateInspectorElements.End();
 
+            // Don't restore while an editor still points at a destroyed target, as happens for a moment when exiting
+            // Play mode. Building to the offset runs a layout pass, and the reused elements of those editors still hold
+            // IMGUI handlers that read the destroyed target (UUM-153587). The tracker rebuilds again once the targets are
+            // valid, and the offset is restored then. Nothing lays out in between, so the live offset is kept until then.
+            var restoreScroll = m_LastVerticalScrollValue > 0f && m_ScrollView != null && !HasEditorWithDestroyedTarget(editors);
+
             // When restoring scroll, build just enough editors for the saved offset to stay reachable, so it can be
             // re-applied below without the scroller clamping it to 0. The remaining editors keep building time-sliced.
-            if (m_LastVerticalScrollValue > 0f && editorsElement != null && m_ScrollView != null)
+            if (restoreScroll && editorsElement != null)
             {
                 m_EditorElementUpdater.CreateInspectorElementsToReachScrollOffset(m_ScrollView, editorsElement, m_LastVerticalScrollValue);
             }
@@ -1328,11 +1334,21 @@ namespace UnityEditor
             EndRebuildContentContainers();
 
             // Re-apply the preserved scroll offset now that the content height is final.
-            if (m_LastVerticalScrollValue > 0f && m_ScrollView != null)
+            if (restoreScroll)
                 m_ScrollView.verticalScroller.value = m_LastVerticalScrollValue;
 
             Repaint();
             RefreshTitle();
+        }
+
+        static bool HasEditorWithDestroyedTarget(Editor[] editors)
+        {
+            foreach (var editor in editors)
+            {
+                if (editor && editor.target == null)
+                    return true;
+            }
+            return false;
         }
 
         void ClearPreview()
@@ -2845,6 +2861,8 @@ namespace UnityEditor
 
                 if (currentEditor == null)
                 {
+                    currentElement.RemoveFromHierarchy();
+                    m_EditorElementUpdater.Remove(currentElement);
                     ++previousEditorsIndex;
                     continue;
                 }
@@ -2861,6 +2879,7 @@ namespace UnityEditor
                         currentElement.ReinitCulled(newEditorsIndex, editors);
                         if (!InspectorElement.disabledThrottling)
                             m_EditorElementUpdater.Add(currentElement);
+                        editorToElementMap[ed.target.GetEntityId()] = currentElement;
 
                         // We need to move forward as the current element is the culled one, so we're not really
                         // interested in it.
@@ -2872,7 +2891,27 @@ namespace UnityEditor
 
                 if (currentEditor && ed.target != currentEditor.target)
                 {
-                    return null;
+                    if (editorToElementMap.Count == 0)
+                        return null;
+
+                    // Keep the matched elements so their IMGUI control IDs stay stable
+                    var firstStaleChildIndex = editorsElement.IndexOf((VisualElement)currentElement);
+                    for (int i = editorsElement.childCount - 1; i >= firstStaleChildIndex; --i)
+                    {
+                        editorsElement.RemoveAt(i);
+                    }
+
+                    m_EditorElementUpdater.Clear();
+                    if (!InspectorElement.disabledThrottling)
+                    {
+                        foreach (var child in editorsElement.Children())
+                        {
+                            if (child is IEditorElement keptElement)
+                                m_EditorElementUpdater.Add(keptElement);
+                        }
+                    }
+
+                    return editorToElementMap;
                 }
 
                 editors[newEditorsIndex].propertyViewer = this;

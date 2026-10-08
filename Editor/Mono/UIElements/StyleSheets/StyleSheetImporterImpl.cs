@@ -1016,7 +1016,7 @@ namespace UnityEditor.UIElements.StyleSheets
         }
     }
 
-    [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
+    [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule", "UnityEditor.UIElementsModule")]
     internal class StyleSheetImporterImpl : StyleValueImporter
     {
         [NoAutoStaticsCleanup]
@@ -1126,6 +1126,32 @@ namespace UnityEditor.UIElements.StyleSheets
             m_Context?.DependsOnCustomDependency(UnityStyleSheet.k_SerializationLayoutDependencyKey);
         }
 
+        public static bool IsSelectorSupported(string selector, out string error)
+        {
+            var importer = new StyleSheetImporterImpl();
+            var scratch = ScriptableObject.CreateInstance<UnityStyleSheet>();
+            try
+            {
+                importer.Import(scratch, selector + " {}");
+            }
+            finally
+            {
+                Object.DestroyImmediate(scratch);
+            }
+
+            foreach (var importError in importer.m_Errors)
+            {
+                if (!importError.isWarning)
+                {
+                    error = importError.message;
+                    return false;
+                }
+            }
+
+            error = null;
+            return true;
+        }
+
         void AddUssParserError(TokenizerError error)
         {
             // Currntly ExCSS 4.3 has the same info in error.Message, we will try to add more detail:
@@ -1172,6 +1198,36 @@ namespace UnityEditor.UIElements.StyleSheets
                     var importRules = styleSheet.ImportRules.ToList();
 #pragma warning restore UAC2001
                     var importDirectivesCount = importRules.Count;
+
+                    // In CSS, @import must precede all style rules. USS accepts it anywhere, but the
+                    // position never affects priority, so a late @import likely signals a wrong
+                    // expectation. Compare line AND column so an import following a rule on the same
+                    // line is caught too.
+                    var firstStyleRuleLine = int.MaxValue;
+                    var firstStyleRuleColumn = int.MaxValue;
+                    foreach (var styleRule in styleSheet.StyleRules)
+                    {
+                        var rulePosition = styleRule.StylesheetText.Range.Start;
+                        if (rulePosition.Line < firstStyleRuleLine
+                            || (rulePosition.Line == firstStyleRuleLine && rulePosition.Column < firstStyleRuleColumn))
+                        {
+                            firstStyleRuleLine = rulePosition.Line;
+                            firstStyleRuleColumn = rulePosition.Column;
+                        }
+                    }
+
+                    for (int i = 0; i < importDirectivesCount; ++i)
+                    {
+                        var importText = importRules[i].StylesheetText;
+                        if (importText == null)
+                            continue;
+
+                        var importPosition = importText.Range.Start;
+                        if (importPosition.Line > firstStyleRuleLine
+                            || (importPosition.Line == firstStyleRuleLine && importPosition.Column > firstStyleRuleColumn))
+                            m_Errors.AddValidationWarning(glossary.importAfterStyleRule, importPosition.Line);
+                    }
+
                     asset.imports = new UnityStyleSheet.ImportStruct[importDirectivesCount];
                     for (int i = 0; i < importDirectivesCount; ++i)
                     {
@@ -1204,6 +1260,16 @@ namespace UnityEditor.UIElements.StyleSheets
                             else
                             {
                                 importedStyleSheet = DeclareDependencyAndLoad(projectRelativePath) as UnityStyleSheet;
+                            }
+
+                            // Unsupported shape: only themes import themes. Selector matching only
+                            // keeps the Builtin tier sticky (see StyleSelectorMatch), so a theme
+                            // nested under a regular sheet loses its priority and ranks as
+                            // ordinary imported content.
+                            if (asset is not ThemeStyleSheet && importedStyleSheet is ThemeStyleSheet)
+                            {
+                                m_Errors.AddValidationWarning(glossary.themeImportedByStyleSheet,
+                                    importRules[i].StylesheetText?.Range.Start.Line ?? m_CurrentLine);
                             }
 
                             if (!response.isLibraryAsset && !response.isBuiltinResource)

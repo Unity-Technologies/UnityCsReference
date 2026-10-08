@@ -7,6 +7,8 @@ using UnityEditor.IMGUI.Controls;
 using UnityEditorInternal;
 using UnityEngine;
 
+#pragma warning disable CS0618 // OcclusionPortal is deprecated but its inspector remains available in 6.7.
+
 namespace UnityEditor
 {
     [CustomEditor(typeof(OcclusionPortal)), CanEditMultipleObjects]
@@ -96,3 +98,5 @@ namespace UnityEditor
         }
     }
 }
+
+#pragma warning restore CS0618

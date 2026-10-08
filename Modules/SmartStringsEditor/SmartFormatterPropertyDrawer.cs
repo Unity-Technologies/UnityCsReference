@@ -36,20 +36,7 @@ class SmartFormatterPropertyDrawer : PropertyDrawer
     static ListView BuildList(string title, string tooltip, SerializedProperty arrayProperty, Type baseType, SerializedObject serializedObject)
     {
         var path = arrayProperty.propertyPath;
-        var listView = new ListView
-        {
-            showFoldoutHeader = true,
-            headerTitle = title,
-            tooltip = tooltip,
-            showAddRemoveFooter = true,
-            reorderable = true,
-            reorderMode = ListViewReorderMode.Animated,
-            showBoundCollectionSize = false,
-            horizontalScrollingEnabled = false,
-            virtualizationMethod = CollectionVirtualizationMethod.DynamicHeight,
-            selectionType = SelectionType.Single,
-            style = { marginTop = 4, flexShrink = 1, minWidth = 0 }
-        };
+        var listView = ManagedReferenceUI.CreateList(title, tooltip);
         listView.makeItem = () => new PropertyField();
         listView.bindItem = (element, index) =>
         {
@@ -80,27 +67,10 @@ class SmartFormatterPropertyDrawer : PropertyDrawer
                 present.Add(value.GetType());
         }
 
-        var types = new List<Type>();
-        foreach (var type in TypeCache.GetTypesDerivedFrom(baseType))
-        {
-            if (type.IsAbstract || type.IsGenericType)
-                continue;
-            // Managed references cannot be UnityEngine.Object instances.
-            if (typeof(UnityEngine.Object).IsAssignableFrom(type))
-                continue;
-            if (Attribute.IsDefined(type, typeof(ObsoleteAttribute)))
-                continue;
-            // Needs a parameterless constructor to be instantiated and serialized as a managed reference.
-            if (type.GetConstructor(Type.EmptyTypes) == null)
-                continue;
-            types.Add(type);
-        }
-        types.Sort((a, b) => string.Compare(GetDisplayName(a), GetDisplayName(b), StringComparison.Ordinal));
-
         var menu = new GenericDropdownMenu();
-        foreach (var type in types)
+        foreach (var type in ManagedReferenceUI.ConcreteTypes(baseType))
         {
-            var name = GetDisplayName(type);
+            var name = ManagedReferenceUI.DisplayName(type);
             if (present.Contains(type))
             {
                 // Already added: the formatter would be skipped (sources) or rejected for a duplicate name (formatters).
@@ -155,8 +125,6 @@ class SmartFormatterPropertyDrawer : PropertyDrawer
     static string GetElementLabel(SerializedProperty element)
     {
         var value = element.managedReferenceValue;
-        return value != null ? GetDisplayName(value.GetType()) : L10n.Tr("None", null);
+        return value != null ? ManagedReferenceUI.DisplayName(value.GetType()) : L10n.Tr("None", null);
     }
-
-    static string GetDisplayName(Type type) => L10n.Tr(ObjectNames.NicifyVariableName(type.Name), null);
 }

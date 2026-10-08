@@ -15,7 +15,7 @@ using static Unity.U2D.Physics.Scripting2D;
 namespace Unity.U2D.Physics
 {
     /// <undoc/>
-    readonly struct PhysicsTransformWatcher
+    readonly partial struct PhysicsTransformWatcher
     {
         public static void RegisterWatcher(Transform transform, PhysicsCallbacks.ITransformChangedCallback callback)
         {
@@ -126,10 +126,11 @@ namespace Unity.U2D.Physics
         #region Native Methods
 
         /// <undoc/>
+        [OnCodeUnloading]
         [RequiredByNativeCode]
         static void ClearAllWatchers()
         {
-            // Called from native subsystem teardown (PhysicsWorldManager2D::DestroyScriptObjects).
+            // Runs on code unloading, and from native subsystem teardown (PhysicsWorldManager2D::DestroyScriptObjects) outside a code reload.
             // Drops the watcher store so it does not span a scripting reload.
             // The native interest is left set on each transform, because a transform can outlive this teardown.
             // UnregisterWatcher clears it when the owning component disables.

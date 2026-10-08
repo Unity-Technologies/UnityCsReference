@@ -68,7 +68,7 @@ namespace UnityEditor.UIElements
             {
                 s_DefaultCommonDarkStyleSheet = LoadSkinnedStyleSheetForFont(EditorResources.darkSkinIndex, EditorResources.currentFontName);
                 if (s_DefaultCommonDarkStyleSheet != null)
-                    s_DefaultCommonDarkStyleSheet.isDefaultStyleSheet = true;
+                    s_DefaultCommonDarkStyleSheet.priority = UnityEngine.UIElements.StyleSheetPriority.Builtin;
             }
 
             return s_DefaultCommonDarkStyleSheet;
@@ -85,7 +85,7 @@ namespace UnityEditor.UIElements
             {
                 s_DefaultCommonLightStyleSheet = LoadSkinnedStyleSheetForFont(EditorResources.normalSkinIndex, EditorResources.currentFontName);
                 if (s_DefaultCommonLightStyleSheet != null)
-                    s_DefaultCommonLightStyleSheet.isDefaultStyleSheet = true;
+                    s_DefaultCommonLightStyleSheet.priority = UnityEngine.UIElements.StyleSheetPriority.Builtin;
             }
 
             return s_DefaultCommonLightStyleSheet;

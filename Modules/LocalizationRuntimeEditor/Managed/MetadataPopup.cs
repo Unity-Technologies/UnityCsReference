@@ -10,7 +10,7 @@ using Object = UnityEngine.Object;
 
 namespace Unity.Localization.Editor;
 
-class MetadataPopup : EditorWindow
+class MetadataPopup : AnchoredPopupWindow
 {
     const string k_Uxml = "LocalizationRuntime/UXML/MetadataPopup.uxml";
 
@@ -20,7 +20,7 @@ class MetadataPopup : EditorWindow
     MetadataType m_Target;
     Action m_OnChanged;
 
-    public static void Show(Rect activatorWorldBound, string title, Object owner, string metadataPath, MetadataType target, Action onChanged)
+    public static void Show(Rect activatorWorldBound, VisualElement view, string title, Object owner, string metadataPath, MetadataType target, Action onChanged)
     {
         var window = CreateInstance<MetadataPopup>();
         window.m_Title = title;
@@ -28,12 +28,12 @@ class MetadataPopup : EditorWindow
         window.m_MetadataPath = metadataPath;
         window.m_Target = target;
         window.m_OnChanged = onChanged;
-        var screenRect = GUIUtility.GUIToScreenRect(activatorWorldBound);
-        window.ShowAsDropDown(screenRect, new Vector2(320, 220));
+        window.ShowUnder(activatorWorldBound, view, new Vector2(320, 220));
     }
 
-    void OnDisable()
+    protected override void OnDisable()
     {
+        base.OnDisable();
         m_SerializedObject?.Dispose();
         m_SerializedObject = null;
     }

@@ -14,6 +14,17 @@ class FieldIcon<T> : Image
     {
         image = Icons.GetImage(iconName);
         AddToClassList(k_FieldIconClass);
-        field.Insert(1, this);
+
+        // Sized here rather than left to the class alone: the rule lives in ScenarioConfigEditor.uss,
+        // which only the Play Mode Scenarios window loads, so in the status views the icon would take
+        // its size from the raw texture and stretch the row it sits in.
+        style.width = 16;
+        style.height = 16;
+        style.flexShrink = 0;
+        style.alignSelf = Align.Center;
+
+        // Goes before the field's value. A field built without a label keeps no label element in its
+        // hierarchy, so a fixed index would put the icon after the value on those fields instead.
+        field.Insert(field.IndexOf(field.labelElement) + 1, this);
     }
 }

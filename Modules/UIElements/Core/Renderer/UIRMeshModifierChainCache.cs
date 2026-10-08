@@ -70,8 +70,8 @@ namespace UnityEngine.UIElements.UIR
             if (chain == null)
                 return;
             var info = m_InfoByChain[chain];
-            if (--info.refCount == 0)
-                RemoveInfo(info);
+            Debug.Assert(info.refCount > 0);
+            info.refCount--;
         }
 
         // Reclaims chains with refCount == 0. Must be called AFTER every ProcessChanges walk completes, not during.
@@ -103,19 +103,6 @@ namespace UnityEngine.UIElements.UIR
             m_Buckets.Clear();
             m_InfoByChain.Clear();
             m_FreeChainInfoHead = null;
-        }
-
-        void RemoveInfo(ChainInfo info)
-        {
-            m_InfoByChain.Remove(info.chain);
-            int hash = ComputeHash(info.chain);
-            if (m_Buckets.TryGetValue(hash, out var bucket))
-            {
-                bucket.Remove(info);
-                if (bucket.Count == 0)
-                    m_Buckets.Remove(hash);
-            }
-            ReleaseChainInfo(info);
         }
 
         ChainInfo AcquireChainInfo(List<MeshModifierRegistration> content)

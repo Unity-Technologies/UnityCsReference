@@ -5,15 +5,35 @@
 using System;
 using UnityEditor;
 using UnityEngine;
+using UnityEngine.Bindings;
+using UnityEngine.Scripting.APIUpdating;
 using UnityEngine.UIElements;
 
-namespace Unity.UI.Builder
+namespace Unity.UIToolkit.Editor
 {
+    [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
+    [MovedFrom("Unity.UI.Builder")]
     internal class StyleFieldPopupWindow : EditorWindow
     {
 
         VisualElement m_Content;
         private float m_LastHeight;
+        bool m_Resizable;
+
+        // When true, the popup grows/shrinks to fit its content and forces the OS window's
+        // min/max size to that content height. When false, content flex-grows to fill the
+        // window and the auto-resize is a no-op — leave sizing to the caller (min/max on
+        // ShowAsDropDown), so the user can drag the corner freely.
+        public bool resizable
+        {
+            get => m_Resizable;
+            set
+            {
+                m_Resizable = value;
+                if (m_Content != null)
+                    m_Content.style.flexGrow = m_Resizable ? 1 : 0;
+            }
+        }
 
         public VisualElement content
         {
@@ -34,10 +54,11 @@ namespace Unity.UI.Builder
                 {
                     rootVisualElement.Add(m_Content);
                     m_Content.style.position = Position.Relative;
-                    m_Content.style.flexGrow = 0;
+                    m_Content.style.flexGrow = m_Resizable ? 1 : 0;
                     m_Content.style.flexShrink = 0;
                     m_Content.RegisterCallback<GeometryChangedEvent>(OnGeometryChanged);
-                    ResizeToContent();
+                    if (!m_Resizable)
+                        ResizeToContent();
                 }
             }
         }
@@ -46,7 +67,7 @@ namespace Unity.UI.Builder
 
         void OnGeometryChanged(GeometryChangedEvent evt)
         {
-            if (m_Parent == null)
+            if (m_Parent == null || m_Resizable)
                 return;
             ResizeToContent();
         }
@@ -66,6 +87,11 @@ namespace Unity.UI.Builder
                 var pos = m_Parent.window.position;
 
                 pos.height = content.layout.height;
+
+                // ShowAsDropDown pins minSize/maxSize to the initial size; unpin the height
+                // so the window can follow the content.
+                minSize = new Vector2(minSize.x, pos.height);
+                maxSize = new Vector2(maxSize.x, pos.height);
                 position = pos;
             });
         }

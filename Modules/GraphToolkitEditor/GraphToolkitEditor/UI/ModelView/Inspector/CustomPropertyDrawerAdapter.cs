@@ -320,6 +320,17 @@ namespace Unity.GraphToolkit.Editor
             // Only create the wrapper type if it doesn't already exist.
             if (!wrapperTypes.TryGetValue(valueType, out var wrapperType))
             {
+                // CoreCLR's type loader denies generic instantiations whose type arguments are not
+                // publicly visible from outside their defining assembly. Mono is more permissive.
+                // Return null here so callers skip the custom drawer for inaccessible types.
+                if (!valueType.IsVisible)
+                {
+                    Debug.LogWarning($"[Graph Toolkit] Custom property drawer skipped for '{valueType.FullName}': " +
+                        "the type must be public for custom drawers to work. Make the type and all its enclosing types public.");
+                    wrapperTypes.Add(valueType, null);
+                    return null;
+                }
+
                 var genericBaseType = typeof(FieldWrapper<>);
                 Type[] typeArgs = { valueType };
                 var baseType = genericBaseType.MakeGenericType(typeArgs);
@@ -384,6 +395,8 @@ namespace Unity.GraphToolkit.Editor
             // Else, create a new one.
             var valueType = constant.GetTypeHandle().Resolve();
             var wrapperType = GetOrCreateWrapperType(valueType);
+            if (wrapperType == null)
+                return null;
             var wrapper = ScriptableObject.CreateInstance(wrapperType) as FieldWrapper;
             if (wrapper != null)
             {
@@ -412,7 +425,8 @@ namespace Unity.GraphToolkit.Editor
 
             // Else, create a new one.
             var wrapperType = GetOrCreateWrapperType(field.FieldType);
-            // Create a scriptable object with the wrapper type that was generated.
+            if (wrapperType == null)
+                return null;
             var wrapper = ScriptableObject.CreateInstance(wrapperType) as FieldWrapper;
             if (wrapper != null)
             {

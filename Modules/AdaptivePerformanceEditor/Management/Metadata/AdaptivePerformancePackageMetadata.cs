@@ -767,7 +767,7 @@ namespace UnityEditor.AdaptivePerformance.Editor.Metadata
             }
 
             var req = reqs.activeRequests[0];
-            reqs.activeRequests.Remove(req);
+            reqs.activeRequests.RemoveAt(0);
 
             if (req.timeOut < Time.realtimeSinceStartup)
             {

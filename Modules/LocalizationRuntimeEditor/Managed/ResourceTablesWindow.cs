@@ -101,12 +101,14 @@ partial class ResourceTablesWindow : EditorWindow
     void OnEnable()
     {
         LocalizationEditorSettings.CollectionsChanged += OnCollectionsChanged;
+        LocalizationEditorSettings.LocalesChanged += RefreshAll;
         Undo.undoRedoPerformed += OnUndoRedoPerformed;
     }
 
     void OnDisable()
     {
         LocalizationEditorSettings.CollectionsChanged -= OnCollectionsChanged;
+        LocalizationEditorSettings.LocalesChanged -= RefreshAll;
         Undo.undoRedoPerformed -= OnUndoRedoPerformed;
         DisposeTableSerializedObjects();
         m_SharedNameSerialized?.Dispose();
@@ -128,7 +130,7 @@ partial class ResourceTablesWindow : EditorWindow
             foreach (var table in m_Collection.Tables)
                 table?.InvalidateCache();
         }
-        RebuildTree();
+        RefreshAll();
     }
 
     Object[] UndoTargets()
@@ -808,7 +810,7 @@ partial class ResourceTablesWindow : EditorWindow
     {
         var menu = new GenericDropdownMenu();
         menu.AddItem($"{L10n.Tr("Shared Metadata", null)}...", false, () =>
-            MetadataPopup.Show(anchor.worldBound, $"{L10n.Tr("Shared Metadata", null)}: {m_Collection.TableCollectionName}", m_Collection.SharedData, "m_Metadata", MetadataType.SharedTableData,
+            MetadataPopup.Show(anchor.worldBound, rootVisualElement, $"{L10n.Tr("Shared Metadata", null)}: {m_Collection.TableCollectionName}", m_Collection.SharedData, "m_Metadata", MetadataType.SharedTableData,
                 () => { EditorUtility.SetDirty(m_Collection.SharedData); RebuildTree(); }));
         AddColumnItems(menu);
         menu.DropDown(anchor.worldBound, anchor, DropdownMenuSizeMode.Auto);
@@ -870,7 +872,7 @@ partial class ResourceTablesWindow : EditorWindow
         var code = table.LocaleIdentifier.Code;
         var menu = new GenericDropdownMenu();
         menu.AddItem($"{L10n.Tr("Table Metadata", null)}...", false, () =>
-            MetadataPopup.Show(anchor.worldBound, $"{L10n.Tr("Table Metadata", null)}: {LocaleLabel(code, LocaleDisplayName(code))}", table, "m_Metadata", MetadataType.ResourceTable,
+            MetadataPopup.Show(anchor.worldBound, rootVisualElement, $"{L10n.Tr("Table Metadata", null)}: {LocaleLabel(code, LocaleDisplayName(code))}", table, "m_Metadata", MetadataType.ResourceTable,
                 () => { EditorUtility.SetDirty(table); RebuildTree(); }));
 
         var visible = VisibleTableCount();

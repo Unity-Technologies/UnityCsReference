@@ -94,9 +94,32 @@ namespace Unity.Multiplayer.PlayMode.Editor
             }
         }
 
+        // The run device is captured while the graph is built, but it lives in per-user settings that can
+        // change without the graph being rebuilt - selecting a device does not touch the Scenario asset.
+        // Re-apply it so free-run validates what the Run Device dropdown currently says (UUM-152807).
+        protected internal override void RefreshExecutionGraphInputs(ExecutionGraph graph)
+        {
+            if (!InternalUtilities.IsAndroidBuildTarget(Settings.BuildProfile))
+                return;
+
+            var userSettings = TryGetUserSettings<UserSettings>(out var settings) ? settings : DefaultUserSettings;
+
+            foreach (var node in graph.GetNodes(ExecutionStage.Validate))
+            {
+                if (node is not ValidateRunDeviceNode validateDeviceNode)
+                    continue;
+
+                graph.ConnectConstant(validateDeviceNode.DeviceId, userSettings.DeviceID, reconnectConstant: true);
+            }
+        }
+
         void SetupExecutionGraphForAdbProcess(ExecutionGraphBuilder executionGraph, BuildPlayerNode buildNode)
         {
             var userSettings = TryGetUserSettings<UserSettings>(out var settings) ? settings : DefaultUserSettings;
+
+            var validateDeviceNode = executionGraph.AddNode<ValidateRunDeviceNode>(ExecutionStage.Validate);
+            executionGraph.ConnectConstant(validateDeviceNode.InstanceName, name);
+            executionGraph.ConnectConstant(validateDeviceNode.DeviceId, userSettings.DeviceID);
 
             var installAdbNode = executionGraph.AddNode<AdbInstallNode>(ExecutionStage.Deploy);
             executionGraph.Connect(buildNode.ExecutablePath, installAdbNode.ApkPath);
@@ -142,6 +165,7 @@ namespace Unity.Multiplayer.PlayMode.Editor
                 executionGraph.ConnectConstant(deleteLogsNode.FilePath, logsFilePath);
             }
         }
+
 
         void SetupExecutionGraphForLocalProcess(ExecutionGraphBuilder executionGraph, BuildPlayerNode buildNode)
         {

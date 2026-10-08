@@ -1209,6 +1209,10 @@ namespace UnityEditor.SceneManagement
                 EditorApplication.update -= DelayedFraming;
                 m_DelayCounter = 0;
 
+                // The stage can be closed earlier in the same update, after the callbacks to run were collected.
+                if (!isValid)
+                    return;
+
                 if(!IsPartOfPrefabContents(Selection.activeGameObject))
                     Selection.activeGameObject = prefabContentsRoot;
 
@@ -1830,7 +1834,9 @@ namespace UnityEditor.SceneManagement
         // This method is not called from the SceneView if the SceneView does not support stage handling
         internal override void OnPreSceneViewRender(SceneView sceneView)
         {
+            #pragma warning disable CS0618
             StaticOcclusionCullingVisualization.showOcclusionCulling = false;
+            #pragma warning restore CS0618
 
             if (mode != Mode.InContext)
                 return;
@@ -1844,7 +1850,9 @@ namespace UnityEditor.SceneManagement
         // This method is not called from the SceneView if the SceneView does not support stage handling
         internal override void OnPostSceneViewRender(SceneView sceneView)
         {
+            #pragma warning disable CS0618
             StaticOcclusionCullingVisualization.showOcclusionCulling = OcclusionCullingWindow.isVisible;
+            #pragma warning restore CS0618
 
             if (mode != Mode.InContext)
                 return;

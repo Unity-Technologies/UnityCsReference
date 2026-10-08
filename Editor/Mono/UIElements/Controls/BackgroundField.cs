@@ -52,6 +52,14 @@ namespace UnityEditor.UIElements
         public ObjectField objectField => m_ObjectField;
         public PopupField<string> typePopup => m_TypePopup;
 
+        // The gradient preview strip, exposed so hosts can intercept clicks and open their
+        // own gradient editor instead of the built-in gradient picker.
+        internal GradientField gradientColorsField
+        {
+            [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
+            get => m_GradientColorsField;
+        }
+
         public BackgroundField() : this(null) {}
 
         public BackgroundField(string label) : base(label, null)
@@ -91,10 +99,10 @@ namespace UnityEditor.UIElements
             m_GradientTypeField.RegisterValueChangedCallback(_ => OnGradientControlChanged());
             m_GradientContainer.Add(m_GradientTypeField);
 
-            m_GradientColorsField = new GradientField("Color")
+            m_GradientColorsField = new GradientField("Gradient Stops")
             {
                 value = new Gradient(),
-                tooltip = "The colors and alpha stops of the gradient. Up to 4 stops are supported.",
+                tooltip = "The color stops of the gradient. Click to edit. Up to 4 stops are supported.",
             };
             m_GradientColorsField.RegisterValueChangedCallback(_ => OnGradientControlChanged());
             m_GradientContainer.Add(m_GradientColorsField);
@@ -157,12 +165,12 @@ namespace UnityEditor.UIElements
             value = Background.FromGradient(gradient);
         }
 
-        // Sensible starting gradient (CSS "to bottom", white → white) shown when nothing is set.
+        // Sensible starting gradient (CSS "to bottom", black → white) shown when nothing is set.
         internal static BackgroundGradient defaultAuthoringGradient
         {
-            [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
+            [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
             get => BackgroundGradient.Linear(Mathf.PI,
-                BackgroundGradientStop.Percent(Color.white, 0f),
+                BackgroundGradientStop.Percent(Color.black, 0f),
                 BackgroundGradientStop.Percent(Color.white, 1f));
         }
 

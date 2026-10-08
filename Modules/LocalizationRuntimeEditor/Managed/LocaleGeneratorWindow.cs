@@ -320,6 +320,7 @@ class LocaleGeneratorWindow : EditorWindow
             EditorUtility.SetDirty(settings);
             LanguageToolbar.Refresh();
             m_OnLocalesAdded?.Invoke();
+            LocalizationEditorSettings.RaiseLocalesChanged();
         }
         Close();
     }

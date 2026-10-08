@@ -160,9 +160,9 @@ namespace Unity.UI.Builder
                 "Paste",
                 a =>
                 {
-                    m_PaneWindow.commandHandler.Paste();
+                    m_PaneWindow.commandHandler.Paste(target);
                 },
-                BuilderEditorUtility.CopyBufferMatchesTarget(target)
+                m_PaneWindow.commandHandler.CanPaste(target)
                 ? DropdownMenuAction.Status.Normal
                 : DropdownMenuAction.Status.Disabled);
 

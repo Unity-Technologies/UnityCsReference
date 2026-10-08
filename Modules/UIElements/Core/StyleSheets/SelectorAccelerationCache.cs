@@ -394,6 +394,17 @@ class SelectorAccelerationCache
         }
     }
 
+    // Test helper: whether a (path, entityId) association is currently tracked for this id.
+    internal bool HasPathAssociation(EntityId entityId)
+    {
+        foreach (var pair in m_PathList)
+        {
+            if (pair.entityId == entityId)
+                return true;
+        }
+        return false;
+    }
+
     public int Count => m_Cache.Count;
     internal int dependencyCount => m_DependencyList.Count;
 
@@ -495,17 +506,25 @@ class SelectorAccelerationCache
         {
             styleSheet = Resources.EntityIdToObject(entityId) as StyleSheet;
         }
-        if (styleSheet == null)
-        {
-            return;
-        }
 
-        string path = Panel.GetStyleSheetPath(styleSheet);
+        string path = styleSheet != null ? Panel.GetStyleSheetPath(styleSheet) : null;
         if (!string.IsNullOrEmpty(path) && path != "Library/unity editor resources")
         {
-            int index = m_PathList.BinarySearch((path, styleSheet.GetEntityId()), m_PathListComparer);
+            int index = m_PathList.BinarySearch((path, entityId), m_PathListComparer);
             if (index >= 0)
                 m_PathList.RemoveRange(index, 1);
+        }
+        else if (styleSheet == null)
+        {
+            // No path to binary search by, and m_PathList stays small enough to scan.
+            for (int i = 0; i < m_PathList.Count; i++)
+            {
+                if (m_PathList[i].entityId == entityId)
+                {
+                    m_PathList.RemoveRange(i, 1);
+                    break;
+                }
+            }
         }
     }
 

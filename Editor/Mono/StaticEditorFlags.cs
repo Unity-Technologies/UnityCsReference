@@ -14,8 +14,10 @@ namespace UnityEditor
         [System.ComponentModel.Description("Contribute Global Illumination")]
         ContributeGI          = 1,
         // Considered static for occlusion.
+        [Obsolete("StaticEditorFlags.OccluderStatic is deprecated and will be removed in a future release. Consider migrating to GPU Occlusion Culling where your target platform supports it. #from(6000.7)", false)]
         OccluderStatic       = 2,
         // Considered static for occlusion.
+        [Obsolete("StaticEditorFlags.OccludeeStatic is deprecated and will be removed in a future release. Consider migrating to GPU Occlusion Culling where your target platform supports it. #from(6000.7)", false)]
         OccludeeStatic       = 16,
         // Consider for static batching.
         BatchingStatic        = 4,

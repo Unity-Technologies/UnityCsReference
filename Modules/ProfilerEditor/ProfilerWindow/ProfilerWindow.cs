@@ -458,6 +458,11 @@ namespace UnityEditor
         {
             m_WasCreateGUICalled = true;
 
+            // The frame count can change while the window is closed, when nothing is subscribed to
+            // settingsChanged. Reconcile before the restore below reads SelectedFrameRange, or the
+            // window comes back with a selection outside the displayed window.
+            ClearSelectedFrameIfOutsideDisplayWindow();
+
             // If there is already an open instance of the Module Editor window, resubscribe to the onChangesConfirmed event.
             if (ModuleEditorWindow.TryGetOpenInstance(out var moduleEditorWindow))
             {
@@ -491,6 +496,8 @@ namespace UnityEditor
                 else
                     SelectFirstActiveModule();
             }
+
+            RestorePersistedFrameSelection();
 
             // Restore the previously loaded capture file path to maintain Captures List highlight after window reload
             if (ProfilerHasAnyFrames())
@@ -877,6 +884,9 @@ namespace UnityEditor
 
         void ApplySettingsChange()
         {
+            // Before SaveViewSettings, so it persists the cleared selection rather than the stale one.
+            ClearSelectedFrameIfOutsideDisplayWindow();
+
             SaveViewSettings();
 
             foreach (var module in m_AllModules)
@@ -884,6 +894,82 @@ namespace UnityEditor
                 module.Rebuild();
             }
             Repaint();
+        }
+
+        // The selection is persisted per session and restored by the SelectedFrameRange getter, which
+        // is enough for the toolbar label - but nothing puts it back into m_CurrentFrame, because the
+        // responder that would is still creating the details view and returns early. Left alone, the
+        // window reports the latest frame while the label shows the persisted one.
+        void RestorePersistedFrameSelection()
+        {
+            // A clamp earlier in CreateGUI may already have set this; restoring would undo it.
+            if (m_CurrentFrame != FrameDataView.invalidOrCurrentFrameIndex)
+                return;
+
+            var persistedRange = SelectedFrameRange;
+            if (persistedRange == null)
+                return;
+
+            // Reading the property above has already restored the range, so an unusable one must be
+            // cleared rather than left behind: PickFrameLabel reads it directly and would keep
+            // reporting a frame this capture doesn't have.
+            var lastFrame = ProfilerDriver.lastFrameIndex;
+            var firstFrame = persistedRange.Value.Start.Value;
+            if (firstFrame < ProfilerDriver.firstFrameIndex || firstFrame > lastFrame)
+            {
+                ClearFrameSelection();
+                return;
+            }
+
+            // A range persisted against a longer capture can overhang this one; keep the part that
+            // still exists rather than discarding the whole selection.
+            var exclusiveEnd = Math.Min(persistedRange.Value.End.Value, lastFrame + 1);
+
+            // The range, not just its start, so a Highlights range selection survives the reopen.
+            SetCurrentFrameRangeDontPause(firstFrame..exclusiveEnd);
+        }
+
+        // The SelectedFrameRange getter restores from these keys whenever the field is null, and
+        // SetCurrentFrameDontPause nulls it before InvokeSelectedFrameIndexChangedEventIfNecessary
+        // reads the property - so without the sentinel the stale range comes straight back and the
+        // change event never fires.
+        void ClearFrameSelection()
+        {
+            SessionState.SetInt(k_FrameSelectionRangeStartKey, k_NoFrameSelectionSession);
+            SessionState.SetInt(k_FrameSelectionRangeEndKey, k_NoFrameSelectionSession);
+
+            SetCurrentFrameDontPause(FrameDataView.invalidOrCurrentFrameIndex);
+            m_CurrentFrameEnabled = true;
+        }
+
+        // Reducing the frame-count setting trims the displayed window without evicting anything from
+        // memory, so an already-selected frame can end up outside it while staying valid to the driver:
+        // the setters only guard ProfilerDriver's range and FrameNavigationControls only clamps upward.
+        void ClearSelectedFrameIfOutsideDisplayWindow()
+        {
+            // Prefer the range: it is what a window reload restores, while m_CurrentFrame isn't
+            // serialized. The two are otherwise kept in lockstep by SetCurrentFrameRangeDontPause.
+            var selectedRange = SelectedFrameRange;
+            var selectedFrame = selectedRange?.Start.Value ?? m_CurrentFrame;
+            if (selectedFrame == FrameDataView.invalidOrCurrentFrameIndex)
+                return;
+
+            // Shared with the chart data window and the screenshot strips, so they can't disagree about
+            // what is displayed. Not firstFrameIndexWithHistoryOffset, which is deliberately unclamped.
+            var firstDisplayedFrame = ScreenshotIndexCatalogue.FirstDisplayedFrameIndex();
+            if (selectedFrame >= firstDisplayedFrame)
+                return;
+
+            // A Highlights range can straddle the new boundary, so keep the part still displayed -
+            // as RestorePersistedFrameSelection does for a range overhanging the other end. A single
+            // frame is stored as [f, f + 1] and so can never straddle it: those always clear.
+            if (selectedRange != null && selectedRange.Value.End.Value > firstDisplayedFrame)
+            {
+                SetCurrentFrameRangeDontPause(firstDisplayedFrame..selectedRange.Value.End.Value);
+                return;
+            }
+
+            ClearFrameSelection();
         }
 
         void Clear()

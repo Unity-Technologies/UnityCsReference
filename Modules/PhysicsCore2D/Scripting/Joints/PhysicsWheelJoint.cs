@@ -356,6 +356,17 @@ namespace Unity.U2D.Physics
         public readonly float currentMotorTorque { get => WheelJoint_GetCurrentMotorTorque(this); }
 
         /// <summary>
+        /// The force the suspension spring applied along the suspension axis during the last simulation step, usually in newtons.
+        /// A positive value pushes body B towards a greater suspension translation and a negative value towards a smaller one.
+        /// This is zero when the spring is disabled.
+        /// Unlike the current constraint force, it excludes the force from the suspension limits.
+        /// </summary>
+        /// <remarks>
+        /// See <see cref="enableSpring"/>.
+        /// </remarks>
+        public readonly float currentSpringForce { get => WheelJoint_GetCurrentSpringForce(this); }
+
+        /// <summary>
         /// Enable/disable the joint limit.
         /// </summary>
         public readonly bool enableLimit { get => WheelJoint_GetEnableLimit(this); set => WheelJoint_SetEnableLimit(this, value); }

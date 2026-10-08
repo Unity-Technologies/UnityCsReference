@@ -81,7 +81,7 @@ public class IsMatchFormatter : FormatterBase, IInitializer, IFormatterLiteralEx
                 $"Formatter named '{formattingInfo.Placeholder?.FormatterName}' requires at least 2 format options.");
         }
 
-        var regEx = m_RegexCache.GetOrAdd(expression, static (expr, options) => new Regex(expr, options), m_RegexOptions);
+        var regEx = m_RegexCache.GetOrAdd(expression, static (expr, options) => new Regex(expr, options, TimeSpan.FromMilliseconds(500)), m_RegexOptions);
         var match = regEx.Match(formattingInfo.CurrentValue.ToString());
 
         if (!match.Success)

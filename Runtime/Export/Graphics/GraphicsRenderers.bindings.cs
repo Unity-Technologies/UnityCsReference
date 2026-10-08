@@ -117,6 +117,7 @@ namespace UnityEngine
 
         internal extern byte stagePriority { get; set; }
 
+        [Obsolete("Renderer.allowOcclusionWhenDynamic is deprecated and will be removed in a future release. Consider migrating to GPU Occlusion Culling where your target platform supports it. #from(6000.7)", false)]
         [NativeProperty("IsDynamicOccludee")] extern public bool allowOcclusionWhenDynamic { get; set; }
 
         [NativeProperty("ForceMeshLod")] extern public Int16 forceMeshLod { get; set; }

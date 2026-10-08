@@ -410,8 +410,14 @@ public class SmartFormatter : ISerializationCallbackReceiver
     void Format(FormatDetails formatDetails, Format format, object current)
     {
         var formattingInfo = FormattingInfoPool.Pool.Get().Initialize(formatDetails, format, current);
-        Format(formattingInfo);
-        FormattingInfoPool.Pool.Release(formattingInfo);
+        try
+        {
+            Format(formattingInfo);
+        }
+        finally
+        {
+            FormattingInfoPool.Pool.Release(formattingInfo);
+        }
     }
 
     /// <summary>

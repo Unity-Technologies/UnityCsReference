@@ -285,6 +285,10 @@ namespace Unity.Hierarchy.Editor
 
         bool IHierarchyEditorNodeTypeHandler.OnSetName(HierarchyView view, in HierarchyNode node, string name)
         {
+            // A GameObject always shows a name, so an emptied field is a cancel rather than a new name.
+            if (string.IsNullOrEmpty(name))
+                return false;
+
             var go = GetGameObject(in node);
             if (go == null)
                 return false;

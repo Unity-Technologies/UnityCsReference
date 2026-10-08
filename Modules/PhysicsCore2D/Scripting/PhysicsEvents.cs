@@ -79,9 +79,10 @@ namespace Unity.U2D.Physics
             /// <summary>
             /// Whether this is the first trigger event between the two groups the shapes belong to.
             /// Always true when either shape has no group or the world has event grouping disallowed.
+            /// This is only reliable when each group's shapes all belong to one body.
             /// </summary>
             /// <remarks>
-            /// See <see cref="PhysicsShape.physicsGroup"/> and <see cref="PhysicsWorld.eventGroupingAllowed"/>.
+            /// See <see cref="PhysicsWorld.PhysicsGroup"/>, <see cref="PhysicsShape.physicsGroup"/> and <see cref="PhysicsWorld.eventGroupingAllowed"/>.
             /// </remarks>
             public readonly bool firstGroup => m_FirstGroup;
 
@@ -119,9 +120,10 @@ namespace Unity.U2D.Physics
             /// <summary>
             /// Whether this is the last trigger event between the two groups the shapes belong to.
             /// Always true when either shape has no group or the world has event grouping disallowed.
+            /// This is only reliable when each group's shapes all belong to one body.
             /// </summary>
             /// <remarks>
-            /// See <see cref="PhysicsShape.physicsGroup"/> and <see cref="PhysicsWorld.eventGroupingAllowed"/>.
+            /// See <see cref="PhysicsWorld.PhysicsGroup"/>, <see cref="PhysicsShape.physicsGroup"/> and <see cref="PhysicsWorld.eventGroupingAllowed"/>.
             /// </remarks>
             public readonly bool lastGroup => m_LastGroup;
 
@@ -164,9 +166,10 @@ namespace Unity.U2D.Physics
             /// <summary>
             /// Whether this is the first contact event between the two groups the shapes belong to.
             /// Always true when either shape has no group or the world has event grouping disallowed.
+            /// This is only reliable when each group's shapes all belong to one body.
             /// </summary>
             /// <remarks>
-            /// See <see cref="PhysicsShape.physicsGroup"/> and <see cref="PhysicsWorld.eventGroupingAllowed"/>.
+            /// See <see cref="PhysicsWorld.PhysicsGroup"/>, <see cref="PhysicsShape.physicsGroup"/> and <see cref="PhysicsWorld.eventGroupingAllowed"/>.
             /// </remarks>
             public readonly bool firstGroup => m_FirstGroup;
 
@@ -211,9 +214,10 @@ namespace Unity.U2D.Physics
             /// <summary>
             /// Whether this is the last contact event between the two groups the shapes belong to.
             /// Always true when either shape has no group or the world has event grouping disallowed.
+            /// This is only reliable when each group's shapes all belong to one body.
             /// </summary>
             /// <remarks>
-            /// See <see cref="PhysicsShape.physicsGroup"/> and <see cref="PhysicsWorld.eventGroupingAllowed"/>.
+            /// See <see cref="PhysicsWorld.PhysicsGroup"/>, <see cref="PhysicsShape.physicsGroup"/> and <see cref="PhysicsWorld.eventGroupingAllowed"/>.
             /// </remarks>
             public readonly bool lastGroup => m_LastGroup;
 

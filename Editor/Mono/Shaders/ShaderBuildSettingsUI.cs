@@ -52,6 +52,7 @@ namespace UnityEditor.Shaders
         private HelpBox m_FastBuildInfoBox;
         private bool m_AppliedFastBuildEnabled;
         private Func<ShaderKeywordDeclarationInfo[]> m_KeywordDeclarationSource = ShaderKeywordDeclarations.GatherFromProject;
+        private ShaderKeywordDeclarationInfo[] m_GatheredDeclarations;
         private bool m_FastBuildEnabled;
         // Shown in place of the settings data while Fast Build is on. Never saved; see BuildFastBuildDisplayedOverrides.
         private readonly List<ShaderBuildSettings.KeywordDeclarationOverride> m_FastBuildDisplayedOverrides = new();
@@ -183,7 +184,7 @@ namespace UnityEditor.Shaders
             var customFoldout = element.Q<ShaderKeywordDeclarationOverrideFoldout>();
 
             // While Fast Build is on the displayed entries come from the computed approximation, not the settings data.
-            var rows = m_FastBuildEnabled ? m_FastBuildDisplayedOverrides : m_KeywordDeclarationOverrides;
+            var rows = DisplayedKeywordOverrides;
 
             customFoldout.ParentShaderBuildSettingsUI = this;
             customFoldout.DataSource = rows;
@@ -369,6 +370,10 @@ namespace UnityEditor.Shaders
                 m_AppliedFastBuildEnabled = m_FastBuildEnabled;
                 UpdateFastBuildControls();
                 ClearSettingsChangedState();
+
+                // Applying can be the first import of a shader authored since the last gather, reimport will be triggered anyway.
+                m_GatheredDeclarations = null;
+                EnsureKeywordDeclarationsGathered();
             }
             else
             {
@@ -522,6 +527,7 @@ namespace UnityEditor.Shaders
 
             m_KeywordDeclarationOverrides.Clear();
             m_FastBuildDisplayedOverrides.Clear();
+            m_GatheredDeclarations = null;
             m_KeywordDeclarationOverridesListView.RefreshItems();
             m_InternalConstantDefines.Clear();
             m_ConstantDefines.Clear();
@@ -637,6 +643,38 @@ namespace UnityEditor.Shaders
             }
         }
 
+        // --- Keyword Declaration Matching -----------------------------------------------------
+
+        private List<ShaderBuildSettings.KeywordDeclarationOverride> DisplayedKeywordOverrides =>
+            m_FastBuildEnabled ? m_FastBuildDisplayedOverrides : m_KeywordDeclarationOverrides;
+
+        // ShaderKeywordDeclarations.GatherFromProject() can be expensive and is already used for Fast Build.
+        // It's needed too to warn users if the override has an effect or not.
+        // Sharing one per load to avoid running it multiple times.
+        private ShaderKeywordDeclarationInfo[] EnsureKeywordDeclarationsGathered()
+        {
+            m_GatheredDeclarations ??= m_KeywordDeclarationSource() ?? Array.Empty<ShaderKeywordDeclarationInfo>();
+            return m_GatheredDeclarations;
+        }
+
+        internal bool IsKeywordOverrideUsedInProject(int index)
+        {
+            var overrides = DisplayedKeywordOverrides;
+            if (index < 0 || index >= overrides.Count)
+                return false;
+
+            m_GatheredDeclarations = EnsureKeywordDeclarationsGathered();
+
+            if (m_GatheredDeclarations == null)
+                return false;
+
+            var keywordOverride = overrides[index];
+            if (keywordOverride.keywords == null || keywordOverride.keywords.Length == 0)
+                return false;
+
+            return ShaderBuildSettings.HasMatchingKeywordDeclaration(keywordOverride, m_GatheredDeclarations);
+        }
+
         // --- Fast Build -----------------------------------------------------------------------
 
         private const int k_FastBuildOff = 0;
@@ -696,7 +734,7 @@ namespace UnityEditor.Shaders
             if (!m_FastBuildEnabled)
                 return;
 
-            var gatheredDeclarations = m_KeywordDeclarationSource() ?? Array.Empty<ShaderKeywordDeclarationInfo>();
+            var gatheredDeclarations = EnsureKeywordDeclarationsGathered();
             var takenOverUserOverride = new bool[m_KeywordDeclarationOverrides.Count];
 
             foreach (var declaration in gatheredDeclarations)
@@ -750,8 +788,7 @@ namespace UnityEditor.Shaders
         {
             m_KeywordDeclarationOverridesListView.ClearSelection();
             // Rebound because Fast Build shows a resolved list in place of the settings data.
-            m_KeywordDeclarationOverridesListView.itemsSource =
-                m_FastBuildEnabled ? m_FastBuildDisplayedOverrides : m_KeywordDeclarationOverrides;
+            m_KeywordDeclarationOverridesListView.itemsSource = DisplayedKeywordOverrides;
             m_KeywordDeclarationOverridesListView.reorderable = !m_FastBuildEnabled;
             m_KeywordDeclarationOverridesListView.showAddRemoveFooter = !m_FastBuildEnabled;
             m_KeywordDeclarationOverridesListView.RefreshItems();

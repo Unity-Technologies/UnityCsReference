@@ -92,7 +92,7 @@ namespace UnityEditor
 
         void UpdateValidation()
         {
-            var validationErrorMessage = m_Validator?.Invoke(m_TextField.value);
+            var validationErrorMessage = m_Validator?.Invoke(m_TextField.value.Trim());
 
             m_WarningText.text = validationErrorMessage;
             m_IsValid = validationErrorMessage == null;
@@ -103,7 +103,7 @@ namespace UnityEditor
 
         void Submit()
         {
-            m_Action(m_TextField.text);
+            m_Action(m_TextField.text.Trim());
             Close();
         }
 

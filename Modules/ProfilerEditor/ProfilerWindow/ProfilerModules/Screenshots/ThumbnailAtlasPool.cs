@@ -114,10 +114,18 @@ namespace UnityEditorInternal.Profiling
 
         // Normalised UV (bottom-left origin) for assignment to Image.uv. We use Image.uv rather
         // than Image.sourceRect (top-left) to avoid the Y-flip on every assignment.
+        //
+        // Inset half a texel per edge, since slots have no gutter and bilinear filtering would
+        // otherwise blend in the adjacent slot right at the boundary.
         public static Rect ComputeUv(AtlasSlot slot, int thumbWidth, int thumbHeight)
         {
             const float inv = 1f / k_AtlasSize;
-            return new Rect(slot.X * inv, slot.Y * inv, thumbWidth * inv, thumbHeight * inv);
+            const float halfTexel = 0.5f * inv;
+            return new Rect(
+                slot.X * inv + halfTexel,
+                slot.Y * inv + halfTexel,
+                thumbWidth * inv - inv,
+                thumbHeight * inv - inv);
         }
 
 

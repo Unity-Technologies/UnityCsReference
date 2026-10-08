@@ -333,9 +333,10 @@ internal partial class VisualElementNodeHandler
         // The re-clone that follows the command group replaces every live element the drag moved, and an element
         // that changed parent no longer matches the identity its selection was filed under, so asking for it back
         // is what keeps the dropped elements selected — narrowed to the instance they were dropped into, which is
-        // the one the user is looking at.
+        // the one the user is looking at. The dragged elements themselves are what the re-clone replaces.
         RequestSelectionOnNextUpdate(childrenAssets);
         ScopePendingSelectionRequestsTo(parentElement);
+        ExcludeReplacedElementsFromPendingSelectionRequests(draggedVisualElements);
 
         return DragVisualMode.Move;
     }

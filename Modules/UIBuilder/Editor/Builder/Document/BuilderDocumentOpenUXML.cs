@@ -342,8 +342,7 @@ namespace Unity.UI.Builder
                 }
             }
 
-            registry?.CloseAll(this);
-            m_ReportedAssets?.Clear();
+            ReleaseRegistryClaims();
 
             ClearUndo();
 
@@ -1049,6 +1048,19 @@ namespace Unity.UI.Builder
             m_ReportedAssets.AddRange(current);
 
             return anyAlreadyDirty;
+        }
+
+        internal void ReleaseRegistryClaims()
+        {
+            UIAssetRegistry.LiveInstance?.CloseAll(this);
+            m_ReportedAssets?.Clear();
+        }
+
+        internal void ReleaseWithoutRestoring()
+        {
+            ReleaseRegistryClaims();
+            ClearUndo();
+            ClearBackups();
         }
 
         public void PostLoadDocumentStyleSheetCleanup()

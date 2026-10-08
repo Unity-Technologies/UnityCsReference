@@ -188,7 +188,7 @@ namespace Unity.Collections
         public void Initialize(int initialSizeInBytes, bool enableBlockFree = false)
         {
             m_spinner = default;
-            m_memoryLabel = Memory.CreateLabel("Collections", "Allocator.Rewindable", Allocator.Persistent);
+            m_memoryLabel = MemoryLabel.Create("Collections", "Allocator.Rewindable", Allocator.Persistent);
             m_block = new UnmanagedArray<MemoryBlock>(kMaxNumBlocks, Allocator.Persistent);
             // Initial block size should be larger than min block size
             var blockSize = initialSizeInBytes > kMinMemoryBlockSize ? initialSizeInBytes : kMinMemoryBlockSize;

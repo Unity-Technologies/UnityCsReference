@@ -12,7 +12,7 @@ namespace UnityEngine.UIElements
     /// Represents the number of times an animation repeats, used by the animation-iteration-count style
     /// property. The count is either a finite number of iterations or <see cref="Infinite"/>.
     /// </summary>
-    [Serializable, StructLayout(LayoutKind.Sequential)]
+    [StructLayout(LayoutKind.Sequential)]
     readonly public partial struct AnimationIterationCount : IEquatable<AnimationIterationCount>
     {
         internal const string k_InfiniteKeyword = "infinite";

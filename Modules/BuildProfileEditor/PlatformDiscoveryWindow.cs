@@ -58,6 +58,11 @@ namespace UnityEditor.Build.Profile
         VisualElement m_LicenseContainer;
         VisualElement m_LicenseLines;
         VisualElement m_LicenseAgreement;
+        Toggle m_LicenseAgreementToggle;
+        VisualElement m_LicenseAgreementText;
+
+        // The licenses the agreement currently lists, joined; empty when there is nothing to agree to.
+        string m_ListedLicenses = string.Empty;
 
         VisualElement m_KeyFeaturesContainer;
         Label m_KeyFeaturesContentLabel;
@@ -363,6 +368,10 @@ namespace UnityEditor.Build.Profile
             m_LicenseContainer.Q<Label>("license-container-title").text = TrText.licenseContainerTitle;
             m_LicenseLines = m_LicenseContainer.Q<VisualElement>("license-lines");
             m_LicenseAgreement = rootVisualElement.Q<VisualElement>("license-agreement");
+            m_LicenseAgreementText = m_LicenseAgreement.Q<VisualElement>("license-agreement-text");
+            m_LicenseAgreementToggle = m_LicenseAgreement.Q<Toggle>("license-agreement-toggle");
+            m_LicenseAgreementToggle.tooltip = TrText.licenseAgreementTooltip;
+            m_LicenseAgreementToggle.RegisterValueChangedCallback(_ => UpdateAddBuildProfileButton());
 
             // Apply localized text to static elements.
             rootVisualElement.Q<ToolbarButton>("toolbar-filter-all").text = TrText.all;
@@ -532,7 +541,7 @@ namespace UnityEditor.Build.Profile
             m_NameLinks.Clear();
             m_AddtionalInfoLabel.Clear();
             m_LicenseLines.Clear();
-            m_LicenseAgreement.Clear();
+            ClearLicenseAgreement();
             m_InternalPackageListView.itemsSource = Array.Empty<PlatformPackageEntry>();
             m_PartnerPackageListView.itemsSource = Array.Empty<PlatformPackageEntry>();
         }
@@ -694,13 +703,13 @@ namespace UnityEditor.Build.Profile
                 m_SignInRequiredHelpBox.Show();
                 m_PackageListsAndActionsContainer.Hide();
                 m_LicenseContainer.Hide();
-                m_LicenseAgreement.Hide();
+                ClearLicenseAgreement();
             }
             else
             {
                 m_PackageContainer.Hide();
                 m_LicenseContainer.Hide();
-                m_LicenseAgreement.Hide();
+                ClearLicenseAgreement();
             }
 
             if (!BuildProfileModuleUtil.HasSamplesInPackageManager(card.platformId))
@@ -743,28 +752,47 @@ namespace UnityEditor.Build.Profile
         }
 
         /// <summary>
-        /// Shows which licenses the user accepts by creating a profile with the currently selected packages.
+        /// Shows which licenses the user accepts by creating a profile with the currently selected packages,
+        /// and asks them to agree to those licenses before a profile can be created.
         /// </summary>
         internal void UpdateLicenseAgreement()
         {
-            m_LicenseAgreement.Clear();
-
             // An installed package is not installed again, so creating the profile accepts nothing new for it.
             var licenses = CollectLicenses(entry => !entry.isInstalled && entry.shouldInstalled);
             if (licenses.Count == 0)
             {
-                m_LicenseAgreement.Hide();
+                ClearLicenseAgreement();
+                UpdateAddBuildProfileButton();
                 return;
             }
+
+            m_LicenseAgreementText.Clear();
 
             var label = new LinkedTextLabel();
             var links = new List<string>(licenses.Count);
             foreach (var license in licenses)
                 links.Add(label.Link(license.name, license.url));
 
+            // Agreeing covers the licenses listed at the time, so a changed list has to be agreed to again.
+            var listedLicenses = string.Join("\n", label.urls);
+            if (listedLicenses != m_ListedLicenses)
+            {
+                m_ListedLicenses = listedLicenses;
+                m_LicenseAgreementToggle.SetValueWithoutNotify(false);
+            }
+
             label.text = string.Format(TrText.licenseAgreement, JoinForDisplay(links));
-            m_LicenseAgreement.Add(label);
+            m_LicenseAgreementText.Add(label);
             m_LicenseAgreement.Show();
+            UpdateAddBuildProfileButton();
+        }
+
+        void ClearLicenseAgreement()
+        {
+            m_LicenseAgreementText.Clear();
+            m_ListedLicenses = string.Empty;
+            m_LicenseAgreementToggle.SetValueWithoutNotify(false);
+            m_LicenseAgreement.Hide();
         }
 
         /// <summary>
@@ -867,7 +895,12 @@ namespace UnityEditor.Build.Profile
                 && AllRequiredPackagesInstalled(card.partnerPackages);
             var isLoggedIn = BuildProfileContext.packageServiceInfoProvider.isUserLoggedIn;
             var isMultiTarget = card.supportedPlatformGuids.Length > 0;
-            m_AddBuildProfileButton.SetEnabled((allRequiredPackagesInstalled || isLoggedIn) && (!isMultiTarget || count > 0));
+            var licensesAgreed = m_ListedLicenses.Length == 0 || m_LicenseAgreementToggle.value;
+            m_AddBuildProfileButton.SetEnabled(
+                (allRequiredPackagesInstalled || isLoggedIn) && (!isMultiTarget || count > 0) && licensesAgreed);
+
+            // Nothing else on the button says why it is held back, and a disabled element still shows its tooltip.
+            m_AddBuildProfileButton.tooltip = licensesAgreed ? string.Empty : TrText.licenseAgreementRequiredTooltip;
 
             if (isMultiTarget && count == 0)
                 m_VariantSelectionWarning.Show();

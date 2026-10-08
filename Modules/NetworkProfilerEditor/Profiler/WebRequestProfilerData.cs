@@ -33,13 +33,10 @@ namespace UnityEditor.Networking
         public const int TagBodyBytes = 5;
     }
 
-    // Must match WebRequestProfilerBodyCapture in WebRequestProfilerCapture.h. Carried on in-flight
-    // rows too: a request that started with capture off will never produce a body.
     [Flags]
     enum WebRequestProfilerBodyCapture : byte
     {
         None = 0,
-        Enabled = 1 << 0,
         Supported = 1 << 1,
         TransportKnown = 1 << 2,
     }

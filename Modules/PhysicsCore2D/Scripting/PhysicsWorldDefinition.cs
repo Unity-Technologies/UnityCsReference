@@ -139,10 +139,13 @@ namespace Unity.U2D.Physics
 
         /// <summary>
         /// Controls if contact and trigger begin/end events for shapes assigned a group are marked as being the first or last event between the two groups involved.
-        /// This allows the many events produced between two groups of shapes to be reduced to a single begin and end, such as when treating multiple shapes as a single object.
+        /// This allows the many events produced between two groups of shapes to be reduced to a single begin and end, such as when treating multiple shapes on one body as a single object.
         /// The marking is only calculated for shapes assigned a group and only when a begin or end event is produced, so the cost of leaving this enabled is minor.
-        /// See <see cref="PhysicsWorld.eventGroupingAllowed"/>
         /// </summary>
+        /// <remarks>
+        /// Every shape in a group must belong to the same body; see <see cref="PhysicsWorld.PhysicsGroup"/> for the limitations.
+        /// See <see cref="PhysicsWorld.eventGroupingAllowed"/>.
+        /// </remarks>
         public bool eventGroupingAllowed { readonly get => m_EventGroupingAllowed; set => m_EventGroupingAllowed = value; }
 
         /// <summary>
@@ -184,6 +187,33 @@ namespace Unity.U2D.Physics
         public float bounceThreshold { readonly get => m_BounceThreshold; set => m_BounceThreshold = Mathf.Max(0f, value); }
 
         /// <summary>
+        /// The number of bounce passes the world runs each simulation step, after contacts and joints have been solved.
+        /// Each pass pushes apart the bodies of every contact that struck with a bounciness above zero, at the speed its bounciness allows, and never adds energy.
+        /// More passes let a bounce settle more accurately, which reduces unwanted spinning of bouncing boxes, and each pass adds work for every bouncy contact in the world.
+        /// The value must be from zero up to the maximum bounce pass count.
+        /// With zero, contacts never bounce whatever their bounciness.
+        /// </summary>
+        /// <remarks>
+        /// The maximum bounce pass count is <see cref="PhysicsConstants.MaxBounceIterations"/>.
+        /// Setting a value outside zero to that maximum clamps it into that range.
+        /// See <see cref="PhysicsWorld.bounceIterations"/>.
+        /// </remarks>
+        public int bounceIterations { readonly get => m_BounceIterations; set => m_BounceIterations = Mathf.Clamp(value, 0, PhysicsConstants.MaxBounceIterations); }
+
+        /// <summary>
+        /// Controls whether the bounce passes also solve contacts that have no bounciness.
+        /// With this disabled, only contacts with a bounciness above zero take part in the bounce passes.
+        /// A bounce then does not carry through neighboring bodies in the same pass, so a stack of boxes on a bouncy surface bounces from the bottom box up rather than together.
+        /// With this enabled, every contact takes part, so a bounce carries through groups of touching bodies within the same simulation step.
+        /// This visits every contact in the world on every bounce pass, which is significantly more expensive, so only enable it when bodies in contact must bounce together.
+        /// Carrying a bounce through a taller group of bodies needs more bounce passes.
+        /// </summary>
+        /// <remarks>
+        /// See <see cref="PhysicsWorld.bouncePropagation"/>.
+        /// </remarks>
+        public bool bouncePropagation { readonly get => m_BouncePropagation; set => m_BouncePropagation = value; }
+
+        /// <summary>
         /// The contact hit event threshold controls the collision speed needed to generate a contact hit event, usually in meters per second.
         /// See <see cref="PhysicsEvents.ContactHitEvent"/>.
         /// See <see cref="PhysicsWorld.contactHitEventThreshold"/>.
@@ -220,10 +250,14 @@ namespace Unity.U2D.Physics
         public float contactRecycleDistance { readonly get => m_ContactRecycleDistance; set => m_ContactRecycleDistance = Mathf.Max(0f, value); }
 
         /// <summary>
-        /// Get/Set the maximum linear speed.
-        /// See <see cref="PhysicsWorld.maximumLinearSpeed"/>.
+        /// The fastest any body in the world can move, in meters per second.
+        /// Each simulation step, a body moving faster than this is slowed to it, which stops a body covering so much distance in one step that the simulation becomes unstable.
         /// </summary>
-        public float maximumLinearSpeed { readonly get => m_MaximumLinearSpeed; set => m_MaximumLinearSpeed = Mathf.Max(0f, value); }
+        /// <remarks>
+        /// A value below <see cref="PhysicsConstants.MinMaximumLinearSpeed"/> is raised to that minimum.
+        /// See <see cref="PhysicsWorld.maximumLinearSpeed"/>.
+        /// </remarks>
+        public float maximumLinearSpeed { readonly get => m_MaximumLinearSpeed; set => m_MaximumLinearSpeed = Mathf.Max(PhysicsConstants.MinMaximumLinearSpeed, value); }
 
         /// <summary>
         /// Limits what gets drawn to a broad selection.
@@ -345,13 +379,15 @@ namespace Unity.U2D.Physics
         [SerializeField] [FormerlySerializedAs("m_PreSolveCallbacks")] bool m_PreContactCallbacks;
         [SerializeField] bool m_AutoBodyUpdateCallbacks;
         [SerializeField] bool m_AutoJointThresholdCallbacks;
+        [SerializeField] bool m_BouncePropagation;
         [SerializeField] [Min(0.0f)] float m_BounceThreshold;
+        [SerializeField] [Range(0, PhysicsConstants.MaxBounceIterations)] int m_BounceIterations;
         [SerializeField] [Min(0.0f)] float m_ContactHitEventThreshold;
         [SerializeField] [Min(0.0f)] float m_ContactFrequency;
         [SerializeField] [Min(0.0f)] float m_ContactDamping;
         [SerializeField] [Min(0.0f)] float m_ContactSpeed;
         [SerializeField] [Min(0.0f)] float m_ContactRecycleDistance;
-        [SerializeField] [Min(0.0f)] float m_MaximumLinearSpeed;
+        [SerializeField] [Min(PhysicsConstants.MinMaximumLinearSpeed)] float m_MaximumLinearSpeed;
         [SerializeField] PhysicsWorld.DrawOptions m_DrawOptions;
         [SerializeField] PhysicsWorld.DrawFillOptions m_DrawFillOptions;
         [SerializeField] PhysicsWorld.DrawContactType m_DrawContactType;

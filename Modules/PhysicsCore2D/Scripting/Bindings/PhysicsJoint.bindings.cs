@@ -40,7 +40,7 @@ namespace Unity.U2D.Physics
         [NativeMethod(Name = "PhysicsJoint::GetCurrentAngularSeparation", IsThreadSafe = true)] extern internal static float PhysicsJoint_GetCurrentAngularSeparation(PhysicsJoint joint);
         [NativeMethod(Name = "PhysicsJoint::SetWorldDrawing", IsThreadSafe = true)] extern internal static void PhysicsJoint_SetWorldDrawing(PhysicsJoint joint, bool flag);
         [NativeMethod(Name = "PhysicsJoint::GetWorldDrawing", IsThreadSafe = true)] extern internal static bool PhysicsJoint_GetWorldDrawing(PhysicsJoint joint);
-        [NativeMethod(Name = "PhysicsJoint::SetSelectedDrawing", IsThreadSafe = true)] extern internal static void PhysicsJoint_SetSelectedDrawing(ReadOnlySpan<PhysicsJoint> joints, bool selected);
+        [NativeMethod(Name = "PhysicsJoint::SetSelectedDrawing", IsThreadSafe = true)] extern internal static int PhysicsJoint_SetSelectedDrawing(ReadOnlySpan<PhysicsJoint> joints, bool selected);
         [NativeMethod(Name = "PhysicsJoint::GetSelectedDrawing", IsThreadSafe = true)] extern internal static bool PhysicsJoint_GetSelectedDrawing(PhysicsJoint joint);
         [NativeMethod(Name = "PhysicsJoint::SetDrawTarget", IsThreadSafe = true)] extern internal static void PhysicsJoint_SetDrawTarget(PhysicsJoint joint, PhysicsWorld.DrawTarget drawTarget);
         [NativeMethod(Name = "PhysicsJoint::GetDrawTarget", IsThreadSafe = true)] extern internal static PhysicsWorld.DrawTarget PhysicsJoint_GetDrawTarget(PhysicsJoint joint);
@@ -51,8 +51,8 @@ namespace Unity.U2D.Physics
         [NativeMethod(Name = "PhysicsJoint::SetCallbackTarget", IsThreadSafe = true)] extern internal static void PhysicsJoint_SetCallbackTarget(PhysicsJoint joint, System.Object callbackTarget);
         [NativeMethod(Name = "PhysicsJoint::GetCallbackTarget", IsThreadSafe = true)] extern internal static System.Object PhysicsJoint_GetCallbackTarget(PhysicsJoint joint);
         [NativeMethod(Name = "PhysicsJoint::SetUserData", IsThreadSafe = true)] extern internal static void PhysicsJoint_SetUserData(PhysicsJoint joint, PhysicsUserData physicsUserData);
-        [NativeMethod(Name = "PhysicsJoint::SetUserDataSpan", IsThreadSafe = true)] extern internal static void PhysicsJoint_SetUserDataSpan(ReadOnlySpan<PhysicsJoint> joints, ReadOnlySpan<PhysicsUserData> userDatas);
-        [NativeMethod(Name = "PhysicsJoint::SetUserDataSpanAll", IsThreadSafe = true)] extern internal static void PhysicsJoint_SetUserDataSpanAll(ReadOnlySpan<PhysicsJoint> joints, PhysicsUserData physicsUserData);
+        [NativeMethod(Name = "PhysicsJoint::SetUserDataSpan", IsThreadSafe = true)] extern internal static int PhysicsJoint_SetUserDataSpan(ReadOnlySpan<PhysicsJoint> joints, ReadOnlySpan<PhysicsUserData> userDatas);
+        [NativeMethod(Name = "PhysicsJoint::SetUserDataSpanAll", IsThreadSafe = true)] extern internal static int PhysicsJoint_SetUserDataSpanAll(ReadOnlySpan<PhysicsJoint> joints, PhysicsUserData physicsUserData);
         [NativeMethod(Name = "PhysicsJoint::GetUserData", IsThreadSafe = true)] extern internal static PhysicsUserData PhysicsJoint_GetUserData(PhysicsJoint joint);
         [NativeMethod(Name = "PhysicsJoint::SetOwnerUserData", IsThreadSafe = true)] extern internal static void PhysicsJoint_SetOwnerUserData(PhysicsJoint joint, PhysicsUserData physicsUserData, int ownerKey);
         [NativeMethod(Name = "PhysicsJoint::SetOwnerUserDataSpan", IsThreadSafe = true)] extern internal static void PhysicsJoint_SetOwnerUserDataSpan(ReadOnlySpan<PhysicsJoint> joints, ReadOnlySpan<PhysicsUserData> userDatas, int ownerKey);
@@ -84,6 +84,7 @@ namespace Unity.U2D.Physics
         [NativeMethod(Name = "PhysicsDistanceJoint::SetMaxMotorForce", IsThreadSafe = true)] extern internal static void DistanceJoint_SetMaxMotorForce(PhysicsDistanceJoint joint, float maxMotorForce);
         [NativeMethod(Name = "PhysicsDistanceJoint::GetMaxMotorForce", IsThreadSafe = true)] extern internal static float DistanceJoint_GetMaxMotorForce(PhysicsDistanceJoint joint);
         [NativeMethod(Name = "PhysicsDistanceJoint::GetCurrentMotorForce", IsThreadSafe = true)] extern internal static float DistanceJoint_GetCurrentMotorForce(PhysicsDistanceJoint joint);
+        [NativeMethod(Name = "PhysicsDistanceJoint::GetCurrentSpringForce", IsThreadSafe = true)] extern internal static float DistanceJoint_GetCurrentSpringForce(PhysicsDistanceJoint joint);
         [NativeMethod(Name = "PhysicsDistanceJoint::SetEnableLimit", IsThreadSafe = true)] extern internal static void DistanceJoint_SetEnableLimit(PhysicsDistanceJoint joint, bool enableLimit);
         [NativeMethod(Name = "PhysicsDistanceJoint::GetEnableLimit", IsThreadSafe = true)] extern internal static bool DistanceJoint_GetEnableLimit(PhysicsDistanceJoint joint);
         [NativeMethod(Name = "PhysicsDistanceJoint::SetMinDistanceLimit", IsThreadSafe = true)] extern internal static void DistanceJoint_SetMinDistanceLimit(PhysicsDistanceJoint joint, float minDistanceLimit);
@@ -143,6 +144,7 @@ namespace Unity.U2D.Physics
         [NativeMethod(Name = "PhysicsSliderJoint::SetMaxMotorForce", IsThreadSafe = true)] extern internal static void SliderJoint_SetMaxMotorForce(PhysicsSliderJoint joint, float force);
         [NativeMethod(Name = "PhysicsSliderJoint::GetMaxMotorForce", IsThreadSafe = true)] extern internal static float SliderJoint_GetMaxMotorForce(PhysicsSliderJoint joint);
         [NativeMethod(Name = "PhysicsSliderJoint::GetCurrentMotorForce", IsThreadSafe = true)] extern internal static float SliderJoint_GetCurrentMotorForce(PhysicsSliderJoint joint);
+        [NativeMethod(Name = "PhysicsSliderJoint::GetCurrentSpringForce", IsThreadSafe = true)] extern internal static float SliderJoint_GetCurrentSpringForce(PhysicsSliderJoint joint);
         [NativeMethod(Name = "PhysicsSliderJoint::GetCurrentTranslation", IsThreadSafe = true)] extern internal static float SliderJoint_GetCurrentTranslation(PhysicsSliderJoint joint);
         [NativeMethod(Name = "PhysicsSliderJoint::GetCurrentSpeed", IsThreadSafe = true)] extern internal static float SliderJoint_GetCurrentSpeed(PhysicsSliderJoint joint);
         [NativeMethod(Name = "PhysicsSliderJoint::SetEnableLimit", IsThreadSafe = true)] extern internal static void SliderJoint_SetEnableLimit(PhysicsSliderJoint joint, bool enableLimit);
@@ -175,6 +177,7 @@ namespace Unity.U2D.Physics
         [NativeMethod(Name = "PhysicsHingeJoint::SetMaxMotorTorque", IsThreadSafe = true)] extern internal static void HingeJoint_SetMaxMotorTorque(PhysicsHingeJoint joint, float torque);
         [NativeMethod(Name = "PhysicsHingeJoint::GetMaxMotorTorque", IsThreadSafe = true)] extern internal static float HingeJoint_GetMaxMotorTorque(PhysicsHingeJoint joint);
         [NativeMethod(Name = "PhysicsHingeJoint::GetCurrentMotorTorque", IsThreadSafe = true)] extern internal static float HingeJoint_GetCurrentMotorTorque(PhysicsHingeJoint joint);
+        [NativeMethod(Name = "PhysicsHingeJoint::GetCurrentSpringTorque", IsThreadSafe = true)] extern internal static float HingeJoint_GetCurrentSpringTorque(PhysicsHingeJoint joint);
         [NativeMethod(Name = "PhysicsHingeJoint::SetEnableLimit", IsThreadSafe = true)] extern internal static void HingeJoint_SetEnableLimit(PhysicsHingeJoint joint, bool enableLimit);
         [NativeMethod(Name = "PhysicsHingeJoint::GetEnableLimit", IsThreadSafe = true)] extern internal static bool HingeJoint_GetEnableLimit(PhysicsHingeJoint joint);
         [NativeMethod(Name = "PhysicsHingeJoint::SetLowerAngleLimit", IsThreadSafe = true)] extern internal static void HingeJoint_SetLowerLimit(PhysicsHingeJoint joint, float lowerAngleLimit);
@@ -214,6 +217,7 @@ namespace Unity.U2D.Physics
         [NativeMethod(Name = "PhysicsWheelJoint::SetMaxMotorTorque", IsThreadSafe = true)] extern internal static void WheelJoint_SetMaxMotorTorque(PhysicsWheelJoint joint, float torque);
         [NativeMethod(Name = "PhysicsWheelJoint::GetMaxMotorTorque", IsThreadSafe = true)] extern internal static float WheelJoint_GetMaxMotorTorque(PhysicsWheelJoint joint);
         [NativeMethod(Name = "PhysicsWheelJoint::GetCurrentMotorTorque", IsThreadSafe = true)] extern internal static float WheelJoint_GetCurrentMotorTorque(PhysicsWheelJoint joint);
+        [NativeMethod(Name = "PhysicsWheelJoint::GetCurrentSpringForce", IsThreadSafe = true)] extern internal static float WheelJoint_GetCurrentSpringForce(PhysicsWheelJoint joint);
         [NativeMethod(Name = "PhysicsWheelJoint::SetEnableLimit", IsThreadSafe = true)] extern internal static void WheelJoint_SetEnableLimit(PhysicsWheelJoint joint, bool enableLimit);
         [NativeMethod(Name = "PhysicsWheelJoint::GetEnableLimit", IsThreadSafe = true)] extern internal static bool WheelJoint_GetEnableLimit(PhysicsWheelJoint joint);
         [NativeMethod(Name = "PhysicsWheelJoint::SetLowerTranslationLimit", IsThreadSafe = true)] extern internal static void WheelJoint_SetLowerTranslationLimit(PhysicsWheelJoint joint, float lowerTranslationLimit);

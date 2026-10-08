@@ -245,12 +245,21 @@ namespace Unity.ProjectAuditor.Editor.Modules
             AsyncProgressState progressState = progress?.Start("Analyzing Precompiled Assemblies", precompiledAssemblyPaths.Count);
 
             long threadExecutionTimeMs = 0;
+            var analysisSucceeded = true;
 
             // Analyze precompiled assemblies
             m_AssemblyAnalysisThread = new Thread(() =>
             {
                 var startTime = DateTime.UtcNow;
-                AnalyzePrecompiledAssemblies(analysisParams, precompiledAssemblyPaths, onPrecompiledAssemblyIssueFoundInternal, progress, progressState);
+                try
+                {
+                    AnalyzePrecompiledAssemblies(analysisParams, precompiledAssemblyPaths, onPrecompiledAssemblyIssueFoundInternal, progress, progressState);
+                }
+                catch (Exception e)
+                {
+                    analysisSucceeded = false;
+                    Debug.LogError($"[{ProjectAuditor.DisplayName}] Precompiled assembly analysis failed: {e}");
+                }
                 threadExecutionTimeMs += (long)(DateTime.UtcNow - startTime).TotalMilliseconds;
             });
             m_AssemblyAnalysisThread.Name = "Precompiled Assembly Analysis";
@@ -260,6 +269,7 @@ namespace Unity.ProjectAuditor.Editor.Modules
             // wait for thread
             while (m_AssemblyAnalysisThread.IsAlive)
                 yield return new WaitForEndOfFrame();
+            m_AssemblyAnalysisThread.Join();
 
             progress?.Clear(progressState);
 
@@ -297,7 +307,7 @@ namespace Unity.ProjectAuditor.Editor.Modules
             // per-assembly AssemblyBuilder compilation below applies, so finish the module here.
             if (MsBuildCompilationInterface.IsEnabled())
             {
-                yield return AuditWithMsBuild(context, analysisParams, progress, threadExecutionTimeMs, roslynAnalyzerAssets);
+                yield return AuditWithMsBuild(context, analysisParams, progress, threadExecutionTimeMs, analysisSucceeded, roslynAnalyzerAssets);
                 yield break;
             }
 
@@ -396,6 +406,7 @@ namespace Unity.ProjectAuditor.Editor.Modules
             assemblyDirectories.AddRange(AssemblyInfoProvider.GetPrecompiledAssemblyDirectories(PrecompiledAssemblyTypes.UserAssembly | PrecompiledAssemblyTypes.UnityEngine | PrecompiledAssemblyTypes.SystemAssembly));
             if ((analysisParams.CodeAnalysisFlags & CodeAnalysisFlags.Editor) != 0)
                 assemblyDirectories.AddRange(AssemblyInfoProvider.GetPrecompiledAssemblyDirectories(PrecompiledAssemblyTypes.UnityEditor));
+            assemblyDirectories.AddRange(compilationPipeline.ResponseFileReferenceDirectories);
 
             yield return null;
 
@@ -406,8 +417,16 @@ namespace Unity.ProjectAuditor.Editor.Modules
                 // Run analysis on the background thread
                 var startTime = DateTime.UtcNow;
 
-                AnalyzeAssemblies(localAssemblyInfos, analysisParams, assemblyDirectories, onIssueFoundInternal, progress, assemblyProgressState);
-                AnalyzeAssemblies(readOnlyAssemblyInfos, analysisParams, assemblyDirectories, onIssueFoundInternal, progress, assemblyProgressState);
+                try
+                {
+                    AnalyzeAssemblies(localAssemblyInfos, analysisParams, assemblyDirectories, onIssueFoundInternal, progress, assemblyProgressState);
+                    AnalyzeAssemblies(readOnlyAssemblyInfos, analysisParams, assemblyDirectories, onIssueFoundInternal, progress, assemblyProgressState);
+                }
+                catch (Exception e)
+                {
+                    analysisSucceeded = false;
+                    Debug.LogError($"[{ProjectAuditor.DisplayName}] Assembly analysis failed: {e}");
+                }
 
                 threadExecutionTimeMs += (long)(DateTime.UtcNow - startTime).TotalMilliseconds;
             });
@@ -418,6 +437,7 @@ namespace Unity.ProjectAuditor.Editor.Modules
             // wait for thread
             while (m_AssemblyAnalysisThread.IsAlive)
                 yield return new WaitForEndOfFrame();
+            m_AssemblyAnalysisThread.Join();
 
             // remove issues if platform does not match
             foundIssues.RemoveAll(i => i.Id.IsValid() &&
@@ -430,12 +450,12 @@ namespace Unity.ProjectAuditor.Editor.Modules
                 analysisParams.OnIncomingIssues(foundIssues);
 
             progress?.Clear(assemblyProgressState);
-            analysisParams.OnModuleCompleted?.Invoke(Name, AnalysisResult.Success, threadExecutionTimeMs);
+            analysisParams.OnModuleCompleted?.Invoke(Name, analysisSucceeded ? AnalysisResult.Success : AnalysisResult.Failure, threadExecutionTimeMs);
         }
 
         // Runs the analysis compilation(s) through the MSBuild pipeline and reports the resulting diagnostics.
         // One build per requested target: "Analysis" for editor code, "<Platform>+Analysis" for player code.
-        IEnumerator AuditWithMsBuild(AnalysisContext context, AnalysisParams analysisParams, IProgress progress, long threadExecutionTimeMs, IReadOnlyCollection<string> roslynAnalyzerAssets)
+        IEnumerator AuditWithMsBuild(AnalysisContext context, AnalysisParams analysisParams, IProgress progress, long threadExecutionTimeMs, bool analysisSucceeded, IReadOnlyCollection<string> roslynAnalyzerAssets)
         {
             var configurations = new List<(string Configuration, bool EditorAssemblies)>(2);
             if ((analysisParams.CodeAnalysisFlags & CodeAnalysisFlags.Editor) != 0)
@@ -487,7 +507,7 @@ namespace Unity.ProjectAuditor.Editor.Modules
             }
 
             progress?.Clear(progressState);
-            analysisParams.OnModuleCompleted?.Invoke(Name, AnalysisResult.Success, threadExecutionTimeMs);
+            analysisParams.OnModuleCompleted?.Invoke(Name, analysisSucceeded ? AnalysisResult.Success : AnalysisResult.Failure, threadExecutionTimeMs);
         }
 
         static void WriteGlobalConfig()

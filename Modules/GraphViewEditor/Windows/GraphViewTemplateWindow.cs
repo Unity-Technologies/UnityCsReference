@@ -119,7 +119,7 @@ namespace UnityEditor.Experimental.GraphView
     }
 
     [Serializable]
-    internal struct TemplateUseHistoryItem
+    internal struct TemplateUseHistoryItem : IEquatable<TemplateUseHistoryItem>
     {
         public string toolKey;
         public string assetGuid;
@@ -130,6 +130,11 @@ namespace UnityEditor.Experimental.GraphView
             this.toolKey = key;
             this.assetGuid = guid;
             this.lastUsedTicks = DateTime.UtcNow.Ticks;
+        }
+
+        public bool Equals(TemplateUseHistoryItem other)
+        {
+            return toolKey == other.toolKey && assetGuid == other.assetGuid && lastUsedTicks == other.lastUsedTicks;
         }
     }
 

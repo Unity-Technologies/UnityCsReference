@@ -29,7 +29,7 @@ namespace UnityEngine.TextCore.Text
         }
     }
 
-    internal struct TextCacheEntry
+    internal struct TextCacheEntry : IEquatable<TextCacheEntry>
     {
         public TextHandle textHandle;
         public TextInfo   textInfo;
@@ -41,6 +41,11 @@ namespace UnityEngine.TextCore.Text
             textHandle = handle;
             textInfo   = info;
             lastTimeInCache = time;
+        }
+
+        public bool Equals(TextCacheEntry other)
+        {
+            return textHandle == other.textHandle && textInfo == other.textInfo && lastTimeInCache == other.lastTimeInCache;
         }
     }
 

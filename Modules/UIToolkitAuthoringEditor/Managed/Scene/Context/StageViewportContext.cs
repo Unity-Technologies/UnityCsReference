@@ -81,7 +81,7 @@ sealed class StageViewportContext : IUIViewportContext
             var stage = history[i];
             var content = stage.CreateHeaderContent();
             var icon = content.image as Texture2D;
-            var label = content.text;
+            var label = stage.hasUnsavedChanges ? content.text + "*" : content.text;
 
             var isCurrentStage = i == history.Count - 1;
             if (isCurrentStage)

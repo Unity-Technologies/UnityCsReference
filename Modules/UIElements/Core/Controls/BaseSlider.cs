@@ -6,7 +6,6 @@
 #pragma warning disable UAL0010,UAL0011,UAL0012,UAL0013,UAL0014 // AutoStaticsCleanup: UIToolkitFramework not yet converted
 using System;
 using System.Collections.Generic;
-using System.Globalization;
 using System.Runtime.CompilerServices;
 using Unity.Properties;
 using Unity.Scripting.LifecycleManagement;
@@ -472,20 +471,26 @@ namespace UnityEngine.UIElements
 
         /// <undoc/>
         /// TODO why not make this stuff internal?
-        protected internal static float GetClosestPowerOfTen(float positiveNumber)
+        protected internal static float GetClosestPowerOfTen(float positiveNumber) =>
+            (float)GetClosestPowerOfTen((double)positiveNumber);
+
+        internal static double GetClosestPowerOfTen(double positiveNumber)
         {
             if (positiveNumber <= 0)
                 return 1;
-            return Mathf.Pow(10, Mathf.RoundToInt(Mathf.Log10(positiveNumber)));
+            return Math.Pow(10, Math.Round(Math.Log10(positiveNumber)));
         }
 
         /// <undoc/>
         /// TODO why not make this stuff internal?
-        protected internal static float RoundToMultipleOf(float value, float roundingValue)
+        protected internal static float RoundToMultipleOf(float value, float roundingValue) =>
+            (float)RoundToMultipleOf((double)value, (double)roundingValue);
+
+        internal static double RoundToMultipleOf(double value, double roundingValue)
         {
             if (roundingValue == 0)
                 return value;
-            return Mathf.Round(value / roundingValue) * roundingValue;
+            return Math.Round(value / roundingValue) * roundingValue;
         }
 
         private void ClampValue()
@@ -498,6 +503,7 @@ namespace UnityEngine.UIElements
         internal abstract float SliderNormalizeValue(TValueType currentValue, TValueType lowerValue, TValueType higherValue);
         internal abstract TValueType SliderRange();
         internal abstract TValueType ParseStringToValue(string previousValue, string newValue);
+        internal abstract string ValueToString(TValueType currentValue);
         internal abstract void ComputeValueFromKey(SliderKey sliderKey, bool isShift);
 
         internal enum SliderKey
@@ -795,7 +801,7 @@ namespace UnityEngine.UIElements
             if (inputTextField == null || m_IsEditingTextField)
                 return;
 
-            inputTextField.SetValueWithoutNotify(String.Format(CultureInfo.InvariantCulture, "{0:g7}", value));
+            inputTextField.SetValueWithoutNotify(ValueToString(value));
         }
 
         void OnFocusIn(FocusInEvent evt) => dragElement.AddToClassList(movableUssClassNameUnique);

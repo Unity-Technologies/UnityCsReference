@@ -14,7 +14,7 @@ namespace Unity.UIToolkit.Editor
 
         internal static VisualElement FindClipOwner(VisualElement element)
         {
-            if (element == null)
+            if (element == null || element.resourcesReleased)   // resolvedStyle throws on a recycled layout node
                 return null;
             if (element.resolvedStyle.unityAnimationClip != null)
                 return element;

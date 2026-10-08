@@ -236,7 +236,9 @@ namespace Unity.UI.Builder
 
             attributesContainer.Clear();
 
-            if (context.element == null || context.uxmlSerializedDataDescription == null)
+            context.Revalidate();
+
+            if (context.element == null || context.uxmlSerializedDataDescription == null || !context.hasLiveSerializedObject)
                 return;
 
             GenerateSerializedAttributeFields();
@@ -822,7 +824,7 @@ namespace Unity.UI.Builder
         void UpdateCustomPropertyDrawerAttributeOverrideStyle(CustomPropertyDrawerField fieldElement)
         {
             // When an assembly reload occurs this may be called before the view is fully initialized.
-            if (context.rootSerializedObject == null)
+            if (!context.hasLiveSerializedObject)
                 return;
             var overridde = IsAttributeOverriden(fieldElement.Q<PropertyField>().bindingPath);
             var style = fieldElement.GetFirstAncestorOfType<BuilderStyleRow>();

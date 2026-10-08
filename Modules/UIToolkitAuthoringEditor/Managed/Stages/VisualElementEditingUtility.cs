@@ -326,6 +326,47 @@ static class VisualElementEditingUtility
     }
 
     /// <summary>
+    /// Whether the clipboard holds content to paste under the paste parent: valid UXML, or cut elements that can
+    /// move there.
+    /// </summary>
+    public static bool CanPasteContent(VisualElement parentElement, VisualElementAsset parentAsset)
+    {
+        if (!CanPasteContent())
+            return false;
+
+        var cutElements = Clipboard.GetClipboardForStage()?.GetCutElements();
+        return cutElements == null || cutElements.Count == 0 ||
+            CanMoveCutElements(cutElements, parentElement, parentAsset);
+    }
+
+    /// <summary>
+    /// Whether the cut elements can move under the paste parent: none of them is the parent or one of its
+    /// ancestors, and none would leave the target document instantiating itself.
+    /// </summary>
+    public static bool CanMoveCutElements(IReadOnlyList<VisualElementAsset> cutElements, VisualElement parentElement,
+        VisualElementAsset parentAsset)
+    {
+        var targetDocument = parentAsset.visualTreeAsset;
+        for (var i = 0; i < cutElements.Count; ++i)
+        {
+            var cutAsset = cutElements[i];
+            if (cutAsset == null)
+                continue;
+
+            if (cutAsset == parentAsset || cutAsset.IsAncestorOf(parentAsset))
+                return false;
+
+            // Pasting a cut element into another document re-homes it, template instances and all, exactly like a
+            // drag does — and can close the same cycle.
+            if (cutAsset.visualTreeAsset != targetDocument &&
+                WouldCauseCircularDependency(targetDocument, parentElement, cutAsset))
+                return false;
+        }
+
+        return true;
+    }
+
+    /// <summary>
     /// Pastes the current clipboard UXML content under <paramref name="parentAsset"/>.
     /// Returns <see langword="false"/> when the clipboard is empty, the content is not valid UXML,
     /// or the paste would create a circular template dependency.

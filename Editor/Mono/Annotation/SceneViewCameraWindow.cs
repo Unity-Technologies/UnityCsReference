@@ -105,7 +105,13 @@ namespace UnityEditor
             => m_WindowSize;
 
         public SceneViewCameraWindow(SceneView sceneView)
-            => m_SceneView = sceneView;
+        {
+            m_SceneView = sceneView;
+
+            // The Occlusion Culling row is hidden when legacy Umbra is disabled, so the window is one line shorter.
+            if (!EditorSettings.enableLegacyUmbraCulling)
+                m_WindowSize.y -= (int)EditorGUI.kSingleLineHeight;
+        }
         
         public override VisualElement CreateGUI()
         {
@@ -191,9 +197,13 @@ namespace UnityEditor
 
             //    Occlusion culling
             m_OcclusionCulling = m_Root.MandatoryQ<Toggle>("OcclusionCulling");
+            if (!EditorSettings.enableLegacyUmbraCulling)
+                m_OcclusionCulling.style.display = DisplayStyle.None;
             m_OcclusionCulling.RegisterValueChangedCallback(evt =>
             {
+                #pragma warning disable CS0618
                 settings.occlusionCulling = evt.newValue;
+                #pragma warning restore CS0618
                 m_SceneView.Repaint();
             });
 
@@ -305,7 +315,9 @@ namespace UnityEditor
             ShowExtremeClippingIfNeeded();
 
             //    Occlusion culling
+            #pragma warning disable CS0618
             m_OcclusionCulling.SetValueWithoutNotify(settings.occlusionCulling);
+            #pragma warning restore CS0618
 
             // Camera Navigation
             //    Easing

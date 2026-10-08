@@ -89,6 +89,15 @@ partial class UxmlAttributesView : VisualElement
     public void Rebind()
     {
         using var _ = k_RebindMarker.Auto();
+
+        // Binding writes the bound value into a field, which resets the text of a delayed field still being typed in.
+        var editedText = panel?.focusController?.GetLeafFocusedElement() as TextElement;
+        var editedField = editedText?.GetFirstAncestorOfType<TextField>();
+        if (editedField == null || !Contains(editedField))
+            editedText = null;
+        var pendingText = editedText?.text;
+        var valueBefore = editedField?.value;
+
         m_RootPropertyView.Unbind();
 
         if (Context != null && Context.rootSerializedObject != null)
@@ -96,6 +105,9 @@ partial class UxmlAttributesView : VisualElement
             m_RootPropertyView.bindingPath = m_Context.serializedBasePath;
             m_RootPropertyView.Bind(m_Context.rootSerializedObject);
         }
+
+        if (editedText != null && editedField.value == valueBefore)
+            ((INotifyValueChanged<string>)editedText).SetValueWithoutNotify(pendingText);
     }
 
     void OnContextChanged(object sender, UxmlAttributesEditingContext.ContextChangedEventArgs args)

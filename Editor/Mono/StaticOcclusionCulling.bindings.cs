@@ -10,6 +10,7 @@ using Object = UnityEngine.Object;
 namespace UnityEditor
 {
     // StaticOcclusionCulling lets you perform static occlusion culling operations
+    [Obsolete("StaticOcclusionCulling is deprecated and will be removed in a future release. Consider migrating to GPU Occlusion Culling where your target platform supports it. #from(6000.7)", false)]
     [NativeHeader("Runtime/Camera/OcclusionCullingSettings.h")]
     [NativeHeader("Runtime/Camera/RendererScene.h")]
     [NativeHeader("Editor/Src/OcclusionCulling.h")]
@@ -95,6 +96,7 @@ namespace UnityEditor
     }
 
     // Used to visualize static occlusion culling at development time in scene view.
+    [Obsolete("StaticOcclusionCullingVisualization is deprecated and will be removed in a future release. Consider migrating to GPU Occlusion Culling where your target platform supports it. #from(6000.7)", false)]
     [StaticAccessor("GetOcclusionCullingVisualization()", StaticAccessorType.Arrow)]
     [NativeHeader("Editor/Src/OcclusionCullingVisualizationState.h")]
     [NativeHeader("Runtime/Camera/Camera.h")]

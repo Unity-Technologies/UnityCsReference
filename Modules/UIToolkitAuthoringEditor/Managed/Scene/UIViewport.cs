@@ -254,13 +254,9 @@ sealed partial class UIViewport : VisualElement
                     evt.StopPropagation();
                 break;
             case EventCommandNames.Duplicate:
-            {
-                using var selectionHandle = ListPool<VisualElementAsset>.Get(out var filteredSelection);
-                UIViewportContextMenuUtility.FilterSelection(filteredSelection);
-                if (DuplicateElementsCommand.Execute(CommandSources.Viewport, filteredSelection.ToArray()) == CommandExecutionStatus.Success)
+                if (UIViewportContextMenuUtility.DoDuplicate(CommandSources.Viewport))
                     evt.StopPropagation();
                 break;
-            }
             case EventCommandNames.Delete:
             case EventCommandNames.SoftDelete:
             {

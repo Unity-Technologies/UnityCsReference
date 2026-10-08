@@ -16,12 +16,21 @@ namespace UnityEngine.UIElements.StyleSheets
         public readonly int importedStyleSheetIndex;
         public readonly StyleComplexSelector complexSelector;
 
+        // Effective tier of this match, resolved per use (an imported rule inherits the tier of
+        // the stack entry that pulled it in; see StyleSelectorMatch). Derived data: not part of
+        // equality.
+        public readonly StyleSheetPriority tier;
+
         public SelectorMatchRecord(StyleSheet sheet, int styleSheetIndexInStack, int importedStyleSheetIndex, StyleComplexSelector complexSelector)
         {
             this.sheet = sheet;
             this.styleSheetIndexInStack = styleSheetIndexInStack;
             this.importedStyleSheetIndex = importedStyleSheetIndex;
             this.complexSelector = complexSelector;
+
+            // No stack context here (UI Builder and test paths): the sheet's own tier is the
+            // best available answer.
+            tier = sheet != null ? sheet.priority : StyleSheetPriority.Default;
         }
 
         // Copies fields out of the hot-path representation so the rest of the system can keep
@@ -32,6 +41,7 @@ namespace UnityEngine.UIElements.StyleSheets
             this.styleSheetIndexInStack = src.styleSheetIndexInStack;
             this.importedStyleSheetIndex = src.importedStyleSheetIndex;
             this.complexSelector = src.complexSelector;
+            this.tier = src.tier;
         }
 
         public bool Equals(SelectorMatchRecord other)

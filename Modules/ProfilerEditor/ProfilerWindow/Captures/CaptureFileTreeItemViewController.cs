@@ -4,7 +4,6 @@
 
 using System;
 using System.Collections;
-using System.Text.RegularExpressions;
 using UnityEditor;
 using UnityEditor.Profiling;
 using UnityEngine;
@@ -35,8 +34,6 @@ namespace Unity.Profiling.Editor.UI
         const int k_MinTimeBetweenClicksMs = 100;
         const int k_WarningMessageVertOffset = -25;
 
-        readonly int m_StrLenMaxFPS;
-
         static readonly GUIContent k_CaptureOptionMenuItemDelete = new("Delete", "Deletes the capture file from disk.");
         static readonly GUIContent k_CaptureOptionMenuItemRename = new("Rename", "Renames the capture file on disk.");
         static readonly GUIContent k_CaptureOptionMenuItemBrowse = new("Open Folder", "Opens the folder where the capture file is located on disk.");
@@ -65,7 +62,6 @@ namespace Unity.Profiling.Editor.UI
             base(model, screenshotsManager)
         {
             m_CaptureDataService = captureDataService;
-            m_StrLenMaxFPS = ProfilerUserSettings.k_MaximumTargetFramesPerSecond.ToString().Length;
             m_ProfilerWindow = profilerWindow;
             m_WarningMessage = warningLabel;
             m_OnEditStarted = onEditStarted;
@@ -375,16 +371,18 @@ namespace Unity.Profiling.Editor.UI
             return true;
         }
 
-        string ValidateFPSInput(string newFPSValue)
+        internal static string ValidateFPSInput(string newFPSValue)
         {
-            // Get rid of non-numeric chars
-            var fpsString = Regex.Replace(newFPSValue, @"[^0-9]", "");
+            // Culture-aware parsing, for handling input such as "1,000".
+            // Finite check handles "NaN" and "∞" as inputs.
+            if (!double.TryParse(newFPSValue, out var parsedValue) || !double.IsFinite(parsedValue))
+                return string.Empty;
 
-            // Easiest way to avoid potential int parsing awkwardness
-            if (fpsString.Length > m_StrLenMaxFPS)
-                return ProfilerUserSettings.k_MaximumTargetFramesPerSecond.ToString();
-
-            return fpsString;
+            var roundedValue = Math.Round(parsedValue, MidpointRounding.AwayFromZero);
+            var clampedValue = Math.Clamp(roundedValue,
+                ProfilerUserSettings.k_MinimumTargetFramesPerSecond,
+                ProfilerUserSettings.k_MaximumTargetFramesPerSecond);
+            return ((int)clampedValue).ToString();
         }
 
         void TryRename(string newCaptureName)

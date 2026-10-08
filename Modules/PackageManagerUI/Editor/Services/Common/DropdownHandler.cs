@@ -47,7 +47,7 @@ internal partial class DropdownHandler : BaseService<IDropdownHandler>, IDropdow
 
         public static void ShowDropdown(VisualElement anchorElement, DropdownContent content)
         {
-            if (anchorElement == null || content == null)
+            if (anchorElement?.panel == null || content == null)
                 return;
 
             if (float.IsNaN(anchorElement.rect.x) || float.IsNaN(anchorElement.rect.y) || float.IsNaN(anchorElement.rect.width) || float.IsNaN(anchorElement.rect.height))

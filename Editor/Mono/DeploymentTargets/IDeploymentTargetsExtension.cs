@@ -62,10 +62,15 @@ namespace UnityEditor.DeploymentTargets
         Unknown,
     }
 
-    internal struct DeploymentTargetIdAndStatus
+    internal struct DeploymentTargetIdAndStatus : IEquatable<DeploymentTargetIdAndStatus>
     {
         public DeploymentTargetId id;
         public DeploymentTargetStatus status;
+
+        public bool Equals(DeploymentTargetIdAndStatus other)
+        {
+            return id == other.id && status == other.status;
+        }
     }
 
     internal interface IDeploymentLaunchResult

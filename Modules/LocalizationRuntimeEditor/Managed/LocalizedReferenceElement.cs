@@ -57,6 +57,8 @@ abstract class LocalizedReferenceElement : VisualElement
 
     ResourceTableCollection m_Collection;
     SharedTableData.SharedTableEntry m_SharedEntry;
+    TableReference m_ShownTable;
+    TableEntryReference m_ShownEntry;
     string m_SelectedLocaleCode;
 
     protected ResourceTableCollection Collection => m_Collection;
@@ -119,6 +121,8 @@ abstract class LocalizedReferenceElement : VisualElement
         InjectReferenceButton(label);
         WireEntryName();
         BuildToggles();
+        this.TrackPropertyValue(m_TableRefProp, _ => OnReferenceChanged());
+        this.TrackPropertyValue(m_TableEntryRefProp, _ => OnReferenceChanged());
 
         // Custom-built content is not auto-bound, so rebuild it when an undo/redo changes the underlying data.
         RegisterCallback<AttachToPanelEvent>(_ => Undo.undoRedoPerformed += OnUndoRedo);
@@ -127,6 +131,12 @@ abstract class LocalizedReferenceElement : VisualElement
     }
 
     bool SerializedDataAlive => m_Property.isValid && m_Object.targetObject != null;
+
+    void OnReferenceChanged()
+    {
+        if (SerializedDataAlive && (!TableRef().Equals(m_ShownTable) || !EntryRef().Equals(m_ShownEntry)))
+            RebuildBody();
+    }
 
     void OnUndoRedo()
     {
@@ -234,10 +244,12 @@ abstract class LocalizedReferenceElement : VisualElement
         m_EntryNameField.RegisterCallback<FocusOutEvent>(_ => CommitRename());
     }
 
-    protected void RebuildBody()
+    internal void RebuildBody()
     {
         m_Object.Update();
         var reference = TableRef();
+        m_ShownTable = reference;
+        m_ShownEntry = EntryRef();
         m_Collection = ResolveCollection(reference);
         m_SharedEntry = ResolveSharedEntry(m_Collection);
         UpdateRefButton();
@@ -323,6 +335,8 @@ abstract class LocalizedReferenceElement : VisualElement
 
     TableReference TableRef() => (TableReference)m_TableRefProp.boxedValue;
 
+    TableEntryReference EntryRef() => (TableEntryReference)m_TableEntryRefProp.boxedValue;
+
     ResourceTableCollection ResolveCollection(TableReference reference)
     {
         var guid = reference.TableCollectionNameGuid;
@@ -363,7 +377,7 @@ abstract class LocalizedReferenceElement : VisualElement
     {
         m_CreateRow.Clear();
 
-        var newEntry = new Button(OpenNewEntry) { text = L10n.Tr("New entry…", null) };
+        var newEntry = new Button(OpenNewEntry) { name = "new-entry", text = L10n.Tr("New entry…", null) };
         newEntry.tooltip = L10n.Tr("Create a new key in a table collection and point this reference at it.", null);
         m_CreateRow.Add(newEntry);
 
@@ -384,7 +398,7 @@ abstract class LocalizedReferenceElement : VisualElement
 
     void OpenNewEntry()
     {
-        NewEntryPopup.Show(m_RefButton.worldBound, m_Collection, (collection, name) =>
+        NewEntryPopup.Show(m_RefButton.worldBound, this, m_Collection, (collection, name) =>
         {
             if (!SerializedDataAlive)
                 return;
@@ -556,7 +570,7 @@ abstract class LocalizedReferenceElement : VisualElement
             string path;
             using (var so = new SerializedObject(shared))
                 path = so.FindProperty("m_Entries").GetArrayElementAtIndex(index).FindPropertyRelative("m_Metadata").propertyPath;
-            MetadataPopup.Show(button.worldBound, $"{L10n.Tr("Metadata", null)}: {m_SharedEntry.Key}", shared, path, MetadataType.SharedTableEntry,
+            MetadataPopup.Show(button.worldBound, this, $"{L10n.Tr("Metadata", null)}: {m_SharedEntry.Key}", shared, path, MetadataType.SharedTableEntry,
                 () => { EditorUtility.SetDirty(shared); RefreshDetail(); });
         };
     }

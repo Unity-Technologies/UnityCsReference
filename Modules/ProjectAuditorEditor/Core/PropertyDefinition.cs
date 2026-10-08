@@ -52,7 +52,7 @@ namespace Unity.ProjectAuditor.Editor.Core
         Float
     }
 
-    internal struct PropertyDefinition
+    internal struct PropertyDefinition : IEquatable<PropertyDefinition>
     {
         public PropertyType Type;
         public PropertyFormat Format;
@@ -62,5 +62,18 @@ namespace Unity.ProjectAuditor.Editor.Core
         public bool IsDefaultGroup;
         public bool IsHidden;
         public int DecimalPlaces;
+
+        public bool Equals(PropertyDefinition other)
+        {
+            return
+                Type == other.Type &&
+                Format == other.Format &&
+                Name == other.Name &&
+                LongName == other.LongName &&
+                MaxAutoWidth == other.MaxAutoWidth &&
+                IsDefaultGroup == other.IsDefaultGroup &&
+                IsHidden == other.IsHidden &&
+                DecimalPlaces == other.DecimalPlaces;
+        }
     }
 }

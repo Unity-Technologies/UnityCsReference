@@ -64,7 +64,7 @@ namespace Unity.ProjectAuditor.Editor.UI
             {
                 Title = L10n.Tr("Install URP", null),
                 Heading = L10n.TextContent("This wizard will guide you through the migration process to URP and provide a report of the assets that need conversion.", null, null, null),
-                Warning = L10n.Tr("Before you analyze your project, Unity must install the URP package and make changes to your project. You should backup your project, or make sure you are using version control, before you start.", null),
+                Warning = L10n.Tr("Before you analyze your project, Unity must install the URP package and make changes to your project. You should back up your project, or make sure you are using version control, before you start.", null),
                 Contents =
                 [
                     L10n.TextContent("Install Package", "Install the URP package.", null, null),
@@ -98,10 +98,10 @@ namespace Unity.ProjectAuditor.Editor.UI
             new Step
             {
                 Title = L10n.Tr("Create URP asset", null),
-                Heading = L10n.TextContent("Unity will now assign the Render Pipeline asset to your Quality Settings.", null, null, null),
+                Heading = L10n.TextContent("Unity will now assign a Render Pipeline asset as your project's default, creating one if needed.", null, null, null),
                 Contents =
                 [
-                    L10n.TextContent("Create URP Asset", "Create the Render Pipeline Asset and assign it to the Quality Settings.", null, null),
+                    L10n.TextContent("Create URP Asset", "Create the Render Pipeline Asset and assign it as the project's default.", null, null),
                     L10n.TextContent("Create URP Asset", $"Please install the rules package before starting migration ({ProjectAuditorRulesPackage.Name}).", null, null),
                 ],
 
@@ -280,8 +280,14 @@ namespace Unity.ProjectAuditor.Editor.UI
 
         public void DrawContent()
         {
-            var next = DrawStepper();
-            DrawStepUI(next);
+            // Checked before the stepper: out of scope there is no step to make progress on, nor one that may run.
+            if (MigrationToURPUtilities.IsProjectUsingOtherSRP())
+            {
+                DrawOtherSRPNotSupportedPage();
+                return;
+            }
+
+            DrawStepUI(DrawStepper());
         }
 
         const float k_ColumnWidth = 420f;
@@ -376,6 +382,41 @@ namespace Unity.ProjectAuditor.Editor.UI
                 DrawProgressBar(fraction);
 
             return (firstIncomplete >= 0) ? firstIncomplete : count - 1;
+        }
+
+        static void DrawOtherSRPNotSupportedPage()
+        {
+            DrawUnsupportedRenderPipelinePage(GetUnsupportedRenderPipelineMessage());
+        }
+
+        // The report pages refuse the same project as the wizard, in their own words.
+        internal static void DrawReportUnavailablePage()
+        {
+            DrawUnsupportedRenderPipelinePage(GetReportUnavailableMessage());
+        }
+
+        static void DrawUnsupportedRenderPipelinePage(string message)
+        {
+            GUILayout.Space(HomePage.k_SpacingHeight * 2);
+            using (new CenteredColumn())
+            {
+                EditorGUILayout.HelpBox(message, MessageType.Info);
+            }
+        }
+
+        // URP is in scope, so what stopped the wizard is either HDRP or a custom SRP.
+        internal static string GetUnsupportedRenderPipelineMessage()
+        {
+            return MigrationToURPUtilities.IsProjectUsingHDRP()
+                ? Contents.OtherSRPNotSupportedHDRP
+                : Contents.OtherSRPNotSupportedCustomSRP;
+        }
+
+        internal static string GetReportUnavailableMessage()
+        {
+            return MigrationToURPUtilities.IsProjectUsingHDRP()
+                ? Contents.ReportUnavailableHDRP
+                : Contents.ReportUnavailableCustomSRP;
         }
 
         void DrawStepUI(int next)
@@ -490,6 +531,12 @@ namespace Unity.ProjectAuditor.Editor.UI
             public static readonly string TotalIssues = L10n.Tr("Total Issues: {0}", null);
             public static readonly string ConverterIssues = L10n.Tr("Issues that can be converted automatically: {0}", null);
             public static readonly string ManualIssues = L10n.Tr("Issues that need manual review: {0}", null);
+
+            public static readonly string OtherSRPNotSupportedHDRP = L10n.Tr("This wizard only migrates projects that use the Built-in Render Pipeline. Your project uses the High Definition Render Pipeline.", null);
+            public static readonly string OtherSRPNotSupportedCustomSRP = L10n.Tr("This wizard only migrates projects that use the Built-in Render Pipeline. Your project uses a custom Render Pipeline.", null);
+
+            public static readonly string ReportUnavailableHDRP = L10n.Tr("The Migration analysis report is available only for projects migrating from the Built-in Render Pipeline. Your project uses the High Definition Render Pipeline.", null);
+            public static readonly string ReportUnavailableCustomSRP = L10n.Tr("The Migration analysis report is available only for projects migrating from the Built-in Render Pipeline. Your project uses a custom Render Pipeline.", null);
 
             public static readonly string URP = L10n.Tr("Universal Render Pipeline", null);
             public static readonly string HDRP = L10n.Tr("High Definition Render Pipeline", null);

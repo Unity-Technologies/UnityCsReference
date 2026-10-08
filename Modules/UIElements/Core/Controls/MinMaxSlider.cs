@@ -360,6 +360,8 @@ namespace UnityEngine.UIElements
             // Clamp both values
             clampedValue.x = Mathf.Clamp(valueToClamp.x, m_MinLimit, valueToClamp.y);
             clampedValue.y = Mathf.Clamp(valueToClamp.y, valueToClamp.x, m_MaxLimit);
+            clampedValue.x = Mathf.Clamp(clampedValue.x, m_MinLimit, m_MaxLimit);
+            clampedValue.y = Mathf.Clamp(clampedValue.y, clampedValue.x, m_MaxLimit);
             return clampedValue;
         }
 

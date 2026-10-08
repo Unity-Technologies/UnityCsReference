@@ -74,6 +74,10 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_PackagesToSelectOnSamplePageAfterRefresh = Array.Empty<string>();
         }
 
+        // We use DelayedSelectionHandler to handle the case where the package is not yet available when the
+        // selection is set. That could happen when we want to open Package Manager and select a package, but
+        // the refresh call is not yet finished. It could also happen when we create a package and the newly
+        // created package is not yet in the database until after package resolution.
         public void SelectPackage(string packageToSelect, string pageId = null)
         {
             if (string.IsNullOrEmpty(packageToSelect))

@@ -473,12 +473,15 @@ namespace Unity.Hierarchy
             if (canceled)
                 return;
 
-            if (m_Node == HierarchyNode.Null || string.IsNullOrEmpty(text))
+            if (m_Node == HierarchyNode.Null)
                 return;
 
+            // An empty name means different things to different node types, so each handler decides.
             if (m_Handler is IHierarchyEditorNodeTypeHandler editorHandler)
             {
-                editorHandler.OnSetName(m_View, in m_Node, text);
+                // A field nobody typed in has nothing to commit, and its row may have been rebound to another node.
+                if (m_Name.TextWasEdited)
+                    editorHandler.OnSetName(m_View, in m_Node, text);
 
                 // The label was just set to the committed text, which carries none of the decorations the
                 // handler adds, and a rejected or no-op rename asks for no re-bind that would restore them.
@@ -486,7 +489,7 @@ namespace Unity.Hierarchy
                 if (overrideName != null)
                     m_Name.Text = overrideName;
             }
-            else
+            else if (m_Name.TextWasEdited && !string.IsNullOrEmpty(text))
             {
                 m_View.Source.SetName(in m_Node, text);
             }

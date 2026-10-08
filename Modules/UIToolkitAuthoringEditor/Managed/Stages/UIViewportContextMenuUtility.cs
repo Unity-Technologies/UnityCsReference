@@ -64,9 +64,9 @@ internal static class UIViewportContextMenuUtility
 
     public static bool CanPaste(IPanel scopePanel = null)
     {
-        if (!VisualElementEditingUtility.TryResolvePasteParent(GetFirstSelectedElement(scopePanel), out _, out _))
+        if (!VisualElementEditingUtility.TryResolvePasteParent(GetFirstSelectedElement(scopePanel), out var parentElement, out var parentAsset))
             return false;
-        return VisualElementEditingUtility.CanPasteContent();
+        return VisualElementEditingUtility.CanPasteContent(parentElement, parentAsset);
     }
 
     public static bool DoPaste(CommandSources.CommandSource source, IPanel scopePanel = null)
@@ -75,20 +75,13 @@ internal static class UIViewportContextMenuUtility
         if (!VisualElementEditingUtility.TryResolvePasteParent(selected, out var parentElement, out var parentAsset))
             return false;
 
-        var targetDocument = parentAsset.visualTreeAsset;
         var clipboard = Clipboard.GetClipboardForStage();
         var cutElements = clipboard?.GetCutElements();
 
         if (cutElements != null && cutElements.Count > 0)
         {
-            for (var i = 0; i < cutElements.Count; ++i)
-            {
-                var cutAsset = cutElements[i];
-                if (cutAsset == null || cutAsset.visualTreeAsset == targetDocument)
-                    continue;
-                if (VisualElementEditingUtility.WouldCauseCircularDependency(targetDocument, parentElement, cutAsset))
-                    return false;
-            }
+            if (!VisualElementEditingUtility.CanMoveCutElements(cutElements, parentElement, parentAsset))
+                return false;
 
             using var toPasteHandle = ListPool<VisualElementAsset>.Get(out var toPasteList);
             for (var i = 0; i < cutElements.Count; ++i)
@@ -106,6 +99,25 @@ internal static class UIViewportContextMenuUtility
         }
 
         return VisualElementEditingUtility.TryPasteCopied(source, parentElement, parentAsset);
+    }
+
+    // Duplicates the selection and points the selection request at the instance each copy was made in.
+    public static bool DoDuplicate(CommandSources.CommandSource source)
+    {
+        using var assetsHandle = ListPool<VisualElementAsset>.Get(out var assets);
+        using var elementsHandle = ListPool<VisualElement>.Get(out var elements);
+        FilterSelection(assets, elements);
+
+        // Captured before Execute, which can replace the live elements.
+        using var parentsHandle = ListPool<VisualElement>.Get(out var parents);
+        foreach (var element in elements)
+            parents.Add(element.parent);
+
+        if (DuplicateElementsCommand.Execute(source, assets.ToArray()) != CommandExecutionStatus.Success)
+            return false;
+
+        UIToolkitStageUtility.ScopePendingSelectionRequestsTo(parents);
+        return true;
     }
 
     // Appends the complete viewport context menu: edit actions, optional in-place editor entry,
@@ -182,7 +194,7 @@ internal static class UIViewportContextMenuUtility
         StageContextMenuUtility.AppendActionWithHotKey(menu, StageContextMenuUtility.Paste,
             doPaste, canPaste);
         StageContextMenuUtility.AppendActionWithHotKey(menu, StageContextMenuUtility.Duplicate,
-            () => DuplicateElementsCommand.Execute(CommandSources.Menus, selection),
+            () => DoDuplicate(CommandSources.Menus),
             DuplicateElementsCommand.Validate(CommandSources.Menus, selection));
         StageContextMenuUtility.AppendActionWithHotKey(menu, StageContextMenuUtility.Delete,
             () => RemoveElementsCommand.Execute(CommandSources.Menus, selection),

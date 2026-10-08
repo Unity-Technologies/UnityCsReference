@@ -252,7 +252,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         {
             var styleSheet = ScriptableObject.CreateInstance<StyleSheet>();
             styleSheet.hideFlags = HideFlags.HideAndDontSave;
-            styleSheet.isDefaultStyleSheet = true;
+            styleSheet.priority = UnityEngine.UIElements.StyleSheetPriority.Builtin;
 
             var resolver = new StyleSheets.StyleSheetResolver();
             foreach (var sheet in styleSheets)

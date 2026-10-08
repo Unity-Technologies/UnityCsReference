@@ -3,10 +3,8 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System.Collections.Generic;
-using System.IO;
 using System.Text;
 using Unity.Properties;
-using UnityEditorInternal;
 using UnityEngine;
 using UnityEngine.UIElements;
 using UnityEngine.UIElements.StyleSheets;
@@ -394,7 +392,7 @@ namespace UnityEditor.UIElements.Debugger
                         using (new EditorGUI.DisabledScope(!canOpen))
                         {
                             if (GUILayout.Button(new GUIContent(sheet, canOpen ? null : k_noAssetText)))
-                                InternalEditorUtility.OpenFileAtLineExternal(sheet, 0, 0);
+                                StyleSheetExternalEditor.TryOpen(sheet, 0);
                         }
                     }
 
@@ -407,6 +405,13 @@ namespace UnityEditor.UIElements.Debugger
         {
             if (m_PanelDebug == null || m_SelectedElement == null)
                 return;
+
+            if (UIToolkitProjectSettings.enableLegacyThemePriority)
+            {
+                EditorGUILayout.HelpBox(
+                    L10n.Tr("'Legacy theme priority' is enabled: theme style sheets do not take priority over Unity's built-in styles; overrides depend on selector specificity. See Project Settings > UI Toolkit.", null),
+                    MessageType.Warning);
+            }
 
             if (m_MatchedRulesExtractor.selectedElementRules != null && m_MatchedRulesExtractor.selectedElementRules.Count > 0)
             {
@@ -460,7 +465,7 @@ namespace UnityEditor.UIElements.Debugger
                         using (new EditorGUI.DisabledScope(!canOpen))
                         {
                             if (rule.displayPath != null && GUILayout.Button(new GUIContent(rule.displayPath, canOpen ? null : k_noAssetText), EditorStyles.miniButton, GUILayout.MaxWidth(250)) )
-                                InternalEditorUtility.OpenFileAtLineExternal(rule.fullPath, rule.lineNumber, -1);
+                                StyleSheetExternalEditor.TryOpen(rule.fullPath, rule.lineNumber);
                         }
                         EditorGUILayout.EndHorizontal();
 
@@ -496,7 +501,7 @@ namespace UnityEditor.UIElements.Debugger
             }
         }
 
-        static bool CanOpenStyleSheet(string path) => File.Exists(path);
+        static bool CanOpenStyleSheet(string path) => StyleSheetExternalEditor.CanOpen(path);
     }
 
 

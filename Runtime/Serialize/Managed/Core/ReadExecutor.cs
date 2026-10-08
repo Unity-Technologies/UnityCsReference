@@ -739,7 +739,7 @@ internal static unsafe partial class SerializationBackendManagedCommands
                     // mirror: registry-first data has every reference patched
                     // before any body's bracket fires, so there is nothing to
                     // defer for. Suppressed transfers (import metadata reads
-                    // with kSuppressDeserializeCallbacks) never reach this
+                    // with kLoadForNativeFormatImporter) never reach this
                     // arm: ExecuteV2Read serves them the stripped stream.
                     case V2OpCode.InvokeCallback:
                     {

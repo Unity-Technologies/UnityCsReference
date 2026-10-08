@@ -297,7 +297,7 @@ partial class ResourceTablesWindow
         button.tooltip = L10n.Tr("Metadata", null);
         LocIcons.Apply(button, hasData ? LocIcons.MetadataOn : LocIcons.Metadata);
         button.EnableInClassList(LocClasses.LocIconBtnActive, hasData);
-        button.clickable = new Clickable(() => MetadataPopup.Show(button.worldBound, title, owner, metadataPath?.Invoke(), target,
+        button.clickable = new Clickable(() => MetadataPopup.Show(button.worldBound, rootVisualElement, title, owner, metadataPath?.Invoke(), target,
             () => { if (owner != null) EditorUtility.SetDirty(owner); RebuildTree(); }));
     }
 

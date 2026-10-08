@@ -432,6 +432,12 @@ namespace UnityEngine.TextCore.Text
             return FontAssetFactory.CreateFontAssetOSFallbackList(fonts, persistent: persistsFontAssetCaches);
         }
 
+        // Used by TMP
+        internal static bool TryGetOSFallbackFontReference(uint unicode, out LowLevel.FontReference fontRef)
+        {
+            return OSFontFallbackBindings.TryGetFontReferenceForUnicode(unicode, out fontRef);
+        }
+
         [VisibleToOtherModules("UnityEngine.IMGUIModule", "UnityEngine.UIElementsModule")]
         internal virtual float GetEditorTextSharpness()
         {

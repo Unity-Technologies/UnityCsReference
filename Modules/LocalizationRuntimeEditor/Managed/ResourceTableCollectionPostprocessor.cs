@@ -5,7 +5,6 @@
 using System;
 using System.Collections.Generic;
 using Object = UnityEngine.Object;
-using Unity.Scripting.LifecycleManagement;
 using UnityEditor;
 using UnityEngine;
 
@@ -15,24 +14,18 @@ class ResourceTableCollectionPostprocessor : AssetPostprocessor
 {
     static void OnPostprocessAllAssets(string[] importedAssets, string[] deletedAssets, string[] movedAssets, string[] movedFromAssetPaths)
     {
+        // Checked before registering, which re-scans and refills the path cache with the post-delete state.
+        var deletedLocalizationAsset = AssetProviderEditors.MayHaveDeletedCollectionAssets(deletedAssets);
+
         var changed = false;
         changed |= RegisterOwningCollections(importedAssets);
         changed |= RegisterOwningCollections(movedAssets);
 
-        var deletedLocalizationAsset = ConsumeDeletedLocalizationAssets();
         if (changed || deletedLocalizationAsset)
             LocalizationEditorSettings.RaiseCollectionsChanged();
 
         if (deletedLocalizationAsset)
             AssetProviderEditors.RebuildRegistrations();
-    }
-
-    static bool ConsumeDeletedLocalizationAssets()
-    {
-        var pending = LocalizationDeletionWatcher.Pending;
-        var any = pending.Count > 0;
-        pending.Clear();
-        return any;
     }
 
     static bool RegisterOwningCollections(string[] paths)
@@ -95,30 +88,6 @@ class ResourceTableCollectionPostprocessor : AssetPostprocessor
             return false;
         var other = AssetDatabase.LoadAssetAtPath<ResourceTableCollection>(path);
         return other != null && other != except && other.SharedData == shared;
-    }
-}
-
-partial class LocalizationDeletionWatcher : AssetModificationProcessor
-{
-    [AutoStaticsCleanup] // pending deletions for the current import; a reload abandons them
-    internal static readonly HashSet<string> Pending = new();
-
-    static AssetDeleteResult OnWillDeleteAsset(string path, RemoveAssetOptions options)
-    {
-        if (LocalizationAssetPaths.IsLocalizationAsset(path) || FolderHasLocalizationAsset(path))
-            Pending.Add(path);
-        return AssetDeleteResult.DidNotDelete;
-    }
-
-    // A folder delete only reports the folder path, so look inside it before it goes.
-    static bool FolderHasLocalizationAsset(string path)
-    {
-        if (!AssetDatabase.IsValidFolder(path))
-            return false;
-        var scope = new[] { path };
-        return AssetDatabase.FindAssets($"t:{nameof(ResourceTableCollection)}", scope).Length > 0
-            || AssetDatabase.FindAssets($"t:{nameof(ResourceTable)}", scope).Length > 0
-            || AssetDatabase.FindAssets($"t:{nameof(SharedTableData)}", scope).Length > 0;
     }
 }
 

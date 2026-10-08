@@ -558,11 +558,11 @@ internal partial class VisualTreeAssetExporter
     protected void WriteInlineStyles(ref ExportContext ctx, StyleSheet inlineStyleSheet, int ruleIndex)
     {
         // Add inline StyleSheet attribute.
-        if (ruleIndex != -1)
+        if (ruleIndex >= 0)
         {
             if (inlineStyleSheet == null)
                 Debug.LogWarning("VisualElementAsset has a RuleIndex but no inlineStyleSheet");
-            else
+            else if (ruleIndex < inlineStyleSheet.rules.Length)
             {
                 var r = inlineStyleSheet.rules[ruleIndex];
                 // Disable highlighting of the inline styles, since the color syntax would get encoded when written as an

@@ -201,6 +201,10 @@ namespace UnityEngine
         [FreeFunction("MaterialScripting::GetPropertyCount", HasExplicitThis = true)]
         extern internal int GetPropertyCount();
 
+        extern internal bool changeTrackingEnabled { get; set; }
+        extern internal void GetTrackedChangedPropertyNameIdsAndClear([Out,NotNull] List<int> nameIds);
+        extern internal void GetTrackedChangedKeywordsAndClear([Out,NotNull] List<string> keywords);
+
         extern public int ComputeCRC();
 
         [FreeFunction("MaterialScripting::GetTexturePropertyNames", HasExplicitThis = true)]

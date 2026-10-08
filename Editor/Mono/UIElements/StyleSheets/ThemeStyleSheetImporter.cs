@@ -12,7 +12,7 @@ namespace UnityEditor.UIElements.StyleSheets
     // Make sure style sheets importer after allowed dependent assets: textures, fonts, json and uss.
     // Has to be higher then AssetImportOrder.kImportOrderLate
     [HelpURL("UIE-tss")]
-    [ScriptedImporter(version: 23, ext: "tss", importQueueOffset: 1101, AllowCaching = true)]
+    [ScriptedImporter(version: 24, ext: "tss", importQueueOffset: 1101, AllowCaching = true)]
     [ExcludeFromPreset]
     class ThemeStyleSheetImporter : StyleSheetImporter
     {
@@ -32,6 +32,13 @@ namespace UnityEditor.UIElements.StyleSheets
                 var theme = ScriptableObject.CreateInstance<ThemeStyleSheet>();
                 theme.hideFlags = HideFlags.NotEditable;
                 theme.serializationLayoutHash = StyleSheet.currentSerializationLayoutHash;
+
+                // The declared dependency makes the project-wide priority mode part of this
+                // import's input hash, keeping the settings read below deterministic.
+                ctx.DependsOnCustomDependency(ThemeRegistry.kPriorityModeDependencyKey);
+                theme.priority = ThemeRegistry.legacyThemePriority
+                    ? StyleSheetPriority.Builtin
+                    : StyleSheetPriority.UserTheme;
 
                 if (!string.IsNullOrEmpty(contents))
                 {

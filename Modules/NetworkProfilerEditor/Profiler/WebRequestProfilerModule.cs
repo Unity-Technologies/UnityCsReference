@@ -10,9 +10,7 @@ using Unity.Scripting.LifecycleManagement;
 namespace UnityEditor.Networking
 {
     [Serializable]
-    // IconPath is a placeholder until the designed icon exists; the asset belongs in this module's
-    // editor-resources package alongside the UXML and USS.
-    [ProfilerModuleMetadata("Web Requests", IconPath = "Profiler.NetworkOperations",
+    [ProfilerModuleMetadata("Web Requests", IconPath = "WebRequest/Icons/WebRequests.png",
         Tooltip = "Shows how many UnityWebRequest transfers are in flight, and how many bytes they send and receive each frame.")]
     internal class WebRequestProfilerModule : ProfilerModule
     {

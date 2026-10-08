@@ -31,6 +31,7 @@ namespace Unity.ProjectAuditor.Editor.UI
 
         bool m_AnyAdditionalInsights;
         bool m_AnyCompilationErrors;
+        bool m_AnyTopTenIssues;
 
         public override string Description => "Project report summary.";
 
@@ -53,6 +54,7 @@ namespace Unity.ProjectAuditor.Editor.UI
         {
             base.ResetStats();
             m_Stats = NewStats();
+            m_AnyTopTenIssues = false;
         }
 
         protected override void RefreshStats()
@@ -69,6 +71,10 @@ namespace Unity.ProjectAuditor.Editor.UI
                     continue;
 
                 AccumulateStat(issue, ref m_Stats);
+
+                // The Top Ten list leaves out categories that are still being analysed
+                if (!IsIssueIgnoredOrFiltered(issue) && !m_ViewManager.HasPendingCategory(issue.Category))
+                    m_AnyTopTenIssues = true;
             }
         }
 
@@ -95,17 +101,20 @@ namespace Unity.ProjectAuditor.Editor.UI
             // Issue Breakdown section (shared with all summary pages)
             DrawIssueBreakdownSection();
 
-            EditorGUILayout.Space();
-
-            // Top Ten Issues section
-            EditorGUILayout.BeginVertical(GUI.skin.box);
-            m_ShowTopTenIssues = Utility.BoldFoldout(m_ShowTopTenIssues, Contents.TopTenIssuesContent);
-            if (m_ShowTopTenIssues)
+            // Top Ten Issues section, only drawn if any issue would appear in it
+            if (m_AnyTopTenIssues)
             {
-                DrawTopTenIssues(m_TopTen, IsIssueIgnoredOrFiltered);
-                EditorGUILayout.Space(10);
+                EditorGUILayout.Space();
+
+                EditorGUILayout.BeginVertical(GUI.skin.box);
+                m_ShowTopTenIssues = Utility.BoldFoldout(m_ShowTopTenIssues, Contents.TopTenIssuesContent);
+                if (m_ShowTopTenIssues)
+                {
+                    DrawTopTenIssues(m_TopTen, IsIssueIgnoredOrFiltered);
+                    EditorGUILayout.Space(10);
+                }
+                EditorGUILayout.EndVertical();
             }
-            EditorGUILayout.EndVertical();
 
             // Additional Insights section, only drawn if any such insights exist
             if (m_RefreshAdditionalInsights)
@@ -117,8 +126,7 @@ namespace Unity.ProjectAuditor.Editor.UI
                         && i.GetProperty(PropertyType.LogLevel) == errorString);
 
                 m_AnyAdditionalInsights = m_AnyCompilationErrors
-                    || m_ViewManager.Report.HasCategory(IssueCategory.Assembly)
-                    || m_ViewManager.Report.HasCategory(IssueCategory.BuildFile);
+                    || m_ViewManager.Report.HasCategory(IssueCategory.Assembly);
 
                 m_RefreshAdditionalInsights = false;
             }
@@ -299,8 +307,6 @@ namespace Unity.ProjectAuditor.Editor.UI
                 {
                     if (m_AnyCompilationErrors)
                         DrawAdditionalInsightItem("Compilation Errors", IssueCategory.CodeCompilerMessage);
-
-                    DrawAdditionalInsightItem("Build Report", IssueCategory.BuildFile);
 
                     var assemblyView = m_ViewManager.GetView(IssueCategory.Assembly);
                     if (assemblyView?.NumIssues > 0)

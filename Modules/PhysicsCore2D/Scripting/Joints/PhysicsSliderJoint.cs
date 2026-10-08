@@ -361,6 +361,17 @@ namespace Unity.U2D.Physics
         public readonly float currentMotorForce { get => SliderJoint_GetCurrentMotorForce(this); }
 
         /// <summary>
+        /// The force the spring applied along the slide axis during the last simulation step, usually in newtons.
+        /// A positive value pushes body B towards a greater translation and a negative value towards a smaller one.
+        /// This is zero when the spring is disabled.
+        /// Unlike the current constraint force, it excludes the force from the translation limits and the motor.
+        /// </summary>
+        /// <remarks>
+        /// See <see cref="enableSpring"/> and <see cref="springTargetTranslation"/>.
+        /// </remarks>
+        public readonly float currentSpringForce { get => SliderJoint_GetCurrentSpringForce(this); }
+
+        /// <summary>
         /// Enable/Disable the joint translation limit.
         /// </summary>
         public readonly bool enableLimit { get => SliderJoint_GetEnableLimit(this); set => SliderJoint_SetEnableLimit(this, value); }

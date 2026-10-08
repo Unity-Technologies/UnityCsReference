@@ -106,10 +106,26 @@ namespace UnityEditor.UIElements.StyleSheets
                 var themePath = pair.Value;
 
                 var styleSheet = EditorGUIUtility.Load(themePath) as StyleSheet;
+                Debug.Assert(styleSheet == null || styleSheet.priority == StyleSheetPriority.Builtin,
+                    $"Builtin theme '{themeName}' must be generated with Builtin priority (see UIElementsStyleSheetGenerator)");
                 var hash = ComputeThemeContentHash(styleSheet);
 
                 AssetDatabase.RegisterCustomDependency(FormatThemeDependencyKey(themeName), hash);
             }
+
+            RegisterPriorityModeDependency();
+        }
+
+        internal const string kPriorityModeDependencyKey = "uitk/theme-priority-mode";
+
+        // Pushed from UIToolkitProjectSettings, which this assembly cannot reference
+        [NoAutoStaticsCleanup] // plain bool, re-pushed at editor initialization
+        internal static bool legacyThemePriority { get; set; }
+
+        internal static void RegisterPriorityModeDependency()
+        {
+            AssetDatabase.RegisterCustomDependency(kPriorityModeDependencyKey,
+                Hash128.Compute(legacyThemePriority ? "legacy" : "default"));
         }
     }
 }

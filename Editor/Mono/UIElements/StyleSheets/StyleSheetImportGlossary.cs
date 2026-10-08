@@ -41,5 +41,7 @@ namespace UnityEditor.UIElements.StyleSheets
         public readonly string invalidAssetPath = L10n.Tr("Invalid asset path: '{0}'", null);
         public readonly string invalidAssetType = L10n.Tr("Unsupported type {0} for asset at path '{1}' ; only the following types are supported: {2}\nSuggestion: verify the import settings of this asset.", null);
         public readonly string unknownPsuedoClass = L10n.Tr("Unknown psuedo class '{0}' in selector '{1}`", null);
+        public readonly string importAfterStyleRule = L10n.Tr("@import should precede all style rules. Note that the position of an @import does not change selector priority.", null);
+        public readonly string themeImportedByStyleSheet = L10n.Tr("A theme style sheet (.tss) imported by a regular style sheet does not keep its theme priority. Import separate USS files instead.", null);
     }
 }

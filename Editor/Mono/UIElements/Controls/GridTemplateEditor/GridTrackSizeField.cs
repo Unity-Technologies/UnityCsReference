@@ -18,6 +18,8 @@ namespace UnityEditor.UIElements
         const string k_Px = "px", k_Pct = "%", k_Fr = "fr", k_Auto = "auto",
             k_Min = "min", k_Max = "max", k_Minmax = "minmax", k_Fit = "fit";
         const int k_UnitWidth = 54;
+        const int k_NestedUnitWidth = 34;
+        const int k_NestedMinWidth = 64;
 
         // Immutable unit lookup table of string constants; safe to keep for the process.
         [NoAutoStaticsCleanup]
@@ -63,7 +65,7 @@ namespace UnityEditor.UIElements
             unitContainer.AddToClassList("unity-style-field__options-popup-container");
             m_Unit = new PopupField<string>(allowFunctions ? k_FullUnits : k_SimpleUnits, k_Fr);
             m_Unit.AddToClassList("unity-style-field__options-popup");
-            m_Unit.style.width = k_UnitWidth; // wider than the length unit (24px) to fit "minmax" / "auto"
+            m_Unit.style.width = allowFunctions ? k_UnitWidth : k_NestedUnitWidth; // wider than the length unit (24px) to fit "minmax" / "auto"
             m_Unit.RegisterValueChangedCallback(OnUnitChanged);
             unitContainer.Add(m_Unit);
             Add(unitContainer);
@@ -81,6 +83,15 @@ namespace UnityEditor.UIElements
                 m_Arrow.style.marginLeft = 3;
                 m_Arrow.style.marginRight = 3;
                 m_Arrow.style.flexShrink = 0;
+
+                m_ValueArea.style.flexWrap = Wrap.Wrap;
+            }
+            else
+            {
+                // Nested min/max/limit fields are too narrow for the unit to overlay the text box.
+                unitContainer.style.position = Position.Relative;
+                unitContainer.style.flexShrink = 0;
+                style.minWidth = k_NestedMinWidth;
             }
 
             UpdateLayout();

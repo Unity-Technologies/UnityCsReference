@@ -275,21 +275,12 @@ namespace UnityEditorInternal.Profiling
             }
 
             // Calculate total draw calls
-            long totalDC;
             bool isNewStats = batchesCount == -1;
 
-            if (isNewStats)
+            long totalDC = GetCounterLong(f, "Draw Calls Count");
+            if (totalDC < 0)
             {
-                totalDC = 0;
-                foreach (var t in k_DrawCallTotalCounters)
-                {
-                    long v = GetCounterLong(f, t);
-                    if (v > 0) totalDC += v;
-                }
-            }
-            else
-            {
-                totalDC = GetCounterLong(f, "Draw Calls Count");
+                totalDC = Sum(f, k_DrawCallTotalCounters);
             }
 
             AddStatNumber(headline, Content.SetPassCalls, FmtLong(setPass));

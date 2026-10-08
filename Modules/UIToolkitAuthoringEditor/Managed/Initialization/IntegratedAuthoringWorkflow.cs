@@ -39,7 +39,8 @@ static class IntegratedAuthoringWorkflow
                 HierarchyWindow.RegisterNodeTypeHandler<VisualElementNodeHandler>();
                 break;
             case MainStage:
-                RestorePreviousFrontTab();
+                if (previousStage is VisualElementEditingStage)
+                    RestorePreviousFrontTab();
                 HierarchyWindow.RegisterNodeTypeHandler<VisualElementNodeHandler>();
                 break;
             default:

@@ -142,17 +142,7 @@ namespace Unity.ProjectAuditor.Editor.UI.Framework
 
             foreach (var issue in issues)
             {
-                var depth = 1;
-                if (m_Layout.IsHierarchy)
-                {
-                    if (m_Desc.Category == IssueCategory.BuildStep)
-                    {
-                        depth = issue.GetCustomPropertyInt32(BuildReportStepProperty.Depth);
-                    }
-                    else
-                        depth = 0;
-                }
-
+                var depth = m_Layout.IsHierarchy ? 0 : 1;
                 var item = new IssueTableItem(m_NextId++, depth, issue.Description, issue, issue.GetPropertyGroup(m_Layout.Properties[groupPropertyIndex]));
                 items.Add(item.id, item);
             }
@@ -251,6 +241,12 @@ namespace Unity.ProjectAuditor.Editor.UI.Framework
 
                 foreach (var issue in allIssues)
                 {
+                    // allIssues spans every page that shares this category's view (e.g. Code is shown under
+                    // both Optimization and Upgrade), so exclude issues that don't belong on the current page.
+                    // Otherwise an issue ignored on one page could make an empty group appear on another.
+                    if (!m_View.MatchesPage(issue.ReportItem))
+                        continue;
+
                     string filteredItemName = issue.GroupName;
                     if (!groupNameItemLookupIgnored.ContainsKey(filteredItemName))
                     {

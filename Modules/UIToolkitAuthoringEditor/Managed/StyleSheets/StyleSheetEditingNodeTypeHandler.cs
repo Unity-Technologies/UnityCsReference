@@ -448,6 +448,10 @@ internal class StyleSheetEditingNodeTypeHandler : StyleSheetNodeTypeHandler, IHi
 
     bool IHierarchyEditorNodeTypeHandler.OnSetName(HierarchyView view, in HierarchyNode hierarchyNode, string name)
     {
+        // A rule needs a selector, so an emptied field is a cancel, and a cancel asks for no re-bind.
+        if (string.IsNullOrEmpty(name))
+            return false;
+
         if (!Mappings.TryGetValue(hierarchyNode, out var node) || node.IsReadOnly)
         {
             CommandList.SetDirty();

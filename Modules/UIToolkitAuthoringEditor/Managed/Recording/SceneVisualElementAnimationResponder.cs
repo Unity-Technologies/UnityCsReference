@@ -75,7 +75,7 @@ namespace Unity.UIToolkit.Editor
         {
             newSelection = null;
 
-            if (element == null)
+            if (element == null || element.resourcesReleased)
                 return false;
 
             // Per-element UIAnimationClip takes priority: if the element (or one of its

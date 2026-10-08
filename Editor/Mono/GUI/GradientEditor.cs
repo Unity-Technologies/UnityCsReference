@@ -543,9 +543,12 @@ namespace UnityEditor
 
         // The binding's FieldValueChange collapses every gradient commit into the entry undo group;
         // without an increment between gestures the entry never advances and they merge.
-        static void EndGradientGesture()
+        internal static void EndGradientGesture()
         {
-            Undo.SetCurrentGroupName("Modify Gradient");
+            // Flush first so pending changes count; naming registers an undo record, which clears redo. (UUM-153510)
+            Undo.FlushTrackedObjects();
+            if (!Undo.HasRedo())
+                Undo.SetCurrentGroupName("Modify Gradient");
             Undo.IncrementCurrentGroup();
         }
 

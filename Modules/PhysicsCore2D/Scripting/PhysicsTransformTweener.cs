@@ -19,7 +19,7 @@ namespace Unity.U2D.Physics
 {
     /// <undoc/>
     [StructLayout(LayoutKind.Sequential)]
-    readonly struct PhysicsTransformTweener
+    readonly partial struct PhysicsTransformTweener
     {
         static readonly ProfilerMarker s_WriteTransformTweensMarker = new ProfilerMarker("PhysicsWorld.WriteTransformTweens");
         static readonly ProfilerMarker s_WriteTransformTweensParallelMarker = new ProfilerMarker("PhysicsWorld.WriteTransformTweens.Parallel");
@@ -419,6 +419,24 @@ namespace Unity.U2D.Physics
             // Create the transform access array.
             transformAccessArray = new TransformAccessArray(capacity: capacity, desiredJobCount: desiredJobCount);
             s_WorldTransformAccessArrays[worldIndex] = transformAccessArray;
+        }
+
+        // Disposes every world transform access array on code unloading.
+        // Native skips its per-world dispose during a code reload, so this is the only dispose then.
+        [OnCodeUnloading]
+        static void DestroyAllWorldTransformAccessArrays()
+        {
+            if (s_WorldTransformAccessArrays == null)
+                return;
+
+            for (var i = 0; i < s_WorldTransformAccessArrays.Length; ++i)
+            {
+                var transformAccessArray = s_WorldTransformAccessArrays[i];
+                if (transformAccessArray.isCreated)
+                    transformAccessArray.Dispose();
+
+                s_WorldTransformAccessArrays[i] = default;
+            }
         }
 
         /// <undoc/>

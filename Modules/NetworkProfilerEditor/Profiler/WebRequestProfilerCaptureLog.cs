@@ -81,11 +81,9 @@ namespace UnityEditor.Networking
         public bool hasTimings;
         public WebRequestProfilerTimingRow timings;
 
-        // Whether this request's bodies could be captured at all, carried from its first frame. Tells
-        // "not yet, still running" from "never, capture was off when it started".
         public WebRequestProfilerBodyCapture bodyCapture;
 
-        // Default (captured false) unless capture was on. The tabs name the switch when it was off.
+        // Default (captured false) until a body arrives. The tabs say why when none can.
         public WebRequestProfilerBody requestBody;
         public WebRequestProfilerBody responseBody;
 

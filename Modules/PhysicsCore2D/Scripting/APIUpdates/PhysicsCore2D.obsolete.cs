@@ -40,6 +40,16 @@ namespace Unity.U2D.Physics
 
         [ExcludeFromDocs]
         [EditorBrowsable(EditorBrowsableState.Never)]
+        [Obsolete("PhysicsWorld.elementDepth is deprecated, please use PhysicsWorld.drawDepth instead. (UnityUpgradable) -> drawDepth", false)]
+        public float elementDepth { readonly get => drawDepth; set => drawDepth = value; }
+
+        [ExcludeFromDocs]
+        [EditorBrowsable(EditorBrowsableState.Never)]
+        [Obsolete("PhysicsWorld.SetElementDepth3D is deprecated, please use PhysicsWorld.SetDrawDepth3D instead. (UnityUpgradable) -> SetDrawDepth3D(UnityEngine.Vector3)", false)]
+        public readonly void SetElementDepth3D(Vector3 position) => SetDrawDepth3D(position);
+
+        [ExcludeFromDocs]
+        [EditorBrowsable(EditorBrowsableState.Never)]
         [Obsolete("PhysicsWorld.transformTweening is deprecated, please use PhysicsWorld.transformTweenMode instead.", false)]
         public readonly bool transformTweening { get => transformTweenMode != TransformTweenMode.Off; set => transformTweenMode = value ? TransformTweenMode.Parallel : TransformTweenMode.Off; }
 

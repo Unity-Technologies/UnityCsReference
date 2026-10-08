@@ -380,5 +380,8 @@ namespace UnityEditor
 
         [StaticAccessor("GetEditorSettings()", StaticAccessorType.Dot)]
         public static extern bool hideBuildProfileClassicPlatforms { get; set; }
+
+        [StaticAccessor("GetEditorSettings()", StaticAccessorType.Dot)]
+        internal static extern bool enableLegacyUmbraCulling { get; }
     }
 }

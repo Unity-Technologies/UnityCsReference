@@ -9049,15 +9049,11 @@ namespace UnityEngine
             if (deltaTime < 0.0f)
                 throw new ArgumentException($"Time cannot be negative. It is {deltaTime}.", "deltaTime");
 
-            // Simply return if the time is zero.
-            if (Mathf.Approximately(deltaTime, 0f))
-                return new SlideResults() { position = slideMovement.useStartPosition ? slideMovement.startPosition : position, remainingVelocity = velocity };
-
             if (slideMovement.useSimulationMove && bodyType == RigidbodyType2D.Static)
-                throw new ArgumentException($"Cannot use simulation move when the body type is Static. It is {slideMovement.useSimulationMove}.", "SlideMovement.useSimulationMove");
+                throw new ArgumentException($"Cannot use simulation move when the body type is {bodyType}.", "SlideMovement.useSimulationMove");
 
             if (slideMovement.useNoMove && slideMovement.useSimulationMove)
-                throw new ArgumentException($"Cannot use no move and simulation move at the same time; the two are conflicting options. It is {slideMovement.useNoMove}.", "SlideMovement.useNoMove");
+                throw new ArgumentException("Cannot use no move and simulation move at the same time; the two are conflicting options.", "SlideMovement.useNoMove");
 
             if (slideMovement.maxIterations < 1)
                 throw new ArgumentException($"Maximum Iterations must be greater than zero. It is {slideMovement.maxIterations}.", "SlideMovement.maxIterations");
@@ -9077,11 +9073,15 @@ namespace UnityEngine
             if (!float.IsFinite(slideMovement.gravity.x) || !float.IsFinite(slideMovement.gravity.y))
                 throw new ArgumentException($"Gravity is invalid. It is {slideMovement.gravity}.", "SlideMovement.gravity");
 
-            if (!float.IsFinite(slideMovement.startPosition.x) || !float.IsFinite(slideMovement.startPosition.y))
-                throw new ArgumentException($"Start Position is invalid. It is {slideMovement.gravity}.", "SlideMovement.startPosition");
+            if (slideMovement.useStartPosition && (!float.IsFinite(slideMovement.startPosition.x) || !float.IsFinite(slideMovement.startPosition.y)))
+                throw new ArgumentException($"Start Position is invalid. It is {slideMovement.startPosition}.", "SlideMovement.startPosition");
 
             if (slideMovement.selectedCollider && slideMovement.selectedCollider.attachedRigidbody != this)
                 throw new ArgumentException($"Selected Collider must be attached to the Slide Rigidbody2D. It is {slideMovement.selectedCollider}.", "SlideMovement.selectedCollider");
+
+            // Simply return if the time is zero.
+            if (Mathf.Approximately(deltaTime, 0f))
+                return new SlideResults() { position = slideMovement.useStartPosition ? slideMovement.startPosition : position, remainingVelocity = velocity };
 
             return Slide_Internal(velocity, deltaTime, slideMovement);
         }

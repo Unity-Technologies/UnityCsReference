@@ -22,7 +22,10 @@ namespace Unity.ProjectAuditor.Editor.UI.Framework
         readonly ViewManager m_ViewManager;
 
         Dictionary<int, Page> m_ItemIdToPage = new Dictionary<int, Page>();
-        Dictionary<IssueCategory, TreeViewItem> m_CategoryToItem = new Dictionary<IssueCategory, TreeViewItem>();
+
+        // A category can be represented by more than one item (e.g. Code appears under both
+        // Optimization and Upgrade), so each category maps to every item that represents it.
+        Dictionary<IssueCategory, List<TreeViewItem>> m_CategoryToItems = new Dictionary<IssueCategory, List<TreeViewItem>>();
         Dictionary<Page, TreeViewItem> m_PageToItem = new Dictionary<Page, TreeViewItem>();
 
         // Item ids of the "tab" pages (direct children of a top-level page) that display the
@@ -78,7 +81,7 @@ namespace Unity.ProjectAuditor.Editor.UI.Framework
             m_RootItem = new TreeViewItem { id = id++, depth = -1, displayName = "Root" };
 
             m_ItemIdToPage.Clear();
-            m_CategoryToItem.Clear();
+            m_CategoryToItems.Clear();
             m_PageToItem.Clear();
             m_AnalyzeUnitItemIds.Clear();
             m_FirstItem = null;
@@ -103,7 +106,7 @@ namespace Unity.ProjectAuditor.Editor.UI.Framework
             m_PageToItem[page] = item;
 
             if (!page.isHome)
-                m_CategoryToItem[page.category] = item;
+                AddCategoryItem(page.category, item);
 
             // "Tab" pages (direct children of a top-level page) show the analysis status icon.
             if (depth == 1)
@@ -124,7 +127,7 @@ namespace Unity.ProjectAuditor.Editor.UI.Framework
                 foreach (var child in page.children)
                 {
                     if (!child.isHome)
-                        m_CategoryToItem[child.category] = item;
+                        AddCategoryItem(child.category, item);
                 }
 
                 return;
@@ -132,6 +135,17 @@ namespace Unity.ProjectAuditor.Editor.UI.Framework
 
             foreach (var child in page.children)
                 BuildPage(item, child, ref id, depth + 1);
+        }
+
+        void AddCategoryItem(IssueCategory category, TreeViewItem item)
+        {
+            if (!m_CategoryToItems.TryGetValue(category, out var items))
+            {
+                items = new List<TreeViewItem>();
+                m_CategoryToItems[category] = items;
+            }
+
+            items.Add(item);
         }
 
         bool AnyChildAnalyzed(Page page)
@@ -257,8 +271,32 @@ namespace Unity.ProjectAuditor.Editor.UI.Framework
                 && !currentPage.isHome && currentPage.category == category)
                 return;
 
-            if (m_CategoryToItem.TryGetValue(category, out var item))
-                SelectItem(item, false);
+            if (!m_CategoryToItems.TryGetValue(category, out var items) || items.Count == 0)
+                return;
+
+            // Several items can represent the same category (e.g. Code under both Optimization and
+            // Upgrade). Prefer the one under the currently selected top-level group, so navigating
+            // within e.g. Upgrade doesn't jump back to the Optimization copy.
+            var currentTop = GetTopLevelAncestor(FindItem(m_CurrentlySelectedItemID, rootItem));
+
+            var item = items[0];
+            foreach (var candidate in items)
+            {
+                if (GetTopLevelAncestor(candidate) == currentTop)
+                {
+                    item = candidate;
+                    break;
+                }
+            }
+
+            SelectItem(item, false);
+        }
+
+        TreeViewItem GetTopLevelAncestor(TreeViewItem item)
+        {
+            while (item != null && item.parent != null && item.parent != m_RootItem)
+                item = item.parent;
+            return item;
         }
 
         // Resolves the page mapped to a tree item id (e.g. the serialized selection after a reload).

@@ -293,6 +293,8 @@ namespace UnityEditorInternal
         /// Passing the config in a dedicated file (via LinkRequest.ManagedCaptureConfigFile) rather
         /// than embedding it in the editor-to-linker data isolates it: a bad or oversized capture
         /// config can't corrupt the shared editor data the rest of engine stripping depends on.
+        /// The payload is base64 so the intermediate artifact is not casually readable or editable;
+        /// the linker accepts either form.
         /// </summary>
         public static string WriteManagedCaptureConfig(NPath linkerInputDirectory)
         {
@@ -300,8 +302,8 @@ namespace UnityEditorInternal
             if (string.IsNullOrEmpty(config))
                 return null;
 
-            var path = linkerInputDirectory.Combine("ManagedCaptureConfig.json");
-            File.WriteAllText(path.ToString(), config);
+            var path = linkerInputDirectory.Combine("ManagedCapture.dat");
+            File.WriteAllText(path.ToString(), Convert.ToBase64String(Encoding.UTF8.GetBytes(config)));
             return path.MakeAbsolute().ToString();
         }
 

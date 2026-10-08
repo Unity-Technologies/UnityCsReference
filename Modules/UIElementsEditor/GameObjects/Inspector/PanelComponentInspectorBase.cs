@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Pool;
 using UnityEngine.UIElements;
@@ -332,6 +333,34 @@ namespace UnityEditor.UIElements.Inspector
             panelComponent.PerformUpdate();
         }
 
+        private void RefreshFieldValues()
+        {
+            if (target == null)
+                return;
+
+            var pc = (IPanelComponent)target;
+            var size = pc.worldSpaceSize;
+
+            bool changed = SetValueIfChanged(m_PositionEnumField, pc.position);
+            changed |= SetValueIfChanged(m_WorldSpaceSizeField, pc.worldSpaceSizeMode);
+            changed |= SetValueIfChanged(m_WorldSpaceWidthField, size.x);
+            changed |= SetValueIfChanged(m_WorldSpaceHeightField, size.y);
+            changed |= SetValueIfChanged(m_PivotReferenceSizeField, pc.pivotReferenceSize);
+            changed |= SetValueIfChanged(m_PivotField, pc.pivot);
+
+            if (changed)
+                UpdateValues();
+        }
+
+        static bool SetValueIfChanged<T>(BaseField<T> field, T value)
+        {
+            if (EqualityComparer<T>.Default.Equals(field.value, value))
+                return false;
+
+            field.SetValueWithoutNotify(value);
+            return true;
+        }
+
         string GenerateEditorElementsErrorMessage(int maxElements)
         {
             var pc = (IPanelComponent)target;
@@ -445,6 +474,7 @@ namespace UnityEditor.UIElements.Inspector
 
             BindFields();
             UpdateValues();
+            m_RootVisualElement.TrackSerializedObjectValue(serializedObject, _ => RefreshFieldValues());
 
             UpdateInputConfigurationOptions();
             m_InputConfiguration.schedule.Execute(UpdateInputConfigurationOptions).Every(200);
@@ -458,7 +488,7 @@ namespace UnityEditor.UIElements.Inspector
         void AddPanelRendererComponent()
         {
             var component = (Component)target;
-            var pr = component.gameObject.AddComponent<PanelRenderer>();
+            var pr = Undo.AddComponent(component.gameObject, typeof(PanelRenderer));
 
             var uiDoc = (target as UIDocument);
             if (uiDoc == null)

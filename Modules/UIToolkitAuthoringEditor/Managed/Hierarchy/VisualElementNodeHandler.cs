@@ -301,15 +301,26 @@ internal partial class VisualElementNodeHandler :
         /// </summary>
         public readonly IPanelComponent Scope;
 
-        public SelectionRequest(VisualElementAsset asset, int[] instancePath = null, IPanelComponent scope = null)
+        /// <summary>
+        /// The live element the edit is about to replace, which is still backed by <see cref="Asset"/> until the
+        /// re-clone lands and so must not be taken for the element to select, or <see langword="null"/>.
+        /// </summary>
+        public readonly VisualElement Replaced;
+
+        public SelectionRequest(VisualElementAsset asset, int[] instancePath = null, IPanelComponent scope = null,
+            VisualElement replaced = null)
         {
             Asset = asset;
             InstancePath = instancePath;
             Scope = scope;
+            Replaced = replaced;
         }
 
         public SelectionRequest ScopedTo(int[] instancePath, IPanelComponent scope)
-            => new(Asset, instancePath, scope);
+            => new(Asset, instancePath, scope, Replaced);
+
+        public SelectionRequest Replacing(VisualElement replaced)
+            => new(Asset, InstancePath, Scope, replaced);
     }
 
     protected internal NodeHandlerStageStrategy StageStrategy => m_StageStrategy;
@@ -390,7 +401,7 @@ internal partial class VisualElementNodeHandler :
         UICommandQueue.RegisterHandler<CopyElementsCommand>(ClearCutFlagsOnSuccess);
         UICommandQueue.RegisterHandler<PasteElementsCommand>(ClearCutFlagsOnSuccess);
         UICommandQueue.RegisterHandler<ReparentElementsCommand>(ClearCutFlagsOnSuccess);
-        UICommandQueue.RegisterHandler<DuplicateElementsCommand>(OnElementsDuplicated);
+        UICommandQueue.RegisterHandler<DuplicateElementsCommand>(ClearCutFlagsOnSuccess);
         UICommandQueue.RegisterHandlerForCategory(CommandCategory.Attributes, OnAttributeOverridesChanged);
         UICommandQueue.GroupEnded += OnCommandGroupEnded;
 
@@ -424,7 +435,7 @@ internal partial class VisualElementNodeHandler :
         UICommandQueue.UnregisterHandler<CopyElementsCommand>(ClearCutFlagsOnSuccess);
         UICommandQueue.UnregisterHandler<PasteElementsCommand>(ClearCutFlagsOnSuccess);
         UICommandQueue.UnregisterHandler<ReparentElementsCommand>(ClearCutFlagsOnSuccess);
-        UICommandQueue.UnregisterHandler<DuplicateElementsCommand>(OnElementsDuplicated);
+        UICommandQueue.UnregisterHandler<DuplicateElementsCommand>(ClearCutFlagsOnSuccess);
         UICommandQueue.UnregisterHandlerForCategory(CommandCategory.Attributes, OnAttributeOverridesChanged);
         UICommandQueue.GroupEnded -= OnCommandGroupEnded;
         m_AttributeOverridesChanged = false;
@@ -766,6 +777,9 @@ internal partial class VisualElementNodeHandler :
     /// </summary>
     static bool Matches(in SelectionRequest request, VisualElement element, List<int> pathBuffer)
     {
+        if (element == request.Replaced)
+            return false;
+
         if ((Component)request.Scope
             && !ReferenceEquals(element.GetFirstOfType<IPanelComponentRootElement>()?.panelComponent, request.Scope))
             return false;
@@ -1313,7 +1327,24 @@ internal partial class VisualElementNodeHandler :
     /// <returns>The <see cref="HierarchyNode"/> of the parent of the <paramref name="element"/> or the root node.</returns>
     /// <exception cref="ArgumentNullException">If the <paramref name="element"/> is null.</exception>
     protected virtual bool TryGetParentNode(VisualElement element, out HierarchyNode parentNode)
+        => TryGetParentNode(element, out parentNode, out _);
+
+    /// <summary>
+    /// Attempts to find the parent <see cref="HierarchyNode"/> for a given <see cref="VisualElement"/>.
+    /// </summary>
+    /// <param name="element">The requested <see cref="VisualElement"/>.</param>
+    /// <param name="parentNode">The parent <see cref="HierarchyNode"/> of the <see cref="VisualElement"/>.</param>
+    /// <param name="parentPending">
+    /// When this method returns <see langword="false"/>, whether the parent may still resolve once the rest of
+    /// the batch is processed (<see langword="true"/>), as opposed to <paramref name="element"/> having no
+    /// legitimate parent at all (<see langword="false"/>).
+    /// </param>
+    /// <returns>The <see cref="HierarchyNode"/> of the parent of the <paramref name="element"/> or the root node.</returns>
+    /// <exception cref="ArgumentNullException">If the <paramref name="element"/> is null.</exception>
+    bool TryGetParentNode(VisualElement element, out HierarchyNode parentNode, out bool parentPending)
     {
+        parentPending = true;
+
         if (null == element)
             throw new ArgumentNullException(nameof(element));
 
@@ -1336,6 +1367,13 @@ internal partial class VisualElementNodeHandler :
         var parent = element.hierarchy.parent;
         if (null == parent)
         {
+            if (!StageStrategy.AcceptRootAsParent)
+            {
+                parentNode = HierarchyNode.Null;
+                parentPending = false;
+                return false;
+            }
+
             parentNode = Hierarchy.Root;
             return true;
         }
@@ -1346,7 +1384,8 @@ internal partial class VisualElementNodeHandler :
             {
                 case NodeCreationType.DontCreate:
                     parentNode = HierarchyNode.Null;
-                    break;
+                    parentPending = false;
+                    return false;
                 case NodeCreationType.Create:
                     if (m_Mappings.TryGetValue(parent, out parentNode))
                         return true;
@@ -1356,6 +1395,13 @@ internal partial class VisualElementNodeHandler :
                     parent = parent.hierarchy.parent;
                     if (parent == null)
                     {
+                        if (!StageStrategy.AcceptRootAsParent)
+                        {
+                            parentNode = HierarchyNode.Null;
+                            parentPending = false;
+                            return false;
+                        }
+
                         parentNode = Hierarchy.Root;
                         return true;
                     }
@@ -1569,6 +1615,27 @@ internal partial class VisualElementNodeHandler :
     }
 
     /// <summary>
+    /// Keeps each pending request from resolving to the matching entry of <paramref name="replaced"/>, for a caller
+    /// whose edit left those live elements in place, still backed by the requested assets, until the re-clone
+    /// replaces them.
+    /// </summary>
+    /// <remarks>
+    /// In the Main Stage that re-clone runs on a later editor tick, after the hierarchy has already updated, so a
+    /// move within one document would otherwise select the element about to be released instead of the one that
+    /// replaces it — at a place in the hierarchy the move no longer reflects.
+    /// </remarks>
+    internal void ExcludeReplacedElementsFromPendingSelectionRequests(IReadOnlyList<VisualElement> replaced)
+    {
+        if (m_NodesToSelect is not { Count: > 0 } || replaced == null || replaced.Count != m_NodesToSelect.Count)
+            return;
+
+        for (var i = 0; i < m_NodesToSelect.Count; ++i)
+        {
+            m_NodesToSelect[i] = m_NodesToSelect[i].Replacing(replaced[i]);
+        }
+    }
+
+    /// <summary>
     /// Points the pending request at <paramref name="index"/> at the one clone of its asset that hangs from the
     /// template instances of <paramref name="prefix"/>, inside <paramref name="scope"/>.
     /// </summary>
@@ -1677,6 +1744,7 @@ internal partial class VisualElementNodeHandler :
         {
             using var parentHashHandler = HashSetPool<HierarchyNode>.Get(out var parentsToSort);
             using var processedElementsHandler = HashSetPool<VisualElement>.Get(out var processedElements);
+            using var elementsToClearHandler = ListPool<VisualElement>.Get(out var elementsToClear);
 
             foreach (var element in changes.addedOrMovedElements)
             {
@@ -1689,14 +1757,20 @@ internal partial class VisualElementNodeHandler :
                 if (m_Mappings.TryGetValue(element, out var elementNode))
                 {
                     // Parent is already mapped
-                    if (TryGetParentNode(element, out var parentNode))
+                    if (TryGetParentNode(element, out var parentNode, out var parentPending))
                     {
                         CommandList.SetParent(elementNode, parentNode);
                         parentsToSort.Add(parentNode);
                     }
-                    else
+                    else if (parentPending)
                     {
                         // Wait until the parent is processed.
+                    }
+                    else
+                    {
+                        // Deferred so a batch-mate still parented under this node gets its own SetParent
+                        // applied first, before the node (and whatever's still under it) is torn down.
+                        elementsToClear.Add(element);
                     }
                 }
                 // Element was not known previously
@@ -1709,6 +1783,13 @@ internal partial class VisualElementNodeHandler :
                     if (m_Mappings.TryGetValue(elementParent, out var elementParentNode))
                         parentsToSort.Add(elementParentNode);
                 }
+            }
+
+            // Runs after every SetParent/Rebuild above, so any batch-mate moved out of one of these
+            // subtrees has already been relocated before the stale root drags it down with it.
+            foreach (var element in elementsToClear)
+            {
+                Clear(element);
             }
 
             // Recompute sorting index

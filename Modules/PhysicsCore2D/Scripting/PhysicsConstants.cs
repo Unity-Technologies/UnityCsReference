@@ -38,5 +38,22 @@ namespace Unity.U2D.Physics
         /// The number of "colors" used for contact and joint constraints when solving the simulation.
         /// </summary>
         internal const int SolverGraphColorCount = 24;
+
+        /// <summary>
+        /// The maximum number of bounce passes a physics world can run in one simulation step.
+        /// </summary>
+        /// <remarks>
+        /// See <see cref="PhysicsWorld.bounceIterations"/> and <see cref="PhysicsWorldDefinition.bounceIterations"/>.
+        /// </remarks>
+        public const int MaxBounceIterations = 63;
+
+        /// <summary>
+        /// The lowest maximum linear speed a physics world accepts, in meters per second.
+        /// A world limited to this speed lets bodies move no more than a tenth of a millimeter each second, so it behaves as if nothing can move.
+        /// </summary>
+        /// <remarks>
+        /// See <see cref="PhysicsWorld.maximumLinearSpeed"/> and <see cref="PhysicsWorldDefinition.maximumLinearSpeed"/>.
+        /// </remarks>
+        public const float MinMaximumLinearSpeed = 0.0001f;
     }
 }

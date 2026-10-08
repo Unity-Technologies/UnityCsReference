@@ -1458,6 +1458,13 @@ namespace Unity.Hierarchy.Editor
         {
             if (stage == null)
                 return;
+
+            // Consider a child Prefab open in context inside its parent Prefab.
+            // If the parent Prefab were to be edited on disk, we could end up writing the child's state under the parent's key.
+            // Doing this then sends the user to an empty hierarchy when they return to the parent prefab.
+            if (!HierarchyStageStack.IsHierarchyOf(stage, m_Hierarchy))
+                return;
+
             var key = StageUtility.CreateWindowAndStageIdentifier(m_WindowGUID, stage);
             // The search text is saved along with the stage content so it can be restored when
             // returning to this stage through the stage history; see LoadStageViewState.

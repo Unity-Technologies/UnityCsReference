@@ -887,6 +887,8 @@ sealed partial class UICanvasDocumentRoot : VisualElement, IVisualElementChangeP
         {
             if (element.visualElementAsset == null)
                 return;
+            if (element.pickingMode == PickingMode.Ignore || !element.visible)
+                return;
             // Tested before the selection object is resolved: resolving walks the live tree looking for the
             // counterpart, and this runs over the whole document on every pointer move of the drag.
             if (!RectIncludesElement(canvasRect, element.worldBound, mode))

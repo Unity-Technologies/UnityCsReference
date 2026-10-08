@@ -119,28 +119,23 @@ sealed class ComponentUxmlAttributesEditingContext : UxmlAttributesEditingContex
 
         // No editable backing asset for this element — either it has no VisualElementAsset (a runtime or
         // script-created element selected in the main scene stage) or it is a template instance. Mirror the
-        // element attributes inspector: show the component read-only against a temporary VisualTreeAsset, so
-        // the fields appear instead of just the component name. The temp is shared with the element
-        // attributes inspector; add this component to it, populated from the live component so real values show.
+        // element attributes inspector: show the component read-only against its own temporary
+        // VisualTreeAsset, so the fields appear instead of just the component name, populated from the live
+        // component so real values show.
         if (elementAsset == null || isInTemplateInstance)
         {
-            var temp = element.GetProperty(k_TempSerializedDataPropertyName) as TempSerializedData
-                       ?? TempSerializedData.Create(element, isInTemplateInstance);
-            tempSerializedData = temp;
+            tempSerializedData = TempSerializedData.Create(element);
 
-            if (IndexOfComponent(temp.elementAsset, m_ComponentDataType) < 0)
-            {
-                var data = (UxmlComponentSerializedData)m_Description.CreateDefaultSerializedData();
-                var live = liveAttributeOwner;
-                if (live != null)
-                    m_Description.SyncSerializedData(live, data);
-                temp.elementAsset.AddComponentData(data);
-            }
+            var data = (UxmlComponentSerializedData)m_Description.CreateDefaultSerializedData();
+            var live = liveAttributeOwner;
+            if (live != null)
+                m_Description.SyncSerializedData(live, data);
+            tempSerializedData.elementAsset.AddComponentData(data);
 
-            visualTreeAsset = temp;
-            this.elementAsset = temp.elementAsset;
-            rootSerializedObject = new SerializedObject(temp);
-            serializedBasePath = GetSerializedPath(temp.elementAsset);
+            visualTreeAsset = tempSerializedData;
+            this.elementAsset = tempSerializedData.elementAsset;
+            rootSerializedObject = new SerializedObject(tempSerializedData);
+            serializedBasePath = GetSerializedPath(tempSerializedData.elementAsset);
             return;
         }
 

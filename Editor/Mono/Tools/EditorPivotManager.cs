@@ -10,7 +10,7 @@ using Unity.Scripting.LifecycleManagement;
 
 namespace UnityEditor
 {
-    struct PivotSettingDefinition
+    struct PivotSettingDefinition : IEquatable<PivotSettingDefinition>
     {
         public Type type { get; }
 
@@ -38,6 +38,11 @@ namespace UnityEditor
             this.type = type;
             this.attribute = attribute;
             m_Icon = null;
+        }
+
+        public bool Equals(PivotSettingDefinition other)
+        {
+            return type == other.type && attribute == other.attribute && m_Icon == other.m_Icon;
         }
     }
 

@@ -73,6 +73,7 @@ internal sealed class SetStyleSheetPropertyCommand<T> : Command<SetStyleSheetPro
     {
         var property = GetOrCreateStyleProperty(Rule, StylePropertyId);
         ValueSetter(property, StyleSheet, Value);
+
         return CommandExecutionStatus.Success;
     }
 

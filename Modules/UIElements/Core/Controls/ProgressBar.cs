@@ -246,8 +246,13 @@ namespace UnityEngine.UIElements
                 return 0f;
             }
 
+            var range = highValue - lowValue;
+
+            // An empty range counts as complete, as it does in Slider.SliderNormalizeValue.
+            var normalizedProgress = Mathf.Approximately(range, 0f) ? 1f : Mathf.Clamp01((width - lowValue) / range);
+
             var maxWidth = Mathf.Floor(m_Background.layout.width - 2);
-            var progressWidth = Mathf.Max((maxWidth) * width / highValue, k_MinVisibleProgress);
+            var progressWidth = Mathf.Max(maxWidth * normalizedProgress, k_MinVisibleProgress);
             var oppositeProgressWidth = maxWidth - progressWidth;
 
             // If the difference between the max width and the desired right position is too small, we don't want to display the progress bar.

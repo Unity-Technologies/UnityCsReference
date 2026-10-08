@@ -299,6 +299,7 @@ class LocalizationSettingsProvider : SettingsProvider
                 active.CompactLocales();
                 EditorUtility.SetDirty(active);
                 ScheduleRebuild();
+                LocalizationEditorSettings.RaiseLocalesChanged();
             }) { text = LocLabels.RemoveUnresolvedLocales };
             repair.AddToClassList(LocClasses.LocRepairButton);
             root.Insert(1, repair);
@@ -383,6 +384,7 @@ class LocalizationSettingsProvider : SettingsProvider
         }
         m_Serialized.ApplyModifiedProperties();
         m_Serialized.Update();
+        LocalizationEditorSettings.RaiseLocalesChanged();
     }
 
     static int IndexOfReference(SerializedProperty localesArray, Locale locale, int from)
@@ -441,6 +443,7 @@ class LocalizationSettingsProvider : SettingsProvider
         EditorUtility.SetDirty(active);
         AssetProviderEditors.SetLocaleEnabled(locale, enabled);
         ScheduleRebuild();
+        LocalizationEditorSettings.RaiseLocalesChanged();
     }
 
     void RemoveLocaleAt(LocalizationSettings active, int index)
@@ -466,6 +469,7 @@ class LocalizationSettingsProvider : SettingsProvider
         EditorUtility.SetDirty(active);
         AssetProviderEditors.SetLocaleEnabled(locale, false);
         LanguageToolbar.Refresh();
+        LocalizationEditorSettings.RaiseLocalesChanged();
     }
 
     void BuildProjectLocaleRow(VisualElement root, LocalizationSettings active)
@@ -550,6 +554,7 @@ class LocalizationSettingsProvider : SettingsProvider
                 EditorUtility.SetDirty(active);
                 AssetDatabase.SaveAssetIfDirty(active);
                 ScheduleRebuild();
+                LocalizationEditorSettings.RaiseLocalesChanged();
             });
         }
         menu.DropDown(button.worldBound, button, DropdownMenuSizeMode.Auto);

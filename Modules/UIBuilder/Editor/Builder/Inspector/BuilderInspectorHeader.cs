@@ -356,9 +356,6 @@ namespace Unity.UI.Builder
                 return false;
             }
 
-            Undo.RegisterCompleteObjectUndo(
-                styleSheet, BuilderConstants.RenameSelectorUndoMessage);
-
             if (!BuilderSharedStyles.SetSelectorString(currentVisualElement, styleSheet, value, out var error))
             {
                 Builder.ShowWarning(error);

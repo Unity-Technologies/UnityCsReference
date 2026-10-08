@@ -4,6 +4,7 @@
 
 using System;
 using System.Diagnostics;
+using System.Globalization;
 
 namespace UnityEngine.UIElements
 {
@@ -85,12 +86,12 @@ namespace UnityEngine.UIElements
             long v = value;
 
             v += (long)Math.Round(NumericFieldDraggerUtility.NiceDelta(delta, acceleration) * sensitivity);
-            value = (int)v;
+            value = (int)Math.Clamp(v, int.MinValue, int.MaxValue);
         }
 
         internal override int SliderLerpUnclamped(int a, int b, float interpolant)
         {
-            return Mathf.RoundToInt(Mathf.LerpUnclamped((float)a, (float)b, interpolant));
+            return (int)Math.Clamp(Math.Round((double)a + ((double)b - (double)a) * interpolant), int.MinValue, int.MaxValue);
         }
 
         internal override float SliderNormalizeValue(int currentValue, int lowerValue, int higherValue)
@@ -98,12 +99,12 @@ namespace UnityEngine.UIElements
             // Avoid divide by zero
             if (higherValue - lowerValue == 0)
                 return 1.0f;
-            return ((float)currentValue - (float)lowerValue) / ((float)higherValue - (float)lowerValue);
+            return (float)(((long)currentValue - (long)lowerValue) / (double)((long)higherValue - (long)lowerValue));
         }
 
         internal override int SliderRange()
         {
-            return Math.Abs(highValue - lowValue);
+            return (int)Math.Clamp(Math.Abs((long)highValue - (long)lowValue), 0, int.MaxValue);
         }
 
         internal override int ParseStringToValue(string previousValue, string newValue)
@@ -111,6 +112,11 @@ namespace UnityEngine.UIElements
             var success = UINumericFieldsUtils.TryConvertStringToInt(newValue, previousValue, out var value, out var expression);
             expressionEvaluated?.Invoke(expression);
             return success ? value : 0;
+        }
+
+        internal override string ValueToString(int currentValue)
+        {
+            return String.Format(CultureInfo.InvariantCulture, "{0:d}", currentValue);
         }
 
         internal override void ComputeValueAndDirectionFromClick(float sliderLength, float dragElementLength, float dragElementPos, float dragElementLastPos)
@@ -171,7 +177,7 @@ namespace UnityEngine.UIElements
 
             // Change by approximately 1/100 of entire range, or 1/10 if holding down shift
             // But round to nearest power of ten to get nice resulting numbers.
-            var delta = GetClosestPowerOfTen(Mathf.Abs((highValue - lowValue) * 0.01f));
+            var delta = GetClosestPowerOfTen(Math.Abs(((long)highValue - lowValue) * 0.01));
             if (delta < 1)
                 delta = 1;
             if (isPageSize)
@@ -187,7 +193,11 @@ namespace UnityEngine.UIElements
                 delta = -delta;
 
             // Now round to a multiple of our delta value so we get a round end result instead of just a round delta.
-            value = Mathf.RoundToInt(RoundToMultipleOf(value + (delta * 0.5001f), Mathf.Abs(delta)));
+            // Clamp to the representable int range before casting: converting an out-of-range double to int is
+            // unspecified in C# (it may wrap to the opposite end instead of saturating) and differs across Unity's
+            // runtimes. The value setter clamps to the slider's actual range afterwards.
+            var stepped = Math.Round(RoundToMultipleOf(value + (delta * 0.5001), Math.Abs(delta)));
+            value = (int)Math.Clamp(stepped, int.MinValue, int.MaxValue);
         }
     }
 }

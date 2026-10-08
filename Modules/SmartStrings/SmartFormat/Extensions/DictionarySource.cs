@@ -27,32 +27,64 @@ public class DictionarySource : Source
         var current = selectorInfo.CurrentValue;
         if (TrySetResultForNullableOperator(selectorInfo)) return true;
 
-        if (current is null) return false;
+        if (current is not (IDictionary or IDictionary<string, object>)) return false;
 
         var selector = selectorInfo.SelectorText;
+        var comparison = selectorInfo.FormatDetails.Settings.GetCaseSensitivityComparison();
+
+        if (TryGetValue(current, selector, comparison, out var value))
+        {
+            selectorInfo.Result = value;
+            return true;
+        }
+
+        // A missing key behind a nullable operator resolves to null
+        if (HasNullableOperator(selectorInfo))
+        {
+            selectorInfo.Result = null;
+            return true;
+        }
+
+        return false;
+    }
+
+    static bool TryGetValue(object current, string selector, StringComparison comparison, out object value)
+    {
+        // Gives the same result as the ordinal scan below without visiting every entry
+        if (comparison == StringComparison.Ordinal && current is Dictionary<string, object> dictionary && IsOrdinal(dictionary.Comparer))
+            return dictionary.TryGetValue(selector, out value);
 
         // See if current is an IDictionary and contains the selector:
         if (current is IDictionary rawDict)
+        {
             foreach (DictionaryEntry entry in rawDict)
             {
-                var key = entry.Key as string ?? entry.Key.ToString() !;
+                var key = entry.Key as string ?? entry.Key.ToString();
 
-                if (key.Equals(selector, selectorInfo.FormatDetails.Settings.GetCaseSensitivityComparison()))
+                if (key.Equals(selector, comparison))
                 {
-                    selectorInfo.Result = entry.Value;
+                    value = entry.Value;
                     return true;
                 }
             }
-
+        }
         // this check is for dynamics and generic dictionaries
-        if (current is not IDictionary<string, object> dict) return false;
+        else if (current is IDictionary<string, object> dict)
+        {
+            foreach (var entry in dict)
+            {
+                if (entry.Key.Equals(selector, comparison))
+                {
+                    value = entry.Value;
+                    return true;
+                }
+            }
+        }
 
-        // We're using the CaseSensitivityType of the dictionary,
-        // not the one from Settings.GetCaseSensitivityComparison().
-        // This is faster and has less GC than Key.Equals(...)
-        if (!dict.TryGetValue(selector, out var val)) return false;
-
-        selectorInfo.Result = val;
-        return true;
+        value = null;
+        return false;
     }
+
+    static bool IsOrdinal(IEqualityComparer<string> comparer) =>
+        ReferenceEquals(comparer, EqualityComparer<string>.Default) || ReferenceEquals(comparer, StringComparer.Ordinal);
 }

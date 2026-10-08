@@ -77,11 +77,11 @@ namespace Unity.UI.Builder
 
         internal static bool SetSelectorString(VisualElement element, StyleSheet styleSheet, string newString, out string error)
         {
-            var complexSelector = GetSelectorProperty(element);
-            if (!complexSelector.TrySetSelectorsFromString(newString, out error))
+            if (!UnityEditor.UIElements.StyleSheetExtensions.ValidateSingleSelector(newString, out error))
                 return false;
-            return true;
 
+            Undo.RegisterCompleteObjectUndo(styleSheet, BuilderConstants.RenameSelectorUndoMessage);
+            return GetSelectorProperty(element).TrySetSelectorsFromString(newString, out error);
         }
 
         internal static List<string> GetSelectorParts(VisualElement element)
@@ -178,6 +178,12 @@ namespace Unity.UI.Builder
 
         internal static StyleComplexSelector CreateNewSelector(VisualElement selectorContainerElement, StyleSheet styleSheet, string selectorStr)
         {
+            if (!UnityEditor.UIElements.StyleSheetExtensions.ValidateSingleSelector(selectorStr, out var error))
+            {
+                Builder.ShowWarning(error);
+                return null;
+            }
+
             var complexSelector =  StyleSheetExtensions.AddSelector(styleSheet, selectorStr);
             if (complexSelector == null)
                 return null;
@@ -338,7 +344,7 @@ namespace Unity.UI.Builder
             var complexSelectors = new List<SelectorMatchRecord>();
             foreach (var rule in matchedElementsSelector.selectedElementRules)
             {
-                if (rule.matchRecord.sheet.IsUnityEditorStyleSheet() || rule.matchRecord.sheet.isDefaultStyleSheet)
+                if (rule.matchRecord.sheet.IsUnityEditorStyleSheet() || rule.matchRecord.tier != UnityEngine.UIElements.StyleSheetPriority.Default)
                     continue;
                 complexSelectors.Add(rule.matchRecord);
             }

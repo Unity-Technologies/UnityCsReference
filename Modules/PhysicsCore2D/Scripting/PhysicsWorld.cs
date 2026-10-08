@@ -985,7 +985,7 @@ namespace Unity.U2D.Physics
         /// </summary>
         /// <remarks>
         /// A snapshot restores the full simulation configuration, so these <see cref="PhysicsWorldDefinition"/> properties are taken from <paramref name="snapshot"/> and their values in <paramref name="definition"/> are ignored:
-        /// <see cref="PhysicsWorldDefinition.gravity"/>, <see cref="PhysicsWorldDefinition.bounceThreshold"/>, <see cref="PhysicsWorldDefinition.contactHitEventThreshold"/>, <see cref="PhysicsWorldDefinition.contactFrequency"/>, <see cref="PhysicsWorldDefinition.contactDamping"/>, <see cref="PhysicsWorldDefinition.contactSpeed"/>, <see cref="PhysicsWorldDefinition.contactRecycleDistance"/>, <see cref="PhysicsWorldDefinition.maximumLinearSpeed"/>, <see cref="PhysicsWorldDefinition.sleepingAllowed"/>, <see cref="PhysicsWorldDefinition.continuousAllowed"/>, <see cref="PhysicsWorldDefinition.eventGroupingAllowed"/> and <see cref="PhysicsWorldDefinition.capacity"/>.
+        /// <see cref="PhysicsWorldDefinition.gravity"/>, <see cref="PhysicsWorldDefinition.bounceThreshold"/>, <see cref="PhysicsWorldDefinition.bounceIterations"/>, <see cref="PhysicsWorldDefinition.bouncePropagation"/>, <see cref="PhysicsWorldDefinition.contactHitEventThreshold"/>, <see cref="PhysicsWorldDefinition.contactFrequency"/>, <see cref="PhysicsWorldDefinition.contactDamping"/>, <see cref="PhysicsWorldDefinition.contactSpeed"/>, <see cref="PhysicsWorldDefinition.contactRecycleDistance"/>, <see cref="PhysicsWorldDefinition.maximumLinearSpeed"/>, <see cref="PhysicsWorldDefinition.sleepingAllowed"/>, <see cref="PhysicsWorldDefinition.continuousAllowed"/>, <see cref="PhysicsWorldDefinition.eventGroupingAllowed"/> and <see cref="PhysicsWorldDefinition.capacity"/>.
         /// All other <paramref name="definition"/> properties are applied normally, for example <see cref="PhysicsWorldDefinition.simulationWorkers"/> and <see cref="PhysicsWorldDefinition.simulationSubSteps"/>.
         /// To use a value other than the snapshot's, set the matching property on the returned world after this call.
         /// Creating and restoring a world processes the whole image, so this is not intended to be called at high frequency.
@@ -1042,12 +1042,19 @@ namespace Unity.U2D.Physics
         public PhysicsWorldDefinition definition { get => PhysicsWorld_ReadDefinition(this); set => PhysicsWorld_WriteDefinition(this, value, false); }
 
         /// <summary>
-        /// An abstract group identity that can be shared by a set of physics objects.
-        /// Each group is globally unique across all worlds.
+        /// An identity shared by a set of shapes on one body so they are treated as a single object when reporting contact and trigger begin and end events.
+        /// Assign a group only to shapes that belong to the same body.
+        /// Two objects made of many shapes produce a begin and end event for every pair of shapes that touch.
+        /// When each object's shapes share a group, the world marks the first begin event and the last end event between the two groups, so a callback can act on those alone and receive a single begin and end for each pair of objects.
+        /// The marking is designed to be cheap, so it only examines the contacts of the two bodies involved, which is why a group cannot span more than one body.
         /// </summary>
         /// <remarks>
         /// Create a group with <see cref="CreateGroup"/> and assign it with <see cref="PhysicsShape.physicsGroup"/>.
-        /// A default group has a <see cref="groupIndex"/> of zero, meaning no group.
+        /// Each group is globally unique across all worlds, and a default group has a <see cref="groupIndex"/> of zero, meaning no group.
+        /// Grouping has these limitations:
+        /// Assigning one group to shapes on more than one body is not supported, and the first and last marking of their events is then unreliable, so several events between the same two groups can each be marked first or last.
+        /// Marking only applies between two groups, so an event between a grouped shape and a shape with no group is always marked both first and last.
+        /// When <see cref="eventGroupingAllowed"/> is disabled, every event is marked both first and last.
         /// </remarks>
         [StructLayout(LayoutKind.Sequential)]
         public readonly struct PhysicsGroup
@@ -1071,6 +1078,7 @@ namespace Unity.U2D.Physics
         /// <summary>
         /// Create a new globally unique group.
         /// Groups are created from a rolling index, so the first group created has a group index of one and a group index of zero always means no group.
+        /// Assign the group only to shapes that belong to the same body.
         /// </summary>
         /// <remarks>
         /// See <see cref="PhysicsGroup"/> and <see cref="PhysicsShape.physicsGroup"/>.
@@ -1250,10 +1258,11 @@ namespace Unity.U2D.Physics
 
         /// <summary>
         /// Controls if contact and trigger begin/end events for shapes assigned a group are marked as being the first or last event between the two groups involved.
-        /// This allows the many events produced between two groups of shapes to be reduced to a single begin and end, such as when treating multiple shapes as a single object.
+        /// This allows the many events produced between two groups of shapes to be reduced to a single begin and end, such as when treating multiple shapes on one body as a single object.
         /// The marking is only calculated for shapes assigned a group and only when a begin or end event is produced, so the cost of leaving this enabled is minor.
         /// </summary>
         /// <remarks>
+        /// Every shape in a group must belong to the same body; see <see cref="PhysicsGroup"/> for the limitations.
         /// See <see cref="PhysicsShape.physicsGroup"/> and <see cref="CreateGroup"/>.
         /// </remarks>
         public readonly bool eventGroupingAllowed { get => PhysicsWorld_GetEventGroupingAllowed(this); set => PhysicsWorld_SetEventGroupingAllowed(this, value); }
@@ -1302,6 +1311,33 @@ namespace Unity.U2D.Physics
         public readonly float bounceThreshold { get => PhysicsWorld_GetBounceThreshold(this); set => PhysicsWorld_SetBounceThreshold(this, value); }
 
         /// <summary>
+        /// The number of bounce passes the world runs each simulation step, after contacts and joints have been solved.
+        /// Each pass pushes apart the bodies of every contact that struck with a bounciness above zero, at the speed its bounciness allows, and never adds energy.
+        /// More passes let a bounce settle more accurately, which reduces unwanted spinning of bouncing boxes, and each pass adds work for every bouncy contact in the world.
+        /// The value must be from zero up to the maximum bounce pass count.
+        /// With zero, contacts never bounce whatever their bounciness.
+        /// </summary>
+        /// <remarks>
+        /// The maximum bounce pass count is <see cref="PhysicsConstants.MaxBounceIterations"/>.
+        /// Setting a value outside zero to that maximum logs a warning and leaves the current value unchanged.
+        /// See <see cref="bouncePropagation"/> and <see cref="PhysicsShape.SurfaceMaterial.bounciness"/>.
+        /// </remarks>
+        public readonly int bounceIterations { get => PhysicsWorld_GetBounceIterations(this); set => PhysicsWorld_SetBounceIterations(this, value); }
+
+        /// <summary>
+        /// Controls whether the bounce passes also solve contacts that have no bounciness.
+        /// With this disabled, only contacts with a bounciness above zero take part in the bounce passes.
+        /// A bounce then does not carry through neighboring bodies in the same pass, so a stack of boxes on a bouncy surface bounces from the bottom box up rather than together.
+        /// With this enabled, every contact takes part, so a bounce carries through groups of touching bodies within the same simulation step.
+        /// This visits every contact in the world on every bounce pass, which is significantly more expensive, so only enable it when bodies in contact must bounce together.
+        /// Carrying a bounce through a taller group of bodies needs more bounce passes.
+        /// </summary>
+        /// <remarks>
+        /// See <see cref="bounceIterations"/>.
+        /// </remarks>
+        public readonly bool bouncePropagation { get => PhysicsWorld_GetBouncePropagation(this); set => PhysicsWorld_SetBouncePropagation(this, value); }
+
+        /// <summary>
         /// The contact hit event threshold controls the collision speed needed to generate a contact hit event, usually in meters per second.
         /// See <see cref="PhysicsEvents.ContactHitEvent"/>.
         /// </summary>
@@ -1333,8 +1369,13 @@ namespace Unity.U2D.Physics
         public readonly float contactSpeed { get => PhysicsWorld_GetContactSpeed(this); set => PhysicsWorld_SetContactSpeed(this, value); }
 
         /// <summary>
-        /// Get/Set the maximum linear speed.
+        /// The fastest any body in the world can move, in meters per second.
+        /// Each simulation step, a body moving faster than this is slowed to it, which stops a body covering so much distance in one step that the simulation becomes unstable.
         /// </summary>
+        /// <remarks>
+        /// A value from zero up to <see cref="PhysicsConstants.MinMaximumLinearSpeed"/> is raised to that minimum.
+        /// A negative value logs a warning and leaves the current value unchanged.
+        /// </remarks>
         public readonly float maximumLinearSpeed { get => PhysicsWorld_GetMaximumLinearSpeed(this); set => PhysicsWorld_SetMaximumLinearSpeed(this, value); }
 
         /// <summary>
@@ -1515,7 +1556,8 @@ namespace Unity.U2D.Physics
         /// </summary>
         /// <param name="worlds">The worlds to forward simulate.</param>
         /// <param name="deltaTime">The amount of time to forward simulate the world.</param>
-        public static void Simulate(ReadOnlySpan<PhysicsWorld> worlds, float deltaTime) => PhysicsWorld_Simulate(worlds, deltaTime);
+        /// <returns>The number of worlds that were ignored (not simulated because the world was invalid). A single warning is logged when any are ignored. If the delta time is invalid, nothing is simulated and every world is counted as ignored.</returns>
+        public static int Simulate(ReadOnlySpan<PhysicsWorld> worlds, float deltaTime) => PhysicsWorld_Simulate(worlds, deltaTime);
 
         #region Explode
 
@@ -3220,6 +3262,11 @@ namespace Unity.U2D.Physics
 	        public float relaxImpulses { readonly get => m_RelaxImpulses; set => m_RelaxImpulses = value; }
 
             /// <summary>
+            /// Time spent applying bounce impulses after the other constraints are solved.
+            /// </summary>
+	        public float bounceImpulses { readonly get => m_BounceImpulses; set => m_BounceImpulses = value; }
+
+            /// <summary>
             /// Time spent storing impulses.
             /// </summary>
 	        public float storeImpulses { readonly get => m_StoreImpulses; set => m_StoreImpulses = value; }
@@ -3297,6 +3344,7 @@ namespace Unity.U2D.Physics
                     solveImpulses = profileA.solveImpulses + profileB.solveImpulses,
                     integrateTransforms = profileA.integrateTransforms + profileB.integrateTransforms,
                     relaxImpulses = profileA.relaxImpulses + profileB.relaxImpulses,
+                    bounceImpulses = profileA.bounceImpulses + profileB.bounceImpulses,
                     storeImpulses = profileA.storeImpulses + profileB.storeImpulses,
                     splitIslands = profileA.splitIslands + profileB.splitIslands,
                     bodyTransforms = profileA.bodyTransforms + profileB.bodyTransforms,
@@ -3333,6 +3381,7 @@ namespace Unity.U2D.Physics
                     solveImpulses = Mathf.Max(profileA.solveImpulses, profileB.solveImpulses),
                     integrateTransforms = Mathf.Max(profileA.integrateTransforms, profileB.integrateTransforms),
                     relaxImpulses = Mathf.Max(profileA.relaxImpulses, profileB.relaxImpulses),
+                    bounceImpulses = Mathf.Max(profileA.bounceImpulses, profileB.bounceImpulses),
                     storeImpulses = Mathf.Max(profileA.storeImpulses, profileB.storeImpulses),
                     splitIslands = Mathf.Max(profileA.splitIslands, profileB.splitIslands),
                     bodyTransforms = Mathf.Max(profileA.bodyTransforms, profileB.bodyTransforms),
@@ -3361,6 +3410,7 @@ namespace Unity.U2D.Physics
 	        [SerializeField] float m_SolveImpulses;
 	        [SerializeField] float m_IntegrateTransforms;
 	        [SerializeField] float m_RelaxImpulses;
+	        [SerializeField] float m_BounceImpulses;
 	        [SerializeField] float m_StoreImpulses;
 	        [SerializeField] float m_SplitIslands;
 	        [SerializeField] float m_BodyTransforms;
@@ -4264,34 +4314,32 @@ namespace Unity.U2D.Physics
         public readonly bool autoClearCustom { get => PhysicsWorld_GetAutoClearCustom(this); set => PhysicsWorld_SetAutoClearCustom(this, value); }
 
         /// <summary>
-        /// Controls the element depth.
-        /// 
-        /// When using custom drawing of geometry or primitive shapes there is no reference to the orthogonal axis used with
-        /// respect to the current <see cref="PhysicsWorld.transformPlane"/>.
-        ///
-        /// The element depth is in world-space and for each transform plan is defined as:
-        /// 
-        ///- Element depth is rendered along the Z axis when using <see cref="PhysicsWorld.TransformPlane.XY"/>.
-        ///- Element depth is rendered along the Y axis when using <see cref="PhysicsWorld.TransformPlane.XZ"/>.
-        ///- Element depth is rendered along the X axis when using <see cref="PhysicsWorld.TransformPlane.ZY"/>.
-        ///
-        /// You should set the element depth before performing any custom draw.
-        ///
-        /// The element depth will be reset to zero when rendering is complete.
+        /// The depth that custom drawing is drawn at when it is not tied to a body, in world space, along the axis perpendicular to the transform plane.
         /// </summary>
-        public readonly float elementDepth { get => PhysicsWorld_GetElementDepth(this); set => PhysicsWorld_SetElementDepth(this, value); }
+        /// <remarks>
+        /// Custom drawing of geometry, points and lines has no body to take a depth from, so it is drawn at this depth.
+        /// Set the depth before performing the custom drawing it applies to.
+        /// The depth axis is Z for <see cref="PhysicsWorld.TransformPlane.XY"/>, Y for <see cref="PhysicsWorld.TransformPlane.XZ"/> and X for <see cref="PhysicsWorld.TransformPlane.ZY"/>.
+        /// Drawing that belongs to a body, such as a body, shape or joint being drawn by the world, uses the depth of that body instead.
+        /// See <see cref="PhysicsBody.drawDepth"/>.
+        /// A value that is not finite is rejected and leaves the depth unchanged.
+        /// The depth stays as set until it is changed or <see cref="PhysicsWorld.ClearDraw"/> is called, which resets it to zero.
+        /// </remarks>
+        public readonly float drawDepth { get => PhysicsWorld_GetDrawDepth(this); set => PhysicsWorld_SetDrawDepth(this, value); }
 
         /// <summary>
-        /// Set the element depth using the specified 3D position. The relevant axis will be extracted using the current <see cref="PhysicsWorld.transformPlane"/>.
-        /// If <see cref="PhysicsWorld.TransformPlane.Custom"/> is used, the element depth is always set to zero.
-        ///
-        /// For more details, see <see cref="PhysicsWorld.elementDepth"/>.
+        /// Sets the draw depth from a 3D position, using the axis that matches the current transform plane.
         /// </summary>
-        /// <param name="position">The 3D position to extract the element depth from.</param>
-        public readonly void SetElementDepth3D(Vector3 position)
+        /// <remarks>
+        /// The relevant axis is taken from the position using the current <see cref="PhysicsWorld.transformPlane"/>.
+        /// If <see cref="PhysicsWorld.TransformPlane.Custom"/> is used, the draw depth is set to zero.
+        /// See <see cref="PhysicsWorld.drawDepth"/>.
+        /// </remarks>
+        /// <param name="position">The 3D position to take the draw depth from.</param>
+        public readonly void SetDrawDepth3D(Vector3 position)
         {
             var worldTransformPlane = transformPlane;
-            elementDepth = worldTransformPlane != TransformPlane.Custom ? PhysicsMath.GetTranslationIgnoredAxis(position, transformPlane) : 0.0f;
+            drawDepth = worldTransformPlane != TransformPlane.Custom ? PhysicsMath.GetTranslationIgnoredAxis(position, transformPlane) : 0.0f;
         }
 
         /// <summary>
@@ -4533,7 +4581,8 @@ namespace Unity.U2D.Physics
         /// See <see cref="PhysicsShape.Draw"/> for drawing a single shape.
         /// </remarks>
         /// <param name="shapes">The shapes to draw.</param>
-        public static void DrawShapes(ReadOnlySpan<PhysicsShape> shapes) => PhysicsWorld_DrawShapes(shapes);
+        /// <returns>The number of shapes that were ignored (not drawn because the shape was invalid). A single warning is logged when any are ignored.</returns>
+        public static int DrawShapes(ReadOnlySpan<PhysicsShape> shapes) => PhysicsWorld_DrawShapes(shapes);
 
         /// <undoc/>
         internal static void DrawAllWorlds(PhysicsAABB drawAABB, DrawTarget cameraTarget) => PhysicsWorld_DrawAllWorlds(drawAABB, cameraTarget);

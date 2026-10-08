@@ -386,7 +386,20 @@ namespace UnityEngine.UIElements
                         TimerState timerState = new TimerState { start = scheduledItem.startMs, now = currentTime };
 
                         if (!m_UnscheduleTransactions.Contains(scheduledItem)) // Don't execute items that have been marked for future removal
-                            scheduledItem.PerformTimerUpdate(timerState);
+                        {
+                            try
+                            {
+                                scheduledItem.PerformTimerUpdate(timerState);
+                            }
+                            catch (ExitGUIException)
+                            {
+                                throw;
+                            }
+                            catch (Exception e)
+                            {
+                                Debug.LogException(e);
+                            }
+                        }
 
                         scheduledItem.startMs = currentTime;
                         scheduledItem.delayMs = scheduledItem.intervalMs;

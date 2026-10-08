@@ -108,6 +108,9 @@ static partial class UIAssetSavePrompt
         var registry = UIAssetRegistry.instance;
         var succeeded = true;
 
+        // Batch the imports so saving a template doesn't reimport its dirty dependents first.
+        using var batch = choice == UIAssetSaveChoice.Save ? new AssetDatabase.AssetEditingScope() : null;
+
         foreach (var asset in assets)
         {
             // Saving or discarding a document also covers the stylesheets it references, so by the time we

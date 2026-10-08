@@ -33,7 +33,7 @@ namespace UnityEditor
 
         // Don't compress the data when creating the asset bundle.
         ///<summary>Don't compress the data when creating the AssetBundle.</summary>
-        ///<remarks>Builds the AssetBundle without any compression, resulting in larger file sizes but faster build and load times. Uncompressed AssetBundles are 16-byte aligned.
+        ///<remarks>Builds the AssetBundle without any compression, resulting in larger file sizes but faster build and load times.
         ///
         ///                    See [AssetBundles compression wiki](xref:um-asset-bundles-cache), <see cref="BuildAssetBundleOptions.ChunkBasedCompression" />, <see cref="UnityEngine.BuildCompression" />, and <see cref="UnityEngine.CompressionType" />.</remarks>
         UncompressedAssetBundle = 1, // 1 << 0

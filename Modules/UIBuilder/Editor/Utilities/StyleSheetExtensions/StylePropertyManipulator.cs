@@ -108,6 +108,9 @@ namespace Unity.UI.Builder
 
             public bool isVariableUnresolved => isVariable && handles?.Count == 0;
 
+            // Unresolved variables and non-var() functions (e.g. gradients) still occupy one value slot.
+            public bool hasNoResolvedHandles => handles?.Count == 0;
+
             public void Dispose()
             {
                 if (null != handles)
@@ -235,7 +238,7 @@ namespace Unity.UI.Builder
             var count = 0;
             foreach (var part in stylePropertyParts)
             {
-                if (part.isVariable && part.isVariableUnresolved)
+                if (part.hasNoResolvedHandles)
                     count += 1;
                 else
                     count += part.handles.Count;
@@ -788,11 +791,12 @@ namespace Unity.UI.Builder
             styleProperty.values = list.ToArray();
             var i = part.offset;
             var newPart = ResolveValueOrVariable(styleSheet, element, styleRule, styleProperty.name, styleProperty.values.AsSpan(), ref i, editorExtensionMode);
+            newPart.offset = initialOffset;
             stylePropertyParts.RemoveAt(indices.partIndex);
             stylePropertyParts.Insert(indices.partIndex, newPart);
             part.Dispose();
 
-            AdjustOffsets(indices.partIndex, i - nextOffset);
+            AdjustOffsets(indices.partIndex + 1, handles.Length - range);
         }
 
         void AdjustOffsets(int indicesPartIndex, int partOffset)
@@ -825,7 +829,7 @@ namespace Unity.UI.Builder
                     }
                 }
 
-                if (!part.isVariableUnresolved)
+                if (!part.hasNoResolvedHandles)
                     continue;
 
                 if (--current < 0)
@@ -1095,10 +1099,19 @@ namespace Unity.UI.Builder
                     variableNameUnique, out var stylePropertyValue))
             {
                 var propValue = stylePropertyValue;
-                if (!editorExtensionMode && propValue.sheet.isDefaultStyleSheet)
+
+                // The computed-style provenance only carries the declaring sheet, whose own
+                // priority says nothing about how it was pulled in (a plain USS imported by a
+                // theme is theme content). The variable context carries the effective tier of
+                // the match; a miss means the variable came from inline styles, which are local.
+                var tier = UnityEngine.UIElements.StyleSheetPriority.Default;
+                if (currentVisualElement.variableContext.TryFindVariable(variableNameUnique.id, out var contextVariable))
+                    tier = contextVariable.tier;
+
+                if (!editorExtensionMode && tier != UnityEngine.UIElements.StyleSheetPriority.Default)
                     return null;
 
-                if (propValue.sheet.isDefaultStyleSheet)
+                if (tier != UnityEngine.UIElements.StyleSheetPriority.Default)
                 {
                     StyleVariableUtility.editorVariableDescriptions.TryGetValue(variableName, out var variableDescription);
                 }

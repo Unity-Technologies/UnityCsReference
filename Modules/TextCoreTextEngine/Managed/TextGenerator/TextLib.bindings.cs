@@ -330,5 +330,8 @@ namespace UnityEngine.TextCore.Text
         [FreeFunction("OSFontFallback::ReleaseNativeFallback")]
         [VisibleToOtherModules("UnityEngine.UIElementsModule")]
         internal static extern void ReleaseNativeFallback(IntPtr nativePtr);
+
+        [FreeFunction("OSFontFallback::TryGetFontReferenceForUnicode")]
+        internal static extern bool TryGetFontReferenceForUnicode(long unicode, out FontReference fontRef);
     }
 }

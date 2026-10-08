@@ -189,7 +189,7 @@ namespace UnityEditorInternal.Profiling
             // chart use, so it never surfaces a screenshot from a frame trimmed out of the window.
             var firstDisplayedFrame = ScreenshotIndexCatalogue.FirstSelectableFrameIndex();
 
-            m_TimelineViewController?.UpdateSelection(ResolveDisplayFrame(profilerFrame));
+            m_TimelineViewController?.UpdateSelection(ResolveHighlightFrame(profilerFrame, firstDisplayedFrame));
             m_DetailsViewController?.LoadScreenshot(profilerFrame, firstDisplayedFrame);
 
             // Skip refreshing the info panel while it's collapsed; it's refreshed when toggled back on.
@@ -238,18 +238,17 @@ namespace UnityEditorInternal.Profiling
             }
         }
 
-        // The screenshot the strip should highlight for a given profiler frame: the screenshot at
-        // that frame if one exists, else the nearest one before it (matching what the detail panel
-        // displays). When there's no screenshot at or before the frame, returns the frame unchanged
-        // and the strip falls back to highlighting the closest thumbnail.
-        int ResolveDisplayFrame(int profilerFrame)
+        // The screenshot the strip should highlight for a given profiler frame, resolved through the
+        // same bounded lookup as the detail panel and the info panel so the three can't disagree.
+        // -1 when there's nothing to highlight: the strip must show no selection rather than fall
+        // back to its closest thumbnail, which for a frame below the display window is the first one.
+        int ResolveHighlightFrame(int profilerFrame, int firstDisplayedFrame)
         {
-            if (m_Catalogue == null || m_Catalogue.TryGetEmissionFrame(profilerFrame, out _))
-                return profilerFrame;
-            if (m_Catalogue.TryGetNearestPriorLogicalFrame(profilerFrame, out var nearest))
-                return nearest.LogicalFrame;
+            if (m_Catalogue == null
+                || !m_Catalogue.TryResolveDisplayedScreenshot(profilerFrame, firstDisplayedFrame, out var source))
+                return -1;
 
-            return profilerFrame;
+            return source.LogicalFrame;
         }
 
         void OnTimelineFrameSelected(int frameIndex)

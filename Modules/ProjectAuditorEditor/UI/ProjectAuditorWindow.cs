@@ -112,7 +112,7 @@ namespace Unity.ProjectAuditor.Editor.UI
 
         Vector2 m_PreviousWindowSize;
 
-        private static Page[] GetDefaultPages()
+        internal static Page[] GetDefaultPages()
         {
             // A category-backed leaf page. Its display name matches the registered view's DisplayName.
             Page Leaf(string name, IssueCategory category) =>
@@ -197,11 +197,7 @@ namespace Unity.ProjectAuditor.Editor.UI
                         {
                             id = PageId.Build,
                             name = "Build",
-                            category = IssueCategory.BuildFile,
-                            children =
-                            [
-                                Leaf("Build Steps", IssueCategory.BuildStep),
-                            ]
+                            category = IssueCategory.BuildSummary,
                         },
                     ]
                 },
@@ -446,6 +442,14 @@ namespace Unity.ProjectAuditor.Editor.UI
             RefreshWindow();
 
             wantsMouseMove = true;
+        }
+
+        // The Migrate to URP pages report against a project that can still migrate, so HDRP and custom
+        // SRPs leave nothing that applies - including under a report analyzed before the switch.
+        // Checked on the page, not the view: the child pages share their views with Optimization.
+        internal static bool IsPageOutOfScope(Page topLevelPage)
+        {
+            return topLevelPage?.id == PageId.MigrationToURP && MigrationToURPUtilities.IsProjectUsingOtherSRP();
         }
 
         void InitializeViews(SeverityRules rules, bool reload)
@@ -774,13 +778,27 @@ namespace Unity.ProjectAuditor.Editor.UI
             {
                 DrawToolbar();
 
+                // See DrawViewSelection for why the tree needs the window's own remaining height
+                // rather than GUILayout.ExpandHeight (UUM-147228).
+                var availableHeight = Mathf.Max(0f, position.height - EditorStyles.toolbar.fixedHeight);
+
                 using (new EditorGUILayout.HorizontalScope())
                 {
-                    DrawViewSelection();
+                    DrawViewSelection(availableHeight);
 
                     if (m_ShowHomePage || !IsAnalysisValid())
                     {
                         m_HomePage.OnGUI();
+                    }
+                    else if (IsPageOutOfScope(GetTopLevelPage(m_CurrentPage)) ||
+                             m_ViewManager.GetActiveView().IsPageOutOfScope())
+                    {
+                        // Ahead of the analyze prompt too: re-running analysis would not bring this
+                        // page back, so offering it would be misleading.
+                        using (new EditorGUILayout.VerticalScope())
+                        {
+                            m_ViewManager.GetActiveView().DrawOutOfScopePage();
+                        }
                     }
                     else
                     {
@@ -953,7 +971,7 @@ namespace Unity.ProjectAuditor.Editor.UI
             return null;
         }
 
-        void DrawViewSelection()
+        void DrawViewSelection(float availableHeight)
         {
             using (new EditorGUI.DisabledScope(m_AnalysisState == AnalysisState.Initializing))
             {
@@ -973,7 +991,7 @@ namespace Unity.ProjectAuditor.Editor.UI
                         SyncTreeSelection();
                     }
 
-                    var rect = EditorGUILayout.GetControlRect(GUILayout.Width(LayoutSize.kTreeViewWidth), GUILayout.ExpandHeight(true));
+                    var rect = EditorGUILayout.GetControlRect(GUILayout.Width(LayoutSize.kTreeViewWidth), GUILayout.Height(availableHeight));
                     m_ViewSelectionTreeView.OnGUI(rect);
                 }
             }
@@ -1280,25 +1298,11 @@ namespace Unity.ProjectAuditor.Editor.UI
             });
             ViewDescriptor.Register(new ViewDescriptor
             {
-                Category = IssueCategory.BuildStep,
-                DisplayName = "Build Steps",
-                ShowFilters = true,
-                ShowInfoPanel = true,
-                ShowDetails = true,
-                Type = typeof(BuildStepsView),
-                AnalyticsEventId = (int)AnalyticsReporter.UIButton.BuildSteps
-            });
-            ViewDescriptor.Register(new ViewDescriptor
-            {
-                Category = IssueCategory.BuildFile,
-                DisplayName = "Build Size",
-                DescriptionWithIcon = true,
-                ShowFilters = true,
-                ShowInfoPanel = true,
-                ShowDetails = true,
-                ShowAdditionalInfoPanel = BuildSizeView.ShowAdditionalInfo,
-                OnOpenIssue = EditorInterop.FocusOnAssetInProjectWindow,
-                Type = typeof(BuildSizeView),
+                Category = IssueCategory.BuildSummary,
+                DisplayName = "Build",
+                ShowFilters = false,
+                ShowInfoPanel = false,
+                Type = typeof(BuildView),
                 AnalyticsEventId = (int)AnalyticsReporter.UIButton.BuildFiles
             });
             ViewDescriptor.Register(new ViewDescriptor
@@ -1583,8 +1587,6 @@ namespace Unity.ProjectAuditor.Editor.UI
                 requestedCategories.AddRange(FindPage(PageId.GameObjects).AllCategories);
             if (categories.HasFlag(ProjectAreaFlags.Shaders))
                 requestedCategories.AddRange(FindPage(PageId.Shaders).AllCategories);
-            if (categories.HasFlag(ProjectAreaFlags.Build))
-                requestedCategories.AddRange(FindPage(PageId.Build).AllCategories);
 
             return requestedCategories.ToArray();
         }
@@ -1614,7 +1616,6 @@ namespace Unity.ProjectAuditor.Editor.UI
                 case PageId.Shaders: return ProjectAreaFlags.Shaders;
                 case PageId.GameObjects: return ProjectAreaFlags.GameObjects;
                 case PageId.ProjectSettings: return ProjectAreaFlags.ProjectSettings;
-                case PageId.Build: return ProjectAreaFlags.Build;
                 default:
                     return ProjectAreaFlags.None;
             }
@@ -1885,7 +1886,7 @@ namespace Unity.ProjectAuditor.Editor.UI
 
                     GUILayout.Label(activeView.Desc.DisplayName, SharedStyles.MediumTitleLabel);
 
-                    if (activeView is SummaryView && m_Report != null)
+                    if (activeView is SummaryView && m_Report != null && !(activeView is BuildView))
                     {
                         GUILayout.Label(" | ", SharedStyles.MediumTitleLabel);
 
@@ -2092,11 +2093,17 @@ namespace Unity.ProjectAuditor.Editor.UI
                         if (GUILayout.Button(Contents.CancelButton, EditorStyles.toolbarButton, GUILayout.Width(discardButtonWidth)))
                             m_Progress.Cancel();
                     }
-                    else if (GUILayout.Button(Contents.NewAnalysisButton, EditorStyles.toolbarButton, GUILayout.Width(discardButtonWidth)))
+                    else
                     {
-                        m_ShowHomePage = true;
-                        m_ViewSelectionTreeView?.SelectPage(FindPage(PageId.Home), true);
-                        GUIUtility.ExitGUI();
+                        using (new EditorGUI.DisabledScope(m_ShowHomePage))
+                        {
+                            if (GUILayout.Button(Contents.NewAnalysisButton, EditorStyles.toolbarButton, GUILayout.Width(discardButtonWidth)))
+                            {
+                                m_ShowHomePage = true;
+                                m_ViewSelectionTreeView?.SelectPage(FindPage(PageId.Home), true);
+                                GUIUtility.ExitGUI();
+                            }
+                        }
                     }
                 }
 

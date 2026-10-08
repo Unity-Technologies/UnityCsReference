@@ -12,7 +12,7 @@ using UnityEngine.UIElements;
 namespace Unity.Localization.Editor;
 
 /// <summary>Small form for creating a new table entry: a name plus the collection to add it to, validated before creation.</summary>
-class NewEntryPopup : EditorWindow
+class NewEntryPopup : AnchoredPopupWindow
 {
     const string k_Uxml = "LocalizationRuntime/UXML/NewEntryPopup.uxml";
 
@@ -23,16 +23,15 @@ class NewEntryPopup : EditorWindow
     Label m_Message;
     Button m_Create;
 
-    /// <summary>Shows the form below <paramref name="activatorWorldBound"/>, preselecting <paramref name="preferred"/> when given.</summary>
-    public static void Show(Rect activatorWorldBound, ResourceTableCollection preferred, Action<ResourceTableCollection, string> onCreate)
+    /// <summary>Shows the form below <paramref name="activatorWorldBound"/>, preselecting <paramref name="preferred"/> when given, and closes it with <paramref name="view"/>.</summary>
+    public static void Show(Rect activatorWorldBound, VisualElement view, ResourceTableCollection preferred, Action<ResourceTableCollection, string> onCreate)
     {
         var window = CreateInstance<NewEntryPopup>();
         window.m_OnCreate = onCreate;
         window.m_Collections = AssetProviderEditors.GetKnownCollections();
         window.m_Selected = preferred != null ? preferred : (window.m_Collections.Count > 0 ? window.m_Collections[0] : null);
         window.titleContent = new GUIContent(LocLabels.NewTableEntry);
-        var screenRect = GUIUtility.GUIToScreenRect(activatorWorldBound);
-        window.ShowAsDropDown(screenRect, new Vector2(260, 240));
+        window.ShowUnder(activatorWorldBound, view, new Vector2(260, 240));
     }
 
     void CreateGUI()

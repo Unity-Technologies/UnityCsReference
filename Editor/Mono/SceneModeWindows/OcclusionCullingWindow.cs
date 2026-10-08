@@ -2,15 +2,18 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+#pragma warning disable CS0618
 using System;
 using UnityEngine;
 using UnityEditor.Overlays;
+using UnityEngine.UIElements;
 using UnityEngine.Scripting;
 using Unity.Scripting.LifecycleManagement;
 
 namespace UnityEditor
 {
     [EditorWindowTitle(title = "Occlusion", icon = "Occlusion")]
+    [UIFramework(UIFrameworkUsage.Mixed)]
     internal partial class OcclusionCullingWindow : EditorWindow
     {
         [NoAutoStaticsCleanup] // Window visibility flag; guarded by ms_OcclusionCullingWindow null-check, safe to persist across reload.
@@ -87,6 +90,12 @@ namespace UnityEditor
 
         void OnEnable()
         {
+            if (!EditorSettings.enableLegacyUmbraCulling)
+            {
+                EditorApplication.delayCall += Close;
+                return;
+            }
+
             titleContent = GetLocalizedTitleContent();
             ms_OcclusionCullingWindow = this;
             autoRepaintOnSceneChange = true;
@@ -373,7 +382,16 @@ namespace UnityEditor
             EditorGUILayout.EndHorizontal();
         }
 
-        void OnGUI()
+        void CreateGUI()
+        {
+            var documentationUrl = Help.FindHelpNamed("urp/gpu-culling");
+            var message = string.Format(L10n.Tr("Baked Occlusion Culling is deprecated. Consider migrating to GPU Occlusion Culling. <a href=\"{0}\">Learn more...</a>", null), documentationUrl);
+            rootVisualElement.Add(new IMGUIContainer(DrawToolbar));
+            rootVisualElement.Add(new HelpBox(message, HelpBoxMessageType.Info));
+            rootVisualElement.Add(new IMGUIContainer(DrawContent) { style = { flexGrow = 1 } });
+        }
+
+        void DrawToolbar()
         {
             if (s_Styles == null)
                 s_Styles = new Styles();
@@ -389,7 +407,10 @@ namespace UnityEditor
             EditorGUILayout.Space();
             ModeToggle();
             EditorGUILayout.Space();
+        }
 
+        void DrawContent()
+        {
             m_ScrollPosition = EditorGUILayout.BeginScrollView(m_ScrollPosition);
             switch (m_Mode)
             {
@@ -606,3 +627,4 @@ namespace UnityEditor
         }
     }
 }
+#pragma warning restore CS0618

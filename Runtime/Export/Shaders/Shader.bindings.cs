@@ -23,6 +23,7 @@ namespace UnityEngine
     }
 
     [NativeHeader("Runtime/Graphics/ShaderScriptBindings.h")]
+    [NativeHeader("Runtime/Shaders/GlobalChangeTracking.h")]
     [NativeHeader("Runtime/Shaders/Shader.h")]
     [NativeHeader("Runtime/Shaders/ComputeShader.h")]
     [NativeHeader("Runtime/Shaders/ShaderNameRegistry.h")]
@@ -48,6 +49,11 @@ namespace UnityEngine
         public static GlobalKeyword[] enabledGlobalKeywords { get { return GetEnabledGlobalKeywords(); } }
         public static GlobalKeyword[] globalKeywords { get { return GetAllGlobalKeywords(); } }
         extern public LocalKeywordSpace keywordSpace { get; }
+
+        extern internal static bool globalChangeTrackingEnabled { [FreeFunction("GlobalChangeTracking::IsEnabled")] get; [FreeFunction("GlobalChangeTracking::SetEnabled")] set; }
+
+        [FreeFunction("ShaderScripting::GetTrackedChangedGlobalNameIdsAndClear")] extern internal static void GetTrackedChangedGlobalNameIdsAndClear(List<int> nameIds);
+        [FreeFunction("ShaderScripting::GetTrackedChangedGlobalKeywordsAndClear")] extern internal static void GetTrackedChangedGlobalKeywordsAndClear(List<GlobalKeyword> globalKeywords);
 
         [FreeFunction("keywords::GetEnabledGlobalKeywords")] extern internal static GlobalKeyword[] GetEnabledGlobalKeywords();
         [FreeFunction("keywords::GetAllGlobalKeywords")] extern internal static GlobalKeyword[] GetAllGlobalKeywords();

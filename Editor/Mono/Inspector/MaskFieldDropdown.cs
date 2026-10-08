@@ -310,6 +310,10 @@ namespace UnityEditor
 
     internal class StaticFieldDropdown : PopupWindowContent
     {
+        #pragma warning disable CS0618
+        const int k_LegacyUmbraFlags = (int)(StaticEditorFlags.OccluderStatic | StaticEditorFlags.OccludeeStatic);
+        #pragma warning restore CS0618
+
         SerializedProperty m_SerializedProperty;
 
         SelectionModes[] m_SelectionMatch;
@@ -427,9 +431,12 @@ namespace UnityEditor
             {
                 if (field.IsDefined(typeof(ObsoleteAttribute), true) && !field.IsSpecialName)
                 {
-                    if (!m_FunctioningOptions.Contains((int)(field.GetValue(null))))
+                    int value = (int)field.GetValue(null);
+                    if (!m_FunctioningOptions.Contains(value))
                     {
                         filteredFields.Add(field);
+                        if (EditorSettings.enableLegacyUmbraCulling && (value & k_LegacyUmbraFlags) != 0)
+                            m_FunctioningOptions.Add(value);
                         m_OptionCount++;
                     }
                 }

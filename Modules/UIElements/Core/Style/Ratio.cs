@@ -10,7 +10,6 @@ namespace UnityEngine.UIElements
     /// <summary>
     /// Represents a ratio, used for Aspect Ratio style property.
     /// </summary>
-    [Serializable]
     readonly public partial struct Ratio : IEquatable<Ratio>
     {
         /// <summary>

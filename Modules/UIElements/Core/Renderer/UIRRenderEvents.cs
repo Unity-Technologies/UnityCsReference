@@ -74,11 +74,14 @@ namespace UnityEngine.UIElements.UIR
 
             var groupTransformAncestor = renderData.groupTransformAncestor;
             if (groupTransformAncestor != null)
-                VisualElement.MultiplyMatrix34(ref groupTransformAncestor.owner.worldTransformInverse, ref renderData.owner.worldTransformRef, out transform);
+                UIRUtility.ComputeMatrixRelativeToAncestor(renderData, groupTransformAncestor, out transform);
             else
                 UIRUtility.ComputeMatrixRelativeToRenderTree(renderData, out transform);
 
-            transform.m22 = 1.0f; // Once world-space mode is introduced, this should become conditional
+            if (renderData.owner.elementPanel is { isFlat: true })
+                UIRUtility.NeutralizeZ(ref transform);
+            else
+                transform.m22 = 1.0f;
         }
 
         static Vector4 GetClipRectIDClipInfo(RenderData renderData)
@@ -430,11 +433,16 @@ namespace UnityEngine.UIElements.UIR
                 || renderTreeManager.elementBuilder.RequiresStencilMask(ve);
         }
 
-        static bool IsReparentedZIndexChild(RenderData childRenderData, RenderData visualParentRenderData)
+        static bool IsReparentedZIndexChild(RenderData childRenderData)
         {
             return childRenderData != null
-                && childRenderData.hasZIndex
-                && childRenderData.parent != visualParentRenderData;
+                && (childRenderData.owner.transformFlags & VisualElementTransformFlags.ZIndexPromotedOutOfParent) != 0;
+        }
+
+        public static class Testing
+        {
+            public static bool IsReparentedZIndexChild(RenderData childRenderData) =>
+                RenderEvents.IsReparentedZIndexChild(childRenderData);
         }
 
         internal static void InsertAtZIndexPosition(RenderData renderData, RenderData parentRenderData, int zIndex)
@@ -826,7 +834,7 @@ namespace UnityEngine.UIElements.UIR
                     for (int i = 0; i < childCount; i++)
                     {
                         var childRD = ve.hierarchy[i].renderData;
-                        if (IsReparentedZIndexChild(childRD, renderData))
+                        if (IsReparentedZIndexChild(childRD))
                         {
                             DepthFirstOnClippingChanged(
                                 renderTreeManager,
@@ -963,7 +971,7 @@ namespace UnityEngine.UIElements.UIR
                     for (int i = 0; i < childCount; i++)
                     {
                         var childRD = ve.hierarchy[i].renderData;
-                        if (IsReparentedZIndexChild(childRD, renderData))
+                        if (IsReparentedZIndexChild(childRD))
                             DepthFirstOnOpacityChanged(renderTreeManager, newOpacity, childRD, dirtyID, hierarchical, propagateOpacityChange, ref stats);
                     }
                 }
@@ -1031,9 +1039,7 @@ namespace UnityEngine.UIElements.UIR
 
             if (transformChanged)
             {
-                promotedToBone = !RenderData.AllocatesID(renderData.transformID)
-                    && !renderData.isGroupTransform
-                    && !renderData.isNestedRenderTreeRoot
+                promotedToBone = !renderData.isBoneBarrier
                     && (!renderData.owner.hasDefaultRotationAndScale || renderData.owner.has3DTranslation)
                     && PromoteToBone(renderTreeManager, renderData);
 
@@ -1042,7 +1048,6 @@ namespace UnityEngine.UIElements.UIR
                     // TODO: Optimized flip-winding instead of a full repaint
                     renderData.renderTree.OnRenderDataVisualsChanged(renderData, true);
                 }
-                UpdateZeroScaling(renderData);
             }
 
             // The recorded rect bakes in both the world transform and the clip, so it goes stale on a size-only
@@ -1061,12 +1066,11 @@ namespace UnityEngine.UIElements.UIR
                 isAncestorOfChangeSkinned = true;
                 stats.boneTransformed++;
             }
-            else if (parentBoneChanged)
+            else if (parentBoneChanged && !renderData.isBoneBarrier)
             {
-                // An ancestor was promoted: re-point to the new nearest bone (the parent's bone) and rewrite the record.
-                var bone = RenderData.AllocatesID(renderData.parent.transformID) ? renderData.parent : renderData.parent.boneTransformAncestor;
-                renderData.boneTransformAncestor = bone;
-                renderData.transformID = bone.transformID;
+                // An ancestor was promoted: inherit the parent's bone, or whatever the parent inherits when it has none, and rewrite the record.
+                renderData.boneTransformAncestor = RenderData.AllocatesID(renderData.parent.transformID) ? renderData.parent : renderData.parent.boneTransformAncestor;
+                renderData.transformID = renderData.parent.transformID;
                 renderData.transformID.ownedState = OwnedState.Inherited;
                 renderTreeManager.MarkElementInfoDirty(renderData);
             }
@@ -1074,9 +1078,11 @@ namespace UnityEngine.UIElements.UIR
             {
                 // Only the clip info had to be updated, we can skip the other cases which are for transform changes only.
             }
-            else if (renderData.isGroupTransform)
+            else if (renderData.isBoneBarrier)
             {
-                stats.groupTransformElementsChanged++;
+                Debug.Assert(renderData.transformID.Equals(ShaderInfoAllocator.identityTransform) && renderData.boneTransformAncestor == null); // A group or nested root defines its own transform space and never inherits a bone
+                if (renderData.isGroupTransform)
+                    stats.groupTransformElementsChanged++;
             }
             else if (isAncestorOfChangeSkinned)
             {
@@ -1102,8 +1108,7 @@ namespace UnityEngine.UIElements.UIR
 
             if (!renderData.isGroupTransform)
             {
-                bool childParentBoneChanged = promotedToBone
-                    || (parentBoneChanged && !RenderData.AllocatesID(renderData.transformID) && !renderData.isNestedRenderTreeRoot);
+                bool childParentBoneChanged = promotedToBone || (parentBoneChanged && !renderData.isBoneBarrier);
 
                 // Recurse on children
                 var child = renderData.firstChild;
@@ -1129,7 +1134,7 @@ namespace UnityEngine.UIElements.UIR
                     for (int i = 0; i < childCount; i++)
                     {
                         var childRD = ve.hierarchy[i].renderData;
-                        if (IsReparentedZIndexChild(childRD, renderData))
+                        if (IsReparentedZIndexChild(childRD))
                             DepthFirstOnTransformOrSizeChanged(renderTreeManager, childRD, dirtyID, isAncestorOfChangeSkinned, transformChanged, childParentBoneChanged, ref stats);
                     }
                 }
@@ -1257,22 +1262,6 @@ namespace UnityEngine.UIElements.UIR
             }
 
             return false;
-        }
-
-        static void UpdateZeroScaling(RenderData renderData)
-        {
-            if (renderData.isNestedRenderTreeRoot) // Otherwise, the transform is an identity
-                return;
-
-            var ve = renderData.owner;
-            bool transformScaleZero = Math.Abs(ve.resolvedStyle.scale.value.x * ve.resolvedStyle.scale.value.y) < 0.001f;
-
-            bool parentTransformScaleZero = false;
-            VisualElement parent = ve.hierarchy.parent;
-            if (parent != null)
-                parentTransformScaleZero = parent.renderData.worldTransformScaleZero;
-
-            renderData.worldTransformScaleZero = parentTransformScaleZero | transformScaleZero;
         }
 
         static bool NeedsTransformID(VisualElement ve)

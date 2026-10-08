@@ -30,12 +30,29 @@ public static partial class LocalizationEditorSettings
     public static event Action CollectionsChanged;
 
     /// <summary>
+    /// Occurs when the set of available locales in the project changes.
+    /// </summary>
+    /// <remarks>
+    /// Raised after a <see cref="Locale"/> is added to, removed from, enabled in, disabled in, or reordered in the
+    /// active <see cref="LocalizationSettings"/> through the editor, so editor UI can refresh. Locales that code adds
+    /// to the settings directly do not raise it.
+    /// </remarks>
+    [AutoStaticsCleanup] // holds subscriber delegates
+    [IgnoreForUAL0015("Event whose subscribers re-register through their own lifecycle after a code reload")]
+    public static event Action LocalesChanged;
+
+    /// <summary>
     /// Raises the <see cref="CollectionsChanged"/> event.
     /// </summary>
     /// <remarks>
     /// Call this after creating a <see cref="ResourceTableCollection"/> asset in code so open windows update.
     /// </remarks>
     internal static void RaiseCollectionsChanged() => CollectionsChanged?.Invoke();
+
+    /// <summary>
+    /// Raises the <see cref="LocalesChanged"/> event.
+    /// </summary>
+    internal static void RaiseLocalesChanged() => LocalesChanged?.Invoke();
 
     /// <summary>
     /// Adds a table for a locale to a collection, or returns the collection's existing table for that locale.

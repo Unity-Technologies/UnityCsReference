@@ -699,26 +699,50 @@ namespace UnityEditor.AdaptivePerformance.Editor
         {
             if (state == PlayModeStateChange.EnteredPlayMode)
             {
-                SyncAPSubsystemSettingsToEditor();
-                SyncScalerSettingsToEditor();
-                SyncDeviceSettingsToSimulator();
-                // Set bottleneck so we get CPU/GPU frametimes and a valid bottleneck
-                SetBottleneck((PerformanceBottleneck)m_Bottleneck.value, Subsystem());
-                SubscribeToAPEvents();
-
-                if (AdaptivePerformanceGeneralSettings.Instance?.Manager.activeLoader?.GetSettings()?.enableBoostOnStartup == true)
-                {
-                    Debug.Log("[Adaptive Performance Simulator] Enabled boost mode on launch");
-                }
-
-                EditorApplication.update += Update;
+                // Under FEPM (no domain reload) the Holder singleton persists across the play-mode transition but its subsystem fields are transiently
+                // null while the runtime re-wires. Defer the sync + subscribe + Update-register sequence to a bootstrap tick that runs it once every subsystem is populated. On a
+                // normal domain-reload play-mode entry the subsystems are already up on the first tick, so this adds at most one frame of latency.
+                EditorApplication.update += TryEnteredPlayModeSetup;
             }
             else
             {
+                // Idempotently tear down anything the bootstrap or setup may have installed.
+                EditorApplication.update -= TryEnteredPlayModeSetup;
                 UnsubscribeToAPEvents();
 
                 EditorApplication.update -= Update;
             }
+        }
+
+        void TryEnteredPlayModeSetup()
+        {
+            var ap = Holder.Instance;
+            if (ap == null
+                || ap.DevicePerformanceControl == null
+                || ap.DevelopmentSettings == null
+                || ap.PerformanceStatus == null
+                || ap.ThermalStatus == null
+                || ap.PerformanceModeStatus == null
+                || ap.Indexer == null)
+            {
+                return;
+            }
+
+            EditorApplication.update -= TryEnteredPlayModeSetup;
+
+            SyncAPSubsystemSettingsToEditor();
+            SyncScalerSettingsToEditor();
+            SyncDeviceSettingsToSimulator();
+            // Set bottleneck so we get CPU/GPU frametimes and a valid bottleneck
+            SetBottleneck((PerformanceBottleneck)m_Bottleneck.value, Subsystem());
+            SubscribeToAPEvents();
+
+            if (AdaptivePerformanceGeneralSettings.Instance?.Manager.activeLoader?.GetSettings()?.enableBoostOnStartup == true)
+            {
+                Debug.Log("[Adaptive Performance Simulator] Enabled boost mode on launch");
+            }
+
+            EditorApplication.update += Update;
         }
 
         void SyncDeviceSettingsToSimulator()
@@ -826,6 +850,12 @@ namespace UnityEditor.AdaptivePerformance.Editor
 
             var ctrl = ap.DevicePerformanceControl;
             var devSettings = ap.DevelopmentSettings;
+            // Skip syncing until every field referenced below is available; the extension will resync on the next update tick when the subsystems finish wiring up.
+            if (ctrl == null || devSettings == null
+                || ap.PerformanceStatus == null || ap.ThermalStatus == null
+                || ap.PerformanceModeStatus == null || ap.Indexer == null)
+                return;
+
             var perfMetrics = ap.PerformanceStatus.PerformanceMetrics;
             var thermalMetrics = ap.ThermalStatus.ThermalMetrics;
 
@@ -961,7 +991,9 @@ namespace UnityEditor.AdaptivePerformance.Editor
         void Update()
         {
             var ap = Holder.Instance;
-            if (ap == null)
+            // The EnteredPlayMode bootstrap already ensures PerformanceStatus was populated when Update was registered, but a subsystem can be replaced or torn down
+            // asynchronously (domain-less reloads, live-recompile) so guard here too.
+            if (ap == null || ap.PerformanceStatus == null)
                 return;
 
             m_CpuBoost.SetEnabled(!ap.PerformanceStatus.PerformanceMetrics.CpuPerformanceBoost);

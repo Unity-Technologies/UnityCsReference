@@ -151,8 +151,6 @@ namespace Unity.UI.Builder
             if (string.IsNullOrEmpty(evt.selectorStr))
                 return;
 
-            // TODO: Add validation
-
             var sheet = m_PaneWindow.document.activeStyleSheet;
 
             if (sheet == null && !TryCreateNewUSSAsset(out sheet))

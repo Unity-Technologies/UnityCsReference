@@ -115,7 +115,7 @@ namespace UnityEngine.UIElements
                     continue;
 
                 string name = getStyleSheetPath(sheet);
-                if (string.IsNullOrEmpty(name) || sheet.isDefaultStyleSheet)
+                if (string.IsNullOrEmpty(name) || sheet.priority == UnityEngine.UIElements.StyleSheetPriority.Builtin)
                     name = sheet.name;
 
                 void RecursivePrintStyleSheetNames(StyleSheet importedSheet)

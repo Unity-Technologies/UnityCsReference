@@ -187,7 +187,7 @@ internal static partial class StyleVariableUtility
             if (variables[i].name == variableName)
             {
                 string descr = null;
-                if (variable.sheet.isDefaultStyleSheet)
+                if (variable.tier != UnityEngine.UIElements.StyleSheetPriority.Default)
                 {
                     editorVariableDescriptions.TryGetValue(variableName, out descr);
                 }

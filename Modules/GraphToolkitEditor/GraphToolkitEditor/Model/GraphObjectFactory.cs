@@ -124,6 +124,14 @@ namespace Unity.GraphToolkit.Editor
         [OnOpenAsset(1000)]
         public static bool OpenGraphAsset(EntityId entityId, int line)
         {
+            var assetPath = AssetDatabase.GetAssetPath(entityId);
+            if (!string.IsNullOrEmpty(assetPath))
+            {
+                var ext = Path.GetExtension(assetPath);
+                if ((KnowsExtension(ext) || FilePathHasNativeAssetExtension(assetPath)) && (GraphObject.MigrateFile(assetPath) | GraphObject.MigrateTypeHandles(assetPath)))
+                    AssetDatabase.ImportAsset(assetPath, ImportAssetOptions.ForceSynchronousImport | ImportAssetOptions.ForceUpdate);
+            }
+
             var graphObject = TryLoadGraphObjectFromInstanceId(entityId);
             if (graphObject != null)
             {

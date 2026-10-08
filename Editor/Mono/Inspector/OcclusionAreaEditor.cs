@@ -5,6 +5,8 @@
 using UnityEditor;
 using UnityEngine;
 
+#pragma warning disable CS0618 // OcclusionArea is deprecated but its inspector remains available in 6.7.
+
 namespace UnityEditor
 {
     [CustomEditor(typeof(OcclusionArea))]
@@ -98,3 +100,5 @@ namespace UnityEditor
         }
     }
 }
+
+#pragma warning restore CS0618

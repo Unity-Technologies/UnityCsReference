@@ -42,6 +42,8 @@ internal enum VisualElementTransformFlags
     MayHaveZIndexedChildren = 1 << 14,
     // Element was promoted to an ancestor stacking context root, so it paints behind its own parent
     ZIndexPromotedOutOfParent = 1 << 15,
+    // World transform could not be inverted; current whenever WorldTransformInverseDirty is clear
+    WorldTransformSingular = 1 << 16,
 
     Init = WorldTransformDirty | WorldTransformInverseDirty | BoundingBoxDirty | WorldBoundingBoxDirty | BoundingBoxWithoutNestedDirty | LocalBounds3DDirty | LocalBoundsWithoutNested3DDirty
 }

@@ -126,6 +126,10 @@ namespace Unity.ProjectAuditor.Editor
                 Rules = new SeverityRules(ProjectAuditorSettings.instance.Rules);
                 DiagnosticParams = new DiagnosticParams(ProjectAuditorSettings.instance.DiagnosticParams);
             }
+            else
+            {
+                DiagnosticParams = new DiagnosticParams();
+            }
 
             Platform = BuildTarget.NoTarget;
             CodeOptimization = Editor.CodeOptimization.Release;

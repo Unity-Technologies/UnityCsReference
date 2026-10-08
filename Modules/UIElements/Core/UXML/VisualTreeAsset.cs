@@ -95,7 +95,7 @@ namespace UnityEngine.UIElements
 
         [Serializable]
         [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
-        internal partial struct UsingEntry
+        internal partial struct UsingEntry : IEquatable<UsingEntry>
         {
             [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
             [NoAutoStaticsCleanup]
@@ -119,6 +119,11 @@ namespace UnityEngine.UIElements
                 this.alias = alias;
                 this.path = null;
                 this.asset = asset;
+            }
+
+            public bool Equals(UsingEntry other)
+            {
+                return alias == other.alias && path == other.path && asset == other.asset;
             }
         }
 
@@ -370,6 +375,9 @@ namespace UnityEngine.UIElements
             foreach (var asset in DepthFirstTraversal())
             {
                 asset.SetVisualTreeAssetWithOutNotify(this);
+
+                if (asset is VisualElementAsset vea)
+                    vea.ResetCachedClassList();
             }
         }
 
@@ -656,11 +664,11 @@ namespace UnityEngine.UIElements
                 context.slotInsertionPoints.Add(slotName, ve);
             }
 
-            if (asset.ruleIndex != -1)
+            if (asset.ruleIndex >= 0)
             {
                 if (inlineSheet == null)
                     Debug.LogWarning("VisualElementAsset has a RuleIndex but no inlineStyleSheet");
-                else
+                else if (asset.ruleIndex < inlineSheet.rules.Length)
                 {
                     var rule = inlineSheet.rules[asset.ruleIndex];
                     ve.SetInlineRule(inlineSheet, rule);
@@ -1254,9 +1262,16 @@ namespace UnityEngine.UIElements
             if (vea.ruleIndex < 0)
                 return;
 
-            var toStyleSheet = next.GetOrCreateInlineStyleSheet();
             var fromStyleSheet = previous.inlineSheet;
+            if (fromStyleSheet == null || vea.ruleIndex >= fromStyleSheet.rules.Length)
+            {
+                // Carrying the index over would point it at an unrelated rule in the destination sheet.
+                vea.ruleIndex = -1;
+                Debug.LogWarning(VisualElementAsset.k_LostInlineStyles);
+                return;
+            }
 
+            var toStyleSheet = next.GetOrCreateInlineStyleSheet();
             var fromRule = fromStyleSheet.rules[vea.ruleIndex];
 
             // Add rule to StyleSheet.

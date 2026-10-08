@@ -15,10 +15,14 @@ namespace Unity.GraphToolkit
     static partial class InternalTypeHelpers
     {
         static readonly Regex s_GenericTypeExtractionRegex = new(@"(?<=\[\[)(.*?)(?=\]\])");
+        static readonly Regex s_StripSystemAssemblyVersionRegex = new(
+            @"(, (?:System\.Private\.CoreLib|mscorlib))(?:, Version=[^,\]]*)?(?:, Culture=[^,\]]*)?(?:, PublicKeyToken=[^,\]]*)?");
 
-        static readonly string s_CurrentSystemAssemblyName = ", " + typeof(int).Assembly.GetName().Name + ", ";
+        static readonly string s_CurrentSystemAssemblyShortName = ", " + typeof(int).Assembly.GetName().Name;
         const string k_CoreClrSystemAssemblyName = ", System.Private.CoreLib, ";
+        const string k_CoreClrSystemAssemblyShortName = ", System.Private.CoreLib";
         const string k_MonoSystemAssemblyName = ", mscorlib, ";
+        const string k_MonoSystemAssemblyShortName = ", mscorlib";
 
         [AutoStaticsCleanupOnCodeReload]
         // Lazily built MovedFrom lookup: the accessor rebuilds the whole map by reflection when it is null,
@@ -150,23 +154,33 @@ namespace Unity.GraphToolkit
 
         public static string ConvertTypeNameFromMonoToCoreClr(string asmQualifiedTypeName)
         {
-            if (asmQualifiedTypeName == null || asmQualifiedTypeName.Length < k_MonoSystemAssemblyName.Length)
+            if (asmQualifiedTypeName == null || asmQualifiedTypeName.Length < k_MonoSystemAssemblyShortName.Length)
                 return asmQualifiedTypeName;
 
-            return asmQualifiedTypeName.Replace(k_MonoSystemAssemblyName, k_CoreClrSystemAssemblyName);
+            if (asmQualifiedTypeName.Contains(k_MonoSystemAssemblyShortName))
+            {
+                asmQualifiedTypeName = asmQualifiedTypeName.Replace(k_MonoSystemAssemblyShortName, k_CoreClrSystemAssemblyShortName);
+                return s_StripSystemAssemblyVersionRegex.Replace(asmQualifiedTypeName, "$1");
+            }
+
+            // Strip version/PKT from names already in System.Private.CoreLib form so TypeHandles
+            // created on CoreCLR match those loaded from Mono-era assets (which are version-stripped
+            // during the mscorlib→System.Private.CoreLib conversion above).
+            if (asmQualifiedTypeName.Contains(k_CoreClrSystemAssemblyName))
+                return s_StripSystemAssemblyVersionRegex.Replace(asmQualifiedTypeName, "$1");
+
+            return asmQualifiedTypeName;
         }
 
         static string ConvertTypeNameFromCoreClrToCurrentSystemLib(string asmQualifiedTypeName)
         {
-            if (asmQualifiedTypeName == null || asmQualifiedTypeName.Length < k_CoreClrSystemAssemblyName.Length)
+            if (asmQualifiedTypeName == null || asmQualifiedTypeName.Length < k_CoreClrSystemAssemblyShortName.Length)
                 return asmQualifiedTypeName;
 
-            if (s_CurrentSystemAssemblyName == k_CoreClrSystemAssemblyName)
-            {
+            if (s_CurrentSystemAssemblyShortName == k_CoreClrSystemAssemblyShortName)
                 return asmQualifiedTypeName;
-            }
 
-            return asmQualifiedTypeName.Replace(k_CoreClrSystemAssemblyName, s_CurrentSystemAssemblyName);
+            return asmQualifiedTypeName.Replace(k_CoreClrSystemAssemblyShortName, s_CurrentSystemAssemblyShortName);
         }
 
         /// <summary>

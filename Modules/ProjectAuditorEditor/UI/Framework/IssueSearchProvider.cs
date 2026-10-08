@@ -6,6 +6,7 @@ using System;
 using System.Collections.Generic;
 using System.Text;
 using System.Text.RegularExpressions;
+using Unity.ProjectAuditor.Editor.Core;
 using Unity.Scripting.LifecycleManagement;
 using UnityEditor;
 using UnityEditor.Search;
@@ -21,6 +22,9 @@ namespace Unity.ProjectAuditor.Editor.UI.Framework
         private const string k_ProviderDisplayName = "Project Auditor Issues";
 
         private static readonly Regex kStartUntilColon = new(@"^([^:]*)(?::(.*))?", RegexOptions.Compiled | RegexOptions.CultureInvariant);
+        private static readonly Regex k_TypeFilter = SearchFilterUtility.CreateFilterRegex("type");
+        private static readonly Regex k_CategoryFilter = SearchFilterUtility.CreateFilterRegex("category");
+        private static readonly Regex k_SeverityFilter = SearchFilterUtility.CreateFilterRegex("severity");
         [AutoStaticsCleanupOnCodeReload]
         private static Texture2D s_SearchIcon;
 
@@ -105,27 +109,27 @@ namespace Unity.ProjectAuditor.Editor.UI.Framework
                 var textQuery = context.searchQuery ?? "";
                 var includeIssues = true;
                 var includeInsights = true;
+                var textFilters = new Dictionary<IssueCategory, TextFilter>();
 
-                var typeMatch = Regex.Match(textQuery, @"type=([^;\s]+)", RegexOptions.IgnoreCase);
-                if (typeMatch.Success)
+                var typeMatch = k_TypeFilter.Match(textQuery);
+                if (typeMatch.Success && SearchFilterUtility.TryParseDisplayedEnum(SearchFilterUtility.GetFilterValue(typeMatch), out TypeOfReportItem type))
                 {
-                    Enum.TryParse(typeMatch.Groups[1].Value.Trim('\"'), true, out TypeOfReportItem type);
                     includeIssues = type == TypeOfReportItem.Issues;
                     includeInsights = type == TypeOfReportItem.Insights;
                     textQuery = textQuery.Replace(typeMatch.Value, "");
                 }
 
-                var categoryMatch = Regex.Match(textQuery, @"category=([^;\s]+)", RegexOptions.IgnoreCase);
-                if (categoryMatch.Success)
+                var categoryMatch = k_CategoryFilter.Match(textQuery);
+                if (categoryMatch.Success && SearchFilterUtility.TryParseDisplayedEnum(SearchFilterUtility.GetFilterValue(categoryMatch), out IssueCategory parsedCategory))
                 {
-                    Enum.TryParse(categoryMatch.Groups[1].Value.Trim('\"'), true, out category);
+                    category = parsedCategory;
                     textQuery = textQuery.Replace(categoryMatch.Value, "");
                 }
 
-                var severityMatch = Regex.Match(textQuery, @"severity=([^;\s]+)", RegexOptions.IgnoreCase);
-                if (severityMatch.Success)
+                var severityMatch = k_SeverityFilter.Match(textQuery);
+                if (severityMatch.Success && SearchFilterUtility.TryParseDisplayedEnum(SearchFilterUtility.GetFilterValue(severityMatch), out Severity parsedSeverity))
                 {
-                    Enum.TryParse(severityMatch.Groups[1].Value.Trim('\"'), true, out severity);
+                    severity = parsedSeverity;
                     textQuery = textQuery.Replace(severityMatch.Value, "");
                 }
 
@@ -150,7 +154,7 @@ namespace Unity.ProjectAuditor.Editor.UI.Framework
                     var title = isIssue ? issue.Id.GetDescriptor().Title : issue.Category.ToString();
 
                     if (!string.IsNullOrEmpty(textQuery) &&
-                        issue.Description.IndexOf(textQuery, StringComparison.OrdinalIgnoreCase) < 0 &&
+                        !GetTextFilter(textFilters, issue.Category, textQuery).Match(issue) &&
                         title.IndexOf(textQuery, StringComparison.OrdinalIgnoreCase) < 0)
                         continue;
 
@@ -177,6 +181,19 @@ namespace Unity.ProjectAuditor.Editor.UI.Framework
                     yield return item;
                 }
             }
+        }
+
+        // reuses the view's own matching so a query carried over from the report selects the same issues here
+        static TextFilter GetTextFilter(Dictionary<IssueCategory, TextFilter> cache, IssueCategory category, string searchString)
+        {
+            // GetLayout walks every Module type, so it must not be called per issue
+            if (!cache.TryGetValue(category, out var filter))
+            {
+                filter = new TextFilter(IssueLayout.GetLayout(category)?.Properties) { searchString = searchString };
+                cache.Add(category, filter);
+            }
+
+            return filter;
         }
 
         private static IEnumerable<SearchColumn> FetchColumns(SearchContext context, IEnumerable<SearchItem> items)

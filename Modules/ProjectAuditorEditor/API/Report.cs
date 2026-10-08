@@ -90,7 +90,7 @@ namespace Unity.ProjectAuditor.Editor
     [Serializable]
     public sealed class Report : ISerializationCallbackReceiver
     {
-        internal const string k_CurrentVersion = "1.6";
+        internal const string k_CurrentVersion = "1.7";
         internal const string k_SaveFileHeader = "PROJECT_AUDITOR_REPORT";
 
         [SerializeField]

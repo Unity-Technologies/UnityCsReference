@@ -83,7 +83,7 @@ namespace UnityEditor.Toolbars
 
         void RebuildContextButtons()
         {
-            if (!displayed)
+            if (!displayed || m_Root == null)
                 return;
 
             m_Root.Clear();

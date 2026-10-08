@@ -17,7 +17,7 @@ namespace Unity.ProjectAuditor.Editor.UI
         TopTen m_TopTen = NewTopTen();
         StatSeverities m_Severities;
 
-        public override string Description => "Resolve the following issues to migrate your your project to the CoreCLR scripting backend.";
+        public override string Description => "Resolve the following issues to migrate your project to the CoreCLR scripting backend.";
 
         public MigrateToCoreCLRSummaryView(ViewManager viewManager) : base(viewManager)
         {
@@ -73,7 +73,7 @@ namespace Unity.ProjectAuditor.Editor.UI
             EditorGUILayout.Space();
             DrawSeverityBreakdown();
 
-            if (!m_ViewManager.HasPendingCategories())
+            if (!m_ViewManager.HasPendingCategories() && m_Severities.TotalExcludingIgnored > 0)
             {
                 EditorGUILayout.Space();
                 DrawTopTenSection();

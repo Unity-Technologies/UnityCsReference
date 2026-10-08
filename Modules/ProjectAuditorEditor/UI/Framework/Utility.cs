@@ -694,12 +694,12 @@ namespace Unity.ProjectAuditor.Editor.UI.Framework
             viewStates.upgradeTargetVersion = ObsoleteLibrary.UnityVersions[selectedIndex];
         }
 
-        public static void SearchWindow(string providerId, string title)
+        public static ISearchView SearchWindow(string providerId, string title, string searchText = "")
         {
             var provider = SearchService.GetProvider(providerId);
-            var searchContext = SearchService.CreateContext(provider);
+            var searchContext = SearchService.CreateContext(provider, searchText);
             var viewState = new SearchViewState(searchContext, SearchViewFlags.TableView) { title = title };
-            var searchView = SearchService.ShowWindow(viewState);
+            return SearchService.ShowWindow(viewState);
         }
     }
 }

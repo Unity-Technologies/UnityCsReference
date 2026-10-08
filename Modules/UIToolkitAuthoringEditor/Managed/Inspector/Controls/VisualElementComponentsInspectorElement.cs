@@ -41,6 +41,7 @@ sealed partial class VisualElementComponentsInspectorElement : VisualElement
     const string k_EntryUssClassName = k_UssClassName + "__entry";
     const string k_RemoveButtonUssClassName = k_UssClassName + "__remove-button";
     const string k_DataFoldoutUssClassName = k_UssClassName + "__data-foldout";
+    const string k_StyleSheet = "UIToolkitAuthoring/Inspector/Controls/VisualElementComponentsInspectorElement.uss";
 
     static readonly string k_AddComponentText = L10n.Tr("Add Component", null);
     static readonly string k_RemoveText = L10n.Tr("Remove", null);
@@ -93,6 +94,7 @@ sealed partial class VisualElementComponentsInspectorElement : VisualElement
     public VisualElementComponentsInspectorElement()
     {
         AddToClassList(k_UssClassName);
+        styleSheets.Add(EditorGUIUtility.Load(k_StyleSheet) as StyleSheet);
 
         m_ComponentsContainer = new VisualElement();
         Add(m_ComponentsContainer);
@@ -394,7 +396,6 @@ sealed partial class VisualElementComponentsInspectorElement : VisualElement
             if (dataFoldout == null)
                 return;
 
-            dataFoldout.value = true;
             dataFoldout.AddToClassList(k_DataFoldoutUssClassName);   // header hide + content margin live in USS
         }
 

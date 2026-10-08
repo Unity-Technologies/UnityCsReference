@@ -76,6 +76,37 @@ namespace Unity.ProjectAuditor.Editor.Modules
             return true;
         }
 
+        // Neither the wizard nor the Render Pipeline Converter support migrating from HDRP or custom SRPs to URP.
+        // Only a null asset reads as in scope, so null is unambiguously "no unsupported pipeline in use".
+        static RenderPipelineAsset GetUnsupportedRenderPipelineAsset()
+        {
+            // The wizard writes the project-wide default, so it counts even when every quality level overrides it.
+            // This covers the no-Quality-Levels case too, where the default is all there is.
+            var defaultAsset = GraphicsSettings.defaultRenderPipeline;
+            if (!ShouldMigrateRenderPipelineAsset(defaultAsset))
+                return defaultAsset;
+
+            for (int i = 0, c = QualitySettings.names.Length; i < c; ++i)
+            {
+                var asset = GetEffectiveRenderPipelineAssetAt(i);
+                if (!ShouldMigrateRenderPipelineAsset(asset))
+                    return asset;
+            }
+
+            return null;
+        }
+
+        internal static bool IsProjectUsingOtherSRP()
+        {
+            return GetUnsupportedRenderPipelineAsset() != null;
+        }
+
+        internal static bool IsProjectUsingHDRP()
+        {
+            var asset = GetUnsupportedRenderPipelineAsset();
+            return asset != null && IsAssetOfType(asset, k_HdrpAssetTypeName);
+        }
+
         // A default from another SRP leaves the wizard's work undone, so only a URP default counts as assigned.
         // ShouldMigrateRenderPipelineAsset reads a null asset as Built-in, which is not a default at all.
         internal static bool HasDefaultUrpRenderPipeline()

@@ -11,9 +11,9 @@ namespace Unity.ProjectAuditor.Editor.UI
 {
     class MigrateToURPSummaryView : SummaryView
     {
-        private bool m_ShowTopTenIssues = true;
+        bool m_ShowTopTenIssues = true;
 
-        TopTen m_TopTen = NewTopTen();
+        readonly TopTen m_TopTen = NewTopTen();
         StatSeverities m_Severities;
 
         public int RenderPipelineConverterIssueCount { get; private set; }
@@ -26,13 +26,7 @@ namespace Unity.ProjectAuditor.Editor.UI
         }
 
         // The migration breakdown shows only migration issues.
-        protected override bool MatchesSummaryFilter(ReportItem issue)
-        {
-            if (!HasAnyAreas(issue, Areas.MigrationToURP))
-                return false;
-
-            return true;
-        }
+        protected override bool MatchesSummaryFilter(ReportItem issue) => HasAnyAreas(issue, Areas.MigrationToURP);
 
         protected override void OnSummaryRefreshed()
         {
@@ -59,10 +53,24 @@ namespace Unity.ProjectAuditor.Editor.UI
                 if (!MatchesSummaryFilter(issue))
                     continue;
 
+                // The workflow view shows these counts while analysis is still running
+                if (m_ViewManager.HasPendingCategory(issue.Category))
+                    continue;
+
                 AddSeverityStats(issue, ref m_Severities);
-                if ((issue.Id == MigrationToURPModule.k_ConverterItemDescriptor.Id) && !IsIgnoredOrHidden(issue))
+                if (issue.Id == MigrationToURPModule.k_ConverterItemDescriptor.Id && !IsIgnoredOrHidden(issue))
                     RenderPipelineConverterIssueCount++;
             }
+        }
+
+        public override bool IsPageOutOfScope()
+        {
+            return MigrationToURPUtilities.IsProjectUsingOtherSRP();
+        }
+
+        public override void DrawOutOfScopePage()
+        {
+            MigrationWorkflowView.DrawReportUnavailablePage();
         }
 
         public override void DrawContent()
@@ -75,20 +83,19 @@ namespace Unity.ProjectAuditor.Editor.UI
 
             EditorGUILayout.Space();
             DrawSeverityBreakdown();
-            EditorGUILayout.Space();
-            DrawTopTenSection();
+            if (!m_ViewManager.HasPendingCategories() && m_Severities.TotalExcludingIgnored > 0)
+            {
+                EditorGUILayout.Space();
+                DrawTopTenSection();
+            }
+
             EditorGUILayout.Space();
             DrawSessionInformationSection();
         }
 
         protected override bool IsIssueIgnoredOrFiltered(ReportItem item)
         {
-            if (base.IsIssueIgnoredOrFiltered(item))
-                return true;
-            if (!HasAnyAreas(item, Areas.MigrationToURP))
-                return true;
-
-            return false;
+            return base.IsIssueIgnoredOrFiltered(item) || !MatchesSummaryFilter(item);
         }
 
         void DrawSeverityBreakdown()
