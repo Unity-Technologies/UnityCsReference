@@ -33,7 +33,7 @@ namespace Unity.Collections
     }
 
     ///<summary>Provides a buffer of native memory to managed code, making it possible to share data between managed and native code without marshalling costs.</summary>
-    ///<remarks>NativeArray is a fixed-size block of unmanaged memory which you can directly access from managed code. You can use NativeArray instances in jobs and Burst-compiled code, with optional safety checks for bounds, access, and dependencies. You explicitly control allocation and disposal via an allocator, and Unity tracks allocations to help detect memory leaks. You can use the &lt;a href="https://docs.unity3d.com/Packages/com.unity.collections@latest" &gt;Unity Collections package&lt;/a&gt; to further extend its functionality.</remarks>
+    ///<remarks>NativeArray is a fixed-size block of unmanaged memory which you can directly access from managed code. You can use NativeArray instances in jobs and Burst-compiled code, with optional safety checks for bounds, access, and dependencies. You explicitly control allocation and disposal via an allocator, and Unity tracks allocations to help detect memory leaks.</remarks>
     [StructLayout(LayoutKind.Sequential)]
     [NativeContainer]
     [NativeContainerSupportsMinMaxWriteRestriction]

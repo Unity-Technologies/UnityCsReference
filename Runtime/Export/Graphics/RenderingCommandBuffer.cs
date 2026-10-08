@@ -71,6 +71,7 @@ namespace UnityEngine.Rendering
 
         public GraphicsFence CreateGraphicsFence(GraphicsFenceType fenceType, SynchronisationStageFlags stage)
         {
+            GraphicsFence.ValidateFenceType(fenceType);
             GraphicsFence newFence = new GraphicsFence();
             newFence.m_FenceType = fenceType;
             newFence.m_Ptr = CreateGPUFence_Internal(fenceType, stage);

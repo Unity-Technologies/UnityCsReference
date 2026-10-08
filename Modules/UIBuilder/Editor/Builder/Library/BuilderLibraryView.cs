@@ -86,13 +86,6 @@ namespace Unity.UI.Builder
             if (sample == null)
                 return;
 
-            var panel = m_TooltipPreview.panel as BaseVisualElementPanel;
-            var styleUpdater = panel.GetUpdater(VisualTreeUpdatePhase.Styles) as VisualTreeStyleUpdater;
-            if (styleUpdater.traversal is BuilderVisualTreeStyleUpdaterTraversal updaterTraversal)
-            {
-                updaterTraversal.previewDocument = m_TooltipPreview;
-            }
-
             m_TooltipPreview.Add(sample);
             m_TooltipPreview.Show();
 

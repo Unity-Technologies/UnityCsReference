@@ -281,6 +281,16 @@ namespace UnityEngine.TextCore.Text
             UpdateSourceFontFile(nativeFontAsset, sourceFontFile);
         }
 
+        internal static void UpdateNativeFaceInfo(IntPtr nativeFontAsset, FaceInfo faceInfo)
+        {
+            UpdateFaceInfo(nativeFontAsset, faceInfo);
+        }
+
+        internal static void UpdateNativeRenderMode(IntPtr nativeFontAsset, GlyphRenderMode renderMode)
+        {
+            UpdateRenderMode(nativeFontAsset, renderMode);
+        }
+
         static extern void UpdateFontEditorRef(IntPtr ptr, Font sourceFont_EditorRef);
 
         static extern void UpdateSourceFontFile(IntPtr ptr, Font sourceFontFile);

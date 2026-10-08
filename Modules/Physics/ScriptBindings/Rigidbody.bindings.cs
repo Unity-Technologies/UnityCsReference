@@ -646,8 +646,8 @@ namespace UnityEngine
         extern public int solverIterations { get; set; }
         ///<summary>The mass-normalized energy threshold, below which objects start going to sleep.</summary>
         extern public float sleepThreshold { get; set; }
-        ///<summary>The maximum angular velocity of the rigidbody measured in radians per second. (Default 7) range { 0, infinity }.</summary>
-        ///<remarks>The angular velocity of rigidbodies is clamped to maxAngularVelocity to avoid numerical instability with fast rotating bodies. The maxAngularVelocity is applied to the body before the simulation step. This means that after the simulation frame, the angular velocity might exceed the set maximum. You can override this value per Rigidbody to enable faster rotations on objects such as wheels.</remarks>
+        ///<summary>The maximum angular velocity of the rigidbody measured in radians per second.</summary>
+        ///<remarks>The angular velocity of rigidbodies is clamped to maxAngularVelocity to avoid numerical instability with fast rotating bodies. The maxAngularVelocity is applied to the body before the simulation step. This means that after the simulation frame, the angular velocity might exceed the set maximum. You can override this value per Rigidbody to enable faster rotations on objects such as wheels. The default value is 50. Accepted values are 0 or greater.</remarks>
         extern public float maxAngularVelocity { get; set; }
         ///<summary>The maximum linear velocity of the rigidbody measured in meters per second.</summary>
         ///<remarks>The linear velocity of Rigidbody components is clamped to maxLinearVelocity to avoid numerical instability with fast moving bodies.

@@ -94,8 +94,11 @@ class UnityMSBuildLogger
 
     private static string FormatLogMessageToString(LogMessage logMessage)
     {
-        return $@"{logMessage.MessageType} {logMessage.Code}({logMessage.LineNumber},{logMessage.ColumnNumber}): {logMessage.File}
-{logMessage.Message}";
+        // Match the Roslyn/legacy pipeline shape parsed by PostProcessorOutputParser and
+        // expected by test regexes like Regex(".*error.*") (case-sensitive):
+        // <file>(<line>,<col>): error|warning <code>: <message>
+        var severity = logMessage.MessageType == LogMessageType.Error ? "error" : "warning";
+        return $"{logMessage.File}({logMessage.LineNumber},{logMessage.ColumnNumber}): {severity} {logMessage.Code}: {logMessage.Message}";
     }
 
     private static EntityId LookupInstanceId(IDictionary<string, EntityId> fileInstanceIdCache, string filePath)

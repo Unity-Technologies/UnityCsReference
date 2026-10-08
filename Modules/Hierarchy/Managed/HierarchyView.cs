@@ -108,7 +108,6 @@ namespace Unity.Hierarchy
 
         // Profiler markers
         readonly ProfilerMarker m_RefreshItemsProfilerMarker = new ProfilerMarker("HierarchyView.RefreshItems");
-        readonly ProfilerMarker m_SetSelectionMarker = new ProfilerMarker("HierarchyView.SetSelection");
 
         // Cached to avoid a per-bind delegate allocation.
         readonly HierarchyViewItem.ExpandedStateChangedEventHandler m_OnExpandedStateChanged;
@@ -489,8 +488,6 @@ namespace Unity.Hierarchy
                 m_Hierarchy.HandlerCreated -= OnHandlerCreated;
             if (m_HierarchyViewModel != null)
                 m_HierarchyViewModel.FlagsChanged -= OnViewModelFlagsChanged;
-            if (m_CollectionView != null)
-                m_CollectionView.BeforeRefreshingItems -= UpdateData;
 
             // Invoke source hierarchy changing
             SourceHierarchyChanging?.Invoke(this, m_Hierarchy, hierarchy, defaultFlags);
@@ -560,13 +557,6 @@ namespace Unity.Hierarchy
             // Register events
             m_Hierarchy.HandlerCreated += OnHandlerCreated;
             m_HierarchyViewModel.FlagsChanged += OnViewModelFlagsChanged;
-
-            // Subscribe to BeforeRefreshingItems and calling UpdateData to make sure the data
-            // of Hierarchy, Flattened and ViewModel, alongside all handlers state are up to date for the collection view
-            // to iterate over it.
-            // We had a case where a node was removed from the GameObjectHandler mapping but the node was
-            // still in the hierarchy because the command list was not done being processed.
-            m_CollectionView.BeforeRefreshingItems += UpdateData;
         }
 
         /// <summary>

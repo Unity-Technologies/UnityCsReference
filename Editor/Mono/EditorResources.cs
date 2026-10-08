@@ -119,7 +119,7 @@ namespace UnityEditor.Experimental
     public partial class EditorResources
     {
         private const string k_PrefsUserFontKey = "user_editor_font";
-        const string k_GlobalStyleCatalogCacheFilePath = "Library/Style.catalog";
+        internal const string k_GlobalStyleCatalogCacheFilePath = "Library/Style.catalog";
 
         [NoAutoStaticsCleanup] // lazy style-catalog cache, rebuilt on demand via null-check; safe to persist
         private static StyleCatalog s_StyleCatalog;
@@ -248,7 +248,7 @@ namespace UnityEditor.Experimental
             var hash = $"__StyleCatalog_Hash_{InternalEditorUtility.GetUnityVersion()}_";
             foreach (var path in paths)
             {
-                hash += path.GetHashCode().ToString("X2");
+                hash += Hash128.Compute(path);
                 var fi = new FileInfo(FileUtil.PathToAbsolutePath(path));
                 if (fi.Exists)
                     hash += fi.Length.ToString("X2");
@@ -258,11 +258,18 @@ namespace UnityEditor.Experimental
 
         static void SaveCatalogToDisk(StyleCatalog catalog, string hash, string savePath)
         {
-            using (var stream = new FileStream(savePath, FileMode.Create, FileAccess.Write, FileShare.None))
-            using (BinaryWriter writer = new BinaryWriter(stream))
+            try
             {
-                writer.Write(hash);
-                catalog.Save(writer);
+                using (var stream = new FileStream(savePath, FileMode.Create, FileAccess.Write, FileShare.None))
+                using (BinaryWriter writer = new BinaryWriter(stream))
+                {
+                    writer.Write(hash);
+                    catalog.Save(writer);
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Could not write {savePath}: {ex.Message}");
             }
         }
 
@@ -301,15 +308,22 @@ namespace UnityEditor.Experimental
                     catalogHash = ComputeCatalogHash(paths);
                     if (!forceRebuild && File.Exists(k_GlobalStyleCatalogCacheFilePath))
                     {
-                        using (var cacheCatalogStream = new FileStream(k_GlobalStyleCatalogCacheFilePath, FileMode.Open,
-                            FileAccess.Read, FileShare.Read))
+                        try
                         {
+                            using (var cacheCatalogStream = new FileStream(k_GlobalStyleCatalogCacheFilePath, FileMode.Open,
+                                FileAccess.Read, FileShare.Read))
                             using (var ccReader = new BinaryReader(cacheCatalogStream))
                             {
                                 string cacheHash = ccReader.ReadString();
                                 if (cacheHash == catalogHash)
                                     rebuildCatalog = !s_StyleCatalog.Load(ccReader);
                             }
+                        }
+                        catch (Exception ex)
+                        {
+                            Console.WriteLine($"Could not read {k_GlobalStyleCatalogCacheFilePath}: {ex.Message}");
+                            s_StyleCatalog = new StyleCatalog();
+                            rebuildCatalog = true;
                         }
                     }
                 }

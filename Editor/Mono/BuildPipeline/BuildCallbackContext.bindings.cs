@@ -69,7 +69,7 @@ namespace UnityEditor.Build
         [FreeFunction("BuildCallbackContextBindings::IsContentOnlyBuild")]
         private static extern bool IsContentOnlyBuildInternal(IntPtr self);
 
-        ///<summary>Returns true if the build is a content only build type like an AssetBundle build.</summary>
+        ///<summary>Returns true if the build is a content directory or AssetBundle build.</summary>
         public bool IsContentOnlyBuild
         {
             get

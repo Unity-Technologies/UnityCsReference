@@ -370,10 +370,27 @@ namespace Unity.Collections
                 if(!NeedsUseAfterFreeTracking())
                     return InvalidChildSafetyHandleIndex;
                 ChildSpinLock.Acquire();
+                if (ChildSafetyHandles.Length == ChildSafetyHandles.Capacity)
+                    RemoveReleasedSafetyHandles();
                 var result = ChildSafetyHandles.Length;
                 ChildSafetyHandles.Add(handle);
                 ChildSpinLock.Release();
                 return result;
+            }
+
+            unsafe void RemoveReleasedSafetyHandles()
+            {
+                var handles = ChildSafetyHandles.Ptr;
+                var length = ChildSafetyHandles.Length;
+                var kept = 0;
+                for (var i = 0; i < length; ++i)
+                {
+                    if (CheckExists(handles[i]))
+                        handles[kept++] = handles[i];
+                }
+                ChildSafetyHandles.Length = kept;
+                if (kept > ChildSafetyHandles.Capacity / 2)
+                    ChildSafetyHandles.SetCapacity(ChildSafetyHandles.Capacity * 2);
             }
 
             internal bool TryRemoveSafetyHandle(AtomicSafetyHandle handle, int safetyHandleIndex)

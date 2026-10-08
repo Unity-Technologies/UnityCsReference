@@ -1383,26 +1383,6 @@ namespace UnityEngine.UIElements
             return root;
         }
 
-        [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
-        internal VisualElement GetRootVisualContainer(bool stopAtNearestRoot = false)
-        {
-            VisualElement topMostRootContainer = null;
-            var hierarchyParent = this;
-            while (hierarchyParent != null)
-            {
-                if (hierarchyParent.isRootVisualContainer)
-                {
-                    topMostRootContainer = hierarchyParent;
-                    if (stopAtNearestRoot)
-                        return topMostRootContainer;
-                }
-
-                hierarchyParent = hierarchyParent.hierarchy.parent;
-            }
-
-            return topMostRootContainer;
-        }
-
         [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
         internal VisualElement GetNextElementDepthFirst()
         {

@@ -22,6 +22,7 @@ namespace Unity.Hierarchy
         readonly Action<HierarchyViewCellValueEditor<TModel, TEditor, TValue>, TValue> m_OnSetEditorValue;
 
         EventModifiers m_LastEventModifiers;
+        TEditor m_RegisteredElement;
 
         // Cached to avoid a per-bind delegate allocation.
         readonly EventCallback<PointerDownEvent> m_OnPointerDown;
@@ -83,12 +84,10 @@ namespace Unity.Hierarchy
         {
             Model = model;
             Cell = cell;
-            Cell.userData = this;
+            Cell.ValueEditor = this;
             Element = editor;
             Element.visible = true;
-            Element.RegisterCallback(m_OnPointerDown);
-            Element.RegisterCallback(m_OnPointerUp);
-            Element.RegisterCallback(m_OnValueChanged);
+            EnsureCallbacksRegistered(editor);
             SyncEditorValueWithoutNotify();
         }
 
@@ -97,13 +96,27 @@ namespace Unity.Hierarchy
         /// </summary>
         public void Unbind()
         {
-            Cell.userData = null;
+            Cell.ValueEditor = null;
             Cell = null;
-            Element.visible = false;
-            Element.UnregisterCallback(m_OnPointerDown);
-            Element.UnregisterCallback(m_OnPointerUp);
-            Element.UnregisterCallback(m_OnValueChanged);
             Element = null;
+        }
+
+        void EnsureCallbacksRegistered(TEditor editor)
+        {
+            if (ReferenceEquals(m_RegisteredElement, editor))
+                return;
+
+            if (m_RegisteredElement != null)
+            {
+                m_RegisteredElement.UnregisterCallback(m_OnPointerDown);
+                m_RegisteredElement.UnregisterCallback(m_OnPointerUp);
+                m_RegisteredElement.UnregisterCallback(m_OnValueChanged);
+            }
+
+            editor.RegisterCallback(m_OnPointerDown);
+            editor.RegisterCallback(m_OnPointerUp);
+            editor.RegisterCallback(m_OnValueChanged);
+            m_RegisteredElement = editor;
         }
 
         /// <summary>

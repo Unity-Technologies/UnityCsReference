@@ -15,7 +15,7 @@ using UnityEditor.Build;
 namespace UnityEditor.Build.Reporting
 {
     /// <summary>The BuildReport API gives you information about the Unity build process.</summary>
-    /// <remarks>A BuildReport object is returned by <see cref="BuildPipeline.BuildPlayer" /> and can be used to discover information about the files output, the build steps taken, and other platform-specific information such as native code stripping.
+    /// <remarks>A BuildReport object is returned by <see cref="BuildPipeline.BuildPlayer" /> and can be used to discover information about the file output, the build steps taken, and other platform-specific information such as native code stripping. <see cref="BuildPipeline.BuildContentDirectory"/> also returns a build report.
     ///
     /// For AssetBundle builds the BuildReport is available by calling <see cref="GetLatestReport" /> immediately after calling <see cref="BuildPipeline.BuildAssetBundles" />.
     ///

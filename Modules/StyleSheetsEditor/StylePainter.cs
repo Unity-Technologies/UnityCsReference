@@ -14,7 +14,7 @@ namespace UnityEditor.StyleSheets
 {
     internal static class StylePainter
     {
-        private static readonly int k_EnableHovering = "-unity-enable-hovering".GetHashCode();
+        private static readonly int k_EnableHovering = StyleCatalog.ComputeKey("-unity-enable-hovering");
 
         [NoAutoStaticsCleanup] // cache of enum-flag combinations; pure value data with no user code references
         static readonly Dictionary<StyleState, StyleState[]> s_StatesCache = new Dictionary<StyleState, StyleState[]>();
@@ -34,7 +34,7 @@ namespace UnityEditor.StyleSheets
                 return true;
 
             if (gs.blockId == 0)
-                gs.blockId = GUIStyleExtensions.StyleNameToBlockName(gs.name, false).GetHashCode();
+                gs.blockId = StyleCatalog.ComputeKey(GUIStyleExtensions.StyleNameToBlockName(gs.name, false));
 
             var block = FindBlock(gs.blockId, states);
             if (!block.IsValid())

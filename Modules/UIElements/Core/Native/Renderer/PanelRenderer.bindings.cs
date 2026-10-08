@@ -535,6 +535,12 @@ namespace UnityEngine.UIElements
 
         private BoxCollider m_WorldSpaceCollider;
 
+        /// <summary>
+        /// Invoked when a world space collider is created or destroyed by this PanelRenderer.
+        /// The boolean parameter is <c>true</c> when the collider is created, <c>false</c> when destroyed.
+        /// </summary>
+        internal event Action<Collider, bool> worldSpaceColliderChanged;
+
         #endregion
 
         #region Native Calls
@@ -1136,7 +1142,8 @@ namespace UnityEngine.UIElements
                 return;
             }
 
-            if (m_WorldSpaceCollider == null)
+            var newlyCreated = m_WorldSpaceCollider == null;
+            if (newlyCreated)
             {
                 m_WorldSpaceCollider = gameObject.AddComponent<BoxCollider>();
                 m_WorldSpaceCollider.isTrigger = panelSettings.colliderIsTrigger;
@@ -1150,10 +1157,15 @@ namespace UnityEngine.UIElements
                 m_WorldSpaceCollider.center = bb.center;
                 m_WorldSpaceCollider.size = bb.size;
             }
+
+            if (newlyCreated)
+                worldSpaceColliderChanged?.Invoke(m_WorldSpaceCollider, true);
         }
 
         internal void RemoveWorldSpaceCollider()
         {
+            if (m_WorldSpaceCollider != null)
+                worldSpaceColliderChanged?.Invoke(m_WorldSpaceCollider, false);
             UIRUtility.Destroy(m_WorldSpaceCollider);
             m_WorldSpaceCollider = null;
         }
@@ -1254,9 +1266,6 @@ namespace UnityEngine.UIElements
         // instead of depending on lazy binder creation.
         [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
         internal extern UIAnimationBinder GetOrCreateAnimationBinder();
-
-        [NativeMethod("RegisterPanelRendererAnimationBinding")]
-        internal static extern void RegisterPanelRendererAnimationBinding();
 
         [RequiredByNativeCode(Optional = true)]
         [RequiredMember]

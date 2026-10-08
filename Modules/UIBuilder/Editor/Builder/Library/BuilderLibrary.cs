@@ -328,6 +328,13 @@ namespace Unity.UI.Builder
 
         void RefreshView()
         {
+            // Removed items never get a MouseLeaveEvent, so hide the preview they opened.
+            if (m_TooltipPreview != null)
+            {
+                m_TooltipPreview.Clear();
+                m_TooltipPreview.Hide();
+            }
+
             m_LibraryContentContainer.Clear();
 
             var builderLibraryOptions = new ToggleButtonGroupState(0, Enum.GetNames(typeof(BuilderLibraryTab)).Length);

@@ -25,17 +25,7 @@ internal static unsafe partial class SerializationBackendManagedCommands
     private static unsafe void ConsumeLinearCollectionManagedReferenceArray(
         NativeBufferContext* ctx, int count)
     {
-        if (ctx->writerEnd - ctx->writerPtr < 4)
-            ctx->ensureWritable(ctx, 4);
-        Unsafe.WriteUnaligned(ctx->writerPtr, count);
-        ctx->writerPtr += 4;
-
-        if (count == 0)
-        {
-            // Still cross: the icall marks the registry active, as the native command's Activate<>() does.
-            WriteManagedReferencesToBuffer(ctx->transferState, IntPtr.Zero, 0);
-            return;
-        }
+        // The enter wrote the count and skips this body at count 0, so count is positive here.
 
         const int kRefIdSize = 8;
 
@@ -77,55 +67,4 @@ internal static unsafe partial class SerializationBackendManagedCommands
 
     private static Type GetCachedListType(Type elementType) =>
         s_ListTypeCache.GetOrAdd(elementType, t => typeof(List<>).MakeGenericType(t));
-
-    // Allocate or reuse same-length backing; returns Array + reinterpreted byte[] for pinning.
-    private static unsafe Array AllocateOrReuseArrayBacking(
-        ref byte baseAddr, byte kind, uint fieldOffset, Type elementType, int count, out byte[] dataAsBytes)
-    {
-        Array arr;
-        if ((kind & kV2Pad0KindMask) == LinearCollectionKind.Array)
-        {
-            Array existingArr = V2FieldRef<Array>(ref baseAddr, (nint)fieldOffset);
-            arr = (existingArr != null && existingArr.Length == count)
-                ? existingArr
-                : Array.CreateInstance(elementType, count);
-        }
-        else
-        {
-            ListLayout existingList = V2FieldRef<ListLayout>(ref baseAddr, (nint)fieldOffset);
-            arr = (existingList != null
-                && existingList._size == count
-                && existingList._items != null
-                && existingList._items.Length >= count)
-                ? Unsafe.As<byte[], Array>(ref existingList._items)
-                : Array.CreateInstance(elementType, count);
-        }
-        dataAsBytes = Unsafe.As<Array, byte[]>(ref arr);
-        return arr;
-    }
-
-    private static unsafe void AssignArrayBacking(
-        ref byte baseAddr, byte kind, uint fieldOffset, Array arr, byte[] dataAsBytes, int count, Type elementType)
-    {
-        if ((kind & kV2Pad0KindMask) == LinearCollectionKind.Array)
-        {
-            V2FieldRef<Array>(ref baseAddr, (nint)fieldOffset) = arr;
-        }
-        else
-        {
-            // Refill in place, allocating only when the field is null: a read must not
-            // replace the List instance the field holds.
-            ref byte fieldSlot = ref Unsafe.AddByteOffset(ref baseAddr, (nint)fieldOffset);
-            ListLayout layout = Unsafe.As<byte, ListLayout>(ref fieldSlot);
-            if (layout == null)
-            {
-                layout = Unsafe.As<ListLayout>(
-                    RuntimeHelpers.GetUninitializedObject(GetCachedListType(elementType)));
-                Unsafe.As<byte, ListLayout>(ref fieldSlot) = layout;
-            }
-            layout._items = dataAsBytes;
-            layout._size  = count;
-        }
-    }
-
 }

@@ -25,14 +25,7 @@ internal static unsafe partial class SerializationBackendManagedCommands
     private static unsafe void ConsumeLinearCollectionEntityIdArray(
         NativeBufferContext* ctx, byte[] dataAsBytes, int count, long stride)
     {
-        // Stage the count; it commits with the first batch's re-arm, or with the surrounding
-        // flow's for an empty array.
-        if (ctx->writerEnd - ctx->writerPtr < 4)
-            ctx->ensureWritable(ctx, 4);
-        Unsafe.WriteUnaligned(ctx->writerPtr, count);
-        ctx->writerPtr += 4;
-        if (count == 0)
-            return;
+        // The enter wrote the count and skips this body at count 0, so count is positive here.
 
         const int wire = 12;
 
@@ -96,69 +89,6 @@ internal static unsafe partial class SerializationBackendManagedCommands
         uint lo = (uint)Unsafe.ReadUnaligned<int>(src);
         uint hi = (uint)Unsafe.ReadUnaligned<long>(src + 4);
         return ((ulong)hi << 32) | lo;
-    }
-
-
-    // EntityId stores values — safe on all runtimes, not gated on ENABLE_CORECLR.
-    private static unsafe void ConsumeLinearCollectionEntityIdArrayRead(
-        NativeReadBufferContext* ctx,
-        ref byte baseAddr,
-        ref byte* pos)
-    {
-        var header = (EntityIdArrayReadHeader*)pos;
-        pos += sizeof(EntityIdArrayReadHeader);
-
-        if (ctx->readerEnd - ctx->readerPtr < 4)
-            InvokeEnsureReadable(ctx, 4);
-        int count = Unsafe.ReadUnaligned<int>(ctx->readerPtr);
-        ctx->readerPtr += 4;
-
-        Type elementType = UnmarshalSystemType(header->elementTypeHandle);
-        Array arr = AllocateOrReuseArrayBacking(
-            ref baseAddr, header->kind, header->fieldOffset, elementType, count, out byte[] dataAsBytes);
-
-        if (count > 0)
-        {
-            const int wire = 12;
-            bool packInLSOI = (ctx->flags & UnityObjectTransferFlags.PackEntityIdInLSOI) != 0;
-            fixed (byte* dataPtr = dataAsBytes)
-            {
-                long stride    = (long)header->elementStride;
-                int  processed = 0;
-                while (processed < count)
-                {
-                    if (ctx->readerEnd - ctx->readerPtr < wire)
-                        InvokeEnsureReadable(ctx, wire);
-                    int batch = (int)(ctx->readerEnd - ctx->readerPtr) / wire;
-                    int remaining = count - processed;
-                    if (batch > remaining)
-                        batch = remaining;
-
-                    if (packInLSOI)
-                    {
-                        // Clone arm: unpack each id inline (no crossing).
-                        for (int i = 0; i < batch; ++i)
-                        {
-                            ulong id = UnpackEntityIdFromLsoi(ctx->readerPtr + i * wire);
-                            Unsafe.WriteUnaligned<ulong>(dataPtr + (long)(processed + i) * stride, id);
-                        }
-                    }
-                    else
-                    {
-                        // Remap arm: whole batch in one crossing, storing values into the pinned backing.
-                        s_readEntityIdsArrayIntoElements(
-                            ctx->resolverHandle, ctx->flags,
-                            (IntPtr)(dataPtr + (long)processed * stride), batch, stride,
-                            (IntPtr)ctx->readerPtr);
-                    }
-
-                    ctx->readerPtr += batch * wire;
-                    processed += batch;
-                }
-            }
-        }
-
-        AssignArrayBacking(ref baseAddr, header->kind, header->fieldOffset, arr, dataAsBytes, count, elementType);
     }
 
 }

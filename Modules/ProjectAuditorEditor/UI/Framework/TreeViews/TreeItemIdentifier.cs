@@ -16,8 +16,8 @@ namespace Unity.ProjectAuditor.Editor.UI.Framework
         // to say whether this is the "All" TreeItemIdentifier (i.e. (nameWithIndex == "All"))
         public int index { get; private set; }
 
-        public static readonly int kAll = -1;
-        public static readonly int kSingle = 0;
+        public const int kAll = -1;
+        public const int kSingle = 0;
 
         public TreeItemIdentifier(string _name, int _index)
         {

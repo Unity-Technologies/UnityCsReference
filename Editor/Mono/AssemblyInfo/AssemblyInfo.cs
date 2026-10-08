@@ -130,6 +130,8 @@ using UnityEngine;
 [assembly: InternalsVisibleTo("BuildPipelineTestUtilities")]
 [assembly: InternalsVisibleTo("ContentBuildLoadPreview.Editor")]
 [assembly: InternalsVisibleTo("Unity.CrossModule.PlayMode.Tests.Editor")]
+[assembly: InternalsVisibleTo("Unity.CrossModule.UIElementsUGUI.Tests.Editor")]
+[assembly: InternalsVisibleTo("Unity.CrossModule.UIElementsUGUI.Tests.Runtime")]
 [assembly: InternalsVisibleTo("Unity.Module.AssetDatabase.DanglingComponents.Tests.Editor")]
 [assembly: InternalsVisibleTo("Unity.Modules.CoreEditor.ComponentUtility.Tests.Editor")]
 [assembly: InternalsVisibleTo("Unity.Modules.CoreEditor.AssetType.Tests.Editor")]

@@ -641,17 +641,17 @@ namespace UnityEngine.UIElements
             switch (sv.id)
             {
                 case StylePropertyId.AlignContent:
-                    layoutData.Write().alignContent = (Align)sv.number;
+                    layoutData.Write().alignContent = (Align)sv.intValue;
                     if (sv.keyword == StyleKeyword.Auto)
                         layoutData.Write().alignContent = Align.Auto;
                     break;
                 case StylePropertyId.AlignItems:
-                    layoutData.Write().alignItems = (Align)sv.number;
+                    layoutData.Write().alignItems = (Align)sv.intValue;
                     if (sv.keyword == StyleKeyword.Auto)
                         layoutData.Write().alignItems = Align.Auto;
                     break;
                 case StylePropertyId.AlignSelf:
-                    layoutData.Write().alignSelf = (Align)sv.number;
+                    layoutData.Write().alignSelf = (Align)sv.intValue;
                     if (sv.keyword == StyleKeyword.Auto)
                         layoutData.Write().alignSelf = Align.Auto;
                     break;
@@ -716,7 +716,7 @@ namespace UnityEngine.UIElements
                     layoutData.Write().columnGap = sv.length;
                     break;
                 case StylePropertyId.Display:
-                    layoutData.Write().display = (DisplayStyle)sv.number;
+                    layoutData.Write().display = (DisplayStyle)sv.intValue;
                     if (sv.keyword == StyleKeyword.None)
                         layoutData.Write().display = DisplayStyle.None;
                     break;
@@ -724,7 +724,7 @@ namespace UnityEngine.UIElements
                     layoutData.Write().flexBasis = sv.length;
                     break;
                 case StylePropertyId.FlexDirection:
-                    layoutData.Write().flexDirection = (FlexDirection)sv.number;
+                    layoutData.Write().flexDirection = (FlexDirection)sv.intValue;
                     break;
                 case StylePropertyId.FlexGrow:
                     layoutData.Write().flexGrow = sv.number;
@@ -733,39 +733,39 @@ namespace UnityEngine.UIElements
                     layoutData.Write().flexShrink = sv.number;
                     break;
                 case StylePropertyId.FlexWrap:
-                    layoutData.Write().flexWrap = (Wrap)sv.number;
+                    layoutData.Write().flexWrap = (Wrap)sv.intValue;
                     break;
                 case StylePropertyId.FontSize:
                     inheritedData.Write().fontSize = ComputedStyleUtility.ResolveFontSize(sv.length, ref parentStyle);
                     break;
                 case StylePropertyId.GridAutoFlow:
-                    gridData.Write().gridAutoFlow = (GridAutoFlow)sv.number;
+                    gridData.Write().gridAutoFlow = (GridAutoFlow)sv.intValue;
                     break;
                 case StylePropertyId.GridColumnEnd:
-                    gridData.Write().gridColumnEnd = GridLine.FromRawValue((int)sv.number);
+                    gridData.Write().gridColumnEnd = GridLine.FromRawValue(sv.intValue);
                     break;
                 case StylePropertyId.GridColumnStart:
-                    gridData.Write().gridColumnStart = GridLine.FromRawValue((int)sv.number);
+                    gridData.Write().gridColumnStart = GridLine.FromRawValue(sv.intValue);
                     break;
                 case StylePropertyId.GridRowEnd:
-                    gridData.Write().gridRowEnd = GridLine.FromRawValue((int)sv.number);
+                    gridData.Write().gridRowEnd = GridLine.FromRawValue(sv.intValue);
                     break;
                 case StylePropertyId.GridRowStart:
-                    gridData.Write().gridRowStart = GridLine.FromRawValue((int)sv.number);
+                    gridData.Write().gridRowStart = GridLine.FromRawValue(sv.intValue);
                     break;
                 case StylePropertyId.Height:
                     layoutData.Write().height = sv.length;
                     break;
                 case StylePropertyId.JustifyContent:
-                    layoutData.Write().justifyContent = (Justify)sv.number;
+                    layoutData.Write().justifyContent = (Justify)sv.intValue;
                     break;
                 case StylePropertyId.JustifyItems:
-                    gridData.Write().justifyItems = (Align)sv.number;
+                    gridData.Write().justifyItems = (Align)sv.intValue;
                     if (sv.keyword == StyleKeyword.Auto)
                         gridData.Write().justifyItems = Align.Auto;
                     break;
                 case StylePropertyId.JustifySelf:
-                    gridData.Write().justifySelf = (Align)sv.number;
+                    gridData.Write().justifySelf = (Align)sv.intValue;
                     if (sv.keyword == StyleKeyword.Auto)
                         gridData.Write().justifySelf = Align.Auto;
                     break;
@@ -803,7 +803,7 @@ namespace UnityEngine.UIElements
                     visualData.Write().opacity = sv.number;
                     break;
                 case StylePropertyId.Overflow:
-                    layoutData.Write().overflow = (OverflowInternal)sv.number;
+                    layoutData.Write().overflow = (OverflowInternal)sv.intValue;
                     break;
                 case StylePropertyId.PaddingBottom:
                     layoutData.Write().paddingBottom = sv.length;
@@ -818,7 +818,7 @@ namespace UnityEngine.UIElements
                     layoutData.Write().paddingTop = sv.length;
                     break;
                 case StylePropertyId.Position:
-                    layoutData.Write().position = (Position)sv.number;
+                    layoutData.Write().position = (Position)sv.intValue;
                     break;
                 case StylePropertyId.Right:
                     layoutData.Write().right = sv.length;
@@ -827,7 +827,7 @@ namespace UnityEngine.UIElements
                     layoutData.Write().rowGap = sv.length;
                     break;
                 case StylePropertyId.TextOverflow:
-                    rareData.Write().textOverflow = (TextOverflow)sv.number;
+                    rareData.Write().textOverflow = (TextOverflow)sv.intValue;
                     break;
                 case StylePropertyId.Top:
                     layoutData.Write().top = sv.length;
@@ -836,40 +836,40 @@ namespace UnityEngine.UIElements
                     rareData.Write().unityBackgroundImageTintColor = sv.color;
                     break;
                 case StylePropertyId.UnityEditorTextRenderingMode:
-                    inheritedData.Write().unityEditorTextRenderingMode = (EditorTextRenderingMode)sv.number;
+                    inheritedData.Write().unityEditorTextRenderingMode = (EditorTextRenderingMode)sv.intValue;
                     break;
                 case StylePropertyId.UnityFontStyleAndWeight:
-                    inheritedData.Write().unityFontStyleAndWeight = (FontStyle)sv.number;
+                    inheritedData.Write().unityFontStyleAndWeight = (FontStyle)sv.intValue;
                     break;
                 case StylePropertyId.UnityOverflowClipBox:
-                    rareData.Write().unityOverflowClipBox = (OverflowClipBox)sv.number;
+                    rareData.Write().unityOverflowClipBox = (OverflowClipBox)sv.intValue;
                     break;
                 case StylePropertyId.UnityParagraphSpacing:
                     inheritedData.Write().unityParagraphSpacing = sv.length;
                     break;
                 case StylePropertyId.UnitySliceBottom:
-                    rareData.Write().unitySliceBottom = (int)sv.number;
+                    rareData.Write().unitySliceBottom = sv.intValue;
                     break;
                 case StylePropertyId.UnitySliceLeft:
-                    rareData.Write().unitySliceLeft = (int)sv.number;
+                    rareData.Write().unitySliceLeft = sv.intValue;
                     break;
                 case StylePropertyId.UnitySliceRight:
-                    rareData.Write().unitySliceRight = (int)sv.number;
+                    rareData.Write().unitySliceRight = sv.intValue;
                     break;
                 case StylePropertyId.UnitySliceScale:
                     rareData.Write().unitySliceScale = sv.number;
                     break;
                 case StylePropertyId.UnitySliceTop:
-                    rareData.Write().unitySliceTop = (int)sv.number;
+                    rareData.Write().unitySliceTop = sv.intValue;
                     break;
                 case StylePropertyId.UnitySliceType:
-                    rareData.Write().unitySliceType = (SliceType)sv.number;
+                    rareData.Write().unitySliceType = (SliceType)sv.intValue;
                     break;
                 case StylePropertyId.UnityTextAlign:
-                    inheritedData.Write().unityTextAlign = (TextAnchor)sv.number;
+                    inheritedData.Write().unityTextAlign = (TextAnchor)sv.intValue;
                     break;
                 case StylePropertyId.UnityTextGenerator:
-                    inheritedData.Write().unityTextGenerator = (TextGeneratorType)sv.number;
+                    inheritedData.Write().unityTextGenerator = (TextGeneratorType)sv.intValue;
                     break;
                 case StylePropertyId.UnityTextOutlineColor:
                     inheritedData.Write().unityTextOutlineColor = sv.color;
@@ -878,13 +878,13 @@ namespace UnityEngine.UIElements
                     inheritedData.Write().unityTextOutlineWidth = sv.number;
                     break;
                 case StylePropertyId.UnityTextOverflowPosition:
-                    rareData.Write().unityTextOverflowPosition = (TextOverflowPosition)sv.number;
+                    rareData.Write().unityTextOverflowPosition = (TextOverflowPosition)sv.intValue;
                     break;
                 case StylePropertyId.Visibility:
-                    inheritedData.Write().visibility = (Visibility)sv.number;
+                    inheritedData.Write().visibility = (Visibility)sv.intValue;
                     break;
                 case StylePropertyId.WhiteSpace:
-                    inheritedData.Write().whiteSpace = (WhiteSpace)sv.number;
+                    inheritedData.Write().whiteSpace = (WhiteSpace)sv.intValue;
                     break;
                 case StylePropertyId.Width:
                     layoutData.Write().width = sv.length;
@@ -893,7 +893,7 @@ namespace UnityEngine.UIElements
                     inheritedData.Write().wordSpacing = sv.length;
                     break;
                 case StylePropertyId.ZIndex:
-                    rareData.Write().zIndex = (int)sv.number;
+                    rareData.Write().zIndex = sv.intValue;
                     if (sv.keyword == StyleKeyword.Auto)
                         rareData.Write().zIndex = int.MinValue;
                     break;
@@ -3665,7 +3665,7 @@ namespace UnityEngine.UIElements
             {
                 case StylePropertyId.AlignContent:
                 {
-                    var to = sv.keyword == StyleKeyword.Initial ? InitialStyle.Get().layoutData.Read().alignContent : (Align)sv.number;
+                    var to = sv.keyword == StyleKeyword.Initial ? InitialStyle.Get().layoutData.Read().alignContent : (Align)sv.intValue;
                     if (sv.keyword == StyleKeyword.Auto)
                         to = Align.Auto;
                     return element.styleAnimation.StartEnum(StylePropertyId.AlignContent, (int)computedStyle.layoutData.Read().alignContent, (int)to, durationMs, delayMs, easingCurve);
@@ -3673,7 +3673,7 @@ namespace UnityEngine.UIElements
 
                 case StylePropertyId.AlignItems:
                 {
-                    var to = sv.keyword == StyleKeyword.Initial ? InitialStyle.Get().layoutData.Read().alignItems : (Align)sv.number;
+                    var to = sv.keyword == StyleKeyword.Initial ? InitialStyle.Get().layoutData.Read().alignItems : (Align)sv.intValue;
                     if (sv.keyword == StyleKeyword.Auto)
                         to = Align.Auto;
                     return element.styleAnimation.StartEnum(StylePropertyId.AlignItems, (int)computedStyle.layoutData.Read().alignItems, (int)to, durationMs, delayMs, easingCurve);
@@ -3681,7 +3681,7 @@ namespace UnityEngine.UIElements
 
                 case StylePropertyId.AlignSelf:
                 {
-                    var to = sv.keyword == StyleKeyword.Initial ? InitialStyle.Get().layoutData.Read().alignSelf : (Align)sv.number;
+                    var to = sv.keyword == StyleKeyword.Initial ? InitialStyle.Get().layoutData.Read().alignSelf : (Align)sv.intValue;
                     if (sv.keyword == StyleKeyword.Auto)
                         to = Align.Auto;
                     return element.styleAnimation.StartEnum(StylePropertyId.AlignSelf, (int)computedStyle.layoutData.Read().alignSelf, (int)to, durationMs, delayMs, easingCurve);
@@ -3851,7 +3851,7 @@ namespace UnityEngine.UIElements
 
                 case StylePropertyId.FlexDirection:
                 {
-                    var to = sv.keyword == StyleKeyword.Initial ? InitialStyle.Get().layoutData.Read().flexDirection : (FlexDirection)sv.number;
+                    var to = sv.keyword == StyleKeyword.Initial ? InitialStyle.Get().layoutData.Read().flexDirection : (FlexDirection)sv.intValue;
                     return element.styleAnimation.StartEnum(StylePropertyId.FlexDirection, (int)computedStyle.layoutData.Read().flexDirection, (int)to, durationMs, delayMs, easingCurve);
                 }
 
@@ -3869,7 +3869,7 @@ namespace UnityEngine.UIElements
 
                 case StylePropertyId.FlexWrap:
                 {
-                    var to = sv.keyword == StyleKeyword.Initial ? InitialStyle.Get().layoutData.Read().flexWrap : (Wrap)sv.number;
+                    var to = sv.keyword == StyleKeyword.Initial ? InitialStyle.Get().layoutData.Read().flexWrap : (Wrap)sv.intValue;
                     return element.styleAnimation.StartEnum(StylePropertyId.FlexWrap, (int)computedStyle.layoutData.Read().flexWrap, (int)to, durationMs, delayMs, easingCurve);
                 }
 
@@ -3881,25 +3881,25 @@ namespace UnityEngine.UIElements
 
                 case StylePropertyId.GridColumnEnd:
                 {
-                    var to = sv.keyword == StyleKeyword.Initial ? InitialStyle.Get().gridData.Read().gridColumnEnd : GridLine.FromRawValue((int)sv.number);
+                    var to = sv.keyword == StyleKeyword.Initial ? InitialStyle.Get().gridData.Read().gridColumnEnd : GridLine.FromRawValue(sv.intValue);
                     return element.styleAnimation.StartEnum(StylePropertyId.GridColumnEnd, computedStyle.gridData.Read().gridColumnEnd.rawValue, to.rawValue, durationMs, delayMs, easingCurve);
                 }
 
                 case StylePropertyId.GridColumnStart:
                 {
-                    var to = sv.keyword == StyleKeyword.Initial ? InitialStyle.Get().gridData.Read().gridColumnStart : GridLine.FromRawValue((int)sv.number);
+                    var to = sv.keyword == StyleKeyword.Initial ? InitialStyle.Get().gridData.Read().gridColumnStart : GridLine.FromRawValue(sv.intValue);
                     return element.styleAnimation.StartEnum(StylePropertyId.GridColumnStart, computedStyle.gridData.Read().gridColumnStart.rawValue, to.rawValue, durationMs, delayMs, easingCurve);
                 }
 
                 case StylePropertyId.GridRowEnd:
                 {
-                    var to = sv.keyword == StyleKeyword.Initial ? InitialStyle.Get().gridData.Read().gridRowEnd : GridLine.FromRawValue((int)sv.number);
+                    var to = sv.keyword == StyleKeyword.Initial ? InitialStyle.Get().gridData.Read().gridRowEnd : GridLine.FromRawValue(sv.intValue);
                     return element.styleAnimation.StartEnum(StylePropertyId.GridRowEnd, computedStyle.gridData.Read().gridRowEnd.rawValue, to.rawValue, durationMs, delayMs, easingCurve);
                 }
 
                 case StylePropertyId.GridRowStart:
                 {
-                    var to = sv.keyword == StyleKeyword.Initial ? InitialStyle.Get().gridData.Read().gridRowStart : GridLine.FromRawValue((int)sv.number);
+                    var to = sv.keyword == StyleKeyword.Initial ? InitialStyle.Get().gridData.Read().gridRowStart : GridLine.FromRawValue(sv.intValue);
                     return element.styleAnimation.StartEnum(StylePropertyId.GridRowStart, computedStyle.gridData.Read().gridRowStart.rawValue, to.rawValue, durationMs, delayMs, easingCurve);
                 }
 
@@ -3911,7 +3911,7 @@ namespace UnityEngine.UIElements
 
                 case StylePropertyId.JustifyContent:
                 {
-                    var to = sv.keyword == StyleKeyword.Initial ? InitialStyle.Get().layoutData.Read().justifyContent : (Justify)sv.number;
+                    var to = sv.keyword == StyleKeyword.Initial ? InitialStyle.Get().layoutData.Read().justifyContent : (Justify)sv.intValue;
                     return element.styleAnimation.StartEnum(StylePropertyId.JustifyContent, (int)computedStyle.layoutData.Read().justifyContent, (int)to, durationMs, delayMs, easingCurve);
                 }
 
@@ -3983,7 +3983,7 @@ namespace UnityEngine.UIElements
 
                 case StylePropertyId.Overflow:
                 {
-                    var to = sv.keyword == StyleKeyword.Initial ? InitialStyle.Get().layoutData.Read().overflow : (OverflowInternal)sv.number;
+                    var to = sv.keyword == StyleKeyword.Initial ? InitialStyle.Get().layoutData.Read().overflow : (OverflowInternal)sv.intValue;
                     return element.styleAnimation.StartEnum(StylePropertyId.Overflow, (int)computedStyle.layoutData.Read().overflow, (int)to, durationMs, delayMs, easingCurve);
                 }
 
@@ -4013,7 +4013,7 @@ namespace UnityEngine.UIElements
 
                 case StylePropertyId.Position:
                 {
-                    var to = sv.keyword == StyleKeyword.Initial ? InitialStyle.Get().layoutData.Read().position : (Position)sv.number;
+                    var to = sv.keyword == StyleKeyword.Initial ? InitialStyle.Get().layoutData.Read().position : (Position)sv.intValue;
                     return element.styleAnimation.StartEnum(StylePropertyId.Position, (int)computedStyle.layoutData.Read().position, (int)to, durationMs, delayMs, easingCurve);
                 }
 
@@ -4031,7 +4031,7 @@ namespace UnityEngine.UIElements
 
                 case StylePropertyId.TextOverflow:
                 {
-                    var to = sv.keyword == StyleKeyword.Initial ? InitialStyle.Get().rareData.Read().textOverflow : (TextOverflow)sv.number;
+                    var to = sv.keyword == StyleKeyword.Initial ? InitialStyle.Get().rareData.Read().textOverflow : (TextOverflow)sv.intValue;
                     return element.styleAnimation.StartEnum(StylePropertyId.TextOverflow, (int)computedStyle.rareData.Read().textOverflow, (int)to, durationMs, delayMs, easingCurve);
                 }
 
@@ -4055,13 +4055,13 @@ namespace UnityEngine.UIElements
 
                 case StylePropertyId.UnityFontStyleAndWeight:
                 {
-                    var to = sv.keyword == StyleKeyword.Initial ? InitialStyle.Get().inheritedData.Read().unityFontStyleAndWeight : (FontStyle)sv.number;
+                    var to = sv.keyword == StyleKeyword.Initial ? InitialStyle.Get().inheritedData.Read().unityFontStyleAndWeight : (FontStyle)sv.intValue;
                     return element.styleAnimation.StartEnum(StylePropertyId.UnityFontStyleAndWeight, (int)computedStyle.inheritedData.Read().unityFontStyleAndWeight, (int)to, durationMs, delayMs, easingCurve);
                 }
 
                 case StylePropertyId.UnityOverflowClipBox:
                 {
-                    var to = sv.keyword == StyleKeyword.Initial ? InitialStyle.Get().rareData.Read().unityOverflowClipBox : (OverflowClipBox)sv.number;
+                    var to = sv.keyword == StyleKeyword.Initial ? InitialStyle.Get().rareData.Read().unityOverflowClipBox : (OverflowClipBox)sv.intValue;
                     return element.styleAnimation.StartEnum(StylePropertyId.UnityOverflowClipBox, (int)computedStyle.rareData.Read().unityOverflowClipBox, (int)to, durationMs, delayMs, easingCurve);
                 }
 
@@ -4073,19 +4073,19 @@ namespace UnityEngine.UIElements
 
                 case StylePropertyId.UnitySliceBottom:
                 {
-                    var to = sv.keyword == StyleKeyword.Initial ? InitialStyle.Get().rareData.Read().unitySliceBottom : (int)sv.number;
+                    var to = sv.keyword == StyleKeyword.Initial ? InitialStyle.Get().rareData.Read().unitySliceBottom : sv.intValue;
                     return element.styleAnimation.Start(StylePropertyId.UnitySliceBottom, computedStyle.rareData.Read().unitySliceBottom, to, durationMs, delayMs, easingCurve);
                 }
 
                 case StylePropertyId.UnitySliceLeft:
                 {
-                    var to = sv.keyword == StyleKeyword.Initial ? InitialStyle.Get().rareData.Read().unitySliceLeft : (int)sv.number;
+                    var to = sv.keyword == StyleKeyword.Initial ? InitialStyle.Get().rareData.Read().unitySliceLeft : sv.intValue;
                     return element.styleAnimation.Start(StylePropertyId.UnitySliceLeft, computedStyle.rareData.Read().unitySliceLeft, to, durationMs, delayMs, easingCurve);
                 }
 
                 case StylePropertyId.UnitySliceRight:
                 {
-                    var to = sv.keyword == StyleKeyword.Initial ? InitialStyle.Get().rareData.Read().unitySliceRight : (int)sv.number;
+                    var to = sv.keyword == StyleKeyword.Initial ? InitialStyle.Get().rareData.Read().unitySliceRight : sv.intValue;
                     return element.styleAnimation.Start(StylePropertyId.UnitySliceRight, computedStyle.rareData.Read().unitySliceRight, to, durationMs, delayMs, easingCurve);
                 }
 
@@ -4097,19 +4097,19 @@ namespace UnityEngine.UIElements
 
                 case StylePropertyId.UnitySliceTop:
                 {
-                    var to = sv.keyword == StyleKeyword.Initial ? InitialStyle.Get().rareData.Read().unitySliceTop : (int)sv.number;
+                    var to = sv.keyword == StyleKeyword.Initial ? InitialStyle.Get().rareData.Read().unitySliceTop : sv.intValue;
                     return element.styleAnimation.Start(StylePropertyId.UnitySliceTop, computedStyle.rareData.Read().unitySliceTop, to, durationMs, delayMs, easingCurve);
                 }
 
                 case StylePropertyId.UnitySliceType:
                 {
-                    var to = sv.keyword == StyleKeyword.Initial ? InitialStyle.Get().rareData.Read().unitySliceType : (SliceType)sv.number;
+                    var to = sv.keyword == StyleKeyword.Initial ? InitialStyle.Get().rareData.Read().unitySliceType : (SliceType)sv.intValue;
                     return element.styleAnimation.StartEnum(StylePropertyId.UnitySliceType, (int)computedStyle.rareData.Read().unitySliceType, (int)to, durationMs, delayMs, easingCurve);
                 }
 
                 case StylePropertyId.UnityTextAlign:
                 {
-                    var to = sv.keyword == StyleKeyword.Initial ? InitialStyle.Get().inheritedData.Read().unityTextAlign : (TextAnchor)sv.number;
+                    var to = sv.keyword == StyleKeyword.Initial ? InitialStyle.Get().inheritedData.Read().unityTextAlign : (TextAnchor)sv.intValue;
                     return element.styleAnimation.StartEnum(StylePropertyId.UnityTextAlign, (int)computedStyle.inheritedData.Read().unityTextAlign, (int)to, durationMs, delayMs, easingCurve);
                 }
 
@@ -4127,19 +4127,19 @@ namespace UnityEngine.UIElements
 
                 case StylePropertyId.UnityTextOverflowPosition:
                 {
-                    var to = sv.keyword == StyleKeyword.Initial ? InitialStyle.Get().rareData.Read().unityTextOverflowPosition : (TextOverflowPosition)sv.number;
+                    var to = sv.keyword == StyleKeyword.Initial ? InitialStyle.Get().rareData.Read().unityTextOverflowPosition : (TextOverflowPosition)sv.intValue;
                     return element.styleAnimation.StartEnum(StylePropertyId.UnityTextOverflowPosition, (int)computedStyle.rareData.Read().unityTextOverflowPosition, (int)to, durationMs, delayMs, easingCurve);
                 }
 
                 case StylePropertyId.Visibility:
                 {
-                    var to = sv.keyword == StyleKeyword.Initial ? InitialStyle.Get().inheritedData.Read().visibility : (Visibility)sv.number;
+                    var to = sv.keyword == StyleKeyword.Initial ? InitialStyle.Get().inheritedData.Read().visibility : (Visibility)sv.intValue;
                     return element.styleAnimation.StartEnum(StylePropertyId.Visibility, (int)computedStyle.inheritedData.Read().visibility, (int)to, durationMs, delayMs, easingCurve);
                 }
 
                 case StylePropertyId.WhiteSpace:
                 {
-                    var to = sv.keyword == StyleKeyword.Initial ? InitialStyle.Get().inheritedData.Read().whiteSpace : (WhiteSpace)sv.number;
+                    var to = sv.keyword == StyleKeyword.Initial ? InitialStyle.Get().inheritedData.Read().whiteSpace : (WhiteSpace)sv.intValue;
                     return element.styleAnimation.StartEnum(StylePropertyId.WhiteSpace, (int)computedStyle.inheritedData.Read().whiteSpace, (int)to, durationMs, delayMs, easingCurve);
                 }
 
@@ -4157,7 +4157,7 @@ namespace UnityEngine.UIElements
 
                 case StylePropertyId.ZIndex:
                 {
-                    var to = sv.keyword == StyleKeyword.Initial ? InitialStyle.Get().rareData.Read().zIndex : (int)sv.number;
+                    var to = sv.keyword == StyleKeyword.Initial ? InitialStyle.Get().rareData.Read().zIndex : sv.intValue;
                     return element.styleAnimation.Start(StylePropertyId.ZIndex, computedStyle.rareData.Read().zIndex, to, durationMs, delayMs, easingCurve);
                 }
 

@@ -36,16 +36,20 @@ namespace UnityEditor.Audio
     }
 
 
-    [InitializeOnLoad]
-    static class MixerEffectDefinitionReloader
+    static partial class MixerEffectDefinitionReloader
     {
-        // We use this class with InitializeOnLoad attribute for ensuring MixerEffectDefinitions are refreshed
-        // when needed: 1) At startup, 2) after script recompile and 3) when project changes (new effects can have been added)
-        static MixerEffectDefinitionReloader()
+        [OnCodeLoaded]
+        static void Initialize()
         {
             MixerEffectDefinitions.Refresh();
 
             EditorApplication.projectChanged += OnProjectChanged;
+        }
+
+        [OnCodeUnloading]
+        static void Shutdown()
+        {
+            EditorApplication.projectChanged -= OnProjectChanged;
         }
 
         static void OnProjectChanged()

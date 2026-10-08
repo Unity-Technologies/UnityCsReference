@@ -97,7 +97,9 @@ internal unsafe struct NativeReadBufferContext
     public int      flags;             // UnityObjectTransferFlags bits forwarded to ReadUnityObjectFromBuffer.
     public bool     warnAboutIgnoredEntries;  // True for serialized-file loads and Object.Instantiate clones; false for Inspector ApplyModifiedProperties and other in-memory transfers.
     public byte     discardCallbackDictSinks;  // V2 read executor only (v1's dispatcher leaves it unset): suppressed-callback transfers discard callback-keyed dictionary sinks. Brackets are handled by stream selection, not a context check.
-    public byte     _pad1;
+    // ShouldSuppressScriptedFakeNull(), resolved once per transfer. Applies to scripted field types
+    // only.
+    public byte     suppressScriptedFakeNull;
     public byte     _pad2;             // align fuidContext to 8-byte boundary
     public IntPtr   fuidContext;       // native FieldUniqueIdentifierContext*; forwarded to ConsumeDictionaryRead for FUID Push/Pop bracketing. IntPtr.Zero when no transfer-side context is active.
     public EntityId hostingEntityId;   // Resolved once per managed block by the native dispatcher (FUID context's value first, falling back to TryGetHostingEntityIdForUnityObject in editor). EntityId.None when neither yields a value.
@@ -147,15 +149,61 @@ internal static unsafe partial class SerializationBackendManagedCommands
 
     // field / fieldParent (from the wire field-table) let the native side stamp
     // the editor fake-null wrapper on resolver-miss; ignored in player builds.
+    // declaredTypeIndex addresses the field's declared type in V2DeclaredTypeTable, so no wire
+    // pointer is reinterpreted as a class on either side.
     [MethodImpl(MethodImplOptions.InternalCall)]
     [NativeMethod(IsFreeFunction = true, IsThreadSafe = true)]
     private static extern unsafe object ReadUnityObjectFromBuffer(
         IntPtr resolverHandle,
         IntPtr inputPtr,
-        IntPtr klass,
+        uint declaredTypeIndex,
         int flags,
         IntPtr field,
         IntPtr fieldParent);
+
+    // The declared type's ScriptingClassPtr for a V2DeclaredTypeTable index, or zero for an index the
+    // table never handed out. Called once per index and cached.
+    [MethodImpl(MethodImplOptions.InternalCall)]
+    [NativeMethod(IsFreeFunction = true, IsThreadSafe = true)]
+    private static extern unsafe IntPtr GetDeclaredTypeKlass(uint declaredTypeIndex);
+
+    // Fake-null inputs, each a constant of the declared type or the field, fetched once and cached.
+    //
+    // Zero when the field gets no wrapper. Decided at compose time, MonoObjectNULL's rejections
+    // already folded in.
+    [MethodImpl(MethodImplOptions.InternalCall)]
+    [NativeMethod(IsFreeFunction = true, IsThreadSafe = true)]
+    private static extern unsafe IntPtr GetNoIdFakeNullClass(uint declaredTypeIndex);
+
+    // Accepts an abstract scripted type by standing a concrete subclass in for it, which the
+    // no-id case does not.
+    [MethodImpl(MethodImplOptions.InternalCall)]
+    [NativeMethod(IsFreeFunction = true, IsThreadSafe = true)]
+    private static extern unsafe IntPtr GetUnresolvedFakeNullClass(uint declaredTypeIndex);
+
+    // Separate from the class so both are cached per index while the gate is applied per read.
+    [MethodImpl(MethodImplOptions.InternalCall)]
+    [NativeMethod(IsFreeFunction = true, IsThreadSafe = true)]
+    private static extern unsafe int GetFakeNullClassIsScripted(uint declaredTypeIndex);
+
+    // A per-field constant: formatted from the field's name and its declaring class's. hasId picks
+    // the "doesn't exist anymore" wording over "has not been assigned".
+    //
+    // [FreeFunction] rather than an InternalCall extern, because a string return needs the marshalling
+    // the BindingsGenerator injects and InternalCall opts out of it.
+    [FreeFunction("GetFakeNullMessage", IsThreadSafe = true)]
+    private static extern string GetFakeNullMessage(IntPtr field, IntPtr fieldParent, int hasId);
+
+    // Decodes and resolves a UnityObject reference, for the kFileLoad and kCloneRemap modes only.
+    // See ReadUnityObjectFromBuffer.h for the three possible returns. The return is a blittable
+    // UInt64, so this needs no FromNativeRepresentation step.
+    [MethodImpl(MethodImplOptions.InternalCall)]
+    [NativeMethod(IsFreeFunction = true, IsThreadSafe = true)]
+    private static extern unsafe ulong ResolveUnityObjectEntityIdForManaged(
+        IntPtr resolverHandle,
+        IntPtr inputPtr,
+        int flags);
+
 
     // Read-side icall for the RttiDataType.ManagedReference opcode
     // ([SerializeReference] inline RefId). Reads the 8-byte SInt64 RefId from

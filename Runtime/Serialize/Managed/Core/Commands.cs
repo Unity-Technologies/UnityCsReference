@@ -411,10 +411,10 @@ internal static unsafe partial class SerializationBackendManagedCommands
         public ulong userData;
         public ulong readArrayHandler;       // 0 = collection not readable (template is write-only)
         public ulong elementTypeHandle;      // RuntimeTypeHandle for Array.CreateInstance
-        public ulong readKlass;              // element class (resolve + fake-null); 0 when unused
+        public ulong readDeclaredTypeIndex;  // V2DeclaredTypeTable index for the element's declared type (resolve + fake-null)
         public ulong readField;              // collection field backend ptr (fake-null); 0 when unused
         public ulong readFieldParent;        // collection field's declaring class; 0 when unused
-        public ulong readUserData;           // read-side crossing payload (SR array fixup helper); 0 when unused
+        public ulong readUserData;           // read-side crossing payload (SR array assignment helper); 0 when unused
         public uint segment;                 // FUID segment for per-element missing-type registration; kV2NoPathSegment when absent
         public ushort ensureSum;             // doc §12: window guarantee after the collection
         public ushort pad2;

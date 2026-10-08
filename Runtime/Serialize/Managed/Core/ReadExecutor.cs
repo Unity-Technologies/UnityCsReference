@@ -779,13 +779,12 @@ internal static unsafe partial class SerializationBackendManagedCommands
                     // with a readGroupHandler. The group's slots live inside the
                     // enclosing fixed block, so entries index off `input` like
                     // copy entries. Layout after the header: count x 8B write
-                    // entries, then when flagged count x read entries (v1's
-                    // UnityObjectReadEntry layout, 8 + sizeof(IntPtr)) and
+                    // entries, then when flagged count x 12B read entries and
                     // count x (field, fieldParent) pairs of 2 x sizeof(void*).
-                    // Both strides are pointer-width: V2ExternalFixedReadEntry
-                    // and V2ExternalFieldPair in Commands.h are emitted that way
-                    // so v1's ReadUnityObjectsIntoFields and the C# handler's
-                    // UnityObjectReadEntry cast both match on 32-bit too.
+                    // Both strides must match ReadUnityObjectsIntoFields, which is
+                    // handed these region bases and strides each itself. The read
+                    // entry is all-uint, so its stride is platform-invariant; the
+                    // pairs stay pointer-width.
                     case V2OpCode.ExternalFixed:
                     {
                         var cmd = (V2CmdExternalFixedGroup*)pos;
@@ -805,12 +804,12 @@ internal static unsafe partial class SerializationBackendManagedCommands
                             segmentTable = tableCursor;
 
                         // The frame instance rides along: handlers whose native
-                        // crossing needs the frame's object (SR fixups) hand it
-                        // over as a GCHandle, which is GC-safe on CoreCLR's
-                        // moving GC where recovering it from baseAddr is not.
-                        // top.Offset distinguishes the frame kind for the SR
-                        // crossing: 0 = object frame, non-zero = struct
-                        // collection-element frame (interior fixup addressing).
+                        // crossing needs the frame's object hand it over as a
+                        // GCHandle, which is GC-safe on CoreCLR's moving GC
+                        // where recovering it from baseAddr is not. top.Offset
+                        // distinguishes the frame kind for the SR crossing:
+                        // 0 = object frame, non-zero = struct
+                        // collection-element frame (interior addressing).
                         ((delegate*<object, nint, ref byte, byte*, byte*, byte*, int, byte*, NativeReadBufferContext*, ulong, void>)(void*)cmd->readGroupHandler)(
                             top.Instance, top.Offset, ref baseAddr, entries, readEntries, fieldTable, count, input, ctx, cmd->userData);
 
@@ -846,10 +845,16 @@ internal static unsafe partial class SerializationBackendManagedCommands
                     case V2OpCode.ExternalArray:
                     {
                         var cmd = (V2CmdExternalArray*)pos;
-                        // The path tables serve per-element missing-type
-                        // registration in the SR collection handler.
-                        ((delegate*<ref byte, byte*, NativeReadBufferContext*, byte*, byte*, void>)(void*)cmd->readArrayHandler)(
-                            ref baseAddr, (byte*)cmd, ctx, pathSegments, pathNames);
+                        // The enter read the count, bound the collection to the field and pushed the
+                        // element frame, so baseAddr is element 0. The path tables serve per-element
+                        // missing-type registration in the SR collection handler.
+                        int arrayCount = (int)((cursorEnd - cursorOffset) / (nint)cmd->elementStride);
+                        ((delegate*<byte[], int, long, byte*, NativeReadBufferContext*, byte*, byte*, void>)(void*)cmd->readArrayHandler)(
+                            Unsafe.As<byte[]>(top.Instance), arrayCount, (long)cmd->elementStride, (byte*)cmd, ctx, pathSegments, pathNames);
+                        // Every element is consumed, so the trailing latch exits and pops the frame
+                        // rather than taking its backedge. The latch tests the cursor locals.
+                        cursorOffset = cursorEnd;
+                        top.Offset = cursorEnd;
                         // The handler checks its own framing; re-establish
                         // the trailing window guarantee.
                         ensureSpace = cmd->ensureSum;

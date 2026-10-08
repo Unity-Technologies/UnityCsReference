@@ -17,15 +17,17 @@ namespace UnityEditor
     [NativeHeader("Editor/Src/Utility/GameObjectChangeTracker.h")]
     internal static partial class GameObjectChangeTracker
     {
-        [OnCodeLoaded]
-        static void Initialize() => Init();
-
         [StaticAccessor("GameObjectChangeTracker", StaticAccessorType.DoubleColon)]
         extern static void Init();
 
         public static event GameObjectChangeTrackerEventHandler GameObjectsChanged
         {
-            add => m_GameObjectsChanged.Add(value);
+            add
+            {
+                // Tracking has a per-frame cost, so only enable it once someone listens
+                Init();
+                m_GameObjectsChanged.Add(value);
+            }
             remove => m_GameObjectsChanged.Remove(value);
         }
 

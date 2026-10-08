@@ -542,7 +542,7 @@ namespace UnityEditor
                 view.Repaint();
         }
 
-        internal static void DisplayRestartRequiredDialog(string settingName, string details = null)
+        internal static bool DisplayRestartRequiredDialog(string settingName, string details = null, Action beforeRestart = null)
         {
             var message = string.Format(L10n.Tr("The Unity Editor must be restarted for the change to \"{0}\" to take full effect.", null), settingName);
             if (!string.IsNullOrEmpty(details))
@@ -555,7 +555,12 @@ namespace UnityEditor
                 L10n.Tr("Restart Later", null));
 
             if (restartNow)
+            {
+                beforeRestart?.Invoke();
                 RequestCloseAndRelaunchWithCurrentArguments();
+            }
+
+            return restartNow;
         }
 
         internal static void RequestRepaintAllTexts(VersionChangeType incrementVersion)

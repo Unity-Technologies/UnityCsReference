@@ -18,7 +18,7 @@ using UnityEngine.Assemblies;
 namespace UnityEditor.AdaptivePerformance.Editor
 {
     [InitializeOnLoad]
-    internal static class EditorUtilities
+    internal static partial class EditorUtilities
     {
         internal static readonly string[] s_DefaultGeneralSettingsPath = {"Adaptive Performance"};
         internal static readonly string[] s_DefaultLoaderPath = {"Adaptive Performance", "Provider"};
@@ -448,9 +448,16 @@ namespace UnityEditor.AdaptivePerformance.Editor
         const string k_WarningPlaymodeDuringPackageOperation =
             "Adaptive Performance is updating its packages. Wait for the operation to finish before entering Play mode.";
 
-        static EditorUtilities()
+        [OnCodeLoaded]
+        static void Initialize()
         {
             EditorApplication.playModeStateChanged += OnPlayModeStateChanged;
+        }
+
+        [OnCodeUnloading]
+        static void Shutdown()
+        {
+            EditorApplication.playModeStateChanged -= OnPlayModeStateChanged;
         }
 
         // True while an Adaptive Performance enable/disable package operation (and its domain reload) is still resolving.

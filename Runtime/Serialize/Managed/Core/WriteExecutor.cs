@@ -729,36 +729,25 @@ internal static unsafe partial class SerializationBackendManagedCommands
 
                         ensureSpace = cmd->ensureSum;
 
-                        // Null writes the empty count and skips the handler. Nothing
-                        // downstream needs that crossing: binary's references frame is
-                        // registry-first and type-driven, and the text writers render
-                        // from those bytes (SerializeRef_Null* pin it). Nothing
-                        // guarantees room ahead of this command, so the count checks.
-                        if (!V2GetCollectionBacking(ref baseAddr, cmd->fieldOffset, cmd->kind, out byte[] dataAsBytes, out int count))
-                        {
-                            if (ctx->writerEnd - ctx->writerPtr < 4)
-                                ctx->ensureWritable(ctx, 4);
-                            Unsafe.WriteUnaligned(ctx->writerPtr, 0);
-                            ctx->writerPtr += 4;
-                            goto EnsureAndAdvance;
-                        }
+                        // The enter read the collection, wrote the count and pushed the element
+                        // frame, so the backing comes from the frame and the count from the cursor.
+                        byte[] dataAsBytes = Unsafe.As<byte[]>(top.Instance);
+                        int count = (int)((cursorEnd - cursorOffset) / (nint)cmd->elementStride);
 
                         if (cmd->arrayHandler != 0)
                         {
-                            // Batched path: the handler owns the full framing
-                            // (count, payload, pad) in one call, so it can batch
-                            // its native crossings.
+                            // Batched path: the handler owns the payload and its pad in one call, so
+                            // it can batch its native crossings.
                             ((delegate*<byte[], int, uint, NativeBufferContext*, ulong, void>)(void*)cmd->arrayHandler)(
                                 dataAsBytes, count, cmd->elementStride, ctx, cmd->userData);
+                            // Every element is consumed, so the trailing latch exits and pops the frame.
+                            cursorOffset = cursorEnd;
+                            top.Offset = cursorEnd;
                             goto EnsureAndAdvance;
                         }
 
                         // Per-element fallback: the executor frames, and the
                         // field handler fills whatever records the window holds.
-                        if (ctx->writerEnd - ctx->writerPtr < 4)
-                            ctx->ensureWritable(ctx, 4);
-                        Unsafe.WriteUnaligned(ctx->writerPtr, count);
-                        ctx->writerPtr += 4;
                         int wire = (int)cmd->elementWireBytes;
                         var fieldHandler = (delegate*<ref byte, byte*, NativeBufferContext*, ulong, void>)(void*)cmd->fieldHandler;
                         int processed = 0;
@@ -787,6 +776,9 @@ internal static unsafe partial class SerializationBackendManagedCommands
                             Unsafe.InitBlockUnaligned(ctx->writerPtr, 0, (uint)padBytes);
                             ctx->writerPtr += padBytes;
                         }
+                        // Every element is consumed, so the trailing latch exits and pops the frame.
+                        cursorOffset = cursorEnd;
+                        top.Offset = cursorEnd;
                         goto EnsureAndAdvance;
                     }
 
@@ -798,17 +790,18 @@ internal static unsafe partial class SerializationBackendManagedCommands
                         var cmd = (V2CmdExternalArray*)pos;
                         ensureSpace = cmd->ensureSum;
 
-                        if (!V2GetCollectionBacking(ref baseAddr, cmd->fieldOffset, cmd->kind, out byte[] dataAsBytes, out int count))
-                        {
-                            if (ctx->writerEnd - ctx->writerPtr < 4)
-                                ctx->ensureWritable(ctx, 4);
-                            Unsafe.WriteUnaligned(ctx->writerPtr, 0);
-                            ctx->writerPtr += 4;
-                            goto EnsureAndAdvance;
-                        }
+                        // The filter copies the command verbatim, so the enter owns the collection
+                        // here exactly as it does for ExternalArray: the backing comes from the
+                        // element frame, the count from the cursor, and a null collection never
+                        // reaches this arm.
+                        byte[] dataAsBytes = Unsafe.As<byte[]>(top.Instance);
+                        int count = (int)((cursorEnd - cursorOffset) / (nint)cmd->elementStride);
 
                         ((delegate*<byte[], int, uint, uint, Span<V2ObjectFrame>, NativeBufferContext*, ulong, void>)(void*)cmd->arrayHandler)(
                             dataAsBytes, count, cmd->elementStride, cmd->segment, frames, ctx, cmd->userData);
+                        // Every element is consumed, so the trailing latch exits and pops the frame.
+                        cursorOffset = cursorEnd;
+                        top.Offset = cursorEnd;
                         goto EnsureAndAdvance;
                     }
 

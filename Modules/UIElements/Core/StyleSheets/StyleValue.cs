@@ -9,7 +9,7 @@ using System.Runtime.InteropServices;
 namespace UnityEngine.UIElements.StyleSheets
 {
     [StructLayout(LayoutKind.Explicit)]
-    [DebuggerDisplay("id = {id}, keyword = {keyword}, number = {number}, boolean = {boolean}, color = {color}, object = {resource}")]
+    [DebuggerDisplay("id = {id}, keyword = {keyword}, number = {number}, intValue = {intValue}, color = {color}")]
     internal struct StyleValue
     {
         [FieldOffset(0)]
@@ -19,7 +19,9 @@ namespace UnityEngine.UIElements.StyleSheets
         public StyleKeyword keyword;
 
         [FieldOffset(8)]
-        public float number;   // float, int, enum
+        public float number;   // float
+        [FieldOffset(8)]
+        public int intValue;   // int, enum
         [FieldOffset(8)]
         public Length length;
         [FieldOffset(8)]

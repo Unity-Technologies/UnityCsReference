@@ -31,8 +31,6 @@ namespace Unity.ProjectAuditor.Editor.UI
             Valid
         }
 
-        static readonly string[] s_AreaNames = Array.ConvertAll(AreasExtensions.AlphabeticalAreas, (a) => a.ToString());
-
         static string[] NicifiedAreaNames
         {
             get
@@ -85,7 +83,7 @@ namespace Unity.ProjectAuditor.Editor.UI
         [SerializeField] ViewStates m_ViewStates = new ViewStates();
         [SerializeField] internal ViewManager m_ViewManager;
 
-        static readonly string k_ReportAutoSaveFilename = "projectauditor-report-autosave.projectauditor";
+        const string k_ReportAutoSaveFilename = "projectauditor-report-autosave.projectauditor";
 
         // The navigation tree shown in the view selection tree view.
         // Rebuilt from code in OnEnable, so it doesn't need to be serialized.
@@ -2326,12 +2324,12 @@ namespace Unity.ProjectAuditor.Editor.UI
         {
             const int kFilterContentsWidth = 320;
 
-            public static readonly int MinWindowWidth = 410;
-            public static readonly int MinWindowHeight = 640;
+            public const int MinWindowWidth = 410;
+            public const int MinWindowHeight = 640;
             public static readonly GUILayoutOption FilterOptionsLabelWidth = GUILayout.Width(104);
             public static readonly GUILayoutOption FilterOptionsContentsWidth = GUILayout.Width(kFilterContentsWidth);
             public static readonly GUILayoutOption FilterOptionsContentsHalfWidth = GUILayout.Width(kFilterContentsWidth / 2);
-            public static readonly int FilterOptionsEnumWidth = 50;
+            public const int FilterOptionsEnumWidth = 50;
             public const float kTreeViewWidth = 190.0f;
         }
 

@@ -140,7 +140,7 @@ namespace Unity.ProjectAuditor.Editor.Utils
             return val.ToString($"F{decimalPlaces}", CultureInfo.InvariantCulture);
         }
 
-        static readonly string k_StringSeparator = ", ";
+        const string k_StringSeparator = ", ";
 
         internal static string CombineStrings<T>(IEnumerable<T> strings, string separator = null)
         {

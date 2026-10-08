@@ -183,13 +183,19 @@ namespace Unity.Hierarchy
 
             var node = m_View.ViewModel[index];
             if (node == HierarchyNode.Null)
+            {
+                cell.HideCachedEditor();
                 return;
+            }
 
             cell.Node = node;
             cell.NodeIndex = index;
             cell.Handler = m_View.ViewModel.GetNodeTypeHandler(node);
             if (cell.Handler == null)
+            {
+                cell.HideCachedEditor();
                 return;
+            }
 
             foreach (var desc in m_CellDescriptors)
             {
@@ -202,6 +208,7 @@ namespace Unity.Hierarchy
 
             if (cell.Descriptor == null)
             {
+                cell.HideCachedEditor();
                 return;
             }
             cell.BindCell();

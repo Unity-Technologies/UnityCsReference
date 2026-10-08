@@ -156,25 +156,21 @@ internal struct UnityObjectWriteEntry // 8 bytes
     public uint destOffset;
 }
 
-// Mirrors ManagedCommandUnityObjectReadEntry in SerializationCommands.h. The
-// read entry carries klass per-entry so a single group can span PPtr fields
-// of differing types. Wire size = 8 + sizeof(IntPtr) — 12B on 32-bit, 16B on
-// 64-bit — and matches the native struct exactly because klass is the
-// trailing field.
+// Mirrors V2ExternalFixedReadEntry in Commands.h. The read entry carries its declared type
+// per-entry so a single group can span PPtr fields of differing types.
 //
-// Pack = 4 because entries sit immediately after a 4B FBP header in the
-// entry stream; without it, the runtime would assume the 8B alignment
-// IntPtr requires on 64-bit and read past the actual buffer alignment.
+// declaredTypeIndex addresses V2DeclaredTypeTable rather than carrying a ScriptingClassPtr, so the
+// wire size is 12 bytes on every platform. Entries sit immediately after a 4B FBP header, and
+// Pack = 4 states the 4-byte alignment this all-uint layout needs.
 //
-// A parallel (fieldBackendPtr, fieldParentClassPtr) table follows the entry
-// array (see FieldTableFor in SerializationCommands.h); the executor forwards
-// each slot to ReadUnityObjectFromBuffer for the resolver-miss fake-null wrapper.
+// A parallel (fieldBackendPtr, fieldParentClassPtr) table follows the entry array; the executor
+// forwards each slot to ReadUnityObjectFromBuffer for the resolver-miss fake-null wrapper.
 [StructLayout(LayoutKind.Sequential, Pack = 4)]
 internal struct UnityObjectReadEntry
 {
     public uint fieldOffset;
     public uint destOffset;
-    public IntPtr klass;
+    public uint declaredTypeIndex;
 }
 
 // No klass or field-table — the id is the field value; read and write entries are identical.
@@ -201,6 +197,7 @@ internal static class UnityObjectTransferFlags
     public const int SerializeForGameRelease              = 1 << 4;
     public const int DontPopulateNullManagedFields        = 1 << 5;
 }
+
 
 // Mirrors ManagedCommandStringEntry in SerializationCommands.h (8 bytes).
 // Natural sequential layout matches the native side exactly: no padding is
@@ -332,7 +329,6 @@ internal static class LinearCollectionKind
     public const byte List  = 1;
 }
 
-// Write-only — read layout has additional fields (UnityObjectArrayReadHeader).
 internal struct UnityObjectArrayHeader
 {
     public RttiDataType opCode;        // = RttiDataType.UnityObjectArray
@@ -341,22 +337,6 @@ internal struct UnityObjectArrayHeader
     public byte         reserved1;
     public uint         fieldOffset;   // post-header offset of the collection reference on the parent
     public uint         elementStride; // bytes between elements in the managed backing array
-}
-
-// Uniform fake-null context (klass/field/fieldParent) covers every element. 48 bytes on 64-bit.
-internal struct UnityObjectArrayReadHeader
-{
-    public RttiDataType opCode;            // = RttiDataType.UnityObjectArray
-    public byte         kind;              // 0 = Array, 1 = List
-    public byte         reserved0;
-    public byte         reserved1;
-    public uint         fieldOffset;       // post-header offset of the collection reference on the parent
-    public uint         elementStride;     // bytes between elements in the managed backing array
-    public uint         reserved2;         // pad to align the pointer-sized members
-    public IntPtr       elementTypeHandle; // RuntimeTypeHandle.Value for Array.CreateInstance
-    public IntPtr       klass;             // native element class (resolve + editor fake-null type)
-    public IntPtr       field;             // array field backend ptr (editor fake-null)
-    public IntPtr       fieldParent;       // array field's declaring class backend ptr (editor fake-null)
 }
 
 internal struct EntityIdArrayHeader
@@ -378,18 +358,6 @@ internal struct ManagedReferenceArrayHeader
     public uint         fieldOffset;   // post-header offset of the collection reference on the parent
 }
 
-// No klass/field/fieldParent — EntityId decodes to a value, no fake-null context. 24 bytes on 64-bit.
-internal struct EntityIdArrayReadHeader
-{
-    public RttiDataType opCode;            // = RttiDataType.EntityIdArray
-    public byte         kind;              // 0 = Array, 1 = List
-    public byte         reserved0;
-    public byte         reserved1;
-    public uint         fieldOffset;       // post-header offset of the collection reference on the parent
-    public uint         elementStride;     // bytes between elements in the managed backing array
-    public uint         reserved2;         // pad to align elementTypeHandle on an 8-byte boundary
-    public IntPtr       elementTypeHandle; // RuntimeTypeHandle.Value for Array.CreateInstance
-}
 
 // Mirrors ManagedCommandFixedBuffer in SerializationCommands.h — see that
 // header for the wire / executor contract.

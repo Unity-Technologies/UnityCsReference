@@ -16,7 +16,7 @@ using System.Runtime.CompilerServices;
 
 namespace Unity.Mathematics
 {
-    partial class math
+    public static partial class math
     {
         /// <summary>Returns the float value result of a matrix multiplication between a float value and a float value.</summary>
         /// <param name="a">Left hand side argument of the matrix multiply.</param>

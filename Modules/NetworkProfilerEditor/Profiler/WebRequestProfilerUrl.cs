@@ -57,7 +57,7 @@ namespace UnityEditor.Networking
         {
             try
             {
-                return Uri.UnescapeDataString(text);
+                return Uri.UnescapeDataString(text.Replace('+', ' '));
             }
             catch (UriFormatException)
             {

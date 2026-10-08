@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using Unity.Scripting.LifecycleManagement;
 using UnityEngine;
 using UnityEngine.Rendering;
 
@@ -34,22 +35,58 @@ namespace UnityEditor
         }
     }
 
-    [InitializeOnLoad]
-    static class RemoveLegacyUmbraMenuItems
+    static partial class RemoveLegacyUmbraMenuItems
     {
-        static RemoveLegacyUmbraMenuItems()
-        {
-            EditorApplication.delayCall += RemoveMenuItems;
-        }
+        [AutoStaticsCleanupOnCodeReload]
+        static bool s_RemovalScheduled;
 
-        static void RemoveMenuItems()
+        [OnCodeLoaded]
+        static void Initialize()
         {
             if (EditorSettings.enableLegacyUmbraCulling)
                 return;
 
-            Menu.RemoveMenuItem("Component/Rendering/Occlusion Area");
-            Menu.RemoveMenuItem("Component/Rendering/Occlusion Portal");
-            Menu.RemoveMenuItem("Window/Rendering/Occlusion Culling");
+            Menu.menuChanged += ScheduleRemoval;
+            ScheduleRemoval();
+        }
+
+        [OnCodeUnloading]
+        static void Teardown()
+        {
+            Menu.menuChanged -= ScheduleRemoval;
+        }
+
+        static void ScheduleRemoval()
+        {
+            if (s_RemovalScheduled)
+                return;
+
+            s_RemovalScheduled = true;
+            EditorApplication.delayCall += RemoveMenuItems;
+        }
+
+        static readonly string[] k_MenuItems =
+        {
+            "Component/Rendering/Occlusion Area",
+            "Component/Rendering/Occlusion Portal",
+            "Window/Rendering/Occlusion Culling",
+        };
+
+        static void RemoveMenuItems()
+        {
+            try
+            {
+                EditorUtility.Internal_UpdateAllMenus();
+                foreach (var menuItem in k_MenuItems)
+                {
+                    if (Menu.MenuItemExists(menuItem))
+                        Menu.RemoveMenuItem(menuItem);
+                }
+            }
+            finally
+            {
+                s_RemovalScheduled = false;
+            }
         }
     }
 }

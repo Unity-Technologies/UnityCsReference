@@ -68,60 +68,80 @@ internal static unsafe partial class SerializationBackendManagedCommands
     }
 
     // Collection read (M7b). The handler owns the full framing.
-    private static unsafe void V2ReadEntityIdArray(ref byte baseAddr, byte* cmdRaw, NativeReadBufferContext* ctx, byte* pathSegments, byte* pathNames)
+    // The enter read the count, bound the collection to the field and rebased `data` to element 0.
+    // It skips the body at count 0, so count is always positive here.
+    private static unsafe void V2ReadEntityIdArray(
+        byte[] backing, int count, long stride, byte* cmdRaw, NativeReadBufferContext* ctx,
+        byte* pathSegments, byte* pathNames)
     {
         var cmd = (V2CmdExternalArray*)cmdRaw;
+        int wire = (int)cmd->elementWireBytes;
+        bool packInLSOI = (ctx->flags & UnityObjectTransferFlags.PackEntityIdInLSOI) != 0;
 
-        if (ctx->readerEnd - ctx->readerPtr < 4)
-            InvokeEnsureReadable(ctx, 4);
-        int count = Unsafe.ReadUnaligned<int>(ctx->readerPtr);
-        ctx->readerPtr += 4;
-
-        Type elementType = UnmarshalSystemType((nint)cmd->elementTypeHandle);
-        Array arr = AllocateOrReuseArrayBacking(
-            ref baseAddr, cmd->kind, cmd->fieldOffset, elementType, count, out byte[] dataAsBytes);
-
-        if (count > 0)
+        // Pinned: the remap arm below hands a raw address to native on every backend, including
+        // CoreCLR, where the GC moves.
+        fixed (byte* dataPtr = backing)
         {
-            int wire = (int)cmd->elementWireBytes;
-            bool packInLSOI = (ctx->flags & UnityObjectTransferFlags.PackEntityIdInLSOI) != 0;
-            fixed (byte* dataPtr = dataAsBytes)
+            int  processed = 0;
+            while (processed < count)
             {
-                long stride    = (long)cmd->elementStride;
-                int  processed = 0;
-                while (processed < count)
+                if (ctx->readerEnd - ctx->readerPtr < wire)
+                    InvokeEnsureReadable(ctx, wire);
+                int batch = (int)(ctx->readerEnd - ctx->readerPtr) / wire;
+                int remaining = count - processed;
+                if (batch > remaining)
+                    batch = remaining;
+
+                if (packInLSOI)
                 {
-                    if (ctx->readerEnd - ctx->readerPtr < wire)
-                        InvokeEnsureReadable(ctx, wire);
-                    int batch = (int)(ctx->readerEnd - ctx->readerPtr) / wire;
-                    int remaining = count - processed;
-                    if (batch > remaining)
-                        batch = remaining;
-
-                    if (packInLSOI)
+                    // Clone arm: unpack each id inline (no crossing).
+                    for (int i = 0; i < batch; ++i)
                     {
-                        // Clone arm: unpack each id inline (no crossing).
-                        for (int i = 0; i < batch; ++i)
-                        {
-                            ulong id = UnpackEntityIdFromLsoi(ctx->readerPtr + i * wire);
-                            Unsafe.WriteUnaligned<ulong>(dataPtr + (long)(processed + i) * stride, id);
-                        }
+                        ulong id = UnpackEntityIdFromLsoi(ctx->readerPtr + i * wire);
+                        Unsafe.WriteUnaligned<ulong>(dataPtr + (long)(processed + i) * stride, id);
                     }
-                    else
-                    {
-                        // Remap arm: whole batch in one crossing into the pinned backing.
-                        s_readEntityIdsArrayIntoElements(
-                            ctx->resolverHandle, ctx->flags,
-                            (IntPtr)(dataPtr + (long)processed * stride), batch, stride,
-                            (IntPtr)ctx->readerPtr);
-                    }
-
-                    ctx->readerPtr += batch * wire;
-                    processed += batch;
                 }
+                else
+                {
+                    // Remap arm: whole batch in one crossing into the pinned backing.
+                    s_readEntityIdsArrayIntoElements(
+                        ctx->resolverHandle, ctx->flags,
+                        (IntPtr)(dataPtr + (long)processed * stride), batch, stride,
+                        (IntPtr)ctx->readerPtr);
+                }
+
+                ctx->readerPtr += batch * wire;
+                processed += batch;
             }
         }
+    }
 
-        AssignArrayBacking(ref baseAddr, cmd->kind, cmd->fieldOffset, arr, dataAsBytes, count, elementType);
+    // Collect arms (V2BuildCollectStream swaps them in for the write arms):
+    // report each non-zero EntityId slot to the collect sink, with the target
+    // index as userData. The slot holds the id inline, as the write reads it.
+    private static unsafe void V2CollectEntityIdGroup(ref byte baseAddr, byte* entriesRaw, int count, byte* output, NativeBufferContext* ctx, ulong userData)
+    {
+        var sink = (V2CollectSink*)ctx->transferState;
+        var entries = (V2ExternalFixedEntry*)entriesRaw;
+        for (int i = 0; i < count; ++i)
+        {
+            ulong entityId = Unsafe.ReadUnaligned<ulong>(ref Unsafe.AddByteOffset(ref baseAddr, (nint)entries[i].fieldOffset));
+            if (entityId != 0UL)
+                sink->reportEntityId(sink, (uint)userData, entityId);
+        }
+    }
+
+    private static unsafe void V2CollectEntityIdArray(byte[] dataAsBytes, int count, uint stride, NativeBufferContext* ctx, ulong userData)
+    {
+        var sink = (V2CollectSink*)ctx->transferState;
+        fixed (byte* dataPtr = dataAsBytes)
+        {
+            for (int i = 0; i < count; ++i)
+            {
+                ulong entityId = Unsafe.ReadUnaligned<ulong>(dataPtr + (long)i * stride);
+                if (entityId != 0UL)
+                    sink->reportEntityId(sink, (uint)userData, entityId);
+            }
+        }
     }
 }

@@ -3,16 +3,23 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System.Threading;
+using Unity.Scripting.LifecycleManagement;
 using UnityEngine;
 
 namespace UnityEditor
 {
-    [InitializeOnLoad]
-    static class AsyncInstantiateManager
+    static partial class AsyncInstantiateManager
     {
-        static AsyncInstantiateManager()
+        [OnCodeLoaded]
+        static void Initialize()
         {
             EditorApplication.playModeStateChanged += OnPlayModeStateChanged;
+        }
+
+        [OnCodeUnloading]
+        static void Shutdown()
+        {
+            EditorApplication.playModeStateChanged -= OnPlayModeStateChanged;
         }
 
         static void OnPlayModeStateChanged(PlayModeStateChange stateChange)

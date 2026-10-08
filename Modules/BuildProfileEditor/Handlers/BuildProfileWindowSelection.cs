@@ -55,7 +55,7 @@ namespace UnityEditor.Build.Profile.Handlers
             m_LastBuildLine = new BuildProfileLastBuildLine(
                 rootVisualElement,
                 BuildProfileLastBuild.GetLatestForProfile,
-                BuildAnalysisWindowLauncher.OpenWithBuild,
+                BuildAnalysisUtility.OpenWindow,
                 BuildHistory.GetRevision);
         }
 

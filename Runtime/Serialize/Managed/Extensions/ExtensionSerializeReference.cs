@@ -96,48 +96,33 @@ internal static unsafe partial class SerializationBackendManagedCommands
         }
     }
 
-    // T[] / List<T> read: count prefix plus count 8-byte RefIds. The handler
-    // owns the full framing: reuse-or-allocate the backing (v1's null/empty
-    // behavior: allocate and assign even at count 0), assign it to the field
-    // BEFORE registering fixups so the array stays reachable from the host
-    // while deferred fixups hold it, then register one fixup per element in
-    // reader-window batches through the native crossing riding readUserData
-    // (TypeSerializeReference.cpp). The crossing also marks the references
-    // registry active, so the references blob is consumed wrapper-side.
+    // T[] / List<T> read: count 8-byte RefIds assigned into the backing array
+    // in reader-window batches through the native crossing riding readUserData
+    // (TypeSerializeReference.cpp). The referenced instances are already live,
+    // because the registry body precedes the object body in the stream.
     //
     // Missing-type property paths: when ExecuteV2Read stamped the
     // registerSrReferenceField crossing (the persistent registry holds
     // missing types) and the command carries a collection segment, every
     // element registers its resolved per-index path, mirroring the native
     // element arm's RegisterReferenceField.
-    private static unsafe void V2ReadSerializeReferenceArray(ref byte baseAddr, byte* cmdRaw, NativeReadBufferContext* ctx, byte* pathSegments, byte* pathNames)
+    // The enter read the count, bound the collection to the field and pushed the element frame. It
+    // skips the body at count 0, so count is always positive here; ExecuteV2Read marks the registry
+    // active once per transfer from templ.hasSerializeReferenceInSubtree, so no per-site activation
+    // is needed.
+    private static unsafe void V2ReadSerializeReferenceArray(
+        byte[] backing, int count, long stride, byte* cmdRaw, NativeReadBufferContext* ctx,
+        byte* pathSegments, byte* pathNames)
     {
         var cmd = (V2CmdExternalArray*)cmdRaw;
-
-        if (ctx->readerEnd - ctx->readerPtr < 4)
-            InvokeEnsureReadable(ctx, 4);
-        int count = Unsafe.ReadUnaligned<int>(ctx->readerPtr);
-        ctx->readerPtr += 4;
-
-        Type elementType = UnmarshalSystemType((nint)cmd->elementTypeHandle);
-        Array arr = AllocateOrReuseArrayBacking(
-            ref baseAddr, cmd->kind, cmd->fieldOffset, elementType, count, out byte[] dataAsBytes);
-        AssignArrayBacking(ref baseAddr, cmd->kind, cmd->fieldOffset, arr, dataAsBytes, count, elementType);
-
-        var registerFixups = (delegate* unmanaged[Cdecl]<IntPtr, IntPtr, IntPtr, int, int, void>)(void*)cmd->readUserData;
-        if (count == 0)
-        {
-            // Count-0 crossing still marks the registry active (the group
-            // crossing's contract; v1 activates on every SR site).
-            registerFixups(ctx->transferState, IntPtr.Zero, IntPtr.Zero, 0, 0);
-            return;
-        }
+        byte[] dataAsBytes = backing;
+        var assignElements = (delegate* unmanaged[Cdecl]<IntPtr, IntPtr, IntPtr, int, int, void>)(void*)cmd->readUserData;
 
         bool registerPaths = ctx->registerSrReferenceField != IntPtr.Zero && cmd->segment != kV2NoPathSegment;
         var registerPath = (delegate* unmanaged[Cdecl]<IntPtr, long, IntPtr, void>)(void*)ctx->registerSrReferenceField;
 
         const int kRefIdSize = 8;
-        GCHandle arrayHandle = GCHandle.Alloc(arr);
+        GCHandle arrayHandle = GCHandle.Alloc(dataAsBytes);
         try
         {
             int processed = 0;
@@ -150,7 +135,7 @@ internal static unsafe partial class SerializationBackendManagedCommands
                 if (batch > remaining)
                     batch = remaining;
 
-                registerFixups(ctx->transferState, GCHandle.ToIntPtr(arrayHandle),
+                assignElements(ctx->transferState, GCHandle.ToIntPtr(arrayHandle),
                     (IntPtr)ctx->readerPtr, batch, processed);
 
                 if (registerPaths)
@@ -178,14 +163,12 @@ internal static unsafe partial class SerializationBackendManagedCommands
         }
     }
 
-    // Group read: fixup registration. The whole group is one crossing into
-    // the native helper riding userData (TypeSerializeReference.cpp). The
-    // frame's object goes over as a GCHandle, which keeps the crossing
-    // GC-safe on CoreCLR's moving GC; frameOffset carries the element base
-    // for struct collection-element frames (0 on object frames). The helper
-    // marks the references registry active (the references blob is consumed
-    // wrapper-side) and registers one deferred fixup per entry, which
-    // PerformFixups resolves once the blob has been read.
+    // Group read: the whole group is one crossing into the native helper riding
+    // userData (TypeSerializeReference.cpp), which assigns one resolved
+    // reference per entry. The frame's object goes over as a GCHandle, which
+    // keeps the crossing GC-safe on CoreCLR's moving GC; frameOffset carries
+    // the element base for struct collection-element frames (0 on object
+    // frames).
     private static unsafe void V2ReadSerializeReferenceGroup(object frameInstance, nint frameOffset, ref byte baseAddr, byte* entriesRaw, byte* readEntriesRaw, byte* fieldTableBase, int count, byte* input, NativeReadBufferContext* ctx, ulong userData)
     {
         var readGroupIntoObject = (delegate* unmanaged[Cdecl]<IntPtr, IntPtr, int, IntPtr, int, IntPtr, void>)(void*)userData;

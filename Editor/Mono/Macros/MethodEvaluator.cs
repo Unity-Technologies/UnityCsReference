@@ -8,6 +8,7 @@ using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Runtime.Serialization;
+using System.Threading;
 using System.Xml;
 using UnityEngine.Assemblies;
 
@@ -326,6 +327,18 @@ namespace UnityEditor.Macros
         }
 
         private static object ExecuteCode(Type target, MethodInfo method, object[] args)
+        {
+            var executionContext = ExecutionContext.Capture();
+            if (executionContext == null)
+                return InvokeOnActor(target, method, args);
+
+            // Run restores the caller's context, so AsyncLocals set by the evaluated code (e.g. NUnit's test context) don't stay on the main thread and pin the User ALC.
+            object returnValue = null;
+            ExecutionContext.Run(executionContext, _ => returnValue = InvokeOnActor(target, method, args), null);
+            return returnValue;
+        }
+
+        private static object InvokeOnActor(Type target, MethodInfo method, object[] args)
         {
             return method.Invoke(method.IsStatic ? null : GetActor(target), args);
         }

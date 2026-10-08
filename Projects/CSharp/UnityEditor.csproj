@@ -5383,11 +5383,11 @@
     <Compile Include="..\..\Modules\BuildAnalysis\UI\BuildAnalysisTabHost.cs">
       <Link>Modules\BuildAnalysis\UI\BuildAnalysisTabHost.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\BuildAnalysis\UI\BuildAnalysisUtility.cs">
+      <Link>Modules\BuildAnalysis\UI\BuildAnalysisUtility.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\BuildAnalysis\UI\BuildAnalysisWindow.cs">
       <Link>Modules\BuildAnalysis\UI\BuildAnalysisWindow.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\BuildAnalysis\UI\BuildAnalysisWindowLauncher.cs">
-      <Link>Modules\BuildAnalysis\UI\BuildAnalysisWindowLauncher.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\BuildAnalysis\UI\BuildListPanel.cs">
       <Link>Modules\BuildAnalysis\UI\BuildListPanel.cs</Link>
@@ -18101,9 +18101,9 @@
       <Link>artifacts\MonolithicEditorDlls\InternalsVisibleTo.cs</Link>
     </Compile>
     <Reference Include="..\..\artifacts\Stevedore\unity-compiler-win-x64_17b7\Unity.CompilationPipeline.Common\Unity.CompilationPipeline.Common.dll" />
-    <Reference Include="..\..\artifacts\Stevedore\msbu-tools_60ee\buildTools\UnityEditor.MSBuild.dll" />
-    <Reference Include="..\..\artifacts\Stevedore\msbu-tools_60ee\buildTools\Unity.BuildService.dll" />
-    <Reference Include="..\..\artifacts\Stevedore\msbu-tools_60ee\asmDefToCSProj\AsmDefToCSProjLib.dll" />
+    <Reference Include="..\..\artifacts\Stevedore\msbu-tools_51d6\buildTools\UnityEditor.MSBuild.dll" />
+    <Reference Include="..\..\artifacts\Stevedore\msbu-tools_51d6\buildTools\Unity.BuildService.dll" />
+    <Reference Include="..\..\artifacts\Stevedore\msbu-tools_51d6\asmDefToCSProj\AsmDefToCSProjLib.dll" />
     <Reference Include="..\..\External\Unity.Cecil\builds\lib\net40\Unity.Cecil.dll" />
     <Reference Include="..\..\External\ExCSS\builds\builds\lib\netstandard2.0\ExCSS.Unity.dll" />
     <Reference Include="..\..\Tools\Bee\build\Distribution\BeeDriver2\Bee.BeeDriver2.dll" />
@@ -18136,7 +18136,7 @@
     </PropertyGroup>
   </Target>
   <ItemGroup>
-    <Analyzer Include="/tmp/uitoolkit_gen_33k1a63u/Unity.UIToolkit.SourceGenerator.dll" />
+    <Analyzer Include="/tmp/uitoolkit_gen_skoa6888/Unity.UIToolkit.SourceGenerator.dll" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="10.0.8" />

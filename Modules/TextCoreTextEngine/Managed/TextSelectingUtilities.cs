@@ -1330,13 +1330,13 @@ namespace UnityEngine
             {
                 string selected = TextSelectionService.GetSelectedText(tgi);
                 if (selected.Length > 0)
-                    StytemCopyBuffer.systemCopyBuffer = selected;
+                    SystemCopyBuffer.systemCopyBuffer = selected;
                 return;
             }
             if (selectIndex == cursorIndex)
                 return;
 
-            StytemCopyBuffer.systemCopyBuffer = selectedText;
+            SystemCopyBuffer.systemCopyBuffer = selectedText;
         }
 
         enum CharacterType

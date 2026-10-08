@@ -7,6 +7,15 @@ using System.Runtime.CompilerServices;
 
 namespace UnityEngine.Serialization;
 
+// Mirror of ExtensionTable.h's V2CollectSink: the head of a collect pass's
+// state, which NativeBufferContext.transferState points at while a collect
+// stream runs. The collect arms report each EntityId through it.
+[System.Runtime.InteropServices.StructLayout(System.Runtime.InteropServices.LayoutKind.Sequential)]
+internal unsafe struct V2CollectSink
+{
+    public delegate* unmanaged[Cdecl]<V2CollectSink*, uint, ulong, void> reportEntityId;
+}
+
 // Managed serialization V2: write-side helpers used by WriteExecutor.cs.
 internal static unsafe partial class SerializationBackendManagedCommands
 {

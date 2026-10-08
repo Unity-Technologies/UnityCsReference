@@ -5,6 +5,7 @@
 using System;
 using System.Collections.Generic;
 using System.Text;
+using Unity.Scripting.LifecycleManagement;
 using UnityEditor.Profiling;
 using UnityEditorInternal;
 using UnityEngine;
@@ -116,9 +117,8 @@ namespace UnityEditor.Networking
             }
         }
 
-        // Decoded by the charset the body declared: text-like is not UTF-8, and iso-8859-1's high
-        // bytes are not UTF-8 sequences. An unknown charset falls back to UTF-8, and both encodings
-        // use replacement fallback so a mis-declared one cannot throw into the view.
+        // Decoded by what the body declares: a BOM, then the charset parameter, then an XML declaration's
+        // encoding, then UTF-8. Replacement fallback everywhere so a mis-declared body cannot throw into the view.
         public static string DecodeBody(byte[] bodyBytes, uint offset, uint length, string contentType)
         {
             if (bodyBytes == null || length == 0)
@@ -127,28 +127,137 @@ namespace UnityEditor.Networking
             if ((long)offset + length > bodyBytes.Length)
                 return string.Empty;
 
-            var encoding = EncodingFor(contentType);
-            return encoding.GetString(bodyBytes, (int)offset, (int)length);
+            var start = (int)offset;
+            var count = (int)length;
+
+            var bomEncoding = EncodingFromBom(bodyBytes, start, count, out var bomLength);
+            if (bomEncoding != null)
+                return bomEncoding.GetString(bodyBytes, start + bomLength, count - bomLength);
+
+            return EncodingFor(contentType, bodyBytes, start, count).GetString(bodyBytes, start, count);
         }
 
-        static Encoding EncodingFor(string contentType)
+        static readonly byte[] k_Utf8Bom = { 0xEF, 0xBB, 0xBF };
+        static readonly byte[] k_Utf32LittleEndianBom = { 0xFF, 0xFE, 0x00, 0x00 };
+        static readonly byte[] k_Utf32BigEndianBom = { 0x00, 0x00, 0xFE, 0xFF };
+        static readonly byte[] k_Utf16LittleEndianBom = { 0xFF, 0xFE };
+        static readonly byte[] k_Utf16BigEndianBom = { 0xFE, 0xFF };
+
+        [NoAutoStaticsCleanup]
+        static readonly (byte[] bom, Encoding encoding)[] k_BomEncodings =
         {
-            var charset = CharsetOf(contentType);
-            if (!string.IsNullOrEmpty(charset)
-                && !string.Equals(charset, "utf-8", StringComparison.OrdinalIgnoreCase))
+            (k_Utf8Bom, Encoding.UTF8),
+            (k_Utf32LittleEndianBom, new UTF32Encoding(false, false, false)),
+            (k_Utf32BigEndianBom, new UTF32Encoding(true, false, false)),
+            (k_Utf16LittleEndianBom, new UnicodeEncoding(false, false, false)),
+            (k_Utf16BigEndianBom, new UnicodeEncoding(true, false, false)),
+        };
+
+        static Encoding EncodingFromBom(byte[] bytes, int start, int count, out int bomLength)
+        {
+            var body = bytes.AsSpan(start, count);
+            foreach (var (bom, encoding) in k_BomEncodings)
             {
-                try
+                if (body.StartsWith(bom))
                 {
-                    return Encoding.GetEncoding(charset, EncoderFallback.ReplacementFallback,
-                        DecoderFallback.ReplacementFallback);
-                }
-                catch (ArgumentException)
-                {
-                    // A charset this runtime does not carry, or one the peer invented. Fall through.
+                    bomLength = bom.Length;
+                    return encoding;
                 }
             }
 
+            bomLength = 0;
+            return null;
+        }
+
+        static Encoding EncodingFor(string contentType, byte[] bytes, int start, int count)
+        {
+            var charsetEncoding = EncodingByName(CharsetOf(contentType));
+            if (charsetEncoding != null)
+                return charsetEncoding;
+
+            if (IsXmlContentType(contentType))
+            {
+                var declaredEncoding = EncodingByName(XmlDeclarationEncoding(bytes, start, count));
+                if (declaredEncoding != null)
+                    return declaredEncoding;
+            }
+
             return Encoding.UTF8;
+        }
+
+        static Encoding EncodingByName(string name)
+        {
+            if (string.IsNullOrEmpty(name))
+                return null;
+
+            if (string.Equals(name, "utf-8", StringComparison.OrdinalIgnoreCase))
+                return Encoding.UTF8;
+
+            try
+            {
+                return Encoding.GetEncoding(name, EncoderFallback.ReplacementFallback,
+                    DecoderFallback.ReplacementFallback);
+            }
+            catch (ArgumentException)
+            {
+                // A charset this runtime does not carry, or one the peer invented. Fall through.
+                return null;
+            }
+        }
+
+        static bool IsXmlContentType(string contentType)
+        {
+            if (string.IsNullOrEmpty(contentType))
+                return false;
+
+            var end = contentType.IndexOf(';');
+            var mediaType = (end < 0 ? contentType : contentType.Substring(0, end)).Trim();
+            return mediaType.EndsWith("/xml", StringComparison.OrdinalIgnoreCase)
+                || mediaType.EndsWith("+xml", StringComparison.OrdinalIgnoreCase);
+        }
+
+        const int k_XmlDeclarationScanLimit = 256;
+
+        static string XmlDeclarationEncoding(byte[] bytes, int start, int count)
+        {
+            var scan = Math.Min(count, k_XmlDeclarationScanLimit);
+            var builder = new StringBuilder(scan);
+            for (var i = 0; i < scan; ++i)
+            {
+                if (bytes[start + i] >= 0x80)
+                    break;
+
+                builder.Append((char)bytes[start + i]);
+            }
+
+            var text = builder.ToString();
+            if (!text.StartsWith("<?xml", StringComparison.Ordinal) || text.Length < 6 || !char.IsWhiteSpace(text[5]))
+                return null;
+
+            var close = text.IndexOf("?>", StringComparison.Ordinal);
+            if (close < 0)
+                return null;
+
+            var at = text.IndexOf("encoding", 5, close - 5, StringComparison.Ordinal);
+            if (at < 0)
+                return null;
+
+            var cursor = at + "encoding".Length;
+            while (cursor < close && char.IsWhiteSpace(text[cursor]))
+                ++cursor;
+
+            if (cursor >= close || text[cursor] != '=')
+                return null;
+
+            ++cursor;
+            while (cursor < close && char.IsWhiteSpace(text[cursor]))
+                ++cursor;
+
+            if (cursor >= close || (text[cursor] != '"' && text[cursor] != '\''))
+                return null;
+
+            var valueEnd = text.IndexOf(text[cursor], cursor + 1, close - cursor - 1);
+            return valueEnd < 0 ? null : text.Substring(cursor + 1, valueEnd - cursor - 1).Trim();
         }
 
         // The charset parameter, or null. Walked rather than searched: "charset=" is legal text inside

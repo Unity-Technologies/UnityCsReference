@@ -671,7 +671,7 @@ namespace UnityEngine
 
         public bool CanPaste()
         {
-            return StytemCopyBuffer.systemCopyBuffer.Length != 0;
+            return SystemCopyBuffer.systemCopyBuffer.Length != 0;
         }
 
         public bool Cut()
@@ -691,7 +691,7 @@ namespace UnityEngine
         {
             if (useAdvancedText)
             {
-                string pasteval = StytemCopyBuffer.systemCopyBuffer;
+                string pasteval = SystemCopyBuffer.systemCopyBuffer;
                 if (pasteval == "")
                     return false;
                 if (!multiline)
@@ -702,7 +702,7 @@ namespace UnityEngine
 
             RestoreCursorState();
             {
-                string pastevalStd = StytemCopyBuffer.systemCopyBuffer;
+                string pastevalStd = SystemCopyBuffer.systemCopyBuffer;
                 if (pastevalStd != "")
                 {
                     if (!multiline)

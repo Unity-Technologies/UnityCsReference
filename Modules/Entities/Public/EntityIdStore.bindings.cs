@@ -410,6 +410,26 @@ namespace UnityEngine
             return (void*)ptr;
         }
 
+        // Resolves an Object that is published or still loading, never one being destroyed. For lookups by a bare id
+        // that must also find an object a load has produced but not yet published.
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public unsafe static void* GetLoadingOrPublishedNativeObject(EntityId entity)
+        {
+            ref EntitySlot slot = ref GetSlot(entity.Index);
+
+            // Ordered as in GetNativeObject.
+            IntPtr ptr = Volatile.Read(ref slot.nativeObjectPtr);
+            ulong vac = Volatile.Read(ref slot.versionAndChunk);
+
+            // Zero in the version bits when the version matches, leaving only the kind. The Object kinds below
+            // kDestroying are exactly the published and loading ones.
+            uint versionAndKind = (uint)(vac & k_SlotVersionAndKindMask) ^ entity.Version;
+            if ((versionAndKind & k_SlotVersionMask) != 0 || versionAndKind >= ((uint)k_SlotPtrDestroying << k_SlotKindShift))
+                return null;
+
+            return (void*)ptr;
+        }
+
 
         // ----------------------------------------------------------------------
         // Integrity check; mirrors C++ IntegrityCheck in EntityIdStore.cpp.

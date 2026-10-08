@@ -1367,12 +1367,12 @@ namespace UnityEngine
         ///<summary>Returns the alpha map at a position x, y given a width and height.</summary>
         ///<remarks>The returned array is three-dimensional - the first two dimensions
         ///represent y and x coordinates on the map, while the third denotes the
-        ///splatmap texture to which the alphamap is applied.</remarks>
+        ///terrain layer.</remarks>
         ///<param name="x">The x offset to read from.</param>
         ///<param name="y">The y offset to read from.</param>
         ///<param name="width">The width of the alpha map area to read.</param>
         ///<param name="height">The height of the alpha map area to read.</param>
-        ///<returns>A 3D array of floats, where the 3rd dimension represents the mixing weight of each splatmap at each x,y coordinate.</returns>
+        ///<returns>A 3D array of floats, where the 3rd dimension represents the mixing weight of each terrain layer at each x,y coordinate.</returns>
         ///<example>
         ///  <code><![CDATA[
         ///using UnityEngine;
@@ -1423,6 +1423,9 @@ namespace UnityEngine
 
 
         ///<summary>The size of the alpha map in texels for either the width or the height.</summary>
+        ///<remarks>Setting this value, even to its current value, resizes the alpha map textures and resets all splat weights: the first terrain layer gets a weight of 1 everywhere and the other layers get 0.
+        ///To keep existing painting, read the weights with <see cref="TerrainData.GetAlphamaps" /> before you change the resolution, resample them to the new size, and write them back with <see cref="TerrainData.SetAlphamaps" />.
+        ///To make the change undoable from an Editor script, register both the TerrainData and its <see cref="TerrainData.alphamapTextures" /> with <c>Undo.RegisterCompleteObjectUndo</c> before you set this value.</remarks>
         public int alphamapResolution
         {
             get { return Internal_alphamapResolution; }
@@ -1488,7 +1491,13 @@ namespace UnityEngine
         ///<summary>Assign all splat values in the given map area.</summary>
         ///<remarks>The array supplied to this function determines the width and height
         ///of the portion to be replaced. The third dimension of the array
-        ///corresponds to the number of splatmap textures. Note that the order of the array is [y,x,i].</remarks>
+        ///corresponds to the number of terrain layers and must equal <see cref="TerrainData.alphamapLayers" />. The array is indexed as [y,x,i].
+        ///
+        ///The splat weights are stored in <see cref="TerrainData.alphamapTextures" />, which are separate Texture2D objects.
+        ///If an Editor script creates a TerrainData and saves it with <c>AssetDatabase.CreateAsset</c> after it assigns terrain layers, the alpha map textures are not added to the asset and the weights are lost.
+        ///Save the TerrainData as an asset before you assign terrain layers and call this function.
+        ///To make a change from an Editor script undoable, register both the TerrainData and its <see cref="TerrainData.alphamapTextures" /> with <c>Undo.RegisterCompleteObjectUndo</c> before you call this function.
+        ///If you register only the TerrainData, undo does not restore the weights.</remarks>
         ///<example>
         ///  <code><![CDATA[
         ///using UnityEngine;
@@ -1496,11 +1505,13 @@ namespace UnityEngine
         ///public class Example : MonoBehaviour
         ///{
         ///    public Terrain t;
-        ///    // Blend the two terrain textures according to the steepness of
-        ///    // the slope at each point.
+        ///    // Blend the first two terrain layers according to the steepness of
+        ///    // the slope at each point. The terrain must have at least two layers.
         ///    void Start()
         ///    {
-        ///        float[,,] map = new float[t.terrainData.alphamapWidth, t.terrainData.alphamapHeight, 2];
+        ///        // The array is [height, width, layers] and covers every terrain layer.
+        ///        // This overwrites any existing weights; layers other than the first two are set to zero.
+        ///        float[,,] map = new float[t.terrainData.alphamapHeight, t.terrainData.alphamapWidth, t.terrainData.alphamapLayers];
         ///
         ///        // For each point on the alphamap...
         ///        for (int y = 0; y < t.terrainData.alphamapHeight; y++)
@@ -1561,7 +1572,10 @@ namespace UnityEngine
             get;
         }
 
-        ///<summary>Alpha map textures used by the Terrain. Used by Terrain Inspector for undo.</summary>
+        ///<summary>Alpha map textures that store the splat weights of the terrain layers.</summary>
+        ///<remarks>Each texture stores four layers, one per RGBA channel. The textures are separate Texture2D objects. Unity adds them to the TerrainData asset as sub-assets only if the TerrainData is already an asset when they are created, so save a new TerrainData as an asset before you assign terrain layers.
+        ///To make a change to the weights from an Editor script undoable, for example with <see cref="TerrainData.SetAlphamaps" />, register both the TerrainData and these textures with <c>Undo.RegisterCompleteObjectUndo</c> before the change.
+        ///If you register only the TerrainData, undo does not restore the weights.</remarks>
         public Texture2D[] alphamapTextures
         {
             get

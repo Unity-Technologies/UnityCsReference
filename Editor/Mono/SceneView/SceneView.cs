@@ -1713,7 +1713,6 @@ namespace UnityEditor
                         viewDataKey = name,
                         renderHints = RenderHints.ClipWithScissors
                     };
-                    UIElementsEditorUtility.AddDefaultEditorStyleSheets(m_PrefabToolbar);
                     m_PrefabToolbar.style.overflow = UnityEngine.UIElements.Overflow.Hidden;
                     m_PrefabToolbar.style.flexShrink = 0;
                 }
@@ -1734,7 +1733,6 @@ namespace UnityEditor
                 requireMeasureFunction = false
             };
 
-            UIElementsEditorUtility.AddDefaultEditorStyleSheets(root);
             root.style.overflow = Overflow.Hidden;
             root.style.flexGrow = 1;
 

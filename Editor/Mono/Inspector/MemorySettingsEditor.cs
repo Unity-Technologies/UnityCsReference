@@ -80,8 +80,8 @@ namespace UnityEditor
             public static readonly GUIContent kProfilerBucketAllocatorBlockCount = L10n.TextContent("Bucket Allocator Block Count", "Bucket allocator block count", null, null);
 
             public static readonly GUIContent kEntitiesAllocatorTitle = L10n.TextContent("Entities Allocators", "Memory allocators used by the Unity.Entities package", null, null);
-            public static readonly GUIContent kEntitiesArchetypeAllocatorBudget = L10n.TextContent("Archetype Allocator Budget", "Memory budget for Entity archetype metadata. Default is 16 MB.", null, null);
-            public static readonly GUIContent kEntitiesQueryAllocatorBudget = L10n.TextContent("Query Allocator Budget", "Memory budget for EntityQuery data. Default is 16 MB.", null, null);
+            public static readonly GUIContent kEntitiesArchetypeAllocatorBudget = L10n.TextContent("Archetype Allocator Budget", "Memory budget for Entity archetype metadata. Default is 16 MB, minimum is 1 MB.", null, null);
+            public static readonly GUIContent kEntitiesQueryAllocatorBudget = L10n.TextContent("Query Allocator Budget", "Memory budget for EntityQuery data. Default is 16 MB, minimum is 1 MB.", null, null);
 
             public static readonly GUIContent kEditorLabel = L10n.TextContent("Editor", "Editor settings", null, null);
             public static readonly GUIContent kPlayerLabel = L10n.TextContent("Players", "player settings", null, null);
@@ -249,6 +249,19 @@ namespace UnityEditor
             MB,
         }
 
+        static int GetSizeInBytes(SizeEnum unit)
+        {
+            switch (unit)
+            {
+                case SizeEnum.KB:
+                    return 1024;
+                case SizeEnum.MB:
+                    return 1024 * 1024;
+                default:
+                    return 1;
+            }
+        }
+
         private void OptionalBooleanField(SerializedProperty settings, string variableName, GUIContent label)
         {
             const int fieldSpacing = 2;
@@ -317,7 +330,7 @@ namespace UnityEditor
             EditorGUI.indentLevel = indentLevel;
         }
 
-        private void OptionalVariableField(SerializedProperty settings, string variablename, GUIContent label, bool useBytes = true, int minValue = 0, int maxValue = int.MaxValue)
+        private void OptionalVariableField(SerializedProperty settings, string variablename, GUIContent label, bool useBytes = true, int minValue = 0, int maxValue = int.MaxValue, SizeEnum? lockedUnit = null)
         {
             const int k_FieldSpacing = 2;
             if (s_Styles == null)
@@ -392,6 +405,21 @@ namespace UnityEditor
                         EditorGUI.EnumPopup(sizeEnumRect, enumValue);
                 }
             }
+            else if (lockedUnit.HasValue)
+            {
+                var unit = lockedUnit.Value;
+                var unitBytes = GetSizeInBytes(unit);
+                EditorGUI.BeginChangeCheck();
+                long unitCount = EditorGUI.DelayedIntField(fieldRect, prop.intValue / unitBytes);
+                using (new EditorGUI.DisabledScope(true))
+                    EditorGUI.EnumPopup(sizeEnumRect, unit);
+                if (EditorGUI.EndChangeCheck())
+                {
+                    var minUnitCount = (minValue + unitBytes - 1) / unitBytes;
+                    var maxUnitCount = maxValue / unitBytes;
+                    prop.intValue = (int)(Math.Clamp(unitCount, minUnitCount, maxUnitCount) * unitBytes);
+                }
+            }
             else
             {
                 int factor = 1;
@@ -410,7 +438,7 @@ namespace UnityEditor
                         enumValue = SizeEnum.KB;
                     }
                 }
-                var newIntValue = factor * EditorGUI.DelayedIntField(fieldRect, oldIntValue / factor);
+                long newIntValue = (long)factor * EditorGUI.DelayedIntField(fieldRect, oldIntValue / factor);
                 if (useBytes)
                 {
                     SizeEnum newEnumValue = (SizeEnum)EditorGUI.EnumPopup(sizeEnumRect, enumValue);
@@ -440,7 +468,7 @@ namespace UnityEditor
                         }
                     }
                 }
-                prop.intValue = Mathf.Clamp(newIntValue, minValue, maxValue);
+                prop.intValue = (int)Math.Clamp(newIntValue, minValue, maxValue);
             }
 
             EditorGUI.indentLevel = indent;
@@ -598,8 +626,8 @@ namespace UnityEditor
                 if (BeginGroup(9, Content.kEntitiesAllocatorTitle))
                 {
                     const int kMinBudget = 1024 * 1024; // 1 MB minimum
-                    OptionalVariableField(currentSettings, "m_EntitiesArchetypeAllocatorBudget", Content.kEntitiesArchetypeAllocatorBudget, true, kMinBudget);
-                    OptionalVariableField(currentSettings, "m_EntitiesQueryAllocatorBudget", Content.kEntitiesQueryAllocatorBudget, true, kMinBudget);
+                    OptionalVariableField(currentSettings, "m_EntitiesArchetypeAllocatorBudget", Content.kEntitiesArchetypeAllocatorBudget, true, kMinBudget, lockedUnit: SizeEnum.MB);
+                    OptionalVariableField(currentSettings, "m_EntitiesQueryAllocatorBudget", Content.kEntitiesQueryAllocatorBudget, true, kMinBudget, lockedUnit: SizeEnum.MB);
                 }
                 EndGroup();
             }

@@ -171,7 +171,7 @@ namespace UnityEngine.UIElements
             for (int i = 0; i < 4; ++i)
             {
                 Vector2 uv = gradient.type == GradientType.Radial
-                    ? RadialUV(corners[i], gradient.position, gradient.size)
+                    ? RadialUV(corners[i], gradient.position, gradient.size, gradient.shape, Vector2.one)
                     : LinearUV(corners[i], gradient.angle);
 
                 vertices[i] = new VectorImageVertex
@@ -189,7 +189,7 @@ namespace UnityEngine.UIElements
         }
 
         // Per-vertex UV math mirrors shader semantics in Shaders/Includes/Internal/UnityUIE.cginc:447-486.
-        // Computed in element-fraction space [0,1]², so non-square elements get a slight aspect stretch.
+        // Computed in element-fraction space [0,1]²; circles need the element's pixel size to undo the aspect stretch.
 
         internal static Vector2 LinearUV(Vector2 corner, float angleRadians)
         {
@@ -209,9 +209,20 @@ namespace UnityEngine.UIElements
             return new Vector2(t, 0f);
         }
 
-        internal static Vector2 RadialUV(Vector2 corner, Vector2 center, BackgroundGradientSize sizeMode)
+        internal static Vector2 RadialUV(Vector2 corner, Vector2 center, BackgroundGradientSize sizeMode,
+            BackgroundGradientShape shape, Vector2 rectSize)
         {
-            EllipseAxes(center, sizeMode, out float Rx, out float Ry);
+            float Rx, Ry;
+            if (shape == BackgroundGradientShape.Circle)
+            {
+                // Pixel radius back to per-axis fractions, so the element-rect stretch yields a circle.
+                float r = CircleRadius(center, sizeMode, rectSize);
+                Rx = rectSize.x > 1e-6f ? r / rectSize.x : 0f;
+                Ry = rectSize.y > 1e-6f ? r / rectSize.y : 0f;
+            }
+            else
+                EllipseAxes(center, sizeMode, out Rx, out Ry);
+
             if (Rx < 1e-6f || Ry < 1e-6f)
             {
                 // Degenerate ellipse: encode past t=1 so the shader clamps to the last stop.
@@ -235,7 +246,12 @@ namespace UnityEngine.UIElements
 
         internal static Color32 SampleRadialAt(in BackgroundGradient gradient, float u, float v)
         {
-            Vector2 uv = RadialUV(new Vector2(u, v), gradient.position, gradient.size);
+            return SampleRadialAt(gradient, u, v, Vector2.one);
+        }
+
+        internal static Color32 SampleRadialAt(in BackgroundGradient gradient, float u, float v, Vector2 rectSize)
+        {
+            Vector2 uv = RadialUV(new Vector2(u, v), gradient.position, gradient.size, gradient.shape, rectSize);
             // Mirror shader (uv-0.5)*2 with focus=0: t is the magnitude of the remapped uv.
             float rx = (uv.x - 0.5f) * 2f;
             float ry = (uv.y - 0.5f) * 2f;
@@ -264,6 +280,29 @@ namespace UnityEngine.UIElements
                 case BackgroundGradientSize.ClosestCorner:  Rx = Mathf.Sqrt(2f) * closestX;  Ry = Mathf.Sqrt(2f) * closestY;  return;
                 case BackgroundGradientSize.FarthestCorner: Rx = Mathf.Sqrt(2f) * farthestX; Ry = Mathf.Sqrt(2f) * farthestY; return;
                 default:                                    Rx = Mathf.Sqrt(2f) * farthestX; Ry = Mathf.Sqrt(2f) * farthestY; return;
+            }
+        }
+
+        // CSS circle radius in pixels (CSS Images L3 §3.3); center is a fraction of rectSize.
+        internal static float CircleRadius(Vector2 center, BackgroundGradientSize sizeMode, Vector2 rectSize)
+        {
+            float top = center.y * rectSize.y;
+            float bottom = (1f - center.y) * rectSize.y;
+            float left = center.x * rectSize.x;
+            float right = (1f - center.x) * rectSize.x;
+
+            float closestX = Mathf.Min(left, right);
+            float closestY = Mathf.Min(top, bottom);
+            float farthestX = Mathf.Max(left, right);
+            float farthestY = Mathf.Max(top, bottom);
+
+            switch (sizeMode)
+            {
+                case BackgroundGradientSize.ClosestSide:    return Mathf.Min(closestX, closestY);
+                case BackgroundGradientSize.FarthestSide:   return Mathf.Max(farthestX, farthestY);
+                case BackgroundGradientSize.ClosestCorner:  return Mathf.Sqrt(closestX * closestX + closestY * closestY);
+                case BackgroundGradientSize.FarthestCorner: return Mathf.Sqrt(farthestX * farthestX + farthestY * farthestY);
+                default:                                    return Mathf.Sqrt(farthestX * farthestX + farthestY * farthestY);
             }
         }
 

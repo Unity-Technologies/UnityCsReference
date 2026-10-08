@@ -104,6 +104,7 @@ using System.Runtime.CompilerServices;
 [assembly: InternalsVisibleTo("UnityEngine.PhysicsModule")]
 [assembly: InternalsVisibleTo("UnityEditor.PhysicsModule")]
 [assembly: InternalsVisibleTo("UnityEditor.ClothModule")]
+[assembly: InternalsVisibleTo("UnityEngine.TilemapModule")]
 [assembly: InternalsVisibleTo("UnityEditor.TilemapModule")]
 [assembly: InternalsVisibleTo("UnityEditor.Physics2DModule")]
 [assembly: InternalsVisibleTo("UnityEditor.PhysicsCore2DModule")]

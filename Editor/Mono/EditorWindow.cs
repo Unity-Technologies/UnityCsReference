@@ -1549,10 +1549,6 @@ namespace UnityEditor
                 viewDataKey = rootName,
                 renderHints = RenderHints.ClipWithScissors
             };
-            // The theme stylesheet is also applied at the panel level (see DefaultEditorWindowBackend),
-            // but it is kept here on the window content root as well: existing packages rely on
-            // rootVisualElement always owning the editor theme stylesheet (e.g. reading styleSheets[0]).
-            UIElementsEditorUtility.AddDefaultEditorStyleSheets(root);
             root.style.overflow = Overflow.Hidden;
             return root;
         }

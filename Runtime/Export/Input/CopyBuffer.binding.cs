@@ -7,7 +7,7 @@ namespace UnityEngine
 {
     [VisibleToOtherModules("UnityEngine.TextCoreTextEngineModule")]
     [NativeHeader("Runtime/Utilities/CopyPaste.h")]
-    internal partial class StytemCopyBuffer
+    internal partial class SystemCopyBuffer
     {
         // Get access to the system-wide pasteboard.
         public static extern string systemCopyBuffer

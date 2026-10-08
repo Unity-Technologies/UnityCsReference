@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using Unity.Scripting.LifecycleManagement;
 using UnityEngine;
 
 namespace UnityEditor.PackageManager.UI.Internal
@@ -14,16 +15,21 @@ namespace UnityEditor.PackageManager.UI.Internal
         public bool skipShowDialog;
     }
 
-    [InitializeOnLoad]
-    internal static class PlayModeDownload
+    internal static partial class PlayModeDownload
     {
         private static readonly string k_DefaultGotItButtonText = L10n.Tr("Got it", null);
         private static readonly string k_DefaultCancelButtonText = L10n.Tr("Cancel", null);
 
-        static PlayModeDownload()
+        [OnCodeLoaded]
+        static void Initialize()
         {
-            if (!PlayModeDownloadState.instance.skipShowDialog)
-                EditorApplication.playModeStateChanged += PlayModeStateChanged;
+            EditorApplication.playModeStateChanged += PlayModeStateChanged;
+        }
+
+        [OnCodeUnloading]
+        static void Shutdown()
+        {
+            EditorApplication.playModeStateChanged -= PlayModeStateChanged;
         }
 
         private static void PlayModeStateChanged(PlayModeStateChange state)

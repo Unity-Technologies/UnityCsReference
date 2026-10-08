@@ -162,16 +162,10 @@ namespace UnityEditor.UIElements
             {
                 var lightStyle = GetCommonLightStyleSheet();
                 var darkStyle = GetCommonDarkStyleSheet();
-                var e = ele;
-                while (e != null)
-                {
-                    if (e.styleSheets.Contains(lightStyle))
-                    {
-                        e.styleSheets.Swap(lightStyle, darkStyle);
-                        break;
-                    }
-                    e = e.parent;
-                }
+                if (ele.styleSheets.Contains(lightStyle))
+                    ele.styleSheets.Swap(lightStyle, darkStyle);
+                else if (!ele.styleSheets.Contains(darkStyle))
+                    ele.styleSheets.Add(darkStyle);
             }
         }
 

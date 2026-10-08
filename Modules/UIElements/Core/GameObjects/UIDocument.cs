@@ -430,6 +430,12 @@ namespace UnityEngine.UIElements
 
         [SerializeField, HideInInspector] private BoxCollider m_WorldSpaceCollider;
 
+        /// <summary>
+        /// Invoked when a world space collider is created or destroyed by this UIDocument.
+        /// The boolean parameter is <c>true</c> when the collider is created, <c>false</c> when destroyed.
+        /// </summary>
+        internal event Action<Collider, bool> worldSpaceColliderChanged;
+
         // Curved UI: minimum local Z extent of the document's 3D picking bounds for a MatchDocumentRect
         // collider to be promoted to the full 3D bounding box. A flat panel's picking bounds are effectively
         // zero-thickness; any real curvature sag clears this comfortably.
@@ -732,7 +738,8 @@ namespace UnityEngine.UIElements
                 return;
             }
 
-            if (m_WorldSpaceCollider == null)
+            var newlyCreated = m_WorldSpaceCollider == null;
+            if (newlyCreated)
             {
                 m_WorldSpaceCollider = gameObject.AddComponent<BoxCollider>();
                 m_WorldSpaceCollider.isTrigger = panelSettings.colliderIsTrigger;
@@ -746,10 +753,15 @@ namespace UnityEngine.UIElements
                 m_WorldSpaceCollider.center = bb.center;
                 m_WorldSpaceCollider.size = bb.size;
             }
+
+            if (newlyCreated)
+                worldSpaceColliderChanged?.Invoke(m_WorldSpaceCollider, true);
         }
 
         internal void RemoveWorldSpaceCollider()
         {
+            if (m_WorldSpaceCollider != null)
+                worldSpaceColliderChanged?.Invoke(m_WorldSpaceCollider, false);
             UIRUtility.Destroy(m_WorldSpaceCollider);
             m_WorldSpaceCollider = null;
         }

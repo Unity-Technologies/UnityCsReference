@@ -1624,9 +1624,14 @@ namespace UnityEditor.Scripting.ScriptCompilation
 
 
         public string[] GetTargetAssemblyDefines(TargetAssembly targetAssembly, ScriptAssemblySettings settings)
-        {
-            var versionMetaDatas = GetVersionMetaDatas();
+            => GetTargetAssemblyDefines(targetAssembly, GetVersionMetaDatas(), settings);
 
+        // Overload that accepts the version metadata dictionary as a parameter so callers whose
+        // version metadata lives outside EditorCompilation (e.g. MsBuildCompilation under MSBU,
+        // where SetAdditionalVersionMetaDatas routes exclusively to the MSBU proxy) can produce
+        // the same define set the legacy 2-arg overload would.
+        internal string[] GetTargetAssemblyDefines(TargetAssembly targetAssembly, Dictionary<string, VersionMetaData> versionMetaDatas, ScriptAssemblySettings settings)
+        {
             var editorApiCompatibility = PlayerSettings.EditorAssemblyCompatibilityToApiCompatibility(PlayerSettings.GetEditorAssembliesCompatibilityLevel());
 
             var editorOnlyCompatibleDefines = InternalEditorUtility.GetCompilationDefines(settings.CompilationOptions, settings.BuildTarget, settings.Subtarget, editorApiCompatibility, settings.ExtraGeneralDefines);

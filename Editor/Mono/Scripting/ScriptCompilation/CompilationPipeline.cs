@@ -425,11 +425,26 @@ namespace UnityEditor.Compilation
 
         public static string GetAssemblyDefinitionFilePathFromAssemblyName(string assemblyName)
         {
+            // MSBU branch lives on the public wrapper (not the internal overload below) so
+            // tests that pass their own manually-populated EditorCompilation via the internal
+            // 2-arg overload keep hitting that instance instead of being redirected to
+            // MsBuildCompilation.Instance, which has different (real-runtime) inventory.
+            if (MsBuildCompilationInterface.IsEnabled())
+            {
+                var name = AssetPath.GetAssemblyNameWithoutExtension(assemblyName);
+                return MsBuildCompilationInterface.Instance.TryGetAssemblyDefinitionFilePathFromReference(name);
+            }
             return GetAssemblyDefinitionFilePathFromAssemblyName(EditorCompilationInterface.Instance, assemblyName);
         }
 
         public static string GetAssemblyDefinitionFilePathFromAssemblyReference(string reference)
         {
+            // MSBU branch lives on the public wrapper (not the internal overload below) so
+            // tests that pass their own manually-populated EditorCompilation via the internal
+            // 2-arg overload keep hitting that instance instead of being redirected to
+            // MsBuildCompilation.Instance, which has different (real-runtime) inventory.
+            if (MsBuildCompilationInterface.IsEnabled())
+                return MsBuildCompilationInterface.Instance.TryGetAssemblyDefinitionFilePathFromReference(reference);
             return GetAssemblyDefinitionFilePathFromAssemblyReference(EditorCompilationInterface.Instance, reference);
         }
 
@@ -472,6 +487,17 @@ namespace UnityEditor.Compilation
 
         public static string[] GetDefinesFromAssemblyName(string assemblyName)
         {
+            if (MsBuildCompilationInterface.IsEnabled())
+            {
+                try
+                {
+                    return MsBuildCompilationInterface.Instance.GetDefinesFromAssemblyName(assemblyName, BuildDefinesScriptAssemblySettings());
+                }
+                catch (ArgumentException)
+                {
+                    return null;
+                }
+            }
             return GetDefinesFromAssemblyName(EditorCompilationInterface.Instance, assemblyName);
         }
 
@@ -480,19 +506,7 @@ namespace UnityEditor.Compilation
             try
             {
                 var assembly = editorCompilation.GetCustomTargetAssemblyFromName(assemblyName);
-
-                var buildTarget = EditorUserBuildSettings.activeBuildTarget;
-
-                var scriptAssemblySettings = new ScriptAssemblySettings()
-                {
-                    BuildTarget = buildTarget,
-                    CompilationOptions = EditorScriptCompilationOptions.BuildingForEditor | EditorScriptCompilationOptions.BuildingWithAsserts | EditorScriptCompilationOptions.BuildingWithInstrumentation,
-                    // Without this the platform's own defines are missing, so define constraints that depend on
-                    // them are reported as unsatisfied in the assembly definition Inspector.
-                    CompilationExtension = ModuleManager.FindPlatformSupportModule(ModuleManager.GetTargetStringFromBuildTarget(buildTarget))?.CreateCompilationExtension()
-                };
-
-                return editorCompilation.GetTargetAssemblyDefines(assembly, scriptAssemblySettings);
+                return editorCompilation.GetTargetAssemblyDefines(assembly, BuildDefinesScriptAssemblySettings());
             }
             catch (ArgumentException)
             {
@@ -500,8 +514,32 @@ namespace UnityEditor.Compilation
             }
         }
 
+        static ScriptAssemblySettings BuildDefinesScriptAssemblySettings()
+        {
+            var buildTarget = EditorUserBuildSettings.activeBuildTarget;
+            return new ScriptAssemblySettings()
+            {
+                BuildTarget = buildTarget,
+                CompilationOptions = EditorScriptCompilationOptions.BuildingForEditor | EditorScriptCompilationOptions.BuildingWithAsserts | EditorScriptCompilationOptions.BuildingWithInstrumentation,
+                // Without this the platform's own defines are missing, so define constraints that depend on
+                // them are reported as unsatisfied in the assembly definition Inspector.
+                CompilationExtension = ModuleManager.FindPlatformSupportModule(ModuleManager.GetTargetStringFromBuildTarget(buildTarget))?.CreateCompilationExtension()
+            };
+        }
+
         public static string[] GetResponseFileDefinesFromAssemblyName(string assemblyName)
         {
+            if (MsBuildCompilationInterface.IsEnabled())
+            {
+                try
+                {
+                    return MsBuildCompilationInterface.Instance.GetResponseFileDefinesFromAssemblyName(assemblyName);
+                }
+                catch (ArgumentException)
+                {
+                    return null;
+                }
+            }
             return GetResponseFileDefinesFromAssemblyName(EditorCompilationInterface.Instance, assemblyName);
         }
 
@@ -734,15 +772,6 @@ namespace UnityEditor.Compilation
 
         internal static string GetAssemblyDefinitionFilePathFromAssemblyName(EditorCompilation editorCompilation, string assemblyName)
         {
-            // Under MSBuild the asmdef inventory is owned by MsBuildCompilation, not the legacy
-            // EditorCompilation, so route the lookup to the active pipeline.
-            if (MsBuildCompilationInterface.IsEnabled())
-            {
-                var name = AssetPath.GetAssemblyNameWithoutExtension(assemblyName);
-                return MsBuildCompilationInterface.Instance.TryGetAssemblyDefinitionFilePathFromReference(name);
-            }
-
-            // TODO: Remove once we migrate to MSBuild.
             if (editorCompilation.TryFindCustomScriptAssemblyFromAssemblyName(assemblyName, out var customScriptAssembly))
             {
                 return customScriptAssembly.FilePath;
@@ -753,14 +782,6 @@ namespace UnityEditor.Compilation
 
         internal static string GetAssemblyDefinitionFilePathFromAssemblyReference(EditorCompilation editorCompilation, string reference)
         {
-            // Under MSBuild the asmdef inventory is owned by MsBuildCompilation, not the legacy
-            // EditorCompilation, so route the lookup to the active pipeline.
-            if (MsBuildCompilationInterface.IsEnabled())
-            {
-                return MsBuildCompilationInterface.Instance.TryGetAssemblyDefinitionFilePathFromReference(reference);
-            }
-
-            // TODO: Remove once we migrate to MSBuild.
             if (editorCompilation.TryFindCustomScriptAssemblyFromAssemblyReference(reference, out var customScriptAssembly))
             {
                 return customScriptAssembly.FilePath;

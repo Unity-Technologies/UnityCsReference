@@ -11,6 +11,10 @@ namespace UnityEditor.Scripting.Compilers
     {
         public static readonly Regex sCompilerOutput = new Regex(@"(?<filename>.+)(\((?<line>\d+),(?<column>\d+)\)):\s*(?<type>warning|error|info)\s*(?<id>[^:]*):\s*(?<message>.*)", RegexOptions.ExplicitCapture | RegexOptions.Compiled);
 
+        // Compilation-level diagnostics such as CS8785 (source generator failed) carry no file or
+        // line, so sCompilerOutput never matches them and they would be dropped silently.
+        public static readonly Regex sFilelessCompilerOutput = new Regex(@"^\s*(?<type>warning|error|info)\s+(?<id>CS\d+):\s*(?<message>.*)$", RegexOptions.ExplicitCapture | RegexOptions.Compiled);
+
         protected override bool ShouldParseLine(string line)
         {
             return line.Contains("warning", StringComparison.Ordinal) ||
@@ -26,6 +30,11 @@ namespace UnityEditor.Scripting.Compilers
         protected override Regex GetOutputRegex()
         {
             return sCompilerOutput;
+        }
+
+        protected override Regex GetInternalErrorOutputRegex()
+        {
+            return sFilelessCompilerOutput;
         }
 
         protected override string GetErrorIdentifier()

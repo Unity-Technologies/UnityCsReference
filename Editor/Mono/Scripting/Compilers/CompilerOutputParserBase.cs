@@ -28,10 +28,7 @@ namespace UnityEditor.Scripting.Compilers
         {
             CompilerMessage message = new CompilerMessage();
 
-            if (m.Groups["filename"].Success)
-            {
-                message.file = m.Groups["filename"].Value;
-            }
+            message.file = m.Groups["filename"].Success ? m.Groups["filename"].Value : "";
 
             if (m.Groups["line"].Success)
             {

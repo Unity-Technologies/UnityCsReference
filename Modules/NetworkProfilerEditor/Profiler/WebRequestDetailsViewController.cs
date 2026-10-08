@@ -1265,7 +1265,7 @@ namespace UnityEditor.Networking
         // Milliseconds to two decimals, which is what the Timing tab's design shows and what makes the
         // phases of one request comparable at a glance - a column mixing us and ms has to be read twice.
         // Deliberately not WebRequestProfilerFormatting.FormatDuration: that switches units so a
-        // sub-millisecond request does not read as zero, and it is shared with the list's Time column.
+        // sub-millisecond request does not read as zero, and it is shared with the list's Duration column.
         static string FormatPhaseDuration(ulong microseconds)
         {
             return $"{microseconds / 1000f:0.00} ms";

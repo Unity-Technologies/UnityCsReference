@@ -2,12 +2,23 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using Unity.Scripting.LifecycleManagement;
+
 namespace UnityEditor.ObjectPool
 {
-    [InitializeOnLoad]
-    static class PoolManager
+    static partial class PoolManager
     {
-        static PoolManager() => EditorApplication.playModeStateChanged += OnEditorStateChange;
+        [OnCodeLoaded]
+        static void Initialize()
+        {
+            EditorApplication.playModeStateChanged += OnEditorStateChange;
+        }
+
+        [OnCodeUnloading]
+        static void Shutdown()
+        {
+            EditorApplication.playModeStateChanged -= OnEditorStateChange;
+        }
 
         static void OnEditorStateChange(PlayModeStateChange stateChange)
         {

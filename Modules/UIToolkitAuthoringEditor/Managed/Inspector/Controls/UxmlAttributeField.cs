@@ -562,7 +562,7 @@ public partial class UxmlAttributeFieldDecorator : VisualElement, ITrackableProp
 
     bool CanUnsetAttribute()
     {
-        if (context?.element == null || boundProperty is not { isValid: true })
+        if (context?.element == null || boundProperty is not { isValid: true } || boundAttributeDescription == null)
             return false;
 
         var result = UxmlAssetUtilities.SynchronizePath(context, boundProperty.propertyPath, false);

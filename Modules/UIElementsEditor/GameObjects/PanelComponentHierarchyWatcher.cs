@@ -11,17 +11,23 @@ using Unity.Scripting.LifecycleManagement;
 
 namespace Unity.UIElements.Editor
 {
-    [InitializeOnLoad]
-    internal static class PanelComponentHierarchyWatcher
+    internal static partial class PanelComponentHierarchyWatcher
     {
         [NoAutoStaticsCleanup]
         private static int previousUIDocumentCount = 0;
         [NoAutoStaticsCleanup]
         private static int previousPanelRendererCount = 0;
 
-        static PanelComponentHierarchyWatcher()
+        [OnCodeLoaded]
+        static void Initialize()
         {
             EditorApplication.hierarchyChanged += OnHierarchyChanged;
+        }
+
+        [OnCodeUnloading]
+        static void Shutdown()
+        {
+            EditorApplication.hierarchyChanged -= OnHierarchyChanged;
         }
 
         static void UpdateUIDocument(UIDocument doc) => doc.ReactToHierarchyChanged();

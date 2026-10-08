@@ -67,6 +67,45 @@ namespace UnityEngine.UIElements
 
         bool m_PublishingCursorPosition;
 
+        // Used for tests.
+        internal bool isPublishingCursorPosition => m_PublishingCursorPosition;
+
+        public override void RegisterCallbacksOnTarget(VisualElement target)
+        {
+            target.RegisterCallback<AttachToPanelEvent>(OnAttachToPanel);
+            target.RegisterCallback<DetachFromPanelEvent>(OnDetachFromPanel);
+        }
+
+        public override void UnregisterCallbacksFromTarget(VisualElement target)
+        {
+            target.UnregisterCallback<AttachToPanelEvent>(OnAttachToPanel);
+            target.UnregisterCallback<DetachFromPanelEvent>(OnDetachFromPanel);
+            StopEnteringText(target.panel as BaseVisualElementPanel);
+        }
+
+        // Focus survives a detach and re-attach to the same panel, and no FocusEvent is sent for it.
+        void OnAttachToPanel(AttachToPanelEvent evt)
+        {
+            if (!textElement.hasFocus)
+                return;
+            (evt.destinationPanel as BaseVisualElementPanel)?.OnIsEnteringTextChanged_internal(true);
+            StartPublishingCursorPosition();
+        }
+
+        void OnDetachFromPanel(DetachFromPanelEvent evt)
+        {
+            StopEnteringText(evt.originPanel as BaseVisualElementPanel);
+        }
+
+        // Detach, read-only and panel disposal drop focus handling without a BlurEvent, so undo what OnFocus did.
+        void StopEnteringText(BaseVisualElementPanel panel)
+        {
+            if (!m_PublishingCursorPosition)
+                return;
+            StopPublishingCursorPosition();
+            panel?.OnIsEnteringTextChanged_internal(false);
+        }
+
         void OnFocus(FocusEvent _)
         {
             (textElement.panel as BaseVisualElementPanel).OnIsEnteringTextChanged_internal(true);

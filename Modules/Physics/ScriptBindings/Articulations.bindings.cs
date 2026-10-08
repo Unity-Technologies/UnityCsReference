@@ -773,7 +773,7 @@ namespace UnityEngine
         ///<summary>The maximum angular velocity of the articulation body measured in radians per second.</summary>
         ///<remarks>The angular velocity of articulation bodies is clamped to maxAngularVelocity to avoid numerical instability with fast rotating bodies.
         ///                    The maxAngularVelocity is applied to the body before the simulation step. This means that after the simulation frame, the angular velocity might exceed the set maximum. You can override this value per articulation body to enable faster rotations on objects such as wheels.
-        ///                    (Default 7) range { 0, infinity }.
+        ///                    The default value is 50. Accepted values are 0 or greater.
         ///
         ///Unit of measurement - rad/s (radians per second).</remarks>
         extern public float maxAngularVelocity { get; set; }

@@ -47,44 +47,44 @@ namespace UnityEditor.StyleSheets
             GetStyleRectOffset(styleBlock, "margin", style.margin);
             GetStyleRectOffset(styleBlock, "padding", style.padding);
 
-            style.stretchHeight = styleBlock.GetBool("-unity-stretch-height".GetHashCode(), style.stretchHeight);
-            style.stretchWidth = styleBlock.GetBool("-unity-stretch-width".GetHashCode(), style.stretchWidth);
+            style.stretchHeight = styleBlock.GetBool("-unity-stretch-height", style.stretchHeight);
+            style.stretchWidth = styleBlock.GetBool("-unity-stretch-width", style.stretchWidth);
 
             GetStyleRectOffset(styleBlock, "-unity-slice", style.border);
             GetStyleRectOffset(styleBlock, "-unity-overflow", style.overflow);
 
-            var contentOffsetKey = "-unity-content-offset".GetHashCode();
+            var contentOffsetKey = StyleCatalog.ComputeKey("-unity-content-offset");
             if (styleBlock.HasValue(contentOffsetKey, StyleValue.Type.Rect))
             {
                 var contentOffsetSize = styleBlock.GetRect(contentOffsetKey);
                 style.contentOffset = new Vector2(contentOffsetSize.width, contentOffsetSize.height);
             }
 
-            var contentSpacingKey = "-unity-content-spacing".GetHashCode();
+            var contentSpacingKey = StyleCatalog.ComputeKey("-unity-content-spacing");
             style.contentSpacing = styleBlock.GetFloat(contentSpacingKey, style.contentSpacing);
 
             // Support both properties for font:
-            style.font = styleBlock.GetResource<Font>("-unity-font".GetHashCode(), style.font);
-            style.font = styleBlock.GetResource<Font>("font".GetHashCode(), style.font);
+            style.font = styleBlock.GetResource<Font>("-unity-font", style.font);
+            style.font = styleBlock.GetResource<Font>("font", style.font);
 
             if (style.fontSize == 0 || styleBlock.HasValue(StyleCatalogKeyword.fontSize, StyleValue.Type.Number))
                 style.fontSize = styleBlock.GetInt(StyleCatalogKeyword.fontSize, style.fontSize);
 
-            var fontStyleStr = styleBlock.GetText(ConverterUtils.k_FontStyle.GetHashCode());
-            var fontWeightStr = styleBlock.GetText(ConverterUtils.k_FontWeight.GetHashCode());
+            var fontStyleStr = styleBlock.GetText(ConverterUtils.k_FontStyle);
+            var fontWeightStr = styleBlock.GetText(ConverterUtils.k_FontWeight);
             FontStyle fontStyle;
             if (ConverterUtils.TryGetFontStyle(fontStyleStr, fontWeightStr, out fontStyle))
             {
                 style.fontStyle = fontStyle;
             }
 
-            style.imagePosition = ConverterUtils.ToImagePosition(styleBlock.GetText("-unity-image-position".GetHashCode(), ConverterUtils.ToUssString(style.imagePosition)));
-            style.clipping = ConverterUtils.ToTextClipping(styleBlock.GetText("-unity-clipping".GetHashCode(), ConverterUtils.ToUssString(style.clipping)));
-            style.alignment = ConverterUtils.ToTextAnchor(styleBlock.GetText("-unity-text-align".GetHashCode(), ConverterUtils.ToUssString(style.alignment)));
+            style.imagePosition = ConverterUtils.ToImagePosition(styleBlock.GetText("-unity-image-position", ConverterUtils.ToUssString(style.imagePosition)));
+            style.clipping = ConverterUtils.ToTextClipping(styleBlock.GetText("-unity-clipping", ConverterUtils.ToUssString(style.clipping)));
+            style.alignment = ConverterUtils.ToTextAnchor(styleBlock.GetText("-unity-text-align", ConverterUtils.ToUssString(style.alignment)));
 
-            style.richText = styleBlock.GetBool("-unity-rich-text".GetHashCode(), style.richText);
-            style.wordWrap = styleBlock.GetBool("-unity-word-wrap".GetHashCode(), style.wordWrap);
-            style.isSDF = styleBlock.GetBool("-unity-is-sdf".GetHashCode(), style.isSDF);
+            style.richText = styleBlock.GetBool("-unity-rich-text", style.richText);
+            style.wordWrap = styleBlock.GetBool("-unity-word-wrap", style.wordWrap);
+            style.isSDF = styleBlock.GetBool("-unity-is-sdf", style.isSDF);
 
             var defaultStyleState = useExtensionDefaultValues ? new GUIStyleState() { textColor = styleBlock.GetColor(StyleCatalogKeyword.color, rootBlock.GetColor("--unity-text-color")) } : null;
 

@@ -17,10 +17,8 @@ namespace UnityEngine.Tilemaps
     [RequiredByNativeCode]
     public class ITilemap
     {
-        // NOTE: s_Instance, createITilemap and createITilemapPriority should ideally be reset on code reload
-        // (createITilemap can point into reloadable editor code), but AutoStaticsCleanup codegen in this
-        // player-shipped module forces the Tilemap module into stripped player builds
-        // (TestStrippingDependencies). Persist as before until lifecycle registration is strip-safe.
+        // NOTE: AutoStaticsCleanup codegen in this player-shipped module forces the Tilemap module into
+        // stripped player builds (TestStrippingDependencies). Persist until lifecycle registration is strip-safe.
         [NoAutoStaticsCleanup] // see stripping note above
         internal static ITilemap s_Instance;
 
@@ -270,18 +268,28 @@ namespace UnityEngine.Tilemaps
             return m_Tilemap.GetComponent<T>();
         }
 
-        // Holds a Func pointing into editor (reloadable) code; not cleaned on reload — see stripping note on s_Instance.
+        // Reset on code reload by s_CodeReloadCleanup.
         [NoAutoStaticsCleanup]
         private static Func<Tilemap, ITilemap> createITilemap;
-        // Paired priority gate for createITilemap; persists alongside it — see stripping note on s_Instance.
         [NoAutoStaticsCleanup]
         private static int createITilemapPriority = 0;
+
+        // Registered lazily rather than with [AutoStaticsCleanupOnCodeReload] so the module still strips from players.
+        [NoAutoStaticsCleanup]
+        static DelegateAutoCleanup s_CodeReloadCleanup;
+
+        static void ResetCreateITilemapFunc()
+        {
+            createITilemap = null;
+            createITilemapPriority = 0;
+        }
 
         internal static int createPriority => createITilemapPriority;
 
         [RequiredByNativeCode]
         internal static void RegisterCreateITilemapFunc(Func<Tilemap, ITilemap> func, int priority)
         {
+            s_CodeReloadCleanup ??= new DelegateAutoCleanup(ResetCreateITilemapFunc, typeof(CodeLoadedScope), ScopeTransitionType.Exiting, nameof(ITilemap));
             if (priority <= createITilemapPriority)
                 return;
 

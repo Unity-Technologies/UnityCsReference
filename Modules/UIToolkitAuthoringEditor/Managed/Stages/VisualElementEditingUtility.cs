@@ -275,10 +275,10 @@ static class VisualElementEditingUtility
         return parentElement != null && parentAsset != null;
     }
 
-    // With a selection, paste lands as a sibling of the selected element; with none it falls back to the local
-    // root of the (sub-)document being edited. Reparenting onto the local root always targets the edited
-    // document's root asset, since the live local root has no backing asset of its own (or, when editing in
-    // context, is the parent document's template instance).
+    // With a selection, paste lands as a sibling of the selected element; with none, or when the selected
+    // element's parent is read-only, it falls back to the local root of the (sub-)document being edited.
+    // Reparenting onto the local root always targets the edited document's root asset, since the live local root
+    // has no backing asset of its own (or, when editing in context, is the parent document's template instance).
     static bool TryResolvePasteParentInUIStage(VisualElementEditingStage stage, VisualElement selected,
         out VisualElement parentElement, out VisualElementAsset parentAsset)
     {
@@ -292,6 +292,10 @@ static class VisualElementEditingUtility
         {
             if (selected.parent != null)
                 parentElement = GetLogicalParentFromPhysicalParent(selected.parent) ?? parentElement;
+            // A read-only parent belongs to another document, such as an instanced template, that must stay untouched.
+            if (parentElement != null && parentElement != localRoot &&
+                !stage.Context.GetElementEditFlags(parentElement).IsFullyEditable())
+                parentElement = localRoot;
             parentAsset = parentElement?.visualElementAsset ?? parentAsset;
         }
 

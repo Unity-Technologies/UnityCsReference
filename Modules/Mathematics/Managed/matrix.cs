@@ -1020,7 +1020,7 @@ namespace Unity.Mathematics
         }
     }
 
-    partial class math
+    public static partial class math
     {
         /// <summary>
         /// Extracts a float3x3 from the upper left 3x3 of a float4x4.

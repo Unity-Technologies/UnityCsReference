@@ -423,7 +423,7 @@ namespace UnityEditor.Toolbars
 
         VisualElement GetOverlayCanvas()
         {
-            return GetRootVisualContainer().Q("unity-overlay-canvas");
+            return GetRoot().Q("unity-overlay-canvas");
         }
 
         int GetPreferredVariantIndex()

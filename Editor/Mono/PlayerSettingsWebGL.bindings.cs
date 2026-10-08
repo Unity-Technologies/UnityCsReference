@@ -23,14 +23,16 @@ namespace UnityEditor
         Disabled = 2
     }
 
+    [Obsolete("WebGLLinkerTarget is deprecated. Web builds always use WebAssembly.", false)]
     public enum WebGLLinkerTarget
     {
         Asm,
         Wasm,
-        [Obsolete("WebGLLinkerTarget.Both mode is no longer supported. Instead you can create separate asm.js and WebAssembly builds and download the appropriate one depending on the browser capabilities.", true)]
+        [Obsolete("WebGLLinkerTarget.Both mode is no longer supported. Web builds always use WebAssembly.", true)]
         Both
     }
 
+    [Obsolete("WebGLWasmArithmeticExceptions is deprecated. WebAssembly arithmetic exceptions are always ignored.", false)]
     public enum WebGLWasmArithmeticExceptions
     {
         [Obsolete("WebGLWasmArithmeticExceptions.Throw mode is no longer supported. WebAssembly arithmetic exceptions are always ignored.")]
@@ -64,6 +66,7 @@ namespace UnityEditor
         [NativeHeader("Editor/Mono/PlayerSettingsWebGL.bindings.h")]
         public sealed class WebGL
         {
+            [Obsolete("memorySize is deprecated. Use initialMemorySize and maximumMemorySize instead.", false)]
             [NativeProperty("webGLMemorySize", TargetType.Field)]
             public extern static int memorySize
             {
@@ -120,7 +123,7 @@ namespace UnityEditor
                 [StaticAccessor("GetPlayerSettings().GetEditorOnlyForUpdate()", StaticAccessorType.Dot)] set;
             }
 
-            [Obsolete("useWasm Property deprecated. Use linkerTarget instead")]
+            [Obsolete("useWasm is deprecated. Web builds always use WebAssembly.")]
             public static bool useWasm
             {
                 get { return linkerTarget != WebGLLinkerTarget.Asm; }
@@ -134,6 +137,7 @@ namespace UnityEditor
                 [StaticAccessor("GetPlayerSettings().GetEditorOnlyForUpdate()", StaticAccessorType.Dot)] set;
             }
 
+            [Obsolete("linkerTarget is deprecated. Web builds always use WebAssembly.", false)]
             [NativeProperty("webGLLinkerTarget", TargetType.Field)]
             public extern static WebGLLinkerTarget linkerTarget
             {
@@ -169,14 +173,14 @@ namespace UnityEditor
                 [StaticAccessor("GetPlayerSettings().GetEditorOnlyForUpdate()", StaticAccessorType.Dot)] set;
             }
 
-            [Obsolete("debugSymbols Property deprecated. Property has been replaced by debugSymbolMode property.", false)]
+            [Obsolete("debugSymbols is deprecated. Property has been replaced by debugSymbolMode property.", false)]
             public static bool debugSymbols
             {
                 get { return debugSymbolMode != WebGLDebugSymbolMode.Off; }
                 set { debugSymbolMode = value ? WebGLDebugSymbolMode.External : WebGLDebugSymbolMode.Off; }
             }
 
-            [Obsolete("wasmStreaming Property deprecated. WebAssembly streaming will be automatically used when decompressionFallback is disabled and vice versa.", true)]
+            [Obsolete("wasmStreaming is deprecated. WebAssembly streaming will be automatically used when decompressionFallback is disabled and vice versa.", true)]
             [NativeProperty("webGLWasmStreaming", TargetType.Field)]
             public extern static bool wasmStreaming
             {
@@ -191,6 +195,7 @@ namespace UnityEditor
                 [StaticAccessor("GetPlayerSettings().GetEditorOnlyForUpdate()", StaticAccessorType.Dot)] set;
             }
 
+            [Obsolete("wasmArithmeticExceptions is deprecated. WebAssembly arithmetic exceptions are always ignored.", false)]
             [NativeProperty("webGLWasmArithmeticExceptions", TargetType.Field)]
             public extern static WebGLWasmArithmeticExceptions wasmArithmeticExceptions
             {

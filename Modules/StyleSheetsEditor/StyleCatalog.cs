@@ -67,103 +67,103 @@ namespace UnityEditor.StyleSheets
 
     internal static class StyleCatalogKeyword
     {
-        public readonly static int root = "".GetHashCode();
+        public readonly static int root = StyleCatalog.ComputeKey("");
 
-        public readonly static int left = "left".GetHashCode();
-        public readonly static int right = "right".GetHashCode();
-        public readonly static int top = "top".GetHashCode();
-        public readonly static int bottom = "bottom".GetHashCode();
+        public readonly static int left = StyleCatalog.ComputeKey("left");
+        public readonly static int right = StyleCatalog.ComputeKey("right");
+        public readonly static int top = StyleCatalog.ComputeKey("top");
+        public readonly static int bottom = StyleCatalog.ComputeKey("bottom");
 
-        public readonly static int background = "background".GetHashCode();
-        public readonly static int backgroundAttachment = "background-attachment".GetHashCode();
-        public readonly static int backgroundColor = "background-color".GetHashCode();
-        public readonly static int backgroundImage = "background-image".GetHashCode();
-        public readonly static int scaledBackgroundImage = "-unity-scaled-backgrounds".GetHashCode();
-        public readonly static int backgroundPosition = "background-position".GetHashCode();
-        public readonly static int backgroundPositionX = "background-position-x".GetHashCode();
-        public readonly static int backgroundPositionY = "background-position-y".GetHashCode();
+        public readonly static int background = StyleCatalog.ComputeKey("background");
+        public readonly static int backgroundAttachment = StyleCatalog.ComputeKey("background-attachment");
+        public readonly static int backgroundColor = StyleCatalog.ComputeKey("background-color");
+        public readonly static int backgroundImage = StyleCatalog.ComputeKey("background-image");
+        public readonly static int scaledBackgroundImage = StyleCatalog.ComputeKey("-unity-scaled-backgrounds");
+        public readonly static int backgroundPosition = StyleCatalog.ComputeKey("background-position");
+        public readonly static int backgroundPositionX = StyleCatalog.ComputeKey("background-position-x");
+        public readonly static int backgroundPositionY = StyleCatalog.ComputeKey("background-position-y");
 
-        public readonly static int contentImageOffsetX = "-unity-content-image-offset-x".GetHashCode();
-        public readonly static int contentImageOffsetY = "-unity-content-image-offset-y".GetHashCode();
+        public readonly static int contentImageOffsetX = StyleCatalog.ComputeKey("-unity-content-image-offset-x");
+        public readonly static int contentImageOffsetY = StyleCatalog.ComputeKey("-unity-content-image-offset-y");
 
-        public readonly static int backgroundRepeat = "background-repeat".GetHashCode();
-        public readonly static int backgroundSize = "background-size".GetHashCode();
-        public readonly static int border = "border".GetHashCode();
-        public readonly static int borderBottom = "border-bottom".GetHashCode();
-        public readonly static int borderBottomColor = "border-bottom-color".GetHashCode();
-        public readonly static int borderBottomStyle = "border-bottom-style".GetHashCode();
-        public readonly static int borderBottomWidth = "border-bottom-width".GetHashCode();
-        public readonly static int borderColor = "border-color".GetHashCode();
-        public readonly static int borderLeft = "border-left".GetHashCode();
-        public readonly static int borderLeftColor = "border-left-color".GetHashCode();
-        public readonly static int borderLeftStyle = "border-left-style".GetHashCode();
-        public readonly static int borderLeftWidth = "border-left-width".GetHashCode();
-        public readonly static int borderRadius = "border-radius".GetHashCode();
-        public readonly static int borderRight = "border-right".GetHashCode();
-        public readonly static int borderRightColor = "border-right-color".GetHashCode();
-        public readonly static int borderRightStyle = "border-right-style".GetHashCode();
-        public readonly static int borderRightWidth = "border-right-width".GetHashCode();
-        public readonly static int borderStyle = "border-style".GetHashCode();
-        public readonly static int borderTop = "border-top".GetHashCode();
-        public readonly static int borderTopColor = "border-top-color".GetHashCode();
-        public readonly static int borderTopStyle = "border-top-style".GetHashCode();
-        public readonly static int borderTopWidth = "border-top-width".GetHashCode();
-        public readonly static int borderWidth = "border-width".GetHashCode();
-        public readonly static int borderTopLeftRadius = "border-top-left-radius".GetHashCode();
-        public readonly static int borderTopRightRadius = "border-top-right-radius".GetHashCode();
-        public readonly static int borderBottomLeftRadius = "border-bottom-left-radius".GetHashCode();
-        public readonly static int borderBottomRightRadius = "border-bottom-right-radius".GetHashCode();
-        public readonly static int clear = "clear".GetHashCode();
-        public readonly static int clip = "clip".GetHashCode();
-        public readonly static int color = "color".GetHashCode();
-        public readonly static int cursor = "cursor".GetHashCode();
-        public readonly static int display = "display".GetHashCode();
-        public readonly static int filter = "filter".GetHashCode();
-        public readonly static int cssFloat = "float".GetHashCode();
-        public readonly static int font = "font".GetHashCode();
-        public readonly static int fontFamily = "font-family".GetHashCode();
-        public readonly static int fontSize = "font-size".GetHashCode();
-        public readonly static int fontVariant = "font-variant".GetHashCode();
-        public readonly static int fontWeight = "font-weight".GetHashCode();
-        public readonly static int height = "height".GetHashCode();
-        public readonly static int letterSpacing = "letter-spacing".GetHashCode();
-        public readonly static int lineHeight = "line-height".GetHashCode();
-        public readonly static int listStyle = "list-style".GetHashCode();
-        public readonly static int listStyleImage = "list-style-image".GetHashCode();
-        public readonly static int listStylePosition = "list-style-position".GetHashCode();
-        public readonly static int listStyleType = "list-style-type".GetHashCode();
-        public readonly static int margin = "margin".GetHashCode();
-        public readonly static int marginBottom = "margin-bottom".GetHashCode();
-        public readonly static int marginLeft = "margin-left".GetHashCode();
-        public readonly static int marginRight = "margin-right".GetHashCode();
-        public readonly static int marginTop = "margin-top".GetHashCode();
-        public readonly static int opacity = "opacity".GetHashCode();
-        public readonly static int overflow = "overflow".GetHashCode();
-        public readonly static int overflowX = "overflow-x".GetHashCode();
-        public readonly static int overflowY = "overflow-y".GetHashCode();
-        public readonly static int padding = "padding".GetHashCode();
-        public readonly static int paddingBottom = "padding-bottom".GetHashCode();
-        public readonly static int paddingLeft = "padding-left".GetHashCode();
-        public readonly static int paddingRight = "padding-right".GetHashCode();
-        public readonly static int paddingTop = "padding-top".GetHashCode();
-        public readonly static int pageBreakAfter = "page-break-after".GetHashCode();
-        public readonly static int pageBreakBefore = "page-break-before".GetHashCode();
-        public readonly static int position = "position".GetHashCode();
-        public readonly static int size = "size".GetHashCode();
-        public readonly static int strokeDasharray = "stroke-dasharray".GetHashCode();
-        public readonly static int strokeDashoffset = "stroke-dashoffset".GetHashCode();
-        public readonly static int strokeWidth = "stroke-width".GetHashCode();
-        public readonly static int textAlign = "text-align".GetHashCode();
-        public readonly static int textDecoration = "text-decoration".GetHashCode();
-        public readonly static int textDecorationColor = "text-decoration-color".GetHashCode();
-        public readonly static int textIndent = "text-indent".GetHashCode();
-        public readonly static int textTransform = "text-transform".GetHashCode();
-        public readonly static int verticalAlign = "vertical-align".GetHashCode();
-        public readonly static int visibility = "visibility".GetHashCode();
-        public readonly static int width = "width".GetHashCode();
-        public readonly static int minWidth = "min-width".GetHashCode();
-        public readonly static int maxWidth = "max-width".GetHashCode();
-        public readonly static int zIndex = "z-index".GetHashCode();
+        public readonly static int backgroundRepeat = StyleCatalog.ComputeKey("background-repeat");
+        public readonly static int backgroundSize = StyleCatalog.ComputeKey("background-size");
+        public readonly static int border = StyleCatalog.ComputeKey("border");
+        public readonly static int borderBottom = StyleCatalog.ComputeKey("border-bottom");
+        public readonly static int borderBottomColor = StyleCatalog.ComputeKey("border-bottom-color");
+        public readonly static int borderBottomStyle = StyleCatalog.ComputeKey("border-bottom-style");
+        public readonly static int borderBottomWidth = StyleCatalog.ComputeKey("border-bottom-width");
+        public readonly static int borderColor = StyleCatalog.ComputeKey("border-color");
+        public readonly static int borderLeft = StyleCatalog.ComputeKey("border-left");
+        public readonly static int borderLeftColor = StyleCatalog.ComputeKey("border-left-color");
+        public readonly static int borderLeftStyle = StyleCatalog.ComputeKey("border-left-style");
+        public readonly static int borderLeftWidth = StyleCatalog.ComputeKey("border-left-width");
+        public readonly static int borderRadius = StyleCatalog.ComputeKey("border-radius");
+        public readonly static int borderRight = StyleCatalog.ComputeKey("border-right");
+        public readonly static int borderRightColor = StyleCatalog.ComputeKey("border-right-color");
+        public readonly static int borderRightStyle = StyleCatalog.ComputeKey("border-right-style");
+        public readonly static int borderRightWidth = StyleCatalog.ComputeKey("border-right-width");
+        public readonly static int borderStyle = StyleCatalog.ComputeKey("border-style");
+        public readonly static int borderTop = StyleCatalog.ComputeKey("border-top");
+        public readonly static int borderTopColor = StyleCatalog.ComputeKey("border-top-color");
+        public readonly static int borderTopStyle = StyleCatalog.ComputeKey("border-top-style");
+        public readonly static int borderTopWidth = StyleCatalog.ComputeKey("border-top-width");
+        public readonly static int borderWidth = StyleCatalog.ComputeKey("border-width");
+        public readonly static int borderTopLeftRadius = StyleCatalog.ComputeKey("border-top-left-radius");
+        public readonly static int borderTopRightRadius = StyleCatalog.ComputeKey("border-top-right-radius");
+        public readonly static int borderBottomLeftRadius = StyleCatalog.ComputeKey("border-bottom-left-radius");
+        public readonly static int borderBottomRightRadius = StyleCatalog.ComputeKey("border-bottom-right-radius");
+        public readonly static int clear = StyleCatalog.ComputeKey("clear");
+        public readonly static int clip = StyleCatalog.ComputeKey("clip");
+        public readonly static int color = StyleCatalog.ComputeKey("color");
+        public readonly static int cursor = StyleCatalog.ComputeKey("cursor");
+        public readonly static int display = StyleCatalog.ComputeKey("display");
+        public readonly static int filter = StyleCatalog.ComputeKey("filter");
+        public readonly static int cssFloat = StyleCatalog.ComputeKey("float");
+        public readonly static int font = StyleCatalog.ComputeKey("font");
+        public readonly static int fontFamily = StyleCatalog.ComputeKey("font-family");
+        public readonly static int fontSize = StyleCatalog.ComputeKey("font-size");
+        public readonly static int fontVariant = StyleCatalog.ComputeKey("font-variant");
+        public readonly static int fontWeight = StyleCatalog.ComputeKey("font-weight");
+        public readonly static int height = StyleCatalog.ComputeKey("height");
+        public readonly static int letterSpacing = StyleCatalog.ComputeKey("letter-spacing");
+        public readonly static int lineHeight = StyleCatalog.ComputeKey("line-height");
+        public readonly static int listStyle = StyleCatalog.ComputeKey("list-style");
+        public readonly static int listStyleImage = StyleCatalog.ComputeKey("list-style-image");
+        public readonly static int listStylePosition = StyleCatalog.ComputeKey("list-style-position");
+        public readonly static int listStyleType = StyleCatalog.ComputeKey("list-style-type");
+        public readonly static int margin = StyleCatalog.ComputeKey("margin");
+        public readonly static int marginBottom = StyleCatalog.ComputeKey("margin-bottom");
+        public readonly static int marginLeft = StyleCatalog.ComputeKey("margin-left");
+        public readonly static int marginRight = StyleCatalog.ComputeKey("margin-right");
+        public readonly static int marginTop = StyleCatalog.ComputeKey("margin-top");
+        public readonly static int opacity = StyleCatalog.ComputeKey("opacity");
+        public readonly static int overflow = StyleCatalog.ComputeKey("overflow");
+        public readonly static int overflowX = StyleCatalog.ComputeKey("overflow-x");
+        public readonly static int overflowY = StyleCatalog.ComputeKey("overflow-y");
+        public readonly static int padding = StyleCatalog.ComputeKey("padding");
+        public readonly static int paddingBottom = StyleCatalog.ComputeKey("padding-bottom");
+        public readonly static int paddingLeft = StyleCatalog.ComputeKey("padding-left");
+        public readonly static int paddingRight = StyleCatalog.ComputeKey("padding-right");
+        public readonly static int paddingTop = StyleCatalog.ComputeKey("padding-top");
+        public readonly static int pageBreakAfter = StyleCatalog.ComputeKey("page-break-after");
+        public readonly static int pageBreakBefore = StyleCatalog.ComputeKey("page-break-before");
+        public readonly static int position = StyleCatalog.ComputeKey("position");
+        public readonly static int size = StyleCatalog.ComputeKey("size");
+        public readonly static int strokeDasharray = StyleCatalog.ComputeKey("stroke-dasharray");
+        public readonly static int strokeDashoffset = StyleCatalog.ComputeKey("stroke-dashoffset");
+        public readonly static int strokeWidth = StyleCatalog.ComputeKey("stroke-width");
+        public readonly static int textAlign = StyleCatalog.ComputeKey("text-align");
+        public readonly static int textDecoration = StyleCatalog.ComputeKey("text-decoration");
+        public readonly static int textDecorationColor = StyleCatalog.ComputeKey("text-decoration-color");
+        public readonly static int textIndent = StyleCatalog.ComputeKey("text-indent");
+        public readonly static int textTransform = StyleCatalog.ComputeKey("text-transform");
+        public readonly static int verticalAlign = StyleCatalog.ComputeKey("vertical-align");
+        public readonly static int visibility = StyleCatalog.ComputeKey("visibility");
+        public readonly static int width = StyleCatalog.ComputeKey("width");
+        public readonly static int minWidth = StyleCatalog.ComputeKey("min-width");
+        public readonly static int maxWidth = StyleCatalog.ComputeKey("max-width");
+        public readonly static int zIndex = StyleCatalog.ComputeKey("z-index");
     }
 
     [DebuggerDisplay("{value}")]
@@ -187,18 +187,18 @@ namespace UnityEditor.StyleSheets
             m_LateInitHandler = () => m_Value;
         }
 
-        public SVC(string name, string property, T defaultValue = default(T), params StyleState[] states) : this(name.GetHashCode(), property.GetHashCode(), defaultValue, states) {}
-        public SVC(string name, int property, T defaultValue = default(T), params StyleState[] states) : this(name.GetHashCode(), property, defaultValue, states) {}
-        public SVC(int name, string property, T defaultValue = default(T), params StyleState[] states) : this(name, property.GetHashCode(), defaultValue, states) {}
+        public SVC(string name, string property, T defaultValue = default(T), params StyleState[] states) : this(StyleCatalog.ComputeKey(name), StyleCatalog.ComputeKey(property), defaultValue, states) {}
+        public SVC(string name, int property, T defaultValue = default(T), params StyleState[] states) : this(StyleCatalog.ComputeKey(name), property, defaultValue, states) {}
+        public SVC(int name, string property, T defaultValue = default(T), params StyleState[] states) : this(name, StyleCatalog.ComputeKey(property), defaultValue, states) {}
 
-        public SVC(string name, int property, Func<T> lateInitHandler, params StyleState[] states) : this(name.GetHashCode(), property, default(T), states)
+        public SVC(string name, int property, Func<T> lateInitHandler, params StyleState[] states) : this(StyleCatalog.ComputeKey(name), property, default(T), states)
         {
             m_LateInitHandler = lateInitHandler;
         }
 
         // Root access, i.e. :root {...}
         public SVC(int property, T defaultValue = default(T)) : this(StyleCatalogKeyword.root, property, defaultValue, StyleState.root) {}
-        public SVC(string property, T defaultValue = default(T)) : this(StyleCatalogKeyword.root, property.GetHashCode(), defaultValue, StyleState.root) {}
+        public SVC(string property, T defaultValue = default(T)) : this(StyleCatalogKeyword.root, StyleCatalog.ComputeKey(property), defaultValue, StyleState.root) {}
 
         public static implicit operator T(SVC<T> sc) { return sc.value; }
 
@@ -482,7 +482,7 @@ namespace UnityEditor.StyleSheets
     internal struct StyleValue : IEquatable<StyleValue>
     {
         public static StyleValue Undefined(int key, StyleState state = StyleState.none) { return new StyleValue { key = key, state = state, type = Type.Undefined, index = 0 }; }
-        public static StyleValue Undefined(string name, StyleState state = StyleState.none) { return Undefined(name.GetHashCode(), state); }
+        public static StyleValue Undefined(string name, StyleState state = StyleState.none) { return Undefined(StyleCatalog.ComputeKey(name), state); }
 
         public enum Type
         {
@@ -646,7 +646,7 @@ namespace UnityEditor.StyleSheets
 
         public StyleValue.Keyword GetKeyword(string key, StyleValue.Keyword defaultValue = StyleValue.Keyword.Invalid)
         {
-            return GetKeyword(key.GetHashCode(), defaultValue);
+            return GetKeyword(StyleCatalog.ComputeKey(key), defaultValue);
         }
 
         public bool GetBool(int key, bool defaultValue = false)
@@ -659,7 +659,7 @@ namespace UnityEditor.StyleSheets
 
         public bool GetBool(string key, bool defaultValue = false)
         {
-            return GetBool(key.GetHashCode(), defaultValue);
+            return GetBool(StyleCatalog.ComputeKey(key), defaultValue);
         }
 
         public float GetFloat(int key, float defaultValue = 0.0f)
@@ -672,7 +672,7 @@ namespace UnityEditor.StyleSheets
 
         public float GetFloat(string key, float defaultValue = 0.0f)
         {
-            return GetFloat(key.GetHashCode(), defaultValue);
+            return GetFloat(StyleCatalog.ComputeKey(key), defaultValue);
         }
 
         public Color GetColor(int key, Color defaultValue = default(Color))
@@ -685,7 +685,7 @@ namespace UnityEditor.StyleSheets
 
         public Color GetColor(string key, Color defaultValue = default(Color))
         {
-            return GetColor(key.GetHashCode(), defaultValue);
+            return GetColor(StyleCatalog.ComputeKey(key), defaultValue);
         }
 
         public string GetText(int key, string defaultValue = "")
@@ -698,7 +698,7 @@ namespace UnityEditor.StyleSheets
 
         public string GetText(string key, string defaultValue = "")
         {
-            return GetText(key.GetHashCode(), defaultValue);
+            return GetText(StyleCatalog.ComputeKey(key), defaultValue);
         }
 
         public StyleRect GetRect(int key, StyleRect defaultValue = default(StyleRect))
@@ -711,7 +711,7 @@ namespace UnityEditor.StyleSheets
 
         public StyleRect GetRect(string key, StyleRect defaultValue = default(StyleRect))
         {
-            return GetRect(key.GetHashCode(), defaultValue);
+            return GetRect(StyleCatalog.ComputeKey(key), defaultValue);
         }
 
         public int GetInt(int key, int defaultValue = 0)
@@ -743,7 +743,7 @@ namespace UnityEditor.StyleSheets
 
         public T GetResource<T>(string key, T defaultValue = null) where T : UnityEngine.Object
         {
-            return GetResource<T>(key.GetHashCode(), defaultValue);
+            return GetResource<T>(StyleCatalog.ComputeKey(key), defaultValue);
         }
 
         static class TexturesByDPIScale
@@ -820,7 +820,7 @@ namespace UnityEditor.StyleSheets
 
         public Texture2D GetTexture(string key)
         {
-            return GetTexture(key.GetHashCode());
+            return GetTexture(StyleCatalog.ComputeKey(key));
         }
 
         public Tuple<T1, T2> GetTuple<T1, T2>(int key)
@@ -857,10 +857,10 @@ namespace UnityEditor.StyleSheets
                 GetTupleElementValue(key, 4, default(T5)));
         }
 
-        public Tuple<T1, T2> GetTuple<T1, T2>(string key) { return GetTuple<T1, T2>(key.GetHashCode()); }
-        public Tuple<T1, T2, T3> GetTuple<T1, T2, T3>(string key) { return GetTuple<T1, T2, T3>(key.GetHashCode()); }
-        public Tuple<T1, T2, T3, T4> GetTuple<T1, T2, T3, T4>(string key) { return GetTuple<T1, T2, T3, T4>(key.GetHashCode()); }
-        public Tuple<T1, T2, T3, T4, T5> GetTuple<T1, T2, T3, T4, T5>(string key) { return GetTuple<T1, T2, T3, T4, T5>(key.GetHashCode()); }
+        public Tuple<T1, T2> GetTuple<T1, T2>(string key) { return GetTuple<T1, T2>(StyleCatalog.ComputeKey(key)); }
+        public Tuple<T1, T2, T3> GetTuple<T1, T2, T3>(string key) { return GetTuple<T1, T2, T3>(StyleCatalog.ComputeKey(key)); }
+        public Tuple<T1, T2, T3, T4> GetTuple<T1, T2, T3, T4>(string key) { return GetTuple<T1, T2, T3, T4>(StyleCatalog.ComputeKey(key)); }
+        public Tuple<T1, T2, T3, T4, T5> GetTuple<T1, T2, T3, T4, T5>(string key) { return GetTuple<T1, T2, T3, T4, T5>(StyleCatalog.ComputeKey(key)); }
 
         private T GetTupleElementValue<T>(int key, int elementIndex, T defaultValue)
         {
@@ -897,7 +897,7 @@ namespace UnityEditor.StyleSheets
                     }
                     case StyleValue.Type.Text:
                     {
-                        var v = catalog.buffers.strings[sv.index].GetHashCode();
+                        var v = StyleCatalog.ComputeKey(catalog.buffers.strings[sv.index]);
                         UnsafeUtility.MemCpy(sptr + offset, &v, 4);
                         offset += 4;
                         break;
@@ -951,7 +951,7 @@ namespace UnityEditor.StyleSheets
                 if (sv.type == StyleValue.Type.Number)
                     return (T)(object)numbers[sv.index];
                 if (sv.type == StyleValue.Type.Text)
-                    return (T)(object)strings[sv.index].GetHashCode();
+                    return (T)(object)StyleCatalog.ComputeKey(strings[sv.index]);
                 if (sv.type == StyleValue.Type.Keyword)
                     return (T)(object)sv.index;
                 return defaultValue;
@@ -992,7 +992,7 @@ namespace UnityEditor.StyleSheets
 
         public bool HasValue(string key, StyleValue.Type type = StyleValue.Type.Any)
         {
-            return HasValue(key.GetHashCode(), type);
+            return HasValue(StyleCatalog.ComputeKey(key), type);
         }
 
         public StyleValue.Type GetValueType(int key)
@@ -1007,12 +1007,12 @@ namespace UnityEditor.StyleSheets
 
         public StyleValue.Type GetValueType(string key)
         {
-            return GetValueType(key.GetHashCode());
+            return GetValueType(StyleCatalog.ComputeKey(key));
         }
 
         private int GetValueIndex(string key, StyleValue.Type type)
         {
-            return GetValueIndex(key.GetHashCode(), type);
+            return GetValueIndex(StyleCatalog.ComputeKey(key), type);
         }
 
         private int GetValueIndex(int hash, StyleValue.Type type)
@@ -1343,7 +1343,7 @@ namespace UnityEditor.StyleSheets
             return true;
         }
 
-        const int k_CacheVersion = 4;
+        const int k_CacheVersion = 5;
         public void Save(BinaryWriter writer)
         {
             // version
@@ -1439,7 +1439,7 @@ namespace UnityEditor.StyleSheets
 
         public StyleBlock GetStyle(string selectorName, params StyleState[] states)
         {
-            return GetStyle(selectorName.GetHashCode(), states);
+            return GetStyle(ComputeKey(selectorName), states);
         }
 
         public StyleBlock GetComposedStyle(int selectorKey, params StyleState[] states)
@@ -1565,9 +1565,26 @@ namespace UnityEditor.StyleSheets
             return name;
         }
 
+        const uint k_FnvOffsetBasis = 2166136261;
+        const uint k_FnvPrime = 16777619;
+
+        // Library/Style.catalog stores these keys, so they can't come from string.GetHashCode(), which differs per process on CoreCLR.
+        public static int ComputeKey(string name)
+        {
+            unchecked
+            {
+                uint hash = k_FnvOffsetBasis;
+                foreach (var c in name)
+                {
+                    hash = (hash ^ c) * k_FnvPrime;
+                }
+                return (int)hash;
+            }
+        }
+
         private int GetNameKey(string name)
         {
-            int key = name.GetHashCode();
+            int key = ComputeKey(name);
             if (m_NameCollisionTable.ContainsKey(key) && m_NameCollisionTable[key] != name)
                 throw new ArgumentException($"Style key name `{name}` collides with `{m_NameCollisionTable[key]}`. You should tweak either name.", nameof(name));
             m_NameCollisionTable[key] = name;
@@ -1725,8 +1742,8 @@ namespace UnityEditor.StyleSheets
             values = ExpandRect(states, values, numbers, rects, StyleCatalogKeyword.position, StyleCatalogKeyword.top, StyleCatalogKeyword.right, StyleCatalogKeyword.bottom, StyleCatalogKeyword.left);
             values = ExpandRect(states, values, numbers, rects, StyleCatalogKeyword.margin, StyleCatalogKeyword.marginTop, StyleCatalogKeyword.marginRight, StyleCatalogKeyword.marginBottom, StyleCatalogKeyword.marginLeft);
             values = ExpandRect(states, values, numbers, rects, StyleCatalogKeyword.padding, StyleCatalogKeyword.paddingTop, StyleCatalogKeyword.paddingRight, StyleCatalogKeyword.paddingBottom, StyleCatalogKeyword.paddingLeft);
-            values = ExpandRect(states, values, numbers, rects, "-unity-overflow".GetHashCode(), "-unity-overflow-top".GetHashCode(), "-unity-overflow-right".GetHashCode(), "-unity-overflow-bottom".GetHashCode(), "-unity-overflow-left".GetHashCode());
-            values = ExpandRect(states, values, numbers, rects, "-unity-slice".GetHashCode(), "-unity-slice-top".GetHashCode(), "-unity-slice-right".GetHashCode(), "-unity-slice-bottom".GetHashCode(), "-unity-slice-left".GetHashCode());
+            values = ExpandRect(states, values, numbers, rects, ComputeKey("-unity-overflow"), ComputeKey("-unity-overflow-top"), ComputeKey("-unity-overflow-right"), ComputeKey("-unity-overflow-bottom"), ComputeKey("-unity-overflow-left"));
+            values = ExpandRect(states, values, numbers, rects, ComputeKey("-unity-slice"), ComputeKey("-unity-slice-top"), ComputeKey("-unity-slice-right"), ComputeKey("-unity-slice-bottom"), ComputeKey("-unity-slice-left"));
 
             // Lines
             values = ExpandLine(states, values, numbers, colors, strings, rects, groups, StyleCatalogKeyword.border, StyleCatalogKeyword.borderWidth, StyleCatalogKeyword.borderStyle, StyleCatalogKeyword.borderColor);

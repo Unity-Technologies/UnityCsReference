@@ -841,11 +841,18 @@ namespace UnityEditor.Experimental.GraphView
         void OnEnterPanel(AttachToPanelEvent e)
         {
             var p = panel as BaseVisualElementPanel;
+            VisualElement themeTarget = this;
             if (p != null)
             {
                 HostView ownerView = p.ownerObject as HostView;
                 if (ownerView != null && ownerView.actualView != null)
+                {
                     ownerView.actualView.antiAliasing = 4;
+
+                    var windowRoot = ownerView.actualView.rootVisualElement;
+                    if (windowRoot.Contains(this))
+                        themeTarget = windowRoot;
+                }
 
 #pragma warning disable CS0618 // Type or member is obsolete
                 p.beforeUpdate += OnBeforeUpdate;
@@ -853,7 +860,7 @@ namespace UnityEditor.Experimental.GraphView
             }
 
             // Force DefaultCommonDark.uss since GraphView only has a dark style at the moment
-            UIElementsEditorUtility.ForceDarkStyleSheet(this);
+            UIElementsEditorUtility.ForceDarkStyleSheet(themeTarget);
 
             if (isReframable && panel != null)
                 panel.visualTree.RegisterCallback<KeyDownEvent>(OnKeyDownShortcut);

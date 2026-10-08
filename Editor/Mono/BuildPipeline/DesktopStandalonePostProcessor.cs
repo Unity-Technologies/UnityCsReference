@@ -65,19 +65,15 @@ internal abstract class DesktopStandalonePostProcessor : BeeBuildPostprocessor
         return null;
     }
 
-    readonly bool m_HasMonoPlayers;
     readonly bool m_HasIl2CppPlayers;
     readonly bool m_HasCoreCLRPlayers;
-    readonly bool m_HasServerMonoPlayers;
     readonly bool m_HasServerIl2CppPlayers;
     readonly bool m_HasServerCoreCLRPlayers;
 
-    protected DesktopStandalonePostProcessor(bool hasMonoPlayers, bool hasIl2CppPlayers, bool hasCoreCLRPlayers, bool hasServerMonoPlayers, bool hasServerIl2CppPlayers, bool hasServerCoreCLRPlayers)
+    protected DesktopStandalonePostProcessor(bool hasIl2CppPlayers, bool hasCoreCLRPlayers, bool hasServerIl2CppPlayers, bool hasServerCoreCLRPlayers)
     {
-        m_HasMonoPlayers = hasMonoPlayers;
         m_HasIl2CppPlayers = hasIl2CppPlayers;
         m_HasCoreCLRPlayers = hasCoreCLRPlayers;
-        m_HasServerMonoPlayers = hasServerMonoPlayers;
         m_HasServerIl2CppPlayers = hasServerIl2CppPlayers;
         m_HasServerCoreCLRPlayers = hasServerCoreCLRPlayers;
     }
@@ -89,12 +85,6 @@ internal abstract class DesktopStandalonePostProcessor : BeeBuildPostprocessor
 
         switch (PlayerSettings.GetScriptingBackend(namedBuildTarget))
         {
-            case ScriptingImplementation.Mono2x:
-                if (!isServer && !m_HasMonoPlayers)
-                    return "Currently selected scripting backend (Mono) is not installed.";
-                if (isServer && !m_HasServerMonoPlayers)
-                    return $"Dedicated Server support for {GetPlatformNameForBuildProgram(default)} is not installed.";
-                break;
             case ScriptingImplementation.IL2CPP:
                 if (!isServer && !m_HasIl2CppPlayers)
                     return "Currently selected scripting backend (IL2CPP) is not installed.";

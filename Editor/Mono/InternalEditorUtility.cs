@@ -529,6 +529,10 @@ namespace UnityEditorInternal
             if (view == null)
                 return;
 
+            var gameView = view as GameView;
+            if (gameView != null)
+                gameView.drawGizmos = value;
+
             view.SetShowGizmos(value);
         }
 

@@ -358,8 +358,15 @@ namespace UnityEditor.Scripting.APIUpdater
         {
             [DataMember]
             public string m_Name;
-            [DataMember]
             public List<DependencyEntry> m_Dependencies;
+
+            // DataContractSerializer caches List<DependencyEntry> strongly and pins the ALC (dotnet/runtime#90437 checks Type.Assembly)
+            [DataMember(Name = nameof(m_Dependencies))]
+            DependencyEntry[] SerializedDependencies
+            {
+                get { return m_Dependencies?.ToArray(); }
+                set { m_Dependencies = value != null ? new List<DependencyEntry>(value) : null; }
+            }
 
             public DependencyEntry()
             {
@@ -391,8 +398,14 @@ namespace UnityEditor.Scripting.APIUpdater
             }
         }
 
-        [DataMember]
         List<DependencyEntry> m_Graph;
+
+        [DataMember(Name = nameof(m_Graph))]
+        DependencyEntry[] SerializedGraph
+        {
+            get { return m_Graph?.ToArray(); }
+            set { m_Graph = value != null ? new List<DependencyEntry>(value) : null; }
+        }
 
         [DataMember]
         HashSet<string> m_Processed; // used to ignore cycles.

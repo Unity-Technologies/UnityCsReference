@@ -97,7 +97,8 @@ partial class MsBuildCompilation
     [OnCodeLoaded]
     private static void PrimeCompilerClient()
     {
-        if (!MsBuildCompilationInterface.IsEnabled())
+        // Import workers never compile, and a host started there takes over the Editor's socket.
+        if (!MsBuildCompilationInterface.IsEnabled() || AssetDatabase.IsAssetImportWorkerProcess())
             return;
 
         // No need to wait for this, just kick off the connection so that it's ready when we need it.
@@ -656,6 +657,12 @@ partial class MsBuildCompilation
             return null;
         }
 
+        // Legacy TryFindCustomScriptAssemblyFromAssemblyReference accepts both "MyAssembly" and
+        // "MyAssembly.dll"; asmdef names never carry the extension, so normalize the input.
+        var normalized = reference.EndsWith(".dll", StringComparison.Ordinal)
+            ? reference.Substring(0, reference.Length - 4)
+            : reference;
+
         var len = Math.Min(m_AllAssemblyJsonContents.Length, m_AllAssemblyJsonPaths.Length);
         for (int i = 0; i < len; i++)
         {
@@ -668,9 +675,97 @@ partial class MsBuildCompilation
             {
                 continue;
             }
-            if (data != null && string.Equals(data.name, reference, StringComparison.Ordinal))
+            if (data != null && string.Equals(data.name, normalized, StringComparison.Ordinal))
                 return m_AllAssemblyJsonPaths[i];
         }
         return null;
+    }
+
+    // Legacy GetCustomTargetAssemblyFromName accepts both "MyAssembly" and "MyAssembly.dll";
+    // mirror that. Returns false if the asmdef isn't in the inventory or the inventory hasn't
+    // been seeded yet.
+    private bool TryGetTargetAssemblyFromName(string assemblyName, out TargetAssembly targetAssembly, out string asmdefPath)
+    {
+        targetAssembly = null;
+        asmdefPath = null;
+        if (string.IsNullOrEmpty(assemblyName)
+            || m_AllAssemblyJsonPaths == null
+            || m_AllAssemblyJsonContents == null
+            || m_AllAssemblyJsonGuids == null)
+            return false;
+
+        var key = assemblyName.EndsWith(".dll", StringComparison.Ordinal)
+            ? assemblyName
+            : assemblyName + ".dll";
+
+        var len = Math.Min(m_AllAssemblyJsonContents.Length, m_AllAssemblyJsonPaths.Length);
+        for (int i = 0; i < len; i++)
+        {
+            CustomScriptAssemblyData data;
+            try
+            {
+                data = CustomScriptAssemblyData.FromJsonNoFieldValidation(m_AllAssemblyJsonContents[i]);
+            }
+            catch
+            {
+                continue;
+            }
+            if (data == null || string.IsNullOrEmpty(data.name))
+                continue;
+
+            var candidateKey = data.name.EndsWith(".dll", StringComparison.Ordinal)
+                ? data.name
+                : data.name + ".dll";
+            if (!string.Equals(candidateKey, key, StringComparison.Ordinal))
+                continue;
+
+            var guid = (m_AllAssemblyJsonGuids.Length > i) ? m_AllAssemblyJsonGuids[i] : string.Empty;
+            var csa = CustomScriptAssembly.FromCustomScriptAssemblyData(m_AllAssemblyJsonPaths[i], guid, data);
+            if (csa == null)
+                return false;
+
+            asmdefPath = m_AllAssemblyJsonPaths[i];
+            var dict = EditorBuildRules.CreateTargetAssemblies(new[] { csa });
+            return dict != null && dict.TryGetValue(key, out targetAssembly);
+        }
+        return false;
+    }
+
+    // MSBU replacement for CompilationPipeline.GetDefinesFromAssemblyName. Supplies MsBuildCompilation's
+    // own versionMetaDatas rather than EditorCompilation's, which is empty under MSBU.
+    public string[] GetDefinesFromAssemblyName(string assemblyName, ScriptAssemblySettings settings)
+    {
+        if (!TryGetTargetAssemblyFromName(assemblyName, out var targetAssembly, out _))
+            return null;
+        return EditorCompilationInterface.Instance.GetTargetAssemblyDefines(
+            targetAssembly, GetVersionMetaDatas(), settings);
+    }
+
+    // MSBU replacement for CompilationPipeline.GetResponseFileDefinesFromAssemblyName. Parses the
+    // asmdef's csc.rsp on demand: FromCustomScriptAssemblyData only reads asmdef JSON, so the
+    // legacy pipeline's separate UpdateCustomTargetAssembliesResponseFileData pass never runs here.
+    public string[] GetResponseFileDefinesFromAssemblyName(string assemblyName)
+    {
+        if (!TryGetTargetAssemblyFromName(assemblyName, out _, out var asmdefPath))
+            return null;
+
+        var pathPrefix = Path.GetDirectoryName(asmdefPath);
+        if (string.IsNullOrEmpty(pathPrefix))
+            return Array.Empty<string>();
+
+        var rspFileProvider = new UnityEditor.Scripting.Compilers.MicrosoftCSharpResponseFileProvider();
+        string rspFile = null;
+        foreach (var candidate in rspFileProvider.Get(pathPrefix))
+        {
+            rspFile = candidate;
+            break;
+        }
+        if (string.IsNullOrEmpty(rspFile))
+            return Array.Empty<string>();
+
+        var responseFileContent = UnityEditor.Scripting.Compilers.MicrosoftResponseFileParser.GetResponseFileContent(
+            Directory.GetParent(Application.dataPath).FullName, rspFile);
+        var compilerOptions = UnityEditor.Scripting.Compilers.MicrosoftResponseFileParser.GetCompilerOptions(responseFileContent);
+        return UnityEditor.Scripting.Compilers.MicrosoftResponseFileParser.GetDefines(compilerOptions).ToArray();
     }
 }

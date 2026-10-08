@@ -154,14 +154,14 @@ namespace Unity.Hierarchy.Editor
 
         string IHierarchyEditorNodeTypeHandler.GetDisplayNameOverride(HierarchyView view, in HierarchyNode node)
         {
-            if (!Hierarchy.Exists(node))
-                return node.ToString();
+            if (!Hierarchy.TryGetNameRaw(in node, out var rawName))
+                return null;
 
             var scene = GetScene(in node);
             if (!scene.IsValid() || !scene.isDirty)
                 return null;
 
-            return Hierarchy.GetName(in node) + "*";
+            return Encoding.UTF8.GetString(rawName) + "*";
         }
 
         bool IHierarchyEditorNodeTypeHandler.CanDuplicate(HierarchyView view) => false;

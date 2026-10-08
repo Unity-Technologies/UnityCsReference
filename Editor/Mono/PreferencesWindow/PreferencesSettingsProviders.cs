@@ -592,8 +592,13 @@ By default, Windows will combine these under a single taskbar item.", null, null
                     GeneralProperties.editorSkinOptions);
                 if ((!EditorGUIUtility.isProSkin ? 0 : 1) != newSkin)
                 {
-                    InternalEditorUtility.SwitchSkinAndRepaintAllViews();
-                    EditorApplication.DisplayRestartRequiredDialog(GeneralProperties.editorSkin.text);
+                    var restarting = EditorApplication.DisplayRestartRequiredDialog(GeneralProperties.editorSkin.text, beforeRestart: () =>
+                    {
+                        EditorGUIUtility.skinIndex = newSkin;
+                        EditorPrefs.Sync();
+                    });
+                    if (!restarting)
+                        InternalEditorUtility.SwitchSkinAndRepaintAllViews();
                 }
             }
 

@@ -770,8 +770,9 @@ namespace UnityEngine.UIElements
             }
             else
             {
-                // Elide CSS defaults; the parser coerces `circle` to `ellipse`, so we never emit it.
+                // Elide CSS defaults (`ellipse farthest-corner at 50% 50%`).
                 // A var-bound extent is always written out, even when it resolves to the default.
+                bool isCircle = value.shape == BackgroundGradientShape.Circle;
                 bool sizeIsDefault = value.size == BackgroundGradientSize.FarthestCorner
                                   && boundNames.GetName(GradientVarBindings.RadialExtentSlot()) == null;
                 bool positionIsDefault = Mathf.Approximately(value.position.x, 0.5f)
@@ -779,11 +780,15 @@ namespace UnityEngine.UIElements
                                       && boundNames.GetName(GradientVarBindings.RadialPositionXSlot()) == null
                                       && boundNames.GetName(GradientVarBindings.RadialPositionYSlot()) == null;
 
+                if (isCircle)
+                    plan.Add(HandleWriteOp.EnumIdent("circle"));
+
                 if (!sizeIsDefault)
                 {
-                    // Emit `ellipse` with the extent for clarity, even though the parser accepts
+                    // Emit the shape with the extent for clarity, even though the parser accepts
                     // extent alone; the shape also anchors the extent var on the next read.
-                    plan.Add(HandleWriteOp.EnumIdent("ellipse"));
+                    if (!isCircle)
+                        plan.Add(HandleWriteOp.EnumIdent("ellipse"));
                     if (!TryAddVar(GradientVarBindings.RadialExtentSlot()))
                     {
                         string extent = value.size switch
@@ -806,7 +811,7 @@ namespace UnityEngine.UIElements
                         plan.Add(HandleWriteOp.Dimension(new Dimension(RoundUnitConversion(value.position.y * 100.0), Dimension.Unit.Percent)));
                 }
 
-                hasPrefix = !sizeIsDefault || !positionIsDefault;
+                hasPrefix = isCircle || !sizeIsDefault || !positionIsDefault;
             }
 
             // Comma before stops only when a prefix was actually emitted.

@@ -298,11 +298,6 @@ namespace Unity.Hierarchy.Editor
             return true;
         }
 
-        string IHierarchyEditorNodeTypeHandler.GetDisplayNameOverride(HierarchyView view, in HierarchyNode node)
-        {
-            return Hierarchy.Exists(in node) ? null : node.ToString();
-        }
-
         bool IHierarchyEditorNodeTypeHandler.CanDuplicate(HierarchyView view)
         {
             return AllowCutCopyAndDuplicate(view);

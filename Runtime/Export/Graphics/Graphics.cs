@@ -500,6 +500,7 @@ namespace UnityEngine
 
         public static GraphicsFence CreateGraphicsFence(GraphicsFenceType fenceType, [uei.DefaultValue("SynchronisationStage.PixelProcessing")] SynchronisationStageFlags stage)
         {
+            GraphicsFence.ValidateFenceType(fenceType);
             GraphicsFence newFence = new GraphicsFence();
             newFence.m_FenceType = fenceType;
             newFence.m_Ptr = CreateGPUFenceImpl(fenceType, stage);

@@ -106,6 +106,12 @@ internal static unsafe partial class SerializationBackendManagedCommands
         // version 18: sized-factory instantiation crossing (see
         // ExtensionTable.h).
         public IntPtr instantiateSizedFactory;
+        // version 21: collect arms for UnityObject and EntityId slots (see
+        // ExtensionTable.h).
+        public IntPtr pptrCollectGroupHandler;
+        public IntPtr pptrCollectArrayHandler;
+        public IntPtr entityIdCollectGroupHandler;
+        public IntPtr entityIdCollectArrayHandler;
     }
 
     // Mirror of V2ExecutorArgs in ExtensionTable.h. Must stay in sync.
@@ -326,7 +332,7 @@ internal static unsafe partial class SerializationBackendManagedCommands
         {
             var table = (V2ExtensionTable*)buffer;
             *table = default;
-            table->version = 20;
+            table->version = 21;
             table->pptrWireBytes = 12;  // LocalSerializedObjectIdentifier
             table->pptrArrayHandler = (IntPtr)(delegate*<byte[], int, uint, NativeBufferContext*, ulong, void>)&V2WriteUnityObjectArray;
             table->pptrGroupHandler = (IntPtr)(delegate*<ref byte, byte*, int, byte*, NativeBufferContext*, ulong, void>)&V2WriteUnityObjectGroup;
@@ -342,9 +348,9 @@ internal static unsafe partial class SerializationBackendManagedCommands
             table->propertyNameHandler = (IntPtr)(delegate*<ref byte, NativeBufferContext*, ulong, ulong, void>)&V2WritePropertyName;
             table->fixedBufferHandler = (IntPtr)(delegate*<ref byte, NativeBufferContext*, ulong, ulong, void>)&V2WriteFixedBuffer;
             table->pptrReadGroupHandler = (IntPtr)(delegate*<object, nint, ref byte, byte*, byte*, byte*, int, byte*, NativeReadBufferContext*, ulong, void>)&V2ReadUnityObjectGroup;
-            table->pptrReadArrayHandler = (IntPtr)(delegate*<ref byte, byte*, NativeReadBufferContext*, byte*, byte*, void>)&V2ReadUnityObjectArray;
+            table->pptrReadArrayHandler = (IntPtr)(delegate*<byte[], int, long, byte*, NativeReadBufferContext*, byte*, byte*, void>)&V2ReadUnityObjectArray;
             table->entityIdReadGroupHandler = (IntPtr)(delegate*<object, nint, ref byte, byte*, byte*, byte*, int, byte*, NativeReadBufferContext*, ulong, void>)&V2ReadEntityIdGroup;
-            table->entityIdReadArrayHandler = (IntPtr)(delegate*<ref byte, byte*, NativeReadBufferContext*, byte*, byte*, void>)&V2ReadEntityIdArray;
+            table->entityIdReadArrayHandler = (IntPtr)(delegate*<byte[], int, long, byte*, NativeReadBufferContext*, byte*, byte*, void>)&V2ReadEntityIdArray;
             // All backends since RD-4: the SR crossing hands the frame OBJECT
             // over as a GCHandle instead of a raw frame pointer, so it is
             // GC-safe on CoreCLR's moving GC too.
@@ -359,7 +365,7 @@ internal static unsafe partial class SerializationBackendManagedCommands
             table->readExecutorEntry = Marshal.GetFunctionPointerForDelegate(s_V2ReadExecutorEntryDelegate);
             table->dictionaryElementSourceHandler = (IntPtr)(delegate*<object, ref V2FuidBuilder, NativeBufferContext*, ulong, Array>)&V2DictionaryElementSource;
             table->dictionaryElementSinkHandler = (IntPtr)(delegate*<ref byte, Array, ref V2FuidBuilder, NativeReadBufferContext*, ulong, void>)&V2DictionaryElementSink;
-            table->srReadArrayHandler = (IntPtr)(delegate*<ref byte, byte*, NativeReadBufferContext*, byte*, byte*, void>)&V2ReadSerializeReferenceArray;
+            table->srReadArrayHandler = (IntPtr)(delegate*<byte[], int, long, byte*, NativeReadBufferContext*, byte*, byte*, void>)&V2ReadSerializeReferenceArray;
             s_V2RegisterConstructorDelegate = V2RegisterConstructorEntry;
             table->registerConstructor = Marshal.GetFunctionPointerForDelegate(s_V2RegisterConstructorDelegate);
             s_V2DictionaryExactTypesDelegate = V2GetExactDictionaryFieldTypes;
@@ -372,6 +378,10 @@ internal static unsafe partial class SerializationBackendManagedCommands
             table->srGatherGroupHandler = (IntPtr)(delegate*<ref byte, byte*, int, byte*, uint*, Span<V2ObjectFrame>, NativeBufferContext*, ulong, void>)&V2GatherSerializeReferenceGroup;
             s_V2InstantiateSizedFactoryDelegate = V2InstantiateSizedFactory;
             table->instantiateSizedFactory = Marshal.GetFunctionPointerForDelegate(s_V2InstantiateSizedFactoryDelegate);
+            table->pptrCollectGroupHandler = (IntPtr)(delegate*<ref byte, byte*, int, byte*, NativeBufferContext*, ulong, void>)&V2CollectUnityObjectGroup;
+            table->pptrCollectArrayHandler = (IntPtr)(delegate*<byte[], int, uint, NativeBufferContext*, ulong, void>)&V2CollectUnityObjectArray;
+            table->entityIdCollectGroupHandler = (IntPtr)(delegate*<ref byte, byte*, int, byte*, NativeBufferContext*, ulong, void>)&V2CollectEntityIdGroup;
+            table->entityIdCollectArrayHandler = (IntPtr)(delegate*<byte[], int, uint, NativeBufferContext*, ulong, void>)&V2CollectEntityIdArray;
             return table->version;
         }
     }

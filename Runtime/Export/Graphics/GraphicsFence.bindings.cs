@@ -44,6 +44,12 @@ namespace UnityEngine.Rendering
             return s == SynchronisationStage.VertexProcessing ? SynchronisationStageFlags.VertexProcessing : SynchronisationStageFlags.PixelProcessing;
         }
 
+        internal static void ValidateFenceType(GraphicsFenceType fenceType)
+        {
+            if (fenceType < GraphicsFenceType.AsyncQueueSynchronisation || fenceType > GraphicsFenceType.CPUSynchronisation)
+                throw new ArgumentOutOfRangeException(nameof(fenceType), fenceType, "Must be a defined GraphicsFenceType value.");
+        }
+
         public bool passed
         {
             get

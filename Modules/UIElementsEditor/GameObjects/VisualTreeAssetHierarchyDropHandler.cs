@@ -13,7 +13,7 @@ using Unity.Scripting.LifecycleManagement;
 #nullable enable
 namespace UnityEditor.UIElements
 {
-    internal static class VisualTreeAssetHierarchyDropHandler
+    internal static partial class VisualTreeAssetHierarchyDropHandler
     {
         const string k_UndoCreatePanelRenderer = "Create Panel Renderer";
 
@@ -23,15 +23,16 @@ namespace UnityEditor.UIElements
         /// <summary>GenericData key for tests: when the hierarchy passes null for parentForDraggedObjects, the handler may use this Transform as the parent for new objects.</summary>
         internal const string k_GenericDataParentForNewObjects = "VisualTreeAssetHierarchyDropHandler.ParentForNewObjects";
 
-        [NoAutoStaticsCleanup]
-        static bool s_Registered;
-
-        internal static void Register()
+        [OnCodeLoaded]
+        static void Register()
         {
-            if (s_Registered)
-                return;
             DragAndDrop.AddDropHandlerV2(OnHierarchyDrop);
-            s_Registered = true;
+        }
+
+        [OnCodeUnloading]
+        static void Unregister()
+        {
+            DragAndDrop.RemoveDropHandlerV2(OnHierarchyDrop);
         }
 
         static DragAndDropVisualMode OnHierarchyDrop(EntityId dropTargetEntityId, HierarchyDropFlags dropMode,

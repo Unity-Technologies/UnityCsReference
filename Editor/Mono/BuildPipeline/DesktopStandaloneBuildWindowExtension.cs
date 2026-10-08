@@ -16,18 +16,11 @@ internal abstract class DesktopStandaloneBuildWindowExtension : DefaultBuildWind
     private BuildTarget[] m_StandaloneSubtargets;
     private GUIContent[] m_StandaloneSubtargetStrings;
 
-    protected bool m_HasMonoPlayers;
     protected bool m_HasIl2CppPlayers;
     protected bool m_HasCoreCLRPlayers;
-    protected bool m_HasServerMonoPlayers;
     protected bool m_HasServerIl2CppPlayers;
     protected bool m_HasServerCoreCLRPlayers;
     protected bool m_IsRunningOnHostPlatform;
-
-    public bool MonoPlayersInstalled(NamedBuildTarget namedBuildTarget)
-    {
-        return namedBuildTarget == NamedBuildTarget.Server ? m_HasServerMonoPlayers : m_HasMonoPlayers;
-    }
 
     public bool Il2CppPlayersInstalled(NamedBuildTarget namedBuildTarget)
     {
@@ -44,7 +37,7 @@ internal abstract class DesktopStandaloneBuildWindowExtension : DefaultBuildWind
         EditorUserBuildSettings.SetPlatformSettings(BuildPipeline.GetBuildTargetName(buildTarget), EditorUserBuildSettings.kSettingArchitecture, architecture.ToString().ToLower());
     }
 
-    public DesktopStandaloneBuildWindowExtension(bool hasMonoPlayers, bool hasIl2CppPlayers, bool hasCoreCLRPlayers, bool hasServerMonoPlayers, bool hasServerIl2CppPlayers, bool hasServerCoreCLRPlayers)
+    public DesktopStandaloneBuildWindowExtension(bool hasIl2CppPlayers, bool hasCoreCLRPlayers, bool hasServerIl2CppPlayers, bool hasServerCoreCLRPlayers)
     {
         #pragma warning disable UAL0015 // rebuilt/resubscribed wholesale on the next reload via this object's own lifecycle; a stale value in the interim is never observed
         SetupStandaloneSubtargets();
@@ -53,8 +46,6 @@ internal abstract class DesktopStandaloneBuildWindowExtension : DefaultBuildWind
         m_IsRunningOnHostPlatform = Application.platform == GetHostPlatform();
         m_HasIl2CppPlayers = hasIl2CppPlayers;
         m_HasCoreCLRPlayers = hasCoreCLRPlayers;
-        m_HasMonoPlayers = hasMonoPlayers;
-        m_HasServerMonoPlayers = hasServerMonoPlayers;
         m_HasServerIl2CppPlayers = hasServerIl2CppPlayers;
         m_HasServerCoreCLRPlayers = hasServerCoreCLRPlayers;
     }
@@ -221,9 +212,6 @@ internal abstract class DesktopStandaloneBuildWindowExtension : DefaultBuildWind
 
         if (namedBuildTarget == NamedBuildTarget.Server)
         {
-            if (scriptingBackend == ScriptingImplementation.Mono2x && !m_HasServerMonoPlayers)
-                return $"Dedicated Server support (Mono) for {GetHostPlatformName()} is not installed.";
-
             if (scriptingBackend == ScriptingImplementation.IL2CPP && !m_IsRunningOnHostPlatform)
                 return string.Format("{0} IL2CPP player can only be built on {0}.", GetHostPlatformName());
 
@@ -238,12 +226,6 @@ internal abstract class DesktopStandaloneBuildWindowExtension : DefaultBuildWind
 
         switch(scriptingBackend)
         {
-            case ScriptingImplementation.Mono2x:
-            {
-                if (!MonoPlayersInstalled(namedBuildTarget))
-                    return "Currently selected scripting backend (Mono) is not installed.";
-                break;
-            }
             case ScriptingImplementation.CoreCLR:
             {
                 if (!m_HasCoreCLRPlayers)

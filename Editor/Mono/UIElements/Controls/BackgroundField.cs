@@ -43,6 +43,7 @@ namespace UnityEditor.UIElements
         readonly GradientField m_GradientColorsField;
         readonly FloatField m_GradientAngleField;
         readonly VisualElement m_GradientRadialOnlyContainer;
+        readonly EnumField m_GradientShapeField;
         readonly EnumField m_GradientSizeField;
         readonly Vector2Field m_GradientPositionField;
         bool m_SuppressGradientChange;
@@ -110,6 +111,9 @@ namespace UnityEditor.UIElements
             m_GradientContainer.Add(m_GradientAngleField);
 
             m_GradientRadialOnlyContainer = new VisualElement();
+            m_GradientShapeField = new EnumField("Shape", BackgroundGradientShape.Ellipse);
+            m_GradientShapeField.RegisterValueChangedCallback(_ => OnGradientControlChanged());
+            m_GradientRadialOnlyContainer.Add(m_GradientShapeField);
             m_GradientSizeField = new EnumField("Extent", BackgroundGradientSize.FarthestCorner);
             m_GradientSizeField.RegisterValueChangedCallback(_ => OnGradientControlChanged());
             m_GradientRadialOnlyContainer.Add(m_GradientSizeField);
@@ -154,7 +158,7 @@ namespace UnityEditor.UIElements
             {
                 type = (GradientType)m_GradientTypeField.value,
                 angle = m_GradientAngleField.value * Mathf.Deg2Rad,
-                shape = BackgroundGradientShape.Ellipse, // Circle disabled
+                shape = (BackgroundGradientShape)m_GradientShapeField.value,
                 size = (BackgroundGradientSize)m_GradientSizeField.value,
                 position = m_GradientPositionField.value,
                 stops = UnityGradientToBackgroundStops(m_GradientColorsField.value),
@@ -179,6 +183,7 @@ namespace UnityEditor.UIElements
             {
                 m_GradientTypeField.SetValueWithoutNotify(g.type);
                 m_GradientAngleField.SetValueWithoutNotify(g.angle * Mathf.Rad2Deg);
+                m_GradientShapeField.SetValueWithoutNotify(g.shape);
                 m_GradientSizeField.SetValueWithoutNotify(g.size);
                 m_GradientPositionField.SetValueWithoutNotify(g.position);
                 m_GradientColorsField.SetValueWithoutNotify(BackgroundGradientToUnityGradient(g));

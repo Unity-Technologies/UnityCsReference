@@ -3,13 +3,13 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using Unity.Scripting.LifecycleManagement;
 using UnityEngine;
 using UnityEngine.Analytics;
 
 namespace UnityEditor.Audio.Analytics;
 
-[InitializeOnLoad]
-class AudioRandomContainerQuitAnalyticsEvent
+partial class AudioRandomContainerQuitAnalyticsEvent
 {
     [AnalyticInfo(eventName: "audioRandomContainerQuit", vendorKey: "unity.audio", maxEventsPerHour: 60, maxNumberOfElements: 1)]
     internal class AudioRandomAnalytic : IAnalytic
@@ -40,9 +40,16 @@ class AudioRandomContainerQuitAnalyticsEvent
         private int count;
     }
 
-    static AudioRandomContainerQuitAnalyticsEvent()
+    [OnCodeLoaded]
+    static void Initialize()
     {
         EditorApplication.wantsToQuit += OnEditorApplicationWantsToQuit;
+    }
+
+    [OnCodeUnloading]
+    static void Shutdown()
+    {
+        EditorApplication.wantsToQuit -= OnEditorApplicationWantsToQuit;
     }
 
     static bool OnEditorApplicationWantsToQuit()

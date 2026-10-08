@@ -189,14 +189,14 @@ namespace Unity.Hierarchy.Editor
 
         string IHierarchyEditorNodeTypeHandler.GetDisplayNameOverride(HierarchyView view, in HierarchyNode node)
         {
-            if (!Hierarchy.Exists(node))
-                return node.ToString();
+            if (!Hierarchy.TryGetNameRaw(in node, out var rawName))
+                return null;
 
             var scene = GetScene(node);
             if (!scene.IsValid() || (scene.isLoaded && !scene.isDirty))
                 return null;
 
-            var name = Hierarchy.GetName(in node);
+            var name = Encoding.UTF8.GetString(rawName);
             if (!scene.isLoaded)
                 name += " (not loaded)";
             if (scene.isDirty)

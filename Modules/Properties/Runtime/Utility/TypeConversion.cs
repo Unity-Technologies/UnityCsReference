@@ -376,12 +376,12 @@ namespace Unity.Properties
                     if (destinationUnderlyingType.IsEnum)
                     {
                         var enumUnderlyingType = Enum.GetUnderlyingType(destinationUnderlyingType);
-                        var value = System.Convert.ChangeType(source, enumUnderlyingType);
+                        var value = System.Convert.ChangeType(source, enumUnderlyingType, CultureInfo.InvariantCulture);
                         destination = (TDestination)Enum.ToObject(destinationUnderlyingType, value);
                         return true;
                     }
 
-                    destination = (TDestination)System.Convert.ChangeType(source, destinationUnderlyingType);
+                    destination = (TDestination)System.Convert.ChangeType(source, destinationUnderlyingType, CultureInfo.InvariantCulture);
                     return true;
                 } catch (Exception)
                 {
@@ -1326,7 +1326,7 @@ namespace Unity.Properties
                     if (bool.TryParse(source, out var v))
                         return UnsafeUtility.As<bool, TDestination>(ref v);
 
-                    return double.TryParse(source, out var fromDouble) &&
+                    return double.TryParse(source, NumberStyles.Float, CultureInfo.InvariantCulture, out var fromDouble) &&
                            TryConvertPrimitiveOrString(ref fromDouble, out bool result)
                         ? UnsafeUtility.As<bool, TDestination>(ref result)
                         : default;
@@ -1334,10 +1334,10 @@ namespace Unity.Properties
 
                 if (typeof(TDestination) == typeof(byte))
                 {
-                    if (byte.TryParse(source, out var v))
+                    if (byte.TryParse(source, NumberStyles.Integer, CultureInfo.InvariantCulture, out var v))
                         return UnsafeUtility.As<byte, TDestination>(ref v);
 
-                    return double.TryParse(source, out var fromDouble) &&
+                    return double.TryParse(source, NumberStyles.Float, CultureInfo.InvariantCulture, out var fromDouble) &&
                            TryConvertPrimitiveOrString(ref fromDouble, out byte result)
                         ? UnsafeUtility.As<byte, TDestination>(ref result)
                         : default;
@@ -1351,17 +1351,17 @@ namespace Unity.Properties
 
                 if (typeof(TDestination) == typeof(double))
                 {
-                    return double.TryParse(source, out var v)
+                    return double.TryParse(source, NumberStyles.Float, CultureInfo.InvariantCulture, out var v)
                         ? UnsafeUtility.As<double, TDestination>(ref v)
                         : default;
                 }
 
                 if (typeof(TDestination) == typeof(short))
                 {
-                    if (short.TryParse(source, out var v))
+                    if (short.TryParse(source, NumberStyles.Integer, CultureInfo.InvariantCulture, out var v))
                         return UnsafeUtility.As<short, TDestination>(ref v);
 
-                    return double.TryParse(source, out var fromDouble) &&
+                    return double.TryParse(source, NumberStyles.Float, CultureInfo.InvariantCulture, out var fromDouble) &&
                            TryConvertPrimitiveOrString(ref fromDouble, out short result)
                         ? UnsafeUtility.As<short, TDestination>(ref result)
                         : default;
@@ -1369,10 +1369,10 @@ namespace Unity.Properties
 
                 if (typeof(TDestination) == typeof(int))
                 {
-                    if (int.TryParse(source, out var v))
+                    if (int.TryParse(source, NumberStyles.Integer, CultureInfo.InvariantCulture, out var v))
                         return UnsafeUtility.As<int, TDestination>(ref v);
 
-                    return double.TryParse(source, out var fromDouble) &&
+                    return double.TryParse(source, NumberStyles.Float, CultureInfo.InvariantCulture, out var fromDouble) &&
                            TryConvertPrimitiveOrString(ref fromDouble, out int result)
                         ? UnsafeUtility.As<int, TDestination>(ref result)
                         : default;
@@ -1380,10 +1380,10 @@ namespace Unity.Properties
 
                 if (typeof(TDestination) == typeof(long))
                 {
-                    if (long.TryParse(source, out var v))
+                    if (long.TryParse(source, NumberStyles.Integer, CultureInfo.InvariantCulture, out var v))
                         return UnsafeUtility.As<long, TDestination>(ref v);
 
-                    return double.TryParse(source, out var fromDouble) &&
+                    return double.TryParse(source, NumberStyles.Float, CultureInfo.InvariantCulture, out var fromDouble) &&
                            TryConvertPrimitiveOrString(ref fromDouble, out long result)
                         ? UnsafeUtility.As<long, TDestination>(ref result)
                         : default;
@@ -1391,10 +1391,10 @@ namespace Unity.Properties
 
                 if (typeof(TDestination) == typeof(sbyte))
                 {
-                    if (sbyte.TryParse(source, out var v))
+                    if (sbyte.TryParse(source, NumberStyles.Integer, CultureInfo.InvariantCulture, out var v))
                         return UnsafeUtility.As<sbyte, TDestination>(ref v);
 
-                    return double.TryParse(source, out var fromDouble) &&
+                    return double.TryParse(source, NumberStyles.Float, CultureInfo.InvariantCulture, out var fromDouble) &&
                            TryConvertPrimitiveOrString(ref fromDouble, out sbyte result)
                         ? UnsafeUtility.As<sbyte, TDestination>(ref result)
                         : default;
@@ -1402,10 +1402,10 @@ namespace Unity.Properties
 
                 if (typeof(TDestination) == typeof(float))
                 {
-                    if (float.TryParse(source, out var v))
+                    if (float.TryParse(source, NumberStyles.Float, CultureInfo.InvariantCulture, out var v))
                         return UnsafeUtility.As<float, TDestination>(ref v);
 
-                    return double.TryParse(source, out var fromDouble) &&
+                    return double.TryParse(source, NumberStyles.Float, CultureInfo.InvariantCulture, out var fromDouble) &&
                            TryConvertPrimitiveOrString(ref fromDouble, out float result)
                         ? UnsafeUtility.As<float, TDestination>(ref result)
                         : default;
@@ -1418,10 +1418,10 @@ namespace Unity.Properties
 
                 if (typeof(TDestination) == typeof(ushort))
                 {
-                    if (ushort.TryParse(source, out var v))
+                    if (ushort.TryParse(source, NumberStyles.Integer, CultureInfo.InvariantCulture, out var v))
                         return UnsafeUtility.As<ushort, TDestination>(ref v);
 
-                    return double.TryParse(source, out var fromDouble) &&
+                    return double.TryParse(source, NumberStyles.Float, CultureInfo.InvariantCulture, out var fromDouble) &&
                            TryConvertPrimitiveOrString(ref fromDouble, out ushort result)
                         ? UnsafeUtility.As<ushort, TDestination>(ref result)
                         : default;
@@ -1429,10 +1429,10 @@ namespace Unity.Properties
 
                 if (typeof(TDestination) == typeof(uint))
                 {
-                    if (uint.TryParse(source, out var v))
+                    if (uint.TryParse(source, NumberStyles.Integer, CultureInfo.InvariantCulture, out var v))
                         return UnsafeUtility.As<uint, TDestination>(ref v);
 
-                    return double.TryParse(source, out var fromDouble) &&
+                    return double.TryParse(source, NumberStyles.Float, CultureInfo.InvariantCulture, out var fromDouble) &&
                            TryConvertPrimitiveOrString(ref fromDouble, out uint result)
                         ? UnsafeUtility.As<uint, TDestination>(ref result)
                         : default;
@@ -1440,10 +1440,10 @@ namespace Unity.Properties
 
                 if (typeof(TDestination) == typeof(ulong))
                 {
-                    if (ulong.TryParse(source, out var v))
+                    if (ulong.TryParse(source, NumberStyles.Integer, CultureInfo.InvariantCulture, out var v))
                         return UnsafeUtility.As<ulong, TDestination>(ref v);
 
-                    return double.TryParse(source, out var fromDouble) &&
+                    return double.TryParse(source, NumberStyles.Float, CultureInfo.InvariantCulture, out var fromDouble) &&
                            TryConvertPrimitiveOrString(ref fromDouble, out ulong result)
                         ? UnsafeUtility.As<ulong, TDestination>(ref result)
                         : default;

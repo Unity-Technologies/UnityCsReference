@@ -343,6 +343,30 @@ namespace UnityEngine
             unityObj.m_UnityRuntimeErrorString = null;
         }
 
+        // The wrapper native builds in GetNullUnityEngineObjectReplacement. It carries only the id, which
+        // either resolves to nothing or fails IsInstanceOf, so the wrapper compares equal to null while the
+        // id lets a dangling reference survive a re-save.
+        //
+        // An unassigned reference passes EntityId.None, a dangling one its decoded id, and a
+        // type-mismatched one its id with the marker error the game-release writer reads back.
+        // A null wrapperType means the field gets no wrapper.
+        //
+        // GetUninitializedObject runs no constructor, matching native's scripting_object_new.
+        internal static Object CreateFakeNullWrapper(Type wrapperType, EntityId id, string error)
+        {
+            if (wrapperType == null)
+                return null;
+
+            var wrapper = RuntimeHelpers.GetUninitializedObject(wrapperType) as Object;
+            // `is null`: Object's `==` reads a wrapper with no native object as null.
+            if (wrapper is null)
+                return null;
+
+            wrapper.m_EntityId = id;
+            wrapper.m_UnityRuntimeErrorString = error;
+            return wrapper;
+        }
+
         [RequiredByNativeCode]
         static void SetUnityRuntimeErrorStringFromNative(System.Object obj, string errorString)
         {

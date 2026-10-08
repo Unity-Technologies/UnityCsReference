@@ -51,6 +51,7 @@ namespace Unity.Hierarchy.Editor
                 if (!HierarchyWindowColumnUtility.IsGameObjectEditable(go))
                 {
                     HierarchyWindowColumnUtility.UnbindCellFromValueEditor(cell, cellGOPool);
+                    cell.HideCachedEditor();
                     return;
                 }
 
@@ -247,6 +248,7 @@ namespace Unity.Hierarchy.Editor
                 if (!HierarchyWindowColumnUtility.IsGameObjectEditable(go))
                 {
                     HierarchyWindowColumnUtility.UnbindCellFromValueEditor(cell, cellGOPool);
+                    cell.HideCachedEditor();
                     return;
                 }
 
@@ -431,6 +433,7 @@ namespace Unity.Hierarchy.Editor
                 if (!HierarchyWindowColumnUtility.IsGameObjectEditable(go))
                 {
                     HierarchyWindowColumnUtility.UnbindCellFromValueEditor(cell, cellGOPool);
+                    cell.HideCachedEditor();
                     return;
                 }
 
@@ -479,6 +482,7 @@ namespace Unity.Hierarchy.Editor
                 if (!HierarchyWindowColumnUtility.IsGameObjectEditable(go))
                 {
                     HierarchyWindowColumnUtility.UnbindCellFromValueEditor(cell, cellGOPool);
+                    cell.HideCachedEditor();
                     return;
                 }
 
@@ -548,6 +552,7 @@ namespace Unity.Hierarchy.Editor
                 if (!HierarchyWindowColumnUtility.IsGameObjectEditable(go))
                 {
                     HierarchyWindowColumnUtility.UnbindCellFromValueEditor(cell, cellGOPool);
+                    cell.HideCachedEditor();
                     return;
                 }
 
@@ -619,6 +624,7 @@ namespace Unity.Hierarchy.Editor
                 if (!HierarchyWindowColumnUtility.IsGameObjectEditable(gameObject))
                 {
                     HierarchyWindowColumnUtility.UnbindCellFromValueEditor(cell, cellGOPool);
+                    cell.HideCachedEditor();
                     return;
                 }
 

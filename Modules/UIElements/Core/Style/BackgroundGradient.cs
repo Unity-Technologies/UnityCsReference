@@ -255,9 +255,13 @@ namespace UnityEngine.UIElements
             bool positionIsDefault = Mathf.Approximately(m_Position.x, 0.5f)
                                   && Mathf.Approximately(m_Position.y, 0.5f);
 
+            bool isCircle = m_Shape == BackgroundGradientShape.Circle;
+
             var prefix = new System.Text.StringBuilder();
+            if (isCircle)
+                prefix.Append("circle");
             if (!sizeIsDefault)
-                prefix.Append("ellipse ").Append(sizeKw);
+                prefix.Append(isCircle ? " " : "ellipse ").Append(sizeKw);
             if (!positionIsDefault)
             {
                 if (prefix.Length > 0) prefix.Append(' ');

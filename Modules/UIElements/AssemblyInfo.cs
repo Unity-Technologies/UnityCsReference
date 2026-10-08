@@ -8,6 +8,7 @@ using System.Runtime.CompilerServices;
 
 [assembly: InternalsVisibleTo("Unity.UIElements.Tests")]
 [assembly: InternalsVisibleTo("Unity.UIElements.PlayModeTests")]
+[assembly: InternalsVisibleTo("Unity.CrossModule.UIElementsUGUI.Tests.Runtime")]
 [assembly: InternalsVisibleTo("Unity.UIElements.RuntimeTests")]
 [assembly: InternalsVisibleTo("Unity.UIElements.RuntimeTests.Controls")]
 [assembly: InternalsVisibleTo("Unity.UIElements.TestComponents")]
@@ -35,6 +36,7 @@ using System.Runtime.CompilerServices;
 [assembly: InternalsVisibleTo("Unity.Modules.Core.InspectorWindow.Tests.Editor")]
 
 [assembly: InternalsVisibleTo("Unity.UIElements.EditorTests")]
+[assembly: InternalsVisibleTo("Unity.CrossModule.UIElementsUGUI.Tests.Editor")]
 [assembly: InternalsVisibleTo("Unity.UIElements.TestComponents.Editor")]
 [assembly: InternalsVisibleTo("Assembly-CSharp-Editor-testable")]
 [assembly: InternalsVisibleTo("Unity.UIElements.EditorResources.Authoring")]

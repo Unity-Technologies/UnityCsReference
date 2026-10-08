@@ -62,6 +62,8 @@ namespace UnityEditor.Build.Analysis
 
         private bool m_WasProSkin;
 
+        internal BuildEntry SelectedBuild => m_BuildListPanel?.SelectedBuild;
+
         [MenuItem("Window/Analysis/Build Analysis")]
         internal static void ShowWindow()
         {
