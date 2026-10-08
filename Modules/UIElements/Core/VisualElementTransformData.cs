@@ -38,6 +38,8 @@ internal enum VisualElementTransformFlags
     PickingIgnore = 1 << 12,
     // Element has a ContainsPoint override
     UsesContainsPoint = 1 << 13,
+    // World transform could not be inverted; current whenever WorldTransformInverseDirty is clear
+    WorldTransformSingular = 1 << 14,
 
     Init = WorldTransformDirty | WorldTransformInverseDirty | BoundingBoxDirty | WorldBoundingBoxDirty | BoundingBoxWithoutNestedDirty | LocalBounds3DDirty | LocalBoundsWithoutNested3DDirty
 }

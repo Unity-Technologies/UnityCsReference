@@ -134,11 +134,12 @@ namespace UnityEditor.Search
 
         public StringView Substring(int start, int length)
         {
-            if (start < 0 || start >= this.length)
+            // Follows System.String.Substring's bounds rules: start may equal this.length only when length == 0.
+            if (start < 0 || start > this.length || (start == this.length && length != 0))
                 throw new ArgumentException("Index out of string range", nameof(start));
 
             var innerStartIndex = m_StartIndex + start;
-            if (innerStartIndex >= m_EndIndex)
+            if (innerStartIndex > m_EndIndex)
                 throw new ArgumentException("Index out of string range", nameof(length));
 
             return new StringView(m_BaseString, innerStartIndex, innerStartIndex + length);

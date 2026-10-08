@@ -56,6 +56,8 @@ namespace UnityEngine.UIElements.UIR
 
             internal static KickRangesReason GetKickReasonForNonDrawCommand(CommandType type)
                 => KickReasonForNonDrawCommand(type);
+
+            public static int GetDefaultMaterialStackDepth(UIRenderDevice device) => device.m_DrawParams.defaultMaterialStack.Count;
         }
 
         struct DeviceToFree
@@ -978,19 +980,9 @@ namespace UnityEngine.UIElements.UIR
                             st.flags &= ~EvaluationFlags.MustApplyMaterial;
 
                             if (head.type == CommandType.PopDefaultMaterial)
-                            {
-                                int index = drawParams.defaultMaterial.Count - 1;
-                                defaultMat = drawParams.defaultMaterial[index];
-                                userProps = drawParams.props[index];
-                                drawParams.defaultMaterial.RemoveAt(index);
-                            }
+                                drawParams.PopDefaultMaterial(ref defaultMat, ref userProps);
                             else if (head.type == CommandType.PushDefaultMaterial)
-                            {
-                                drawParams.defaultMaterial.Add(defaultMat);
-                                drawParams.props.Add(head.userProps);
-                                defaultMat = head.material;
-                                userProps = head.userProps;
-                            }
+                                drawParams.PushDefaultMaterial(ref defaultMat, ref userProps, head.material, head.userProps);
                         }
                     }
                 } // If kick ranges
@@ -1022,6 +1014,7 @@ namespace UnityEngine.UIElements.UIR
                 m_Profiler.EmitPanel(in m_DrawStats);
 
             Debug.Assert(disableCounter == 0, "Rendering disabled counter is not 0, indicating a mismatch of commands");
+            Debug.Assert(drawParams.defaultMaterialStack.Count == 0, "Default material stack is not empty, indicating a mismatch of push/pop commands");
 
             RenderChainCommand.PopScissor(drawParams);
 

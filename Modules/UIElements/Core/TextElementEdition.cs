@@ -612,12 +612,12 @@ namespace UnityEngine.UIElements
 
                 if (effectiveMaskChar != char.MinValue) // Password
                 {
-                    return new RenderedText(effectiveMaskChar, m_TextBuffer.length, ZeroWidthSpace);
+                    return new RenderedText(effectiveMaskChar, textBuffer.length, ZeroWidthSpace);
                 }
 
                 if (m_IsTextBufferDirty)
                 {
-                    m_Text = m_TextBuffer.Materialize();
+                    m_Text = textBuffer.Materialize();
                     m_RenderedText = m_Text;
                     m_IsTextBufferDirty = false;
                 }
@@ -641,11 +641,11 @@ namespace UnityEngine.UIElements
                     return m_PlaceholderText;
 
                 if (effectiveMaskChar != char.MinValue)
-                    return "".PadLeft(m_TextBuffer.length, effectiveMaskChar);
+                    return "".PadLeft(textBuffer.length, effectiveMaskChar);
 
                 if (m_IsTextBufferDirty)
                 {
-                    m_Text = m_TextBuffer.Materialize();
+                    m_Text = textBuffer.Materialize();
                     m_RenderedText = m_Text;
                     m_IsTextBufferDirty = false;
                 }
@@ -659,7 +659,7 @@ namespace UnityEngine.UIElements
             m_RenderedText = value;
         }
 
-        internal bool isTextEmpty => m_IsTextBufferDirty ? m_TextBuffer.length == 0 : string.IsNullOrEmpty(m_Text);
+        internal bool isTextEmpty => m_IsTextBufferDirty ? textBuffer.length == 0 : string.IsNullOrEmpty(m_Text);
 
         internal bool TryGetProcessedRenderedText(ref NativeTextBuffer dest)
         {
@@ -672,7 +672,7 @@ namespace UnityEngine.UIElements
             char mask = effectiveMaskChar;
             if (mask != char.MinValue)
             {
-                int length = m_TextBuffer.length;
+                int length = textBuffer.length;
                 dest.EnsureCapacity(length);
                 for (int i = 0; i < length; i++)
                     dest[i] = mask;

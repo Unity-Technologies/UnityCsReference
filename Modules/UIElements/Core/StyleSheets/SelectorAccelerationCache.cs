@@ -263,7 +263,19 @@ class SelectorAccelerationCache
         }
     }
 
+    // Test helper: whether a (path, entityId) association is currently tracked for this id.
+    internal bool HasPathAssociation(EntityId entityId)
+    {
+        foreach (var pair in m_PathList)
+        {
+            if (pair.entityId == entityId)
+                return true;
+        }
+        return false;
+    }
+
     public int Count => m_Cache.Count;
+    internal int dependencyCount => m_DependencyList.Count;
 
     bool TryRemoveAndDisposeEntry(EntityId entityId)
     {
@@ -273,10 +285,28 @@ class SelectorAccelerationCache
         return true;
     }
 
+    // Rows naming an evicted sheet as the dependent go with its entry: rebuilding through
+    // GetOrCreate re-registers every import relation, so stale rows would duplicate on rebuild.
+    void RemoveDependencyRowsForDependents(HashSet<EntityId> evicted)
+    {
+        if (evicted.Count == 0)
+            return;
+
+        int write = 0;
+        for (int read = 0; read < m_DependencyList.Count; read++)
+        {
+            if (!evicted.Contains(m_DependencyList[read].dependent))
+                m_DependencyList[write++] = m_DependencyList[read];
+        }
+        m_DependencyList.RemoveRange(write, m_DependencyList.Count - write);
+    }
+
     public void Remove(string styleSheetPath)
     {
         // Find the all occurrences of this path
         (int firstIndex, int removeCount) = m_PathList.FindRangeForKey(m_PathListComparer, styleSheetPath, EntityId.None);
+
+        using var _ = UnityEngine.Pool.HashSetPool<EntityId>.Get(out var evicted);
 
         // For each occurence, clean up the cached data
         for (int i = 0; i < removeCount; i++)
@@ -284,12 +314,15 @@ class SelectorAccelerationCache
             EntityId entityId = m_PathList[firstIndex + i].entityId;
             TryRemoveAndDisposeEntry(entityId);
             m_CacheForHash.Remove(entityId);
-            // No need to remove each dependent style sheet from the main cache here
-            // This is because they will be removed separately (dependent style sheets get reimported too)
+            // Dependent style sheets are not evicted from the main cache here: they get reimported
+            // too, each arriving with its own Remove call. Only this sheet's dependency rows are
+            // cleaned up — the rows it keys now, and the rows naming it as the dependent below.
             m_DependencyList.RemoveRangeForKey(m_DependencyComparer, entityId, EntityId.None);
+            evicted.Add(entityId);
         }
 
         m_PathList.RemoveRange(firstIndex, removeCount);
+        RemoveDependencyRowsForDependents(evicted);
     }
 
     public void Remove(StyleSheet styleSheet)
@@ -299,25 +332,31 @@ class SelectorAccelerationCache
 
             EntityId entityId = styleSheet.GetEntityId();
 
+            using var _ = UnityEngine.Pool.HashSetPool<EntityId>.Get(out var evicted);
+            evicted.Add(entityId);
+
             // First, we try to find if any potential dependent stylesheet registered for this one
             {
                 (int firstIndex, int removeCount) = m_DependencyList.FindRangeForKey(m_DependencyComparer, entityId, EntityId.None);
 
-                // Remove each entry for any dependent stylesheet. Path-list cleanup is intentionally
-                // skipped for dependents - they get reimported separately and clean up their own paths
-                // through the path-keyed Remove flow.
+                // Remove each entry for any dependent stylesheet, including its path-list association:
+                // an in-memory edit of an imported sheet (e.g. the UI Builder editing it) has no reimport
+                // following it, so the dependent rebuilds through GetOrCreate and re-inserting its path
+                // would collide with a stale association. A real reimport's path-keyed Remove tolerates
+                // the association already being gone.
                 for (int i = 0; i < removeCount; i++)
                 {
-                    EntityId dependentEntityId = m_DependencyList[firstIndex + i].dependent;
-                    TryRemoveAndDisposeEntry(dependentEntityId);
-                    m_CacheForHash.Remove(dependentEntityId);
+                    var dependent = m_DependencyList[firstIndex + i].dependent;
+                    if (evicted.Add(dependent))
+                        RemovedStyleSheetFromMainCache(dependent);
                 }
-
-                m_DependencyList.RemoveRange(firstIndex, removeCount);
             }
 
             // Attempt to remove the style sheet itself
             RemovedStyleSheetFromMainCache(entityId, styleSheet);
+
+            // This also drops the rows keyed by this sheet, which named the dependents just evicted.
+            RemoveDependencyRowsForDependents(evicted);
 
         }
     }
@@ -336,17 +375,25 @@ class SelectorAccelerationCache
         {
             styleSheet = Resources.EntityIdToObject(entityId) as StyleSheet;
         }
-        if (styleSheet == null)
-        {
-            return;
-        }
 
-        string path = Panel.GetStyleSheetPath(styleSheet);
+        string path = styleSheet != null ? Panel.GetStyleSheetPath(styleSheet) : null;
         if (!string.IsNullOrEmpty(path) && path != "Library/unity editor resources")
         {
-            int index = m_PathList.BinarySearch((path, styleSheet.GetEntityId()), m_PathListComparer);
+            int index = m_PathList.BinarySearch((path, entityId), m_PathListComparer);
             if (index >= 0)
                 m_PathList.RemoveRange(index, 1);
+        }
+        else if (styleSheet == null)
+        {
+            // No path to binary search by, and m_PathList stays small enough to scan.
+            for (int i = 0; i < m_PathList.Count; i++)
+            {
+                if (m_PathList[i].entityId == entityId)
+                {
+                    m_PathList.RemoveRange(i, 1);
+                    break;
+                }
+            }
         }
     }
 

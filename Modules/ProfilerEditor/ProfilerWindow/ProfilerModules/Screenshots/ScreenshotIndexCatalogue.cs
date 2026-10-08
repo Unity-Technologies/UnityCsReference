@@ -293,37 +293,6 @@ namespace UnityEditorInternal.Profiling
             return highest;
         }
 
-        public bool TryGetEmissionFrame(int logicalFrame, out int emissionFrame)
-        {
-            var index = LowerBoundByLogicalFrame(m_Frames, logicalFrame);
-            if (index < m_Frames.Count && m_Frames[index].LogicalFrame == logicalFrame)
-            {
-                emissionFrame = m_Frames[index].EmissionFrame;
-                return true;
-            }
-            emissionFrame = 0;
-            return false;
-        }
-
-        // Largest entry with LogicalFrame ≤ logicalFrame. Works on legacy captures too.
-        public bool TryGetNearestPriorLogicalFrame(int logicalFrame, out ScreenshotFrame match)
-        {
-            var index = LowerBoundByLogicalFrame(m_Frames, logicalFrame);
-            // Exact hit at index, or the element just before (lower_bound returns the first ≥).
-            if (index < m_Frames.Count && m_Frames[index].LogicalFrame == logicalFrame)
-            {
-                match = m_Frames[index];
-                return true;
-            }
-            if (index > 0)
-            {
-                match = m_Frames[index - 1];
-                return true;
-            }
-            match = default;
-            return false;
-        }
-
         // Resolves which screenshot to display for a requested logical frame: the screenshot captured
         // on that exact frame if one exists, otherwise the most recent prior screenshot still inside
         // the display window. firstDisplayedFrame bounds both, so a screenshot trimmed out of the

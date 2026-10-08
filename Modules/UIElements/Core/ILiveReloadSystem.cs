@@ -30,6 +30,7 @@ namespace UnityEngine.UIElements
 
         void RegisterVisualTreeAssetTracker(ILiveReloadAssetTracker<VisualTreeAsset> tracker, VisualElement owner);
         void UnregisterVisualTreeAssetTracker(VisualElement owner);
+        bool IsVisualTreeAssetTrackerRegistered(VisualElement owner);
 
         void RegisterAuthoringTrackerForAsset(IAuthoringLiveReloadAssetTracker<VisualTreeAsset> tracker, VisualTreeAsset asset);
         void UnregisterAuthoringTrackerForAsset(IAuthoringLiveReloadAssetTracker<VisualTreeAsset> tracker, VisualTreeAsset asset);

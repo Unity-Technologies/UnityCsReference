@@ -479,13 +479,16 @@ namespace Unity.UI.Builder
         public static void TransferAssetToAsset(
             BuilderDocument document, VisualElementAsset parent, VisualTreeAsset otherVta, bool registerUndo = true)
         {
+            var vta = document.visualTreeAsset;
             if (registerUndo)
             {
+                // Swallow appends to the inline sheet and rewrites ruleIndex, so both must roll back together.
                 Undo.RegisterCompleteObjectUndo(
-                    document.visualTreeAsset, BuilderConstants.CreateUIElementUndoMessage);
+                    new Object[] { vta, vta.GetOrCreateInlineStyleSheet() },
+                    BuilderConstants.CreateUIElementUndoMessage);
             }
 
-            document.visualTreeAsset.Swallow(parent, otherVta);
+            vta.Swallow(parent, otherVta);
         }
 
         public static void TransferAssetToAsset(StyleSheet styleSheet, StyleSheet otherStyleSheet)

@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using Unity.Properties;
+using UnityEditor;
 using UnityEngine.UIElements;
 
 namespace Unity.UIToolkit.Editor;
@@ -11,6 +12,9 @@ internal class VisualElementSelection : UISelectionObject
 {
     public static readonly BindingId ElementProperty = nameof(Element);
     public static readonly BindingId EditFlagsProperty = nameof(EditFlags);
+
+    // No manual page exists for this type, so hide the help button.
+    static VisualElementSelection() => Help.RegisterHelpFileName(typeof(VisualElementSelection), "");
 
     private VisualElement m_Element;
 

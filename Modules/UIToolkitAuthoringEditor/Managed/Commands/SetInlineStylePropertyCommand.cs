@@ -89,7 +89,7 @@ internal sealed class SetInlineStylePropertyCommand<T> : Command<SetInlineStyleP
 
     static StyleRule GetOrCreateRule(VisualElementAsset vea, StyleSheet styleSheet)
     {
-        if (vea.ruleIndex >= 0)
+        if (vea.ruleIndex >= 0 && vea.ruleIndex < styleSheet.rules.Length)
             return styleSheet.rules[vea.ruleIndex];
 
         var ruleIndex = styleSheet.rules.Length;

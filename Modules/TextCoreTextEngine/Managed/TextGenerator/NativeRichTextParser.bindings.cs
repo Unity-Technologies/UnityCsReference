@@ -23,5 +23,8 @@ namespace UnityEngine.TextCore
     {
         [NativeMethod(Name = "RichTextParser::GetAllLinks", IsThreadSafe = true)]
         public static extern RichTextLinkInfo[] GetAllLinks(IntPtr textGenerationInfo);
+
+        [NativeMethod(Name = "RichTextParser::GetLinkCount", IsThreadSafe = true)]
+        public static extern int GetLinkCount(IntPtr textGenerationInfo);
     }
 }

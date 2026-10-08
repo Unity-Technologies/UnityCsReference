@@ -1194,6 +1194,10 @@ namespace UnityEditor.SceneManagement
                 EditorApplication.update -= DelayedFraming;
                 m_DelayCounter = 0;
 
+                // The stage can be closed earlier in the same update, after the callbacks to run were collected.
+                if (!isValid)
+                    return;
+
                 if(!IsPartOfPrefabContents(Selection.activeGameObject))
                     Selection.activeGameObject = prefabContentsRoot;
 

@@ -4,6 +4,7 @@
 
 using System;
 using System.Collections.Generic;
+using Unity.Scripting.LifecycleManagement;
 using UnityEngine.TextCore;
 using UnityEngine.TextCore.Text;
 
@@ -80,15 +81,27 @@ namespace UnityEngine
         internal static void EmptyCache()
         {
             GUIStyle.Internal_CleanupAllTextGenerator();
-            textHandles.Clear();
-            textHandlesTuple.Clear();
+            EmptyManagedCache();
         }
 
         // This only cleans up the cache on the managed side. We assume it is already cleaned on the native side to avoid calls.
         internal static void EmptyManagedCache()
         {
+            foreach (var handle in textHandles.Values)
+            {
+                handle.RemoveFromTemporaryCache();
+                handle.RemoveFromPermanentCache();
+            }
             textHandles.Clear();
             textHandlesTuple.Clear();
+        }
+
+        // Free on the main thread, before the domain unloads. (OnAssemblyUnloading->crash) 
+        // Native generator cache is left to TextCoreGeneratorGroup::CleanupAll: destroying its GPU buffers mid-reload is not safe.
+        [OnCodeUnloading]
+        internal static void ReleaseCacheOnUnloading()
+        {
+            EmptyManagedCache();
         }
 
         /// <summary>

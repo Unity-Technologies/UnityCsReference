@@ -5003,6 +5003,9 @@
     <Compile Include="..\..\Modules\UIElements\Core\Text\PanelTextSettings.cs">
       <Link>Modules\UIElements\Core\Text\PanelTextSettings.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Text\TextBufferStore.cs">
+      <Link>Modules\UIElements\Core\Text\TextBufferStore.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\UIElements\Core\Text\TextEditingManipulator.cs">
       <Link>Modules\UIElements\Core\Text\TextEditingManipulator.cs</Link>
     </Compile>
@@ -7132,7 +7135,7 @@
     </PropertyGroup>
   </Target>
   <ItemGroup>
-    <Analyzer Include="/tmp/uitoolkit_gen_4fjs8mx4/Unity.UIToolkit.SourceGenerator.dll" />
+    <Analyzer Include="/tmp/uitoolkit_gen_osan4dw_/Unity.UIToolkit.SourceGenerator.dll" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="8.0.2" />

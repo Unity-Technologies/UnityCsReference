@@ -1084,6 +1084,24 @@ namespace UnityEngine.UIElements
             set => transformFlags = value ? transformFlags | VisualElementTransformFlags.WorldTransformInverseDirty : transformFlags & ~VisualElementTransformFlags.WorldTransformInverseDirty;
         }
 
+        // Refreshing the inverse is what decides this, so it is read through the same laziness.
+        internal ref Matrix4x4 GetWorldTransformInverse(out bool isSingular)
+        {
+            if (isWorldTransformInverseOrDependenciesDirty)
+                UpdateWorldTransformInverse();
+            isSingular = (transformFlags & VisualElementTransformFlags.WorldTransformSingular) != 0;
+            return ref transformData.WorldTransformInverse;
+        }
+
+        internal bool isWorldTransformSingular
+        {
+            get
+            {
+                GetWorldTransformInverse(out bool isSingular);
+                return isSingular;
+            }
+        }
+
         private const VisualElementTransformFlags worldTransformInverseDirtyDependencies =
             VisualElementTransformFlags.WorldTransformInverseDirty | VisualElementTransformFlags.WorldTransformDirty;
 
@@ -1187,9 +1205,20 @@ namespace UnityEngine.UIElements
             isWorldBoundingBoxDirty = true;
         }
 
+        // Below |det| ~1e-3, inverse * world loses a descendant's offset to float32 cancellation (UUM-140869).
+        internal const float k_MinInvertibleDeterminantSquared = 1e-6f;
+
         internal void UpdateWorldTransformInverse()
         {
-            Matrix4x4.Inverse3DAffine(in worldTransformRef, ref transformData.WorldTransformInverse);
+            ref var world = ref worldTransformRef;
+            bool invertible = Matrix4x4.Inverse3DAffine(in world, ref transformData.WorldTransformInverse);
+            float det = world.m00 * (world.m11 * world.m22 - world.m12 * world.m21)
+                - world.m01 * (world.m10 * world.m22 - world.m12 * world.m20)
+                + world.m02 * (world.m10 * world.m21 - world.m11 * world.m20);
+            bool singular = !invertible || det * det < k_MinInvertibleDeterminantSquared;
+            transformFlags = singular
+                ? transformFlags | VisualElementTransformFlags.WorldTransformSingular
+                : transformFlags & ~VisualElementTransformFlags.WorldTransformSingular;
             isWorldTransformInverseDirty = false;
         }
 
@@ -1950,6 +1979,7 @@ namespace UnityEngine.UIElements
                     {
                         LayoutManager.SharedManager.EnqueueNodeForRecycling(ref m_LayoutNode);
                     }
+                    ReleaseNativeResources(fromFinalizer: true);
                 }
                 s_FinalizerCount++;
             }
@@ -1962,7 +1992,7 @@ namespace UnityEngine.UIElements
             }
         }
 
-        private const string k_ElementReleaseExceptionMessage = "You can't modify a VisualElement after its resources are released. This usually happens when PanelRenderer releases elements during UI reload or cleanup. Make sure that you don't hold stale references to elements.";
+        private protected const string k_ElementReleaseExceptionMessage = "You can't modify a VisualElement after its resources are released. This usually happens when PanelRenderer releases elements during UI reload or cleanup. Make sure that you don't hold stale references to elements.";
 
         /// <summary>
         /// Indicates if the element has released its reusable resources, in which case it can not be modified or added again.
@@ -2023,7 +2053,16 @@ namespace UnityEngine.UIElements
                 m_CallbackRegistry.Dispose();
                 m_CallbackRegistry = null;
             }
+
+            ReleaseNativeResources(fromFinalizer: false);
         }
+
+        /// <summary>
+        /// Releases native (unmanaged) resources owned by this element.
+        /// When <paramref name="fromFinalizer"/> is true, implementations must not free the
+        /// resource directly; they must hand it off to a main-thread free queue instead.
+        /// </summary>
+        private protected virtual void ReleaseNativeResources(bool fromFinalizer) { }
 
         internal void SetTooltip(TooltipEvent e)
         {

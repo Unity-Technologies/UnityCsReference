@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using Unity.Properties;
+using UnityEditor;
 using UnityEngine;
 using UnityEngine.UIElements;
 
@@ -11,6 +12,9 @@ namespace Unity.UIToolkit.Editor;
 internal class StyleRuleSelection : UISelectionObject
 {
     public static readonly BindingId StyleRuleProperty = nameof(StyleRule);
+
+    // No manual page exists for this type, so hide the help button.
+    static StyleRuleSelection() => Help.RegisterHelpFileName(typeof(StyleRuleSelection), "");
 
     StyleRule m_StyleRule;
 

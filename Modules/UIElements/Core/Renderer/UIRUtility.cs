@@ -100,12 +100,13 @@ namespace UnityEngine.UIElements
                 r.height + margins.top + margins.bottom);
         }
 
-        static void ComputeMatrixRelativeToAncestor(RenderData renderData, RenderData ancestor, out Matrix4x4 transform)
+        public static void ComputeMatrixRelativeToAncestor(RenderData renderData, RenderData ancestor, out Matrix4x4 transform)
         {
-            if (ancestor.worldTransformScaleZero)
+            ref var ancestorInverse = ref ancestor.owner.GetWorldTransformInverse(out bool isSingular);
+            if (isSingular)
                 ComputeTransformMatrix(renderData, ancestor, out transform);
             else
-                VisualElement.MultiplyMatrix34(ref ancestor.owner.worldTransformInverse, ref renderData.owner.worldTransformRef, out transform);
+                VisualElement.MultiplyMatrix34(ref ancestorInverse, ref renderData.owner.worldTransformRef, out transform);
         }
 
         public static void ComputeMatrixRelativeToRenderTree(RenderData renderData, out Matrix4x4 transform)
@@ -134,55 +135,43 @@ namespace UnityEngine.UIElements
                 transform.m22 = 1.0f; // Scaling in z means nothing for 2d ui, and break masking
         }
 
-        // This function is used when we detect that the dynamic transform or group transform is using a scale of zero in the x or y axis.
-        // It fixes the bug UUM-4171, which is caused when we re-generate the mesh while the scaling is zero.
-        // In UUM-4171, using the original previous code we would end up using the to-world/inverse matrices which were invalid
-        // since the scale was 0. The solution is to use explicitly compute the chain of transform from the ancestor to the visual element
-        // without using the inverse matrices.
-        //
-        // There are multiple possible solution for this problem, we took the one which only update the needed data but at a cost of
-        // computing the hierarchy transform up to the dynamic or group transform. We used a ProfileMarker to check if this can be an issue.
-        //
-        // Other solutions includes:
-        // 1) Defer repaint: When we detect that the element dynamic transform or group scale is 0, we add it to a list of item to repaint later.
-        //    When the dynamic transform or group scale transition from 0 to != 0, we then repaint the element keep in the list. This would be the
-        //    optimal solution but it is more complicated since we need to keep track of the dirty element.
-        //
-        // 2) LocalTransform: Keep and maintain a LocalTransform relative to the dynamic transform or group when its scale is 0. Update the LocalTransform
-        //    Only when needed and cache its value. We can then use it instead of computing it like we currently do. It will be faster but take more memory
-        //    as we need to store another matrix in the VisualElement.
-        //
-        // 3) Simply repaint all the hierarchy when the dynamic transform or group transform scale transition from 0 to != 0. This would be the simplest solution
-        //    but it is the most costly.
+        // Fallback for ComputeMatrixRelativeToAncestor when the ancestor's world matrix is singular
+        // (VisualElement.isWorldTransformSingular): composes local matrices instead of multiplying by an inverse. UUM-4171.
         internal static void ComputeTransformMatrix(RenderData renderData, RenderData ancestor, out Matrix4x4 result)
         {
             Debug.Assert(renderData.renderTree == ancestor.renderTree);
 
             using (k_ComputeTransformMatrixMarker.Auto())
             {
-                // TODO: Adjust this matrix for nested RenderTrees
-                renderData.owner.GetPivotedMatrixWithLayout(out result);
-                var currentAncestor = renderData.parent;
-                if ((currentAncestor == null) || (ancestor == currentAncestor))
+                if (renderData == ancestor)
+                {
+                    result = Matrix4x4.identity;
+                    return;
+                }
+
+                // Each pivoted matrix is relative to the hierarchy parent, so the chain must follow the
+                // hierarchy: the render-tree parent skips visual ancestors of z-index-promoted elements.
+                var ancestorOwner = ancestor.owner;
+                var owner = renderData.owner;
+                owner.GetPivotedMatrixWithLayout(out result);
+                var current = owner.hierarchy.parent;
+                if (current == null || current == ancestorOwner)
                     return;
 
-                // We need to proceed recursively
                 Matrix4x4 temp = new Matrix4x4();
                 bool destIsTemp = true;
 
                 do
                 {
-                    // TODO: Adjust this matrix for nested RenderTrees
-                    currentAncestor.owner.GetPivotedMatrixWithLayout(out Matrix4x4 ancestorMatrix);
+                    current.GetPivotedMatrixWithLayout(out Matrix4x4 ancestorMatrix);
                     if (destIsTemp)
                         VisualElement.MultiplyMatrix34(ref ancestorMatrix, ref result, out temp);
                     else
                         VisualElement.MultiplyMatrix34(ref ancestorMatrix, ref temp, out result);
 
-                    currentAncestor = currentAncestor.parent;
-
+                    current = current.hierarchy.parent;
                     destIsTemp = !destIsTemp;
-                } while ((currentAncestor != null) && (ancestor != currentAncestor));
+                } while (current != null && current != ancestorOwner);
 
                 // Invert logic as destIsTemp is changed each iteration
                 if (!destIsTemp)

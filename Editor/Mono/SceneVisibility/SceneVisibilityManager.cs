@@ -61,6 +61,9 @@ namespace UnityEditor
             PreviewSceneStage stage = StageNavigationManager.instance.currentStage as PreviewSceneStage;
             SceneVisibilityState.ForceDataUpdate();
 
+            // Drive cache rebuild when no Scene View is open to render it; No cost when no change.
+            EditorApplication.update += SceneVisibilityState.UpdateCacheIfNeeded;
+
             s_ShortcutContext = new ShortcutContext();
             EditorApplication.delayCall += () => ShortcutIntegration.instance.contextManager.RegisterToolContext(s_ShortcutContext);
         }

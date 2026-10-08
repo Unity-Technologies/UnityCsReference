@@ -626,6 +626,10 @@ namespace UnityEngine.UIElements
             if (!IsActiveAndEnabled())
                 return;
 
+            // UUM-149762: the panel can be recreated while we keep our root (e.g. exiting Play mode). Register
+            // before inserting, as attaching the subtree is what tracks the assets of nested templates.
+            SetupVisualTreeAssetTracker();
+
             // If we do have a parent, it will add us.
             if (parentUI != null)
                 parentUI.AddChildAndInsertContentToVisualTree(this);
@@ -763,9 +767,15 @@ namespace UnityEngine.UIElements
             if (rootVisualElement == null || panelSettings == null)
                 return;
 
+            var liveReloadSystem = panelSettings.panel.liveReloadSystem;
+
+            // Registering twice bumps the asset reference count, which a single unregister doesn't balance.
+            if (liveReloadSystem.IsVisualTreeAssetTrackerRegistered(m_RootVisualElement))
+                return;
+
             m_LiveReloadVisualTreeAssetTracker ??= CreateLiveReloadVisualTreeAssetTracker?.Invoke(this);
 
-            panelSettings.panel.liveReloadSystem.RegisterVisualTreeAssetTracker(m_LiveReloadVisualTreeAssetTracker, m_RootVisualElement);
+            liveReloadSystem.RegisterVisualTreeAssetTracker(m_LiveReloadVisualTreeAssetTracker, m_RootVisualElement);
         }
 
         void RemoveVisualTreeAssetTracker()

@@ -200,6 +200,27 @@ namespace UnityEngine.UIElements.UIR
             public static BitmapAllocator32 GetOpacityAllocator(ShaderInfoAllocator a) => a.m_OpacityAllocator;
             public static BitmapAllocator32 GetColorAllocator(ShaderInfoAllocator a) => a.m_ColorAllocator;
             public static BitmapAllocator32 GetTextSettingsAllocator(ShaderInfoAllocator a) => a.m_TextSettingsAllocator;
+
+            public static Matrix4x4 GetTransformValue(ShaderInfoAllocator a, BMPAlloc alloc)
+            {
+                var allocXY = AllocToTexelCoord(ref a.m_TransformAllocator, alloc);
+                var texture = a.m_Storage.texture;
+                var texels = texture.GetRawTextureData<Vector4>(); // Live after upload, unlike the storage's write view
+                int row0 = allocXY.x + allocXY.y * texture.width;
+                var transform = new Matrix4x4();
+                transform.SetRow(0, texels[row0]);
+                transform.SetRow(1, texels[row0 + texture.width]);
+                transform.SetRow(2, texels[row0 + 2 * texture.width]);
+                transform.SetRow(3, new Vector4(0, 0, 0, 1));
+                return transform;
+            }
+
+            public static Vector4 GetClipRectValue(ShaderInfoAllocator a, BMPAlloc alloc)
+            {
+                var allocXY = AllocToTexelCoord(ref a.m_ClipRectAllocator, alloc);
+                var texture = a.m_Storage.texture;
+                return texture.GetRawTextureData<Vector4>()[allocXY.x + allocXY.y * texture.width];
+            }
         }
 
         static int pageWidth { get { return BitmapAllocator32.kPageWidth; } }

@@ -166,6 +166,14 @@ namespace UnityEditor.UIElements
             m_RuntimeVisualTreeAssetTrackers.Remove(rootElement);
         }
 
+        public bool IsVisualTreeAssetTrackerRegistered(VisualElement rootElement)
+        {
+            if (panel.contextType == ContextType.Editor)
+                return m_EditorVisualTreeAssetTracker != null;
+
+            return m_RuntimeVisualTreeAssetTrackers.ContainsKey(rootElement);
+        }
+
         /// <summary>
         /// Registers a tracker for a specific VisualTreeAsset.
         /// Multiple trackers can be registered for the same asset.

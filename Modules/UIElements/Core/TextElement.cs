@@ -8,10 +8,12 @@ using System.Diagnostics;
 using System.Text;
 using Unity.Collections;
 using Unity.Properties;
+using Unity.Scripting.LifecycleManagement;
 using UnityEngine.Bindings;
 using UnityEngine.Serialization;
 using UnityEngine.TextCore;
 using UnityEngine.TextCore.Text;
+using UnityEngine.UIElements.Unmanaged;
 
 namespace UnityEngine.UIElements
 {
@@ -152,8 +154,8 @@ namespace UnityEngine.UIElements
             // And otherwise we only register them if ATG is effectively used
             (attachEvent.destinationPanel as BaseVisualElementPanel)?.textElementRegistry.Value.Add(this);
 
-            if (m_Text != null && m_Text.Length > 0)
-                m_TextBuffer.CopyFrom(m_Text);
+            if (m_Text != null)
+                textBuffer.CopyFrom(m_Text);
 
             uitkTextHandle.ReleaseResourcesIfPossible();
         }
@@ -165,15 +167,59 @@ namespace UnityEngine.UIElements
             var textRegistry = (detachEvent.originPanel as BaseVisualElementPanel)?.textElementRegistry;
             if (textRegistry != null && textRegistry.IsValueCreated)
                 textRegistry.Value.Remove(this);
-            m_TextBuffer.Dispose();
             uitkTextHandle.ReleaseResourcesIfPossible();
         }
 
+        private protected override void ReleaseNativeResources(bool fromFinalizer)
+        {
+            if (m_TextDataHandle.IsUndefined || !TextBufferStore.IsSharedManagerCreated)
+                return;
+
+            if (fromFinalizer)
+                TextBufferStore.SharedManager.EnqueueForDisposal(m_TextDataHandle);
+            else
+                TextBufferStore.SharedManager.FreeSlot(m_TextDataHandle);
+
+            m_TextDataHandle = UnmanagedDataHandle.Undefined;
+        }
+
         private string m_Text = String.Empty;
-        NativeTextBuffer m_TextBuffer;
+        UnmanagedDataHandle m_TextDataHandle;
         bool m_IsTextBufferDirty;
 
-        internal ref NativeTextBuffer textBuffer => ref m_TextBuffer;
+        ref TextBufferData textBufferData
+        {
+            get
+            {
+                if (resourcesReleased)
+                    throw new InvalidOperationException(k_ElementReleaseExceptionMessage);
+
+                var store = TextBufferStore.SharedManager;
+                if (store == null)
+                    throw new InvalidOperationException("UI Toolkit has already been shutdown. Operation refused");
+
+                if (!store.Exists(m_TextDataHandle))
+                    m_TextDataHandle = store.Allocate();
+
+                return ref store.GetRef(m_TextDataHandle);
+            }
+        }
+
+        internal ref NativeTextBuffer textBuffer => ref textBufferData.buffer;
+
+        internal ref NativeTextBuffer processedTextBuffer => ref textBufferData.processedBuffer;
+
+        // Frees the processed buffer early (it is only needed while generating masked, placeholder
+        // or elided text); unlike the accessors, never allocates a slot just to dispose nothing.
+        internal void DisposeProcessedTextBuffer()
+        {
+            if (m_TextDataHandle.IsUndefined || !TextBufferStore.IsSharedManagerCreated)
+                return;
+
+            var store = TextBufferStore.SharedManager;
+            if (store.Exists(m_TextDataHandle))
+                store.GetRef(m_TextDataHandle).processedBuffer.Dispose();
+        }
 
         /// <summary>
         /// The text to be displayed.
@@ -186,6 +232,13 @@ namespace UnityEngine.UIElements
         {
             get => ((INotifyValueChanged<string>) this).value;
             set => ((INotifyValueChanged<string>) this).value = value;
+        }
+
+        internal static int AvoidSurrogateSplit(ReadOnlySpan<char> text, int length)
+        {
+            if (length > 0 && char.IsHighSurrogate(text[length - 1]) && char.IsLowSurrogate(text[length]))
+                return length - 1;
+            return length;
         }
 
         /// <summary>
@@ -211,12 +264,38 @@ namespace UnityEngine.UIElements
             int length = text.Length;
             int maxLen = edition.maxLength;
             if (maxLen >= 0 && length > maxLen)
-                length = maxLen;
+                length = AvoidSurrogateSplit(text, maxLen);
 
             if (IsBufferEqualTo(text, length))
                 return;
 
-            m_TextBuffer.CopyFrom(text, length);
+            textBuffer.CopyFrom(text, length);
+
+            ApplyBufferChange(length);
+        }
+
+        /// <summary>
+        /// Sets the text content from a UTF-8 encoded byte sequence without allocating a managed string.
+        /// </summary>
+        /// <remarks>
+        /// This method is slower than its UTF-16 counterparts since transcoding is unavoidable. Prefer using <see cref="SetText(ReadOnlySpan{char})"/> when possible.
+        /// </remarks>
+        /// <param name="utf8">The UTF-8 encoded bytes to set as the element's text content.</param>
+        public void SetTextUtf8(ReadOnlySpan<byte> utf8)
+        {
+            if (panel == null)
+            {
+                Debug.LogWarning("TextElement.SetTextUtf8() called while the element is not attached to a panel. Falling back to string allocation.");
+                this.text = utf8.IsEmpty ? string.Empty : Encoding.UTF8.GetString(utf8);
+                return;
+            }
+
+            int maxLen = edition.maxLength;
+
+            if (textBuffer.MatchesUtf8(utf8, maxLen))
+                return;
+
+            int length = textBuffer.CopyFromUtf8(utf8, maxLen);
 
             ApplyBufferChange(length);
         }
@@ -258,14 +337,20 @@ namespace UnityEngine.UIElements
             int length = sb.Length;
             int maxLen = edition.maxLength;
             if (maxLen >= 0 && length > maxLen)
+            {
                 length = maxLen;
+                // Don't split a surrogate pair at the truncation boundary.
+                if (length > 0 && char.IsHighSurrogate(sb[length - 1]) && char.IsLowSurrogate(sb[length]))
+                    length--;
+            }
 
             if (IsBufferEqualTo(sb, length))
                 return;
 
-            m_TextBuffer.EnsureCapacity(length);
+            ref var buffer = ref textBuffer;
+            buffer.EnsureCapacity(length);
             for (int i = 0; i < length; i++)
-                m_TextBuffer[i] = sb[i];
+                buffer[i] = sb[i];
 
             ApplyBufferChange(length);
         }
@@ -297,26 +382,54 @@ namespace UnityEngine.UIElements
                 text = value.ToString();
         }
 
+        /// <summary>
+        /// Pre-allocates the internal text buffer so that subsequent <see cref="SetText(ReadOnlySpan{char})"/>
+        /// (and related) calls of up to <paramref name="capacity"/> UTF-16 code units do not allocate.
+        /// </summary>
+        /// <remarks>
+        /// The buffer grows automatically on demand using a doubling strategy, so this method is never
+        /// required for correctness. Use it only to pay the allocation cost up front.
+        /// </remarks>
+        /// <param name="capacity">The minimum buffer capacity, in UTF-16 code units.</param>
+        public void EnsureTextCapacity(int capacity)
+        {
+            if (capacity < 0)
+                throw new ArgumentOutOfRangeException(nameof(capacity));
+
+            if (panel == null)
+            {
+                Debug.LogWarning("TextElement.EnsureTextCapacity() called while the element is not attached to a panel. Ignoring the capacity request.");
+                return;
+            }
+
+            if (capacity == 0)
+                return;
+
+            textBuffer.EnsureCapacity(capacity, preserveContent: true);
+        }
+
         bool IsBufferEqualTo(ReadOnlySpan<char> span, int length)
         {
-            if (!m_TextBuffer.isCreated)
-                return length == 0 && m_TextBuffer.length == 0;
-            if (m_TextBuffer.length != length)
+            ref var buffer = ref textBuffer;
+            if (!buffer.isCreated)
+                return length == 0 && buffer.length == 0;
+            if (buffer.length != length)
                 return false;
             for (int i = 0; i < length; i++)
-                if (m_TextBuffer[i] != span[i])
+                if (buffer[i] != span[i])
                     return false;
             return true;
         }
 
         bool IsBufferEqualTo(StringBuilder sb, int length)
         {
-            if (!m_TextBuffer.isCreated)
-                return length == 0 && m_TextBuffer.length == 0;
-            if (m_TextBuffer.length != length)
+            ref var buffer = ref textBuffer;
+            if (!buffer.isCreated)
+                return length == 0 && buffer.length == 0;
+            if (buffer.length != length)
                 return false;
             for (int i = 0; i < length; i++)
-                if (m_TextBuffer[i] != sb[i])
+                if (buffer[i] != sb[i])
                     return false;
             return true;
         }
@@ -325,7 +438,7 @@ namespace UnityEngine.UIElements
         {
             string previousText = m_Text;
 
-            m_TextBuffer.length = newLength;
+            textBuffer.length = newLength;
             m_IsTextBufferDirty = true;
             m_Text = null;
             isElided = false;
@@ -340,7 +453,7 @@ namespace UnityEngine.UIElements
 
             if (panel != null && HasParentEventInterests(EventCategory.ChangeValue))
             {
-                m_Text = m_TextBuffer.Materialize();
+                m_Text = textBuffer.Materialize();
                 SetRenderedText(m_Text);
                 m_IsTextBufferDirty = false;
                 using (var evt = ChangeEvent<string>.GetPooled(previousText ?? string.Empty, m_Text))
@@ -717,7 +830,7 @@ namespace UnityEngine.UIElements
             {
                 if (m_IsTextBufferDirty)
                 {
-                    m_Text = m_TextBuffer.Materialize();
+                    m_Text = textBuffer.Materialize();
                     m_IsTextBufferDirty = false;
                 }
                 return m_Text ?? string.Empty;
@@ -727,7 +840,7 @@ namespace UnityEngine.UIElements
             {
                 if (m_IsTextBufferDirty)
                 {
-                    m_Text = m_TextBuffer.Materialize();
+                    m_Text = textBuffer.Materialize();
                     m_IsTextBufferDirty = false;
                 }
                 if (m_Text != value)
@@ -769,7 +882,7 @@ namespace UnityEngine.UIElements
             newValue = ((ITextEdition)this).CullString(newValue);
             if (m_IsTextBufferDirty)
             {
-                m_Text = m_TextBuffer.Materialize();
+                m_Text = textBuffer.Materialize();
                 m_IsTextBufferDirty = false;
             }
             if (m_Text != newValue)
@@ -778,7 +891,7 @@ namespace UnityEngine.UIElements
                 m_Text = newValue;
                 isElided = false;
                 if (panel != null)
-                    m_TextBuffer.CopyFrom(newValue);
+                    textBuffer.CopyFrom(newValue);
 
                 //No need to dirty the layout if the element's size is not affected by the text change
                 if (AnySizeAutoOrNone(ref computedStyle))

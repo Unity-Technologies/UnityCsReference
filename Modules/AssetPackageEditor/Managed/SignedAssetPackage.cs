@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using System.Security.Cryptography;
 using System.Threading.Tasks;
 using UnityEngine;
 using UnityEngine.Scripting;
@@ -40,27 +41,27 @@ namespace UnityEditor.AssetPackage
 
         internal static async Task InsertAttestationFileIntoTarball(string sourcePath, string destinationPath, string ownerOrgId, SignatureService signatureService)
         {
-            var tarball = Tarball.GetUncompressedTarball(sourcePath);
-            
-            using (var sha256 = System.Security.Cryptography.SHA256.Create())
+            byte[] hash;
+            using (var sha256 = SHA256.Create())
+            using (var tarball = Tarball.OpenUncompressedTarball(sourcePath))
             {
-                var hash = sha256.ComputeHash(tarball.Span.ToArray());
-                var integrity = GetIntegrityStringFromSha256Digest(hash);
-
-                var attestation = await signatureService.RequestAttestationFromPackageRegistry(integrity, ownerOrgId);
-
-                byte[] attestationFile;
-                try
-                {
-                    attestationFile = Convert.FromBase64String(attestation);
-                }
-                catch (FormatException)
-                {
-                    throw new FormatException("Attestation file is not a valid base64 string");
-                }
-
-                Tarball.InsertFileAtStart(tarball, destinationPath, AttestationFilename, attestationFile);
+                hash = sha256.ComputeHash(tarball);
             }
+            var integrity = GetIntegrityStringFromSha256Digest(hash);
+
+            var attestation = await signatureService.RequestAttestationFromPackageRegistry(integrity, ownerOrgId);
+
+            byte[] attestationFile;
+            try
+            {
+                attestationFile = Convert.FromBase64String(attestation);
+            }
+            catch (FormatException)
+            {
+                throw new FormatException("Attestation file is not a valid base64 string");
+            }
+
+            Tarball.InsertFileAtStart(sourcePath, destinationPath, AttestationFilename, attestationFile, expectedSourceSha256: hash);
         }
 
         internal static string GetIntegrityStringFromSha256Digest(ReadOnlySpan<byte> digest)

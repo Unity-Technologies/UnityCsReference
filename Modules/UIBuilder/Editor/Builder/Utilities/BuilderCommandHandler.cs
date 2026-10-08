@@ -504,6 +504,13 @@ namespace Unity.UI.Builder
             VisualElementAsset rootUnpackedVEA = null;
             elementsToUnpack.Add(templateContainer);
 
+            // Unpacking swallows the template's inline rules into the document sheet and rewrites
+            // ruleIndex, so both must roll back together. The transfers below opt out of their own undo.
+            var documentVta = m_PaneWindow.document.visualTreeAsset;
+            Undo.RegisterCompleteObjectUndo(
+                new UnityEngine.Object[] { documentVta, documentVta.GetOrCreateInlineStyleSheet() },
+                BuilderConstants.CreateUIElementUndoMessage);
+
             while (elementsToUnpack.Count > 0)
             {
                 var elementToUnpack = elementsToUnpack[0];

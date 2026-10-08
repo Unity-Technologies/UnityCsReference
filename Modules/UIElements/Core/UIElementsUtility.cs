@@ -109,6 +109,7 @@ namespace UnityEngine.UIElements
         LayoutManager,
         SelectorAccelerationCache,
         StyleClassList,
+        TextBufferStore,
         Count
     }
 
@@ -248,6 +249,11 @@ namespace UnityEngine.UIElements
             if (LayoutManager.IsSharedManagerCreated)
             {
                 LayoutManager.SharedManager.Collect();
+            }
+
+            if (TextBufferStore.IsSharedManagerCreated)
+            {
+                TextBufferStore.SharedManager.Collect();
             }
 
             // Since updating schedulers jumps into user code, the panels list might change while we're iterating,

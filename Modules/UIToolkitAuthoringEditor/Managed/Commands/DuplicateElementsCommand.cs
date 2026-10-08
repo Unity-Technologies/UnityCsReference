@@ -56,8 +56,14 @@ internal sealed class DuplicateElementsCommand : Command<DuplicateElementsComman
         using var _ = HashSetPool<VisualTreeAsset>.Get(out var set);
         foreach (var asset in ToDuplicateAssets)
         {
-            if (set.Add(asset.visualTreeAsset))
-                context.RecordUndo(asset.visualTreeAsset);
+            var vta = asset.visualTreeAsset;
+            if (set.Add(vta))
+            {
+                context.RecordUndo(vta);
+
+                // Inserting the copy appends to the inline sheet and rewrites its ruleIndex.
+                context.RecordUndo(vta.inlineSheet);
+            }
         }
     }
 

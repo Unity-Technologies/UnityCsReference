@@ -15,12 +15,6 @@ namespace UnityEngine.TextCore.Text
     [VisibleToOtherModules("UnityEngine.IMGUIModule", "UnityEngine.UIElementsModule", "UnityEditor.QuickSearchModule")] //Search uses GetCursorPositionFromStringIndexUsingLineHeight
     internal partial class TextHandle
     {
-        ~TextHandle()
-        {
-            RemoveFromTemporaryCache();
-            RemoveFromPermanentCache();
-        }
-
         [VisibleToOtherModules("UnityEngine.UIElementsModule")]
         internal static TextHandleTemporaryCache s_TemporaryCache = new TextHandleTemporaryCache();
         [VisibleToOtherModules("UnityEngine.UIElementsModule")]
@@ -293,6 +287,12 @@ namespace UnityEngine.TextCore.Text
         }
 
         public virtual void RemoveFromPermanentCacheATG()
+        {
+            DestroyPermanentCachedGenerationInfo();
+        }
+
+        // Finalizer-safe: TextGenerationInfo.Destroy is thread-safe, unlike the overrides above, which also free NativeArray-backed buffers.
+        protected void DestroyPermanentCachedGenerationInfo()
         {
             if (IsCachedPermanentATG)
             {

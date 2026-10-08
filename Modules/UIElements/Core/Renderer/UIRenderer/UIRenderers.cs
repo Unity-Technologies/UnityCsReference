@@ -57,6 +57,13 @@ namespace UnityEngine.UIElements.UIR
         SkipForceGamma = 1 << 5,
     }
 
+    // The default material and property block in effect before a PushDefaultMaterial, restored by its PopDefaultMaterial.
+    struct DefaultMaterialScope
+    {
+        public Material material;
+        public MaterialPropertyBlock props;
+    }
+
     class DrawParams
     {
         internal static readonly Rect k_UnlimitedRect = new Rect(-100000, -100000, 200000, 200000);
@@ -72,15 +79,28 @@ namespace UnityEngine.UIElements.UIR
             view.Push(Matrix4x4.identity);
             scissor.Clear();
             scissor.Push(k_UnlimitedRect);
-            defaultMaterial.Clear();
+            defaultMaterialStack.Clear();
             drawBounds = Rect.zero;
             pixelScale = Vector2.one;
         }
 
         internal readonly Stack<Matrix4x4> view = new Stack<Matrix4x4>(8);
         internal readonly Stack<Rect> scissor = new Stack<Rect>(8);
-        internal readonly List<Material> defaultMaterial = new(8);
-        internal readonly List<MaterialPropertyBlock> props = new(8);
+        public readonly Stack<DefaultMaterialScope> defaultMaterialStack = new(8);
+
+        public void PushDefaultMaterial(ref Material material, ref MaterialPropertyBlock props, Material newMaterial, MaterialPropertyBlock newProps)
+        {
+            defaultMaterialStack.Push(new DefaultMaterialScope { material = material, props = props });
+            material = newMaterial;
+            props = newProps;
+        }
+
+        public void PopDefaultMaterial(ref Material material, ref MaterialPropertyBlock props)
+        {
+            var outer = defaultMaterialStack.Pop();
+            material = outer.material;
+            props = outer.props;
+        }
 
         // Always equal to drawBounds.min; derived rather than stored so the two can't drift out of sync.
         internal Vector2 boundsMin => drawBounds.min;

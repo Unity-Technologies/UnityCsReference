@@ -329,6 +329,11 @@ namespace UnityEngine.UIElements
                 LayoutManager.SharedManager.Collect();
             }
 
+            if (TextBufferStore.IsSharedManagerCreated)
+            {
+                TextBufferStore.SharedManager.Collect();
+            }
+
             using (s_PreUpdatePanelRenderersMarker.Auto())
             {
                 // Pre-update the PanelRenderers to warm-up the visual tree and panels

@@ -62,6 +62,11 @@ namespace Unity.Profiling.Editor.UI
         // character-only swallow in OnKeyDown and the re-selection in TryTakeFocus.
         bool m_UserHasTyped;
 
+        // False from Open until a pointer goes down on the field. A click both focuses the field and
+        // places the caret, so it needs the same re-selection guard as m_UserHasTyped, or a retry
+        // attempt landing right after the click wipes the caret the user just placed.
+        bool m_UserHasClicked;
+
         /// <param name="field">The field shown while editing.</param>
         /// <param name="display">The label shown while not editing.</param>
         /// <param name="readValue">The committed value, used to seed the edit field and to restore on cancel.</param>
@@ -92,8 +97,20 @@ namespace Unity.Profiling.Editor.UI
                 return;
 
             m_Field.isDelayed = true;
+
+            // TextField has two of its own triggers for selecting everything on focus
+            // (TextSelectingManipulator.OnFocusEvent), for a mouse-up and for a non-click focus
+            // gain. Neither is reachable by m_UserHasClicked below, since both live inside the
+            // framework's own focus handling - disable both and rely on the calls below instead.
+            m_Field.selectAllOnMouseUp = false;
+            m_Field.selectAllOnFocus = false;
+
             m_Field.RegisterCallback<KeyDownEvent>(OnKeyDown, TrickleDown.TrickleDown);
             m_Field.RegisterCallback<KeyUpEvent>(OnKeyUp);
+
+            // Trickle-down, because the inner TextElement captures the pointer on pointer-down and
+            // stops its propagation, so the field never sees that click bubble up.
+            m_Field.RegisterCallback<PointerDownEvent>(OnPointerDown, TrickleDown.TrickleDown);
             m_Field.RegisterCallback<MouseUpEvent>(OnMouseUp);
             m_Field.RegisterCallback<FocusOutEvent>(OnFocusOut);
         }
@@ -107,6 +124,7 @@ namespace Unity.Profiling.Editor.UI
 
             m_Closing = false;
             m_UserHasTyped = false;
+            m_UserHasClicked = false;
 
             UIUtility.SwitchVisibility(m_Field, m_Display);
             m_Field.SetValueWithoutNotify(m_ReadValue?.Invoke() ?? string.Empty);
@@ -186,8 +204,9 @@ namespace Unity.Profiling.Editor.UI
             // lets delegatesFocus route inwards, so the caret appears and typing works.
             m_Field.Focus();
 
-            // Re-selecting after the user has typed loses their input on the next keystroke.
-            if (!m_UserHasTyped)
+            // Re-selecting after the user has typed or clicked loses their input or caret position
+            // on the next attempt.
+            if (!m_UserHasTyped && !m_UserHasClicked)
                 m_Field.SelectAll();
         }
 
@@ -195,7 +214,7 @@ namespace Unity.Profiling.Editor.UI
         // the attempt itself.
         bool FocusAttemptsFinished()
         {
-            return !IsOpen || m_UserHasTyped || HasKeyboardFocus() || m_FocusAttempts >= k_MaxFocusAttempts;
+            return !IsOpen || m_UserHasTyped || m_UserHasClicked || HasKeyboardFocus() || m_FocusAttempts >= k_MaxFocusAttempts;
         }
 
         bool HasKeyboardFocus()
@@ -206,7 +225,7 @@ namespace Unity.Profiling.Editor.UI
 
         void OnFirstLayout(GeometryChangedEvent _)
         {
-            if (IsOpen && !m_UserHasTyped)
+            if (IsOpen && !m_UserHasTyped && !m_UserHasClicked)
                 m_Field.SelectAll();
         }
 
@@ -257,6 +276,11 @@ namespace Unity.Profiling.Editor.UI
             // Validated on key up rather than key down: on key down the field's text does not yet
             // include the key just pressed.
             m_Validate?.Invoke(m_Field.text);
+        }
+
+        void OnPointerDown(PointerDownEvent _)
+        {
+            m_UserHasClicked = true;
         }
 
         void OnMouseUp(MouseUpEvent evt)

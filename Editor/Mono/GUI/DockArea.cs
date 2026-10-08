@@ -59,6 +59,8 @@ namespace UnityEditor
 
         // Which pane window would we drop the currently dragged pane over
         static int s_PlaceholderPos;
+        // Which dock area would we drop the currently dragged pane over
+        static DockArea s_PlaceholderDockArea;
         // Which pane is currently being dragged around
         static EditorWindow s_DragPane;
         // Where did it come from
@@ -317,7 +319,15 @@ namespace UnityEditor
             var tabWidth = GetTabWidth(tabStyle, window);
             int mPos = GetTabAtMousePos(tabStyle, pos);
 
-            if (s_PlaceholderPos != mPos)
+            if (!ReferenceEquals(this, s_PlaceholderDockArea))
+            {
+                Repaint();
+                if (s_PlaceholderDockArea)
+                    s_PlaceholderDockArea.Repaint();
+                s_PlaceholderPos = mPos;
+                s_PlaceholderDockArea = this;
+            }
+            else if (s_PlaceholderPos != mPos)
             {
                 Repaint();
                 s_PlaceholderPos = mPos;

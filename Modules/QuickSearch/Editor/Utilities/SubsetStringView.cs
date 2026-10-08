@@ -165,7 +165,8 @@ namespace UnityEditor.Search
 
         public SubsetStringView Substring(int start, int length)
         {
-            if (start < 0 || start >= this.length)
+            // Follows System.String.Substring's bounds rules: start may equal this.length only when length == 0.
+            if (start < 0 || start > this.length || (start == this.length && length != 0))
                 throw new ArgumentException("Index out of string range", nameof(start));
 
             var end = start + length;

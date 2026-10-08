@@ -343,6 +343,7 @@ namespace UnityEditor
         // Object types whose help filename don't map directly to their type name can use `RegisterHelpFileName()` to
         // register a custom help file name.
         private static Dictionary<Type, string> m_ObjectTypeToHelpFileName = new Dictionary<Type, string>();
+        [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
         internal static bool RegisterHelpFileName(Type type, string fileName)
         {
             return m_ObjectTypeToHelpFileName.TryAdd(type, fileName);
