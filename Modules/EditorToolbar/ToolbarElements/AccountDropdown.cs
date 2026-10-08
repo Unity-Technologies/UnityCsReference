@@ -29,27 +29,26 @@ namespace UnityEditor.Toolbars
             }
             else
             {
-                string text = s_LoggedIn ? GetUserInitials(UnityConnect.instance.userInfo.displayName) : L10n.Tr("Sign in");
+                string text = L10n.Tr("Sign in");
                 info = new MainToolbarButton(new MainToolbarContent(text), UnityConnect.instance.ShowLogin);
             }
             info.displayed = s_Available;
             return info;
         }
 
+        [InitializeOnLoadMethod]
+        static void Initialize()
+        {
+            UnityConnect.instance.StateChanged += OnStateChange;
+            OnStateChange(UnityConnect.instance.connectInfo);
+        }
+
         static AccountDropdown()
         {
             s_Available = MPE.ProcessService.level == MPE.ProcessLevel.Main;
-            s_LoggedIn = false;
             s_AccountIcon = EditorGUIUtility.LoadIcon("Account");
 
-            EditorApplication.delayCall += DelayInitialization;
-        }
-
-        static void DelayInitialization()
-        {
             EditorApplication.update += CheckAvailability;
-            UnityConnect.instance.StateChanged += OnStateChange;
-            OnStateChange(UnityConnect.instance.connectInfo);
         }
 
         static void CheckAvailability()

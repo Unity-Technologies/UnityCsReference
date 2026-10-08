@@ -848,6 +848,7 @@ namespace UnityEditor
             }
 
 
+            buildTargetFromGuid = BuildProfileModuleUtil.GetActiveBuildTargetForProfileSwitch(profile, buildTargetFromGuid);
             return SwitchActiveBuildTargetAndSubTargetGuid(platformGuid, buildTargetFromGuid, activeSubtarget);
         }
 

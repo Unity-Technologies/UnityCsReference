@@ -241,7 +241,7 @@ namespace Unity.VectorGraphics
         public SVGDocument(XmlReader docReader, float dpi, Scene scene, int windowWidth, int windowHeight, bool applyRootViewBox)
         {
             allElems = new ElemHandler[]
-            { circle, defs, ellipse, g, image, line, linearGradient, path, polygon, polyline, radialGradient, clipPath, pattern, mask, rect, symbol, use, style };
+            { circle, defs, ellipse, g, image, line, linearGradient, path, polygon, polyline, radialGradient, clipPath, pattern, mask, rect, svg, symbol, use, style };
 
             // These elements excluded below should not be immediatelly part of the hierarchy and can only be referenced
             elemsToAddToHierarchy = new HashSet<ElemHandler>(new ElemHandler[]
@@ -273,6 +273,7 @@ namespace Unity.VectorGraphics
 
             PostProcess(scene.Root);
             RemoveInvisibleNodes();
+            ApplyNestedViewportClips();
         }
 
         public Dictionary<SceneNode, float> NodeOpacities { get { return nodeOpacity; } }
@@ -532,9 +533,10 @@ namespace Unity.VectorGraphics
 
             var link = node["xlink:href"];
             var refFill = SVGAttribParser.ParseRelativeRef(link, svgObjects) as GradientFill;
-            var refFillData = refFill != null ? gradientExInfo[refFill] as LinearGradientExData : null;
+            var refExData = refFill != null ? gradientExInfo[refFill] as GradientExData : null;
+            var refFillData = refExData as LinearGradientExData;
 
-            bool relativeToWorld = refFillData != null ? refFillData.WorldRelative : false;
+            bool relativeToWorld = refExData != null ? refExData.WorldRelative : false;
             switch (node["gradientUnits"])
             {
                 case null:
@@ -574,7 +576,10 @@ namespace Unity.VectorGraphics
                     throw node.GetUnsupportedAttribValException("spreadMethod");
             }
 
-            var gradientTransform = SVGAttribParser.ParseTransform(node, "gradientTransform");
+            // Per SVG spec, attributes not specified on this element are inherited from the referenced gradient
+            var gradientTransform = node["gradientTransform"] == null && refExData != null
+                ? refExData.FillTransform
+                : SVGAttribParser.ParseTransform(node, "gradientTransform");
 
             GradientFill fill = CloneGradientFill(refFill);
             if (fill == null)
@@ -590,10 +595,10 @@ namespace Unity.VectorGraphics
             // nonetheless to give meaningful error messages to the user if any.
             currentContainerSize.Push(Vector2.one);
 
-            fillExData.X1 = node["x1"];
-            fillExData.Y1 = node["y1"];
-            fillExData.X2 = node["x2"];
-            fillExData.Y2 = node["y2"];
+            fillExData.X1 = node["x1"] ?? refFillData?.X1;
+            fillExData.Y1 = node["y1"] ?? refFillData?.Y1;
+            fillExData.X2 = node["x2"] ?? refFillData?.X2;
+            fillExData.Y2 = node["y2"] ?? refFillData?.Y2;
 
             // The calls below are ineffective but they validate the inputs and throw an error if wrong values are specified, so don't remove them
             AttribLengthVal(fillExData.X1, node, "x1", 0.0f, DimType.Width);
@@ -609,6 +614,7 @@ namespace Unity.VectorGraphics
             if (!string.IsNullOrEmpty(link) && !svgObjects.ContainsKey(link))
             {
                 // Reference may be defined later in the file. Save for postponed processing.
+                // Only the stops are inherited in this case, not the coordinates nor the transform.
                 if (!postponedStopData.ContainsKey(currentGradientLink))
                     postponedStopData.Add(currentGradientLink, new List<PostponedStopData>());
                 postponedStopData[currentGradientLink].Add(new PostponedStopData() { fill = fill });
@@ -776,9 +782,10 @@ namespace Unity.VectorGraphics
 
             var link = node["xlink:href"];
             var refFill = SVGAttribParser.ParseRelativeRef(link, svgObjects) as GradientFill;
-            var refFillData = refFill != null ? gradientExInfo[refFill] as RadialGradientExData : null;
+            var refExData = refFill != null ? gradientExInfo[refFill] as GradientExData : null;
+            var refFillData = refExData as RadialGradientExData;
 
-            bool relativeToWorld = refFillData != null ? refFillData.WorldRelative : false;
+            bool relativeToWorld = refExData != null ? refExData.WorldRelative : false;
             switch (node["gradientUnits"])
             {
                 case null:
@@ -818,7 +825,10 @@ namespace Unity.VectorGraphics
                     throw node.GetUnsupportedAttribValException("spreadMethod");
             }
 
-            var gradientTransform = SVGAttribParser.ParseTransform(node, "gradientTransform");
+            // Per SVG spec, attributes not specified on this element are inherited from the referenced gradient
+            var gradientTransform = node["gradientTransform"] == null && refExData != null
+                ? refExData.FillTransform
+                : SVGAttribParser.ParseTransform(node, "gradientTransform");
 
             GradientFill fill = CloneGradientFill(refFill);
             if (fill == null)
@@ -834,11 +844,11 @@ namespace Unity.VectorGraphics
             // nonetheless to give meaningful error messages to the user if any.
             currentContainerSize.Push(Vector2.one);
 
-            fillExData.Cx = node["cx"];
-            fillExData.Cy = node["cy"];
-            fillExData.Fx = node["fx"];
-            fillExData.Fy = node["fy"];
-            fillExData.R = node["r"];
+            fillExData.Cx = node["cx"] ?? refFillData?.Cx;
+            fillExData.Cy = node["cy"] ?? refFillData?.Cy;
+            fillExData.Fx = node["fx"] ?? refFillData?.Fx;
+            fillExData.Fy = node["fy"] ?? refFillData?.Fy;
+            fillExData.R = node["r"] ?? refFillData?.R;
 
             // The calls below are ineffective but they validate the inputs and throw an error if wrong values are specified, so don't remove them
             AttribLengthVal(fillExData.Cx, node, "cx", 0.5f, DimType.Width);
@@ -855,6 +865,7 @@ namespace Unity.VectorGraphics
             if (!string.IsNullOrEmpty(link) && !svgObjects.ContainsKey(link))
             {
                 // Reference may be defined later in the file. Save for postponed processing.
+                // Only the stops are inherited in this case, not the coordinates nor the transform.
                 if (!postponedStopData.ContainsKey(currentGradientLink))
                     postponedStopData.Add(currentGradientLink, new List<PostponedStopData>());
                 postponedStopData[currentGradientLink].Add(new PostponedStopData() { fill = fill });
@@ -1151,42 +1162,155 @@ namespace Unity.VectorGraphics
         void svg()
         {
             var node = docReader.VisitCurrent();
-            var sceneNode = new SceneNode();
-            if (scene.Root == null) // If this is the root SVG element, then we set the vector scene root as well
+
+            // A nested <svg> establishes a new viewport. Unlike the root element, its node comes
+            // pre-created and pushed by ParseChildren (which also pushed the style node), its x/y
+            // attributes translate the content, and it must not touch the root sceneViewport.
+            bool isNested = scene.Root != null;
+
+            // The reader moves past this element during ParseChildren, so grab the id now
+            string id = node["id"];
+
+            SceneNode sceneNode;
+            SceneNode contentNode;
+            Rect viewport;
+            if (isNested)
+            {
+                sceneNode = currentSceneNode.Peek();
+
+                ParseID(node, sceneNode);
+                ParseOpacity(sceneNode);
+
+                viewport = ParseViewport(node, sceneNode, currentContainerSize.Peek());
+                sceneNode.Transform = SVGAttribParser.ParseTransform(node) * Matrix2D.Translate(viewport.position);
+
+                // The viewBox transform and viewport overflow clipper go on a separate content
+                // node, leaving the outer node's Clipper free for clip-path/mask.
+                contentNode = new SceneNode();
+                sceneNode.Children = new List<SceneNode> { contentNode };
+
+                AddToSVGDictionaryIfPossible(node, sceneNode);
+            }
+            else
             {
                 System.Diagnostics.Debug.Assert(currentSceneNode.Count == 0);
+                sceneNode = new SceneNode();
                 scene.Root = sceneNode;
+                contentNode = sceneNode;
+
+                styles.PushNode(node);
+
+                ParseID(node, sceneNode);
+                ParseOpacity(sceneNode);
+
+                sceneViewport = ParseViewport(node, sceneNode, new Vector2(windowWidth, windowHeight));
+                viewport = sceneViewport;
             }
 
-            styles.PushNode(node);
+            var viewBoxInfo = ParseViewBox(node, contentNode, viewport);
+            if (isNested || applyRootViewBox)
+                ApplyViewBox(contentNode, viewBoxInfo, viewport);
 
-            ParseID(node, sceneNode);
-            ParseOpacity(sceneNode);
-
-            sceneViewport = ParseViewport(node, sceneNode, new Vector2(windowWidth, windowHeight));
-            var viewBoxInfo = ParseViewBox(node, sceneNode, sceneViewport);
-            if (applyRootViewBox)
-                ApplyViewBox(sceneNode, viewBoxInfo, sceneViewport);
-
-            currentContainerSize.Push(sceneViewport.size);
+            currentContainerSize.Push(viewport.size);
             if (!viewBoxInfo.IsEmpty)
                 currentViewBoxSize.Push(viewBoxInfo.ViewBox.size);
 
-            currentSceneNode.Push(sceneNode);
-            nodeGlobalSceneState[sceneNode] = new NodeGlobalSceneState() { ContainerSize = currentContainerSize.Peek() };
+            currentSceneNode.Push(contentNode);
+            nodeGlobalSceneState[contentNode] = new NodeGlobalSceneState() { ContainerSize = currentContainerSize.Peek() };
 
             if (ShouldDeclareSupportedChildren(node))
                 SupportElems(node, allElems);
             ParseChildren(node, "svg");
 
-            if (currentSceneNode.Pop() != sceneNode)
+            if (currentSceneNode.Pop() != contentNode)
                 throw SVGFormatException.StackError;
+
+            if (isNested)
+            {
+                PostponeNestedViewportClip(contentNode, viewport.size);
+                ParseClipAndMask(node, sceneNode);
+                ResolvePostponedUseReferences(id, sceneNode);
+            }
 
             if (!viewBoxInfo.IsEmpty)
                 currentViewBoxSize.Pop();
             currentContainerSize.Pop();
 
-            styles.PopNode();
+            if (!isNested)
+                styles.PopNode();
+        }
+
+        void PostponeNestedViewportClip(SceneNode contentNode, Vector2 viewportSize)
+        {
+            // Elements establishing a new viewport default to overflow:hidden per the SVG spec
+            var overflow = styles.Evaluate("overflow");
+            if (overflow == "visible" || overflow == "auto")
+                return;
+
+            // The clip decision is postponed to the end of the import since deferred <use>
+            // references may still add content under this viewport
+            postponedViewportClips[contentNode] = viewportSize;
+        }
+
+        void ApplyNestedViewportClips()
+        {
+            foreach (var viewportClip in postponedViewportClips)
+            {
+                var contentNode = viewportClip.Key;
+                var viewportSize = viewportClip.Value;
+
+                // Skip the clipper when the content fits in the viewport: clipping cuts away the
+                // antialiasing of shapes lying exactly on the viewport edges, and is costly.
+                var bounds = PaintedNodeBounds(contentNode);
+                var eps = Mathf.Max(viewportSize.x, viewportSize.y) * 0.001f;
+                if (bounds.xMin >= -eps && bounds.yMin >= -eps &&
+                    bounds.xMax <= viewportSize.x + eps && bounds.yMax <= viewportSize.y + eps)
+                {
+                    continue;
+                }
+
+                // The viewport rect stays a rect in content space since the viewBox transform is axis-aligned
+                var contentFromViewport = contentNode.Transform.Inverse();
+                var min = contentFromViewport.MultiplyPoint(Vector2.zero);
+                var max = contentFromViewport.MultiplyPoint(viewportSize);
+
+                var rectClip = new Shape();
+                VectorUtils.MakeRectangleShape(rectClip, new Rect(min, max - min));
+                contentNode.Clipper = new SceneNode() { Shapes = new List<Shape>() { rectClip } };
+            }
+        }
+
+        // Like VectorUtils.SceneNodeBounds, but padded for stroke widths, including miter tips
+        static Rect PaintedNodeBounds(SceneNode root)
+        {
+            var min = new Vector2(float.MaxValue, float.MaxValue);
+            var max = new Vector2(-float.MaxValue, -float.MaxValue);
+            foreach (var tnode in VectorUtils.WorldTransformedSceneNodes(root, null))
+            {
+                if (tnode.Node.Shapes == null)
+                    continue;
+
+                foreach (var shape in tnode.Node.Shapes)
+                {
+                    var padding = Vector2.zero;
+                    var stroke = shape.PathProps.Stroke;
+                    if (stroke != null && stroke.HalfThickness > VectorUtils.Epsilon)
+                    {
+                        var m = tnode.WorldTransform;
+                        var scale = Mathf.Sqrt(Mathf.Max(m.m00 * m.m00 + m.m10 * m.m10, m.m01 * m.m01 + m.m11 * m.m11));
+                        var miter = (shape.PathProps.Corners == PathCorner.Tipped) ? Mathf.Max(stroke.TippedCornerLimit, 1.0f) : 1.0f;
+                        padding = Vector2.one * (stroke.HalfThickness * miter * scale);
+                    }
+
+                    foreach (var contour in shape.Contours)
+                    {
+                        var bbox = VectorUtils.Bounds(VectorUtils.TransformBezierPath(contour.Segments, tnode.WorldTransform));
+                        min = Vector2.Min(min, bbox.min - padding);
+                        max = Vector2.Max(max, bbox.max + padding);
+                    }
+                }
+            }
+            return (min.x != float.MaxValue) ? new Rect(min, max - min) : Rect.zero;
         }
 
         void symbol()
@@ -1220,15 +1344,20 @@ namespace Unity.VectorGraphics
 
             ParseClipAndMask(node, sceneNode);
 
-            // Resolve any previous node that was referencing this symbol
-            if (!string.IsNullOrEmpty(id))
+            ResolvePostponedUseReferences(id, sceneNode);
+        }
+
+        void ResolvePostponedUseReferences(string id, SceneNode sceneNode)
+        {
+            // Resolve any previous <use> that was forward-referencing this element
+            if (string.IsNullOrEmpty(id))
+                return;
+
+            List<NodeReferenceData> refList;
+            if (postponedSymbolData.TryGetValue(id, out refList))
             {
-                List<NodeReferenceData> refList;
-                if (postponedSymbolData.TryGetValue(id, out refList))
-                {
-                    foreach (var refData in refList)
-                        ResolveReferencedNode(sceneNode, refData, true);
-                }
+                foreach (var refData in refList)
+                    ResolveReferencedNode(sceneNode, refData, true);
             }
         }
 
@@ -1399,6 +1528,11 @@ namespace Unity.VectorGraphics
                 nodeGlobalSceneState[n] = nodeGlobalSceneState[node];
             if (nodeOpacity.ContainsKey(node))
                 nodeOpacity[n] = nodeOpacity[node];
+
+            // Cloned nested viewports need their own postponed clip decision
+            Vector2 viewportSize;
+            if (postponedViewportClips.TryGetValue(node, out viewportSize))
+                postponedViewportClips[n] = viewportSize;
 
             return n;
         }
@@ -1883,7 +2017,9 @@ namespace Unity.VectorGraphics
         void ParseMask(XmlReaderIterator.Node node, SceneNode sceneNode)
         {
             string reference = null;
-            string maskRef = node["mask"];
+            // Evaluate through the style layer instead of the node: the reader may have moved
+            // past the element when the handler parses its children first (nested svg, symbol)
+            string maskRef = styles.Evaluate("mask");
             if (maskRef != null)
                 reference = SVGAttribParser.ParseURLRef(maskRef);
 
@@ -2025,16 +2161,7 @@ namespace Unity.VectorGraphics
             if (fill == null || contours == null || contours.Length == 0)
                 return;
 
-            var min = new Vector2(float.MaxValue, float.MaxValue);
-            var max = new Vector2(-float.MaxValue, -float.MaxValue);
-            foreach (var contour in contours)
-            {
-                var bbox = VectorUtils.Bounds(contour.Segments);
-                min = Vector2.Min(min, bbox.min);
-                max = Vector2.Max(max, bbox.max);
-            }
-
-            Rect bounds = new Rect(min, max - min);
+            var bounds = VectorUtils.Bounds(contours);
 
             GradientExData extInfo = (GradientExData)gradientExInfo[gradientFill];
             var containerSize = nodeGlobalSceneState[node].ContainerSize;
@@ -2062,11 +2189,20 @@ namespace Unity.VectorGraphics
                         AttribLengthVal(linGradEx.Y2, null, null, 0.0f, DimType.Height));
 
                 var gradientVector = lineEnd - lineStart;
-                float gradientVectorInvLength = 1.0f / gradientVector.magnitude;
-                var scale = Matrix2D.Scale(new Vector2(bounds.width * gradientVectorInvLength, bounds.height * gradientVectorInvLength));
-                var rotation = Matrix2D.RotateLH(Mathf.Atan2(gradientVector.y, gradientVector.x));
-                var offset = Matrix2D.Translate(-lineStart);
-                gradTransform = scale * rotation * offset;
+                if (gradientVector.magnitude < VectorUtils.Epsilon)
+                {
+                    // Per SVG spec, a degenerate gradient vector paints with the color of the last stop
+                    var lastStopU = bounds.width > VectorUtils.Epsilon ? bounds.width : 1.0f;
+                    gradTransform = Matrix2D.Translate(new Vector2(lastStopU, 0.0f)) * Matrix2D.Scale(Vector2.zero);
+                }
+                else
+                {
+                    float gradientVectorInvLength = 1.0f / gradientVector.magnitude;
+                    var scale = Matrix2D.Scale(new Vector2(bounds.width * gradientVectorInvLength, bounds.height * gradientVectorInvLength));
+                    var rotation = Matrix2D.RotateLH(Mathf.Atan2(gradientVector.y, gradientVector.x));
+                    var offset = Matrix2D.Translate(-lineStart);
+                    gradTransform = scale * rotation * offset;
+                }
             }
             else if (extInfo is RadialGradientExData)
             {
@@ -2110,7 +2246,12 @@ namespace Unity.VectorGraphics
             currentContainerSize.Pop();
 
             var uvToWorld = extInfo.WorldRelative ? Matrix2D.Translate(bounds.min) * Matrix2D.Scale(bounds.size) : Matrix2D.identity;
-            var boundsInv = new Vector2(1.0f / bounds.width, 1.0f / bounds.height);
+
+            // A degenerate bounds dimension (e.g. a straight-line contour with a gradient stroke)
+            // maps to a constant UV instead of dividing by zero
+            var boundsInv = new Vector2(
+                bounds.width > VectorUtils.Epsilon ? 1.0f / bounds.width : 1.0f,
+                bounds.height > VectorUtils.Epsilon ? 1.0f / bounds.height : 1.0f);
             computedTransform = Matrix2D.Scale(boundsInv) * gradTransform * extInfo.FillTransform.Inverse() * uvToWorld;
         }
 
@@ -2267,6 +2408,7 @@ namespace Unity.VectorGraphics
         Dictionary<string, List<NodeReferenceData>> postponedSymbolData = new Dictionary<string, List<NodeReferenceData>>();
         Dictionary<string, List<PostponedStopData>> postponedStopData = new Dictionary<string, List<PostponedStopData>>();
         Dictionary<string, List<PostponedClip>> postponedClip = new Dictionary<string, List<PostponedClip>>();
+        Dictionary<SceneNode, Vector2> postponedViewportClips = new Dictionary<SceneNode, Vector2>();
         SVGPostponedFills postponedFills = new SVGPostponedFills();
         List<NodeWithParent> invisibleNodes = new List<NodeWithParent>();
         Stack<Vector2> currentContainerSize = new Stack<Vector2>();

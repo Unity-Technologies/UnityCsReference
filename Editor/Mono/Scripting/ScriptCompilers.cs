@@ -66,6 +66,11 @@ namespace UnityEditor.Scripting
 
         internal static void Cleanup()
         {
+            // "dotnet build-server shutdown" needs an SDK the editor does not ship; running VBCSCompiler out of
+            // csc's own directory hashes to the same pipe name and reaches the server.
+            var vbcsCompiler = $"{EditorApplication.applicationScriptingPath}/DotNetSdkRoslyn/VBCSCompiler.dll";
+            var arguments = $"exec \"{vbcsCompiler}\" -shutdown";
+
             if (Application.platform == RuntimePlatform.WindowsEditor)
             {
                 // Use CreateProcessW as opposed to C# Process class to run
@@ -73,7 +78,7 @@ namespace UnityEditor.Scripting
                 STARTUPINFOW startInfo = default;
                 startInfo.cb = (uint)Marshal.SizeOf<STARTUPINFOW>();
 
-                if (!CreateProcessW(null, $"\"{NetCoreProgram.DotNetMuxerPath}\" build-server shutdown", IntPtr.Zero, IntPtr.Zero, false, ProcessCreationFlags.CREATE_NO_WINDOW, IntPtr.Zero, null, ref startInfo, out var _))
+                if (!CreateProcessW(null, $"\"{NetCoreProgram.DotNetMuxerPath}\" {arguments}", IntPtr.Zero, IntPtr.Zero, false, ProcessCreationFlags.CREATE_NO_WINDOW, IntPtr.Zero, null, ref startInfo, out var _))
                 {
                     var lastError = Marshal.GetLastWin32Error();
                     Debug.LogError("Failed to kill csc server process: " + new Win32Exception(lastError).Message);
@@ -81,17 +86,16 @@ namespace UnityEditor.Scripting
             }
             else
             {
-                var muxerPath = NetCoreProgram.DotNetMuxerPath.ToString();
-                System.Threading.ThreadPool.QueueUserWorkItem(_ =>
-                {
-                    using var process = System.Diagnostics.Process.Start(
-                        new System.Diagnostics.ProcessStartInfo(muxerPath)
-                        {
-                            Arguments = "build-server shutdown",
-                            UseShellExecute = false,
-                            CreateNoWindow = true
-                        });
-                });
+                using var process = System.Diagnostics.Process.Start(
+                    new System.Diagnostics.ProcessStartInfo(NetCoreProgram.DotNetMuxerPath.ToString())
+                    {
+                        Arguments = arguments,
+                        UseShellExecute = false,
+                        CreateNoWindow = true
+                    });
+
+                // On this thread: the queued work item this replaces often did not run before the process exited.
+                process?.WaitForExit(3000);
             }
         }
     }

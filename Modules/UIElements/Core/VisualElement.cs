@@ -84,6 +84,8 @@ namespace UnityEngine.UIElements
         ReceivesHierarchyGeometryChangedEvents = 1 << 21,
         // Element or descendent received a GeometryChangedEvent since last Layout update
         BoundingBoxDirtiedSinceLastLayoutPass = 1 << 22,
+        // World transform could not be inverted; current whenever WorldTransformInverseDirty is clear
+        WorldTransformSingular = 1 << 23,
 
         // Element initial flags
         Init = WorldTransformDirty | WorldTransformInverseDirty | WorldClipDirty | BoundingBoxDirty | WorldBoundingBoxDirty | EventInterestParentCategoriesDirty | LocalBounds3DDirty | LocalBoundsWithoutNested3DDirty | DetachedDataSource
@@ -1416,6 +1418,24 @@ namespace UnityEngine.UIElements
             set => m_Flags = value ? m_Flags | VisualElementFlags.WorldTransformInverseDirty : m_Flags & ~VisualElementFlags.WorldTransformInverseDirty;
         }
 
+        // Refreshing the inverse is what decides this, so it is read through the same laziness.
+        internal ref Matrix4x4 GetWorldTransformInverse(out bool isSingular)
+        {
+            if (isWorldTransformInverseOrDependenciesDirty)
+                UpdateWorldTransformInverse();
+            isSingular = (m_Flags & VisualElementFlags.WorldTransformSingular) != 0;
+            return ref m_WorldTransformInverseCache;
+        }
+
+        internal bool isWorldTransformSingular
+        {
+            get
+            {
+                GetWorldTransformInverse(out bool isSingular);
+                return isSingular;
+            }
+        }
+
         private const VisualElementFlags worldTransformInverseDirtyDependencies =
             VisualElementFlags.WorldTransformInverseDirty | VisualElementFlags.WorldTransformDirty;
 
@@ -1498,9 +1518,20 @@ namespace UnityEngine.UIElements
             isWorldBoundingBoxDirty = true;
         }
 
+        // Below |det| ~1e-3, inverse * world loses a descendant's offset to float32 cancellation (UUM-140869).
+        internal const float k_MinInvertibleDeterminantSquared = 1e-6f;
+
         internal void UpdateWorldTransformInverse()
         {
-            Matrix4x4.Inverse3DAffine(in worldTransformRef, ref m_WorldTransformInverseCache);
+            ref var world = ref worldTransformRef;
+            bool invertible = Matrix4x4.Inverse3DAffine(in world, ref m_WorldTransformInverseCache);
+            float det = world.m00 * (world.m11 * world.m22 - world.m12 * world.m21)
+                - world.m01 * (world.m10 * world.m22 - world.m12 * world.m20)
+                + world.m02 * (world.m10 * world.m21 - world.m11 * world.m20);
+            bool singular = !invertible || det * det < k_MinInvertibleDeterminantSquared;
+            m_Flags = singular
+                ? m_Flags | VisualElementFlags.WorldTransformSingular
+                : m_Flags & ~VisualElementFlags.WorldTransformSingular;
             isWorldTransformInverseDirty = false;
         }
 

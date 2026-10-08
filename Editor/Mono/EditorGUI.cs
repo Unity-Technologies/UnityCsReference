@@ -551,6 +551,8 @@ namespace UnityEditor
                 s_ActuallyEditing = true;
                 scrollOffset = Vector2.zero;
                 m_HasFocus = true;
+                // Presetting m_HasFocus skips OnFocus, so reveal the cursor ourselves (UUM-149213)
+                showCursor = true;
                 UnityEditor.Undo.IncrementCurrentGroup();
 
                 m_IMECompositionModeBackup = Input.imeCompositionMode;

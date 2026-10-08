@@ -80,7 +80,6 @@ namespace UnityEngine.UIElements.UIR
         public RenderChainCommand firstTailCommand, lastTailCommand; // Sequential for the same owner
         public bool localFlipsWinding;
         public bool worldFlipsWinding;
-        public bool worldTransformScaleZero;
 
         public ClipMethod clipMethod; // Self
         public int childrenStencilRef;
@@ -130,7 +129,6 @@ namespace UnityEngine.UIElements.UIR
             lastTailCommand = null;
             localFlipsWinding = false;
             worldFlipsWinding = false;
-            worldTransformScaleZero = false;
             clipMethod = ClipMethod.Undetermined;
             childrenStencilRef = 0;
             childrenMaskDepth = 0;
@@ -331,27 +329,23 @@ namespace UnityEngine.UIElements.UIR
                         m_ClippingRectMinusGroup = clip;
                     else
                     {
-                        var clipMinusGroup = clip;
-
-                        // TODO: Skip for identity
-                        VisualElement.TransformAlignedRect(ref owner.worldTransformRef, ref clipMinusGroup);
-
+                        // Relative to the boundary directly: its inverse does not exist while it is collapsed.
+                        Matrix4x4 toBoundary;
                         if (groupTransformAncestor != null)
-                            VisualElement.TransformAlignedRect(ref groupTransformAncestor.owner.worldTransformInverse, ref clipMinusGroup);
+                            UIRUtility.ComputeMatrixRelativeToAncestor(this, groupTransformAncestor, out toBoundary);
                         else
-                            VisualElement.TransformAlignedRect(ref renderTree.rootRenderData.owner.worldTransformInverse, ref clipMinusGroup);
+                            UIRUtility.ComputeMatrixRelativeToRenderTree(this, out toBoundary);
+
+                        var clipMinusGroup = clip;
+                        VisualElement.TransformAlignedRect(ref toBoundary, ref clipMinusGroup);
 
                         m_ClippingRectMinusGroup = parentClipIsInfinite ? clipMinusGroup : IntersectClipRects(clipMinusGroup, inheritedClippingMinusGroup);
                     }
                 }
 
                 // Bring clip in render-tree space
-                VisualElement.TransformAlignedRect(ref owner.worldTransformRef, ref clip);
-
-                var tree = renderTree;
-                var treeRoot = tree.rootRenderData;
-                if (!tree.isRootRenderTree)
-                    VisualElement.TransformAlignedRect(ref treeRoot.owner.worldTransformInverse, ref clip);
+                UIRUtility.ComputeMatrixRelativeToRenderTree(this, out var toTree);
+                VisualElement.TransformAlignedRect(ref toTree, ref clip);
 
                 // Intersect with inherited clipping
                 m_ClippingRect = IntersectClipRects(clip, inheritedClipping);

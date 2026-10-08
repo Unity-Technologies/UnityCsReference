@@ -73,7 +73,7 @@ namespace UnityEngine.UIElements.UIR
             Matrix4x4 transform;
             var groupTransformAncestor = renderData.groupTransformAncestor;
             if (groupTransformAncestor != null)
-                VisualElement.MultiplyMatrix34(ref groupTransformAncestor.owner.worldTransformInverse, ref renderData.owner.worldTransformRef, out transform);
+                UIRUtility.ComputeMatrixRelativeToAncestor(renderData, groupTransformAncestor, out transform);
             else
                 UIRUtility.ComputeMatrixRelativeToRenderTree(renderData, out transform);
 
@@ -831,7 +831,6 @@ namespace UnityEngine.UIElements.UIR
                     // TODO: Optimized flip-winding instead of a full repaint
                     renderData.renderTree.OnRenderDataVisualsChanged(renderData, true);
                 }
-                UpdateZeroScaling(renderData);
             }
 
             bool dirtyHasBeenResolved = true;
@@ -1067,22 +1066,6 @@ namespace UnityEngine.UIElements.UIR
             }
 
             return false;
-        }
-
-        static void UpdateZeroScaling(RenderData renderData)
-        {
-            if (renderData.isNestedRenderTreeRoot) // Otherwise, the transform is an identity
-                return;
-
-            var ve = renderData.owner;
-            bool transformScaleZero = Math.Abs(ve.resolvedStyle.scale.value.x * ve.resolvedStyle.scale.value.y) < 0.001f;
-
-            bool parentTransformScaleZero = false;
-            VisualElement parent = ve.hierarchy.parent;
-            if (parent != null)
-                parentTransformScaleZero = parent.renderData.worldTransformScaleZero;
-
-            renderData.worldTransformScaleZero = parentTransformScaleZero | transformScaleZero;
         }
 
         static bool NeedsTransformID(VisualElement ve)

@@ -6,6 +6,7 @@ using System;
 using System.Collections.Generic;
 using Unity.Collections;
 using UnityEditor;
+using UnityEditor.Profiling;
 using UnityEditor.UIElements;
 using UnityEditorInternal;
 using UnityEngine;
@@ -61,6 +62,8 @@ namespace Unity.Profiling.Editor.UI
 
         public IResponder Responder { get; }
 
+        internal BottlenecksChartViewModel Model => m_Model;
+
         public void ReloadData()
         {
             if (!IsViewLoaded)
@@ -75,7 +78,11 @@ namespace Unity.Profiling.Editor.UI
 
         public bool SaveHighlightsInfo(string filename)
         {
-            return m_Model.ToFile(filename, ProfilerDriver.lastFrameIndex - ProfilerDriver.firstFrameIndex + 1);
+            // lastFrameIndex - firstFrameIndex + 1 gives 1, not 0, when both are the sentinel -1.
+            var numFramesSaved = (ProfilerDriver.lastFrameIndex == FrameDataView.invalidOrCurrentFrameIndex)
+                ? 0
+                : ProfilerDriver.lastFrameIndex - ProfilerDriver.firstFrameIndex + 1;
+            return m_Model.ToFile(filename, numFramesSaved);
         }
 
         protected override VisualElement LoadView()

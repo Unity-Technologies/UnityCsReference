@@ -351,7 +351,7 @@ namespace Unity.VectorGraphics
                         var gradientFill = shape.Fill as GradientFill;
                         if (gradientFill != null)
                         {
-                            ComputeFillGradientFromGradientFill(node, shape, gradientFill, out var fillGradient, out var fillTransform);
+                            ComputeFillGradientFromGradientFill(shape, matrix, gradientFill, out var fillGradient, out var fillTransform);
                             painter.fillGradient = fillGradient;
                             // Important to set after fillGradient, as setting fillGradient resets the transform
                             painter.fillTransform = fillTransform.ToMatrix4x4();
@@ -367,7 +367,7 @@ namespace Unity.VectorGraphics
                         var gradientFill = stroke.Fill as GradientFill;
                         if (gradientFill != null)
                         {
-                            ComputeFillGradientFromGradientFill(node, shape, gradientFill, out var fillGradient, out var fillTransform);
+                            ComputeFillGradientFromGradientFill(shape, matrix, gradientFill, out var fillGradient, out var fillTransform);
                             painter.strokeFillGradient = fillGradient;
                             painter.fillTransform = fillTransform.ToMatrix4x4();
                         }
@@ -463,15 +463,25 @@ namespace Unity.VectorGraphics
             }
         }
 
-        static void ComputeFillGradientFromGradientFill(SceneNode node, Shape shape, GradientFill gradientFill, out FillGradient outFillGradient, out Matrix2D outFillTransform)
+        static void ComputeFillGradientFromGradientFill(Shape shape, Matrix2D matrix, GradientFill gradientFill, out FillGradient outFillGradient, out Matrix2D outFillTransform)
         {
-            var bounds = VectorUtils.SceneNodeBounds(node);
+            // Shape.FillTransform maps shape-local positions to gradient UVs, so the bounds must be
+            // the untransformed contour bounds, matching SVGParser.AdjustGradientFill().
+            var bounds = VectorUtils.Bounds(shape.Contours);
 
-            // Compute fill transform to match SVG importer's behavior
+            // A degenerate bounds dimension (e.g. a straight-line contour with a gradient stroke)
+            // maps to a constant UV instead of dividing by zero
+            var boundsScale = new Vector2(
+                bounds.width > VectorUtils.Epsilon ? 1.0f / bounds.width : 1.0f,
+                bounds.height > VectorUtils.Epsilon ? 1.0f / bounds.height : 1.0f);
+
+            // The painter positions have the accumulated node transform baked in, so map them back
+            // to shape-local space before applying the fill transform
             outFillTransform =
                 Matrix2D.Translate(new Vector2(0, 1)) * Matrix2D.Scale(new Vector2(1.0f, -1.0f)) * // Do 1-uv.y
                 shape.FillTransform *
-                Matrix2D.Scale(new Vector2(1.0f / bounds.width, 1.0f / bounds.height)) * Matrix2D.Translate(-bounds.position);
+                Matrix2D.Scale(boundsScale) * Matrix2D.Translate(-bounds.position) *
+                matrix.Inverse();
 
             // Convert gradients
             var addressMode = UnityEngine.UIElements.AddressMode.Mirror;

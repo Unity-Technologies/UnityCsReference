@@ -27,6 +27,7 @@ namespace UnityEditor.Build.Profile
     internal class BuildProfileModuleUtil
     {
         const string k_BuyProUrl = "https://store.unity.com/products/unity-pro";
+        const string k_WindowsArchitecturePlatformSetting = "Architecture";
         const string k_ConsoleModuleUrl = "https://unity3d.com/platform-installation";
         const string k_LastRunnableBuildPathSeparator = "_";
         const string k_StyleSheet = "BuildProfile/StyleSheets/BuildProfile.uss";
@@ -1153,6 +1154,39 @@ namespace UnityEditor.Build.Profile
 
             return container;
         }
+
+        /// <summary>
+        /// Resolves the active build target when activating a build profile. Windows architecture
+        /// (x86/x64/ARM64) is not encoded in the GUID or <see cref="BuildProfile.buildTarget"/>, so for
+        /// Windows standalone targets this maps the architecture platform setting onto the matching
+        /// target (x86 -> <see cref="BuildTarget.StandaloneWindows"/>).
+        /// </summary>
+        internal static BuildTarget GetActiveBuildTargetForProfileSwitch(BuildProfile profile, BuildTarget buildTargetFromGuid)
+        {
+            if (profile?.platformBuildProfile == null)
+                return buildTargetFromGuid;
+
+            if (!IsWindowsStandaloneBuildTarget(buildTargetFromGuid))
+                return buildTargetFromGuid;
+
+            var architecture = profile.platformBuildProfile.GetRawPlatformSetting(k_WindowsArchitecturePlatformSetting);
+            if (string.IsNullOrEmpty(architecture))
+                return buildTargetFromGuid;
+
+            switch (architecture.ToLowerInvariant())
+            {
+                case "x86":
+                    return BuildTarget.StandaloneWindows;
+                case "x64":
+                case "arm64":
+                    return BuildTarget.StandaloneWindows64;
+                default:
+                    return buildTargetFromGuid;
+            }
+        }
+
+        static bool IsWindowsStandaloneBuildTarget(BuildTarget buildTarget) =>
+            buildTarget == BuildTarget.StandaloneWindows || buildTarget == BuildTarget.StandaloneWindows64;
 
         /// <summary>
         /// Truncates a string to fit within a specified UTF-8 byte count while preserving
