@@ -10,9 +10,15 @@ using UnityEngine.UIElements;
 namespace UnityEditor.Build.Analysis
 {
     // Binds the shared BuildHeader.uxml template to the selected build's metadata.
-    // Construct against the cloned <ui:Instance> root, then call Bind on every selection change.
-    internal sealed class BuildHeaderController
+    // Clones BuildHeader.uxml into itself; call Bind on every selection change.
+    // Addressables' SummaryTabEmbedded.uxml uses this tag and its attributes.
+    // To rename one, keep the old name with [MovedFrom] or [UxmlAttribute("new-name", "old-name")].
+    [UxmlElement]
+    internal sealed partial class BuildHeader : VisualElement
     {
+        public static readonly string ussClassName = "build-header-element";
+
+        private const string k_UxmlPath = "BuildAnalysis/UXML/BuildHeader.uxml";
         private const string k_StatusSuccessClass = "build-header__status--success";
         private const string k_StatusFailedClass = "build-header__status--failed";
 
@@ -23,20 +29,26 @@ namespace UnityEditor.Build.Analysis
         private readonly Label m_StatusText;
         private readonly Label m_TimeRange;
 
-        public BuildHeaderController(VisualElement headerRoot)
+        // CloneTree adds BuildHeader.uxml's <Style> to this element.
+        public BuildHeader()
         {
-            m_Title        = headerRoot.Q<Label>("title");
-            m_Subtitle     = headerRoot.Q<Label>("subtitle");
-            m_PlatformIcon = headerRoot.Q<Image>("subtitle-platform-icon");
-            m_StatusBadge  = headerRoot.Q<VisualElement>("status-badge");
-            m_StatusText   = headerRoot.Q<Label>("status-badge-text");
-            m_TimeRange    = headerRoot.Q<Label>("time-range");
+            var template = EditorGUIUtility.LoadRequired(k_UxmlPath) as VisualTreeAsset;
+            template.CloneTree(this);
+            AddToClassList(ussClassName);
+
+            m_Title        = this.Q<Label>("title");
+            m_Subtitle     = this.Q<Label>("subtitle");
+            m_PlatformIcon = this.Q<Image>("subtitle-platform-icon");
+            m_StatusBadge  = this.Q<VisualElement>("status-badge");
+            m_StatusText   = this.Q<Label>("status-badge-text");
+            m_TimeRange    = this.Q<Label>("time-range");
         }
 
-        public void Bind(BuildEntry selection)
+        // A null subtitle shows the platform and build type.
+        public void Bind(BuildEntry selection, string subtitle = null)
         {
             m_Title.text = selection.BuildName ?? string.Empty;
-            m_Subtitle.text = $"{selection.Platform} • {selection.BuildType}";
+            m_Subtitle.text = subtitle ?? $"{selection.Platform} • {selection.BuildType}";
             m_PlatformIcon.image = IconUtility.GetPlatformIcon(selection.Platform);
             m_StatusText.text = selection.BuildResult == BuildResult.Succeeded ? "Success" : "Failure";
             m_TimeRange.text = FormatTimeRange(selection.BuildStartedAt, selection.TotalTimeMs);

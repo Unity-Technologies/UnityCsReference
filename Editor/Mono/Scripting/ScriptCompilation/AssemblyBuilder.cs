@@ -23,6 +23,8 @@ namespace UnityEditor.Compilation
     {
         None = 0,
         EditorAssembly = 1,
+
+        [Obsolete("AssemblyBuilderFlags.DevelopmentBuild is obsolete and has no effect: the Development Build setting no longer affects script compilation, and the DEVELOPMENT_BUILD scripting symbol is no longer defined. Add the scripting symbols you need (such as DEBUG, UNITY_ENABLE_CHECKS, or UNITY_INCLUDE_INSTRUMENTATION) to AssemblyBuilder.additionalDefines instead.", true)]
         DevelopmentBuild = 2,
     }
 

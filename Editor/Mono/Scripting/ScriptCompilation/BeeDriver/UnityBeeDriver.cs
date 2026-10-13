@@ -133,7 +133,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
 
         public static BuildRequest BuildRequestFor(BuildTarget target, BuildOptions buildOptions, RunnableProgram buildProgram, EditorCompilation editorCompilation, string dagName, CacheMode cacheMode, string dagDirectory = null, bool useScriptUpdater = true)
         {
-            return BuildRequestFor(target, buildOptions, buildProgram, dagName, dagDirectory, useScriptUpdater, editorCompilation.projectDirectory, new ILPostProcessingProgram(), cacheMode, StdOutModeForScriptCompilation);
+            return BuildRequestFor(target, buildOptions, buildProgram, dagName, dagDirectory, useScriptUpdater, editorCompilation.projectDirectory, cacheMode, StdOutModeForScriptCompilation);
         }
 
         public const StdOutMode StdOutModeForScriptCompilation =
@@ -149,15 +149,10 @@ namespace UnityEditor.Scripting.ScriptCompilation
                 string dagDirectory,
                 bool useScriptUpdater,
                 NPath projectDirectory,
-                ILPostProcessingProgram ilpp,
                 CacheMode cacheMode,
                 StdOutMode stdoutMode,
                 RunnableProgram beeBackendProgram = null)
         {
-            // ensure ilpp server is running before staring the backend in defered validation mode.
-            // getting the property value enforces that as it makes sure the server is running and answering a ping request
-            var ilppNamedPipeOrSocket = ilpp.EnsureRunningAndGetSocketOrNamedPipe();
-
             NPath dagDir = dagDirectory ?? projectDirectory.Combine("Library/Bee");
             RecreateDagDirectoryIfNeeded(dagDir);
             var performingPlayerBuild = UnityBeeDriverProfilerSession.PerformingPlayerBuild;
@@ -197,7 +192,6 @@ namespace UnityEditor.Scripting.ScriptCompilation
                 UnitySourceCodePath = Unsupported.IsSourceBuild(false) ? Unsupported.GetBaseUnityDeveloperFolder() : null,
                 Batchmode = InternalEditorUtility.inBatchMode,
                 EmitDataForBeeWhy = (Debug.GetDiagnosticSwitch("EmitDataForBeeWhy").value as bool?)?? false,
-                        NamedPipeOrUnixSocket = ilppNamedPipeOrSocket,
                     }
                 }
             };

@@ -19,5 +19,13 @@ namespace Unity.Multiplayer.Center.Editor
         public const string PlaceHolderIcon = "place-holder__icon";
         public const string QuestionMode = "question-mode";
         public const string SectionHeadline ="section-headline";
+        public const string ComparisonCell = "comparison-cell";
+        public const string SpecRow = "spec-row";
+        public const string SpecRowLabel = "spec-row__label";
+        public const string SpecRowDescription = "spec-row__description";
+        public const string SegmentedRangeMeter = "segmented-range-meter";
+        public const string SpecRowSummary = "spec-row__summary";
+        public const string ArchitectureCellIcon = "architecture-cell__icon";
+        public const string ArchitectureCellLabel = "architecture-cell__label";
     }
 }

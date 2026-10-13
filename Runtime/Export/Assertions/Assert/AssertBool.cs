@@ -20,8 +20,7 @@ namespace UnityEngine.Assertions
         [Conditional(UNITY_ASSERTIONS)]
         public static void IsTrue(bool condition, string message)
         {
-            if (!condition)
-                Fail(AssertionMessageUtil.BooleanFailureMessage(true), message);
+            AssertCore.IsTrue(condition, message);
         }
 
         [Conditional(UNITY_ASSERTIONS)]
@@ -34,8 +33,7 @@ namespace UnityEngine.Assertions
         [Conditional(UNITY_ASSERTIONS)]
         public static void IsFalse(bool condition, string message)
         {
-            if (condition)
-                Fail(AssertionMessageUtil.BooleanFailureMessage(false), message);
+            AssertCore.IsFalse(condition, message);
         }
     }
 }

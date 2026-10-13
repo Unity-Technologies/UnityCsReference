@@ -148,6 +148,11 @@ namespace Unity.ProjectAuditor.Editor.Modules
 
         Thread m_AssemblyAnalysisThread;
 
+        const string kUnknownTargetFramework = "Unknown";
+        const string kEditorReferenceAssemblyTargetFramework = "Editor Reference Assembly";
+
+        string m_EditorContentsPath;
+
         public override string Name => "Code";
 
         // Match a whole "word", starting with UDR and ending with exactly 4 digits, e.g. UDR1234
@@ -238,6 +243,8 @@ namespace Unity.ProjectAuditor.Editor.Modules
                 m_OpCodeAnalyzers[(ushort)opCode.Value] = opCodeAnalyzers;
             }
 
+            m_EditorContentsPath = PathUtils.ReplaceSeparators(EditorApplication.applicationContentsPath);
+
             var precompiledAssemblyPaths = AssemblyInfoProvider.GetPrecompiledAssemblyPaths(PrecompiledAssemblyTypes.All);
             var precompiledAssemblyIssues = new List<ReportItem>(precompiledAssemblyPaths.Count);
             var onPrecompiledAssemblyIssueFoundInternal = new Action<ReportItem>(precompiledAssemblyIssues.Add);
@@ -283,21 +290,24 @@ namespace Unity.ProjectAuditor.Editor.Modules
                 yield return new WaitForEndOfFrame();
 
             // find all roslyn analyzer DLLs by label
-#pragma warning disable UAC2001 // Avoid Linq
-            var roslynAnalyzerAssets = new List<string>(AssetDatabase.FindAssets("l:RoslynAnalyzer").Select(AssetDatabase.GUIDToAssetPath));
-#pragma warning restore UAC2001
+            var roslynAnalyzerGuids = AssetDatabase.FindAssets("l:RoslynAnalyzer");
 
             // report all roslyn analyzers as PrecompiledAssembly issues
-#pragma warning disable UAC2001 // Avoid Linq
-            var roslynAnalyzerIssues = roslynAnalyzerAssets
-#pragma warning restore UAC2001
-                .Distinct()
-                .Select(roslynAnalyzerDllPath => (ReportItem)context.CreateInsight(
-                IssueCategory.PrecompiledAssembly,
-                Path.GetFileNameWithoutExtension(roslynAnalyzerDllPath))
-                .WithCustomProperties([true, string.Empty])
-                .WithLocation(roslynAnalyzerDllPath));
+            var roslynAnalyzerUniqueGuids = new HashSet<string>(roslynAnalyzerGuids);
+            var roslynAnalyzerAssets = new List<string>(roslynAnalyzerUniqueGuids.Count);
+            var roslynAnalyzerIssues = new List<ReportItem>(roslynAnalyzerUniqueGuids.Count);
+            foreach (var roslynAnalyzerDllGuid in roslynAnalyzerUniqueGuids)
+            {
+                var roslynAnalyzerDllPath = AssetDatabase.GUIDToAssetPath(roslynAnalyzerDllGuid);
+                roslynAnalyzerAssets.Add(roslynAnalyzerDllPath);
 
+                var targetFramework = ReadTargetFramework(FileUtil.GetPhysicalPath(roslynAnalyzerDllPath));
+                roslynAnalyzerIssues.Add((ReportItem)context.CreateInsight(
+                    IssueCategory.PrecompiledAssembly,
+                    Path.GetFileNameWithoutExtension(roslynAnalyzerDllPath))
+                    .WithCustomProperties([true, string.IsNullOrEmpty(targetFramework) ? kUnknownTargetFramework : targetFramework])
+                    .WithLocation(roslynAnalyzerDllPath));
+            }
             analysisParams.OnIncomingIssues(roslynAnalyzerIssues);
 
             yield return null;
@@ -807,7 +817,7 @@ namespace Unity.ProjectAuditor.Editor.Modules
                 };
 
                 onIssueFound.Invoke((ReportItem)context.CreateInsight(IssueCategory.PrecompiledAssembly, Path.GetFileNameWithoutExtension(assemblyPath))
-                    .WithCustomProperties([false, targetFramework])
+                    .WithCustomProperties([false, GetTargetFrameworkLabel(assemblyPath, targetFramework)])
                     .WithLocation(assemblyPath));
 
                 foreach (var analyzer in m_PrecompiledAssemblyAnalyzers)
@@ -1133,6 +1143,22 @@ namespace Unity.ProjectAuditor.Editor.Modules
                     .WithLocation(relativePath, message.Line)
                     .WithLogLevel(CompilerMessageTypeToLogLevel(message.Type));
             }
+        }
+
+        string GetTargetFrameworkLabel(string assemblyPath, string targetFramework)
+        {
+            if (!string.IsNullOrEmpty(targetFramework))
+                return targetFramework;
+
+            // the editor's reference assemblies are built without a TargetFrameworkAttribute
+            if (!string.IsNullOrEmpty(m_EditorContentsPath)
+                && assemblyPath.StartsWith(m_EditorContentsPath, StringComparison.OrdinalIgnoreCase)
+                && assemblyPath.Contains("/UnityReferenceAssemblies/", StringComparison.OrdinalIgnoreCase))
+            {
+                return kEditorReferenceAssemblyTargetFramework;
+            }
+
+            return kUnknownTargetFramework;
         }
 
         // Reads the assembly-level TargetFrameworkAttribute (for example ".NETStandard,Version=v2.1") from a

@@ -243,6 +243,10 @@ namespace UnityEngine.Android
         ///- Screen layout
         ///- Screen size
         ///
+        ///Screen size refers to the Android `screenSize` configuration change, which reports the size of the screen space available to the application, in density-independent pixels (dp). For example, the size changes when the device rotates, when the user resizes the application window in multi-window mode, or when the user folds or unfolds a foldable device. To read the new size, use <see cref="AndroidConfiguration.screenWidthDp" /> and <see cref="AndroidConfiguration.screenHeightDp" />.
+        ///
+        ///This callback isn't related to the <see cref="Screen" /> class. Values such as <see cref="Screen.width" />, <see cref="Screen.height" />, and <see cref="Screen.currentResolution" /> describe the rendering surface and the display in pixels, and Unity doesn't invoke this callback in response to changes in those values. For example, calling <see cref="Screen.SetResolution(int,int,FullScreenMode)" /> changes <see cref="Screen.width" /> and <see cref="Screen.height" />, but doesn't trigger this callback, because the screen space available to the application stays the same.
+        ///
         ///For more information on the configuration changes, refer to the &lt;a href="https://developer.android.com/guide/topics/resources/runtime-changes"&gt;Android developer documentation&lt;/a&gt;.</remarks>
         ///<example>
         ///  <code><![CDATA[using UnityEngine;
@@ -378,7 +382,22 @@ namespace UnityEngine.Android
         ///<seealso href="https://developer.android.com/reference/android/app/Activity#isInMultiWindowMode()">isInMultiWindowMode</seealso>
         public static extern bool isInMultiWindowMode { get; }
 
+        [NoAutoStaticsCleanup]
+        private static string m_Category;
+
+        ///<summary>The category of the application.</summary>
+        ///<remarks>Returns one of the following values: <c>accessibility</c>, <c>audio</c>, <c>game</c>, <c>image</c>, <c>maps</c>, <c>news</c>, <c>productivity</c>, <c>social</c>, or <c>video</c>. These are the same values as the <c>android:appCategory</c> attribute in the Android manifest and as <c>PlayerSettings.Android.appCategory</c> in the Editor.
+        ///Returns an empty string if the application doesn't specify a category, if Android reports a category that's not in this list, or when called outside of an Android Player.
+        ///For more information, refer to the Android developer documentation on &lt;a href="https://developer.android.com/reference/android/content/pm/ApplicationInfo#category"&gt;ApplicationInfo.category&lt;/a&gt;.</remarks>
+        public static string category => m_Category ??= GetCategory();
+
+        private static string GetCategory()
+        {
+            return string.Empty;
+        }
+
         ///<summary>Invokes delegate on Android application's UI thread.</summary>
+        ///<param name="action">The delegate to invoke on the UI thread.</param>
         ///<remarks>**Note:** Certain Android Java functions, such as those related to the user interface can only be called on the UI thread.</remarks>
         ///<example nocheck="true">
         ///  <code><![CDATA[using System;
@@ -411,6 +430,7 @@ namespace UnityEngine.Android
         }
 
         ///<summary>Invokes delegate on Android application's main thread.</summary>
+        ///<param name="action">The delegate to invoke on Unity's main thread.</param>
         ///<remarks>This is useful if you receive a Java callback on the UI thread, but want to process result on Unity's main thread.
         ///
         ///This method blocks the calling thread until the Unity main thread finishes running the delegate. It has no effect in the Editor.</remarks>

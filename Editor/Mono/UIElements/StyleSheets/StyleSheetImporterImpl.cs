@@ -610,6 +610,32 @@ namespace UnityEditor.UIElements.StyleSheets
             }
         }
 
+        static bool HasEmptyArgument(FunctionToken functionToken)
+        {
+            bool hasToken = false;
+            bool previousWasComma = true;
+            foreach (var token in functionToken.ArgumentTokens)
+            {
+                if (token.Type == TokenType.Whitespace)
+                    continue;
+
+                hasToken = true;
+
+                if (token.Type == TokenType.Comma)
+                {
+                    if (previousWasComma)
+                        return true;
+                    previousWasComma = true;
+                }
+                else
+                {
+                    previousWasComma = false;
+                }
+            }
+
+            return hasToken && previousWasComma;
+        }
+
         bool ValidateFunction(FunctionToken functionToken, out StyleValueFunction func)
         {
             func = StyleValueFunction.Unknown;
@@ -635,6 +661,12 @@ namespace UnityEditor.UIElements.StyleSheets
             {
                 var prop = m_Builder.currentProperty;
                 m_Errors.AddValidationWarning(string.Format(glossary.unknownFunction, functionToken.Data, prop.name), functionToken.Position.Line, functionToken.Position.Column);
+                return false;
+            }
+
+            if (HasEmptyArgument(functionToken))
+            {
+                m_Errors.AddValidationWarning(glossary.emptyFunctionArgument, functionToken.Position.Line, functionToken.Position.Column);
                 return false;
             }
 
@@ -981,6 +1013,13 @@ namespace UnityEditor.UIElements.StyleSheets
 
         bool TryCreateColorFromFunctionToken(FunctionToken functionToken, int expectedChannels, out Color color)
         {
+            color = default;
+            if (HasEmptyArgument(functionToken))
+            {
+                m_Errors.AddValidationWarning(glossary.emptyFunctionArgument, functionToken.Position.Line, functionToken.Position.Column);
+                return false;
+            }
+
             // We expect colors in the form rgba(int, int, int, float) or rgba(float, float, float, float)
 
             // Extract the channels as float values and determine if the rgb format is int or float
@@ -1372,6 +1411,9 @@ namespace UnityEditor.UIElements.StyleSheets
                 // Note: we must rely on recursion to correctly handle parser types here
                  VisitBaseSelector(rule.Selector);
 
+                foreach (var nestedRule in rule.NestedRules)
+                    m_Errors.AddSemanticError(StyleSheetImportErrorCode.UnsupportedSelectorFormat, string.Format(glossary.unsupportedSelectorFormat, nestedRule.SelectorText), m_CurrentLine);
+
                 foreach (var property in rule.Style.Declarations)
                 {
                     m_CurrentLine = GetPropertyLine(property);
@@ -1433,6 +1475,12 @@ namespace UnityEditor.UIElements.StyleSheets
 
                 case UnknownSelector unknownSelector:
                     VisitUnknownSelector(unknownSelector);
+                    break;
+
+                case NotSelector:
+                case HasSelector:
+                case MatchesSelector:
+                    m_Errors.AddSemanticError(StyleSheetImportErrorCode.RecursiveSelectorDetected, string.Format(glossary.unsupportedSelectorFormat, selector.Text), m_CurrentLine);
                     break;
 
                 default:
@@ -1516,6 +1564,12 @@ namespace UnityEditor.UIElements.StyleSheets
                             parts[i] = StyleSelectorPart.CreatePseudoClass(pseudoClassSelector.Class);
                         break;
                     }
+
+                    case NotSelector:
+                    case HasSelector:
+                    case MatchesSelector:
+                        m_Errors.AddSemanticError(StyleSheetImportErrorCode.RecursiveSelectorDetected, string.Format(glossary.unsupportedSelectorFormat, selectors.Text), m_CurrentLine);
+                        return false;
 
                     case TypeSelector typeSelector:
                         parts[i] = StyleSelectorPart.CreateType(typeSelector.Name);

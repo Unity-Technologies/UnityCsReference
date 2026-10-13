@@ -110,7 +110,7 @@ using System.Runtime.CompilerServices;
 // Until this list is empty, your internal API is included in your public API, and changing internal APIs is considered a breaking change.
 
 [assembly: InternalsVisibleTo("Unity.InternalAPIEngineBridge.001")] // com.unity.2d.common: VisualElement.pseudoStates, PseudoStates
-[assembly: InternalsVisibleTo("Unity.InternalAPIEngineBridge.002")] // com.unity.entities: VisualElementBridge.cs, ListViewBridge.cs
+[assembly: InternalsVisibleTo("Unity.InternalAPIEngineBridge.002")] // com.unity.entities: VisualElementBridge.cs
 [assembly: InternalsVisibleTo("Unity.InternalAPIEngineBridge.003")] // com.unity.vectorgraphics: VectorImage, GradientSettings
 
 

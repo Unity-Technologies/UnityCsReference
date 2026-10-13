@@ -222,15 +222,15 @@ namespace Unity.GraphToolkit.Editor
         /// <summary>
         /// The globally unique identifier for this node.
         /// </summary>
-        public Hash128 ID => m_Implementation?.Guid ?? default;
+        public Hash128 ID => GetImplementation().Guid;
 
         /// <summary>
         /// The text displayed when hovering over the node's header.
         /// </summary>
         public string Tooltip
         {
-            get => m_Implementation.Tooltip;
-            set => m_Implementation.Tooltip = value;
+            get => GetImplementation().Tooltip;
+            set => GetImplementation().Tooltip = value;
         }
 
         /// <summary>
@@ -243,8 +243,8 @@ namespace Unity.GraphToolkit.Editor
         /// <seealso cref="NodeAttribute.Title"/>
         public string Title
         {
-            get => m_Implementation.Title;
-            set => m_Implementation.Title = value;
+            get => GetImplementation().Title;
+            set => GetImplementation().Title = value;
         }
 
         /// <summary>
@@ -252,8 +252,8 @@ namespace Unity.GraphToolkit.Editor
         /// </summary>
         public string Subtitle
         {
-            get => m_Implementation.Subtitle;
-            set => m_Implementation.Subtitle = value;
+            get => GetImplementation().Subtitle;
+            set => GetImplementation().Subtitle = value;
         }
 
         /// <summary>
@@ -261,8 +261,8 @@ namespace Unity.GraphToolkit.Editor
         /// </summary>
         public Color DefaultColor
         {
-            get => m_Implementation.DefaultColor;
-            set => m_Implementation.DefaultColor = value;
+            get => GetImplementation().DefaultColor;
+            set => GetImplementation().DefaultColor = value;
         }
 
         /// <summary>
@@ -274,8 +274,8 @@ namespace Unity.GraphToolkit.Editor
         /// </remarks>
         public float FillAmount
         {
-            get => m_Implementation.FillAmount;
-            set => m_Implementation.FillAmount = value;
+            get => GetImplementation().FillAmount;
+            set => GetImplementation().FillAmount = value;
         }
 
         /// <summary>
@@ -385,7 +385,7 @@ namespace Unity.GraphToolkit.Editor
         /// <summary>
         /// The number of node options defined in the node.
         /// </summary>
-        public int NodeOptionCount => ((INode)m_Implementation).NodeOptionCount;
+        public int NodeOptionCount => ((INode)GetImplementation()).NodeOptionCount;
 
         /// <summary>
         /// Retrieves a node option using its zero-based index.
@@ -398,12 +398,12 @@ namespace Unity.GraphToolkit.Editor
         /// <exception cref="IndexOutOfRangeException">
         /// Thrown if the index is out of bounds.
         /// </exception>
-        public INodeOption GetNodeOption(int index) => ((INode)m_Implementation).GetNodeOption(index);
+        public INodeOption GetNodeOption(int index) => ((INode)GetImplementation()).GetNodeOption(index);
 
         /// <summary>
         /// The node options defined on this node.
         /// </summary>
-        public IEnumerable<INodeOption> NodeOptions => ((INode)m_Implementation).NodeOptions;
+        public IEnumerable<INodeOption> NodeOptions => ((INode)GetImplementation()).NodeOptions;
 
         /// <summary>
         /// Retrieves a node option using its name.
@@ -411,12 +411,12 @@ namespace Unity.GraphToolkit.Editor
         /// <param name="name">The unique name of the node option.</param>
         /// <returns>The node option with the specified name, or null if none is found.</returns>
         /// <remarks>The node option's name is unique within the node's input ports and node options.</remarks>
-        public INodeOption GetNodeOptionByName(string name) => ((INode)m_Implementation).GetNodeOptionByName(name);
+        public INodeOption GetNodeOptionByName(string name) => ((INode)GetImplementation()).GetNodeOptionByName(name);
 
         /// <summary>
         /// The number of input ports on the node.
         /// </summary>
-        public int InputPortCount => ((INode)m_Implementation).InputPortCount;
+        public int InputPortCount => ((INode)GetImplementation()).InputPortCount;
 
         /// <summary>
         /// Retrieves an input port using its index.
@@ -426,13 +426,13 @@ namespace Unity.GraphToolkit.Editor
         /// <remarks>
         /// The index is zero-based. The list of input ports is ordered according to their display order in the node.
         /// </remarks>
-        public IPort GetInputPort(int index) => ((INode)m_Implementation).GetInputPort(index);
+        public IPort GetInputPort(int index) => ((INode)GetImplementation()).GetInputPort(index);
 
         /// <summary>
         /// Retrieves all input ports on the node in the order they are displayed.
         /// </summary>
         /// <returns>An <c>IEnumerable</c> of input ports.</returns>
-        public IEnumerable<IPort> GetInputPorts() => ((INode)m_Implementation).GetInputPorts();
+        public IEnumerable<IPort> GetInputPorts() => ((INode)GetImplementation()).GetInputPorts();
 
         /// <summary>
         /// Retrieves an input port using its name.
@@ -440,12 +440,12 @@ namespace Unity.GraphToolkit.Editor
         /// <param name="name">The unique name of the input port within this node.</param>
         /// <returns>The input port with the specified name, or null if no match is found.</returns>
         /// <remarks>The input port's name is unique within the node's input ports and node options.</remarks>
-        public IPort GetInputPortByName(string name) => ((INode)m_Implementation).GetInputPortByName(name);
+        public IPort GetInputPortByName(string name) => ((INode)GetImplementation()).GetInputPortByName(name);
 
         /// <summary>
         /// The number of output ports on the node.
         /// </summary>
-        public int OutputPortCount => ((INode)m_Implementation).OutputPortCount;
+        public int OutputPortCount => ((INode)GetImplementation()).OutputPortCount;
 
         /// <summary>
         /// Retrieves an output port using its index in the displayed order.
@@ -455,13 +455,13 @@ namespace Unity.GraphToolkit.Editor
         /// <remarks>
         /// The index is zero-based. The list of output ports is ordered according to their display order in the node.
         /// </remarks>
-        public IPort GetOutputPort(int index) => ((INode)m_Implementation).GetOutputPort(index);
+        public IPort GetOutputPort(int index) => ((INode)GetImplementation()).GetOutputPort(index);
 
         /// <summary>
         /// Retrieves all output ports on the node in the order they are displayed.
         /// </summary>
         /// <returns>An <c>IEnumerable</c> of output ports.</returns>
-        public IEnumerable<IPort> GetOutputPorts() => ((INode)m_Implementation).GetOutputPorts();
+        public IEnumerable<IPort> GetOutputPorts() => ((INode)GetImplementation()).GetOutputPorts();
 
         /// <summary>
         /// Retrieves an output port using its name.
@@ -469,7 +469,7 @@ namespace Unity.GraphToolkit.Editor
         /// <param name="name">The unique name of the output port within this node.</param>
         /// <returns>The output port with the specified name, or null if no match is found.</returns>
         /// <remarks>The output port's name is unique within the node's output ports.</remarks>
-        public IPort GetOutputPortByName(string name) => ((INode)m_Implementation).GetOutputPortByName(name);
+        public IPort GetOutputPortByName(string name) => ((INode)GetImplementation()).GetOutputPortByName(name);
 
         /// <summary>
         /// The position of the node in the graph.
@@ -483,6 +483,6 @@ namespace Unity.GraphToolkit.Editor
         /// <summary>
         /// Removes the node from its graph.
         /// </summary>
-        public void RemoveFromGraph() => ((INode)m_Implementation).RemoveFromGraph();
+        public void RemoveFromGraph() => ((INode)GetImplementation()).RemoveFromGraph();
     }
 }

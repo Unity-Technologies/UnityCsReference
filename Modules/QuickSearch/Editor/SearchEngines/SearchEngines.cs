@@ -288,73 +288,169 @@ namespace UnityEditor.Search
         }
     }
 
+    // Tests each filtered GameObject with its own SceneQueryEngine, whose cached GameObject data it invalidates itself
     [SceneSearchEngine]
     class SceneSearchEngine : QuickSearchEngine, ISceneSearchEngineV2
     {
-        private readonly Dictionary<Guid, HashSet<EntityId>> m_SearchItemsBySession = new Dictionary<Guid, HashSet<EntityId>>();
-
-        public override string providerId => "scene";
-
-        public override void BeginSearch(ISearchContext context, string query)
+        sealed class SearchState
         {
-            if (!searchSessions.ContainsKey(context.guid))
-                return;
-            base.BeginSearch(context, query);
-
-            var searchSession = searchSessions[context.guid];
-            if (searchSession.context.searchText == query)
-                return;
-
-            searchSession.context.searchText = query;
-            #pragma warning disable UAC2011 // Avoid Linq
-            if (context.requiredTypeNames != null && context.requiredTypeNames.FirstOrDefault() != null)
-#pragma warning restore UAC2011
-            {
-                #pragma warning disable UAC2010 // Avoid Linq
-                searchSession.context.filterType = Utils.GetTypeFromName(context.requiredTypeNames.First());
-#pragma warning restore UAC2010
-            }
-            else
-            {
-                searchSession.context.filterType = typeof(GameObject);
-            }
-
-            if (!m_SearchItemsBySession.ContainsKey(context.guid))
-                m_SearchItemsBySession.Add(context.guid, new HashSet<EntityId>());
-            var searchItemsSet = m_SearchItemsBySession[context.guid];
-            searchItemsSet.Clear();
-
-            SearchService.Request(searchSession.context, (c, items) =>
-            {
-                foreach (var item in items)
-                {
-                    searchItemsSet.Add(EntityId.FromULong(Convert.ToUInt64(item.id)));
-                }
-            }, SearchFlags.Synchronous);
+            public string parsedFrom;
+            public ParsedQuery<GameObject> query;
+            public bool fuzzyMatch;
+            public SearchMonitorView monitorView;
         }
 
-        public override void EndSearch(ISearchContext context)
+        readonly Dictionary<Guid, SearchState> m_SearchStates = new Dictionary<Guid, SearchState>();
+        SceneQueryEngine m_QueryEngine;
+
+        public override string providerId => BuiltInSceneObjectsProvider.type;
+
+        public override void BeginSession(ISearchContext context)
         {
-            if (!searchSessions.ContainsKey(context.guid))
+            if (m_SearchStates.ContainsKey(context.guid))
                 return;
-            base.EndSearch(context);
+
+            if (m_SearchStates.Count == 0)
+                StartListening();
+            m_SearchStates.Add(context.guid, new SearchState());
         }
 
         public override void EndSession(ISearchContext context)
         {
-            if (m_SearchItemsBySession.ContainsKey(context.guid))
+            if (!m_SearchStates.TryGetValue(context.guid, out var state))
+                return;
+
+            state.monitorView.Dispose();
+            m_SearchStates.Remove(context.guid);
+            if (m_SearchStates.Count == 0)
+                StopListening();
+        }
+
+        public override void BeginSearch(ISearchContext context, string query)
+        {
+            if (!m_SearchStates.TryGetValue(context.guid, out var state))
+                return;
+
+            // Changes made by scripts in Play Mode raise no invalidation event
+            if (EditorApplication.isPlaying)
+                m_QueryEngine.InvalidateAll();
+
+            var searchQuery = GetSearchQuery(query);
+            if (state.query == null || state.parsedFrom != searchQuery)
             {
-                m_SearchItemsBySession[context.guid].Clear();
-                m_SearchItemsBySession.Remove(context.guid);
+                state.query = m_QueryEngine.engine.ParseQuery(searchQuery);
+                state.parsedFrom = searchQuery;
+                state.fuzzyMatch = state.query.HasToggle("fuzzy");
             }
-            base.EndSession(context);
+
+            // Only filters read the property database, and opening a view allocates enough to trigger a collection
+            state.monitorView.Dispose();
+#pragma warning disable UAL0018 // the view is scoped to a single search: it is acquired here and disposed in EndSearch or EndSession, so the property stores it wraps are never held past the search
+            state.monitorView = state.query.valid && HasFilterNode(state.query.queryGraph.root) ? SearchMonitor.GetView() : default;
+#pragma warning restore UAL0018
+        }
+
+        public override void EndSearch(ISearchContext context)
+        {
+            if (!m_SearchStates.TryGetValue(context.guid, out var state))
+                return;
+
+            state.monitorView.Dispose();
+            state.monitorView = default;
         }
 
         public virtual bool Filter(ISearchContext context, string query, HierarchyIterator objectToFilter)
         {
-            if (!m_SearchItemsBySession.ContainsKey(context.guid))
+            if (!m_SearchStates.TryGetValue(context.guid, out var state) || state.query == null)
                 return false;
-            return m_SearchItemsBySession[context.guid].Contains(objectToFilter.entityId);
+
+            if (objectToFilter.pptrValue is not GameObject gameObject)
+                return false;
+
+            // The engine is shared by the sessions, whose searches can interleave
+            m_QueryEngine.SetFuzzyMatch(state.fuzzyMatch);
+            return state.query.Test(gameObject);
+        }
+
+        internal object GetSearchState(Guid sessionGuid)
+        {
+            return m_SearchStates.GetValueOrDefault(sessionGuid);
+        }
+
+        protected override void Dispose(bool disposing)
+        {
+            if (disposing && m_SearchStates.Count > 0)
+            {
+                foreach (var state in m_SearchStates.Values)
+                {
+                    state.monitorView.Dispose();
+                }
+                m_SearchStates.Clear();
+                StopListening();
+            }
+
+            base.Dispose(disposing);
+        }
+
+        // Reads the query the way a search context reads it for the scene provider
+        static string GetSearchQuery(string query)
+        {
+            var searchQuery = (query ?? string.Empty).TrimStart();
+            if (searchQuery.StartsWith(BuiltInSceneObjectsProvider.filterId, StringComparison.OrdinalIgnoreCase))
+                searchQuery = searchQuery.Substring(BuiltInSceneObjectsProvider.filterId.Length);
+            searchQuery = QueryMarker.ReplaceMarkersWithRawValues(searchQuery, out _);
+            return searchQuery.Trim();
+        }
+
+        static bool HasFilterNode(IQueryNode node)
+        {
+            if (node == null)
+                return false;
+
+            if (node.type == QueryNodeType.Filter)
+                return true;
+
+            if (node.children == null)
+                return false;
+
+            foreach (var child in node.children)
+            {
+                if (HasFilterNode(child))
+                    return true;
+            }
+            return false;
+        }
+
+        void StartListening()
+        {
+            if (m_QueryEngine == null)
+            {
+                m_QueryEngine = new SceneQueryEngine(Array.Empty<GameObject>());
+                m_QueryEngine.engine.skipUnknownFilters = true;
+            }
+            EditorApplication.hierarchyChanged += OnHierarchyChanged;
+            EditorApplication.playModeStateChanged += OnPlayModeStateChanged;
+            ObjectChangeEvents.changesPublished += OnChangesPublished;
+        }
+
+        // The cached data cannot be trusted once changes are no longer tracked
+        void StopListening()
+        {
+            EditorApplication.hierarchyChanged -= OnHierarchyChanged;
+            EditorApplication.playModeStateChanged -= OnPlayModeStateChanged;
+            ObjectChangeEvents.changesPublished -= OnChangesPublished;
+            m_QueryEngine.InvalidateAll();
+        }
+
+        // A rename, reparent or creation also changes what other GameObjects cache (is=leaf, ref= by path)
+        void OnHierarchyChanged() => m_QueryEngine.InvalidateAll();
+
+        void OnPlayModeStateChanged(PlayModeStateChange change) => m_QueryEngine.InvalidateAll();
+
+        void OnChangesPublished(ref ObjectChangeEventStream stream)
+        {
+            if (m_QueryEngine.InvalidateChanges(ref stream))
+                m_QueryEngine.InvalidateAll();
         }
     }
 

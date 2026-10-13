@@ -559,6 +559,7 @@ namespace UnityEngine.UIElements.StyleSheets
         BackgroundGradient ParseLinearGradient(ref int cursor, int argsEnd)
         {
             float angle = Mathf.PI; // CSS default: "to bottom"
+            var angleUnit = AngleUnit.Degree;
 
             // Direction phase (optional) up to the first comma.
             while (cursor < argsEnd)
@@ -572,9 +573,10 @@ namespace UnityEngine.UIElements.StyleSheets
                     break;
                 }
 
-                if ((vt == StyleValueType.Dimension || vt == StyleValueType.Float) && TryReadAngle(value, out var dirAngle))
+                if ((vt == StyleValueType.Dimension || vt == StyleValueType.Float) && TryReadAngle(value, out var dirAngle, out var dirUnit))
                 {
                     angle = dirAngle;
+                    angleUnit = dirUnit;
                     cursor++;
                     continue;
                 }
@@ -619,6 +621,7 @@ namespace UnityEngine.UIElements.StyleSheets
             {
                 type = GradientType.Linear,
                 angle = angle,
+                angleUnit = angleUnit,
                 stops = stops,
                 position = new Vector2(0.5f, 0.5f),
                 shape = BackgroundGradientShape.Ellipse,
@@ -871,9 +874,10 @@ namespace UnityEngine.UIElements.StyleSheets
             return pos;
         }
 
-        static bool TryReadAngle(StylePropertyValue value, out float radians)
+        static bool TryReadAngle(StylePropertyValue value, out float radians, out AngleUnit unit)
         {
             radians = 0f;
+            unit = AngleUnit.Degree;
             // A unitless number (e.g. from `--angle: 45`) reads as degrees, matching `rotate`.
             if (value.handle.valueType == StyleValueType.Float)
             {
@@ -885,9 +889,9 @@ namespace UnityEngine.UIElements.StyleSheets
             switch (dim.unit)
             {
                 case Dimension.Unit.Degree:   radians = dim.value * Mathf.Deg2Rad; return true;
-                case Dimension.Unit.Gradian:  radians = dim.value * (Mathf.PI / 200f); return true;
-                case Dimension.Unit.Radian:   radians = dim.value; return true;
-                case Dimension.Unit.Turn:     radians = dim.value * (2f * Mathf.PI); return true;
+                case Dimension.Unit.Gradian:  radians = dim.value * (Mathf.PI / 200f); unit = AngleUnit.Gradian; return true;
+                case Dimension.Unit.Radian:   radians = dim.value; unit = AngleUnit.Radian; return true;
+                case Dimension.Unit.Turn:     radians = dim.value * (2f * Mathf.PI); unit = AngleUnit.Turn; return true;
                 default: return false;
             }
         }
@@ -1208,7 +1212,7 @@ namespace UnityEngine.UIElements.StyleSheets
                 }
 
                 var args = new FixedBuffer4<FilterParameter>();
-                int writtenArgs = 0;
+                int providedArgs = 0;
                 for (int i = 0; i < argCount; i++)
                 {
                     var valueType = GetValueType(index);
@@ -1219,46 +1223,47 @@ namespace UnityEngine.UIElements.StyleSheets
                         continue;
                     }
 
-                    if (writtenArgs == FixedBuffer4<FilterParameter>.Length)
-                    {
-                        malformed = true;
-                        break;
-                    }
-
-                    if (valueType == StyleValueType.Color || valueType == StyleValueType.Enum)
-                    {
-                        var color = ReadColor(index++);
-                        args[writtenArgs++] = new FilterParameter()
-                        {
-                            type = FilterParameterType.Color,
-                            colorValue = color
-                        };
-                    }
-                    else if (valueType == StyleValueType.Dimension || valueType == StyleValueType.Float)
-                    {
-                        var dimValue = GetValue(index++);
-                        var dim = dimValue.sheet.ReadDimension(dimValue.handle);
-                        args[writtenArgs++] = new FilterParameter()
-                        {
-                            type = FilterParameterType.Float,
-                            floatValue = StyleProperty.ConvertDimensionToFilterFloat(dim)
-                        };
-                    }
-                    else
+                    bool isColor = valueType == StyleValueType.Color || valueType == StyleValueType.Enum;
+                    if (!isColor && valueType != StyleValueType.Dimension && valueType != StyleValueType.Float)
                     {
                         Debug.LogError($"Unexpected value type {valueType} in filter function argument");
                         malformed = true;
                         break;
                     }
+
+                    if (providedArgs < FixedBuffer4<FilterParameter>.Length)
+                    {
+                        if (isColor)
+                        {
+                            args[providedArgs] = new FilterParameter()
+                            {
+                                type = FilterParameterType.Color,
+                                colorValue = ReadColor(index)
+                            };
+                        }
+                        else
+                        {
+                            var dimValue = GetValue(index);
+                            var dim = dimValue.sheet.ReadDimension(dimValue.handle);
+                            args[providedArgs] = new FilterParameter()
+                            {
+                                type = FilterParameterType.Float,
+                                floatValue = StyleProperty.ConvertDimensionToFilterFloat(dim)
+                            };
+                        }
+                    }
+
+                    ++index;
+                    ++providedArgs;
                 }
 
                 if (malformed)
                     break;
 
                 if (isCustom)
-                    list.Add(new FilterFunction(filterDef, args, writtenArgs));
+                    list.Add(new FilterFunction(filterDef, args, providedArgs));
                 else
-                    list.Add(new FilterFunction(StyleProperty.ToFilterFunctionType(filterType), args, writtenArgs));
+                    list.Add(new FilterFunction(StyleProperty.ToFilterFunctionType(filterType), args, providedArgs));
             }
             while (index < valueCount);
 

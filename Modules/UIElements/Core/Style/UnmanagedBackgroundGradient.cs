@@ -76,7 +76,7 @@ namespace UnityEngine.UIElements
         public float angle;                                             //  4
         public Vector2 position;                                        //  8
         public int stopCount;                                           //  4
-        int __padding;                                                  //  4  (8-byte align before stops)
+        public AngleUnit angleUnit;                                     //  4  (also aligns stops to 8 bytes)
         public FixedBuffer4<UnmanagedBackgroundGradientStop> stops;     // 96
 
         public bool IsEmpty => stopCount <= 0;
@@ -89,6 +89,7 @@ namespace UnityEngine.UIElements
                 shape = g.shape,
                 size = g.size,
                 angle = g.angle,
+                angleUnit = g.angleUnit,
                 position = g.position,
                 stopCount = 0,
             };
@@ -131,6 +132,7 @@ namespace UnityEngine.UIElements
                 shape = shape,
                 size = size,
                 angle = angle,
+                angleUnit = angleUnit,
                 position = position,
                 stops = managedStops,
             };
@@ -144,6 +146,7 @@ namespace UnityEngine.UIElements
             if (shape != other.shape) return false;
             if (size != other.size) return false;
             if (!angle.Equals(other.angle)) return false;
+            if (angleUnit != other.angleUnit) return false;
             if (!position.Equals(other.position)) return false;
             if (stopCount != other.stopCount) return false;
             for (int i = 0; i < stopCount; ++i)
@@ -161,6 +164,7 @@ namespace UnityEngine.UIElements
             h = (h * -1521134295) + shape.GetHashCode();
             h = (h * -1521134295) + size.GetHashCode();
             h = (h * -1521134295) + angle.GetHashCode();
+            h = (h * -1521134295) + angleUnit.GetHashCode();
             h = (h * -1521134295) + position.GetHashCode();
             for (int i = 0; i < stopCount; ++i)
                 h = (h * -1521134295) + stops[i].GetHashCode();

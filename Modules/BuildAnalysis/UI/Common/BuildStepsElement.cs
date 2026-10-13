@@ -11,11 +11,14 @@ using UnityEngine.UIElements;
 
 namespace UnityEditor.Build.Analysis
 {
-    internal class BuildStepsElement : VisualElement
+    [UxmlElement]
+    internal partial class BuildStepsElement : BuildSection
     {
         private const int k_FixedItemHeight = 26;
         private const int k_MaxVisibleRows = 13;
         private const string k_UssPath = "BuildAnalysis/StyleSheets/BuildSteps.uss";
+
+        public static readonly string emptyLabelUssClassName = "build-steps__empty-label";
 
         private struct StepItemData
         {
@@ -33,17 +36,20 @@ namespace UnityEditor.Build.Analysis
         }
 
         private readonly MultiColumnTreeView m_TreeView;
+        private readonly Label m_EmptyLabel;
 
-        public BuildStepsElement()
+        // Null collapses the section body when there are no steps.
+        [UxmlAttribute]
+        public string emptyStateText
+        {
+            get => m_EmptyLabel.text;
+            set => m_EmptyLabel.text = value;
+        }
+
+        public BuildStepsElement() : base("Build Steps", padContent: false)
         {
             var styleSheet = EditorGUIUtility.LoadRequired(k_UssPath) as StyleSheet;
             styleSheets.Add(styleSheet);
-
-            AddToClassList("section");
-
-            var foldout = new Foldout { text = "Build Steps", value = true };
-            foldout.AddToClassList("section-foldout");
-            Add(foldout);
 
             m_TreeView = new MultiColumnTreeView
             {
@@ -123,7 +129,12 @@ namespace UnityEditor.Build.Analysis
             // ScrollView directly ensures it never occupies space and breaks the loop.
             m_TreeView.Q<ScrollView>().horizontalScrollerVisibility = ScrollerVisibility.Hidden;
 
-            foldout.contentContainer.Add(m_TreeView);
+            Add(m_TreeView);
+
+            m_EmptyLabel = new Label();
+            m_EmptyLabel.AddToClassList(emptyLabelUssClassName);
+            m_EmptyLabel.style.display = DisplayStyle.None;
+            Add(m_EmptyLabel);
 
             // Keep the TreeView in the DOM (never display:none) so the layout engine
             // resolves its width before Rebuild() is called — required for the
@@ -133,14 +144,21 @@ namespace UnityEditor.Build.Analysis
 
         public void Bind(BuildAnalysis analysis, BuildLogMessages messages)
         {
-            var steps = analysis.Tables.Steps;
+            Bind(analysis.Tables.Steps, analysis.Summary.TotalTimeMs, messages);
+        }
+
+        // A totalTimeMs of zero or less falls back to the sum of the steps.
+        public void Bind(BuildAnalysisStep[] steps, long totalTimeMs, BuildLogMessages messages = null)
+        {
             if (steps == null || steps.Length == 0)
             {
                 SetEmpty();
                 return;
             }
 
-            var totalMs = analysis.Summary.TotalTimeMs;
+            m_EmptyLabel.style.display = DisplayStyle.None;
+
+            var totalMs = totalTimeMs;
             if (totalMs <= 0)
             {
                 for (var i = 0; i < steps.Length; i++)
@@ -152,6 +170,11 @@ namespace UnityEditor.Build.Analysis
 
             var badges = ComputeStepBadges(steps, messages);
             var items = BuildTreeViewItems(steps, totalMs, badges);
+            if (items.Count == 0)
+            {
+                SetEmpty();
+                return;
+            }
 
             m_TreeView.SetRootItems(items);
             m_TreeView.Rebuild();
@@ -162,6 +185,7 @@ namespace UnityEditor.Build.Analysis
         private void SetEmpty()
         {
             m_TreeView.style.height = 0;
+            m_EmptyLabel.style.display = string.IsNullOrEmpty(m_EmptyLabel.text) ? DisplayStyle.None : DisplayStyle.Flex;
         }
 
         private void BindNameCell(VisualElement element, int index)

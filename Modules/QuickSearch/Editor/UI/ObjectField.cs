@@ -12,7 +12,6 @@ using UnityEngine.UIElements;
 using Debug = UnityEngine.Debug;
 using Object = UnityEngine.Object;
 
-
 namespace UnityEditor.Search
 {
     /// <summary>
@@ -47,7 +46,7 @@ namespace UnityEditor.Search
 
             if (valueChanged)
             {
-                m_ObjectFieldDisplay.Update();
+                UpdateDisplay();
             }
         }
 
@@ -65,16 +64,24 @@ namespace UnityEditor.Search
                 if (m_ObjectType != value)
                 {
                     m_ObjectType = value;
-                    m_ObjectFieldDisplay.Update();
+                    UpdateDisplay();
                 }
             }
         }
-
 
         public SearchContext searchContext { get; set; }
         public SearchViewFlags searchViewFlags { get; set; }
         public SearchViewState searchViewState { get; set; }
 
+        protected override void UpdateMixedValueContent()
+        {
+            m_ObjectFieldDisplay?.ShowMixedValue(showMixedValue);
+        }
+
+        void UpdateDisplay()
+        {
+            UpdateMixedValueContent();
+        }
 
         private class ObjectFieldDisplay : VisualElement
         {
@@ -87,6 +94,20 @@ namespace UnityEditor.Search
             static readonly string labelUssClassName = ussClassName + "__label";
             static readonly string acceptDropVariantUssClassName = ussClassName + "--accept-drop";
 
+            internal void ShowMixedValue(bool show)
+            {
+                if (show)
+                {
+                    m_ObjectLabel.text = mixedValueString;
+                    m_ObjectLabel.AddToClassList(mixedValueLabelUssClassName);
+                    m_ObjectIcon.image = null;
+                }
+                else
+                {
+                    m_ObjectLabel.RemoveFromClassList(mixedValueLabelUssClassName);
+                    Update();
+                }
+            }
 
             public ObjectFieldDisplay(ObjectField objectField)
             {
@@ -305,7 +326,7 @@ namespace UnityEditor.Search
             // Get notified when hierarchy or project changes so we can update the display to handle renamed/missing objects.
             // This event is occasionally triggered before the reference in memory is updated, so we give it time to process.
             m_AsyncOnProjectOrHierarchyChangedCallback = () => schedule.Execute(m_OnProjectOrHierarchyChangedCallback);
-            m_OnProjectOrHierarchyChangedCallback = () => m_ObjectFieldDisplay.Update();
+            m_OnProjectOrHierarchyChangedCallback = UpdateDisplay;
             RegisterCallback<AttachToPanelEvent>((evt) =>
             {
                 EditorApplication.projectChanged += m_AsyncOnProjectOrHierarchyChangedCallback;
@@ -1082,6 +1103,5 @@ namespace UnityEditor.Search
                 return new Vector2(600f, 300f + kToolbarHeight);
             }
         }
-
     }
 }

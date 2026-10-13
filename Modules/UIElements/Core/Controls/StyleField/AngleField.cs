@@ -15,9 +15,9 @@ namespace UnityEngine.UIElements
     /// <summary>
     /// Makes a text field for entering Angle.
     /// </summary>
-    [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
+    [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
     [UxmlElement(visibility = LibraryVisibility.Hidden)]
-    internal partial class AngleField : TextValueField<Angle>
+    internal partial class AngleField : TextValueField<Angle>, IValueField<Angle>
     {
         public static readonly BindingId showUnitAsDropdownProperty = nameof(showUnitAsDropdown);
 
@@ -145,6 +145,13 @@ namespace UnityEngine.UIElements
             showUnitAsDropdown = true;
         }
 
+        // Hides the base method so the label dragger, which calls it through IValueField, restarts the step count.
+        public new void StartDragging()
+        {
+            angleInput.ResetDragSteps();
+            base.StartDragging();
+        }
+
         public override void SetValueWithoutNotify(Angle newValue)
         {
             base.SetValueWithoutNotify(newValue);
@@ -267,7 +274,12 @@ namespace UnityEngine.UIElements
                 UnitTurn => AngleUnit.Turn,
                 _ => (AngleUnit)(-1)
             };
-            if ((int)newUnit >= 0 && newUnit != value.unit)
+            if ((int)newUnit < 0)
+            {
+                // Keywords have no unit to convert to, so the selector snaps back to the current one.
+                SetOptionsPopupFromValue();
+            }
+            else if (newUnit != value.unit)
             {
                 // Switching the unit converts the angle (90deg -> 100grad) rather than reinterpreting
                 // the number, matching the UI Builder's dimension-field convention.
@@ -283,6 +295,10 @@ namespace UnityEngine.UIElements
         {
             internal AngleField parentField { get; set; }
 
+            double m_DragSteps;
+
+            internal void ResetDragSteps() => m_DragSteps = 0;
+
             internal AngleInput()
             {
                 formatString = UINumericFieldsUtils.k_DoubleFieldFormatString;
@@ -290,20 +306,36 @@ namespace UnityEngine.UIElements
 
             protected override string allowedCharacters => UINumericFieldsUtils.k_AllowedCharactersForFloat;
 
+            // One degree per step in every unit, so a drag turns the angle at the same speed whatever the unit.
+            static float GetDragStep(AngleUnit unit) => unit switch
+            {
+                AngleUnit.Gradian => 400f / 360f,
+                AngleUnit.Radian => Mathf.Deg2Rad,
+                AngleUnit.Turn => 1f / 360f,
+                _ => 1f,
+            };
+
             public override void ApplyInputDeviceDelta(Vector3 delta, DeltaSpeed speed, Angle startValue)
             {
-                double sensitivity = NumericFieldDraggerUtility.CalculateIntDragSensitivity(startValue.value);
+                float step = GetDragStep(startValue.unit);
+                double sensitivity = NumericFieldDraggerUtility.CalculateIntDragSensitivity(startValue.value / step);
                 float acceleration =
                     NumericFieldDraggerUtility.Acceleration(speed == DeltaSpeed.Fast, speed == DeltaSpeed.Slow);
-                var v = StringToValue(text).value;
-                v += (long)Math.Round(NumericFieldDraggerUtility.NiceDelta(delta, acceleration) * sensitivity);
+                // Steps are counted from the drag start, so partial steps add up and rounding never accumulates.
+                double previousSteps = Math.Truncate(m_DragSteps);
+                m_DragSteps += NumericFieldDraggerUtility.NiceDelta(delta, acceleration) * sensitivity;
+                double steps = Math.Truncate(m_DragSteps);
+                if (steps == previousSteps)
+                    return;
+
+                var dragged = new Angle((float)Math.Round(startValue.value + steps * step, Angle.GetPrecision(startValue.unit)), startValue.unit);
                 if (parentField.isDelayed)
                 {
-                    text = ValueToString(new Angle(Mathf.ClampToInt((long)v), startValue.unit));
+                    text = ValueToString(dragged);
                 }
                 else
                 {
-                    parentField.value = new Angle(Mathf.ClampToInt((long)v), startValue.unit);
+                    parentField.value = dragged;
                 }
             }
 

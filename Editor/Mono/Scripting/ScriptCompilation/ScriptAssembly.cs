@@ -40,11 +40,6 @@ namespace UnityEditor.Scripting.ScriptCompilation
             get { return (CompilationOptions & EditorScriptCompilationOptions.BuildingForEditor) == EditorScriptCompilationOptions.BuildingForEditor; }
         }
 
-        public bool BuildingDevelopmentBuild
-        {
-            get { return (CompilationOptions & EditorScriptCompilationOptions.BuildingDevelopmentBuild) == EditorScriptCompilationOptions.BuildingDevelopmentBuild; }
-        }
-
         public CodeOptimization CodeOptimization
         {
             get { return (CompilationOptions & EditorScriptCompilationOptions.BuildingWithoutOptimization) == EditorScriptCompilationOptions.BuildingWithoutOptimization ? CodeOptimization.Debug : CodeOptimization.Release; }

@@ -69,7 +69,7 @@ namespace Unity.Properties
     /// <summary>
     /// Utility class around <see cref="System.Type"/>.
     /// </summary>
-    public static class TypeUtility
+    public static partial class TypeUtility
     {
         interface ITypeConstructor
         {
@@ -241,12 +241,12 @@ namespace Unity.Properties
         /// <remarks>
         /// Any types in this set are also present in the <see cref="TypeUtility.s_TypeConstructors"/> set.
         /// </remarks>
-        struct Cache<T>
+        partial struct Cache<T>
         {
             /// <summary>
             /// Reference to the strongly typed <see cref="ITypeConstructor{TType}"/> for this type. This allows direct access without any dictionary lookups.
             /// </summary>
-            [NoAutoStaticsCleanup]
+            [AutoStaticsCleanupOnCodeReload]
             public static ITypeConstructor<T> TypeConstructor;
         }
 
@@ -267,14 +267,14 @@ namespace Unity.Properties
         /// <remarks>
         /// Any types in this set are also present in the <see cref="Cache{T}"/>.
         /// </remarks>
-        [NoAutoStaticsCleanup]
+        [AutoStaticsCleanupOnCodeReload]
         static readonly ConcurrentDictionary<Type, ITypeConstructor> s_TypeConstructors = new ConcurrentDictionary<Type, ITypeConstructor>();
 
         [NoAutoStaticsCleanup]
         static readonly System.Reflection.MethodInfo s_CreateTypeConstructor;
 
-        [NoAutoStaticsCleanup]
-        static readonly ConcurrentDictionary<Type, string> s_CachedResolvedName;
+        [AutoStaticsCleanupOnCodeReload]
+        static readonly ConcurrentDictionary<Type, string> s_CachedResolvedName = new ConcurrentDictionary<Type, string>();
 
         [NoAutoStaticsCleanup]
         static readonly UnityEngine.Pool.ObjectPool<StringBuilder> s_Builders;
@@ -284,10 +284,8 @@ namespace Unity.Properties
 
         static TypeUtility()
         {
-            s_CachedResolvedName = new ConcurrentDictionary<Type, string>();
             s_Builders = new UnityEngine.Pool.ObjectPool<StringBuilder>(()=> new StringBuilder(), null, sb => sb.Clear());
 
-            SetExplicitInstantiationMethod(() => string.Empty);
             foreach (var method in typeof(TypeUtility).GetMethods(System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Static))
             {
                 if (method.Name != nameof(CreateTypeConstructor) || !method.IsGenericMethod)
@@ -299,6 +297,12 @@ namespace Unity.Properties
 
             if (null == s_CreateTypeConstructor)
                 throw new InvalidProgramException();
+        }
+
+        [OnCodeLoaded]
+        static void RegisterBuiltInInstantiationMethods()
+        {
+            SetExplicitInstantiationMethod(() => string.Empty);
         }
 
         /// <summary>

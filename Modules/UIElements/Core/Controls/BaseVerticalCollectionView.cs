@@ -641,6 +641,7 @@ namespace UnityEngine.UIElements
                 m_HorizontalScrollingEnabled = value;
                 m_ScrollView.horizontalScrollerVisibility = value ? ScrollerVisibility.Auto : ScrollerVisibility.Hidden;
                 m_ScrollView.mode = value ? ScrollViewMode.VerticalAndHorizontal : ScrollViewMode.Vertical;
+                UpdateHorizontalOffsetMinWidth(m_ScrollView.scrollOffset.x, true);
                 NotifyPropertyChanged(horizontalScrollingEnabledProperty);
             }
         }
@@ -1079,6 +1080,8 @@ namespace UnityEngine.UIElements
             m_ScrollView.horizontalScrollerVisibility = ScrollerVisibility.Hidden;
             m_ScrollView.AddToClassList(listScrollViewUssClassNameUnique);
             m_ScrollView.verticalScroller.valueChanged += v => OnScroll(new Vector2(0, v));
+            // Grow only, so the horizontal range doesn't change during a drag
+            m_ScrollView.horizontalScroller.valueChanged += x => UpdateHorizontalOffsetMinWidth(x, false);
 
             m_ScrollView.RegisterCallback<GeometryChangedEvent>(OnSizeChanged);
             RegisterCallback<CustomStyleResolvedEvent>(OnCustomStyleResolved);
@@ -1270,6 +1273,7 @@ namespace UnityEngine.UIElements
                 RefreshSelection();
                 virtualizationController.Refresh(true);
                 PostRefresh();
+                UpdateHorizontalOffsetMinWidth(0f, true); // The old offset may be meaningless for the new items
 
                 m_RebuildScheduled?.Pause();
             }
@@ -1356,6 +1360,8 @@ namespace UnityEngine.UIElements
 
         private protected virtual void PostRefresh()
         {
+            UpdateHorizontalOffsetMinWidth(m_ScrollView.scrollOffset.x, true);
+
             if (!HasValidDataAndBindings())
                 return;
 
@@ -1417,7 +1423,35 @@ namespace UnityEngine.UIElements
             if (!HasValidDataAndBindings())
                 return;
 
+            UpdateHorizontalOffsetMinWidth(m_ScrollView.scrollOffset.x, true);
             virtualizationController.OnScroll(offset);
+        }
+
+        float m_HorizontalOffsetMinWidth;
+
+        private protected virtual bool hasUniformItemWidth => false;
+
+        // Reserves the width the horizontal offset needs, so binding narrower items doesn't clamp the offset
+        void UpdateHorizontalOffsetMinWidth(float offsetX, bool canShrink)
+        {
+            offsetX = Mathf.Min(offsetX, m_ScrollView.scrollableWidth); // Ignore offsets the content can't support yet
+
+            var minWidth = 0f;
+            var viewportWidth = m_ScrollView.contentViewport.layout.width;
+            if (horizontalScrollingEnabled && !hasUniformItemWidth && offsetX > 0f && !float.IsNaN(viewportWidth))
+                minWidth = offsetX + viewportWidth;
+
+            if (!canShrink)
+                minWidth = Mathf.Max(minWidth, m_HorizontalOffsetMinWidth);
+
+            if (Mathf.Approximately(minWidth, m_HorizontalOffsetMinWidth))
+                return;
+
+            m_HorizontalOffsetMinWidth = minWidth;
+            if (minWidth > 0f)
+                m_ScrollView.contentContainer.style.minWidth = minWidth;
+            else
+                m_ScrollView.contentContainer.style.minWidth = StyleKeyword.Null;
         }
 
         private void Resize(Vector2 size)

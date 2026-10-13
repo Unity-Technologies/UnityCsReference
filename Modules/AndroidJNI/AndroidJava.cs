@@ -132,8 +132,10 @@ namespace UnityEngine
     {
         ///<summary>Java interface implemented by the proxy.</summary>
         public readonly AndroidJavaClass javaInterface;
+        ///<summary>Creates a proxy for a Java interface, specified by its fully qualified name.</summary>
         ///<param name="javaInterface">Java interface to be implemented by the proxy.</param>
         public AndroidJavaProxy(string javaInterface) : this(new AndroidJavaClass(javaInterface)) { }
+        ///<summary>Creates a proxy for a Java interface, specified as an already-resolved <see cref="AndroidJavaClass" />.</summary>
         ///<param name="javaInterface">Java interface to be implemented by the proxy.</param>
         public AndroidJavaProxy(AndroidJavaClass javaInterface)
         {
@@ -150,6 +152,7 @@ namespace UnityEngine
         ///<summary>Called by the java vm whenever a method is invoked on the java proxy interface. You can override this to run special code on method invocation, or you can leave the implementation as is, and leave the default behavior which is to look for c# methods matching the signature of the java method.</summary>
         ///<param name="methodName">Name of the invoked java method.</param>
         ///<param name="args">Arguments passed from the java vm - converted into AndroidJavaObject, AndroidJavaClass or a primitive.</param>
+        ///<returns>The return value of the matched method, wrapped as an AndroidJavaObject.</returns>
         public virtual AndroidJavaObject Invoke(string methodName, object[] args)
         {
             Exception error = null;
@@ -260,6 +263,7 @@ namespace UnityEngine
         ///<summary>Called by the java vm whenever a method is invoked on the java proxy interface. You can override this to run special code on method invocation, or you can leave the implementation as is, and leave the default behavior which is to look for c# methods matching the signature of the java method.</summary>
         ///<param name="methodName">Name of the invoked java method.</param>
         ///<param name="javaArgs">Arguments passed from the java vm - all objects are represented by AndroidJavaObject, int for instance is represented by a java.lang.Integer object.</param>
+        ///<returns>The return value of the matched method, wrapped as an AndroidJavaObject.</returns>
         public virtual AndroidJavaObject Invoke(string methodName, AndroidJavaObject[] javaArgs)
         {
             object[] args = new object[javaArgs.Length];
@@ -316,6 +320,7 @@ namespace UnityEngine
         // implementing equals, hashCode and toString which should be implemented by all java objects
         // these methods must be in camel case, because that's how they are defined in java.
         ///<summary>The equivalent of the java.lang.Object <c>equals()</c> method.</summary>
+        ///<param name="obj">The object to compare with the current instance.</param>
         ///<returns>Returns true when the objects are equal and false if otherwise.</returns>
         public virtual bool equals(AndroidJavaObject obj)
         {
@@ -375,35 +380,54 @@ namespace UnityEngine
     ///**Note**: this API can be used from custom thread, but requires that thread to be attached to JVM first, see <see cref="AndroidJNI.AttachCurrentThread" />.</remarks>
     public class AndroidJavaObject : IDisposable
     {
-        // Construct an AndroidJavaObject based on the name of the class.
+        ///<summary>Construct an AndroidJavaObject based on the name of the class.</summary>
+        ///<remarks>Locates the class type, allocates an object, and runs the specified constructor.</remarks>
+        ///<param name="className">Specifies the Java class name (e.g. `java.lang.String` or `java/lang/String`).</param>
+        ///<param name="args">An array of `string` values, passed to the constructor as a single `String[]` argument. To call a constructor that takes multiple individual arguments, use the `params object[]` overload instead.</param>
         public AndroidJavaObject(string className, string[] args) : this()
         {
             _AndroidJavaObject(className, (object)args);
         }
 
+        ///<summary>Construct an AndroidJavaObject based on the name of the class.</summary>
+        ///<remarks>Locates the class type, allocates an object, and runs the specified constructor.</remarks>
+        ///<param name="className">Specifies the Java class name (e.g. `java.lang.String` or `java/lang/String`).</param>
+        ///<param name="args">An array of <see cref="AndroidJavaObject" /> values, passed to the constructor as a single array argument of the corresponding Java object type. To call a constructor that takes multiple individual arguments, use the `params object[]` overload instead.</param>
         public AndroidJavaObject(string className, AndroidJavaObject[] args) : this()
         {
             _AndroidJavaObject(className, (object)args);
         }
 
+        ///<summary>Construct an AndroidJavaObject based on the name of the class.</summary>
+        ///<remarks>Locates the class type, allocates an object, and runs the specified constructor.</remarks>
+        ///<param name="className">Specifies the Java class name (e.g. `java.lang.String` or `java/lang/String`).</param>
+        ///<param name="args">An array of <see cref="AndroidJavaClass" /> values, passed to the constructor as a single array argument of the corresponding Java object type. To call a constructor that takes multiple individual arguments, use the `params object[]` overload instead.</param>
         public AndroidJavaObject(string className, AndroidJavaClass[] args) : this()
         {
             _AndroidJavaObject(className, (object)args);
         }
 
+        ///<summary>Construct an AndroidJavaObject based on the name of the class.</summary>
+        ///<remarks>Locates the class type, allocates an object, and runs the specified constructor.</remarks>
+        ///<param name="className">Specifies the Java class name (e.g. `java.lang.String` or `java/lang/String`).</param>
+        ///<param name="args">An array of <see cref="AndroidJavaProxy" /> values, passed to the constructor as a single array argument of the corresponding Java object type. To call a constructor that takes multiple individual arguments, use the `params object[]` overload instead.</param>
         public AndroidJavaObject(string className, AndroidJavaProxy[] args) : this()
         {
             _AndroidJavaObject(className, (object)args);
         }
 
+        ///<summary>Construct an AndroidJavaObject based on the name of the class.</summary>
+        ///<remarks>Locates the class type, allocates an object, and runs the specified constructor.</remarks>
+        ///<param name="className">Specifies the Java class name (e.g. `java.lang.String` or `java/lang/String`).</param>
+        ///<param name="args">An array of <see cref="AndroidJavaRunnable" /> values, passed to the constructor as a single array argument of the corresponding Java object type. To call a constructor that takes multiple individual arguments, use the `params object[]` overload instead.</param>
         public AndroidJavaObject(string className, AndroidJavaRunnable[] args) : this()
         {
             _AndroidJavaObject(className, (object)args);
         }
 
         ///<summary>Construct an AndroidJavaObject based on the name of the class.</summary>
-        ///<remarks>This essentially means locate the class type, allocate an object and run the specified constructor.</remarks>
-        ///<param name="className">Specifies the Java class name (e.g. "&lt;tt&gt;java.lang.String&lt;/tt&gt;" or "&lt;tt&gt;java/lang/String&lt;/tt&gt;").</param>
+        ///<remarks>Locates the class type, allocates an object, and runs the specified constructor.</remarks>
+        ///<param name="className">Specifies the Java class name (e.g. `java.lang.String` or `java/lang/String`).</param>
         ///<param name="args">An array of parameters passed to the constructor.</param>
         public AndroidJavaObject(string className, params object[] args) : this()
         {
@@ -532,6 +556,7 @@ namespace UnityEngine
         ///<summary>Get the value of a field in an object (non-static).</summary>
         ///<remarks>The generic parameter determines the field type.</remarks>
         ///<param name="fieldName">The name of the field (e.g. int counter; would have fieldName = "counter").</param>
+        ///<returns>The value of the field.</returns>
         public FieldType Get<FieldType>(string fieldName)
         {
             return _Get<FieldType>(fieldName);
@@ -540,6 +565,7 @@ namespace UnityEngine
         ///<summary>Get the value of a field in an object (non-static).</summary>
         ///<remarks>The generic parameter determines the field type.</remarks>
         ///<param name="fieldID">The ID of the field to get.</param>
+        ///<returns>The value of the field.</returns>
         public FieldType Get<FieldType>(IntPtr fieldID)
         {
             return _Get<FieldType>(fieldID);
@@ -584,6 +610,7 @@ namespace UnityEngine
         ///<summary>Get the value of a static field in an object type.</summary>
         ///<remarks>The generic parameter determines the field type.</remarks>
         ///<param name="fieldName">The name of the field (e.g. &lt;i&gt;int counter;&lt;/i&gt; would have fieldName = "counter").</param>
+        ///<returns>The value of the static field.</returns>
         public FieldType GetStatic<FieldType>(string fieldName)
         {
             return _GetStatic<FieldType>(fieldName);
@@ -592,6 +619,7 @@ namespace UnityEngine
         ///<summary>Get the value of a static field in an object type.</summary>
         ///<remarks>The generic parameter determines the field type.</remarks>
         ///<param name="fieldID">The ID of the field to get.</param>
+        ///<returns>The value of the static field.</returns>
         public FieldType GetStatic<FieldType>(IntPtr fieldID)
         {
             return _GetStatic<FieldType>(fieldID);
@@ -658,6 +686,7 @@ namespace UnityEngine
         ///}
         ///]]></code>
         ///</example>
+        ///<returns>The raw `jobject` pointer to the Java object.</returns>
         ///<seealso cref="AndroidJavaObject.GetRawClass" />
         public IntPtr GetRawObject()
         {
@@ -668,6 +697,7 @@ namespace UnityEngine
         ///<summary>Retrieves the raw <c>jclass</c> pointer to the Java class.
         ///
         ///**Note:** Using raw JNI functions requires advanced knowledge of the Android Java Native Interface (JNI).</summary>
+        ///<returns>The raw `jclass` pointer to the Java class.</returns>
         ///<seealso cref="AndroidJavaObject.GetRawObject" />
         public IntPtr GetRawClass()
         {
@@ -703,6 +733,7 @@ namespace UnityEngine
         ///<remarks>To call a Java method with a non-void return type, use the generic version.</remarks>
         ///<param name="methodName">Specifies which method to call.</param>
         ///<param name="args">An array of parameters passed to the method.</param>
+        ///<returns>The value returned by the Java method call.</returns>
         public ReturnType Call<ReturnType, T>(string methodName, T[] args)
         {
             return _Call<ReturnType>(methodName, (object)args);
@@ -712,6 +743,7 @@ namespace UnityEngine
         ///<remarks>To call a Java method with a non-void return type, use the generic version.</remarks>
         ///<param name="args">An array of parameters passed to the method.</param>
         ///<param name="methodID">The ID of the method to call.</param>
+        ///<returns>The value returned by the Java method call.</returns>
         public ReturnType Call<ReturnType, T>(IntPtr methodID, T[] args)
         {
             return _Call<ReturnType>(methodID, (object)args);
@@ -721,6 +753,7 @@ namespace UnityEngine
         ///<remarks>To call a Java method with a non-void return type, use the generic version.</remarks>
         ///<param name="methodName">Specifies which method to call.</param>
         ///<param name="args">An array of parameters passed to the method.</param>
+        ///<returns>The value returned by the Java method call.</returns>
         public ReturnType Call<ReturnType>(string methodName, params object[] args)
         {
             return _Call<ReturnType>(methodName, args);
@@ -730,6 +763,7 @@ namespace UnityEngine
         ///<remarks>To call a Java method with a non-void return type, use the generic version.</remarks>
         ///<param name="args">An array of parameters passed to the method.</param>
         ///<param name="methodID">The ID of the method to call.</param>
+        ///<returns>The value returned by the Java method call.</returns>
         public ReturnType Call<ReturnType>(IntPtr methodID, params object[] args)
         {
             return _Call<ReturnType>(methodID, args);
@@ -740,6 +774,7 @@ namespace UnityEngine
         ///<remarks>To call a static method with a non-void return type, use the generic version.</remarks>
         ///<param name="methodName">Specifies which method to call.</param>
         ///<param name="args">An array of parameters passed to the method.</param>
+        ///<returns>The value returned by the static Java method call.</returns>
         public ReturnType CallStatic<ReturnType, T>(string methodName, T[] args)
         {
             return _CallStatic<ReturnType>(methodName, (object)args);
@@ -749,6 +784,7 @@ namespace UnityEngine
         ///<remarks>To call a static method with a non-void return type, use the generic version.</remarks>
         ///<param name="args">An array of parameters passed to the method.</param>
         ///<param name="methodID">The ID of the method to call.</param>
+        ///<returns>The value returned by the static Java method call.</returns>
         public ReturnType CallStatic<ReturnType, T>(IntPtr methodID, T[] args)
         {
             return _CallStatic<ReturnType>(methodID, (object)args);
@@ -758,6 +794,7 @@ namespace UnityEngine
         ///<remarks>To call a static method with a non-void return type, use the generic version.</remarks>
         ///<param name="methodName">Specifies which method to call.</param>
         ///<param name="args">An array of parameters passed to the method.</param>
+        ///<returns>The value returned by the static Java method call.</returns>
         public ReturnType CallStatic<ReturnType>(string methodName, params object[] args)
         {
             return _CallStatic<ReturnType>(methodName, args);
@@ -767,6 +804,7 @@ namespace UnityEngine
         ///<remarks>To call a static method with a non-void return type, use the generic version.</remarks>
         ///<param name="args">An array of parameters passed to the method.</param>
         ///<param name="methodID">The ID of the method to call.</param>
+        ///<returns>The value returned by the static Java method call.</returns>
         public ReturnType CallStatic<ReturnType>(IntPtr methodID, params object[] args)
         {
             return _CallStatic<ReturnType>(methodID, args);

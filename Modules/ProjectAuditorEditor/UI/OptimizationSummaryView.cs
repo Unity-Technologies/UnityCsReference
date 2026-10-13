@@ -206,15 +206,18 @@ namespace Unity.ProjectAuditor.Editor.UI
 
             // Display analysis time in sensible units
             var timeSpan = TimeSpan.FromMilliseconds(analysisTimeMs);
+            if (timeSpan.TotalSeconds >= 1)
+                timeSpan = TimeSpan.FromSeconds(Math.Round(timeSpan.TotalSeconds, MidpointRounding.AwayFromZero));
+
             string time;
             if (timeSpan.TotalHours >= 1)
-                time = $"{timeSpan.TotalHours:F0}h {timeSpan.Minutes}m";
+                time = $"{(int)timeSpan.TotalHours}h {timeSpan.Minutes}m";
             else if (timeSpan.TotalMinutes >= 1)
                 time = $"{timeSpan.Minutes}m {timeSpan.Seconds}s";
             else if (timeSpan.TotalSeconds >= 2)
-                time = $"{timeSpan.TotalSeconds:F0} seconds";
+                time = $"{timeSpan.Seconds} seconds";
             else if (timeSpan.TotalSeconds >= 1)
-                time = $"{timeSpan.TotalSeconds:F0} second";
+                time = "1 second";
             else
                 time = $"{timeSpan.TotalMilliseconds:F0}ms";
             time = $"found in {time}";

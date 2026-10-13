@@ -142,6 +142,12 @@ namespace UnityEngine
             set;
         }
 
+        public extern int boneTransformBufferIndex
+        {
+            [NativeMethod("GetBoneTransformIndex")]
+            get;
+        }
+
         extern public float GetBlendShapeWeight(int index);
         extern public void SetBlendShapeWeight(int index, float value);
         extern internal int GetBlendShapeChannelCount();

@@ -26,6 +26,9 @@ namespace UnityEngine.UIElements
         public ManagedComponentRegistry managedRegistry;
         public RuntimeTypeHandle typeHandle;
 
+        // Index of the ComponentManager that created this store; see ComponentManager.EnqueueFree.
+        public int managerIndex;
+
         public Action<VisualElement> onChanged;
         public ComponentBindingDispatcher bindingDispatcher;
 
@@ -162,6 +165,12 @@ namespace UnityEngine.UIElements
         [IgnoreForUAL0015("Shared instance recreated on demand by Initialize() after cleanup nulls it")]
         static ComponentManager s_SharedManager;
 
+        // Never reset, so a manager created after a code reload never shares an index with one disposed by it.
+        [NoAutoStaticsCleanup]
+        static int s_NextManagerIndex = 1;
+
+        readonly int m_Index;
+
         public static ComponentManager SharedManager
         {
             get
@@ -199,7 +208,10 @@ namespace UnityEngine.UIElements
             public IManagedComponentBox box;
         }
 
-        ComponentManager() { }
+        ComponentManager()
+        {
+            m_Index = s_NextManagerIndex++;
+        }
 
         // First call is always main-thread (VisualElements are main-thread only), so the state
         // transitions aren't racy. Mirrors LayoutManager.Initialize.
@@ -234,7 +246,7 @@ namespace UnityEngine.UIElements
                 if (m_StoresByComponentType.TryGetValue(typeHandle, out var existing))
                     return existing;
 
-                var record = new PerTypeStore { typeHandle = typeHandle };
+                var record = new PerTypeStore { typeHandle = typeHandle, managerIndex = m_Index };
                 if (isUnmanaged)
                     record.store = CreateUnmanagedStore<T>(initialCapacity);
                 else
@@ -283,11 +295,14 @@ namespace UnityEngine.UIElements
         /// </summary>
         internal void EnqueueFree(PerTypeStore record, in UnmanagedDataHandle handle)
         {
-            if (record == null || handle.IsUndefined)
+            if (record == null || handle.IsUndefined || !Owns(record))
                 return;
 
             m_ToFree.Enqueue(new FreeRequest { record = record, handle = handle });
         }
+
+        // Stores from a manager disposed by a code reload were released with it.
+        bool Owns(PerTypeStore record) => record.managerIndex == m_Index;
 
         /// <summary>
         /// Enqueues an element-held box for deferred release. Thread-safe like
@@ -302,7 +317,7 @@ namespace UnityEngine.UIElements
         /// </remarks>
         internal void EnqueueFree(PerTypeStore record, IManagedComponentBox box)
         {
-            if (record == null || box == null)
+            if (record == null || box == null || !Owns(record))
                 return;
 
             m_ToFree.Enqueue(new FreeRequest { record = record, box = box });

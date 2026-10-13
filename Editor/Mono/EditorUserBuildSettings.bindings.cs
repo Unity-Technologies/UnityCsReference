@@ -39,6 +39,7 @@ namespace UnityEditor
         }
 
         [NativeHeader("Editor/Src/EditorUserBuildSettings.h")]
+        [NativeHeader("Runtime/Serialize/SerializationMetaFlagsBindings.h")]
         public enum Il2CppCodeGeneration
         {
             OptimizeSpeed = 0,

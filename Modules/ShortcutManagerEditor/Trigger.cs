@@ -127,7 +127,7 @@ namespace UnityEditor.ShortcutManagement
                     var shortcutEntry = m_ActiveMouseActionEntry.entry;
                     var context = m_ActiveMouseActionEntry.context;
 
-                    ExecuteShortcut(shortcutEntry, ShortcutStage.End, context, true);
+                    ExecuteShortcut(shortcutEntry, ShortcutStage.End, context, true, evt);
                     evt.Use();
 
                     return;
@@ -140,7 +140,7 @@ namespace UnityEditor.ShortcutManagement
 
                     DeactivateClutchContext(active.clutchContext);
                     m_ActiveClutches.Remove(evt.keyCode);
-                    ExecuteShortcut(shortcutEntry, ShortcutStage.End, context, true);
+                    ExecuteShortcut(shortcutEntry, ShortcutStage.End, context, true, evt);
                     evt.Use();
 
                     return;
@@ -323,12 +323,12 @@ namespace UnityEditor.ShortcutManagement
                                     {
                                         s_CachedCurrentEvent.CopyFrom(Event.current);
                                         Event.current.CopyFrom(s_QueuedMouseClutchEvent);
-                                        ExecuteShortcut(queued, ShortcutStage.Begin, mouseCtx, true);
+                                        ExecuteShortcut(queued, ShortcutStage.Begin, mouseCtx, true, s_QueuedMouseClutchEvent);
                                         Event.current.CopyFrom(s_CachedCurrentEvent);
                                     }
                                     else
                                     {
-                                        ExecuteShortcut(queued, ShortcutStage.Begin, mouseCtx, true);
+                                        ExecuteShortcut(queued, ShortcutStage.Begin, mouseCtx, true, s_QueuedMouseClutchEvent);
                                     }
 
                                     m_ActiveClutches.Add(key, new ActiveClutch()
@@ -347,7 +347,7 @@ namespace UnityEditor.ShortcutManagement
                         {
                             case ShortcutType.Menu:
                             case ShortcutType.Action:
-                                ExecuteShortcut(shortcutEntry, ShortcutStage.End, context, true);
+                                ExecuteShortcut(shortcutEntry, ShortcutStage.End, context, true, evt);
                                 evt.Use();
                                 break;
 
@@ -356,7 +356,7 @@ namespace UnityEditor.ShortcutManagement
                                 {
                                     var evtKeyCode = evt.keyCode;
                                     m_ClutchActivatedContexts.Remove(evtKeyCode);
-                                    var args = ExecuteShortcut(shortcutEntry, ShortcutStage.Begin, context, true);
+                                    var args = ExecuteShortcut(shortcutEntry, ShortcutStage.Begin, context, true, evt);
                                     m_ActiveClutches.Add(evtKeyCode, new ActiveClutch()
                                     {
                                         entry = shortcutEntry,
@@ -377,7 +377,7 @@ namespace UnityEditor.ShortcutManagement
                     if (HasConflicts(entries, m_KeyCombinationSequence))
                     {
                         if (ShowConflictsWindow)
-                            m_ConflictResolver.ResolveConflict(m_KeyCombinationSequence, entries);
+                            m_ConflictResolver.ResolveConflict(m_KeyCombinationSequence, entries, evt);
 
                         evt.Use();
                         ResetKeyCombo();
@@ -484,11 +484,11 @@ namespace UnityEditor.ShortcutManagement
                     if (previousContext != newContextType)
                         return false;
 
-                    ResetActiveClutches();
+                    ResetActiveClutches(evt);
 
                     m_ClutchActivatedContexts.Remove(newActiveClutchKeyCombination.keyCode);
 
-                    var newArgs = ExecuteShortcut(newShortcutEntry, ShortcutStage.Begin, newContext, true);
+                    var newArgs = ExecuteShortcut(newShortcutEntry, ShortcutStage.Begin, newContext, true, evt);
 
                     m_ActiveClutches.Add(newActiveClutchKeyCombination.keyCode, new ActiveClutch()
                     {
@@ -505,7 +505,7 @@ namespace UnityEditor.ShortcutManagement
                     if (HasConflicts(newEntries, keyCombinationSequence))
                     {
                         if (ShowConflictsWindow)
-                            m_ConflictResolver.ResolveConflict(keyCombinationSequence, newEntries);
+                            m_ConflictResolver.ResolveConflict(keyCombinationSequence, newEntries, evt);
 
                         evt.Use();
                         ResetKeyCombo();
@@ -517,7 +517,9 @@ namespace UnityEditor.ShortcutManagement
             }
         }
 
-        public void ResetActiveClutches()
+        public void ResetActiveClutches() => ResetActiveClutches(null);
+
+        void ResetActiveClutches(Event evt)
         {
             // this is done in two passes to ensure that shortcuts enabled by a clutch context are ended before the
             // parent clutch shortcut ends. it is necessary because the child clutch can be dependent on state managed
@@ -525,14 +527,14 @@ namespace UnityEditor.ShortcutManagement
             foreach (var shortcut in m_ActiveClutches.Values)
             {
                 if (shortcut.clutchContext == null)
-                    ExecuteShortcut(shortcut.entry, ShortcutStage.End, shortcut.context);
+                    ExecuteShortcut(shortcut.entry, ShortcutStage.End, shortcut.context, evt: evt);
             }
 
             foreach (var shortcut in m_ActiveClutches.Values)
             {
                 if (shortcut.clutchContext == null)
                     continue;
-                ExecuteShortcut(shortcut.entry, ShortcutStage.End, shortcut.context);
+                ExecuteShortcut(shortcut.entry, ShortcutStage.End, shortcut.context, evt: evt);
                 shortcut.clutchContext.active = false;
             }
 
@@ -573,12 +575,13 @@ namespace UnityEditor.ShortcutManagement
             return m_CurrentContextManager.HasPriorityContextOfType(entry.context);
         }
 
-        ShortcutArguments ExecuteShortcut(ShortcutEntry entry, ShortcutStage stage, object context, bool reset = false)
+        ShortcutArguments ExecuteShortcut(ShortcutEntry entry, ShortcutStage stage, object context, bool reset = false, Event evt = null)
         {
             var args = new ShortcutArguments
             {
                 context = context,
-                stage = stage
+                stage = stage,
+                sourceEvent = evt != null ? new Event(evt) : null
             };
 
             try

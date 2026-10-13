@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using System.Collections.Generic;
 using System.Globalization;
 using UnityEngine;
 using UnityEngine.Bindings;
@@ -62,7 +63,7 @@ namespace UnityEditor.Build
     /// </example>
     [VisibleToOtherModules]
     [NativeHeader("Modules/BuildReportingEditor/Public/BuildHistory.h")]
-    public static class BuildHistory
+    public static partial class BuildHistory
     {
         // ==================== Configuration Properties ====================
 
@@ -145,6 +146,113 @@ namespace UnityEditor.Build
         internal static bool TryGetLatestCompletedBuild(out GUID buildSessionGuid)
         {
             return BuildHistoryState.Instance.TryGetLatestCompletedBuild(out buildSessionGuid);
+        }
+
+        /// <summary>
+        /// Attempts to get the build that a build ran inside.
+        /// </summary>
+        /// <param name="buildSessionGuid">The unique session GUID of the build to look up.</param>
+        /// <param name="parentBuildSessionGuid">When this method returns, contains the session GUID of the build it ran inside, if found.</param>
+        /// <returns>`true` if the build is tracked in the build history and has a recorded parent; otherwise `false`.</returns>
+        /// <remarks>
+        /// The parent is recorded when the build runs. The value is returned regardless of whether
+        /// the parent build is actually still present in the build history. For example it could
+        /// reference a build that has already been deleted by the retention policy.
+        /// </remarks>
+        /// <seealso cref="GetChildBuilds"/>
+        public static bool TryGetParentBuild(GUID buildSessionGuid, out GUID parentBuildSessionGuid)
+        {
+            return BuildHistoryState.Instance.TryGetParentBuild(buildSessionGuid, out parentBuildSessionGuid);
+        }
+
+        /// <summary>
+        /// Gets the builds that ran directly inside a build.
+        /// </summary>
+        /// <param name="buildSessionGuid">The unique session GUID of the build to look up.</param>
+        /// <returns>The session GUIDs of the builds whose recorded parent is this build, most recent first. Empty when there are none.</returns>
+        /// <seealso cref="TryGetParentBuild"/>
+        public static GUID[] GetChildBuilds(GUID buildSessionGuid)
+        {
+            return BuildHistoryState.Instance.GetChildBuilds(buildSessionGuid);
+        }
+
+        /// <summary>
+        /// Marks an external build as running, so that builds started inside the scope record it as their parent.
+        /// </summary>
+        /// <returns>A scope that ends the build when disposed.</returns>
+        /// <remarks>
+        /// Exists only for the Addressables package, which has access through InternalsVisibleTo.
+        /// Call this method from the main thread, and dispose the returned scope with a <c>using</c> statement.
+        /// Until the scope is disposed, every build started in the Editor records this build as its parent,
+        /// including Player and Content Directory builds.
+        /// Call <see cref="RegisterExternalBuild"/> inside the scope.
+        /// </remarks>
+        internal static ExternalBuildScope BeginExternalBuild(GUID buildSessionGuid)
+        {
+            if (buildSessionGuid.Empty())
+                throw new ArgumentException("buildSessionGuid must not be empty.", nameof(buildSessionGuid));
+
+            // A running GUID would record a parent cycle, and a tracked one would give nested builds a stale parent.
+            if (s_ActiveBuilds.Contains(buildSessionGuid))
+                throw new ArgumentException($"A build with session GUID {buildSessionGuid} is already running.", nameof(buildSessionGuid));
+
+            if (BuildHistoryState.Instance.TryGetBuildReportDirectory(buildSessionGuid, out _))
+                throw new ArgumentException($"A build with session GUID {buildSessionGuid} is already tracked in the build history.", nameof(buildSessionGuid));
+
+            BeginActiveBuild(buildSessionGuid);
+            return new ExternalBuildScope(buildSessionGuid);
+        }
+
+        // Running builds, outermost first. Main thread only.
+        [NoAutoStaticsCleanup] // cleared in ClearActiveBuilds
+        static readonly List<GUID> s_ActiveBuilds = new List<GUID>();
+        [NoAutoStaticsCleanup] // cleared in ClearActiveBuilds
+        static readonly Dictionary<GUID, GUID> s_RecordedParents = new Dictionary<GUID, GUID>();
+
+        internal static void BeginActiveBuild(GUID buildSessionGuid)
+        {
+            var parent = CurrentActiveBuild();
+            if (!parent.Empty() && parent != buildSessionGuid)
+                s_RecordedParents[buildSessionGuid] = parent;
+
+            s_ActiveBuilds.Add(buildSessionGuid);
+        }
+
+        static GUID ParentForRegisteredBuild(GUID buildSessionGuid)
+        {
+            return s_ActiveBuilds.Contains(buildSessionGuid) ? GetRecordedParent(buildSessionGuid) : CurrentActiveBuild();
+        }
+
+        [RequiredByNativeCode]
+        internal static void EndActiveBuildFromNative(string buildSessionGuidString)
+        {
+            EndActiveBuild(new GUID(buildSessionGuidString));
+        }
+
+        // By value, so a build that never ended cannot leave a stale parent.
+        internal static void EndActiveBuild(GUID buildSessionGuid)
+        {
+            s_ActiveBuilds.Remove(buildSessionGuid);
+            s_RecordedParents.Remove(buildSessionGuid);
+        }
+
+        // Builds never span a code reload, so this only drops entries a build failed to end.
+        [OnCodeUnloading]
+        internal static void ClearActiveBuilds()
+        {
+            s_ActiveBuilds.Clear();
+            s_RecordedParents.Clear();
+        }
+
+        internal static GUID GetRecordedParent(GUID buildSessionGuid)
+        {
+            s_RecordedParents.TryGetValue(buildSessionGuid, out var parent);
+            return parent;
+        }
+
+        static GUID CurrentActiveBuild()
+        {
+            return s_ActiveBuilds.Count > 0 ? s_ActiveBuilds[s_ActiveBuilds.Count - 1] : default;
         }
 
         /// <summary>
@@ -374,12 +482,10 @@ namespace UnityEditor.Build
         /// <remarks>
         /// Call this method from the main thread when a build performed outside the Unity build pipeline has finished,
         /// to make it appear in the build history and the **Build Analysis** window alongside Player and
-        /// Content Directory builds.
+        /// Content Directory builds. Exists only for the Addressables package, which has access through
+        /// InternalsVisibleTo.
         /// </remarks>
-        /// <example>
-        /// <code source="../Tests/BuildReporting/Assets/Editor/ReferenceExamples/RegisterExternalBuild.cs"/>
-        /// </example>
-        public static string RegisterExternalBuild(ExternalBuildInfo buildInfo)
+        internal static string RegisterExternalBuild(ExternalBuildInfo buildInfo)
         {
             if (buildInfo.BuildSessionGUID.Empty())
                 throw new ArgumentException("BuildSessionGUID must not be empty.", nameof(buildInfo));
@@ -428,6 +534,7 @@ namespace UnityEditor.Build
                 BuildType = buildInfo.BuildType,
                 BuildTypeName = string.IsNullOrEmpty(buildInfo.BuildTypeName) ? buildInfo.BuildType.ToString() : buildInfo.BuildTypeName,
                 OutputPath = buildInfo.OutputPath ?? string.Empty,
+                ParentBuildSessionGUID = ParentForRegisteredBuild(buildInfo.BuildSessionGUID),
                 Platform = buildInfo.Platform,
                 PlatformName = buildInfo.Platform.ToString(),
                 ProducerPackage = buildInfo.ProducerPackage ?? string.Empty,
@@ -514,6 +621,8 @@ namespace UnityEditor.Build
                 DateTime startTime = new DateTime(buildStartTimeTicks, DateTimeKind.Utc);
 
                 var buildSessionGuid = new GUID(buildSessionGuidString);
+                BeginActiveBuild(buildSessionGuid);
+
                 string folderName = FormatBuildHistoryFolderName(buildSessionGuid, startTime);
                 string directoryPath = rootDirectory + "/" + folderName;
 

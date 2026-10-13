@@ -30,7 +30,7 @@ namespace UnityEditor
             IsDeprecated                    = (1 << 0),
             HasIntegratedGPU                = (1 << 1),
             IsConsole                       = (1 << 2),
-            IsX64                           = (1 << 3),
+            // removed: IsX64 = (1 << 3),
             IsStandalonePlatform            = (1 << 4),
             // removed: DynamicBatchingDisabled = (1 << 5),
             CompressedGPUSkinningDisabled   = (1 << 6),

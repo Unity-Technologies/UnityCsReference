@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System;
 using System.Collections.Generic;
 using UnityEditor.IMGUI.Controls;
 using UnityEditor.SceneManagement;
@@ -13,6 +14,7 @@ namespace UnityEditor
     {
         SceneView m_SceneView;
         StateCache<SceneViewCameraState> m_StateCache = new StateCache<SceneViewCameraState>("Library/StateCache/SceneView/");
+        StateCache<SceneViewSearchState> m_SearchStateCache = new StateCache<SceneViewSearchState>("Library/StateCache/SceneViewSearch/");
 
         BreadcrumbBar m_BreadcrumbBar = new BreadcrumbBar();
         bool m_BreadcrumbInitialized;
@@ -84,8 +86,37 @@ namespace UnityEditor
             else
                 LoadCameraState(m_SceneView, contextStage);
 
+            SwitchSearchFilter(previousStage, newStage);
+
             m_BreadcrumbInitialized = false;
             m_SceneView.OnStageChanged(previousStage, newStage);
+        }
+
+        // Unlike the camera state, the search is kept per stage and not per context stage
+        void SwitchSearchFilter(Stage previousStage, Stage newStage)
+        {
+            // The legacy Hierarchy clears the search of all windows on stage changes
+            if (EditorSettings.useLegacyHierarchy)
+                return;
+
+            if (previousStage != null)
+            {
+                var previousKey = StageUtility.CreateWindowAndStageIdentifier(m_SceneView.windowGUID, previousStage);
+                m_SearchStateCache.SetState(previousKey, new SceneViewSearchState
+                {
+                    searchFilter = m_SceneView.m_SearchFilter,
+                    searchMode = m_SceneView.m_SearchMode,
+                });
+            }
+
+            // A newly opened stage starts with an empty search, only returning to a stage restores its search
+            SceneViewSearchState state = null;
+            if (newStage.setSelectionAndScrollWhenBecomingCurrentStage)
+                state = m_SearchStateCache.GetState(StageUtility.CreateWindowAndStageIdentifier(m_SceneView.windowGUID, newStage));
+
+            var searchFilter = state?.searchFilter ?? string.Empty;
+            var searchMode = state?.searchMode ?? SearchableEditorWindow.SearchMode.All;
+            m_SceneView.SetSearchFilter(searchFilter, searchMode, false, false);
         }
 
         void SaveCameraState(SceneView sceneView, Stage stage)
@@ -199,5 +230,12 @@ namespace UnityEditor
                 EditorApplication.update += SwitchStageOnNextUpdate;
             }
         }
+    }
+
+    [Serializable]
+    class SceneViewSearchState
+    {
+        public string searchFilter;
+        public SearchableEditorWindow.SearchMode searchMode;
     }
 }

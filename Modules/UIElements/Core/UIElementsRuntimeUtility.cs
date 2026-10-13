@@ -329,11 +329,6 @@ namespace UnityEngine.UIElements
         [NoAutoStaticsCleanup]
         internal static bool autoUpdateEventSystem { get; set; } = true;
 
-        // For unit tests and some XR debugging options
-        [NoAutoStaticsCleanup] // debug/test config knob; enum value, safe to persist
-        internal static DefaultEventSystem.UpdateMode eventSystemUpdateMode { get; set; } =
-            DefaultEventSystem.UpdateMode.IgnoreIfAppNotFocused;
-
         [NoAutoStaticsCleanup]
         private static bool s_IsPlayMode = false;
 
@@ -433,7 +428,7 @@ namespace UnityEngine.UIElements
 
                     if (autoUpdateEventSystem)
                     {
-                        defaultEventSystem.Update(eventSystemUpdateMode);
+                        defaultEventSystem.Update();
                     }
                 }
                 else if (s_DefaultEventSystem != null)

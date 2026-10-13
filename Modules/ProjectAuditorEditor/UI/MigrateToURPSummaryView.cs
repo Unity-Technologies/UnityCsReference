@@ -17,7 +17,9 @@ namespace Unity.ProjectAuditor.Editor.UI
         StatSeverities m_Severities;
 
         public int RenderPipelineConverterIssueCount { get; private set; }
-        public int TotalIssueCount => m_Severities.TotalExcludingIgnored;
+        public int QualitySettings2DIssueCount { get; private set; }
+        public int QualitySettings3DIssueCount { get; private set; }
+        public int TotalIssueCount => m_Severities.TotalExcludingIgnoredAndFixed;
 
         public override string Description => "Resolve the following issues to migrate your project to the Universal Render Pipeline.";
 
@@ -38,6 +40,8 @@ namespace Unity.ProjectAuditor.Editor.UI
             base.ResetStats();
             m_Severities = new StatSeverities();
             RenderPipelineConverterIssueCount = 0;
+            QualitySettings2DIssueCount = 0;
+            QualitySettings3DIssueCount = 0;
         }
 
         protected override void RefreshStats()
@@ -57,9 +61,15 @@ namespace Unity.ProjectAuditor.Editor.UI
                 if (m_ViewManager.HasPendingCategory(issue.Category))
                     continue;
 
-                AddSeverityStats(issue, ref m_Severities);
                 if (issue.Id == MigrationToURPModule.k_ConverterItemDescriptor.Id && !IsIgnoredOrHidden(issue))
                     RenderPipelineConverterIssueCount++;
+
+                if (issue.Id == MigrationToURPModule.k_QualitySettings2DNotReadyDescriptor.Id)
+                    QualitySettings2DIssueCount++;
+                else if (issue.Id == MigrationToURPModule.k_QualitySettings3DNotReadyDescriptor.Id)
+                    QualitySettings3DIssueCount++;
+                else
+                    AddSeverityStats(issue, ref m_Severities);
             }
         }
 
@@ -83,7 +93,7 @@ namespace Unity.ProjectAuditor.Editor.UI
 
             EditorGUILayout.Space();
             DrawSeverityBreakdown();
-            if (!m_ViewManager.HasPendingCategories() && m_Severities.TotalExcludingIgnored > 0)
+            if (!m_ViewManager.HasPendingCategories() && m_Severities.TotalExcludingIgnoredAndFixed > 0)
             {
                 EditorGUILayout.Space();
                 DrawTopTenSection();

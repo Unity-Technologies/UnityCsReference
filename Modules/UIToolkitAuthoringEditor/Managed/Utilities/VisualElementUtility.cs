@@ -48,6 +48,17 @@ static class VisualElementUtility
 
     public static void UpdateInlineRuleOnAllClones(VisualElement element, StyleSheet inlineSheet, StyleRule rule)
     {
+        ForEachClone(element, Apply);
+
+        void Apply(VisualElement e)
+        {
+            e.UpdateInlineRule(inlineSheet, rule);
+            e.IncrementVersion(VersionChangeType.StyleSheet | VersionChangeType.Styles);
+        }
+    }
+
+    public static void ForEachClone(VisualElement element, System.Action<VisualElement> action)
+    {
         var asset = element.visualElementAsset;
         var ownPanel = element.panel as BaseVisualElementPanel;
 
@@ -70,22 +81,16 @@ static class VisualElementUtility
 
         if (asset == null || panels.Count == 0)
         {
-            Apply(element);
+            action(element);
             return;
         }
 
         foreach (var panel in panels)
-            panel.visualTree?.Query<VisualElement>().Where(e => e.visualElementAsset == asset).ForEach(Apply);
+            panel.visualTree?.Query<VisualElement>().Where(e => e.visualElementAsset == asset).ForEach(action);
 
-        // A detached element is not found by the walks but still holds the rule
+        // A detached element is not found by the panel walks
         if (ownPanel == null)
-            Apply(element);
-
-        void Apply(VisualElement e)
-        {
-            e.UpdateInlineRule(inlineSheet, rule);
-            e.IncrementVersion(VersionChangeType.StyleSheet | VersionChangeType.Styles);
-        }
+            action(element);
     }
 
     public static void GenerateSubDocumentPath(this VisualElement element, List<TemplateAsset> templateAssetPath)

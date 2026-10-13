@@ -17,28 +17,40 @@ namespace UnityEditor.Build.Analysis
         internal const string k_SelectedBuildKey = "BuildAnalysisWindow.SelectedBuildSessionGUID";
 
         internal const string k_FooterWarningClass = "build-list-footer--warning";
-        private const double k_FooterWarnThreshold = 0.8;
-        internal const string k_FooterDefaultTooltip = "To edit the build limit, go to Project Settings > Build Pipeline.";
-        private const string k_FooterWarningTooltip = "Build limit approaching. Older builds will be automatically deleted once the limit is hit. To edit the limit, go to Project Settings > Build Pipeline.";
-        private const string k_FooterExceededTooltip = "Build limit exceeded. Older builds will be automatically deleted on the next build. To edit the limit, go to Project Settings > Build Pipeline.";
+        private const double k_FooterWarnThreshold = 0.7;
+        internal const string k_FooterWarningTooltip = "Build limit approaching. Older builds will be automatically deleted once the limit is hit. To edit the limit, go to Project Settings > Build Pipeline.";
+        internal const string k_FooterExceededTooltip = "Build limit exceeded. Older builds will be automatically deleted on the next build. To edit the limit, go to Project Settings > Build Pipeline.";
+
+        private const int k_NoItemId = -1;
 
         public event Action<BuildEntry> SelectionChanged;
 
         private readonly IBuildListActions m_Actions;
         private readonly ToolbarSearchField m_SearchField;
         private readonly ToolbarMenu m_SettingsMenu;
-        private readonly ListView m_BuildListView;
+        private readonly TreeView m_BuildListView;
         private readonly VisualElement m_EmptyState;
         private readonly Label m_EmptyStateDescription;
         private readonly VisualElement m_FooterRoot;
+        private readonly VisualElement m_FooterLimit;
         private readonly Label m_FooterLabel;
+        private readonly Label m_FooterSearchCount;
+
+        // One id per GUID, never reused, so expanded state survives a refresh.
+        private readonly Dictionary<GUID, int> m_ItemIdByGuid = new Dictionary<GUID, int>();
+
+        // SetRootItems forgets collapsed rows, so the user's collapses are reapplied.
+        private readonly HashSet<int> m_CollapsedItemIds = new HashSet<int>();
+        private bool m_RestoringExpandedState;
 
         private BuildEntry[] m_AllBuilds = Array.Empty<BuildEntry>();
+        private int m_BuildHistoryLimit;
         private string[] m_AllPlatformNames = Array.Empty<string>();
         private BuildEntry[] m_FilteredBuilds = Array.Empty<BuildEntry>();
+        private BuildRelationships m_Relationships = new BuildRelationships();
         private string m_CurrentSearchText = string.Empty;
         private BuildEntry m_SelectedBuild;
-        private int m_PendingScrollIndex = -1;
+        private int m_PendingScrollId = k_NoItemId;
 
         public BuildEntry SelectedBuild => m_SelectedBuild;
 
@@ -51,11 +63,13 @@ namespace UnityEditor.Build.Analysis
 
             m_SearchField = this.Q<ToolbarSearchField>("build-search");
             m_SettingsMenu = this.Q<ToolbarMenu>("build-settings-menu");
-            m_BuildListView = this.Q<ListView>("build-list");
+            m_BuildListView = this.Q<TreeView>("build-list");
             m_EmptyState = this.Q<VisualElement>("empty-state");
             m_EmptyStateDescription = this.Q<Label>("empty-state-description");
             m_FooterRoot = this.Q<VisualElement>("build-list-footer");
+            m_FooterLimit = this.Q<VisualElement>("build-list-footer__limit");
             m_FooterLabel = this.Q<Label>("build-list-footer__label");
+            m_FooterSearchCount = this.Q<Label>("build-list-footer__search-count");
 
             SetupBuildListView();
             SetupSettingsMenu();
@@ -63,18 +77,24 @@ namespace UnityEditor.Build.Analysis
 
             // Initial empty state.
             UpdateEmptyState();
-            UpdateFooter(0, 0);
+            UpdateFooter();
         }
 
         public void SetBuilds(BuildEntry[] builds, int buildHistoryLimit)
         {
+            SetBuilds(builds, new BuildRelationships(), buildHistoryLimit);
+        }
+
+        public void SetBuilds(BuildEntry[] builds, BuildRelationships relationships, int buildHistoryLimit)
+        {
             m_AllBuilds = builds ?? Array.Empty<BuildEntry>();
+            m_BuildHistoryLimit = buildHistoryLimit;
+            m_Relationships = relationships ?? new BuildRelationships();
             if (m_AllPlatformNames.Length < m_AllBuilds.Length)
                 m_AllPlatformNames = new string[m_AllBuilds.Length];
             for (var i = 0; i < m_AllBuilds.Length; i++)
                 m_AllPlatformNames[i] = m_AllBuilds[i].Platform.ToString();
             ApplyFilter(m_CurrentSearchText);
-            UpdateFooter(m_AllBuilds.Length, buildHistoryLimit);
 
             // After re-binding, try to restore a previously-persisted selection if
             // nothing is currently selected
@@ -102,8 +122,10 @@ namespace UnityEditor.Build.Analysis
 
             if (index >= 0)
             {
-                m_BuildListView.SetSelection(index); // fires OnListSelectionChanged → SelectionChanged
-                ScrollToIndex(index);                // SetSelection does not scroll the row into view
+                // SetSelectionById expands collapsed ancestors.
+                var itemId = GetItemId(buildSessionGUID);
+                m_BuildListView.SetSelectionById(itemId); // fires OnListSelectionChanged → SelectionChanged
+                ScrollToItemId(itemId);                   // SetSelectionById does not scroll the row into view
             }
 
             return true;
@@ -132,6 +154,7 @@ namespace UnityEditor.Build.Analysis
             m_BuildListView.fixedItemHeight = 45;
             m_BuildListView.virtualizationMethod = CollectionVirtualizationMethod.FixedHeight;
             m_BuildListView.selectionChanged += OnListSelectionChanged;
+            m_BuildListView.itemExpandedChanged += OnItemExpandedChanged;
             m_BuildListView.AddManipulator(new ContextualMenuManipulator(
                 evt => PopulateContextMenu(evt.menu, m_SelectedBuild, Unsupported.IsDeveloperMode())));
         }
@@ -186,10 +209,10 @@ namespace UnityEditor.Build.Analysis
 
         private void BindListItem(VisualElement element, int index)
         {
-            if (index < 0 || index >= m_FilteredBuilds.Length)
+            var build = m_BuildListView.GetItemDataForIndex<BuildEntry>(index);
+            if (build == null)
                 return;
 
-            var build = m_FilteredBuilds[index];
             element.Q<Label>("build-name").text = build.BuildName;
             element.Q<Label>("size-duration").text =
                 $"{FormatUtility.FormatSize(build.TotalSizeBytes)} • {FormatUtility.FormatDuration(build.TotalTimeMs)}";
@@ -237,7 +260,10 @@ namespace UnityEditor.Build.Analysis
             m_BuildListView.selectionChanged -= OnListSelectionChanged;
             try
             {
-                m_BuildListView.itemsSource = m_FilteredBuilds;
+                // A held selection id would expand its ancestors; ReapplySelectionAfterRebuild restores it.
+                m_BuildListView.ClearSelection();
+                m_BuildListView.SetRootItems(BuildTreeItems());
+                RestoreExpandedState();
                 m_BuildListView.Rebuild();
                 ReapplySelectionAfterRebuild();
             }
@@ -247,6 +273,112 @@ namespace UnityEditor.Build.Analysis
             }
 
             UpdateEmptyState();
+            UpdateFooter();
+        }
+
+        private List<TreeViewItemData<BuildEntry>> BuildTreeItems()
+        {
+            var items = new List<TreeViewItemData<BuildEntry>>(m_FilteredBuilds.Length);
+
+            // Search results are flat, since a match's parent may not match. With no nesting, there is no tree to build.
+            if (!string.IsNullOrEmpty(m_CurrentSearchText) || !m_Relationships.HasAny)
+            {
+                foreach (var build in m_FilteredBuilds)
+                    items.Add(new TreeViewItemData<BuildEntry>(GetItemId(build.BuildSessionGUID), build));
+                return items;
+            }
+
+            var buildsByGuid = new Dictionary<GUID, BuildEntry>(m_FilteredBuilds.Length);
+            foreach (var build in m_FilteredBuilds)
+                buildsByGuid[build.BuildSessionGUID] = build;
+
+            var addedToTree = new HashSet<GUID>();
+            foreach (var build in m_FilteredBuilds)
+            {
+                // A build whose parent isn't listed, e.g. deleted by retention, is shown unnested.
+                if (m_Relationships.TryGetParent(build.BuildSessionGUID, out var parent)
+                    && buildsByGuid.ContainsKey(parent))
+                    continue;
+
+                // A top-level row, with its nested builds added beneath it.
+                items.Add(CreateTreeItem(build, buildsByGuid, addedToTree));
+            }
+
+            // Catch anything that was never added and show it unnested.
+            foreach (var build in m_FilteredBuilds)
+            {
+                if (addedToTree.Add(build.BuildSessionGUID))
+                    items.Add(new TreeViewItemData<BuildEntry>(GetItemId(build.BuildSessionGUID), build));
+            }
+
+            return items;
+        }
+
+        private TreeViewItemData<BuildEntry> CreateTreeItem(
+            BuildEntry build, Dictionary<GUID, BuildEntry> buildsByGuid, HashSet<GUID> addedToTree)
+        {
+            var itemId = GetItemId(build.BuildSessionGUID);
+            addedToTree.Add(build.BuildSessionGUID);
+
+            var childGuids = m_Relationships.GetChildren(build.BuildSessionGUID);
+
+            // Nothing is nested in this build, so show it as a leaf.
+            if (childGuids.Count == 0)
+                return new TreeViewItemData<BuildEntry>(itemId, build);
+
+            var children = new List<TreeViewItemData<BuildEntry>>(childGuids.Count);
+            for (var i = 0; i < childGuids.Count; i++)
+            {
+                // Skip children that aren't listed, and any already added so a parent loop can't recurse forever.
+                if (buildsByGuid.TryGetValue(childGuids[i], out var child) && !addedToTree.Contains(childGuids[i]))
+                    children.Add(CreateTreeItem(child, buildsByGuid, addedToTree));
+            }
+
+            // Every child was skipped, so show the build as a leaf rather than with an empty, expandable group.
+            if (children.Count == 0)
+                return new TreeViewItemData<BuildEntry>(itemId, build);
+
+            // The build with its nested builds beneath it.
+            return new TreeViewItemData<BuildEntry>(itemId, build, children);
+        }
+
+        // Expand everything, then re-collapse what the user collapsed.
+        private void RestoreExpandedState()
+        {
+            m_RestoringExpandedState = true;
+            try
+            {
+                m_BuildListView.ExpandAll();
+                foreach (var itemId in m_CollapsedItemIds)
+                    m_BuildListView.CollapseItem(itemId, collapseAllChildren: false, refresh: false);
+            }
+            finally
+            {
+                m_RestoringExpandedState = false;
+            }
+        }
+
+        private void OnItemExpandedChanged(TreeViewExpansionChangedArgs args)
+        {
+            // An args.id of -1 is a whole-tree change, which only RestoreExpandedState makes.
+            if (m_RestoringExpandedState || args.id < 0)
+                return;
+
+            if (args.isExpanded)
+                m_CollapsedItemIds.Remove(args.id);
+            else
+                m_CollapsedItemIds.Add(args.id);
+        }
+
+        private int GetItemId(GUID buildSessionGUID)
+        {
+            // IDs go 0, 1, 2... as builds are first seen. Entries are never removed, so Count is always the next free ID.
+            if (!m_ItemIdByGuid.TryGetValue(buildSessionGUID, out var itemId))
+            {
+                itemId = m_ItemIdByGuid.Count;
+                m_ItemIdByGuid[buildSessionGUID] = itemId;
+            }
+            return itemId;
         }
 
         private void ReapplySelectionAfterRebuild()
@@ -261,7 +393,8 @@ namespace UnityEditor.Build.Analysis
                 // Refresh the cached reference so consumers see the latest metadata
                 // for this GUID (size/duration/result may have changed across rebuilds).
                 m_SelectedBuild = m_FilteredBuilds[index];
-                m_BuildListView.SetSelectionWithoutNotify((IEnumerable<int>)new[] { index });
+
+                m_BuildListView.SetSelectionByIdWithoutNotify(new[] { GetItemId(selectedGUID) });
                 return;
             }
 
@@ -287,19 +420,17 @@ namespace UnityEditor.Build.Analysis
             return -1;
         }
 
-        // Scrolls the row at the given filtered index into view. On a freshly-opened window this can run
-        // from CreateGUI before the ListView has its first layout, where ScrollToItem can't position
-        // against an unresolved viewport — so defer to the first geometry pass in that case.
-        private void ScrollToIndex(int index)
+        // Before the first layout ScrollToItemById cannot position, so defer to the first geometry pass.
+        private void ScrollToItemId(int itemId)
         {
             if (m_BuildListView.layout.height > 0f)
             {
-                m_BuildListView.ScrollToItem(index);
+                m_BuildListView.ScrollToItemById(itemId);
                 return;
             }
 
-            var alreadyPending = m_PendingScrollIndex >= 0;
-            m_PendingScrollIndex = index;
+            var alreadyPending = m_PendingScrollId != k_NoItemId;
+            m_PendingScrollId = itemId;
             if (!alreadyPending)
                 m_BuildListView.RegisterCallback<GeometryChangedEvent>(OnScrollOnGeometryChanged);
         }
@@ -307,10 +438,10 @@ namespace UnityEditor.Build.Analysis
         private void OnScrollOnGeometryChanged(GeometryChangedEvent _)
         {
             m_BuildListView.UnregisterCallback<GeometryChangedEvent>(OnScrollOnGeometryChanged);
-            if (m_PendingScrollIndex >= 0)
+            if (m_PendingScrollId != k_NoItemId)
             {
-                m_BuildListView.ScrollToItem(m_PendingScrollIndex);
-                m_PendingScrollIndex = -1;
+                m_BuildListView.ScrollToItemById(m_PendingScrollId);
+                m_PendingScrollId = k_NoItemId;
             }
         }
 
@@ -332,6 +463,8 @@ namespace UnityEditor.Build.Analysis
             m_SelectedBuild = newSelection;
             if (newSelection != null)
                 EditorPrefs.SetString(k_SelectedBuildKey, newSelection.BuildSessionGUID.ToString());
+            else
+                EditorPrefs.DeleteKey(k_SelectedBuildKey); // otherwise the next refresh would restore it
 
             SelectionChanged?.Invoke(newSelection);
         }
@@ -345,8 +478,9 @@ namespace UnityEditor.Build.Analysis
             var index = FindIndex(m_FilteredBuilds, storedGuid);
             if (index >= 0)
             {
-                m_BuildListView.SetSelection(index); // fires OnListSelectionChanged → SelectionChanged event
-                ScrollToIndex(index);
+                var itemId = GetItemId(storedGuid);
+                m_BuildListView.SetSelectionById(itemId); // fires OnListSelectionChanged → SelectionChanged event
+                ScrollToItemId(itemId);
             }
         }
 
@@ -369,23 +503,27 @@ namespace UnityEditor.Build.Analysis
             }
         }
 
-        private void UpdateFooter(int count, int limit)
+        private void UpdateFooter()
         {
-            if (limit <= 0)
-            {
-                m_FooterLabel.text = $"{count} builds";
-                m_FooterRoot.RemoveFromClassList(k_FooterWarningClass);
-                m_FooterRoot.tooltip = k_FooterDefaultTooltip;
-                return;
-            }
+            var count = m_AllBuilds.Length;
+            var limit = m_BuildHistoryLimit;
+            var exceeded = limit > 0 && count > limit;
+            var approaching = limit > 0 && !exceeded && count >= (int)Math.Ceiling(limit * k_FooterWarnThreshold);
+            var showLimit = exceeded || approaching;
+            var searching = !string.IsNullOrEmpty(m_CurrentSearchText);
 
-            m_FooterLabel.text = $"{count} of {limit} builds";
-            var exceeded = count > limit;
-            var approaching = !exceeded && count >= (int)Math.Ceiling(limit * k_FooterWarnThreshold);
-            m_FooterRoot.EnableInClassList(k_FooterWarningClass, exceeded || approaching);
-            m_FooterRoot.tooltip = exceeded ? k_FooterExceededTooltip
-                                 : approaching ? k_FooterWarningTooltip
-                                 : k_FooterDefaultTooltip;
+            m_FooterRoot.EnableInClassList(k_FooterWarningClass, showLimit);
+            m_FooterLabel.text = showLimit ? $"{count} of {limit} limit" : string.Empty;
+            m_FooterLimit.tooltip = exceeded ? k_FooterExceededTooltip
+                                  : approaching ? k_FooterWarningTooltip
+                                  : string.Empty;
+
+            // Always filled, so the hidden count still gives the footer row its height.
+            m_FooterSearchCount.text = $"Showing {m_FilteredBuilds.Length}/{count}";
+            m_FooterSearchCount.style.visibility = searching ? Visibility.Visible : Visibility.Hidden;
+
+            // Hidden rather than removed, so the list does not resize when a search starts or clears.
+            m_FooterRoot.style.visibility = showLimit || searching ? Visibility.Visible : Visibility.Hidden;
         }
 
         internal void PopulateContextMenu(DropdownMenu menu, BuildEntry selection, bool isDeveloperMode)
@@ -394,7 +532,7 @@ namespace UnityEditor.Build.Analysis
                 ? DropdownMenuAction.Status.Normal
                 : DropdownMenuAction.Status.Disabled;
 
-            menu.AppendAction("Show in Explorer", _ => m_Actions.ShowInExplorer(selection), status);
+            menu.AppendAction(BuildAnalysisConstants.k_ShowInFileBrowserLabel, _ => m_Actions.ShowInExplorer(selection), status);
             menu.AppendAction("Copy Path", _ => m_Actions.CopyPath(selection), status);
 
             if (isDeveloperMode)

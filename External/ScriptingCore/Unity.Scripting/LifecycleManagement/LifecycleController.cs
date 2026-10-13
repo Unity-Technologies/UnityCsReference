@@ -94,6 +94,7 @@ namespace Unity.Scripting.LifecycleManagement
         public void OnAssemblyLoadedScopeExited(ReadOnlyAssemblyList unloadingAssemblies)
         {
             _lifecycleMethodRegistry.Clear(unloadingAssemblies);
+            _scopeTransitionHelper.ClearMarkerCache();
         }
 
         internal INativeCallbackProvider? SetDependency_NativeCallbackProvider(INativeCallbackProvider nativeCallbackProvider)

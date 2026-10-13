@@ -45,7 +45,15 @@ namespace UnityEditor.UIElements.StyleSheets
             // TODO: refactor to avoid the unnecessary JSON serialization
             var container = s_PPtrContainer;
             container.o = asset;
-            var jsonContainer = EditorJsonUtility.ToJson(container);
+            string jsonContainer;
+            try
+            {
+                jsonContainer = EditorJsonUtility.ToJson(container);
+            }
+            finally
+            {
+                container.o = null;
+            }
             var rawContainer = s_RawPPtrContainer;
             EditorJsonUtility.FromJsonOverwrite(jsonContainer, rawContainer);
 
@@ -240,8 +248,16 @@ namespace UnityEditor.UIElements.StyleSheets
                     // TODO: refactor to avoid the unnecessary JSON serialization
                     var json = $"{{\"{k_ContainerRefName}\":{{\"{k_AttrFileId}\": {query.fileId}, \"{k_AttrGuid}\":\"{query.guid}\", \"{k_AttrType}\": {query.type}}}}}";
                     var container = s_PPtrContainer;
-                    EditorJsonUtility.FromJsonOverwrite(json, container);
-                    var resolvedAssetReference = container.o;
+                    Object resolvedAssetReference;
+                    try
+                    {
+                        EditorJsonUtility.FromJsonOverwrite(json, container);
+                        resolvedAssetReference = container.o;
+                    }
+                    finally
+                    {
+                        container.o = null;
+                    }
                     response.resolvedQueryAsset = resolvedAssetReference;
 
                     // empty paths are resolved to the input assetPath, which is not an issue here

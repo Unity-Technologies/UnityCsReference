@@ -80,6 +80,7 @@ namespace UnityEngine
         extern public int renderQueue {[FreeFunction("ShaderScripting::GetRenderQueue", HasExplicitThis = true)] get; }
         extern internal DisableBatchingType disableBatching {[FreeFunction("ShaderScripting::GetDisableBatchingType", HasExplicitThis = true)] get; }
 
+        [Obsolete("The warmup functionality is deprecated. Please use GraphicsStateCollection instead.", false)]
         [FreeFunction] extern public static void WarmupAllShaders();
 
         [FreeFunction("ShaderScripting::TagToID")] extern internal static int TagToID(string name);

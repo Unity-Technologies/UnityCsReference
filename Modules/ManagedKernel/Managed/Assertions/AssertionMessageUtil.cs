@@ -6,9 +6,11 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using UnityEngine.Bindings;
 
 namespace UnityEngine.Assertions
 {
+    [VisibleToOtherModules("UnityEngine.CoreModule")]
     internal class AssertionMessageUtil
     {
         const string k_Expected = "Expected:";

@@ -28,6 +28,7 @@ using System.Runtime.CompilerServices;
 [assembly: InternalsVisibleTo("Unity.GraphToolkit.Editor.Tests.UI")]
 
 // Unity users
+[assembly: InternalsVisibleTo("Unity.GraphAuthoring.Editor")]
 [assembly: InternalsVisibleTo("Unity.Motion.Editor")]
 [assembly: InternalsVisibleTo("Unity.Motion.Editor.Tests")]
 [assembly: InternalsVisibleTo("Unity.ShaderGraph2.Editor")]

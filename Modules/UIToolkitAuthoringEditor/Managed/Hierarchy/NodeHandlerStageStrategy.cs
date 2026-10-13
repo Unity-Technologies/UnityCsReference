@@ -403,6 +403,8 @@ sealed class UIStageNodeHandlerStrategy(VisualElementEditingStage stage) : NodeH
         if (localRoot == null && Stage.GetAuthoringPanel() != null)
         {
             Debug.LogWarning("Current stage could not be recreated correctly.");
+
+            // Wrong: this runs from the handler's Initialize, and switching stages there re-enters the stage switch that is creating the handler; it must move out of Initialize
             StageUtility.GoBackToPreviousStage();
         }
 

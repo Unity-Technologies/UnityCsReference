@@ -298,10 +298,42 @@ namespace UnityEditor.Modules
                     _ => throw new ArgumentException($"Unhandled {nameof(ManagedStrippingLevel)} value")
                 },
                 AdditionalArgs = additionalArgs.ToArray(),
-                ModulesAssetPath = $"{BuildPipeline.GetPlaybackEngineDirectory(args.target, 0)}/modules.asset",
+                ModulesAssetPath = GetModulesAssetPath(args.target),
                 AllowDebugging = GetAllowDebugging(args),
                 PerformEngineStripping = PlayerSettings.stripEngineCode,
             };
+        }
+
+        // Installed gated feature-set modules ship their entries as modules.<FeatureSet>.gated.asset fragments next to
+        // modules.asset. UnityLinker and class registration read a single file, so merge the fragments into a copy.
+        static string GetModulesAssetPath(BuildTarget target)
+        {
+            var platformDirectory = BuildPipeline.GetPlaybackEngineDirectory(target, 0);
+            var modulesAssetPath = $"{platformDirectory}/modules.asset";
+            var fragments = Directory.Exists(platformDirectory) ? Directory.GetFiles(platformDirectory, "modules.*.gated.asset") : Array.Empty<string>();
+            if (fragments.Length == 0)
+                return modulesAssetPath;
+
+            var merged = File.ReadAllText(modulesAssetPath);
+            if (!merged.EndsWith("\n"))
+                merged += "\n";
+            Array.Sort(fragments, StringComparer.Ordinal);
+            foreach (var fragment in fragments)
+            {
+                var lines = File.ReadAllLines(fragment);
+                var modulesLine = Array.FindIndex(lines, l => l.TrimEnd() == "  modules:");
+                for (var i = modulesLine + 1; i < lines.Length; i++)
+                    merged += lines[i] + "\n";
+            }
+
+            var mergedPath = Path.GetFullPath(DagDirectory.Combine("modules.merged.asset").ToString());
+            // Only rewrite when the content changed so the linker step isn't needlessly invalidated.
+            if (!File.Exists(mergedPath) || File.ReadAllText(mergedPath) != merged)
+            {
+                Directory.CreateDirectory(Path.GetDirectoryName(mergedPath));
+                File.WriteAllText(mergedPath, merged);
+            }
+            return mergedPath;
         }
 
         static bool IsBuildOptionSet(BuildOptions options, BuildOptions flag) => (options & flag) != 0;
@@ -598,14 +630,14 @@ namespace UnityEditor.Modules
         }
         protected virtual RunnableProgram BeeBackendProgram(BuildPostProcessArgs args) => null;
 
-        protected virtual BuildRequest SetupBuildRequest(BuildPostProcessArgs args, ILPostProcessingProgram ilpp)
+        protected virtual BuildRequest SetupBuildRequest(BuildPostProcessArgs args)
         {
             RunnableProgram buildProgram = MakePlayerBuildProgram(args);
             var cacheMode = ((args.options & BuildOptions.CleanBuildCache) == BuildOptions.CleanBuildCache)
                 ? UnityBeeDriver.CacheMode.WriteOnly
                 : UnityBeeDriver.CacheMode.ReadWrite;
 
-            var buildRequest = UnityBeeDriver.BuildRequestFor(args.target, args.options, buildProgram, DagName(args), DagDirectory.ToString(), false, "",ilpp, cacheMode, UnityBeeDriver.StdOutModeForPlayerBuilds, BeeBackendProgram(args));
+            var buildRequest = UnityBeeDriver.BuildRequestFor(args.target, args.options, buildProgram, DagName(args), DagDirectory.ToString(), false, "", cacheMode, UnityBeeDriver.StdOutModeForPlayerBuilds, BeeBackendProgram(args));
 #pragma warning disable UAC2001 // Avoid Linq
             buildRequest.DataForBuildProgram.Add(() => GetDataForBuildProgramFor(args).Where(o=> o is not null));
 #pragma warning restore UAC2001
@@ -867,7 +899,7 @@ namespace UnityEditor.Modules
 
                 var buildStep = args.report.BeginBuildStep("Setup incremental player build");
 
-                var buildRequest = SetupBuildRequest(args,new ILPostProcessingProgram());
+                var buildRequest = SetupBuildRequest(args);
                 args.report.EndBuildStep(buildStep);
 
                 buildStep = args.report.BeginBuildStep("Incremental player build");

@@ -806,7 +806,7 @@ namespace Unity.ProjectAuditor.Editor.UI.Framework
             }
             else
             {
-                m_Table.SetExpanded(new List<int>());
+                m_Table.CollapseAllGroups();
             }
         }
 

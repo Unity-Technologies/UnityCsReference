@@ -62,13 +62,15 @@ namespace Unity.UI.Builder
 
             // The visual editor for this axis, hosted in the same (visible) row as the hidden text field so
             // the row's override indicator (driven by the text field) renders next to it.
-            if (styleRow.Q<UnityEditor.UIElements.GridTrackAxisEditor>() == null)
+            var axis = styleRow.Q<UnityEditor.UIElements.GridTrackAxisEditor>();
+            if (axis == null)
             {
                 bool implicitTracks = styleName is "grid-auto-columns" or "grid-auto-rows";
-                var axis = new UnityEditor.UIElements.GridTrackAxisEditor(GridAxisTitle(styleName)) { allowRepeat = !implicitTracks };
+                axis = new UnityEditor.UIElements.GridTrackAxisEditor(GridAxisTitle(styleName)) { allowRepeat = !implicitTracks };
                 axis.changed += list => ApplyGridTrackList(styleName, list);
                 styleRow.Add(axis);
             }
+            m_GridTrackFields[field] = new GridTrackFieldState { axis = axis };
 
             EnsureGridPreview(styleRow);
         }
@@ -109,8 +111,8 @@ namespace Unity.UI.Builder
                 return;
 
             var cs = currentVisualElement.computedStyle;
-            m_GridPreview.SetColumns(new List<GridTrackSize>(cs.gridTemplateColumns.ToArray()));
-            m_GridPreview.SetRows(new List<GridTrackSize>(cs.gridTemplateRows.ToArray()));
+            m_GridPreview.SetColumns(cs.gridTemplateColumns);
+            m_GridPreview.SetRows(cs.gridTemplateRows);
         }
 
         // Shared writeback for a whole track list (used by the text field and the visual editor popup).
@@ -129,26 +131,47 @@ namespace Unity.UI.Builder
             NotifyStyleChanges(s_StyleChangeList, true);
         }
 
+        class GridTrackFieldState
+        {
+            public UnityEditor.UIElements.GridTrackAxisEditor axis;
+            public VisualElement element;
+            public readonly List<GridTrackSize> tracks = new();
+        }
+
+        readonly Dictionary<TextField, GridTrackFieldState> m_GridTrackFields = new();
+        readonly Dictionary<TextField, GridLine> m_GridLineFieldValues = new();
+
         void RefreshGridTrackField(string styleName, TextField field)
         {
+            if (!m_GridTrackFields.TryGetValue(field, out var state))
+                return;
+
             var cs = currentVisualElement.computedStyle;
+            var isTemplate = false;
             ReadOnlySpan<GridTrackSize> tracks;
-            if (styleName == "grid-template-columns") tracks = cs.gridTemplateColumns;
-            else if (styleName == "grid-template-rows") tracks = cs.gridTemplateRows;
-            else if (styleName == "grid-auto-columns") tracks = cs.gridAutoColumns;
-            else tracks = cs.gridAutoRows;
+            switch (styleName)
+            {
+                case "grid-template-columns": tracks = cs.gridTemplateColumns; isTemplate = true; break;
+                case "grid-template-rows": tracks = cs.gridTemplateRows; isTemplate = true; break;
+                case "grid-auto-columns": tracks = cs.gridAutoColumns; break;
+                default: tracks = cs.gridAutoRows; break;
+            }
 
-            var list = new List<GridTrackSize>(tracks.ToArray());
-            field.SetValueWithoutNotify(GridTrackSize.FormatList(list.ToArray()));
+            var elementChanged = state.element != currentVisualElement;
+            state.element = currentVisualElement;
 
-            // Keep the visual editor in sync with external changes (selection, undo, etc.).
-            field.GetContainingRow()?.Q<UnityEditor.UIElements.GridTrackAxisEditor>()?.SetTracks(list);
+            if (UnityEditor.UIElements.GridTrackSizeListUtility.CopyIfChanged(tracks, state.tracks))
+            {
+                field.SetValueWithoutNotify(GridTrackSize.FormatList(state.tracks));
+                if (isTemplate)
+                    SyncGridPreview();
+            }
+            else if (!elementChanged)
+            {
+                return;
+            }
 
-            var prop = GetLastStyleProperty(currentRule, styleName);
-            m_Inspector.UpdateFieldStatus(field, prop);
-
-            if (styleName is "grid-template-columns" or "grid-template-rows")
-                SyncGridPreview();
+            state.axis.SetTracks(tracks, preserveRepeatRows: !elementChanged);
         }
 
         void OnGridTrackFieldChange(ChangeEvent<string> evt, string styleName)
@@ -190,14 +213,19 @@ namespace Unity.UI.Builder
                 "grid-row-start" => cs.gridRowStart,
                 _ => cs.gridRowEnd
             };
-            field.SetValueWithoutNotify(value.ToString());
+            if (m_GridLineFieldValues.TryGetValue(field, out var last) && last == value)
+                return;
 
-            var prop = GetLastStyleProperty(currentRule, styleName);
-            m_Inspector.UpdateFieldStatus(field, prop);
+            m_GridLineFieldValues[field] = value;
+            field.SetValueWithoutNotify(value.ToString());
         }
 
         void OnGridLineFieldChange(ChangeEvent<string> evt, string styleName)
         {
+            // Forces the next refresh to rewrite the text, which resets invalid input.
+            if (evt.target is TextField field)
+                m_GridLineFieldValues.Remove(field);
+
             Undo.RegisterCompleteObjectUndo(styleSheet, BuilderConstants.ChangeUIStyleValueUndoMessage);
 
             var styleProperty = GetOrCreateStylePropertyByStyleName(styleName);

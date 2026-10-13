@@ -139,7 +139,7 @@ namespace Unity.ProjectAuditor.Editor.Modules
 
             using (var reader = new StreamReader(assetPath))
             {
-                // Text-serialized files start with the %YAML directive, which Unity 7.0 and newer precede with a
+                // Text-serialized files start with the %YAML directive, which 7.0 alpha builds preceded with a
                 // %UNITY directive
                 var line = reader.ReadLine();
                 if (line != null && line.StartsWith(k_UnityDirective, StringComparison.Ordinal))

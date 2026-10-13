@@ -87,8 +87,8 @@ namespace Unity.Hierarchy.Editor
 
         protected override void Initialize()
         {
-            var currentStage = StageUtility.GetCurrentStage();
-            m_CustomParentForNewGameObjects = currentStage is PrefabStage prefabStage ? prefabStage.prefabContentsRoot.transform : null;
+            var stage = HierarchyWindow.GetStage(Hierarchy);
+            m_CustomParentForNewGameObjects = stage is PrefabStage prefabStage ? prefabStage.prefabContentsRoot.transform : null;
         }
 
         /// <summary>

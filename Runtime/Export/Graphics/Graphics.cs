@@ -285,6 +285,7 @@ namespace UnityEngine
             offsetObjectToWorld = t == typeof(Matrix4x4) ? 0 : Marshal.OffsetOf(t, "objectToWorld").ToInt32();
 
             // fill optional data members
+            try { offsetSpriteProp = Marshal.OffsetOf(t, "spriteProp").ToInt32(); } catch (ArgumentException) { offsetSpriteProp = -1; }
             try { offsetSpriteColor = Marshal.OffsetOf(t, "spriteColor").ToInt32(); } catch (ArgumentException) { offsetSpriteColor = -1; }
             try { offsetRenderingLayerMask = Marshal.OffsetOf(t, "renderingLayerMask").ToInt32(); } catch (ArgumentException) { offsetRenderingLayerMask = -1; }
             try { offsetRendererShaderUserValue = Marshal.OffsetOf(t, "rendererShaderUserValue").ToInt32(); } catch (ArgumentException) { offsetRendererShaderUserValue = -1; }
@@ -292,6 +293,7 @@ namespace UnityEngine
 
         public int size { get; }
         public int offsetObjectToWorld { get; }
+        public int offsetSpriteProp { get; }
         public int offsetSpriteColor { get; }
         public int offsetRenderingLayerMask { get; }
         public int offsetRendererShaderUserValue { get; }

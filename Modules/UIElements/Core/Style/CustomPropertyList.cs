@@ -157,7 +157,7 @@ internal struct CustomPropertyListEnumerator
     public extern int GetCurrent(IntPtr valuePtr);
 }
 
-[VisibleToOtherModules("UnityEditor.UIBuilderModule")]
+[VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
 internal readonly ref struct CustomPropertyListRef
 {
     private readonly CustomPropertyList m_Self;

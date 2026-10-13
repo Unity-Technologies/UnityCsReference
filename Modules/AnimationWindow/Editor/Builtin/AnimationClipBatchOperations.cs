@@ -21,6 +21,11 @@ namespace UnityEditor.AnimationWindowBuiltin
             AnimationUtility.SetObjectReferenceCurveNoSync(m_Clip, binding, curve);
         }
 
+        public void SetDiscreteCurve(EditorCurveBinding binding, DiscreteKeyframe[] curve)
+        {
+            AnimationUtility.SetDiscreteCurveNoSync(m_Clip, binding, curve);
+        }
+
         public void SetEditorCurve(EditorCurveBinding binding, AnimationCurve curve)
         {
             AnimationUtility.SetEditorCurveNoSync(m_Clip, binding, curve);

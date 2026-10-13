@@ -16,8 +16,7 @@ namespace Unity.ProjectAuditor.Editor.Modules
 {
     internal class MigrationToURPModule : Module
     {
-        const string k_ConvertersTypeName = "UnityEditor.Rendering.Universal.Converters, Unity.RenderPipelines.Universal.Editor";
-        const string k_ContainerName = "BuiltInToURP";
+        internal const string k_ConvertersTypeName = "UnityEditor.Rendering.Universal.Converters, Unity.RenderPipelines.Universal.Editor";
         const string k_ScanFileName = "ProjectAuditorURPMigrationScan.json";
 
         // The asset converters scan through the Search service, which indexes the project over several Editor updates,
@@ -41,6 +40,36 @@ namespace Unity.ProjectAuditor.Editor.Modules
             FixerLabel = "Migrate to URP",
             Fixer = MigrationToURPUtilities.OpenRenderPipelineConverter,
             DocumentationUrl = MigrationToURPUtilities.DocumentationUrl
+        };
+
+        internal const string PAA7001 = nameof(PAA7001);
+        internal const string PAA7002 = nameof(PAA7002);
+
+        // Matches the location used by the Rules package's QualitySettingsAnalyzer for the same settings page.
+        const string k_QualitySettingsLocation = "Project/Quality";
+
+        internal static readonly Descriptor k_QualitySettings2DNotReadyDescriptor = new Descriptor
+            (
+            PAA7001,
+            "Universal Render Pipeline: Quality Settings are incorrect for 2D",
+            Areas.MigrationToURP,
+            "One or more Quality Levels (or the project-wide default, if there are no Quality Levels) don't yet have a Universal Render Pipeline Asset assigned.",
+            "Complete the 'Create URP asset' step of the Migrate to URP wizard, then re-run the analysis."
+            )
+		{
+            DefaultSeverity = Severity.Hidden
+        };
+
+        internal static readonly Descriptor k_QualitySettings3DNotReadyDescriptor = new Descriptor
+            (
+            PAA7002,
+            "Universal Render Pipeline: Quality Settings are incorrect for 3D",
+            Areas.MigrationToURP,
+            "One or more Quality Levels (or the project-wide default, if there are no Quality Levels) don't yet have a Universal Render Pipeline Asset assigned.",
+            "Complete the 'Create URP asset' step of the Migrate to URP wizard, then re-run the analysis."
+            )
+        {
+            DefaultSeverity = Severity.Hidden
         };
 
 #pragma warning disable CS0649
@@ -83,14 +112,38 @@ namespace Unity.ProjectAuditor.Editor.Modules
         {
             base.Initialize();
             RegisterDescriptor(k_ConverterItemDescriptor);
+            RegisterDescriptor(k_QualitySettings2DNotReadyDescriptor);
+            RegisterDescriptor(k_QualitySettings3DNotReadyDescriptor);
         }
 
         public override IEnumerator Audit(AnalysisParams analysisParams, IProgress progress)
         {
+            // Nothing to do if the migration checks aren't needed at all (eg using a custom SRP)
+            if (!k_ConverterItemDescriptor.IsSupported(analysisParams))
+            {
+                analysisParams.OnModuleCompleted?.Invoke(Name, AnalysisResult.Success, 0);
+                yield break;
+            }
+
+            // Several converters only report items while a Render Pipeline Asset matching their target pipeline is
+            // active on every Quality Level. 2D and 3D are reported independently so a caller can
+            // judge readiness for whichever pipeline it cares about.
+            var qualityContext = new AnalysisContext { Params = analysisParams };
+
+            MigrationToURPUtilities.AreQualitySettingsReadyForUrpTargetPipelines([MigrationToURPUtilities.Urp3DContainer, MigrationToURPUtilities.Urp2DContainer], out var results);
+            if (!results[0])
+                analysisParams.OnIncomingIssues([qualityContext.CreateIssue(IssueCategory.ProjectSetting, k_QualitySettings3DNotReadyDescriptor.Id).WithLocation(k_QualitySettingsLocation)]);
+            if (!results[1])
+                analysisParams.OnIncomingIssues([qualityContext.CreateIssue(IssueCategory.ProjectSetting, k_QualitySettings2DNotReadyDescriptor.Id).WithLocation(k_QualitySettingsLocation)]);
+
+            var targetPipeline = string.IsNullOrEmpty(analysisParams.MigrationTargetPipeline)
+                ? MigrationToURPUtilities.DefaultTargetPipelineContainer
+                : analysisParams.MigrationTargetPipeline;
+
             var convertersType = Type.GetType(k_ConvertersTypeName);
 
-            // Nothing to do if the migration checks aren't needed (eg using custom SRP), or if URP isn't installed
-            if (!k_ConverterItemDescriptor.IsSupported(analysisParams) || convertersType == null || !MigrationToURPUtilities.IsUrpPackageInstalled())
+            // Nothing more to do if URP isn't installed; the issue above (if any) already explains why not.
+            if (convertersType == null || !MigrationToURPUtilities.IsUrpPackageInstalled())
             {
                 analysisParams.OnModuleCompleted?.Invoke(Name, AnalysisResult.Success, 0);
                 yield break;
@@ -111,7 +164,7 @@ namespace Unity.ProjectAuditor.Editor.Modules
 
             // The converters report the status the scan finished with, which is how we know the results are complete
             string scanStatus = null;
-            var scanFilePath = ScanWithRenderPipelineConverter(convertersType, status => scanStatus = status);
+            var scanFilePath = ScanWithRenderPipelineConverter(convertersType, targetPipeline, status => scanStatus = status);
             var result = AnalysisResult.Failure;
 
             if (!string.IsNullOrEmpty(scanFilePath))
@@ -172,7 +225,7 @@ namespace Unity.ProjectAuditor.Editor.Modules
             }
         }
 
-        static string ScanWithRenderPipelineConverter(Type convertersType, Action<string> onScanFinished)
+        static string ScanWithRenderPipelineConverter(Type convertersType, string containerName, Action<string> onScanFinished)
         {
             var filterConvertersMethod = convertersType.GetMethod("FilterConverters", k_ConverterApiBindingFlags, null,
                 [typeof(string), typeof(List<string>), typeof(bool)], null);
@@ -187,11 +240,11 @@ namespace Unity.ProjectAuditor.Editor.Modules
 
             try
             {
-                var converterTypes = filterConvertersMethod.Invoke(null, [k_ContainerName, new List<string>(), false]);
+                var converterTypes = filterConvertersMethod.Invoke(null, [containerName, new List<string>(), false]);
 
                 if (converterTypes is not ICollection { Count: > 0 })
                 {
-                    Debug.LogWarning($"[{ProjectAuditor.DisplayName}] The Render Pipeline Converter has no converters for the {k_ContainerName} container.");
+                    Debug.LogWarning($"[{ProjectAuditor.DisplayName}] The Render Pipeline Converter has no converters for the {containerName} container.");
                     return null;
                 }
 

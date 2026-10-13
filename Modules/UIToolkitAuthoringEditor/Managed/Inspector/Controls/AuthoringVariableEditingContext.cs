@@ -24,6 +24,7 @@ internal class AuthoringVariableEditingContext : IVariableEditingContext
     }
 
     public VisualElement CurrentVisualElement => m_Inspector.Target.Element;
+    public VisualElement VariableScopeElement => null;
     public StyleRule CurrentRule
     {
         get

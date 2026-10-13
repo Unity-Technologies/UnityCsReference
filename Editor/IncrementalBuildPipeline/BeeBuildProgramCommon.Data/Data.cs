@@ -39,6 +39,5 @@ namespace BeeBuildProgramCommon.Data
         public string UnitySourceCodePath;
         public bool Batchmode;
         public bool EmitDataForBeeWhy;
-        public string NamedPipeOrUnixSocket;
     }
 }

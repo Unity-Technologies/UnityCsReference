@@ -116,19 +116,21 @@ namespace UnityEditor.Search
             foreach (var p in parts)
             {
                 var f = FindItem(p, parent);
-                if (f != null)
+                if (f == null)
                 {
-                    parent = f;
-                }
-                else
-                {
-                    AdvancedDropdownItem newItem = new AdvancedDropdownItem(p)
+                    f = new AdvancedDropdownItem(p)
                     {
                         icon = desc.content.image as Texture2D,
+                        tooltip = desc.content.tooltip
                     };
-                    parent.AddChild(newItem);
-                    parent = newItem;
+                    parent.AddChild(f);
                 }
+
+                // An existing column item can also become a folder, e.g. Material/<shader> under Material.
+                // Add children after the folder is parented, so they get an ID unique to this folder path.
+                if (!f.hasChildren)
+                    f.AddChild(new AdvancedDropdownItem(k_AddlAllItemName) { userData = f });
+                parent = f;
             }
 
             return parent;
@@ -175,6 +177,5 @@ namespace UnityEditor.Search
                 properties.Add(ac);
             }
         }
-
     }
 }

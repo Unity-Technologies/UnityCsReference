@@ -449,21 +449,35 @@ namespace Unity.ProjectAuditor.Editor
 
             string header = sr.ReadLine();
 
-            if (!header.Equals(k_SaveFileHeader))
+            if (header != k_SaveFileHeader)
             {
                 errorMessage = "Invalid file format";
                 return null;
             }
 
             string version = sr.ReadLine();
-            if (!version.Equals(k_CurrentVersion))
+            if (string.IsNullOrWhiteSpace(version))
+            {
+                errorMessage = "Invalid file format";
+                return null;
+            }
+
+            if (version != k_CurrentVersion)
             {
                 errorMessage = $"Report file version is {version}, but this version of Project Auditor requires file version {k_CurrentVersion}";
                 return null;
             }
 
-            errorMessage = "";
-            return JsonUtility.FromJson<Report>(sr.ReadToEnd());
+            try
+            {
+                errorMessage = "";
+                return JsonUtility.FromJson<Report>(sr.ReadToEnd());
+            }
+            catch (ArgumentException e)
+            {
+                errorMessage = e.Message;
+                return null;
+            }
         }
 
         // Internal only: Data written by ProjectAuditor during analysis

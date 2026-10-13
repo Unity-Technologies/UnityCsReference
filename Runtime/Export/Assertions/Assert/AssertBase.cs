@@ -19,7 +19,7 @@ namespace UnityEngine.Assertions
         [Obsolete("Future versions of Unity are expected to always throw exceptions and not have this field.")]
         public static bool raiseExceptions = true;
 
-        static void Fail(string message, string userMessage)
+        internal static void Fail(string message, string userMessage)
         {
             #pragma warning disable CS0618
             if (!raiseExceptions)

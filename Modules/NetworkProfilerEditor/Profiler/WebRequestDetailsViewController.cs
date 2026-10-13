@@ -26,6 +26,8 @@ namespace UnityEditor.Networking
         const string k_UssDarkResourceName = "WebRequest/StyleSheets/Profiler/WebRequestDetailsViewDark.uss";
         const string k_InsecureIconResourceName = "WebRequest/Icons/UnsafeConnection.png";
 
+        const int k_NativeTrackedRequestCap = 1024;
+
         const string k_OrderColumn = "order-column";
         const string k_StatusColumn = "status-column";
         const string k_MethodColumn = "method-column";
@@ -43,6 +45,9 @@ namespace UnityEditor.Networking
         const string k_StatusSuccessClass = "web-request-details-view__status--success";
         const string k_StatusErrorClass = "web-request-details-view__status--error";
         const string k_StatusInFlightClass = "web-request-details-view__status--in-flight";
+        const string k_HiddenClass = "web-request-details-view--hidden";
+        const string k_InsecureIconHiddenClass = "web-request-details-view__insecure-icon--hidden";
+        const string k_ContainerClass = "web-request-details-view__container";
 
         const string k_InsecureTooltip = "Sent over plain HTTP, so the request and response were not encrypted.";
 
@@ -102,13 +107,16 @@ namespace UnityEditor.Networking
         TextField m_QueryParametersText;
         UnityEngine.UIElements.Button m_QueryParametersSource;
         UnityEngine.UIElements.Button m_RequestPayloadSource;
+        UnityEngine.UIElements.Button m_QueryParametersCopy;
+        UnityEngine.UIElements.Button m_RequestPayloadCopy;
+        UnityEngine.UIElements.Button m_ResponseBodyCopy;
         string m_SelectedUrl = string.Empty;
         bool m_QueryParametersShowSource;
         bool m_RequestPayloadShowSource;
-        Label m_RequestPayloadEmpty;
+        Label m_RequestPayloadStatus;
         TextField m_RequestPayloadText;
         TreeView m_RequestPayloadTree;
-        Label m_ResponseBodyEmpty;
+        Label m_ResponseBodyStatus;
         TextField m_ResponseBodyText;
         TreeView m_ResponseBodyTree;
 
@@ -123,7 +131,7 @@ namespace UnityEditor.Networking
                 EditorGUIUtility.isProSkin ? k_UssDarkResourceName : k_UssLightResourceName) as StyleSheet;
 
             var view = tree.Instantiate();
-            view.style.flexGrow = 1f;
+            view.AddToClassList(k_ContainerClass);
             view.styleSheets.Add(style);
             view.styleSheets.Add(themedStyle);
 
@@ -159,9 +167,9 @@ namespace UnityEditor.Networking
 
             m_QueryParameterRows = view.Q<VisualElement>("web-request-details-view__query-parameters-rows");
             m_QueryParametersText = view.Q<TextField>("web-request-details-view__query-parameters-text");
-            m_RequestPayloadEmpty = view.Q<Label>("web-request-details-view__request-payload-empty");
+            m_RequestPayloadStatus = view.Q<Label>("web-request-details-view__request-payload-status");
             m_RequestPayloadText = view.Q<TextField>("web-request-details-view__request-payload-text");
-            m_ResponseBodyEmpty = view.Q<Label>("web-request-details-view__response-body-empty");
+            m_ResponseBodyStatus = view.Q<Label>("web-request-details-view__response-body-status");
             m_ResponseBodyText = view.Q<TextField>("web-request-details-view__response-body-text");
 
             m_RequestPayloadTree = SetUpBodyTree(view, "web-request-details-view__request-payload-tree");
@@ -172,9 +180,9 @@ namespace UnityEditor.Networking
             m_RequestPayloadSource = SetUpSourceButton(view, "web-request-details-view__request-payload-source",
                 () => m_RequestPayloadShowSource = !m_RequestPayloadShowSource);
 
-            SetUpCopyButton(view, "web-request-details-view__query-parameters-copy", () => WebRequestProfilerUrl.RawQueryString(m_SelectedUrl));
-            SetUpCopyButton(view, "web-request-details-view__request-payload-copy", () => m_RequestPayloadText.value);
-            SetUpCopyButton(view, "web-request-details-view__response-body-copy", () => m_ResponseBodyText.value);
+            m_QueryParametersCopy = SetUpCopyButton(view, "web-request-details-view__query-parameters-copy", () => WebRequestProfilerUrl.RawQueryString(m_SelectedUrl));
+            m_RequestPayloadCopy = SetUpCopyButton(view, "web-request-details-view__request-payload-copy", () => m_RequestPayloadText.value);
+            m_ResponseBodyCopy = SetUpCopyButton(view, "web-request-details-view__response-body-copy", () => m_ResponseBodyText.value);
 
             SetUpInspectorToggle(view);
 
@@ -372,7 +380,7 @@ namespace UnityEditor.Networking
                 // hovering the empty icon slot on an HTTPS row reports it as unencrypted.
                 var warning = element.Q<Image>("insecure");
                 var insecure = IsInsecure(record.url);
-                warning.style.visibility = insecure ? Visibility.Visible : Visibility.Hidden;
+                warning.EnableInClassList(k_InsecureIconHiddenClass, !insecure);
                 warning.pickingMode = insecure ? PickingMode.Position : PickingMode.Ignore;
                 warning.tooltip = insecure ? k_InsecureTooltip : null;
             };
@@ -648,20 +656,21 @@ namespace UnityEditor.Networking
 
         void UpdateSummary()
         {
-            var completed = 0;
-            var errors = 0;
-            var pending = 0;
-            ulong bytesDown = 0;
-            ulong bytesUp = 0;
+            var evicted = m_Log.Evicted;
+            var completed = evicted.completed;
+            var errors = evicted.errors;
+            var pending = evicted.pending;
+            var bytesDown = evicted.bytesDown;
+            var bytesUp = evicted.bytesUp;
             var records = m_Log.Records;
             var durations = new List<ulong>(records.Count);
 
             // A capture can mix transports that count bytes with ones that do not, so a sum over some
             // of the rows is a floor and FormatTransferTotal marks it as one.
-            var measuredDown = false;
-            var measuredUp = false;
-            var unmeasuredDown = false;
-            var unmeasuredUp = false;
+            var measuredDown = evicted.measuredDown;
+            var measuredUp = evicted.measuredUp;
+            var unmeasuredDown = evicted.unmeasuredDown;
+            var unmeasuredUp = evicted.unmeasuredUp;
 
             foreach (var record in records)
             {
@@ -705,9 +714,32 @@ namespace UnityEditor.Networking
 
             // Every total covers the whole capture rather than the filtered rows; the request count is the
             // only one that says how many are visible, so a filter cannot make the totals mean two things.
-            m_SummaryRequests.text = m_Rows.Count == records.Count
-                ? WebRequestProfilerFormatting.FormatCount(records.Count, "Request")
-                : $"{m_Rows.Count} of {WebRequestProfilerFormatting.FormatCount(records.Count, "Request")}";
+            var captured = records.Count + evicted.count;
+            var requests = m_Rows.Count == captured
+                ? WebRequestProfilerFormatting.FormatCount(captured, "Request")
+                : $"{m_Rows.Count} of {WebRequestProfilerFormatting.FormatCount(captured, "Request")}";
+
+
+            var dropped = m_Log.DroppedRequests;
+            var coverage = captured > 0
+                ? m_Log.DroppedRequestsCoverage
+                : WebRequestProfilerDropCoverage.Complete;
+            var suffix = DropSuffix(coverage, dropped);
+            m_SummaryRequests.text = suffix == null ? requests : $"{requests} · {suffix}";
+
+            var note = evicted.count > 0
+                ? $"{evicted.count} of {captured} requests are no longer listed, but are still counted in these totals."
+                : string.Empty;
+            var lossNote = DropNote(coverage, dropped);
+            if (lossNote.Length > 0)
+            {
+                if (note.Length > 0)
+                    note += " ";
+
+                note += lossNote;
+            }
+
+            m_SummaryRequests.tooltip = note;
             m_SummaryCompleted.text = $"{completed} Completed";
             // Both directions in one figure, so it is a floor as soon as either of them is.
             var anyUnmeasured = unmeasuredDown || unmeasuredUp;
@@ -719,9 +751,44 @@ namespace UnityEditor.Networking
                 ? WebRequestProfilerFormatting.FormatDuration(Percentile(durations, 0.95f))
                 : "-";
             m_SummaryLatency.text = $"Latency p95: {latency}";
+            m_SummaryLatency.tooltip = evicted.count > 0
+                ? $"Over the {durations.Count} finished requests still listed. A further {evicted.count} are no longer held."
+                : string.Empty;
             m_SummaryErrors.text = WebRequestProfilerFormatting.FormatCount(errors, "Error");
             m_SummaryBytes.text = $"Total Bytes Down/Up: {WebRequestProfilerFormatting.FormatTransferTotal(bytesDown, measuredDown, unmeasuredDown)} / {WebRequestProfilerFormatting.FormatTransferTotal(bytesUp, measuredUp, unmeasuredUp)}";
             m_SummaryBytes.tooltip = anyUnmeasured ? WebRequestProfilerFormatting.PartialTotalTooltip : string.Empty;
+        }
+
+        internal static string DropSuffix(WebRequestProfilerDropCoverage coverage, int dropped)
+        {
+            switch (coverage)
+            {
+                case WebRequestProfilerDropCoverage.None:
+                    return "drops not recorded";
+                case WebRequestProfilerDropCoverage.Partial:
+                    return dropped > 0 ? $"at least {dropped} dropped" : "drops partly recorded";
+                default:
+                    return dropped > 0 ? $"{dropped} dropped" : null;
+            }
+        }
+
+        internal static string DropNote(WebRequestProfilerDropCoverage coverage, int dropped)
+        {
+            const string why = "The Web Requests counters are only captured while this module is open.";
+
+            switch (coverage)
+            {
+                case WebRequestProfilerDropCoverage.None:
+                    return "Whether any requests were refused was not recorded in this capture. " + why;
+                case WebRequestProfilerDropCoverage.Partial:
+                    return "Some frames in this capture were recorded without the drop counter, so more "
+                        + $"than these {dropped} may have been refused. " + why;
+                default:
+                    return dropped > 0
+                        ? $"{dropped} more ran but were never recorded: the profiler tracks at most "
+                            + $"{k_NativeTrackedRequestCap} requests at once."
+                        : string.Empty;
+            }
         }
 
         // Nearest-rank percentile: interpolating between neighbours would imply more precision than a
@@ -767,9 +834,9 @@ namespace UnityEditor.Networking
         {
             var hasSelection = index >= 0 && index < m_Rows.Count;
 
-            m_InspectorEmpty.style.display = hasSelection ? DisplayStyle.None : DisplayStyle.Flex;
+            SetDisplayed(m_InspectorEmpty, !hasSelection);
             // The TabView owns each tab's content, so this one toggle covers all of them.
-            m_Tabs.style.display = hasSelection ? DisplayStyle.Flex : DisplayStyle.None;
+            SetDisplayed(m_Tabs, hasSelection);
 
             if (!hasSelection)
                 return;
@@ -797,18 +864,18 @@ namespace UnityEditor.Networking
 
             var showQuery = ShouldShowQueryParameters(record.url);
             var showPayload = ShouldShowRequestPayload(record.requestBody);
-            m_QueryParameters.style.display = showQuery ? DisplayStyle.Flex : DisplayStyle.None;
-            m_RequestPayload.style.display = showPayload ? DisplayStyle.Flex : DisplayStyle.None;
+            SetDisplayed(m_QueryParameters, showQuery);
+            SetDisplayed(m_RequestPayload, showPayload);
             SetTabVisible(m_PayloadTab, showQuery || showPayload);
 
             if (showQuery)
                 PopulateQueryParameters(record);
 
-            PopulateBody(m_RequestPayloadEmpty, m_RequestPayloadText, m_RequestPayloadTree,
-                m_RequestPayloadSource, record, record.requestBody, m_RequestPayloadShowSource);
+            PopulateBody(m_RequestPayloadStatus, m_RequestPayloadText, m_RequestPayloadTree,
+                m_RequestPayloadSource, m_RequestPayloadCopy, record, record.requestBody, m_RequestPayloadShowSource);
 
-            PopulateBody(m_ResponseBodyEmpty, m_ResponseBodyText, m_ResponseBodyTree,
-                null, record, record.responseBody, showSource: false);
+            PopulateBody(m_ResponseBodyStatus, m_ResponseBodyText, m_ResponseBodyTree,
+                null, m_ResponseBodyCopy, record, record.responseBody, showSource: false);
             PopulateTiming(record);
         }
 
@@ -847,15 +914,13 @@ namespace UnityEditor.Networking
             if (!visible && m_Tabs.activeTab == tab)
                 m_Tabs.activeTab = m_HeadersTab;
 
-            if (visible)
-            {
-                tab.style.display = StyleKeyword.Null;
-                tab.tabHeader.style.display = StyleKeyword.Null;
-                return;
-            }
+            SetDisplayed(tab, visible);
+            SetDisplayed(tab.tabHeader, visible);
+        }
 
-            tab.style.display = DisplayStyle.None;
-            tab.tabHeader.style.display = DisplayStyle.None;
+        static void SetDisplayed(VisualElement element, bool displayed)
+        {
+            element.EnableInClassList(k_HiddenClass, !displayed);
         }
 
         UnityEngine.UIElements.Button SetUpSourceButton(VisualElement view, string buttonName, Action toggle)
@@ -881,7 +946,7 @@ namespace UnityEditor.Networking
             ShouldShowQueryParameters(url) || ShouldShowRequestPayload(requestBody);
 
         // Copies what the box shows, so a truncated body copies the part that exists.
-        static void SetUpCopyButton(VisualElement view, string buttonName, Func<string> textToCopy)
+        static UnityEngine.UIElements.Button SetUpCopyButton(VisualElement view, string buttonName, Func<string> textToCopy)
         {
             // Qualified: UnityEditorInternal has a Button too, and this file uses both namespaces.
             var button = view.Q<UnityEngine.UIElements.Button>(buttonName);
@@ -891,16 +956,18 @@ namespace UnityEditor.Networking
                 if (!string.IsNullOrEmpty(text))
                     EditorGUIUtility.systemCopyBuffer = text;
             };
+            return button;
         }
 
 
         void PopulateQueryParameters(WebRequestProfilerRecord record)
         {
             var raw = WebRequestProfilerUrl.RawQueryString(record.url);
+            m_QueryParametersCopy.SetEnabled(raw.Length > 0);
             m_QueryParametersSource.text = m_QueryParametersShowSource ? "View Parsed" : "View Source";
             m_QueryParametersText.SetValueWithoutNotify(raw);
-            m_QueryParametersText.style.display = m_QueryParametersShowSource ? DisplayStyle.Flex : DisplayStyle.None;
-            m_QueryParameterRows.style.display = m_QueryParametersShowSource ? DisplayStyle.None : DisplayStyle.Flex;
+            SetDisplayed(m_QueryParametersText, m_QueryParametersShowSource);
+            SetDisplayed(m_QueryParameterRows, !m_QueryParametersShowSource);
 
             if (m_QueryParametersShowSource)
                 return;
@@ -968,9 +1035,71 @@ namespace UnityEditor.Networking
             public override int GetHashCode() => (int)m_RequestId;
         }
 
-        // Captured, never captured, or skipped by the type gate. Only the first has text.
-        static void PopulateBody(Label empty, TextField text, TreeView tree,
-            UnityEngine.UIElements.Button source,
+        internal enum BodyState
+        {
+            Text,
+            Binary,
+            Empty,
+            InFlight,
+            TransportCannotReport,
+            NothingSent,
+            CaptureOff,
+        }
+
+        internal static BodyState ClassifyBody(WebRequestProfilerRecord record, in WebRequestProfilerBody body)
+        {
+            if (!body.captured)
+            {
+                var known = (record.bodyCapture & WebRequestProfilerBodyCapture.TransportKnown) != 0;
+                var supported = (record.bodyCapture & WebRequestProfilerBodyCapture.Supported) != 0;
+
+                if (known && !supported)
+                    return BodyState.TransportCannotReport;
+                if (record.state == WebRequestProfilerState.InFlight)
+                    return BodyState.InFlight;
+                return known ? BodyState.CaptureOff : BodyState.NothingSent;
+            }
+
+            if (body.IsBinary)
+                return BodyState.Binary;
+
+            return body.totalLength == 0 ? BodyState.Empty : BodyState.Text;
+        }
+
+        internal static string BodyStatusText(BodyState state, in WebRequestProfilerBody body)
+        {
+            switch (state)
+            {
+                case BodyState.TransportCannotReport:
+                    return "Not captured: the transport that ran this request cannot report bodies.";
+                case BodyState.InFlight:
+                    return "Bodies are recorded when a request finishes.";
+                case BodyState.NothingSent:
+                    return "Not captured: nothing was sent for this request, so there is no body to record.";
+                case BodyState.CaptureOff:
+                    return "Not captured: this capture was recorded with body capture turned off.";
+                case BodyState.Binary:
+                    return $"Not captured: binary content ({WebRequestProfilerFormatting.FormatBytes(body.totalLength)}). Only text bodies are shown.";
+                case BodyState.Empty:
+                    return "The body is empty.";
+                default:
+                    return string.Empty;
+            }
+        }
+
+        internal static bool CanCopyBody(BodyState state, string text) =>
+            state == BodyState.Text && !string.IsNullOrEmpty(text);
+
+        static void SetStatus(Label status, string text)
+        {
+            status.text = text;
+            SetDisplayed(status, !string.IsNullOrEmpty(text));
+        }
+
+        // The status line says why there is no body, or what is off about the one shown. The body
+        // fields only ever hold a body.
+        static void PopulateBody(Label status, TextField text, TreeView tree,
+            UnityEngine.UIElements.Button source, UnityEngine.UIElements.Button copy,
             WebRequestProfilerRecord record, in WebRequestProfilerBody body, bool showSource)
         {
             var key = new BodyViewKey(record, body, showSource);
@@ -980,53 +1109,18 @@ namespace UnityEditor.Networking
             tree.userData = key;
 
             if (source != null)
-                source.style.display = DisplayStyle.None;
+                SetDisplayed(source, false);
 
-            tree.style.display = DisplayStyle.None;
+            SetDisplayed(tree, false);
             tree.SetRootItems(new List<TreeViewItemData<WebRequestProfilerJsonNode>>());
             tree.Rebuild();
 
-            if (!body.captured)
+            var state = ClassifyBody(record, body);
+            copy.SetEnabled(CanCopyBody(state, body.text));
+            if (state != BodyState.Text)
             {
-                var known = (record.bodyCapture & WebRequestProfilerBodyCapture.TransportKnown) != 0;
-                var supported = (record.bodyCapture & WebRequestProfilerBodyCapture.Supported) != 0;
-
-                if (known && !supported)
-                {
-                    empty.text = "Not captured: the transport that ran this request cannot report bodies.";
-                }
-                else if (record.state == WebRequestProfilerState.InFlight)
-                {
-                    empty.text = "Bodies are recorded when a request finishes.";
-                }
-                else if (!known)
-                {
-                    empty.text = "Not captured: nothing was sent for this request, so there is no body to record.";
-                }
-                else
-                {
-                    empty.text = "Not captured: this capture was recorded with body capture turned off.";
-                }
-                empty.style.display = DisplayStyle.Flex;
-                text.style.display = DisplayStyle.None;
-                text.SetValueWithoutNotify(string.Empty);
-                return;
-            }
-
-            if (body.IsBinary)
-            {
-                empty.text = $"Not captured (binary). {WebRequestProfilerFormatting.FormatBytes(body.totalLength)} of a content type that is not text.";
-                empty.style.display = DisplayStyle.Flex;
-                text.style.display = DisplayStyle.None;
-                text.SetValueWithoutNotify(string.Empty);
-                return;
-            }
-
-            if (body.totalLength == 0)
-            {
-                empty.text = "This request carried no body.";
-                empty.style.display = DisplayStyle.Flex;
-                text.style.display = DisplayStyle.None;
+                SetStatus(status, BodyStatusText(state, body));
+                SetDisplayed(text, false);
                 text.SetValueWithoutNotify(string.Empty);
                 return;
             }
@@ -1051,7 +1145,7 @@ namespace UnityEditor.Networking
 
             if (parsed && source != null)
             {
-                source.style.display = DisplayStyle.Flex;
+                SetDisplayed(source, true);
                 source.text = showSource ? "View Parsed" : "View Source";
             }
 
@@ -1064,14 +1158,13 @@ namespace UnityEditor.Networking
                         : "The body ended mid-structure, so this tree is incomplete.";
                 }
 
-                empty.text = note;
-                empty.style.display = string.IsNullOrEmpty(note) ? DisplayStyle.None : DisplayStyle.Flex;
-                text.style.display = DisplayStyle.None;
+                SetStatus(status, note);
+                SetDisplayed(text, false);
                 tree.SetRootItems(roots);
                 tree.Rebuild();
                 tree.ExpandAll();
                 FitTreeToContent(tree);
-                tree.style.display = DisplayStyle.Flex;
+                SetDisplayed(tree, true);
                 return;
             }
 
@@ -1082,9 +1175,8 @@ namespace UnityEditor.Networking
                     : note + " The body is not valid JSON. Showing the raw body.";
             }
 
-            empty.text = note;
-            empty.style.display = string.IsNullOrEmpty(note) ? DisplayStyle.None : DisplayStyle.Flex;
-            text.style.display = DisplayStyle.Flex;
+            SetStatus(status, note);
+            SetDisplayed(text, true);
         }
 
         internal static void PopulateHeaders(Foldout foldout, WebRequestProfilerRecord record,
@@ -1163,14 +1255,14 @@ namespace UnityEditor.Networking
 
             if (!record.hasTimings)
             {
-                m_TimingEmpty.style.display = DisplayStyle.Flex;
+                SetDisplayed(m_TimingEmpty, true);
                 m_TimingEmpty.text = record.state == WebRequestProfilerState.InFlight
                     ? "Timings are measured when the request finishes."
                     : "This request's transport does not measure per-phase timings.";
                 return;
             }
 
-            m_TimingEmpty.style.display = DisplayStyle.None;
+            SetDisplayed(m_TimingEmpty, false);
 
             var timings = record.timings;
 
@@ -1341,20 +1433,15 @@ namespace UnityEditor.Networking
             return spans;
         }
 
-        // start and fraction are both of the request's total duration, so the bars lay out as a
-        // waterfall: each one begins where the phase before it ended. Width alone would left-align every
-        // phase and lose the only thing the view is for - when each one happened.
-        // A phase shorter than a pixel of track still has to be visible - a request whose queueing took
-        // half a millisecond out of half a second is a real phase, and rounding it to nothing is how the
-        // tab loses the small ones. Two pixels reads as a deliberate hairline rather than an artefact.
-        const float k_MinPhaseBarPx = 2f;
-
         // The track's own width is not known until layout, so this is the fraction of it a hairline may
         // need. Reserving it keeps a bar that starts near the end from being clipped away entirely by
         // the track's overflow, at the cost of placing the very last sliver slightly early - which is a
         // better trade than drawing nothing.
         const float k_MaxPhaseStart = 0.98f;
 
+        // start and fraction are both of the request's total duration, so the bars lay out as a
+        // waterfall: each one begins where the phase before it ended. Width alone would left-align every
+        // phase and lose the only thing the view is for - when each one happened.
         static VisualElement MakePhaseRow(string label, string modifier, string value, float start, float fraction,
             bool hasBar)
         {
@@ -1383,7 +1470,6 @@ namespace UnityEditor.Networking
                 var width = Mathf.Clamp(fraction, 0f, 1f - left);
                 fill.style.left = Length.Percent(left * 100f);
                 fill.style.width = Length.Percent(width * 100f);
-                fill.style.minWidth = k_MinPhaseBarPx;
                 bar.Add(fill);
             }
 

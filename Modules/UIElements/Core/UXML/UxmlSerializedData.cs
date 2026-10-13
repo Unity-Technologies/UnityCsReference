@@ -247,9 +247,9 @@ namespace UnityEngine.UIElements
         static class UxmlSerializableCopyAdapter<T>
         {
             [NoAutoStaticsCleanup] // per-type serialization adapter singleton; no user refs
-            public static readonly UxmlSerializableAdapterBase Instance = Register();
+            public static readonly UxmlSerializableAdapterBase Instance = Create();
 
-            static UxmlSerializableAdapterBase Register()
+            static UxmlSerializableAdapterBase Create()
             {
                 Type elementType = null;
                 if (typeof(T).IsArray)
@@ -257,22 +257,20 @@ namespace UnityEngine.UIElements
                 else if (typeof(T).IsGenericType && typeof(T).GetGenericTypeDefinition() == typeof(List<>))
                     elementType = typeof(T).GetGenericArguments()[0];
 
-                UxmlSerializableAdapterBase adapter;
                 if (elementType != null && typeof(IUxmlSerializedDataDeserializeReference).IsAssignableFrom(elementType))
-                    adapter = (UxmlSerializableAdapterBase)Activator.CreateInstance(
+                    return (UxmlSerializableAdapterBase)Activator.CreateInstance(
                         typeof(UxmlSerializableDeserializeReferenceListAdapter<>).MakeGenericType(elementType));
-                else
-                    adapter = new UxmlSerializableAdapter<T>();
 
-                s_Adapters[typeof(T)] = adapter;
-                return adapter;
+                return new UxmlSerializableAdapter<T>();
             }
         }
 
         static UxmlSerializableAdapterBase CreateAdapter(Type type)
         {
-            RuntimeHelpers.RunClassConstructor(typeof(UxmlSerializableCopyAdapter<>).MakeGenericType(type).TypeHandle);
-            return s_Adapters[type];
+            var adapterType = typeof(UxmlSerializableCopyAdapter<>).MakeGenericType(type);
+            var adapter = (UxmlSerializableAdapterBase)adapterType.GetField(nameof(UxmlSerializableCopyAdapter<object>.Instance)).GetValue(null);
+            s_Adapters[type] = adapter;
+            return adapter;
         }
     }
 

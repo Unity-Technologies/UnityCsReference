@@ -289,8 +289,6 @@ namespace UnityEditor.Scripting.ScriptCompilation
             AssembliesType assembliesType)
         {
             var options = GetAdditionalEditorScriptCompilationOptions();
-            if (EditorUserBuildSettings.development && (assembliesType == AssembliesType.Player || assembliesType == AssembliesType.PlayerWithoutTestAssemblies))
-                options |= EditorScriptCompilationOptions.BuildingDevelopmentBuild;
 
             switch (assembliesType)
             {

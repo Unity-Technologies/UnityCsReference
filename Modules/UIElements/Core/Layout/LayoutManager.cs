@@ -353,6 +353,8 @@ internal partial class LayoutManager : IDisposable
 
     public void Dispose()
     {
+        LayoutNative.ReleaseGridTracksPool(m_Index);
+
         var slot = m_Index - s_ManagerIndexBase;
         if ((uint)slot < s_Managers.Count)
             s_Managers[slot] = null;
@@ -487,6 +489,10 @@ internal partial class LayoutManager : IDisposable
 
         ref var computedStyle = ref access.GetComputedStyle(handle);
         computedStyle.Release();
+
+        ref var computedData = ref access.GetComputedData(handle);
+        if (computedData.GridTracks != 0)
+            LayoutNative.ReleaseGridTracks(m_Index, computedData.GridTracks);
 
         m_Nodes.Free(handle);
     }

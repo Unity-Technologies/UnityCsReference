@@ -64,27 +64,25 @@ namespace UnityEditor.Search
 
     static partial class EvaluatorManager
     {
-        [AutoStaticsCleanupOnCodeReload]
-        public static List<SearchExpressionEvaluator> evaluators { get; private set; }
-        [AutoStaticsCleanupOnCodeReload]
-        public static SearchItemQueryEngine itemQueryEngine;
-        [AutoStaticsCleanupOnCodeReload]
-        public static Dictionary<string, List<SearchExpressionValidator.Signature>> evaluatorSignatures = new Dictionary<string, List<SearchExpressionValidator.Signature>>();
-
-        [OnCodeLoaded]
-        static void Initialize()
+        sealed class EvaluatorRegistry
         {
-            try
-            {
-                RefreshEvaluators();
-            }
-            catch (Exception)
-            {
-                Debug.LogError("Error while loading evaluators");
-            }
+            public List<SearchExpressionEvaluator> evaluators { get; }
+            public Dictionary<string, List<SearchExpressionValidator.Signature>> signatures { get; }
 
-            itemQueryEngine = new SearchItemQueryEngine();
+            public EvaluatorRegistry(List<SearchExpressionEvaluator> evaluators, Dictionary<string, List<SearchExpressionValidator.Signature>> signatures)
+            {
+                this.evaluators = evaluators;
+                this.signatures = signatures;
+            }
         }
+
+        [AutoStaticsCleanupOnCodeReload]
+        static Lazy<EvaluatorRegistry> s_Registry = new Lazy<EvaluatorRegistry>(BuildRegistryOrLogError);
+        [AutoStaticsCleanupOnCodeReload]
+        static Lazy<SearchItemQueryEngine> s_ItemQueryEngine = new Lazy<SearchItemQueryEngine>(() => new SearchItemQueryEngine());
+
+        public static List<SearchExpressionEvaluator> evaluators => s_Registry.Value.evaluators;
+        public static SearchItemQueryEngine itemQueryEngine => s_ItemQueryEngine.Value;
 
         public static SearchExpressionEvaluator GetEvaluatorByNameDuringEvaluation(string name, StringView errorView, SearchExpressionContext context)
         {
@@ -125,7 +123,7 @@ namespace UnityEditor.Search
         public static IEnumerable<SearchExpressionValidator.Signature> GetSignaturesByName(string name)
         {
             name = name.ToLowerInvariant();
-            if (evaluatorSignatures.TryGetValue(name.ToLowerInvariant(), out var signatures))
+            if (s_Registry.Value.signatures.TryGetValue(name.ToLowerInvariant(), out var signatures))
             {
                 #pragma warning disable UAC2001 // Avoid Linq
                 return signatures.OrderByDescending(s => s.mandatoryArgumentNumber);
@@ -134,7 +132,7 @@ namespace UnityEditor.Search
             return null;
         }
 
-        public static void AddSignature(string name, SearchExpressionValidator.Signature signature)
+        static void AddSignature(Dictionary<string, List<SearchExpressionValidator.Signature>> signaturesByName, string name, SearchExpressionValidator.Signature signature)
         {
             name = name.ToLowerInvariant();
             string error = "";
@@ -144,12 +142,12 @@ namespace UnityEditor.Search
                 return;
             }
 
-            if (!evaluatorSignatures.TryGetValue(name.ToLowerInvariant(), out var signatures))
+            if (!signaturesByName.TryGetValue(name, out var signatures))
             {
                 signatures = new List<SearchExpressionValidator.Signature>();
-                evaluatorSignatures.Add(name, signatures);
+                signaturesByName.Add(name, signatures);
             }
-            evaluatorSignatures[name].Add(signature);
+            signatures.Add(signature);
         }
 
         public static SearchExpressionEvaluator FindEvaluatorByName(string name)
@@ -162,9 +160,29 @@ namespace UnityEditor.Search
 
         public static void RefreshEvaluators()
         {
+            var registry = BuildRegistry();
+            s_Registry = new Lazy<EvaluatorRegistry>(() => registry);
+        }
+
+        static EvaluatorRegistry BuildRegistryOrLogError()
+        {
+            try
+            {
+                return BuildRegistry();
+            }
+            catch (Exception)
+            {
+                Debug.LogError("Error while loading evaluators");
+                return new EvaluatorRegistry(new List<SearchExpressionEvaluator>(), new Dictionary<string, List<SearchExpressionValidator.Signature>>());
+            }
+        }
+
+        static EvaluatorRegistry BuildRegistry()
+        {
+            var signatures = new Dictionary<string, List<SearchExpressionValidator.Signature>>();
             var supportedSignature = MethodSignature.FromDelegate<SearchExpressionEvaluatorHandler>();
             #pragma warning disable UAC2001 // Avoid Linq
-            evaluators = ReflectionUtils.LoadAllMethodsWithAttribute<SearchExpressionEvaluatorAttribute, SearchExpressionEvaluator>((mi, attribute, handler) =>
+            var evaluators = ReflectionUtils.LoadAllMethodsWithAttribute<SearchExpressionEvaluatorAttribute, SearchExpressionEvaluator>((mi, attribute, handler) =>
 #pragma warning restore UAC2001
             {
                 var descAttr = mi.GetCustomAttribute<System.ComponentModel.DescriptionAttribute>();
@@ -176,10 +194,10 @@ namespace UnityEditor.Search
                 if (handler is SearchExpressionEvaluatorHandler _handler)
                 {
                     if (attribute.signature != null)
-                        AddSignature(name, attribute.signature);
+                        AddSignature(signatures, name, attribute.signature);
                     foreach (var additionalSignature in additionalSignatures)
                     {
-                        AddSignature(name, additionalSignature.signature);
+                        AddSignature(signatures, name, additionalSignature.signature);
                     }
                     return new SearchExpressionEvaluator(name, description, category, _handler, attribute.hints);
                 }
@@ -187,6 +205,8 @@ namespace UnityEditor.Search
                 Debug.LogWarning($"Invalid evaluator handler: \"{attribute.name}\" using: \"{mi.DeclaringType.FullName}.{mi.Name}\"");
                 return new SearchExpressionEvaluator();
             }, supportedSignature, ReflectionUtils.AttributeLoaderBehavior.DoNotThrowOnValidation).Distinct().Where(evaluator => evaluator.valid).ToList();
+
+            return new EvaluatorRegistry(evaluators, signatures);
         }
     }
 

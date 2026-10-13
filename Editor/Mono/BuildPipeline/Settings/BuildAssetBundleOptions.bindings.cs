@@ -5,6 +5,7 @@
 using System;
 using System.ComponentModel;
 using UnityEngine.Internal;
+using UnityEngine.Bindings;
 
 namespace UnityEditor
 {
@@ -22,6 +23,7 @@ namespace UnityEditor
     ///  <code source="../../../../Modules/ContentBuild/Tests/local.test.build-examples/Editor/BuildPipeline/Settings/BuildAssetBundleOptions_BuildAssetBundleOptions.cs"/>
     ///</example>
     [Flags]
+    [NativeHeader("Runtime/Serialize/SerializationMetaFlagsBindings.h")]
     public enum BuildAssetBundleOptions
     {
         // Perform the build without any special option.
@@ -131,7 +133,7 @@ namespace UnityEditor
         /// When this flag is set, errors logged from these build callbacks also fail the build:
         /// <see cref="Build.IPreprocessBuildWithContext.OnPreprocessBuild"/>,
         /// <see cref="Build.IPostprocessBuildWithContext.OnPostprocessBuild"/>,
-        /// <see cref="Build.IProcessSceneWithReport.OnProcessScene"/>,
+        /// <see cref="AssetPostprocessor.OnProcessScene"/>,
         /// <see cref="Build.IPreprocessShaders.OnProcessShader"/>, and
         /// <see cref="Build.IPreprocessComputeShaders.OnProcessComputeShader"/>.
         ///

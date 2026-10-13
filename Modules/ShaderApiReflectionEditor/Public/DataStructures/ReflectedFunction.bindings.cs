@@ -29,16 +29,7 @@ namespace UnityEditor.ShaderApiReflection
 
         public string GetSignature()
         {
-            StringBuilder signature = new StringBuilder();
-
-            signature.Append(ReturnTypeName);
-            signature.Append(' ');
-            signature.Append(FullyQualifiedName);
-            signature.Append('(');
-            signature.AppendJoin(", ", Parameters);
-            signature.Append(')');
-
-            return signature.ToString();
+            return GetSignature(includeNamespace: true);
         }
 
         public override string ToString()
@@ -109,6 +100,20 @@ namespace UnityEditor.ShaderApiReflection
         }
 
         // Private API
+
+        internal string GetSignature(bool includeNamespace)
+        {
+            StringBuilder signature = new StringBuilder();
+
+            signature.Append(ReturnTypeName);
+            signature.Append(' ');
+            signature.Append(includeNamespace ? FullyQualifiedName : Name);
+            signature.Append('(');
+            signature.AppendJoin(", ", Parameters);
+            signature.Append(')');
+
+            return signature.ToString();
+        }
 
         internal List<string> m_EnclosingNamespace;
         internal List<ReflectedParameter> m_Parameters;

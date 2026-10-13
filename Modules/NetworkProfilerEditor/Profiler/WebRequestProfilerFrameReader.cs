@@ -20,6 +20,20 @@ namespace UnityEditor.Networking
         // Metadata is emitted from ProfilerManager::StartNewFrame, which runs on the main thread, so
         // only thread 0 carries any of it.
         const int k_MainThreadIndex = 0;
+        const string k_CounterCategoryName = "Web Requests";
+        const string k_RequestsDroppedCounter = "Requests Dropped";
+        static readonly float[] k_SingleFrameCounter = new float[1];
+
+        public static int ReadRequestsDropped(long frameIndex, out bool recorded)
+        {
+            ProfilerDriver.GetCounterValuesBatch(k_CounterCategoryName, k_RequestsDroppedCounter,
+                (int)frameIndex, 1f, k_SingleFrameCounter, out _);
+
+            var value = k_SingleFrameCounter[0];
+            recorded = value >= 0f;
+
+            return value > 0f ? (int)value : 0;
+        }
 
         public static List<WebRequestProfilerRow> ReadFrame(long frameIndex, out byte[] strings)
         {

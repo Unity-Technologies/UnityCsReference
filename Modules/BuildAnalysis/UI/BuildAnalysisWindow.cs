@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Threading.Tasks;
 using UnityEditor.UIElements;
@@ -52,6 +53,7 @@ namespace UnityEditor.Build.Analysis
 
         private BuildAnalysisService m_Service;
         private DependencyGraphService m_GraphService;
+        private IBuildHistoryProvider m_BuildHistory;
         private BuildAnalysisTabHost m_TabHost;
         private ExternalViewRouter m_ExternalViews;
         private BuildHistoryWatcher m_Watcher;
@@ -125,6 +127,7 @@ namespace UnityEditor.Build.Analysis
             var logReader = new BuildLogReader();
             m_Service = new BuildAnalysisService(enumerator, analyzer, fileSystem, buildHistory, logReader);
             m_GraphService = new DependencyGraphService(graphStore, fileSystem);
+            m_BuildHistory = buildHistory;
 
             m_Watcher = new BuildHistoryWatcher(buildHistory);
             m_Watcher.BuildHistoryChanged += RefreshBuildList;
@@ -202,6 +205,8 @@ namespace UnityEditor.Build.Analysis
             var splitterPos = EditorPrefs.GetFloat(k_SplitterKey, 100);
             m_SplitView.fixedPaneInitialDimension = splitterPos;
 
+            // BuildHistoryWatcher only runs while the window is open, so builds added while it was closed are not cached yet.
+            m_Service.Refresh();
             RefreshBuildList();
             ApplyPendingSelection();
         }
@@ -283,7 +288,20 @@ namespace UnityEditor.Build.Analysis
 
         private void RefreshBuildList()
         {
-            m_BuildListPanel.SetBuilds(m_Service.GetBuilds(), BuildHistory.BuildHistoryLimit);
+            var builds = m_Service.GetBuilds();
+            m_BuildListPanel.SetBuilds(builds, ResolveRelationships(builds), BuildHistory.BuildHistoryLimit);
+        }
+
+        private BuildRelationships ResolveRelationships(BuildEntry[] builds)
+        {
+            var links = new List<(GUID Parent, GUID Child)>();
+            foreach (var build in builds)
+            {
+                if (m_BuildHistory.TryGetParentBuild(build.BuildSessionGUID, out var parent))
+                    links.Add((parent, build.BuildSessionGUID));
+            }
+
+            return new BuildRelationships(links);
         }
 
         private async void OnBuildSelectionChanged(BuildEntry selection)

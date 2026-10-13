@@ -30,7 +30,8 @@ internal class VariableCompleter : FieldSearchCompleter<VariableInfo>
             return StyleVariableUtility.GetAllAvailableVariables(
                 handler.context.CurrentVisualElement,
                 StyleValueTypeResolver.GetCompatibleTypes(handler.styleName),
-                handler.context.EditorExtensionMode);
+                handler.context.EditorExtensionMode,
+                handler.context.VariableScopeElement);
         };
         MakeItem = () =>
         {
@@ -71,7 +72,7 @@ internal class VariableCompleter : FieldSearchCompleter<VariableInfo>
 
         MatcherCallback = Matcher;
         GetTextFromDataCallback = GetVarName;
-        SetupCompleterField(handler.variableField?.TextField, false);
+        SetupCompleterField(handler.variableField?.TextField, handler.useRealPopupWindow);
     }
 
     void UpdateDetailView(VariableInfo data)

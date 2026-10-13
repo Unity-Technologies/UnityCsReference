@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System;
 using System.Runtime.CompilerServices;
 
 namespace UnityEngine.UIElements.Layout;
@@ -80,6 +81,52 @@ unsafe partial struct LayoutNode
     public float LayoutBorderEnd => GetLayoutValue(Layout.BorderBuffer, LayoutLayoutEdge.End);
 
     public float ComputedFlexBasis => Layout.ComputedFlexBasis;
+
+    // A grid item has no flex basis; its slot holds whatever its last flex parent left there.
+    public float ResolvedFlexBasis => Layout.ItemLayoutKind == LayoutItemKind.Grid ? float.NaN : Layout.ComputedFlexBasis;
+
+    // Valid until the next layout pass; empty unless the node was last laid out as a grid container.
+    public ReadOnlySpan<float> GridResolvedColumnSizes => GetGridTracks(GridTrackSegment.ColumnSizes);
+    public ReadOnlySpan<float> GridResolvedColumnOffsets => GetGridTracks(GridTrackSegment.ColumnOffsets);
+    public ReadOnlySpan<float> GridResolvedRowSizes => GetGridTracks(GridTrackSegment.RowSizes);
+    public ReadOnlySpan<float> GridResolvedRowOffsets => GetGridTracks(GridTrackSegment.RowOffsets);
+
+    enum GridTrackSegment
+    {
+        ColumnSizes,
+        ColumnOffsets,
+        RowSizes,
+        RowOffsets,
+    }
+
+    ReadOnlySpan<float> GetGridTracks(GridTrackSegment segment)
+    {
+        var handle = Layout.GridTracks;
+        if (handle == 0)
+            return default;
+
+        var data = (float*)LayoutNative.GetGridTracks(m_Access.ManagerIndex, handle, out var columns, out var rows);
+        if (data == null)
+            return default;
+
+        return segment switch
+        {
+            GridTrackSegment.ColumnSizes => new ReadOnlySpan<float>(data, columns),
+            GridTrackSegment.ColumnOffsets => new ReadOnlySpan<float>(data + columns, columns),
+            GridTrackSegment.RowSizes => new ReadOnlySpan<float>(data + 2 * columns, rows),
+            _ => new ReadOnlySpan<float>(data + 2 * columns + rows, rows),
+        };
+    }
+
+    internal void ReleaseGridTracks()
+    {
+        ref var layout = ref Layout;
+        if (layout.GridTracks == 0)
+            return;
+
+        LayoutNative.ReleaseGridTracks(m_Access.ManagerIndex, layout.GridTracks);
+        layout.GridTracks = 0;
+    }
 
     [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
     float GetLayoutValue(float* buffer, LayoutLayoutEdge edge)

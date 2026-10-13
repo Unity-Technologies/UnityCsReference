@@ -122,6 +122,11 @@ partial class MsBuildCompilation
         return _editorAssembliesMightBeDirty;
     }
 
+    internal void OnCodeLoaded()
+    {
+        _editorAssembliesMightBeDirty = false;
+    }
+
     public bool IsCompiling()
     {
         return _requestedBuild || _currentBuildState is not null;

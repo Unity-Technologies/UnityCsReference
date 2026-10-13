@@ -417,6 +417,16 @@ namespace UnityEngine.UIElements
             public override void SetValue(ref ResolvedStyleAccess container, float value) => throw new System.InvalidOperationException();
         }
 
+        class GridAutoColumnsProperty : ResolvedListProperty<GridTrackSize>
+        {
+            public override string Name => nameof(IResolvedStyle.gridAutoColumns);
+            public override string ussName => "grid-auto-columns";
+            public override bool IsReadOnly => true;
+
+            public override IEnumerable<GridTrackSize> GetValue(ref ResolvedStyleAccess container) => ((IResolvedStyle)container).gridAutoColumns;
+            public override void SetValue(ref ResolvedStyleAccess container, IEnumerable<GridTrackSize> value) => throw new System.InvalidOperationException();
+        }
+
         class GridAutoFlowProperty : ResolvedEnumProperty<GridAutoFlow>
         {
             public override string Name => nameof(IResolvedStyle.gridAutoFlow);
@@ -425,6 +435,16 @@ namespace UnityEngine.UIElements
 
             public override GridAutoFlow GetValue(ref ResolvedStyleAccess container) => ((IResolvedStyle)container).gridAutoFlow;
             public override void SetValue(ref ResolvedStyleAccess container, GridAutoFlow value) => throw new System.InvalidOperationException();
+        }
+
+        class GridAutoRowsProperty : ResolvedListProperty<GridTrackSize>
+        {
+            public override string Name => nameof(IResolvedStyle.gridAutoRows);
+            public override string ussName => "grid-auto-rows";
+            public override bool IsReadOnly => true;
+
+            public override IEnumerable<GridTrackSize> GetValue(ref ResolvedStyleAccess container) => ((IResolvedStyle)container).gridAutoRows;
+            public override void SetValue(ref ResolvedStyleAccess container, IEnumerable<GridTrackSize> value) => throw new System.InvalidOperationException();
         }
 
         class GridColumnEndProperty : ResolvedGridLineProperty
@@ -465,6 +485,26 @@ namespace UnityEngine.UIElements
 
             public override GridLine GetValue(ref ResolvedStyleAccess container) => ((IResolvedStyle)container).gridRowStart;
             public override void SetValue(ref ResolvedStyleAccess container, GridLine value) => throw new System.InvalidOperationException();
+        }
+
+        class GridTemplateColumnsProperty : ResolvedListProperty<float>
+        {
+            public override string Name => nameof(IResolvedStyle.gridTemplateColumns);
+            public override string ussName => "grid-template-columns";
+            public override bool IsReadOnly => true;
+
+            public override IEnumerable<float> GetValue(ref ResolvedStyleAccess container) => ((IResolvedStyle)container).gridTemplateColumns;
+            public override void SetValue(ref ResolvedStyleAccess container, IEnumerable<float> value) => throw new System.InvalidOperationException();
+        }
+
+        class GridTemplateRowsProperty : ResolvedListProperty<float>
+        {
+            public override string Name => nameof(IResolvedStyle.gridTemplateRows);
+            public override string ussName => "grid-template-rows";
+            public override bool IsReadOnly => true;
+
+            public override IEnumerable<float> GetValue(ref ResolvedStyleAccess container) => ((IResolvedStyle)container).gridTemplateRows;
+            public override void SetValue(ref ResolvedStyleAccess container, IEnumerable<float> value) => throw new System.InvalidOperationException();
         }
 
         class HeightProperty : ResolvedFloatProperty
@@ -1049,9 +1089,9 @@ namespace UnityEngine.UIElements
 
         public ResolvedStyleAccessPropertyBag()
         {
-            m_PropertiesList = new List<IProperty<ResolvedStyleAccess>>(103);
-            m_PropertiesHash = new Dictionary<string, IProperty<ResolvedStyleAccess>>(309);
-            AddPropertyRange(new AlignContentProperty(), new AlignItemsProperty(), new AlignSelfProperty(), new AnimationDelayProperty(), new AnimationDirectionProperty(), new AnimationDurationProperty(), new AnimationIterationCountProperty(), new AnimationNamesProperty(), new AnimationPlayStatesProperty(), new AspectRatioProperty(), new BackdropFilterProperty(), new BackgroundColorProperty(), new BackgroundImageProperty(), new BackgroundPositionXProperty(), new BackgroundPositionYProperty(), new BackgroundRepeatProperty(), new BackgroundSizeProperty(), new BorderBottomColorProperty(), new BorderBottomLeftRadiusProperty(), new BorderBottomRightRadiusProperty(), new BorderBottomWidthProperty(), new BorderLeftColorProperty(), new BorderLeftWidthProperty(), new BorderRightColorProperty(), new BorderRightWidthProperty(), new BorderTopColorProperty(), new BorderTopLeftRadiusProperty(), new BorderTopRightRadiusProperty(), new BorderTopWidthProperty(), new BottomProperty(), new ColorProperty(), new ColumnGapProperty(), new DisplayProperty(), new FilterProperty(), new FlexBasisProperty(), new FlexDirectionProperty(), new FlexGrowProperty(), new FlexShrinkProperty(), new FlexWrapProperty(), new FontSizeProperty(), new GridAutoFlowProperty(), new GridColumnEndProperty(), new GridColumnStartProperty(), new GridRowEndProperty(), new GridRowStartProperty(), new HeightProperty(), new JustifyContentProperty(), new JustifyItemsProperty(), new JustifySelfProperty(), new LeftProperty(), new LetterSpacingProperty(), new MarginBottomProperty(), new MarginLeftProperty(), new MarginRightProperty(), new MarginTopProperty(), new MaxHeightProperty(), new MaxWidthProperty(), new MinHeightProperty(), new MinWidthProperty(), new OpacityProperty(), new OverflowProperty(), new PaddingBottomProperty(), new PaddingLeftProperty(), new PaddingRightProperty(), new PaddingTopProperty(), new PositionProperty(), new RightProperty(), new RotateProperty(), new RowGapProperty(), new ScaleProperty(), new TextOverflowProperty(), new TextShadowProperty(), new TopProperty(), new TransformOriginProperty(), new TransitionDelayProperty(), new TransitionDurationProperty(), new TransitionPropertyProperty(), new TransitionTimingFunctionProperty(), new TranslateProperty(), new UnityBackgroundImageTintColorProperty(), new UnityCurvatureProperty(), new UnityEditorTextRenderingModeProperty(), new UnityFontProperty(), new UnityFontDefinitionProperty(), new UnityFontStyleAndWeightProperty(), new UnityMaterialProperty(), new UnityParagraphSpacingProperty(), new UnitySliceBottomProperty(), new UnitySliceLeftProperty(), new UnitySliceRightProperty(), new UnitySliceScaleProperty(), new UnitySliceTopProperty(), new UnitySliceTypeProperty(), new UnityTextAlignProperty(), new UnityTextGeneratorProperty(), new UnityTextOutlineColorProperty(), new UnityTextOutlineWidthProperty(), new UnityTextOverflowPositionProperty(), new VisibilityProperty(), new WhiteSpaceProperty(), new WidthProperty(), new WordSpacingProperty(), new ZIndexProperty());
+            m_PropertiesList = new List<IProperty<ResolvedStyleAccess>>(107);
+            m_PropertiesHash = new Dictionary<string, IProperty<ResolvedStyleAccess>>(321);
+            AddPropertyRange(new AlignContentProperty(), new AlignItemsProperty(), new AlignSelfProperty(), new AnimationDelayProperty(), new AnimationDirectionProperty(), new AnimationDurationProperty(), new AnimationIterationCountProperty(), new AnimationNamesProperty(), new AnimationPlayStatesProperty(), new AspectRatioProperty(), new BackdropFilterProperty(), new BackgroundColorProperty(), new BackgroundImageProperty(), new BackgroundPositionXProperty(), new BackgroundPositionYProperty(), new BackgroundRepeatProperty(), new BackgroundSizeProperty(), new BorderBottomColorProperty(), new BorderBottomLeftRadiusProperty(), new BorderBottomRightRadiusProperty(), new BorderBottomWidthProperty(), new BorderLeftColorProperty(), new BorderLeftWidthProperty(), new BorderRightColorProperty(), new BorderRightWidthProperty(), new BorderTopColorProperty(), new BorderTopLeftRadiusProperty(), new BorderTopRightRadiusProperty(), new BorderTopWidthProperty(), new BottomProperty(), new ColorProperty(), new ColumnGapProperty(), new DisplayProperty(), new FilterProperty(), new FlexBasisProperty(), new FlexDirectionProperty(), new FlexGrowProperty(), new FlexShrinkProperty(), new FlexWrapProperty(), new FontSizeProperty(), new GridAutoColumnsProperty(), new GridAutoFlowProperty(), new GridAutoRowsProperty(), new GridColumnEndProperty(), new GridColumnStartProperty(), new GridRowEndProperty(), new GridRowStartProperty(), new GridTemplateColumnsProperty(), new GridTemplateRowsProperty(), new HeightProperty(), new JustifyContentProperty(), new JustifyItemsProperty(), new JustifySelfProperty(), new LeftProperty(), new LetterSpacingProperty(), new MarginBottomProperty(), new MarginLeftProperty(), new MarginRightProperty(), new MarginTopProperty(), new MaxHeightProperty(), new MaxWidthProperty(), new MinHeightProperty(), new MinWidthProperty(), new OpacityProperty(), new OverflowProperty(), new PaddingBottomProperty(), new PaddingLeftProperty(), new PaddingRightProperty(), new PaddingTopProperty(), new PositionProperty(), new RightProperty(), new RotateProperty(), new RowGapProperty(), new ScaleProperty(), new TextOverflowProperty(), new TextShadowProperty(), new TopProperty(), new TransformOriginProperty(), new TransitionDelayProperty(), new TransitionDurationProperty(), new TransitionPropertyProperty(), new TransitionTimingFunctionProperty(), new TranslateProperty(), new UnityBackgroundImageTintColorProperty(), new UnityCurvatureProperty(), new UnityEditorTextRenderingModeProperty(), new UnityFontProperty(), new UnityFontDefinitionProperty(), new UnityFontStyleAndWeightProperty(), new UnityMaterialProperty(), new UnityParagraphSpacingProperty(), new UnitySliceBottomProperty(), new UnitySliceLeftProperty(), new UnitySliceRightProperty(), new UnitySliceScaleProperty(), new UnitySliceTopProperty(), new UnitySliceTypeProperty(), new UnityTextAlignProperty(), new UnityTextGeneratorProperty(), new UnityTextOutlineColorProperty(), new UnityTextOutlineWidthProperty(), new UnityTextOverflowPositionProperty(), new VisibilityProperty(), new WhiteSpaceProperty(), new WidthProperty(), new WordSpacingProperty(), new ZIndexProperty());
         }
     }
 }

@@ -202,6 +202,8 @@ namespace UnityEngine.UIElements
             CreateVirtualizationController<ReusableMultiColumnListViewItem>();
         }
 
+        private protected override bool hasUniformItemWidth => true;
+
         void RaiseColumnSortingChanged()
         {
             columnSortingChanged?.Invoke();

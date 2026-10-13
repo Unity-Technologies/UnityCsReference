@@ -183,7 +183,7 @@ namespace UnityEditor
         ///
         ///Calling this method will invalidate any variables in the editor script that reference GameObjects, so they will need to be reacquired after the call.
         ///
-        ///Scripts can run at strategic points during the build by implementing one of the supported callback interfaces, for example <see cref="BuildPlayerProcessor" />, <see cref="IPreprocessBuildWithContext" />, <see cref="IProcessSceneWithReport" /> and <see cref="IPostprocessBuildWithContext" />.
+        ///Scripts can run at strategic points during the build by implementing one of the supported callback interfaces, for example <see cref="BuildPlayerProcessor" />, <see cref="IPreprocessBuildWithContext" /> and <see cref="IPostprocessBuildWithContext" />, or by overriding <see cref="AssetPostprocessor.OnProcessScene" />.
         ///
         ///Note: Be aware that changes to [scripting symbols](xref:um-platform-dependent-compilation) only take effect at the next domain reload, when scripts are recompiled.
         ///
@@ -494,11 +494,17 @@ namespace UnityEditor
             buildParameters.metadataPath = BuildHistory.ReserveBuildReportDirectory(
                 buildSessionGuid.ToString(), buildParameters.buildStartTimeTicks);
 
-            var report = BuildContentDirectoryInternal(buildParameters, buildSessionGuid);
-
-            BuildHistory.FinalizeBuild(report);
-
-            return report;
+            try
+            {
+                var report = BuildContentDirectoryInternal(buildParameters, buildSessionGuid);
+                BuildHistory.FinalizeBuild(report);
+                return report;
+            }
+            finally
+            {
+                // BuildHistory.ReserveBuildReportDirectory registered this as the running build.
+                BuildHistory.EndActiveBuild(buildSessionGuid);
+            }
         }
 
         [NativeMethod(ThrowsException = true)]
@@ -585,7 +591,7 @@ namespace UnityEditor
         ///  <para>This signature of BuildAssetBundles is recommended and exposes the most functionality. The other signatures, documented below,
         ///are retained for backward compatibility and convenience.
         ///
-        ///During the <see cref="AssetBundle" /> build process, classes that implement <see cref="IProcessSceneWithReport" /> are called as scenes are processed. Similarly the way shaders are built can be influenced by implementing <see cref="IPreprocessShaders" /> or <see cref="IPreprocessComputeShaders" />.
+        ///During the <see cref="AssetBundle" /> build process, classes derived from <see cref="AssetPostprocessor" /> that define <see cref="AssetPostprocessor.OnProcessScene" /> are called as scenes are processed. Similarly the way shaders are built can be influenced by implementing <see cref="IPreprocessShaders" /> or <see cref="IPreprocessComputeShaders" />.
         ///
         ///This method returns an <see cref="AssetBundleManifest" /> instance that describes the AssetBundles produced.
         ///

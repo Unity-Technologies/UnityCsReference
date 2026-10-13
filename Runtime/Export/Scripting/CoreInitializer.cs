@@ -26,6 +26,8 @@ namespace UnityEngine
             bool runOnceOnly = !s_Initialized;
             s_Initialized = true;
 
+            Assertions.AssertCore.s_Fail = Assertions.Assert.Fail;
+
             // 0. Wrapper-marshalling offsets and scripted-object base-class table. Must run before any
             //    wrapper is resolved (Object.MarshalledUnityObject reads these when resolving a wrapper).
             //    An explicit init rather than a static ctor keeps MarshalledUnityObject .cctor-free, so

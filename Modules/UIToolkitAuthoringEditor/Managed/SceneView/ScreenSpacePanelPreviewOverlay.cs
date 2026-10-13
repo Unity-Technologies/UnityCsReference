@@ -730,7 +730,8 @@ namespace Unity.UIToolkit.Editor
             if (visualTreeAsset != null && !IsStaging(visualTreeAsset, panelSettings))
             {
                 var context = new VisualTreeAssetEditingContext(visualTreeAsset, panelSettings);
-                UIStageNavigation.Navigate(context, BreadcrumbBar.SeparatorStyle.Line);
+                if (UIStageNavigation.Navigate(context, BreadcrumbBar.SeparatorStyle.Line) == null)
+                    return;
             }
 
             EditorWindow.GetWindow<UIViewportWindow>(null, true, typeof(SceneView));
@@ -1044,7 +1045,7 @@ namespace Unity.UIToolkit.Editor
                 return;
             }
 
-            m_PanelElement.FrameUpdate();
+            m_PanelElement.TickUpdate();
 
             // Style-only edits re-render without a re-clone or layout request, so while the empty state
             // is up keep probing for content that became visible.

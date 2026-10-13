@@ -63,7 +63,8 @@ internal struct ProfilingEvent
     /// <param name="categoryId">Category identifier used for determining event color and grouping.</param>
     /// <param name="markerId">Unique identifier for the marker name used for this event.</param>
     /// <param name="parentIndex">Index to the parent event in the hierarchical callstack.</param>
-    internal ProfilingEvent(float startTime, float time, ushort threadIndex, ushort level, ushort categoryId, int markerId, int parentIndex)
+    /// <param name="rawSampleIndex">Index of the sample in the thread's RawFrameDataView that the event was created from.</param>
+    internal ProfilingEvent(float startTime, float time, ushort threadIndex, ushort level, ushort categoryId, int markerId, int parentIndex, int rawSampleIndex = -1)
     {
         this.startTime = startTime;
         this.time = time;
@@ -72,6 +73,7 @@ internal struct ProfilingEvent
         this.level = level;
         this.categoryId = categoryId;
         this.parentIndex = parentIndex;
+        this.rawSampleIndex = rawSampleIndex;
         this.pad0 = 0;
     }
 
@@ -91,6 +93,10 @@ internal struct ProfilingEvent
     /// Index to the parent event in the hierarchical callstack.
     /// </summary>
     internal int parentIndex;
+    /// <summary>
+    /// Index of the sample in the thread's RawFrameDataView that the event was created from.
+    /// </summary>
+    internal int rawSampleIndex;
     /// <summary>
     /// Index of the thread (0 is typically the main thread, others are job threads).
     /// </summary>
@@ -195,6 +201,10 @@ internal struct ThreadInfo
     /// End of the event stream.
     /// </summary>
     internal int eventEnd;
+    /// <summary>
+    /// Index of the thread in ProfilerDriver.GetRawFrameDataView for this frame.
+    /// </summary>
+    internal int rawThreadIndex;
 }
 
 /// <summary>
@@ -650,7 +660,7 @@ struct CacheFrameJob : IJob
                 eventIndex = currentIndex,
             });
 
-            output.events.AddNoResize(new ProfilingEvent(startTime, time, threadIndex, (ushort)level, catId, markerId, parent));
+            output.events.AddNoResize(new ProfilingEvent(startTime, time, threadIndex, (ushort)level, catId, markerId, parent, index));
 
             m_state = State.Default;
         }
@@ -669,7 +679,7 @@ struct CacheFrameJob : IJob
             });
 
             // TODO: We should validate matching being job/end job pairs
-            output.events.AddNoResize(new ProfilingEvent(handleTime.time, startTime - handleTime.time, threadIndex, (ushort)level, catId, markerId, parent));
+            output.events.AddNoResize(new ProfilingEvent(handleTime.time, startTime - handleTime.time, threadIndex, (ushort)level, catId, markerId, parent, index));
 
             m_state = State.Default;
         }
@@ -677,7 +687,7 @@ struct CacheFrameJob : IJob
         {
             if (metadataState != State.EndJob)
             {
-                output.events.AddNoResize(new ProfilingEvent(startTime, time, threadIndex, (ushort)level, catId, markerId, parent));
+                output.events.AddNoResize(new ProfilingEvent(startTime, time, threadIndex, (ushort)level, catId, markerId, parent, index));
             }
         }
 
@@ -868,6 +878,7 @@ struct CacheFrameJob : IJob
                 maxDepth = depth,
                 eventStart = eventsStart,
                 eventEnd = output.events.Length,
+                rawThreadIndex = orgThreadIndex,
             };
 
             output.threadsLookup.TryAdd(threadId, i);
@@ -1098,6 +1109,7 @@ internal class FrameCache : IDisposable
 {
     /// <summary> All the frames that has been cached </summary>
     Dictionary<int, FrameData> m_frames;
+    HashSet<int> m_emptyFrames = new HashSet<int>();
     /// <summary> Ranges of frames that needs to be cached </summary>
     NativeList<Range> m_ranges;
     /// <summary> The GCHandles for RawDataView that are inflight for caching </summary>
@@ -1143,6 +1155,11 @@ internal class FrameCache : IDisposable
             return false;
 
         return true;
+    }
+
+    internal bool IsFrameEmpty(int frameIndex)
+    {
+        return m_emptyFrames.Contains(frameIndex);
     }
 
     internal int GetNumberOfFrames()
@@ -1471,6 +1488,7 @@ internal class FrameCache : IDisposable
             if (eventsCount == 0)
             {
                 ReleaseFrameDataHandles(threadIndices);
+                m_emptyFrames.Add(i);
                 continue;
             }
 
@@ -1558,6 +1576,7 @@ internal class FrameCache : IDisposable
         }
 
         m_frames.Clear();
+        m_emptyFrames.Clear();
         m_ranges.Clear();
         m_cachedRanges.Clear();
 

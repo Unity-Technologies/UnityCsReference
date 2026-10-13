@@ -880,40 +880,38 @@ namespace UnityEngine.UIElements.StyleSheets
 
         protected override bool MatchFilterFunction()
         {
-            var filterType = current.handle.valueIndex;
-            MoveNext();
-
-            var value = current;
-            int argCount = (int)value.sheet.ReadFloat(value.handle);
-            for (int i = 0; i < argCount; ++i)
-                MoveNext();
-
-            return true;
+            return current.handle.valueType == StyleValueType.Function && SkipFunctionArguments();
         }
 
         protected override bool MatchLinearGradient()
         {
-            return MatchGradientFunction(StyleValueFunction.LinearGradient);
+            return MatchFunction(StyleValueFunction.LinearGradient);
         }
 
         protected override bool MatchRadialGradient()
         {
-            return MatchGradientFunction(StyleValueFunction.RadialGradient);
+            return MatchFunction(StyleValueFunction.RadialGradient);
         }
 
-        bool MatchGradientFunction(StyleValueFunction expected)
+        bool MatchFunction(StyleValueFunction expected)
         {
             var handle = current.handle;
-            if (handle.valueType != StyleValueType.Function)
-                return false;
-            if ((StyleValueFunction)handle.valueIndex != expected)
+            return handle.valueType == StyleValueType.Function
+                && (StyleValueFunction)handle.valueIndex == expected
+                && SkipFunctionArguments();
+        }
+
+        bool SkipFunctionArguments()
+        {
+            int argCountIndex = currentIndex + 1;
+            if (argCountIndex >= valueCount || m_Values[argCountIndex].handle.valueType != StyleValueType.Float)
                 return false;
 
             MoveNext();
 
             var value = current;
             int argCount = (int)value.sheet.ReadFloat(value.handle);
-            for (int i = 0; i < argCount; ++i)
+            for (int i = 0; i < argCount && hasCurrent; ++i)
                 MoveNext();
 
             return true;
@@ -921,15 +919,7 @@ namespace UnityEngine.UIElements.StyleSheets
 
         protected override bool MatchMaterialPropertyValue()
         {
-            var propFunc = current.handle.valueIndex;
-            MoveNext();
-
-            var value = current;
-            int argCount = (int)value.sheet.ReadFloat(value.handle);
-            for (int i = 0; i < argCount; ++i)
-                MoveNext();
-
-            return true;
+            return MatchFunction(StyleValueFunction.MaterialProperty);
         }
 
         protected override bool MatchCustomIdent()

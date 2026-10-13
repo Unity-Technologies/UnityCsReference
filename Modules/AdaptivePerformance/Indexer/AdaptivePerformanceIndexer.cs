@@ -786,6 +786,16 @@ namespace UnityEngine.AdaptivePerformance
                 TimeUntilNextAction = m_Settings.indexerSettings.thermalActionDelay;
             }
 
+            // A combined Increase here comes from the CPU/GPU UtilizationStateTrackers via
+            // MostPressingAction (PerformanceStateTracker itself never returns Increase). Without
+            // this branch it matched neither Stale case above nor a Decrease case below, so quality
+            // could never come back up while utilization stayed under IncreaseThreshold.
+            else if (allowQualityIncrease && performanceAction == StateAction.Increase && (thermalAction == StateAction.Stale || thermalAction == StateAction.Increase))
+            {
+                UnapplyHighestCostScaler(excludedScalers);
+                TimeUntilNextAction = m_Settings.indexerSettings.performanceActionDelay;
+            }
+
             else if (thermalAction == StateAction.Decrease)
             {
                 ApplyLowestCostScaler(excludedScalers);

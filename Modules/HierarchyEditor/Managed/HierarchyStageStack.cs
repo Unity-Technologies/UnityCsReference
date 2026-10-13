@@ -30,21 +30,32 @@ namespace Unity.Hierarchy.Editor
     /// </summary>
     /// <remarks>
     /// Entries outlive the windows bound to them. Consumers drive the shared data themselves, so nothing is
-    /// updated while no window is open and the content stays stale until the next update; that is expected. An
-    /// entry is only ever created for the stage that is current at that moment, because the scene handler
-    /// resolves its scenes from the current stage once, when it is initialized.
+    /// updated while no window is open and the content stays stale until the next update; that is expected.
+    /// After a domain reload, every stage of the navigation history gets its entry back, so that undo records
+    /// resolve to the stage they were recorded in.
     /// </remarks>
     static partial class HierarchyStageStack
     {
         sealed class Entry
         {
+            // The stage this entry shows, which is not necessarily the current one
             public Stage Stage;
+
+            // Shared by every Hierarchy window while this stage is current
             public Hierarchy Hierarchy;
+
+            // Shared flattened view of Hierarchy, null until its handlers are created
             public HierarchyFlattened Flattened;
+
+            // HierarchyUndoManager id stored in undo records, stable across domain reloads
             public int UndoId;
+
+            // False while the handlers initialize, guarding against a handler that wrongly switches stages and prunes this entry
+            public bool HandlersCreated;
         }
 
         const string k_UndoIdKey = "HierarchyStageStack";
+        const string k_RestoreAfterReloadKey = "HierarchyStageStack.RestoreAfterReload";
 
         // Cleaned up explicitly by Shutdown so disposal never depends on statics-cleanup ordering.
         [NoAutoStaticsCleanup]
@@ -137,6 +148,20 @@ namespace Unity.Hierarchy.Editor
             }
         }
 
+        /// <summary>
+        /// The stage <paramref name="hierarchy"/> shows: the stage of the entry owning it, or the current stage for a hierarchy the stack does not own.
+        /// </summary>
+        internal static Stage GetStage(Hierarchy hierarchy)
+        {
+            foreach (var entry in s_Entries)
+            {
+                if (ReferenceEquals(entry.Hierarchy, hierarchy))
+                    return entry.Stage;
+            }
+
+            return CurrentStage;
+        }
+
         // Lazy so an editor that never opens a Hierarchy window does not build the StageNavigationManager singleton
         static void EnsureSubscribed()
         {
@@ -144,7 +169,12 @@ namespace Unity.Hierarchy.Editor
                 return;
 
             s_Subscribed = true;
+
+            // Undo records outlive a domain reload, so their entries have to come back even if no window does
+            SessionState.SetBool(k_RestoreAfterReloadKey, true);
+
             StageNavigationManager.instance.afterSuccessfullySwitchedToStage += OnAfterSuccessfullySwitchedToStage;
+            StageNavigationManager.instance.recoveredFromStageChangeError += OnRecoveredFromStageChangeError;
             PrefabStage.prefabStageReloaded += OnPrefabStageReloaded;
             PrefabUtility.prefabInstanceUpdated += OnPrefabInstanceUpdated;
             Undo.undoRedoPerformed += OnUndoRedoPerformed;
@@ -160,6 +190,7 @@ namespace Unity.Hierarchy.Editor
                 Undo.undoRedoPerformed -= OnUndoRedoPerformed;
                 PrefabUtility.prefabInstanceUpdated -= OnPrefabInstanceUpdated;
                 PrefabStage.prefabStageReloaded -= OnPrefabStageReloaded;
+                StageNavigationManager.instance.recoveredFromStageChangeError -= OnRecoveredFromStageChangeError;
                 StageNavigationManager.instance.afterSuccessfullySwitchedToStage -= OnAfterSuccessfullySwitchedToStage;
             }
 
@@ -172,35 +203,62 @@ namespace Unity.Hierarchy.Editor
             Changed = null;
         }
 
+        [InitializeOnLoadMethod]
+        static void RestoreAfterReload()
+        {
+            if (SessionState.GetBool(k_RestoreAfterReloadKey, false))
+                EnsureHistoryEntries();
+        }
+
         static Stage CurrentStage => StageNavigationManager.instance.currentStage;
 
-        static Entry EnsureCurrentEntry()
+        static Entry EnsureCurrentEntry() => EnsureEntry(CurrentStage);
+
+        static void EnsureHistoryEntries()
+        {
+            foreach (var stage in StageNavigationManager.instance.stageHistory)
+            {
+                if (stage != null)
+                    EnsureEntry(stage);
+            }
+        }
+
+        static Entry EnsureEntry(Stage stage)
         {
             EnsureSubscribed();
 
-            var stage = CurrentStage;
             var entry = FindEntry(stage);
             if (entry != null)
                 return entry;
 
-            entry = CreateEntry(stage);
-            s_Entries.Add(entry);
-            return entry;
+            return CreateEntry(stage);
         }
 
         static Entry CreateEntry(Stage stage)
         {
             var hierarchy = new Hierarchy();
-            HierarchyWindowManager.InstantiateNodeTypeHandlers(hierarchy);
-
             var entry = new Entry
             {
                 Stage = stage,
                 Hierarchy = hierarchy,
-                Flattened = new HierarchyFlattened(hierarchy),
                 UndoId = ComputeUndoId(stage)
             };
 
+            // Registered before the handlers are instantiated, so they can find the stage they belong to
+            s_Entries.Add(entry);
+            try
+            {
+                HierarchyWindowManager.InstantiateNodeTypeHandlers(hierarchy);
+            }
+            catch
+            {
+                s_Entries.Remove(entry);
+                hierarchy.Dispose();
+                throw;
+            }
+
+            entry.HandlersCreated = true;
+            entry.Flattened = new HierarchyFlattened(hierarchy);
             HierarchyUndoManager.Register(entry.UndoId, hierarchy);
             return entry;
         }
@@ -267,6 +325,9 @@ namespace Unity.Hierarchy.Editor
             PruneEntriesNotInHistory();
         }
 
+        // The recovery goes back to the main stage without raising afterSuccessfullySwitchedToStage
+        static void OnRecoveredFromStageChangeError(Stage previousStage, Stage newStage) => OnAfterSuccessfullySwitchedToStage(newStage);
+
         static void OnPrefabStageReloaded(PrefabStage stage)
         {
             // The stage's preview scene was replaced, so every node in its entry refers to dead objects. The
@@ -287,7 +348,8 @@ namespace Unity.Hierarchy.Editor
             var history = StageNavigationManager.instance.stageHistory;
             for (var i = s_Entries.Count - 1; i >= 0; --i)
             {
-                if (!IsInHistory(history, s_Entries[i].Stage))
+                // Dispose entries whose stage left the history, unless their handlers are still initializing and wrongly switched stages
+                if (s_Entries[i].HandlersCreated && !IsInHistory(history, s_Entries[i].Stage))
                     DisposeEntryAt(i);
             }
         }

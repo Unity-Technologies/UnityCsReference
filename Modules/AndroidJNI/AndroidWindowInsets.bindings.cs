@@ -214,6 +214,7 @@ namespace UnityEngine.Android
         private static extern void InternalShow(Type type);
 
         /// <summary>Displays a set of windows that generate insets on screen.</summary>
+        /// <param name="type">The set of window insets to show, as a bitwise combination of <see cref="Type" /> values.</param>
         /// <remarks>Use this method to display the system bars, such as the status and navigation bars at runtime.
         ///
         /// This method has no effect on <see cref="Android.AndroidWindowInsets.Type.CaptionBar" />, because the system controls the visibility of the caption bar.</remarks>
@@ -240,6 +241,7 @@ namespace UnityEngine.Android
         private static extern void InternalHide(Type type);
 
         /// <summary>Hides a set of windows that generate insets.</summary>
+        /// <param name="type">The set of window insets to hide, as a bitwise combination of <see cref="Type" /> values.</param>
         /// <remarks>Use this method to hide the system bars, allowing your application to use the available screen space when in full-screen mode.
         ///
         /// This method has no effect on <see cref="Android.AndroidWindowInsets.Type.CaptionBar" />, because the system controls the visibility of the caption bar.</remarks>
@@ -271,6 +273,8 @@ namespace UnityEngine.Android
         }
 
         /// <summary>Indicates whether a set of windows that might generate insets is currently visible on screen, regardless of whether they overlap with your application window.</summary>
+        /// <param name="type">The set of window insets to check, as a bitwise combination of <see cref="Type" /> values.</param>
+        /// <returns>True if any of the specified windows are currently visible. Otherwise, false.</returns>
         /// <remarks>This method allows you to check whether the system UI elements for the status and navigation bars are currently visible or hidden on the screen.</remarks>
         /// <example>
         ///  <code><![CDATA[using UnityEngine;
@@ -297,6 +301,7 @@ namespace UnityEngine.Android
         private static extern void InternalSetSystemBarsBehavior(int behavior);
 
         /// <summary>Controls the behavior of system bars.</summary>
+        /// <param name="behavior">The system bars behavior to apply.</param>
         /// <remarks>This method allows you to configure how the system bars, such as the status and navigation bars, should respond to system gestures in your application.
         ///
         ///**Note:** Only supported on Android 11 (API 30) or later. Has no effect on Android 10 (API 29) or earlier versions.</remarks>
@@ -321,6 +326,7 @@ namespace UnityEngine.Android
         private static extern int InternalGetSystemBarsBehavior();
 
         /// <summary>Retrieves the configured behavior of system bars, such as status and navigation bars.</summary>
+        /// <returns>The currently configured system bars behavior.</returns>
         /// <remarks>This behavior determines how system gestures reveal the system bars when hidden at runtime.</remarks>
         /// <example>
         ///  <code><![CDATA[using UnityEngine;

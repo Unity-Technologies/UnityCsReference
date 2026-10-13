@@ -112,6 +112,17 @@ namespace UnityEditor.Search.Providers
             return InvalidateObject(entityId);
         }
 
+        public void InvalidateAll()
+        {
+            m_GODS.Clear();
+        }
+
+        // Search reads the fuzzy toggle of its query, ParsedQuery.Test does not
+        public void SetFuzzyMatch(bool enabled)
+        {
+            m_DoFuzzyMatch = enabled;
+        }
+
         public ObjectQueryEngine()
             : this(Array.Empty<T>())
         {

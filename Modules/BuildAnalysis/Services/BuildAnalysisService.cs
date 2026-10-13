@@ -81,7 +81,14 @@ namespace UnityEditor.Build.Analysis
         /// </summary>
         public void Refresh()
         {
-            m_BuildHistory.Refresh();
+            try
+            {
+                m_BuildHistory.Refresh();
+            }
+            catch (Exception e)
+            {
+                Debug.LogError($"{BuildAnalysisConstants.k_ConsoleLogPrefix} Failed to refresh build history: {e.Message}");
+            }
             ClearCache();
         }
 

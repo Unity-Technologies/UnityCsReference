@@ -66,6 +66,7 @@ using System.Runtime.CompilerServices;
 [assembly: InternalsVisibleTo("UnityEditor.UIElementsModule")]
 [assembly: InternalsVisibleTo("UnityEditor.UIElementsGameObjectsModule")]
 [assembly: InternalsVisibleTo("Unity.UI.TestFramework.Editor")] // for UI Test Framework
+[assembly: InternalsVisibleTo("Unity.UI.TestFramework.Editor.IMGUI")] // for UI Test Framework IMGUI support
 [assembly: InternalsVisibleTo("Unity.Modules.UIToolkitAuthoring.Tests.Editor")]
 [assembly: InternalsVisibleTo("Unity.Tiny.Rendering.Authoring")]
 [assembly: InternalsVisibleTo("Unity.Tiny.Authoring")]

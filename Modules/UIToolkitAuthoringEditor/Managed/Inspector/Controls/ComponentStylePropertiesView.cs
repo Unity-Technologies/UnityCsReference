@@ -190,6 +190,7 @@ sealed class ComponentStylePropertiesView : VisualElement
         }
 
         editor.AddToClassList(k_RowUssClassName);
+        editor.AddToClassList(BaseField<float>.alignedFieldUssClassName);
         editor.SetEnabled(m_CanEdit);
 
         // Wrap the field in an OverrideRow so an overridden property shows the same left-gutter bar that
@@ -197,28 +198,38 @@ sealed class ComponentStylePropertiesView : VisualElement
         var row = new OverrideRow();
         row.AddToClassList(OverrideRow.ussClassName);
         row.AddTrackedProperty(ussName); // for inspector search
+        var affordance = new FieldAffordanceElement();
+        row.Add(affordance);
         row.Add(editor);
 
         void Refresh()
         {
             refreshValue();
-            row.UpdateTrackedProperties(IsOverridden(ussName) ? new[] { ussName } : Array.Empty<string>());
+            var overridden = IsOverridden(ussName);
+            row.UpdateTrackedProperties(overridden ? new[] { ussName } : Array.Empty<string>());
+            affordance.fieldAffordanceData.sourceTypeInfo =
+                overridden ? FieldAffordanceSourceInfoType.Inline
+                : IsFromCascade(ussName) ? FieldAffordanceSourceInfoType.MatchingUSSSelector
+                : FieldAffordanceSourceInfoType.Default;
         }
 
         Refresh();
         m_RowRefreshers.Add(Refresh);
 
-        editor.AddManipulator(new ContextualMenuManipulator(evt =>
+        void PopulateMenu(DropdownMenu menu)
         {
             if (!m_CanEdit)
                 return;
-            evt.menu.AppendAction(UxmlAttributeFieldDecorator.k_UnsetText,
+            menu.AppendAction(UxmlAttributeFieldDecorator.k_UnsetText,
                 _ => { ClearOverride(ussName); RefreshAll(); },
                 _ => IsOverridden(ussName) ? DropdownMenuAction.Status.Normal : DropdownMenuAction.Status.Disabled);
-            evt.menu.AppendAction(UxmlAttributeFieldDecorator.k_UnsetAllText,
+            menu.AppendAction(UxmlAttributeFieldDecorator.k_UnsetAllText,
                 _ => { ClearAllOverrides(); RefreshAll(); },
                 _ => AnyOverridden() ? DropdownMenuAction.Status.Normal : DropdownMenuAction.Status.Disabled);
-        }));
+        }
+
+        affordance.populateMenuItems = PopulateMenu;
+        editor.AddManipulator(new ContextualMenuManipulator(evt => PopulateMenu(evt.menu)));
 
         return row;
     }
@@ -232,12 +243,14 @@ sealed class ComponentStylePropertiesView : VisualElement
         return component != null ? field.GetValue(component) : null;
     }
 
-    object LiveComponentValue()
+    object LiveComponentValue() => LiveComponentValue(m_Target);
+
+    object LiveComponentValue(VisualElement element)
     {
-        if (m_Target == null || m_ComponentType == null)
+        if (element == null || m_ComponentType == null)
             return null;
-        var has = (bool)k_HasComponentMethod.MakeGenericMethod(m_ComponentType).Invoke(m_Target, null);
-        return has ? ComponentValueReflection.GetComponentValueMethod.MakeGenericMethod(m_ComponentType).Invoke(null, new object[] { m_Target }) : null;
+        var has = (bool)k_HasComponentMethod.MakeGenericMethod(m_ComponentType).Invoke(element, null);
+        return has ? ComponentValueReflection.GetComponentValueMethod.MakeGenericMethod(m_ComponentType).Invoke(null, new object[] { element }) : null;
     }
 
     // ----- Inline-rule access -----
@@ -252,6 +265,14 @@ sealed class ComponentStylePropertiesView : VisualElement
     }
 
     internal bool IsOverridden(string ussName) => GetInlineRule()?.FindLastProperty(ussName) != null;
+
+    // A resolved custom property with no inline entry means a matching selector supplies the value.
+    bool IsFromCascade(string ussName)
+    {
+        return m_Target != null
+            && UniqueStyleString.TryGet(ussName, out var name)
+            && m_Target.computedStyle.customProperties.TryGetValue(name, out _);
+    }
 
     internal void SetOverride(string ussName, Type valueType, object value)
     {
@@ -311,8 +332,85 @@ sealed class ComponentStylePropertiesView : VisualElement
 
         RemoveStyleRulePropertyCommand.Execute(CommandSources.Inspector, inlineSheet, rule, property);
 
+        // Every clone shares the inline rule, and each one's component holds its own copy of the value.
+        VisualElementUtility.ForEachClone(m_Target, element => ResetFieldToDefault(element, ussName));
         VisualElementUtility.UpdateInlineRuleOnAllClones(m_Target, inlineSheet, rule);
         MarkDocumentChanged();
+    }
+
+    // The resolved-event handler only writes fields whose custom property is present, so removing the
+    // property would otherwise leave the unset value in the component; the next style pass reapplies
+    // any matching selector on top of this default.
+    void ResetFieldToDefault(VisualElement element, string ussName)
+    {
+        FieldInfo target = null;
+        foreach (var field in GetStylePropertyFields(m_ComponentType))
+        {
+            if (field.GetCustomAttribute<StylePropertyAttribute>().name == ussName)
+            {
+                target = field;
+                break;
+            }
+        }
+
+        var component = LiveComponentValue(element);
+        if (target == null || component == null)
+            return;
+
+        var defaults = ComponentValueReflection.CreateComponentValueMethod
+            .MakeGenericMethod(m_ComponentType).Invoke(null, null);
+        target.SetValue(component, target.GetValue(defaults));
+        ClearInlineOverrideBit(component, target.Name);
+        ComponentValueReflection.SetComponentValueMethod.MakeGenericMethod(m_ComponentType)
+            .Invoke(null, new object[] { element, component });
+        if (target.IsDefined(typeof(UxmlAttributeAttribute)))
+            ReapplyUxmlValues(element);
+
+        // Mirror the generated Set{Field} / ClearInline{Field}: dirty the component, raise the field's
+        // binding id when the generator emitted one, and force a style pass so USS can reclaim the field.
+        ComponentValueReflection.MarkComponentDirtyMethod.MakeGenericMethod(m_ComponentType)
+            .Invoke(null, new object[] { element });
+        var property = m_ComponentType.GetField(target.Name + "Property",
+            BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic);
+        if (property?.GetValue(null) is BindingId bindingId)
+            element.NotifyComponentChanged(bindingId);
+        element.MarkDirtyStyles();
+    }
+
+    // A field can also be a [UxmlAttribute], so the unset value is the authored one, as a fresh clone would get.
+    void ReapplyUxmlValues(VisualElement element)
+    {
+        var componentData = element.visualElementAsset?.componentData;
+        if (componentData == null)
+            return;
+
+        foreach (var data in componentData)
+        {
+            if (data != null && data.GetType().DeclaringType == m_ComponentType)
+            {
+                data.Deserialize(element);
+                UxmlAssetUtilities.ReapplyAncestorSerializedDataOverrides(element);
+                return;
+            }
+        }
+    }
+
+    // The C# inline pin (Set/SetInline{Field} sets a bit in the generated __styleOverrides) would make
+    // the resolved-event handler skip the field forever after this reset.
+    static void ClearInlineOverrideBit(object component, string fieldName)
+    {
+        var overrides = component.GetType().GetField("__styleOverrides",
+            BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+        if (overrides == null)
+            return;
+
+        var pascalName = char.ToUpperInvariant(fieldName[0]) + fieldName.Substring(1);
+        if (Array.IndexOf(Enum.GetNames(overrides.FieldType), pascalName) < 0)
+            return;
+
+        var bit = Convert.ToUInt64(Enum.Parse(overrides.FieldType, pascalName));
+        var current = Convert.ToUInt64(overrides.GetValue(component));
+        overrides.SetValue(component, Enum.ToObject(overrides.FieldType, current & ~bit));
     }
 
     // The style commands dirty the inline StyleSheet, not the owning asset, but Save tracks the asset — so

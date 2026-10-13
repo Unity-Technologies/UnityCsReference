@@ -14,17 +14,17 @@ namespace Unity.ProjectAuditor.Editor
     public enum CompilationMode
     {
         /// <summary>
-        ///   <para>Non-Development player (default)</para>
+        ///   <para>Player (default)</para>
         /// </summary>
         /// <remarks>
-        /// Code will be compiled for analysis as it would be when making a non-development Player build for the specified target platform. Code inside #if DEVELOPMENT_BUILD will be excluded from this analysis.
+        /// Code will be compiled for analysis as it would be when making a Player build for the specified target platform.
         /// </remarks>
         Player,
         /// <summary>
         ///   <para>Development player</para>
         /// </summary>
         /// <remarks>
-        /// Code will be compiled for analysis as it would be when making a development Player build for the specified target platform. Code inside #if DEVELOPMENT_BUILD will be included in this analysis.
+        /// Code will be compiled for analysis as it would be when making a Player build for the specified target platform. The Development Build setting no longer affects C# compilation, so this is the same as <see cref="Player"/>. The DEVELOPMENT_BUILD C# preprocessor directive is no longer defined.
         /// </remarks>
         DevelopmentPlayer,
 

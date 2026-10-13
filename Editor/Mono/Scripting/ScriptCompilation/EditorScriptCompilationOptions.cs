@@ -13,7 +13,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
     enum EditorScriptCompilationOptions
     {
         BuildingEmpty = 0,
-        BuildingDevelopmentBuild = 1 << 0,
+        // 1 << 0 was BuildingDevelopmentBuild; removed, the Development Build setting no longer affects script compilation.
         BuildingForEditor = 1 << 1,
         BuildingEditorOnlyAssembly = 1 << 2,
         BuildingForIl2Cpp = 1 << 3,

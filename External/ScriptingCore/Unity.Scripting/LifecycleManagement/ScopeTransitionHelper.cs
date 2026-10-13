@@ -36,6 +36,11 @@ namespace Unity.Scripting.LifecycleManagement
             return _lifecycleMethodRegistry.Get(attributeType, assemblies);
         }
 
+        /// <summary>
+        /// Drops the cached markers of Type objects from assemblies that are about to unload
+        /// </summary>
+        internal void ClearMarkerCache() => _processMarkers.Clear();
+
         private Profiling.ProfilerMarker GetProcessMarker(Type attributeType)
         {
             // Cache markers per attribute type: creating one allocates a string and calls into

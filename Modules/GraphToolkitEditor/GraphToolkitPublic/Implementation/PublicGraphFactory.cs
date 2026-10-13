@@ -602,7 +602,7 @@ namespace Unity.GraphToolkit.Editor.Implementation
             if( graphModel.Graph.GetType() != graphType)
                 return false;
 
-            GraphViewEditorWindowImp.ShowGraph(graphObject);
+            GraphToolkitWindow.ShowGraph(graphObject);
 
             return true;
         }

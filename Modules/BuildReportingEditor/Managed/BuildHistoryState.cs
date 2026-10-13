@@ -56,6 +56,7 @@ namespace UnityEditor.Build
         // Cached state
         private Dictionary<GUID, BuildEntry> m_Builds; // Build session GUID to BuildEntry
         private List<GUID> m_BuildOrder; // Build session GUIDs, sorted by build start type (most recent first)
+        private readonly Dictionary<GUID, List<GUID>> m_ChildrenOf = new Dictionary<GUID, List<GUID>>(); // Parent build session GUID to its child builds
         private int m_Revision; // Incremented any time the build history state changes
         private string m_CachedRootDirectory;
         private bool m_IsDirty;
@@ -132,6 +133,22 @@ namespace UnityEditor.Build
             }
 
             return found;
+        }
+
+        internal bool TryGetParentBuild(GUID buildSessionGuid, out GUID parentBuildSessionGuid)
+        {
+            EnsureCacheLoaded();
+            parentBuildSessionGuid = m_Builds.TryGetValue(buildSessionGuid, out var entry)
+                ? entry.Summary.ParentBuildSessionGUID
+                : default;
+            return !parentBuildSessionGuid.Empty();
+        }
+
+        // Most recent first.
+        internal GUID[] GetChildBuilds(GUID buildSessionGuid)
+        {
+            EnsureCacheLoaded();
+            return m_ChildrenOf.TryGetValue(buildSessionGuid, out var children) ? children.ToArray() : Array.Empty<GUID>();
         }
 
         // Gets the build summary for a specific build.
@@ -282,7 +299,7 @@ namespace UnityEditor.Build
             else
             {
                 AddOrUpdateBuildEntry(entry);
-                InsertBuildInOrder(entry);
+                InsertBuildInOrder(m_BuildOrder, entry);
             }
 
             m_Revision++;
@@ -480,6 +497,7 @@ namespace UnityEditor.Build
             // Clear existing state
             m_Builds.Clear();
             m_BuildOrder.Clear();
+            m_ChildrenOf.Clear();
 
             string rootDirectory = BuildHistory.BuildHistoryDirectory;
 
@@ -585,6 +603,7 @@ namespace UnityEditor.Build
             {
                 m_Builds.Clear();
                 m_BuildOrder.Clear();
+                m_ChildrenOf.Clear();
                 m_Revision++;
             }
         }
@@ -633,23 +652,24 @@ namespace UnityEditor.Build
         }
 
         /// <summary>
-        /// Inserts a build entry into the build order list at the correct position.
+        /// Inserts a build entry into a list of build session GUIDs at the correct position.
         /// Assumes the entry has already been added to m_Builds.
         /// </summary>
+        /// <param name="orderedEntries">The list to insert into, sorted most recent first.</param>
         /// <param name="entry">The build entry to insert.</param>
-        private void InsertBuildInOrder(BuildEntry entry)
+        private void InsertBuildInOrder(List<GUID> orderedEntries, BuildEntry entry)
         {
             // Find the correct position (most recent first)
-            int insertIndex = m_BuildOrder.Count; // Default to end
-            for (int i = 0; i < m_BuildOrder.Count; i++)
+            int insertIndex = orderedEntries.Count; // Default to end
+            for (int i = 0; i < orderedEntries.Count; i++)
             {
-                if (m_Builds[m_BuildOrder[i]].BuildStartTime < entry.BuildStartTime)
+                if (m_Builds[orderedEntries[i]].BuildStartTime < entry.BuildStartTime)
                 {
                     insertIndex = i;
                     break;
                 }
             }
-            m_BuildOrder.Insert(insertIndex, entry.Summary.BuildSessionGUID);
+            orderedEntries.Insert(insertIndex, entry.Summary.BuildSessionGUID);
         }
 
         /// <summary>
@@ -674,7 +694,12 @@ namespace UnityEditor.Build
         /// </remarks>
         private void AddOrUpdateBuildEntry(BuildEntry entry)
         {
-            m_Builds[entry.Summary.BuildSessionGUID] = entry;
+            var guid = entry.Summary.BuildSessionGUID;
+            if (m_Builds.TryGetValue(guid, out var previous))
+                RemoveChildLink(previous);
+
+            m_Builds[guid] = entry;
+            AddChildLink(entry);
         }
 
         /// <summary>
@@ -684,12 +709,37 @@ namespace UnityEditor.Build
         /// <returns>True if the build was found and removed; otherwise false.</returns>
         private bool RemoveBuildEntry(GUID sessionGuid)
         {
-            if (!m_Builds.Remove(sessionGuid))
+            if (!m_Builds.TryGetValue(sessionGuid, out var entry))
                 return false;
 
+            m_Builds.Remove(sessionGuid);
             m_BuildOrder.Remove(sessionGuid);
+            RemoveChildLink(entry);
 
             return true;
+        }
+
+        private void AddChildLink(BuildEntry entry)
+        {
+            var parent = entry.Summary.ParentBuildSessionGUID;
+            if (parent.Empty())
+                return;
+
+            if (!m_ChildrenOf.TryGetValue(parent, out var children))
+                m_ChildrenOf[parent] = children = new List<GUID>();
+
+            InsertBuildInOrder(children, entry);
+        }
+
+        private void RemoveChildLink(BuildEntry entry)
+        {
+            var parent = entry.Summary.ParentBuildSessionGUID;
+            if (parent.Empty() || !m_ChildrenOf.TryGetValue(parent, out var children))
+                return;
+
+            children.Remove(entry.Summary.BuildSessionGUID);
+            if (children.Count == 0)
+                m_ChildrenOf.Remove(parent);
         }
 
         // ==================== Private Helper Methods ====================

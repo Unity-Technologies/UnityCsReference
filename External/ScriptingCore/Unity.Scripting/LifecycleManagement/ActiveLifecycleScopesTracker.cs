@@ -715,10 +715,11 @@ namespace Unity.Scripting.LifecycleManagement
                         continue;
                     }
 
+                    Func<Type, bool> isUnloading = type => IsTypeInUnloadingAssembly(type, unloadingAssemblies);
                     var emptyInnerKeys = new List<ScopeTransitionType>();
                     foreach (var innerKvp in outerKvp.Value)
                     {
-                        innerKvp.Value.RemoveAll(cleanup => IsTypeInUnloadingAssembly(cleanup.GetType(), unloadingAssemblies));
+                        innerKvp.Value.RemoveAll(cleanup => cleanup.IsOwnedBy(isUnloading));
                         if (innerKvp.Value.Count == 0)
                             emptyInnerKeys.Add(innerKvp.Key);
                     }

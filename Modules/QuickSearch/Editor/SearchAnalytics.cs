@@ -448,7 +448,6 @@ namespace UnityEditor.Search
             m_Debouncer.Execute(evtCreator);
         }
 
-
         public static void SendSearchEvent(SearchEvent evt, SearchContext searchContext)
         {
             evt.useOverrideFilter = searchContext.filterId != null;

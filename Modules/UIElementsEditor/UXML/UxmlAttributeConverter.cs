@@ -380,16 +380,9 @@ namespace UnityEditor.UIElements
 
     internal class BoolAttributeConverter : UxmlAttributeConverter<bool>
     {
-        public override bool FromString(string value)
-        {
-            bool.TryParse(value, out var result);
-            return result;
-        }
+        public override bool FromString(string value) => UxmlUtility.ParseBool(value);
 
-        public override string ToString(bool value)
-        {
-            return value ? "true" : "false";
-        }
+        public override string ToString(bool value) => value ? "true" : "false";
     }
 
     internal class ByteAttributeConverter : UxmlAttributeConverter<byte>
@@ -439,11 +432,7 @@ namespace UnityEditor.UIElements
 
     internal class DoubleAttributeConverter : UxmlAttributeConverter<double>
     {
-        public override double FromString(string value)
-        {
-            double.TryParse(value, NumberStyles.Float, CultureInfo.InvariantCulture, out var result);
-            return result;
-        }
+        public override double FromString(string value) => UxmlUtility.ParseDouble(value);
     }
 
     internal class EnumAttributeConverter<T> : UxmlAttributeConverter<Enum>
@@ -898,12 +887,12 @@ namespace UnityEditor.UIElements
                 if (keyItems.Length < 8)
                     throw new ArgumentOutOfRangeException(nameof(value), "AnimationCurve's KeyFrame does not have enough values.");
 
-                var success = float.TryParse(keyItems[0], out var keyTime);
-                success &= float.TryParse(keyItems[1], out var keyValue);
-                success &= float.TryParse(keyItems[2], out var inTangent);
-                success &= float.TryParse(keyItems[3], out var outTangent);
-                success &= float.TryParse(keyItems[4], out var inWeight);
-                success &= float.TryParse(keyItems[5], out var outWeight);
+                var success = UxmlUtility.TryParseFloat(keyItems[0], out var keyTime);
+                success &= UxmlUtility.TryParseFloat(keyItems[1], out var keyValue);
+                success &= UxmlUtility.TryParseFloat(keyItems[2], out var inTangent);
+                success &= UxmlUtility.TryParseFloat(keyItems[3], out var outTangent);
+                success &= UxmlUtility.TryParseFloat(keyItems[4], out var inWeight);
+                success &= UxmlUtility.TryParseFloat(keyItems[5], out var outWeight);
                 success &= Enum.TryParse<AnimationUtility.TangentMode>(keyItems[6], out var leftTangent);
                 success &= Enum.TryParse<AnimationUtility.TangentMode>(keyItems[7], out var rightTangent);
                 success &= bool.TryParse(keyItems[8], out var broken);
@@ -933,16 +922,16 @@ namespace UnityEditor.UIElements
 
         public override string ToString(AnimationCurve value)
         {
-            var sb = StringBuilderPool.Get();
+            using var pool = StringBuilderPool.Get(out var sb);
             for (var i = 0; i < value.keys.Length; i++)
             {
                 var key = value.keys[i];
-                sb.Append($"{{{key.time.ToString(CultureInfo.InvariantCulture)},");
-                sb.Append($"{key.value.ToString(CultureInfo.InvariantCulture)},");
-                sb.Append($"{key.inTangent.ToString(CultureInfo.InvariantCulture)},");
-                sb.Append($"{key.outTangent.ToString(CultureInfo.InvariantCulture)},");
-                sb.Append($"{key.inWeight.ToString(CultureInfo.InvariantCulture)},");
-                sb.Append($"{key.outWeight.ToString(CultureInfo.InvariantCulture)},");
+                sb.Append($"{{{UxmlUtility.ValueToString(key.time)},");
+                sb.Append($"{UxmlUtility.ValueToString(key.value)},");
+                sb.Append($"{UxmlUtility.ValueToString(key.inTangent)},");
+                sb.Append($"{UxmlUtility.ValueToString(key.outTangent)},");
+                sb.Append($"{UxmlUtility.ValueToString(key.inWeight)},");
+                sb.Append($"{UxmlUtility.ValueToString(key.outWeight    )},");
                 sb.Append($"{AnimationUtility.GetKeyLeftTangentMode(key)},");
                 sb.Append($"{AnimationUtility.GetKeyRightTangentMode(key)},");
                 sb.Append($"{AnimationUtility.GetKeyBroken(key)},");
@@ -957,7 +946,6 @@ namespace UnityEditor.UIElements
             sb.Append($"+({value.preWrapMode},{value.postWrapMode})");
 
             var result = sb.ToString();
-            StringBuilderPool.Release(sb);
             return result;
         }
     }
@@ -992,7 +980,7 @@ namespace UnityEditor.UIElements
                 if (colorKeys.Length <= 0)
                     throw new ArgumentOutOfRangeException(nameof(value), "Gradient's color key does not have enough values.");
 
-                var success = float.TryParse(colorKeys[0], out var time);
+                var success = UxmlUtility.TryParseFloat(colorKeys[0], out var time);
                 success &= ColorUtility.TryParseHtmlString(colorKeys[1], out var color);
 
                 if (!success)
@@ -1010,8 +998,8 @@ namespace UnityEditor.UIElements
                 if (alphaKeys.Length <= 0)
                     throw new ArgumentOutOfRangeException(nameof(value), "Gradient's alpha key does not have enough values.");
 
-                var success = float.TryParse(alphaKeys[0], out var time);
-                success &= float.TryParse(alphaKeys[1], out var alpha);
+                var success = UxmlUtility.TryParseFloat(alphaKeys[0], out var time);
+                success &= UxmlUtility.TryParseFloat(alphaKeys[1], out var alpha);
 
                 if (!success)
                     throw new ArgumentOutOfRangeException(nameof(value), "Gradient's alpha key could not be parsed correctly.");
@@ -1415,7 +1403,7 @@ namespace UnityEditor.UIElements
                     colorValue = colorConverter.FromString(trimmedArg);
                     filterFunction.AddParameter(new FilterParameter(colorValue));
                 }
-                else if (float.TryParse(trimmedArg, NumberStyles.Float, CultureInfo.InvariantCulture, out var floatValue))
+                else if (UxmlUtility.TryParseFloat(trimmedArg, out var floatValue))
                 {
                     filterFunction.AddParameter(new FilterParameter(floatValue));
                 }
@@ -2079,7 +2067,7 @@ namespace UnityEditor.UIElements
                         y = Length.ParseString(parts[1]);
                     break;
                 case 3: //X Y Z value
-                    float.TryParse(parts[2], NumberStyles.Float, CultureInfo.InvariantCulture.NumberFormat, out z);
+                    UxmlUtility.TryParseFloat(parts[2], out z);
                     goto case 2; //Parse the first 2 parameters
             }
             return new Translate(x, y, z);
@@ -2122,7 +2110,7 @@ namespace UnityEditor.UIElements
                 var parts = value.Split('/', ':');
                 if (parts.Length == 2)
                 {
-                    if (double.TryParse(parts[0], NumberStyles.Float, CultureInfo.InvariantCulture, out double w) && double.TryParse(parts[1], NumberStyles.Float, CultureInfo.InvariantCulture, out double h))
+                    if (UxmlUtility.TryParseDouble(parts[0], out double w) && UxmlUtility.TryParseDouble(parts[1], out double h))
                     {
                         if (h <= 0 || w <= 0 || double.IsNaN(h) || double.IsNaN(w))
                         {
@@ -2134,7 +2122,7 @@ namespace UnityEditor.UIElements
                 }
             }
 
-            if (double.TryParse(value, NumberStyles.Float, CultureInfo.InvariantCulture, out double val))
+            if (UxmlUtility.TryParseDouble(value, out double val))
             {
                 if (val <= 0 || double.IsNaN(val))
                 {
@@ -2163,7 +2151,7 @@ namespace UnityEditor.UIElements
         {
             if (string.Equals(value, "infinite", StringComparison.OrdinalIgnoreCase))
                 return AnimationIterationCount.Infinite();
-            if (float.TryParse(value, NumberStyles.Float, CultureInfo.InvariantCulture, out var count))
+            if (UxmlUtility.TryParseFloat(value, out var count))
                 return new AnimationIterationCount(count);
             return new AnimationIterationCount(1f);
         }

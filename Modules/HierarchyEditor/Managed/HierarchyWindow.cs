@@ -216,6 +216,19 @@ namespace Unity.Hierarchy.Editor
             HierarchyWindowManager.UnregisterNodeTypeHandler<T>();
 
         /// <summary>
+        /// Gets the stage <paramref name="hierarchy"/> shows, or the current stage for a hierarchy that no Hierarchy window shares.
+        /// </summary>
+        /// <remarks>
+        /// Node type handlers must use this instead of the current stage, because a stage's hierarchy can be created while another stage is current.
+        /// </remarks>
+        /// <param name="hierarchy">The hierarchy of a node type handler.</param>
+        /// <returns>The stage.</returns>
+        [VisibleToOtherModules]
+        internal static Stage GetStage(Hierarchy hierarchy) => HierarchyStageStack.GetStage(hierarchy);
+
+        internal static Stage GetStage(IntPtr hierarchyHandlePtr) => GetStage(Hierarchy.FromIntPtr(hierarchyHandlePtr));
+
+        /// <summary>
         /// Creates a new <see cref="HierarchyWindow"/>.
         /// </summary>
         public HierarchyWindow()
@@ -230,16 +243,26 @@ namespace Unity.Hierarchy.Editor
         /// <param name="query">The filter query text.</param>
         public void SetSearchText(string query)
         {
-            HierarchyLogging.Log($"HierarchyWindow({GetHashCode():X}).SetSearchText(query=\"{query}\")");
+            SetSearchText(query, synchronizeSearchableWindows: true);
+        }
+
+        // A restored search is not pushed to the Scene view (UUM-150981)
+        void RestoreSearchText(string query) => SetSearchText(query, synchronizeSearchableWindows: false);
+
+        void SetSearchText(string query, bool synchronizeSearchableWindows)
+        {
+            HierarchyLogging.Log($"HierarchyWindow({GetHashCode():X}).SetSearchText(query=\"{query}\", synchronize={synchronizeSearchableWindows})");
             query = query ?? string.Empty;
             var clearSearchText = !string.IsNullOrEmpty(m_HierarchyView.Filter) && string.IsNullOrEmpty(query);
-            ((ISearchView)m_SearchView).SetSearchText(query, TextCursorPlacement.Default);
+            m_SearchView.SetSearchTextWithoutNotify(query);
             m_SearchField.SetValueWithoutNotify(query);
             m_HierarchyView.Filter = query;
             if (clearSearchText)
                 UpdateSearchStatus();
 
-            SynchronizeSearchWithSearchableWindows(query);
+            if (synchronizeSearchableWindows)
+                SynchronizeSearchWithSearchableWindows(query);
+
             if (clearSearchText && !m_LockTracker.isLocked)
             {
                 var selectedNodes = m_HierarchyView.ViewModel.GetNodesWithFlags(HierarchyNodeFlags.Selected);
@@ -808,7 +831,8 @@ namespace Unity.Hierarchy.Editor
         void ISerializationCallbackReceiver.OnBeforeSerialize()
         {
             // Note: OnBeforeSerialize is necessary for proper layout saves since OnDisable is not called.
-            SaveViewState(HierarchyViewState.Content.Layout);
+            // Also keep the search text so a window destroyed by a maximize keeps searching (UUM-150981)
+            SaveViewState(HierarchyViewState.Content.Layout | HierarchyViewState.Content.SearchText);
         }
 
         void ISerializationCallbackReceiver.OnAfterDeserialize()
@@ -1395,7 +1419,7 @@ namespace Unity.Hierarchy.Editor
 
             // Restore search text state synchronously, to ensure the search filter is properly applied before restoring the rest of the view state.
             if (viewState.ValidContent.HasFlag(HierarchyViewState.Content.SearchText))
-                SetSearchText(viewState.SearchText);
+                RestoreSearchText(viewState.SearchText);
 
             // Queue the rest to happen on next frame (all except the view model state)
             m_HierarchyView.SetState(new HierarchyViewState
@@ -1483,8 +1507,8 @@ namespace Unity.Hierarchy.Editor
             if (stage == null)
                 return;
 
-            // A newly opened stage always starts with a new, empty search; only returning to a stage
-            // restores the search it had when it was left (see OnSharedHierarchyChanged).
+            // A newly opened stage always starts with a new, empty search, in the Scene view too; only returning
+            // to a stage restores the search it had when it was left (see OnSharedHierarchyChanged).
             if (!restoreSearchText)
                 SetSearchText(string.Empty);
 
@@ -1520,48 +1544,36 @@ namespace Unity.Hierarchy.Editor
 
         void SynchronizeSearchWithSearchableWindows(string query)
         {
-            SearchableEditorWindow[] windows;
-            if ((windows = Resources.FindObjectsOfTypeAll<SearchableEditorWindow>()) != null && windows.Length > 0)
+            var windows = Resources.FindObjectsOfTypeAll<SearchableEditorWindow>();
+            if (windows == null || windows.Length == 0)
+                return;
+
+            // The Scene view evaluates the query itself (SceneViewSearchFilter)
+            var sceneViewQuery = string.IsNullOrEmpty(query)
+                ? string.Empty
+                : BuildSceneViewQuery(query, m_HierarchyView.ViewModel.QueryParser.ParseQuery(query));
+
+            foreach (var sw in windows)
             {
-                var searching = !string.IsNullOrEmpty(query);
-                if (!UnityEditor.SearchService.SceneSearch.HasEngineOverride())
-                {
-                    var queryDesc = m_HierarchyView.ViewModel.QueryParser.ParseQuery(query);
-                    query = SimplifyQuery(queryDesc);
-                }
-                foreach (var sw in windows)
-                {
-                    if (sw.m_HierarchyType != HierarchyType.Assets)
-                    {
-                        if (sw is SceneView sceneView)
-                            sceneView.SetSceneViewFilteringForSearch(searching);
-                        sw.SetSearchFilter(query, SearchMode.All, false, true);
-                    }
-                }
+                if (sw.m_HierarchyType != HierarchyType.Assets)
+                    sw.SetSearchFilter(sceneViewQuery, SearchMode.All, false, true);
             }
         }
 
-        internal static string SimplifyQuery(HierarchySearchQueryDescriptor queryDesc)
+        // Rebuilds the query without the Hierarchy's own system filters (nodetype, strict)
+        internal static string BuildSceneViewQuery(string query, HierarchySearchQueryDescriptor queryDesc)
         {
-            // Only keep the type filter and words
+            // The raw text of an invalid query also matches nothing in the Scene view
+            if (queryDesc.Invalid)
+                return query;
 
-            var query = "";
-            foreach (var filter in queryDesc.Filters)
-            {
-                if (filter.Name == "t")
-                {
-                    if (query.Length > 0)
-                        query += " ";
-                    query += filter.ToString();
-                }
-            }
-            foreach (var word in queryDesc.TextValues)
-            {
-                if (query.Length > 0)
-                    query += " ";
-                query += word;
-            }
-            return query;
+            var filters = queryDesc.BuildFilterQuery();
+            var words = queryDesc.BuildTextQuery();
+            if (filters.Length == 0)
+                return words;
+            if (words.Length == 0)
+                return filters;
+            return $"{filters} {words}";
         }
 
         IHierarchyWindow IHierarchyWindow.LastInteractedHierarchyWindow => s_LastInteractedHierarchy;

@@ -14,6 +14,7 @@ namespace Unity.UIToolkit.Editor;
 internal interface IVariableEditingContext
 {
     VisualElement CurrentVisualElement { get; }
+    VisualElement VariableScopeElement { get; }
     StyleRule CurrentRule { get; }
     StyleSheet CurrentStyleSheet { get; }
     bool EditorExtensionMode { get; }

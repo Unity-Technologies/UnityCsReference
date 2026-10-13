@@ -12,5 +12,7 @@ namespace UnityEditor.PackageManager
     {
         extern internal static int GetPolicyLevel();
         extern internal static void SetPolicyLevel(int level);
+        extern internal static bool GetTrustDisabled();
+        extern internal static void SetTrustDisabled(bool disabled);
     }
 }

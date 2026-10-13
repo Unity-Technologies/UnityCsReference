@@ -849,6 +849,8 @@ namespace UnityEditor.Build.Profile
             else
                 BuildProfileContext.instance.cachedEditorScriptingDefines = Array.Empty<string>();
 
+            BuildProfileContext.instance.cachedSDKPlatformDefines = SDKPlatformCompilationUtil.GetActivePlatformDefinesToCache();
+
             EditorApplication.delayCall += TryRecompileScripts;
         }
 

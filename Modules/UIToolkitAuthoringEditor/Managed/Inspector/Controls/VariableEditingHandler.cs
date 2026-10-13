@@ -34,6 +34,7 @@ internal class VariableEditingHandler
 
     public int index { get; set; } = 0;
     public bool editingEnabled { get; set; } = true;
+    public bool useRealPopupWindow { get; set; }
 
     public bool isVariableFieldVisible => variableField != null && !variableField.ClassListContains(HiddenStyleClassName);
 

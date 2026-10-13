@@ -25,7 +25,9 @@ namespace UnityEngine
     {
         extern public int  shaderCount  { get; }
         extern public int  variantCount { get; }
+        [Obsolete("ShaderVariantCollection warmup functionality is deprecated. Please use GraphicsStateCollection instead.", false)]
         extern public int  warmedUpVariantCount { get; }
+        [Obsolete("ShaderVariantCollection warmup functionality is deprecated. Please use GraphicsStateCollection instead.", false)]
         extern public bool isWarmedUp   {[NativeName("IsWarmedUp")] get; }
 
         extern private bool AddVariant(Shader shader, UnityEngine.Rendering.PassType passType, [UnityMarshalAs(NativeType.ScriptingObjectPtr)] string[] keywords);
@@ -33,7 +35,9 @@ namespace UnityEngine
         extern private bool ContainsVariant(Shader shader, UnityEngine.Rendering.PassType passType, [UnityMarshalAs(NativeType.ScriptingObjectPtr)] string[] keywords);
 
         [NativeName("ClearVariants")] extern public void Clear();
+        [Obsolete("ShaderVariantCollection warmup functionality is deprecated. Please use GraphicsStateCollection instead.", false)]
         [NativeName("WarmupShaders")] extern public void WarmUp();
+        [Obsolete("ShaderVariantCollection warmup functionality is deprecated. Please use GraphicsStateCollection instead.", false)]
         [NativeName("WarmupShadersProgressively")] extern public bool WarmUpProgressively(int variantCount);
 
         [NativeName("CreateFromScript")] extern private static EntityId Internal_Create();

@@ -284,7 +284,6 @@ namespace UnityEditor.Search
             version = ReadSetting(settings, nameof(version), 0);
             itemIconSize = ReadSetting(settings, nameof(itemIconSize), (float)DisplayMode.List);
 
-
             var searches = ReadSetting<object[]>(settings, nameof(recentSearches));
             #pragma warning disable UAC2001 // Avoid Linq
             recentSearches = searches != null ? searches.Cast<string>().ToList() : new List<string>();
@@ -347,7 +346,6 @@ namespace UnityEditor.Search
                 [nameof(findProviderIndexHelper)] = findProviderIndexHelper,
                 [nameof(itemIconSize)] = itemIconSize,
                 [nameof(version)] = version,
-
             };
 
             RetriableOperation<IOException>.Execute(() =>
@@ -1159,7 +1157,6 @@ namespace UnityEditor.Search
             orderedSearchEngines.AddRange(overrides);
             return orderedSearchEngines;
         }
-
 
         internal static bool TryGetObjectSelectorSettings(string selectorId, out ObjectSelectorsSettings settings)
         {

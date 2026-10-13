@@ -465,19 +465,45 @@ namespace UnityEditor.Scripting.ScriptCompilation
 
         static void UpdateCustomTargetAssembliesResponseFileData(CustomScriptAssembly[] customScriptAssemblies, ResponseFileProvider responseFileProvider)
         {
+            var projectDirectory = Directory.GetParent(Application.dataPath).FullName;
+
+            // The default response file (Assets/csc.rsp) is the same for every assembly without a folder-specific one,
+            // so look it up and parse it at most once per refresh instead of once per assembly.
+            var defaultResponseFileResolved = false;
+            string[] defaultResponseFileDefines = null;
+
             foreach (var assembly in customScriptAssemblies)
             {
-#pragma warning disable UAC2001 // Avoid Linq
-                string rspFile = responseFileProvider.Get(assembly.PathPrefix)
-#pragma warning restore UAC2001
-                    .SingleOrDefault();
+                var rspFile = responseFileProvider.GetCompilerSpecific(assembly.PathPrefix);
                 if (!string.IsNullOrEmpty(rspFile))
                 {
-                    var responseFileContent = MicrosoftResponseFileParser.GetResponseFileContent(Directory.GetParent(Application.dataPath).FullName, rspFile);
-                    var compilerOptions = MicrosoftResponseFileParser.GetCompilerOptions(responseFileContent);
-                    assembly.ResponseFileDefines = MicrosoftResponseFileParser.GetDefines(compilerOptions).ToArray();
+                    assembly.ResponseFileDefines = GetResponseFileDefines(projectDirectory, rspFile);
+                    continue;
+                }
+
+                if (!defaultResponseFileResolved)
+                {
+                    var defaultResponseFile = responseFileProvider.GetDefaultResponseFiles();
+                    if (!string.IsNullOrEmpty(defaultResponseFile))
+                    {
+                        defaultResponseFileDefines = GetResponseFileDefines(projectDirectory, defaultResponseFile);
+                    }
+                    defaultResponseFileResolved = true;
+                }
+
+                if (defaultResponseFileDefines != null)
+                {
+                    // Each assembly gets its own copy because the array is exposed through CompilationPipeline.GetResponseFileDefinesFromAssemblyName.
+                    assembly.ResponseFileDefines = (string[])defaultResponseFileDefines.Clone();
                 }
             }
+        }
+
+        static string[] GetResponseFileDefines(string projectDirectory, string rspFile)
+        {
+            var responseFileContent = MicrosoftResponseFileParser.GetResponseFileContent(projectDirectory, rspFile);
+            var compilerOptions = MicrosoftResponseFileParser.GetCompilerOptions(responseFileContent);
+            return MicrosoftResponseFileParser.GetDefines(compilerOptions).ToArray();
         }
 
         static Exception[] UpdateCustomTargetAssembliesAssetPathsMetaData(
@@ -896,7 +922,6 @@ namespace UnityEditor.Scripting.ScriptCompilation
             var config =
                 hash.ToString().Substring(0, 5) +
                 $"{(scriptAssemblySettings.BuildingForEditor ? "E" : "P")}" +
-                $"{(scriptAssemblySettings.BuildingDevelopmentBuild ? "Dev" : "")}" +
                 $"{(debug ? "Dbg" : "")}" +
                 $"{(hasChecks && !scriptAssemblySettings.BuildingForEditor ? "Chk" : "")}" +
                 $"{(hasInstrumentation && !scriptAssemblySettings.BuildingForEditor ? "Ins" : "")}" +
@@ -1021,7 +1046,8 @@ namespace UnityEditor.Scripting.ScriptCompilation
 
             predefinedAssembliesCompilerOptions.ApiCompatibilityLevel = PlayerSettings.GetApiCompatibilityLevel(namedBuildTarget);
 
-            var tempCompilationExtension = ModuleManager.FindPlatformSupportModule(ModuleManager.GetTargetStringFromBuildTarget(buildTarget))?.CreateCompilationExtension();
+            var tempCompilationExtension = SDKPlatformCompilationUtil.CreateActiveCompilationExtension(
+                ModuleManager.FindPlatformSupportModule(ModuleManager.GetTargetStringFromBuildTarget(buildTarget)));
             ICompilationExtension compilationExtension =
                 ((options & EditorScriptCompilationOptions.BuildingForEditor) == 0 || tempCompilationExtension?.GetAdditionalEditorDefines().Length > 0) ?
                     tempCompilationExtension : null;
@@ -1869,11 +1895,6 @@ namespace UnityEditor.Scripting.ScriptCompilation
         static EditorScriptCompilationOptions ToEditorScriptCompilationOptions(AssemblyBuilderFlags flags)
         {
             EditorScriptCompilationOptions options = EditorScriptCompilationOptions.BuildingEmpty;
-
-            if ((flags & AssemblyBuilderFlags.DevelopmentBuild) == AssemblyBuilderFlags.DevelopmentBuild)
-            {
-                options |= EditorScriptCompilationOptions.BuildingDevelopmentBuild;
-            }
 
             if ((flags & AssemblyBuilderFlags.EditorAssembly) == AssemblyBuilderFlags.EditorAssembly)
             {

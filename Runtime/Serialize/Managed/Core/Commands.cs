@@ -338,7 +338,6 @@ internal static unsafe partial class SerializationBackendManagedCommands
     private const byte kV2Pad0KindMask = 0x0F;
     private const byte kV2Pad0FlagCallbackRead = 0x10;
     private const byte kV2Pad0FlagPushFuidFrame = 0x20;
-    private const byte kV2Pad0FlagDictKeyHasCallbacks = 0x40;
     private const byte kV2Pad0FlagEnterNoFrame = 0x01;
     private const byte kV2CallbackFlavorMask = 0x0F;
 

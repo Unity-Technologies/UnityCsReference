@@ -75,6 +75,11 @@ namespace UnityEditor.AddComponent
                 base.name = name;
                 base.icon = icon;
             }
+            else if (command.StartsWith("DATACOMPONENT"))
+            {
+                base.name = name;
+                base.icon = EditorGUIUtility.LoadIcon("DataComponent Icon");
+            }
             else
             {
                 var classId = int.Parse(command);

@@ -24,7 +24,9 @@ namespace Unity.UI.Builder
 
         readonly EnumField m_TypeField;
         readonly GradientField m_GradientField;
-        readonly FloatField m_AngleField;
+        readonly AngleField m_AngleField;
+        float m_Angle = Mathf.PI;
+        AngleUnit m_AngleUnit;
         readonly VisualElement m_RadialOnlyContainer;
         readonly EnumField m_ShapeField;
         readonly EnumField m_SizeField;
@@ -42,6 +44,7 @@ namespace Unity.UI.Builder
         internal Func<string, Color?> resolveVariableColor { get; set; }
         internal Func<VisualElement> getCurrentVisualElement { get; set; }
         internal Func<bool> getEditorExtensionMode { get; set; }
+        internal Func<VisualElement> getVariableScopeElement { get; set; }
 
         readonly GradientVarBindingTracker m_VarBindings = new();
 
@@ -88,9 +91,19 @@ namespace Unity.UI.Builder
             }, TrickleDown.TrickleDown);
             visualInput.Add(m_GradientField);
 
-            m_AngleField = new FloatField("Angle (deg)") { value = 180f };
+            m_AngleField = BackgroundField.CreateGradientAngleField(
+                (radians, unit) =>
+                {
+                    m_Angle = radians;
+                    m_AngleUnit = unit;
+                    OnControlChanged(() => m_VarBindings.angleVarName = null);
+                },
+                unit =>
+                {
+                    m_AngleUnit = unit;
+                    OnControlChanged(() => {});
+                });
             m_AngleField.AddToClassList(k_RowClassName);
-            m_AngleField.RegisterValueChangedCallback(_ => OnControlChanged(() => m_VarBindings.angleVarName = null));
             visualInput.Add(m_AngleField);
 
             m_RadialOnlyContainer = new VisualElement();
@@ -147,7 +160,9 @@ namespace Unity.UI.Builder
             try
             {
                 m_TypeField.SetValueWithoutNotify(effective.type);
-                m_AngleField.SetValueWithoutNotify(effective.angle * Mathf.Rad2Deg);
+                m_Angle = effective.angle;
+                m_AngleUnit = effective.angleUnit;
+                m_AngleField.SetValueWithoutNotify(BackgroundField.RadiansToAngle(effective.angle, effective.angleUnit));
                 m_ShapeField.SetValueWithoutNotify(effective.shape);
                 m_SizeField.SetValueWithoutNotify(effective.size);
                 m_PositionField.SetValueWithoutNotify(effective.position);
@@ -166,6 +181,7 @@ namespace Unity.UI.Builder
                 return;
 
             clearOverriddenVarNames();
+            UpdateAngleEnabled();
 
             var type = (GradientType)m_TypeField.value;
             UpdateModeVisibility(type);
@@ -173,7 +189,8 @@ namespace Unity.UI.Builder
             var built = new BackgroundGradient
             {
                 type = type,
-                angle = m_AngleField.value * Mathf.Deg2Rad,
+                angle = m_Angle,
+                angleUnit = m_AngleUnit,
                 shape = (BackgroundGradientShape)m_ShapeField.value,
                 size = (BackgroundGradientSize)m_SizeField.value,
                 position = m_PositionField.value,
@@ -188,11 +205,15 @@ namespace Unity.UI.Builder
         internal void SetVarBindings(in StyleProperty.GradientVarBindings bindings)
         {
             m_VarBindings.SetVarBindings(bindings, value.IsEmpty() ? defaultAuthoringGradient : value);
+            UpdateAngleEnabled();
 
             // The inspector refresh lands here after every write; mirror the resolved
             // stops and bindings into the stops popup if it is open.
             RefreshStopsEditor();
         }
+
+        // A var-bound angle takes its value and unit from the variable, like other bound properties.
+        void UpdateAngleEnabled() => m_AngleField.SetEnabled(m_VarBindings.angleVarName == null);
 
         void RefreshStopsEditor()
         {
@@ -222,6 +243,7 @@ namespace Unity.UI.Builder
             m_StopsEditor.resolveVariableColor = name => resolveVariableColor?.Invoke(name);
             m_StopsEditor.getCurrentVisualElement = () => getCurrentVisualElement?.Invoke();
             m_StopsEditor.getEditorExtensionMode = () => getEditorExtensionMode?.Invoke() ?? false;
+            m_StopsEditor.getVariableScopeElement = () => getVariableScopeElement?.Invoke();
             RefreshStopsEditor();
             m_StopsEditor.stopsChanged += OnStopsEdited;
 
@@ -257,7 +279,8 @@ namespace Unity.UI.Builder
             var built = new BackgroundGradient
             {
                 type = (GradientType)m_TypeField.value,
-                angle = m_AngleField.value * Mathf.Deg2Rad,
+                angle = m_Angle,
+                angleUnit = m_AngleUnit,
                 shape = (BackgroundGradientShape)m_ShapeField.value,
                 size = (BackgroundGradientSize)m_SizeField.value,
                 position = m_PositionField.value,

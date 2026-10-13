@@ -70,6 +70,7 @@ namespace UnityEngine.UIElements.UIR
         public TextureId quadTextureId;
         public Rect quadRect;
         public Rect quadUVRect;
+        public Vector2 rasterPixelsPerPoint;
         // Gamma-encoded quad (force-gamma); the parent samples it without re-encoding (UI-5094).
         public bool quadIsGammaEncoded;
 
@@ -108,6 +109,7 @@ namespace UnityEngine.UIElements.UIR
             m_DirtyTracker.owner = this;
 
             quadTextureId = TextureId.invalid;
+            rasterPixelsPerPoint = Vector2.zero;
             quadIsGammaEncoded = false;
 
             parent = null;
@@ -203,6 +205,37 @@ namespace UnityEngine.UIElements.UIR
         {
             Debug.Assert((m_AllowedDirtyClasses & AllowedClasses.Visuals) != 0);
             m_DirtyTracker.RegisterDirty(renderData, RenderDataDirtyTypes.Visuals | (hierarchical ? RenderDataDirtyTypes.VisualsHierarchy : 0), RenderDataDirtyTypeClasses.Visuals);
+        }
+
+        public bool hasBackdropFilters => m_BackdropFilterRenderDatas != null && m_BackdropFilterRenderDatas.Count > 0;
+
+        // Includes the backdrop-filters that will register when this frame's visual changes are processed
+        public bool HasBackdropFiltersIncludingPending()
+        {
+            if (hasBackdropFilters)
+                return true;
+            if (m_RootRenderData == null)
+                return false;
+            var subtreeDirty = RenderTreeDirtyTracker.ConvertDirtyClassToFlags(RenderDataDirtyTypeClasses.Visuals);
+            return HasPendingBackdropFilter(m_RootRenderData, subtreeDirty, false);
+        }
+
+        static bool HasPendingBackdropFilter(RenderData renderData, RenderDataFlags subtreeDirty, bool inDirtyHierarchy)
+        {
+            inDirtyHierarchy |= (renderData.dirtiedValues & RenderDataDirtyTypes.VisualsHierarchy) != 0;
+            bool visualsDirty = inDirtyHierarchy || (renderData.dirtiedValues & RenderDataDirtyTypes.AllVisuals) != 0;
+            if (visualsDirty && !renderData.isNestedRenderTreeRoot && renderData.owner.hasBackdropFilter)
+                return true;
+
+            if (!inDirtyHierarchy && (renderData.flags & subtreeDirty) == 0)
+                return false;
+
+            for (RenderData child = renderData.firstChild; child != null; child = child.nextSibling)
+            {
+                if (HasPendingBackdropFilter(child, subtreeDirty, inDirtyHierarchy))
+                    return true;
+            }
+            return false;
         }
 
         public void RegisterBackdropFilter(RenderData renderData)

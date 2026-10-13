@@ -209,6 +209,7 @@ partial struct LayoutNode : IEquatable<LayoutNode>
         data.UsesMeasure = false;
         data.UsesBaseline = false;
 
+        ReleaseGridTracks();
         Layout = LayoutComputedData.Default;
         Style = LayoutData.Default;
     }

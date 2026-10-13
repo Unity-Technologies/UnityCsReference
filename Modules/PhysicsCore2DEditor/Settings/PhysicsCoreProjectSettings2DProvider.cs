@@ -12,7 +12,7 @@ using UnityEngine.UIElements;
 
 namespace Unity.U2D.Physics.Editor
 {
-    sealed class PhysicsCoreProjectSettings2DProvider : SettingsProvider
+    sealed partial class PhysicsCoreProjectSettings2DProvider : SettingsProvider
     {
         static internal class ProjectSettingPath
         {
@@ -40,8 +40,7 @@ namespace Unity.U2D.Physics.Editor
             public const string physicsCoreSettings2D = "PhysicsCore2D/UXML/PhysicsCoreSettings2D.uxml";
         }
 
-        // Editor SettingsProvider singleton; assigned by the settings system when the provider is (re)created, so it is safe to persist across a code reload.
-        [NoAutoStaticsCleanup]
+        [AutoStaticsCleanupOnCodeReload]
         public static PhysicsCoreProjectSettings2DProvider Instance { get; private set; }
 
         static readonly string EmptySettingsLabel = $"Select a {ObjectNames.NicifyVariableName(nameof(PhysicsCoreSettings2D))} asset to edit.";

@@ -183,9 +183,9 @@ namespace UnityEditor.ShortcutManagement
             {
                 case CanCreateProfileResult.Success:
                     var profile = new ShortcutProfile(profileId, parentProfile?.id ?? "");
-                    m_LoadedProfiles.Add(profileId, profile);
                     ResolveProfileParentReference(profile);
                     SaveShortcutProfile(profile);
+                    m_LoadedProfiles.Add(profileId, profile);
                     loadedProfilesChanged?.Invoke(this);
                     return profile;
 

@@ -83,6 +83,7 @@ namespace Unity.UIToolkit.Editor
         // element hook is unset the set/edit variable menu items are not shown.
         public Func<VisualElement> getCurrentVisualElement { get; set; }
         public Func<bool> getEditorExtensionMode { get; set; }
+        public Func<VisualElement> getVariableScopeElement { get; set; }
 
         public BackgroundGradientStopsEditor()
         {
@@ -146,6 +147,7 @@ namespace Unity.UIToolkit.Editor
             SortStopsIfNeeded();
             m_ListView.RefreshItems();
             RefreshPreview();
+            UpdateFooterButtons();
         }
 
         void SortStopsIfNeeded()
@@ -276,7 +278,14 @@ namespace Unity.UIToolkit.Editor
         void NotifyStopsChanged()
         {
             RefreshPreview();
+            UpdateFooterButtons();
             stopsChanged?.Invoke(m_Stops.ToArray());
+        }
+
+        void UpdateFooterButtons()
+        {
+            m_ListView.allowAdd = m_Stops.Count < k_MaxStops;
+            m_ListView.allowRemove = m_Stops.Count > k_MinStops;
         }
 
         void RefreshPreview()
@@ -624,7 +633,12 @@ namespace Unity.UIToolkit.Editor
                 if (variableEditingContext == null)
                     return;
 
-                m_ColorVarHandler ??= new VariableEditingHandler(m_HexField, variableEditingContext) { styleName = "color" };
+                // The editor lives in a small popup window, so give the suggestions their own window.
+                m_ColorVarHandler ??= new VariableEditingHandler(m_HexField, variableEditingContext)
+                {
+                    styleName = "color",
+                    useRealPopupWindow = true,
+                };
                 m_ColorVarHandler.index = index;
                 m_ColorVarHandler.ShowVariableField();
             }
@@ -807,6 +821,7 @@ namespace Unity.UIToolkit.Editor
             }
 
             public VisualElement CurrentVisualElement => m_Editor.getCurrentVisualElement?.Invoke();
+            public VisualElement VariableScopeElement => m_Editor.getVariableScopeElement?.Invoke();
             public StyleRule CurrentRule => null;
             public StyleSheet CurrentStyleSheet => null;
             public bool EditorExtensionMode => m_Editor.getEditorExtensionMode?.Invoke() ?? false;

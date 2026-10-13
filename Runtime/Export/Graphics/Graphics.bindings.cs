@@ -261,10 +261,35 @@ namespace UnityEngine
         }
     }
 
+    /// <summary>
+    /// Arguments passed to callbacks registered with <see cref="DisplayInfo.RegisterLayoutChangedCallback"/>.
+    /// </summary>
+    /// <remarks>
+    /// Represents the arguments of the display layout changed event. This struct currently carries no data, so a callback
+    /// cannot tell which display changed. To respond to a layout change, query <see cref="DisplayInfo.GetLayout"/> from the
+    /// callback to read the updated display information.
+    /// </remarks>
+    /// <example>
+    /// <code>
+    /// void OnDisplayLayoutChanged(DisplayLayoutChangedEventArgs args)
+    /// {
+    ///     List&lt;DisplayInfo&gt; displays = new List&lt;DisplayInfo&gt;();
+    ///     DisplayInfo.GetLayout(displays);
+    ///     Debug.Log("Display count: " + displays.Count);
+    /// }
+    /// </code>
+    /// </example>
+    /// <seealso cref="DisplayInfo.RegisterLayoutChangedCallback"/>
+    /// <seealso cref="DisplayInfo.UnregisterLayoutChangedCallback"/>
+    public struct DisplayLayoutChangedEventArgs
+    {
+    }
+
     [UsedByNativeCode]
     [NativeHeader("Runtime/Graphics/DisplayInfo.h")]
-    public struct DisplayInfo : IEquatable<DisplayInfo>
+    public partial struct DisplayInfo : IEquatable<DisplayInfo>
     {
+
         [RequiredMember]
         internal ulong handle;
         [RequiredMember]
@@ -311,6 +336,25 @@ namespace UnityEngine
         private static Resolution[] GetResolutions(DisplayInfo displayInfo)
         {
             throw new NotSupportedException("DisplayInfo.GetResolutions() is not supported on this platform.");
+        }
+
+        public static void RegisterLayoutChangedCallback(Action<DisplayLayoutChangedEventArgs> callback)
+        {
+            if (callback == null)
+                throw new ArgumentNullException(nameof(callback));
+            throw new NotSupportedException("DisplayInfo.RegisterLayoutChangedCallback() is not supported on this platform.");
+        }
+
+        public static bool UnregisterLayoutChangedCallback(Action<DisplayLayoutChangedEventArgs> callback)
+        {
+            if (callback == null)
+                throw new ArgumentNullException(nameof(callback));
+            throw new NotSupportedException("DisplayInfo.UnregisterLayoutChangedCallback() is not supported on this platform.");
+        }
+
+        [RequiredByNativeCode]
+        internal static void InvokeLayoutChangedCallbacks()
+        {
         }
 
         [FreeFunction("DisplayInfoScripting::GetLayout")]

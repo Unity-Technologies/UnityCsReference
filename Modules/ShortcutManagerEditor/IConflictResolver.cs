@@ -5,10 +5,11 @@
 using System;
 using System.Collections.Generic;
 using UnityEditor.ShortcutManagement;
+using UnityEngine;
 
 interface IConflictResolver
 {
-    void ResolveConflict(IEnumerable<KeyCombination> keyCombinationSequence, IEnumerable<ShortcutEntry> entries);
+    void ResolveConflict(IEnumerable<KeyCombination> keyCombinationSequence, IEnumerable<ShortcutEntry> entries, Event sourceEvent);
     void Cancel();
     void ExecuteOnce(ShortcutEntry entry);
     void ExecuteAlways(ShortcutEntry entry);

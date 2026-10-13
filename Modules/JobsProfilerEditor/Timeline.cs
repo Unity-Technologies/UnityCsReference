@@ -369,8 +369,9 @@ class SmoothEventTransition
     float3 m_end;
     float3 m_pos;
     bool m_fixed = false;
+    bool m_zoom = false;
 
-    internal void SetTarget(float time, float duration, float height)
+    internal void SetTarget(float time, float duration, float height, bool zoom)
     {
         m_start = m_pos;
         m_end.x = time;
@@ -380,6 +381,7 @@ class SmoothEventTransition
         m_time = 0.0f;
         m_state = State.Transition;
         m_fixed = false;
+        m_zoom = zoom;
     }
 
     internal void SetFixedTarget(float time, float duration, float height)
@@ -429,6 +431,7 @@ class SmoothEventTransition
     }
     internal float3 Pos { get { return m_pos; } }
     internal bool Fixed { get { return m_fixed; } }
+    internal bool Zoom { get { return m_zoom; } }
 }
 
 
@@ -1147,6 +1150,25 @@ class TimelineBarView : VisualElement, IDisposable
     private SmoothEventTransition m_posTransition = new SmoothEventTransition();
     private bool m_disposed = false;
 
+    private struct PendingSampleSelection
+    {
+        internal int frameIndex;
+        internal int threadIndex;
+        internal int rawSampleIndex;
+        internal bool focus;
+    }
+
+    private bool m_hasPendingSampleSelection;
+    private PendingSampleSelection m_pendingSampleSelection;
+    private int m_reportedSelectionFrameIndex = -1;
+    private int m_reportedSelectionEventIndex = -1;
+    private bool m_jobSelectionChangedSinceScheduled;
+    private bool m_hasPendingSampleFocus;
+    private DependJobInfo m_pendingSampleFocus;
+
+    internal event Action<int, int> eventSelected;
+    internal event Action eventSelectionCleared;
+
     private double m_lastTimeSinceStartup = EditorApplication.timeSinceStartup;
     private const int PreAllocateTextElementCount = 1024;
     private const int kPrimitiveRendererCount = SelectedFrameRange.k_SelectionRange * 2 + 1;
@@ -1330,6 +1352,7 @@ class TimelineBarView : VisualElement, IDisposable
         m_jobInfoPanel.Deactivate();
         m_jobInfoPanel.ClearHistory();
         m_nextFrame = -1;
+        ClearSampleSelection();
     }
 
     void OnJobsInfoToggleChanged(ChangeEvent<bool> evt)
@@ -1337,12 +1360,10 @@ class TimelineBarView : VisualElement, IDisposable
         bool show = evt.newValue;
 
         // Stats table
-        m_stats.style.display = show ? DisplayStyle.Flex : DisplayStyle.None;
-
-        // Hide the TwoPaneSplitView drag handle too
-        var dragHandle = m_splitView.Q(className: "unity-two-pane-split-view__dragline-anchor");
-        if (dragHandle != null)
-            dragHandle.style.display = show ? DisplayStyle.Flex : DisplayStyle.None;
+        if (show)
+            m_splitView.UnCollapse();
+        else
+            m_splitView.CollapseChild(1);
 
         // Arrow flags are gated by the master toggle in Update() every frame, so no
         // need to set them here.
@@ -1529,6 +1550,8 @@ class TimelineBarView : VisualElement, IDisposable
             frameTime = frame.info[0].frameTime;
         }
 
+        ApplyPendingSampleSelection();
+
         ClickLinkEvent clickStatEvent = m_stats.GetClickLinkEvent();
         ClickLinkEvent clickOrHoverEvent = m_jobInfoPanel.GetClickOrHoverEvent();
 
@@ -1539,6 +1562,12 @@ class TimelineBarView : VisualElement, IDisposable
             UpdateClickEvent(clickOrHoverEvent);
 
         ScheduleJobs();
+
+        if (m_hasPendingSampleFocus)
+        {
+            m_hasPendingSampleFocus = false;
+            FocusOnElement(m_pendingSampleFocus.frameIndex, m_pendingSampleFocus.eventIndex, m_settings.zoomOnEventFocus, false, false, TransitionMode.Smooth);
+        }
 
         m_tickLabels.Update(m_tickHandler, m_zoomArea, m_nextFrame, m_dragRange.textLabel, frameTime);
 
@@ -1599,7 +1628,7 @@ class TimelineBarView : VisualElement, IDisposable
             if (m_posTransition.Fixed)
                 FocusOnPosition(pos.x, pos.y, pos.z, true);
             else
-                FocusOnPosition(pos.x, pos.y, pos.z, m_settings.zoomOnEventHover);
+                FocusOnPosition(pos.x, pos.y, pos.z, m_posTransition.Zoom);
         }
 
         if (m_dragRange.show)
@@ -1636,7 +1665,108 @@ class TimelineBarView : VisualElement, IDisposable
                 m_dragRange.textLabel.style.translate = new StyleTranslate(new Translate(new Length(xStart + textCenter), new Length(0.0f), 0.0f));
             }
         }
+
+        ReportSelectionChange();
     }
+
+    internal void SetSampleSelection(int frameIndex, int threadIndex, int rawSampleIndex, bool focus)
+    {
+        m_pendingSampleSelection = new PendingSampleSelection
+        {
+            frameIndex = frameIndex,
+            threadIndex = threadIndex,
+            rawSampleIndex = rawSampleIndex,
+            focus = focus,
+        };
+        m_hasPendingSampleSelection = true;
+    }
+
+    internal void ClearSampleSelection()
+    {
+        m_hasPendingSampleSelection = false;
+        m_hasPendingSampleFocus = false;
+        m_reportedSelectionFrameIndex = -1;
+        m_reportedSelectionEventIndex = -1;
+
+        if (m_jobSelection.state != JobSelection.State.Selected)
+            return;
+
+        m_jobSelection.state = JobSelection.State.Default;
+        m_jobSelection.updatedFocus = true;
+        m_jobSelectionChangedSinceScheduled = true;
+    }
+
+    void ApplyPendingSampleSelection()
+    {
+        if (!m_hasPendingSampleSelection)
+            return;
+
+        PendingSampleSelection pending = m_pendingSampleSelection;
+
+        FrameData frameData;
+        if (!m_frameCache.GetFrame(pending.frameIndex, out frameData))
+            return;
+
+        m_hasPendingSampleSelection = false;
+
+        int eventIndex = SampleEventMapping.FindEventIndex(frameData, pending.threadIndex, pending.rawSampleIndex);
+        if (eventIndex < 0)
+        {
+            ClearSampleSelection();
+            return;
+        }
+
+        m_reportedSelectionFrameIndex = pending.frameIndex;
+        m_reportedSelectionEventIndex = eventIndex;
+
+        bool isAlreadySelected = m_jobSelection.state == JobSelection.State.Selected &&
+            !m_jobSelection.hover &&
+            m_jobSelection.frameIndex == pending.frameIndex &&
+            m_jobSelection.eventIndex == eventIndex;
+
+        if (!isAlreadySelected)
+        {
+            var depInfo = new DependJobInfo
+            {
+                frameIndex = pending.frameIndex,
+                eventIndex = eventIndex,
+            };
+            UpdateSelectedEvent(depInfo, false, false);
+        }
+
+        m_hasPendingSampleFocus = pending.focus;
+        m_pendingSampleFocus = new DependJobInfo
+        {
+            frameIndex = pending.frameIndex,
+            eventIndex = eventIndex,
+        };
+    }
+
+    void ReportSelectionChange()
+    {
+        JobSelection selection = m_jobSelection;
+        if (selection.hover)
+            return;
+
+        if (selection.state == JobSelection.State.Selected)
+        {
+            if (selection.frameIndex == m_reportedSelectionFrameIndex && selection.eventIndex == m_reportedSelectionEventIndex)
+                return;
+
+            m_hasPendingSampleSelection = false;
+            m_reportedSelectionFrameIndex = selection.frameIndex;
+            m_reportedSelectionEventIndex = selection.eventIndex;
+            eventSelected?.Invoke(selection.frameIndex, selection.eventIndex);
+        }
+        else if (selection.state == JobSelection.State.Default && m_reportedSelectionEventIndex != -1)
+        {
+            m_hasPendingSampleSelection = false;
+            m_reportedSelectionFrameIndex = -1;
+            m_reportedSelectionEventIndex = -1;
+            eventSelectionCleared?.Invoke();
+        }
+    }
+
     internal void UpdateClickEvent(ClickLinkEvent evnt)
     {
         if (evnt.frameIndex >= 0 && evnt.eventIndex >= 0)
@@ -1645,11 +1775,12 @@ class TimelineBarView : VisualElement, IDisposable
             DependJobInfo depInfo = new DependJobInfo();
             depInfo.eventIndex = evnt.eventIndex;
             depInfo.frameIndex = evnt.frameIndex;
+            m_hasPendingSampleFocus = false;
             UpdateSelectedEvent(depInfo, evnt.hover);
         }
     }
 
-    void UpdateSelectedEvent(in DependJobInfo depInfo, bool hover)
+    void UpdateSelectedEvent(in DependJobInfo depInfo, bool hover, bool focus = true)
     {
         JobSelection selection = m_jobSelection;
         InternalJobHandle jobHandle = depInfo.jobHandle;
@@ -1662,13 +1793,19 @@ class TimelineBarView : VisualElement, IDisposable
         if (!jobHandle.IsValid())
             jobHandle = m_frameCache.GetJobHandleForFrameEvent(depInfo.frameIndex, depInfo.eventIndex);
 
+        FrameData frameData;
+        if (m_frameCache.GetFrame(depInfo.frameIndex, out frameData) && depInfo.eventIndex < frameData.events.Length)
+            selection.markerId = frameData.events[depInfo.eventIndex].markerId;
+
         selection.jobHandle = jobHandle;
         selection.updatedSelection = true;
         selection.updatedFocus = true;
         selection.hover = hover;
 
         m_jobSelection = selection;
-        FocusOnElement(selection.frameIndex, selection.eventIndex, m_settings.zoomOnEventFocus, false, selection.hover, TransitionMode.Smooth);
+        m_jobSelectionChangedSinceScheduled = true;
+        if (focus)
+            FocusOnElement(selection.frameIndex, selection.eventIndex, m_settings.zoomOnEventFocus, false, selection.hover, TransitionMode.Smooth);
     }
 
     void SelectScheduledBy(PointerUpLinkTagEvent evt)
@@ -2413,6 +2550,7 @@ class TimelineBarView : VisualElement, IDisposable
             var jobTemp = m_jobSelectionJobs[i];
             jobTemp[0] = t;
         }
+        m_jobSelectionChangedSinceScheduled = false;
 
         Rect rect = m_zoomArea.drawRect;
         rect.x = rect.y = 0.0f;
@@ -2529,7 +2667,7 @@ class TimelineBarView : VisualElement, IDisposable
         }
 
         // If the non-job selection state has been updated (such as a selection in the stats view) we use that instead of the job one.
-        if (m_jobSelection.updatedFocus)
+        if (m_jobSelection.updatedFocus || m_jobSelectionChangedSinceScheduled)
         {
             t = m_jobSelection;
             t.updatedFocus = false;
@@ -2808,7 +2946,7 @@ class TimelineBarView : VisualElement, IDisposable
         if (transMode == TransitionMode.Fixed)
             m_posTransition.SetFixedTarget(startTime, duration, threadPos.offset);
         else
-            m_posTransition.SetTarget(startTime, duration, threadPos.offset);
+            m_posTransition.SetTarget(startTime, duration, threadPos.offset, hover ? m_settings.zoomOnEventHover : zoomArea);
 
         /*
         if (zoomArea)

@@ -44,9 +44,7 @@ namespace UnityEditor
 
         /// <summary>
         /// Create a SerializedObject targeting the object identified by <paramref name="id"/>.
-        /// The id may be a Unity object's EntityId (TypeId == 0) or an ECS component EntityId
-        /// (TypeId != 0). Pure entities throw
-        /// <see cref="ArgumentException"/>.
+        /// The id may name an Object, an entity, or a data component.
         ///
         /// Note: for ECS-component targets, <see cref="UpdateIfRequiredOrScript"/> does not
         /// auto-detect external chunk mutation until the chunk change-version accessor is wired.
@@ -72,9 +70,8 @@ namespace UnityEditor
 
         /// <summary>
         /// Create a multi-target SerializedObject over homogeneous targets identified by
-        /// <paramref name="ids"/>. All entries must share the same TypeId; heterogeneous arrays
-        /// (mixed Unity-object and component EntityIds, or two different component types) are
-        /// rejected with <see cref="ArgumentException"/>. Pure entities are also rejected.
+        /// <paramref name="ids"/>. The entries must be all Objects, all entities, or all data
+        /// components of the same type; any other mix is rejected with <see cref="ArgumentException"/>.
         ///
         /// Note: for ECS-component targets, <see cref="UpdateIfRequiredOrScript"/> does not
         /// auto-detect external chunk mutation until the chunk change-version accessor is wired.

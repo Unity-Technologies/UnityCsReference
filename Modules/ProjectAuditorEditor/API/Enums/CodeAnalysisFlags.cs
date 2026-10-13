@@ -37,7 +37,7 @@ namespace Unity.ProjectAuditor.Editor
         /// </remarks>
         Editor = 1 << 1,
 
-        [Obsolete("DevelopmentBuild flag is deprecated as a result of the DEVELOPMENT_BUILD C# preprocessor directive being deprecated. It will be removed in a future release. Please use DebugManagedCodeVariant instead.")]
+        [Obsolete("CodeAnalysisFlags.DevelopmentBuild is obsolete and has no effect: the Development Build setting no longer affects C# compilation, and the DEVELOPMENT_BUILD C# preprocessor directive is no longer defined. Use CodeAnalysisFlags.DebugManagedCodeVariant instead.", true)]
         DevelopmentBuild = 1 << 2,
         /// <summary>
         ///   <para>Tests</para>

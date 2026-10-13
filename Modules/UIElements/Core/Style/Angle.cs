@@ -237,6 +237,14 @@ namespace UnityEngine.UIElements
             return 0;
         }
 
+        // Decimals that keep the USS writer's 0.0001deg resolution in each unit.
+        internal static int GetPrecision(AngleUnit unit) => unit switch
+        {
+            AngleUnit.Radian => 6,
+            AngleUnit.Turn => 7,
+            _ => 4,
+        };
+
         internal void ConvertTo(AngleUnit newUnit)
         {
             m_Value = newUnit switch

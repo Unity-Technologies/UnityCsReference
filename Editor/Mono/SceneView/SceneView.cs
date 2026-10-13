@@ -1553,12 +1553,55 @@ namespace UnityEditor
             }
         }
 
+        // The base class does not serialize its search filter
+        [SerializeField] string m_SerializedSearchFilter = string.Empty;
+        [SerializeField] SearchMode m_SerializedSearchMode = SearchMode.All;
+
         internal override void SetSearchFilter(string searchFilter, SearchMode mode, bool setAll, bool delayed)
         {
             if (m_SearchFilter == "" || searchFilter == "")
                 m_StartSearchFilterTime = EditorApplication.timeSinceStartup;
 
             base.SetSearchFilter(searchFilter, mode, setAll, delayed);
+
+            m_SerializedSearchFilter = m_SearchFilter;
+            m_SerializedSearchMode = m_SearchMode;
+
+            SceneViewSearchFilter.SetQuery(searchFilterQuery);
+        }
+
+        // Narrows the text to names or component types according to the search mode
+        internal string searchFilterQuery => BuildSearchFilterQuery(m_SearchFilter, m_SearchMode);
+
+        static readonly char[] k_SearchQuerySyntaxChars = { ':', '=', '<', '>', '!', '"' };
+
+        internal static string BuildSearchFilterQuery(string searchFilter, SearchMode mode)
+        {
+            if (string.IsNullOrWhiteSpace(searchFilter))
+                return string.Empty;
+
+            switch ((SearchModeHierarchyWindow)mode)
+            {
+                case SearchModeHierarchyWindow.Name:
+                    // Quote tokens the query language would read as filters
+                    return JoinSearchTokens(searchFilter, token => token.IndexOfAny(k_SearchQuerySyntaxChars) != -1 || token[0] == '-'
+                        ? $"\"{token.Replace("\"", "")}\""
+                        : token);
+                case SearchModeHierarchyWindow.Type:
+                    return JoinSearchTokens(searchFilter, token => token.StartsWith("t:", StringComparison.OrdinalIgnoreCase)
+                        ? token
+                        : $"t:{token}");
+                default:
+                    return searchFilter;
+            }
+        }
+
+        static string JoinSearchTokens(string searchFilter, Func<string, string> transform)
+        {
+            var tokens = searchFilter.Split((char[])null, StringSplitOptions.RemoveEmptyEntries);
+            for (var i = 0; i < tokens.Length; ++i)
+                tokens[i] = transform(tokens[i]);
+            return string.Join(" ", tokens);
         }
 
         internal void OnLostFocus()
@@ -1669,6 +1712,13 @@ namespace UnityEditor
 #pragma warning restore UAC2015
 
             base.OnEnable();
+
+            m_SearchFilter = m_SerializedSearchFilter ?? string.Empty;
+            m_SearchMode = m_SerializedSearchMode;
+            var query = searchFilterQuery;
+            // A Scene view without a search must not clear the filter of another one
+            if (!string.IsNullOrEmpty(query) || !SceneViewSearchFilter.isFiltering)
+                SceneViewSearchFilter.SetQuery(query);
 
             if (SupportsStageHandling())
             {
@@ -1929,6 +1979,7 @@ namespace UnityEditor
             {
                 m_SceneViewMotion.UnregisterShortcutContexts();
                 m_RectSelection.UnregisterShortcutContext();
+                SceneViewSearchFilter.Release();
             }
 
             if (s_LastActiveSceneView == this)
@@ -1979,7 +2030,7 @@ namespace UnityEditor
         {
             if (m_MainViewControlID != GUIUtility.keyboardControl
                 && Event.current.type == EventType.KeyDown
-                && !string.IsNullOrEmpty(m_SearchFilter)
+                && !string.IsNullOrWhiteSpace(m_SearchFilter)
             )
             {
                 switch (Event.current.keyCode)
@@ -2276,17 +2327,11 @@ namespace UnityEditor
         bool m_ForceSceneViewFiltering;
         bool m_ForceSceneViewFilteringForLodGroupEditing;
         bool m_ForceSceneViewFilteringForStageHandling;
-        bool m_ForceSceneViewFilteringForSearch;
         double m_lastRenderedTime;
 
         internal void SetSceneViewFiltering(bool enable)
         {
             m_ForceSceneViewFiltering = enable;
-        }
-
-        internal void SetSceneViewFilteringForSearch(bool enable)
-        {
-            m_ForceSceneViewFilteringForSearch = enable;
         }
 
         internal void SetSceneViewFilteringForLODGroups(bool enable)
@@ -2303,9 +2348,9 @@ namespace UnityEditor
 
         bool UseSceneFiltering()
         {
-            return ((!string.IsNullOrEmpty(m_SearchFilter) || m_ForceSceneViewFilteringForSearch) &&
-                    s_PreferenceEnableFilteringWhileSearching) || forceSceneViewFilteringForLodGroupEditing ||
-                    m_ForceSceneViewFilteringForStageHandling || m_ForceSceneViewFiltering;
+            return (!string.IsNullOrWhiteSpace(m_SearchFilter) && s_PreferenceEnableFilteringWhileSearching) ||
+                    forceSceneViewFilteringForLodGroupEditing || m_ForceSceneViewFilteringForStageHandling ||
+                    m_ForceSceneViewFiltering;
         }
 
         internal bool SceneViewIsRenderingHDR()
@@ -4050,6 +4095,9 @@ namespace UnityEditor
         [FreeFunction("SceneViewBindings::CanDoDrag")]
         internal static extern bool CanDoDrag(ReadOnlySpan<EntityId> entityIds);
 
+        [FreeFunction("SceneViewBindings::SetSearchFilterMarks")]
+        internal static extern void SetSearchFilterMarks(ReadOnlySpan<EntityId> visible, ReadOnlySpan<EntityId> hidden);
+
         internal void HandleDragging(Event evt)
         {
             var dragAndDropIds = DragAndDrop.entityIds;
@@ -4823,6 +4871,8 @@ namespace UnityEditor
             if (m_Grid == null)
                 m_Grid = new SceneViewGrid();
             m_Grid.showGrid = view.showGrid;
+            m_SerializedSearchFilter = view.m_SearchFilter;
+            m_SerializedSearchMode = view.m_SearchMode;
         }
 
         internal void SetOverlayVisible(string id, bool show)

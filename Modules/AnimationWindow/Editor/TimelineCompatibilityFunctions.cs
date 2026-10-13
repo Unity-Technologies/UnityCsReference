@@ -54,6 +54,15 @@ namespace UnityEditorInternal
 
                 AnimationUtility.SetObjectReferenceCurve(clip, curve.binding, objectCurve);
             }
+            else if (curve.isDiscreteCurve)
+            {
+                DiscreteKeyframe[] discreteCurve = curve.ToDiscreteCurve();
+
+                if (discreteCurve.Length == 0)
+                    discreteCurve = null;
+
+                AnimationUtility.SetDiscreteCurve(clip, curve.binding, discreteCurve);
+            }
             else
             {
                 AnimationCurve animationCurve = curve.ToAnimationCurve();

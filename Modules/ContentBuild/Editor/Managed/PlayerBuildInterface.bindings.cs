@@ -15,7 +15,11 @@ namespace UnityEditor.Build.Player
     public enum ScriptCompilationOptions
     {
         None = 0,
+
+        [Obsolete("ScriptCompilationOptions.DevelopmentBuild is obsolete and has no effect: the Development Build setting no longer affects script compilation, and the DEVELOPMENT_BUILD scripting symbol is no longer defined. Use PlayerSettings.SetManagedCodeVariant to control the DEBUG, UNITY_ENABLE_CHECKS, and UNITY_INCLUDE_INSTRUMENTATION scripting symbols instead.", true)]
         DevelopmentBuild = 1 << 0,
+
+        [Obsolete("ScriptCompilationOptions.Assertions is obsolete and has no effect: script compilation for content builds follows the managed code variant, like player builds. Use PlayerSettings.SetManagedCodeVariant (for example ManagedCodeVariant.Checked) to include assertions and safety checks instead.", true)]
         Assertions = 1 << 1
     }
 

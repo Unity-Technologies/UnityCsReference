@@ -31,8 +31,7 @@ namespace UnityEngine.Assertions
                 AreEqual(expected as UnityEngine.Object, actual as UnityEngine.Object, message);
                 return;
             }
-            if (!comparer.Equals(actual, expected))
-                Fail(AssertionMessageUtil.GetEqualityMessage(actual, expected, true), message);
+            AssertCore.AreEqual(expected, actual, message, comparer);
         }
 
         [Conditional(UNITY_ASSERTIONS)]
@@ -62,8 +61,7 @@ namespace UnityEngine.Assertions
                 AreNotEqual(expected as UnityEngine.Object, actual as UnityEngine.Object, message);
                 return;
             }
-            if (comparer.Equals(actual, expected))
-                Fail(AssertionMessageUtil.GetEqualityMessage(actual, expected, false), message);
+            AssertCore.AreNotEqual(expected, actual, message, comparer);
         }
 
         [Conditional(UNITY_ASSERTIONS)]

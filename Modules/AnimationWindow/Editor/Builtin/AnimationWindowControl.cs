@@ -846,12 +846,16 @@ namespace UnityEditor.AnimationWindowBuiltin
                 EditorCurveBinding binding = bindings[i];
                 if (binding.isPPtrCurve)
                     AnimationUtility.SetObjectReferenceCurve(m_CandidateClip, binding, null);
+                else if (binding.isDiscreteCurve)
+                    AnimationUtility.SetDiscreteCurve(m_CandidateClip, binding, null);
                 else
                     AnimationUtility.SetEditorCurve(m_CandidateClip, binding, null);
             }
 
             // Clear out candidate clip if it's empty.
-            if (AnimationUtility.GetCurveBindings(m_CandidateClip).Length == 0 && AnimationUtility.GetObjectReferenceCurveBindings(m_CandidateClip).Length == 0)
+            if (AnimationUtility.GetCurveBindings(m_CandidateClip).Length == 0 &&
+                AnimationUtility.GetObjectReferenceCurveBindings(m_CandidateClip).Length == 0 &&
+                AnimationUtility.GetDiscreteCurveBindings(m_CandidateClip).Length == 0)
                 ClearCandidates();
         }
 
@@ -881,6 +885,7 @@ namespace UnityEditor.AnimationWindowBuiltin
 
             EditorCurveBinding[] bindings = AnimationUtility.GetCurveBindings(m_CandidateClip);
             EditorCurveBinding[] objectCurveBindings = AnimationUtility.GetObjectReferenceCurveBindings(m_CandidateClip);
+            EditorCurveBinding[] discreteCurveBindings = AnimationUtility.GetDiscreteCurveBindings(m_CandidateClip);
 
             List<AnimationWindowCurve> curves = new List<AnimationWindowCurve>();
 
@@ -888,7 +893,9 @@ namespace UnityEditor.AnimationWindowBuiltin
             {
                 AnimationWindowCurve curve = state.filteredCurves[i];
                 EditorCurveBinding remappedBinding = RotationCurveInterpolation.RemapAnimationBindingForRotationCurves(curve.binding, m_CandidateClip);
-                if (Array.Exists(bindings, binding => remappedBinding.Equals(binding)) || Array.Exists(objectCurveBindings, binding => remappedBinding.Equals(binding)))
+                if (Array.Exists(bindings, binding => remappedBinding.Equals(binding)) ||
+                    Array.Exists(objectCurveBindings, binding => remappedBinding.Equals(binding)) ||
+                    Array.Exists(discreteCurveBindings, binding => remappedBinding.Equals(binding)))
                     curves.Add(curve);
             }
 
@@ -985,17 +992,18 @@ namespace UnityEditor.AnimationWindowBuiltin
                 return false;
 
             EditorCurveBinding[] clipBindings = AnimationUtility.GetCurveBindings(animationClip);
-            if (clipBindings.Length == 0)
+            EditorCurveBinding[] objectCurveBindings = AnimationUtility.GetObjectReferenceCurveBindings(animationClip);
+            EditorCurveBinding[] discreteCurveBindings = AnimationUtility.GetDiscreteCurveBindings(animationClip);
+            if (clipBindings.Length == 0 && objectCurveBindings.Length == 0 && discreteCurveBindings.Length == 0)
                 return false;
 
             if (Array.Exists(bindings, binding => Array.Exists(clipBindings, clipBinding => clipBinding.Equals(binding))))
                 return true;
 
-            EditorCurveBinding[] objectCurveBindings = AnimationUtility.GetObjectReferenceCurveBindings(animationClip);
-            if (objectCurveBindings.Length == 0)
-                return false;
+            if (Array.Exists(bindings, binding => Array.Exists(objectCurveBindings, clipBinding => clipBinding.Equals(binding))))
+                return true;
 
-            return Array.Exists(objectCurveBindings, binding => Array.Exists(clipBindings, clipBinding => clipBinding.Equals(binding)));
+            return Array.Exists(bindings, binding => Array.Exists(discreteCurveBindings, clipBinding => clipBinding.Equals(binding)));
         }
 
         public bool HasAnyCandidates()
@@ -1076,6 +1084,8 @@ namespace UnityEditor.AnimationWindowBuiltin
                 EditorCurveBinding binding = bindings[i];
                 if (binding.isPPtrCurve)
                     AnimationUtility.SetObjectReferenceCurve(animationClip, binding, null);
+                else if (binding.isDiscreteCurve)
+                    AnimationUtility.SetDiscreteCurve(animationClip, binding, null);
                 else
                     AnimationUtility.SetEditorCurve(animationClip, binding, null);
             }

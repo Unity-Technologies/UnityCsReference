@@ -14,29 +14,10 @@ namespace UnityEngine.UIElements
 {
     internal partial class DefaultEventSystem
     {
-        private bool isAppFocused => Application.isFocused;
-
-
+        // Never read; kept only because the XR Interaction Toolkit package assigns it.
         [AutoStaticsCleanupOnCodeReload]
-        // Editor-side implementation slot: EditorDelegateRegistration.Initialize() runs on every code
-        // load and reinstalls it, so the value cleared on reload is back before anything reads it.
-        [IgnoreForUAL0015("Editor implementation reinstalled on every code load by EditorDelegateRegistration.Initialize()")]
+        [IgnoreForUAL0015("Never read; kept only for XR Interaction Toolkit compilation")]
         internal static Func<bool> IsEditorRemoteConnected = () => false;
-
-        private bool ShouldIgnoreEventsOnAppNotFocused()
-        {
-            switch (SystemInfo.operatingSystemFamily)
-            {
-                case OperatingSystemFamily.Windows:
-                case OperatingSystemFamily.Linux:
-                case OperatingSystemFamily.MacOSX:
-                    if (IsEditorRemoteConnected())
-                        return false;
-                    return true;
-                default:
-                    return false;
-            }
-        }
 
         private Panel m_FocusedPanel;
         private Panel m_PreviousFocusedPanel;
@@ -62,18 +43,9 @@ namespace UnityEngine.UIElements
             m_FocusedPanel = null;
         }
 
-        public enum UpdateMode
-        {
-            Always,
-            IgnoreIfAppNotFocused
-        }
-
         internal int m_UpdateFrameCount = 0;
-        public void Update(UpdateMode updateMode = UpdateMode.Always)
+        public void Update()
         {
-            if (!isAppFocused && ShouldIgnoreEventsOnAppNotFocused() && updateMode == UpdateMode.IgnoreIfAppNotFocused)
-                return;
-
             m_UpdateFrameCount++; // Invalidate previous frame counts at start of Update, so 0 is never a valid count.
             m_Raycaster?.Update();
 

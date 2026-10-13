@@ -96,10 +96,10 @@ internal unsafe struct NativeReadBufferContext
     public IntPtr   resolverHandle;    // ILSOIResolver*; forwarded to ReadUnityObjectFromBuffer. Null falls back to the global PersistentManager path.
     public int      flags;             // UnityObjectTransferFlags bits forwarded to ReadUnityObjectFromBuffer.
     public bool     warnAboutIgnoredEntries;  // True for serialized-file loads and Object.Instantiate clones; false for Inspector ApplyModifiedProperties and other in-memory transfers.
-    public byte     discardCallbackDictSinks;  // V2 read executor only (v1's dispatcher leaves it unset): suppressed-callback transfers discard callback-keyed dictionary sinks. Brackets are handled by stream selection, not a context check.
     // ShouldSuppressScriptedFakeNull(), resolved once per transfer. Applies to scripted field types
     // only.
     public byte     suppressScriptedFakeNull;
+    public byte     _pad1;
     public byte     _pad2;             // align fuidContext to 8-byte boundary
     public IntPtr   fuidContext;       // native FieldUniqueIdentifierContext*; forwarded to ConsumeDictionaryRead for FUID Push/Pop bracketing. IntPtr.Zero when no transfer-side context is active.
     public EntityId hostingEntityId;   // Resolved once per managed block by the native dispatcher (FUID context's value first, falling back to TryGetHostingEntityIdForUnityObject in editor). EntityId.None when neither yields a value.

@@ -196,6 +196,21 @@ namespace UnityEditor
             SettingsService.settingsProviderChanged -= OnSettingsProviderChanged;
             SettingsService.repaintAllSettingsWindow -= OnRepaintAllWindows;
             Undo.undoRedoEvent -= OnUndoRedoPerformed;
+
+            ReleaseProviders();
+        }
+
+        void ReleaseProviders()
+        {
+            if (m_Providers == null)
+                return;
+
+            foreach (var provider in m_Providers)
+            {
+                if (provider.settingsWindow == this)
+                    provider.settingsWindow = null;
+            }
+            m_Providers = null;
         }
 
         void CreateGUI()
@@ -247,6 +262,7 @@ namespace UnityEditor
 
         internal void InitProviders()
         {
+            ReleaseProviders();
             m_Providers = SettingsService.FetchSettingsProviders(m_Scope);
             foreach (var provider in m_Providers)
             {

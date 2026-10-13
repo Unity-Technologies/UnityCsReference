@@ -300,6 +300,8 @@ namespace UnityEditor
             public static Texture2D prefabOverlayAddedIcon = EditorGUIUtility.LoadIcon("PrefabOverlayAdded Icon");
             [NoAutoStaticsCleanup] // lazy-loaded Texture2D; null after reload is fine, re-loaded by LoadIcon
             public static Texture2D prefabOverlayRemovedIcon = EditorGUIUtility.LoadIcon("PrefabOverlayRemoved Icon");
+            [NoAutoStaticsCleanup] // lazy-loaded Texture2D; null after reload is fine, re-loaded by LoadIcon
+            public static Texture2D dataComponentIcon = EditorGUIUtility.LoadIcon("DataComponent Icon");
             public static readonly GUIStyle linkButton = "FloatFieldLinkButton";
             [NoAutoStaticsCleanup] // lazy-loaded Texture2D; null after reload is fine, re-loaded by LoadIcon
             public static Texture2D repaintDot = EditorGUIUtility.LoadIcon("RepaintDot");
@@ -6545,6 +6547,10 @@ namespace UnityEditor
 
                 if (isAddedComponentAndEventIsRepaint)
                     GUIStyle.none.Draw(iconRect, EditorGUIUtility.TempContent(Styles.prefabOverlayAddedIcon), false, false, false, false);
+            }
+            else if (evt.type == EventType.Repaint)
+            {
+                GUIStyle.none.Draw(iconRect, EditorGUIUtility.TempContent(Styles.dataComponentIcon), iconRect.Contains(Event.current.mousePosition), false, false, false);
             }
 
             // Temporarily set GUI.enabled = true to enable the Settings button. see Case 947218.

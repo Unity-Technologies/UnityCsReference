@@ -21,7 +21,15 @@ namespace UnityEditor
     public struct ObjectReferenceKeyframe
     {
         public float time;
-        public UnityEngine.Object value;
+        public Object value;
+    }
+
+    [NativeHeader("Modules/Animation/DiscreteKeyframes.h")]
+    [StructLayout(LayoutKind.Sequential)]
+    public struct DiscreteKeyframe
+    {
+        public float time;
+        public int value;
     }
 
     // An AnimationClipCurveData object contains all the information needed to identify a specific curve in an AnimationClip. The curve animates a specific property of a component / material attached to a game object / animated bone.
@@ -230,6 +238,7 @@ namespace UnityEditor
 
         extern public static EditorCurveBinding[] GetCurveBindings([NotNull] AnimationClip clip);
         extern public static EditorCurveBinding[] GetObjectReferenceCurveBindings([NotNull] AnimationClip clip);
+        extern public static EditorCurveBinding[] GetDiscreteCurveBindings([NotNull] AnimationClip clip);
 
         extern public static ObjectReferenceKeyframe[] GetObjectReferenceCurve([NotNull] AnimationClip clip, EditorCurveBinding binding);
 
@@ -265,6 +274,41 @@ namespace UnityEditor
 
         [NativeMethod(ThrowsException = true)]
         extern private static void Internal_SetObjectReferenceCurve([NotNull] AnimationClip clip, EditorCurveBinding binding, ObjectReferenceKeyframe[] keyframes, bool updateMuscleClip);
+
+        public static extern DiscreteKeyframe[] GetDiscreteCurve([NotNull] AnimationClip clip, EditorCurveBinding binding);
+
+        public static void SetDiscreteCurve(AnimationClip clip, EditorCurveBinding binding, DiscreteKeyframe[] keyframes)
+        {
+            Internal_SetDiscreteCurve(clip, binding, keyframes, true);
+            Internal_InvokeOnCurveWasModified(clip, binding, keyframes != null ? CurveModifiedType.CurveModified : CurveModifiedType.CurveDeleted);
+        }
+
+        public static void SetDiscreteCurves(AnimationClip clip, EditorCurveBinding[] bindings, DiscreteKeyframe[][] keyframes)
+        {
+            if (bindings == null)
+                throw new ArgumentNullException(nameof(bindings), $"{nameof(bindings)} must be non-null");
+            if (keyframes == null)
+                throw new ArgumentNullException(nameof(keyframes), $"{nameof(keyframes)} must be non-null");
+            if (bindings.Length != keyframes.Length)
+                throw new InvalidOperationException($"{nameof(bindings)} and {nameof(keyframes)} must be of equal length");
+
+            int length = bindings.Length;
+            for (int i = 0; i < length; i++)
+            {
+                SetDiscreteCurveNoSync(clip, bindings[i], keyframes[i]);
+            }
+            SyncEditorCurves(clip);
+            Internal_InvokeOnCurveWasModified(clip, new EditorCurveBinding(), CurveModifiedType.ClipModified);
+        }
+
+        internal static void SetDiscreteCurveNoSync(AnimationClip clip, EditorCurveBinding binding, DiscreteKeyframe[] keyframes)
+        {
+            Internal_SetDiscreteCurve(clip, binding, keyframes, false);
+            Internal_InvokeOnCurveWasModified(clip, binding, keyframes != null ? CurveModifiedType.CurveModified : CurveModifiedType.CurveDeleted);
+        }
+
+        [NativeMethod(ThrowsException = true)]
+        extern private static void Internal_SetDiscreteCurve([NotNull] AnimationClip clip, EditorCurveBinding binding, DiscreteKeyframe[] keyframes, bool updateMuscleClip);
 
         extern public static AnimationCurve GetEditorCurve([NotNull] AnimationClip clip, EditorCurveBinding binding);
 

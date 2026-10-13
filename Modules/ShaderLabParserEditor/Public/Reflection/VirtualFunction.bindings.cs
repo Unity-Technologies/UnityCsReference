@@ -17,6 +17,8 @@ namespace UnityEditor.ShaderApiReflection
 
         public VirtualFunctionDeclaration Declaration { get; internal set; }
         public ReadOnlyCollection<VirtualFunctionOverride> LocalOverrides => m_LocalOverrides.AsReadOnly();
+        public bool HasDefinition { get; internal set; }
+        public Shader DeclarationOwner { get; internal set; }
 
         // Private API
 
@@ -30,6 +32,8 @@ namespace UnityEditor.ShaderApiReflection
             public ShaderScope m_Scope;
             public ReflectedFunction.MarshalledType m_Signature;
             public VirtualFunctionOverride[] m_LocalOverrides;
+            public bool m_HasDefinition;
+            public Shader m_DeclarationOwner;
         }
 
         internal VirtualFunction(MarshalledType nativeData)
@@ -38,6 +42,8 @@ namespace UnityEditor.ShaderApiReflection
                 VirtualFunctionDeclaration.Attribute.PureVirtual : VirtualFunctionDeclaration.Attribute.Virtual;
             Declaration = new(attribute, nativeData.m_Scope, new ReflectedFunction(nativeData.m_Signature));
             m_LocalOverrides = new(nativeData.m_LocalOverrides);
+            HasDefinition = nativeData.m_HasDefinition;
+            DeclarationOwner = nativeData.m_DeclarationOwner;
         }
     }
 }

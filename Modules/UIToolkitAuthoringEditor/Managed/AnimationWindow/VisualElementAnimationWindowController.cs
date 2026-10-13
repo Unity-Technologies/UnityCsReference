@@ -6,6 +6,7 @@ using System;
 using System.Collections.Generic;
 using System.Globalization;
 using UnityEditor;
+using UnityEditor.AnimationWindowBuiltin;
 using UnityEditorInternal;
 using UnityEngine;
 using UnityEngine.UIElements;
@@ -334,9 +335,13 @@ namespace Unity.UIToolkit.Editor
             // closure). Candidate keys re-apply on top of the previewed pose, mirroring
             // AnimationWindowControl.ResampleAnimation's m_CandidateClip handling.
             m_SampleUiClip = uiClip;
-            m_SampleCandidateClip = m_CandidateClip != null && AnimationUtility.GetCurveBindings(m_CandidateClip).Length > 0
-                ? WrapAsUIAnimationClip(m_CandidateClip)
-                : null;
+
+            bool validCandidateClip = m_CandidateClip != null &&
+                                      (AnimationUtility.GetCurveBindings(m_CandidateClip).Length > 0 ||
+                                       AnimationUtility.GetObjectReferenceCurveBindings(m_CandidateClip).Length > 0 ||
+                                       AnimationUtility.GetDiscreteCurveBindings(m_CandidateClip).Length > 0);
+
+            m_SampleCandidateClip = validCandidateClip ? WrapAsUIAnimationClip(m_CandidateClip) : null;
             m_SampleTime = m_Time;
 
             // Resolve the canonical binder once for this pass; OnBinderEditorPostSample reads the
@@ -398,7 +403,8 @@ namespace Unity.UIToolkit.Editor
 
             var floatBindings = AnimationUtility.GetCurveBindings(m_CandidateClip);
             var pptrBindings = AnimationUtility.GetObjectReferenceCurveBindings(m_CandidateClip);
-            if (floatBindings.Length == 0 && pptrBindings.Length == 0)
+            var discreteBindings = AnimationUtility.GetDiscreteCurveBindings(m_CandidateClip);
+            if (floatBindings.Length == 0 && pptrBindings.Length == 0 && discreteBindings.Length == 0)
             {
                 ClearCandidates();
                 return;
@@ -438,6 +444,19 @@ namespace Unity.UIToolkit.Editor
                 Object candidateRef = candidatePptrs[0].value;
                 var merged = AnimationClipKeyEditing.ReplaceObjectReferenceKey(existing, m_Time, candidateRef);
                 AnimationUtility.SetObjectReferenceCurve(animClip, binding, merged);
+            }
+
+            foreach (var binding in discreteBindings)
+            {
+                var candidateKeys = AnimationUtility.GetDiscreteCurve(m_CandidateClip, binding);
+                if (candidateKeys == null || candidateKeys.Length == 0)
+                    continue;
+
+                var existing = AnimationUtility.GetDiscreteCurve(animClip, binding) ??
+                               Array.Empty<DiscreteKeyframe>();
+                int candidateValue = candidateKeys[0].value;
+                AnimationClipKeyEditing.AddOrReplaceDiscreteKey(existing, m_Time, candidateValue);
+                AnimationUtility.SetDiscreteCurve(animClip, binding, existing);
             }
 
             ClearCandidates();
@@ -696,6 +715,16 @@ namespace Unity.UIToolkit.Editor
                 };
                 AnimationMode.AddPropertyModification(binding, modification, keepPrefabOverride: false);
             }
+            foreach (var binding in AnimationUtility.GetDiscreteCurveBindings(animClip))
+            {
+                var modification = new PropertyModification
+                {
+                    target = clip,
+                    propertyPath = binding.propertyName,
+                    value = string.Empty,
+                };
+                AnimationMode.AddPropertyModification(binding, modification, keepPrefabOverride: false);
+            }
         }
 
         void SubscribeBinderHook()
@@ -812,27 +841,36 @@ namespace Unity.UIToolkit.Editor
 
                 // Int channels store the ordinal as a bit-encoded float (decoded by
                 // UIAnimationBinder.SetFloatValue's Int/Enum branches via SingleToInt32Bits).
-                EditorCurveBinding floatBinding;
-                float storedValue = floatValue;
                 if (hasChannelKind && channelKind == UIAnimationBinder.AnimationChannelKind.Int)
                 {
-                    floatBinding = EditorCurveBinding.DiscreteCurve(string.Empty, typeof(UIAnimationClip), prop.propertyPath);
-                    storedValue = BitConverter.Int32BitsToSingle((int)floatValue);
-                }
-                else
-                {
-                    floatBinding = EditorCurveBinding.FloatCurve(string.Empty, typeof(UIAnimationClip), prop.propertyPath);
-                }
+                    var binding = EditorCurveBinding.DiscreteCurve(string.Empty, typeof(UIAnimationClip), prop.propertyPath);
+                    var intValue = (int)floatValue;
 
-                if (isRecording)
-                {
-                    AnimationClipKeyEditing.AddOrReplaceKey(animClip, floatBinding, m_Time, storedValue);
-                    AnimationMode.AddPropertyModification(floatBinding, prop, mod.keepPrefabOverride);
+                    if (isRecording)
+                    {
+                        AnimationClipKeyEditing.AddOrReplaceDiscreteKey(animClip, binding, m_Time, intValue);
+                        AnimationMode.AddPropertyModification(binding, prop, mod.keepPrefabOverride);
+                    }
+                    else
+                    {
+                        AnimationClipKeyEditing.AddOrReplaceDiscreteKey(m_CandidateClip, binding, 0f, intValue);
+                        AnimationMode.AddCandidate(binding, prop, mod.keepPrefabOverride);
+                    }
                 }
                 else
                 {
-                    AnimationClipKeyEditing.AddOrReplaceKey(m_CandidateClip, floatBinding, 0f, storedValue);
-                    AnimationMode.AddCandidate(floatBinding, prop, mod.keepPrefabOverride);
+                    var binding = EditorCurveBinding.FloatCurve(string.Empty, typeof(UIAnimationClip), prop.propertyPath);
+
+                    if (isRecording)
+                    {
+                        AnimationClipKeyEditing.AddOrReplaceFloatKey(animClip, binding, m_Time, floatValue);
+                        AnimationMode.AddPropertyModification(binding, prop, mod.keepPrefabOverride);
+                    }
+                    else
+                    {
+                        AnimationClipKeyEditing.AddOrReplaceFloatKey(m_CandidateClip, binding, 0f, floatValue);
+                        AnimationMode.AddCandidate(binding, prop, mod.keepPrefabOverride);
+                    }
                 }
             }
 
@@ -859,6 +897,8 @@ namespace Unity.UIToolkit.Editor
             foreach (var binding in AnimationUtility.GetCurveBindings(animClip))
                 AppendSnapshotEntry(binder, binding.propertyName, snapshot);
             foreach (var binding in AnimationUtility.GetObjectReferenceCurveBindings(animClip))
+                AppendSnapshotEntry(binder, binding.propertyName, snapshot);
+            foreach (var binding in AnimationUtility.GetDiscreteCurveBindings(animClip))
                 AppendSnapshotEntry(binder, binding.propertyName, snapshot);
 
             m_PrePreviewSnapshot = snapshot;

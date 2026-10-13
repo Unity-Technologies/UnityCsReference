@@ -12,13 +12,13 @@ using UnityEngine.UIElements;
 
 namespace Unity.GraphToolkit.Editor.Implementation
 {
-    class GraphViewEditorWindowImp : GraphViewEditorWindow, IGraphWindow
+    class GraphToolkitWindow : GraphViewEditorWindow, IGraphWindow
     {
         class MainToolbarDefinition : ToolbarDefinition
         {
-            readonly GraphViewEditorWindowImp m_Window;
+            readonly GraphToolkitWindow m_Window;
 
-            public MainToolbarDefinition(GraphViewEditorWindowImp window)
+            public MainToolbarDefinition(GraphToolkitWindow window)
             {
                 m_Window = window;
             }
@@ -78,14 +78,14 @@ namespace Unity.GraphToolkit.Editor.Implementation
             }
         }
 
-        public static GraphViewEditorWindowImp GetOpenedWindow(GraphObjectImp graphObject)
+        public static GraphToolkitWindow GetOpenedWindow(GraphObjectImp graphObject)
         {
             for (int i = OpenedWindows.Count - 1; i >= 0; --i)
             {
                 var window = OpenedWindows[i];
                 if (window.GraphTool.ToolState.GraphObject == graphObject)
                 {
-                    return window as GraphViewEditorWindowImp;
+                    return window as GraphToolkitWindow;
                 }
             }
 
@@ -103,7 +103,7 @@ namespace Unity.GraphToolkit.Editor.Implementation
                 }
             }
 
-            var graphWindow = EditorWindow.CreateWindow<GraphViewEditorWindowImp>(typeof(GraphViewEditorWindowImp), typeof(GraphViewEditorWindow), typeof(SceneView));
+            var graphWindow = EditorWindow.CreateWindow<GraphToolkitWindow>(typeof(GraphToolkitWindow), typeof(GraphViewEditorWindow), typeof(SceneView));
             graphWindow.GraphTool.Dispatch(new LoadGraphCommand(graphObject.GraphModel));
         }
 

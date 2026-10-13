@@ -49,6 +49,9 @@ static class MenuUtility
 
     static void AddElement(AddRequest request, bool addAsSibling, bool parentNewGameObjectUnderSelection)
     {
+        if (!LegacyHierarchyGuard.EnsureNewHierarchy())
+            return;
+
         if (StageUtility.GetCurrentStage() is VisualElementEditingStage activeStage)
         {
             if (!TryResolveStageParent(activeStage, Selection.activeObject as VisualElementSelection, addAsSibling,

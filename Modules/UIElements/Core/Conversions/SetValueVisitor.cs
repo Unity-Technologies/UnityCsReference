@@ -10,7 +10,7 @@ namespace UnityEngine.UIElements
     internal partial class SetValueVisitor<TSrcValue> : PathVisitor
     {
         [NoAutoStaticsCleanup]
-        public static readonly UnityEngine.Pool.ObjectPool<SetValueVisitor<TSrcValue>> Pool = new (() => new SetValueVisitor<TSrcValue>(), v => v.Reset());
+        public static readonly UnityEngine.Pool.ObjectPool<SetValueVisitor<TSrcValue>> Pool = new (() => new SetValueVisitor<TSrcValue>(), actionOnRelease: v => v.Reset());
         public TSrcValue Value;
 
         public ConverterGroup group { get; set; }

@@ -23,6 +23,7 @@ namespace UnityEngine.Android
         ///<summary>When running on a ChromeOS device, hardwareType is set to AndroidHardwareType.ChromeOS. It is set to AndroidHardwareType.Generic in all other cases.</summary>
         static public AndroidHardwareType hardwareType => AndroidHardwareType.Generic;
         ///<summary>Set sustained performance mode. When enabled, sustained performance mode is intended to provide a consistent level of performance for a prolonged amount of time.</summary>
+        ///<param name="enabled">Set to true to enable sustained performance mode. Set to false to disable it.</param>
         ///<remarks>Internally, this method calls the &lt;a href="https://developer.android.com/reference/android/view/Window#setSustainedPerformanceMode(boolean)"&gt;Android sustained performance API&lt;/a&gt;. It is not reset when the window loses focus.</remarks>
         static public void SetSustainedPerformanceMode(bool enabled) {}
     }

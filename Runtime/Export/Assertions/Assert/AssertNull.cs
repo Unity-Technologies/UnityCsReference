@@ -23,9 +23,9 @@ namespace UnityEngine.Assertions
             {
                 IsNull(value as UnityEngine.Object, message);
             }
-            else if (value != null)
+            else
             {
-                Fail(AssertionMessageUtil.NullFailureMessage(value, true), message);
+                AssertCore.IsNull(value, message);
             }
         }
 
@@ -49,9 +49,9 @@ namespace UnityEngine.Assertions
             {
                 IsNotNull(value as UnityEngine.Object, message);
             }
-            else if (value == null)
+            else
             {
-                Fail(AssertionMessageUtil.NullFailureMessage(value, false), message);
+                AssertCore.IsNotNull(value, message);
             }
         }
 

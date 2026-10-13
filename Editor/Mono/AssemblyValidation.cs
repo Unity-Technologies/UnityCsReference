@@ -17,7 +17,7 @@ namespace UnityEditor
 {
     static class AssemblyValidation
     {
-        // Keep in sync with AssemblyValidationFlags in MonoManager.cpp
+        // Keep in sync with AssemblyValidation::ErrorFlags in AssemblyValidation.h
         [Flags]
         public enum ErrorFlags
         {

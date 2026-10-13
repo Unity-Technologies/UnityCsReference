@@ -31,7 +31,7 @@ namespace Unity.ProjectAuditor.Editor.InstructionAnalyzers
             "Remove logging code, or strip it from release builds by using scripting symbols for conditional compilation (#if ... #endif) or the <b>ConditionalAttribute</b> on a custom logging method that calls Debug.Log. Where logging is required in release builds, CPU times can be reduced by disabling stack traces in log messages. You can do this by setting <b>Application.SetStackTraceLogType(LogType.Log, StackTraceLogType.None)</b>."
             )
         {
-            DocumentationUrl = "https://docs.unity3d.com/Manual/UnderstandingPerformanceGeneralOptimizations.html",
+            DocumentationUrl = "https://docs.unity3d.com/Manual/analysis.html",
             MessageFormat = "Use of Debug.{0} in '{1}'",
             DefaultSeverity = Severity.Minor
         };
@@ -45,7 +45,7 @@ namespace Unity.ProjectAuditor.Editor.InstructionAnalyzers
             "Remove logging code, or strip it from release builds by using scripting symbols for conditional compilation (#if ... #endif) or the <b>ConditionalAttribute</b> on a custom logging method that calls Debug.LogWarning. Where logging is required in release builds, CPU times can be reduced by disabling stack traces in log messages. You can do this by setting <b>Application.SetStackTraceLogType(LogType.Log, StackTraceLogType.None)</b>."
             )
         {
-            DocumentationUrl = "https://docs.unity3d.com/Manual/UnderstandingPerformanceGeneralOptimizations.html",
+            DocumentationUrl = "https://docs.unity3d.com/Manual/analysis.html",
             MessageFormat = "Use of Debug.{0} in '{1}'",
             DefaultSeverity = Severity.Minor
         };

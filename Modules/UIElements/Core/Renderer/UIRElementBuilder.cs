@@ -284,7 +284,9 @@ namespace UnityEngine.UIElements.UIR
             }
 
             // Draw using TextureId directly (texture will be bound during command execution by GenerateBackdropFilterTexture)
-            mgc.entryRecorder.DrawMesh(mgc.parentEntry, vertices, indices, backdrop.backdropFilterTextureId, false);
+            // Force-gamma reads premultiplied textures as toLinear(premultiplied gamma), which the linear backdrop chain does not produce.
+            bool isPremultiplied = !m_RenderTreeManager.forceGammaRendering;
+            mgc.entryRecorder.DrawMesh(mgc.parentEntry, vertices, indices, backdrop.backdropFilterTextureId, isPremultiplied);
         }
 
         protected override void DrawVisualElementBackground(MeshGenerationContext mgc)

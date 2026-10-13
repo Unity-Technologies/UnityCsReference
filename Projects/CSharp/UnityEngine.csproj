@@ -1486,6 +1486,9 @@
     <Compile Include="..\..\Modules\Hierarchy\Managed\IHierarchyEntityIdConverter.cs">
       <Link>Modules\Hierarchy\Managed\IHierarchyEntityIdConverter.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\Hierarchy\Managed\IHierarchyNodeTypeHandlerViewState.cs">
+      <Link>Modules\Hierarchy\Managed\IHierarchyNodeTypeHandlerViewState.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\Hierarchy\ScriptBindings\HierarchyUndoManager.bindings.cs">
       <Link>Modules\Hierarchy\ScriptBindings\HierarchyUndoManager.bindings.cs</Link>
     </Compile>
@@ -1908,6 +1911,15 @@
     </Compile>
     <Compile Include="..\..\Modules\Localization\Public\LocalizationAsset.bindings.cs">
       <Link>Modules\Localization\Public\LocalizationAsset.bindings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\ManagedKernel\Managed\Assertions\AssertCore.cs">
+      <Link>Modules\ManagedKernel\Managed\Assertions\AssertCore.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\ManagedKernel\Managed\Assertions\AssertionException.cs">
+      <Link>Modules\ManagedKernel\Managed\Assertions\AssertionException.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\ManagedKernel\Managed\Assertions\AssertionMessageUtil.cs">
+      <Link>Modules\ManagedKernel\Managed\Assertions\AssertionMessageUtil.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\ManagedKernel\Managed\Collections\AllocatorManager.cs">
       <Link>Modules\ManagedKernel\Managed\Collections\AllocatorManager.cs</Link>
@@ -2554,6 +2566,9 @@
     <Compile Include="..\..\Modules\PhysicsCore2D\Scripting\Assets\PhysicsCoreSettings2D.cs">
       <Link>Modules\PhysicsCore2D\Scripting\Assets\PhysicsCoreSettings2D.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\PhysicsCore2D\Scripting\Bindings\PhysicsAABB.bindings.cs">
+      <Link>Modules\PhysicsCore2D\Scripting\Bindings\PhysicsAABB.bindings.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\PhysicsCore2D\Scripting\Bindings\PhysicsBody.bindings.cs">
       <Link>Modules\PhysicsCore2D\Scripting\Bindings\PhysicsBody.bindings.cs</Link>
     </Compile>
@@ -2572,23 +2587,38 @@
     <Compile Include="..\..\Modules\PhysicsCore2D\Scripting\Bindings\PhysicsGeometry.bindings.cs">
       <Link>Modules\PhysicsCore2D\Scripting\Bindings\PhysicsGeometry.bindings.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\PhysicsCore2D\Scripting\Bindings\PhysicsGlobal.bindings.cs">
+      <Link>Modules\PhysicsCore2D\Scripting\Bindings\PhysicsGlobal.bindings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\PhysicsCore2D\Scripting\Bindings\PhysicsHandle.bindings.cs">
+      <Link>Modules\PhysicsCore2D\Scripting\Bindings\PhysicsHandle.bindings.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\PhysicsCore2D\Scripting\Bindings\PhysicsJoint.bindings.cs">
       <Link>Modules\PhysicsCore2D\Scripting\Bindings\PhysicsJoint.bindings.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\PhysicsCore2D\Scripting\Bindings\PhysicsList.bindings.cs">
       <Link>Modules\PhysicsCore2D\Scripting\Bindings\PhysicsList.bindings.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\PhysicsCore2D\Scripting\Bindings\PhysicsMiscellaneous.bindings.cs">
-      <Link>Modules\PhysicsCore2D\Scripting\Bindings\PhysicsMiscellaneous.bindings.cs</Link>
+    <Compile Include="..\..\Modules\PhysicsCore2D\Scripting\Bindings\PhysicsMath.bindings.cs">
+      <Link>Modules\PhysicsCore2D\Scripting\Bindings\PhysicsMath.bindings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\PhysicsCore2D\Scripting\Bindings\PhysicsPlane.bindings.cs">
+      <Link>Modules\PhysicsCore2D\Scripting\Bindings\PhysicsPlane.bindings.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\PhysicsCore2D\Scripting\Bindings\PhysicsQuery.bindings.cs">
       <Link>Modules\PhysicsCore2D\Scripting\Bindings\PhysicsQuery.bindings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\PhysicsCore2D\Scripting\Bindings\PhysicsRotate.bindings.cs">
+      <Link>Modules\PhysicsCore2D\Scripting\Bindings\PhysicsRotate.bindings.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\PhysicsCore2D\Scripting\Bindings\PhysicsShape.bindings.cs">
       <Link>Modules\PhysicsCore2D\Scripting\Bindings\PhysicsShape.bindings.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\PhysicsCore2D\Scripting\Bindings\PhysicsSpace.bindings.cs">
       <Link>Modules\PhysicsCore2D\Scripting\Bindings\PhysicsSpace.bindings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\PhysicsCore2D\Scripting\Bindings\PhysicsTransform.bindings.cs">
+      <Link>Modules\PhysicsCore2D\Scripting\Bindings\PhysicsTransform.bindings.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\PhysicsCore2D\Scripting\Bindings\PhysicsTransformWatcher.bindings.cs">
       <Link>Modules\PhysicsCore2D\Scripting\Bindings\PhysicsTransformWatcher.bindings.cs</Link>
@@ -5191,6 +5221,9 @@
     <Compile Include="..\..\Modules\UIElements\Core\Layout\Model\LayoutFlexDirection.cs">
       <Link>Modules\UIElements\Core\Layout\Model\LayoutFlexDirection.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Layout\Model\LayoutItemKind.cs">
+      <Link>Modules\UIElements\Core\Layout\Model\LayoutItemKind.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\UIElements\Core\Layout\Model\LayoutJustify.cs">
       <Link>Modules\UIElements\Core\Layout\Model\LayoutJustify.cs</Link>
     </Compile>
@@ -5475,6 +5508,9 @@
     </Compile>
     <Compile Include="..\..\Modules\UIElements\Core\Renderer\UIRRenderTreeCompositor.cs">
       <Link>Modules\UIElements\Core\Renderer\UIRRenderTreeCompositor.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Renderer\UIRRenderTreeDensity.cs">
+      <Link>Modules\UIElements\Core\Renderer\UIRRenderTreeDensity.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\UIElements\Core\Renderer\UIRRenderTreeManager.cs">
       <Link>Modules\UIElements\Core\Renderer\UIRRenderTreeManager.cs</Link>
@@ -6682,12 +6718,6 @@
     <Compile Include="..\..\Runtime\Export\Assertions\Assert\AssertPrimitiveTypes.cs">
       <Link>Runtime\Export\Assertions\Assert\AssertPrimitiveTypes.cs</Link>
     </Compile>
-    <Compile Include="..\..\Runtime\Export\Assertions\Assert\AssertionException.cs">
-      <Link>Runtime\Export\Assertions\Assert\AssertionException.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Runtime\Export\Assertions\Assert\AssertionMessageUtil.cs">
-      <Link>Runtime\Export\Assertions\Assert\AssertionMessageUtil.cs</Link>
-    </Compile>
     <Compile Include="..\..\Runtime\Export\Assertions\Assert\Comparers\FloatComparer.cs">
       <Link>Runtime\Export\Assertions\Assert\Comparers\FloatComparer.cs</Link>
     </Compile>
@@ -7618,9 +7648,6 @@
     <Compile Include="..\..\Runtime\Export\Scripting\Coroutines.cs">
       <Link>Runtime\Export\Scripting\Coroutines.cs</Link>
     </Compile>
-    <Compile Include="..\..\Runtime\Export\Scripting\CurrentAssemblies.bindings.cs">
-      <Link>Runtime\Export\Scripting\CurrentAssemblies.bindings.cs</Link>
-    </Compile>
     <Compile Include="..\..\Runtime\Export\Scripting\CurrentAssemblies.cs">
       <Link>Runtime\Export\Scripting\CurrentAssemblies.cs</Link>
     </Compile>
@@ -8244,7 +8271,7 @@
     </PropertyGroup>
   </Target>
   <ItemGroup>
-    <Analyzer Include="/tmp/uitoolkit_gen_skoa6888/Unity.UIToolkit.SourceGenerator.dll" />
+    <Analyzer Include="/tmp/uitoolkit_gen_0nqy_6hp/Unity.UIToolkit.SourceGenerator.dll" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="10.0.8" />

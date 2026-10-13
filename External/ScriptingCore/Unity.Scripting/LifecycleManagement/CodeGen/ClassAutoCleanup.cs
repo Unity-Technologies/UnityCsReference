@@ -10,6 +10,8 @@ namespace Unity.Scripting.LifecycleManagement.CodeGen
     {
         public abstract void Cleanup();
 
+        internal virtual bool IsOwnedBy(Func<Type, bool> predicate) => predicate(GetType());
+
         protected ClassAutoCleanup(Type scopeType)
         {
             LifecycleController.Instance.RegisterAutoCleanup(this, scopeType, ScopeTransitionType.Both);

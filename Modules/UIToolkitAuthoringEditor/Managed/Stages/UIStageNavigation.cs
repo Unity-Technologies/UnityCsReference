@@ -54,11 +54,14 @@ static partial class UIStageNavigation
     /// its document; the ones passed through cost no more than their own existence.
     /// </summary>
     /// <returns>
-    /// The stage landed on, or <see langword="null"/> when a walk's unsaved-changes prompt was backed out of or
-    /// the save it asked for failed to write.
+    /// The stage landed on, or <see langword="null"/> when a walk's unsaved-changes prompt was backed out of, the
+    /// save it asked for failed to write, or the user declined to switch away from the legacy Hierarchy.
     /// </returns>
     public static VisualElementEditingStage Navigate(VisualTreeAssetEditingContext context, BreadcrumbBar.SeparatorStyle separatorStyle, bool setAsFirstItemAfterMainStage = false)
     {
+        if (!LegacyHierarchyGuard.EnsureNewHierarchy())
+            return null;
+
         // Isolation deliberately detaches the sub-document from the documents enclosing it, so there is no path
         // into it to show and no trail to keep standing behind it.
         if (context.SubDocumentOptions == SubDocumentOptions.Isolation)

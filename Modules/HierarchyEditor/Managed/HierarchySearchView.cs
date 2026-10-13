@@ -50,6 +50,8 @@ namespace Unity.Hierarchy.Editor
             m_SearchWindow.SetSearchText(context.searchQuery);
         }
 
+        internal void SetSearchTextWithoutNotify(string searchText) => context.searchText = searchText;
+
         IEnumerable<SearchQueryError> ISearchView.GetAllVisibleErrors()
         {
             yield break;

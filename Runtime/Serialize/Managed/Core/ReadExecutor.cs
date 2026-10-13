@@ -645,11 +645,6 @@ internal static unsafe partial class SerializationBackendManagedCommands
                         cursorOffset = top.Offset;
                         cursorEnd = top.EndOffset;
                         baseAddr = ref V2RebaseTo(in top);
-                        // Suppressed-callback transfers discard the sink for
-                        // callback-keyed dictionaries; the staged entries were
-                        // still read for the wire.
-                        if ((enter->pad0 & kV2Pad0FlagDictKeyHasCallbacks) == 0
-                            || ctx->discardCallbackDictSinks == 0)
                         {
                             var finishFuid = new V2FuidBuilder(pathSegments, pathNames, enter->segmentIndex, frames);
                             ((delegate*<ref byte, Array, ref V2FuidBuilder, NativeReadBufferContext*, ulong, void>)(void*)enter->sinkHandler)(
@@ -693,19 +688,11 @@ internal static unsafe partial class SerializationBackendManagedCommands
                                 ++openDictFrames;
                         }
 
-                        // Suppressed-callback transfers discard the sink for
-                        // callback-keyed dictionaries: insertion hashes the
-                        // key, and the key's OnAfterDeserialize did not run.
-                        // The wire is still consumed; the field stays as-is.
-                        bool discardSink = (cmd->pad0 & kV2Pad0FlagDictKeyHasCallbacks) != 0
-                            && ctx->discardCallbackDictSinks != 0;
-
                         if (count == 0)
                         {
                             // The sink still runs (v1's null/empty contract; for
                             // Dictionary, default-allocate and SetEntries(empty)).
                             // No tail pad: v2 element bodies are 4-byte multiples.
-                            if (!discardSink)
                             {
                                 var emptyFuid = new V2FuidBuilder(pathSegments, pathNames, cmd->segmentIndex, frames);
                                 ((delegate*<ref byte, Array, ref V2FuidBuilder, NativeReadBufferContext*, ulong, void>)(void*)cmd->sinkHandler)(
@@ -741,9 +728,7 @@ internal static unsafe partial class SerializationBackendManagedCommands
                     // receiver's data) invoke inline, the write bracket's
                     // mirror: registry-first data has every reference patched
                     // before any body's bracket fires, so there is nothing to
-                    // defer for. Suppressed transfers (import metadata reads
-                    // with kLoadForNativeFormatImporter) never reach this
-                    // arm: ExecuteV2Read serves them the stripped stream.
+                    // defer for.
                     case V2OpCode.InvokeCallback:
                     {
                         var cmd = (V2CmdInvokeCallback*)pos;

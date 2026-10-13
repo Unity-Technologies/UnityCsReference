@@ -55,20 +55,30 @@ namespace UnityEditor.AnimationWindowBuiltin
             if (m_Clip == null)
                 return;
 
-            if (!animationWindowCurve.isPPtrCurve)
-            {
-                var curve = AnimationUtility.GetEditorCurve(m_Clip, animationWindowCurve.binding);
-                if (curve != null)
-                {
-                    animationWindowCurve.FromAnimationCurve(curve);
-                }
-            }
-            else
+            if (animationWindowCurve.isPPtrCurve)
             {
                 ObjectReferenceKeyframe[] curve = AnimationUtility.GetObjectReferenceCurve(m_Clip, animationWindowCurve.binding);
                 if (curve != null)
                 {
                     animationWindowCurve.FromObjectReferenceCurve(curve);
+                }
+            }
+            else if (animationWindowCurve.isDiscreteCurve)
+            {
+                var curve = AnimationUtility.GetDiscreteCurve(m_Clip, animationWindowCurve.binding);
+                if (curve != null)
+                {
+                    animationWindowCurve.FromDiscreteCurve(curve);
+                }
+            }
+            else
+            {
+
+
+                var curve = AnimationUtility.GetEditorCurve(m_Clip, animationWindowCurve.binding);
+                if (curve != null)
+                {
+                    animationWindowCurve.FromAnimationCurve(curve);
                 }
             }
         }
@@ -80,6 +90,7 @@ namespace UnityEditor.AnimationWindowBuiltin
 
             EditorCurveBinding[] curveBindings = AnimationUtility.GetCurveBindings(m_Clip);
             EditorCurveBinding[] objectCurveBindings = AnimationUtility.GetObjectReferenceCurveBindings(m_Clip);
+            EditorCurveBinding[] discreteCurveBindings = AnimationUtility.GetDiscreteCurveBindings(m_Clip);
 
             List<AnimationWindowCurve> transformCurves = new List<AnimationWindowCurve>();
 
@@ -102,6 +113,12 @@ namespace UnityEditor.AnimationWindowBuiltin
             }
 
             foreach (EditorCurveBinding curveBinding in objectCurveBindings)
+            {
+                AnimationWindowCurve curve = new AnimationWindowCurve(this, curveBinding, GetValueType(curveBinding));
+                curves.Add(curve);
+            }
+
+            foreach (EditorCurveBinding curveBinding in discreteCurveBindings)
             {
                 AnimationWindowCurve curve = new AnimationWindowCurve(this, curveBinding, GetValueType(curveBinding));
                 curves.Add(curve);
@@ -222,6 +239,15 @@ namespace UnityEditor.AnimationWindowBuiltin
 
                 AnimationUtility.SetObjectReferenceCurve(m_Clip, curve.binding, objectCurve);
             }
+            else if (curve.isDiscreteCurve)
+            {
+                var integerCurve = curve.ToDiscreteCurve();
+
+                if (integerCurve.Length == 0)
+                    integerCurve = null;
+
+                AnimationUtility.SetDiscreteCurve(m_Clip, curve.binding, integerCurve);
+            }
             else
             {
                 AnimationCurve animationCurve = curve.ToAnimationCurve();
@@ -253,6 +279,15 @@ namespace UnityEditor.AnimationWindowBuiltin
                         objectCurve = null;
 
                     batchOperations.SetObjectReferenceCurve(curve.binding, objectCurve);
+                }
+                else if (curve.isDiscreteCurve)
+                {
+                    var integerCurve = curve.ToDiscreteCurve();
+
+                    if (integerCurve.Length == 0)
+                        integerCurve = null;
+
+                    batchOperations.SetDiscreteCurve(curve.binding, integerCurve);
                 }
                 else
                 {
@@ -346,6 +381,12 @@ namespace UnityEditor.AnimationWindowBuiltin
                     batchOperations.SetObjectReferenceCurve(binding, null);
                     batchOperations.SetObjectReferenceCurve(newBinding, curve);
                 }
+                else if (binding.isDiscreteCurve)
+                {
+                    var curve = AnimationUtility.GetDiscreteCurve(m_Clip, binding);
+                    batchOperations.SetDiscreteCurve(binding, null);
+                    batchOperations.SetDiscreteCurve(newBinding, curve);
+                }
                 else
                 {
                     var curve = AnimationUtility.GetEditorCurve(m_Clip, binding);
@@ -375,6 +416,10 @@ namespace UnityEditor.AnimationWindowBuiltin
             if (binding.isPPtrCurve)
             {
                 return AnimationUtility.GetObjectReferenceCurve(m_Clip, binding) != null;
+            }
+            else if (binding.isDiscreteCurve)
+            {
+                return AnimationUtility.GetDiscreteCurve(m_Clip, binding) != null;
             }
             else
             {
@@ -447,6 +492,11 @@ namespace UnityEditor.AnimationWindowBuiltin
                 {
                     // Cannot extract type of PPtrCurve.
                     return null;
+                }
+                else if (binding.isDiscreteCurve)
+                {
+                    // Cannot extract type of DiscreteCurve.
+                    return typeof(int);
                 }
                 else
                 {

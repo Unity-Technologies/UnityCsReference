@@ -101,7 +101,8 @@ namespace Unity.UIToolkit.Editor
             if (animClip == null)
                 return false;
             return AnimationUtility.GetCurveBindings(animClip).Length > 0
-                || AnimationUtility.GetObjectReferenceCurveBindings(animClip).Length > 0;
+                || AnimationUtility.GetObjectReferenceCurveBindings(animClip).Length > 0
+                || AnimationUtility.GetDiscreteCurveBindings(animClip).Length > 0;
         }
 
         public void AddKey(PropertyModification[] modifications)
@@ -123,9 +124,9 @@ namespace Unity.UIToolkit.Editor
                 if (binding.isPPtrCurve)
                     AnimationClipKeyEditing.AddOrReplaceObjectReferenceKey(animClip, binding, m_Time, Resources.EntityIdToObject(ev));
                 else if (binding.isDiscreteCurve)
-                    AnimationClipKeyEditing.AddOrReplaceKey(animClip, binding, m_Time, BitConverter.Int32BitsToSingle(iv));
+                    AnimationClipKeyEditing.AddOrReplaceDiscreteKey(animClip, binding, m_Time, iv);
                 else
-                    AnimationClipKeyEditing.AddOrReplaceKey(animClip, binding, m_Time, f);
+                    AnimationClipKeyEditing.AddOrReplaceFloatKey(animClip, binding, m_Time, f);
             }
 
             RemoveBindingsFromCandidates(modifications);
@@ -159,6 +160,8 @@ namespace Unity.UIToolkit.Editor
             {
                 if (binding.isPPtrCurve)
                     AnimationUtility.SetObjectReferenceCurve(animClip, binding, null);
+                else if (binding.isDiscreteCurve)
+                    AnimationUtility.SetDiscreteCurve(animClip, binding, null);
                 else
                     AnimationUtility.SetEditorCurve(animClip, binding, null);
             }
@@ -189,10 +192,7 @@ namespace Unity.UIToolkit.Editor
                 if (curve == null)
                     continue;
                 var value = curve.Evaluate(m_Time);
-                if (binding.isDiscreteCurve)
-                    AnimationClipKeyEditing.AddOrReplaceDiscreteKey(curve, m_Time, value);
-                else
-                    AnimationClipKeyEditing.AddOrReplaceFloatKey(curve, m_Time, value);
+                AnimationClipKeyEditing.AddOrReplaceFloatKey(curve, m_Time, value);
                 AnimationUtility.SetEditorCurve(animClip, binding, curve);
             }
 
@@ -204,6 +204,16 @@ namespace Unity.UIToolkit.Editor
                 var value = AnimationClipKeyEditing.EvaluateObjectReferenceCurve(keys, m_Time);
                 var merged = AnimationClipKeyEditing.ReplaceObjectReferenceKey(keys, m_Time, value);
                 AnimationUtility.SetObjectReferenceCurve(animClip, binding, merged);
+            }
+
+            foreach (var binding in AnimationUtility.GetDiscreteCurveBindings(animClip))
+            {
+                var keys = AnimationUtility.GetDiscreteCurve(animClip, binding);
+                if (keys == null || keys.Length == 0)
+                    continue;
+                var value = AnimationClipKeyEditing.EvaluateDiscreteCurve(keys, m_Time);
+                var merged = AnimationClipKeyEditing.AddOrReplaceDiscreteKey(keys, m_Time, value);
+                AnimationUtility.SetDiscreteCurve(animClip, binding, merged);
             }
 
             ClearCandidates();
@@ -289,6 +299,8 @@ namespace Unity.UIToolkit.Editor
             {
                 if (binding.isPPtrCurve)
                     AnimationUtility.SetObjectReferenceCurve(m_CandidateClip, binding, null);
+                else if (binding.isDiscreteCurve)
+                    AnimationUtility.SetDiscreteCurve(m_CandidateClip, binding, null);
                 else
                     AnimationUtility.SetEditorCurve(m_CandidateClip, binding, null);
                 removedAny = true;
@@ -312,6 +324,14 @@ namespace Unity.UIToolkit.Editor
                 if (binding.isPPtrCurve)
                 {
                     var keys = AnimationUtility.GetObjectReferenceCurve(animClip, binding);
+                    if (keys == null)
+                        continue;
+                    for (int i = 0; i < keys.Length; i++)
+                        times.Add(keys[i].time);
+                }
+                else if (binding.isDiscreteCurve)
+                {
+                    var keys = AnimationUtility.GetDiscreteCurve(animClip, binding);
                     if (keys == null)
                         continue;
                     for (int i = 0; i < keys.Length; i++)

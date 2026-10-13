@@ -39,6 +39,9 @@ namespace Unity.ProjectAuditor.Editor
 
         internal void AddRule(Rule ruleToAdd)
         {
+            if (ruleToAdd == null)
+                return;
+
             if (string.IsNullOrEmpty(ruleToAdd.Filter))
             {
                 ruleToAdd.Filter = string.Empty; // make sure it's empty, as opposed to null

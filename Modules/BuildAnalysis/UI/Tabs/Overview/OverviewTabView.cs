@@ -19,19 +19,18 @@ namespace UnityEditor.Build.Analysis
         private VisualElement m_NoSelection;
         private ScrollView m_ScrollView;
 
-        private BuildHeaderController m_Header;
-        private Label m_TotalSizeStatValue;
-        private Label m_BuildDurationStatValue;
-        private Label m_AssetsStatValue;
+        private BuildHeader m_Header;
+        private StatCard m_TotalSizeCard;
+        private StatCard m_BuildDurationCard;
+        private StatCard m_AssetsCard;
 
+        private BuildDetailsGrid m_DetailsGrid;
         private Label m_ErrorsValue;
         private Label m_WarningsValue;
         private Label m_CacheReuseValue;
         private Label m_OutputPathValue;
         private Button m_OutputPathOpenButton;
-        private Label m_BuildOptionsLabel;
         private Label m_BuildOptionsValue;
-        private Label m_ContentOptionsLabel;
         private Label m_ContentOptionsValue;
         private Label m_BuildProfileValue;
         private string m_CurrentOutputPath = string.Empty;
@@ -54,28 +53,26 @@ namespace UnityEditor.Build.Analysis
             m_ScrollView.horizontalScrollerVisibility = ScrollerVisibility.Hidden;
             KeyboardNavigation.ScrollFocusedIntoView(m_ScrollView);
 
-            m_Header = new BuildHeaderController(m_Root.Q<VisualElement>("build-header"));
-            m_TotalSizeStatValue = m_Root.Q<VisualElement>("stat-card-total-size").Q<Label>("value");
-            m_BuildDurationStatValue = m_Root.Q<VisualElement>("stat-card-build-duration").Q<Label>("value");
-            m_AssetsStatValue = m_Root.Q<VisualElement>("stat-card-assets").Q<Label>("value");
+            m_Header = m_Root.Q<BuildHeader>("build-header");
+            m_TotalSizeCard = m_Root.Q<StatCard>("stat-card-total-size");
+            m_BuildDurationCard = m_Root.Q<StatCard>("stat-card-build-duration");
+            m_AssetsCard = m_Root.Q<StatCard>("stat-card-assets");
 
+            m_DetailsGrid = m_Root.Q<BuildDetailsGrid>();
             m_ErrorsValue = m_Root.Q<Label>("errors-value");
             m_WarningsValue = m_Root.Q<Label>("warnings-value");
             m_CacheReuseValue = m_Root.Q<Label>("cache-reuse-value");
+            m_BuildProfileValue = m_Root.Q<Label>("build-profile-value");
+            m_BuildOptionsValue = m_Root.Q<Label>("build-options-value");
+            m_ContentOptionsValue = m_Root.Q<Label>("content-options-value");
             m_OutputPathValue = m_Root.Q<Label>("output-path-value");
             m_OutputPathOpenButton = m_Root.Q<Button>("output-path-open-button");
-            m_BuildOptionsLabel = m_Root.Q<Label>("build-options-label");
-            m_BuildOptionsValue = m_Root.Q<Label>("build-options-value");
-            m_ContentOptionsLabel = m_Root.Q<Label>("content-options-label");
-            m_ContentOptionsValue = m_Root.Q<Label>("content-options-value");
-            m_BuildProfileValue = m_Root.Q<Label>("build-profile-value");
+            m_OutputPathOpenButton.text = BuildAnalysisConstants.k_ShowInFileBrowserLabel;
             m_OutputPathOpenButton.clicked += OnOutputPathOpenClicked;
 
-            var detailsGrid = m_Root.Q<VisualElement>("overview-details-grid");
-            m_Steps = new BuildStepsElement();
-            detailsGrid.Add(m_Steps);
+            m_Steps = m_Root.Q<BuildStepsElement>("build-steps");
             m_Messages = new MessagesConsole();
-            detailsGrid.Add(m_Messages);
+            m_Root.Q<VisualElement>("overview-details-grid").Add(m_Messages);
 
             Apply(null);
         }
@@ -97,9 +94,9 @@ namespace UnityEditor.Build.Analysis
             var summary = analysis.Summary;
 
             m_Header.Bind(selection);
-            m_TotalSizeStatValue.text = FormatUtility.FormatSize(selection.TotalSizeBytes);
-            m_BuildDurationStatValue.text = FormatUtility.FormatDuration(selection.TotalTimeMs);
-            m_AssetsStatValue.text = analysis.Computed.Counts.AssetCount.ToString();
+            m_TotalSizeCard.value = FormatUtility.FormatSize(selection.TotalSizeBytes);
+            m_BuildDurationCard.value = FormatUtility.FormatDuration(selection.TotalTimeMs);
+            m_AssetsCard.value = analysis.Computed.Counts.AssetCount.ToString();
 
             m_ErrorsValue.text = summary.TotalErrors.ToString();
             m_WarningsValue.text = summary.TotalWarnings.ToString();
@@ -111,8 +108,8 @@ namespace UnityEditor.Build.Analysis
             m_OutputPathOpenButton.SetEnabled(!string.IsNullOrEmpty(m_CurrentOutputPath));
             m_BuildOptionsValue.text = FormatOptions(summary.BuildOptions);
             m_ContentOptionsValue.text = FormatOptions(summary.BuildContentOptions);
-            SetRowVisible(m_BuildOptionsLabel, m_BuildOptionsValue, selection.BuildType == BuildType.Player);
-            SetRowVisible(m_ContentOptionsLabel, m_ContentOptionsValue, selection.BuildType == BuildType.ContentDirectory);
+            m_DetailsGrid.SetRowVisible(m_BuildOptionsValue, selection.BuildType == BuildType.Player);
+            m_DetailsGrid.SetRowVisible(m_ContentOptionsValue, selection.BuildType == BuildType.ContentDirectory);
             m_BuildProfileValue.text = FormatBuildProfile(summary.BuildProfilePath);
 
             m_Steps.Bind(analysis, messages);
@@ -142,14 +139,6 @@ namespace UnityEditor.Build.Analysis
             }
 
             return null;
-        }
-
-        // Label and value live in separate grid columns, so both must be hidden to keep rows aligned.
-        private static void SetRowVisible(VisualElement label, VisualElement value, bool visible)
-        {
-            var display = visible ? DisplayStyle.Flex : DisplayStyle.None;
-            label.style.display = display;
-            value.style.display = display;
         }
 
         private static string FormatOptions(string[] options)

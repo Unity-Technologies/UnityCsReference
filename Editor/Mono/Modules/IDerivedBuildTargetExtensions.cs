@@ -6,7 +6,17 @@ namespace UnityEditor.Modules
 {
     internal interface IDerivedBuildTargetExtensions
     {
-        ICompilationExtension CompilationExtension { get; }
+        /// <summary>
+        /// What this derived platform adds to its base platform's compilation extension.
+        /// </summary>
+        ICompilationExtension AdditionalCompilationExtension { get; }
+
+        /// <summary>
+        /// This derived platform's complete compilation extension.
+        /// </summary>
+        ICompilationExtension CreateCompilationExtension(ICompilationExtension baseCompilationExtension)
+            => CompositeCompilationExtension.Combine(baseCompilationExtension, AdditionalCompilationExtension);
+
         IBuildPostprocessor BuildPostprocessor { get; }
         IDerivedBuildTarget DerivedBuildTarget { get; }
         IBuildProfileExtension CreateBuildProfileExtension();

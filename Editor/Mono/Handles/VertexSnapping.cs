@@ -16,13 +16,13 @@ namespace UnityEditor
         private static Vector3 s_VertexSnappingOffset = Vector3.zero;
 
         [Shortcut(k_VertexSnappingToggleShortcut, typeof(SceneView), KeyCode.V, ShortcutModifiers.Shift)]
-        private static void ToggleVertexSnappingViaShortcut()
+        private static void ToggleVertexSnappingViaShortcut(ShortcutArguments arguments)
         {
             int id = GUIUtility.hotControl;
             if (HandleUtility.vertexDragging)
                 DisableVertexSnapping(id);
             else
-                EnableVertexSnapping(id);
+                EnableVertexSnapping(id, arguments.sourceEvent ?? Event.current);
         }
 
         [ClutchShortcut(k_VertexSnappingShortcut, typeof(SceneView), KeyCode.V)]
@@ -30,7 +30,7 @@ namespace UnityEditor
         {
             int id = GUIUtility.hotControl;
             if (arguments.stage == ShortcutStage.Begin)
-                EnableVertexSnapping(id);
+                EnableVertexSnapping(id, arguments.sourceEvent ?? Event.current);
             else
                 DisableVertexSnapping(id);
         }
@@ -58,12 +58,12 @@ namespace UnityEditor
             var evt = Event.current;
             if (evt.GetTypeForControl(id) == EventType.MouseMove && HandleUtility.vertexDragging)
             {
-                EnableVertexSnapping(id);
+                EnableVertexSnapping(id, evt);
                 evt.Use();
             }
         }
 
-        private static void EnableVertexSnapping(int id)
+        private static void EnableVertexSnapping(int id, Event evt)
         {
             Tools.vertexDragging = true;
             if (GUIUtility.hotControl != 0 && GUIUtility.hotControl == id)
@@ -72,9 +72,17 @@ namespace UnityEditor
             }
             else
             {
-                UpdateVertexSnappingOffset();
+                UpdateVertexSnappingOffset(evt.mousePosition, IsActionKey(evt), evt.shift);
                 s_VertexSnappingOffset = Tools.handleOffset;
             }
+        }
+
+        // Mirrors EditorGUI.actionKey for an explicit event instead of ambient Event.current.
+        private static bool IsActionKey(Event evt)
+        {
+            if (evt == null)
+                return false;
+            return Application.platform == RuntimePlatform.OSXEditor ? evt.command : evt.control;
         }
 
         //Used in tests
@@ -93,14 +101,12 @@ namespace UnityEditor
                 s_VertexSnappingOffset = Vector3.zero;
         }
 
-        // Iterates over selected objects, finds nearest vertex or pivot and sets Tools.handleOffset accordingly
-        private static void UpdateVertexSnappingOffset()
+        // Iterates over selected objects, finds nearest vertex or pivot and sets Tools.handleOffset accordingly.
+        private static void UpdateVertexSnappingOffset(Vector2 mousePosition, bool actionKey, bool shift)
         {
-            Event evt = Event.current;
-
             // If pressing ctrl/cmd key while using vertex snapping,
             // then the pivot should be used to snap on vertices
-            if(EditorGUI.actionKey &&! evt.shift)
+            if(actionKey &&! shift)
             {
                 Tools.InvalidateHandlePosition();
                 Tools.handleOffset = Vector3.zero;
@@ -114,14 +120,14 @@ namespace UnityEditor
             // Make sure we're not ignoring any objects, that other handles may have set to ignore and forgot to reset.
             HandleUtility.ignoreRaySnapObjects = null;
 
-            Vector3 nearestPivot = FindNearestPivot(selection, evt.mousePosition);
-            bool foundVertex = HandleUtility.FindNearestVertex(evt.mousePosition, selection, out nearestVertex);
+            Vector3 nearestPivot = FindNearestPivot(selection, mousePosition);
+            bool foundVertex = HandleUtility.FindNearestVertex(mousePosition, selection, out nearestVertex);
 
             Vector3 near;
 
             // Is nearest vertex closer than nearest pivot?
-            float distanceToNearestVertex = (HandleUtility.WorldToGUIPoint(nearestVertex) - evt.mousePosition).magnitude;
-            float distanceToNearestPivot = (HandleUtility.WorldToGUIPoint(nearestPivot) - evt.mousePosition).magnitude;
+            float distanceToNearestVertex = (HandleUtility.WorldToGUIPoint(nearestVertex) - mousePosition).magnitude;
+            float distanceToNearestPivot = (HandleUtility.WorldToGUIPoint(nearestPivot) - mousePosition).magnitude;
 
             if (foundVertex && (distanceToNearestVertex < distanceToNearestPivot))
                 near = nearestVertex;

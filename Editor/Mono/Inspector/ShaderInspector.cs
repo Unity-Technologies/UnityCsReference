@@ -9,6 +9,7 @@ using System.Globalization;
 using UnityEditor.Rendering;
 using Object = UnityEngine.Object;
 using UnityEngine.Rendering;
+using UnityEngine.UIElements;
 using Unity.CodeEditor;
 using Unity.Scripting.LifecycleManagement;
 
@@ -114,6 +115,19 @@ namespace UnityEditor
             return kPropertyTypes[(int)type];
         }
 
+        public override VisualElement CreateInspectorGUI()
+        {
+            Shader s = target as Shader;
+            if (s == null)
+                return null;
+
+            VisualElement root = new();
+            root.Add(ShaderApiReflection.ShaderInspectorExtensions.CreateInterfaceHeader(s));
+            root.Add(new IMGUIContainer(OnInspectorGUI));
+            root.Add(ShaderApiReflection.ShaderInspectorExtensions.CreateOverridableFunctions(s));
+            return root;
+        }
+
         public override void OnInspectorGUI()
         {
             var s = target as Shader;
@@ -207,37 +221,9 @@ namespace UnityEditor
         {
             ShowSurfaceShaderButton(s);
             ShowFixedFunctionShaderButton(s);
-            ShowSplicedCodeButton(s);
+            ShaderApiReflection.ShaderInspectorExtensions.DoShowSplicedCodeButton(s);
             ShowCompiledCodeButton(s);
             ShowShaderErrors(s);
-        }
-
-        private void ShowSplicedCodeButton(Shader s)
-        {
-            string assetPath = AssetDatabase.GetAssetPath(s);
-            TextAsset splicedTextObject = null;
-            foreach (Object assetObject in AssetDatabase.LoadAllAssetsAtPath(assetPath))
-            {
-                if (assetObject is TextAsset textAssetObject && textAssetObject.name == "SplicedText")
-                {
-                    splicedTextObject = textAssetObject;
-                    break;
-                }
-            }
-
-            if (splicedTextObject == null)
-                return;
-
-            EditorGUILayout.BeginHorizontal();
-            EditorGUILayout.PrefixLabel("Shader interface", EditorStyles.miniButton);
-            if (GUILayout.Button("Show generated ShaderLab", EditorStyles.miniButton, GUILayout.ExpandWidth(false)))
-            {
-                string tempFilePath = System.IO.Path.ChangeExtension($"Temp/{assetPath}", ".gen.shader");
-                System.IO.Directory.CreateDirectory(System.IO.Path.GetDirectoryName(tempFilePath));
-                System.IO.File.WriteAllText(tempFilePath, splicedTextObject.text);
-                CodeEditor.CurrentEditor?.OpenProject(tempFilePath);
-            }
-            EditorGUILayout.EndHorizontal();
         }
 
         private static void ShowShaderProperties(Shader s)

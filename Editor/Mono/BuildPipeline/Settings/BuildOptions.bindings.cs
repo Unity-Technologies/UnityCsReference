@@ -5,6 +5,7 @@
 using System;
 using System.ComponentModel;
 using UnityEngine.Internal;
+using UnityEngine.Bindings;
 
 namespace UnityEditor
 {
@@ -15,6 +16,7 @@ namespace UnityEditor
     ///</example>
     ///<seealso cref="BuildPipeline.BuildPlayer" />
     [Flags]
+    [NativeHeader("Runtime/Serialize/SerializationMetaFlagsBindings.h")]
     public enum BuildOptions
     {
         // Perform the specified build without any special settings or extra tasks.
@@ -163,7 +165,7 @@ namespace UnityEditor
         Il2CPP = 0,
 
         [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
-        [Obsolete("BuildOptions.ForceEnableAssertions is deprecated. Use PlayerSettings.SetManagedCodeVariant(NamedBuildTarget, ManagedCodeVariant.Checked) instead.")]
+        [Obsolete("BuildOptions.ForceEnableAssertions is obsolete and has no effect. Use PlayerSettings.SetManagedCodeVariant(NamedBuildTarget, ManagedCodeVariant.Checked) instead.", true)]
         [ExcludeFromDocs]
         ForceEnableAssertions = 1 << 17,
 
@@ -229,7 +231,7 @@ namespace UnityEditor
         /// When this flag is set, errors logged from these build callbacks also fail the build:
         /// <see cref="Build.IPreprocessBuildWithContext.OnPreprocessBuild"/>,
         /// <see cref="Build.IPostprocessBuildWithContext.OnPostprocessBuild"/>,
-        /// <see cref="Build.IProcessSceneWithReport.OnProcessScene"/>,
+        /// <see cref="AssetPostprocessor.OnProcessScene"/>,
         /// <see cref="Build.IPreprocessShaders.OnProcessShader"/>, and
         /// <see cref="Build.IPreprocessComputeShaders.OnProcessComputeShader"/>.
         /// </remarks>

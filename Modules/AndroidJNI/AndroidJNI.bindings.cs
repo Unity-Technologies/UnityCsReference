@@ -102,6 +102,7 @@ namespace UnityEngine
         ///<remarks>The signature comparison is done to allow for sub-/base-classes of the class types.
         ///If no signature is provided the first constuctor found will be returned.</remarks>
         ///<param name="javaClass">Raw JNI Java class object (obtained by calling AndroidJNI.FindClass).</param>
+        ///<returns>The constructor's method ID. Throws an exception if no matching constructor is found.</returns>
         ///<seealso cref="AndroidJNIHelper.GetSignature" />
         ///<seealso cref="AndroidJNIHelper.GetMethodID" />
         ///<seealso cref="AndroidJNIHelper.GetFieldID" />
@@ -116,6 +117,7 @@ namespace UnityEngine
         ///If no signature is provided the first constuctor found will be returned.</remarks>
         ///<param name="javaClass">Raw JNI Java class object (obtained by calling AndroidJNI.FindClass).</param>
         ///<param name="signature">Constructor method signature (e.g. obtained by calling AndroidJNIHelper.GetSignature).</param>
+        ///<returns>The constructor's method ID. Throws an exception if no matching constructor is found.</returns>
         ///<seealso cref="AndroidJNIHelper.GetSignature" />
         ///<seealso cref="AndroidJNIHelper.GetMethodID" />
         ///<seealso cref="AndroidJNIHelper.GetFieldID" />
@@ -130,6 +132,7 @@ namespace UnityEngine
         ///If no signature is provided the first method with the correct name will be returned.</remarks>
         ///<param name="javaClass">Raw JNI Java class object (obtained by calling AndroidJNI.FindClass).</param>
         ///<param name="methodName">Name of the method as declared in Java.</param>
+        ///<returns>The method ID. Throws an exception if the method is not found.</returns>
         ///<seealso cref="AndroidJNIHelper.GetSignature" />
         ///<seealso cref="AndroidJNIHelper.GetConstructorID" />
         ///<seealso cref="AndroidJNIHelper.GetFieldID" />
@@ -145,6 +148,7 @@ namespace UnityEngine
         ///<param name="javaClass">Raw JNI Java class object (obtained by calling AndroidJNI.FindClass).</param>
         ///<param name="methodName">Name of the method as declared in Java.</param>
         ///<param name="signature">Method signature (e.g. obtained by calling AndroidJNIHelper.GetSignature).</param>
+        ///<returns>The method ID. Throws an exception if the method is not found.</returns>
         ///<seealso cref="AndroidJNIHelper.GetSignature" />
         ///<seealso cref="AndroidJNIHelper.GetConstructorID" />
         ///<seealso cref="AndroidJNIHelper.GetFieldID" />
@@ -161,6 +165,7 @@ namespace UnityEngine
         ///<param name="methodName">Name of the method as declared in Java.</param>
         ///<param name="signature">Method signature (e.g. obtained by calling AndroidJNIHelper.GetSignature).</param>
         ///<param name="isStatic">Set to &lt;tt&gt;true&lt;/tt&gt; for static methods; &lt;tt&gt;false&lt;/tt&gt; for instance (nonstatic) methods.</param>
+        ///<returns>The method ID. Throws an exception if the method is not found.</returns>
         ///<seealso cref="AndroidJNIHelper.GetSignature" />
         ///<seealso cref="AndroidJNIHelper.GetConstructorID" />
         ///<seealso cref="AndroidJNIHelper.GetFieldID" />
@@ -175,6 +180,7 @@ namespace UnityEngine
         ///If no signature is provided the first field with the correct name will be returned.</remarks>
         ///<param name="javaClass">Raw JNI Java class object (obtained by calling AndroidJNI.FindClass).</param>
         ///<param name="fieldName">Name of the field as declared in Java.</param>
+        ///<returns>The field ID. Throws an exception if the field is not found.</returns>
         ///<seealso cref="AndroidJNIHelper.GetSignature" />
         ///<seealso cref="AndroidJNIHelper.GetConstructorID" />
         ///<seealso cref="AndroidJNIHelper.GetMethodID" />
@@ -190,6 +196,7 @@ namespace UnityEngine
         ///<param name="javaClass">Raw JNI Java class object (obtained by calling AndroidJNI.FindClass).</param>
         ///<param name="fieldName">Name of the field as declared in Java.</param>
         ///<param name="signature">Field signature (e.g. obtained by calling AndroidJNIHelper.GetSignature).</param>
+        ///<returns>The field ID. Throws an exception if the field is not found.</returns>
         ///<seealso cref="AndroidJNIHelper.GetSignature" />
         ///<seealso cref="AndroidJNIHelper.GetConstructorID" />
         ///<seealso cref="AndroidJNIHelper.GetMethodID" />
@@ -206,6 +213,7 @@ namespace UnityEngine
         ///<param name="fieldName">Name of the field as declared in Java.</param>
         ///<param name="signature">Field signature (e.g. obtained by calling AndroidJNIHelper.GetSignature).</param>
         ///<param name="isStatic">Set to &lt;tt&gt;true&lt;/tt&gt; for static fields; &lt;tt&gt;false&lt;/tt&gt; for instance (nonstatic) fields.</param>
+        ///<returns>The field ID. Throws an exception if the field is not found.</returns>
         ///<seealso cref="AndroidJNIHelper.GetSignature" />
         ///<seealso cref="AndroidJNIHelper.GetConstructorID" />
         ///<seealso cref="AndroidJNIHelper.GetMethodID" />
@@ -217,6 +225,7 @@ namespace UnityEngine
         // Creates a UnityJavaRunnable object (implements java.lang.Runnable).
         ///<summary>Creates a UnityJavaRunnable object (implements java.lang.Runnable).</summary>
         ///<param name="jrunnable">A delegate representing the java.lang.Runnable.</param>
+        ///<returns>A local reference to the newly created UnityJavaRunnable object.</returns>
         ///<seealso cref="AndroidJavaRunnable" />
         public static IntPtr CreateJavaRunnable(AndroidJavaRunnable jrunnable)
         {
@@ -226,6 +235,7 @@ namespace UnityEngine
         // Creates a UnityJavaProxy object (implements jinterface).
         ///<summary>Creates a java proxy object which connects to the supplied proxy implementation.</summary>
         ///<param name="proxy">An implementatinon of a java interface in c#.</param>
+        ///<returns>A local reference to the newly created Java proxy object.</returns>
         ///<seealso cref="AndroidJavaProxy" />
         public static IntPtr CreateJavaProxy(AndroidJavaProxy proxy)
         {
@@ -244,6 +254,7 @@ namespace UnityEngine
         // Creates a Java array from a managed array
         ///<summary>Creates a Java array from a managed array.</summary>
         ///<param name="array">Managed array to be converted into a Java array object.</param>
+        ///<returns>A local reference to the newly created Java array.</returns>
         ///<seealso cref="AndroidJNIHelper.ConvertFromJNIArray" />
         public static IntPtr ConvertToJNIArray(Array array)
         {
@@ -253,6 +264,7 @@ namespace UnityEngine
         // Creates the parameter array to be used as argument list when invoking Java code through CallMethod() in AndroidJNI.
         ///<summary>Creates the parameter array to be used as argument list when invoking Java code through CallMethod() in AndroidJNI.</summary>
         ///<param name="args">An array of objects that should be converted to Call parameters.</param>
+        ///<returns>The converted arguments, ready to pass to a Call method.</returns>
         public static jvalue[] CreateJNIArgArray(object[] args)
         {
             jvalue[] ret = new jvalue[args.Length];
@@ -260,6 +272,9 @@ namespace UnityEngine
             return ret;
         }
 
+        ///<summary>Creates the parameter array to be used as argument list when invoking Java code through CallMethod() in AndroidJNI, writing into the given buffer instead of allocating a new array.</summary>
+        ///<param name="args">An array of objects to convert to Call parameters.</param>
+        ///<param name="jniArgs">The buffer to write the converted arguments into.</param>
         public static void CreateJNIArgArray(object[] args, Span<jvalue> jniArgs)
         {
             if (args.Length != jniArgs.Length)
@@ -267,19 +282,17 @@ namespace UnityEngine
             _AndroidJNIHelper.CreateJNIArgArray(args, jniArgs);
         }
 
-        // Deletes any local jni references previously allocated by CreateJNIArgArray()
-        //
-        // @param jniArgs the array returned by CreateJNIArgArray()
-        // @param args the array of arguments used as a parameter to CreateJNIArgArray()
-        //
-        ///<summary>Deletes any local jni references previously allocated by CreateJNIArgArray().</summary>
-        ///<param name="args">The array of arguments used as a parameter to CreateJNIArgArray().</param>
-        ///<param name="jniArgs">The array returned by CreateJNIArgArray().</param>
+        ///<summary>Deletes any local JNI references previously allocated by CreateJNIArgArray.</summary>
+        ///<param name="args">The array of arguments used as a parameter to CreateJNIArgArray.</param>
+        ///<param name="jniArgs">The array returned by CreateJNIArgArray.</param>
         public static void DeleteJNIArgArray(object[] args, jvalue[] jniArgs)
         {
             _AndroidJNIHelper.DeleteJNIArgArray(args, jniArgs);
         }
 
+        ///<summary>Deletes any local JNI references previously allocated by CreateJNIArgArray.</summary>
+        ///<param name="args">The array of arguments used as a parameter to CreateJNIArgArray.</param>
+        ///<param name="jniArgs">The array returned by CreateJNIArgArray.</param>
         public static void DeleteJNIArgArray(object[] args, Span<jvalue> jniArgs)
         {
             _AndroidJNIHelper.DeleteJNIArgArray(args, jniArgs);
@@ -295,7 +308,9 @@ namespace UnityEngine
         ///<summary>Get a JNI method ID for a constructor based on calling arguments.</summary>
         ///<remarks>Scans a particular Java class for a constructor method matching a signature based on passed arguments.
         ///The signature comparison is done to allow for sub-/base-classes of the class types.</remarks>
+        ///<param name="jclass">The Java class to scan.</param>
         ///<param name="args">Array with parameters to be passed to the constructor when invoked.</param>
+        ///<returns>The constructor's method ID. Throws an exception if no matching constructor is found.</returns>
         public static IntPtr GetConstructorID(IntPtr jclass, object[] args)
         {
             return _AndroidJNIHelper.GetConstructorID(jclass, args);
@@ -306,9 +321,11 @@ namespace UnityEngine
         ///<remarks>Generic parameter represents the method return type, and the regular method assumes 'void' return type.
         ///Scans a particular Java class for a method matching a signature based on passed arguments.
         ///The signature comparison is done to allow for sub-/base-classes of the class types.</remarks>
+        ///<param name="jclass">The Java class to scan.</param>
         ///<param name="methodName">Name of the method as declared in Java.</param>
         ///<param name="args">Array with parameters to be passed to the method when invoked.</param>
         ///<param name="isStatic">Set to &lt;tt&gt;true&lt;/tt&gt; for static methods; &lt;tt&gt;false&lt;/tt&gt; for instance (nonstatic) methods.</param>
+        ///<returns>The method ID. Throws an exception if the method is not found.</returns>
         public static IntPtr GetMethodID(IntPtr jclass, string methodName, object[] args, bool isStatic)
         {
             return _AndroidJNIHelper.GetMethodID(jclass, methodName, args, isStatic);
@@ -317,6 +334,7 @@ namespace UnityEngine
         // Creates the JNI signature string for particular object type
         ///<summary>Creates the JNI signature string for particular object type.</summary>
         ///<param name="obj">Object for which a signature is to be produced.</param>
+        ///<returns>The JNI signature string.</returns>
         public static string GetSignature(object obj)
         {
             return _AndroidJNIHelper.GetSignature(obj);
@@ -325,6 +343,7 @@ namespace UnityEngine
         // Creates the JNI signature string for an object parameter list.
         ///<summary>Creates the JNI signature string for an object parameter list.</summary>
         ///<param name="args">Array of object for which a signature is to be produced.</param>
+        ///<returns>The JNI signature string.</returns>
         public static string GetSignature(object[] args)
         {
             return _AndroidJNIHelper.GetSignature(args);
@@ -335,6 +354,7 @@ namespace UnityEngine
         // Creates a managed array from a Java array
         ///<summary>Creates a managed array from a Java array.</summary>
         ///<param name="array">Java array object to be converted into a managed array.</param>
+        ///<returns>The managed array converted from the Java array.</returns>
         ///<seealso cref="AndroidJNIHelper.ConvertToJNIArray" />
         public static ArrayType ConvertFromJNIArray<ArrayType>(IntPtr array)
         {
@@ -346,9 +366,11 @@ namespace UnityEngine
         ///<remarks>Generic parameter represents the method return type, and the regular method assumes 'void' return type.
         ///Scans a particular Java class for a method matching a signature based on passed arguments.
         ///The signature comparison is done to allow for sub-/base-classes of the class types.</remarks>
+        ///<param name="jclass">The Java class to scan.</param>
         ///<param name="methodName">Name of the method as declared in Java.</param>
         ///<param name="args">Array with parameters to be passed to the method when invoked.</param>
         ///<param name="isStatic">Set to &lt;tt&gt;true&lt;/tt&gt; for static methods; &lt;tt&gt;false&lt;/tt&gt; for instance (nonstatic) methods.</param>
+        ///<returns>The method ID. Throws an exception if the method is not found.</returns>
         public static IntPtr GetMethodID<ReturnType>(IntPtr jclass, string methodName, object[] args, bool isStatic)
         {
             return _AndroidJNIHelper.GetMethodID<ReturnType>(jclass, methodName, args, isStatic);
@@ -358,8 +380,10 @@ namespace UnityEngine
         ///<summary>Get a JNI field ID based on type detection. Generic parameter represents the field type.</summary>
         ///<remarks>Scans a particular Java class for a field matching a signature of the field type.
         ///The signature comparison is done to allow for sub-/base-classes of the class types.</remarks>
+        ///<param name="jclass">The Java class to scan.</param>
         ///<param name="fieldName">Name of the field as declared in Java.</param>
         ///<param name="isStatic">Set to &lt;tt&gt;true&lt;/tt&gt; for static fields; &lt;tt&gt;false&lt;/tt&gt; for instance (nonstatic) fields.</param>
+        ///<returns>The field ID. Throws an exception if the field is not found.</returns>
         public static IntPtr GetFieldID<FieldType>(IntPtr jclass, string fieldName, bool isStatic)
         {
             return _AndroidJNIHelper.GetFieldID<FieldType>(jclass, fieldName, isStatic);
@@ -369,6 +393,7 @@ namespace UnityEngine
         ///<summary>Creates the JNI signature string for an object parameter list.</summary>
         ///<remarks>The generic parameter represents the method return type.</remarks>
         ///<param name="args">Array of object for which a signature is to be produced.</param>
+        ///<returns>The JNI signature string.</returns>
         public static string GetSignature<ReturnType>(object[] args)
         {
             return _AndroidJNIHelper.GetSignature<ReturnType>(args);
@@ -622,15 +647,15 @@ namespace UnityEngine
         private static extern void ReleaseStringChars(JStringBinding str);
 
         ///<summary>Returns the pointer to JavaVM.</summary>
+        ///<returns>The pointer to the JavaVM.</returns>
         [NativeMethod(IsThreadSafe = true)]
         [StaticAccessor("jni", StaticAccessorType.DoubleColon)]
         public static extern IntPtr GetJavaVM();
 
         // Attaches the current thread to a Java (Dalvik) VM.
         ///<summary>Attaches the current thread to a Java (Dalvik) VM.</summary>
-        ///<remarks>A thread must be attached to the VM before any other JNI calls can be made.
-        ///
-        ///Returns 0 on success; returns a negative number on failure.</remarks>
+        ///<remarks>A thread must be attached to the VM before any other JNI calls can be made.</remarks>
+        ///<returns>Zero on success. A negative number on failure.</returns>
         ///<seealso href="http://download.oracle.com/javase/1.5.0/docs/guide/jni/spec/jniTOC.html">Java Native Interface Specification (Oracle)</seealso>
         [NativeMethod(IsThreadSafe = true)]
         public static extern int AttachCurrentThread();
@@ -638,6 +663,7 @@ namespace UnityEngine
         // Detaches the current thread from a Java (Dalvik) VM.
         ///<summary>Detaches the current thread from a Java (Dalvik) VM.</summary>
         ///<remarks>A thread must be detached from the VM before exiting.</remarks>
+        ///<returns>Zero on success. A negative number on failure.</returns>
         ///<seealso href="http://download.oracle.com/javase/1.5.0/docs/guide/jni/spec/jniTOC.html">Java Native Interface Specification (Oracle)</seealso>
         [NativeMethod(IsThreadSafe = true)]
         public static extern int DetachCurrentThread();
@@ -647,6 +673,7 @@ namespace UnityEngine
 
         ///<summary>Calls <see cref="AndroidJNI.AttachCurrentThread" /> (if necessary) before invoking a delegate, and then calls <see cref="AndroidJNI.DetachCurrentThread" />.</summary>
         ///<remarks>**Note:** Use this method to invoke Java methods on threads other than the main thread.</remarks>
+        ///<param name="action">The delegate to invoke while the current thread is attached to the Java VM.</param>
         ///<example nocheck="true">
         ///  <code><![CDATA[using System;
         ///using UnityEngine;
@@ -670,33 +697,48 @@ namespace UnityEngine
 
         // Returns the version of the native method interface.
         ///<summary>Returns the version of the native method interface.</summary>
+        ///<returns>The version of the native method interface.</returns>
         ///<seealso href="http://download.oracle.com/javase/1.5.0/docs/guide/jni/spec/jniTOC.html">Java Native Interface Specification (Oracle)</seealso>
         [NativeMethod(IsThreadSafe = true)]
         public static extern int GetVersion();
 
         // This function loads a locally-defined class.
         ///<summary>This function loads a locally-defined class.</summary>
+        ///<param name="name">The fully qualified class name, or the name of an array class.</param>
+        ///<returns>A local reference to the class, or null if the class couldn't be found.</returns>
         ///<seealso href="http://download.oracle.com/javase/1.5.0/docs/guide/jni/spec/jniTOC.html">Java Native Interface Specification (Oracle)</seealso>
         [NativeMethod(IsThreadSafe = true)]
         public static extern IntPtr FindClass(string name);
 
         // Converts a <tt>java.lang.reflect.Method</tt> or <tt>java.lang.reflect.Constructor</tt> object to a method ID.
         ///<summary>Converts a &lt;tt&gt;java.lang.reflect.Method&lt;/tt&gt; or &lt;tt&gt;java.lang.reflect.Constructor&lt;/tt&gt; object to a method ID.</summary>
+        ///<param name="refMethod">The java.lang.reflect.Method or java.lang.reflect.Constructor object to convert.</param>
+        ///<returns>The corresponding method ID.</returns>
         ///<seealso href="http://download.oracle.com/javase/1.5.0/docs/guide/jni/spec/jniTOC.html">Java Native Interface Specification (Oracle)</seealso>
         [NativeMethod(IsThreadSafe = true)]
         public static extern IntPtr FromReflectedMethod(IntPtr refMethod);
         // Converts a <tt>java.lang.reflect.Field</tt> to a field ID.
         ///<summary>Converts a &lt;tt&gt;java.lang.reflect.Field&lt;/tt&gt; to a field ID.</summary>
+        ///<param name="refField">The java.lang.reflect.Field object to convert.</param>
+        ///<returns>The corresponding field ID.</returns>
         ///<seealso href="http://download.oracle.com/javase/1.5.0/docs/guide/jni/spec/jniTOC.html">Java Native Interface Specification (Oracle)</seealso>
         [NativeMethod(IsThreadSafe = true)]
         public static extern IntPtr FromReflectedField(IntPtr refField);
         // Converts a method ID derived from clazz to a <tt>java.lang.reflect.Method</tt> or <tt>java.lang.reflect.Constructor</tt> object.
         ///<summary>Converts a method ID derived from clazz to a &lt;tt&gt;java.lang.reflect.Method&lt;/tt&gt; or &lt;tt&gt;java.lang.reflect.Constructor&lt;/tt&gt; object.</summary>
+        ///<param name="clazz">The Java class that declares the method.</param>
+        ///<param name="methodID">The ID of the method to convert.</param>
+        ///<param name="isStatic">Set to true for a static method. Set to false for an instance (nonstatic) method.</param>
+        ///<returns>A local reference to the corresponding java.lang.reflect.Method or java.lang.reflect.Constructor object.</returns>
         ///<seealso href="http://download.oracle.com/javase/1.5.0/docs/guide/jni/spec/jniTOC.html">Java Native Interface Specification (Oracle)</seealso>
         [NativeMethod(IsThreadSafe = true)]
         public static extern IntPtr ToReflectedMethod(IntPtr clazz, IntPtr methodID, bool isStatic);
         // Converts a field ID derived from cls to a <tt>java.lang.reflect.Field</tt> object.
         ///<summary>Converts a field ID derived from cls to a &lt;tt&gt;java.lang.reflect.Field&lt;/tt&gt; object.</summary>
+        ///<param name="clazz">The Java class that declares the field.</param>
+        ///<param name="fieldID">The ID of the field.</param>
+        ///<param name="isStatic">Set to true for a static field. Set to false for an instance (nonstatic) field.</param>
+        ///<returns>A local reference to the corresponding java.lang.reflect.Field object.</returns>
         ///<seealso href="http://download.oracle.com/javase/1.5.0/docs/guide/jni/spec/jniTOC.html">Java Native Interface Specification (Oracle)</seealso>
         [NativeMethod(IsThreadSafe = true)]
         public static extern IntPtr ToReflectedField(IntPtr clazz, IntPtr fieldID, bool isStatic);
@@ -704,27 +746,38 @@ namespace UnityEngine
         // If <tt>clazz</tt> represents any class other than the class <tt>Object</tt>, then this function returns the object that represents the superclass of the class specified by <tt>clazz</tt>.
         ///<summary>If &lt;tt&gt;clazz&lt;/tt&gt; represents any class other than the class &lt;tt&gt;Object&lt;/tt&gt;, then this function returns the object that represents the superclass of the class specified by &lt;tt&gt;clazz&lt;/tt&gt;.</summary>
         ///<remarks>If &lt;tt&gt;clazz&lt;/tt&gt; specifies the class &lt;tt&gt;Object&lt;/tt&gt;, or &lt;tt&gt;clazz&lt;/tt&gt; represents an interface, this function returns &lt;tt&gt;NULL&lt;/tt&gt;.</remarks>
+        ///<param name="clazz">The class whose superclass is returned.</param>
+        ///<returns>A local reference to the superclass, or null.</returns>
         ///<seealso href="http://download.oracle.com/javase/1.5.0/docs/guide/jni/spec/jniTOC.html">Java Native Interface Specification (Oracle)</seealso>
         [NativeMethod(IsThreadSafe = true)]
         public static extern IntPtr GetSuperclass(IntPtr clazz);
         // Determines whether an object of <tt>clazz1</tt> can be safely cast to <tt>clazz2</tt>.
         ///<summary>Determines whether an object of &lt;tt&gt;clazz1&lt;/tt&gt; can be safely cast to &lt;tt&gt;clazz2&lt;/tt&gt;.</summary>
+        ///<param name="clazz1">The class to test for assignability.</param>
+        ///<param name="clazz2">The class to test against.</param>
+        ///<returns>True if an object of the first class can be safely cast to the second. Otherwise, false.</returns>
         ///<seealso href="http://download.oracle.com/javase/1.5.0/docs/guide/jni/spec/jniTOC.html">Java Native Interface Specification (Oracle)</seealso>
         [NativeMethod(IsThreadSafe = true)]
         public static extern bool IsAssignableFrom(IntPtr clazz1, IntPtr clazz2);
 
         // Causes a <tt>java.lang.Throwable</tt> object to be thrown.
         ///<summary>Causes a &lt;tt&gt;java.lang.Throwable&lt;/tt&gt; object to be thrown.</summary>
+        ///<param name="obj">The throwable object to throw.</param>
+        ///<returns>Zero on success. A negative value on failure.</returns>
         ///<seealso href="http://download.oracle.com/javase/1.5.0/docs/guide/jni/spec/jniTOC.html">Java Native Interface Specification (Oracle)</seealso>
         [NativeMethod(IsThreadSafe = true)]
         public static extern int Throw(IntPtr obj);
         // Constructs an exception object from the specified class with the <tt>message</tt> specified by message and causes that exception to be thrown.
         ///<summary>Constructs an exception object from the specified class with the &lt;tt&gt;message&lt;/tt&gt; specified by message and causes that exception to be thrown.</summary>
+        ///<param name="clazz">The class of the exception to construct and throw.</param>
+        ///<param name="message">The exception message.</param>
+        ///<returns>Zero on success. A negative value on failure.</returns>
         ///<seealso href="http://download.oracle.com/javase/1.5.0/docs/guide/jni/spec/jniTOC.html">Java Native Interface Specification (Oracle)</seealso>
         [NativeMethod(IsThreadSafe = true)]
         public static extern int ThrowNew(IntPtr clazz, string message);
         // Determines if an exception is being thrown
         ///<summary>Determines if an exception is being thrown.</summary>
+        ///<returns>A local reference to the exception being thrown, or null if no exception is currently being thrown.</returns>
         ///<seealso href="http://download.oracle.com/javase/1.5.0/docs/guide/jni/spec/jniTOC.html">Java Native Interface Specification (Oracle)</seealso>
         [NativeMethod(IsThreadSafe = true)]
         public static extern IntPtr ExceptionOccurred();
@@ -740,28 +793,36 @@ namespace UnityEngine
         public static extern void ExceptionClear();
         // Raises a fatal error and does not expect the VM to recover. This function does not return.
         ///<summary>Raises a fatal error and does not expect the VM to recover. This function does not return.</summary>
+        ///<param name="message">The exception message.</param>
         ///<seealso href="http://download.oracle.com/javase/1.5.0/docs/guide/jni/spec/jniTOC.html">Java Native Interface Specification (Oracle)</seealso>
         [NativeMethod(IsThreadSafe = true)]
         public static extern void FatalError(string message);
 
         // Creates a new local reference frame, in which at least a given number of local references can be created.
         ///<summary>Creates a new local reference frame, in which at least a given number of local references can be created.</summary>
+        ///<param name="capacity">The minimum number of local references the new frame can hold.</param>
+        ///<returns>Zero on success. A negative value on failure.</returns>
         ///<seealso href="http://download.oracle.com/javase/1.5.0/docs/guide/jni/spec/jniTOC.html">Java Native Interface Specification (Oracle)</seealso>
         [NativeMethod(IsThreadSafe = true)]
         public static extern int PushLocalFrame(int capacity);
         // Pops off the current local reference frame, frees all the local references, and returns a local reference in the previous local reference frame for the given <tt>result</tt> object.
         ///<summary>Pops off the current local reference frame, frees all the local references, and returns a local reference in the previous local reference frame for the given &lt;tt&gt;result&lt;/tt&gt; object.</summary>
+        ///<param name="ptr">The result object to return a local reference to, in the previous local reference frame.</param>
+        ///<returns>A local reference to the given result object, valid in the previous local reference frame.</returns>
         ///<seealso href="http://download.oracle.com/javase/1.5.0/docs/guide/jni/spec/jniTOC.html">Java Native Interface Specification (Oracle)</seealso>
         [NativeMethod(IsThreadSafe = true)]
         public static extern IntPtr PopLocalFrame(IntPtr ptr);
 
         // Creates a new global reference to the object referred to by the <tt>obj</tt> argument.
         ///<summary>Creates a new global reference to the object referred to by the &lt;tt&gt;obj&lt;/tt&gt; argument.</summary>
+        ///<param name="obj">The reference to convert.</param>
+        ///<returns>The new reference, or null if the object referred to by the original reference has already been garbage collected.</returns>
         ///<seealso href="http://download.oracle.com/javase/1.5.0/docs/guide/jni/spec/jniTOC.html">Java Native Interface Specification (Oracle)</seealso>
         [NativeMethod(IsThreadSafe = true)]
         public static extern IntPtr NewGlobalRef(IntPtr obj);
         // Deletes the global reference pointed to by <tt>obj</tt>.
         ///<summary>Deletes the global reference pointed to by &lt;tt&gt;obj&lt;/tt&gt;.</summary>
+        ///<param name="obj">The reference to delete.</param>
         ///<seealso href="http://download.oracle.com/javase/1.5.0/docs/guide/jni/spec/jniTOC.html">Java Native Interface Specification (Oracle)</seealso>
         [NativeMethod(IsThreadSafe = true)]
         public static extern void DeleteGlobalRef(IntPtr obj);
@@ -776,32 +837,43 @@ namespace UnityEngine
         internal static extern void CleanQueueGlobalRefs();
         // Creates a new global weak reference to the object referred to by the <tt>obj</tt> argument.
         ///<summary>Creates a new global weak reference to the object referred to by the &lt;tt&gt;obj&lt;/tt&gt; argument.</summary>
+        ///<param name="obj">The reference to convert.</param>
+        ///<returns>The new reference, or null if the object referred to by the original reference has already been garbage collected.</returns>
         ///<seealso href="http://download.oracle.com/javase/1.5.0/docs/guide/jni/spec/jniTOC.html">Java Native Interface Specification (Oracle)</seealso>
         [NativeMethod(IsThreadSafe = true)]
         public static extern IntPtr NewWeakGlobalRef(IntPtr obj);
         // Deletes the global weak reference pointed to by <tt>obj</tt>.
         ///<summary>Deletes the global weak reference pointed to by &lt;tt&gt;obj&lt;/tt&gt;.</summary>
+        ///<param name="obj">The reference to delete.</param>
         ///<seealso href="http://download.oracle.com/javase/1.5.0/docs/guide/jni/spec/jniTOC.html">Java Native Interface Specification (Oracle)</seealso>
         [NativeMethod(IsThreadSafe = true)]
         public static extern void DeleteWeakGlobalRef(IntPtr obj);
         // Creates a new local reference that refers to the same object as <tt>obj</tt>.
         ///<summary>Creates a new local reference that refers to the same object as &lt;tt&gt;obj&lt;/tt&gt;.</summary>
+        ///<param name="obj">The reference to convert.</param>
+        ///<returns>The new reference, or null if the object referred to by the original reference has already been garbage collected.</returns>
         ///<seealso href="http://download.oracle.com/javase/1.5.0/docs/guide/jni/spec/jniTOC.html">Java Native Interface Specification (Oracle)</seealso>
         [NativeMethod(IsThreadSafe = true)]
         public static extern IntPtr NewLocalRef(IntPtr obj);
         // Deletes the local reference pointed to by <tt>obj</tt>.
         ///<summary>Deletes the local reference pointed to by &lt;tt&gt;obj&lt;/tt&gt;.</summary>
+        ///<param name="obj">The reference to delete.</param>
         ///<seealso href="http://download.oracle.com/javase/1.5.0/docs/guide/jni/spec/jniTOC.html">Java Native Interface Specification (Oracle)</seealso>
         [NativeMethod(IsThreadSafe = true)]
         public static extern void DeleteLocalRef(IntPtr obj);
         // Tests whether two references refer to the same Java object.
         ///<summary>Tests whether two references refer to the same Java object.</summary>
+        ///<param name="obj1">The first reference to compare.</param>
+        ///<param name="obj2">The second reference to compare.</param>
+        ///<returns>True if both references refer to the same Java object, or are both null. Otherwise, false.</returns>
         ///<seealso href="http://download.oracle.com/javase/1.5.0/docs/guide/jni/spec/jniTOC.html">Java Native Interface Specification (Oracle)</seealso>
         [NativeMethod(IsThreadSafe = true)]
         public static extern bool IsSameObject(IntPtr obj1, IntPtr obj2);
 
         // Ensures that at least a given number of local references can be created in the current thread.
         ///<summary>Ensures that at least a given number of local references can be created in the current thread.</summary>
+        ///<param name="capacity">The minimum number of local references the current thread can hold.</param>
+        ///<returns>Zero on success. A negative value on failure.</returns>
         ///<seealso href="http://download.oracle.com/javase/1.5.0/docs/guide/jni/spec/jniTOC.html">Java Native Interface Specification (Oracle)</seealso>
         [NativeMethod(IsThreadSafe = true)]
         public static extern int EnsureLocalCapacity(int capacity);
@@ -810,17 +882,29 @@ namespace UnityEngine
 
         // Allocates a new Java object without invoking any of the constructors for the object.
         ///<summary>Allocates a new Java object without invoking any of the constructors for the object.</summary>
+        ///<param name="clazz">The Java class to instantiate.</param>
+        ///<returns>A local reference to the newly allocated object.</returns>
         ///<seealso href="http://download.oracle.com/javase/1.5.0/docs/guide/jni/spec/jniTOC.html">Java Native Interface Specification (Oracle)</seealso>
         [NativeMethod(IsThreadSafe = true)]
         public static extern IntPtr AllocObject(IntPtr clazz);
 
         // Constructs a new Java object. The method ID indicates which constructor method to invoke. This ID must be obtained by calling GetMethodID() with <init> as the method name and void (V) as the return type.
         ///<summary>Constructs a new Java object. The method ID indicates which constructor method to invoke. This ID must be obtained by calling GetMethodID() with &lt;init&gt; as the method name and void (V) as the return type.</summary>
+        ///<param name="clazz">The Java class to instantiate.</param>
+        ///<param name="methodID">The ID of the constructor to invoke.</param>
+        ///<param name="args">An array of arguments to pass to the constructor.</param>
+        ///<returns>A local reference to the newly constructed object.</returns>
         ///<seealso href="http://download.oracle.com/javase/1.5.0/docs/guide/jni/spec/jniTOC.html">Java Native Interface Specification (Oracle)</seealso>
         public static IntPtr NewObject(IntPtr clazz, IntPtr methodID, jvalue[] args)
         {
             return NewObject(clazz, methodID, new Span<jvalue>(args));
         }
+        ///<summary>Constructs a new Java object. The method ID indicates which constructor method to invoke. This ID must be obtained by calling `GetMethodID` with `init` as the method name and `void (V)` as the return type.</summary>
+        ///<param name="clazz">The Java class to instantiate.</param>
+        ///<param name="methodID">The ID of the constructor to invoke.</param>
+        ///<param name="args">An array of arguments to pass to the constructor.</param>
+        ///<returns>A local reference to the newly constructed object.</returns>
+        ///<seealso href="http://download.oracle.com/javase/1.5.0/docs/guide/jni/spec/jniTOC.html">Java Native Interface Specification (Oracle)</seealso>
         public static IntPtr NewObject(IntPtr clazz, IntPtr methodID, Span<jvalue> args)
         {
             unsafe
@@ -832,43 +916,70 @@ namespace UnityEngine
             }
         }
         ///<summary>Constructs a new Java object. The method ID indicates which constructor method to invoke. This ID must be obtained by calling GetMethodID() with &lt;init&gt; as the method name and void (V) as the return type.</summary>
+        ///<param name="clazz">The Java class to instantiate.</param>
+        ///<param name="methodID">The ID of the constructor to invoke.</param>
+        ///<param name="args">An array of arguments to pass to the constructor.</param>
+        ///<returns>A local reference to the newly constructed object.</returns>
         ///<seealso href="http://download.oracle.com/javase/1.5.0/docs/guide/jni/spec/jniTOC.html">Java Native Interface Specification (Oracle)</seealso>
         [NativeMethod(IsThreadSafe = true)]
         public static extern unsafe IntPtr NewObjectA(IntPtr clazz, IntPtr methodID, jvalue* args);
 
         // Returns the class of an object.
         ///<summary>Returns the class of an object.</summary>
+        ///<param name="obj">The object whose class is returned.</param>
+        ///<returns>A local reference to the object's class.</returns>
         ///<seealso href="http://download.oracle.com/javase/1.5.0/docs/guide/jni/spec/jniTOC.html">Java Native Interface Specification (Oracle)</seealso>
         [NativeMethod(IsThreadSafe = true)]
         public static extern IntPtr GetObjectClass(IntPtr obj);
         // Tests whether an object is an instance of a class.
         ///<summary>Tests whether an object is an instance of a class.</summary>
+        ///<param name="obj">The object to test.</param>
+        ///<param name="clazz">The class to test against.</param>
+        ///<returns>True if the object is an instance of the class. Otherwise, false.</returns>
         ///<seealso href="http://download.oracle.com/javase/1.5.0/docs/guide/jni/spec/jniTOC.html">Java Native Interface Specification (Oracle)</seealso>
         [NativeMethod(IsThreadSafe = true)]
         public static extern bool IsInstanceOf(IntPtr obj, IntPtr clazz);
 
         // Returns the method ID for an instance (nonstatic) method of a class or interface.
         ///<summary>Returns the method ID for an instance (nonstatic) method of a class or interface.</summary>
+        ///<param name="clazz">The Java class to scan.</param>
+        ///<param name="name">The name of the method, as declared in Java.</param>
+        ///<param name="sig">The JNI method signature.</param>
+        ///<returns>The method ID, or zero if the method couldn't be found.</returns>
         ///<seealso href="http://download.oracle.com/javase/1.5.0/docs/guide/jni/spec/jniTOC.html">Java Native Interface Specification (Oracle)</seealso>
         [NativeMethod(IsThreadSafe = true)]
         public static extern IntPtr GetMethodID(IntPtr clazz, string name, string sig);
         // Returns the field ID for an instance (nonstatic) field of a class.
         ///<summary>Returns the field ID for an instance (nonstatic) field of a class.</summary>
+        ///<param name="clazz">The Java class to scan.</param>
+        ///<param name="name">The name of the field, as declared in Java.</param>
+        ///<param name="sig">The JNI field signature.</param>
+        ///<returns>The field ID, or zero if the field couldn't be found.</returns>
         ///<seealso href="http://download.oracle.com/javase/1.5.0/docs/guide/jni/spec/jniTOC.html">Java Native Interface Specification (Oracle)</seealso>
         [NativeMethod(IsThreadSafe = true)]
         public static extern IntPtr GetFieldID(IntPtr clazz, string name, string sig);
         // Returns the method ID for a static method of a class.
         ///<summary>Returns the method ID for a static method of a class.</summary>
+        ///<param name="clazz">The Java class to scan.</param>
+        ///<param name="name">The name of the method, as declared in Java.</param>
+        ///<param name="sig">The JNI method signature.</param>
+        ///<returns>The method ID, or zero if the method couldn't be found.</returns>
         ///<seealso href="http://download.oracle.com/javase/1.5.0/docs/guide/jni/spec/jniTOC.html">Java Native Interface Specification (Oracle)</seealso>
         [NativeMethod(IsThreadSafe = true)]
         public static extern IntPtr GetStaticMethodID(IntPtr clazz, string name, string sig);
         // Returns the field ID for a static field of a class.
         ///<summary>Returns the field ID for a static field of a class.</summary>
+        ///<param name="clazz">The Java class to scan.</param>
+        ///<param name="name">The name of the field, as declared in Java.</param>
+        ///<param name="sig">The JNI field signature.</param>
+        ///<returns>The field ID, or zero if the field couldn't be found.</returns>
         ///<seealso href="http://download.oracle.com/javase/1.5.0/docs/guide/jni/spec/jniTOC.html">Java Native Interface Specification (Oracle)</seealso>
         [NativeMethod(IsThreadSafe = true)]
         public static extern IntPtr GetStaticFieldID(IntPtr clazz, string name, string sig);
 
         ///<summary>Constructs a new &lt;tt&gt;java.lang.String&lt;/tt&gt; object from an array of Unicode characters.</summary>
+        ///<param name="chars">The array of Unicode characters to construct the string from.</param>
+        ///<returns>A local reference to the newly constructed java.lang.String object.</returns>
         ///<seealso href="http://download.oracle.com/javase/1.5.0/docs/guide/jni/spec/jniTOC.html">Java Native Interface Specification (Oracle)</seealso>
         public static IntPtr NewString(string chars)
         {
@@ -880,18 +991,24 @@ namespace UnityEngine
 
         // Constructs a new <tt>java.lang.String</tt> object from an array of Unicode characters.
         ///<summary>Constructs a new &lt;tt&gt;java.lang.String&lt;/tt&gt; object from an array of Unicode characters.</summary>
+        ///<param name="chars">The array of Unicode characters to construct the string from.</param>
+        ///<returns>A local reference to the newly constructed java.lang.String object.</returns>
         ///<seealso href="http://download.oracle.com/javase/1.5.0/docs/guide/jni/spec/jniTOC.html">Java Native Interface Specification (Oracle)</seealso>
         [NativeMethod(IsThreadSafe = true)]
         public static extern IntPtr NewString(char[] chars);
 
         // Constructs a new <tt>java.lang.String</tt> object from an array of characters in modified UTF-8 encoding.
         ///<summary>Constructs a new &lt;tt&gt;java.lang.String&lt;/tt&gt; object from an array of characters in modified UTF-8 encoding.</summary>
+        ///<param name="bytes">The modified UTF-8 encoded string data.</param>
+        ///<returns>A local reference to the newly constructed java.lang.String object.</returns>
         ///<seealso href="http://download.oracle.com/javase/1.5.0/docs/guide/jni/spec/jniTOC.html">Java Native Interface Specification (Oracle)</seealso>
         [NativeMethod(IsThreadSafe = true)]
         public static extern IntPtr NewStringUTF(string bytes);
 
         ///<summary>Returns a pointer to the array of Unicode characters of the string. This pointer is valid until ReleaseStringchars() is called.</summary>
         ///<remarks>This method is a modification of the original &lt;tt&gt;GetStringChars&lt;/tt&gt;, which returns a pointer to an array of bytes.</remarks>
+        ///<param name="str">The Java string.</param>
+        ///<returns>The Unicode characters of the string.</returns>
         ///<seealso href="http://download.oracle.com/javase/1.5.0/docs/guide/jni/spec/jniTOC.html">Java Native Interface Specification (Oracle)</seealso>
         public static string GetStringChars(IntPtr str)
         {
@@ -904,17 +1021,23 @@ namespace UnityEngine
 
         // Returns the length (the count of Unicode characters) of a Java string.
         ///<summary>Returns the length (the count of Unicode characters) of a Java string.</summary>
+        ///<param name="str">The Java string.</param>
+        ///<returns>The number of Unicode characters in the string.</returns>
         ///<seealso href="http://download.oracle.com/javase/1.5.0/docs/guide/jni/spec/jniTOC.html">Java Native Interface Specification (Oracle)</seealso>
         [NativeMethod(IsThreadSafe = true)]
         public static extern int GetStringLength(IntPtr str);
         // Returns the length in bytes of the modified UTF-8 representation of a string.
         ///<summary>Returns the length in bytes of the modified UTF-8 representation of a string.</summary>
+        ///<param name="str">The Java string.</param>
+        ///<returns>The length, in bytes, of the modified UTF-8 representation of the string.</returns>
         ///<seealso href="http://download.oracle.com/javase/1.5.0/docs/guide/jni/spec/jniTOC.html">Java Native Interface Specification (Oracle)</seealso>
         [NativeMethod(IsThreadSafe = true)]
         public static extern int GetStringUTFLength(IntPtr str);
         // Returns a managed string object representing the string in modified UTF-8 encoding.
         ///<summary>Returns a managed string object representing the string in modified UTF-8 encoding.</summary>
         ///<remarks>This method is a modification of the original &lt;tt&gt;GetStringUTFChars&lt;/tt&gt;, which returns a pointer to an array of bytes.</remarks>
+        ///<param name="str">The Java string.</param>
+        ///<returns>The string, converted from its modified UTF-8 representation.</returns>
         ///<seealso href="http://download.oracle.com/javase/1.5.0/docs/guide/jni/spec/jniTOC.html">Java Native Interface Specification (Oracle)</seealso>
         [NativeMethod(IsThreadSafe = true)]
         public static extern string GetStringUTFChars(IntPtr str);
@@ -924,11 +1047,22 @@ namespace UnityEngine
         // Calls an instance (nonstatic) Java method defined by <tt>methodID</tt>, optionally passing an array of arguments (<tt>args</tt>) to the method.
         ///<summary>Calls a Java instance method defined by &lt;tt&gt;methodID&lt;/tt&gt;, optionally passing an array of arguments (&lt;tt&gt;args&lt;/tt&gt;) to the method.</summary>
         ///<remarks>This is a convenience function that calls CallObjectMethod() with the same parameters, but creates a managed string from the result.</remarks>
+        ///<param name="obj">The Java object on which to call the instance method.</param>
+        ///<param name="methodID">The ID of the method to call.</param>
+        ///<param name="args">An array of arguments to pass to the method.</param>
+        ///<returns>The managed string returned by the method.</returns>
         ///<seealso cref="AndroidJNI.CallObjectMethod" />
         public static string CallStringMethod(IntPtr obj, IntPtr methodID, jvalue[] args)
         {
             return CallStringMethod(obj, methodID, new Span<jvalue>(args));
         }
+        ///<summary>Calls a Java instance method defined by `methodID`, optionally passing an array of arguments (`args`) to the method.</summary>
+        ///<param name="obj">The Java object on which to call the instance method.</param>
+        ///<param name="methodID">The ID of the method to call.</param>
+        ///<param name="args">An array of arguments to pass to the method.</param>
+        ///<returns>The managed string returned by the method.</returns>
+        ///<remarks>This is a convenience function that calls `CallObjectMethod` with the same parameters, but creates a managed string from the result.</remarks>
+        ///<seealso cref="AndroidJNI.CallObjectMethod" />
         public static string CallStringMethod(IntPtr obj, IntPtr methodID, Span<jvalue> args)
         {
             unsafe
@@ -941,6 +1075,10 @@ namespace UnityEngine
         }
         ///<summary>Calls a Java instance method defined by &lt;tt&gt;methodID&lt;/tt&gt;, optionally passing an array of arguments (&lt;tt&gt;args&lt;/tt&gt;) to the method.</summary>
         ///<remarks>This is a convenience function that calls CallObjectMethod() with the same parameters, but creates a managed string from the result.</remarks>
+        ///<param name="obj">The Java object on which to call the instance method.</param>
+        ///<param name="methodID">The ID of the method to call.</param>
+        ///<param name="args">An array of arguments to pass to the method.</param>
+        ///<returns>The managed string returned by the method.</returns>
         ///<seealso cref="AndroidJNI.CallObjectMethodUnsafe" />
         public static unsafe string CallStringMethodUnsafe(IntPtr obj, IntPtr methodID, jvalue* args)
         {
@@ -954,11 +1092,22 @@ namespace UnityEngine
         // Calls an instance (nonstatic) Java method defined by <tt>methodID</tt>, optionally passing an array of arguments (<tt>args</tt>) to the method.
         ///<summary>Calls a Java instance method defined by &lt;tt&gt;methodID&lt;/tt&gt;, optionally passing an array of arguments (&lt;tt&gt;args&lt;/tt&gt;) to the method.</summary>
         ///<remarks>This method returns a reference to a &lt;tt&gt;java.lang.Object&lt;/tt&gt;, or a subclass thereof.</remarks>
+        ///<param name="obj">The Java object on which to call the instance method.</param>
+        ///<param name="methodID">The ID of the method to call.</param>
+        ///<param name="args">An array of arguments to pass to the method.</param>
+        ///<returns>A local reference to the Java object returned by the method.</returns>
         ///<seealso href="http://download.oracle.com/javase/1.5.0/docs/guide/jni/spec/jniTOC.html">Java Native Interface Specification (Oracle)</seealso>
         public static IntPtr CallObjectMethod(IntPtr obj, IntPtr methodID, jvalue[] args)
         {
             return CallObjectMethod(obj, methodID, new Span<jvalue>(args));
         }
+        ///<summary>Calls a Java instance method defined by `methodID`, optionally passing an array of arguments (`args`) to the method.</summary>
+        ///<param name="obj">The Java object on which to call the instance method.</param>
+        ///<param name="methodID">The ID of the method to call.</param>
+        ///<param name="args">An array of arguments to pass to the method.</param>
+        ///<returns>A local reference to the Java object returned by the method.</returns>
+        ///<remarks>This method returns a reference to a `java.lang.Object`, or a subclass thereof.</remarks>
+        ///<seealso href="http://download.oracle.com/javase/1.5.0/docs/guide/jni/spec/jniTOC.html">Java Native Interface Specification (Oracle)</seealso>
         public static IntPtr CallObjectMethod(IntPtr obj, IntPtr methodID, Span<jvalue> args)
         {
             unsafe
@@ -971,16 +1120,30 @@ namespace UnityEngine
         }
         ///<summary>Calls a Java instance method defined by &lt;tt&gt;methodID&lt;/tt&gt;, optionally passing an array of arguments (&lt;tt&gt;args&lt;/tt&gt;) to the method.</summary>
         ///<remarks>This method returns a reference to a &lt;tt&gt;java.lang.Object&lt;/tt&gt;, or a subclass thereof.</remarks>
+        ///<param name="obj">The Java object on which to call the instance method.</param>
+        ///<param name="methodID">The ID of the method to call.</param>
+        ///<param name="args">An array of arguments to pass to the method.</param>
+        ///<returns>A local reference to the Java object returned by the method.</returns>
         ///<seealso href="http://download.oracle.com/javase/1.5.0/docs/guide/jni/spec/jniTOC.html">Java Native Interface Specification (Oracle)</seealso>
         [NativeMethod(IsThreadSafe = true)]
         public static extern unsafe IntPtr CallObjectMethodUnsafe(IntPtr obj, IntPtr methodID, jvalue* args);
         // Calls an instance (nonstatic) Java method defined by <tt>methodID</tt>, optionally passing an array of arguments (<tt>args</tt>) to the method.
         ///<summary>Calls a Java instance method defined by &lt;tt&gt;methodID&lt;/tt&gt;, optionally passing an array of arguments (&lt;tt&gt;args&lt;/tt&gt;) to the method.</summary>
+        ///<param name="obj">The Java object on which to call the instance method.</param>
+        ///<param name="methodID">The ID of the method to call.</param>
+        ///<param name="args">An array of arguments to pass to the method.</param>
+        ///<returns>The value returned by the Java method.</returns>
         ///<seealso href="http://download.oracle.com/javase/1.5.0/docs/guide/jni/spec/jniTOC.html">Java Native Interface Specification (Oracle)</seealso>
         public static Int32 CallIntMethod(IntPtr obj, IntPtr methodID, jvalue[] args)
         {
             return CallIntMethod(obj, methodID, new Span<jvalue>(args));
         }
+        ///<summary>Calls a Java instance method defined by `methodID`, optionally passing an array of arguments (`args`) to the method.</summary>
+        ///<param name="obj">The Java object on which to call the instance method.</param>
+        ///<param name="methodID">The ID of the method to call.</param>
+        ///<param name="args">An array of arguments to pass to the method.</param>
+        ///<returns>The value returned by the Java method.</returns>
+        ///<seealso href="http://download.oracle.com/javase/1.5.0/docs/guide/jni/spec/jniTOC.html">Java Native Interface Specification (Oracle)</seealso>
         public static Int32 CallIntMethod(IntPtr obj, IntPtr methodID, Span<jvalue> args)
         {
             unsafe
@@ -992,16 +1155,30 @@ namespace UnityEngine
             }
         }
         ///<summary>Calls a Java instance method defined by &lt;tt&gt;methodID&lt;/tt&gt;, optionally passing an array of arguments (&lt;tt&gt;args&lt;/tt&gt;) to the method.</summary>
+        ///<param name="obj">The Java object on which to call the instance method.</param>
+        ///<param name="methodID">The ID of the method to call.</param>
+        ///<param name="args">An array of arguments to pass to the method.</param>
+        ///<returns>The value returned by the Java method.</returns>
         ///<seealso href="http://download.oracle.com/javase/1.5.0/docs/guide/jni/spec/jniTOC.html">Java Native Interface Specification (Oracle)</seealso>
         [NativeMethod(IsThreadSafe = true)]
         public static extern unsafe Int32 CallIntMethodUnsafe(IntPtr obj, IntPtr methodID, jvalue* args);
         // Calls an instance (nonstatic) Java method defined by <tt>methodID</tt>, optionally passing an array of arguments (<tt>args</tt>) to the method.
         ///<summary>Calls a Java instance method defined by &lt;tt&gt;methodID&lt;/tt&gt;, optionally passing an array of arguments (&lt;tt&gt;args&lt;/tt&gt;) to the method.</summary>
+        ///<param name="obj">The Java object on which to call the instance method.</param>
+        ///<param name="methodID">The ID of the method to call.</param>
+        ///<param name="args">An array of arguments to pass to the method.</param>
+        ///<returns>The value returned by the Java method.</returns>
         ///<seealso href="http://download.oracle.com/javase/1.5.0/docs/guide/jni/spec/jniTOC.html">Java Native Interface Specification (Oracle)</seealso>
         public static bool CallBooleanMethod(IntPtr obj, IntPtr methodID, jvalue[] args)
         {
             return CallBooleanMethod(obj, methodID, new Span<jvalue>(args));
         }
+        ///<summary>Calls a Java instance method defined by `methodID`, optionally passing an array of arguments (`args`) to the method.</summary>
+        ///<param name="obj">The Java object on which to call the instance method.</param>
+        ///<param name="methodID">The ID of the method to call.</param>
+        ///<param name="args">An array of arguments to pass to the method.</param>
+        ///<returns>The value returned by the Java method.</returns>
+        ///<seealso href="http://download.oracle.com/javase/1.5.0/docs/guide/jni/spec/jniTOC.html">Java Native Interface Specification (Oracle)</seealso>
         public static bool CallBooleanMethod(IntPtr obj, IntPtr methodID, Span<jvalue> args)
         {
             unsafe
@@ -1013,16 +1190,30 @@ namespace UnityEngine
             }
         }
         ///<summary>Calls a Java instance method defined by &lt;tt&gt;methodID&lt;/tt&gt;, optionally passing an array of arguments (&lt;tt&gt;args&lt;/tt&gt;) to the method.</summary>
+        ///<param name="obj">The Java object on which to call the instance method.</param>
+        ///<param name="methodID">The ID of the method to call.</param>
+        ///<param name="args">An array of arguments to pass to the method.</param>
+        ///<returns>The value returned by the Java method.</returns>
         ///<seealso href="http://download.oracle.com/javase/1.5.0/docs/guide/jni/spec/jniTOC.html">Java Native Interface Specification (Oracle)</seealso>
         [NativeMethod(IsThreadSafe = true)]
         public static extern unsafe bool CallBooleanMethodUnsafe(IntPtr obj, IntPtr methodID, jvalue* args);
         // Calls an instance (nonstatic) Java method defined by <tt>methodID</tt>, optionally passing an array of arguments (<tt>args</tt>) to the method.
         ///<summary>Calls a Java instance method defined by &lt;tt&gt;methodID&lt;/tt&gt;, optionally passing an array of arguments (&lt;tt&gt;args&lt;/tt&gt;) to the method.</summary>
+        ///<param name="obj">The Java object on which to call the instance method.</param>
+        ///<param name="methodID">The ID of the method to call.</param>
+        ///<param name="args">An array of arguments to pass to the method.</param>
+        ///<returns>The value returned by the Java method.</returns>
         ///<seealso href="http://download.oracle.com/javase/1.5.0/docs/guide/jni/spec/jniTOC.html">Java Native Interface Specification (Oracle)</seealso>
         public static Int16 CallShortMethod(IntPtr obj, IntPtr methodID, jvalue[] args)
         {
             return CallShortMethod(obj, methodID, new Span<jvalue>(args));
         }
+        ///<summary>Calls a Java instance method defined by `methodID`, optionally passing an array of arguments (`args`) to the method.</summary>
+        ///<param name="obj">The Java object on which to call the instance method.</param>
+        ///<param name="methodID">The ID of the method to call.</param>
+        ///<param name="args">An array of arguments to pass to the method.</param>
+        ///<returns>The value returned by the Java method.</returns>
+        ///<seealso href="http://download.oracle.com/javase/1.5.0/docs/guide/jni/spec/jniTOC.html">Java Native Interface Specification (Oracle)</seealso>
         public static Int16 CallShortMethod(IntPtr obj, IntPtr methodID, Span<jvalue> args)
         {
             unsafe
@@ -1034,6 +1225,10 @@ namespace UnityEngine
             }
         }
         ///<summary>Calls a Java instance method defined by &lt;tt&gt;methodID&lt;/tt&gt;, optionally passing an array of arguments (&lt;tt&gt;args&lt;/tt&gt;) to the method.</summary>
+        ///<param name="obj">The Java object on which to call the instance method.</param>
+        ///<param name="methodID">The ID of the method to call.</param>
+        ///<param name="args">An array of arguments to pass to the method.</param>
+        ///<returns>The value returned by the Java method.</returns>
         ///<seealso href="http://download.oracle.com/javase/1.5.0/docs/guide/jni/spec/jniTOC.html">Java Native Interface Specification (Oracle)</seealso>
         [NativeMethod(IsThreadSafe = true)]
         public static extern unsafe Int16 CallShortMethodUnsafe(IntPtr obj, IntPtr methodID, jvalue* args);
@@ -1049,11 +1244,21 @@ namespace UnityEngine
 
         // Calls an instance (nonstatic) Java method defined by <tt>methodID</tt>, optionally passing an array of arguments (<tt>args</tt>) to the method.
         ///<summary>Calls a Java instance method defined by &lt;tt&gt;methodID&lt;/tt&gt;, optionally passing an array of arguments (&lt;tt&gt;args&lt;/tt&gt;) to the method.</summary>
+        ///<param name="obj">The Java object on which to call the instance method.</param>
+        ///<param name="methodID">The ID of the method to call.</param>
+        ///<param name="args">An array of arguments to pass to the method.</param>
+        ///<returns>The value returned by the Java method.</returns>
         ///<seealso href="http://download.oracle.com/javase/1.5.0/docs/guide/jni/spec/jniTOC.html">Java Native Interface Specification (Oracle)</seealso>
         public static SByte CallSByteMethod(IntPtr obj, IntPtr methodID, jvalue[] args)
         {
             return CallSByteMethod(obj, methodID, new Span<jvalue>(args));
         }
+        ///<summary>Calls a Java instance method defined by `methodID`, optionally passing an array of arguments (`args`) to the method.</summary>
+        ///<param name="obj">The Java object on which to call the instance method.</param>
+        ///<param name="methodID">The ID of the method to call.</param>
+        ///<param name="args">An array of arguments to pass to the method.</param>
+        ///<returns>The value returned by the Java method.</returns>
+        ///<seealso href="http://download.oracle.com/javase/1.5.0/docs/guide/jni/spec/jniTOC.html">Java Native Interface Specification (Oracle)</seealso>
         public static SByte CallSByteMethod(IntPtr obj, IntPtr methodID, Span<jvalue> args)
         {
             unsafe
@@ -1065,16 +1270,30 @@ namespace UnityEngine
             }
         }
         ///<summary>Calls a Java instance method defined by &lt;tt&gt;methodID&lt;/tt&gt;, optionally passing an array of arguments (&lt;tt&gt;args&lt;/tt&gt;) to the method.</summary>
+        ///<param name="obj">The Java object on which to call the instance method.</param>
+        ///<param name="methodID">The ID of the method to call.</param>
+        ///<param name="args">An array of arguments to pass to the method.</param>
+        ///<returns>The value returned by the Java method.</returns>
         ///<seealso href="http://download.oracle.com/javase/1.5.0/docs/guide/jni/spec/jniTOC.html">Java Native Interface Specification (Oracle)</seealso>
         [NativeMethod(IsThreadSafe = true)]
         public static extern unsafe SByte CallSByteMethodUnsafe(IntPtr obj, IntPtr methodID, jvalue* args);
         // Calls an instance (nonstatic) Java method defined by <tt>methodID</tt>, optionally passing an array of arguments (<tt>args</tt>) to the method.
         ///<summary>Calls a Java instance method defined by &lt;tt&gt;methodID&lt;/tt&gt;, optionally passing an array of arguments (&lt;tt&gt;args&lt;/tt&gt;) to the method.</summary>
+        ///<param name="obj">The Java object on which to call the instance method.</param>
+        ///<param name="methodID">The ID of the method to call.</param>
+        ///<param name="args">An array of arguments to pass to the method.</param>
+        ///<returns>The value returned by the Java method.</returns>
         ///<seealso href="http://download.oracle.com/javase/1.5.0/docs/guide/jni/spec/jniTOC.html">Java Native Interface Specification (Oracle)</seealso>
         public static Char CallCharMethod(IntPtr obj, IntPtr methodID, jvalue[] args)
         {
             return CallCharMethod(obj, methodID, new Span<jvalue>(args));
         }
+        ///<summary>Calls a Java instance method defined by `methodID`, optionally passing an array of arguments (`args`) to the method.</summary>
+        ///<param name="obj">The Java object on which to call the instance method.</param>
+        ///<param name="methodID">The ID of the method to call.</param>
+        ///<param name="args">An array of arguments to pass to the method.</param>
+        ///<returns>The value returned by the Java method.</returns>
+        ///<seealso href="http://download.oracle.com/javase/1.5.0/docs/guide/jni/spec/jniTOC.html">Java Native Interface Specification (Oracle)</seealso>
         public static Char CallCharMethod(IntPtr obj, IntPtr methodID, Span<jvalue> args)
         {
             unsafe
@@ -1086,16 +1305,30 @@ namespace UnityEngine
             }
         }
         ///<summary>Calls a Java instance method defined by &lt;tt&gt;methodID&lt;/tt&gt;, optionally passing an array of arguments (&lt;tt&gt;args&lt;/tt&gt;) to the method.</summary>
+        ///<param name="obj">The Java object on which to call the instance method.</param>
+        ///<param name="methodID">The ID of the method to call.</param>
+        ///<param name="args">An array of arguments to pass to the method.</param>
+        ///<returns>The value returned by the Java method.</returns>
         ///<seealso href="http://download.oracle.com/javase/1.5.0/docs/guide/jni/spec/jniTOC.html">Java Native Interface Specification (Oracle)</seealso>
         [NativeMethod(IsThreadSafe = true)]
         public static extern unsafe Char CallCharMethodUnsafe(IntPtr obj, IntPtr methodID, jvalue* args);
         // Calls an instance (nonstatic) Java method defined by <tt>methodID</tt>, optionally passing an array of arguments (<tt>args</tt>) to the method.
         ///<summary>Calls a Java instance method defined by &lt;tt&gt;methodID&lt;/tt&gt;, optionally passing an array of arguments (&lt;tt&gt;args&lt;/tt&gt;) to the method.</summary>
+        ///<param name="obj">The Java object on which to call the instance method.</param>
+        ///<param name="methodID">The ID of the method to call.</param>
+        ///<param name="args">An array of arguments to pass to the method.</param>
+        ///<returns>The value returned by the Java method.</returns>
         ///<seealso href="http://download.oracle.com/javase/1.5.0/docs/guide/jni/spec/jniTOC.html">Java Native Interface Specification (Oracle)</seealso>
         public static float CallFloatMethod(IntPtr obj, IntPtr methodID, jvalue[] args)
         {
             return CallFloatMethod(obj, methodID, new Span<jvalue>(args));
         }
+        ///<summary>Calls a Java instance method defined by `methodID`, optionally passing an array of arguments (`args`) to the method.</summary>
+        ///<param name="obj">The Java object on which to call the instance method.</param>
+        ///<param name="methodID">The ID of the method to call.</param>
+        ///<param name="args">An array of arguments to pass to the method.</param>
+        ///<returns>The value returned by the Java method.</returns>
+        ///<seealso href="http://download.oracle.com/javase/1.5.0/docs/guide/jni/spec/jniTOC.html">Java Native Interface Specification (Oracle)</seealso>
         public static float CallFloatMethod(IntPtr obj, IntPtr methodID, Span<jvalue> args)
         {
             unsafe
@@ -1107,16 +1340,30 @@ namespace UnityEngine
             }
         }
         ///<summary>Calls a Java instance method defined by &lt;tt&gt;methodID&lt;/tt&gt;, optionally passing an array of arguments (&lt;tt&gt;args&lt;/tt&gt;) to the method.</summary>
+        ///<param name="obj">The Java object on which to call the instance method.</param>
+        ///<param name="methodID">The ID of the method to call.</param>
+        ///<param name="args">An array of arguments to pass to the method.</param>
+        ///<returns>The value returned by the Java method.</returns>
         ///<seealso href="http://download.oracle.com/javase/1.5.0/docs/guide/jni/spec/jniTOC.html">Java Native Interface Specification (Oracle)</seealso>
         [NativeMethod(IsThreadSafe = true)]
         public static extern unsafe float CallFloatMethodUnsafe(IntPtr obj, IntPtr methodID, jvalue* args);
         // Calls an instance (nonstatic) Java method defined by <tt>methodID</tt>, optionally passing an array of arguments (<tt>args</tt>) to the method.
         ///<summary>Calls a Java instance method defined by &lt;tt&gt;methodID&lt;/tt&gt;, optionally passing an array of arguments (&lt;tt&gt;args&lt;/tt&gt;) to the method.</summary>
+        ///<param name="obj">The Java object on which to call the instance method.</param>
+        ///<param name="methodID">The ID of the method to call.</param>
+        ///<param name="args">An array of arguments to pass to the method.</param>
+        ///<returns>The value returned by the Java method.</returns>
         ///<seealso href="http://download.oracle.com/javase/1.5.0/docs/guide/jni/spec/jniTOC.html">Java Native Interface Specification (Oracle)</seealso>
         public static double CallDoubleMethod(IntPtr obj, IntPtr methodID, jvalue[] args)
         {
             return CallDoubleMethod(obj, methodID, new Span<jvalue>(args));
         }
+        ///<summary>Calls a Java instance method defined by `methodID`, optionally passing an array of arguments (`args`) to the method.</summary>
+        ///<param name="obj">The Java object on which to call the instance method.</param>
+        ///<param name="methodID">The ID of the method to call.</param>
+        ///<param name="args">An array of arguments to pass to the method.</param>
+        ///<returns>The value returned by the Java method.</returns>
+        ///<seealso href="http://download.oracle.com/javase/1.5.0/docs/guide/jni/spec/jniTOC.html">Java Native Interface Specification (Oracle)</seealso>
         public static double CallDoubleMethod(IntPtr obj, IntPtr methodID, Span<jvalue> args)
         {
             unsafe
@@ -1128,16 +1375,30 @@ namespace UnityEngine
             }
         }
         ///<summary>Calls a Java instance method defined by &lt;tt&gt;methodID&lt;/tt&gt;, optionally passing an array of arguments (&lt;tt&gt;args&lt;/tt&gt;) to the method.</summary>
+        ///<param name="obj">The Java object on which to call the instance method.</param>
+        ///<param name="methodID">The ID of the method to call.</param>
+        ///<param name="args">An array of arguments to pass to the method.</param>
+        ///<returns>The value returned by the Java method.</returns>
         ///<seealso href="http://download.oracle.com/javase/1.5.0/docs/guide/jni/spec/jniTOC.html">Java Native Interface Specification (Oracle)</seealso>
         [NativeMethod(IsThreadSafe = true)]
         public static extern unsafe double CallDoubleMethodUnsafe(IntPtr obj, IntPtr methodID, jvalue* args);
         // Calls an instance (nonstatic) Java method defined by <tt>methodID</tt>, optionally passing an array of arguments (<tt>args</tt>) to the method.
         ///<summary>Calls a Java instance method defined by &lt;tt&gt;methodID&lt;/tt&gt;, optionally passing an array of arguments (&lt;tt&gt;args&lt;/tt&gt;) to the method.</summary>
+        ///<param name="obj">The Java object on which to call the instance method.</param>
+        ///<param name="methodID">The ID of the method to call.</param>
+        ///<param name="args">An array of arguments to pass to the method.</param>
+        ///<returns>The value returned by the Java method.</returns>
         ///<seealso href="http://download.oracle.com/javase/1.5.0/docs/guide/jni/spec/jniTOC.html">Java Native Interface Specification (Oracle)</seealso>
         public static Int64 CallLongMethod(IntPtr obj, IntPtr methodID, jvalue[] args)
         {
             return CallLongMethod(obj, methodID, new Span<jvalue>(args));
         }
+        ///<summary>Calls a Java instance method defined by `methodID`, optionally passing an array of arguments (`args`) to the method.</summary>
+        ///<param name="obj">The Java object on which to call the instance method.</param>
+        ///<param name="methodID">The ID of the method to call.</param>
+        ///<param name="args">An array of arguments to pass to the method.</param>
+        ///<returns>The value returned by the Java method.</returns>
+        ///<seealso href="http://download.oracle.com/javase/1.5.0/docs/guide/jni/spec/jniTOC.html">Java Native Interface Specification (Oracle)</seealso>
         public static Int64 CallLongMethod(IntPtr obj, IntPtr methodID, Span<jvalue> args)
         {
             unsafe
@@ -1149,16 +1410,28 @@ namespace UnityEngine
             }
         }
         ///<summary>Calls a Java instance method defined by &lt;tt&gt;methodID&lt;/tt&gt;, optionally passing an array of arguments (&lt;tt&gt;args&lt;/tt&gt;) to the method.</summary>
+        ///<param name="obj">The Java object on which to call the instance method.</param>
+        ///<param name="methodID">The ID of the method to call.</param>
+        ///<param name="args">An array of arguments to pass to the method.</param>
+        ///<returns>The value returned by the Java method.</returns>
         ///<seealso href="http://download.oracle.com/javase/1.5.0/docs/guide/jni/spec/jniTOC.html">Java Native Interface Specification (Oracle)</seealso>
         [NativeMethod(IsThreadSafe = true)]
         public static extern unsafe Int64 CallLongMethodUnsafe(IntPtr obj, IntPtr methodID, jvalue* args);
         // Calls an instance (nonstatic) Java method defined by <tt>methodID</tt>, optionally passing an array of arguments (<tt>args</tt>) to the method.
         ///<summary>Calls a Java instance method defined by &lt;tt&gt;methodID&lt;/tt&gt;, optionally passing an array of arguments (&lt;tt&gt;args&lt;/tt&gt;) to the method.</summary>
+        ///<param name="obj">The Java object on which to call the instance method.</param>
+        ///<param name="methodID">The ID of the method to call.</param>
+        ///<param name="args">An array of arguments to pass to the method.</param>
         ///<seealso href="http://download.oracle.com/javase/1.5.0/docs/guide/jni/spec/jniTOC.html">Java Native Interface Specification (Oracle)</seealso>
         public static void CallVoidMethod(IntPtr obj, IntPtr methodID, jvalue[] args)
         {
             CallVoidMethod(obj, methodID, new Span<jvalue>(args));
         }
+        ///<summary>Calls a Java instance method defined by `methodID`, optionally passing an array of arguments (`args`) to the method.</summary>
+        ///<param name="obj">The Java object on which to call the instance method.</param>
+        ///<param name="methodID">The ID of the method to call.</param>
+        ///<param name="args">An array of arguments to pass to the method.</param>
+        ///<seealso href="http://download.oracle.com/javase/1.5.0/docs/guide/jni/spec/jniTOC.html">Java Native Interface Specification (Oracle)</seealso>
         public static void CallVoidMethod(IntPtr obj, IntPtr methodID, Span<jvalue> args)
         {
             unsafe
@@ -1170,6 +1443,9 @@ namespace UnityEngine
             }
         }
         ///<summary>Calls a Java instance method defined by &lt;tt&gt;methodID&lt;/tt&gt;, optionally passing an array of arguments (&lt;tt&gt;args&lt;/tt&gt;) to the method.</summary>
+        ///<param name="obj">The Java object on which to call the instance method.</param>
+        ///<param name="methodID">The ID of the method to call.</param>
+        ///<param name="args">An array of arguments to pass to the method.</param>
         ///<seealso href="http://download.oracle.com/javase/1.5.0/docs/guide/jni/spec/jniTOC.html">Java Native Interface Specification (Oracle)</seealso>
         [NativeMethod(IsThreadSafe = true)]
         public static extern unsafe void CallVoidMethodUnsafe(IntPtr obj, IntPtr methodID, jvalue* args);
@@ -1179,6 +1455,9 @@ namespace UnityEngine
         // This function returns the value of an instance (nonstatic) field of an object.
         ///<summary>Returns the value of an instance (nonstatic) field of an object.</summary>
         ///<remarks>This is a convenience function that calls GetObjectField() with the same parameters, but creates a managed string from the result.</remarks>
+        ///<param name="obj">The Java object that declares the field.</param>
+        ///<param name="fieldID">The ID of the field.</param>
+        ///<returns>The value of the field, as a managed string.</returns>
         ///<seealso cref="AndroidJNI.GetObjectField" />
         public static string GetStringField(IntPtr obj, IntPtr fieldID)
         {
@@ -1192,11 +1471,17 @@ namespace UnityEngine
         // This function returns the value of an instance (nonstatic) field of an object.
         ///<summary>Returns the value of an instance (nonstatic) field of an object.</summary>
         ///<remarks>The result is a reference to a &lt;tt&gt;java.lang.Object&lt;/tt&gt;, or a subclass thereof.</remarks>
+        ///<param name="obj">The Java object that declares the field.</param>
+        ///<param name="fieldID">The ID of the field.</param>
+        ///<returns>A local reference to the Java object stored in the field.</returns>
         ///<seealso href="http://download.oracle.com/javase/1.5.0/docs/guide/jni/spec/jniTOC.html">Java Native Interface Specification (Oracle)</seealso>
         [NativeMethod(IsThreadSafe = true)]
         public static extern IntPtr GetObjectField(IntPtr obj, IntPtr fieldID);
         // This function returns the value of an instance (nonstatic) field of an object.
         ///<summary>Returns the value of an instance (nonstatic) field of an object.</summary>
+        ///<param name="obj">The Java object that declares the field.</param>
+        ///<param name="fieldID">The ID of the field.</param>
+        ///<returns>The value of the field.</returns>
         ///<seealso href="http://download.oracle.com/javase/1.5.0/docs/guide/jni/spec/jniTOC.html">Java Native Interface Specification (Oracle)</seealso>
         [NativeMethod(IsThreadSafe = true)]
         public static extern bool GetBooleanField(IntPtr obj, IntPtr fieldID);
@@ -1212,36 +1497,57 @@ namespace UnityEngine
 
         // This function returns the value of an instance (nonstatic) field of an object.
         ///<summary>Returns the value of an instance (nonstatic) field of an object.</summary>
+        ///<param name="obj">The Java object that declares the field.</param>
+        ///<param name="fieldID">The ID of the field.</param>
+        ///<returns>The value of the field.</returns>
         ///<seealso href="http://download.oracle.com/javase/1.5.0/docs/guide/jni/spec/jniTOC.html">Java Native Interface Specification (Oracle)</seealso>
         [NativeMethod(IsThreadSafe = true)]
         public static extern SByte GetSByteField(IntPtr obj, IntPtr fieldID);
         // This function returns the value of an instance (nonstatic) field of an object.
         ///<summary>Returns the value of an instance (nonstatic) field of an object.</summary>
+        ///<param name="obj">The Java object that declares the field.</param>
+        ///<param name="fieldID">The ID of the field.</param>
+        ///<returns>The value of the field.</returns>
         ///<seealso href="http://download.oracle.com/javase/1.5.0/docs/guide/jni/spec/jniTOC.html">Java Native Interface Specification (Oracle)</seealso>
         [NativeMethod(IsThreadSafe = true)]
         public static extern Char GetCharField(IntPtr obj, IntPtr fieldID);
         // This function returns the value of an instance (nonstatic) field of an object.
         ///<summary>Returns the value of an instance (nonstatic) field of an object.</summary>
+        ///<param name="obj">The Java object that declares the field.</param>
+        ///<param name="fieldID">The ID of the field.</param>
+        ///<returns>The value of the field.</returns>
         ///<seealso href="http://download.oracle.com/javase/1.5.0/docs/guide/jni/spec/jniTOC.html">Java Native Interface Specification (Oracle)</seealso>
         [NativeMethod(IsThreadSafe = true)]
         public static extern Int16 GetShortField(IntPtr obj, IntPtr fieldID);
         // This function returns the value of an instance (nonstatic) field of an object.
         ///<summary>Returns the value of an instance (nonstatic) field of an object.</summary>
+        ///<param name="obj">The Java object that declares the field.</param>
+        ///<param name="fieldID">The ID of the field.</param>
+        ///<returns>The value of the field.</returns>
         ///<seealso href="http://download.oracle.com/javase/1.5.0/docs/guide/jni/spec/jniTOC.html">Java Native Interface Specification (Oracle)</seealso>
         [NativeMethod(IsThreadSafe = true)]
         public static extern Int32 GetIntField(IntPtr obj, IntPtr fieldID);
         // This function returns the value of an instance (nonstatic) field of an object.
         ///<summary>Returns the value of an instance (nonstatic) field of an object.</summary>
+        ///<param name="obj">The Java object that declares the field.</param>
+        ///<param name="fieldID">The ID of the field.</param>
+        ///<returns>The value of the field.</returns>
         ///<seealso href="http://download.oracle.com/javase/1.5.0/docs/guide/jni/spec/jniTOC.html">Java Native Interface Specification (Oracle)</seealso>
         [NativeMethod(IsThreadSafe = true)]
         public static extern Int64 GetLongField(IntPtr obj, IntPtr fieldID);
         // This function returns the value of an instance (nonstatic) field of an object.
         ///<summary>Returns the value of an instance (nonstatic) field of an object.</summary>
+        ///<param name="obj">The Java object that declares the field.</param>
+        ///<param name="fieldID">The ID of the field.</param>
+        ///<returns>The value of the field.</returns>
         ///<seealso href="http://download.oracle.com/javase/1.5.0/docs/guide/jni/spec/jniTOC.html">Java Native Interface Specification (Oracle)</seealso>
         [NativeMethod(IsThreadSafe = true)]
         public static extern float GetFloatField(IntPtr obj, IntPtr fieldID);
         // This function returns the value of an instance (nonstatic) field of an object.
         ///<summary>Returns the value of an instance (nonstatic) field of an object.</summary>
+        ///<param name="obj">The Java object that declares the field.</param>
+        ///<param name="fieldID">The ID of the field.</param>
+        ///<returns>The value of the field.</returns>
         ///<seealso href="http://download.oracle.com/javase/1.5.0/docs/guide/jni/spec/jniTOC.html">Java Native Interface Specification (Oracle)</seealso>
         [NativeMethod(IsThreadSafe = true)]
         public static extern double GetDoubleField(IntPtr obj, IntPtr fieldID);
@@ -1251,17 +1557,26 @@ namespace UnityEngine
         // This function sets the value of an instance (nonstatic) field of an object.
         ///<summary>Sets the value of an instance field of the specified object.</summary>
         ///<remarks>This is a convenience function that calls SetObjectField() with the same parameters, but performs the necessary marshalling of the string value.</remarks>
+        ///<param name="obj">The Java object that declares the field.</param>
+        ///<param name="fieldID">The ID of the field.</param>
+        ///<param name="val">The value to assign to the field.</param>
         ///<seealso cref="AndroidJNI.SetObjectField" />
         [NativeMethod(IsThreadSafe = true)]
         public static extern void SetStringField(IntPtr obj, IntPtr fieldID, string val);
         // This function sets the value of an instance (nonstatic) field of an object.
         ///<summary>Sets the value of an instance field of the specified object.</summary>
         ///<remarks>The value to set is a reference to either a &lt;tt&gt;java.lang.Object&lt;/tt&gt;, or a subclass thereof.</remarks>
+        ///<param name="obj">The Java object that declares the field.</param>
+        ///<param name="fieldID">The ID of the field.</param>
+        ///<param name="val">The value to assign to the field.</param>
         ///<seealso href="http://download.oracle.com/javase/1.5.0/docs/guide/jni/spec/jniTOC.html">Java Native Interface Specification (Oracle)</seealso>
         [NativeMethod(IsThreadSafe = true)]
         public static extern void SetObjectField(IntPtr obj, IntPtr fieldID, IntPtr val);
         // This function sets the value of an instance (nonstatic) field of an object.
         ///<summary>Sets the value of an instance field of the specified object.</summary>
+        ///<param name="obj">The Java object that declares the field.</param>
+        ///<param name="fieldID">The ID of the field.</param>
+        ///<param name="val">The value to assign to the field.</param>
         ///<seealso href="http://download.oracle.com/javase/1.5.0/docs/guide/jni/spec/jniTOC.html">Java Native Interface Specification (Oracle)</seealso>
         [NativeMethod(IsThreadSafe = true)]
         public static extern void SetBooleanField(IntPtr obj, IntPtr fieldID, bool val);
@@ -1277,36 +1592,57 @@ namespace UnityEngine
 
         // This function sets the value of an instance (nonstatic) field of an object.
         ///<summary>Sets the value of an instance field of the specified object.</summary>
+        ///<param name="obj">The Java object that declares the field.</param>
+        ///<param name="fieldID">The ID of the field.</param>
+        ///<param name="val">The value to assign to the field.</param>
         ///<seealso href="http://download.oracle.com/javase/1.5.0/docs/guide/jni/spec/jniTOC.html">Java Native Interface Specification (Oracle)</seealso>
         [NativeMethod(IsThreadSafe = true)]
         public static extern void SetSByteField(IntPtr obj, IntPtr fieldID, SByte val);
         // This function sets the value of an instance (nonstatic) field of an object.
         ///<summary>Sets the value of an instance field of the specified object.</summary>
+        ///<param name="obj">The Java object that declares the field.</param>
+        ///<param name="fieldID">The ID of the field.</param>
+        ///<param name="val">The value to assign to the field.</param>
         ///<seealso href="http://download.oracle.com/javase/1.5.0/docs/guide/jni/spec/jniTOC.html">Java Native Interface Specification (Oracle)</seealso>
         [NativeMethod(IsThreadSafe = true)]
         public static extern void SetCharField(IntPtr obj, IntPtr fieldID, Char val);
         // This function sets the value of an instance (nonstatic) field of an object.
         ///<summary>Sets the value of an instance field of the specified object.</summary>
+        ///<param name="obj">The Java object that declares the field.</param>
+        ///<param name="fieldID">The ID of the field.</param>
+        ///<param name="val">The value to assign to the field.</param>
         ///<seealso href="http://download.oracle.com/javase/1.5.0/docs/guide/jni/spec/jniTOC.html">Java Native Interface Specification (Oracle)</seealso>
         [NativeMethod(IsThreadSafe = true)]
         public static extern void SetShortField(IntPtr obj, IntPtr fieldID, Int16 val);
         // This function sets the value of an instance (nonstatic) field of an object.
         ///<summary>Sets the value of an instance field of the specified object.</summary>
+        ///<param name="obj">The Java object that declares the field.</param>
+        ///<param name="fieldID">The ID of the field.</param>
+        ///<param name="val">The value to assign to the field.</param>
         ///<seealso href="http://download.oracle.com/javase/1.5.0/docs/guide/jni/spec/jniTOC.html">Java Native Interface Specification (Oracle)</seealso>
         [NativeMethod(IsThreadSafe = true)]
         public static extern void SetIntField(IntPtr obj, IntPtr fieldID, Int32 val);
         // This function sets the value of an instance (nonstatic) field of an object.
         ///<summary>Sets the value of an instance field of the specified object.</summary>
+        ///<param name="obj">The Java object that declares the field.</param>
+        ///<param name="fieldID">The ID of the field.</param>
+        ///<param name="val">The value to assign to the field.</param>
         ///<seealso href="http://download.oracle.com/javase/1.5.0/docs/guide/jni/spec/jniTOC.html">Java Native Interface Specification (Oracle)</seealso>
         [NativeMethod(IsThreadSafe = true)]
         public static extern void SetLongField(IntPtr obj, IntPtr fieldID, Int64 val);
         // This function sets the value of an instance (nonstatic) field of an object.
         ///<summary>Sets the value of an instance field of the specified object.</summary>
+        ///<param name="obj">The Java object that declares the field.</param>
+        ///<param name="fieldID">The ID of the field.</param>
+        ///<param name="val">The value to assign to the field.</param>
         ///<seealso href="http://download.oracle.com/javase/1.5.0/docs/guide/jni/spec/jniTOC.html">Java Native Interface Specification (Oracle)</seealso>
         [NativeMethod(IsThreadSafe = true)]
         public static extern void SetFloatField(IntPtr obj, IntPtr fieldID, float val);
         // This function sets the value of an instance (nonstatic) field of an object.
         ///<summary>Sets the value of an instance field of the specified object.</summary>
+        ///<param name="obj">The Java object that declares the field.</param>
+        ///<param name="fieldID">The ID of the field.</param>
+        ///<param name="val">The value to assign to the field.</param>
         ///<seealso href="http://download.oracle.com/javase/1.5.0/docs/guide/jni/spec/jniTOC.html">Java Native Interface Specification (Oracle)</seealso>
         [NativeMethod(IsThreadSafe = true)]
         public static extern void SetDoubleField(IntPtr obj, IntPtr fieldID, double val);
@@ -1317,11 +1653,22 @@ namespace UnityEngine
         // Invokes a static method on a Java object, according to the specified <tt>methodID</tt>, optionally passing an array of arguments (<tt>args</tt>) to the method.
         ///<summary>Invokes the specified &lt;tt&gt;methodID&lt;/tt&gt; static method on a Java object, optionally passing in an array of arguments (&lt;tt&gt;args&lt;/tt&gt;).</summary>
         ///<remarks>This is a convenience function that calls CallStaticObjectMethod() with the same parameters, but creates a managed string from the result.</remarks>
+        ///<param name="clazz">The Java class on which to call the static method.</param>
+        ///<param name="methodID">The ID of the method to call.</param>
+        ///<param name="args">An array of arguments to pass to the method.</param>
+        ///<returns>The managed string returned by the method.</returns>
         ///<seealso cref="AndroidJNI.CallStaticObjectMethod" />
         public static string CallStaticStringMethod(IntPtr clazz, IntPtr methodID, jvalue[] args)
         {
             return CallStaticStringMethod(clazz, methodID, new Span<jvalue>(args));
         }
+        ///<summary>Invokes the specified `methodID` static method on a Java object, optionally passing in an array of arguments (`args`).</summary>
+        ///<param name="clazz">The Java class on which to call the static method.</param>
+        ///<param name="methodID">The ID of the method to call.</param>
+        ///<param name="args">An array of arguments to pass to the method.</param>
+        ///<returns>The managed string returned by the method.</returns>
+        ///<remarks>This is a convenience function that calls `CallStaticObjectMethod()` with the same parameters, but creates a managed string from the result.</remarks>
+        ///<seealso cref="AndroidJNI.CallStaticObjectMethod" />
         public static string CallStaticStringMethod(IntPtr clazz, IntPtr methodID, Span<jvalue> args)
         {
             unsafe
@@ -1334,6 +1681,10 @@ namespace UnityEngine
         }
         ///<summary>Invokes the specified &lt;tt&gt;methodID&lt;/tt&gt; static method on a Java object, optionally passing in an array of arguments (&lt;tt&gt;args&lt;/tt&gt;).</summary>
         ///<remarks>This is a convenience function that calls CallStaticObjectMethod() with the same parameters, but creates a managed string from the result.</remarks>
+        ///<param name="clazz">The Java class on which to call the static method.</param>
+        ///<param name="methodID">The ID of the method to call.</param>
+        ///<param name="args">An array of arguments to pass to the method.</param>
+        ///<returns>The managed string returned by the method.</returns>
         ///<seealso cref="AndroidJNI.CallStaticObjectMethodUnsafe" />
         public static unsafe string CallStaticStringMethodUnsafe(IntPtr clazz, IntPtr methodID, jvalue* args)
         {
@@ -1346,11 +1697,22 @@ namespace UnityEngine
         // Invokes a static method on a Java object, according to the specified <tt>methodID</tt>, optionally passing an array of arguments (<tt>args</tt>) to the method.
         ///<summary>Invokes the specified &lt;tt&gt;methodID&lt;/tt&gt; static method on a Java object, optionally passing in an array of arguments (&lt;tt&gt;args&lt;/tt&gt;).</summary>
         ///<remarks>This method returns a reference to a &lt;tt&gt;java.lang.Object&lt;/tt&gt;, or a subclass thereof.</remarks>
+        ///<param name="clazz">The Java class on which to call the static method.</param>
+        ///<param name="methodID">The ID of the method to call.</param>
+        ///<param name="args">An array of arguments to pass to the method.</param>
+        ///<returns>A local reference to the Java object returned by the method.</returns>
         ///<seealso href="http://download.oracle.com/javase/1.5.0/docs/guide/jni/spec/jniTOC.html">Java Native Interface Specification (Oracle)</seealso>
         public static IntPtr CallStaticObjectMethod(IntPtr clazz, IntPtr methodID, jvalue[] args)
         {
             return CallStaticObjectMethod(clazz, methodID, new Span<jvalue>(args));
         }
+        ///<summary>Invokes the specified `methodID` static method on a Java object, optionally passing in an array of arguments (`args`).</summary>
+        ///<param name="clazz">The Java class on which to call the static method.</param>
+        ///<param name="methodID">The ID of the method to call.</param>
+        ///<param name="args">An array of arguments to pass to the method.</param>
+        ///<returns>A local reference to the Java object returned by the method.</returns>
+        ///<remarks>This method returns a reference to a `java.lang.Object`, or a subclass thereof.</remarks>
+        ///<seealso href="http://download.oracle.com/javase/1.5.0/docs/guide/jni/spec/jniTOC.html">Java Native Interface Specification (Oracle)</seealso>
         public static IntPtr CallStaticObjectMethod(IntPtr clazz, IntPtr methodID, Span<jvalue> args)
         {
             unsafe
@@ -1363,16 +1725,30 @@ namespace UnityEngine
         }
         ///<summary>Invokes the specified &lt;tt&gt;methodID&lt;/tt&gt; static method on a Java object, optionally passing in an array of arguments (&lt;tt&gt;args&lt;/tt&gt;).</summary>
         ///<remarks>This method returns a reference to a &lt;tt&gt;java.lang.Object&lt;/tt&gt;, or a subclass thereof.</remarks>
+        ///<param name="clazz">The Java class on which to call the static method.</param>
+        ///<param name="methodID">The ID of the method to call.</param>
+        ///<param name="args">An array of arguments to pass to the method.</param>
+        ///<returns>A local reference to the Java object returned by the method.</returns>
         ///<seealso href="http://download.oracle.com/javase/1.5.0/docs/guide/jni/spec/jniTOC.html">Java Native Interface Specification (Oracle)</seealso>
         [NativeMethod(IsThreadSafe = true)]
         public static extern unsafe IntPtr CallStaticObjectMethodUnsafe(IntPtr clazz, IntPtr methodID, jvalue* args);
         // Invokes a static method on a Java object, according to the specified <tt>methodID</tt>, optionally passing an array of arguments (<tt>args</tt>) to the method.
         ///<summary>Invokes the specified &lt;tt&gt;methodID&lt;/tt&gt; static method on a Java object, optionally passing in an array of arguments (&lt;tt&gt;args&lt;/tt&gt;).</summary>
+        ///<param name="clazz">The Java class on which to call the static method.</param>
+        ///<param name="methodID">The ID of the method to call.</param>
+        ///<param name="args">An array of arguments to pass to the method.</param>
+        ///<returns>The value returned by the Java method.</returns>
         ///<seealso href="http://download.oracle.com/javase/1.5.0/docs/guide/jni/spec/jniTOC.html">Java Native Interface Specification (Oracle)</seealso>
         public static Int32 CallStaticIntMethod(IntPtr clazz, IntPtr methodID, jvalue[] args)
         {
             return CallStaticIntMethod(clazz, methodID, new Span<jvalue>(args));
         }
+        ///<summary>Invokes the specified `methodID` static method on a Java object, optionally passing in an array of arguments (`args`).</summary>
+        ///<param name="clazz">The Java class on which to call the static method.</param>
+        ///<param name="methodID">The ID of the method to call.</param>
+        ///<param name="args">An array of arguments to pass to the method.</param>
+        ///<returns>The value returned by the Java method.</returns>
+        ///<seealso href="http://download.oracle.com/javase/1.5.0/docs/guide/jni/spec/jniTOC.html">Java Native Interface Specification (Oracle)</seealso>
         public static Int32 CallStaticIntMethod(IntPtr clazz, IntPtr methodID, Span<jvalue> args)
         {
             unsafe
@@ -1384,16 +1760,30 @@ namespace UnityEngine
             }
         }
         ///<summary>Invokes the specified &lt;tt&gt;methodID&lt;/tt&gt; static method on a Java object, optionally passing in an array of arguments (&lt;tt&gt;args&lt;/tt&gt;).</summary>
+        ///<param name="clazz">The Java class on which to call the static method.</param>
+        ///<param name="methodID">The ID of the method to call.</param>
+        ///<param name="args">An array of arguments to pass to the method.</param>
+        ///<returns>The value returned by the Java method.</returns>
         ///<seealso href="http://download.oracle.com/javase/1.5.0/docs/guide/jni/spec/jniTOC.html">Java Native Interface Specification (Oracle)</seealso>
         [NativeMethod(IsThreadSafe = true)]
         public static extern unsafe Int32 CallStaticIntMethodUnsafe(IntPtr clazz, IntPtr methodID, jvalue* args);
         // Invokes a static method on a Java object, according to the specified <tt>methodID</tt>, optionally passing an array of arguments (<tt>args</tt>) to the method.
         ///<summary>Invokes the specified &lt;tt&gt;methodID&lt;/tt&gt; static method on a Java object, optionally passing in an array of arguments (&lt;tt&gt;args&lt;/tt&gt;).</summary>
+        ///<param name="clazz">The Java class on which to call the static method.</param>
+        ///<param name="methodID">The ID of the method to call.</param>
+        ///<param name="args">An array of arguments to pass to the method.</param>
+        ///<returns>The value returned by the Java method.</returns>
         ///<seealso href="http://download.oracle.com/javase/1.5.0/docs/guide/jni/spec/jniTOC.html">Java Native Interface Specification (Oracle)</seealso>
         public static bool CallStaticBooleanMethod(IntPtr clazz, IntPtr methodID, jvalue[] args)
         {
             return CallStaticBooleanMethod(clazz, methodID, new Span<jvalue>(args));
         }
+        ///<summary>Invokes the specified `methodID` static method on a Java object, optionally passing in an array of arguments (`args`).</summary>
+        ///<param name="clazz">The Java class on which to call the static method.</param>
+        ///<param name="methodID">The ID of the method to call.</param>
+        ///<param name="args">An array of arguments to pass to the method.</param>
+        ///<returns>The value returned by the Java method.</returns>
+        ///<seealso href="http://download.oracle.com/javase/1.5.0/docs/guide/jni/spec/jniTOC.html">Java Native Interface Specification (Oracle)</seealso>
         public static bool CallStaticBooleanMethod(IntPtr clazz, IntPtr methodID, Span<jvalue> args)
         {
             unsafe
@@ -1405,16 +1795,30 @@ namespace UnityEngine
             }
         }
         ///<summary>Invokes the specified &lt;tt&gt;methodID&lt;/tt&gt; static method on a Java object, optionally passing in an array of arguments (&lt;tt&gt;args&lt;/tt&gt;).</summary>
+        ///<param name="clazz">The Java class on which to call the static method.</param>
+        ///<param name="methodID">The ID of the method to call.</param>
+        ///<param name="args">An array of arguments to pass to the method.</param>
+        ///<returns>The value returned by the Java method.</returns>
         ///<seealso href="http://download.oracle.com/javase/1.5.0/docs/guide/jni/spec/jniTOC.html">Java Native Interface Specification (Oracle)</seealso>
         [NativeMethod(IsThreadSafe = true)]
         public static extern unsafe bool CallStaticBooleanMethodUnsafe(IntPtr clazz, IntPtr methodID, jvalue* args);
         // Invokes a static method on a Java object, according to the specified <tt>methodID</tt>, optionally passing an array of arguments (<tt>args</tt>) to the method.
         ///<summary>Invokes the specified &lt;tt&gt;methodID&lt;/tt&gt; static method on a Java object, optionally passing in an array of arguments (&lt;tt&gt;args&lt;/tt&gt;).</summary>
+        ///<param name="clazz">The Java class on which to call the static method.</param>
+        ///<param name="methodID">The ID of the method to call.</param>
+        ///<param name="args">An array of arguments to pass to the method.</param>
+        ///<returns>The value returned by the Java method.</returns>
         ///<seealso href="http://download.oracle.com/javase/1.5.0/docs/guide/jni/spec/jniTOC.html">Java Native Interface Specification (Oracle)</seealso>
         public static Int16 CallStaticShortMethod(IntPtr clazz, IntPtr methodID, jvalue[] args)
         {
             return CallStaticShortMethod(clazz, methodID, new Span<jvalue>(args));
         }
+        ///<summary>Invokes the specified `methodID` static method on a Java object, optionally passing in an array of arguments (`args`).</summary>
+        ///<param name="clazz">The Java class on which to call the static method.</param>
+        ///<param name="methodID">The ID of the method to call.</param>
+        ///<param name="args">An array of arguments to pass to the method.</param>
+        ///<returns>The value returned by the Java method.</returns>
+        ///<seealso href="http://download.oracle.com/javase/1.5.0/docs/guide/jni/spec/jniTOC.html">Java Native Interface Specification (Oracle)</seealso>
         public static Int16 CallStaticShortMethod(IntPtr clazz, IntPtr methodID, Span<jvalue> args)
         {
             unsafe
@@ -1426,6 +1830,10 @@ namespace UnityEngine
             }
         }
         ///<summary>Invokes the specified &lt;tt&gt;methodID&lt;/tt&gt; static method on a Java object, optionally passing in an array of arguments (&lt;tt&gt;args&lt;/tt&gt;).</summary>
+        ///<param name="clazz">The Java class on which to call the static method.</param>
+        ///<param name="methodID">The ID of the method to call.</param>
+        ///<param name="args">An array of arguments to pass to the method.</param>
+        ///<returns>The value returned by the Java method.</returns>
         ///<seealso href="http://download.oracle.com/javase/1.5.0/docs/guide/jni/spec/jniTOC.html">Java Native Interface Specification (Oracle)</seealso>
         [NativeMethod(IsThreadSafe = true)]
         public static extern unsafe Int16 CallStaticShortMethodUnsafe(IntPtr clazz, IntPtr methodID, jvalue* args);
@@ -1441,11 +1849,21 @@ namespace UnityEngine
         }
 
         ///<summary>Invokes the specified &lt;tt&gt;methodID&lt;/tt&gt; static method on a Java object, optionally passing in an array of arguments (&lt;tt&gt;args&lt;/tt&gt;).</summary>
+        ///<param name="clazz">The Java class on which to call the static method.</param>
+        ///<param name="methodID">The ID of the method to call.</param>
+        ///<param name="args">An array of arguments to pass to the method.</param>
+        ///<returns>The value returned by the Java method.</returns>
         ///<seealso href="http://download.oracle.com/javase/1.5.0/docs/guide/jni/spec/jniTOC.html">Java Native Interface Specification (Oracle)</seealso>
         public static SByte CallStaticSByteMethod(IntPtr clazz, IntPtr methodID, jvalue[] args)
         {
             return CallStaticSByteMethod(clazz, methodID, new Span<jvalue>(args));
         }
+        ///<summary>Invokes the specified `methodID` static method on a Java object, optionally passing in an array of arguments (`args`).</summary>
+        ///<param name="clazz">The Java class on which to call the static method.</param>
+        ///<param name="methodID">The ID of the method to call.</param>
+        ///<param name="args">An array of arguments to pass to the method.</param>
+        ///<returns>The value returned by the Java method.</returns>
+        ///<seealso href="http://download.oracle.com/javase/1.5.0/docs/guide/jni/spec/jniTOC.html">Java Native Interface Specification (Oracle)</seealso>
         public static SByte CallStaticSByteMethod(IntPtr clazz, IntPtr methodID, Span<jvalue> args)
         {
             unsafe
@@ -1457,16 +1875,30 @@ namespace UnityEngine
             }
         }
         ///<summary>Invokes the specified &lt;tt&gt;methodID&lt;/tt&gt; static method on a Java object, optionally passing in an array of arguments (&lt;tt&gt;args&lt;/tt&gt;).</summary>
+        ///<param name="clazz">The Java class on which to call the static method.</param>
+        ///<param name="methodID">The ID of the method to call.</param>
+        ///<param name="args">An array of arguments to pass to the method.</param>
+        ///<returns>The value returned by the Java method.</returns>
         ///<seealso href="http://download.oracle.com/javase/1.5.0/docs/guide/jni/spec/jniTOC.html">Java Native Interface Specification (Oracle)</seealso>
         [NativeMethod(IsThreadSafe = true)]
         public static extern unsafe SByte CallStaticSByteMethodUnsafe(IntPtr clazz, IntPtr methodID, jvalue* args);
         // Invokes a static method on a Java object, according to the specified <tt>methodID</tt>, optionally passing an array of arguments (<tt>args</tt>) to the method.
         ///<summary>Invokes the specified &lt;tt&gt;methodID&lt;/tt&gt; static method on a Java object, optionally passing in an array of arguments (&lt;tt&gt;args&lt;/tt&gt;).</summary>
+        ///<param name="clazz">The Java class on which to call the static method.</param>
+        ///<param name="methodID">The ID of the method to call.</param>
+        ///<param name="args">An array of arguments to pass to the method.</param>
+        ///<returns>The value returned by the Java method.</returns>
         ///<seealso href="http://download.oracle.com/javase/1.5.0/docs/guide/jni/spec/jniTOC.html">Java Native Interface Specification (Oracle)</seealso>
         public static Char CallStaticCharMethod(IntPtr clazz, IntPtr methodID, jvalue[] args)
         {
             return CallStaticCharMethod(clazz, methodID, new Span<jvalue>(args));
         }
+        ///<summary>Invokes the specified `methodID` static method on a Java object, optionally passing in an array of arguments (`args`).</summary>
+        ///<param name="clazz">The Java class on which to call the static method.</param>
+        ///<param name="methodID">The ID of the method to call.</param>
+        ///<param name="args">An array of arguments to pass to the method.</param>
+        ///<returns>The value returned by the Java method.</returns>
+        ///<seealso href="http://download.oracle.com/javase/1.5.0/docs/guide/jni/spec/jniTOC.html">Java Native Interface Specification (Oracle)</seealso>
         public static Char CallStaticCharMethod(IntPtr clazz, IntPtr methodID, Span<jvalue> args)
         {
             unsafe
@@ -1478,16 +1910,30 @@ namespace UnityEngine
             }
         }
         ///<summary>Invokes the specified &lt;tt&gt;methodID&lt;/tt&gt; static method on a Java object, optionally passing in an array of arguments (&lt;tt&gt;args&lt;/tt&gt;).</summary>
+        ///<param name="clazz">The Java class on which to call the static method.</param>
+        ///<param name="methodID">The ID of the method to call.</param>
+        ///<param name="args">An array of arguments to pass to the method.</param>
+        ///<returns>The value returned by the Java method.</returns>
         ///<seealso href="http://download.oracle.com/javase/1.5.0/docs/guide/jni/spec/jniTOC.html">Java Native Interface Specification (Oracle)</seealso>
         [NativeMethod(IsThreadSafe = true)]
         public static extern unsafe Char CallStaticCharMethodUnsafe(IntPtr clazz, IntPtr methodID, jvalue* args);
         // Invokes a static method on a Java object, according to the specified <tt>methodID</tt>, optionally passing an array of arguments (<tt>args</tt>) to the method.
         ///<summary>Invokes the specified &lt;tt&gt;methodID&lt;/tt&gt; static method on a Java object, optionally passing in an array of arguments (&lt;tt&gt;args&lt;/tt&gt;).</summary>
+        ///<param name="clazz">The Java class on which to call the static method.</param>
+        ///<param name="methodID">The ID of the method to call.</param>
+        ///<param name="args">An array of arguments to pass to the method.</param>
+        ///<returns>The value returned by the Java method.</returns>
         ///<seealso href="http://download.oracle.com/javase/1.5.0/docs/guide/jni/spec/jniTOC.html">Java Native Interface Specification (Oracle)</seealso>
         public static float CallStaticFloatMethod(IntPtr clazz, IntPtr methodID, jvalue[] args)
         {
             return CallStaticFloatMethod(clazz, methodID, new Span<jvalue>(args));
         }
+        ///<summary>Invokes the specified `methodID` static method on a Java object, optionally passing in an array of arguments (`args`).</summary>
+        ///<param name="clazz">The Java class on which to call the static method.</param>
+        ///<param name="methodID">The ID of the method to call.</param>
+        ///<param name="args">An array of arguments to pass to the method.</param>
+        ///<returns>The value returned by the Java method.</returns>
+        ///<seealso href="http://download.oracle.com/javase/1.5.0/docs/guide/jni/spec/jniTOC.html">Java Native Interface Specification (Oracle)</seealso>
         public static float CallStaticFloatMethod(IntPtr clazz, IntPtr methodID, Span<jvalue> args)
         {
             unsafe
@@ -1499,16 +1945,30 @@ namespace UnityEngine
             }
         }
         ///<summary>Invokes the specified &lt;tt&gt;methodID&lt;/tt&gt; static method on a Java object, optionally passing in an array of arguments (&lt;tt&gt;args&lt;/tt&gt;).</summary>
+        ///<param name="clazz">The Java class on which to call the static method.</param>
+        ///<param name="methodID">The ID of the method to call.</param>
+        ///<param name="args">An array of arguments to pass to the method.</param>
+        ///<returns>The value returned by the Java method.</returns>
         ///<seealso href="http://download.oracle.com/javase/1.5.0/docs/guide/jni/spec/jniTOC.html">Java Native Interface Specification (Oracle)</seealso>
         [NativeMethod(IsThreadSafe = true)]
         public static extern unsafe float CallStaticFloatMethodUnsafe(IntPtr clazz, IntPtr methodID, jvalue* args);
         // Invokes a static method on a Java object, according to the specified <tt>methodID</tt>, optionally passing an array of arguments (<tt>args</tt>) to the method.
         ///<summary>Invokes the specified &lt;tt&gt;methodID&lt;/tt&gt; static method on a Java object, optionally passing in an array of arguments (&lt;tt&gt;args&lt;/tt&gt;).</summary>
+        ///<param name="clazz">The Java class on which to call the static method.</param>
+        ///<param name="methodID">The ID of the method to call.</param>
+        ///<param name="args">An array of arguments to pass to the method.</param>
+        ///<returns>The value returned by the Java method.</returns>
         ///<seealso href="http://download.oracle.com/javase/1.5.0/docs/guide/jni/spec/jniTOC.html">Java Native Interface Specification (Oracle)</seealso>
         public static double CallStaticDoubleMethod(IntPtr clazz, IntPtr methodID, jvalue[] args)
         {
             return CallStaticDoubleMethod(clazz, methodID, new Span<jvalue>(args));
         }
+        ///<summary>Invokes the specified `methodID` static method on a Java object, optionally passing in an array of arguments (`args`).</summary>
+        ///<param name="clazz">The Java class on which to call the static method.</param>
+        ///<param name="methodID">The ID of the method to call.</param>
+        ///<param name="args">An array of arguments to pass to the method.</param>
+        ///<returns>The value returned by the Java method.</returns>
+        ///<seealso href="http://download.oracle.com/javase/1.5.0/docs/guide/jni/spec/jniTOC.html">Java Native Interface Specification (Oracle)</seealso>
         public static double CallStaticDoubleMethod(IntPtr clazz, IntPtr methodID, Span<jvalue> args)
         {
             unsafe
@@ -1520,16 +1980,30 @@ namespace UnityEngine
             }
         }
         ///<summary>Invokes the specified &lt;tt&gt;methodID&lt;/tt&gt; static method on a Java object, optionally passing in an array of arguments (&lt;tt&gt;args&lt;/tt&gt;).</summary>
+        ///<param name="clazz">The Java class on which to call the static method.</param>
+        ///<param name="methodID">The ID of the method to call.</param>
+        ///<param name="args">An array of arguments to pass to the method.</param>
+        ///<returns>The value returned by the Java method.</returns>
         ///<seealso href="http://download.oracle.com/javase/1.5.0/docs/guide/jni/spec/jniTOC.html">Java Native Interface Specification (Oracle)</seealso>
         [NativeMethod(IsThreadSafe = true)]
         public static extern unsafe double CallStaticDoubleMethodUnsafe(IntPtr clazz, IntPtr methodID, jvalue* args);
         // Invokes a static method on a Java object, according to the specified <tt>methodID</tt>, optionally passing an array of arguments (<tt>args</tt>) to the method.
         ///<summary>Invokes the specified &lt;tt&gt;methodID&lt;/tt&gt; static method on a Java object, optionally passing in an array of arguments (&lt;tt&gt;args&lt;/tt&gt;).</summary>
+        ///<param name="clazz">The Java class on which to call the static method.</param>
+        ///<param name="methodID">The ID of the method to call.</param>
+        ///<param name="args">An array of arguments to pass to the method.</param>
+        ///<returns>The value returned by the Java method.</returns>
         ///<seealso href="http://download.oracle.com/javase/1.5.0/docs/guide/jni/spec/jniTOC.html">Java Native Interface Specification (Oracle)</seealso>
         public static Int64 CallStaticLongMethod(IntPtr clazz, IntPtr methodID, jvalue[] args)
         {
             return CallStaticLongMethod(clazz, methodID, new Span<jvalue>(args));
         }
+        ///<summary>Invokes the specified `methodID` static method on a Java object, optionally passing in an array of arguments (`args`).</summary>
+        ///<param name="clazz">The Java class on which to call the static method.</param>
+        ///<param name="methodID">The ID of the method to call.</param>
+        ///<param name="args">An array of arguments to pass to the method.</param>
+        ///<returns>The value returned by the Java method.</returns>
+        ///<seealso href="http://download.oracle.com/javase/1.5.0/docs/guide/jni/spec/jniTOC.html">Java Native Interface Specification (Oracle)</seealso>
         public static Int64 CallStaticLongMethod(IntPtr clazz, IntPtr methodID, Span<jvalue> args)
         {
             unsafe
@@ -1541,16 +2015,28 @@ namespace UnityEngine
             }
         }
         ///<summary>Invokes the specified &lt;tt&gt;methodID&lt;/tt&gt; static method on a Java object, optionally passing in an array of arguments (&lt;tt&gt;args&lt;/tt&gt;).</summary>
+        ///<param name="clazz">The Java class on which to call the static method.</param>
+        ///<param name="methodID">The ID of the method to call.</param>
+        ///<param name="args">An array of arguments to pass to the method.</param>
+        ///<returns>The value returned by the Java method.</returns>
         ///<seealso href="http://download.oracle.com/javase/1.5.0/docs/guide/jni/spec/jniTOC.html">Java Native Interface Specification (Oracle)</seealso>
         [NativeMethod(IsThreadSafe = true)]
         public static extern unsafe Int64 CallStaticLongMethodUnsafe(IntPtr clazz, IntPtr methodID, jvalue* args);
         // Invokes a static method on a Java object, according to the specified <tt>methodID</tt>, optionally passing an array of arguments (<tt>args</tt>) to the method.
         ///<summary>Invokes the specified &lt;tt&gt;methodID&lt;/tt&gt; static method on a Java object, optionally passing in an array of arguments (&lt;tt&gt;args&lt;/tt&gt;).</summary>
+        ///<param name="clazz">The Java class on which to call the static method.</param>
+        ///<param name="methodID">The ID of the method to call.</param>
+        ///<param name="args">An array of arguments to pass to the method.</param>
         ///<seealso href="http://download.oracle.com/javase/1.5.0/docs/guide/jni/spec/jniTOC.html">Java Native Interface Specification (Oracle)</seealso>
         public static void CallStaticVoidMethod(IntPtr clazz, IntPtr methodID, jvalue[] args)
         {
             CallStaticVoidMethod(clazz, methodID, new Span<jvalue>(args));
         }
+        ///<summary>Invokes the specified `methodID` static method on a Java object, optionally passing in an array of arguments (`args`).</summary>
+        ///<param name="clazz">The Java class on which to call the static method.</param>
+        ///<param name="methodID">The ID of the method to call.</param>
+        ///<param name="args">An array of arguments to pass to the method.</param>
+        ///<seealso href="http://download.oracle.com/javase/1.5.0/docs/guide/jni/spec/jniTOC.html">Java Native Interface Specification (Oracle)</seealso>
         public static void CallStaticVoidMethod(IntPtr clazz, IntPtr methodID, Span<jvalue> args)
         {
             unsafe
@@ -1562,6 +2048,9 @@ namespace UnityEngine
             }
         }
         ///<summary>Invokes the specified &lt;tt&gt;methodID&lt;/tt&gt; static method on a Java object, optionally passing in an array of arguments (&lt;tt&gt;args&lt;/tt&gt;).</summary>
+        ///<param name="clazz">The Java class on which to call the static method.</param>
+        ///<param name="methodID">The ID of the method to call.</param>
+        ///<param name="args">An array of arguments to pass to the method.</param>
         ///<seealso href="http://download.oracle.com/javase/1.5.0/docs/guide/jni/spec/jniTOC.html">Java Native Interface Specification (Oracle)</seealso>
         [NativeMethod(IsThreadSafe = true)]
         public static extern unsafe void CallStaticVoidMethodUnsafe(IntPtr clazz, IntPtr methodID, jvalue* args);
@@ -1571,6 +2060,9 @@ namespace UnityEngine
         // This function returns the value of a static field of an object.
         ///<summary>Returns the value of a static field of an object.</summary>
         ///<remarks>This is a convenience function that calls GetStaticObjectField() with the same parameters, but creates a managed string from the result.</remarks>
+        ///<param name="clazz">The Java class that declares the static field.</param>
+        ///<param name="fieldID">The ID of the field.</param>
+        ///<returns>The value of the static field, as a managed string.</returns>
         ///<seealso cref="AndroidJNI.GetStaticObjectField" />
         ///<seealso href="http://download.oracle.com/javase/1.5.0/docs/guide/jni/spec/jniTOC.html">Java Native Interface Specification (Oracle)</seealso>
         public static string GetStaticStringField(IntPtr clazz, IntPtr fieldID)
@@ -1584,11 +2076,17 @@ namespace UnityEngine
         // This function returns the value of a static field of an object.
         ///<summary>Returns the value of a static field of an object.</summary>
         ///<remarks>The result is a reference to a &lt;tt&gt;java.lang.Object&lt;/tt&gt;, or a subclass thereof.</remarks>
+        ///<param name="clazz">The Java class that declares the static field.</param>
+        ///<param name="fieldID">The ID of the field.</param>
+        ///<returns>A local reference to the Java object stored in the static field.</returns>
         ///<seealso href="http://download.oracle.com/javase/1.5.0/docs/guide/jni/spec/jniTOC.html">Java Native Interface Specification (Oracle)</seealso>
         [NativeMethod(IsThreadSafe = true)]
         public static extern IntPtr GetStaticObjectField(IntPtr clazz, IntPtr fieldID);
         // This function returns the value of a static field of an object.
         ///<summary>Returns the value of a static field of an object.</summary>
+        ///<param name="clazz">The Java class that declares the static field.</param>
+        ///<param name="fieldID">The ID of the field.</param>
+        ///<returns>The value of the static field.</returns>
         ///<seealso href="http://download.oracle.com/javase/1.5.0/docs/guide/jni/spec/jniTOC.html">Java Native Interface Specification (Oracle)</seealso>
         [NativeMethod(IsThreadSafe = true)]
         public static extern bool GetStaticBooleanField(IntPtr clazz, IntPtr fieldID);
@@ -1604,36 +2102,57 @@ namespace UnityEngine
 
         // This function returns the value of a static field of an object.
         ///<summary>Returns the value of a static field of an object.</summary>
+        ///<param name="clazz">The Java class that declares the static field.</param>
+        ///<param name="fieldID">The ID of the field.</param>
+        ///<returns>The value of the static field.</returns>
         ///<seealso href="http://download.oracle.com/javase/1.5.0/docs/guide/jni/spec/jniTOC.html">Java Native Interface Specification (Oracle)</seealso>
         [NativeMethod(IsThreadSafe = true)]
         public static extern SByte GetStaticSByteField(IntPtr clazz, IntPtr fieldID);
         // This function returns the value of a static field of an object.
         ///<summary>Returns the value of a static field of an object.</summary>
+        ///<param name="clazz">The Java class that declares the static field.</param>
+        ///<param name="fieldID">The ID of the field.</param>
+        ///<returns>The value of the static field.</returns>
         ///<seealso href="http://download.oracle.com/javase/1.5.0/docs/guide/jni/spec/jniTOC.html">Java Native Interface Specification (Oracle)</seealso>
         [NativeMethod(IsThreadSafe = true)]
         public static extern Char GetStaticCharField(IntPtr clazz, IntPtr fieldID);
         // This function returns the value of a static field of an object.
         ///<summary>Returns the value of a static field of an object.</summary>
+        ///<param name="clazz">The Java class that declares the static field.</param>
+        ///<param name="fieldID">The ID of the field.</param>
+        ///<returns>The value of the static field.</returns>
         ///<seealso href="http://download.oracle.com/javase/1.5.0/docs/guide/jni/spec/jniTOC.html">Java Native Interface Specification (Oracle)</seealso>
         [NativeMethod(IsThreadSafe = true)]
         public static extern Int16 GetStaticShortField(IntPtr clazz, IntPtr fieldID);
         // This function returns the value of a static field of an object.
         ///<summary>Returns the value of a static field of an object.</summary>
+        ///<param name="clazz">The Java class that declares the static field.</param>
+        ///<param name="fieldID">The ID of the field.</param>
+        ///<returns>The value of the static field.</returns>
         ///<seealso href="http://download.oracle.com/javase/1.5.0/docs/guide/jni/spec/jniTOC.html">Java Native Interface Specification (Oracle)</seealso>
         [NativeMethod(IsThreadSafe = true)]
         public static extern Int32 GetStaticIntField(IntPtr clazz, IntPtr fieldID);
         // This function returns the value of a static field of an object.
         ///<summary>Returns the value of a static field of an object.</summary>
+        ///<param name="clazz">The Java class that declares the static field.</param>
+        ///<param name="fieldID">The ID of the field.</param>
+        ///<returns>The value of the static field.</returns>
         ///<seealso href="http://download.oracle.com/javase/1.5.0/docs/guide/jni/spec/jniTOC.html">Java Native Interface Specification (Oracle)</seealso>
         [NativeMethod(IsThreadSafe = true)]
         public static extern Int64 GetStaticLongField(IntPtr clazz, IntPtr fieldID);
         // This function returns the value of a static field of an object.
         ///<summary>Returns the value of a static field of an object.</summary>
+        ///<param name="clazz">The Java class that declares the static field.</param>
+        ///<param name="fieldID">The ID of the field.</param>
+        ///<returns>The value of the static field.</returns>
         ///<seealso href="http://download.oracle.com/javase/1.5.0/docs/guide/jni/spec/jniTOC.html">Java Native Interface Specification (Oracle)</seealso>
         [NativeMethod(IsThreadSafe = true)]
         public static extern float GetStaticFloatField(IntPtr clazz, IntPtr fieldID);
         // This function returns the value of a static field of an object.
         ///<summary>Returns the value of a static field of an object.</summary>
+        ///<param name="clazz">The Java class that declares the static field.</param>
+        ///<param name="fieldID">The ID of the field.</param>
+        ///<returns>The value of the static field.</returns>
         ///<seealso href="http://download.oracle.com/javase/1.5.0/docs/guide/jni/spec/jniTOC.html">Java Native Interface Specification (Oracle)</seealso>
         [NativeMethod(IsThreadSafe = true)]
         public static extern double GetStaticDoubleField(IntPtr clazz, IntPtr fieldID);
@@ -1643,17 +2162,26 @@ namespace UnityEngine
         // This function ets the value of a static field of an object.
         ///<summary>Sets the value of a static field in the specified object.</summary>
         ///<remarks>This is a convenience function that calls SetStaticObjectField() with the same parameters, but performs the necessary marshalling of the string value.</remarks>
+        ///<param name="clazz">The Java class that declares the static field.</param>
+        ///<param name="fieldID">The ID of the field.</param>
+        ///<param name="val">The value to assign to the field.</param>
         ///<seealso cref="AndroidJNI.SetStaticObjectField" />
         [NativeMethod(IsThreadSafe = true)]
         public static extern void SetStaticStringField(IntPtr clazz, IntPtr fieldID, string val);
         // This function ets the value of a static field of an object.
         ///<summary>Sets the value of a static field in the specified object.</summary>
         ///<remarks>The value to set is a reference to either a &lt;tt&gt;java.lang.Object&lt;/tt&gt;, or a subclass thereof.</remarks>
+        ///<param name="clazz">The Java class that declares the static field.</param>
+        ///<param name="fieldID">The ID of the field.</param>
+        ///<param name="val">The value to assign to the field.</param>
         ///<seealso href="http://download.oracle.com/javase/1.5.0/docs/guide/jni/spec/jniTOC.html">Java Native Interface Specification (Oracle)</seealso>
         [NativeMethod(IsThreadSafe = true)]
         public static extern void SetStaticObjectField(IntPtr clazz, IntPtr fieldID, IntPtr val);
         // This function ets the value of a static field of an object.
         ///<summary>Sets the value of a static field in the specified object.</summary>
+        ///<param name="clazz">The Java class that declares the static field.</param>
+        ///<param name="fieldID">The ID of the field.</param>
+        ///<param name="val">The value to assign to the field.</param>
         ///<seealso href="http://download.oracle.com/javase/1.5.0/docs/guide/jni/spec/jniTOC.html">Java Native Interface Specification (Oracle)</seealso>
         [NativeMethod(IsThreadSafe = true)]
         public static extern void SetStaticBooleanField(IntPtr clazz, IntPtr fieldID, bool val);
@@ -1669,36 +2197,57 @@ namespace UnityEngine
 
         // This function ets the value of a static field of an object.
         ///<summary>Sets the value of a static field in the specified object.</summary>
+        ///<param name="clazz">The Java class that declares the static field.</param>
+        ///<param name="fieldID">The ID of the field.</param>
+        ///<param name="val">The value to assign to the field.</param>
         ///<seealso href="http://download.oracle.com/javase/1.5.0/docs/guide/jni/spec/jniTOC.html">Java Native Interface Specification (Oracle)</seealso>
         [NativeMethod(IsThreadSafe = true)]
         public static extern void SetStaticSByteField(IntPtr clazz, IntPtr fieldID, SByte val);
         // This function ets the value of a static field of an object.
         ///<summary>Sets the value of a static field in the specified object.</summary>
+        ///<param name="clazz">The Java class that declares the static field.</param>
+        ///<param name="fieldID">The ID of the field.</param>
+        ///<param name="val">The value to assign to the field.</param>
         ///<seealso href="http://download.oracle.com/javase/1.5.0/docs/guide/jni/spec/jniTOC.html">Java Native Interface Specification (Oracle)</seealso>
         [NativeMethod(IsThreadSafe = true)]
         public static extern void SetStaticCharField(IntPtr clazz, IntPtr fieldID, Char val);
         // This function ets the value of a static field of an object.
         ///<summary>Sets the value of a static field in the specified object.</summary>
+        ///<param name="clazz">The Java class that declares the static field.</param>
+        ///<param name="fieldID">The ID of the field.</param>
+        ///<param name="val">The value to assign to the field.</param>
         ///<seealso href="http://download.oracle.com/javase/1.5.0/docs/guide/jni/spec/jniTOC.html">Java Native Interface Specification (Oracle)</seealso>
         [NativeMethod(IsThreadSafe = true)]
         public static extern void SetStaticShortField(IntPtr clazz, IntPtr fieldID, Int16 val);
         // This function ets the value of a static field of an object.
         ///<summary>Sets the value of a static field in the specified object.</summary>
+        ///<param name="clazz">The Java class that declares the static field.</param>
+        ///<param name="fieldID">The ID of the field.</param>
+        ///<param name="val">The value to assign to the field.</param>
         ///<seealso href="http://download.oracle.com/javase/1.5.0/docs/guide/jni/spec/jniTOC.html">Java Native Interface Specification (Oracle)</seealso>
         [NativeMethod(IsThreadSafe = true)]
         public static extern void SetStaticIntField(IntPtr clazz, IntPtr fieldID, Int32 val);
         // This function ets the value of a static field of an object.
         ///<summary>Sets the value of a static field in the specified object.</summary>
+        ///<param name="clazz">The Java class that declares the static field.</param>
+        ///<param name="fieldID">The ID of the field.</param>
+        ///<param name="val">The value to assign to the field.</param>
         ///<seealso href="http://download.oracle.com/javase/1.5.0/docs/guide/jni/spec/jniTOC.html">Java Native Interface Specification (Oracle)</seealso>
         [NativeMethod(IsThreadSafe = true)]
         public static extern void SetStaticLongField(IntPtr clazz, IntPtr fieldID, Int64 val);
         // This function ets the value of a static field of an object.
         ///<summary>Sets the value of a static field in the specified object.</summary>
+        ///<param name="clazz">The Java class that declares the static field.</param>
+        ///<param name="fieldID">The ID of the field.</param>
+        ///<param name="val">The value to assign to the field.</param>
         ///<seealso href="http://download.oracle.com/javase/1.5.0/docs/guide/jni/spec/jniTOC.html">Java Native Interface Specification (Oracle)</seealso>
         [NativeMethod(IsThreadSafe = true)]
         public static extern void SetStaticFloatField(IntPtr clazz, IntPtr fieldID, float val);
         // This function ets the value of a static field of an object.
         ///<summary>Sets the value of a static field in the specified object.</summary>
+        ///<param name="clazz">The Java class that declares the static field.</param>
+        ///<param name="fieldID">The ID of the field.</param>
+        ///<param name="val">The value to assign to the field.</param>
         ///<seealso href="http://download.oracle.com/javase/1.5.0/docs/guide/jni/spec/jniTOC.html">Java Native Interface Specification (Oracle)</seealso>
         [NativeMethod(IsThreadSafe = true)]
         public static extern void SetStaticDoubleField(IntPtr clazz, IntPtr fieldID, double val);
@@ -1707,8 +2256,9 @@ namespace UnityEngine
         //---------------------------------------
         [NativeMethod(IsThreadSafe = true)]
         static extern IntPtr ConvertToBooleanArray(Boolean[] array);
-        // Convert a managed array of System.Boolean to a Java array of <tt>boolean</tt>.
-        ///<summary>Converts a managed array of System.Boolean to a Java array of &lt;tt&gt;boolean&lt;/tt&gt;.</summary>
+        ///<summary>Converts a managed array of `System.Boolean` to a Java array of `boolean`.</summary>
+        ///<param name="array">The managed array to convert.</param>
+        ///<returns>A local reference to the newly constructed Java array of boolean.</returns>
         ///<seealso cref="AndroidJNI.NewBooleanArray" />
         ///<seealso cref="AndroidJNI.SetBooleanArrayElement" />
         public static IntPtr ToBooleanArray(Boolean[] array)
@@ -1726,6 +2276,8 @@ namespace UnityEngine
         public static extern IntPtr ToByteArray(Byte[] array);
         // Convert a managed array of System.SByte to a Java array of <tt>byte</tt>.
         ///<summary>Converts a managed array of System.SByte to a Java array of &lt;tt&gt;byte&lt;/tt&gt;.</summary>
+        ///<param name="array">The managed array to convert.</param>
+        ///<returns>A local reference to the newly constructed Java array of sbyte.</returns>
         ///<seealso cref="AndroidJNI.NewSByteArray" />
         ///<seealso cref="AndroidJNI.SetSByteArrayElement" />
         public static IntPtr ToSByteArray(SByte[] array)
@@ -1740,10 +2292,18 @@ namespace UnityEngine
                 }
             }
         }
+        ///<summary>Converts a managed array of `System.SByte` to a Java array of `byte`.</summary>
+        ///<param name="array">The managed array to convert.</param>
+        ///<param name="length">The number of elements in the array.</param>
+        ///<returns>A local reference to the newly constructed Java array of sbyte.</returns>
+        ///<seealso cref="AndroidJNI.NewSByteArray" />
+        ///<seealso cref="AndroidJNI.SetSByteArrayElement" />
         [NativeMethod(IsThreadSafe = true)]
         public static extern unsafe IntPtr ToSByteArray(SByte* array, int length);
         // Convert a managed array of System.Char to a Java array of <tt>char</tt>.
         ///<summary>Converts a managed array of System.Char to a Java array of &lt;tt&gt;char&lt;/tt&gt;.</summary>
+        ///<param name="array">The managed array to convert.</param>
+        ///<returns>A local reference to the newly constructed Java array of char.</returns>
         ///<seealso cref="AndroidJNI.NewCharArray" />
         ///<seealso cref="AndroidJNI.SetCharArrayElement" />
         public static IntPtr ToCharArray(Char[] array)
@@ -1758,10 +2318,18 @@ namespace UnityEngine
                 }
             }
         }
+        ///<summary>Converts a managed array of System.Char to a Java array of &lt;tt&gt;char&lt;/tt&gt;.</summary>
+        ///<param name="array">The managed array to convert.</param>
+        ///<param name="length">The number of elements in the array.</param>
+        ///<returns>A local reference to the newly constructed Java array of char.</returns>
+        ///<seealso cref="AndroidJNI.NewCharArray" />
+        ///<seealso cref="AndroidJNI.SetCharArrayElement" />
         [NativeMethod(IsThreadSafe = true)]
         public static extern unsafe IntPtr ToCharArray(Char* array, int length);
         // Convert a managed array of System.Int16 to a Java array of <tt>short</tt>.
         ///<summary>Converts a managed array of System.Int16 to a Java array of &lt;tt&gt;short&lt;/tt&gt;.</summary>
+        ///<param name="array">The managed array to convert.</param>
+        ///<returns>A local reference to the newly constructed Java array of short.</returns>
         ///<seealso cref="AndroidJNI.NewShortArray" />
         ///<seealso cref="AndroidJNI.SetShortArrayElement" />
         public static IntPtr ToShortArray(Int16[] array)
@@ -1776,10 +2344,18 @@ namespace UnityEngine
                 }
             }
         }
+        ///<summary>Converts a managed array of System.Int16 to a Java array of &lt;tt&gt;short&lt;/tt&gt;.</summary>
+        ///<param name="array">The managed array to convert.</param>
+        ///<param name="length">The number of elements in the array.</param>
+        ///<returns>A local reference to the newly constructed Java array of short.</returns>
+        ///<seealso cref="AndroidJNI.NewShortArray" />
+        ///<seealso cref="AndroidJNI.SetShortArrayElement" />
         [NativeMethod(IsThreadSafe = true)]
         public static extern unsafe IntPtr ToShortArray(Int16* array, int length);
         // Convert a managed array of System.Int32 to a Java array of <tt>int</tt>.
         ///<summary>Converts a managed array of System.Int32 to a Java array of &lt;tt&gt;int&lt;/tt&gt;.</summary>
+        ///<param name="array">The managed array to convert.</param>
+        ///<returns>A local reference to the newly constructed Java array of int.</returns>
         ///<seealso cref="AndroidJNI.NewIntArray" />
         ///<seealso cref="AndroidJNI.SetIntArrayElement" />
         public static IntPtr ToIntArray(Int32[] array)
@@ -1794,10 +2370,18 @@ namespace UnityEngine
                 }
             }
         }
+        ///<summary>Converts a managed array of System.Int32 to a Java array of &lt;tt&gt;int&lt;/tt&gt;.</summary>
+        ///<param name="array">The managed array to convert.</param>
+        ///<param name="length">The number of elements in the array.</param>
+        ///<returns>A local reference to the newly constructed Java array of int.</returns>
+        ///<seealso cref="AndroidJNI.NewIntArray" />
+        ///<seealso cref="AndroidJNI.SetIntArrayElement" />
         [NativeMethod(IsThreadSafe = true)]
         public static extern unsafe IntPtr ToIntArray(Int32* array, int length);
         // Convert a managed array of System.Int64 to a Java array of <tt>long</tt>.
         ///<summary>Converts a managed array of System.Int64 to a Java array of &lt;tt&gt;long&lt;/tt&gt;.</summary>
+        ///<param name="array">The managed array to convert.</param>
+        ///<returns>A local reference to the newly constructed Java array of long.</returns>
         ///<seealso cref="AndroidJNI.NewLongArray" />
         ///<seealso cref="AndroidJNI.SetLongArrayElement" />
         public static IntPtr ToLongArray(Int64[] array)
@@ -1812,10 +2396,18 @@ namespace UnityEngine
                 }
             }
         }
+        ///<summary>Converts a managed array of System.Int64 to a Java array of &lt;tt&gt;long&lt;/tt&gt;.</summary>
+        ///<param name="array">The managed array to convert.</param>
+        ///<param name="length">The number of elements in the array.</param>
+        ///<returns>A local reference to the newly constructed Java array of long.</returns>
+        ///<seealso cref="AndroidJNI.NewLongArray" />
+        ///<seealso cref="AndroidJNI.SetLongArrayElement" />
         [NativeMethod(IsThreadSafe = true)]
         public static extern unsafe IntPtr ToLongArray(Int64* array, int length);
         // Convert a managed array of System.Single to a Java array of <tt>float</tt>.
         ///<summary>Converts a managed array of System.Single to a Java array of &lt;tt&gt;float&lt;/tt&gt;.</summary>
+        ///<param name="array">The managed array to convert.</param>
+        ///<returns>A local reference to the newly constructed Java array of float.</returns>
         ///<seealso cref="AndroidJNI.NewFloatArray" />
         ///<seealso cref="AndroidJNI.SetFloatArrayElement" />
         public static IntPtr ToFloatArray(float[] array)
@@ -1830,10 +2422,18 @@ namespace UnityEngine
                 }
             }
         }
+        ///<summary>Converts a managed array of System.Single to a Java array of &lt;tt&gt;float&lt;/tt&gt;.</summary>
+        ///<param name="array">The managed array to convert.</param>
+        ///<param name="length">The number of elements in the array.</param>
+        ///<returns>A local reference to the newly constructed Java array of float.</returns>
+        ///<seealso cref="AndroidJNI.NewFloatArray" />
+        ///<seealso cref="AndroidJNI.SetFloatArrayElement" />
         [NativeMethod(IsThreadSafe = true)]
         public static extern unsafe IntPtr ToFloatArray(float* array, int length);
         // Convert a managed array of System.Double to a Java array of <tt>double</tt>.
         ///<summary>Converts a managed array of System.Double to a Java array of &lt;tt&gt;double&lt;/tt&gt;.</summary>
+        ///<param name="array">The managed array to convert.</param>
+        ///<returns>A local reference to the newly constructed Java array of double.</returns>
         ///<seealso cref="AndroidJNI.NewDoubleArray" />
         ///<seealso cref="AndroidJNI.SetDoubleArrayElement" />
         public static IntPtr ToDoubleArray(double[] array)
@@ -1848,13 +2448,32 @@ namespace UnityEngine
                 }
             }
         }
+        ///<summary>Converts a managed array of System.Double to a Java array of `double`.</summary>
+        ///<param name="array">The managed array to convert.</param>
+        ///<param name="length">The number of elements in the array.</param>
+        ///<returns>A local reference to the newly constructed Java array of double.</returns>
+        ///<seealso cref="AndroidJNI.NewDoubleArray" />
+        ///<seealso cref="AndroidJNI.SetDoubleArrayElement" />
         [NativeMethod(IsThreadSafe = true)]
         public static extern unsafe IntPtr ToDoubleArray(double* array, int length);
 
         // Convert a managed array of System.IntPtr, representing Java objects, to a Java array of <tt>java.lang.Object</tt>.
+        ///<summary>Converts a managed array of System.IntPtr, representing Java objects, to a Java array of &lt;tt&gt;java.lang.Object&lt;/tt&gt;.</summary>
+        ///<param name="array">The managed array to convert.</param>
+        ///<param name="length">The number of elements in the array.</param>
+        ///<param name="arrayClass">The class of the array's elements.</param>
+        ///<returns>A local reference to the newly constructed Java array of object.</returns>
+        ///<seealso cref="AndroidJNI.NewObjectArray" />
+        ///<seealso cref="AndroidJNI.SetObjectArrayElement" />
         [NativeMethod(IsThreadSafe = true)]
         public static extern unsafe IntPtr ToObjectArray(IntPtr* array, int length, IntPtr arrayClass);
 
+        ///<summary>Converts a managed array of System.IntPtr, representing Java objects, to a Java array of `java.lang.Object`.</summary>
+        ///<param name="array">The managed array to convert.</param>
+        ///<param name="arrayClass">The class of the array's elements.</param>
+        ///<returns>A local reference to the newly constructed Java array of object.</returns>
+        ///<seealso cref="AndroidJNI.NewObjectArray" />
+        ///<seealso cref="AndroidJNI.SetObjectArrayElement" />
         public static IntPtr ToObjectArray(IntPtr[] array, IntPtr arrayClass)
         {
             unsafe
@@ -1870,6 +2489,8 @@ namespace UnityEngine
 
         // Convert a managed array of System.IntPtr, representing Java objects, to a Java array of <tt>java.lang.Object</tt>.
         ///<summary>Converts a managed array of System.IntPtr, representing Java objects, to a Java array of &lt;tt&gt;java.lang.Object&lt;/tt&gt;.</summary>
+        ///<param name="array">The managed array to convert.</param>
+        ///<returns>A local reference to the newly constructed Java array of object.</returns>
         ///<seealso cref="AndroidJNI.NewObjectArray" />
         ///<seealso cref="AndroidJNI.SetObjectArrayElement" />
         public static IntPtr ToObjectArray(IntPtr[] array)
@@ -1879,6 +2500,8 @@ namespace UnityEngine
 
         // Convert a Java array of <tt>boolean</tt> to a managed array of System.Boolean.
         ///<summary>Converts a Java array of &lt;tt&gt;boolean&lt;/tt&gt; to a managed array of System.Boolean.</summary>
+        ///<param name="array">The Java array to read from.</param>
+        ///<returns>A managed array containing a copy of the Java array's elements.</returns>
         ///<seealso cref="AndroidJNI.GetBooleanArrayElement" />
         ///<seealso cref="AndroidJNI.GetArrayLength" />
         [NativeMethod(IsThreadSafe = true)]
@@ -1893,6 +2516,8 @@ namespace UnityEngine
         public static extern Byte[] FromByteArray(IntPtr array);
         // Convert a Java array of <tt>byte</tt> to a managed array of System.SByte.
         ///<summary>Converts a Java array of &lt;tt&gt;byte&lt;/tt&gt; to a managed array of System.SByte.</summary>
+        ///<param name="array">The Java array to read from.</param>
+        ///<returns>A managed array containing a copy of the Java array's elements.</returns>
         ///<seealso cref="AndroidJNI.GetSByteArrayElement" />
         ///<seealso cref="AndroidJNI.GetArrayLength" />
         [NativeMethod(IsThreadSafe = true)]
@@ -1900,6 +2525,8 @@ namespace UnityEngine
         public static extern SByte[] FromSByteArray(IntPtr array);
         // Convert a Java array of <tt>char</tt> to a managed array of System.Char.
         ///<summary>Converts a Java array of &lt;tt&gt;char&lt;/tt&gt; to a managed array of System.Char.</summary>
+        ///<param name="array">The Java array to read from.</param>
+        ///<returns>A managed array containing a copy of the Java array's elements.</returns>
         ///<seealso cref="AndroidJNI.GetCharArrayElement" />
         ///<seealso cref="AndroidJNI.GetArrayLength" />
         [NativeMethod(IsThreadSafe = true)]
@@ -1907,6 +2534,8 @@ namespace UnityEngine
         public static extern Char[] FromCharArray(IntPtr array);
         // Convert a Java array of <tt>short</tt> to a managed array of System.Int16.
         ///<summary>Converts a Java array of &lt;tt&gt;short&lt;/tt&gt; to a managed array of System.Int16.</summary>
+        ///<param name="array">The Java array to read from.</param>
+        ///<returns>A managed array containing a copy of the Java array's elements.</returns>
         ///<seealso cref="AndroidJNI.GetShortArrayElement" />
         ///<seealso cref="AndroidJNI.GetArrayLength" />
         [NativeMethod(IsThreadSafe = true)]
@@ -1914,6 +2543,8 @@ namespace UnityEngine
         public static extern Int16[] FromShortArray(IntPtr array);
         // Convert a Java array of <tt>int</tt> to a managed array of System.Int32.
         ///<summary>Converts a Java array of &lt;tt&gt;int&lt;/tt&gt; to a managed array of System.Int32.</summary>
+        ///<param name="array">The Java array to read from.</param>
+        ///<returns>A managed array containing a copy of the Java array's elements.</returns>
         ///<seealso cref="AndroidJNI.GetIntArrayElement" />
         ///<seealso cref="AndroidJNI.GetArrayLength" />
         [NativeMethod(IsThreadSafe = true)]
@@ -1921,6 +2552,8 @@ namespace UnityEngine
         public static extern Int32[] FromIntArray(IntPtr array);
         // Convert a Java array of <tt>long</tt> to a managed array of System.Int64.
         ///<summary>Converts a Java array of &lt;tt&gt;long&lt;/tt&gt; to a managed array of System.Int64.</summary>
+        ///<param name="array">The Java array to read from.</param>
+        ///<returns>A managed array containing a copy of the Java array's elements.</returns>
         ///<seealso cref="AndroidJNI.GetFloatArrayElement" />
         ///<seealso cref="AndroidJNI.GetArrayLength" />
         [NativeMethod(IsThreadSafe = true)]
@@ -1928,6 +2561,8 @@ namespace UnityEngine
         public static extern Int64[] FromLongArray(IntPtr array);
         // Convert a Java array of <tt>float</tt> to a managed array of System.Single.
         ///<summary>Converts a Java array of &lt;tt&gt;float&lt;/tt&gt; to a managed array of System.Single.</summary>
+        ///<param name="array">The Java array to read from.</param>
+        ///<returns>A managed array containing a copy of the Java array's elements.</returns>
         ///<seealso cref="AndroidJNI.GetFloatArrayElement" />
         ///<seealso cref="AndroidJNI.GetArrayLength" />
         [NativeMethod(IsThreadSafe = true)]
@@ -1935,6 +2570,8 @@ namespace UnityEngine
         public static extern float[] FromFloatArray(IntPtr array);
         // Convert a Java array of <tt>double</tt> to a managed array of System.Double.
         ///<summary>Converts a Java array of &lt;tt&gt;double&lt;/tt&gt; to a managed array of System.Double.</summary>
+        ///<param name="array">The Java array to read from.</param>
+        ///<returns>A managed array containing a copy of the Java array's elements.</returns>
         ///<seealso cref="AndroidJNI.GetDoubleArrayElement" />
         ///<seealso cref="AndroidJNI.GetArrayLength" />
         [NativeMethod(IsThreadSafe = true)]
@@ -1942,6 +2579,8 @@ namespace UnityEngine
         public static extern double[] FromDoubleArray(IntPtr array);
         // Convert a Java array of <tt>java.lang.Object</tt> to a managed array of System.IntPtr, representing Java objects.
         ///<summary>Converts a Java array of &lt;tt&gt;java.lang.Object&lt;/tt&gt; to a managed array of System.IntPtr, representing Java objects.</summary>
+        ///<param name="array">The Java array to read from.</param>
+        ///<returns>A managed array containing a copy of the Java array's elements.</returns>
         ///<seealso cref="AndroidJNI.GetFloatArrayElement" />
         ///<seealso cref="AndroidJNI.GetArrayLength" />
         [NativeMethod(IsThreadSafe = true)]
@@ -1949,12 +2588,16 @@ namespace UnityEngine
 
         // Returns the number of elements in the array.
         ///<summary>Returns the number of elements in the array.</summary>
+        ///<param name="array">The Java array whose length is returned.</param>
+        ///<returns>The number of elements in the array.</returns>
         ///<seealso href="http://download.oracle.com/javase/1.5.0/docs/guide/jni/spec/jniTOC.html">Java Native Interface Specification (Oracle)</seealso>
         [NativeMethod(IsThreadSafe = true)]
         public static extern int GetArrayLength(IntPtr array);
 
         // Construct a new primitive array object.
         ///<summary>Constructs a new primitive array object.</summary>
+        ///<param name="size">The number of elements in the array to construct.</param>
+        ///<returns>A local reference to the newly constructed Java array.</returns>
         ///<seealso href="http://download.oracle.com/javase/1.5.0/docs/guide/jni/spec/jniTOC.html">Java Native Interface Specification (Oracle)</seealso>
         [NativeMethod(IsThreadSafe = true)]
         public static extern IntPtr NewBooleanArray(int size);
@@ -1970,41 +2613,59 @@ namespace UnityEngine
 
         // Construct a new primitive array object.
         ///<summary>Constructs a new primitive array object.</summary>
+        ///<param name="size">The number of elements in the array to construct.</param>
+        ///<returns>A local reference to the newly constructed Java array.</returns>
         ///<seealso href="http://download.oracle.com/javase/1.5.0/docs/guide/jni/spec/jniTOC.html">Java Native Interface Specification (Oracle)</seealso>
         [NativeMethod(IsThreadSafe = true)]
         public static extern IntPtr NewSByteArray(int size);
         // Construct a new primitive array object.
         ///<summary>Constructs a new primitive array object.</summary>
+        ///<param name="size">The number of elements in the array to construct.</param>
+        ///<returns>A local reference to the newly constructed Java array.</returns>
         ///<seealso href="http://download.oracle.com/javase/1.5.0/docs/guide/jni/spec/jniTOC.html">Java Native Interface Specification (Oracle)</seealso>
         [NativeMethod(IsThreadSafe = true)]
         public static extern IntPtr NewCharArray(int size);
         // Construct a new primitive array object.
         ///<summary>Constructs a new primitive array object.</summary>
+        ///<param name="size">The number of elements in the array to construct.</param>
+        ///<returns>A local reference to the newly constructed Java array.</returns>
         ///<seealso href="http://download.oracle.com/javase/1.5.0/docs/guide/jni/spec/jniTOC.html">Java Native Interface Specification (Oracle)</seealso>
         [NativeMethod(IsThreadSafe = true)]
         public static extern IntPtr NewShortArray(int size);
         // Construct a new primitive array object.
         ///<summary>Constructs a new primitive array object.</summary>
+        ///<param name="size">The number of elements in the array to construct.</param>
+        ///<returns>A local reference to the newly constructed Java array.</returns>
         ///<seealso href="http://download.oracle.com/javase/1.5.0/docs/guide/jni/spec/jniTOC.html">Java Native Interface Specification (Oracle)</seealso>
         [NativeMethod(IsThreadSafe = true)]
         public static extern IntPtr NewIntArray(int size);
         // Construct a new primitive array object.
         ///<summary>Constructs a new primitive array object.</summary>
+        ///<param name="size">The number of elements in the array to construct.</param>
+        ///<returns>A local reference to the newly constructed Java array.</returns>
         ///<seealso href="http://download.oracle.com/javase/1.5.0/docs/guide/jni/spec/jniTOC.html">Java Native Interface Specification (Oracle)</seealso>
         [NativeMethod(IsThreadSafe = true)]
         public static extern IntPtr NewLongArray(int size);
         // Construct a new primitive array object.
         ///<summary>Constructs a new primitive array object.</summary>
+        ///<param name="size">The number of elements in the array to construct.</param>
+        ///<returns>A local reference to the newly constructed Java array.</returns>
         ///<seealso href="http://download.oracle.com/javase/1.5.0/docs/guide/jni/spec/jniTOC.html">Java Native Interface Specification (Oracle)</seealso>
         [NativeMethod(IsThreadSafe = true)]
         public static extern IntPtr NewFloatArray(int size);
         // Construct a new primitive array object.
         ///<summary>Constructs a new primitive array object.</summary>
+        ///<param name="size">The number of elements in the array to construct.</param>
+        ///<returns>A local reference to the newly constructed Java array.</returns>
         ///<seealso href="http://download.oracle.com/javase/1.5.0/docs/guide/jni/spec/jniTOC.html">Java Native Interface Specification (Oracle)</seealso>
         [NativeMethod(IsThreadSafe = true)]
         public static extern IntPtr NewDoubleArray(int size);
         // Constructs a new array holding objects in class <tt>clazz</tt>. All elements are initially set to <tt>obj</tt>.
         ///<summary>Constructs a new array holding objects in class &lt;tt&gt;clazz&lt;/tt&gt;. All elements are initially set to &lt;tt&gt;obj&lt;/tt&gt;.</summary>
+        ///<param name="size">The number of elements in the array to construct.</param>
+        ///<param name="clazz">The element class of the array to construct.</param>
+        ///<param name="obj">The value used to initialize every element of the array.</param>
+        ///<returns>A local reference to the newly constructed Java array.</returns>
         ///<seealso href="http://download.oracle.com/javase/1.5.0/docs/guide/jni/spec/jniTOC.html">Java Native Interface Specification (Oracle)</seealso>
         [NativeMethod(IsThreadSafe = true)]
         public static extern IntPtr NewObjectArray(int size, IntPtr clazz, IntPtr obj);
@@ -2012,6 +2673,9 @@ namespace UnityEngine
         // Returns the value of one element of a primitive array.
         ///<summary>Returns the value of one element of a primitive array.</summary>
         ///<remarks>This function is a special case of GetBooleanArrayRegion(), called with region size set to 1.</remarks>
+        ///<param name="array">The Java array to read from.</param>
+        ///<param name="index">The index of the array element.</param>
+        ///<returns>The value of the array element.</returns>
         ///<seealso href="http://download.oracle.com/javase/1.5.0/docs/guide/jni/spec/jniTOC.html">Java Native Interface Specification (Oracle)</seealso>
         [NativeMethod(IsThreadSafe = true)]
         public static extern bool GetBooleanArrayElement(IntPtr array, int index);
@@ -2029,47 +2693,71 @@ namespace UnityEngine
         // Returns the value of one element of a primitive array.
         ///<summary>Returns the value of one element of a primitive array.</summary>
         ///<remarks>This function is a special case of GetByteArrayRegion(), called with region size set to 1.</remarks>
+        ///<param name="array">The Java array to read from.</param>
+        ///<param name="index">The index of the array element.</param>
+        ///<returns>The value of the array element.</returns>
         ///<seealso href="http://download.oracle.com/javase/1.5.0/docs/guide/jni/spec/jniTOC.html">Java Native Interface Specification (Oracle)</seealso>
         [NativeMethod(IsThreadSafe = true)]
         public static extern SByte GetSByteArrayElement(IntPtr array, int index);
         // Returns the value of one element of a primitive array.
         ///<summary>Returns the value of one element of a primitive array.</summary>
         ///<remarks>This function is a special case of GetCharArrayRegion(), called with region size set to 1.</remarks>
+        ///<param name="array">The Java array to read from.</param>
+        ///<param name="index">The index of the array element.</param>
+        ///<returns>The value of the array element.</returns>
         ///<seealso href="http://download.oracle.com/javase/1.5.0/docs/guide/jni/spec/jniTOC.html">Java Native Interface Specification (Oracle)</seealso>
         [NativeMethod(IsThreadSafe = true)]
         public static extern Char GetCharArrayElement(IntPtr array, int index);
         // Returns the value of one element of a primitive array.
         ///<summary>Returns the value of one element of a primitive array.</summary>
         ///<remarks>This function is a special case of GetShortArrayRegion(), called with region size set to 1.</remarks>
+        ///<param name="array">The Java array to read from.</param>
+        ///<param name="index">The index of the array element.</param>
+        ///<returns>The value of the array element.</returns>
         ///<seealso href="http://download.oracle.com/javase/1.5.0/docs/guide/jni/spec/jniTOC.html">Java Native Interface Specification (Oracle)</seealso>
         [NativeMethod(IsThreadSafe = true)]
         public static extern Int16 GetShortArrayElement(IntPtr array, int index);
         // Returns the value of one element of a primitive array.
         ///<summary>Returns the value of one element of a primitive array.</summary>
         ///<remarks>This function is a special case of GetIntArrayRegion(), called with region size set to 1.</remarks>
+        ///<param name="array">The Java array to read from.</param>
+        ///<param name="index">The index of the array element.</param>
+        ///<returns>The value of the array element.</returns>
         ///<seealso href="http://download.oracle.com/javase/1.5.0/docs/guide/jni/spec/jniTOC.html">Java Native Interface Specification (Oracle)</seealso>
         [NativeMethod(IsThreadSafe = true)]
         public static extern Int32 GetIntArrayElement(IntPtr array, int index);
         // Returns the value of one element of a primitive array.
         ///<summary>Returns the value of one element of a primitive array.</summary>
         ///<remarks>This function is a special case of GetLongArrayRegion(), called with region size set to 1.</remarks>
+        ///<param name="array">The Java array to read from.</param>
+        ///<param name="index">The index of the array element.</param>
+        ///<returns>The value of the array element.</returns>
         ///<seealso href="http://download.oracle.com/javase/1.5.0/docs/guide/jni/spec/jniTOC.html">Java Native Interface Specification (Oracle)</seealso>
         [NativeMethod(IsThreadSafe = true)]
         public static extern Int64 GetLongArrayElement(IntPtr array, int index);
         // Returns the value of one element of a primitive array.
         ///<summary>Returns the value of one element of a primitive array.</summary>
         ///<remarks>This function is a special case of GetFloatArrayRegion(), called with region size set to 1.</remarks>
+        ///<param name="array">The Java array to read from.</param>
+        ///<param name="index">The index of the array element.</param>
+        ///<returns>The value of the array element.</returns>
         ///<seealso href="http://download.oracle.com/javase/1.5.0/docs/guide/jni/spec/jniTOC.html">Java Native Interface Specification (Oracle)</seealso>
         [NativeMethod(IsThreadSafe = true)]
         public static extern float GetFloatArrayElement(IntPtr array, int index);
         // Returns the value of one element of a primitive array.
         ///<summary>Returns the value of one element of a primitive array.</summary>
         ///<remarks>This function is a special case of GetDoubleArrayRegion(), called with region size set to 1.</remarks>
+        ///<param name="array">The Java array to read from.</param>
+        ///<param name="index">The index of the array element.</param>
+        ///<returns>The value of the array element.</returns>
         ///<seealso href="http://download.oracle.com/javase/1.5.0/docs/guide/jni/spec/jniTOC.html">Java Native Interface Specification (Oracle)</seealso>
         [NativeMethod(IsThreadSafe = true)]
         public static extern double GetDoubleArrayElement(IntPtr array, int index);
         // Returns an element of an <tt>Object</tt> array.
         ///<summary>Returns an element of an &lt;tt&gt;Object&lt;/tt&gt; array.</summary>
+        ///<param name="array">The Java array to read from.</param>
+        ///<param name="index">The index of the array element.</param>
+        ///<returns>The value of the array element.</returns>
         ///<seealso href="http://download.oracle.com/javase/1.5.0/docs/guide/jni/spec/jniTOC.html">Java Native Interface Specification (Oracle)</seealso>
         [NativeMethod(IsThreadSafe = true)]
         public static extern IntPtr GetObjectArrayElement(IntPtr array, int index);
@@ -2111,47 +2799,71 @@ namespace UnityEngine
         // Sets the value of one element in a primitive array.
         ///<summary>Sets the sbyte value of one element in a primitive array.</summary>
         ///<remarks>This function is a special case of SetByteArrayRegion(), called with region size set to 1.</remarks>
+        ///<param name="array">The Java array to modify.</param>
+        ///<param name="index">The index of the array element.</param>
+        ///<param name="val">The value to assign to the field.</param>
         ///<seealso href="http://download.oracle.com/javase/1.5.0/docs/guide/jni/spec/jniTOC.html">Java Native Interface Specification (Oracle)</seealso>
         [NativeMethod(IsThreadSafe = true)]
         public static extern void SetSByteArrayElement(IntPtr array, int index, sbyte val);
         // Sets the value of one element in a primitive array.
         ///<summary>Sets the char value of one element in a primitive array.</summary>
         ///<remarks>This function is a special case of SetCharArrayRegion(), called with region size set to 1.</remarks>
+        ///<param name="array">The Java array to modify.</param>
+        ///<param name="index">The index of the array element.</param>
+        ///<param name="val">The value to assign to the field.</param>
         ///<seealso href="http://download.oracle.com/javase/1.5.0/docs/guide/jni/spec/jniTOC.html">Java Native Interface Specification (Oracle)</seealso>
         [NativeMethod(IsThreadSafe = true)]
         public static extern void SetCharArrayElement(IntPtr array, int index, Char val);
         // Sets the value of one element in a primitive array.
         ///<summary>Sets the short value of one element in a primitive array.</summary>
         ///<remarks>This function is a special case of SetShortArrayRegion(), called with region size set to 1.</remarks>
+        ///<param name="array">The Java array to modify.</param>
+        ///<param name="index">The index of the array element.</param>
+        ///<param name="val">The value to assign to the field.</param>
         ///<seealso href="http://download.oracle.com/javase/1.5.0/docs/guide/jni/spec/jniTOC.html">Java Native Interface Specification (Oracle)</seealso>
         [NativeMethod(IsThreadSafe = true)]
         public static extern void SetShortArrayElement(IntPtr array, int index, Int16 val);
         // Sets the value of one element in a primitive array.
         ///<summary>Sets the int value of one element in a primitive array.</summary>
         ///<remarks>This function is a special case of SetIntArrayRegion(), called with region size set to 1.</remarks>
+        ///<param name="array">The Java array to modify.</param>
+        ///<param name="index">The index of the array element.</param>
+        ///<param name="val">The value to assign to the field.</param>
         ///<seealso href="http://download.oracle.com/javase/1.5.0/docs/guide/jni/spec/jniTOC.html">Java Native Interface Specification (Oracle)</seealso>
         [NativeMethod(IsThreadSafe = true)]
         public static extern void SetIntArrayElement(IntPtr array, int index, Int32 val);
         // Sets the value of one element in a primitive array.
         ///<summary>Sets the long value of one element in a primitive array.</summary>
         ///<remarks>This function is a special case of SetLongArrayRegion(), called with region size set to 1.</remarks>
+        ///<param name="array">The Java array to modify.</param>
+        ///<param name="index">The index of the array element.</param>
+        ///<param name="val">The value to assign to the field.</param>
         ///<seealso href="http://download.oracle.com/javase/1.5.0/docs/guide/jni/spec/jniTOC.html">Java Native Interface Specification (Oracle)</seealso>
         [NativeMethod(IsThreadSafe = true)]
         public static extern void SetLongArrayElement(IntPtr array, int index, Int64 val);
         // Sets the value of one element in a primitive array.
         ///<summary>Sets the float value of one element in a primitive array.</summary>
         ///<remarks>This function is a special case of SetFloatArrayRegion(), called with region size set to 1.</remarks>
+        ///<param name="array">The Java array to modify.</param>
+        ///<param name="index">The index of the array element.</param>
+        ///<param name="val">The value to assign to the field.</param>
         ///<seealso href="http://download.oracle.com/javase/1.5.0/docs/guide/jni/spec/jniTOC.html">Java Native Interface Specification (Oracle)</seealso>
         [NativeMethod(IsThreadSafe = true)]
         public static extern void SetFloatArrayElement(IntPtr array, int index, float val);
         // Sets the value of one element in a primitive array.
         ///<summary>Sets the double value of one element in a primitive array.</summary>
         ///<remarks>This function is a special case of SetDoubleArrayRegion(), called with region size set to 1.</remarks>
+        ///<param name="array">The Java array to modify.</param>
+        ///<param name="index">The index of the array element.</param>
+        ///<param name="val">The value to assign to the field.</param>
         ///<seealso href="http://download.oracle.com/javase/1.5.0/docs/guide/jni/spec/jniTOC.html">Java Native Interface Specification (Oracle)</seealso>
         [NativeMethod(IsThreadSafe = true)]
         public static extern void SetDoubleArrayElement(IntPtr array, int index, double val);
         // Sets an element of an <tt>Object</tt> array.
         ///<summary>Sets an element of an &lt;tt&gt;Object&lt;/tt&gt; array.</summary>
+        ///<param name="array">The Java array to modify.</param>
+        ///<param name="index">The index of the array element.</param>
+        ///<param name="obj">The value to assign to the array element.</param>
         ///<seealso href="http://download.oracle.com/javase/1.5.0/docs/guide/jni/spec/jniTOC.html">Java Native Interface Specification (Oracle)</seealso>
         [NativeMethod(IsThreadSafe = true)]
         public static extern void SetObjectArrayElement(IntPtr array, int index, IntPtr obj);
@@ -2159,11 +2871,16 @@ namespace UnityEngine
         // ------------------------------------------
         // ByteBuffer support
         ///<summary>Allocates and returns a direct java.nio.ByteBuffer referring to the block of memory starting at the memory address address and extending capacity bytes.</summary>
+        ///<param name="buffer">The block of memory the buffer refers to.</param>
+        ///<param name="capacity">The capacity, in bytes, of the memory region.</param>
+        ///<returns>A local reference to the newly allocated java.nio.ByteBuffer.</returns>
         ///<seealso href="http://download.oracle.com/javase/1.5.0/docs/guide/jni/spec/jniTOC.html">Java Native Interface Specification (Oracle)</seealso>
         [NativeMethod(IsThreadSafe = true)]
         public static extern unsafe IntPtr NewDirectByteBuffer(byte* buffer, Int64 capacity);
 
         ///<summary>Allocates and returns a direct java.nio.ByteBuffer referring to the same block of memory as the given NativeArray.</summary>
+        ///<param name="buffer">The block of memory the buffer refers to.</param>
+        ///<returns>A local reference to the newly allocated java.nio.ByteBuffer.</returns>
         ///<seealso href="http://download.oracle.com/javase/1.5.0/docs/guide/jni/spec/jniTOC.html">Java Native Interface Specification (Oracle)</seealso>
         public static IntPtr NewDirectByteBuffer(NativeArray<byte> buffer)
         {
@@ -2171,6 +2888,8 @@ namespace UnityEngine
         }
 
         ///<summary>Allocates and returns a direct java.nio.ByteBuffer referring to the same block of memory as the given NativeArray.</summary>
+        ///<param name="buffer">The block of memory the buffer refers to.</param>
+        ///<returns>A local reference to the newly allocated java.nio.ByteBuffer.</returns>
         ///<seealso href="http://download.oracle.com/javase/1.5.0/docs/guide/jni/spec/jniTOC.html">Java Native Interface Specification (Oracle)</seealso>
         public static IntPtr NewDirectByteBuffer(NativeArray<sbyte> buffer)
         {
@@ -2189,6 +2908,8 @@ namespace UnityEngine
         }
 
         ///<summary>Fetches and returns the starting address of the memory region referenced by the given direct java.nio.Buffer.</summary>
+        ///<param name="buffer">The direct java.nio.Buffer.</param>
+        ///<returns>The starting address of the memory region, or null if the buffer isn't a direct buffer or direct buffers aren't supported.</returns>
         ///<seealso href="http://download.oracle.com/javase/1.5.0/docs/guide/jni/spec/jniTOC.html">Java Native Interface Specification (Oracle)</seealso>
         public static unsafe sbyte* GetDirectBufferAddress(IntPtr buffer)
         {
@@ -2196,6 +2917,8 @@ namespace UnityEngine
         }
 
         ///<summary>Fetches and returns the capacity of the memory region referenced by the given direct java.nio.Buffer.</summary>
+        ///<param name="buffer">The direct java.nio.Buffer.</param>
+        ///<returns>The capacity, in bytes, of the memory region, or -1 if the buffer isn't a direct buffer or direct buffers aren't supported.</returns>
         ///<seealso href="http://download.oracle.com/javase/1.5.0/docs/guide/jni/spec/jniTOC.html">Java Native Interface Specification (Oracle)</seealso>
         [NativeMethod(IsThreadSafe = true)]
         public static extern long GetDirectBufferCapacity(IntPtr buffer);
@@ -2218,6 +2941,8 @@ namespace UnityEngine
         }
 
         ///<summary>Returns the NativeArray backed by the same memory region as the given direct java.nio.Buffer.</summary>
+        ///<param name="buffer">The direct java.nio.Buffer.</param>
+        ///<returns>The NativeArray backed by the same memory region as the given buffer.</returns>
         ///<seealso cref="AndroidJNI.GetDirectBufferAddress" />
         public static NativeArray<byte> GetDirectByteBuffer(IntPtr buffer)
         {
@@ -2225,6 +2950,8 @@ namespace UnityEngine
         }
 
         ///<summary>Returns the NativeArray backed by the same memory region as the given direct java.nio.Buffer.</summary>
+        ///<param name="buffer">The direct java.nio.Buffer.</param>
+        ///<returns>The NativeArray backed by the same memory region as the given buffer.</returns>
         ///<seealso cref="AndroidJNI.GetDirectBufferAddress" />
         public static NativeArray<sbyte> GetDirectSByteBuffer(IntPtr buffer)
         {
@@ -2236,6 +2963,8 @@ namespace UnityEngine
         // Native method support
         ///<summary>Registers native methods with the class specified by the clazz argument.</summary>
         ///<remarks>See <see cref="JNINativeMethod.fnPtr" /> for details.</remarks>
+        ///<param name="clazz">The Java class to register the native methods with.</param>
+        ///<param name="methods">The native methods to register.</param>
         ///<returns>Zero on success, negative value on error. Falsely succeeds in Editor.</returns>
         ///<seealso href="http://download.oracle.com/javase/1.5.0/docs/guide/jni/spec/jniTOC.html">Java Native Interface Specification (Oracle)</seealso>
         public static int RegisterNatives(IntPtr clazz, JNINativeMethod[] methods)
@@ -2258,6 +2987,7 @@ namespace UnityEngine
         [NativeMethod(IsThreadSafe = true)]
         private static extern int RegisterNativesAndFree(IntPtr clazz, IntPtr natives, int n);
         ///<summary>Unregisters native methods of a class. The class goes back to the state before it was linked or registered with its native method functions.</summary>
+        ///<param name="clazz">The Java class to unregister native methods from.</param>
         ///<returns>Zero on success, negative value on error. Falsely succeeds in Editor.</returns>
         ///<seealso href="http://download.oracle.com/javase/1.5.0/docs/guide/jni/spec/jniTOC.html">Java Native Interface Specification (Oracle)</seealso>
         [NativeMethod(IsThreadSafe = true)]

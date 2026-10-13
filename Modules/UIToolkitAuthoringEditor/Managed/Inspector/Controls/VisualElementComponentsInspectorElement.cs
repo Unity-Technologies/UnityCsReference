@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using System.Reflection;
 using Unity.Properties;
 using Unity.Scripting.LifecycleManagement;
+using Unity.UIToolkit.Editor.Utilities;
 using UnityEditor;
 using UnityEditor.UIElements;
 using UnityEngine;
@@ -235,11 +236,21 @@ sealed partial class VisualElementComponentsInspectorElement : VisualElement
         elementAsset.AddComponentData(data);
         EditorUtility.SetDirty(vta);
 
-        // Attach to the live element so the change is visible immediately, mirroring the importer:
+        // Attach to every live clone so the change is visible immediately, mirroring the importer:
         // CreateInstance(owner) does owner.GetOrAddComponent<T>(); Deserialize writes the authored values.
-        data.CreateInstance(m_Target);
-        data.Deserialize(m_Target);
-        UxmlAssetUtilities.ReapplyAncestorSerializedDataOverrides(m_Target);
+        VisualElementUtility.ForEachClone(m_Target, element =>
+        {
+            try
+            {
+                data.CreateInstance(element);
+                data.Deserialize(element);
+                UxmlAssetUtilities.ReapplyAncestorSerializedDataOverrides(element);
+            }
+            catch (Exception e)
+            {
+                Debug.LogException(e);
+            }
+        });
 
         UIElementsUtility.MarkVisualTreeAssetAsChanged(vta);
         Rebuild();
@@ -257,20 +268,27 @@ sealed partial class VisualElementComponentsInspectorElement : VisualElement
         if (index < 0)
             return;
 
-        // Detach the live component FIRST, then edit the asset. RemoveComponent<T>() is generic-only, so
-        // dispatch by reflection. If the detach throws, leave the asset untouched and bail — otherwise the
-        // asset would say "no component" while the live element still carries it until the next Rebuild.
+        // Detach the live components FIRST, then edit the asset. RemoveComponent<T>() is generic-only, so
+        // dispatch by reflection. If a detach throws, leave the asset untouched and bail — otherwise the
+        // asset would say "no component" while a live element still carries it until the next Rebuild.
         if (k_RemoveComponentMethod != null)
         {
-            try
+            var remove = k_RemoveComponentMethod.MakeGenericMethod(componentType);
+            var failed = false;
+            VisualElementUtility.ForEachClone(m_Target, element =>
             {
-                k_RemoveComponentMethod.MakeGenericMethod(componentType).Invoke(m_Target, null);
-            }
-            catch (Exception e)
-            {
-                Debug.LogException(e);
+                try
+                {
+                    remove.Invoke(element, null);
+                }
+                catch (Exception e)
+                {
+                    Debug.LogException(e);
+                    failed = true;
+                }
+            });
+            if (failed)
                 return;
-            }
         }
 
         Undo.RegisterCompleteObjectUndo(vta, k_RemoveComponentUndoName);

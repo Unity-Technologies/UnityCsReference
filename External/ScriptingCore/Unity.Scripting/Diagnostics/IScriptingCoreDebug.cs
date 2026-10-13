@@ -10,6 +10,10 @@ namespace Unity.Scripting
 
         public void Log(string message);
         public void LogWarning(string message);
+
+        // Returns an identifier for RemoveStickyLog, or 0 when the log cannot be removed
+        public int LogStickyWarning(string message);
+        public void RemoveStickyLog(int identifier);
         public void LogError(string message);
         public void LogException(Exception exception);
 

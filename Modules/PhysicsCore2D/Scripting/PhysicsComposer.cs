@@ -105,13 +105,6 @@ namespace Unity.U2D.Physics
             /// <undoc/>
             internal Layer(ReadOnlySpan<CircleGeometry> geometry, PhysicsTransform transform, Operation operation, int order, float curveStride, bool reverseWinding)
             {
-                // Validate.
-                if (geometry.Length < 1)
-                    throw new ArgumentOutOfRangeException(nameof(geometry), "At least a single CircleGeometry must be specified.");
-
-                if (curveStride < MinCurveStride || curveStride > 1.0f)
-                    throw new ArgumentOutOfRangeException(nameof(curveStride), $"CircleGeometry curveStride must be in the range [{PhysicsComposer.MinCurveStride}, 1.0]");
-
                 m_LayerType = LayerType.Geometry;
                 m_GeometryType = ShapeType.Circle;
                 m_DataBuffer = PhysicsBuffer.FromSpan(geometry);
@@ -125,13 +118,6 @@ namespace Unity.U2D.Physics
             /// <undoc/>
             internal Layer(ReadOnlySpan<CapsuleGeometry> geometry, PhysicsTransform transform, Operation operation, int order, float curveStride, bool reverseWinding)
             {
-                // Validate.
-                if (geometry.Length < 1)
-                    throw new ArgumentOutOfRangeException(nameof(geometry), "At least a single CapsuleGeometry must be specified.");
-
-                if (curveStride < MinCurveStride || curveStride > 1.0f)
-                    throw new ArgumentOutOfRangeException(nameof(curveStride), $"CapsuleGeometry curveStride must be in the range [{PhysicsComposer.MinCurveStride}, 1.0]");
-
                 m_LayerType = LayerType.Geometry;
                 m_GeometryType = ShapeType.Capsule;
                 m_DataBuffer = PhysicsBuffer.FromSpan(geometry);
@@ -145,13 +131,6 @@ namespace Unity.U2D.Physics
             /// <undoc/>
             internal Layer(ReadOnlySpan<PolygonGeometry> geometry, PhysicsTransform transform, Operation operation, int order, float curveStride, bool reverseWinding)
             {
-                // Validate.
-                if (geometry.Length < 1)
-                    throw new ArgumentOutOfRangeException(nameof(geometry), "At least a single PolygonGeometry must be specified.");
-
-                if (curveStride < MinCurveStride || curveStride > 1.0f)
-                    throw new ArgumentOutOfRangeException(nameof(curveStride), $"PolygonGeometry curveStride must be in the range [{PhysicsComposer.MinCurveStride}, 1.0]");
-
                 m_LayerType = LayerType.Geometry;
                 m_GeometryType = ShapeType.Polygon;
                 m_DataBuffer = PhysicsBuffer.FromSpan(geometry);
@@ -165,14 +144,6 @@ namespace Unity.U2D.Physics
             /// <undoc/>
             internal Layer(ReadOnlySpan<PhysicsShape> shapes, PhysicsTransform transform, Operation operation, int order, float curveStride, bool reverseWinding)
             {
-                // Validate.
-                // NOTE: We don't need to validate the shapes here as this is done when adding the layer internally.
-                if (shapes.Length < 1)
-                    throw new ArgumentOutOfRangeException(nameof(shapes), "At least a single PhysicsShape must be specified.");
-
-                if (curveStride < MinCurveStride || curveStride > 1.0f)
-                    throw new ArgumentOutOfRangeException(nameof(curveStride), $"PhysicsShape curveStride must be in the range [{PhysicsComposer.MinCurveStride}, 1.0]");
-
                 m_LayerType = LayerType.Shape;
                 m_DataBuffer = PhysicsBuffer.FromSpan(shapes);
                 m_Transform = transform;
@@ -188,10 +159,6 @@ namespace Unity.U2D.Physics
             /// <undoc/>
             internal Layer(PhysicsBuffer vertices, PhysicsTransform transform, Operation operation, int order, bool reverseWinding)
             {
-                // Validate.
-                if (vertices.size < 3)
-                    throw new ArgumentOutOfRangeException(nameof(vertices), "A minimum of 3 vertices must be specified.");
-
                 m_LayerType = LayerType.Vertex;
                 m_DataBuffer = vertices;
                 m_Transform = transform;

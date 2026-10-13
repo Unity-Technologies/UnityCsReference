@@ -157,21 +157,11 @@ namespace Unity.ProjectAuditor.Editor.Core
 
         static bool AreAreasSupported(Areas areas)
         {
-            if ((areas & Areas.MigrationToURP) != 0)
+            // All other areas are always supported
+            if (areas == Areas.MigrationToURP)
             {
                 if (s_MigrationToURPSupported == null)
-                {
-                    // With no Quality Levels, Unity uses the global Render Pipeline Asset.
-                    if (QualitySettings.names.Length == 0)
-                    {
-                        s_MigrationToURPSupported = MigrationToURPUtilities.ShouldMigrateRenderPipelineAsset(GraphicsSettings.defaultRenderPipeline);
-                    }
-                    else
-                    {
-                        var qualityLevelsToMigrate = MigrationToURPUtilities.FindQualitySettingsToMigrate();
-                        s_MigrationToURPSupported = qualityLevelsToMigrate.Count > 0;
-                    }
-                }
+                    s_MigrationToURPSupported = !MigrationToURPUtilities.IsProjectUsingOtherSRP();
 
                 return s_MigrationToURPSupported.Value;
             }

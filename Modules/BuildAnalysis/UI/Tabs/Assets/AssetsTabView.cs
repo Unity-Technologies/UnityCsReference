@@ -21,14 +21,13 @@ namespace UnityEditor.Build.Analysis
         private VisualElement m_Body;
         private TwoPaneSplitView m_InspectorSplit;
         private VisualElement m_InspectorHost;
-        private BuildHeaderController m_Header;
+        private BuildHeader m_Header;
         private AssetTable m_AssetTable;
         private RootAssetTable m_RootAssetTable;
         private AssetInspector m_AssetInspector;
-        private Label m_ScenesValue;
-        private Label m_AssetsValue;
-        private VisualElement m_RootAssetsCard;
-        private Label m_RootAssetsValue;
+        private StatCard m_ScenesCard;
+        private StatCard m_AssetsCard;
+        private StatCard m_RootAssetsCard;
         private VisualElement m_ContentMain;
         private HelpBox m_AssetSourceBanner;
         private HelpBox m_AssetsEmptyState;
@@ -72,11 +71,10 @@ namespace UnityEditor.Build.Analysis
             KeyboardNavigation.ScrollFocusedIntoView(m_Root.Q<ScrollView>("assets-content"));
             m_InspectorSplit = m_Root.Q<TwoPaneSplitView>("assets-inspector-split");
             m_InspectorHost = m_Root.Q<VisualElement>("asset-inspector-host");
-            m_Header = new BuildHeaderController(m_Root.Q<VisualElement>("build-header"));
-            m_ScenesValue = m_Root.Q<VisualElement>("stat-card-scenes").Q<Label>("value");
-            m_AssetsValue = m_Root.Q<VisualElement>("stat-card-assets").Q<Label>("value");
-            m_RootAssetsCard = m_Root.Q<VisualElement>("stat-card-root-assets");
-            m_RootAssetsValue = m_RootAssetsCard.Q<Label>("value");
+            m_Header = m_Root.Q<BuildHeader>("build-header");
+            m_ScenesCard = m_Root.Q<StatCard>("stat-card-scenes");
+            m_RootAssetsCard = m_Root.Q<StatCard>("stat-card-root-assets");
+            m_AssetsCard = m_Root.Q<StatCard>("stat-card-assets");
             m_ContentMain = m_Root.Q<VisualElement>("assets-content-main");
             m_AssetSourceBanner = m_Root.Q<HelpBox>("asset-source-banner");
             m_AssetsEmptyState = m_Root.Q<HelpBox>("assets-empty-state");
@@ -243,7 +241,7 @@ namespace UnityEditor.Build.Analysis
             if (!isContentDirectory)
                 return;
 
-            m_RootAssetsValue.text = analysis.Computed.Counts.RootAssetCount.ToString();
+            m_RootAssetsCard.value = analysis.Computed.Counts.RootAssetCount.ToString();
             m_RootAssetTable.Bind(analysis);
         }
 
@@ -254,8 +252,8 @@ namespace UnityEditor.Build.Analysis
 
             m_Header.Bind(selection);
             var counts = analysis.Computed.Counts;
-            m_ScenesValue.text = counts.SceneCount.ToString();
-            m_AssetsValue.text = counts.AssetCount.ToString();
+            m_ScenesCard.value = counts.SceneCount.ToString();
+            m_AssetsCard.value = counts.AssetCount.ToString();
 
             m_AssetTable.Bind(analysis);
 

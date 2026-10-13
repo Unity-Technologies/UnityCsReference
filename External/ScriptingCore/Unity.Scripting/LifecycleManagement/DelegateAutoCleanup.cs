@@ -20,8 +20,22 @@ namespace UnityEngine
     {
         private readonly Action _cleanup;
         private readonly string _ownerDescription;
+        private readonly Type[] _ownerTypes;
 
         public override void Cleanup() => _cleanup();
+
+        internal override bool IsOwnedBy(Func<Type, bool> predicate)
+        {
+            foreach (var ownerType in _ownerTypes)
+            {
+                if (predicate(ownerType))
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
 
         /// <summary>
         /// Returns a description of the owning class for diagnostic purposes.
@@ -32,12 +46,28 @@ namespace UnityEngine
         {
             _cleanup = cleanup ?? throw new ArgumentNullException(nameof(cleanup));
             _ownerDescription = ownerDescription;
+            _ownerTypes = ResolveOwnerTypes(cleanup);
         }
 
         internal DelegateAutoCleanup(Action cleanup, Type scopeType, ScopeTransitionType cleanOn, string ownerDescription = "") : base(scopeType, cleanOn)
         {
             _cleanup = cleanup ?? throw new ArgumentNullException(nameof(cleanup));
             _ownerDescription = ownerDescription;
+            _ownerTypes = ResolveOwnerTypes(cleanup);
+        }
+
+        private static Type[] ResolveOwnerTypes(Action cleanup)
+        {
+            var targets = cleanup.GetInvocationList();
+            var ownerTypes = new Type[targets.Length * 2];
+            for (var i = 0; i < targets.Length; i++)
+            {
+                var declaringType = targets[i].Method.DeclaringType ?? typeof(DelegateAutoCleanup);
+                ownerTypes[i * 2] = declaringType;
+                ownerTypes[i * 2 + 1] = targets[i].Target?.GetType() ?? declaringType;
+            }
+
+            return ownerTypes;
         }
 
         /// <summary>

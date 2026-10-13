@@ -79,6 +79,9 @@ namespace UnityEditor
             ctx.AddObjectToAsset("mode", modeDescriptor);
             ctx.SetMainObject(modeDescriptor);
 
+            // The scan that filled the path cache may have run before this file was imported.
+            SessionState.EraseString(ModeService.k_ModePathsCache);
+
             if (!allowExplicitModeRefresh)
                 return;
 
@@ -110,6 +113,7 @@ namespace UnityEditor
         }
 
         internal const string k_ModePathsCache = "mode-paths-cache";
+        const string k_ModePathsNotScanned = "<not scanned>";
         internal const string k_DefaultModeId = "default";
         internal const string k_ModeCurrentIdKeyName = "mode-current-id";
         internal const string k_MenuKeyChecked = "checked";
@@ -156,6 +160,10 @@ namespace UnityEditor
         [OnCodeLoaded]
         static void Initialize()
         {
+            // Import workers never show modes, menus or layouts.
+            if (AssetDatabase.IsAssetImportWorkerProcess())
+                return;
+
             Log("Initialize");
 
             LoadModes();
@@ -478,10 +486,11 @@ namespace UnityEditor
             var builtinModeFile = Path.Combine(EditorApplication.applicationContentsPath, "Resources/default.mode");
             FillModeData(builtinModeFile, modesData);
 
-            var modeFilePathCache = SessionState.GetString(k_ModePathsCache, "");
-
-            if (modeFilePathCache == "")
+            // An empty cache is valid; most projects have no mode files.
+            var modeFilePathCache = SessionState.GetString(k_ModePathsCache, k_ModePathsNotScanned);
+            if (modeFilePathCache == k_ModePathsNotScanned)
             {
+                modeFilePathCache = "";
                 var modeDescriptors = AssetDatabase.EnumerateAllAssets(new SearchFilter
                 {
                     searchArea = SearchFilter.SearchArea.InPackagesOnly,

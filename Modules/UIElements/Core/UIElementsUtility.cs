@@ -405,15 +405,15 @@ namespace UnityEngine.UIElements
         }
 
 
-        [NoAutoStaticsCleanup]
+        [AutoStaticsCleanupOnCodeReload]
         internal static readonly HashSet<StyleSheet> s_StyleSheetsRequiringRebuilding = new();
-        [NoAutoStaticsCleanup]
+        [AutoStaticsCleanupOnCodeReload]
         internal static readonly HashSet<string> s_ReimportedStyleSheetsPath = new();
-        [NoAutoStaticsCleanup]
+        [AutoStaticsCleanupOnCodeReload]
         internal static readonly List<StyleSheet> s_StyleSheetsRebuildList = new();
-        [NoAutoStaticsCleanup]
+        [AutoStaticsCleanupOnCodeReload]
         internal static readonly List<string> s_ReimportedStyleSheetsPathList = new();
-        [NoAutoStaticsCleanup]
+        [AutoStaticsCleanupOnCodeReload] // set before each reload; unloads must be recorded again after it
         internal static bool s_StopRecordingStyleSheetUnloads = false;
 
         [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]

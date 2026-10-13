@@ -8,6 +8,7 @@ using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using Unity.Profiling;
 using UnityEngine.Bindings;
+using UnityEngine.Pool;
 using UnityEngine.UIElements.Layout;
 using UnityEngine.UIElements.Unmanaged;
 
@@ -944,8 +945,66 @@ namespace UnityEngine.UIElements
                     ? transformFlags | PanelTransformFlags.IsFlat
                     : transformFlags & ~PanelTransformFlags.IsFlat;
 
+                // Going flat has to re-version BEFORE the updater swap: only the world-space updater dirties
+                // LocalBounds3DDirty, and without it localBoundsPicking3D keeps handing back the cached
+                // sag-inflated bounds instead of recomputing them now that nothing bends.
+                if (value)
+                    RefreshCurvedElements(markPanelCurved: false);
+
                 SetSpecializedHierarchyFlagsUpdater();
                 isFlatChanged?.Invoke();
+
+                if (!value)
+                    RefreshCurvedElements(markPanelCurved: true);
+            }
+        }
+
+        // Elements attached under the previous flatness were never versioned for it. Roots get a version bump
+        // (repaint + Needs3DBounds propagation); descendants get their 3D bounds flags set directly, because the
+        // downward pass drops a flag at the first node already carrying it. Barriers are over-dirtied on purpose.
+        void RefreshCurvedElements(bool markPanelCurved)
+        {
+            const VisualElementTransformFlags k_Subtree3DBoundsFlags =
+                VisualElementTransformFlags.Needs3DBounds |
+                VisualElementTransformFlags.LocalBounds3DDirty |
+                VisualElementTransformFlags.LocalBoundsWithoutNested3DDirty;
+
+            var root = visualTree;
+            if (root == null)
+                return;
+
+            using (ListPool<VisualElement>.Get(out var pending))
+            using (ListPool<bool>.Get(out var pendingUnderCurvedRoot))
+            {
+                pending.Add(root);
+                pendingUnderCurvedRoot.Add(false);
+
+                while (pending.Count > 0)
+                {
+                    int last = pending.Count - 1;
+                    var ve = pending[last];
+                    var underCurvedRoot = pendingUnderCurvedRoot[last];
+                    pending.RemoveAt(last);
+                    pendingUnderCurvedRoot.RemoveAt(last);
+
+                    if (ve.hasCurvature)
+                    {
+                        if (markPanelCurved)
+                            mayHaveCurvedElements = true;
+                        ve.IncrementVersion(VersionChangeType.Transform);
+                        underCurvedRoot = true;
+                    }
+
+                    if (underCurvedRoot)
+                        ve.transformFlags |= k_Subtree3DBoundsFlags;
+
+                    var hierarchy = ve.hierarchy;
+                    for (int i = 0, count = hierarchy.childCount; i < count; ++i)
+                    {
+                        pending.Add(hierarchy[i]);
+                        pendingUnderCurvedRoot.Add(underCurvedRoot);
+                    }
+                }
             }
         }
 

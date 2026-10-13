@@ -26,7 +26,7 @@ namespace UnityEditor
         {
             if (!(args.context is SceneViewPickingShortcutContext ctx) || !(ctx.window is SceneView view))
                 return;
-            OpenSelectionPiercingMenu(view, SelectionType.Normal);
+            OpenSelectionPiercingMenu(view, SelectionType.Normal, args.sourceEvent ?? Event.current);
         }
 
         [Shortcut("Scene View/List Deselect", typeof(SceneViewPickingShortcutContext), KeyCode.Mouse1, ShortcutModifiers.Action | ShortcutModifiers.Shift)]
@@ -34,13 +34,12 @@ namespace UnityEditor
         {
             if (!(args.context is SceneViewPickingShortcutContext ctx) || !(ctx.window is SceneView view))
                 return;
-            OpenSelectionPiercingMenu(view, SelectionType.Subtractive);
+            OpenSelectionPiercingMenu(view, SelectionType.Subtractive, args.sourceEvent ?? Event.current);
         }
 
-        static void OpenSelectionPiercingMenu(SceneView view, SelectionType type)
+        static void OpenSelectionPiercingMenu(SceneView view, SelectionType type, Event evt)
         {
             SceneView.duringSceneGui += type == SelectionType.Normal ? ShowSelectionPiercingMenuNormal : ShowSelectionPiercingMenuSubtractive;
-            var evt = Event.current;
 
             view.SendEvent(new Event()
             {
@@ -134,8 +133,19 @@ namespace UnityEditor
 
             evt.Use();
 
+            var selectionPiercingMenu = BuildSelectionPiercingMenu(evt.mousePosition, forceSubtractive);
+
+#pragma warning disable CS0618 // Type or member is obsolete
+            selectionPiercingMenu.DoDisplayEditorMenuFromImGUI(new Rect(evt.mousePosition, Vector2.zero));
+#pragma warning restore CS0618 // Type or member is obsolete
+        }
+
+        // Builds (without displaying) the piercing-selection menu for every object overlapping mousePosition
+        // (GUI space). Split out from ShowSelectionPiercingMenu so it can be tested without popping the menu.
+        internal static DropdownMenu BuildSelectionPiercingMenu(Vector2 mousePosition, bool forceSubtractive)
+        {
             var overlapping = new List<PickingObject>();
-            foreach(var o in SceneViewPicking.GetAllOverlapping(evt.mousePosition))
+            foreach(var o in SceneViewPicking.GetAllOverlapping(mousePosition))
                 overlapping.Add(o);
 
             var selectionPiercingMenu = new DropdownMenu();
@@ -152,9 +162,7 @@ namespace UnityEditor
             if (selectionPiercingMenu.MenuItems().Count == 0)
                 selectionPiercingMenu.AppendAction("Nothing to Select Under Pointer", null, DropdownMenuAction.Status.Disabled);
 
-#pragma warning disable CS0618 // Type or member is obsolete
-            selectionPiercingMenu.DoDisplayEditorMenuFromImGUI(new Rect(Event.current.mousePosition, Vector2.zero));
-#pragma warning restore CS0618 // Type or member is obsolete
+            return selectionPiercingMenu;
         }
     }
 }

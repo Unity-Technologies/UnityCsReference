@@ -58,10 +58,14 @@ namespace UnityEngine.UIElements.UIR
                 return;
 
             VisualElement ve = renderData.owner;
-            bool wasEnabled = renderData.hasCurvatureModifier;
-            bool isEnabled = ve.hasCurvature;
+            // Flatness first, so a flat panel never pays the per-element style read.
+            bool isEnabled = ve.elementPanel is BaseRuntimePanel { isFlat: false } && ve.hasCurvature;
+            // The owner's list, not renderData, records what is armed: renderData is pooled and re-created whenever
+            // the render chain is rebuilt (flatness, atlas, drawsInCameras), which would forget a live registration.
+            var modifiers = ve.meshModifiers;
+            int index = IndexOfRegistration(modifiers);
 
-            if (wasEnabled == isEnabled)
+            if ((index >= 0) == isEnabled)
                 return;
 
             // Mutate the owner's modifier list directly (no dirty): RebuildEffectiveModifiers runs next,
@@ -69,23 +73,19 @@ namespace UnityEngine.UIElements.UIR
             if (isEnabled)
                 ve.GetOrCreateMeshModifiers().Add(s_Registration);
             else
-                RemoveRegistration(ve.meshModifiers);
-
-            renderData.hasCurvatureModifier = isEnabled;
+                modifiers.RemoveAt(index);
         }
 
-        static void RemoveRegistration(List<MeshModifierRegistration> list)
+        static int IndexOfRegistration(List<MeshModifierRegistration> list)
         {
             if (list == null)
-                return;
+                return -1;
             for (int i = 0; i < list.Count; ++i)
             {
                 if (list[i].id == s_Id)
-                {
-                    list.RemoveAt(i);
-                    return;
-                }
+                    return i;
             }
+            return -1;
         }
 
         static void Modify(MeshModificationContext ctx)
@@ -300,6 +300,18 @@ namespace UnityEngine.UIElements.UIR
         {
             public static float CombineSag(float sagX, float sagY) => UIRCurvatureGeometry.Testing.CombineSag(sagX, sagY);
             public static int BudgetCappedLevel(int srcTris, int desiredLevel) => UIRCurvatureMeshModifier.BudgetCappedLevel(srcTris, desiredLevel);
+
+            public static int RegistrationCount(VisualElement ve)
+            {
+                var list = ve.meshModifiers;
+                int count = 0;
+                for (int i = 0; i < (list?.Count ?? 0); ++i)
+                {
+                    if (list[i].id == s_Id)
+                        ++count;
+                }
+                return count;
+            }
         }
     }
 }

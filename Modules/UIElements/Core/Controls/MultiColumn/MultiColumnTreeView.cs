@@ -224,6 +224,8 @@ namespace UnityEngine.UIElements
             CreateVirtualizationController<ReusableMultiColumnTreeViewItem>();
         }
 
+        private protected override bool hasUniformItemWidth => true;
+
         void RaiseColumnSortingChanged()
         {
             columnSortingChanged?.Invoke();

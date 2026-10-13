@@ -172,7 +172,7 @@ namespace UnityEngine.UIElements
                     return new BindingResult(BindingStatus.Failure, message);
                 }
 
-                return s_VisitDataSourceAsRootVisitor.result;
+                return visitRoot.bindingResult;
             }
 
             var visitAtPath = VisitAtPath(dataBinding, BindingUpdateStage.UpdateUI, ref resolvedDataSource, context.dataSourcePath, in context);
@@ -343,8 +343,15 @@ namespace UnityEngine.UIElements
             s_VisitDataSourceAsRootVisitor.Binding = dataBinding;
             s_VisitDataSourceAsRootVisitor.bindingContext = context;
 
-            var succeeded = PropertyContainer.TryAccept(s_VisitDataSourceAsRootVisitor, ref container, out var returnCode);
-            return (succeeded, returnCode, s_VisitDataSourceAsRootVisitor.result);
+            try
+            {
+                var succeeded = PropertyContainer.TryAccept(s_VisitDataSourceAsRootVisitor, ref container, out var returnCode);
+                return (succeeded, returnCode, s_VisitDataSourceAsRootVisitor.result);
+            }
+            finally
+            {
+                s_VisitDataSourceAsRootVisitor.Reset();
+            }
         }
 
         private static (bool succeeded, VisitReturnCode visitationReturnCode, VisitReturnCode atPathReturnCode, BindingResult bindingResult) VisitAtPath<TContainer>(
@@ -361,8 +368,15 @@ namespace UnityEngine.UIElements
             s_VisitDataSourceAtPathVisitor.Path = path;
             s_VisitDataSourceAtPathVisitor.bindingContext = context;
 
-            var succeeded = PropertyContainer.TryAccept(s_VisitDataSourceAtPathVisitor, ref container, out var returnCode);
-            return (succeeded, returnCode, s_VisitDataSourceAtPathVisitor.ReturnCode, s_VisitDataSourceAtPathVisitor.result);
+            try
+            {
+                var succeeded = PropertyContainer.TryAccept(s_VisitDataSourceAtPathVisitor, ref container, out var returnCode);
+                return (succeeded, returnCode, s_VisitDataSourceAtPathVisitor.ReturnCode, s_VisitDataSourceAtPathVisitor.result);
+            }
+            finally
+            {
+                s_VisitDataSourceAtPathVisitor.Reset();
+            }
         }
 
         // Internal for tests

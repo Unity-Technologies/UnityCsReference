@@ -8,3 +8,4 @@ using System.Runtime.CompilerServices;
 [assembly: InternalsVisibleTo("Unity.Modules.BuildAnalysis.Tests.Editor")]
 [assembly: InternalsVisibleTo("UnityEditor.BuildProfileModule")]
 [assembly: InternalsVisibleTo("Unity.Addressables.Editor")]
+[assembly: InternalsVisibleTo("Unity.Addressables.Editor.Tests")]

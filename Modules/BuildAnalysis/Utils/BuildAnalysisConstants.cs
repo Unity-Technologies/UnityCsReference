@@ -14,6 +14,8 @@ namespace UnityEditor.Build.Analysis
         public const string k_DependencyGraphFileName = "DependencyGraph.bin";
         public const string k_ConsoleLogPrefix = "[Build Analysis]";
 
+        public const string k_ShowInFileBrowserLabel = "Open Containing Folder";
+
         // Schema version stamped into BuildAnalysis.json. Bump this whenever the serialized shape changes:
         // BuildAnalysisService regenerates any cached analysis whose version differs, so old caches self-heal.
         // 4: analyses now generate a DependencyGraph.bin sibling, so pre-graph caches regenerate once and write it.

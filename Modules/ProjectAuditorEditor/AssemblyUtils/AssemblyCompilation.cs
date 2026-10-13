@@ -344,15 +344,7 @@ namespace Unity.ProjectAuditor.Editor.AssemblyUtils
                 var additionalDefines = new List<string>(assembly.defines.Except(assemblyBuilder.defaultDefines).Concat(responseFileData.Defines));
 #pragma warning restore UAC2001
 
-                // DEVELOPMENT_BUILD
                 assemblyBuilder.flags = AssemblyBuilderFlags.None;
-                
-#pragma warning disable 618 // disable warning for obsolete DevelopmentBuild
-                if ((CodeAnalysisFlags & CodeAnalysisFlags.DevelopmentBuild) != 0)
-                    assemblyBuilder.flags |= AssemblyBuilderFlags.DevelopmentBuild;
-                else
-                    additionalDefines.Remove("DEVELOPMENT_BUILD"); // Checking Development Build in the Build Profile, can cause this define to appear in assembly.defines!
-#pragma warning restore 618
 
                 if ((CodeAnalysisFlags & CodeAnalysisFlags.DebugManagedCodeVariant) != 0)
                 {

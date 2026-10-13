@@ -102,6 +102,27 @@ namespace UnityEditor.Networking
         public long completedFrame = -1;
     }
 
+    internal enum WebRequestProfilerDropCoverage
+    {
+        None,
+        Partial,
+        Complete,
+    }
+
+    internal struct WebRequestProfilerEvictedTotals
+    {
+        public int count;
+        public int completed;
+        public int errors;
+        public int pending;
+        public ulong bytesDown;
+        public ulong bytesUp;
+        public bool measuredDown;
+        public bool measuredUp;
+        public bool unmeasuredDown;
+        public bool unmeasuredUp;
+    }
+
     // Accumulates every request across the frames held in the profiler's buffer.
     //
     // Native emits a request once per frame it is alive in and then drops it, so its final status and
@@ -113,20 +134,43 @@ namespace UnityEditor.Networking
     // resolved here while that blob is still the one in hand.
     internal sealed class WebRequestProfilerCaptureLog
     {
+        internal const int k_MaxRecords = 2048;
+
         readonly Dictionary<ulong, WebRequestProfilerRecord> m_ById = new Dictionary<ulong, WebRequestProfilerRecord>();
 
         // Insertion ordered, so requests are listed in the order they started.
         readonly List<WebRequestProfilerRecord> m_Records = new List<WebRequestProfilerRecord>();
 
         long m_IngestedThrough = -1;
+        int m_NextCaptureIndex;
+        ulong m_EvictedThroughId;
+        WebRequestProfilerEvictedTotals m_Evicted;
+        int m_DroppedRequests;
+        bool m_AnyFrameWithCounter;
+        bool m_AnyFrameWithoutCounter;
 
         public List<WebRequestProfilerRecord> Records => m_Records;
+
+        public WebRequestProfilerEvictedTotals Evicted => m_Evicted;
+
+        public int DroppedRequests => m_DroppedRequests;
+
+        public WebRequestProfilerDropCoverage DroppedRequestsCoverage =>
+            !m_AnyFrameWithCounter ? WebRequestProfilerDropCoverage.None
+            : m_AnyFrameWithoutCounter ? WebRequestProfilerDropCoverage.Partial
+            : WebRequestProfilerDropCoverage.Complete;
 
         public void Clear()
         {
             m_ById.Clear();
             m_Records.Clear();
             m_IngestedThrough = -1;
+            m_NextCaptureIndex = 0;
+            m_EvictedThroughId = 0;
+            m_Evicted = default;
+            m_DroppedRequests = 0;
+            m_AnyFrameWithCounter = false;
+            m_AnyFrameWithoutCounter = false;
         }
 
         // Ingests every frame in range not already read. Returns true when a record was added or
@@ -158,9 +202,22 @@ namespace UnityEditor.Networking
 
         bool Ingest(long frameIndex)
         {
+            var dropped = WebRequestProfilerFrameReader.ReadRequestsDropped(frameIndex, out var recorded);
+            AddDroppedRequests(dropped, recorded);
+
             var rows = WebRequestProfilerFrameReader.ReadFrame(frameIndex, out var strings,
                 out var headers, out var timings, out var bodies, out var bodyBytes);
             return Merge(frameIndex, rows, strings, headers, timings, bodies, bodyBytes);
+        }
+
+        internal void AddDroppedRequests(int dropped, bool recorded)
+        {
+            m_DroppedRequests += dropped;
+
+            if (recorded)
+                m_AnyFrameWithCounter = true;
+            else
+                m_AnyFrameWithoutCounter = true;
         }
 
         internal bool Merge(long frameIndex, List<WebRequestProfilerRow> rows, byte[] strings)
@@ -186,10 +243,13 @@ namespace UnityEditor.Networking
             {
                 if (!m_ById.TryGetValue(row.requestId, out var record))
                 {
+                    if (row.requestId <= m_EvictedThroughId)
+                        continue;
+
                     record = new WebRequestProfilerRecord
                     {
                         requestId = row.requestId,
-                        captureIndex = m_Records.Count,
+                        captureIndex = m_NextCaptureIndex++,
                     };
                     m_ById.Add(row.requestId, record);
                     m_Records.Add(record);
@@ -257,7 +317,89 @@ namespace UnityEditor.Networking
                 }
             }
 
+            EvictWhileOverCap();
+
             return true;
+        }
+
+        void EvictWhileOverCap()
+        {
+            while (m_Records.Count > k_MaxRecords)
+            {
+                var index = -1;
+                for (var i = 0; i < m_Records.Count; ++i)
+                {
+                    if (m_Records[i].state != WebRequestProfilerState.InFlight)
+                    {
+                        index = i;
+                        break;
+                    }
+                }
+
+                if (index < 0)
+                    index = StalestIndex();
+
+                var evicted = m_Records[index];
+                m_Records.RemoveAt(index);
+                m_ById.Remove(evicted.requestId);
+
+                if (evicted.requestId > m_EvictedThroughId)
+                    m_EvictedThroughId = evicted.requestId;
+
+                Accumulate(evicted);
+            }
+        }
+
+        int StalestIndex()
+        {
+            var stalest = 0;
+            for (var i = 1; i < m_Records.Count; ++i)
+            {
+                if (m_Records[i].lastSeenFrame < m_Records[stalest].lastSeenFrame)
+                    stalest = i;
+            }
+
+            return stalest;
+        }
+
+        void Accumulate(WebRequestProfilerRecord record)
+        {
+            m_Evicted.count++;
+
+            if (WebRequestProfilerFormatting.HasMeasuredDownload(record))
+            {
+                m_Evicted.bytesDown += record.bytesDownloaded;
+                m_Evicted.measuredDown = true;
+            }
+            else
+            {
+                m_Evicted.unmeasuredDown = true;
+            }
+
+            if (WebRequestProfilerFormatting.HasMeasuredUpload(record))
+            {
+                m_Evicted.bytesUp += record.bytesUploaded;
+                m_Evicted.measuredUp = true;
+            }
+            else
+            {
+                m_Evicted.unmeasuredUp = true;
+            }
+
+            switch (record.state)
+            {
+                case WebRequestProfilerState.InFlight:
+                    m_Evicted.pending++;
+                    break;
+                case WebRequestProfilerState.Failed:
+                    m_Evicted.errors++;
+                    break;
+                default:
+                    m_Evicted.completed++;
+                    if (record.statusCode >= 400)
+                        m_Evicted.errors++;
+                    break;
+            }
         }
 
         // Null when this frame carried no headers for the request, which the caller reads as "leave

@@ -450,7 +450,7 @@ namespace UnityEditor.Build
 
     ///<summary>Implement this interface to receive a callback for each scene during the build.</summary>
     ///<remarks>If the scene or related content in the project is unchanged from the previous Player build, Unity doesn't build the scene and instead uses cached Player build data. In this case, the callback isn't called. For more information about build callbacks, refer to [Use build callbacks](xref:um-build-callbacks)</remarks>
-    ///<remarks>This interface is obsolete. Use <see cref="AssetPostprocessor.OnProcessScene" /> instead.</remarks>
+    ///<remarks>This interface is deprecated. Use <see cref="AssetPostprocessor.OnProcessScene" /> instead.</remarks>
     [Obsolete("Use AssetPostprocessor.OnProcessScene instead")]
     public interface IProcessSceneWithReport : IOrderedCallback
     {

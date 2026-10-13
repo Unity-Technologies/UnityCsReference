@@ -240,13 +240,19 @@ namespace UnityEngine.UIElements
                 return;
             }
 
-            if (contentContainer == this)
+            var container = contentContainer;
+
+            if (container == null)
+            {
+                return;
+            }
+            else if (container == this)
             {
                 hierarchy.Insert(index, element);
             }
             else
             {
-                contentContainer?.Insert(index, element);
+                container.Insert(index, element);
             }
 
             element.m_LogicalParent = this;
@@ -608,6 +614,7 @@ namespace UnityEngine.UIElements
         public readonly struct Hierarchy
         {
             private const string k_InvalidHierarchyChangeMsg = "Cannot modify VisualElement hierarchy during layout calculation";
+            private const string k_HierarchyCycleMsg = "Cannot insert an element under one of its own descendants, as this would create a cycle in the hierarchy. Remove the descendant from the element first.";
 
             private readonly VisualElement m_Owner;
 
@@ -660,12 +667,19 @@ namespace UnityEngine.UIElements
                 if (child == m_Owner)
                     throw new ArgumentException("Cannot insert element as its own child");
 
+                if (child.m_Children.Count > 0 && child.Contains(m_Owner))
+                    throw new ArgumentException(k_HierarchyCycleMsg);
+
                 ValidateElementCanBeModified();
 
                 if (child.resourcesReleased)
                     throw new InvalidOperationException("You can't insert a VisualElement after its resources are released. This usually happens when PanelRenderer releases elements during UI reload or cleanup. Make sure that you don't hold stale references to elements.");
 
                 child.RemoveFromHierarchy();
+
+                // A detach callback may have moved m_Owner under child.
+                if (child.m_Children.Count > 0 && child.Contains(m_Owner))
+                    throw new ArgumentException(k_HierarchyCycleMsg);
 
                 if (ReferenceEquals(m_Owner.m_Children, s_EmptyList))
                 {
@@ -1280,12 +1294,12 @@ namespace UnityEngine.UIElements
         {
             while (child != null)
             {
-                if (child.hierarchy.parent == this)
+                if (child.m_PhysicalParent == this)
                 {
                     return true;
                 }
 
-                child = child.hierarchy.parent;
+                child = child.m_PhysicalParent;
             }
 
             return false;

@@ -47,6 +47,43 @@ namespace UnityEngine
         ///<summary>Should the <c>connectedAnchor</c> be calculated automatically?</summary>
         ///<remarks>If this is enabled, then the <c>connectedAnchor</c> property will be calculated automatically to match the global position of the <c>anchor</c> property. This is the default behavior. If this is disabled, you can configure the position of the connected anchor using the <c>connectedAnchor</c> property.</remarks>
         extern public bool autoConfigureConnectedAnchor { get; set; }
+        ///<summary>Orientation of the joint frame relative to the connected <see cref="Rigidbody" />.</summary>
+        ///<remarks>This is the rotational counterpart of <see cref="Joint.connectedAnchor" />: together they define the joint frame on the connected body. The rotation is given in local coordinates of the connected body, or in world coordinates if there is no connected body.
+        ///
+        ///If <see cref="Joint.autoConfigureConnectedOrientation" /> is enabled, then reading this property returns the orientation Unity computed from the relative rotation of the two bodies, and assigning to it has no effect on the simulation. Disable <see cref="Joint.autoConfigureConnectedOrientation" /> to control the orientation yourself.
+        ///
+        ///Setting this property is the way to keep a joint's rest pose stable across disable/enable cycles. By default Unity recalculates the orientation every time the joint is enabled, so a joint that is re-enabled while its bodies are away from their rest pose adopts that distorted pose as its new zero, which in turn shifts its limits and drive targets. Capturing the auto-configured value once while the bodies are at rest and reassigning it on every re-enable avoids this.</remarks>
+        ///<example>
+        ///  <code><![CDATA[
+        ///using UnityEngine;
+        ///
+        ///public class StableJointFrame : MonoBehaviour
+        ///{
+        ///    [SerializeField] Quaternion m_RestOrientation;
+        ///
+        ///    // Capture the joint's current anchor orientation at start up.
+        ///    void OnEnable()
+        ///    {
+        ///        var joint = GetComponent<Joint>();
+        ///        
+        ///        //cache the rest orientation while we are still in auto configure mode
+        ///        m_RestOrientation = joint.connectedOrientation;
+        ///        
+        ///        joint.autoConfigureConnectedOrientation = false;
+        ///        
+        ///        //apply the cached rest orientation as we are now in manual mode
+        ///        joint.connectedOrientation = m_RestOrientation;
+        ///    }
+        ///}
+        ///]]></code>
+        ///</example>
+        ///<seealso cref="Joint.autoConfigureConnectedOrientation" />
+        ///<seealso cref="Joint.connectedAnchor" />
+        extern public Quaternion connectedOrientation { get; set; }
+        ///<summary>Should the <c>connectedOrientation</c> be calculated automatically?</summary>
+        ///<remarks>If this is enabled, then the <c>connectedOrientation</c> property is recalculated from the current relative rotation of the two bodies every time the joint is created or enabled. This is the default behavior. If this is disabled, the joint frame on the connected body keeps the orientation you assign to <c>connectedOrientation</c>, which stays stable across disable/enable cycles.</remarks>
+        ///<seealso cref="Joint.connectedOrientation" />
+        extern public bool autoConfigureConnectedOrientation { get; set; }
         ///<summary>The force that needs to be applied for this joint to break.</summary>
         ///<remarks>The force might come from collisions with other objects, forces applied with <see cref="Rigidbody.AddTorque" /> or from other joints.
         ///The break force can be set to <see cref="Mathf.Infinity" /> to render the joint unbreakable.</remarks>

@@ -2,10 +2,8 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-using System;
 using UnityEngine;
 using UnityEditorInternal;
-using Unity.Collections.LowLevel.Unsafe;
 
 namespace UnityEditor
 {
@@ -14,16 +12,7 @@ namespace UnityEditor
         public static void FromKeyframe(this AnimationWindowKeyframe awk, AnimationWindowCurve curve, Keyframe key)
         {
             awk.time = key.time;
-
-            if (curve.isDiscreteCurve)
-            {
-                awk.value = ConvertFloatToDiscreteInt(key.value);
-            }
-            else
-            {
-                awk.value = key.value;
-            }
-
+            awk.value = key.value;
             awk.curve = curve;
             awk.inTangent = key.inTangent;
             awk.outTangent = key.outTangent;
@@ -42,22 +31,16 @@ namespace UnityEditor
             awk.curve = curve;
         }
 
+        public static void FromDiscreteKeyframe(this AnimationWindowKeyframe awk, AnimationWindowCurve curve, DiscreteKeyframe key)
+        {
+            awk.time = key.time;
+            awk.value = key.value;
+            awk.curve = curve;
+        }
+
         public static Keyframe ToKeyframe(this AnimationWindowKeyframe awk)
         {
-            float floatValue;
-            if (awk.curve.isDiscreteCurve)
-            {
-                // case 1395978
-                // Negative int values converted to float create NaN values. Limiting discrete int values to only positive values
-                // until we rewrite the animation backend with dedicated int curves.
-                floatValue = ConvertDiscreteIntToFloat(Math.Max((int)awk.value, 0));
-            }
-            else
-            {
-                floatValue = (float)awk.value;
-            }
-
-            var keyframe = new Keyframe(awk.time, floatValue, awk.inTangent, awk.outTangent);
+            var keyframe = new Keyframe(awk.time, (float)awk.value, awk.inTangent, awk.outTangent);
 
             AnimationUtility.SetKeyLeftTangentMode(ref keyframe, awk.leftTangentMode);
             AnimationUtility.SetKeyRightTangentMode(ref keyframe, awk.rightTangentMode);
@@ -80,24 +63,14 @@ namespace UnityEditor
             return keyframe;
         }
 
-        static unsafe float ConvertDiscreteIntToFloat(int intToConvert)
+        public static DiscreteKeyframe ToDiscreteKeyframe(this AnimationWindowKeyframe awk)
         {
-            float converted = 0f;
-            UnsafeUtility.MemCpy(
-                UnsafeUtility.AddressOf(ref converted),
-                UnsafeUtility.AddressOf(ref intToConvert),
-                UnsafeUtility.SizeOf<int>());
-            return converted;
-        }
+            var keyframe = new DiscreteKeyframe();
 
-        static unsafe int ConvertFloatToDiscreteInt(float floatToConvert)
-        {
-            int converted = 0;
-            UnsafeUtility.MemCpy(
-                UnsafeUtility.AddressOf(ref converted),
-                UnsafeUtility.AddressOf(ref floatToConvert),
-                UnsafeUtility.SizeOf<float>());
-            return converted;
+            keyframe.time = awk.time;
+            keyframe.value = (int)awk.value;
+
+            return keyframe;
         }
     }
 }

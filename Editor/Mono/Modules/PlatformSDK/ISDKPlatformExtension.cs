@@ -14,6 +14,19 @@ internal interface ISDKPlatformExtension
     SDKPlatformProvider sdkPlatformProvider { get; }
     ConfigurableBuildTarget sdkPlatformBuildTarget { get; }
 
+    /// <summary>
+    /// What this SDK platform adds to its base or selected platform's compilation extension.
+    /// </summary>
+    ICompilationExtension additionalCompilationExtension { get; }
+
+    /// <summary>
+    /// This SDK platform's complete compilation extension. For a multi-target platform the base is the
+    /// selected platform's extension, which changes with the selection, so this is computed per
+    /// call and must not be stored.
+    /// </summary>
+    ICompilationExtension CreateCompilationExtension(ICompilationExtension baseCompilationExtension)
+        => CompositeCompilationExtension.Combine(baseCompilationExtension, additionalCompilationExtension);
+
     bool shouldShowPlatformSettings { get; }
     bool shouldShowAdditionalSettings { get; }
     bool shouldShowAddSettingsButton { get; }

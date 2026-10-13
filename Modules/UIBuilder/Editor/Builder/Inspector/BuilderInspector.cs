@@ -236,6 +236,30 @@ namespace Unity.UI.Builder
             }
         }
 
+        VisualElement m_CachedVariableScopeElement;
+
+        internal VisualElement variableScopeElement
+        {
+            get
+            {
+                var element = currentVisualElement;
+                if (!BuilderSharedStyles.IsSelectorElement(element))
+                    return null;
+
+                var root = selection.documentRootElement;
+                var sheet = styleSheet;
+                if (root == null || sheet == null)
+                    return root ?? element;
+
+                var cached = m_CachedVariableScopeElement;
+                if (cached != null && cached.panel != null && cached.styleSheets.Contains(sheet))
+                    return cached;
+
+                m_CachedVariableScopeElement = root.Query<VisualElement>().Where(e => e.styleSheets.Contains(sheet)).First();
+                return m_CachedVariableScopeElement ?? root;
+            }
+        }
+
         HighlightOverlayPainter m_HighlightOverlayPainter;
         public HighlightOverlayPainter highlightOverlayPainter => m_HighlightOverlayPainter;
 

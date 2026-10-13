@@ -158,12 +158,15 @@ namespace UnityEngine.Android
         {
         }
 
+        ///<summary>Creates a new instance of the configuration, copied from another instance.</summary>
+        ///<param name="otherConfiguration">The configuration to copy.</param>
         public AndroidConfiguration(AndroidConfiguration otherConfiguration)
         {
             this.CopyFrom(otherConfiguration);
         }
 
         ///<summary>Copies the specified configuration into the current instance.</summary>
+        ///<param name="otherConfiguration">The configuration to copy the values from.</param>
         public void CopyFrom(AndroidConfiguration otherConfiguration)
         {
             colorMode = otherConfiguration.colorMode;
@@ -189,6 +192,7 @@ namespace UnityEngine.Android
         }
 
         ///<summary>Mirrors the Android method <c>toString()</c>.</summary>
+        ///<returns>A string that represents the current instance.</returns>
         ///<remarks>For information about this method, refer to the Android developer documentation on &lt;a href="https://developer.android.com/reference/android/content/res/Configuration#toString()"&gt;toString()&lt;/a&gt;.</remarks>
         [RequiredMember]
         public override string ToString()

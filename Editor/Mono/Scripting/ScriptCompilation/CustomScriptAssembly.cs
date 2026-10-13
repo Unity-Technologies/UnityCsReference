@@ -235,32 +235,31 @@ namespace UnityEditor.Scripting.ScriptCompilation
     class CustomScriptAssembly
     {
         // Whitelisted packages that should not have analyzer rules applied
-        // All package names should have "com.unity." prefix
+        // All entries are full package names including the "com.unity." prefix
         static readonly string[] k_WhitelistedPackages = new string[]
         {
-            "ide.rider", // UAC0005/6/7/20
-            "ide.visualstudio", // UAC0005/6/7 in Testing folder for test runner integration
-            "addressables", // UAC0023
-            "memoryprofiler", // UAC0006
-            "purchasing", // UAC0005
-            "cinemachine", // UAC0005
-            "learn.iet-framework", // UAC0005
-            "polyspatial", // UAC0005/7
-            "web.stripping-tool", // UAC0005/7
-            "multiplayer.tools", // UAC0005
-            "formats.alembic", // UAC0005
-            "mars", // to be deprecated
-            "barracuda", // to be deprecated
-            "xrtools.utils", // to be deprecated
-            "test-framework", // UAC0007
-            "netcode", // UAC0005
-            "scriptablebuildpipeline", // UAC0023
-            "package-validation-suite", // UAC0005/7
-            "mobile.android-logcat", // UAC0005
-            "searcher", // CS0618: obsolete API usage
-            "xr.legacyinputhelpers", // CS0618: obsolete FindObjectsOfType
-            "inputsystem", // CS0109: unnecessary new keyword
-            "ads", // CS0168: unused variable
+            "com.unity.ide.rider", // UAC0005/6/7/20
+            "com.unity.ide.visualstudio", // UAC0005/6/7 in Testing folder for test runner integration
+            "com.unity.addressables", // UAC0023
+            "com.unity.memoryprofiler", // UAC0006
+            "com.unity.purchasing", // UAC0005
+            "com.unity.cinemachine", // UAC0005
+            "com.unity.learn.iet-framework", // UAC0005
+            "com.unity.polyspatial", // UAC0005/7
+            "com.unity.web.stripping-tool", // UAC0005/7
+            "com.unity.multiplayer.tools", // UAC0005
+            "com.unity.formats.alembic", // UAC0005
+            "com.unity.mars", // to be deprecated
+            "com.unity.barracuda", // to be deprecated
+            "com.unity.xrtools.utils", // to be deprecated
+            "com.unity.test-framework", // UAC0007
+            "com.unity.netcode", // UAC0005
+            "com.unity.scriptablebuildpipeline", // UAC0023
+            "com.unity.package-validation-suite", // UAC0005/7
+            "com.unity.searcher", // CS0618: obsolete API usage
+            "com.unity.xr.legacyinputhelpers", // CS0618: obsolete FindObjectsOfType
+            "com.unity.inputsystem", // CS0109: unnecessary new keyword
+            "com.unity.ads", // CS0168: unused variable
         };
 
         // Unity packages not yet migrated to AutoStatics cleanup, so
@@ -268,63 +267,62 @@ namespace UnityEditor.Scripting.ScriptCompilation
         // fail compilation if mutable. Please remove a package from this list once it has been fixed.
         static readonly string[] k_AutoStaticsCleanupExcludedPackages = new string[]
         {
-
-            "2d.sprite",
-            "2d.tilemap",
-            "adaptiveperformance",
-            "adaptiveperformance.apple",
-            "adaptiveperformance.google.android",
-            "animation.rigging",
-            "burst",
-            "cinemachine",
-            "collections",
-            "dedicated-server",
-            "editorcoroutines",
-            "entities",
-            "entities.graphics",
-            "ext.nunit",
-            "feature.2d",
-            "feature.ar",
-            "feature.characters-animation",
-            "feature.development",
-            "feature.ecs",
-            "feature.gameplay-storytelling",
-            "feature.mobile",
-            "feature.vr",
-            "feature.worldbuilding",
-            "graph-authoring",
-            "graphtoolkit",
-            "mathematics",
-            "modules.uielementsnative",
-            "multiplayer.center",
-            "multiplayer.playmode",
-            "netcode",
-            "package-manager-ui",
-            "physics",
-            "profiling.core",
-            "project-auditor",
-            "rendering.denoising",
-            "render-pipelines.core",
-            "render-pipelines.high-definition",
-            "render-pipelines.high-definition-config",
-            "render-pipelines.universal",
-            "render-pipelines.universal-config",
-            "sentis",
-            "serialization",
-            "shaderanalysis",
-            "shadergraph",
-            "test-framework",
-            "test-framework.performance",
-            "textmeshpro",
-            "timeline",
-            "transport",
-            "ugui",
-            "ui",
-            "ui.builder",
-            "ui.test-framework",
-            "visualeffectgraph",
-            "xr.core-utils",
-            "xr.openxr",
+            "com.unity.2d.sprite",
+            "com.unity.2d.tilemap",
+            "com.unity.adaptiveperformance",
+            "com.unity.adaptiveperformance.apple",
+            "com.unity.adaptiveperformance.google.android",
+            "com.unity.animation.rigging",
+            "com.unity.burst",
+            "com.unity.cinemachine",
+            "com.unity.collections",
+            "com.unity.dedicated-server",
+            "com.unity.editorcoroutines",
+            "com.unity.entities",
+            "com.unity.entities.graphics",
+            "com.unity.ext.nunit",
+            "com.unity.feature.2d",
+            "com.unity.feature.ar",
+            "com.unity.feature.characters-animation",
+            "com.unity.feature.development",
+            "com.unity.feature.ecs",
+            "com.unity.feature.gameplay-storytelling",
+            "com.unity.feature.mobile",
+            "com.unity.feature.vr",
+            "com.unity.feature.worldbuilding",
+            "com.unity.graph-authoring",
+            "com.unity.graphtoolkit",
+            "com.unity.mathematics",
+            "com.unity.modules.uielementsnative",
+            "com.unity.multiplayer.center",
+            "com.unity.multiplayer.playmode",
+            "com.unity.netcode",
+            "com.unity.package-manager-ui",
+            "com.unity.physics",
+            "com.unity.profiling.core",
+            "com.unity.project-auditor",
+            "com.unity.rendering.denoising",
+            "com.unity.render-pipelines.core",
+            "com.unity.render-pipelines.high-definition",
+            "com.unity.render-pipelines.high-definition-config",
+            "com.unity.render-pipelines.universal",
+            "com.unity.render-pipelines.universal-config",
+            "com.unity.sentis",
+            "com.unity.serialization",
+            "com.unity.shaderanalysis",
+            "com.unity.shadergraph",
+            "com.unity.test-framework",
+            "com.unity.test-framework.performance",
+            "com.unity.textmeshpro",
+            "com.unity.timeline",
+            "com.unity.transport",
+            "com.unity.ugui",
+            "com.unity.ui",
+            "com.unity.ui.builder",
+            "com.unity.ui.test-framework",
+            "com.unity.visualeffectgraph",
+            "com.unity.xr.core-utils",
+            "com.unity.xr.openxr",
         };
 
         [NoAutoStaticsCleanup] // immutable package ruleset file path computed once, safe to persist across reload
@@ -360,9 +358,8 @@ namespace UnityEditor.Scripting.ScriptCompilation
         private bool IsInWhitelistedPackage()
         {
             var pathSpan = PathPrefix.AsSpan();
-            foreach (var packageName in k_WhitelistedPackages)
+            foreach (var packagePath in k_WhitelistedPackages)
             {
-                var packagePath = $"com.unity.{packageName}";
                 if (pathSpan.Contains(packagePath.AsSpan(), StringComparison.OrdinalIgnoreCase))
                     return true;
             }
@@ -378,9 +375,8 @@ namespace UnityEditor.Scripting.ScriptCompilation
         private bool IsInAutoStaticsCleanupExcludedPackage()
         {
             var pathSpan = PathPrefix.AsSpan();
-            foreach (var packageName in k_AutoStaticsCleanupExcludedPackages)
+            foreach (var packagePath in k_AutoStaticsCleanupExcludedPackages)
             {
-                var packagePath = $"com.unity.{packageName}";
                 if (pathSpan.Contains(packagePath.AsSpan(), StringComparison.OrdinalIgnoreCase))
                     return true;
             }
@@ -752,6 +748,10 @@ namespace UnityEditor.Scripting.ScriptCompilation
             var rulesetDirectory = System.IO.Path.Combine(projectPath, "Library");
             ImmutablePackageRulesetPath = System.IO.Path.Combine(rulesetDirectory, "ImmutablePackage.ruleset");
 
+            // UAC0036 ([AutoStaticsCleanup] code generation failed on the package's code) is lowered to a Warning: the
+            // user cannot edit a read-only package, so it must not fail their compilation. User code keeps the default
+            // Error. UAC0034 is left alone: the other generators report it without a source location, so as a Warning
+            // the Console would drop it and their failures would go unnoticed.
             const string rulesetContent = /* lang=xml */ """
                 <?xml version="1.0" encoding="utf-8"?>
                 <RuleSet Name="Immutable Package Rules" Description="Errors for Forbidden API rules" ToolsVersion="16.0">
@@ -761,6 +761,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
                     <Rule Id="UAC0007" Action="Error" />
                     <Rule Id="UAC0020" Action="Error" />
                     <Rule Id="UAC0023" Action="Error" />
+                    <Rule Id="UAC0036" Action="Warning" />
                   </Rules>
                 </RuleSet>
                 """;

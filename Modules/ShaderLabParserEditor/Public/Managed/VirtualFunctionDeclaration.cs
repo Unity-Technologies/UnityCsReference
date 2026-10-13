@@ -35,6 +35,11 @@ namespace UnityEditor.ShaderApiReflection
 
         // Private API
 
+        internal string GetSignature(bool includeNamespace)
+        {
+            return m_Signature.GetSignature(includeNamespace);
+        }
+
         private ReflectedFunction m_Signature;
 
         internal VirtualFunctionDeclaration(Attribute attribute,

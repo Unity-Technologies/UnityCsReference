@@ -10,7 +10,7 @@
     <GenerateDocumentationFile>false</GenerateDocumentationFile>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <EnableDefaultItems>false</EnableDefaultItems>
-    <DefineConstants>$(DefineConstants);ALLOW_IMPLICIT_INTERNAL_VISIBILITY;COMBINED_ASSEMBLIES;DEBUGGER_LISTENS_FIXED_PORT;EDITOR_ONLY_NAVMESH_BUILDER_DEPRECATED;ENABLE_ACCELERATOR_CLIENT_DEBUGGING;ENABLE_ALTERNATIVE_LISTEN_PORT;ENABLE_AMD;ENABLE_AUDIO;ENABLE_AUDIO_MANAGER_BASED_SCHEDULING;ENABLE_AUDIO_SCRIPTABLE_PIPELINE;ENABLE_BURST;ENABLE_CACHING;ENABLE_CLOTH;ENABLE_CLOUD_LICENSE;ENABLE_CLOUD_SERVICES;ENABLE_CLOUD_SERVICES_ADS;ENABLE_CLOUD_SERVICES_ANALYTICS;ENABLE_CLOUD_SERVICES_BUILD;ENABLE_CLOUD_SERVICES_CRASH_REPORTING;ENABLE_CLOUD_SERVICES_ENGINE_DIAGNOSTICS;ENABLE_CLOUD_SERVICES_PURCHASING;ENABLE_CLOUD_SERVICES_USE_WEBREQUEST;ENABLE_CLUSTERINPUT;ENABLE_CLUSTER_SYNC;ENABLE_CORECLR;ENABLE_CORECLR_FIXME;ENABLE_CRUNCH_TEXTURE_COMPRESSION;ENABLE_DIRECTOR_AUDIO;ENABLE_DIRECTOR_TEXTURE;ENABLE_EDITOR_GAME_SERVICES;ENABLE_EDITOR_HUB_LICENSE;ENABLE_ETC_COMPRESSION;ENABLE_EVENT_QUEUE;ENABLE_GAMECENTER_API;ENABLE_GENERATE_NATIVE_PLUGINS_FOR_ASSEMBLIES_API;ENABLE_LOCALIZATION_RUNTIME;ENABLE_LZMA;ENABLE_MANAGED_ANIMATION_JOBS;ENABLE_MANAGED_AUDIO_JOBS;ENABLE_MANAGED_JOBS;ENABLE_MANAGED_TRANSFORM_JOBS;ENABLE_MANAGED_UNITYTLS;ENABLE_MARSHALLING_TESTS;ENABLE_METALFX;ENABLE_MICROPHONE;ENABLE_MULTIPLE_DISPLAYS;ENABLE_MULTI_WINDOWING;ENABLE_NAVIGATION_OFFMESHLINK_TO_NAVMESHLINK;ENABLE_NETWORK;ENABLE_NINTENDO_CORE_SCRIPT_BINDINGS;ENABLE_NVIDIA;ENABLE_PHYSICS;ENABLE_RUNTIME_GI;ENABLE_SCRIPTING_GC_SAFE;ENABLE_SCRIPTING_GC_WBARRIERS;ENABLE_SMARTSTRINGS;ENABLE_TEXTURE_STREAMING;ENABLE_UNITYEVENTS;ENABLE_UNITYWEBREQUEST;ENABLE_UNITY_CLOUD_IDENTIFIERS;ENABLE_UNITY_COLLECTIONS_CHECKS;ENABLE_UNITY_CONSENT;ENABLE_UNITY_GAME_SERVICES_ANALYTICS_SUPPORT;ENABLE_UTF8_VALIDATION_ON_STRING_DESERIALIZATION;ENABLE_VERSION_CONTROL_INTEGRATION;ENABLE_VIDEO;ENABLE_VIRTUALTEXTURING;ENABLE_VR;ENABLE_WEBCAM;ENABLE_WEBSOCKET_CLIENT;ENABLE_WEBSOCKET_HOST;ENABLE_WINDOW_ABSTRACTION;ENABLE_WWW;INCLUDE_DYNAMIC_GI;INCLUDE_UNIFIED_RAYTRACING_COMPUTE_BACKEND;INCLUDE_UNIFIED_RAYTRACING_HARDWARE_BACKEND;PLATFORM_SUPPORTS_GAMEPAD_AUDIO;PLAYERCONNECTION_LISTENS_FIXED_PORT;RENDER_SOFTWARE_CURSOR;TEXTCORE_1_0_OR_NEWER;TRACE;UNITY_ANDROID_API;UNITY_ASSEMBLIES_API;UNITY_ASSERTIONS;UNITY_CAN_SHOW_SPLASH_SCREEN;UNITY_EDITOR;UNITY_EDITOR_API;UNITY_EDITOR_LINUX;UNITY_IPHONE_API;UNITY_METRO_API;UNITY_PS4_API;UNITY_PS5_API;UNITY_STANDALONE_LINUX_API;UNITY_STANDALONE_OSX_API;UNITY_STANDALONE_WIN_API;UNITY_TINYPROFILING_INTERNAL;UNITY_TVOS_API;UNITY_UNITYADS_API;UNITY_WEBGL_API;USE_PROPERTY_DATABASE;USE_QUERY_BUILDER;USE_SEARCH_ENGINE_API;USE_SEARCH_MODULE</DefineConstants>
+    <DefineConstants>$(DefineConstants);ALLOW_IMPLICIT_INTERNAL_VISIBILITY;COMBINED_ASSEMBLIES;DEBUGGER_LISTENS_FIXED_PORT;EDITOR_ONLY_NAVMESH_BUILDER_DEPRECATED;ENABLE_ACCELERATOR_CLIENT_DEBUGGING;ENABLE_ALTERNATIVE_LISTEN_PORT;ENABLE_AMD;ENABLE_AUDIO;ENABLE_AUDIO_MANAGER_BASED_SCHEDULING;ENABLE_AUDIO_SCRIPTABLE_PIPELINE;ENABLE_BURST;ENABLE_CACHING;ENABLE_CLOTH;ENABLE_CLOUD_LICENSE;ENABLE_CLOUD_SERVICES;ENABLE_CLOUD_SERVICES_ADS;ENABLE_CLOUD_SERVICES_ANALYTICS;ENABLE_CLOUD_SERVICES_BUILD;ENABLE_CLOUD_SERVICES_CRASH_REPORTING;ENABLE_CLOUD_SERVICES_ENGINE_DIAGNOSTICS;ENABLE_CLOUD_SERVICES_PURCHASING;ENABLE_CLOUD_SERVICES_USE_WEBREQUEST;ENABLE_CLUSTERINPUT;ENABLE_CLUSTER_SYNC;ENABLE_CORECLR;ENABLE_CORECLR_FIXME;ENABLE_CRUNCH_TEXTURE_COMPRESSION;ENABLE_DIRECTOR_AUDIO;ENABLE_DIRECTOR_TEXTURE;ENABLE_EDITOR_GAME_SERVICES;ENABLE_EDITOR_HUB_LICENSE;ENABLE_ETC_COMPRESSION;ENABLE_EVENT_QUEUE;ENABLE_GAMECENTER_API;ENABLE_GENERATE_NATIVE_PLUGINS_FOR_ASSEMBLIES_API;ENABLE_LOCALIZATION_RUNTIME;ENABLE_LZMA;ENABLE_MANAGED_ANIMATION_JOBS;ENABLE_MANAGED_AUDIO_JOBS;ENABLE_MANAGED_JOBS;ENABLE_MANAGED_TRANSFORM_JOBS;ENABLE_MANAGED_UNITYTLS;ENABLE_MARSHALLING_TESTS;ENABLE_METALFX;ENABLE_MICROPHONE;ENABLE_MULTIPLE_DISPLAYS;ENABLE_MULTI_WINDOWING;ENABLE_NAVIGATION_OFFMESHLINK_TO_NAVMESHLINK;ENABLE_NETWORK;ENABLE_NINTENDO_CORE_SCRIPT_BINDINGS;ENABLE_NVIDIA;ENABLE_PHYSICS;ENABLE_RUNTIME_GI;ENABLE_SCRIPTING_GC_SAFE;ENABLE_SCRIPTING_GC_WBARRIERS;ENABLE_SMARTSTRINGS;ENABLE_TEXTURE_STREAMING;ENABLE_UNITYEVENTS;ENABLE_UNITYWEBREQUEST;ENABLE_UNITY_CLOUD_IDENTIFIERS;ENABLE_UNITY_COLLECTIONS_CHECKS;ENABLE_UNITY_CONSENT;ENABLE_UNITY_GAME_SERVICES_ANALYTICS_SUPPORT;ENABLE_UTF8_VALIDATION_ON_STRING_DESERIALIZATION;ENABLE_VERSION_CONTROL_INTEGRATION;ENABLE_VIDEO;ENABLE_VIRTUALTEXTURING;ENABLE_VR;ENABLE_WEBCAM;ENABLE_WEBSOCKET_CLIENT;ENABLE_WEBSOCKET_HOST;ENABLE_WINDOW_ABSTRACTION;ENABLE_WWW;INCLUDE_DYNAMIC_GI;INCLUDE_UNIFIED_RAYTRACING_COMPUTE_BACKEND;INCLUDE_UNIFIED_RAYTRACING_HARDWARE_BACKEND;PLATFORM_SUPPORTS_GAMEPAD_AUDIO;PLAYERCONNECTION_LISTENS_FIXED_PORT;RENDER_SOFTWARE_CURSOR;TEXTCORE_1_0_OR_NEWER;TRACE;UNITY_ANDROID_API;UNITY_ASSEMBLIES_API;UNITY_ASSERTIONS;UNITY_CAN_SHOW_SPLASH_SCREEN;UNITY_EDITOR;UNITY_EDITOR_API;UNITY_EDITOR_LINUX;UNITY_IPHONE_API;UNITY_METRO_API;UNITY_PS4_API;UNITY_PS5_API;UNITY_STANDALONE_LINUX_API;UNITY_STANDALONE_OSX_API;UNITY_STANDALONE_WIN_API;UNITY_TINYPROFILING_INTERNAL;UNITY_TVOS_API;UNITY_UNITYADS_API;UNITY_WEBGL_API</DefineConstants>
     <LangVersion>14.0</LangVersion>
     <NoWarn>1701;169;649;626;UA1002</NoWarn>
     <Nullable>disable</Nullable>
@@ -2689,6 +2689,9 @@
     <Compile Include="..\..\Editor\Mono\Modules\BeeBuildPostprocessor.cs">
       <Link>Editor\Mono\Modules\BeeBuildPostprocessor.cs</Link>
     </Compile>
+    <Compile Include="..\..\Editor\Mono\Modules\CompositeCompilationExtension.cs">
+      <Link>Editor\Mono\Modules\CompositeCompilationExtension.cs</Link>
+    </Compile>
     <Compile Include="..\..\Editor\Mono\Modules\DefaultBuildProfileExtension.cs">
       <Link>Editor\Mono\Modules\DefaultBuildProfileExtension.cs</Link>
     </Compile>
@@ -2728,6 +2731,9 @@
     <Compile Include="..\..\Editor\Mono\Modules\PlatformSDK\ConfigurableBuildTarget.cs">
       <Link>Editor\Mono\Modules\PlatformSDK\ConfigurableBuildTarget.cs</Link>
     </Compile>
+    <Compile Include="..\..\Editor\Mono\Modules\PlatformSDK\ConfigurableCompilationExtension.cs">
+      <Link>Editor\Mono\Modules\PlatformSDK\ConfigurableCompilationExtension.cs</Link>
+    </Compile>
     <Compile Include="..\..\Editor\Mono\Modules\PlatformSDK\ConfigurableDerivedBuildTarget.cs">
       <Link>Editor\Mono\Modules\PlatformSDK\ConfigurableDerivedBuildTarget.cs</Link>
     </Compile>
@@ -2742,6 +2748,9 @@
     </Compile>
     <Compile Include="..\..\Editor\Mono\Modules\PlatformSDK\ISDKPlatformExtension.cs">
       <Link>Editor\Mono\Modules\PlatformSDK\ISDKPlatformExtension.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Mono\Modules\PlatformSDK\SDKPlatformCompilationUtil.cs">
+      <Link>Editor\Mono\Modules\PlatformSDK\SDKPlatformCompilationUtil.cs</Link>
     </Compile>
     <Compile Include="..\..\Editor\Mono\Modules\PlatformSDK\SDKPlatformInfo.cs">
       <Link>Editor\Mono\Modules\PlatformSDK\SDKPlatformInfo.cs</Link>
@@ -3460,6 +3469,9 @@
     <Compile Include="..\..\Editor\Mono\SceneView\SceneViewPiercingMenu.cs">
       <Link>Editor\Mono\SceneView\SceneViewPiercingMenu.cs</Link>
     </Compile>
+    <Compile Include="..\..\Editor\Mono\SceneView\SceneViewSearchFilter.cs">
+      <Link>Editor\Mono\SceneView\SceneViewSearchFilter.cs</Link>
+    </Compile>
     <Compile Include="..\..\Editor\Mono\SceneView\SceneViewStageHandling.cs">
       <Link>Editor\Mono\SceneView\SceneViewStageHandling.cs</Link>
     </Compile>
@@ -3696,9 +3708,6 @@
     </Compile>
     <Compile Include="..\..\Editor\Mono\Scripting\ScriptCompilation\GUIDReference.cs">
       <Link>Editor\Mono\Scripting\ScriptCompilation\GUIDReference.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Editor\Mono\Scripting\ScriptCompilation\ILPostProcessingProgram.cs">
-      <Link>Editor\Mono\Scripting\ScriptCompilation\ILPostProcessingProgram.cs</Link>
     </Compile>
     <Compile Include="..\..\Editor\Mono\Scripting\ScriptCompilation\IVersion.cs">
       <Link>Editor\Mono\Scripting\ScriptCompilation\IVersion.cs</Link>
@@ -4161,6 +4170,9 @@
     </Compile>
     <Compile Include="..\..\Editor\Mono\UIElements\Controls\GridTemplateEditor\GridTrackSizeField.cs">
       <Link>Editor\Mono\UIElements\Controls\GridTemplateEditor\GridTrackSizeField.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Mono\UIElements\Controls\GridTemplateEditor\GridTrackSizeListUtility.cs">
+      <Link>Editor\Mono\UIElements\Controls\GridTemplateEditor\GridTrackSizeListUtility.cs</Link>
     </Compile>
     <Compile Include="..\..\Editor\Mono\UIElements\Controls\LayerField.cs">
       <Link>Editor\Mono\UIElements\Controls\LayerField.cs</Link>
@@ -5326,6 +5338,9 @@
     <Compile Include="..\..\Modules\BuildAnalysis\Data\Models\BuildLogMessages.cs">
       <Link>Modules\BuildAnalysis\Data\Models\BuildLogMessages.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\BuildAnalysis\Data\Models\BuildRelationships.cs">
+      <Link>Modules\BuildAnalysis\Data\Models\BuildRelationships.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\BuildAnalysis\Data\Models\BuildReportData.cs">
       <Link>Modules\BuildAnalysis\Data\Models\BuildReportData.cs</Link>
     </Compile>
@@ -5392,14 +5407,35 @@
     <Compile Include="..\..\Modules\BuildAnalysis\UI\BuildListPanel.cs">
       <Link>Modules\BuildAnalysis\UI\BuildListPanel.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\BuildAnalysis\UI\Common\BuildHeaderController.cs">
-      <Link>Modules\BuildAnalysis\UI\Common\BuildHeaderController.cs</Link>
+    <Compile Include="..\..\Modules\BuildAnalysis\UI\Common\BuildDetailsColumn.cs">
+      <Link>Modules\BuildAnalysis\UI\Common\BuildDetailsColumn.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\BuildAnalysis\UI\Common\BuildDetailsGrid.cs">
+      <Link>Modules\BuildAnalysis\UI\Common\BuildDetailsGrid.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\BuildAnalysis\UI\Common\BuildDetailsRow.cs">
+      <Link>Modules\BuildAnalysis\UI\Common\BuildDetailsRow.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\BuildAnalysis\UI\Common\BuildHeader.cs">
+      <Link>Modules\BuildAnalysis\UI\Common\BuildHeader.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\BuildAnalysis\UI\Common\BuildSection.cs">
+      <Link>Modules\BuildAnalysis\UI\Common\BuildSection.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\BuildAnalysis\UI\Common\BuildStepsElement.cs">
+      <Link>Modules\BuildAnalysis\UI\Common\BuildStepsElement.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\BuildAnalysis\UI\Common\KeyboardNavigation.cs">
       <Link>Modules\BuildAnalysis\UI\Common\KeyboardNavigation.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\BuildAnalysis\UI\Common\LoadingOverlay.cs">
       <Link>Modules\BuildAnalysis\UI\Common\LoadingOverlay.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\BuildAnalysis\UI\Common\StatCard.cs">
+      <Link>Modules\BuildAnalysis\UI\Common\StatCard.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\BuildAnalysis\UI\Common\StatCardRow.cs">
+      <Link>Modules\BuildAnalysis\UI\Common\StatCardRow.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\BuildAnalysis\UI\Common\ZebraEmptyBody.cs">
       <Link>Modules\BuildAnalysis\UI\Common\ZebraEmptyBody.cs</Link>
@@ -5439,9 +5475,6 @@
     </Compile>
     <Compile Include="..\..\Modules\BuildAnalysis\UI\Tabs\IBuildAnalysisTabView.cs">
       <Link>Modules\BuildAnalysis\UI\Tabs\IBuildAnalysisTabView.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\BuildAnalysis\UI\Tabs\Overview\BuildStepsElement.cs">
-      <Link>Modules\BuildAnalysis\UI\Tabs\Overview\BuildStepsElement.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\BuildAnalysis\UI\Tabs\Overview\MessagesConsole.cs">
       <Link>Modules\BuildAnalysis\UI\Tabs\Overview\MessagesConsole.cs</Link>
@@ -5679,6 +5712,9 @@
     </Compile>
     <Compile Include="..\..\Modules\BuildReportingEditor\Managed\ExternalBuildInfo.cs">
       <Link>Modules\BuildReportingEditor\Managed\ExternalBuildInfo.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\BuildReportingEditor\Managed\ExternalBuildScope.cs">
+      <Link>Modules\BuildReportingEditor\Managed\ExternalBuildScope.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\BuildReportingEditor\Managed\PackedAssetInfo.cs">
       <Link>Modules\BuildReportingEditor\Managed\PackedAssetInfo.cs</Link>
@@ -8248,8 +8284,8 @@
     <Compile Include="..\..\Modules\GraphToolkitEditor\GraphToolkitPublic\Implementation\GraphToolImp.cs">
       <Link>Modules\GraphToolkitEditor\GraphToolkitPublic\Implementation\GraphToolImp.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\GraphToolkitEditor\GraphToolkitPublic\Implementation\GraphViewEditorWindowImp.cs">
-      <Link>Modules\GraphToolkitEditor\GraphToolkitPublic\Implementation\GraphViewEditorWindowImp.cs</Link>
+    <Compile Include="..\..\Modules\GraphToolkitEditor\GraphToolkitPublic\Implementation\GraphToolkitWindow.cs">
+      <Link>Modules\GraphToolkitEditor\GraphToolkitPublic\Implementation\GraphToolkitWindow.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\GraphToolkitEditor\GraphToolkitPublic\Implementation\GraphViewImp.cs">
       <Link>Modules\GraphToolkitEditor\GraphToolkitPublic\Implementation\GraphViewImp.cs</Link>
@@ -8953,6 +8989,9 @@
     <Compile Include="..\..\Modules\JobsProfilerEditor\PrimitiveRenderer.cs">
       <Link>Modules\JobsProfilerEditor\PrimitiveRenderer.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\JobsProfilerEditor\SampleEventMapping.cs">
+      <Link>Modules\JobsProfilerEditor\SampleEventMapping.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\JobsProfilerEditor\SettingsMenu.cs">
       <Link>Modules\JobsProfilerEditor\SettingsMenu.cs</Link>
     </Compile>
@@ -9592,8 +9631,8 @@
     <Compile Include="..\..\Modules\MultiplayerEditor\Managed\MultiplayerCenter\Editor\MultiplayerCenterWindow\VisualElements\CategoriesContainer.cs">
       <Link>Modules\MultiplayerEditor\Managed\MultiplayerCenter\Editor\MultiplayerCenterWindow\VisualElements\CategoriesContainer.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\MultiplayerEditor\Managed\MultiplayerCenter\Editor\MultiplayerCenterWindow\VisualElements\ColoredMinMaxSlider.cs">
-      <Link>Modules\MultiplayerEditor\Managed\MultiplayerCenter\Editor\MultiplayerCenterWindow\VisualElements\ColoredMinMaxSlider.cs</Link>
+    <Compile Include="..\..\Modules\MultiplayerEditor\Managed\MultiplayerCenter\Editor\MultiplayerCenterWindow\VisualElements\GenreComparisonView.cs">
+      <Link>Modules\MultiplayerEditor\Managed\MultiplayerCenter\Editor\MultiplayerCenterWindow\VisualElements\GenreComparisonView.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\MultiplayerEditor\Managed\MultiplayerCenter\Editor\MultiplayerCenterWindow\VisualElements\HyperLink.cs">
       <Link>Modules\MultiplayerEditor\Managed\MultiplayerCenter\Editor\MultiplayerCenterWindow\VisualElements\HyperLink.cs</Link>
@@ -9621,6 +9660,9 @@
     </Compile>
     <Compile Include="..\..\Modules\MultiplayerEditor\Managed\MultiplayerCenter\Editor\MultiplayerCenterWindow\VisualElements\Recommendations\RecommendationsGrid.cs">
       <Link>Modules\MultiplayerEditor\Managed\MultiplayerCenter\Editor\MultiplayerCenterWindow\VisualElements\Recommendations\RecommendationsGrid.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\MultiplayerEditor\Managed\MultiplayerCenter\Editor\MultiplayerCenterWindow\VisualElements\SegmentedRangeMeter.cs">
+      <Link>Modules\MultiplayerEditor\Managed\MultiplayerCenter\Editor\MultiplayerCenterWindow\VisualElements\SegmentedRangeMeter.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\MultiplayerEditor\Managed\MultiplayerPlayMode\Analytics\AnalyticsEvent.cs">
       <Link>Modules\MultiplayerEditor\Managed\MultiplayerPlayMode\Analytics\AnalyticsEvent.cs</Link>
@@ -14419,6 +14461,9 @@
     <Compile Include="..\..\Modules\ShaderLabParserEditor\AssemblyInfo.cs">
       <Link>Modules\ShaderLabParserEditor\AssemblyInfo.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\ShaderLabParserEditor\Public\Managed\ShaderInspectorExtensions.cs">
+      <Link>Modules\ShaderLabParserEditor\Public\Managed\ShaderInspectorExtensions.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\ShaderLabParserEditor\Public\Managed\ShaderUtil.cs">
       <Link>Modules\ShaderLabParserEditor\Public\Managed\ShaderUtil.cs</Link>
     </Compile>
@@ -16099,6 +16144,9 @@
     <Compile Include="..\..\Modules\UIElementsEditor\Debugger\Events\UIElementsEventDebugger.cs">
       <Link>Modules\UIElementsEditor\Debugger\Events\UIElementsEventDebugger.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\UIElementsEditor\Debugger\GridTracksView.cs">
+      <Link>Modules\UIElementsEditor\Debugger\GridTracksView.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\UIElementsEditor\Debugger\LayoutDebugger\LayoutPanelDebuggerImpl.cs">
       <Link>Modules\UIElementsEditor\Debugger\LayoutDebugger\LayoutPanelDebuggerImpl.cs</Link>
     </Compile>
@@ -17761,6 +17809,9 @@
     <Compile Include="..\..\Modules\UIToolkitAuthoringEditor\Managed\Settings\UIToolkitAuthoringSettingsProvider.cs">
       <Link>Modules\UIToolkitAuthoringEditor\Managed\Settings\UIToolkitAuthoringSettingsProvider.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\UIToolkitAuthoringEditor\Managed\Stages\LegacyHierarchyGuard.cs">
+      <Link>Modules\UIToolkitAuthoringEditor\Managed\Stages\LegacyHierarchyGuard.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\UIToolkitAuthoringEditor\Managed\Stages\StageCommandHandler.cs">
       <Link>Modules\UIToolkitAuthoringEditor\Managed\Stages\StageCommandHandler.cs</Link>
     </Compile>
@@ -18100,7 +18151,7 @@
     <Compile Include="..\..\artifacts\MonolithicEditorDlls\InternalsVisibleTo.cs">
       <Link>artifacts\MonolithicEditorDlls\InternalsVisibleTo.cs</Link>
     </Compile>
-    <Reference Include="..\..\artifacts\Stevedore\unity-compiler-win-x64_17b7\Unity.CompilationPipeline.Common\Unity.CompilationPipeline.Common.dll" />
+    <Reference Include="..\..\artifacts\Stevedore\unity-compiler-win-x64_9182\Unity.CompilationPipeline.Common\Unity.CompilationPipeline.Common.dll" />
     <Reference Include="..\..\artifacts\Stevedore\msbu-tools_51d6\buildTools\UnityEditor.MSBuild.dll" />
     <Reference Include="..\..\artifacts\Stevedore\msbu-tools_51d6\buildTools\Unity.BuildService.dll" />
     <Reference Include="..\..\artifacts\Stevedore\msbu-tools_51d6\asmDefToCSProj\AsmDefToCSProjLib.dll" />
@@ -18136,7 +18187,7 @@
     </PropertyGroup>
   </Target>
   <ItemGroup>
-    <Analyzer Include="/tmp/uitoolkit_gen_skoa6888/Unity.UIToolkit.SourceGenerator.dll" />
+    <Analyzer Include="/tmp/uitoolkit_gen_0nqy_6hp/Unity.UIToolkit.SourceGenerator.dll" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="10.0.8" />

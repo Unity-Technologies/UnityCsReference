@@ -30,6 +30,16 @@ namespace UnityEditor
             }
         }
 
+        public static void FromDiscreteCurve(this AnimationWindowCurve awc, DiscreteKeyframe[] curve)
+        {
+            for (int i = 0; i < curve.Length; i++)
+            {
+                var awk = new AnimationWindowKeyframe();
+                awk.FromDiscreteKeyframe(awc, curve[i]);
+                awc.AddKeyframeFast(awk);
+            }
+        }
+
         public static AnimationCurve ToAnimationCurve(this AnimationWindowCurve curve)
         {
             int length = curve.keyframes.Count;
@@ -57,6 +67,23 @@ namespace UnityEditor
             for (int i = 0; i < length; i++)
             {
                 ObjectReferenceKeyframe newKeyframe = curve.keyframes[i].ToObjectReferenceKeyframe();
+                keys[i] = newKeyframe;
+            }
+
+            Array.Sort(keys, (a, b) => a.time.CompareTo(b.time));
+
+            return keys;
+        }
+
+        public static DiscreteKeyframe[] ToDiscreteCurve(this AnimationWindowCurve curve)
+        {
+            int length = curve.keyframes.Count;
+
+            var keys = new DiscreteKeyframe[length];
+
+            for (int i = 0; i < length; i++)
+            {
+                var newKeyframe = curve.keyframes[i].ToDiscreteKeyframe();
                 keys[i] = newKeyframe;
             }
 

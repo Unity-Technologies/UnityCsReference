@@ -58,6 +58,9 @@ namespace Unity.UI.Builder
 
         public static void AddToSelection(StyleSheet styleSheet)
         {
+            if (styleSheet == null)
+                return;
+
             styleSheet.AddSelector(
                 BuilderConstants.SelectedStyleSheetSelectorName,
                 BuilderConstants.ChangeSelectionUndoMessage);
@@ -65,6 +68,9 @@ namespace Unity.UI.Builder
 
         public static void RemoveFromSelection(StyleSheet styleSheet)
         {
+            if (styleSheet == null)
+                return;
+
             styleSheet.RemoveSelector(
                 BuilderConstants.SelectedStyleSheetSelectorName,
                 BuilderConstants.ChangeSelectionUndoMessage);
@@ -78,6 +84,9 @@ namespace Unity.UI.Builder
 
         public static void AddToSelection(StyleSheet styleSheet, StyleComplexSelector scs)
         {
+            if (styleSheet == null)
+                return;
+
             var selectionProp = styleSheet.AddProperty(
                 scs.rule,
                 BuilderConstants.SelectedStyleRulePropertyName,
@@ -91,6 +100,9 @@ namespace Unity.UI.Builder
 
         public static void RemoveFromSelection(StyleSheet styleSheet, StyleComplexSelector scs)
         {
+            if (styleSheet == null)
+                return;
+
             styleSheet.RemoveProperty(
                 scs.rule,
                 BuilderConstants.SelectedStyleRulePropertyName,

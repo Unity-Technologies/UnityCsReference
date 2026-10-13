@@ -2,7 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-using System.Collections.Generic;
 using System.IO;
 using Unity.Multiplayer.Center.Common;
 using Unity.Multiplayer.Center.Editor.Analytics;
@@ -128,23 +127,6 @@ namespace Unity.Multiplayer.Center.Editor
             : GameGenres.Descriptions[SelectedGenre].Name;
 
         /// <summary>
-        /// Selected GameGenre in the ListView when <see cref="m_DisplayQuestion" /> is true.
-        /// </summary>
-        /// <remarks>
-        /// This is bound to the "question-list" ListView.selectedIndex property in the UXML.
-        /// </remarks>
-        [CreateProperty] int m_ListViewSelectedGameGenre;
-
-        /// <summary>
-        /// Description of the selected GameGenre.
-        /// </summary>
-        /// <remarks>
-        /// This is bound to the "question-description" VisualElement.dataSource property in the UXML.
-        /// </remarks>
-        [CreateProperty]
-        GameGenreDescription SelectedGameGenre => GameGenres.Descriptions[m_ListViewSelectedGameGenre];
-
-        /// <summary>
         /// Currently selected category.
         /// </summary>
         /// <remarks>
@@ -197,7 +179,6 @@ namespace Unity.Multiplayer.Center.Editor
             if (!m_SetupDone)
             {
                 m_DisplayQuestion = SelectedGenre == -1;
-                m_ListViewSelectedGameGenre = SelectedGenre < 0 ? 0 : SelectedGenre;
                 m_SelectedCategory = EditorPrefs.GetInt("com.unity.multiplayer.center.selectedCategory", 0);
                 m_SetupDone = true;
             }
@@ -213,10 +194,10 @@ namespace Unity.Multiplayer.Center.Editor
             AddThemedStyleSheets(rootVisualElement, k_CommonSkinPath);
             rootVisualElement.dataSource = this;
 
-            var questionList = rootVisualElement.Q<ListView>("question-list");
-            questionList.selectionChanged += OnQuestionListSelectionChanged;
+            var comparisonView = rootVisualElement.Q<GenreComparisonView>("genre-comparison-view");
+            comparisonView.Build(GameGenres);
+            comparisonView.genreSelected += OnGenreSelected;
 
-            var answerButton = rootVisualElement.Q<Button>("answer-button");
             var backButton = rootVisualElement.Q<Button>("back-button");
 
             backButton.clicked += () =>
@@ -224,38 +205,21 @@ namespace Unity.Multiplayer.Center.Editor
                 m_DisplayQuestion = true;
                 SelectedGenre = -1;
             };
-
-            answerButton.clicked += () =>
-            {
-                // Only save the genre and reset the category if it has changed.
-                if (SelectedGenre != m_ListViewSelectedGameGenre)
-                {
-                    SelectedCategory = 0;
-                    SelectedGenre = m_ListViewSelectedGameGenre;
-                }
-
-                m_DisplayQuestion = false;
-
-                var genreName = SelectedGameGenre.Name;
-                GenreSelectedEvent.Send(new GenreSelectedData { gameGenre = genreName });
-            };
         }
 
-        void OnQuestionListSelectionChanged(IEnumerable<object> objects)
+        void OnGenreSelected(int genreIndex)
         {
-            var questionDescription = rootVisualElement.Q<VisualElement>("question-description");
+            // Only save the genre and reset the category if it has changed.
+            if (SelectedGenre != genreIndex)
+            {
+                SelectedCategory = 0;
+                SelectedGenre = genreIndex;
+            }
 
-            using var enumerator = objects.GetEnumerator();
-            if (!enumerator.MoveNext()) return;
+            m_DisplayQuestion = false;
 
-            var genre = enumerator.Current as GameGenreDescription?;
-            var header = questionDescription.Q<VisualElement>("genre-header-container");
-            header.Clear();
-
-            var genreHeader = genre?.Header.Instantiate();
-            genreHeader?.SetBinding(nameof(genreHeader.dataSource), new DataBinding() { dataSource = genre, });
-
-            header.Add(genreHeader);
+            var genreName = GameGenres.Descriptions[genreIndex].Name;
+            GenreSelectedEvent.Send(new GenreSelectedData { gameGenre = genreName });
         }
 
 
@@ -263,12 +227,12 @@ namespace Unity.Multiplayer.Center.Editor
         /// This is testing on the 3 fields with [CreateProperty] that have an impact on the UI display.
         /// </summary>
         /// <returns>A hash of the <see cref="m_DisplayQuestion"/>,
-        /// <see cref="m_ListViewSelectedGameGenre"/>,
+        /// <see cref="SelectedGenre"/>,
         /// and <see cref="SelectedCategory"/> values.</returns>
         public long GetViewHashCode()
         {
             var hash = Hash128.Compute(m_DisplayQuestion.GetHashCode());
-            hash.Append(m_ListViewSelectedGameGenre);
+            hash.Append(SelectedGenre);
             hash.Append(SelectedCategory);
             return hash.GetHashCode();
         }

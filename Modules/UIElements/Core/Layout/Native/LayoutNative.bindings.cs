@@ -35,6 +35,21 @@ static partial class LayoutNative
         out float outWidth,
         out float outHeight);
 
+    [NativeMethod(IsThreadSafe = false)]
+    internal static extern IntPtr GetGridTracks(int manager, int handle, out int columnCount, out int rowCount);
+
+    [NativeMethod(IsThreadSafe = false)]
+    internal static extern void ReleaseGridTracks(int manager, int handle);
+
+    [NativeMethod(IsThreadSafe = false)]
+    internal static extern void ReleaseGridTracksPool(int manager);
+
+    [NativeMethod(IsThreadSafe = false)]
+    internal static extern long GetGridTracksMemory(int manager);
+
+    [NativeMethod(IsThreadSafe = false)]
+    internal static extern void SetGridTracksSlotLimit(int limit);
+
     internal enum LayoutLogEventType
     {
         None = 0,

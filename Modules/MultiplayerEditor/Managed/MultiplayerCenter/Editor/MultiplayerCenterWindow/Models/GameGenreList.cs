@@ -5,8 +5,8 @@
 using System;
 using Unity.Multiplayer.Center.Common;
 using Unity.Properties;
+using UnityEditor;
 using UnityEngine;
-using UnityEngine.UIElements;
 
 namespace Unity.Multiplayer.Center.Editor
 {
@@ -40,8 +40,14 @@ namespace Unity.Multiplayer.Center.Editor
 
         [TextArea]
         public string Description;
-        [Tooltip("Use this to define a header template for the game genre.")]
-        public VisualTreeAsset Header;
+
+        [Tooltip("Genre illustration shown on the card, for the dark editor skin.")]
+        public Texture2D Image;
+        [Tooltip("Genre illustration shown on the card, for the light editor skin.")]
+        public Texture2D LightImage;
+        [Tooltip("Icon shown next to the architecture summary.")]
+        public Texture2D ArchitectureIcon;
+
         public Vector2 Complexity;
         [TextArea]
         public string ComplexityDescription;
@@ -58,5 +64,11 @@ namespace Unity.Multiplayer.Center.Editor
 
         [CreateProperty]
         public string DisplayName => Name;
+
+        /// <summary>
+        /// <see cref="Image"/> on the dark editor skin, <see cref="LightImage"/> on the light one.
+        /// </summary>
+        [CreateProperty]
+        public Texture2D ThemedImage => EditorGUIUtility.isProSkin ? Image : LightImage;
     }
 }

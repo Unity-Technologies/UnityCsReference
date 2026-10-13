@@ -78,10 +78,8 @@ namespace UnityEditor.UIElements
 
         private readonly List<IUIToolkitSettingsProviderExtension> m_Extensions = new ();
 
-        [NoAutoStaticsCleanup]
-        private static EventCallback<ChangeEvent<string>> s_RuntimeThemeCallback;
-        [NoAutoStaticsCleanup]
-        private static EventCallback<ChangeEvent<string>> s_EditorThemeCallback;
+        private EventCallback<ChangeEvent<string>> m_RuntimeThemeCallback;
+        private EventCallback<ChangeEvent<string>> m_EditorThemeCallback;
 
         private VisualElement m_HelpVisualTree;
         private VisualTreeAsset m_UIToolkitTemplate;
@@ -332,7 +330,7 @@ namespace UnityEditor.UIElements
             base.OnDeactivate();
         }
 
-        private static void PopulateThemeMenu(ProjectSettingsThemeDropdown menu, bool isEditorTheme, Action<CanvasTheme, ThemeStyleSheet> onThemeSelected)
+        private void PopulateThemeMenu(ProjectSettingsThemeDropdown menu, bool isEditorTheme, Action<CanvasTheme, ThemeStyleSheet> onThemeSelected)
         {
             var choices = new List<string>();
             var themeData = new Dictionary<string, (CanvasTheme, ThemeStyleSheet)>();
@@ -398,19 +396,19 @@ namespace UnityEditor.UIElements
             // Unregister old callbacks
             if (isEditorTheme)
             {
-                if (s_EditorThemeCallback != null)
-                    menu.UnregisterValueChangedCallback(s_EditorThemeCallback);
+                if (m_EditorThemeCallback != null)
+                    menu.UnregisterValueChangedCallback(m_EditorThemeCallback);
 
                 menu.RegisterValueChangedCallback(valueChangedCallback);
-                s_EditorThemeCallback = valueChangedCallback;
+                m_EditorThemeCallback = valueChangedCallback;
             }
             else
             {
-                if (s_RuntimeThemeCallback != null)
-                    menu.UnregisterValueChangedCallback(s_RuntimeThemeCallback);
+                if (m_RuntimeThemeCallback != null)
+                    menu.UnregisterValueChangedCallback(m_RuntimeThemeCallback);
 
                 menu.RegisterValueChangedCallback(valueChangedCallback);
-                s_RuntimeThemeCallback = valueChangedCallback;
+                m_RuntimeThemeCallback = valueChangedCallback;
             }
         }
     }

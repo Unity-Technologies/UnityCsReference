@@ -82,7 +82,11 @@ namespace Unity.UIToolkit.Editor
             // maintains its own var names in OnStopsEdited, so a control edit arriving here can
             // only override the type/angle/extent/position slots.
             valueField.RegisterCallback<ChangeEvent<Background>>(
-                evt => m_VarBindings.DropOverridden(evt.previousValue.gradient, evt.newValue.gradient),
+                evt =>
+                {
+                    m_VarBindings.DropOverridden(evt.previousValue.gradient, evt.newValue.gradient);
+                    UpdateAngleEnabled();
+                },
                 TrickleDown.TrickleDown);
         }
 
@@ -130,6 +134,7 @@ namespace Unity.UIToolkit.Editor
         internal void SetVarBindings(in StyleProperty.GradientVarBindings bindings)
         {
             m_VarBindings.SetVarBindings(bindings, effectiveGradient);
+            UpdateAngleEnabled();
 
             // The inspector refresh lands here after every write; mirror the resolved
             // stops and bindings into the stops popup if it is open.
@@ -141,6 +146,9 @@ namespace Unity.UIToolkit.Editor
         {
             return m_VarBindings.BuildVarBindings(effectiveGradient.type == GradientType.Linear);
         }
+
+        // A var-bound angle takes its value and unit from the variable, like other bound properties.
+        void UpdateAngleEnabled() => valueField.gradientAngleField.SetEnabled(m_VarBindings.angleVarName == null);
 
         // The generated SetBackground setter writes gradients with GradientVarBindings.none, wiping stored
         // var() references. Re-route gradient writes through a setter that carries the field's bindings.
@@ -261,6 +269,7 @@ namespace Unity.UIToolkit.Editor
             {
                 type = effective.type,
                 angle = effective.angle,
+                angleUnit = effective.angleUnit,
                 shape = effective.shape,
                 size = effective.size,
                 position = effective.position,

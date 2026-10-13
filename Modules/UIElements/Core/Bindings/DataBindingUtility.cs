@@ -118,9 +118,9 @@ namespace UnityEngine.UIElements
     internal static partial class DataBindingUtility
     {
         [NoAutoStaticsCleanup]
-        static readonly Pool.ObjectPool<TypePathVisitor> k_TypeVisitors = new(() => new TypePathVisitor(), v => v.Reset(), defaultCapacity: 1);
+        static readonly Pool.ObjectPool<TypePathVisitor> k_TypeVisitors = new(() => new TypePathVisitor(), actionOnRelease: v => v.Reset(), defaultCapacity: 1);
         [NoAutoStaticsCleanup]
-        static readonly Pool.ObjectPool<AutoCompletePathVisitor> k_AutoCompleteVisitors = new(() => new AutoCompletePathVisitor(), v => v.Reset(), defaultCapacity: 1);
+        static readonly Pool.ObjectPool<AutoCompletePathVisitor> k_AutoCompleteVisitors = new(() => new AutoCompletePathVisitor(), actionOnRelease: v => v.Reset(), defaultCapacity: 1);
 
         private static readonly Regex s_ReplaceIndices = new Regex("\\[[0-9]+\\]", RegexOptions.Compiled);
 

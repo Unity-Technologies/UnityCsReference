@@ -32,6 +32,7 @@ namespace UnityEditor
         HiddenByDefault = 2,
     }
 
+    [NativeHeader("Runtime/Serialize/SerializationMetaFlagsBindings.h")]
     public enum ScriptingImplementation
     {
         Mono2x = 0,
@@ -40,7 +41,7 @@ namespace UnityEditor
         CoreCLR = 3,
     }
 
-    // Must be in sync with Il2CppCompilerConfiguration enum in SerializationMetaFlags.h
+    // Must be in sync with Il2CppCompilerConfiguration enum in BuildPlayerEnums.h
     public enum Il2CppCompilerConfiguration
     {
         Debug = 0,
@@ -48,14 +49,14 @@ namespace UnityEditor
         Master = 2,
     }
 
-    // Must be in sync with Il2CppStacktraceInformation enum in SerializationMetaFlags.h
+    // Must be in sync with Il2CppStacktraceInformation enum in BuildPlayerEnums.h
     public enum Il2CppStacktraceInformation
     {
         MethodOnly = 0,
         MethodFileLineNumber = 1,
     }
 
-    // Must be in sync with Il2CppLTOMode enum in SerializationMetaFlags.h
+    // Must be in sync with Il2CppLTOMode enum in BuildPlayerEnums.h
     public enum Il2CppLTOMode
     {
         None = 0,

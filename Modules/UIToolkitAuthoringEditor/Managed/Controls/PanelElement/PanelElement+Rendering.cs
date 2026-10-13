@@ -26,6 +26,7 @@ sealed partial class PanelElement
     ColorSpace m_PreviousColorSpace = QualitySettings.activeColorSpace;
     bool m_IsRenderTextureDirty = true;
     RenderTexture m_RenderTexture;
+    bool m_RenderRequested;
 
     public PanelSettings PanelSettings
     {
@@ -168,11 +169,27 @@ sealed partial class PanelElement
 
     public void FrameUpdate()
     {
+        RequestRender();
+        TickUpdate();
+    }
+
+    // Ticks run outside a GPU frame, so per-frame GPU memory waits for the next frame end; render only on change.
+    public void TickUpdate()
+    {
         if (SubPanel == null)
             return;
         SubPanel.TickSchedulingUpdaters();
+        if (SubPanel.isDirty || m_RenderRequested || (RenderTexture != null && !RenderTexture.IsCreated()))
+            RenderSubPanel();
+    }
+
+    public void RequestRender() => m_RenderRequested = true;
+
+    void RenderSubPanel()
+    {
         SubPanel.Repaint();
         SubPanel.Render();
+        m_RenderRequested = false;
     }
 
     void ApplyPanelSettingsToRuntimePanel(RuntimePanel runtimePanel, PanelSettings panelSettings)
@@ -332,6 +349,7 @@ sealed partial class PanelElement
                     RenderTexture.descriptor = descriptor;
                     RenderTexture.Create();
                 }
+                m_RenderRequested = true;
             }
         }
         finally

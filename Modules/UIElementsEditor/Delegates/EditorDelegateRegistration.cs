@@ -20,8 +20,6 @@ namespace UnityEditor.UIElements
         [OnCodeLoaded]
         static void Initialize()
         {
-            DefaultEventSystem.IsEditorRemoteConnected = () => EditorApplication.isRemoteConnected;
-
             TextUtilities.getEditorTextSettings = () => EditorTextSettings.defaultTextSettings;
 
             UIDocument.IsEditorPlaying = () => EditorApplication.isPlaying;

@@ -51,8 +51,6 @@ namespace UnityEngine.UIElements.UIR
         IsElementInfoDirty = 1 << 8,
         RegisteredForFilterCallbacks = 1 << 9,
         RegisteredForBackdropFilterCallbacks = 1 << 10,
-        // Curved UI: the engine-owned curvature mesh modifier is registered on the owner.
-        HasCurvatureModifier = 1 << 11,
         // Value of the owner's isWorldSpaceRootPanelComponent at insertion time, which decides both the
         // render-chain cut and whether z-indexed descendants may be promoted past this element.
         CutsRenderChain = 1 << 12,
@@ -167,15 +165,6 @@ namespace UnityEngine.UIElements.UIR
         // True while this render data's ExtraRenderData holds live backdrop-filter state. A flag rather than a
         // derived check, so a pooled ExtraRenderData's stale fields can never read as allocated.
         public bool hasBackdropFilterAllocated => (flags & RenderDataFlags.HasBackdropFilter) != 0;
-
-        // Curved UI: true while the engine-owned curvature mesh modifier is registered on the
-        // owner. Synchronized against owner.hasCurvature by UIRCurvatureMeshModifier.SyncState. Packed
-        // into flags (reset by Init), so pooled RenderData never carries stale state.
-        public bool hasCurvatureModifier
-        {
-            get => (flags & RenderDataFlags.HasCurvatureModifier) != 0;
-            set => flags = value ? (flags | RenderDataFlags.HasCurvatureModifier) : (flags & ~RenderDataFlags.HasCurvatureModifier);
-        }
 
         public RenderChainCommand lastTailOrHeadCommand { get { return lastTailCommand ?? lastHeadCommand; } }
         public static bool AllocatesID(BMPAlloc alloc) { return (alloc.ownedState == OwnedState.Owned) && alloc.IsValid(); }

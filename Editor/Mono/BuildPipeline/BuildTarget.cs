@@ -20,7 +20,7 @@ namespace UnityEditor
     ///<seealso cref="BuildPipeline.BuildPlayer" />
     ///<seealso cref="EditorUserBuildSettings.activeBuildTarget" />
     ///<seealso cref="BuildAssetBundlesParameters.targetPlatform" />
-    [NativeHeader("Runtime/Serialize/SerializationMetaFlags.h")]
+    [NativeHeader("Runtime/Serialize/BuildTarget.h")]
     public enum BuildTarget
     {
         ///<summary>Build a macOS standalone.

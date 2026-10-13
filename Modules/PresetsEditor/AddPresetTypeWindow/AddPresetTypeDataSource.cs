@@ -65,6 +65,12 @@ namespace UnityEditor.Presets
                     continue;
                 }
 
+                // Presets target UnityEngine.Object types, which data components are not
+                if (menu.Value.StartsWith("DATACOMPONENT"))
+                {
+                    continue;
+                }
+
                 var menuPath = menu.Key;
                 var paths = menuPath.Split('/');
 

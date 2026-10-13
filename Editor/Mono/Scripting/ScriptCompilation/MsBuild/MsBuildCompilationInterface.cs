@@ -11,16 +11,10 @@ using UnityEngine.Scripting;
 namespace UnityEditor.Scripting.ScriptCompilation.MsBuild
 {
     [VisibleToOtherModules("UnityEditor.ProjectAuditorModule")]
-    static class MsBuildCompilationInterface
+    static partial class MsBuildCompilationInterface
     {
         [NoAutoStaticsCleanup] // editor MSBuild compilation service singleton, safe to persist across reload
         static MsBuildCompilation msBuildCompilation;
-
-        static MsBuildCompilationInterface()
-        {
-            if (!IsEnabled())
-                return;
-        }
 
         public static MsBuildCompilation Instance
         {
@@ -33,6 +27,13 @@ namespace UnityEditor.Scripting.ScriptCompilation.MsBuild
 
                 return msBuildCompilation;
             }
+        }
+
+        // The singleton outlives code reloads, so state scoped to "since the last domain reload" is reset here.
+        [OnCodeLoaded]
+        static void ResetPerReloadState()
+        {
+            msBuildCompilation?.OnCodeLoaded();
         }
 
         public static bool IsEnabled() => UnityEditor.Compilation.CompilationPipeline.IsUsingMSBuild();
