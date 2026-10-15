@@ -226,6 +226,9 @@ namespace UnityEngine.TextCore.Text
         [NativeMethod(Name = "TextLib::FindIntersectingLink")]
         static public extern int FindIntersectingLink(Vector2 point, IntPtr textGenerationInfo);
 
+        [NativeMethod(Name = "TextLib::GetIntersectingLinkText")]
+        static public extern string GetIntersectingLinkText(Vector2 point, IntPtr textGenerationInfo, out int linkId);
+
         [NativeMethod(Name = "TextLib::GetCharacterCount")]
         static public extern int GetCharacterCount(IntPtr textGenerationInfo);
 

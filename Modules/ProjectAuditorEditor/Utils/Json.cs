@@ -11,7 +11,7 @@ namespace Unity.ProjectAuditor.Editor.Utils
 {
     internal static class Json
     {
-        static readonly string kDateFormatString = "yyyy-MM-dd HH:mm:ss";
+        const string kDateFormatString = "yyyy-MM-dd HH:mm:ss";
 
         /// <summary>
         /// Serializes a DateTime object to a string using a UTC format.

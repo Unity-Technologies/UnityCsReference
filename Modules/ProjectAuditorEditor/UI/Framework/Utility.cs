@@ -51,34 +51,34 @@ namespace Unity.ProjectAuditor.Editor.UI.Framework
         }
 
         // Log level
-        static readonly string k_InfoIconName = "console.infoicon";
-        static readonly string k_WarningIconName = "console.warnicon";
-        static readonly string k_ErrorIconName = "console.erroricon";
+        const string k_InfoIconName = "console.infoicon";
+        const string k_WarningIconName = "console.warnicon";
+        const string k_ErrorIconName = "console.erroricon";
 
         // Severity
-        static readonly string k_CriticalIconName = "Critical";
-        static readonly string k_MajorIconName = "Major";
-        static readonly string k_ModerateIconName = "Moderate";
-        static readonly string k_MinorIconName = "Minor";
-        static readonly string k_IgnoredIconName = "Ignored";
+        const string k_CriticalIconName = "Critical";
+        const string k_MajorIconName = "Major";
+        const string k_ModerateIconName = "Moderate";
+        const string k_MinorIconName = "Minor";
+        const string k_IgnoredIconName = "Ignored";
 
-        static readonly string k_HelpIconName = "_Help";
-        static readonly string k_RefreshIconName = "Refresh";
-        static readonly string k_SettingsIconName = "Settings";
+        const string k_HelpIconName = "_Help";
+        const string k_RefreshIconName = "Refresh";
+        const string k_SettingsIconName = "Settings";
 
-        static readonly string k_WhiteCheckMarkIconName = "FilterSelectedOnly";
-        static readonly string k_GreenCheckMarkIconName = "TestPassed";
-        static readonly string k_HierarchyIconName = "UnityEditor.SceneHierarchyWindow";
-        static readonly string k_ZoomToolIconName = "ViewToolZoom";
-        static readonly string k_FixIconName = "Profiler.Custom";
-        static readonly string k_DownloadIconName = "Download-Available";
-        static readonly string k_LoadIconName = "Import";
-        static readonly string k_SaveIconName = "SaveAs";
-        static readonly string k_TrashIconName = "TreeEditor.Trash";
-        static readonly string k_ViewIconName = "ViewToolOrbit";
-        static readonly string k_AdditionalAnalysisIconName = "AdditionalAnalysis";
-        static readonly string k_FoldoutExpandedIconName = "ClassicFoldoutArrow-Open";
-        static readonly string k_FoldoutFoldedIconName = "ClassicFoldoutArrow-Close";
+        const string k_WhiteCheckMarkIconName = "FilterSelectedOnly";
+        const string k_GreenCheckMarkIconName = "TestPassed";
+        const string k_HierarchyIconName = "UnityEditor.SceneHierarchyWindow";
+        const string k_ZoomToolIconName = "ViewToolZoom";
+        const string k_FixIconName = "Profiler.Custom";
+        const string k_DownloadIconName = "Download-Available";
+        const string k_LoadIconName = "Import";
+        const string k_SaveIconName = "SaveAs";
+        const string k_TrashIconName = "TreeEditor.Trash";
+        const string k_ViewIconName = "ViewToolOrbit";
+        const string k_AdditionalAnalysisIconName = "AdditionalAnalysis";
+        const string k_FoldoutExpandedIconName = "ClassicFoldoutArrow-Open";
+        const string k_FoldoutFoldedIconName = "ClassicFoldoutArrow-Close";
 
         [NoAutoStaticsCleanup] // Lazily loaded from asset database by fixed name; survives code reload
         static Texture2D s_CriticalIcon;

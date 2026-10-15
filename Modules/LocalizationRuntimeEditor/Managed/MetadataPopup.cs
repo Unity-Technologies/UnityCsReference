@@ -27,7 +27,8 @@ class MetadataPopup : AnchoredPopupWindow
         window.m_SerializedObject = owner != null ? new SerializedObject(owner) : null;
         window.m_MetadataPath = metadataPath;
         window.m_Target = target;
-        window.m_OnChanged = onChanged;
+        // Metadata is shown in more than one window at a time, so every edit has to reach the others.
+        window.m_OnChanged = () => { onChanged?.Invoke(); LocalizationEditorSettings.RaiseCollectionsChanged(); };
         window.ShowUnder(activatorWorldBound, view, new Vector2(320, 220));
     }
 

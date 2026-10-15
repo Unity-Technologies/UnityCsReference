@@ -59,6 +59,9 @@ namespace UnityEditor.Networking
                 // Both are absent on most frames: they are recorded when a request finishes, and the
                 // timings only when its transport can measure the phases.
                 headers = ReadChunks<WebRequestProfilerHeaderRow>(frameData, guid, WebRequestProfilerData.TagHeaders);
+
+                if (headers == null)
+                    headers = ReadChunks<WebRequestProfilerHeaderRow>(frameData, guid, WebRequestProfilerData.TagHeadersLegacy);
                 timings = ReadChunks<WebRequestProfilerTimingRow>(frameData, guid, WebRequestProfilerData.TagTimings);
 
                 // Absent on every frame of every capture where nobody switched body capture on.

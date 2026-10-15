@@ -68,7 +68,7 @@ namespace Unity.ProjectAuditor.Editor
         /// <summary>
         /// Determines whether the Issue was fixed. Only used if the ReportItem represents an Issue.
         /// </summary>
-        [NonSerialized]
+        [SerializeField]
         internal bool WasFixed = false;
 
         [SerializeField]

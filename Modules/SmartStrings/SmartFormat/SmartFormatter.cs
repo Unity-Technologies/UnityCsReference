@@ -565,6 +565,13 @@ public class SmartFormatter : ISerializationCallbackReceiver
                     parentFormattingInfo.Result = null;
                     handled = InvokeSourceExtensions(parentFormattingInfo);
                     if (handled) formattingInfo.CurrentValue = parentFormattingInfo.Result;
+
+                    // A source asked to skip formatting for this placeholder, not for the parent it was handed
+                    if (parentFormattingInfo.DisableFormattingExtensions)
+                    {
+                        parentFormattingInfo.DisableFormattingExtensions = false;
+                        formattingInfo.DisableFormattingExtensions = true;
+                    }
                 }
             }
 
@@ -593,6 +600,8 @@ public class SmartFormatter : ISerializationCallbackReceiver
     /// <exception cref="FormattingException"></exception>
     void EvaluateFormatters(FormattingInfo formattingInfo)
     {
+        if (formattingInfo.DisableFormattingExtensions) return;
+
         var handled = InvokeFormatterExtensions(formattingInfo);
         if (!handled)
             throw formattingInfo.FormattingException("No suitable Formatter could be found", formattingInfo.Format);

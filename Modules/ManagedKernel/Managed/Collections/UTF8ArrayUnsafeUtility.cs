@@ -299,6 +299,29 @@ namespace Unity.Collections
             return aLength == bLength && StrCmp(aBytes, aLength, bBytes, bLength) == 0;
         }
 
+        [ExcludeFromBurstCompatTesting("Takes managed string")]
+        internal static bool EqualsManagedString(byte* utf8Buffer, int utf8LengthInBytes, string utf16String)
+        {
+            var utf16LengthInChars = utf16String.Length;
+            if (utf8LengthInBytes < utf16LengthInChars)
+                return false;
+
+            fixed (char* utf16Buffer = utf16String)
+            {
+                int byteIndex = 0;
+                int charIndex = 0;
+                while (byteIndex < utf8LengthInBytes && charIndex < utf16LengthInChars)
+                {
+                    var utf8Error = Unicode.Utf8ToUcs(out var utf8Rune, utf8Buffer, ref byteIndex, utf8LengthInBytes);
+                    var utf16Error = Unicode.Utf16ToUcs(out var utf16Rune, utf16Buffer, ref charIndex, utf16LengthInChars);
+                    if (utf8Error != ConversionError.None || utf16Error != ConversionError.None || utf8Rune.value != utf16Rune.value)
+                        return false;
+                }
+
+                return byteIndex == utf8LengthInBytes && charIndex == utf16LengthInChars;
+            }
+        }
+
         /// <summary>Compares a UTF-8 buffer and a UTF-16 buffer for relative equality.</summary>
         /// <param name="utf8Buffer">The buffer of UTF-8 text.</param>
         /// <param name="utf8LengthInBytes">The length in bytes of the UTF-8 buffer.</param>

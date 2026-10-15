@@ -22,13 +22,13 @@ namespace Unity.ProjectAuditor.Editor.UI
     {
         const string k_BulletPointUnicode = " \u2022";
 
-        static readonly string k_Description =
+        const string k_Description =
             $@"This view shows the Shader Variants that are included in a build. If a player log which includes shader compilation logging is supplied, the view can also show which variants were encountered at runtime.
 ";
 
         const string k_LogShaderCompilation = "Log Shader Compilation (requires Build&Run)";
 
-        static readonly string k_BuildInstructionsIncludingLogging =
+        const string k_BuildInstructionsIncludingLogging =
             $@"To record and view the Shader Variants for this project:
 {k_BulletPointUnicode} To see which shader variants are used at runtime, enable <b>Project Settings > Graphics > Shader Loading > Log Shader Compilation</b> or click the checkbox above.
 {k_BulletPointUnicode} Click the <b>Clear</b> button.
@@ -36,18 +36,18 @@ namespace Unity.ProjectAuditor.Editor.UI
 {k_BulletPointUnicode} Click the <b>Refresh</b> button.
 ";
 
-        static readonly string k_BuildInstructions =
+        const string k_BuildInstructions =
             $@"To record and view the Shader Variants for this project:
 {k_BulletPointUnicode} Click the <b>Clear</b> button.
 {k_BulletPointUnicode} Build the project and/or Addressables/AssetBundles. To record shader compilation logs, this should be a Development build.
 {k_BulletPointUnicode} Click the <b>Refresh</b> button.
 ";
 
-        static readonly string k_PlayerLogInstructions = $@"To find out which of these variants are compiled at runtime:
+        const string k_PlayerLogInstructions = $@"To find out which of these variants are compiled at runtime:
 {k_BulletPointUnicode} Run the build on the target platform. Make sure to go through all scenes.
 {k_BulletPointUnicode} Drag & Drop the Player.log file on this window";
 
-        static readonly string k_ClearInstructions = "Unity's incremental build pipeline might not recompile all variants if the project was built previously. Therefore it is important to Clear before building.";
+        const string k_ClearInstructions = "Unity's incremental build pipeline might not recompile all variants if the project was built previously. Therefore it is important to Clear before building.";
 
         const string k_PlayerLogParsingDialogTitle = "Shader Variants";
         const string k_NoCompiledVariantWarning = "No compiled shader variants found in player log. Perhaps, Log Shader Compilation was not enabled when the project was built.";

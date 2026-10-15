@@ -69,8 +69,6 @@ namespace UnityEngine.UIElements.StyleSheets
         // One-shot per session — avoids flooding the console when a stylesheet with a
         // limitation-tripping gradient is applied to many elements.
         [NoAutoStaticsCleanup] // one-shot warning flags; safe to persist across reload
-        static bool s_WarnedCircleCoerce;
-        [NoAutoStaticsCleanup] // one-shot warning flags; safe to persist across reload
         static bool s_WarnedRadialPositionUnit;
         [NoAutoStaticsCleanup] // one-shot warning flags; safe to persist across reload
         static bool s_WarnedPixelStopPosition;
@@ -652,16 +650,7 @@ namespace UnityEngine.UIElements.StyleSheets
 
                     if (string.Equals(ident, "circle", StringComparison.OrdinalIgnoreCase))
                     {
-                        // circle needs element-aspect-aware UVs; the hash-cached baker can't deliver — coerce to ellipse.
-                        if (!s_WarnedCircleCoerce)
-                        {
-                            s_WarnedCircleCoerce = true;
-                            Debug.LogWarning(
-                                "radial-gradient(circle, ...) is not supported on rectangular " +
-                                "elements yet; falling back to `ellipse` (which stretches " +
-                                "with the element's aspect ratio).");
-                        }
-                        shape = BackgroundGradientShape.Ellipse;
+                        shape = BackgroundGradientShape.Circle;
                         cursor++;
                         continue;
                     }

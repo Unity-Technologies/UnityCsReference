@@ -91,16 +91,6 @@ namespace UnityEngine.UIElements
             return new Rect(r.xMin - i, r.yMin - i, r.width + i + i, r.height + i + i);
         }
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Rect InflateByMargins(Rect r, PostProcessingMargins margins)
-        {
-            return new Rect(
-                r.xMin - margins.left,
-                r.yMin - margins.top,
-                r.width + margins.left + margins.right,
-                r.height + margins.top + margins.bottom);
-        }
-
         public static void ComputeMatrixRelativeToAncestor(RenderData renderData, RenderData ancestor, out Matrix4x4 transform)
         {
             ref var ancestorInverse = ref ancestor.owner.GetWorldTransformInverse(out bool isSingular);
@@ -224,16 +214,6 @@ namespace UnityEngine.UIElements
         public static Rect CastToRect(RectInt rect)
         {
             return new Rect(rect.xMin, rect.yMin, rect.width, rect.height);
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static RectInt CastToRectInt(Rect rect)
-        {
-            return new RectInt(
-                Mathf.FloorToInt(rect.xMin),
-                Mathf.FloorToInt(rect.yMin),
-                Mathf.CeilToInt(rect.width),
-                Mathf.CeilToInt(rect.height));
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]

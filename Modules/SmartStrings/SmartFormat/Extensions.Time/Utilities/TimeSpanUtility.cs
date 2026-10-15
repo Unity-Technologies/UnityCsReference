@@ -7,8 +7,8 @@
 // Licensed under the MIT license.
 
 using System;
+using System.Collections.Generic;
 using Unity.Scripting.LifecycleManagement;
-using System.Text;
 
 namespace Unity.SmartStrings.Extensions.Time.Utilities;
 
@@ -17,7 +17,7 @@ namespace Unity.SmartStrings.Extensions.Time.Utilities;
 /// </summary>
 static class TimeSpanUtility
 {
-    // Scratch state for the in-progress ToTimeString() call: each field is written near the top of that
+    // Scratch state for the in-progress ToTimeParts() call: each field is written near the top of that
     // call before it is read, so nothing meaningful survives the call, let alone a code reload. s_Round
     // and s_TimeTextInfo only ever hold values the caller passed in or this type's own rounding
     // helpers, so neither can pin reloadable user code.
@@ -58,6 +58,22 @@ static class TimeSpanUtility
     /// </param>
     /// <param name="timeTextInfo">An object that supplies the text to use for output</param>
     public static string ToTimeString(this TimeSpan fromTime, TimeSpanFormatOptions options,
+        TimeTextInfo timeTextInfo)
+    {
+        return string.Join(" ", fromTime.ToTimeParts(options, timeTextInfo));
+    }
+
+    /// <summary>
+    /// Turns a TimeSpan into a list of human-readable text parts, one per unit.
+    /// For example: "31.23:59:00.555" = "31 days", "23 hours", "59 minutes", "0 seconds", "555 milliseconds"
+    /// </summary>
+    /// <param name="fromTime"></param>
+    /// <param name="options">
+    /// A combination of flags that determine the formatting options.
+    /// These will be combined with the default timeSpanFormatOptions.
+    /// </param>
+    /// <param name="timeTextInfo">An object that supplies the text to use for output</param>
+    public static List<string> ToTimeParts(this TimeSpan fromTime, TimeSpanFormatOptions options,
         TimeTextInfo timeTextInfo)
     {
         // If there are any missing options, merge with the defaults:
@@ -113,8 +129,7 @@ static class TimeSpanUtility
         }
 
         // Create our result:
-        var textStarted = false;
-        var result = new StringBuilder();
+        var result = new List<string>();
         for (var i = rangeMax; i >= s_RangeMin; i = (TimeSpanFormatOptions)((int)i >> 1))
         {
             // Determine the value and title:
@@ -151,21 +166,19 @@ static class TimeSpanUtility
             }
 
             //Determine whether to display this value
-            if (!ShouldTruncate(value, textStarted, out var displayThisValue)) continue;
+            if (!ShouldTruncate(value, result.Count > 0, out var displayThisValue)) continue;
 
-            PrepareOutput(value, i == s_RangeMin, textStarted, result, ref displayThisValue);
+            PrepareOutput(value, i == s_RangeMin, result.Count > 0, result, ref displayThisValue);
 
             // Output the value:
             if (displayThisValue)
             {
-                if (textStarted) result.Append(' ');
                 var unitTitle = s_TimeTextInfo.GetUnitText(i, value, s_Abbreviate);
-                result.Append(unitTitle);
-                textStarted = true;
+                if (!string.IsNullOrEmpty(unitTitle)) result.Add(unitTitle);
             }
         }
 
-        return result.ToString();
+        return result;
     }
 
     static bool ShouldTruncate(int value, bool textStarted, out bool displayThisValue)
@@ -192,7 +205,7 @@ static class TimeSpanUtility
         return false;
     }
 
-    static void PrepareOutput(int value, bool isRangeMin, bool hasTextStarted, StringBuilder result, ref bool displayThisValue)
+    static void PrepareOutput(int value, bool isRangeMin, bool hasTextStarted, List<string> result, ref bool displayThisValue)
     {
         // we need to display SOMETHING (even if it's zero)
         if (isRangeMin && !hasTextStarted)
@@ -202,7 +215,7 @@ static class TimeSpanUtility
             {
                 // Output the "less than 1 unit" text:
                 var unitTitle = s_TimeTextInfo !.GetUnitText(s_RangeMin, 1, s_Abbreviate);
-                result.Append(s_TimeTextInfo.GetLessThanText(unitTitle));
+                result.Add(s_TimeTextInfo.GetLessThanText(unitTitle));
                 displayThisValue = false;
             }
         }

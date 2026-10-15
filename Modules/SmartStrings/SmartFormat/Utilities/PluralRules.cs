@@ -21,11 +21,9 @@ namespace Unity.SmartStrings.Utilities;
 /// </summary>
 public static partial class PluralRules
 {
-    /// <summary>
-    /// Mapping of each two-letter ISO language code to its <see cref="PluralRuleDelegate"/>.
-    /// </summary>
-    [AutoStaticsCleanupOnCodeReload] // public dictionary of delegates; drop user-added entries on reload
-    public static Dictionary<string, PluralRuleDelegate> IsoLangToDelegate { get; } =
+    // Built-in rules, never mutated; IsoLangToDelegate and RestoreDefault copy from it.
+    [NoAutoStaticsCleanup]
+    static readonly Dictionary<string, PluralRuleDelegate> k_DefaultLangToDelegate =
         new() {
             // Singular
             { "az", Singular }, // Azerbaijani
@@ -199,6 +197,32 @@ public static partial class PluralRules
             // Central Morocco Tamazight
             { "tzm", CentralMoroccoTamazight }
         };
+
+    /// <summary>
+    /// Mapping of each two-letter ISO language code to its <see cref="PluralRuleDelegate"/>.
+    /// </summary>
+    [AutoStaticsCleanupOnCodeReload] // public dictionary of delegates; drop user-added entries on reload
+    public static Dictionary<string, PluralRuleDelegate> IsoLangToDelegate { get; } = new(k_DefaultLangToDelegate);
+
+    /// <summary>
+    /// Restores the built-in pluralization rule for every language.
+    /// </summary>
+    /// <remarks>
+    /// Refills <see cref="IsoLangToDelegate"/> with only the built-in rules, which discards every rule you added or
+    /// replaced. A change to <see cref="IsoLangToDelegate"/> applies to all formatting in the project, so call this
+    /// method once you no longer need your custom rules, for example at the end of a test that registers one.
+    /// </remarks>
+    /// <example>
+    /// <code source="../../../../Modules/SmartStrings/Tests/UTFTests/SmartFormat.Samples/CustomPluralRuleExample.cs"/>
+    /// </example>
+    /// <seealso cref="IsoLangToDelegate"/>
+    /// <seealso cref="GetPluralRule"/>
+    public static void RestoreDefault()
+    {
+        IsoLangToDelegate.Clear();
+        foreach (var rule in k_DefaultLangToDelegate)
+            IsoLangToDelegate.Add(rule.Key, rule.Value);
+    }
 
     static PluralRuleDelegate Singular => (value, pluralWordsCount) => 0;
 

@@ -109,6 +109,7 @@ namespace UnityEditorInternal.Profiling
         protected const string k_MainThreadName = "Main Thread";
 
         const string k_ViewTypeSettingsKey = "ViewType";
+        const string k_UseTimelineV2SettingsKey = "UseTimelineV2";
         const string k_HierarchyViewSettingsKeyPrefix = "HierarchyView.";
 
         protected abstract string SettingsKeyPrefix { get; }
@@ -117,6 +118,7 @@ namespace UnityEditorInternal.Profiling
         // (see UUM-114839 -- accessing treeView before this is correct selects CPU columns).
         protected virtual bool IsGpuView => false;
         string ViewTypeSettingsKey { get { return SettingsKeyPrefix + k_ViewTypeSettingsKey; } }
+        string UseTimelineV2SettingsKey { get { return SettingsKeyPrefix + k_UseTimelineV2SettingsKey; } }
         string HierarchyViewSettingsKeyPrefix { get { return SettingsKeyPrefix + k_HierarchyViewSettingsKeyPrefix; } }
 
         string ProfilerViewFilteringOptionsKey => SettingsKeyPrefix + nameof(m_ProfilerViewFilteringOptions);
@@ -300,11 +302,12 @@ namespace UnityEditorInternal.Profiling
             ProfilerDriver.profileCleared += ProfileCleared;
 
 
-            ProfilerViewType loaded = (ProfilerViewType)EditorPrefs.GetInt(ViewTypeSettingsKey, (int)DefaultViewTypeSetting);
+            ProfilerViewType stored = (ProfilerViewType)EditorPrefs.GetInt(ViewTypeSettingsKey, (int)DefaultViewTypeSetting);
+            bool? useTimelineV2Pref = EditorPrefs.HasKey(UseTimelineV2SettingsKey)
+                ? EditorPrefs.GetBool(UseTimelineV2SettingsKey)
+                : (bool?)null;
 
-            // if viewtype is the timeline v2 then this is a domain reload and we don't want to switch away
-            if (m_ViewType != ProfilerViewType.TimelineV2)
-                m_ViewType = loaded;
+            m_ViewType = ResolveViewTypeOnLoad(stored, useTimelineV2Pref, m_ViewType);
 
             m_ProfilerViewFilteringOptions = SessionState.GetInt(ProfilerViewFilteringOptionsKey, m_ProfilerViewFilteringOptions);
         }
@@ -317,11 +320,22 @@ namespace UnityEditorInternal.Profiling
             SendViewTypeAnalytics(m_ViewType);
         }
 
+        internal static ProfilerViewType ResolveViewTypeOnLoad(ProfilerViewType storedViewType, bool? useTimelineV2Pref, ProfilerViewType serializedViewType)
+        {
+            bool useTimelineV2 = useTimelineV2Pref ?? serializedViewType == ProfilerViewType.TimelineV2;
+            if (storedViewType == ProfilerViewType.Timeline && useTimelineV2)
+                return ProfilerViewType.TimelineV2;
+
+            return storedViewType;
+        }
+
         internal override void SaveViewSettings()
         {
             base.SaveViewSettings();
-            ProfilerViewType saving_vt = (m_ViewType == ProfilerViewType.TimelineV2) ? ProfilerViewType.Timeline : m_ViewType;
-            EditorPrefs.SetInt(ViewTypeSettingsKey, (int)saving_vt);
+
+            bool useTimelineV2 = m_ViewType == ProfilerViewType.TimelineV2;
+            EditorPrefs.SetInt(ViewTypeSettingsKey, (int)(useTimelineV2 ? ProfilerViewType.Timeline : m_ViewType));
+            EditorPrefs.SetBool(UseTimelineV2SettingsKey, useTimelineV2);
             SessionState.SetInt(ProfilerViewFilteringOptionsKey, m_ProfilerViewFilteringOptions);
             m_FrameDataHierarchyView?.SaveViewSettings();
         }

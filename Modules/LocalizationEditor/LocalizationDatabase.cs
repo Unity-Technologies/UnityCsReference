@@ -207,8 +207,7 @@ namespace UnityEditor
 
         internal static GUIContent TextContentCore(string groupName, string text, string tooltip, Texture icon)
         {
-            return CachedTextContent(groupName, WithIconIdentity(groupName, TextKey(text, tooltip), icon),
-                text, tooltip, icon);
+            return TextContentByTexture(groupName, text, tooltip, icon);
         }
 
         [ExcludeFromDocs]
@@ -230,8 +229,7 @@ namespace UnityEditor
             if (string.IsNullOrEmpty(iconName))
                 return TextContentCore(groupName, text, tooltip, null);
 
-            return CachedTextContent(groupName, TextKey(text, tooltip, iconName),
-                text, tooltip, EditorGUIUtility.LoadIconRequired(iconName));
+            return TextContentByIconName(groupName, text, tooltip, iconName);
         }
 
         [ExcludeFromDocs]
@@ -248,8 +246,7 @@ namespace UnityEditor
 
         static GUIContent TextContentWithTextureCore(string groupName, string text, Texture icon)
         {
-            return CachedTextContent(groupName, WithIconIdentity(groupName, TextKey(text, null), icon),
-                text, null, icon);
+            return TextContentByTexture(groupName, text, null, icon);
         }
 
         [ExcludeFromDocs]
@@ -281,8 +278,7 @@ namespace UnityEditor
             if (string.IsNullOrEmpty(iconName))
                 return TextContentWithIconTextureCore(groupName, text, null);
 
-            return CachedTextContent(groupName, TextKey(text, null, iconName),
-                text, null, EditorGUIUtility.LoadIconRequired(iconName));
+            return TextContentByIconName(groupName, text, null, iconName);
         }
 
         [ExcludeFromDocs]
@@ -302,8 +298,7 @@ namespace UnityEditor
             if (string.IsNullOrEmpty(iconName))
                 return TextContentWithIconTooltipTextureCore(groupName, text, tooltip, null);
 
-            return CachedTextContent(groupName, TextKey(text, tooltip, iconName),
-                text, tooltip, EditorGUIUtility.LoadIconRequired(iconName));
+            return TextContentByIconName(groupName, text, tooltip, iconName);
         }
 
         [ExcludeFromDocs]
@@ -320,8 +315,7 @@ namespace UnityEditor
 
         static GUIContent TextContentWithIconTooltipTextureCore(string groupName, string text, string tooltip, Texture icon)
         {
-            return CachedTextContent(groupName, WithIconIdentity(groupName, TextKey(text, tooltip), icon),
-                text, tooltip, icon);
+            return TextContentByTexture(groupName, text, tooltip, icon);
         }
 
         [ExcludeFromDocs]
@@ -389,9 +383,7 @@ namespace UnityEditor
 
         static GUIContent IconContentTextureCore(string groupName, Texture icon, string tooltip)
         {
-            // A tooltip is the only thing worth keying on here, so content without one is not cached.
-            string key = tooltip == null ? null : WithIconIdentity(groupName, TooltipKey(tooltip), icon);
-            return CachedIconContent(groupName, key, icon, tooltip);
+            return IconContentByTexture(groupName, icon, tooltip);
         }
 
         [ExcludeFromDocs]

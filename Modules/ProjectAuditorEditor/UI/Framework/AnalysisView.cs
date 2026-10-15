@@ -8,6 +8,7 @@ using System.IO;
 using System.Linq;
 using Unity.ProjectAuditor.Editor.Core;
 using Unity.ProjectAuditor.Editor.Utils;
+using Unity.Scripting.LifecycleManagement;
 using UnityEditor;
 using UnityEditor.IMGUI.Controls;
 using UnityEditor.Search;
@@ -1069,18 +1070,18 @@ namespace Unity.ProjectAuditor.Editor.UI.Framework
 
         protected static class LayoutSize
         {
-            public static readonly int FoldoutWidth = 260;
-            public static readonly int FoldoutMaxHeight = 220;
-            public static readonly int DependencyViewHeight = 200;
-            public static readonly int DetailsPanelWidth = 200;
-            public static readonly int ToolbarButtonSize = 80;
-            public static readonly int ToolbarLargeButtonSize = 120;
-            public static readonly int ToolbarIconSize = 32;
-            public static readonly int ActionButtonHeight = 24;
-            public static readonly int TabButtonSize = 16;
-            public static readonly int CellItemIconSize = 16;
-            public static readonly int CellWidthPadding = 6;
-            public static readonly int CellItemTreeIndent = 30;
+            public const int FoldoutWidth = 260;
+            public const int FoldoutMaxHeight = 220;
+            public const int DependencyViewHeight = 200;
+            public const int DetailsPanelWidth = 200;
+            public const int ToolbarButtonSize = 80;
+            public const int ToolbarLargeButtonSize = 120;
+            public const int ToolbarIconSize = 32;
+            public const int ActionButtonHeight = 24;
+            public const int TabButtonSize = 16;
+            public const int CellItemIconSize = 16;
+            public const int CellWidthPadding = 6;
+            public const int CellItemTreeIndent = 30;
         }
 
         static class Contents

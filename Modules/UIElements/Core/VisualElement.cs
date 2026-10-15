@@ -268,14 +268,14 @@ namespace UnityEngine.UIElements
             set
             {
                 ref var f = ref transformFlags;
-                var changed = areAncestorsAndSelfDisplayed != value;
-                f = value ? f | VisualElementTransformFlags.HierarchyDisplayed : f & ~VisualElementTransformFlags.HierarchyDisplayed;
+                var previous = f;
+                f = value ? previous | VisualElementTransformFlags.HierarchyDisplayed : previous & ~VisualElementTransformFlags.HierarchyDisplayed;
 
                 // Displayed state decides an element's inclusion in the generated accessibility
                 // hierarchy, and a display flip bumps no bit on the affected descendants — this
                 // setter, which the layout updater drives for every affected element, is their
                 // only per-element signal.
-                if (changed)
+                if (previous != f && UITKAccessibilityBridge.isLive)
                     UITKAccessibilityBridge.OnElementDisplayedChanged(this);
 
                 if (renderData == null)
@@ -1434,7 +1434,7 @@ namespace UnityEngine.UIElements
                 // Every effective disabled flip funnels through here (own state and the SetEnabled
                 // tree walk alike), and it bumps no version bit unless a style selector depends on
                 // it — so this is where the generated accessibility hierarchy learns about it.
-                if ((diff & PseudoStates.Disabled) != 0)
+                if ((diff & PseudoStates.Disabled) != 0 && UITKAccessibilityBridge.isLive)
                     UITKAccessibilityBridge.OnElementEnabledChanged(this);
             }
         }

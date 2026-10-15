@@ -298,7 +298,7 @@ partial class ResourceTablesWindow
         LocIcons.Apply(button, hasData ? LocIcons.MetadataOn : LocIcons.Metadata);
         button.EnableInClassList(LocClasses.LocIconBtnActive, hasData);
         button.clickable = new Clickable(() => MetadataPopup.Show(button.worldBound, rootVisualElement, title, owner, metadataPath?.Invoke(), target,
-            () => { if (owner != null) EditorUtility.SetDirty(owner); RebuildTree(); }));
+            () => { if (owner != null) EditorUtility.SetDirty(owner); }));
     }
 
     VisualElement BuildVariantCell(ResourceTable table, VariantRow variantRow)

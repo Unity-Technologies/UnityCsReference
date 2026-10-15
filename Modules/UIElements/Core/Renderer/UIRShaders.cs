@@ -42,7 +42,9 @@ namespace UnityEngine.UIElements.UIR
                 }
 
                 material = new Material(shader);
-                material.hideFlags = HideFlags.DontSave;
+                // The renderer toggles keywords on this material every frame. HideAndDontSave keeps the editor
+                // from tracking those changes as object modifications, which would trigger a player loop update.
+                material.hideFlags = HideFlags.HideAndDontSave;
             }
 
             return material;

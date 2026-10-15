@@ -25,10 +25,10 @@ namespace Unity.ProjectAuditor.Editor.UI
             public int Major;
             public int Moderate;
             public int Minor;
-            public int Ignored;
+            public int IgnoredOrFixed;
 
-            public int Total => TotalExcludingIgnored + Ignored;
-            public int TotalExcludingIgnored => Error + Critical + Major + Moderate + Minor;
+            public int Total => TotalExcludingIgnoredAndFixed + IgnoredOrFixed;
+            public int TotalExcludingIgnoredAndFixed => Error + Critical + Major + Moderate + Minor;
             public int MajorAndCritical => Critical + Major;
         }
 
@@ -184,7 +184,7 @@ namespace Unity.ProjectAuditor.Editor.UI
         protected void AddSeverityStats(ReportItem newIssue, ref StatSeverities severities)
         {
             if (IsIgnoredOrHidden(newIssue))
-                severities.Ignored++;
+                severities.IgnoredOrFixed++;
             else if (newIssue.Severity == Severity.Error)
                 severities.Error++;
             else if (newIssue.Severity == Severity.Critical)
@@ -228,8 +228,8 @@ namespace Unity.ProjectAuditor.Editor.UI
                 elements.Add(new ChartUtil.Element("Moderate", "Moderate issues", severities.Moderate, colors[2], Utility.GetIcon(Utility.IconType.Moderate)));
             if (severities.Minor != 0)
                 elements.Add(new ChartUtil.Element("Minor", "Minor issues", severities.Minor, colors[3], Utility.GetIcon(Utility.IconType.Minor)));
-            if (severities.Ignored != 0)
-                elements.Add(new ChartUtil.Element("Ignored", "Ignored issues", severities.Ignored, colors[4], Utility.GetIcon(Utility.IconType.Ignored)));
+            if (severities.IgnoredOrFixed != 0)
+                elements.Add(new ChartUtil.Element("Ignored/Fixed", "Ignored/fixed issues", severities.IgnoredOrFixed, colors[4], Utility.GetIcon(Utility.IconType.Ignored)));
 
             return elements;
         }
@@ -262,7 +262,7 @@ namespace Unity.ProjectAuditor.Editor.UI
 
         protected bool IsIgnoredOrHidden(ReportItem issue)
         {
-            return issue.Severity == Severity.None || issue.Severity == Severity.Hidden || IsIgnored(issue);
+            return issue.Severity == Severity.None || issue.Severity == Severity.Hidden || issue.WasFixed || IsIgnored(issue);
         }
 
         protected void DrawTopTenIssues(TopTen topTen, Func<ReportItem, bool> filter)
@@ -313,6 +313,9 @@ namespace Unity.ProjectAuditor.Editor.UI
         protected virtual bool IsIssueIgnoredOrFiltered(ReportItem item)
         {
             if (IsIgnored(item))
+                return true;
+
+            if (item.Severity == Severity.Hidden)
                 return true;
 
             if (item.WasFixed)

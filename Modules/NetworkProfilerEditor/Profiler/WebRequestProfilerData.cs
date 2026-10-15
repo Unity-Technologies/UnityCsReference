@@ -27,10 +27,11 @@ namespace UnityEditor.Networking
 
         public const int TagRequests = 0;
         public const int TagStrings = 1;
-        public const int TagHeaders = 2;
         public const int TagTimings = 3;
         public const int TagBodies = 4;
         public const int TagBodyBytes = 5;
+        public const int TagHeaders = 6;
+        public const int TagHeadersLegacy = 2;
     }
 
     [Flags]
@@ -70,6 +71,7 @@ namespace UnityEditor.Networking
     {
         Request = 0,
         Response = 1,
+        RequestWire = 2,
     }
 
     enum WebRequestProfilerState : byte
@@ -133,7 +135,6 @@ namespace UnityEditor.Networking
         public byte reserved2;
         public byte reserved3;
         public byte reserved4;
-        public byte reserved5;
     }
 
     // Must match struct WebRequestProfilerHeaderRow in WebRequestProfilerCapture.h (32 bytes).
@@ -146,13 +147,13 @@ namespace UnityEditor.Networking
         public uint valueOffset;
         public uint valueLength;
         public byte kind;
+        public byte isCredential;
+        public byte truncated;
         public byte reserved0;
         public byte reserved1;
         public byte reserved2;
         public byte reserved3;
         public byte reserved4;
-        public byte reserved5;
-        public byte reserved6;
     }
 
     // Must match struct WebRequestProfilerTimingRow in WebRequestProfilerCapture.h (72 bytes).

@@ -35,11 +35,12 @@ public class Parser
     public SmartSettings Settings { get; }
 
     // Cache method results from settings
-    readonly List<char> m_OperatorChars;
+    readonly CharSet m_OperatorChars;
+    // The settings list itself, so custom operators added after construction still apply
     readonly List<char> m_CustomOperatorChars;
     readonly ParserSettings m_ParserSettings;
-    readonly List<char> m_ValidSelectorChars;
-    readonly List<char> m_FormatOptionsTerminatorChars;
+    readonly CharSet m_SelectorChars;
+    readonly CharSet m_FormatOptionsTerminatorChars;
 
     /// <summary>
     /// Raised when an error occurs during parsing.
@@ -57,14 +58,12 @@ public class Parser
     {
         Settings = smartSettings ?? new SmartSettings();
         m_ParserSettings = Settings.Parser;
-        m_OperatorChars = m_ParserSettings.OperatorChars();
+        m_OperatorChars = new CharSet(m_ParserSettings.OperatorChars());
         m_CustomOperatorChars = m_ParserSettings.CustomOperatorChars();
-        m_FormatOptionsTerminatorChars = m_ParserSettings.FormatOptionsTerminatorChars();
+        m_FormatOptionsTerminatorChars = new CharSet(m_ParserSettings.FormatOptionsTerminatorChars());
 
-        m_ValidSelectorChars = new List<char>();
-        m_ValidSelectorChars.AddRange(m_ParserSettings.SelectorChars());
-        m_ValidSelectorChars.AddRange(m_ParserSettings.OperatorChars());
-        m_ValidSelectorChars.AddRange(m_ParserSettings.CustomSelectorChars());
+        // Selector chars can be an allowlist or blocklist:
+        m_SelectorChars = m_ParserSettings.GetSelectorChars();
 
         m_InputFormat = string.Empty;
         m_ResultFormat = null;
@@ -527,7 +526,7 @@ public class Parser
         else
         {
             // Ensure the selector characters are valid:
-            if (!m_ValidSelectorChars.Contains(inputChar))
+            if (m_SelectorChars.Contains(inputChar) != m_SelectorChars.IsAllowList)
                 parsingErrors.AddIssue(m_ResultFormat,
                     $"'0x{Convert.ToUInt32(inputChar):X}': " +
                     m_ParsingErrorText[ParsingError.InvalidCharactersInSelector],

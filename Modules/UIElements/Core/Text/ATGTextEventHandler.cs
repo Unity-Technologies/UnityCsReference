@@ -185,11 +185,11 @@ namespace UnityEngine.UIElements
             EnsureTextGenerationInfoIsValid();
             var pos = pde.localPosition - new Vector3(m_TextElement.contentRect.min.x, m_TextElement.contentRect.min.y);
             // Convert UITK pos to ATG pos
-            var info = m_TextElement.uitkTextHandle.ATGFindIntersectingLink(pos);
+            var info = m_TextElement.uitkTextHandle.ATGFindIntersectingLink(pos, out var linkText);
             if (info.value == null || info.isHyperlink)
                 return;
 
-            using (var e = Experimental.PointerDownLinkTagEvent.GetPooled(pde, info.value, "test" /* TODO we have no way of gettting the hilighted text*/ ))
+            using (var e = Experimental.PointerDownLinkTagEvent.GetPooled(pde, info.value, linkText))
             {
                 e.elementTarget = m_TextElement;
                 m_TextElement.SendEvent(e);
@@ -200,11 +200,11 @@ namespace UnityEngine.UIElements
         {
             EnsureTextGenerationInfoIsValid();
             var pos = pue.localPosition - new Vector3(m_TextElement.contentRect.min.x, m_TextElement.contentRect.min.y);
-            var info = m_TextElement.uitkTextHandle.ATGFindIntersectingLink(pos);
+            var info = m_TextElement.uitkTextHandle.ATGFindIntersectingLink(pos, out var linkText);
             if (info.value == null || info.isHyperlink)
                 return;
 
-            using (var e = Experimental.PointerUpLinkTagEvent.GetPooled(pue, info.value, "test" /* TODO we have no way of gettting the hilighted text*/ ))
+            using (var e = Experimental.PointerUpLinkTagEvent.GetPooled(pue, info.value, linkText))
             {
                 e.elementTarget = m_TextElement;
                 m_TextElement.SendEvent(e);
@@ -219,7 +219,7 @@ namespace UnityEngine.UIElements
             EnsureTextGenerationInfoIsValid();
             var pos = pme.localPosition - new Vector3(m_TextElement.contentRect.min.x, m_TextElement.contentRect.min.y);
             // Convert UITK pos to ATG pos
-            var info = m_TextElement.uitkTextHandle.ATGFindIntersectingLink(pos);
+            var info = m_TextElement.uitkTextHandle.ATGFindIntersectingLink(pos, out var linkText);
 
             if (info.value != null && !info.isHyperlink)
             {
@@ -227,7 +227,7 @@ namespace UnityEngine.UIElements
                 if (currentLinkIDHash == -1)
                 {
                     currentLinkIDHash = 0; // Placeholder for link.hashCode
-                    using (var e = Experimental.PointerOverLinkTagEvent.GetPooled(pme, info.value, "test" /* TODO we have no way of gettting the hilighted text*/ ))
+                    using (var e = Experimental.PointerOverLinkTagEvent.GetPooled(pme, info.value, linkText))
                     {
                         e.elementTarget = m_TextElement;
                         m_TextElement.SendEvent(e);
@@ -239,7 +239,7 @@ namespace UnityEngine.UIElements
                 // PointerMove
                 if (currentLinkIDHash == 0) // Placeholder for link.hashCode
                 {
-                    using (var e = Experimental.PointerMoveLinkTagEvent.GetPooled(pme, info.value, "test" /* TODO we have no way of gettting the hilighted text*/ ))
+                    using (var e = Experimental.PointerMoveLinkTagEvent.GetPooled(pme, info.value, linkText))
                     {
                         e.elementTarget = m_TextElement;
                         m_TextElement.SendEvent(e);

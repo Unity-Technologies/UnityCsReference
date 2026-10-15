@@ -4506,7 +4506,18 @@ namespace Unity.U2D.Physics
         /// <param name="radius">The radius of the point, in pixels (approximately).</param>
         /// <param name="color">The color to draw with.</param>
         /// <param name="lifetime">How long the element should be drawn for, in seconds. The default is zero indicating that it should only be drawn once. Lifetime is only used when the world is playing.</param>
-        public readonly void DrawPoint(Vector2 position, float radius, Color color, float lifetime = 0.0f) => PhysicsWorld_DrawPoint(this, position, radius, color, lifetime);
+        public readonly void DrawPoint(Vector2 position, float radius, Color color, float lifetime = 0.0f) => PhysicsWorld_DrawPointSpan(this, stackalloc Vector2[1] { position }, radius, color, lifetime);
+
+        /// <summary>
+        /// Draw a set of Points that all share the same radius and color.
+        /// A Point is similar to a filled Circle except the radius here is specified in pixels rather than world units.
+        /// Nothing is drawn, and an error is reported, if the span is empty or the radius is not greater than zero.
+        /// </summary>
+        /// <param name="points">The positions of the points in PhysicsWorld space.</param>
+        /// <param name="radius">The radius of every point, in pixels (approximately).</param>
+        /// <param name="color">The color to draw with.</param>
+        /// <param name="lifetime">How long the elements should be drawn for, in seconds. The default is zero indicating that they should only be drawn once. Lifetime is only used when the world is playing.</param>
+        public readonly void DrawPoint(ReadOnlySpan<Vector2> points, float radius, Color color, float lifetime = 0.0f) => PhysicsWorld_DrawPointSpan(this, points, radius, color, lifetime);
 
         /// <summary>
         /// Draw a Line.

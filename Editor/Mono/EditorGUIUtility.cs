@@ -88,18 +88,30 @@ namespace UnityEditor
 
         [NoAutoStaticsCleanup] // destroyed on code unload by RegisterResourceForCleanupOnDomainReload
         internal static Material s_GUITextureBlit2SRGBMaterial;
+        [NoAutoStaticsCleanup] // color space last applied to s_GUITextureBlit2SRGBMaterial; reset whenever the material is recreated
+        static ColorSpace s_GUITextureBlit2SRGBColorSpace;
         internal static Material GUITextureBlit2SRGBMaterial
         {
             get
             {
+                bool forceUpdate = false;
                 if (!s_GUITextureBlit2SRGBMaterial)
                 {
                     Shader shader = LoadRequired("SceneView/GUITextureBlit2SRGB.shader") as Shader;
                     s_GUITextureBlit2SRGBMaterial = new Material(shader);
                     s_GUITextureBlit2SRGBMaterial.hideFlags |= HideFlags.DontSaveInEditor;
                     RegisterResourceForCleanupOnDomainReload(s_GUITextureBlit2SRGBMaterial);
+                    forceUpdate = true;
                 }
-                s_GUITextureBlit2SRGBMaterial.SetFloat("_ManualTex2SRGB", QualitySettings.activeColorSpace == ColorSpace.Linear ? 1.0f : 0.0f);
+
+                // _ManualTex2SRGB isn't declared in the shader properties, so SetFloat always dirties the material.
+                // A dirty material triggers an edit-mode player loop update, so only set it when it changes.
+                ColorSpace colorSpace = QualitySettings.activeColorSpace;
+                if (forceUpdate || colorSpace != s_GUITextureBlit2SRGBColorSpace)
+                {
+                    s_GUITextureBlit2SRGBMaterial.SetFloat("_ManualTex2SRGB", colorSpace == ColorSpace.Linear ? 1.0f : 0.0f);
+                    s_GUITextureBlit2SRGBColorSpace = colorSpace;
+                }
                 return s_GUITextureBlit2SRGBMaterial;
             }
         }

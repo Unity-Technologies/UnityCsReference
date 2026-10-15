@@ -26,7 +26,7 @@ namespace Unity.UI.Builder
         readonly GradientField m_GradientField;
         readonly FloatField m_AngleField;
         readonly VisualElement m_RadialOnlyContainer;
-        // Shape control omitted — the hash-cached baker can't honor Circle on non-square elements.
+        readonly EnumField m_ShapeField;
         readonly EnumField m_SizeField;
         readonly Vector2Field m_PositionField;
 
@@ -96,6 +96,12 @@ namespace Unity.UI.Builder
             m_RadialOnlyContainer = new VisualElement();
             m_RadialOnlyContainer.AddToClassList(k_RadialOnlyClassName);
 
+            // The shape is never var-bound, so there is no var name to clear.
+            m_ShapeField = new EnumField("Shape", BackgroundGradientShape.Ellipse);
+            m_ShapeField.AddToClassList(k_RowClassName);
+            m_ShapeField.RegisterValueChangedCallback(_ => OnControlChanged(() => {}));
+            m_RadialOnlyContainer.Add(m_ShapeField);
+
             m_SizeField = new EnumField("Extent", BackgroundGradientSize.FarthestCorner);
             m_SizeField.AddToClassList(k_RowClassName);
             m_SizeField.RegisterValueChangedCallback(_ => OnControlChanged(() => m_VarBindings.extentVarName = null));
@@ -142,6 +148,7 @@ namespace Unity.UI.Builder
             {
                 m_TypeField.SetValueWithoutNotify(effective.type);
                 m_AngleField.SetValueWithoutNotify(effective.angle * Mathf.Rad2Deg);
+                m_ShapeField.SetValueWithoutNotify(effective.shape);
                 m_SizeField.SetValueWithoutNotify(effective.size);
                 m_PositionField.SetValueWithoutNotify(effective.position);
                 m_GradientField.SetValueWithoutNotify(BackgroundGradientToUnityGradient(effective));
@@ -167,7 +174,7 @@ namespace Unity.UI.Builder
             {
                 type = type,
                 angle = m_AngleField.value * Mathf.Deg2Rad,
-                shape = BackgroundGradientShape.Ellipse, // Circle disabled
+                shape = (BackgroundGradientShape)m_ShapeField.value,
                 size = (BackgroundGradientSize)m_SizeField.value,
                 position = m_PositionField.value,
                 stops = UnityGradientToBackgroundStops(m_GradientField.value),
@@ -251,7 +258,7 @@ namespace Unity.UI.Builder
             {
                 type = (GradientType)m_TypeField.value,
                 angle = m_AngleField.value * Mathf.Deg2Rad,
-                shape = BackgroundGradientShape.Ellipse, // Circle disabled
+                shape = (BackgroundGradientShape)m_ShapeField.value,
                 size = (BackgroundGradientSize)m_SizeField.value,
                 position = m_PositionField.value,
                 stops = stops,

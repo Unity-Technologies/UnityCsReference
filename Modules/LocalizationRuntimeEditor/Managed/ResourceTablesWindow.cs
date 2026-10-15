@@ -811,7 +811,7 @@ partial class ResourceTablesWindow : EditorWindow
         var menu = new GenericDropdownMenu();
         menu.AddItem($"{L10n.Tr("Shared Metadata", null)}...", false, () =>
             MetadataPopup.Show(anchor.worldBound, rootVisualElement, $"{L10n.Tr("Shared Metadata", null)}: {m_Collection.TableCollectionName}", m_Collection.SharedData, "m_Metadata", MetadataType.SharedTableData,
-                () => { EditorUtility.SetDirty(m_Collection.SharedData); RebuildTree(); }));
+                () => EditorUtility.SetDirty(m_Collection.SharedData)));
         AddColumnItems(menu);
         menu.DropDown(anchor.worldBound, anchor, DropdownMenuSizeMode.Auto);
     }
@@ -873,7 +873,7 @@ partial class ResourceTablesWindow : EditorWindow
         var menu = new GenericDropdownMenu();
         menu.AddItem($"{L10n.Tr("Table Metadata", null)}...", false, () =>
             MetadataPopup.Show(anchor.worldBound, rootVisualElement, $"{L10n.Tr("Table Metadata", null)}: {LocaleLabel(code, LocaleDisplayName(code))}", table, "m_Metadata", MetadataType.ResourceTable,
-                () => { EditorUtility.SetDirty(table); RebuildTree(); }));
+                () => EditorUtility.SetDirty(table)));
 
         var visible = VisibleTableCount();
         if (visible > 1)

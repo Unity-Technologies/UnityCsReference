@@ -766,7 +766,27 @@ namespace UnityEngine.TextCore.Text
             }
 
             int id = TextLib.FindIntersectingLink(point * GetPixelsPerPoint(), textGenerationInfo);
+            return GetLinkInfo(id);
+        }
 
+        [VisibleToOtherModules("UnityEngine.IMGUIModule", "UnityEngine.UIElementsModule")]
+        internal RichTextLinkInfo ATGFindIntersectingLink(Vector2 point, out string linkText)
+        {
+            Debug.Assert(useAdvancedText);
+
+            if (textGenerationInfo == IntPtr.Zero)
+            {
+                Debug.LogError("TextGenerationInfo pointer is null.");
+                linkText = string.Empty;
+                return new RichTextLinkInfo { id = -1 };
+            }
+
+            linkText = TextLib.GetIntersectingLinkText(point * GetPixelsPerPoint(), textGenerationInfo, out int id);
+            return GetLinkInfo(id);
+        }
+
+        RichTextLinkInfo GetLinkInfo(int id)
+        {
             if (m_Links == null || id < 0 || id >= m_Links.Length)
                 return new RichTextLinkInfo { id = -1 };
 

@@ -107,7 +107,7 @@ namespace UnityEngine.UIElements.UIR
         HashSet<RenderData> m_BackdropFilterRenderDatas;
 
         public TextureId quadTextureId;
-        public RectInt quadRect;
+        public Rect quadRect;
         public Rect quadUVRect;
         // Gamma-encoded quad (force-gamma); the parent samples it without re-encoding (UI-5094).
         public bool quadIsGammaEncoded;

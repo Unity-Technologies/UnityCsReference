@@ -111,6 +111,9 @@ namespace UnityEngine.UIElements.UIR
                 m_Filter = new FilterFunction();
                 filterGroupId = 0;
 
+                bounds = default;
+                drawSourceBounds = default;
+                drawSourceTexOffsets = default;
                 dstAtlasBlock = default;
                 dstTextureId = TextureId.invalid;
             }
@@ -147,6 +150,11 @@ namespace UnityEngine.UIElements.UIR
         int m_MaxBlockWidth;
         int m_MaxBlockHeight;
 
+        float m_PixelsPerPoint;
+
+        // Absorbs the float error of point/pixel round trips so snapping doesn't add a spurious pixel
+        const float k_PixelSnapTolerance = 0.01f;
+
         public RenderTreeCompositor(RenderTreeManager owner)
         {
             m_RenderTreeManager = owner;
@@ -168,6 +176,7 @@ namespace UnityEngine.UIElements.UIR
 
             m_MaxBlockWidth = RenderTreeAtlas.maxBlockWidth;
             m_MaxBlockHeight = RenderTreeAtlas.maxBlockHeight;
+            m_PixelsPerPoint = rootRenderTree.rootRenderData.owner.scaledPixelsPerPoint;
 
             BuildDrawOperationTree(rootRenderTree);
             UpdateDrawBounds_PostOrder(m_RootOperation);
@@ -244,6 +253,7 @@ namespace UnityEngine.UIElements.UIR
         void UpdateDrawBounds_PostOrder(DrawOperation op)
         {
             Rect? bounds = null;
+            float scale = m_PixelsPerPoint;
 
             switch (op.type)
             {
@@ -274,7 +284,8 @@ namespace UnityEngine.UIElements.UIR
                         if (UIRUtility.RectHasArea(child.bounds))
                         {
                             UIRUtility.ComputeMatrixRelativeToRenderTree(child.visualElement.renderData, out Matrix4x4 childOpToParentOp);
-                            Rect childBounds = VisualElement.CalculateConservativeRect(ref childOpToParentOp, UIRUtility.CastToRect(child.bounds));
+                            Rect childPointBounds = PixelsToPoints(child.bounds);
+                            Rect childBounds = VisualElement.CalculateConservativeRect(ref childOpToParentOp, childPointBounds);
                             bounds = bounds == null ? childBounds : UIRUtility.Encapsulate(bounds.Value, childBounds);
                         }
 
@@ -287,6 +298,9 @@ namespace UnityEngine.UIElements.UIR
                     else
                         Debug.Assert(bounds == null); // Children bounds should be zero
 
+                    if (bounds != null)
+                        bounds = ScaleRect(bounds.Value, scale);
+
                     break;
                 }
                 default:
@@ -298,56 +312,47 @@ namespace UnityEngine.UIElements.UIR
                 Rect r = bounds.Value;
                 RectInt rectInt;
 
-                PostProcessingMargins readMargins = new();
-                PostProcessingMargins writeMargins = new();
-
                 DrawOperation parentOp = op.parent;
-                float scale = op.renderTree.rootRenderData.owner.scaledPixelsPerPoint;
 
                 // Last resort when the content alone exceeds the GPU limit: crop it so the texture
                 // can always be created; a failed creation renders nothing at all (UUM-134044).
-                if (parentOp != null && ExceedsAtlasLimits(UIRUtility.CastToRectInt(r), scale))
+                if (parentOp != null && ExceedsAtlasLimits(SnapOutwardToPixels(r)))
                 {
-                    r.width = Mathf.Min(r.width, Mathf.Floor(m_MaxBlockWidth / scale) - 1);
-                    r.height = Mathf.Min(r.height, Mathf.Floor(m_MaxBlockHeight / scale) - 1);
-                    LogTextureLimitError(op, UIRUtility.CastToRectInt(bounds.Value), scale, "the content was cropped");
+                    r.width = Mathf.Min(r.width, m_MaxBlockWidth - 1);
+                    r.height = Mathf.Min(r.height, m_MaxBlockHeight - 1);
+                    LogTextureLimitError(op, SnapOutwardToPixels(bounds.Value), "the content was cropped");
                 }
 
                 if (parentOp?.type == DrawOperationType.Effect)
                 {
                     // Inflate for the parent read and write margins
-                    readMargins = FilterHelper.GetReadMargins(parentOp.FilterPass, parentOp.filter);
-                    writeMargins = FilterHelper.GetWriteMargins(parentOp.FilterPass, parentOp.filter);
-                    var inflated = UIRUtility.InflateByMargins(UIRUtility.InflateByMargins(r, readMargins), writeMargins);
-                    rectInt = UIRUtility.CastToRectInt(inflated);
+                    var readMargins = FilterHelper.GetReadMargins(parentOp.FilterPass, parentOp.filter);
+                    var writeMargins = FilterHelper.GetWriteMargins(parentOp.FilterPass, parentOp.filter);
+                    var inflated = InflateByMargins(InflateByMargins(r, readMargins, scale), writeMargins, scale);
+                    rectInt = SnapOutwardToPixels(inflated);
 
-                    if (ExceedsAtlasLimits(rectInt, scale))
+                    if (ExceedsAtlasLimits(rectInt))
                     {
                         // Rendering without margins (the effect reads edge-clamped) beats failing to
                         // create the texture and not rendering the element at all.
-                        LogTextureLimitError(op, rectInt, scale, "the filter margins were discarded");
-                        readMargins = new();
+                        LogTextureLimitError(op, rectInt, "the filter margins were discarded");
                         writeMargins = new();
-                        rectInt = UIRUtility.CastToRectInt(r);
+                        rectInt = SnapOutwardToPixels(r);
                     }
 
-                    var sourceBounds = r;
-                    sourceBounds = UIRUtility.InflateByMargins(sourceBounds, writeMargins);
+                    RectInt sourceBounds = SnapOutwardToPixels(InflateByMargins(r, writeMargins, scale));
+                    op.parent.drawSourceBounds = sourceBounds;
 
-                    op.parent.drawSourceBounds = UIRUtility.CastToRectInt(sourceBounds);
-
-                    // Store the texel offsets in "pixels" since we do not know the texture size yet.
-                    // They will be converted to UVs once rendered.
-                    // Scale by DPI to convert from points to physical pixels.
+                    // Whole texels, so the effect samples its source texel-centered
                     op.parent.drawSourceTexOffsets = new Vector4(
-                        readMargins.left * scale,
-                        readMargins.top * scale,
-                        readMargins.right * scale,
-                        readMargins.bottom * scale);
+                        sourceBounds.xMin - rectInt.xMin,
+                        sourceBounds.yMin - rectInt.yMin,
+                        rectInt.xMax - sourceBounds.xMax,
+                        rectInt.yMax - sourceBounds.yMax);
                 }
                 else
                 {
-                    rectInt = UIRUtility.CastToRectInt(r);
+                    rectInt = SnapOutwardToPixels(r);
                 }
 
                 op.bounds = rectInt;
@@ -359,11 +364,6 @@ namespace UnityEngine.UIElements.UIR
             {
                 int width = op.bounds.width;
                 int height = op.bounds.height;
-
-                // Request a texture size that accounts for the scaling (DPI) of the render tree
-                float scale = op.renderTree.rootRenderData.owner.scaledPixelsPerPoint;
-                width = Mathf.CeilToInt(width * scale);
-                height = Mathf.CeilToInt(height * scale);
 
                 RenderTreeAtlas.AtlasBlock block;
                 if (RenderTreeAtlas.ReserveSize(width, height, out block))
@@ -384,36 +384,70 @@ namespace UnityEngine.UIElements.UIR
                     op.dstAtlasBlock = block;
                     if (op.parent.type == DrawOperationType.RenderTree)
                     {
-                        op.renderTree.quadRect = op.bounds;
+                        op.renderTree.quadRect = PixelsToPoints(op.bounds);
                         op.renderTree.quadUVRect = block.uvRect;
                     }
                 }
             }
         }
 
-        bool ExceedsAtlasLimits(RectInt rect, float scale)
+        static Rect ScaleRect(Rect r, float scale)
+        {
+            return new Rect(r.x * scale, r.y * scale, r.width * scale, r.height * scale);
+        }
+
+        Rect PixelsToPoints(RectInt r)
+        {
+            if (m_PixelsPerPoint <= 0)
+                return Rect.zero;
+            return ScaleRect(UIRUtility.CastToRect(r), 1 / m_PixelsPerPoint);
+        }
+
+        static Rect InflateByMargins(Rect r, PostProcessingMargins margins, float scale)
+        {
+            return new Rect(
+                r.xMin - margins.left * scale,
+                r.yMin - margins.top * scale,
+                r.width + (margins.left + margins.right) * scale,
+                r.height + (margins.top + margins.bottom) * scale);
+        }
+
+        internal static RectInt SnapOutwardToPixels(Rect r)
+        {
+            int xMin = Mathf.FloorToInt(r.xMin + k_PixelSnapTolerance);
+            int yMin = Mathf.FloorToInt(r.yMin + k_PixelSnapTolerance);
+            int xMax = SnapMaxOutward(xMin, r.xMax, r.width);
+            int yMax = SnapMaxOutward(yMin, r.yMax, r.height);
+            return new RectInt(xMin, yMin, xMax - xMin, yMax - yMin);
+        }
+
+        // A positive extent must keep at least one pixel, or a sub-tolerance sliver collapses one axis only
+        static int SnapMaxOutward(int snappedMin, float max, float extent)
+        {
+            int minMax = extent > 0 ? snappedMin + 1 : snappedMin;
+            return Mathf.Max(minMax, Mathf.CeilToInt(max - k_PixelSnapTolerance));
+        }
+
+        bool ExceedsAtlasLimits(RectInt rect)
         {
             // Non-positive limits mean the graphics caps aren't usable yet; cropping against them would
             // produce negative sizes, which is worse than letting the texture allocation report the failure.
             if (m_MaxBlockWidth <= 0 || m_MaxBlockHeight <= 0)
                 return false;
 
-            return Mathf.CeilToInt(rect.width * scale) > m_MaxBlockWidth
-                || Mathf.CeilToInt(rect.height * scale) > m_MaxBlockHeight;
+            return rect.width > m_MaxBlockWidth || rect.height > m_MaxBlockHeight;
         }
 
         [NoAutoStaticsCleanup] // per-element log dedup (identity hash, keeps no element reference): the oversize condition persists across frames
         static readonly HashSet<int> s_TextureLimitErrorLogged = new();
 
-        void LogTextureLimitError(DrawOperation op, RectInt rect, float scale, string action)
+        void LogTextureLimitError(DrawOperation op, RectInt rect, string action)
         {
             var ve = op.visualElement;
             if (!s_TextureLimitErrorLogged.Add(ve?.GetHashCode() ?? 0))
                 return;
 
-            int width = Mathf.CeilToInt(rect.width * scale);
-            int height = Mathf.CeilToInt(rect.height * scale);
-            Debug.LogError($"The filter on element '{ve}' requires a {width}x{height} texture, which exceeds the " +
+            Debug.LogError($"The filter on element '{ve}' requires a {rect.width}x{rect.height} texture, which exceeds the " +
                 $"maximum supported size ({m_MaxBlockWidth}x{m_MaxBlockHeight}); {action}.");
         }
 
@@ -585,7 +619,7 @@ namespace UnityEngine.UIElements.UIR
                 }
                 case DrawOperationType.RenderTree:
                 {
-                    m_RenderTreeManager.RenderSingleTree(op.renderTree, op.dstAtlasBlock.texture, op.dstAtlasBlock.rect, UIRUtility.CastToRect(bounds));
+                    m_RenderTreeManager.RenderSingleTree(op.renderTree, op.dstAtlasBlock.texture, op.dstAtlasBlock.rect, PixelsToPoints(bounds));
                     break;
                 }
                 default:

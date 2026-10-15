@@ -253,11 +253,16 @@ namespace Unity.ProjectAuditor.Editor.UI
             GUILayout.Space(8);
         }
 
-        internal static void DrawTabTitleText(GUIContent title)
+        internal static void DrawTabTitleText(GUIContent title, int spacing = k_SpacingHeight)
         {
-            GUILayout.Space(k_SpacingHeight);
-            EditorGUILayout.LabelField(title, SharedStyles.WelcomeTextArea, GUILayout.MaxWidth(k_TabViewWidth - 32), GUILayout.Height(k_SpacingHeight * 2));
-            GUILayout.Space(k_SpacingHeight - 6);
+            GUILayout.Space(spacing);
+            using (new EditorGUILayout.HorizontalScope())
+            {
+                GUILayout.FlexibleSpace();
+                EditorGUILayout.LabelField(title, SharedStyles.WelcomeTextArea, GUILayout.MaxWidth(k_TabViewWidth - 32), GUILayout.Height(k_SpacingHeight * 2));
+                GUILayout.FlexibleSpace();
+            }
+            GUILayout.Space(spacing - 6);
         }
 
         static void DrawSharedPreferences(bool includeProjectAreas)

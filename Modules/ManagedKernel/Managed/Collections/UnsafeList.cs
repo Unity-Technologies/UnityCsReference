@@ -1239,7 +1239,7 @@ namespace Unity.Collections.LowLevel.Unsafe
                 throw new IndexOutOfRangeException($"Value for index {index} is out of bounds.");
             }
 
-            if (index + count > Length)
+            if (((long)index + count) > Length)
             {
                 throw new ArgumentOutOfRangeException($"Value for count {count} is out of bounds.");
             }

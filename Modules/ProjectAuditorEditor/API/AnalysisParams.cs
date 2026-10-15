@@ -65,6 +65,12 @@ namespace Unity.ProjectAuditor.Editor
         [SerializeField]
         internal SerializableEnum<CodeOwnerFlags> CodeOwnerFlags;
 
+		/// <summary>
+        /// The Render Pipeline Converter container to migrate to (eg "BuiltInToURP" or "BuiltInToURP2D").
+		/// </summary>
+        [SerializeField]
+        internal string MigrationTargetPipeline;
+
         /// <summary>
         /// Reports a batch of new issues. Note that this be called multiple times per analysis.
         /// </summary>
@@ -153,6 +159,7 @@ namespace Unity.ProjectAuditor.Editor
             CodeOptimization = original.CodeOptimization;
             CodeAnalysisFlags = original.CodeAnalysisFlags;
             CodeOwnerFlags = original.CodeOwnerFlags;
+            MigrationTargetPipeline = original.MigrationTargetPipeline;
 
             OnIncomingIssues = original.OnIncomingIssues;
             OnCompleted = original.OnCompleted;
@@ -171,6 +178,9 @@ namespace Unity.ProjectAuditor.Editor
         /// <returns>This AnalysisParams object, after adding the additional Rules.</returns>
         public AnalysisParams WithAdditionalDiagnosticRules(List<Rule> rules)
         {
+            if (rules == null)
+                return this;
+
             foreach (var rule in rules)
             {
                 Rules.AddRule(rule);

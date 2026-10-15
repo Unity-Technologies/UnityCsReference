@@ -48,6 +48,7 @@ namespace UnityEditor.AssetImporters
 
         public extern BuildTarget selectedBuildTarget { get; }
 
+        [NativeMethod(ThrowsException = true)]
         public extern void SetMainObject(Object obj);
         public extern Object mainObject { get; }
 

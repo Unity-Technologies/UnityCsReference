@@ -3037,6 +3037,9 @@
     <Compile Include="..\..\Modules\SmartStrings\SmartFormat\Core\Formatting\IFormatterLiteralExtractor.cs">
       <Link>Modules\SmartStrings\SmartFormat\Core\Formatting\IFormatterLiteralExtractor.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\SmartStrings\SmartFormat\Core\Formatting\IFormattingExtensionsToggle.cs">
+      <Link>Modules\SmartStrings\SmartFormat\Core\Formatting\IFormattingExtensionsToggle.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\SmartStrings\SmartFormat\Core\Formatting\IFormattingInfo.cs">
       <Link>Modules\SmartStrings\SmartFormat\Core\Formatting\IFormattingInfo.cs</Link>
     </Compile>
@@ -3060,6 +3063,9 @@
     </Compile>
     <Compile Include="..\..\Modules\SmartStrings\SmartFormat\Core\Parsing\AdditionalFormatData.cs">
       <Link>Modules\SmartStrings\SmartFormat\Core\Parsing\AdditionalFormatData.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\SmartStrings\SmartFormat\Core\Parsing\CharSet.cs">
+      <Link>Modules\SmartStrings\SmartFormat\Core\Parsing\CharSet.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\SmartStrings\SmartFormat\Core\Parsing\EscapedLiteral.cs">
       <Link>Modules\SmartStrings\SmartFormat\Core\Parsing\EscapedLiteral.cs</Link>
@@ -3105,6 +3111,9 @@
     </Compile>
     <Compile Include="..\..\Modules\SmartStrings\SmartFormat\Core\Settings\ParserSettings.cs">
       <Link>Modules\SmartStrings\SmartFormat\Core\Settings\ParserSettings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\SmartStrings\SmartFormat\Core\Settings\SelectorFilterType.cs">
+      <Link>Modules\SmartStrings\SmartFormat\Core\Settings\SelectorFilterType.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\SmartStrings\SmartFormat\Core\Settings\SmartSettings.cs">
       <Link>Modules\SmartStrings\SmartFormat\Core\Settings\SmartSettings.cs</Link>
@@ -8067,7 +8076,7 @@
     </PropertyGroup>
   </Target>
   <ItemGroup>
-    <Analyzer Include="/tmp/uitoolkit_gen_q59wzsjg/Unity.UIToolkit.SourceGenerator.dll" />
+    <Analyzer Include="/tmp/uitoolkit_gen_shtozom8/Unity.UIToolkit.SourceGenerator.dll" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="10.0.8" />

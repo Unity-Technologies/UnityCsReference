@@ -49,6 +49,7 @@ namespace UnityEditor.PackageManager.UI
 
         [AutoStaticsCleanupOnCodeReload]
         private static bool s_IsInitializationFrameDone;
+        public static bool isInitializationFrameDone => s_IsInitializationFrameDone;
 
         [OnCodeLoaded]
         static void Initialize()

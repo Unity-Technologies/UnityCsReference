@@ -10,7 +10,7 @@ namespace Unity.ProjectAuditor.Editor.UI
 {
     class BuildView : SummaryView
     {
-        static readonly string k_Message =
+        const string k_Message =
             $"Build information has been removed from {ProjectAuditor.DisplayName} and moved to the new Build Analysis window. New builds will automatically show up in the Build Analysis window.";
         static readonly GUIContent k_OpenBuildAnalysisButton = new GUIContent("Open Build Analysis");
 

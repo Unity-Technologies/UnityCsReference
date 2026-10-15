@@ -51,9 +51,13 @@ internal class JobsProfiler : VisualElement
     VisualElement m_timeline;
     VisualElement m_filterSpacer;
     long m_currentFrame = 0;
+    bool m_disposed = false;
 
     internal void SelectFrame(long frame)
     {
+        if (m_disposed)
+            return;
+
         m_currentFrame = frame;
         m_timelineView.SetCurrentFrame((int)frame);
     }
@@ -88,6 +92,9 @@ internal class JobsProfiler : VisualElement
 
     internal void Update()
     {
+        if (m_disposed)
+            return;
+
         int firstFrame = ProfilerDriver.firstFrameIndex;
         int lastFrame = ProfilerDriver.lastFrameIndex;
 
@@ -104,6 +111,9 @@ internal class JobsProfiler : VisualElement
 
     internal void ClearCaches()
     {
+        if (m_disposed)
+            return;
+
         m_timelineView.ClearData();
         m_frameCache.ClearCache();
     }
@@ -163,9 +173,15 @@ internal class JobsProfiler : VisualElement
 
     internal void Cleanup()
     {
+        if (m_disposed)
+            return;
+        m_disposed = true;
+
         EditorApplication.update -= Update;
         ProfilerDriver.profileCleared -= ClearedProfile;
         JobsProfilerSettings.ColorBlindModeChanged -= OnColorBlindModeChanged;
+        UnregisterCallback<GeometryChangedEvent>(OnGeometryChangedEvent);
+        UnregisterCallback<DetachFromPanelEvent>(OnDetachFromPanel);
         m_timelineView?.Dispose();
         m_filter?.Dispose();
         m_frameCache?.Dispose();

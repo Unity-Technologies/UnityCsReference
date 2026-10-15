@@ -9,6 +9,7 @@
 using UnityEngine;
 using System;
 using System.Collections.Generic;
+using Unity.Scripting.LifecycleManagement;
 using Unity.SmartStrings.Core.Parsing;
 
 namespace Unity.SmartStrings.Core.Settings;
@@ -31,11 +32,72 @@ public class ParserSettings
     [SerializeField] List<char> m_CustomSelectorChars = new List<char>();
     [SerializeField] List<char> m_CustomOperatorChars = new List<char>();
 
+    [Tooltip("Which characters a selector can contain: letters, digits, underscores and hyphens, or characters from any script.")]
+    [SerializeField] SelectorFilterType m_SelectorCharFilter = SelectorFilterType.Alphanumeric;
+
+    // Immutable char table, populated once from literals, so nothing user-defined can be pinned across a code reload.
+    [NoAutoStaticsCleanup]
+    static readonly char[] k_NonVisualUnicodeCharacters =
+    {
+        // Control characters
+        '\u0000', '\u0001', '\u0002', '\u0003', '\u0004', '\u0005', '\u0006', '\u0007',
+        '\u0008', '\u0009', '\u000A', '\u000B', '\u000C', '\u000D', '\u000E', '\u000F',
+        '\u0010', '\u0011', '\u0012', '\u0013', '\u0014', '\u0015', '\u0016', '\u0017',
+        '\u0018', '\u0019', '\u001A', '\u001B', '\u001C', '\u001D', '\u001E', '\u001F', '\u007F',
+        '\u0080', '\u0081', '\u0082', '\u0083', '\u0084', '\u0085', '\u0086', '\u0087',
+        '\u0088', '\u0089', '\u008A', '\u008B', '\u008C', '\u008D', '\u008E', '\u008F',
+        '\u0090', '\u0091', '\u0092', '\u0093', '\u0094', '\u0095', '\u0096', '\u0097',
+        '\u0098', '\u0099', '\u009A', '\u009B', '\u009C', '\u009D', '\u009E', '\u009F',
+        // Format and directional formatting characters, and the invisible separator
+        '\u200B', '\u200C', '\u200D', '\u2060', '\uFEFF',
+        '\u202A', '\u202B', '\u202C', '\u202D', '\u202E', '\u2066', '\u2067', '\u2068', '\u2069', '\u2063',
+        // Common combining marks
+        '\u0300', '\u0301', '\u0302', '\u0308',
+        // Whitespace without a glyph
+        '\u00A0', '\u1680', '\u2000', '\u2001', '\u2002', '\u2003', '\u2004', '\u2005', '\u2006',
+        '\u2007', '\u2008', '\u2009', '\u200A', '\u202F', '\u205F', '\u3000',
+        // Line and paragraph separators
+        '\u2028', '\u2029'
+    };
+
     /// <summary>
     /// Behavior that the <see cref="Parser" /> applies when a parsing error occurs.
     /// The default is <see cref="ParseErrorAction.ThrowError"/>.
     /// </summary>
     public ParseErrorAction ErrorAction { get => m_ErrorAction; set => m_ErrorAction = value; }
+
+    /// <summary>
+    /// Gets or sets which characters a selector can contain.
+    /// </summary>
+    /// <remarks>
+    /// The default, <see cref="SelectorFilterType.Alphanumeric"/>, allows letters a to z in either case, digits,
+    /// underscores and hyphens, plus characters added with <see cref="AddCustomSelectorChars"/>.
+    /// <see cref="SelectorFilterType.VisualUnicodeChars"/> allows characters from any script. Set this before
+    /// you create the <see cref="Parser"/> or <see cref="SmartFormatter"/> that uses these settings.
+    /// </remarks>
+    public SelectorFilterType SelectorCharFilter { get => m_SelectorCharFilter; set => m_SelectorCharFilter = value; }
+
+    /// <summary>
+    /// Gets the selector characters: an allowlist for <see cref="SelectorFilterType.Alphanumeric"/>,
+    /// or a blocklist for <see cref="SelectorFilterType.VisualUnicodeChars"/>.
+    /// </summary>
+    internal CharSet GetSelectorChars()
+    {
+        if (m_SelectorCharFilter == SelectorFilterType.Alphanumeric)
+        {
+            var allowlist = new CharSet(m_AlphanumericSelectorChars) { IsAllowList = true };
+            allowlist.AddRange(OperatorChars());
+            allowlist.AddRange(m_CustomSelectorChars);
+            return allowlist;
+        }
+
+        var blocklist = new CharSet(DisallowedSelectorChars());
+        blocklist.AddRange(m_CustomOperatorChars);
+        blocklist.AddRange(k_NonVisualUnicodeCharacters.AsSpan());
+        foreach (var c in m_CustomSelectorChars)
+            blocklist.Remove(c);
+        return blocklist;
+    }
 
     /// <summary>
     /// The list of standard selector characters.

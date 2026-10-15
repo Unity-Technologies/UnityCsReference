@@ -142,6 +142,11 @@ namespace UnityEditor
             if (platform.namedBuildTarget == NamedBuildTarget.Standalone)
                 buildTarget = DesktopStandaloneBuildWindowExtension.GetBestStandaloneTarget(buildTarget);
 
+            return BuildTargetSupportsRenderer(buildTarget, type);
+        }
+
+        public static bool BuildTargetSupportsRenderer(BuildTarget buildTarget, GraphicsDeviceType type)
+        {
             foreach (int var in GetRenderList(buildTarget))
             {
                 if ((GraphicsDeviceType)var == type)

@@ -46,8 +46,8 @@ namespace Unity.ProjectAuditor.Editor.UI.Framework
 
     class IssueTable : TreeView
     {
-        static readonly int k_DefaultRowHeight = 18;
-        static readonly int k_FirstId = 1;
+        const int k_DefaultRowHeight = 18;
+        const int k_FirstId = 1;
 
         readonly SeverityRules m_Rules;
         readonly ViewDescriptor m_Desc;
@@ -535,13 +535,10 @@ namespace Unity.ProjectAuditor.Editor.UI.Framework
                 {
                     case PropertyType.LogLevel:
                         {
-                            if (issue.Severity != Severity.Hidden)
+                            var icon = Utility.GetLogLevelIcon(issue.LogLevel);
+                            if (icon != null)
                             {
-                                var icon = Utility.GetLogLevelIcon(issue.LogLevel);
-                                if (icon != null)
-                                {
-                                    EditorGUI.LabelField(cellRect, icon, labelStyle);
-                                }
+                                EditorGUI.LabelField(cellRect, icon, labelStyle);
                             }
                         }
                         break;

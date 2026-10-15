@@ -992,8 +992,7 @@ namespace Unity.UI.Builder
                 case StyleValueType.ScalableImage:
                 case StyleValueType.MissingAssetReference:
                 {
-                    // skip comma
-                    ++currentIndex;
+                    currentIndex = SkipToEndOfValue(styleSheet, propertyHandles, currentIndex);
 
                     var part = StylePropertyPart.Create();
                     part.handles.Add(new StylePropertyValue
@@ -1016,7 +1015,8 @@ namespace Unity.UI.Builder
                         {
                             // Non-var() function (e.g. gradient) — skip its args so the outer walk
                             // doesn't stumble on inner commas.
-                            currentIndex = SkipFunctionArgs(styleSheet, propertyHandles, currentIndex, argCount);
+                            currentIndex = SkipToEndOfValue(styleSheet, propertyHandles,
+                                SkipFunctionArgs(styleSheet, propertyHandles, currentIndex, argCount));
                             return StylePropertyPart.Create();
                         }
 
@@ -1025,8 +1025,7 @@ namespace Unity.UI.Builder
                         {
                             if (argCount == 1)
                             {
-                                // Skip comma
-                                ++currentIndex;
+                                currentIndex = SkipToEndOfValue(styleSheet, propertyHandles, currentIndex);
                                 var part = StylePropertyPart.Create();
                                 if (null == manipulator || manipulator.stylePropertyParts.Count == 0)
                                 {
@@ -1054,6 +1053,7 @@ namespace Unity.UI.Builder
                         return fallbackPart;
                     }
 
+                    currentIndex = SkipToEndOfValue(styleSheet, propertyHandles, currentIndex);
                     return StylePropertyPart.Create();
                 }
                 // These should never be hit as they are being handled by the cases above
@@ -1067,8 +1067,7 @@ namespace Unity.UI.Builder
 
         // index points at the first argument; skips argCount top-level arguments, where a nested
         // function (with its own count and args) is a single argument, and returns the index of the
-        // last argument handle (the walk convention of ResolveValueOrVariable). Clamped so a stale
-        // over-count in serialized data cannot walk out of bounds.
+        // last argument handle. Clamped so a stale over-count in serialized data cannot walk out of bounds.
         static int SkipFunctionArgs(StyleSheet styleSheet, Span<StyleValueHandle> handles, int index, int argCount)
         {
             for (var arg = 0; arg < argCount && index < handles.Length; ++arg)
@@ -1085,6 +1084,17 @@ namespace Unity.UI.Builder
             }
 
             return index - 1;
+        }
+
+        // A part runs to the next comma, as the write methods replace whole comma-separated parts.
+        static int SkipToEndOfValue(StyleSheet styleSheet, Span<StyleValueHandle> handles, int index)
+        {
+            while (index + 1 < handles.Length && handles[index + 1].valueType != StyleValueType.CommaSeparator)
+            {
+                index = SkipFunctionArgs(styleSheet, handles, index + 1, 1);
+            }
+
+            return Math.Min(index + 1, handles.Length - 1);
         }
 
         static StylePropertyManipulator ResolveVariable(

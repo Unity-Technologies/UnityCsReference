@@ -5,6 +5,7 @@
 using System;
 using System.Reflection;
 using UnityEditor;
+using UnityEditor.Accessibility;
 using UnityEngine;
 using UnityEngine.UIElements;
 
@@ -30,9 +31,6 @@ internal static class JobsProfilerSettings
     [NoAutoStaticsCleanup] static Color[] s_DefaultColors;
     [NoAutoStaticsCleanup] static Color[] s_ColorBlindSafeColors;
     [NoAutoStaticsCleanup] static bool s_ColorBlindReflectionInitialized;
-    [NoAutoStaticsCleanup] static bool s_IsColorBlindMode;
-    [NoAutoStaticsCleanup] static bool s_ColorBlindModeSubscribed;
-    [NoAutoStaticsCleanup] static PropertyInfo s_ColorBlindConditionProperty;
 
     static void InitializeColorBlindReflection()
     {
@@ -40,28 +38,7 @@ internal static class JobsProfilerSettings
             return;
         s_ColorBlindReflectionInitialized = true;
 
-        var editorAssembly = typeof(Editor).Assembly;
         const BindingFlags staticFlags = BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static;
-
-        // Access UserAccessiblitySettings for color blind mode detection
-        var userAccessibilitySettingsType = editorAssembly.GetType("UnityEditor.Accessibility.UserAccessiblitySettings");
-        if (userAccessibilitySettingsType != null)
-        {
-            s_ColorBlindConditionProperty = userAccessibilitySettingsType.GetProperty("colorBlindCondition", staticFlags);
-            if (s_ColorBlindConditionProperty != null)
-            {
-                // Cache initial value (ColorBlindCondition.Default = 0)
-                s_IsColorBlindMode = (int)s_ColorBlindConditionProperty.GetValue(null) != 0;
-            }
-
-            // Subscribe to changes to update cached value
-            var changedEvent = userAccessibilitySettingsType.GetEvent("colorBlindConditionChanged", staticFlags);
-            if (changedEvent != null && !s_ColorBlindModeSubscribed)
-            {
-                s_ColorBlindModeSubscribed = true;
-                changedEvent.AddEventHandler(null, (Action)OnColorBlindConditionChanged);
-            }
-        }
 
         // Access ProfilerColors for color-blind safe color mapping
         s_ProfilerColorsType = typeof(UnityEditorInternal.ProfilerDriver).Assembly.GetType("UnityEditorInternal.ProfilerColors");
@@ -75,48 +52,18 @@ internal static class JobsProfilerSettings
         }
     }
 
-    static void OnColorBlindConditionChanged()
-    {
-        if (s_ColorBlindConditionProperty != null)
-            s_IsColorBlindMode = (int)s_ColorBlindConditionProperty.GetValue(null) != 0;
-    }
-
     /// <summary>
     /// Returns true if color blind mode is enabled in Unity's accessibility settings.
     /// </summary>
-    internal static bool IsColorBlindMode
-    {
-        get
-        {
-            InitializeColorBlindReflection();
-            if (s_ColorBlindConditionProperty != null)
-                s_IsColorBlindMode = (int)s_ColorBlindConditionProperty.GetValue(null) != 0;
-            return s_IsColorBlindMode;
-        }
-    }
+    internal static bool IsColorBlindMode => UserAccessiblitySettings.colorBlindCondition != ColorBlindCondition.Default;
 
     /// <summary>
     /// Event fired when color blind mode setting changes.
     /// </summary>
     internal static event Action ColorBlindModeChanged
     {
-        add
-        {
-            InitializeColorBlindReflection();
-            var editorAssembly = typeof(Editor).Assembly;
-            var userAccessibilitySettingsType = editorAssembly.GetType("UnityEditor.Accessibility.UserAccessiblitySettings");
-            var changedEvent = userAccessibilitySettingsType?.GetEvent("colorBlindConditionChanged",
-                BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static);
-            changedEvent?.AddEventHandler(null, value);
-        }
-        remove
-        {
-            var editorAssembly = typeof(Editor).Assembly;
-            var userAccessibilitySettingsType = editorAssembly.GetType("UnityEditor.Accessibility.UserAccessiblitySettings");
-            var changedEvent = userAccessibilitySettingsType?.GetEvent("colorBlindConditionChanged",
-                BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static);
-            changedEvent?.RemoveEventHandler(null, value);
-        }
+        add { UserAccessiblitySettings.colorBlindConditionChanged += value; }
+        remove { UserAccessiblitySettings.colorBlindConditionChanged -= value; }
     }
 
     /// <summary>

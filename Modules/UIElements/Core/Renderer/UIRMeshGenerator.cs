@@ -1100,6 +1100,7 @@ namespace UnityEngine.UIElements.UIR
                     type = gradient.type,
                     angle = gradient.angle,
                     position = gradient.position,
+                    shape = gradient.shape,
                     size = gradient.size,
                     rect = gradientRect,
                 };
@@ -1841,6 +1842,7 @@ namespace UnityEngine.UIElements.UIR
             public GradientType type;
             public float angle;
             public Vector2 position;
+            public BackgroundGradientShape shape;
             public BackgroundGradientSize size;
             public Rect rect; // source rect for element-fraction computation
         }
@@ -2091,7 +2093,7 @@ namespace UnityEngine.UIElements.UIR
                         (v.position.x - uvp.rect.xMin) * invW,
                         (v.position.y - uvp.rect.yMin) * invH);
                     v.uv = radial
-                        ? BackgroundGradientBaker.RadialUV(frac, uvp.position, uvp.size)
+                        ? BackgroundGradientBaker.RadialUV(frac, uvp.position, uvp.size, uvp.shape, uvp.rect.size)
                         : BackgroundGradientBaker.LinearUV(frac, uvp.angle);
                     vertices[i] = v;
                 }

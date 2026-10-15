@@ -1390,6 +1390,19 @@ class TimelineBarView : VisualElement, IDisposable
             return;
         m_disposed = true;
 
+        m_timeline.generateVisualContent -= OnGenerateVisualContent;
+        m_timeline.UnregisterCallback<PointerDownEvent>(OnPointerDownEvent, TrickleDown.TrickleDown);
+        m_timeline.UnregisterCallback<PointerMoveEvent>(OnPointerMoveEvent, TrickleDown.TrickleDown);
+        m_timeline.UnregisterCallback<PointerUpEvent>(OnPointerUpEvent, TrickleDown.TrickleDown);
+        m_timeline.UnregisterCallback<WheelEvent>(OnWheelEvent, TrickleDown.TrickleDown);
+        UnregisterCallback<KeyDownEvent>(OnKeyDownEvent, TrickleDown.TrickleDown);
+
+        m_verticalScroller.valueChanged -= verticalScroll;
+        m_horizontalScroller.UnregisterCallback<ChangeEvent<Vector2>>(horizontalScroll);
+        m_jobsInfoToggle.UnregisterValueChangedCallback(OnJobsInfoToggleChanged);
+        m_jobInfoPanel.CompletedBy.UnregisterCallback<PointerUpLinkTagEvent>(SelectCompletedBy);
+        m_jobInfoPanel.ScheduledBy.UnregisterCallback<PointerUpLinkTagEvent>(SelectScheduledBy);
+
         WaitPreviousFrameJobs();
 
         m_dependencyInfo.startComplete.Dispose();
@@ -1438,12 +1451,15 @@ class TimelineBarView : VisualElement, IDisposable
         if (eventIndex < 0 || frameIndex < 0)
         {
             label.text = "N/A";
+            label.tooltip = null;
             label.SetEnabled(false);
         }
         else
         {
+            var eventName = m_frameCache.GetEventStringForFrame(frameIndex, eventIndex);
             label.text = String.Format("<link=\"0\"><color={0}>{1}</color></link>",
-                    JobsProfilerSettings.LinkColorHex, m_frameCache.GetEventStringForFrame(frameIndex, eventIndex));
+                    JobsProfilerSettings.LinkColorHex, eventName);
+            label.tooltip = eventName;
             label.SetEnabled(true);
         }
     }
@@ -2482,6 +2498,9 @@ class TimelineBarView : VisualElement, IDisposable
 
     void OnGenerateVisualContent(MeshGenerationContext mgc)
     {
+        if (m_disposed)
+            return;
+
         m_threads.DrawSeparators(mgc, resolvedStyle.width, resolvedStyle.height);
 
         foreach (var meshContext in m_activeMeshGenerators)

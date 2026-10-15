@@ -32,7 +32,7 @@ namespace Unity.ProjectAuditor.Editor.CodeAnalysis
         static readonly HashSet<string> k_UpdateMethodNames = new HashSet<string>(
         [
             "Update", "LateUpdate", "FixedUpdate", "OnAnimatorIK", "OnAnimatorMove", "OnWillRenderObject", "OnRenderObject",
-            "OnPreCull", "OnPostRender", "OnPreRender"
+            "OnPreCull", "OnPostRender", "OnPreRender", "OnRenderImage"
         ]);
 
         public static bool IsMonoBehaviour(TypeReference typeReference)

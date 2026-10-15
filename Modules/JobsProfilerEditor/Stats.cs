@@ -393,6 +393,10 @@ internal class Stats : VisualElement, IDisposable
         m_statsList.sortingMode = ColumnSortingMode.Custom;
         m_statsList.columnSortingChanged += SortingChanged;
 
+        var scrollView = m_statsList.Q<ScrollView>();
+        if (scrollView != null)
+            scrollView.verticalScrollerVisibility = ScrollerVisibility.AlwaysVisible;
+
         Show();
 
         styleSheets.Add(m_labelStyleSheet);
@@ -487,11 +491,31 @@ internal class Stats : VisualElement, IDisposable
         m_clickEvent.jobId = m_stats[row].jobId;
     }
 
+    static int CompareByName(ManagedStatsData a, ManagedStatsData b)
+    {
+        int comparison = a.values[0].stringData.CompareTo(b.values[0].stringData);
+
+        if (comparison != 0)
+            return comparison;
+
+        return a.jobId.CompareTo(b.jobId);
+    }
+
+    static int CompareWithNameTieBreak(int comparison, ManagedStatsData a, ManagedStatsData b)
+    {
+        if (comparison != 0)
+            return comparison;
+
+        return CompareByName(a, b);
+    }
+
     // TODO: Better way to do this
     void SortingChanged()
     {
         if (m_stats.Count == 0)
             return;
+
+        m_stats.Sort(CompareByName);
 
         foreach (var v in m_statsList.sortedColumns)
         {
@@ -515,9 +539,9 @@ internal class Stats : VisualElement, IDisposable
                     {
                         var index = i;
                         if (v.direction == SortDirection.Ascending)
-                            m_stats.Sort((a, b) => (a.values[index].stringData.CompareTo(b.values[index].stringData)));
+                            m_stats.Sort((a, b) => CompareWithNameTieBreak(a.values[index].stringData.CompareTo(b.values[index].stringData), a, b));
                         else
-                            m_stats.Sort((a, b) => (b.values[index].stringData.CompareTo(a.values[index].stringData)));
+                            m_stats.Sort((a, b) => CompareWithNameTieBreak(b.values[index].stringData.CompareTo(a.values[index].stringData), a, b));
 
                         break;
                     }
@@ -525,9 +549,9 @@ internal class Stats : VisualElement, IDisposable
                     {
                         var index = i;
                         if (v.direction == SortDirection.Ascending)
-                            m_stats.Sort((a, b) => (a.values[index].intData.CompareTo(b.values[index].intData)));
+                            m_stats.Sort((a, b) => CompareWithNameTieBreak(a.values[index].intData.CompareTo(b.values[index].intData), a, b));
                         else
-                            m_stats.Sort((a, b) => (b.values[index].intData.CompareTo(a.values[index].intData)));
+                            m_stats.Sort((a, b) => CompareWithNameTieBreak(b.values[index].intData.CompareTo(a.values[index].intData), a, b));
 
                         break;
                     }
@@ -535,9 +559,9 @@ internal class Stats : VisualElement, IDisposable
                     {
                         var index = i;
                         if (v.direction == SortDirection.Ascending)
-                            m_stats.Sort((a, b) => (a.values[index].floatData.CompareTo(b.values[index].floatData)));
+                            m_stats.Sort((a, b) => CompareWithNameTieBreak(a.values[index].floatData.CompareTo(b.values[index].floatData), a, b));
                         else
-                            m_stats.Sort((a, b) => (b.values[index].floatData.CompareTo(a.values[index].floatData)));
+                            m_stats.Sort((a, b) => CompareWithNameTieBreak(b.values[index].floatData.CompareTo(a.values[index].floatData), a, b));
 
                         break;
                     }

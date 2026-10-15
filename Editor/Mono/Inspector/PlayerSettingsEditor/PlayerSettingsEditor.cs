@@ -104,6 +104,8 @@ namespace UnityEditor
             public static readonly GUIContent virtualTexturingUnsupportedPlatformWarning = L10n.TextContent("The current target platform does not support Virtual Texturing. To build for this platform, uncheck Enable Virtual Texturing.", null, null, null);
             public static readonly GUIContent hdrOutputRequireHDRRenderingWarning = L10n.TextContent("The active Render Pipeline does not have HDR enabled. Enable HDR in the Render Pipeline Asset to see the changes.", null, null, null);
             public static readonly GUIContent graphicsAPIDeprecationMessage = L10n.TextContent("There are select Graphics API included that are deprecated and will be removed in a future version. For more information, refer to the Graphics API documentation.", null, null, null);
+            public static readonly GUIContent graphicsKernelExperimentalMessage = L10n.TextContent("Graphics Kernel APIs are experimental.", null, null, null);
+            public static readonly GUIContent graphicsKernelExperimentalEditorMessage = L10n.TextContent("Graphics Kernel APIs are experimental and will only take effect in builds. The editor API remains unchanged.", null, null, null);
             public static readonly GUIContent glesWithEntitiesGraphicsDeprecationMessage = L10n.TextContent("Support for OpenGL ES for Entities Graphics is deprecated, and will be removed in a future version of Entities Graphics.", null, null, null);
             public static readonly string changeColorSpaceString = L10n.Tr("Changing the color space may take a significant amount of time.", null);
             public static readonly string globalPlayerSettingsInfo =
@@ -1871,6 +1873,25 @@ namespace UnityEditor
             m_CurrentTarget.SetGraphicsAPIs_Internal(target, apis, ugkFlags, shouldSync);
         }
 
+        private GraphicsDeviceType? ResolveEditorGraphicsAPI(BuildTarget target, List<GraphicsAPIEntry> entries)
+        {
+            if (entries != null)
+            {
+                // Return the first non-UGK entry in the graphics API list
+                foreach (var entry in entries)
+                {
+                    if (!entry.ugkEnabled)
+                        return entry.api;
+                }
+            }
+
+            // Fallback to the default graphics API if there are no entries in the list
+            var platformAutomaticAPIs = m_CurrentTarget.GetPlatformAutomaticGraphicsAPIsList(target);
+            if (platformAutomaticAPIs != null && platformAutomaticAPIs.Length > 0)
+                return platformAutomaticAPIs[0];
+            return null;
+        }
+
         private static bool GraphicsAPIListContainsAPI(ReorderableList list, GraphicsDeviceType api)
         {
             return list.list is List<GraphicsAPIEntry> entries && entries.Exists(e => e.api == api);
@@ -1881,7 +1902,7 @@ namespace UnityEditor
         static private string GraphicsAPIEntryToString(BuildTarget target, GraphicsAPIEntry entry)
         {
             var name = GraphicsDeviceTypeToString(target, entry.api);
-            return entry.ugkEnabled ? name + " (Graphics Kernel) (Experimental)" : name;
+            return entry.ugkEnabled ? name + " - Graphics Kernel (Experimental)" : name;
         }
 
         // userData for the add API dropdown.
@@ -1962,10 +1983,32 @@ namespace UnityEditor
             EditorUtility.DisplayCustomMenu(rect, names, enabled, null, AddGraphicsDeviceMenuSelected, data);
         }
 
-        private bool CanRemoveGraphicsDeviceElement(ReorderableList list)
+        private bool CanRemoveGraphicsDeviceElement(BuildTarget target, ReorderableList list)
         {
             // don't allow removing the last API
-            return list.list.Count >= 2;
+            if (list.list.Count < 2)
+                return false;
+
+            // Only the platform the editor runs on needs a non-UGK entry
+            if (!WillEditorUseFirstGraphicsAPI(target))
+                return true;
+
+            // We can't inspect the entries in these cases so don't try to check for UGK flags
+            if (!(list.list is List<GraphicsAPIEntry> entries) || list.index < 0 || list.index >= entries.Count)
+                return true;
+
+            // We can always remove a UGK entry
+            if (entries[list.index].ugkEnabled)
+                return true;
+
+            // There needs to be atleast one non-UGK entry in the graphics API list for Editor platforms
+            int nonUGKCount = 0;
+            foreach (var entry in entries)
+            {
+                if (!entry.ugkEnabled)
+                    ++nonUGKCount;
+            }
+            return nonUGKCount >= 2;
         }
 
         private bool CheckRemoveFallbackGraphicsDeviceElement(GraphicsDeviceType removed, BuildTarget target, ReorderableList list)
@@ -2004,7 +2047,7 @@ namespace UnityEditor
                 var newEntries = new List<GraphicsAPIEntry>(entries);
                 newEntries.RemoveAt(list.index);
 
-                bool firstAPIDifferent = newEntries.Count > 0 && newEntries[0].api != entries[0].api;
+                bool firstAPIDifferent = ResolveEditorGraphicsAPI(target, newEntries) != ResolveEditorGraphicsAPI(target, entries);
                 ApplyChangedGraphicsAPIList(target, newEntries, firstAPIDifferent);
             }
         }
@@ -2015,9 +2058,10 @@ namespace UnityEditor
             var entries = new List<GraphicsAPIEntry>((List<GraphicsAPIEntry>)list.list);
             var currentDevice = SystemInfo.graphicsDeviceType;
 
-            // Check if the API has changed in case we need to prompt a restart. Note we don't consider UGK flags here.
-            var firstAPIDifferent = (previousEntries.Count == 0 || previousEntries[0].api != entries[0].api);
-            var requiresRestart = entries[0].api != currentDevice;
+            // Check if the API has changed in case we need to prompt a restart.
+            var editorAPI = ResolveEditorGraphicsAPI(target, entries);
+            var firstAPIDifferent = ResolveEditorGraphicsAPI(target, previousEntries) != editorAPI;
+            var requiresRestart = editorAPI != currentDevice;
 
             ApplyChangedGraphicsAPIList(target, entries, firstAPIDifferent && requiresRestart);
         }
@@ -2294,7 +2338,7 @@ namespace UnityEditor
             {
                 var rlist = new ReorderableList(devicesList, typeof(GraphicsAPIEntry), true, true, true, true);
                 rlist.onAddDropdownCallback = (rect, list) => AddGraphicsDeviceElement(targetPlatform, rect, list);
-                rlist.onCanRemoveCallback = CanRemoveGraphicsDeviceElement;
+                rlist.onCanRemoveCallback = (list) => CanRemoveGraphicsDeviceElement(targetPlatform, list);
                 rlist.onRemoveCallback = (list) => RemoveGraphicsDeviceElement(targetPlatform, list);
                 rlist.onReorderCallback = (list) => ReorderGraphicsDeviceElement(targetPlatform, list);
                 rlist.drawElementCallback = (rect, index, isActive, isFocused) => DrawGraphicsDeviceElement(targetPlatform, rect, index, isActive, isFocused);
@@ -2305,7 +2349,7 @@ namespace UnityEditor
             }
 
             var deviceList = m_GraphicsDeviceLists[targetPlatform];
-            GraphicsDeviceType? selectedDevice = deviceList.count > 0 ? ((GraphicsAPIEntry)deviceList.list[0]).api : (GraphicsDeviceType?)null;
+            GraphicsDeviceType? selectedDevice = ResolveEditorGraphicsAPI(targetPlatform, deviceList.list as List<GraphicsAPIEntry>);
             var currentDevice = SystemInfo.graphicsDeviceType;
             bool firstAPIDifferent = currentDevice != selectedDevice;
 
@@ -2432,6 +2476,14 @@ namespace UnityEditor
             else
             {
                 EditorGUILayout.HelpBox(SettingsContentNonSearchable.playerOnlyGraphicsAPIInfo.text, MessageType.Info, true);
+            }
+
+            // If there is a UGK entry in the device list, display a helpbox message.
+            if (devicesList.Exists(entry => entry.ugkEnabled))
+            {
+                // Different message based on if it is a editor platform or player-only build
+                var graphicsKernelMessage = WillEditorUseFirstGraphicsAPI(targetPlatform) ? SettingsContentNonSearchable.graphicsKernelExperimentalEditorMessage : SettingsContentNonSearchable.graphicsKernelExperimentalMessage;
+                EditorGUILayout.HelpBox(graphicsKernelMessage.text, MessageType.Info, true);
             }
 
             if (targetPlatform == BuildTarget.StandaloneOSX && GraphicsAPIListContainsAPI(m_GraphicsDeviceLists[BuildTarget.StandaloneOSX], GraphicsDeviceType.OpenGLCore))
@@ -3590,6 +3642,16 @@ namespace UnityEditor
         private void OtherSectionD3D12SettingsGUI(BuildPlatform buildPlatform, ISettingEditorExtension settingsExtension)
         {
             if (buildPlatform.namedBuildTarget == NamedBuildTarget.WebGL) return;
+
+            // Device filtering is meaningless on fixed-hardware consoles, even Xbox which uses D3D12.
+            if (BuildTargetDiscovery.PlatformHasFlag(buildPlatform.defaultTarget, BuildTargetDiscovery.TargetAttributes.IsConsole)) return;
+
+            // Standalone is a composite; check Windows (its only D3D12 target) so it shows on any Editor host.
+            bool supportsD3D12 = buildPlatform.namedBuildTarget == NamedBuildTarget.Standalone
+                ? BuildTargetDiscovery.BuildTargetSupportsRenderer(BuildTarget.StandaloneWindows64, GraphicsDeviceType.Direct3D12)
+                : BuildTargetDiscovery.BuildTargetSupportsRenderer(buildPlatform, GraphicsDeviceType.Direct3D12);
+            if (!supportsD3D12) return;
+
             GUILayout.Label(SettingsContent.d3d12SettingsTitle, EditorStyles.boldLabel);
 
             EditorGUILayout.PropertyField(m_D3D12FilterListsAsset, SettingsContent.d3d12FilterLists);

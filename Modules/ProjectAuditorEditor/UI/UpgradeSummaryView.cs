@@ -106,7 +106,7 @@ namespace Unity.ProjectAuditor.Editor.UI
             EditorGUILayout.Space();
             DrawSeverityBreakdown();
 
-            if (!m_ViewManager.HasPendingCategories() && m_CombinedSeverities.TotalExcludingIgnored > 0)
+            if (!m_ViewManager.HasPendingCategories() && m_CombinedSeverities.TotalExcludingIgnoredAndFixed > 0)
             {
                 EditorGUILayout.Space();
                 DrawBeforeUpgradeSection();
@@ -241,7 +241,7 @@ namespace Unity.ProjectAuditor.Editor.UI
         {
             EditorGUILayout.BeginVertical(GUI.skin.box);
 
-            var issueCount = m_BeforeUpgradeSeverities.TotalExcludingIgnored;
+            var issueCount = m_BeforeUpgradeSeverities.TotalExcludingIgnoredAndFixed;
             var foldoutLabel = (issueCount == 1) ? Contents.BeforeUpgrade : Contents.BeforeUpgradePlural;
             m_ShowBeforeUpgrade = Utility.BoldFoldout(m_ShowBeforeUpgrade, Utility.TempContent(string.Format(foldoutLabel, issueCount)));
             if (m_ShowBeforeUpgrade)
@@ -260,7 +260,7 @@ namespace Unity.ProjectAuditor.Editor.UI
         {
             EditorGUILayout.BeginVertical(GUI.skin.box);
 
-            var issueCount = m_AfterUpgradeSeverities.TotalExcludingIgnored;
+            var issueCount = m_AfterUpgradeSeverities.TotalExcludingIgnoredAndFixed;
             var foldoutLabel = (issueCount == 1) ? Contents.AfterUpgrade : Contents.AfterUpgradePlural;
             m_ShowAfterUpgrade = Utility.BoldFoldout(m_ShowAfterUpgrade, Utility.TempContent(string.Format(foldoutLabel, issueCount)));
             if (m_ShowAfterUpgrade)

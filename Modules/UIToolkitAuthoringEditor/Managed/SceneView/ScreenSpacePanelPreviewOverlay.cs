@@ -879,7 +879,9 @@ namespace Unity.UIToolkit.Editor
         {
             var resolved = element.resolvedStyle;
 
-            if (resolved.visibility != Visibility.Visible || resolved.opacity <= k_MinVisibleAlpha)
+            // Opacity is deliberately not checked: zero-opacity content is still laid out and rendered
+            // (e.g. before a fade-in), so the preview shows it as transparent rather than "not available".
+            if (resolved.visibility != Visibility.Visible)
                 return false;
 
             // A custom painter draws content the style-based checks below cannot see.

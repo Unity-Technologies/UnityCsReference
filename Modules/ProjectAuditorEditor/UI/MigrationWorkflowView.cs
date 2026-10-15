@@ -26,6 +26,7 @@ namespace Unity.ProjectAuditor.Editor.UI
         List<Step> m_Steps;
 
         UnityEditor.PackageManager.Requests.AddRequest m_UrpAddRequest;
+        bool m_ConverterRunning;
 
         static MigrateToURPSummaryView GetSummaryView(ProjectAuditorWindow window)
         {
@@ -42,8 +43,32 @@ namespace Unity.ProjectAuditor.Editor.UI
             set => SessionState.SetBool(k_BackupAcknowledgedKey, value);
         }
 
+        internal const string k_TargetPipelineKey = "ProjectAuditor.MigrationWizard.TargetPipeline";
+
+        // The pending choice for the next analysis. Once a matching Report exists, SyncTargetPipelineFromReport
+        // seeds this from the Report instead, so a reloaded Report is reflected rather than overridden.
+        internal static string SelectedTargetPipeline
+        {
+            get => SessionState.GetString(k_TargetPipelineKey, MigrationToURPUtilities.DefaultTargetPipelineContainer);
+            set => SessionState.SetString(k_TargetPipelineKey, value);
+        }
+
+        Report m_LastSyncedReport;
+
         public MigrationWorkflowView()
         {
+        }
+
+        // Seeds SelectedTargetPipeline from a newly-seen Report, so opening the window on an existing Report
+        // (rather than picking one via the dropdown) shows the pipeline it was actually scanned against.
+        void SyncTargetPipelineFromReport(Report report)
+        {
+            if (ReferenceEquals(report, m_LastSyncedReport))
+                return;
+            m_LastSyncedReport = report;
+
+            if (report != null && report.IsValid() && !string.IsNullOrEmpty(report.SessionInfo.MigrationTargetPipeline))
+                SelectedTargetPipeline = report.SessionInfo.MigrationTargetPipeline;
         }
 
         internal sealed class Step
@@ -105,13 +130,20 @@ namespace Unity.ProjectAuditor.Editor.UI
                     L10n.TextContent("Create URP Asset", $"Please install the rules package before starting migration ({ProjectAuditorRulesPackage.Name}).", null, null),
                 ],
 
-                IsComplete = (_) => MigrationToURPUtilities.HasDefaultUrpRenderPipeline(),
+                IsComplete = (_) => MigrationToURPUtilities.DefaultRenderPipelineMatchesTargetPipeline(SelectedTargetPipeline),
+
+                DrawUI = () =>
+                {
+                    DrawTargetPipelineDropdown();
+                    GUILayout.Space(8);
+                    return true;
+                },
 
                 DrawButtonUI = (ProjectAuditorWindow window, Step step, bool enabled) =>
                 {
                     if (CenteredButton(enabled ? step.Contents[0] : step.Contents[1]))
                     {
-                        MigrationToURPUtilities.EnsureDefaultRenderPipelineAsset();
+                        MigrationToURPUtilities.EnsureDefaultRenderPipelineAsset(SelectedTargetPipeline);
                         GUIUtility.ExitGUI();
                     }
 
@@ -144,8 +176,6 @@ namespace Unity.ProjectAuditor.Editor.UI
                     {
                         var summaryView = GetSummaryView(window);
 
-                        GUILayout.FlexibleSpace();
-
                         // Total issues
                         var content = Utility.TempContent(string.Format(Contents.TotalIssues, summaryView.TotalIssueCount));
                         GUILayout.Label(content, SharedStyles.LargeLabel);
@@ -154,13 +184,32 @@ namespace Unity.ProjectAuditor.Editor.UI
                         // Render Pipeline Converter
                         GUIContent pipelineConverterLabel = Utility.TempContent(string.Format(Contents.ConverterIssues, summaryView.RenderPipelineConverterIssueCount));
                         GUILayout.Label(pipelineConverterLabel);
-                        using (new EditorGUI.DisabledScope(summaryView.RenderPipelineConverterIssueCount == 0))
+                        using (new EditorGUI.DisabledScope((summaryView.RenderPipelineConverterIssueCount == 0) || m_ConverterRunning))
                         {
+                            EditorGUILayout.BeginHorizontal();
+
+                            GUIContent runContent = Contents.RunConverterButton;
+                            if (m_ConverterRunning)
+                            {
+                                int frame = Utility.GetStatusWheelFrame();
+                                runContent = Contents.RunningConverterButton[frame];
+                            }
+
+                            if (GUILayout.Button(runContent, GUILayout.Width(HomePage.k_ButtonWidth)))
+                            {
+                                OnRunConverter();
+                                GUIUtility.ExitGUI();
+                            }
+
+                            GUILayout.Space(8);
+
                             if (GUILayout.Button(Contents.OpenConverterButton, GUILayout.Width(HomePage.k_ButtonWidth)))
                             {
                                 MigrationToURPUtilities.OpenRenderPipelineConverter(null, null);
                                 GUIUtility.ExitGUI();
                             }
+
+                            EditorGUILayout.EndHorizontal();
                         }
 
                         GUILayout.Space(10);
@@ -174,7 +223,7 @@ namespace Unity.ProjectAuditor.Editor.UI
                             GUIUtility.ExitGUI();
                         }
 
-                        GUILayout.Space(40);
+                        GUILayout.Space(24);
                     }
 
                     // Start Analysis
@@ -204,8 +253,16 @@ namespace Unity.ProjectAuditor.Editor.UI
                                         GUILayout.Label(Contents.InvalidReportAreas, SharedStyles.TextAreaCentered);
                                         GUILayout.Space(4);
                                         break;
+                                    case InvalidReportReason.ReportTargetsADifferentPipeline:
+                                        GUILayout.Label(Contents.InvalidReportTargetPipeline, SharedStyles.TextAreaCentered);
+                                        GUILayout.Space(4);
+                                        break;
                                     case InvalidReportReason.ReportDoesNotHaveConverterScan:
                                         GUILayout.Label(Contents.InvalidReportMigrationScan, SharedStyles.TextAreaCentered);
+                                        GUILayout.Space(4);
+                                        break;
+                                    case InvalidReportReason.ReportScannedBeforeQualitySettingsApplied:
+                                        GUILayout.Label(Contents.InvalidReportQualitySettings, SharedStyles.TextAreaCentered);
                                         GUILayout.Space(4);
                                         break;
                                 }
@@ -220,11 +277,11 @@ namespace Unity.ProjectAuditor.Editor.UI
                             buttonLabel = enabled ? Contents.ReanalyzeButton : HomePage.Contents.AnalyzeButtonDisabled;
                         }
 
-                        using (new EditorGUI.DisabledScope(window.m_ViewManager.HasPendingCategories()))
+                        using (new EditorGUI.DisabledScope(window.m_ViewManager.HasPendingCategories() || m_ConverterRunning))
                         {
                             if (CenteredButton(buttonLabel))
                             {
-                                window.Analyze(k_ProjectAreaFlags, k_CodeAnalysisFlags, PageId.None);
+                                window.Analyze(k_ProjectAreaFlags, k_CodeAnalysisFlags, PageId.None, SelectedTargetPipeline);
                                 GUIUtility.ExitGUI();
                             }
                         }
@@ -239,7 +296,9 @@ namespace Unity.ProjectAuditor.Editor.UI
             NoReport,
             ReportIsNotForCurrentProject,
             ReportDoesNotHaveCorrectAreas,
-            ReportDoesNotHaveConverterScan
+            ReportTargetsADifferentPipeline,
+            ReportDoesNotHaveConverterScan,
+            ReportScannedBeforeQualitySettingsApplied
         }
 
         bool IsReportValidForMigration(out InvalidReportReason reason)
@@ -265,9 +324,34 @@ namespace Unity.ProjectAuditor.Editor.UI
             if (reason == InvalidReportReason.None && !window.GetSelectedCategories(k_ProjectAreaFlags).TrueForAll(c => report.SessionInfo.Categories?.Contains(c) ?? false))
                 reason = InvalidReportReason.ReportDoesNotHaveCorrectAreas;
 
+            // must have been scanned against the currently selected target pipeline.
+            if (reason == InvalidReportReason.None)
+            {
+                var reportTargetPipeline = string.IsNullOrEmpty(report.SessionInfo.MigrationTargetPipeline)
+                    ? MigrationToURPUtilities.DefaultTargetPipelineContainer
+                    : report.SessionInfo.MigrationTargetPipeline;
+
+                if (reportTargetPipeline != SelectedTargetPipeline)
+                    reason = InvalidReportReason.ReportTargetsADifferentPipeline;
+            }
+
             // must have a valid converter scan
             if (reason == InvalidReportReason.None && !ReportRecordsConverterScan(report))
                 reason = InvalidReportReason.ReportDoesNotHaveConverterScan;
+
+            // must have scanned while a Universal Render Pipeline Asset was already active; several converters
+            // (eg Material, Readonly Material, Animation Clip) only report items once that's true, so a report
+            // from before Step 2 completed would be missing most of its issues.
+            if (reason == InvalidReportReason.None)
+            {
+                var summaryView = GetSummaryView(window);
+                var qualitySettingsIssueCount = (SelectedTargetPipeline == MigrationToURPUtilities.Urp2DContainer)
+                    ? summaryView.QualitySettings2DIssueCount
+                    : summaryView.QualitySettings3DIssueCount;
+
+                if (qualitySettingsIssueCount > 0)
+                    reason = InvalidReportReason.ReportScannedBeforeQualitySettingsApplied;
+            }
 
             return (reason == InvalidReportReason.None);
         }
@@ -280,7 +364,8 @@ namespace Unity.ProjectAuditor.Editor.UI
 
         public void DrawContent()
         {
-            // Checked before the stepper: out of scope there is no step to make progress on, nor one that may run.
+            SyncTargetPipelineFromReport(ProjectAuditorWindow.Instance.m_Report);
+			
             if (MigrationToURPUtilities.IsProjectUsingOtherSRP())
             {
                 DrawOtherSRPNotSupportedPage();
@@ -344,7 +429,7 @@ namespace Unity.ProjectAuditor.Editor.UI
         {
             var window = ProjectAuditorWindow.Instance;
 
-            GUILayout.Space(HomePage.k_SpacingHeight);
+            GUILayout.Space(20);
 
             var count = Steps.Count;
             Span<bool> done = stackalloc bool[count];
@@ -423,7 +508,7 @@ namespace Unity.ProjectAuditor.Editor.UI
         {
             using (new CenteredColumn())
             {
-                HomePage.DrawTabTitleText(m_Steps[next].Heading);
+                HomePage.DrawTabTitleText(m_Steps[next].Heading, 20);
 
                 if (!string.IsNullOrEmpty(m_Steps[next].Warning))
                     EditorGUILayout.HelpBox(m_Steps[next].Warning, MessageType.Warning);
@@ -468,13 +553,16 @@ namespace Unity.ProjectAuditor.Editor.UI
                 SharedStyles.TabBottomActiveColor);
         }
 
+        static readonly GUILayoutOption k_InfoRowLabelWidth = GUILayout.Width(190);
+        static readonly GUILayoutOption k_InfoRowContentWidth = GUILayout.Width(200);
+
         void DrawInfoRow(GUIContent label, string value)
         {
             using (new CenteredRow())
             {
-                GUILayout.Label(label, LabelRightStyle, GUILayout.Width(190));
+                GUILayout.Label(label, LabelRightStyle, k_InfoRowLabelWidth);
                 GUILayout.Space(8);
-                GUILayout.Label(value, SharedStyles.Label, GUILayout.Width(200));
+                GUILayout.Label(value, SharedStyles.Label, k_InfoRowContentWidth);
             }
         }
 
@@ -485,6 +573,24 @@ namespace Unity.ProjectAuditor.Editor.UI
             GUILayout.Space(4);
             DrawInfoRow(Contents.TargetRenderPipeline, Contents.URP);
             GUILayout.Space(32);
+        }
+
+        void DrawTargetPipelineDropdown()
+        {
+            using (new CenteredRow())
+            {
+                GUILayout.Label(Contents.TargetPipeline, LabelRightStyle, k_InfoRowLabelWidth);
+                GUILayout.Space(20);
+
+                var window = ProjectAuditorWindow.Instance;
+                using (new EditorGUI.DisabledScope(m_ConverterRunning || window.m_ViewManager.HasPendingCategories()))
+                {
+                    var currentIndex = (SelectedTargetPipeline == MigrationToURPUtilities.Urp3DContainer) ? 0 : 1;
+                    var newIndex = EditorGUILayout.Popup(currentIndex, Contents.TargetPipelineDisplayNames, k_InfoRowContentWidth);
+                    if (newIndex != currentIndex)
+                        SelectedTargetPipeline = (newIndex == 0) ? MigrationToURPUtilities.Urp3DContainer : MigrationToURPUtilities.Urp2DContainer;
+                }
+            }
         }
 
         void OnInstallUrp()
@@ -513,20 +619,120 @@ namespace Unity.ProjectAuditor.Editor.UI
             ProjectAuditorWindow.Instance.Repaint();
         }
 
+        void OnRunConverter()
+        {
+            m_ConverterRunning = true;
+            EditorApplication.update += RepaintWhileConverterRunning;
+
+            // Deferred so at least one repaint shows the running state, even if every converter turns out to
+            // resolve synchronously (eg because the Search index was already up to date).
+            var targetPipeline = SelectedTargetPipeline;
+            EditorApplication.delayCall += () =>
+                MigrationToURPUtilities.RunRenderPipelineConverterInBatchMode(targetPipeline, OnConverterFinished);
+        }
+
+        void OnConverterFinished(string output)
+        {
+            var window = ProjectAuditorWindow.Instance;
+            var report = window.m_Report;
+
+            // Collect the converter issues.
+            var unfixedConverterIssues = new List<ReportItem>();
+            foreach (var issue in report.UnfixedIssues)
+            {
+                if (issue.Id == MigrationToURPModule.PAA7000)
+                    unfixedConverterIssues.Add(issue);
+            }
+
+            var fixedCount = 0;
+            var failedCount = 0;
+
+			// Scan the conversion results and mark successful items as fixed.
+            foreach (var result in MigrationToURPUtilities.ParseConversionResults(output))
+            {
+                if (!result.Succeeded)
+                {
+                    failedCount++;
+                    continue;
+                }
+
+                var expectedDescription = string.Format(MigrationToURPModule.k_ConverterItemDescriptor.MessageFormat, result.ConverterType, result.Name);
+                var issue = FindUnfixedConverterIssue(unfixedConverterIssues, expectedDescription, result.Info);
+                if (issue != null)
+                {
+                    issue.WasFixed = true;
+                    fixedCount++;
+                }
+            }
+
+            if (fixedCount > 0)
+            {
+                report.NeedsSaving = true;
+                EditorApplication.delayCall += () => ProjectAuditorWindow.AutosaveReport(report);
+
+                window.MarkSummaryViewsDirty();
+            }
+
+            if (failedCount > 0)
+                Debug.Log($"{failedCount} item(s) failed to convert. Check the console for more information.");
+
+            m_ConverterRunning = false;
+            EditorApplication.update -= RepaintWhileConverterRunning;
+            ProjectAuditorWindow.Instance?.Repaint();
+        }
+
+        // Matches a converted item back to the converter issue it came from. Skips issues already marked fixed
+        // during this run, so a second result with the same description and location matches a different issue
+        // rather than the same one twice. Prefers an exact Location match when both sides have one, since the
+        // same description can repeat for same-named items in different locations.
+        static ReportItem FindUnfixedConverterIssue(List<ReportItem> unfixedConverterIssues, string expectedDescription, string info)
+        {
+            ReportItem fallback = null;
+            foreach (var issue in unfixedConverterIssues)
+            {
+                if (issue.WasFixed || issue.Description != expectedDescription)
+                    continue;
+
+                if (!string.IsNullOrEmpty(info) && issue.Location != null && issue.Location.Path == info)
+                    return issue;
+
+                fallback ??= issue;
+            }
+
+            return fallback;
+        }
+
+        void RepaintWhileConverterRunning()
+        {
+            if (ProjectAuditorWindow.Instance == null)
+            {
+                m_ConverterRunning = false;
+                EditorApplication.update -= RepaintWhileConverterRunning;
+                return;
+            }
+
+            ProjectAuditorWindow.Instance.Repaint();
+        }
+
         internal static class Contents
         {
             public static readonly GUIContent ReanalyzeButton = L10n.TextContent("Re-run Analysis", null, null, null);
             public static readonly GUIContent BackupAcknowledgement = L10n.TextContent(" I've backed my project up", "Confirm you have a backup or version control commit to return to.", null, null);
             public static readonly GUIContent CurrentRenderPipeline = L10n.TextContent("Current Render Pipeline:", null, null, null);
             public static readonly GUIContent TargetRenderPipeline = L10n.TextContent("Target Render Pipeline:", null, null, null);
+            public static readonly GUIContent TargetPipeline = L10n.TextContent("Target Universal Render Pipeline:", null, null, null);
             public static readonly GUIContent InvalidReportProject = L10n.TextContent("The current report is for a different project.", null, null, null);
-            public static readonly GUIContent InvalidReportMigrationScan = L10n.TextContent("This report doesn't contain a successful scan of Render Pipeline Converter issues.", null, null, null);
-            public static readonly GUIContent InvalidReportAreas = L10n.TextContent("This report doesn't cover all the areas that need checking before migrating to URP.", null, null, null);
+            public static readonly GUIContent InvalidReportMigrationScan = L10n.TextContent("The current report doesn't contain a successful scan of Render Pipeline Converter issues.", null, null, null);
+            public static readonly GUIContent InvalidReportAreas = L10n.TextContent("The current report doesn't cover all the areas that need checking before migrating to URP.", null, null, null);
+            public static readonly GUIContent InvalidReportTargetPipeline = L10n.TextContent("The current report was generated for a different target pipeline.", null, null, null);
+            public static readonly GUIContent InvalidReportQualitySettings = L10n.TextContent("The current report was generated before the URP Quality Settings were applied.", null, null, null);
             public static readonly GUIContent RefreshReport = L10n.TextContent("Generate a new report if the project has changed", null, null, null);
+            public static readonly GUIContent RunConverterButton = L10n.TextContent("Fix", "Convert the items automatically, without opening the Render Pipeline Converter window.", null, null);
             public static readonly GUIContent OpenConverterButton = L10n.TextContent("Review in Converter", "Open the Render Pipeline Converter", null, null);
             public static readonly GUIContent GoToManualFixesButton = L10n.TextContent("Go to Summary", null, null, null);
 
             public static readonly GUIContent[] InstallingPackageButtonInProgress;
+            public static readonly GUIContent[] RunningConverterButton;
 
             public static readonly string TotalIssues = L10n.Tr("Total Issues: {0}", null);
             public static readonly string ConverterIssues = L10n.Tr("Issues that can be converted automatically: {0}", null);
@@ -542,11 +748,21 @@ namespace Unity.ProjectAuditor.Editor.UI
             public static readonly string HDRP = L10n.Tr("High Definition Render Pipeline", null);
             public static readonly string BuiltIn = L10n.Tr("Built-in Render Pipeline", null);
 
+            public static readonly string[] TargetPipelineDisplayNames =
+            {
+                L10n.Tr("Universal Renderer", null),
+                L10n.Tr("2D Renderer", null)
+            };
+
             static Contents()
             {
                 InstallingPackageButtonInProgress = new GUIContent[12];
+                RunningConverterButton = new GUIContent[12];
                 for (int i = 0; i < 12; i++)
+                {
                     InstallingPackageButtonInProgress[i] = L10n.TextContentWithIcon(" Installing Package...", null, "WaitSpin" + i.ToString("00"), null);
+                    RunningConverterButton[i] = L10n.TextContentWithIcon(" Running Converter...", null, "WaitSpin" + i.ToString("00"), null);
+                }
             }
         }
     }

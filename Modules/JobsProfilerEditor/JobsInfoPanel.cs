@@ -451,6 +451,8 @@ internal class JobsInfoPanel
         m_jobTime.text = "";
         m_scheduledBy.text = "N/A";
         m_completedBy.text = "N/A";
+        m_scheduledBy.tooltip = null;
+        m_completedBy.tooltip = null;
         m_infoPanelData.visible = false;
         m_jobTime.SetEnabled(false);
         m_jobName.SetEnabled(false);
@@ -474,6 +476,8 @@ internal class JobsInfoPanel
         m_jobName.text = string.Empty;
         m_scheduledBy.text = string.Empty;
         m_completedBy.text = string.Empty;
+        m_scheduledBy.tooltip = null;
+        m_completedBy.tooltip = null;
     }
 
     internal Label JobName { get { return m_jobName; } }

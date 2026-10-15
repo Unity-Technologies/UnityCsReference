@@ -4,6 +4,8 @@
 
 using System;
 using System.Collections.Generic;
+using System.Runtime.CompilerServices;
+using Unity.IL2CPP.CompilerServices;
 using Unity.Scripting.LifecycleManagement;
 using UnityEngine.Accessibility;
 using UnityEngine.Pool;
@@ -20,7 +22,7 @@ namespace UnityEngine.UIElements
     /// below <see cref="AssistiveSupport.activeHierarchy"/> handle the native side.
     ///
     /// Everything sits behind <see cref="featureEnabled"/>, off by default. While off, the bridge
-    /// never subscribes nor allocates, and no panel carries a
+    /// never subscribes, its own collections stay empty, and no panel carries a
     /// <see cref="VisualTreeAccessibilityUpdater"/>. Panel components also carry a serialized
     /// opt-out gate, evaluated at registration.
     ///
@@ -36,6 +38,7 @@ namespace UnityEngine.UIElements
     /// The bridge yields to manual authoring: it never overwrites a developer-assigned active
     /// hierarchy, and it only mutates nodes it created.
     /// </remarks>
+    [Il2CppEagerStaticClassConstruction] // Skips IL2CPP's class initialization check on every member call.
     internal static partial class UITKAccessibilityBridge
     {
         [AutoStaticsCleanupOnCodeReload]
@@ -181,14 +184,20 @@ namespace UnityEngine.UIElements
         [NoAutoStaticsCleanup]
         static readonly EventCallback<PropertyChangedEvent> s_OnElementPropertyChanged = OnElementPropertyChanged;
 
+        [AutoStaticsCleanupOnCodeReload] // Cleared on reload so the platform default is re-derived.
+        static bool? s_ActivatesWithoutScreenReader;
+
         /// <summary>
         /// Whether hierarchies are built and kept in sync without a screen reader. On in the
         /// editor: no screen reader reaches it there, and the Accessibility Hierarchy Viewer
         /// should show the result as soon as play mode runs. Players keep screen-reader-driven
         /// activation. Settable so tests control activation explicitly.
         /// </summary>
-        [AutoStaticsCleanupOnCodeReload] // Auto re-captures the initializer: the platform default is re-derived on reload.
-        internal static bool activatesWithoutScreenReader { get; set; } = Application.isEditor;
+        internal static bool activatesWithoutScreenReader
+        {
+            get => s_ActivatesWithoutScreenReader ??= Application.isEditor;
+            set => s_ActivatesWithoutScreenReader = value;
+        }
 
         // Whether a hierarchy should exist right now: a screen reader is on, or activation is
         // platform-unconditional (the editor, for the Hierarchy Viewer).
@@ -219,10 +228,13 @@ namespace UnityEngine.UIElements
         }
 
         /// <summary>
-        /// Whether a generated hierarchy exists and is being kept in sync. This is the cheap
-        /// early-out the per-panel updaters read on every version change.
+        /// Whether a generated hierarchy exists and is being kept in sync.
         /// </summary>
-        internal static bool isLive => s_IsLive;
+        internal static bool isLive
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get => s_IsLive;
+        }
 
         internal static AccessibilityHierarchy hierarchy => s_Hierarchy;
 

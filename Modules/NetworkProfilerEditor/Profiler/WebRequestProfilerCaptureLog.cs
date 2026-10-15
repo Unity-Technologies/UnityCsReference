@@ -13,11 +13,18 @@ namespace UnityEditor.Networking
         public readonly string name;
         public readonly string value;
 
-        public WebRequestProfilerHeader(WebRequestProfilerHeaderKind kind, string name, string value)
+        public readonly bool isCredential;
+
+        public readonly bool truncated;
+
+        public WebRequestProfilerHeader(WebRequestProfilerHeaderKind kind, string name, string value,
+            bool isCredential, bool truncated)
         {
             this.kind = kind;
             this.name = name;
             this.value = value;
+            this.isCredential = isCredential;
+            this.truncated = truncated;
         }
     }
 
@@ -271,7 +278,9 @@ namespace UnityEditor.Networking
                 resolved.Add(new WebRequestProfilerHeader(
                     (WebRequestProfilerHeaderKind)header.kind,
                     WebRequestProfilerFrameReader.Slice(strings, header.nameOffset, header.nameLength),
-                    WebRequestProfilerFrameReader.Slice(strings, header.valueOffset, header.valueLength)));
+                    WebRequestProfilerFrameReader.Slice(strings, header.valueOffset, header.valueLength),
+                    header.isCredential != 0,
+                    header.truncated != 0));
             }
 
             return resolved;

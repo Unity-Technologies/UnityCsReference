@@ -60,6 +60,7 @@ abstract class LocalizedReferenceElement : VisualElement
     TableReference m_ShownTable;
     TableEntryReference m_ShownEntry;
     string m_SelectedLocaleCode;
+    bool m_RebuildPending;
 
     protected ResourceTableCollection Collection => m_Collection;
     protected SharedTableData.SharedTableEntry SharedEntry => m_SharedEntry;
@@ -124,9 +125,19 @@ abstract class LocalizedReferenceElement : VisualElement
         this.TrackPropertyValue(m_TableRefProp, _ => OnReferenceChanged());
         this.TrackPropertyValue(m_TableEntryRefProp, _ => OnReferenceChanged());
 
-        // Custom-built content is not auto-bound, so rebuild it when an undo/redo changes the underlying data.
-        RegisterCallback<AttachToPanelEvent>(_ => Undo.undoRedoPerformed += OnUndoRedo);
-        RegisterCallback<DetachFromPanelEvent>(_ => Undo.undoRedoPerformed -= OnUndoRedo);
+        // Custom-built content is not auto-bound, so rebuild it when the underlying data changes elsewhere.
+        RegisterCallback<AttachToPanelEvent>(_ =>
+        {
+            Undo.undoRedoPerformed += OnUndoRedo;
+            LocalizationEditorSettings.CollectionsChanged += RebuildOrDefer;
+        });
+        RegisterCallback<DetachFromPanelEvent>(_ =>
+        {
+            Undo.undoRedoPerformed -= OnUndoRedo;
+            LocalizationEditorSettings.CollectionsChanged -= RebuildOrDefer;
+        });
+        // Deferred so focus has settled on its new target; moving between two fields in here is not a flush point.
+        RegisterCallback<FocusOutEvent>(_ => { if (m_RebuildPending) schedule.Execute(RebuildOrDefer); });
         // Subclasses call RebuildBody() at the end of their constructor, once their own state is set.
     }
 
@@ -142,6 +153,29 @@ abstract class LocalizedReferenceElement : VisualElement
     {
         if (SerializedDataAlive)
             RebuildBody();
+    }
+
+    void RebuildOrDefer()
+    {
+        if (!SerializedDataAlive)
+            return;
+        // An asset import raises this too, so a rebuild here would drop whatever the user is part way through typing.
+        if (TypingInside)
+            m_RebuildPending = true;
+        else
+            RebuildBody();
+    }
+
+    // Text inputs delegate focus, so the holder may be the field, its input container or the text element itself.
+    bool TypingInside
+    {
+        get
+        {
+            if (focusController?.focusedElement is not VisualElement focused || !Contains(focused))
+                return false;
+            var text = focused as TextElement ?? focused.Q<TextElement>();
+            return text is ITextEdition { isReadOnly: false };
+        }
     }
 
     void LoadSkeleton()
@@ -246,6 +280,7 @@ abstract class LocalizedReferenceElement : VisualElement
 
     internal void RebuildBody()
     {
+        m_RebuildPending = false;
         m_Object.Update();
         var reference = TableRef();
         m_ShownTable = reference;
@@ -571,7 +606,7 @@ abstract class LocalizedReferenceElement : VisualElement
             using (var so = new SerializedObject(shared))
                 path = so.FindProperty("m_Entries").GetArrayElementAtIndex(index).FindPropertyRelative("m_Metadata").propertyPath;
             MetadataPopup.Show(button.worldBound, this, $"{L10n.Tr("Metadata", null)}: {m_SharedEntry.Key}", shared, path, MetadataType.SharedTableEntry,
-                () => { EditorUtility.SetDirty(shared); RefreshDetail(); });
+                () => EditorUtility.SetDirty(shared));
         };
     }
 

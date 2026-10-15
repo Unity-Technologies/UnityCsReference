@@ -25,6 +25,7 @@ using Unity.Collections.LowLevel.Unsafe;
 using Unity.Mathematics;
 using UnityEngine.Internal;
 using UnityEngine;
+using Unity.Burst;
 using Unity.Properties;
 
 namespace Unity.Collections
@@ -2417,7 +2418,24 @@ namespace Unity.Collections
         /// <param name="b">A `String` to compare for equality.</param>
         /// <returns>True if the two strings are equal.</returns>
         [ExcludeFromBurstCompatTesting("Takes managed string")]
-        public static bool operator ==(in FixedString32Bytes a, String b) => a == (FixedString32Bytes)(b == null ? "" : b);
+        public static bool operator ==(in FixedString32Bytes a, String b)
+        {
+            var isManaged = false;
+            var equal = false;
+            EqualsManagedString(in a, b ?? "", ref isManaged, ref equal);
+            if (isManaged)
+                return equal;
+            return a == (FixedString32Bytes)(b == null ? "" : b);
+        }
+
+        [BurstDiscard]
+        [ExcludeFromBurstCompatTesting("Takes managed string")]
+        static unsafe void EqualsManagedString(in FixedString32Bytes a, String b, ref bool isManaged, ref bool equal)
+        {
+            isManaged = true;
+            var aptr = (byte*)UnsafeUtilityExtensions.AddressOf(a.bytes);
+            equal = UTF8ArrayUnsafeUtility.EqualsManagedString(aptr, a.utf8LengthInBytes, b);
+        }
 
         /// <summary>
         /// Returns true if a FixedString32Bytes and another string are not equal.
@@ -2427,7 +2445,27 @@ namespace Unity.Collections
         /// <param name="b">A `String` to compare for equality.</param>
         /// <returns>True if the two strings are not equal.</returns>
         [ExcludeFromBurstCompatTesting("Takes managed string")]
-        public static bool operator !=(in FixedString32Bytes a, String b) => a != (FixedString32Bytes)b;
+        public static bool operator !=(in FixedString32Bytes a, String b) => !(a == b);
+
+        /// <summary>
+        /// Returns true if a string and a FixedString32Bytes are equal.
+        /// </summary>
+        /// <remarks>Two strings are equal if they have equal length and all their characters match.</remarks>
+        /// <param name="a">A `String` to compare for equality.</param>
+        /// <param name="b">A `FixedString32Bytes` to compare for equality.</param>
+        /// <returns>True if the two strings are equal.</returns>
+        [ExcludeFromBurstCompatTesting("Takes managed string")]
+        public static bool operator ==(String a, in FixedString32Bytes b) => b == a;
+
+        /// <summary>
+        /// Returns true if a string and a FixedString32Bytes are not equal.
+        /// </summary>
+        /// <remarks>Two strings are equal if they have equal length and all their characters match.</remarks>
+        /// <param name="a">A `String` to compare for equality.</param>
+        /// <param name="b">A `FixedString32Bytes` to compare for equality.</param>
+        /// <returns>True if the two strings are not equal.</returns>
+        [ExcludeFromBurstCompatTesting("Takes managed string")]
+        public static bool operator !=(String a, in FixedString32Bytes b) => !(b == a);
 
         /// <summary>
         /// Returns a new FixedString32Bytes that is a copy of another string.
@@ -3511,7 +3549,24 @@ namespace Unity.Collections
         /// <param name="b">A `String` to compare for equality.</param>
         /// <returns>True if the two strings are equal.</returns>
         [ExcludeFromBurstCompatTesting("Takes managed string")]
-        public static bool operator ==(in FixedString64Bytes a, String b) => a == (FixedString64Bytes)(b == null ? "" : b);
+        public static bool operator ==(in FixedString64Bytes a, String b)
+        {
+            var isManaged = false;
+            var equal = false;
+            EqualsManagedString(in a, b ?? "", ref isManaged, ref equal);
+            if (isManaged)
+                return equal;
+            return a == (FixedString64Bytes)(b == null ? "" : b);
+        }
+
+        [BurstDiscard]
+        [ExcludeFromBurstCompatTesting("Takes managed string")]
+        static unsafe void EqualsManagedString(in FixedString64Bytes a, String b, ref bool isManaged, ref bool equal)
+        {
+            isManaged = true;
+            var aptr = (byte*)UnsafeUtilityExtensions.AddressOf(a.bytes);
+            equal = UTF8ArrayUnsafeUtility.EqualsManagedString(aptr, a.utf8LengthInBytes, b);
+        }
 
         /// <summary>
         /// Returns true if a FixedString64Bytes and another string are not equal.
@@ -3521,7 +3576,27 @@ namespace Unity.Collections
         /// <param name="b">A `String` to compare for equality.</param>
         /// <returns>True if the two strings are not equal.</returns>
         [ExcludeFromBurstCompatTesting("Takes managed string")]
-        public static bool operator !=(in FixedString64Bytes a, String b) => a != (FixedString64Bytes)b;
+        public static bool operator !=(in FixedString64Bytes a, String b) => !(a == b);
+
+        /// <summary>
+        /// Returns true if a string and a FixedString64Bytes are equal.
+        /// </summary>
+        /// <remarks>Two strings are equal if they have equal length and all their characters match.</remarks>
+        /// <param name="a">A `String` to compare for equality.</param>
+        /// <param name="b">A `FixedString64Bytes` to compare for equality.</param>
+        /// <returns>True if the two strings are equal.</returns>
+        [ExcludeFromBurstCompatTesting("Takes managed string")]
+        public static bool operator ==(String a, in FixedString64Bytes b) => b == a;
+
+        /// <summary>
+        /// Returns true if a string and a FixedString64Bytes are not equal.
+        /// </summary>
+        /// <remarks>Two strings are equal if they have equal length and all their characters match.</remarks>
+        /// <param name="a">A `String` to compare for equality.</param>
+        /// <param name="b">A `FixedString64Bytes` to compare for equality.</param>
+        /// <returns>True if the two strings are not equal.</returns>
+        [ExcludeFromBurstCompatTesting("Takes managed string")]
+        public static bool operator !=(String a, in FixedString64Bytes b) => !(b == a);
 
         /// <summary>
         /// Returns a new FixedString64Bytes that is a copy of another string.
@@ -4617,7 +4692,24 @@ namespace Unity.Collections
         /// <param name="b">A `String` to compare for equality.</param>
         /// <returns>True if the two strings are equal.</returns>
         [ExcludeFromBurstCompatTesting("Takes managed string")]
-        public static bool operator ==(in FixedString128Bytes a, String b) => a == (FixedString128Bytes)(b == null ? "" : b);
+        public static bool operator ==(in FixedString128Bytes a, String b)
+        {
+            var isManaged = false;
+            var equal = false;
+            EqualsManagedString(in a, b ?? "", ref isManaged, ref equal);
+            if (isManaged)
+                return equal;
+            return a == (FixedString128Bytes)(b == null ? "" : b);
+        }
+
+        [BurstDiscard]
+        [ExcludeFromBurstCompatTesting("Takes managed string")]
+        static unsafe void EqualsManagedString(in FixedString128Bytes a, String b, ref bool isManaged, ref bool equal)
+        {
+            isManaged = true;
+            var aptr = (byte*)UnsafeUtilityExtensions.AddressOf(a.bytes);
+            equal = UTF8ArrayUnsafeUtility.EqualsManagedString(aptr, a.utf8LengthInBytes, b);
+        }
 
         /// <summary>
         /// Returns true if a FixedString128Bytes and another string are not equal.
@@ -4627,7 +4719,27 @@ namespace Unity.Collections
         /// <param name="b">A `String` to compare for equality.</param>
         /// <returns>True if the two strings are not equal.</returns>
         [ExcludeFromBurstCompatTesting("Takes managed string")]
-        public static bool operator !=(in FixedString128Bytes a, String b) => a != (FixedString128Bytes)b;
+        public static bool operator !=(in FixedString128Bytes a, String b) => !(a == b);
+
+        /// <summary>
+        /// Returns true if a string and a FixedString128Bytes are equal.
+        /// </summary>
+        /// <remarks>Two strings are equal if they have equal length and all their characters match.</remarks>
+        /// <param name="a">A `String` to compare for equality.</param>
+        /// <param name="b">A `FixedString128Bytes` to compare for equality.</param>
+        /// <returns>True if the two strings are equal.</returns>
+        [ExcludeFromBurstCompatTesting("Takes managed string")]
+        public static bool operator ==(String a, in FixedString128Bytes b) => b == a;
+
+        /// <summary>
+        /// Returns true if a string and a FixedString128Bytes are not equal.
+        /// </summary>
+        /// <remarks>Two strings are equal if they have equal length and all their characters match.</remarks>
+        /// <param name="a">A `String` to compare for equality.</param>
+        /// <param name="b">A `FixedString128Bytes` to compare for equality.</param>
+        /// <returns>True if the two strings are not equal.</returns>
+        [ExcludeFromBurstCompatTesting("Takes managed string")]
+        public static bool operator !=(String a, in FixedString128Bytes b) => !(b == a);
 
         /// <summary>
         /// Returns a new FixedString128Bytes that is a copy of another string.
@@ -5835,7 +5947,24 @@ namespace Unity.Collections
         /// <param name="b">A `String` to compare for equality.</param>
         /// <returns>True if the two strings are equal.</returns>
         [ExcludeFromBurstCompatTesting("Takes managed string")]
-        public static bool operator ==(in FixedString512Bytes a, String b) => a == (FixedString512Bytes)(b == null ? "" : b);
+        public static bool operator ==(in FixedString512Bytes a, String b)
+        {
+            var isManaged = false;
+            var equal = false;
+            EqualsManagedString(in a, b ?? "", ref isManaged, ref equal);
+            if (isManaged)
+                return equal;
+            return a == (FixedString512Bytes)(b == null ? "" : b);
+        }
+
+        [BurstDiscard]
+        [ExcludeFromBurstCompatTesting("Takes managed string")]
+        static unsafe void EqualsManagedString(in FixedString512Bytes a, String b, ref bool isManaged, ref bool equal)
+        {
+            isManaged = true;
+            var aptr = (byte*)UnsafeUtilityExtensions.AddressOf(a.bytes);
+            equal = UTF8ArrayUnsafeUtility.EqualsManagedString(aptr, a.utf8LengthInBytes, b);
+        }
 
         /// <summary>
         /// Returns true if a FixedString512Bytes and another string are not equal.
@@ -5845,7 +5974,27 @@ namespace Unity.Collections
         /// <param name="b">A `String` to compare for equality.</param>
         /// <returns>True if the two strings are not equal.</returns>
         [ExcludeFromBurstCompatTesting("Takes managed string")]
-        public static bool operator !=(in FixedString512Bytes a, String b) => a != (FixedString512Bytes)b;
+        public static bool operator !=(in FixedString512Bytes a, String b) => !(a == b);
+
+        /// <summary>
+        /// Returns true if a string and a FixedString512Bytes are equal.
+        /// </summary>
+        /// <remarks>Two strings are equal if they have equal length and all their characters match.</remarks>
+        /// <param name="a">A `String` to compare for equality.</param>
+        /// <param name="b">A `FixedString512Bytes` to compare for equality.</param>
+        /// <returns>True if the two strings are equal.</returns>
+        [ExcludeFromBurstCompatTesting("Takes managed string")]
+        public static bool operator ==(String a, in FixedString512Bytes b) => b == a;
+
+        /// <summary>
+        /// Returns true if a string and a FixedString512Bytes are not equal.
+        /// </summary>
+        /// <remarks>Two strings are equal if they have equal length and all their characters match.</remarks>
+        /// <param name="a">A `String` to compare for equality.</param>
+        /// <param name="b">A `FixedString512Bytes` to compare for equality.</param>
+        /// <returns>True if the two strings are not equal.</returns>
+        [ExcludeFromBurstCompatTesting("Takes managed string")]
+        public static bool operator !=(String a, in FixedString512Bytes b) => !(b == a);
 
         /// <summary>
         /// Returns a new FixedString512Bytes that is a copy of another string.
@@ -8165,7 +8314,24 @@ namespace Unity.Collections
         /// <param name="b">A `String` to compare for equality.</param>
         /// <returns>True if the two strings are equal.</returns>
         [ExcludeFromBurstCompatTesting("Takes managed string")]
-        public static bool operator ==(in FixedString4096Bytes a, String b) => a == (FixedString4096Bytes)(b == null ? "" : b);
+        public static bool operator ==(in FixedString4096Bytes a, String b)
+        {
+            var isManaged = false;
+            var equal = false;
+            EqualsManagedString(in a, b ?? "", ref isManaged, ref equal);
+            if (isManaged)
+                return equal;
+            return a == (FixedString4096Bytes)(b == null ? "" : b);
+        }
+
+        [BurstDiscard]
+        [ExcludeFromBurstCompatTesting("Takes managed string")]
+        static unsafe void EqualsManagedString(in FixedString4096Bytes a, String b, ref bool isManaged, ref bool equal)
+        {
+            isManaged = true;
+            var aptr = (byte*)UnsafeUtilityExtensions.AddressOf(a.bytes);
+            equal = UTF8ArrayUnsafeUtility.EqualsManagedString(aptr, a.utf8LengthInBytes, b);
+        }
 
         /// <summary>
         /// Returns true if a FixedString4096Bytes and another string are not equal.
@@ -8175,7 +8341,27 @@ namespace Unity.Collections
         /// <param name="b">A `String` to compare for equality.</param>
         /// <returns>True if the two strings are not equal.</returns>
         [ExcludeFromBurstCompatTesting("Takes managed string")]
-        public static bool operator !=(in FixedString4096Bytes a, String b) => a != (FixedString4096Bytes)b;
+        public static bool operator !=(in FixedString4096Bytes a, String b) => !(a == b);
+
+        /// <summary>
+        /// Returns true if a string and a FixedString4096Bytes are equal.
+        /// </summary>
+        /// <remarks>Two strings are equal if they have equal length and all their characters match.</remarks>
+        /// <param name="a">A `String` to compare for equality.</param>
+        /// <param name="b">A `FixedString4096Bytes` to compare for equality.</param>
+        /// <returns>True if the two strings are equal.</returns>
+        [ExcludeFromBurstCompatTesting("Takes managed string")]
+        public static bool operator ==(String a, in FixedString4096Bytes b) => b == a;
+
+        /// <summary>
+        /// Returns true if a string and a FixedString4096Bytes are not equal.
+        /// </summary>
+        /// <remarks>Two strings are equal if they have equal length and all their characters match.</remarks>
+        /// <param name="a">A `String` to compare for equality.</param>
+        /// <param name="b">A `FixedString4096Bytes` to compare for equality.</param>
+        /// <returns>True if the two strings are not equal.</returns>
+        [ExcludeFromBurstCompatTesting("Takes managed string")]
+        public static bool operator !=(String a, in FixedString4096Bytes b) => !(b == a);
 
         /// <summary>
         /// Returns a new FixedString4096Bytes that is a copy of another string.

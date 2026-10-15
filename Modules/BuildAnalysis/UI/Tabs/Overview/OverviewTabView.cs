@@ -173,16 +173,25 @@ namespace UnityEditor.Build.Analysis
             if (string.IsNullOrEmpty(m_CurrentOutputPath))
                 return;
 
+            if (!Directory.Exists(m_CurrentOutputPath))
+            {
+                Debug.LogWarning($"{BuildAnalysisConstants.k_ConsoleLogPrefix} Build output folder no longer exists: {m_CurrentOutputPath}");
+                return;
+            }
+
             EditorUtility.OpenWithDefaultApp(m_CurrentOutputPath);
         }
 
-        // OutputPath from BuildReportSummary may be a file (e.g. .exe for a Player build).
-        // We only show the directory in the UI and open the directory when the user clicks the button, so we need to normalize it here.
+        // Leave an already-missing path unchanged so the existence check below still reports it.
         private static string NormalizeToDirectory(string path)
         {
             if (string.IsNullOrEmpty(path))
                 return string.Empty;
-            return Directory.Exists(path) ? path : (Path.GetDirectoryName(path) ?? string.Empty);
+            if (Directory.Exists(path))
+                return path;
+            if (File.Exists(path))
+                return Path.GetDirectoryName(path) ?? string.Empty;
+            return path;
         }
     }
 }

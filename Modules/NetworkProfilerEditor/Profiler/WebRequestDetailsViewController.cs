@@ -38,11 +38,15 @@ namespace UnityEditor.Networking
         const string k_CellClass = "web-request-details-view__cell";
         const string k_NameCellClass = "web-request-details-view__name-cell";
         const string k_InsecureIconClass = "web-request-details-view__insecure-icon";
+        const string k_CredentialIconClass = "web-request-details-view__credential-icon";
+        const string k_TruncationNoteClass = "web-request-details-view__truncation-note";
         const string k_StatusSuccessClass = "web-request-details-view__status--success";
         const string k_StatusErrorClass = "web-request-details-view__status--error";
         const string k_StatusInFlightClass = "web-request-details-view__status--in-flight";
 
         const string k_InsecureTooltip = "Sent over plain HTTP, so the request and response were not encrypted.";
+
+        const string k_CredentialTooltip = "This value is a credential and is stored in plain text in the profiler captures. Be careful when sharing a saved capture (.raw file).";
 
         internal const string k_InspectorVisiblePrefKey = "ProfilerWindow.WebRequests.DetailsPanel.Visible";
         internal const string k_InspectorWidthPrefKey = "ProfilerWindow.WebRequests.DetailsPanel.Width";
@@ -80,6 +84,7 @@ namespace UnityEditor.Networking
         VisualElement m_Tabs;
         Foldout m_ResponseHeaders;
         Foldout m_RequestHeaders;
+        Foldout m_RequestWireHeaders;
         Label m_FieldUrl;
         Label m_FieldMethod;
         Label m_FieldStatus;
@@ -123,6 +128,7 @@ namespace UnityEditor.Networking
             m_Tabs = view.Q<VisualElement>("web-request-details-view__tabs");
             m_ResponseHeaders = view.Q<Foldout>("web-request-details-view__response-headers");
             m_RequestHeaders = view.Q<Foldout>("web-request-details-view__request-headers");
+            m_RequestWireHeaders = view.Q<Foldout>("web-request-details-view__request-wire-headers");
             m_FieldUrl = view.Q<Label>("web-request-details-view__field-url");
             m_FieldMethod = view.Q<Label>("web-request-details-view__field-method");
             m_FieldStatus = view.Q<Label>("web-request-details-view__field-status");
@@ -755,6 +761,10 @@ namespace UnityEditor.Networking
 
             PopulateHeaders(m_ResponseHeaders, record, WebRequestProfilerHeaderKind.Response);
             PopulateHeaders(m_RequestHeaders, record, WebRequestProfilerHeaderKind.Request);
+
+            PopulateHeaders(m_RequestWireHeaders, record, WebRequestProfilerHeaderKind.RequestWire,
+                "Not captured. The headers sent are only recorded on supported platforms, and are "
+                + "unavailable if the request failed before anything went out.");
             PopulateQueryParameters(m_QueryParameters, record);
             PopulateBody(m_RequestPayloadEmpty, m_RequestPayloadText, record, record.requestBody);
             PopulateBody(m_ResponseBodyEmpty, m_ResponseBodyText, record, record.responseBody);
@@ -820,7 +830,7 @@ namespace UnityEditor.Networking
             }
         }
 
-        static void PopulateQueryParameters(Foldout foldout, WebRequestProfilerRecord record)
+        internal static void PopulateQueryParameters(Foldout foldout, WebRequestProfilerRecord record)
         {
             foldout.Clear();
 
@@ -835,6 +845,7 @@ namespace UnityEditor.Networking
 
                 var valueLabel = new Label(parameter.Value);
                 valueLabel.AddToClassList("web-request-details-view__field-value");
+                valueLabel.selection.isSelectable = true;
 
                 field.Add(nameLabel);
                 field.Add(valueLabel);
@@ -911,17 +922,21 @@ namespace UnityEditor.Networking
             text.SetValueWithoutNotify(body.text);
         }
 
-        static void PopulateHeaders(Foldout foldout, WebRequestProfilerRecord record, WebRequestProfilerHeaderKind kind)
+        internal static void PopulateHeaders(Foldout foldout, WebRequestProfilerRecord record,
+            WebRequestProfilerHeaderKind kind, string emptyText = null)
         {
             foldout.Clear();
 
             var count = 0;
+            var truncated = false;
             if (record.headers != null)
             {
                 foreach (var header in record.headers)
                 {
                     if (header.kind != kind)
                         continue;
+
+                    truncated |= header.truncated;
 
                     var field = new VisualElement();
                     field.AddToClassList("web-request-details-view__field");
@@ -931,8 +946,21 @@ namespace UnityEditor.Networking
 
                     var value = new Label(header.value);
                     value.AddToClassList("web-request-details-view__field-value");
+                    value.selection.isSelectable = true;
 
                     field.Add(name);
+
+                    if (header.isCredential)
+                    {
+                        var warning = new Image();
+                        warning.AddToClassList(k_CredentialIconClass);
+                        warning.image = EditorGUIUtility.LoadIcon("console.warnicon.sml");
+                        field.Add(warning);
+
+                        // On the row, not the 12px icon: hovering anywhere on it reaches the warning.
+                        field.tooltip = k_CredentialTooltip;
+                    }
+
                     field.Add(value);
                     foldout.Add(field);
                     ++count;
@@ -946,10 +974,18 @@ namespace UnityEditor.Networking
                 // that has any header set has been reported on, so an empty section of one kind means
                 // the request carried none of that kind: the usual case is a request with response
                 // headers and no custom request headers, which must not read as still waiting.
-                var text = record.headers != null ? "None captured." : "None captured yet.";
+                var text = emptyText ?? (record.headers != null ? "None captured." : "None captured yet.");
                 var empty = new Label(text);
                 empty.AddToClassList("web-request-details-view__inspector-empty");
                 foldout.Add(empty);
+            }
+
+            if (truncated)
+            {
+                var note = new Label("Capture stopped after " + count
+                    + " headers for this request; any beyond that were not recorded.");
+                note.AddToClassList(k_TruncationNoteClass);
+                foldout.Add(note);
             }
         }
 
@@ -1064,7 +1100,7 @@ namespace UnityEditor.Networking
         // Milliseconds to two decimals, which is what the Timing tab's design shows and what makes the
         // phases of one request comparable at a glance - a column mixing us and ms has to be read twice.
         // Deliberately not WebRequestProfilerFormatting.FormatDuration: that switches units so a
-        // sub-millisecond request does not read as zero, and it is shared with the list's Time column.
+        // sub-millisecond request does not read as zero, and it is shared with the list's Duration column.
         static string FormatPhaseDuration(ulong microseconds)
         {
             return $"{microseconds / 1000f:0.00} ms";

@@ -92,6 +92,8 @@ namespace UnityEngine.UIElements
         private static readonly Dictionary<string, VisualElement> s_TemporarySlotInsertionPoints = new Dictionary<string, VisualElement>();
         [NoAutoStaticsCleanup]
         private static readonly List<int> s_VeaIdsPath = new List<int>();
+        [NoAutoStaticsCleanup]
+        private static readonly HashSet<VisualTreeAsset> s_CloningAssets = new HashSet<VisualTreeAsset>();
 
         [Serializable]
         [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
@@ -585,6 +587,8 @@ namespace UnityEngine.UIElements
             }
         }
 
+        internal static bool IsCloning(VisualTreeAsset asset) => s_CloningAssets.Contains(asset);
+
         internal void CloneTree(VisualElement target, CreationContext cc, VisualElementAssetReferenceTable.DocumentNode parentAuthoringNode)
         {
             if (target == null)
@@ -594,38 +598,47 @@ namespace UnityEngine.UIElements
             if (null == m_VisualTree)
                 return;
 
-            var root = m_VisualTree;
-            AssignClassListFromAssetToElement(root, target);
-            AssignStyleSheetFromAssetToElement(root, target);
-
-            for (var i = 0; i < root.childCount; ++i)
+            var addedToCloningSet = s_CloningAssets.Add(this);
+            try
             {
-                // Assumes m_VisualElementAssets only contain VisualElementAsset.
-                var child = root[i] as VisualElementAsset;
+                var root = m_VisualTree;
+                AssignClassListFromAssetToElement(root, target);
+                AssignStyleSheetFromAssetToElement(root, target);
 
-                var isTemplate = false;
-                if (child is TemplateAsset)
+                for (var i = 0; i < root.childCount; ++i)
                 {
-                    cc.veaIdsPath.Add(child.id);
-                    isTemplate = true;
+                    // Assumes m_VisualElementAssets only contain VisualElementAsset.
+                    var child = root[i] as VisualElementAsset;
+
+                    var isTemplate = false;
+                    if (child is TemplateAsset)
+                    {
+                        cc.veaIdsPath.Add(child.id);
+                        isTemplate = true;
+                    }
+
+                    var newCc = new CreationContext(cc.slotInsertionPoints, cc.attributeOverrides, cc.serializedDataOverrides,
+                        this, target, cc.veaIdsPath, null, cc.templateAsset);
+
+                    var childElement = CloneSetupRecursively(child, newCc, parentAuthoringNode);
+
+                    if (isTemplate)
+                    {
+                        cc.veaIdsPath.Remove(child.id);
+                    }
+
+                    if (null != childElement)
+                    {
+                        // if contentContainer == this, the shadow and the logical hierarchy are identical
+                        // otherwise, if there is a CC, we want to insert in the shadow
+                        target.hierarchy.Add(childElement);
+                    }
                 }
-
-                var newCc = new CreationContext(cc.slotInsertionPoints, cc.attributeOverrides, cc.serializedDataOverrides,
-                    this, target, cc.veaIdsPath, null, cc.templateAsset);
-
-                var childElement = CloneSetupRecursively(child, newCc, parentAuthoringNode);
-
-                if (isTemplate)
-                {
-                    cc.veaIdsPath.Remove(child.id);
-                }
-
-                if (null != childElement)
-                {
-                    // if contentContainer == this, the shadow and the logical hierarchy are identical
-                    // otherwise, if there is a CC, we want to insert in the shadow
-                    target.hierarchy.Add(childElement);
-                }
+            }
+            finally
+            {
+                if (addedToCloningSet)
+                    s_CloningAssets.Remove(this);
             }
         }
 

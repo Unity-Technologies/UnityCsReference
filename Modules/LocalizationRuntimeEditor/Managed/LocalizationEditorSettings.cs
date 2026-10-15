@@ -14,15 +14,17 @@ namespace Unity.Localization.Editor;
 /// <remarks>
 /// The active settings are stored as an <see cref="EditorBuildSettings"/> config object and included in
 /// player builds. Use <see cref="ActiveSettings"/> to read or assign them, and <see cref="CollectionsChanged"/>
-/// to react to <see cref="ResourceTableCollection"/> assets being created, imported, or deleted.
+/// to react to the project's <see cref="ResourceTableCollection"/> assets and their contents changing.
 /// </remarks>
 public static partial class LocalizationEditorSettings
 {
     /// <summary>
-    /// Occurs when the set of table collections in the project changes.
+    /// Occurs when the project's table collections change.
     /// </summary>
     /// <remarks>
-    /// Raised after a <see cref="ResourceTableCollection"/> is created, imported, or deleted so editor UI can refresh.
+    /// Raised after a <see cref="ResourceTableCollection"/> is created, imported, or deleted, and after an edit that
+    /// windows other than the one making it need to see, such as renaming a key or changing its metadata. Editor UI
+    /// listens to this to refresh itself.
     /// </remarks>
     // Re-subscribed on every code load by AssetProviderEditors.Initialize().
     [AutoStaticsCleanup] // holds subscriber delegates
@@ -45,7 +47,7 @@ public static partial class LocalizationEditorSettings
     /// Raises the <see cref="CollectionsChanged"/> event.
     /// </summary>
     /// <remarks>
-    /// Call this after creating a <see cref="ResourceTableCollection"/> asset in code so open windows update.
+    /// Call this after creating or editing a <see cref="ResourceTableCollection"/> in code so open windows update.
     /// </remarks>
     internal static void RaiseCollectionsChanged() => CollectionsChanged?.Invoke();
 

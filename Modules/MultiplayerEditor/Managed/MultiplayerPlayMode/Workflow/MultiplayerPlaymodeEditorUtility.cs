@@ -45,6 +45,19 @@ namespace Unity.Multiplayer.PlayMode.Editor
             return foundProject.ProcessId;
         }
 
+        public static FocusPlayerStatus GetFocusPlayerStatus(UnityPlayer player)
+        {
+            // A clone editor cannot read the other players' state, it relays the request to the main editor.
+            if (VirtualProjectsEditor.IsClone) return FocusPlayerStatus.None;
+
+            if (player == null) return FocusPlayerStatus.PlayerNotFound;
+            if (player.PlayerState is not (PlayerState.Launched or PlayerState.Launching)) return FocusPlayerStatus.IsNotReady;
+            if (player.Type == PlayerType.Main) return FocusPlayerStatus.PlayerTypeCannotBeFocused;
+            if (player.TypeDependentPlayerInfo.VirtualProjectIdentifier == null) return FocusPlayerStatus.PlayerTypeCannotBeFocused;
+
+            return FocusPlayerStatus.None;
+        }
+
         public static FocusPlayerStatus FocusPlayerView(PlayerIndex playerIndex)
         {
             if (VirtualProjectsEditor.IsClone)
@@ -62,10 +75,8 @@ namespace Unity.Multiplayer.PlayMode.Editor
                     _ => null,
                 };
 
-                if (player == null) return FocusPlayerStatus.PlayerNotFound;
-                if (player.PlayerState is not (PlayerState.Launched or PlayerState.Launching)) return FocusPlayerStatus.IsNotReady;
-                if (player.Type == PlayerType.Main) return FocusPlayerStatus.PlayerTypeCannotBeFocused;
-                if (player.TypeDependentPlayerInfo.VirtualProjectIdentifier == null) return FocusPlayerStatus.PlayerTypeCannotBeFocused;
+                var status = GetFocusPlayerStatus(player);
+                if (status != FocusPlayerStatus.None) return status;
 
                 EditorContexts.MainEditorContext.MessagingService.Send(new OpenPlayerWindowMessage(), player.TypeDependentPlayerInfo.VirtualProjectIdentifier, null, MppmLog.Warning);
             }

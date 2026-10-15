@@ -553,7 +553,7 @@ namespace Unity.ProjectAuditor.Editor.UI.Framework
                     s_WelcomeTextArea.fontSize = 14;
                     s_WelcomeTextArea.richText = true;
                     s_WelcomeTextArea.wordWrap = true;
-                    s_WelcomeTextArea.alignment = TextAnchor.UpperCenter;
+                    s_WelcomeTextArea.alignment = TextAnchor.MiddleCenter;
                 }
 
                 return s_WelcomeTextArea;

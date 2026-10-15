@@ -5,7 +5,10 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Reflection;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using Unity.Scripting.LifecycleManagement;
 using UnityEngine;
 using UnityEngine.Bindings;
 using UnityEditor.Compilation;
@@ -22,6 +25,11 @@ namespace UnityEditor.PackageManager
     [NativeType(IntermediateScriptingStructName = "PackageManager_PackageInfo")]
     public sealed partial class PackageInfo
     {
+        const string k_MsBuildPackageNameAssemblyMetadataKey = "Unity.PackageName";
+        const string k_ProjectScriptAssembliesDirectory = "Library/ScriptAssemblies";
+        [AutoStaticsCleanupOnCodeReload]
+        static readonly ConditionalWeakTable<Assembly, string> s_PackageNameByAssembly = new ConditionalWeakTable<Assembly, string>();
+
         [SerializeField]
         [NativeName("packageId")]
         private string m_PackageId = "";
@@ -265,6 +273,13 @@ namespace UnityEditor.PackageManager
             if (assembly == null)
                 throw new ArgumentNullException("assembly");
 
+            if (TryGetPackageNameFromAssemblyMetadata(assembly, out var packageName))
+            {
+                var packageFromAssemblyMetadata = FindForPackageName(packageName);
+                if (packageFromAssemblyMetadata != null)
+                    return packageFromAssemblyMetadata;
+            }
+
             string fullPath = assembly.GetLoadedAssemblyPath();
 
             // See if there is an asmdef file for this assembly - use it if so
@@ -274,6 +289,36 @@ namespace UnityEditor.PackageManager
 
             // No asmdef - this is a precompiled DLL.
             return FindForAssetPath(fullPath);
+        }
+
+        static bool TryGetPackageNameFromAssemblyMetadata(Assembly assembly, out string packageName)
+        {
+            packageName = s_PackageNameByAssembly.GetValue(assembly, ReadPackageNameFromAssemblyMetadata);
+            return packageName.Length > 0;
+        }
+
+        static string ReadPackageNameFromAssemblyMetadata(Assembly assembly)
+        {
+            if (!IsCompiledByProject(assembly))
+                return string.Empty;
+
+            foreach (var metadata in assembly.GetCustomAttributes<AssemblyMetadataAttribute>())
+            {
+                if (metadata.Key == k_MsBuildPackageNameAssemblyMetadataKey && !string.IsNullOrEmpty(metadata.Value))
+                    return metadata.Value;
+            }
+
+            return string.Empty;
+        }
+
+        static bool IsCompiledByProject(Assembly assembly)
+        {
+            var assemblyPath = assembly.GetLoadedAssemblyPath();
+            if (string.IsNullOrEmpty(assemblyPath))
+                return false;
+
+            var assemblyDirectory = Path.GetDirectoryName(Path.GetFullPath(assemblyPath));
+            return string.Equals(assemblyDirectory, Path.GetFullPath(k_ProjectScriptAssembliesDirectory), StringComparison.OrdinalIgnoreCase);
         }
 
         internal static List<PackageInfo> GetForAssemblyFilePaths(List<string> assemblyPaths)

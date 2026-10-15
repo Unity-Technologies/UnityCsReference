@@ -409,7 +409,7 @@ namespace Unity.Multiplayer.PlayMode.Editor
                     {
                         view.PlayerViewContent.AddManipulator(new ContextualMenuManipulator(populateEvent =>
                         {
-                            PlayerContextMenuOptions(populateEvent, player, captureIndex);
+                            PlayerContextMenuOptions(populateEvent.menu, player, captureIndex);
                         }));
 
                         var t = new ContextualMenuManipulator(populateEvent =>
@@ -419,7 +419,7 @@ namespace Unity.Multiplayer.PlayMode.Editor
                                 IsPlayMode = EditorApplication.isPlaying,
                             });
 
-                            PlayerContextMenuOptions(populateEvent, player, captureIndex);
+                            PlayerContextMenuOptions(populateEvent.menu, player, captureIndex);
                         });
                         t.activators.Add(new ManipulatorActivationFilter { button = MouseButton.LeftMouse });
                         view.EllipsesContainer.AddManipulator(t);
@@ -482,7 +482,7 @@ namespace Unity.Multiplayer.PlayMode.Editor
             }
         }
 
-        static void PlayerContextMenuOptions(ContextualMenuPopulateEvent populateEvent, UnityPlayer player, int index)
+        internal static void PlayerContextMenuOptions(DropdownMenu menu, UnityPlayer player, int index)
         {
             var openInExplorerContextualMenuLabel = Application.platform switch
             {
@@ -491,7 +491,7 @@ namespace Unity.Multiplayer.PlayMode.Editor
                 _ => "Open Directory",
             };
 
-            populateEvent.menu.AppendAction(
+            menu.AppendAction(
                 openInExplorerContextualMenuLabel,
                 _ =>
                 {
@@ -504,7 +504,7 @@ namespace Unity.Multiplayer.PlayMode.Editor
                     MultiplayerPlaymodeEditorUtility.RevealInFinder(player);
                 },
                 DropdownMenuAction.AlwaysEnabled);
-            populateEvent.menu.AppendAction(
+            menu.AppendAction(
                 "Focus on Player",
                 _ =>
                 {
@@ -522,7 +522,9 @@ namespace Unity.Multiplayer.PlayMode.Editor
                             : $"Failed to open the window {err}");
                     }
                 },
-                DropdownMenuAction.AlwaysEnabled);
+                _ => MultiplayerPlaymodeEditorUtility.GetFocusPlayerStatus(player) == MultiplayerPlaymodeEditorUtility.FocusPlayerStatus.None
+                    ? DropdownMenuAction.Status.Normal
+                    : DropdownMenuAction.Status.Disabled);
         }
 
         static void Update()

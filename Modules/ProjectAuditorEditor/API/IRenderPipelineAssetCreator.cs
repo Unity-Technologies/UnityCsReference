@@ -13,9 +13,19 @@ namespace Unity.ProjectAuditor.Editor
     public interface IRenderPipelineAssetCreator
     {
         /// <summary>
-        /// Creates a render pipeline asset and assigns it as the project-wide default render pipeline.
+        /// Creates a render pipeline asset configured for the given target pipeline, and assigns it as the
+        /// project-wide default render pipeline.
         /// </summary>
+        /// <param name="targetPipeline">The target pipeline identifier used by the Render Pipeline Converter (eg "BuiltInToURP" or "BuiltInToURP2D").</param>
         /// <returns>The asset assigned as the default, or null if one could not be created.</returns>
-        RenderPipelineAsset CreateAndAssignDefault();
+        RenderPipelineAsset CreateAndAssignDefault(string targetPipeline);
+
+        /// <summary>
+        /// Checks whether a render pipeline asset is already configured for the given target pipeline.
+        /// </summary>
+        /// <param name="asset">The render pipeline asset to check.</param>
+        /// <param name="targetPipeline">The Migrate to URP workflow's target pipeline identifier.</param>
+        /// <returns>True if the asset is already set up for the target pipeline.</returns>
+        bool MatchesTargetPipeline(RenderPipelineAsset asset, string targetPipeline);
     }
 }

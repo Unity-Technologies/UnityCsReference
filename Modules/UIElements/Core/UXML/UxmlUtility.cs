@@ -56,35 +56,18 @@ namespace UnityEngine.UIElements
             list.Insert(dst, item);
         }
 
-        public static float ParseFloat(string value)
-        {
-            return float.Parse(value, NumberStyles.Float, CultureInfo.InvariantCulture);
-        }
-
-        public static byte ParseByte(string value)
-        {
-            return byte.Parse(value, NumberStyles.Integer, CultureInfo.InvariantCulture);
-        }
-
-        public static sbyte ParseSByte(string value)
-        {
-            return sbyte.Parse(value, NumberStyles.Integer, CultureInfo.InvariantCulture);
-        }
-
-        public static short ParseShort(string value)
-        {
-            return short.Parse(value, NumberStyles.Integer, CultureInfo.InvariantCulture);
-        }
-
-        public static ushort ParseUShort(string value)
-        {
-            return ushort.Parse(value, NumberStyles.Integer, CultureInfo.InvariantCulture);
-        }
-
-        public static int ParseInt(string value)
-        {
-            return int.Parse(value, NumberStyles.Integer, CultureInfo.InvariantCulture);
-        }
+        public static float ParseFloat(string value) => float.Parse(value, NumberStyles.Float, CultureInfo.InvariantCulture);
+        public static double ParseDouble(string value) => double.Parse(value, NumberStyles.Float, CultureInfo.InvariantCulture);
+        public static bool ParseBool(string value) => bool.Parse(value);
+        public static byte ParseByte(string value) => byte.Parse(value, NumberStyles.Integer, CultureInfo.InvariantCulture);
+        public static sbyte ParseSByte(string value) => sbyte.Parse(value, NumberStyles.Integer, CultureInfo.InvariantCulture);
+        public static short ParseShort(string value) => short.Parse(value, NumberStyles.Integer, CultureInfo.InvariantCulture);
+        public static ushort ParseUShort(string value) => ushort.Parse(value, NumberStyles.Integer, CultureInfo.InvariantCulture);
+        public static int ParseInt(string value) => int.Parse(value, NumberStyles.Integer, CultureInfo.InvariantCulture);
+        public static uint ParseUint(string value) => uint.Parse(value, NumberStyles.Integer, CultureInfo.InvariantCulture);
+        public static long ParseLong(string value) => long.Parse(value, NumberStyles.Integer, CultureInfo.InvariantCulture);
+        public static ulong ParseULong(string value) => ulong.Parse(value, NumberStyles.Integer, CultureInfo.InvariantCulture);
+        public static Angle ParseAngle(string value, Angle defaultValue = default) => Angle.TryParseString(value, out var angle) ? angle : defaultValue;
 
         public static bool TryParse(string value, out int result, out string error)
         {
@@ -96,31 +79,14 @@ namespace UnityEngine.UIElements
             }
             catch (Exception ex)
             {
-                error =  ex.Message;
+                error = ex.Message;
                 result = default;
                 return false;
             }
         }
+        public static bool TryParseFloat(string value, out float result) => float.TryParse(value, NumberStyles.Float, CultureInfo.InvariantCulture, out result);
 
-        public static uint ParseUint(string value)
-        {
-            return uint.Parse(value, NumberStyles.Integer, CultureInfo.InvariantCulture);
-        }
-
-        public static long ParseLong(string value)
-        {
-            return long.Parse(value, NumberStyles.Integer, CultureInfo.InvariantCulture);
-        }
-
-        public static ulong ParseULong(string value)
-        {
-            return ulong.Parse(value, NumberStyles.Integer, CultureInfo.InvariantCulture);
-        }
-
-        public static Angle ParseAngle(string value, Angle defaultValue = default)
-        {
-            return Angle.TryParseString(value, out var angle) ? angle : defaultValue;
-        }
+        public static bool TryParseDouble(string value, out double result) => double.TryParse(value, NumberStyles.Float, CultureInfo.InvariantCulture, out result);
 
         public static float TryParseFloatAttribute(string attributeName, UxmlAsset bag, ref int foundAttributeCounter)
         {
@@ -202,6 +168,7 @@ namespace UnityEngine.UIElements
             return $"{value.FullName}, {value.Assembly.GetName().Name}";
         }
 
+        public static string ValueToString(float value) => value.ToString(CultureInfo.InvariantCulture);
         public static string ValueToString(Bounds value) => FormattableString.Invariant($"{value.center.x},{value.center.y},{value.center.z},{value.size.x},{value.size.y},{value.size.z}");
         public static string ValueToString(BoundsInt value) => FormattableString.Invariant($"{value.position.x},{value.position.y},{value.position.z},{value.size.x},{value.size.y},{value.size.z}");
         public static string ValueToString(Rect value) => FormattableString.Invariant($"{value.x},{value.y},{value.width},{value.height}");

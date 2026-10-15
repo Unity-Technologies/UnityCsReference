@@ -31,8 +31,6 @@ namespace Unity.ProjectAuditor.Editor.UI
             Valid
         }
 
-        static readonly string[] s_AreaNames = Array.ConvertAll(AreasExtensions.AlphabeticalAreas, (a) => a.ToString());
-
         static string[] NicifiedAreaNames
         {
             get
@@ -85,7 +83,7 @@ namespace Unity.ProjectAuditor.Editor.UI
         [SerializeField] ViewStates m_ViewStates = new ViewStates();
         [SerializeField] internal ViewManager m_ViewManager;
 
-        static readonly string k_ReportAutoSaveFilename = "projectauditor-report-autosave.projectauditor";
+        const string k_ReportAutoSaveFilename = "projectauditor-report-autosave.projectauditor";
 
         // The navigation tree shown in the view selection tree view.
         // Rebuilt from code in OnEnable, so it doesn't need to be serialized.
@@ -337,6 +335,9 @@ namespace Unity.ProjectAuditor.Editor.UI
             if (!MatchesPage(issue))
                 return false;
 
+            if (issue.Severity == Severity.Hidden)
+                return false;
+
             var viewDesc = activeView.Desc;
             var matchAssembly = !viewDesc.ShowAssemblySelection ||
                 m_AssemblySelection != null &&
@@ -533,6 +534,7 @@ namespace Unity.ProjectAuditor.Editor.UI
             m_ViewManager.OnSelectedIssuesQuickFixRequested = issues =>
             {
                 MarkSummaryViewsDirty();
+                m_Report.NeedsSaving = true;
             };
 
             m_ViewManager.OnAnalysisRequested += category =>
@@ -599,14 +601,8 @@ namespace Unity.ProjectAuditor.Editor.UI
             return null;
         }
 
-        // The category a page activates when selected: its own, or its first descendant's.
-        static IssueCategory GetPrimaryCategory(Page page)
-        {
-            return page.AllCategories[0];
-        }
-
         // Marks every summary page's view dirty so its stats refresh (e.g. after muting/fixing issues).
-        void MarkSummaryViewsDirty()
+        internal void MarkSummaryViewsDirty()
         {
             for (int i = 0; i < m_ViewManager.NumViews; i++)
             {
@@ -1354,7 +1350,7 @@ namespace Unity.ProjectAuditor.Editor.UI
             Repaint();
         }
 
-        internal void Analyze(ProjectAreaFlags areasToAnalyze, CodeAnalysisFlags codeAnalysisFlags, PageId targetSummaryPage)
+        internal void Analyze(ProjectAreaFlags areasToAnalyze, CodeAnalysisFlags codeAnalysisFlags, PageId targetSummaryPage, string migrationTargetPipeline = null)
         {
             m_AnalyzeButtonAnalytic = AnalyticsReporter.BeginAnalytic();
 
@@ -1373,6 +1369,7 @@ namespace Unity.ProjectAuditor.Editor.UI
                 Platform = GetSelectedAnalysisPlatform(),
                 CodeAnalysisFlags = codeAnalysisFlags,
                 CodeOwnerFlags = GetSelectedCodeOwnerFlags(),
+                MigrationTargetPipeline = migrationTargetPipeline,
 
                 OnIncomingIssues = issues =>
                 {
@@ -1458,6 +1455,7 @@ namespace Unity.ProjectAuditor.Editor.UI
                 Platform = m_Report.SessionInfo.Platform,
                 CodeAnalysisFlags = (CodeAnalysisFlags)UserPreferences.CodeAnalysisFlags,
                 CodeOwnerFlags = GetSelectedCodeOwnerFlags(),
+                MigrationTargetPipeline = m_Report.SessionInfo.MigrationTargetPipeline,
                 ExistingReport = m_Report,
                 OnIncomingIssues = issues =>
                 {
@@ -2326,12 +2324,12 @@ namespace Unity.ProjectAuditor.Editor.UI
         {
             const int kFilterContentsWidth = 320;
 
-            public static readonly int MinWindowWidth = 410;
-            public static readonly int MinWindowHeight = 640;
+            public const int MinWindowWidth = 410;
+            public const int MinWindowHeight = 640;
             public static readonly GUILayoutOption FilterOptionsLabelWidth = GUILayout.Width(104);
             public static readonly GUILayoutOption FilterOptionsContentsWidth = GUILayout.Width(kFilterContentsWidth);
             public static readonly GUILayoutOption FilterOptionsContentsHalfWidth = GUILayout.Width(kFilterContentsWidth / 2);
-            public static readonly int FilterOptionsEnumWidth = 50;
+            public const int FilterOptionsEnumWidth = 50;
             public const float kTreeViewWidth = 190.0f;
         }
 

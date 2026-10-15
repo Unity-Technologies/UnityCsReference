@@ -73,7 +73,7 @@ namespace Unity.ProjectAuditor.Editor.UI
             EditorGUILayout.Space();
             DrawSeverityBreakdown();
 
-            if (!m_ViewManager.HasPendingCategories() && m_Severities.TotalExcludingIgnored > 0)
+            if (!m_ViewManager.HasPendingCategories() && m_Severities.TotalExcludingIgnoredAndFixed > 0)
             {
                 EditorGUILayout.Space();
                 DrawTopTenSection();
@@ -95,31 +95,35 @@ namespace Unity.ProjectAuditor.Editor.UI
 
         void DrawRuntimeVersions()
         {
+            var currentRuntimeName = GetCurrentRuntimeName();
             using (new EditorGUILayout.HorizontalScope())
             {
                 EditorGUILayout.LabelField(Contents.CurrentRuntime, SharedStyles.Label, GUILayout.Width(k_RuntimeLabelWidth));
-                EditorGUILayout.LabelField(GetCurrentRuntimeName(), SharedStyles.BoldLabel);
+                EditorGUILayout.LabelField(currentRuntimeName, SharedStyles.BoldLabel);
             }
 
-            using (new EditorGUILayout.HorizontalScope())
+            if (currentRuntimeName != Contents.CoreCLRRuntimeValue)
             {
-                EditorGUILayout.LabelField(Contents.TargetRuntime, SharedStyles.Label, GUILayout.Width(k_RuntimeLabelWidth));
-                EditorGUILayout.LabelField(Contents.TargetRuntimeValue, SharedStyles.BoldLabel);
+                using (new EditorGUILayout.HorizontalScope())
+                {
+                    EditorGUILayout.LabelField(Contents.TargetRuntime, SharedStyles.Label, GUILayout.Width(k_RuntimeLabelWidth));
+                    EditorGUILayout.LabelField(Contents.CoreCLRRuntimeValue, SharedStyles.BoldLabel);
+                }
             }
         }
 
-        string GetCurrentRuntimeName()
+        GUIContent GetCurrentRuntimeName()
         {
             var sessionInfo = m_ViewManager.Report.SessionInfo;
 
             switch (sessionInfo.ScriptingBackend.Value)
             {
                 case ScriptingImplementation.Mono2x:
-                    return "Mono (.NET Standard 2.1)";
+                    return Contents.MonoRuntimeValue;
                 case ScriptingImplementation.CoreCLR:
-                    return "CoreCLR (.NET 10)";
+                    return Contents.CoreCLRRuntimeValue;
                 default:
-                    return sessionInfo.ScriptingBackend.ToString();
+                    return Utility.TempContent(sessionInfo.ScriptingBackend.ToString());
             }
         }
 
@@ -185,7 +189,8 @@ namespace Unity.ProjectAuditor.Editor.UI
             public static readonly GUIContent TopTenIssuesContent = L10n.TextContent("Top Ten Issues", null, null, null);
             public static readonly GUIContent CurrentRuntime = L10n.TextContent("Current runtime:", null, null, null);
             public static readonly GUIContent TargetRuntime = L10n.TextContent("Target runtime:", null, null, null);
-            public static readonly GUIContent TargetRuntimeValue = L10n.TextContent("CoreCLR (.NET 10)", null, null, null);
+            public static readonly GUIContent MonoRuntimeValue = L10n.TextContent("Mono (.NET Standard 2.1)", null, null, null);
+            public static readonly GUIContent CoreCLRRuntimeValue = L10n.TextContent("CoreCLR (.NET 10)", null, null, null);
 
             public static readonly string SevereCountFormat = L10n.Tr("{0} issue will cause compilation failures or runtime exceptions on CoreCLR.", null);
             public static readonly string SevereCountPluralFormat = L10n.Tr("{0} issues will cause compilation failures or runtime exceptions on CoreCLR.", null);
