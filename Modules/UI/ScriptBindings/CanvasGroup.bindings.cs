@@ -48,7 +48,9 @@ namespace UnityEngine
         ///<remarks>If set to true the group will ignore any parent group settings.</remarks>
         [NativeProperty("IgnoreParentGroups", false, TargetType.Function)] public extern bool ignoreParentGroups { get; set; }
 
+        ///<inheritdoc/>
         ///<summary>Returns true if the Group allows raycasts.</summary>
+        ///<returns>True if the canvas group allows raycasts. Otherwise, false.</returns>
         public bool IsRaycastLocationValid(Vector2 sp, Camera eventCamera)
         {
             return blocksRaycasts;

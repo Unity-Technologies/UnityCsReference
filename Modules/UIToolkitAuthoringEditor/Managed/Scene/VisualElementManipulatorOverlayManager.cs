@@ -17,10 +17,10 @@ namespace Unity.UIToolkit.Editor;
 /// the canvas shows a preview clone of it, and the overlay has to sit on the clone to land on screen. The
 /// writes it makes go to the backing asset either way, so both faces of the element see them.
 /// </remarks>
-sealed class VisualElementManipulatorOverlayManager
+sealed partial class VisualElementManipulatorOverlayManager
 {
-    [NoAutoStaticsCleanup] // overlay pool, safe to persist
-    static readonly UnityEngine.Pool.ObjectPool<VisualElementManipulatorOverlay> s_Pool =
+    [AutoStaticsCleanupOnCodeReload] // pooled elements must not outlive the reload that frees their style data
+    static readonly CodeLoadScopedPool<VisualElementManipulatorOverlay> s_Pool =
         new(() => new VisualElementManipulatorOverlay(),
             null,
             overlay => overlay.Deactivate());

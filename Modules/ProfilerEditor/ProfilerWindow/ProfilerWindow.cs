@@ -123,6 +123,8 @@ namespace UnityEditor
         const string k_UxmlIdentifier_ToolbarViewContainer = "profiler-view__toolbar-view-container";
         const string k_UxmlIdentifier_BottlenecksViewContainer = "profiler-view__bottlenecks-view-container";
         const string k_UxmlIdentifier_PinnedModulesContainer = "profiler-view__pinned-modules-container";
+        const string k_UxmlIdentifier_PinnedModulesScroll = "profiler-view__pinned-modules-scroll";
+        const string k_UxmlIdentifier_PinnedModulesResizer = "profiler-view__pinned-modules-resizer";
         const string k_UxmlIdentifier_CapturesListViewContainer = "profiler-view__captures-list-view-container";
         const string k_UxmlIdentifier_CaptureRenameWarning = "profiler-view__capture-rename-warning";
         const string k_UxmlIdentifier_SplitView = "profiler-view__split-view";
@@ -134,8 +136,13 @@ namespace UnityEditor
         internal const int k_NoModuleSelected = -1;
         internal const string k_SelectedModuleIndexPreferenceKey = "ProfilerWindow.SelectedModuleIndex";
         const string k_DynamicModulesPreferenceKey = "ProfilerWindow.DynamicModules";
+        // Newline-separated module identifiers, in the order they were pinned.
+        internal const string k_PinnedModulesOrderPreferenceKey = "ProfilerWindow.PinnedModulesOrder";
         const string k_FrameSelectionRangeStartKey = "ProfilerWindow.FrameSelectionRangeStart";
         internal const int k_MaximumPinnedModules = 4;
+        internal static readonly string PinLimitReachedTooltip = string.Format(
+            L10n.Tr("Only {0} modules can be pinned. Unpin a module to pin another.", null),
+            k_MaximumPinnedModules);
         const string k_FrameSelectionRangeEndKey = "ProfilerWindow.FrameSelectionRangeEnd";
         const string k_CurrentLoadedCaptureFileKey = "ProfilerWindow.CurrentLoadedCaptureFile";
         const int k_NoFrameSelectionSession = -99;
@@ -170,7 +177,8 @@ namespace UnityEditor
         bool m_IsInitialized = false;
 
         [NonSerialized]
-        bool m_WasCreateGUICalled = false;
+        // Internal so tests can wait for the deferred CreateGUI call.
+        internal bool m_WasCreateGUICalled = false;
 
         [NonSerialized]
         bool m_LastGPUModuleActiveState = false;
@@ -214,6 +222,9 @@ namespace UnityEditor
         internal VisualElement m_ChartsContainer;
         VisualElement m_BottlenecksViewContainer;
         internal VisualElement m_PinnedModulesContainer;
+        List<string> m_PinnedModulesOrder;
+        ScrollView m_PinnedModulesScroll;
+        PinnedModulesAreaResizer m_PinnedModulesAreaResizer;
         VisualElement m_DetailsViewContainer;
         MatchWidthLock m_Charts2BottlenecksWidthLock;
         MatchWidthLock m_Charts2PinnedModulesWidthLock;
@@ -758,6 +769,13 @@ namespace UnityEditor
             m_Charts2PinnedModulesWidthLock = new MatchWidthLock(m_PinnedModulesContainer);
             m_Charts2PinnedModulesWidthLock.SetSource(m_ChartsContainer);
 
+            m_PinnedModulesScroll = rootVisualElement.Q<ScrollView>(k_UxmlIdentifier_PinnedModulesScroll);
+            m_PinnedModulesAreaResizer = new PinnedModulesAreaResizer(
+                rootVisualElement.Q<VisualElement>(k_UxmlIdentifier_PinnedModulesResizer),
+                m_PinnedModulesScroll);
+            m_PinnedModulesContainer.RegisterCallback<GeometryChangedEvent>(_ => UpdatePinnedModulesScrollFloor());
+            UpdatePinnedModulesScrollFloor();
+
             MainSplitView = rootVisualElement.Q<TwoPaneSplitView>(k_UxmlIdentifier_SplitView);
             // TwoPaneSplitView.viewDataKey is not currently supported so we need to manually persist its state.
             var fixedPaneSize = EditorPrefs.GetFloat(k_MainSplitViewFixedPaneSizePreferenceKey, k_MinimumWindowSize.y * 0.5f);
@@ -774,27 +792,33 @@ namespace UnityEditor
         internal void UpdateVisualTreeModulesOrder()
         {
             foreach (var module in m_AllModules)
+            {
+                // Pinned charts are ordered by UpdatePinnedModulesOrder.
+                if (module.pinned && module.active)
+                    continue;
+
                 module.ChartViewController?.View.BringToFront();
+            }
         }
 
         internal void OnModulePinnedStateChanged(ProfilerModule module)
         {
+            // m_Pinned is already set by the time we get here, so the count includes this module.
+            // The pin UI is disabled at the limit, so this only catches programmatic setters.
+            if (module.pinned && GetPinnedModuleCount() > k_MaximumPinnedModules)
+            {
+                // Revert; SetPinnedStateWithoutCallback avoids re-entering this method.
+                module.SetPinnedStateWithoutCallback(false);
+                return;
+            }
+
+            // Sync for inactive modules too, so the order reflects when they were pinned.
+            SyncPinnedModulesOrder();
+
             // Pinned state persists for inactive modules but doesn't move them. When they
             // become active, PlaceChartViewInContainer (via ApplyActiveState) moves them then.
             if (!module.active)
                 return;
-
-            // m_Pinned is already set by the time we get here, so the count includes this module.
-            if (module.pinned && GetPinnedModuleCount() > k_MaximumPinnedModules)
-            {
-                // Revert and notify; SetPinnedStateWithoutCallback avoids re-entering this method.
-                module.SetPinnedStateWithoutCallback(false);
-                EditorUtility.DisplayDialog(
-                    "Pinning limit",
-                    $"You can pin a maximum of {k_MaximumPinnedModules} modules. Unpin another module first.",
-                    "OK");
-                return;
-            }
 
             PlaceChartViewInContainer(module);
             module.ChartViewController.NotifyPinnedStateChanged();
@@ -808,18 +832,8 @@ namespace UnityEditor
             if (chartView == null)
                 return;
 
+            // The pin limit is enforced when pinning, so activating a module never unpins it.
             bool intoPinned = module.pinned && module.active;
-
-            // Enforce the pinned-modules limit on every path that reaches here. The user-initiated
-            // toggle path (OnModulePinnedStateChanged) already guarded with a dialog; the init-restore
-            // and ApplyActiveState paths reach this without that guard, so silently demote rather than
-            // popping a dialog mid-init.
-            if (intoPinned && GetPinnedModuleCount() > k_MaximumPinnedModules)
-            {
-                module.SetPinnedStateWithoutCallback(false);
-                module.ChartViewController?.NotifyPinnedStateChanged();
-                intoPinned = false;
-            }
 
             var targetParent = intoPinned ? m_PinnedModulesContainer : m_ChartsContainer;
             if (chartView.parent != targetParent)
@@ -829,31 +843,85 @@ namespace UnityEditor
             }
 
             if (intoPinned)
+            {
                 UpdatePinnedModulesOrder();
+            }
             else
+            {
+                SyncPinnedModulesOrder();
                 UpdateVisualTreeModulesOrder();
+            }
+
+            UpdatePinAvailabilityIndicators();
+            UpdatePinnedModulesScrollFloor();
         }
 
+        // Capped at the content height so a short pinned module (e.g. Screenshots) leaves no blank band.
+        void UpdatePinnedModulesScrollFloor()
+        {
+            if (m_PinnedModulesScroll == null)
+                return;
+
+            var contentHeight = m_PinnedModulesContainer.layout.height;
+            if (m_PinnedModulesContainer.childCount == 0 || float.IsNaN(contentHeight))
+                m_PinnedModulesScroll.style.minHeight = StyleKeyword.Null;
+            else
+                m_PinnedModulesScroll.style.minHeight = Mathf.Min(PinnedModulesAreaResizer.k_MinimumHeight, contentHeight);
+        }
+
+        internal void UpdatePinAvailabilityIndicators()
+        {
+            var atPinLimit = GetPinnedModuleCount() >= k_MaximumPinnedModules;
+            foreach (var module in m_AllModules)
+                module.ChartViewController?.NotifyPinAvailabilityChanged(atPinLimit);
+        }
+
+        // Includes inactive modules, so activating a module can't exceed the limit.
         internal int GetPinnedModuleCount()
         {
             int count = 0;
             foreach (var module in m_AllModules)
             {
-                if (module.pinned && module.active)
+                if (module.pinned)
                     count++;
             }
             return count;
         }
 
-        // m_AllModules is sorted by orderIndex at init, so we can walk it directly to preserve
-        // that ordering when re-stacking pinned siblings via BringToFront.
+        // Pinned modules stack in the order they were pinned.
         internal void UpdatePinnedModulesOrder()
         {
-            foreach (var module in m_AllModules)
+            SyncPinnedModulesOrder();
+            foreach (var identifier in m_PinnedModulesOrder)
             {
-                if (module.pinned && module.active)
+                if (TryGetModuleInCollection(identifier, m_AllModules, out ProfilerModule module)
+                    && module.pinned && module.active)
                     module.ChartViewController?.View.BringToFront();
             }
+        }
+
+        // Drops unpinned modules from the pin order and appends newly pinned ones. Reads the persisted
+        // pinned state because during CreateGUI later modules haven't loaded their in-memory flag yet.
+        void SyncPinnedModulesOrder()
+        {
+            m_PinnedModulesOrder ??= new List<string>(
+                EditorPrefs.GetString(k_PinnedModulesOrderPreferenceKey, string.Empty)
+                    .Split(new[] { '\n' }, StringSplitOptions.RemoveEmptyEntries));
+
+            var changed = m_PinnedModulesOrder.RemoveAll(
+                identifier => !TryGetModuleInCollection(identifier, m_AllModules, out ProfilerModule module) || !module.GetPinnedStateForWindow()) > 0;
+
+            foreach (var module in m_AllModules)
+            {
+                if (module.GetPinnedStateForWindow() && !m_PinnedModulesOrder.Contains(module.Identifier))
+                {
+                    m_PinnedModulesOrder.Add(module.Identifier);
+                    changed = true;
+                }
+            }
+
+            if (changed)
+                EditorPrefs.SetString(k_PinnedModulesOrderPreferenceKey, string.Join("\n", m_PinnedModulesOrder));
         }
 
         void SubscribeToGlobalEvents()

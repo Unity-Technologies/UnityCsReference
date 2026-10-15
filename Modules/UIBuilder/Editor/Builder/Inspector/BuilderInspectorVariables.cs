@@ -34,6 +34,12 @@ namespace Unity.UI.Builder
 
         protected override VariablesListItem CreateListItem() => new BuilderInspectorVariablesListItem();
 
+        protected override void ResetAssetFieldType(BaseField<UnityEngine.Object> assetField)
+        {
+            if (assetField is MultiTypeField multiTypeField)
+                multiTypeField.SetTypePopupValueWithoutNotify(typeof(UnityEngine.Texture2D));
+        }
+
         protected override void UpdateOverrideRowsTrackedProperties()
         {
             base.UpdateOverrideRowsTrackedProperties();

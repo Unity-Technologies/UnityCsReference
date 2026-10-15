@@ -181,6 +181,7 @@ namespace UnityEditorInternal.Profiling
         RenderingProfilerModule m_Module;
         ScrollView m_Root;
         VisualElement m_Content;
+        IVisualElementScheduledItem m_PendingReload;
 
         // Persist foldout state across frame changes
         bool m_ExcludedReasonsOpen;
@@ -222,11 +223,17 @@ namespace UnityEditorInternal.Profiling
         protected override void Dispose(bool disposing)
         {
             if (!disposing) return;
+            m_PendingReload?.Pause();
             ProfilerWindow.SelectedFrameIndexChanged -= OnFrameChanged;
             base.Dispose(disposing);
         }
 
-        void OnFrameChanged(long idx) => ReloadData(idx);
+        void OnFrameChanged(long idx)
+        {
+            // Can be raised from the IMGUI toolbar during a layout pass, where the hierarchy can't be modified.
+            m_PendingReload?.Pause();
+            m_PendingReload = View.schedule.Execute(() => ReloadData(idx));
+        }
 
         void ReloadData(long selectedFrameIndex)
         {

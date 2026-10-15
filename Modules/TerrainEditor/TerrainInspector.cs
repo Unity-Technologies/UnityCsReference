@@ -421,7 +421,8 @@ namespace UnityEditor
         static OnPaintContext onPaintEditContext = new OnPaintContext(new RaycastHit(), null, Vector2.zero, 0.0f, 0.0f);
         [NoAutoStaticsCleanup] // reusable stateless scratch context
         static OnInspectorGUIContext onInspectorGUIEditContext = new OnInspectorGUIContext();
-        [NoAutoStaticsCleanup] // reusable scratch context, re-populated via Set() before each scene call
+        // Holds the last SceneView, whose overlay canvas references the terrain tools; recreate on reload.
+        [AutoStaticsCleanupOnCodeReload(CleanupStrategy = CleanupStrategy.CaptureInitializationExpression)]
         static OnSceneGUIContext onSceneGUIEditContext = new OnSceneGUIContext(null, new RaycastHit(), null, 0.0f, 0.0f, 0);
 
         // Coupled with m_ActiveTerrainTool below: reset to the editor-tool default on reload so the pair stays

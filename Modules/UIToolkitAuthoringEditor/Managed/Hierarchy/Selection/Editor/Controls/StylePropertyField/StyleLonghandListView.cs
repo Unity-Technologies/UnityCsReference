@@ -52,6 +52,13 @@ class RowChangedEvent<TData> : EventBase<RowChangedEvent<TData>>
     {
         bubbles = true;
     }
+
+    protected override void Init()
+    {
+        base.Init();
+        field = null;
+        data = default;
+    }
 }
 
 /// <summary>

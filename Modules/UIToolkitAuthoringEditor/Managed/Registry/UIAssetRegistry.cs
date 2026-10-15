@@ -630,6 +630,9 @@ internal sealed partial class UIAssetRegistry : ScriptableSingleton<UIAssetRegis
                     ClearUndoForSingleAsset(asset);
                     MarkClean(asset);
                 }
+
+                // Post handlers must see dependents with their unsaved edits restored, not the content the reimport left.
+                FlushPendingReimports();
             }
             finally
             {
@@ -690,6 +693,8 @@ internal sealed partial class UIAssetRegistry : ScriptableSingleton<UIAssetRegis
                 ReimportFromDisk(path);
 
                 ReconcileAfterReimportToDisk(id);
+
+                FlushPendingReimports();
             }
             finally
             {

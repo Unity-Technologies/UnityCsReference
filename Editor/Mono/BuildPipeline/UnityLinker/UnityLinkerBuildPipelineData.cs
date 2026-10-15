@@ -18,6 +18,8 @@ namespace UnityEditor.UnityLinker
         public readonly string inputDirectory;
 
         ///<summary>Creates a new instance of an UnityLinkerBuildPipelineData.</summary>
+        ///<param name="target">The build target.</param>
+        ///<param name="inputDirectory">The directory containing the assemblies that UnityLinker processes. On platforms that use the incremental build pipeline, this directory doesn't contain any files.</param>
         public UnityLinkerBuildPipelineData(BuildTarget target, string inputDirectory)
         {
             this.target = target;

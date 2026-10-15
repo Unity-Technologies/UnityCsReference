@@ -347,6 +347,24 @@ namespace UnityEditor
             return go;
         }
 
+        // Managed counterpart of the native IsUserModifiable: false for null, NotEditable,
+        // immutable prefab assets and assets whose file can't be opened for edit.
+        internal static bool IsUserModifiable(Object o)
+        {
+            if (o == null)
+                return false;
+            if ((o.hideFlags & HideFlags.NotEditable) != 0)
+                return false;
+            if (IsPersistent(o))
+            {
+                if (PrefabUtility.IsPartOfImmutablePrefab(o))
+                    return false;
+                if (!Editor.IsAppropriateFileOpenForEdit(o))
+                    return false;
+            }
+            return true;
+        }
+
         internal static bool IsHiddenInInspector(Editor editor)
         {
             if (!editor || editor.hideInspector)

@@ -17,8 +17,8 @@ namespace Unity.UIToolkit.Editor;
 [UxmlElement]
 sealed partial class ClassListElement : VisualElement, IVisualElementChangeProcessor
 {
-    [NoAutoStaticsCleanup] // pill pool, safe to persist
-    static UnityEngine.Pool.ObjectPool<ClassPill> s_PillPool = new(CreatePill, null, OnReleasePill);
+    [AutoStaticsCleanupOnCodeReload] // pooled elements must not outlive the reload that frees their style data
+    static CodeLoadScopedPool<ClassPill> s_PillPool = new(CreatePill, null, OnReleasePill);
 
     static ClassPill CreatePill()
     {
@@ -517,7 +517,7 @@ sealed partial class ClassListElement : VisualElement, IVisualElementChangeProce
         RequestSelectionQuery<StyleRule>.Execute(CommandSources.Inspector, activeStyleSheet.rules[^1]);
     }
 
-    void ResizeClassList(VisualElement element, int count, UnityEngine.Pool.ObjectPool<ClassPill> pool)
+    void ResizeClassList(VisualElement element, int count, CodeLoadScopedPool<ClassPill> pool)
     {
         if (element.childCount < count)
         {

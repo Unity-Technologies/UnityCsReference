@@ -845,9 +845,8 @@ namespace UnityEngine.Networking
         ///
         ///This method can only be called once on any given <see cref="UnityWebRequest" /> object.
         ///
-        ///Once this method is called, you cannot change any of the UnityWebRequest’s properties. You cannot change <see cref="UnityWebRequest" /> properties after <see cref="SendWebRequest" /> is called.
-        ///
-        ///This method returns a <see cref="UnityWebRequestAsyncOperation" /> object. Yielding the <see cref="UnityWebRequestAsyncOperation" /> inside a coroutine will cause the coroutine to pause until the <see cref="UnityWebRequest" /> encounters a system error or finishes communicating.</remarks>
+        ///Once this method is called, you cannot change any of the UnityWebRequest’s properties. You cannot change <see cref="UnityWebRequest" /> properties after <see cref="SendWebRequest" /> is called.</remarks>
+        ///<returns>An <see cref="UnityWebRequestAsyncOperation" /> object that tracks the progress of the request. Yield it inside a coroutine to wait until the request finishes or encounters a system error.</returns>
         public UnityWebRequestAsyncOperation SendWebRequest()
         {
             UnityWebRequestAsyncOperation webOp = BeginWebRequest();

@@ -68,7 +68,6 @@ partial class UxmlAttributesView : VisualElement
 
         m_RootPropertyView = new UxmlSerializedDataPropertyView();
         hierarchy.Add(m_RootPropertyView);
-        Context = new UxmlAttributesEditingContext(new UxmlAttributesEditingController());
     }
 
     /// <summary>

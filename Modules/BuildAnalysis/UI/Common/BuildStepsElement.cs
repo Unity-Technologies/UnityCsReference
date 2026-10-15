@@ -18,6 +18,10 @@ namespace UnityEditor.Build.Analysis
         private const int k_MaxVisibleRows = 13;
         private const string k_UssPath = "BuildAnalysis/StyleSheets/BuildSteps.uss";
 
+        // Two .build-step-badge widths from BuildSteps.uss, since a cell shows the error and warning
+        // badges side by side and a column cannot size itself to its cells.
+        private const int k_BadgeColumnWidth = 116;
+
         public static readonly string emptyLabelUssClassName = "build-steps__empty-label";
 
         private struct StepItemData
@@ -78,7 +82,7 @@ namespace UnityEditor.Build.Analysis
             m_TreeView.columns.Add(new Column
             {
                 name = "badges",
-                width = 70,
+                width = k_BadgeColumnWidth,
                 stretchable = false,
                 resizable = false,
                 makeCell = MakeBadgeCell,

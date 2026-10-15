@@ -404,13 +404,18 @@ namespace Unity.GraphToolkit.Editor
             k_PickedElements.Clear();
             panel.PickAll(position, k_PickedElements);
 
+            ConditionView result = null;
             for (var i = 0; i < k_PickedElements.Count; i++)
             {
                 if (k_PickedElements[i] is ConditionView conditionView)
-                    return conditionView;
+                {
+                    result = conditionView;
+                    break;
+                }
             }
 
-            return null;
+            k_PickedElements.Clear();
+            return result;
         }
 
         GroupConditionView GetGroupAtPosition(Vector2 position)
@@ -418,16 +423,21 @@ namespace Unity.GraphToolkit.Editor
             k_PickedElements.Clear();
             m_InteractedCondition.panel.PickAll(position, k_PickedElements);
 
+            GroupConditionView result = m_RootConditionView;
             for (int i = 0; i < k_PickedElements.Count; i++)
             {
                 if (k_PickedElements[i] is GroupConditionView groupCondition)
                 {
                     if (!m_DragRoot.Contains(groupCondition) && !IsGroupInSelection(groupCondition))
-                        return groupCondition;
+                    {
+                        result = groupCondition;
+                        break;
+                    }
                 }
             }
 
-            return m_RootConditionView;
+            k_PickedElements.Clear();
+            return result;
         }
 
         void OnPointerMoveEvent(PointerMoveEvent evt)

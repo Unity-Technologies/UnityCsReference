@@ -25,12 +25,13 @@ namespace UnityEditor.Build
 
         ///<summary>Constructs a BuildFailedException object.</summary>
         ///<param name="message">A string of text describing the error that caused the build to fail.</param>
-        ///<param name="innerException">The exception that caused the build to fail.</param>
         public BuildFailedException(string message) :
             base(message)
         {
         }
 
+        ///<summary>Constructs a BuildFailedException object.</summary>
+        ///<param name="innerException">The exception that caused the build to fail.</param>
         public BuildFailedException(Exception innerException) :
             base(null, innerException)
         {

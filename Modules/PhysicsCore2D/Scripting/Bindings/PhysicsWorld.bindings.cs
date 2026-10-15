@@ -122,6 +122,7 @@ namespace Unity.U2D.Physics
         [NativeMethod(Name = "PhysicsWorld::CastShape", IsThreadSafe = true)] extern internal static PhysicsBuffer PhysicsWorld_CastShape(PhysicsWorld world, PhysicsShape.ShapeProxy shapeProxy, Vector2 origin, Vector2 translation, PhysicsQuery.QueryFilter filter, PhysicsQuery.WorldCastMode castMode, PhysicsShape ignoreShape, Allocator allocator);
         [NativeMethod(Name = "PhysicsWorld::CastMover", IsThreadSafe = true)] extern internal static PhysicsQuery.WorldMoverResult PhysicsWorld_CastMover(PhysicsWorld world, PhysicsQuery.WorldMoverInput input);
         [NativeMethod(Name = "PhysicsWorld::GetAwakeBodyCount", IsThreadSafe = true)] extern internal static int PhysicsWorld_GetAwakeBodyCount(PhysicsWorld world);
+        [NativeMethod(Name = "PhysicsWorld::GetCallbackTargetCount", IsThreadSafe = true)] extern internal static int PhysicsWorld_GetCallbackTargetCount(PhysicsWorld world);
         [NativeMethod(Name = "PhysicsWorld::GetCounters", IsThreadSafe = true)] extern internal static PhysicsWorld.WorldCounters PhysicsWorld_GetCounters(PhysicsWorld world);
         [NativeMethod(Name = "PhysicsWorld::GetBounds", IsThreadSafe = true)] extern internal static PhysicsAABB PhysicsWorld_GetBounds(PhysicsWorld world);
         [NativeMethod(Name = "PhysicsWorld::CreateSnapshot", IsThreadSafe = true)] extern internal static PhysicsBuffer PhysicsWorld_CreateSnapshot(PhysicsWorld world, Allocator allocator);

@@ -381,6 +381,9 @@ namespace Unity.Profiling.Editor
             Update();
 
             ProfilerWindow.UpdateVisualTreeModulesOrder();
+            // The new controller was appended at the end and doesn't know about the pin limit.
+            ProfilerWindow.UpdatePinnedModulesOrder();
+            ProfilerWindow.UpdatePinAvailabilityIndicators();
         }
 
         internal void DisposeChartViewController()

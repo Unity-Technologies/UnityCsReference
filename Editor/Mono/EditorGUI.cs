@@ -1803,9 +1803,10 @@ namespace UnityEditor
             GUI.enabled = true;
 
             // Data-component editors have no UnityEngine.Object target; the
-            // Object-only branches below (context menu, drag-source, drop-target)
-            // are skipped in that case.
-            bool hasTargetObject = editor == null || !editor.isDataComponentEditor;
+            // Object-only branches below (drag-source, drop-target) are skipped
+            // and the context menu is replaced by the data-component one.
+            bool isDataComponentEditor = editor != null && editor.isDataComponentEditor;
+            bool hasTargetObject = !isDataComponentEditor;
 
             // Context menu
             Event evt = Event.current;
@@ -1827,7 +1828,14 @@ namespace UnityEditor
                     break;
 
                 case EventType.ContextClick:
-                    if (hasTargetObject && interactionRect.Contains(evt.mousePosition) && IsValidForContextMenu(targetObjs[0]))
+                    if (!interactionRect.Contains(evt.mousePosition))
+                        break;
+                    if (isDataComponentEditor)
+                    {
+                        DisplayDataComponentContextMenu(new Rect(evt.mousePosition.x, evt.mousePosition.y, 0, 0), editor);
+                        evt.Use();
+                    }
+                    else if (IsValidForContextMenu(targetObjs[0]))
                     {
                         EditorUtility.DisplayObjectContextMenu(new Rect(evt.mousePosition.x, evt.mousePosition.y, 0, 0), targetObjs, 0);
                         evt.Use();
@@ -6485,17 +6493,63 @@ namespace UnityEditor
             return type != typeof(MonoBehaviour) && type != typeof(ScriptableObject);
         }
 
+        // Data-component editors have no UnityEngine.Object target for DisplayObjectContextMenu,
+        // so their titlebar gets its own menu.
+        static void DisplayDataComponentContextMenu(Rect position, Editor editor)
+        {
+            EntityId[] componentIds = editor.targetEntityIds;
+            var menu = new GenericMenu();
+            GUIContent removeContent = L10n.TextContent("Remove Component", null, null, null);
+            if (CanRemoveDataComponents(componentIds))
+                menu.AddItem(removeContent, false, () => RemoveDataComponents(componentIds));
+            else
+                menu.AddDisabledItem(removeContent);
+            menu.DropDown(position);
+        }
+
+        static Object GetDataComponentOwner(EntityId componentId)
+            => EditorUtility.EntityIdToObject(DataComponentEntityId.GetOwner(componentId));
+
+        internal static bool CanRemoveDataComponents(EntityId[] componentIds)
+        {
+            if (componentIds == null || componentIds.Length == 0)
+                return false;
+            foreach (EntityId componentId in componentIds)
+            {
+                if (!EditorUtility.IsUserModifiable(GetDataComponentOwner(componentId)))
+                    return false;
+            }
+            return true;
+        }
+
+        // Removes nothing unless all targets can be removed, so a multi-selection is never half-removed.
+        internal static void RemoveDataComponents(EntityId[] componentIds)
+        {
+            if (!CanRemoveDataComponents(componentIds))
+                return;
+
+            foreach (EntityId componentId in componentIds)
+            {
+                if (!EntityComponentDataAccessTestBridge.RemoveComponent(componentId))
+                    continue;
+
+                // Dirtying the owning GameObject makes the trackers inspecting it drop the removed row on the next flush
+                EditorUtility.SetDirty(GetDataComponentOwner(componentId));
+            }
+        }
+
         // Make an inspector-window-like titlebar.
         //
         // editor is optional. When present and it's a data-component editor,
         // hasTargetObject is false and every Object-deref site is skipped —
         // targetObjs is null-filled for data components, and the icon,
-        // enabled-toggle, header items, and options context menu are all
-        // Object-specific concerns. The title falls back to Editor.GetInspectorTitle
+        // enabled-toggle and header items are Object-specific concerns; the
+        // options menu is the data-component one. The title falls back to Editor.GetInspectorTitle
         // which dispatches correctly for both target kinds.
         internal static void DoInspectorTitlebar(Rect position, int id, bool foldout, Object[] targetObjs, Editor editor, SerializedProperty enabledProperty, GUIStyle baseStyle)
         {
-            bool hasTargetObject = editor == null || !editor.isDataComponentEditor;
+            bool isDataComponentEditor = editor != null && editor.isDataComponentEditor;
+            bool hasTargetObject = !isDataComponentEditor;
 
             if (hasTargetObject && ShouldSkipInspectorTitlebar(targetObjs[0]))
                 return;
@@ -6561,9 +6615,12 @@ namespace UnityEditor
             switch (evt.type)
             {
                 case EventType.MouseDown:
-                    if (hasTargetObject && EditorGUIUtility.comparisonViewMode == EditorGUIUtility.ComparisonViewMode.None && settingsRect.Contains(evt.mousePosition))
+                    if (EditorGUIUtility.comparisonViewMode == EditorGUIUtility.ComparisonViewMode.None && settingsRect.Contains(evt.mousePosition))
                     {
-                        EditorUtility.DisplayObjectContextMenu(settingsRect, targetObjs, 0);
+                        if (isDataComponentEditor)
+                            DisplayDataComponentContextMenu(settingsRect, editor);
+                        else
+                            EditorUtility.DisplayObjectContextMenu(settingsRect, targetObjs, 0);
                         evt.Use();
                     }
                     break;
@@ -6571,7 +6628,7 @@ namespace UnityEditor
                     string title = editor?.GetInspectorTitle(targetObjs.Length > 1)
                         ?? ObjectNames.GetInspectorTitle(targetObjs[0], targetObjs.Length > 1);
                     textStyle.Draw(textRect, EditorGUIUtility.TempContent(title), hovered, pressed, foldout, hasFocus);
-                    if (hasTargetObject && EditorGUIUtility.comparisonViewMode == EditorGUIUtility.ComparisonViewMode.None)
+                    if (EditorGUIUtility.comparisonViewMode == EditorGUIUtility.ComparisonViewMode.None)
                     {
                         EditorStyles.optionsButtonStyle.Draw(settingsRect, GUIContent.none, id, foldout, settingsRect.Contains(Event.current.mousePosition));
                     }

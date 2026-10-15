@@ -12,22 +12,27 @@ using Unity.Scripting.LifecycleManagement;
 
 namespace Unity.UIToolkit.Editor
 {
-    [InitializeOnLoad]
-    internal static class UIToolkitSceneViewPicking
+    internal static partial class UIToolkitSceneViewPicking
     {
-        static UIToolkitSceneViewPicking()
+        [OnCodeLoaded]
+        static void Initialize()
         {
-            // Register with Unity's picking system
             HandleUtility.RegisterRenderPickingCallback(RenderForPicking);
+        }
+
+        [OnCodeUnloading]
+        static void Shutdown()
+        {
+            HandleUtility.UnregisterRenderPickingCallback(RenderForPicking);
         }
 
         [NoAutoStaticsCleanup] // lazily-created picking material, safe to persist
         static Material s_PickingMaterial;
         [NoAutoStaticsCleanup] // lazily-created quad mesh, safe to persist
         static Mesh s_QuadMesh;
-        [NoAutoStaticsCleanup] // scratch list, safe to persist
+        [AutoStaticsCleanupOnCodeReload]
         static List<IPanelComponent> s_PickedPanels = new();
-        [NoAutoStaticsCleanup] // per-pick scratch set, safe to persist
+        [AutoStaticsCleanupOnCodeReload]
         static HashSet<Object> s_SystemIgnoreSet; // System ignore/filter set for GetAllOverlapping
         [NoAutoStaticsCleanup] // picking-type state, safe to persist
         static RenderPickingType s_RenderPickingType; // Type determines how to interpret the ignore set

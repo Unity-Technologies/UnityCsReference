@@ -22,5 +22,12 @@ namespace Unity.UI.Builder
         public BuilderTransition transition;
         public TransitionChangeType changeType;
         public int index;
+
+        protected override void Init()
+        {
+            base.Init();
+            field = null;
+            transition = default;
+        }
     }
 }

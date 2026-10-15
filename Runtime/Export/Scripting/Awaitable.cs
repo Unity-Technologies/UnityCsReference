@@ -64,6 +64,7 @@ namespace UnityEngine
         Action _continuation;
         CancellationTokenRegistration? _cancelTokenRegistration;
         DoubleBufferedAwaitableList _managedCompletionQueue;
+        int _poolGeneration;
 
         // Captured at creation since Awaitable never flows ExecutionContext, so an AsyncLocal read later wouldn't be reliable.
         int _codeLoadedGenerationAtCreation;
@@ -233,6 +234,7 @@ namespace UnityEngine
                 _exceptionToRethrow = null;
                 _managedCompletionQueue = null;
                 _continuation = null;
+                _poolGeneration++;
                 var codeLoadedGenerationAtCreation = _codeLoadedGenerationAtCreation;
                 if (!ptr.IsManaged && !ptr.IsNull)
                 {

@@ -2227,6 +2227,9 @@
     <Compile Include="..\..\Editor\Mono\Inspector\CustomRenderTextureEditor.cs">
       <Link>Editor\Mono\Inspector\CustomRenderTextureEditor.cs</Link>
     </Compile>
+    <Compile Include="..\..\Editor\Mono\Inspector\DataComponentEntityId.cs">
+      <Link>Editor\Mono\Inspector\DataComponentEntityId.cs</Link>
+    </Compile>
     <Compile Include="..\..\Editor\Mono\Inspector\DirectorEditor.cs">
       <Link>Editor\Mono\Inspector\DirectorEditor.cs</Link>
     </Compile>
@@ -13033,6 +13036,9 @@
     <Compile Include="..\..\Modules\ProfilerEditor\ProfilerWindow\Utilities\MatchSizeLock.cs">
       <Link>Modules\ProfilerEditor\ProfilerWindow\Utilities\MatchSizeLock.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\ProfilerEditor\ProfilerWindow\Utilities\PinnedModulesAreaResizer.cs">
+      <Link>Modules\ProfilerEditor\ProfilerWindow\Utilities\PinnedModulesAreaResizer.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\ProfilerEditor\ProfilerWindow\Utilities\UIUtility.cs">
       <Link>Modules\ProfilerEditor\ProfilerWindow\Utilities\UIUtility.cs</Link>
     </Compile>
@@ -14490,6 +14496,12 @@
     </Compile>
     <Compile Include="..\..\Modules\ShaderLabParserEditor\Public\Reflection\VirtualFunctionOverride.bindings.cs">
       <Link>Modules\ShaderLabParserEditor\Public\Reflection\VirtualFunctionOverride.bindings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\ShaderVariantAnalyserEditor\Managed\DataRecorder.bindings.cs">
+      <Link>Modules\ShaderVariantAnalyserEditor\Managed\DataRecorder.bindings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\ShaderVariantAnalyserEditor\Managed\VariantsDatabaseWriterScope.cs">
+      <Link>Modules\ShaderVariantAnalyserEditor\Managed\VariantsDatabaseWriterScope.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\ShortcutManagerEditor\BindingValidator.cs">
       <Link>Modules\ShortcutManagerEditor\BindingValidator.cs</Link>
@@ -17866,6 +17878,9 @@
     <Compile Include="..\..\Modules\UIToolkitAuthoringEditor\Managed\UIResources.cs">
       <Link>Modules\UIToolkitAuthoringEditor\Managed\UIResources.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\UIToolkitAuthoringEditor\Managed\Utilities\CodeLoadScopedPool.cs">
+      <Link>Modules\UIToolkitAuthoringEditor\Managed\Utilities\CodeLoadScopedPool.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\UIToolkitAuthoringEditor\Managed\Utilities\UIAnimationClipFactory.cs">
       <Link>Modules\UIToolkitAuthoringEditor\Managed\Utilities\UIAnimationClipFactory.cs</Link>
     </Compile>
@@ -18187,7 +18202,7 @@
     </PropertyGroup>
   </Target>
   <ItemGroup>
-    <Analyzer Include="/tmp/uitoolkit_gen_0nqy_6hp/Unity.UIToolkit.SourceGenerator.dll" />
+    <Analyzer Include="/tmp/uitoolkit_gen_hss3wqf1/Unity.UIToolkit.SourceGenerator.dll" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="10.0.8" />

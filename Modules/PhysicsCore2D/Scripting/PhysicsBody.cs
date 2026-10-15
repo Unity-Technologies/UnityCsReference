@@ -1896,7 +1896,7 @@ namespace Unity.U2D.Physics
         ///
         ///- A <see cref="PhysicsEvents.BodyUpdateEvent"/> with call <see cref="PhysicsCallbacks.IBodyUpdateCallback"/>.
         /// </summary>
-        public readonly System.Object callbackTarget { get => PhysicsBody_GetCallbackTarget(this); set => PhysicsBody_SetCallbackTarget(this, value); }
+        public readonly System.Object callbackTarget { get => PhysicsBody_GetCallbackTarget(this); set => PhysicsBody_SetCallbackTarget(this, value, System.Runtime.CompilerServices.RuntimeHelpers.GetHashCode(value)); }
 
         /// <summary>
         /// Get/Set <see cref="PhysicsUserData"/> that can be used for any purpose.
@@ -1949,6 +1949,18 @@ namespace Unity.U2D.Physics
         /// <param name="physicsUserData">The user data to set on every body.</param>
         /// <returns>The number of bodies that were ignored (not set because the body was invalid). A single warning is logged when any are ignored.</returns>
         public static int SetUserData(ReadOnlySpan<PhysicsBody> bodies, PhysicsUserData physicsUserData) => PhysicsBody_SetUserDataSpanAll(bodies, physicsUserData);
+
+        /// <summary>
+        /// Set the same <see cref="System.Object"/> that event callbacks will be sent to on a batch of bodies.
+        /// Each body is assigned the callback target as <see cref="callbackTarget"/> would, and setting it to NULL removes it.
+        /// </summary>
+        /// <remarks>
+        /// This is faster than setting <see cref="callbackTarget"/> on each body.
+        /// </remarks>
+        /// <param name="bodies">The bodies to set the callback target on.</param>
+        /// <param name="callbackTarget">The callback target to set on every body, or NULL to remove it.</param>
+        /// <returns>The number of bodies that were ignored (not set because the body was invalid). A single warning is logged when any are ignored.</returns>
+        public static int SetCallbackTarget(ReadOnlySpan<PhysicsBody> bodies, System.Object callbackTarget) => PhysicsBody_SetCallbackTargetSpan(bodies, callbackTarget, System.Runtime.CompilerServices.RuntimeHelpers.GetHashCode(callbackTarget));
 
         /// <summary>
         /// Get/Set the transform object associated with the body.

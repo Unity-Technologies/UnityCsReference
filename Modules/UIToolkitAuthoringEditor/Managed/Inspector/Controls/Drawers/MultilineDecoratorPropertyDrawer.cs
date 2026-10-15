@@ -14,32 +14,27 @@ namespace Unity.UIToolkit.Editor
     [CustomPropertyDrawer(typeof(MultilineDecoratorAttribute))]
     class MultilineDecoratorPropertyDrawer : PropertyDrawer
     {
-        SerializedProperty m_Property;
-
         public override VisualElement CreatePropertyGUI(SerializedProperty property)
         {
-            m_Property = property;
-
-            var field = new Toggle(property.localizedDisplayName) {
+            var toggle = new Toggle(property.localizedDisplayName) {
                 bindingPath = property.propertyPath
             }.WithClassList(Toggle.alignedFieldUssClassName);
 
-            field.RegisterCallback<ChangeEvent<bool>>(evt => SetMultilineOfValueField(evt.newValue, evt.target as VisualElement));
-            return field;
+            toggle.RegisterCallback<ChangeEvent<bool>>(_ => SetMultilineOfValueField(toggle, true));
+            toggle.RegisterCallback<AttachToPanelEvent>(_ => SetMultilineOfValueField(toggle, true));
+            return toggle;
         }
 
-        void SetMultilineOfValueField(bool multiline, VisualElement visualElement)
+        static void SetMultilineOfValueField(Toggle toggle, bool retryIfNotCreated)
         {
-            VisualElement inspector = null;
-
             // First try to find UxmlSerializedDataPropertyView ancestor
-            inspector = visualElement.GetFirstAncestorOfType<UxmlSerializedDataPropertyView>();
+            VisualElement inspector = toggle.GetFirstAncestorOfType<UxmlSerializedDataPropertyView>();
 
             // Fall back to BuilderInspector if UxmlSerializedDataPropertyView not found
             // Use indirect lookup to avoid direct dependency on UI Builder module
             if (inspector == null)
             {
-                var current = visualElement;
+                var current = toggle.parent;
                 while (current != null)
                 {
                     if (current.ClassListContains(InspectorElement.ussClassName))
@@ -55,17 +50,37 @@ namespace Unity.UIToolkit.Editor
                 return;
 
             var valueFieldInInspector = inspector.Query<TextField>().Where(x => x.label is "Value").First();
-            if (valueFieldInInspector == null)
+            if (valueFieldInInspector != null)
             {
-                var propertyField = inspector.Query<PropertyField>().Where(x => x.label is "Value").First();
-                propertyField?.RegisterCallback<SerializedPropertyBindEvent>(_ =>
-                {
-                    EditorApplication.delayCall += () => SetMultilineOfValueField(multiline, visualElement);
-                });
+                valueFieldInInspector.multiline = toggle.value;
+                valueFieldInInspector.UnregisterCallback<InputEvent>(StripNewLinesWhenSingleLine);
+                valueFieldInInspector.RegisterCallback<InputEvent>(StripNewLinesWhenSingleLine);
                 return;
             }
 
-            valueFieldInInspector.multiline = multiline;
+            var propertyField = inspector.Query<PropertyField>().Where(x => x.label is "Value").First();
+            if (propertyField != null)
+            {
+                void OnValueFieldBound(SerializedPropertyBindEvent evt)
+                {
+                    propertyField.UnregisterCallback<SerializedPropertyBindEvent>(OnValueFieldBound);
+                    SetMultilineOfValueField(toggle, false);
+                }
+
+                propertyField.RegisterCallback<SerializedPropertyBindEvent>(OnValueFieldBound);
+            }
+            else if (retryIfNotCreated)
+            {
+                toggle.schedule.Execute(() => SetMultilineOfValueField(toggle, false));
+            }
+        }
+
+        // TextField.value re-applies the raw value to the displayed text, newlines included, even when single-line.
+        static void StripNewLinesWhenSingleLine(InputEvent evt)
+        {
+            var valueField = (TextField)evt.currentTarget;
+            if (!valueField.multiline && evt.newData != null && evt.newData.Contains("\n"))
+                valueField.SetValueWithoutNotify(valueField.value);
         }
     }
 }

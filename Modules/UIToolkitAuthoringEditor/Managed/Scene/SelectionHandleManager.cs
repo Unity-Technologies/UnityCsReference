@@ -17,14 +17,14 @@ namespace Unity.UIToolkit.Editor;
 /// the canvas shows a preview clone of it, so <paramref name="resolveTarget"/> maps one to the other. It is
 /// re-asked rather than cached because a re-clone replaces the element behind an unchanged selection.
 /// </remarks>
-sealed class SelectionHandleManager(
+sealed partial class SelectionHandleManager(
     VisualElement handleContainer,
     Func<VisualElementSelection, VisualElement> resolveTarget)
 {
     const string k_HideHeadersUssClass = "unity-selection-handle-container--no-header";
 
-    [NoAutoStaticsCleanup] // handle pool, safe to persist
-    static readonly UnityEngine.Pool.ObjectPool<SelectionHandle> s_HandlePool =
+    [AutoStaticsCleanupOnCodeReload] // pooled elements must not outlive the reload that frees their style data
+    static readonly CodeLoadScopedPool<SelectionHandle> s_HandlePool =
         new (() => new SelectionHandle(),
             null,
             handle => handle.Target = null);

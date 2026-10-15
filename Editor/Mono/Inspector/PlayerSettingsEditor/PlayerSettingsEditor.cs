@@ -302,6 +302,7 @@ namespace UnityEditor
             public static readonly string undoChangedPlatformShaderChunkCountString = L10n.Tr("Changed Shader Chunk Count Platform Setting", null);
             public static readonly string undoChangedDefaultShaderChunkSizeString   = L10n.Tr("Changed Shader Chunk Size Default Setting", null);
             public static readonly string undoChangedDefaultShaderChunkCountString  = L10n.Tr("Changed Shader Chunk Count Default Setting", null);
+            public static readonly string undoChangedShaderChunkOverrideString      = L10n.Tr("Changed Shader Chunk Override Setting", null);
 
         }
 
@@ -2879,6 +2880,7 @@ namespace UnityEditor
             bool newOverride = EditorGUILayout.Toggle(SettingsContentNonSearchable.overrideDefaultChunkSettings, oldOverride);
             if (oldOverride != newOverride)
             {
+                Undo.RecordObject(target, SettingsContent.undoChangedShaderChunkOverrideString);
                 m_CurrentTarget.SetOverrideShaderChunkSettingsForPlatform_Internal(platform.defaultTarget, newOverride);
                 m_OnTrackSerializedObjectValueChanged?.Invoke(serializedObject);
             }

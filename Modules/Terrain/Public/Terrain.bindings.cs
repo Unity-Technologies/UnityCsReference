@@ -420,6 +420,8 @@ namespace UnityEngine
         extern public Vector3 patchBoundsMultiplier { get; set; }
 
         ///<summary>Samples the height at the given position defined in world space, relative to the Terrain space.</summary>
+        ///<param name="worldPosition">The position, in world space, to sample the height at.</param>
+        ///<returns>The height of the terrain at the given position, in world space units.</returns>
         ///<remarks>This method automatically clamps the world position to the Terrain boundaries.</remarks>
         ///<example>
         ///  <code><![CDATA[
@@ -439,6 +441,7 @@ namespace UnityEngine
         extern public float SampleHeight(Vector3 worldPosition);
 
         ///<summary>Adds a tree instance to the terrain.</summary>
+        ///<param name="instance">The tree instance to add.</param>
         extern public void AddTreeInstance(TreeInstance instance);
 
         ///<summary>Lets you set up the connection between neighboring Terrain tiles. This ensures LOD matches up on neighboring Terrain tiles.</summary>
@@ -488,6 +491,7 @@ namespace UnityEngine
         extern public TerrainRenderFlags editorRenderFlags { get; set; }
 
         ///<summary>Get the world space position of the terrain.</summary>
+        ///<returns>The world space position of the terrain.</returns>
         extern public Vector3 GetPosition();
 
         ///<summary>Flushes any change done in the terrain so it takes effect.</summary>
@@ -496,6 +500,7 @@ namespace UnityEngine
         extern internal void RemoveTrees(Vector2 position, float radius, int prototypeIndex);
 
         ///<summary>Set the additional material properties when rendering the terrain heightmap using the splat material.</summary>
+        ///<param name="properties">The material property block that contains the custom properties to apply.</param>
         ///<seealso cref="GetSplatMaterialPropertyBlock" />
         ///<seealso cref="Renderer.SetPropertyBlock" />
         ///<seealso cref="MaterialPropertyBlock" />
@@ -503,6 +508,7 @@ namespace UnityEngine
         extern public void SetSplatMaterialPropertyBlock(MaterialPropertyBlock properties);
 
         ///<summary>Get the previously set splat material properties by copying to the <c>dest</c> MaterialPropertyBlock object.</summary>
+        ///<param name="dest">The material property block to copy the current splat material properties into.</param>
         ///<seealso cref="SetSplatMaterialPropertyBlock" />
         ///<seealso cref="Renderer.GetPropertyBlock" />
         ///<seealso cref="MaterialPropertyBlock" />
@@ -616,6 +622,8 @@ namespace UnityEngine
         extern private static void Internal_FillActiveTerrainList([NotNull] [Out] List<Terrain> terrainList);
 
         ///<summary>Creates a Terrain including collider from <see cref="TerrainData" />.</summary>
+        ///<param name="assignTerrain">The terrain data to assign to the new Terrain GameObject.</param>
+        ///<returns>The newly created Terrain GameObject.</returns>
         extern public static GameObject CreateTerrainGameObject(TerrainData assignTerrain);
 
         ///<summary>The Terrain tile to the left, which is in the negative X direction.</summary>

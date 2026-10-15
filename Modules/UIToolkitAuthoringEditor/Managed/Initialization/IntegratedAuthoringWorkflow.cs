@@ -3,7 +3,6 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
-using JetBrains.Annotations;
 using Unity.Hierarchy.Editor;
 using Unity.Scripting.LifecycleManagement;
 using UnityEditor;
@@ -12,16 +11,16 @@ using UnityEngine;
 
 namespace Unity.UIToolkit.Editor;
 
-static class IntegratedAuthoringWorkflow
+static partial class IntegratedAuthoringWorkflow
 {
-    [InitializeOnLoadMethod, UsedImplicitly]
+    [OnCodeLoaded]
     private static void RegisterStageHandlers()
     {
         UIStageNavigation.StageChanging += OnStageWillChange;
         EditorSettings.useLegacyHierarchyChanged += OnUseLegacyHierarchyChanged;
     }
 
-    [/*BeforeManagedObjectsDisabled,*/ UsedImplicitly]
+    [OnCodeUnloading]
     private static void UnregisterStageHandlers()
     {
         UIStageNavigation.StageChanging -= OnStageWillChange;

@@ -174,7 +174,6 @@ namespace UnityEngine.U2D
         [NativeName("HasChannel")]
         extern public static bool HasVertexAttribute([NotNull] this Sprite sprite, VertexAttribute channel);
 
-        // The only way to change the vertex count
         extern public static void SetVertexCount([NotNull] this Sprite sprite, int count);
         extern public static int GetVertexCount([NotNull] this Sprite sprite);
 

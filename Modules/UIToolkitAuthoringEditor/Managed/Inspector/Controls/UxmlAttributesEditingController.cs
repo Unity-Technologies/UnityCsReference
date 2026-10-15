@@ -70,8 +70,21 @@ class UxmlAttributesEditingController : IDisposable, IVisualElementChangeProcess
     /// </summary>
     public UxmlAttributesEditingController()
     {
+        RegisterCommandHandlers();
+    }
+
+    internal void RegisterCommandHandlers()
+    {
         UICommandQueue.RegisterHandler<SetAttributeOverrideCommand>(OnAttributeOverrideSet);
         UICommandQueue.RegisterHandlerForCategory(CommandCategory.Hierarchy, OnHierarchyCommandExecuted);
+    }
+
+    // The command queue is a static in the Unity ALC, so a registered handler keeps this controller and the
+    // edited elements alive for the rest of the session.
+    internal void UnregisterCommandHandlers()
+    {
+        UICommandQueue.UnregisterHandler<SetAttributeOverrideCommand>(OnAttributeOverrideSet);
+        UICommandQueue.UnregisterHandlerForCategory(CommandCategory.Hierarchy, OnHierarchyCommandExecuted);
     }
 
     /// <summary>
@@ -161,8 +174,7 @@ class UxmlAttributesEditingController : IDisposable, IVisualElementChangeProcess
         UnregisterChangeProcessor();
         liveAttributePropertyController.RemoveLiveProperties();
         attributeChangeHandler.StopTrackingChanges();
-        UICommandQueue.UnregisterHandler<SetAttributeOverrideCommand>(OnAttributeOverrideSet);
-        UICommandQueue.UnregisterHandlerForCategory(CommandCategory.Hierarchy, OnHierarchyCommandExecuted);
+        UnregisterCommandHandlers();
     }
 
     // Called when a property has changed
@@ -316,14 +328,8 @@ class UxmlAttributesEditingController : IDisposable, IVisualElementChangeProcess
         if (commandContext.Status != CommandExecutionStatus.Success)
             return;
 
-        // Clear the context if the element asset of the context was removed from its visual tree asset
-        if (m_Context?.elementAsset == null || m_Context.visualTreeAsset == null)
+        if (ClearContextIfElementRemoved())
             return;
-        if (m_Context.elementAsset.visualTreeAsset != m_Context.visualTreeAsset)
-        {
-            m_Context.Clear();
-            return;
-        }
 
         // Both ahead of the stage refresh the command triggers, which clones the tree and binds against
         // whatever the context still points at. The release is safe here only because the rebuild binds
@@ -335,6 +341,18 @@ class UxmlAttributesEditingController : IDisposable, IVisualElementChangeProcess
         }
 
         m_Context.RebuildForDocumentChange();
+    }
+
+    /// <summary>Clears the context when its element asset was removed from the visual tree asset.</summary>
+    /// <returns>Whether there is nothing left to edit.</returns>
+    internal bool ClearContextIfElementRemoved()
+    {
+        if (m_Context?.elementAsset == null || m_Context.visualTreeAsset == null)
+            return true;
+        if (m_Context.elementAsset.visualTreeAsset == m_Context.visualTreeAsset)
+            return false;
+        m_Context.Clear();
+        return true;
     }
 
 }

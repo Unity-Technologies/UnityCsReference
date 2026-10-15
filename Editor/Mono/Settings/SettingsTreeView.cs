@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System;
 using System.Linq;
 using System.Collections.Generic;
 using UnityEditor.Experimental;
@@ -32,7 +33,7 @@ namespace UnityEditor
 
         private bool m_ListViewMode;
 
-        public SettingsProvider[] providers { get; }
+        public SettingsProvider[] providers { get; private set; }
         public SettingsProvider currentProvider { get; private set; }
         public string searchContext { get; set; }
 
@@ -45,6 +46,12 @@ namespace UnityEditor
             this.providers = providers;
             Reload();
             ExpandAll();
+        }
+
+        public void ReleaseProviders()
+        {
+            providers = Array.Empty<SettingsProvider>();
+            currentProvider = null;
         }
 
         public void FocusSelection(int selectedId)

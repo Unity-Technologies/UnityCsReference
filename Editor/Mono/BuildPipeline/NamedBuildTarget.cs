@@ -97,7 +97,7 @@ namespace UnityEditor.Build
         }
 
         ///<summary>Returns the appropriate BuildTargetGroup that corresponds to the specified NamedBuildTarget.</summary>
-        ///<param name="namedBuildTarget">Named build target.</param>
+        ///<returns>The build target group that corresponds to this named build target.</returns>
         public BuildTargetGroup ToBuildTargetGroup()
         {
             switch (TargetName)
@@ -111,6 +111,7 @@ namespace UnityEditor.Build
 
         ///<summary>Returns the appropriate NamedBuildTarget that corresponds to the specified BuildTargetGroup.</summary>
         ///<param name="buildTargetGroup">Build target group.</param>
+        ///<returns>The named build target that corresponds to the specified build target group.</returns>
         public static NamedBuildTarget FromBuildTargetGroup(BuildTargetGroup buildTargetGroup)
         {
             switch (buildTargetGroup)
@@ -218,7 +219,7 @@ namespace UnityEditor.Build
         /// <summary>
         /// Returns true if the given object type and target name is exactly equal to this type and target name.
         /// </summary>
-        /// <param name="other">The other object that is used for equality check</param>
+        /// <param name="obj">The object to compare with the current instance.</param>
         /// <returns>True if the given object target name and type is exactly equal to this target name and type.</returns>
         public override bool Equals(object obj)
         {

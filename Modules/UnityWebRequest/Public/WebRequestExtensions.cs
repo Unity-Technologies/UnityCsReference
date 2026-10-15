@@ -1258,6 +1258,7 @@ namespace UnityEngine.Networking
         ///<remarks>Certain text characters have special meanings when present in URLs. If you need to include those characters in URL parameters then you must represent them with escape sequences. It is recommended that you use this function on any text supplied by a user before passing the text as a URL parameter. This will ensure that a malicious user can't manipulate the contents of the URL to attack the webserver.
         ///See Also: <see cref="UnityWebRequest.UnEscapeURL" />.</remarks>
         ///<param name="s">A string with characters to be escaped.</param>
+        ///<returns>The URL-escaped string, or `null` if `s` is `null`.</returns>
         ///<example>
         ///  <code><![CDATA[
         ///using UnityEngine;
@@ -1282,6 +1283,7 @@ namespace UnityEngine.Networking
         ///See Also: <see cref="UnityWebRequest.UnEscapeURL" />.</remarks>
         ///<param name="s">A string with characters to be escaped.</param>
         ///<param name="e">The text encoding to use.</param>
+        ///<returns>The URL-escaped string. If `s` is empty, an empty string, even if `e` is `null`. Otherwise, `null` if `s` or `e` is `null`.</returns>
         ///<example>
         ///  <code><![CDATA[
         ///using UnityEngine;
@@ -1316,6 +1318,7 @@ namespace UnityEngine.Networking
         ///<remarks>Certain text characters have special meanings when present in URLs. If you need to include those characters in URL parameters then you must represent them with escape sequences. This function takes a string containing these escape sequences and converts them back to normal text.
         ///See Also: <see cref="UnityWebRequest.EscapeURL" />.</remarks>
         ///<param name="s">A string containing escaped characters.</param>
+        ///<returns>The unescaped string, or `null` if `s` is `null`.</returns>
         ///<example>
         ///  <code><![CDATA[
         ///using UnityEngine;
@@ -1340,6 +1343,7 @@ namespace UnityEngine.Networking
         ///See Also: <see cref="UnityWebRequest.EscapeURL" />.</remarks>
         ///<param name="s">A string containing escaped characters.</param>
         ///<param name="e">The text encoding to use.</param>
+        ///<returns>The unescaped string, or `null` if `s` is `null`.</returns>
         ///<example>
         ///  <code><![CDATA[
         ///using UnityEngine;

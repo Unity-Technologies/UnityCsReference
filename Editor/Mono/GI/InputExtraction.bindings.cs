@@ -52,14 +52,14 @@ namespace UnityEditor.LightBaking
                 }
             }
 
-            public extern int GetInstanceIndex(UnityEngine.EntityId instanceID);
-            public extern UnityEngine.EntityId GetInstanceInstanceID(int instanceIndex);
+            public extern int GetInstanceIndex(UnityEngine.EntityId entityId);
+            public extern UnityEngine.EntityId GetInstanceEntityId(int instanceIndex);
 
             public extern int GetTreeCount();
             public extern int GetTreeInstanceIndex(int treeIndex);
 
-            public extern int GetLightIndex(UnityEngine.EntityId instanceID);
-            public extern UnityEngine.EntityId GetLightInstanceID(int lightIndex);
+            public extern int GetLightIndex(UnityEngine.EntityId entityId);
+            public extern UnityEngine.EntityId GetLightEntityId(int lightIndex);
 
             static extern IntPtr Internal_Create();
 
@@ -84,7 +84,7 @@ namespace UnityEditor.LightBaking
         {
             if (map == null)
                 return "";
-            EntityId entityId = map.GetInstanceInstanceID(instanceIndex);
+            EntityId entityId = map.GetInstanceEntityId(instanceIndex);
             if (entityId == EntityId.None)
                 return "";
             Object obj = EditorUtility.EntityIdToObject(entityId);

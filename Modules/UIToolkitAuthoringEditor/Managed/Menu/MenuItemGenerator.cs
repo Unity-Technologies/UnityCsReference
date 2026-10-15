@@ -88,12 +88,19 @@ internal static partial class MenuItemGenerator
         ]
     };
 
-    [InitializeOnLoadMethod]
+    [OnCodeLoaded]
     static void Initialize()
     {
         // Defer to the first idle tick so UxmlSerializedDataRegistry (which feeds GetControlElements) is fully populated.
         EditorApplication.delayCall += RegisterMenuItems;
         AssemblyReloadEvents.beforeAssemblyReload += UnregisterMenuItems;
+    }
+
+    [OnCodeUnloading]
+    static void Shutdown()
+    {
+        EditorApplication.delayCall -= RegisterMenuItems;
+        AssemblyReloadEvents.beforeAssemblyReload -= UnregisterMenuItems;
     }
 
     public static List<ControlTypeInfo> GetAvailableControlTypes()

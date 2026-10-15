@@ -33,10 +33,9 @@ namespace UnityEngine.UIElements
         // any [OnCodeLoaded]/[OnCodeUnloading] method here is a first access to the type, which forces
         // this initializer to run inside the code-load window, where the editor-resources bake has
         // nothing loadable yet and EditorResources::Load asserts.
-        // No teardown is needed either - every callback installed below lives in a field that is
-        // itself [AutoStaticsCleanupOnCodeReload], so reload clears them and the next first access
-        // re-installs them per ALC.
-#pragma warning disable UAL0015 // installs native render/update callbacks, re-installed on first access after reload
+        // The target fields are [NoAutoStaticsCleanup]: this ctor runs once per ALC and the callbacks only
+        // point into this module, so they must survive a reload that leaves this module loaded.
+#pragma warning disable UAL0015 // installs native render/update callbacks once per ALC into fields that survive reload
         static UIElementsRuntimeUtility()
         {
             Canvas.externBeginRenderOverlays = BeginRenderOverlays;

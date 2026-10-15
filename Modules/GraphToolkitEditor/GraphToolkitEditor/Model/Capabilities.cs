@@ -153,6 +153,13 @@ namespace Unity.GraphToolkit.Editor
             s_CapabilitiesByName[hash] = this;
         }
 
+        // Lets tests that define capability subclasses drop them so the static tables do not keep the test types alive.
+        internal static void Unregister(Capabilities capability)
+        {
+            s_Capabilities.Remove(capability.Id);
+            s_CapabilitiesByName.Remove(capability.Name.GetHashCode());
+        }
+
         public static Capabilities Get(int id) => s_Capabilities[id];
 
         public static Capabilities Get(string fullname)

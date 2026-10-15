@@ -286,6 +286,7 @@ namespace Unity.GraphToolkit.Editor
             {
                 k_OneWireList[0] = wireModel;
                 list.ReorderElements(k_OneWireList, reorderType);
+                k_OneWireList[0] = null;
             }
             else
             {

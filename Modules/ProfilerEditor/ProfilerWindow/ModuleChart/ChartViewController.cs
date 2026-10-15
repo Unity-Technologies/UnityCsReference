@@ -5,6 +5,7 @@
 using System;
 using Unity.Profiling.Editor.UI;
 using UnityEditor;
+using UnityEditor.Profiling;
 using UnityEditorInternal.Profiling;
 using UnityEngine;
 using UnityEngine.UIElements;
@@ -22,6 +23,10 @@ namespace Unity.Profiling.Editor
         const string k_UxmlIdentifier_HeaderLabel = "profiler-chart-view__legend__header__label";
         const string k_UxmlIdentifier_HeaderIcon = "profiler-chart-view__legend__header__icon";
         const string k_UxmlIdentifier_Warning = "profiler-chart-view__legend__header__warning";
+        const string k_UxmlIdentifier_UssClass_Pin = "profiler-chart-view__legend__header__pin";
+        const string k_UxmlIdentifier_UssClass_PinPinned = "profiler-chart-view__legend__header__pin--pinned";
+        const string k_UxmlIdentifier_UssClass_PinDisabled = "profiler-chart-view__legend__header__pin--disabled";
+        const string k_UxmlIdentifier_UssClass_ViewPinned = "profiler-chart-view--pinned";
         const string k_UxmlIdentifier_Legend = "profiler-chart-view__legend__series";
         const string k_UxmlIdentifier_LegendItem_Toggle = "profiler-chart-view__legend__series-item__toggle";
         const string k_UxmlIdentifier_LegendItem_Icon = "profiler-chart-view__legend__series-item__icon";
@@ -35,6 +40,7 @@ namespace Unity.Profiling.Editor
         readonly ChartModel m_Model;
 
         bool m_Selected;
+        bool m_PinBlockedByLimit;
 
         VisualElement m_Header;
         Label m_HeaderLabel;
@@ -151,18 +157,11 @@ namespace Unity.Profiling.Editor
 
             m_PinIndicatorIcon = new Image
             {
-                image = EditorGUIUtility.LoadIcon("SceneTemplate/pin"),
+                image = Styles.PinIcon,
                 scaleMode = ScaleMode.ScaleToFit,
-                tooltip = "Pinned to top. Right-click to unpin.",
-                style =
-                {
-                    width = 12,
-                    height = 12,
-                    flexShrink = 0,
-                    marginLeft = 4,
-                    marginRight = 2
-                }
             };
+            m_PinIndicatorIcon.AddToClassList(k_UxmlIdentifier_UssClass_Pin);
+            m_PinIndicatorIcon.RegisterCallback<PointerUpEvent>(OnPinIconPointerUp);
             // After header icon (index 1), before header label (index 2). Clamp against
             // childCount so a future UXML edit that prunes a header child can't trip a throw.
             m_Header.Insert(Mathf.Min(2, m_Header.childCount), m_PinIndicatorIcon);
@@ -259,9 +258,38 @@ namespace Unity.Profiling.Editor
             }
         }
 
+        void OnPinIconPointerUp(PointerUpEvent evt)
+        {
+            // Let right-click bubble up to the header's context menu.
+            if (evt.button != 0)
+                return;
+
+            // The hidden pin still occupies its layout slot, so ignore clicks on it.
+            if (m_PinIndicatorIcon.resolvedStyle.visibility == Visibility.Hidden)
+                return;
+
+            // Don't select the module as a side effect, even when the pin is blocked.
+            evt.StopPropagation();
+
+            if (m_PinBlockedByLimit)
+                return;
+
+            // Toggling pinned re-parents this view, so defer it until the event has finished dispatching.
+            var module = m_Module;
+            View.schedule.Execute(() => module.pinned = !module.pinned);
+        }
+
         void UpdatePinIndicator()
         {
-            UIUtility.SetElementDisplay(m_PinIndicatorIcon, m_Module.pinned);
+            var pinned = m_Module.pinned;
+            // Visibility is driven from USS, so don't set an inline display style here.
+            m_PinIndicatorIcon.image = pinned ? Styles.PinnedIcon : Styles.PinIcon;
+            m_PinIndicatorIcon.EnableInClassList(k_UxmlIdentifier_UssClass_PinPinned, pinned);
+            m_PinIndicatorIcon.EnableInClassList(k_UxmlIdentifier_UssClass_PinDisabled, m_PinBlockedByLimit);
+            m_PinIndicatorIcon.tooltip = pinned
+                ? Content.UnpinTooltip
+                : (m_PinBlockedByLimit ? Content.PinLimitReachedTooltip : Content.PinTooltip);
+            View.EnableInClassList(k_UxmlIdentifier_UssClass_ViewPinned, pinned);
         }
 
         public void NotifyPinnedStateChanged()
@@ -269,9 +297,17 @@ namespace Unity.Profiling.Editor
             UpdatePinIndicator();
         }
 
+        public void NotifyPinAvailabilityChanged(bool atPinLimit)
+        {
+            m_PinBlockedByLimit = ProfilerModulesDropdownWindow.IsPinBlockedByLimit(m_Module.pinned, atPinLimit);
+            // ViewLoaded updates the pin when the view loads, so don't force-load it here.
+            if (IsViewLoaded)
+                UpdatePinIndicator();
+        }
+
         void MakeLegend()
         {
-            m_Header.tooltip = m_Model.Tooltip + "\n\nRight-click to pin/unpin this module.";
+            m_Header.tooltip = m_Model.Tooltip + Content.HeaderPinHint;
 
             m_HeaderLabel.text = m_Model.Header;
             m_HeaderLabel.tooltip = m_Model.Header;
@@ -434,6 +470,20 @@ namespace Unity.Profiling.Editor
                     m_ChartWidget = new BarChartWidget(m_Model, m_Chart);
                     break;
             }
+        }
+
+        static class Styles
+        {
+            public static readonly Texture2D PinIcon = EditorGUIUtility.LoadIcon("SceneTemplate/pin");
+            public static readonly Texture2D PinnedIcon = EditorGUIUtility.LoadIcon("SceneTemplate/pinned");
+        }
+
+        static class Content
+        {
+            public static readonly string PinTooltip = L10n.Tr("Pin this module to the top", null);
+            public static readonly string UnpinTooltip = L10n.Tr("Unpin this module from the top", null);
+            public static readonly string PinLimitReachedTooltip = ProfilerWindow.PinLimitReachedTooltip;
+            public static readonly string HeaderPinHint = "\n\n" + L10n.Tr("Click the pin icon, or right-click, to pin/unpin this module.", null);
         }
     }
 }

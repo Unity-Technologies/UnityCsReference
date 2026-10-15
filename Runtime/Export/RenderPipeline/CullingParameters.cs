@@ -18,11 +18,11 @@ namespace UnityEngine.Rendering
     {
         int filterMode;
         uint cullingMask;
-        EntityId instanceID;
+        EntityId entityId;
 
         public bool Equals(CoreCameraValues other)
         {
-            return filterMode == other.filterMode && cullingMask == other.cullingMask && instanceID == other.instanceID;
+            return filterMode == other.filterMode && cullingMask == other.cullingMask && entityId == other.entityId;
         }
 
         public override bool Equals(object obj)
@@ -37,7 +37,7 @@ namespace UnityEngine.Rendering
             {
                 var hashCode = filterMode;
                 hashCode = (hashCode * 397) ^ (int)cullingMask;
-                hashCode = (hashCode * 397) ^ instanceID.GetHashCode();
+                hashCode = (hashCode * 397) ^ entityId.GetHashCode();
                 return hashCode;
             }
         }

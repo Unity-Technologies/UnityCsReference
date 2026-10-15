@@ -15,9 +15,14 @@ namespace UnityEngine
     public static partial class RectTransformUtility
     {
         ///<summary>Convert a given point in screen space into a pixel correct point.</summary>
+        ///<param name="point">Point to adjust, in the local space of the element.</param>
+        ///<param name="elementTransform">Transform of the element that the point belongs to.</param>
+        ///<param name="canvas">Canvas that contains the element.</param>
         ///<returns>Pixel adjusted point.</returns>
         public static extern Vector2 PixelAdjustPoint(Vector2 point, Transform elementTransform, Canvas canvas);
         ///<summary>Given a rect transform, return the corner points in pixel accurate coordinates.</summary>
+        ///<param name="rectTransform">RectTransform whose rect to adjust.</param>
+        ///<param name="canvas">Canvas that contains the RectTransform.</param>
         ///<returns>Pixel adjusted rect.</returns>
         public static extern Rect PixelAdjustRect(RectTransform rectTransform, Canvas canvas);
 

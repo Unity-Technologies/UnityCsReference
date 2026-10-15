@@ -23,6 +23,7 @@ namespace Unity.U2D.Physics
         [NativeMethod(Name = "PhysicsShape::DestroyBatch", IsThreadSafe = true)] extern internal static void PhysicsShape_DestroyBatch(ReadOnlySpan<PhysicsShape> shapes, bool updateBodyMass, int ownerKey);
         [NativeMethod(Name = "PhysicsShape::ApplyBuoyancy", IsThreadSafe = true)] extern internal static void PhysicsShape_ApplyBuoyancy(PhysicsBody.BuoyancyInput input, ReadOnlySpan<PhysicsShape> shapes, float deltaTime);
         [NativeMethod(Name = "PhysicsShape::WriteDefinition")] extern internal static void PhysicsShape_WriteDefinition(PhysicsShape shape, PhysicsShapeDefinition definition, bool onlyExtendedProperties);
+        [NativeMethod(Name = "PhysicsShape::WriteDefinitionSpan")] extern internal static int PhysicsShape_WriteDefinitionSpan(ReadOnlySpan<PhysicsShape> shapes, PhysicsShapeDefinition definition);
         [NativeMethod(Name = "PhysicsShape::ReadDefinition")] extern internal static PhysicsShapeDefinition PhysicsShape_ReadDefinition(PhysicsShape shape);
         [NativeMethod(Name = "PhysicsShape::IsValid", IsThreadSafe = true)] extern internal static bool PhysicsShape_IsValid(PhysicsShape shape);
         [NativeMethod(Name = "PhysicsShape::GetWorld", IsThreadSafe = true)] extern internal static PhysicsWorld PhysicsShape_GetWorld(PhysicsShape shape);
@@ -112,8 +113,10 @@ namespace Unity.U2D.Physics
         [NativeMethod(Name = "PhysicsShape::GetOwner", IsThreadSafe = true)] extern internal static UnityEngine.Object PhysicsShape_GetOwner(PhysicsShape shape);
         [NativeMethod(Name = "PhysicsShape::IsOwned", IsThreadSafe = true)] extern internal static bool PhysicsShape_IsOwned(PhysicsShape shape);
         [NativeMethod(Name = "PhysicsShape::SetPhysicsGroup", IsThreadSafe = true)] extern internal static void PhysicsShape_SetPhysicsGroup(PhysicsShape shape, PhysicsWorld.PhysicsGroup physicsGroup);
+        [NativeMethod(Name = "PhysicsShape::SetPhysicsGroupSpan", IsThreadSafe = true)] extern internal static int PhysicsShape_SetPhysicsGroupSpan(ReadOnlySpan<PhysicsShape> shapes, PhysicsWorld.PhysicsGroup physicsGroup);
         [NativeMethod(Name = "PhysicsShape::GetPhysicsGroup", IsThreadSafe = true)] extern internal static PhysicsWorld.PhysicsGroup PhysicsShape_GetPhysicsGroup(PhysicsShape shape);
-        [NativeMethod(Name = "PhysicsShape::SetCallbackTarget", IsThreadSafe = true)] extern internal static void PhysicsShape_SetCallbackTarget(PhysicsShape shape, System.Object callbackTarget);
+        [NativeMethod(Name = "PhysicsShape::SetCallbackTarget", IsThreadSafe = true)] extern internal static void PhysicsShape_SetCallbackTarget(PhysicsShape shape, System.Object callbackTarget, int callbackTargetHash);
+        [NativeMethod(Name = "PhysicsShape::SetCallbackTargetSpan", IsThreadSafe = true)] extern internal static int PhysicsShape_SetCallbackTargetSpan(ReadOnlySpan<PhysicsShape> shapes, System.Object callbackTarget, int callbackTargetHash);
         [NativeMethod(Name = "PhysicsShape::GetCallbackTarget", IsThreadSafe = true)] extern internal static System.Object PhysicsShape_GetCallbackTarget(PhysicsShape shape);
         [NativeMethod(Name = "PhysicsShape::SetUserData", IsThreadSafe = true)] extern internal static void PhysicsShape_SetUserData(PhysicsShape shape, PhysicsUserData physicsUserData);
         [NativeMethod(Name = "PhysicsShape::SetUserDataSpan", IsThreadSafe = true)] extern internal static int PhysicsShape_SetUserDataSpan(ReadOnlySpan<PhysicsShape> shapes, ReadOnlySpan<PhysicsUserData> userDatas);

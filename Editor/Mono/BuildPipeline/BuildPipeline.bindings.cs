@@ -143,11 +143,12 @@ namespace UnityEditor
 
         // Legacy signature for calling BuildPlayer()
         // Do not add any more overloads of BuildPlayer, or arguments to this method.  Functionality should be added by extending BuildPlayerOptions
-        ///<summary>Builds a Player. These overloads are still supported, but will be replaced. Please use BuildPlayer(<see cref="BuildPlayerOptions" /> buildPlayerOptions) and BuildPlayer(<see cref="BuildPlayerWithProfileOptions" /> buildPlayerWithProfileOptions) instead.</summary>
+        ///<summary>Builds a Player from a list of scenes.</summary>
+        ///<remarks>This overload is still supported, but will be replaced. Use <see cref="BuildPipeline.BuildPlayer(BuildPlayerOptions)" /> or <see cref="BuildPipeline.BuildPlayer(BuildPlayerWithProfileOptions)" /> instead.</remarks>
         ///<param name="levels">The scenes to include in the build. If empty, the build includes only the current open scene. Paths are relative to the project folder, for example <c>Assets/MyLevels/MyScene.unity</c>.</param>
-        ///<param name="locationPathName">The path where the application will be built. For information on the platform extensions to include in the path, refer to [Build path requirements for target platforms](xref:um-build-path-requirements).</param>
+        ///<param name="locationPathName">The path to build the application to. For information on the platform extensions to include in the path, refer to [Build path requirements for target platforms](xref:um-build-path-requirements).</param>
         ///<param name="target">The <see cref="BuildTarget" /> to build.</param>
-        ///<param name="options">Additional <see cref="BuildOptions" />, like whether to run the built player.</param>
+        ///<param name="options">Additional <see cref="BuildOptions" />, such as whether to run the built player.</param>
         ///<returns>A <see cref="BuildReport" /> object containing build process information.</returns>
         public static BuildReport BuildPlayer(EditorBuildSettingsScene[] levels, string locationPathName, BuildTarget target, BuildOptions options)
         {
@@ -162,6 +163,13 @@ namespace UnityEditor
 
         // Legacy signature for calling BuildPlayer()
         // Do not add any more overloads of BuildPlayer, or arguments to this method.  Functionality should be added by extending BuildPlayerOptions
+        ///<summary>Builds a Player from a list of scene paths.</summary>
+        ///<remarks>This overload is still supported, but will be replaced. Use <see cref="BuildPipeline.BuildPlayer(BuildPlayerOptions)" /> or <see cref="BuildPipeline.BuildPlayer(BuildPlayerWithProfileOptions)" /> instead.</remarks>
+        ///<param name="levels">The scene paths to include in the build. If empty, the build includes only the current open scene. Paths are relative to the project folder, for example `Assets/MyLevels/MyScene.unity`.</param>
+        ///<param name="locationPathName">The path to build the application to. For information on the platform extensions to include in the path, refer to [Build path requirements for target platforms](xref:um-build-path-requirements).</param>
+        ///<param name="target">The <see cref="BuildTarget" /> to build.</param>
+        ///<param name="options">Additional <see cref="BuildOptions" />, such as whether to run the built player.</param>
+        ///<returns>A <see cref="BuildReport" /> object containing build process information.</returns>
         public static BuildReport BuildPlayer(string[] levels, string locationPathName, BuildTarget target, BuildOptions options)
         {
             BuildTargetGroup buildTargetGroup = GetBuildTargetGroup(target);
@@ -814,6 +822,9 @@ namespace UnityEditor
         public static extern bool GetCRCForAssetBundle(string targetPath, out uint crc);
 
         ///<summary>Extract the hash for the given AssetBundle.</summary>
+        ///<param name="targetPath">The path to the asset bundle.</param>
+        ///<param name="hash">The resulting hash of the asset bundle.</param>
+        ///<returns>True if the method successfully reads the manifest file and extracts the hash value. Otherwise, false.</returns>
         [FreeFunction("ExtractHashFromAssetBundleManifestFile")]
         public static extern bool GetHashForAssetBundle(string targetPath, out Hash128 hash);
 
@@ -824,33 +835,53 @@ namespace UnityEditor
         ///<summary>Returns true if the specified build target is currently available in the Editor.</summary>
         ///<param name="buildTargetGroup">build target group</param>
         ///<param name="target">build target</param>
+        ///<returns>True if the specified build target is currently available in the Editor. Otherwise, false.</returns>
         [FreeFunction]
         public static extern bool IsBuildTargetSupported(BuildTargetGroup buildTargetGroup, BuildTarget target);
 
         [FreeFunction]
         internal static extern bool IsBuildPlatformSupported(BuildTarget target);
 
-        ///<summary>Returns the path of a player directory. For ex., Editor\Data\PlaybackEngines\AndroidPlayer.</summary>
-        ///<remarks>In some cases the player directory path can be affected by <see cref="BuildOptions.Development" />.</remarks>
-        ///<param name="target">Build target.</param>
-        ///<param name="options">Build options.</param>
-        ///<param name="buildTargetGroup">Build target group.</param>
+        ///<summary>Gets the path of the Player directory for a build target.</summary>
+        ///<remarks>For example, `Editor\Data\PlaybackEngines\AndroidPlayer`. The path can depend on <see cref="BuildOptions.Development" />. If the build target isn't supported, this overload logs an error.</remarks>
+        ///<param name="target">The build target to get the Player directory for.</param>
+        ///<param name="options">The build options for the Player.</param>
+        ///<returns>The path to the Player directory for the specified build target.</returns>
         public static string GetPlaybackEngineDirectory(BuildTarget target, BuildOptions options)
         {
             return GetPlaybackEngineDirectory(target, options, true);
         }
 
+        ///<summary>Gets the path of the Player directory for a build target, with the option to suppress errors for unsupported targets.</summary>
+        ///<remarks>For example, `Editor\Data\PlaybackEngines\AndroidPlayer`. The path can depend on <see cref="BuildOptions.Development" />.</remarks>
+        ///<param name="target">The build target to get the Player directory for.</param>
+        ///<param name="options">The build options for the Player.</param>
+        ///<param name="assertUnsupportedPlatforms">Set to true to log an error if the build target isn't supported. Set to false to return an empty string instead.</param>
+        ///<returns>The path to the Player directory for the specified build target.</returns>
         public static string GetPlaybackEngineDirectory(BuildTarget target, BuildOptions options, bool assertUnsupportedPlatforms)
         {
             BuildTargetGroup buildTargetGroup = GetBuildTargetGroup(target);
             return GetPlaybackEngineDirectory(buildTargetGroup, target, options, assertUnsupportedPlatforms);
         }
 
+        ///<summary>Gets the path of the Player directory for a build target in a build target group.</summary>
+        ///<remarks>For example, `Editor\Data\PlaybackEngines\AndroidPlayer`. The path can depend on <see cref="BuildOptions.Development" />. If the build target isn't supported, this overload logs an error.</remarks>
+        ///<param name="buildTargetGroup">The build target group that the build target belongs to.</param>
+        ///<param name="target">The build target to get the Player directory for.</param>
+        ///<param name="options">The build options for the Player.</param>
+        ///<returns>The path to the Player directory for the specified build target.</returns>
         public static string GetPlaybackEngineDirectory(BuildTargetGroup buildTargetGroup, BuildTarget target, BuildOptions options)
         {
             return GetPlaybackEngineDirectory(buildTargetGroup, target, options, true);
         }
 
+        ///<summary>Gets the path of the Player directory for a build target in a build target group, with the option to suppress errors for unsupported targets.</summary>
+        ///<remarks>For example, `Editor\Data\PlaybackEngines\AndroidPlayer`. The path can depend on <see cref="BuildOptions.Development" />.</remarks>
+        ///<param name="buildTargetGroup">The build target group that the build target belongs to.</param>
+        ///<param name="target">The build target to get the Player directory for.</param>
+        ///<param name="options">The build options for the Player.</param>
+        ///<param name="assertUnsupportedPlatforms">Set to true to log an error if the build target isn't supported. Set to false to return an empty string instead.</param>
+        ///<returns>The path to the Player directory for the specified build target.</returns>
         [FreeFunction(IsThreadSafe = true)]
         public static extern string GetPlaybackEngineDirectory(BuildTargetGroup buildTargetGroup, BuildTarget target, BuildOptions options, bool assertUnsupportedPlatforms);
 
@@ -953,6 +984,9 @@ namespace UnityEditor
         internal static extern string GetBuildTargetGroupName(BuildTargetGroup buildTargetGroup);
 
         ///<summary>Returns the mode currently used by players to initiate a connect to the host.</summary>
+        ///<param name="targetPlatform">The build target to check.</param>
+        ///<param name="buildOptions">The build options to check.</param>
+        ///<returns>The mode that a player uses to initiate a connection to the host.</returns>
         [RequiredByNativeCode]
         public static PlayerConnectionInitiateMode GetPlayerConnectionInitiateMode(BuildTarget targetPlatform, BuildOptions buildOptions)
         {

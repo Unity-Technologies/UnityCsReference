@@ -107,12 +107,14 @@ namespace UnityEditor.Networking
         TextField m_QueryParametersText;
         UnityEngine.UIElements.Button m_QueryParametersSource;
         UnityEngine.UIElements.Button m_RequestPayloadSource;
+        UnityEngine.UIElements.Button m_ResponseBodySource;
         UnityEngine.UIElements.Button m_QueryParametersCopy;
         UnityEngine.UIElements.Button m_RequestPayloadCopy;
         UnityEngine.UIElements.Button m_ResponseBodyCopy;
         string m_SelectedUrl = string.Empty;
         bool m_QueryParametersShowSource;
         bool m_RequestPayloadShowSource;
+        bool m_ResponseBodyShowSource;
         Label m_RequestPayloadStatus;
         TextField m_RequestPayloadText;
         TreeView m_RequestPayloadTree;
@@ -179,6 +181,8 @@ namespace UnityEditor.Networking
                 () => m_QueryParametersShowSource = !m_QueryParametersShowSource);
             m_RequestPayloadSource = SetUpSourceButton(view, "web-request-details-view__request-payload-source",
                 () => m_RequestPayloadShowSource = !m_RequestPayloadShowSource);
+            m_ResponseBodySource = SetUpSourceButton(view, "web-request-details-view__response-body-source",
+                () => m_ResponseBodyShowSource = !m_ResponseBodyShowSource);
 
             m_QueryParametersCopy = SetUpCopyButton(view, "web-request-details-view__query-parameters-copy", () => WebRequestProfilerUrl.RawQueryString(m_SelectedUrl));
             m_RequestPayloadCopy = SetUpCopyButton(view, "web-request-details-view__request-payload-copy", () => m_RequestPayloadText.value);
@@ -875,7 +879,8 @@ namespace UnityEditor.Networking
                 m_RequestPayloadSource, m_RequestPayloadCopy, record, record.requestBody, m_RequestPayloadShowSource);
 
             PopulateBody(m_ResponseBodyStatus, m_ResponseBodyText, m_ResponseBodyTree,
-                null, m_ResponseBodyCopy, record, record.responseBody, showSource: false);
+                m_ResponseBodySource, m_ResponseBodyCopy, record, record.responseBody, m_ResponseBodyShowSource);
+
             PopulateTiming(record);
         }
 

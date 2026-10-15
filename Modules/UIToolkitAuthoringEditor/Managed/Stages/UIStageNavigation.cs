@@ -18,7 +18,6 @@ namespace Unity.UIToolkit.Editor;
 /// <see cref="StageNavigationManager"/>'s events, except that a navigation which walks through several stages
 /// to reach its destination reports as the single transition the user asked for.
 /// </summary>
-[InitializeOnLoad]
 static partial class UIStageNavigation
 {
     /// <summary>
@@ -42,10 +41,27 @@ static partial class UIStageNavigation
     [NoAutoStaticsCleanup]
     static bool s_ChangingForwarded;
 
-    static UIStageNavigation()
+    [AutoStaticsCleanupOnCodeReload]
+    static StageNavigationManager s_Manager;
+
+    [OnCodeInitializing] // StageNavigationManager is restored after [OnCodeLoaded]; touching it earlier duplicates it
+    static void Initialize()
     {
-        StageNavigationManager.instance.afterSuccessfullySwitchedToStage += OnSwitchedToStage;
-        StageNavigationManager.instance.stageChanging += OnStageChanging;
+        s_Manager = StageNavigationManager.instance;
+        s_Manager.afterSuccessfullySwitchedToStage += OnSwitchedToStage;
+        s_Manager.stageChanging += OnStageChanging;
+    }
+
+    [OnCodeDeinitializing]
+    static void Shutdown()
+    {
+        // Not StageNavigationManager.instance: at shutdown that would recreate a manager already destroyed
+        if (s_Manager != null)
+        {
+            s_Manager.afterSuccessfullySwitchedToStage -= OnSwitchedToStage;
+            s_Manager.stageChanging -= OnStageChanging;
+        }
+        s_Manager = null;
     }
 
     /// <summary>

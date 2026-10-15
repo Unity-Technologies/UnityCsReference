@@ -163,6 +163,8 @@ namespace Unity.UIToolkit.Editor
 
         protected virtual VariablesListItem CreateListItem() => new (m_VariablesListView);
 
+        protected virtual void ResetAssetFieldType(BaseField<Object> assetField) { }
+
         protected virtual StyleComplexSelector GetRootRule(StyleRule rule) { return null; }
 
         protected virtual void OnStyleSheetModified()
@@ -236,6 +238,9 @@ namespace Unity.UIToolkit.Editor
 
         void BindValueToItem(VariablesListItem item, StyleValueHandle listItem, int index)
         {
+            var previousAssetVariable = item.boundAssetVariable;
+            item.boundAssetVariable = null;
+
             if (listItem.valueType == StyleValueType.Function)
             {
                 var functionText = styleSheet.ReadVariable(m_VariablesItemsSource[index].values[2]);
@@ -261,6 +266,9 @@ namespace Unity.UIToolkit.Editor
                 case VariableType.AssetReference:
                     var asset = styleSheet.ReadAssetReference(listItem);
                     item.itemAssetField.SetValueWithoutNotify(asset);
+                    item.boundAssetVariable = m_VariablesItemsSource[index];
+                    if (!asset && previousAssetVariable != item.boundAssetVariable)
+                        ResetAssetFieldType(item.itemAssetField);
                     break;
                 case VariableType.Length:
                     var length = styleSheet.ReadLength(listItem);

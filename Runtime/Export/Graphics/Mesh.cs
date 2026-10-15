@@ -1928,13 +1928,13 @@ namespace UnityEngine
 
     public struct CombineInstance
     {
-        private EntityId m_MeshInstanceID;
+        private EntityId m_MeshEntityId;
         private int m_SubMeshIndex;
         private Matrix4x4 m_Transform;
         private Vector4 m_LightmapScaleOffset;
         private Vector4 m_RealtimeLightmapScaleOffset;
 
-        public Mesh mesh { get { return Mesh.FromInstanceID(m_MeshInstanceID); } set { m_MeshInstanceID = value != null ? value.GetEntityId() : EntityId.None; } }
+        public Mesh mesh { get { return Mesh.FromInstanceID(m_MeshEntityId); } set { m_MeshEntityId = value != null ? value.GetEntityId() : EntityId.None; } }
         public int subMeshIndex { get { return m_SubMeshIndex; } set { m_SubMeshIndex = value; } }
         public Matrix4x4 transform { get { return m_Transform; } set { m_Transform = value; } }
         public Vector4 lightmapScaleOffset { get { return m_LightmapScaleOffset; } set { m_LightmapScaleOffset = value; } }

@@ -20,8 +20,8 @@ internal partial class StyleInspectorDefaultContent : VisualElement
     [AutoStaticsCleanupOnCodeReload]
     [IgnoreForUAL0015("Lazily reloaded from the uxml asset by the DefaultContent getter on next access after reload")]
     static VisualTreeAsset s_DefaultContent;
-    [NoAutoStaticsCleanup] // default-content pool, safe to persist
-    static UnityEngine.Pool.ObjectPool<StyleInspectorDefaultContent> s_StyleInspectorDefaultContentPool = new(Create);
+    [AutoStaticsCleanupOnCodeReload] // pooled elements must not outlive the reload that frees their style data
+    static CodeLoadScopedPool<StyleInspectorDefaultContent> s_StyleInspectorDefaultContentPool = new(Create);
 
     static VisualTreeAsset DefaultContent
     {
@@ -64,7 +64,7 @@ internal partial class StyleInspectorDefaultContent : VisualElement
 
             EditorApplication.tick -= SlowlyCreateContent;
             // Prepopulate the content.
-            using var handle = s_StyleInspectorDefaultContentPool.Get(out var _);
+            s_StyleInspectorDefaultContentPool.Release(s_StyleInspectorDefaultContentPool.Get());
         }
 
         bool ContentFinishedLoading()

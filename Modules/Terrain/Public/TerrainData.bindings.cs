@@ -309,12 +309,14 @@ namespace UnityEngine
                 && m_UseDensityScaling == other.m_UseDensityScaling;
         }
 
-        ///<summary>Returns <c>true</c> if the detail prototype is valid and the Terrain can accept it.</summary>
+        ///<summary>Checks whether the detail prototype is valid and the Terrain can accept it.</summary>
+        ///<returns>True if the detail prototype is valid and the Terrain can accept it. Otherwise, false.</returns>
         public bool Validate()
             => ValidateDetailPrototype(this, out _);
 
-        ///<summary>Returns <c>true</c> if the detail prototype is valid and the Terrain can accept it.</summary>
+        ///<summary>Checks whether the detail prototype is valid and the Terrain can accept it.</summary>
         ///<param name="errorMessage">Returns a message that indicates the cause of failed validation.</param>
+        ///<returns>True if the detail prototype is valid and the Terrain can accept it. Otherwise, false.</returns>
         public bool Validate(out string errorMessage)
             => ValidateDetailPrototype(this, out errorMessage);
 
@@ -685,12 +687,16 @@ namespace UnityEngine
         }
 
         ///<summary>Calculates the height in world space units of a point on the heightmap. x and y are pixel coordinates in the heightmap, and the returned value does not take into account the heightmap's position.</summary>
+        ///<param name="x">The x pixel coordinate on the heightmap.</param>
+        ///<param name="y">The y pixel coordinate on the heightmap.</param>
+        ///<returns>The height, in world space units, at the given pixel coordinate.</returns>
         [NativeName(k_HeightmapPrefix + "GetHeight")]
         extern public float GetHeight(int x, int y);
 
         ///<summary>Gets an interpolated height at a point x,y. The x and y coordinates are clamped to [0, 1].</summary>
         ///<param name="x">X coordinate of the point in the range of [0, 1].</param>
         ///<param name="y">Y coordinate of the point in the range of [0, 1].</param>
+        ///<returns>The interpolated height, in world space units, at the given normalized coordinate.</returns>
         [NativeName(k_HeightmapPrefix + "GetInterpolatedHeight")]
         extern public float GetInterpolatedHeight(float x, float y);
 
@@ -702,6 +708,7 @@ namespace UnityEngine
         ///<param name="yCount">The number of queries along the Y axis.</param>
         ///<param name="xInterval">The interval between each query along the X axis.</param>
         ///<param name="yInterval">The interval between each query along the Y axis.</param>
+        ///<returns>A two-dimensional array of interpolated height values, indexed as [y,x].</returns>
         public float[,] GetInterpolatedHeights(float xBase, float yBase, int xCount, int yCount, float xInterval, float yInterval)
         {
             if (xCount <= 0)
@@ -750,6 +757,7 @@ namespace UnityEngine
         ///<param name="yBase">First index of heightmap samples to retrieve along the Terrain's z axis.</param>
         ///<param name="width">Number of samples to retrieve along the Terrain's x axis.</param>
         ///<param name="height">Number of samples to retrieve along the Terrain's z axis.</param>
+        ///<returns>A two-dimensional array of heightmap samples, indexed as [y,x].</returns>
         public float[,] GetHeights(int xBase, int yBase, int width, int height)
         {
             if (xBase < 0 || yBase < 0 || xBase + width < 0 || yBase + height < 0 || xBase + width > heightmapResolution || yBase + height > heightmapResolution)
@@ -836,6 +844,9 @@ namespace UnityEngine
         extern private void Internal_SetHeightsDelayLOD(int xBase, int yBase, int width, int height, float[,] heights);
 
         ///<summary>Gets whether a certain point at x,y is a hole.</summary>
+        ///<param name="x">The x index of the point to query.</param>
+        ///<param name="y">The y index of the point to query.</param>
+        ///<returns>True if the point at the given index is a hole. Otherwise, false.</returns>
         public bool IsHole(int x, int y)
         {
             if (x < 0 || x >= holesResolution || y < 0 || y >= holesResolution)
@@ -852,6 +863,7 @@ namespace UnityEngine
         ///<param name="yBase">First y index of Terrain holes samples to retrieve.</param>
         ///<param name="width">Number of samples to retrieve along the Terrain holes x axis.</param>
         ///<param name="height">Number of samples to retrieve along the Terrain holes y axis.</param>
+        ///<returns>A two-dimensional array of Terrain holes samples, indexed as [y,x].</returns>
         public bool[,] GetHoles(int xBase, int yBase, int width, int height)
         {
             if (xBase < 0 || yBase < 0 || width <= 0 || height <= 0 || xBase + width > holesResolution || yBase + height > holesResolution)
@@ -924,6 +936,9 @@ namespace UnityEngine
         extern private void Internal_SetHolesDelayLOD(int xBase, int yBase, int width, int height, bool[,] holes);
 
         ///<summary>Gets the gradient of the terrain at point (x,y). The gradient's value is always positive.</summary>
+        ///<param name="x">The normalized x-coordinate of the point, in the range [0, 1].</param>
+        ///<param name="y">The normalized y-coordinate of the point, in the range [0, 1].</param>
+        ///<returns>The steepness angle, in degrees, of the terrain at the given point.</returns>
         ///<remarks>The <c>x</c> and <c>y</c> values are normalized coordinates in the range 0 to 1.</remarks>
         [NativeName(k_HeightmapPrefix + "GetSteepness")]
         extern public float GetSteepness(float x, float y);
@@ -1109,7 +1124,7 @@ namespace UnityEngine
             get;
         }
 
-        ///<seealso cref="DetailScatterMode" />
+        ///<summary>Determines how the detail map values for this terrain data translate into detail instances.</summary>
         extern public DetailScatterMode detailScatterMode
         {
             [NativeName(k_DetailDatabasePrefix + "GetDetailScatterMode")]
@@ -1135,15 +1150,23 @@ namespace UnityEngine
             set;
         }
 
-        ///<summary>Returns an array of all supported detail layer indices in the area.</summary>
+        ///<summary>Gets an array of all supported detail layer indices in the area.</summary>
         ///<remarks>The Terrain uses a detail layer density map. Each pixel in the map determines the amount of details objects that will be procedurally placed in the pixel area.
         ///The layer determines the detail prototype that will be instantiated at the location.</remarks>
+        ///<param name="xBase">First x index of the area to query.</param>
+        ///<param name="yBase">First y index of the area to query.</param>
+        ///<param name="totalWidth">The width of the area to query, along the Terrain's x axis.</param>
+        ///<param name="totalHeight">The height of the area to query, along the Terrain's z axis.</param>
+        ///<returns>An array of the supported detail layer indices in the area.</returns>
         [FreeFunction(k_ScriptingInterfacePrefix + "GetSupportedLayers", HasExplicitThis = true)]
         extern public int[] GetSupportedLayers(int xBase, int yBase, int totalWidth, int totalHeight);
 
-        ///<summary>Returns an array of all supported detail layer indices in the area.</summary>
+        ///<summary>Gets an array of all supported detail layer indices in the area.</summary>
         ///<remarks>The Terrain uses a detail layer density map. Each pixel in the map determines the amount of details objects that will be procedurally placed in the pixel area.
         ///The layer determines the detail prototype that will be instantiated at the location.</remarks>
+        ///<param name="positionBase">The first index of the area to query.</param>
+        ///<param name="size">The size of the area to query.</param>
+        ///<returns>An array of the supported detail layer indices in the area.</returns>
         public int[] GetSupportedLayers(Vector2Int positionBase, Vector2Int size)
         {
             return GetSupportedLayers(positionBase.x, positionBase.y, size.x, size.y);
@@ -1195,6 +1218,7 @@ namespace UnityEngine
         ///}
         ///]]></code>
         ///</example>
+        ///<returns>A 2D array of the detail object density for the specified layer and location, indexed as [y,x].</returns>
         public int[,] GetDetailLayer(int xBase, int yBase, int width, int height, int layer)
         {
             int[,] detailLayer = new int[height, width];
@@ -1202,6 +1226,16 @@ namespace UnityEngine
             return detailLayer;
         }
 
+        ///<summary>Gets a 2D array of the number of detail objects for this layer in the specific location.</summary>
+        ///<remarks>The Terrain system uses detail layer density maps. Each map is a grayscale image, where each pixel value denotes the number of detail objects to procedurally place in the terrain area that corresponds to the pixel. Because several different detail types can be used, the map is arranged
+        /// into layers. The array indices of the layers are determined by the order of the detail types defined
+        /// in the Terrain Inspector when the Paint Details tool is selected.
+        ///
+        ///The returned array has the dimensions [height,width] and is indexed as `[y,x]`.</remarks>
+        ///<param name="positionBase">First index of detail object density data to retrieve.</param>
+        ///<param name="size">The amount of detail object density data to retrieve.</param>
+        ///<param name="layer">The index of the detail in the <see cref="detailPrototypes" /> array.</param>
+        ///<returns>A 2D array of the detail object density for the specified layer and location, indexed as `[y,x]`.</returns>
         public int[,] GetDetailLayer(Vector2Int positionBase, Vector2Int size, int layer)
         {
             return GetDetailLayer(positionBase.x, positionBase.y, size.x, size.y, layer);
@@ -1213,6 +1247,7 @@ namespace UnityEngine
         ///<param name="layer">The prototype index.</param>
         ///<param name="density">The density setting of the detail.</param>
         ///<param name="bounds">Returns the bounds of the detail objects.</param>
+        ///<returns>An array of detail object transforms for the specified patch and prototype.</returns>
         ///<seealso cref="DetailInstanceTransform" />
         [FreeFunction(k_ScriptingInterfacePrefix + "ComputeDetailInstanceTransforms", HasExplicitThis = true)]
         extern public DetailInstanceTransform[] ComputeDetailInstanceTransforms(int patchX, int patchY, int layer, float density, out Bounds bounds);
@@ -1220,6 +1255,8 @@ namespace UnityEngine
 
         ///<summary>This function computes and returns the coverage (how many instances fit in a square unit) of a detail prototype, given its index.</summary>
         ///<remarks>Computes detail coverage. In  <see cref="DetailScatterMode.CoverageMode" />, this coverage represents the number of scattered instances per unit squared, based on the detail prototype's size and density settings. Unavailable in <see cref="DetailScatterMode.InstanceCountMode" />.</remarks>
+        ///<param name="detailPrototypeIndex">The index of the detail prototype in the <see cref="detailPrototypes" /> array.</param>
+        ///<returns>The coverage of the detail prototype, in instances per unit squared.</returns>
         [FreeFunction(k_ScriptingInterfacePrefix + "ComputeDetailCoverage", HasExplicitThis = true)]
         extern public float ComputeDetailCoverage(int detailPrototypeIndex);
 
@@ -1262,11 +1299,25 @@ namespace UnityEngine
         ///}
         ///]]></code>
         ///</example>
+        ///<param name="xBase">First x index of the detail layer density map to set.</param>
+        ///<param name="yBase">First y index of the detail layer density map to set.</param>
+        ///<param name="layer">The index of the detail in the <see cref="detailPrototypes" /> array.</param>
+        ///<param name="details">Array of detail object density values indexed as `[y,x]`.</param>
         public void SetDetailLayer(int xBase, int yBase, int layer, int[,] details)
         {
             Internal_SetDetailLayer(xBase, yBase, details.GetLength(1), details.GetLength(0), layer, details);
         }
 
+        ///<summary>Sets the detail layer density map.</summary>
+        ///<remarks>The Terrain system uses detail layer density maps. Each map is a grayscale image
+        /// where each pixel value specifies the number of detail objects to procedurally place in the terrain area that corresponds to the pixel. These values depend on which <see cref="DetailScatterMode" /> is set. Because several different detail types can be used, the map is arranged
+        /// into layers. The array indices of the layers are determined by the order of the detail types defined
+        ///in the Terrain Inspector when the Paint Details tool is selected.
+        ///
+        ///The `details` array must have the dimensions `[height,width]` and is indexed as `[y,x]`.</remarks>
+        ///<param name="basePosition">First index of the detail layer density map to set.</param>
+        ///<param name="layer">The index of the detail in the <see cref="detailPrototypes" /> array.</param>
+        ///<param name="details">Array of detail object density values indexed as `[y,x]`.</param>
         public void SetDetailLayer(Vector2Int basePosition, int layer, int[,] details)
         {
             SetDetailLayer(basePosition.x, basePosition.y, layer, details);
@@ -1278,6 +1329,7 @@ namespace UnityEngine
         ///<summary>Returns an array of detail patches, which are each identified by X-Z coordinates. Detail objects in the patches are clamped to the maximum count.</summary>
         ///<remarks>This function is only available in the Editor.</remarks>
         ///<param name="density">The detail density value. See <see cref="Terrain.detailObjectDensity" />.</param>
+        ///<returns>An array of X-Z coordinates identifying the clamped detail patches.</returns>
         [FreeFunction(k_ScriptingInterfacePrefix + "GetClampedDetailPatches", HasExplicitThis = true)]
         extern public Vector2Int[] GetClampedDetailPatches(float density);
 
@@ -1308,6 +1360,7 @@ namespace UnityEngine
 
         ///<summary>Gets the tree instance at the specified index. It is used as a faster version of <see cref="treeInstances" />[index] as this function doesn't create the entire tree instances array.</summary>
         ///<param name="index">The index of the tree instance.</param>
+        ///<returns>The tree instance at the specified index.</returns>
         public TreeInstance GetTreeInstance(int index)
         {
             if (index < 0 || index >= treeInstanceCount)
@@ -1540,6 +1593,9 @@ namespace UnityEngine
         ///}
         ///]]></code>
         ///</example>
+        ///<param name="x">The x offset to write to.</param>
+        ///<param name="y">The y offset to write to.</param>
+        ///<param name="map">The 3D array of splat weights to assign, where the third dimension represents the mixing weight of each splatmap at each x,y coordinate.</param>
         public void SetAlphamaps(int x, int y, float[,,] map)
         {
             if (map.GetLength(2) != alphamapLayers)

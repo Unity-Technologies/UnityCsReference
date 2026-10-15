@@ -318,6 +318,7 @@ namespace UnityEngine.TerrainTools
         ///<param name="extraBorderPixels">Number of extra border pixels required. The default value is 0.</param>
         ///<param name="sharedBoundaryTexel">Whether to stretch the Textures so that edge texels lie on the Terrain boundary, and are shared with connected Terrains.</param>
         ///<param name="fillOutsideTerrain">Whether to fill empty space outside of the Terrain tiles with data from the nearest tile.</param>
+        ///<returns>A new PaintContext for the given Terrain and region.</returns>
         ///<seealso cref="PaintContext" />
         public static PaintContext CreateFromBounds(
             Terrain terrain, Rect boundsInTerrainSpace, int inputTextureWidth, int inputTextureHeight,

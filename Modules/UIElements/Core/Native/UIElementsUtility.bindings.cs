@@ -13,8 +13,8 @@ namespace UnityEngine.UIElements
     [NativeHeader("Modules/UIElements/Core/Native/UIElementsRuntimeUtilityNative.h")]
     internal static partial class UIElementsRuntimeUtilityNative
     {
-        [AutoStaticsCleanupOnCodeReload]
-        private static Action UpdatePanelsCallback;
+        [NoAutoStaticsCleanup] // set once per ALC by UIElementsRuntimeUtility, only targets UIElementsModule which unloads with this field
+        internal static Action UpdatePanelsCallback;
         [AutoStaticsCleanupOnCodeReload]
         private static Action<bool> RepaintPanelsCallback;
         [AutoStaticsCleanupOnCodeReload]

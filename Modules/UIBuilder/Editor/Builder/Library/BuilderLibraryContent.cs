@@ -28,6 +28,8 @@ namespace Unity.UI.Builder
 
             public void OnAssetChange()
             {
+                s_ContentUpToDate = false;
+
                 // AssetDatabase.FindAllAssets(filter) will return outdated assets if
                 // we refresh immediately.
 
@@ -45,7 +47,7 @@ namespace Unity.UI.Builder
                 => AssetDeleteResult.DidNotDelete;
         }
 
-        internal class AssetPostprocessor : IBuilderOneTimeAssetPostprocessor
+        internal class AssetPostprocessor : IBuilderAssetPostprocessor
         {
             readonly Action m_OnPostprocessAllAssets;
 
@@ -54,8 +56,15 @@ namespace Unity.UI.Builder
                 m_OnPostprocessAllAssets = onPostprocessAllAssets;
             }
 
-            public void OnPostProcessAsset()
+            // The library rebuilds only when the set of UXML paths changes, so USS and TSS imports cannot change it
+            public void OnPostprocessAllAssets(string[] importedAssets, string[] deletedAssets, string[] movedAssets, string[] movedFromAssetPaths)
             {
+                if (!BuilderAssetPostprocessor.ContainsUxml(importedAssets) && !BuilderAssetPostprocessor.ContainsUxml(deletedAssets)
+                    && !BuilderAssetPostprocessor.ContainsUxml(movedAssets) && !BuilderAssetPostprocessor.ContainsUxml(movedFromAssetPaths))
+                    return;
+
+                s_ContentUpToDate = false;
+
                 // AssetDatabase.FindAllAssets(filter) will return outdated assets if
                 // we refresh immediately.
 
@@ -66,6 +75,13 @@ namespace Unity.UI.Builder
                 EditorApplication.delayCall += m_OnPostprocessAllAssets.Invoke;
             }
         }
+
+        // Lets every caller, including each queued delayCall, skip the project search until an asset change clears it
+        [AutoStaticsCleanupOnCodeReload]
+        [IgnoreForUAL0015("Up-to-date flag; its cleared value makes the next regeneration run in full")]
+        static bool s_ContentUpToDate;
+
+        internal static bool isContentUpToDate => s_ContentUpToDate;
 
         [AutoStaticsCleanupOnCodeReload]
         // Per-Type icon and item lookup filled by UpdateControlsTypeCache while the trees are generated,
@@ -167,8 +183,12 @@ namespace Unity.UI.Builder
         {
             if (mustRegisterProcessors && !BuilderAssetModificationProcessor.IsProcessorRegistered(s_AssetModificationProcessor))
                 BuilderAssetModificationProcessor.Register(s_AssetModificationProcessor);
-            if (mustRegisterProcessors && !BuilderAssetPostprocessor.IsOneTimeProcessorRegistered(s_AssetPostProcessor))
+            if (mustRegisterProcessors && !BuilderAssetPostprocessor.IsProcessorRegistered(s_AssetPostProcessor))
                 BuilderAssetPostprocessor.Register(s_AssetPostProcessor);
+
+            if (s_ContentUpToDate)
+                return;
+            s_ContentUpToDate = true;
 
             s_ProjectAssetsScanner.FindAssets();
             var previousProjectUxmlPathsHash = s_ProjectUxmlPathsHash;
@@ -202,6 +222,7 @@ namespace Unity.UI.Builder
         internal static void ResetProjectUxmlPathsHash()
         {
             s_ProjectUxmlPathsHash = default;
+            s_ContentUpToDate = false;
         }
 
         public static Background GetTypeLibraryIcon(Type type)

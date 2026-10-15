@@ -5,7 +5,6 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
-using JetBrains.Annotations;
 using Unity.Scripting.LifecycleManagement;
 using UnityEngine.Bindings;
 using UnityEngine.UIElements;
@@ -58,9 +57,10 @@ namespace UnityEditor.UIElements
         [AutoStaticsCleanupOnCodeReload]
         private static List<Type> s_ExtensionTypes = new();
 
-        [InitializeOnLoadMethod, UsedImplicitly]
+        [OnCodeLoaded]
         private static void GetExtensionTypes()
         {
+            s_ExtensionTypes.Clear();
             foreach (var extension in TypeCache.GetTypesDerivedFrom<IUIToolkitSettingsProviderExtension>())
             {
                 if (extension.IsInterface)

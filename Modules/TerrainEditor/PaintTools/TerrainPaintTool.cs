@@ -168,7 +168,8 @@ namespace UnityEditor.TerrainTools
     // there are additional variables that come with this new type, such as TerrainCategory and HasToolSettings
     public abstract partial class TerrainPaintToolWithOverlaysBase : EditorTools.EditorTool, ITerrainPaintToolWithOverlays
     {
-        [NoAutoStaticsCleanup] // reusable scratch context, re-populated via Set() before each scene call
+        // Holds the last SceneView, whose overlay canvas references the terrain tools; recreate on reload.
+        [AutoStaticsCleanupOnCodeReload(CleanupStrategy = CleanupStrategy.CaptureInitializationExpression)]
         static OnSceneGUIContext s_OnSceneGUIContext = new OnSceneGUIContext(null, new RaycastHit(), null, 0.0f, 0.0f, 0);
         [NoAutoStaticsCleanup] // reusable scratch context, re-populated via Set() before each paint call
         static OnPaintContext s_OnPaintContext = new OnPaintContext(new RaycastHit(), null, Vector2.zero, 0.0f, 0.0f);

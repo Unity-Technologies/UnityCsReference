@@ -229,14 +229,42 @@ namespace Unity.Burst
             ExceptionMarshaller.CheckPendingException();
         }
 
+        [UnityEngine.Internal.ExcludeFromDocs]
+        [BurstDiscard]
+        public static void BeginCheckedInvoke()
+        {
+            PushCheckedInvokeAbortCallback();
+        }
+
+        [UnityEngine.Internal.ExcludeFromDocs]
+        [BurstDiscard]
+        public static void EndCheckedInvoke()
+        {
+            PopUserAbortCallbackForThread();
+        }
+
+        [UnityEngine.Internal.ExcludeFromDocs]
+        [BurstDiscard]
+        public static void ThrowPendingCheckedInvokeException()
+        {
+            CheckPendingException();
+            ThrowCheckedInvokeAbort();
+        }
+
         public unsafe delegate void BurstAbortUserDelegate(string exceptionKind, string message, string stackTrace, void* userData);
+
+        private static string BurstExceptionNote()
+        {
+            var context = Unity.Burst.LowLevel.BurstCompilerService.IsInBurstedJob() ? "job" : "function";
+            return $"This Exception was thrown from a {context} compiled with Burst, which has limited exception support.";
+        }
 
         private static Exception ConstructException(string kind, string message, string callStack)
         {
             var getExceptionType = Type.GetType(kind);
             if (getExceptionType != null)
             {
-                var text = $"{message}\n{callStack}\nEnd of stack trace from the original location.\n";
+                var text = $"{message}\n{BurstExceptionNote()}\n{callStack}\nEnd of stack trace from the original location.\n";
 
                 // Prefer the (message, innerException) overload: it is consistently message-first across the BCL,
                 // whereas the single-string overload of e.g. ArgumentNullException takes a paramName, which would
@@ -253,7 +281,9 @@ namespace Unity.Burst
                     return (Exception)ctor.Invoke(new object[] { text });
                 }
             }
-            return new Exception($"{kind}: {message}\n{callStack}\nEnd of stack trace from the original location.\n");
+            // Burst can only raise a limited set of exception types; anything it cannot resolve back to a
+            // concrete type is surfaced as InvalidOperationException, matching the Mono abort path.
+            return new InvalidOperationException($"{kind}: {message}\n{BurstExceptionNote()}\n{callStack}\nEnd of stack trace from the original location.\n");
         }
 
         [BurstDiscard]
@@ -270,6 +300,36 @@ namespace Unity.Burst
             Marshal.FreeHGlobal(info.message);
             Marshal.FreeHGlobal(info.callStack);
             throw ConstructException(kind, message, callStack);
+        }
+
+        [AutoStaticsCleanup]
+        [ThreadStatic] static Exception threadCheckedInvokeAbort = null;
+
+        [NoAutoStaticsCleanup]
+        private static unsafe BurstAbortUserDelegate CheckedInvokeAbortDelegate = CheckedInvokeAbort;
+
+        [BurstDiscard]
+        private static unsafe void CheckedInvokeAbort(string kind, string message, string callStack, void* user)
+        {
+            threadCheckedInvokeAbort = ConstructException(kind, message, callStack);
+        }
+
+        [BurstDiscard]
+        private static unsafe void PushCheckedInvokeAbortCallback()
+        {
+            PushUserAbortCallbackForThread(CheckedInvokeAbortDelegate, null);
+        }
+
+        [BurstDiscard]
+        private static void ThrowCheckedInvokeAbort()
+        {
+            var exception = threadCheckedInvokeAbort;
+            if (exception == null)
+            {
+                return;
+            }
+            threadCheckedInvokeAbort = null;
+            throw exception;
         }
 
         [BurstDiscard]
@@ -316,7 +376,9 @@ namespace Unity.Burst
                 {
                     if (Unity.Burst.LowLevel.BurstCompilerService.IsInBurstedJob())
                     {
-                        Unity.Scripting.LowLevel.Debug.LogException(e, invokePostProcessCallbacks: true);
+                        Unity.Scripting.LowLevel.Debug.LogException(
+                            ConstructException(e.GetType().FullName, e.Message, e.StackTrace),
+                            invokePostProcessCallbacks: true);
                         return;
                     } else
                     {
@@ -334,18 +396,18 @@ namespace Unity.Burst
             //     BurstFPException.AddException(BurstFPException.GetID(), kind, message, callstack);
             // }
 
-            if ((threadUserCallbacks != null) && (threadUserCallbacks.Count > 0))
+            if (Unity.Burst.LowLevel.BurstCompilerService.IsInBurstedJob())
+            {
+                var e = ConstructException(kind, message, callstack);
+                Unity.Scripting.LowLevel.Debug.LogException(e, invokePostProcessCallbacks: true);
+            }
+            else if ((threadUserCallbacks != null) && (threadUserCallbacks.Count > 0))
             {
                 var data = threadUserCallbacks.Peek();
                 unsafe
                 {
                     data.callback(kind, message, callstack, data.userData);
                 }
-            }
-            else if (Unity.Burst.LowLevel.BurstCompilerService.IsInBurstedJob())
-            {
-                var e = ConstructException(kind, message, callstack);
-                Unity.Scripting.LowLevel.Debug.LogException(e, invokePostProcessCallbacks: true);
             }
             else
             {

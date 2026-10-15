@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System;
 using System.Collections.Generic;
 using Unity.Profiling.Editor;
 using Unity.Scripting.LifecycleManagement;
@@ -31,6 +32,7 @@ namespace UnityEditor.Profiling
         // Data
         bool m_IsInitialized;
         List<ProfilerModule> m_Modules;
+        int m_PinnedModuleCount;
         bool m_BottleneckViewVisible; // Temporary workaround whilst Bottleneck is not a module due to upcoming transition to UIToolkit.
 
         // UI
@@ -107,6 +109,7 @@ namespace UnityEditor.Profiling
             m_ModulesListView.bindItem = BindListViewItem;
             m_ModulesListView.selectionType = SelectionType.Single;
             m_ModulesListView.selectionChanged += OnModuleSelected;
+            RefreshPinnedModuleCount();
             m_ModulesListView.itemsSource = m_Modules;
 
             var configureButton = rootVisualElement.Q<Button>(k_UssSelector_ConfigureButton);
@@ -135,10 +138,41 @@ namespace UnityEditor.Profiling
 
             var selectedModule = m_Modules[selectedIndex];
             selectedModule.ToggleActive();
-            m_ModulesListView.Rebuild();
+            RebuildModulesList();
             m_ModulesListView.ClearSelection();
 
             responder?.OnModuleActiveStateChanged();
+        }
+
+        void RebuildModulesList()
+        {
+            RefreshPinnedModuleCount();
+            m_ModulesListView.Rebuild();
+        }
+
+        void RefreshPinnedModuleCount()
+        {
+            var profilerWindow = (m_Modules != null && m_Modules.Count > 0) ? m_Modules[0].ProfilerWindow : null;
+            m_PinnedModuleCount = (profilerWindow != null) ? profilerWindow.GetPinnedModuleCount() : 0;
+        }
+
+        // Pinned modules count toward the limit whether active or not. A pinned row stays clickable
+        // so it can always be unpinned.
+        internal static bool IsPinBlockedByLimit(bool pinned, bool atPinLimit)
+        {
+            return !pinned && atPinLimit;
+        }
+
+        void OnModulePinToggled(ProfilerModule module)
+        {
+            // Deferred because the setter re-parents charts and the rebuild recycles this row. Uses delayCall
+            // rather than the window's scheduler, which never runs if the popup closes first.
+            EditorApplication.delayCall += () =>
+            {
+                module.pinned = !module.pinned;
+                if (m_ModulesListView?.panel != null)
+                    RebuildModulesList();
+            };
         }
 
         void OnBottlenecksSelected(ClickEvent evt)
@@ -177,7 +211,8 @@ namespace UnityEditor.Profiling
         {
             var module = m_Modules[index];
             var moduleListViewItem = element as ModuleListViewItem;
-            moduleListViewItem.ConfigureWithModule(module);
+            var atPinLimit = m_PinnedModuleCount >= ProfilerWindow.k_MaximumPinnedModules;
+            moduleListViewItem.ConfigureWithModule(module, atPinLimit, OnModulePinToggled);
         }
 
         static class Styles
@@ -191,10 +226,19 @@ namespace UnityEditor.Profiling
             const string k_UssClass_Icon = "module-list-view-item__icon";
             const string k_UssClass_Label = "module-list-view-item__label";
             const string k_UssClass_WarningIcon = "module-list-view-item__warning-icon";
+            const string k_UssClass_Pin = "module-list-view-item__pin";
+            const string k_UssClass_PinAvailable = "module-list-view-item__pin--available";
+            const string k_UssClass_PinPinned = "module-list-view-item__pin--pinned";
+            const string k_UssClass_PinDisabled = "module-list-view-item__pin--disabled";
 
             Image m_Icon;
             Label m_Label;
             Image m_WarningIcon;
+            Image m_Pin;
+
+            ProfilerModule m_Module;
+            Action<ProfilerModule> m_OnPinClicked;
+            bool m_PinInteractive;
 
             public ModuleListViewItem()
             {
@@ -218,11 +262,24 @@ namespace UnityEditor.Profiling
                 };
                 m_WarningIcon.AddToClassList(k_UssClass_WarningIcon);
                 Add(m_WarningIcon);
+
+                m_Pin = new Image
+                {
+                    scaleMode = ScaleMode.ScaleToFit,
+                    image = Styles.pinIcon
+                };
+                m_Pin.AddToClassList(k_UssClass_Pin);
+                // Pointer down, because the ListView toggles the module's active state on pointer down.
+                m_Pin.RegisterCallback<PointerDownEvent>(OnPinPointerDown);
+                Add(m_Pin);
             }
 
-            public void ConfigureWithModule(ProfilerModule module)
+            public void ConfigureWithModule(ProfilerModule module, bool atPinLimit, Action<ProfilerModule> onPinClicked)
             {
+                m_Module = module;
+                m_OnPinClicked = onPinClicked;
                 Configure(module.DisplayName, module.active, module.WarningMsg);
+                ConfigurePin(module, atPinLimit);
             }
 
             public void Configure(string displayName, bool active, string warningMsg = null)
@@ -236,6 +293,42 @@ namespace UnityEditor.Profiling
                 }
                 else
                     m_WarningIcon.style.visibility = Visibility.Hidden;
+
+                // The Bottlenecks row has no pin; ConfigurePin enables it for module rows.
+                m_Pin.RemoveFromClassList(k_UssClass_PinAvailable);
+                m_PinInteractive = false;
+            }
+
+            void ConfigurePin(ProfilerModule module, bool atPinLimit)
+            {
+                var pinned = module.pinned;
+                var blocked = IsPinBlockedByLimit(pinned, atPinLimit);
+                m_PinInteractive = !blocked;
+                m_Pin.image = pinned ? Styles.pinnedIcon : Styles.pinIcon;
+                m_Pin.AddToClassList(k_UssClass_PinAvailable);
+                m_Pin.EnableInClassList(k_UssClass_PinPinned, pinned);
+                m_Pin.EnableInClassList(k_UssClass_PinDisabled, blocked);
+                m_Pin.tooltip = pinned
+                    ? Content.UnpinTooltip
+                    : (blocked ? Content.PinLimitReachedTooltip : Content.PinTooltip);
+            }
+
+            void OnPinPointerDown(PointerDownEvent evt)
+            {
+                if (evt.button != 0)
+                    return;
+
+                evt.StopPropagation();
+                evt.StopImmediatePropagation();
+
+                // The hidden pin still occupies its layout slot, so ignore clicks on it.
+                if (m_Pin.resolvedStyle.visibility == Visibility.Hidden)
+                    return;
+
+                if (!m_PinInteractive || m_Module == null)
+                    return;
+
+                m_OnPinClicked?.Invoke(m_Module);
             }
 
             public void SetActive(bool active)
@@ -248,6 +341,15 @@ namespace UnityEditor.Profiling
             {
                 public static readonly Texture2D inactiveIcon = EditorGUIUtility.LoadIcon("toggle_bg");
                 public static readonly Texture2D activeIcon = EditorGUIUtility.LoadIcon("toggle_on");
+                public static readonly Texture2D pinIcon = EditorGUIUtility.LoadIcon("SceneTemplate/pin");
+                public static readonly Texture2D pinnedIcon = EditorGUIUtility.LoadIcon("SceneTemplate/pinned");
+            }
+
+            static class Content
+            {
+                public static readonly string PinTooltip = L10n.Tr("Pin this module to the top", null);
+                public static readonly string UnpinTooltip = L10n.Tr("Unpin this module from the top", null);
+                public static readonly string PinLimitReachedTooltip = ProfilerWindow.PinLimitReachedTooltip;
             }
         }
 

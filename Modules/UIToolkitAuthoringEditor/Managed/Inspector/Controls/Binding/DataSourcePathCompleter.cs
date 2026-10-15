@@ -212,13 +212,16 @@ class DataSourcePathCompleter : FieldSearchCompleter<PropertyPathInfo>
                 m_ToUICompatibleTypes ??= new List<Type>();
                 m_ToSourceCompatibleTypesMap ??= new Dictionary<Type, List<Type>>();
 
-                if (Binding.bindingMode is BindingMode.TwoWay or BindingMode.ToTarget or BindingMode.ToTargetOnce)
+                var convertsToUi = Binding.bindingMode is BindingMode.TwoWay or BindingMode.ToTarget or BindingMode.ToTargetOnce;
+
+                if (convertsToUi)
                     DataBindingUtility.GetAllConversionsFromSourceToUI(Binding, compatibleType, m_ToUICompatibleTypes);
 
                 foreach (var prop in m_AllProperties)
                 {
-                    bool canConvertToUi = compatibleType == typeof(string) ||
-                                          IsCompatibleType(m_ToUICompatibleTypes, prop.type);
+                    bool canConvertToUi = convertsToUi &&
+                                          (compatibleType == typeof(string) ||
+                                           CanConvert(prop.type, compatibleType, m_ToUICompatibleTypes));
                     bool canConvertToSrc = false;
 
                     if (Binding.bindingMode is BindingMode.TwoWay or BindingMode.ToSource)
@@ -232,7 +235,7 @@ class DataSourcePathCompleter : FieldSearchCompleter<PropertyPathInfo>
                         }
 
                         canConvertToSrc = (prop.type == typeof(string)) ||
-                                          IsCompatibleType(toSrcCompatibleTypes, compatibleType);
+                                          CanConvert(compatibleType, prop.type, toSrcCompatibleTypes);
                     }
 
                     bool isCompatible = false;
@@ -260,17 +263,9 @@ class DataSourcePathCompleter : FieldSearchCompleter<PropertyPathInfo>
             m_AllProperties.Count);
     }
 
-    bool IsCompatibleType(List<Type> compatibleTypes, Type type)
+    static bool CanConvert(Type sourceType, Type destinationType, List<Type> convertibleTypes)
     {
-        foreach (var t in compatibleTypes)
-        {
-            if (t.IsAssignableFrom(type))
-            {
-                return true;
-            }
-        }
-
-        return false;
+        return destinationType.IsAssignableFrom(sourceType) || convertibleTypes.Contains(sourceType);
     }
 
     bool Matcher(string filter, PropertyPathInfo data)

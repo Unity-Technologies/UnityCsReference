@@ -44,11 +44,9 @@ internal static unsafe partial class SerializationBackendManagedCommands
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private static unsafe void RegisterGatheredReference(NativeBufferContext* ctx, object value)
     {
-        // The raw header pointer forwards without a GCHandle; the object stays
-        // rooted in whatever produced it. Null registers too: that is what
-        // records RefId_Null.
-        IntPtr objPtr = Unsafe.As<object, IntPtr>(ref value);
-        ctx->registerGatheredRef(ctx->transferState, objPtr);
+        // Native takes ownership of objPtr. Null registers too: that is what records RefId_Null.
+        IntPtr objPtr = UnityEngine.Bindings.ManagedObjectMarshalling.ConvertToUnmanaged(value);
+        ctx->registerGatheredRef(ctx->transferState, objPtr, value is UnityEngine.Object ? 1 : 0);
     }
 
     // A null [SerializeReference] whose type went missing on load must still

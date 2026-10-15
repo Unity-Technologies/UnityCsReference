@@ -1001,13 +1001,19 @@ namespace Unity.GraphToolkit.Editor
             k_PickedElements.Clear();
             panel.PickAll(position, k_PickedElements);
 
+            GraphElementModel result = null;
             for (var i = 0; i < k_PickedElements.Count; i++)
             {
                 if (k_PickedElements[i] is ModelView modelView && modelView.Model is GraphElementModel model)
-                    return model;
+                {
+                    result = model;
+                    break;
+                }
             }
 
-            return null;
+            // Static list must not keep views alive after the pick.
+            k_PickedElements.Clear();
+            return result;
         }
 
         // CONTEXTUAL MENU METHODS:

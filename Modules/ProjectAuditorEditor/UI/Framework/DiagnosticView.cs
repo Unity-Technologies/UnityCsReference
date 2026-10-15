@@ -291,18 +291,23 @@ namespace Unity.ProjectAuditor.Editor.UI.Framework
 
         public override bool Match(ReportItem issue)
         {
-            if (!base.Match(issue))
-                return false;
-
-            // Filter upgrade issues based on the selected target version. Whether upgrade issues appear at
-            // all is decided by the page's filter (Upgrade vs. Optimization).
-            if (!ObsoleteLibrary.MatchesTargetVersion(issue, m_ViewStates.upgradeTargetVersion))
+            if (!MatchWithoutIgnoredState(issue))
                 return false;
 
             if (m_Table.showIgnoredIssues)
                 return true;
 
             return !issue.IsIgnored;
+        }
+
+        internal override bool MatchWithoutIgnoredState(ReportItem issue)
+        {
+            if (!base.Match(issue))
+                return false;
+
+            // Filter upgrade issues based on the selected target version. Whether upgrade issues appear at
+            // all is decided by the page's filter (Upgrade vs. Optimization).
+            return ObsoleteLibrary.MatchesTargetVersion(issue, m_ViewStates.upgradeTargetVersion);
         }
 
         internal static class Contents

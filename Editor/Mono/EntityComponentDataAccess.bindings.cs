@@ -28,6 +28,9 @@ namespace UnityEditor
         [FreeFunction("EntityComponentDataAccessTestBridge::AddComponent")]
         internal static extern bool AddComponent(EntityId parentId, uint componentTypeId);
 
+        [FreeFunction("EntityComponentDataAccessTestBridge::RemoveComponent")]
+        internal static extern bool RemoveComponent(EntityId componentEntityId);
+
         [FreeFunction("EntityComponentDataAccessTestBridge::HasComponent")]
         internal static extern bool HasComponent(EntityId componentEntityId);
 

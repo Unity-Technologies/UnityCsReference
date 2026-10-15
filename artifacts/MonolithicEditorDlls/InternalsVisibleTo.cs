@@ -152,6 +152,7 @@ using System.Runtime.CompilerServices;
 [assembly: InternalsVisibleTo("UnityEditor.ShaderApiReflectionModule")]
 [assembly: InternalsVisibleTo("UnityEditor.ShaderBuildSettingsModule")]
 [assembly: InternalsVisibleTo("UnityEditor.ShaderLabParserModule")]
+[assembly: InternalsVisibleTo("UnityEditor.ShaderVariantAnalyserModule")]
 [assembly: InternalsVisibleTo("UnityEditor.ShortcutManagerModule")]
 [assembly: InternalsVisibleTo("UnityEditor.SketchUpModule")]
 [assembly: InternalsVisibleTo("UnityEditor.SmartStringsModule")]

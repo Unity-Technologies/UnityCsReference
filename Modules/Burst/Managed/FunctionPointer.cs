@@ -5,6 +5,7 @@
 using System;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
+using Unity.Scripting.LifecycleManagement;
 
 namespace Unity.Burst
 {
@@ -66,6 +67,26 @@ namespace Unity.Burst
             get
             {
                 CheckIsCreated();
+
+                // Assemblies compiled with FunctionPointerWrapperGenerator register a wrapping delegate for
+                // their concrete T, which calls UncheckedInvoke and applies the same exception handling the IL
+                // post-processor emits around a direct call. Anything else falls back to the raw delegate.
+                var factory = FunctionPointerWrapper<T>.Factory;
+                if (factory != null)
+                    return factory(this);
+
+                return Marshal.GetDelegateForFunctionPointer<T>(_ptr);
+            }
+        }
+
+        /// <summary>
+        /// Like <c>Invoke</c> except that exceptions thrown will not be automatically handled and rethrown.
+        /// </summary>
+        public T UncheckedInvoke
+        {
+            get
+            {
+                CheckIsCreated();
                 return Marshal.GetDelegateForFunctionPointer<T>(_ptr);
             }
         }
@@ -81,5 +102,20 @@ namespace Unity.Burst
         /// <param name="ptr">The native pointer.</param>
         /// <returns>An instance of this interface.</returns>
         IFunctionPointer IFunctionPointer.FromIntPtr(IntPtr ptr) => new FunctionPointer<T>(ptr);
+
+        [UnityEngine.Internal.ExcludeFromDocs]
+        public static void RegisterSignature(Func<FunctionPointer<T>, T> wrapperFactory)
+            => FunctionPointerWrapper<T>.SetFactory(wrapperFactory);
+    }
+
+    internal static partial class FunctionPointerWrapper<T>
+    {
+        [NoAutoStaticsCleanup]
+        public static Func<FunctionPointer<T>, T> Factory { get; private set; }
+
+        public static void SetFactory(Func<FunctionPointer<T>, T> factory)
+        {
+            Factory = factory;
+        }
     }
 }

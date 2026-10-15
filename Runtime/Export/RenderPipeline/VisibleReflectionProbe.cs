@@ -21,9 +21,9 @@ namespace UnityEngine.Rendering
         int m_BoxProjection;
     #pragma warning disable 649
         EntityId m_EntityId;
-        EntityId m_TextureId;
+        EntityId m_TextureEntityId;
     #pragma warning restore 649
-        public Texture texture => (Texture)Object.FindObjectFromInstanceID(m_TextureId);
+        public Texture texture => (Texture)Object.FindObjectFromInstanceID(m_TextureEntityId);
 
         public ReflectionProbe reflectionProbe => (ReflectionProbe)Object.FindObjectFromInstanceID(m_EntityId);
 
@@ -71,7 +71,7 @@ namespace UnityEngine.Rendering
 
         public bool Equals(VisibleReflectionProbe other)
         {
-            return m_Bounds.Equals(other.m_Bounds) && m_LocalToWorldMatrix.Equals(other.m_LocalToWorldMatrix) && m_HdrData.Equals(other.m_HdrData) && m_Center.Equals(other.m_Center) && m_BlendDistance.Equals(other.m_BlendDistance) && m_Importance == other.m_Importance && m_BoxProjection == other.m_BoxProjection && m_EntityId == other.m_EntityId && m_TextureId == other.m_TextureId;
+            return m_Bounds.Equals(other.m_Bounds) && m_LocalToWorldMatrix.Equals(other.m_LocalToWorldMatrix) && m_HdrData.Equals(other.m_HdrData) && m_Center.Equals(other.m_Center) && m_BlendDistance.Equals(other.m_BlendDistance) && m_Importance == other.m_Importance && m_BoxProjection == other.m_BoxProjection && m_EntityId == other.m_EntityId && m_TextureEntityId == other.m_TextureEntityId;
         }
 
         public override bool Equals(object obj)
@@ -92,7 +92,7 @@ namespace UnityEngine.Rendering
                 hashCode = (hashCode * 397) ^ m_Importance;
                 hashCode = (hashCode * 397) ^ m_BoxProjection;
                 hashCode = (hashCode * 397) ^ m_EntityId.GetHashCode();
-                hashCode = (hashCode * 397) ^ m_TextureId.GetHashCode();
+                hashCode = (hashCode * 397) ^ m_TextureEntityId.GetHashCode();
                 return hashCode;
             }
         }

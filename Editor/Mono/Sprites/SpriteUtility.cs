@@ -34,6 +34,12 @@ namespace UnityEditor
         [NoAutoStaticsCleanup] // Lazily-created Material from a built-in shader; safe to persist across reloads.
         private static Material s_PreviewSpriteDefaultMaterial;
 
+        internal delegate DragAndDropVisualMode GetSpriteToGameObjectDragVisualModeDelegate(GameObject target, Sprite[] sprites, HierarchyDropFlags dropMode);
+        internal delegate bool PerformSpriteToGameObjectDropDelegate(GameObject target, Sprite[] sprites, HierarchyDropFlags dropMode, ShowFileDialogDelegate saveFileDialog);
+
+        [AutoStaticsCleanupOnCodeReload]
+        static List<(GetSpriteToGameObjectDragVisualModeDelegate getDragVisualMode, PerformSpriteToGameObjectDropDelegate perform)> s_SpriteToGameObjectDragAndDropHandlers;
+
         internal static Material previewSpriteDefaultMaterial
         {
             get
@@ -261,8 +267,6 @@ namespace UnityEditor
         [RequiredByNativeCode]
         static bool CreateAnimation(GameObject gameObject, Object[] frames, ShowFileDialogDelegate saveFileDialog)
         {
-            saveFileDialog = saveFileDialog ?? EditorUtility.SaveFilePanelInProject;
-
             // Use same name compare as when we sort in the backend: See AssetDatabase.cpp: SortChildren
             System.Array.Sort(frames, (a, b) => EditorUtility.NaturalCompare(a.name, b.name));
 
@@ -274,10 +278,7 @@ namespace UnityEditor
 
             if (animator != null)
             {
-                // Go forward with presenting user a save clip dialog
-                string message = string.Format(SpriteUtilityStrings.saveAnimDialogMessage.text, gameObject.name);
-                string newClipDirectory = ProjectWindowUtil.GetActiveFolderPath();
-                string newClipPath = saveFileDialog(SpriteUtilityStrings.saveAnimDialogTitle.text, SpriteUtilityStrings.saveAnimDialogName.text, "anim", message, newClipDirectory);
+                string newClipPath = ShowSaveSpriteAnimationDialog(gameObject, saveFileDialog);
 
                 if (string.IsNullOrEmpty(newClipPath))
                 {
@@ -302,8 +303,22 @@ namespace UnityEditor
             return createSuccess;
         }
 
+        internal static string ShowSaveSpriteAnimationDialog(GameObject gameObject, ShowFileDialogDelegate saveFileDialog)
+        {
+            saveFileDialog = saveFileDialog ?? EditorUtility.SaveFilePanelInProject;
+
+            string message = string.Format(SpriteUtilityStrings.saveAnimDialogMessage.text, gameObject.name);
+            string newClipDirectory = ProjectWindowUtil.GetActiveFolderPath();
+            return saveFileDialog(SpriteUtilityStrings.saveAnimDialogTitle.text, SpriteUtilityStrings.saveAnimDialogName.text, "anim", message, newClipDirectory);
+        }
+
         [RequiredByNativeCode]
         static void AddSpriteAnimationToClip(AnimationClip newClip, Object[] frames)
+        {
+            AddSpriteAnimationCurveToClip(newClip, frames, typeof(SpriteRenderer));
+        }
+
+        internal static void AddSpriteAnimationCurveToClip(AnimationClip newClip, Object[] frames, System.Type spriteComponentType)
         {
             // TODO Default framerate be exposed to user?
             newClip.frameRate = 12;
@@ -319,10 +334,60 @@ namespace UnityEditor
             }
 
             // Create binding
-            EditorCurveBinding curveBinding = EditorCurveBinding.PPtrCurve("", typeof(SpriteRenderer), "m_Sprite");
+            EditorCurveBinding curveBinding = EditorCurveBinding.PPtrCurve("", spriteComponentType, "m_Sprite");
 
             // Save curve to clip
             AnimationUtility.SetObjectReferenceCurve(newClip, (EditorCurveBinding)curveBinding, keyframes);
+        }
+
+        internal static void AddSpriteToGameObjectDragAndDropHandler(GetSpriteToGameObjectDragVisualModeDelegate getDragVisualMode, PerformSpriteToGameObjectDropDelegate perform)
+        {
+            s_SpriteToGameObjectDragAndDropHandlers ??= new List<(GetSpriteToGameObjectDragVisualModeDelegate, PerformSpriteToGameObjectDropDelegate)>();
+            if (!s_SpriteToGameObjectDragAndDropHandlers.Contains((getDragVisualMode, perform)))
+                s_SpriteToGameObjectDragAndDropHandlers.Add((getDragVisualMode, perform));
+        }
+
+        internal static void RemoveSpriteToGameObjectDragAndDropHandler(GetSpriteToGameObjectDragVisualModeDelegate getDragVisualMode, PerformSpriteToGameObjectDropDelegate perform)
+        {
+            s_SpriteToGameObjectDragAndDropHandlers?.Remove((getDragVisualMode, perform));
+        }
+
+        static DragAndDropVisualMode GetSpriteToGameObjectDragVisualModeAndHandler(GameObject target, Sprite[] sprites, HierarchyDropFlags dropMode, out PerformSpriteToGameObjectDropDelegate perform)
+        {
+            if (s_SpriteToGameObjectDragAndDropHandlers == null)
+            {
+                perform = null;
+                return DragAndDropVisualMode.None;
+            }
+
+            for (var i = s_SpriteToGameObjectDragAndDropHandlers.Count - 1; i >= 0; --i)
+            {
+                var result = s_SpriteToGameObjectDragAndDropHandlers[i].getDragVisualMode(target, sprites, dropMode);
+                if (result != DragAndDropVisualMode.None)
+                {
+                    perform = s_SpriteToGameObjectDragAndDropHandlers[i].perform;
+                    return result;
+                }
+            }
+
+            perform = null;
+            return DragAndDropVisualMode.None;
+        }
+
+        [RequiredByNativeCode]
+        internal static DragAndDropVisualMode GetSpriteToGameObjectDragVisualMode(GameObject target, Sprite[] sprites, HierarchyDropFlags dropMode)
+        {
+            return GetSpriteToGameObjectDragVisualModeAndHandler(target, sprites, dropMode, out _);
+        }
+
+        [RequiredByNativeCode]
+        internal static bool PerformSpriteToGameObjectDrop(GameObject target, Sprite[] sprites, HierarchyDropFlags dropMode, ShowFileDialogDelegate saveFileDialog)
+        {
+            var result = GetSpriteToGameObjectDragVisualModeAndHandler(target, sprites, dropMode, out var perform);
+            if (result == DragAndDropVisualMode.None || result == DragAndDropVisualMode.Rejected)
+                return false;
+
+            return perform(target, sprites, dropMode, saveFileDialog);
         }
 
         public static List<Sprite> GetSpriteFromPathsOrObjects(Object[] objects, string[] paths, EventType currentEventType)

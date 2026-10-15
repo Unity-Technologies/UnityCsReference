@@ -269,10 +269,8 @@ namespace Unity.ProjectAuditor.Editor.UI.Framework
 
                 foreach (var issue in allIssues)
                 {
-                    // allIssues spans every page that shares this category's view (e.g. Code is shown under
-                    // both Optimization and Upgrade), so exclude issues that don't belong on the current page.
-                    // Otherwise an issue ignored on one page could make an empty group appear on another.
-                    if (!m_View.MatchesPage(issue.ReportItem))
+                    // The ignored count must use the same filters as the item count, whether or not ignored issues are shown
+                    if (!m_View.MatchWithoutIgnoredState(issue.ReportItem))
                         continue;
 
                     string filteredItemName = issue.GroupName;

@@ -779,7 +779,7 @@ namespace UnityEditor
         static bool PasteTransformPositionMenuValidate(MenuCommand command)
         {
             var tr = command.context as Transform;
-            return tr != null && Clipboard.hasVector3 && IsUserModifiable(tr);
+            return tr != null && Clipboard.hasVector3 && EditorUtility.IsUserModifiable(tr);
         }
 
         [MenuItem("CONTEXT/Transform/Paste/Position", false, 100100)] // ReSharper disable once UnusedMember.Local
@@ -805,7 +805,7 @@ namespace UnityEditor
         static bool PasteTransformRotationMenuValidate(MenuCommand command)
         {
             var tr = command.context as Transform;
-            return tr != null && (Clipboard.hasVector3 || Clipboard.hasQuaternion) && IsUserModifiable(tr);
+            return tr != null && (Clipboard.hasVector3 || Clipboard.hasQuaternion) && EditorUtility.IsUserModifiable(tr);
         }
 
         [MenuItem("CONTEXT/Transform/Paste/Rotation", false, 100102)] // ReSharper disable once UnusedMember.Local
@@ -834,7 +834,7 @@ namespace UnityEditor
         static bool PasteTransformScaleMenuValidate(MenuCommand command)
         {
             var tr = command.context as Transform;
-            return tr != null && Clipboard.hasVector3 && IsUserModifiable(tr);
+            return tr != null && Clipboard.hasVector3 && EditorUtility.IsUserModifiable(tr);
         }
 
         [MenuItem("CONTEXT/Transform/Paste/Scale", false, 100103)] // ReSharper disable once UnusedMember.Local
@@ -860,7 +860,7 @@ namespace UnityEditor
         static bool PasteTransformWorldPlacementMenuValidate(MenuCommand command)
         {
             var tr = command.context as Transform;
-            return tr != null && IsUserModifiable(tr) && Clipboard.HasCustomValue<TransformWorldPlacement>();
+            return tr != null && EditorUtility.IsUserModifiable(tr) && Clipboard.HasCustomValue<TransformWorldPlacement>();
         }
 
         [MenuItem("CONTEXT/Transform/Paste/World Transform", false, 100150)] // ReSharper disable once UnusedMember.Local
@@ -874,23 +874,6 @@ namespace UnityEditor
             tr.position = placement.position;
             tr.rotation = placement.rotation;
             tr.localScale = placement.scale;
-        }
-
-        //@TODO This really should be a helper utility somewhere else
-        static bool IsUserModifiable(UnityEngine.Object o)
-        {
-            if (o == null)
-                return false;
-            if ((o.hideFlags & HideFlags.NotEditable) != 0)
-                return false;
-            if (EditorUtility.IsPersistent(o))
-            {
-                if (PrefabUtility.IsPartOfImmutablePrefab(o))
-                    return false;
-                if (!Editor.IsAppropriateFileOpenForEdit(o))
-                    return false;
-            }
-            return true;
         }
     }
 

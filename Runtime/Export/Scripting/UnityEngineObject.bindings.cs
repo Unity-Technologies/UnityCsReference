@@ -1361,14 +1361,12 @@ namespace UnityEngine
                 return null;
             }
 
-            // Resolves a strong GCHandle from an object's slot to its wrapper. On CoreCLR the handle
-            // points at the table entry holding the object reference, so read it directly (like native
-            // scripting_gchandle_get_target_unsafe); the low pin bit is masked off. The slot only ever
-            // holds a UnityEngine.Object, so reinterpret instead of castclass.
+            // The slot only holds strong, unpinned GCHandles, which point at the table entry holding the wrapper. Read
+            // it directly, like native scripting_gchandle_get_target_unsafe, and reinterpret instead of castclass.
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             static unsafe UnityEngine.Object ResolveWrapperHandle(IntPtr handle)
             {
-                IntPtr* entry = (IntPtr*)(void*)((nint)handle & ~(nint)1);
+                IntPtr* entry = (IntPtr*)(void*)handle;
                 return UnsafeUtility.As<UnityEngine.Object>(UnsafeUtility.As<IntPtr, object>(ref *entry));
             }
 

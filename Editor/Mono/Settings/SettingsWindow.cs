@@ -202,6 +202,9 @@ namespace UnityEditor
 
         void ReleaseProviders()
         {
+            m_TreeView?.ReleaseProviders();
+            m_SettingsPanel?.Clear();
+
             if (m_Providers == null)
                 return;
 

@@ -14,8 +14,7 @@ using Unity.Scripting.LifecycleManagement;
 namespace Unity.UIToolkit.Editor
 {
     // Handles rendering selection outlines for individual VisualElements in the SceneView.
-    [InitializeOnLoad]
-    internal static class VisualElementSceneViewOverlay
+    internal static partial class VisualElementSceneViewOverlay
     {
         const float k_MinimumDepthForVisibility = 0.01f;
         const float k_PanelOutlineThickness = 0f;    // Default thin line — match the panel gizmo look.
@@ -33,7 +32,8 @@ namespace Unity.UIToolkit.Editor
         static readonly UIPrefColor s_VisualElementSelectionColor =
             new(k_SceneViewCategory, "VisualElement Selection", new Color(145f / 255f, 244f / 255f, 139f / 255f, 210f / 255f));
 
-        static VisualElementSceneViewOverlay()
+        [OnCodeLoaded]
+        static void Initialize()
         {
             SceneView.duringSceneGui += OnSceneGUI;
             Selection.selectionChanged += OnSelectionChanged;
@@ -42,6 +42,15 @@ namespace Unity.UIToolkit.Editor
             // Undo can rebuild the panel (live-reload after asset revert) and may fire transient
             // selection events; re-collect so the overlay doesn't disappear after Ctrl+Z.
             Undo.undoRedoPerformed += OnSelectionChanged;
+        }
+
+        [OnCodeUnloading]
+        static void Shutdown()
+        {
+            SceneView.duringSceneGui -= OnSceneGUI;
+            Selection.selectionChanged -= OnSelectionChanged;
+            UICommandQueue.UnregisterHandler<RequestFramingCommand>(OnFramingRequested);
+            Undo.undoRedoPerformed -= OnSelectionChanged;
         }
 
         static void OnFramingRequested(in CommandContext context)
@@ -114,9 +123,9 @@ namespace Unity.UIToolkit.Editor
             }
         }
 
-        [NoAutoStaticsCleanup] // per-frame scratch list, safe to persist
+        [AutoStaticsCleanupOnCodeReload]
         static readonly List<VisualElement> s_SelectedElements = new();
-        [NoAutoStaticsCleanup] // per-frame scratch set, safe to persist
+        [AutoStaticsCleanupOnCodeReload]
         static readonly HashSet<IPanelComponent> s_PanelsDrawnThisFrame = new();
 
         public static Bounds GetElementWorldBounds(VisualElement element, IPanelComponent panelComponent)

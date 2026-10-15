@@ -653,6 +653,8 @@ namespace Unity.GraphToolkit.Editor
                     }
                 }
 
+                k_PickedElements.Clear();
+
                 ReleaseDragging();
                 evt.StopPropagation();
             }
@@ -880,6 +882,8 @@ namespace Unity.GraphToolkit.Editor
                         break;
                     }
                 }
+
+                k_PickedElements.Clear();
 
                 if (!found && m_IsHoveringOver)
                 {

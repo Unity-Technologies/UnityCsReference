@@ -288,7 +288,7 @@ namespace Unity.U2D.Physics
         ///- A <see cref="PhysicsEvents.ContactBeginEvent"/> with call <see cref="PhysicsCallbacks.IContactCallback"/>.
         ///- A <see cref="PhysicsEvents.ContactEndEvent"/> with call <see cref="PhysicsCallbacks.IContactCallback"/>.
         /// </summary>
-        public readonly System.Object callbackTarget { get => PhysicsChain_GetCallbackTarget(this); set => PhysicsChain_SetCallbackTarget(this, value); }
+        public readonly System.Object callbackTarget { get => PhysicsChain_GetCallbackTarget(this); set => PhysicsChain_SetCallbackTarget(this, value, System.Runtime.CompilerServices.RuntimeHelpers.GetHashCode(value)); }
 
         /// <summary>
         /// Get/Set <see cref="PhysicsUserData"/> that can be used for any purpose.

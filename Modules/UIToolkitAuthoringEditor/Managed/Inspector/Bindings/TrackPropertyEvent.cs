@@ -34,5 +34,12 @@ namespace Unity.UIToolkit.Editor
             evt.propertyName = propertyName;
             return evt;
         }
+
+        protected override void Init()
+        {
+            base.Init();
+            provider = null;
+            propertyName = null;
+        }
     }
 }

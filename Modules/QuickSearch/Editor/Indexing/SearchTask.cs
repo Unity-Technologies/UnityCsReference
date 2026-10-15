@@ -25,6 +25,7 @@ namespace UnityEditor.Search
         const int k_BlockingProgress = -2;
 
         internal int progressId = Progress.InvalidProgressId;
+        int m_CancelCallbackProgressId = Progress.InvalidProgressId;
         volatile float m_LastProgress = -1f;
         CancellationTokenSource m_LocalCancelEvent;
         CancellationTokenSource m_CancelEvent;
@@ -133,7 +134,18 @@ namespace UnityEditor.Search
                     m_LocalCancelEvent.Cancel();
                     return true;
                 });
+                m_CancelCallbackProgressId = progressId;
             }
+        }
+
+        // Native progress keeps the callback of a failed or canceled item until the item is removed
+        void UnregisterProgressCancellation()
+        {
+            if (m_CancelCallbackProgressId == Progress.InvalidProgressId)
+                return;
+            if (Progress.Exists(m_CancelCallbackProgressId))
+                Progress.UnregisterCancelCallback(m_CancelCallbackProgressId);
+            m_CancelCallbackProgressId = Progress.InvalidProgressId;
         }
 
         void SetupCancelCallback()
@@ -193,6 +205,7 @@ namespace UnityEditor.Search
             }
 
             AssemblyReloadEvents.beforeAssemblyReload -= OnBeforeAssemblyReload;
+            UnregisterProgressCancellation();
             var allStopped = CancelImmediateWithoutResolver();
             if (!allStopped)
                 Debug.LogWarning($"SearchTask '{name}' had active threads when disposed.");

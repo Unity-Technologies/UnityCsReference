@@ -200,6 +200,8 @@ namespace Unity.GraphToolkit.Editor
                     }
                 }
 
+                k_PickedElements.Clear();
+
                 if (!found && HoveredContext != null)
                 {
                     HoveredContext.StopBlockDragging();
@@ -242,6 +244,8 @@ namespace Unity.GraphToolkit.Editor
                         break;
                     }
                 }
+
+                k_PickedElements.Clear();
             }
             ReleaseDragging();
         }

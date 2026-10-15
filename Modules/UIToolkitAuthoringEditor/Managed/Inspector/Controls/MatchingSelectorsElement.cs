@@ -21,10 +21,10 @@ sealed partial class MatchingSelectorsElement : VisualElement, IVisualElementCha
     [NoAutoStaticsCleanup] // immutable profiler marker, safe to persist
     static readonly ProfilerMarker k_RefreshMarker = new(refreshMarkerName);
 
-    sealed class MatchingSelectorElement : Foldout
+    sealed partial class MatchingSelectorElement : Foldout
     {
-        [NoAutoStaticsCleanup] // text-field pool, safe to persist
-        static UnityEngine.Pool.ObjectPool<TextField> s_PropertyPool = new(CreateTextField, null, OnReleaseTextField);
+        [AutoStaticsCleanupOnCodeReload] // pooled elements must not outlive the reload that frees their style data
+        static CodeLoadScopedPool<TextField> s_PropertyPool = new(CreateTextField, null, OnReleaseTextField);
 
         internal const string ClassName = "unity-matching-selector-element";
         internal const string InputClassName = ClassName + "__input";
@@ -127,8 +127,8 @@ sealed partial class MatchingSelectorsElement : VisualElement, IVisualElementCha
         }
     }
 
-    [NoAutoStaticsCleanup] // selector-element pool, safe to persist
-    static UnityEngine.Pool.ObjectPool<MatchingSelectorElement> s_MatchingSelectorPool = new(CreateMatchingSelector, null, OnReleaseMatchingSelector);
+    [AutoStaticsCleanupOnCodeReload] // pooled elements must not outlive the reload that frees their style data
+    static CodeLoadScopedPool<MatchingSelectorElement> s_MatchingSelectorPool = new(CreateMatchingSelector, null, OnReleaseMatchingSelector);
 
     static MatchingSelectorElement CreateMatchingSelector() => new ();
 
@@ -279,7 +279,7 @@ sealed partial class MatchingSelectorsElement : VisualElement, IVisualElementCha
         return inlineRule.properties?.Length > 0;
     }
 
-    static void Resize<T>(VisualElement element, int count, UnityEngine.Pool.ObjectPool<T> pool)
+    static void Resize<T>(VisualElement element, int count, CodeLoadScopedPool<T> pool)
         where T: VisualElement, new()
     {
         if (element.childCount < count)

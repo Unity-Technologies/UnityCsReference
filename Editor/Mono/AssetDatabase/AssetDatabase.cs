@@ -50,7 +50,7 @@ namespace UnityEditor
             remove => m_importPackageCancelledEvent.Remove(value);
         }
         [AutoStaticsCleanupOnCodeReload(CleanupStrategy = CleanupStrategy.Clear)]
-        private static readonly EventWithPerformanceTracker<ImportPackageCallback> m_importPackageCancelledEvent = new EventWithPerformanceTracker<ImportPackageCallback>($"{nameof(AssetDatabase)}.{nameof(importPackageCancelled)}");
+        private static EventWithPerformanceTracker<ImportPackageCallback> m_importPackageCancelledEvent = new EventWithPerformanceTracker<ImportPackageCallback>($"{nameof(AssetDatabase)}.{nameof(importPackageCancelled)}");
 
         // Delegate to be called when package import fails
         public static event ImportPackageFailedCallback importPackageFailed

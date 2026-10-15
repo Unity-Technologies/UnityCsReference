@@ -65,7 +65,7 @@ internal unsafe struct NativeBufferContext
     public IntPtr   transfer;          // native StreamedBinaryWrite*; opaque to the executor, consumed only by ExternalDynamic dispatchers that Transfer() through it.
     public byte*    pathSegments;      // template FUID segment table (V2PathSegment entries); null when the template has no FUID consumers.
     public byte*    pathNames;         // FUID segment name pool; paired with pathSegments.
-    public delegate* unmanaged[Cdecl]<IntPtr, IntPtr, void> registerGatheredRef;          // (transferState, raw managed object pointer)
+    public delegate* unmanaged[Cdecl]<IntPtr, IntPtr, int, void> registerGatheredRef;     // (transferState, object reference the callee takes ownership of: a GC handle on CoreCLR, whether the object is a UnityEngine.Object)
     public delegate* unmanaged[Cdecl]<IntPtr, byte*, void>  resolveGatheredMissingType;   // (transferState, NUL-terminated identifier); null when no missing types are live
     public ulong    basePosition;      // wire position at transfer start; native-only (alignment asserts), never read here
 }

@@ -475,6 +475,8 @@ namespace Unity.ProjectAuditor.Editor.UI
                     }
                 }
 
+                // The new views load their settings from EditorPrefs, so save the current ones first. UUM-156587
+                m_ViewManager?.OnDisable();
                 m_ViewManager = new ViewManager(supportedCategories);
             }
 
@@ -2049,7 +2051,7 @@ namespace Unity.ProjectAuditor.Editor.UI
 
                     m_AssemblySelection.selection.AddRange(compiledAssemblies);
 
-                    if (m_AssemblySelection.selection.Count == 0)
+                    if (m_AssemblySelection.selection.Count == 0 || compiledAssemblies.Count == m_AssemblyNames.Length)
                         m_AssemblySelection.SetAll(m_AssemblyNames);
                 }
             }

@@ -508,21 +508,21 @@ namespace UnityEngine
         ///<summary>Should the Canvas size be updated based on the render target when a manual Camera.Render call is performed.</summary>
         public extern StandaloneRenderResize updateRectTransformForStandalone { get; set; }
 
-        [AutoStaticsCleanupOnCodeReload]
+        [NoAutoStaticsCleanup] // set once per ALC by UIElementsRuntimeUtility;  only safe because UIModule and UIElementsModule always load into the same ALC
         internal static Action<int> externBeginRenderOverlays
         {
             get;
             [VisibleToOtherModules("UnityEngine.UIElementsModule")]
             set;
         }
-        [AutoStaticsCleanupOnCodeReload]
+        [NoAutoStaticsCleanup]
         internal static Action<int, int> externRenderOverlaysBefore
         {
             get;
             [VisibleToOtherModules("UnityEngine.UIElementsModule")]
             set;
         }
-        [AutoStaticsCleanupOnCodeReload]
+        [NoAutoStaticsCleanup]
         internal static Action<int> externEndRenderOverlays
         {
             get;
@@ -554,7 +554,8 @@ namespace UnityEngine
         [Obsolete("Shared default material now used for text and general UI elements, call Canvas.GetDefaultCanvasMaterial()", false)]
         [FreeFunction("UI::GetDefaultUIMaterial")] public static extern Material GetDefaultCanvasTextMaterial();
 
-        ///<summary>Returns the default material that can be used for rendering normal elements on the Canvas.</summary>
+        ///<summary>Returns the default material that can be used for rendering elements on the Canvas.</summary>
+        ///<returns>The default material for rendering elements on the canvas.</returns>
         [FreeFunction("UI::GetDefaultUIMaterial")] public static extern Material GetDefaultCanvasMaterial();
         ///<summary>Gets or generates the ETC1 Material.</summary>
         ///<remarks>Uses the UI/DefaultETC1 Shader which must be specified in the Always Included Shader list.</remarks>

@@ -351,9 +351,7 @@ sealed partial class VisualElementComponentsInspectorElement : VisualElement
                 (header ?? (VisualElement)foldout).Add(removeButton);
             }
 
-            // Swap the view's default element context for a component-targeting one, then bind it.
             m_AttributesView = new UxmlAttributesView();
-            m_AttributesView.Context.Dispose();
             m_AttributesView.Context = new ComponentUxmlAttributesEditingContext(
                 new UxmlAttributesEditingController(), description);
             m_AttributesView.ContextChanged += OnContextChanged;

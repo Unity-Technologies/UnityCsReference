@@ -41,6 +41,7 @@ namespace Unity.UIToolkit.Editor
         internal TimeValueField itemTimeValueField;
         internal BaseField<UnityEngine.Object> itemAssetField;
         internal ContextualMenuManipulator contextualMenuManipulator;
+        internal StyleProperty boundAssetVariable;
 
         readonly OverrideBarManipulator m_OverrideBar;
 

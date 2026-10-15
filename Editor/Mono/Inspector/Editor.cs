@@ -827,7 +827,7 @@ namespace UnityEditor
         internal void InternalSetTargetEntityIds(EntityId[] ids)
         {
             m_TargetEntityIds = ids;
-            if (ids != null && ids.Length > 0 && IsDataComponentEntityId(ids[0]))
+            if (ids != null && ids.Length > 0 && DataComponentEntityId.IsDataComponent(ids[0]))
                 m_Targets = new UnityObject[ids.Length];
         }
 
@@ -839,10 +839,8 @@ namespace UnityEditor
             m_DataComponentTypeName = t?.AssemblyQualifiedName;
         }
 
-        private static bool IsDataComponentEntityId(EntityId id) => ((EntityId.ToULong(id) >> 28) & 0xFFFUL) != 0;
-
         internal bool isDataComponentEditor
-            => m_TargetEntityIds != null && m_TargetEntityIds.Length > 0 && IsDataComponentEntityId(m_TargetEntityIds[0]);
+            => m_TargetEntityIds != null && m_TargetEntityIds.Length > 0 && DataComponentEntityId.IsDataComponent(m_TargetEntityIds[0]);
 
         internal EntityId targetEntityId => m_TargetEntityIds != null && m_TargetEntityIds.Length > 0
             ? m_TargetEntityIds[0]
@@ -932,17 +930,14 @@ namespace UnityEditor
             if (freshTypeId == 0)
                 return;
 
-            // Rewrite each EntityId's TypeId slice (bits 28..39), preserving the parent bits, so
-            // subsequent SerializedObject construction sees TypeIds that match TypeManager.
-            const ulong kTypeIdMask = 0xFFFUL << 28;
+            // Rewrite each EntityId's TypeId, preserving the owner, so subsequent
+            // SerializedObject construction sees TypeIds that match TypeManager.
             for (int i = 0; i < m_TargetEntityIds.Length; ++i)
             {
-                ulong raw = EntityId.ToULong(m_TargetEntityIds[i]);
-                ulong parentRaw = raw & ~kTypeIdMask;
-                uint staleTypeId = (uint)((raw & kTypeIdMask) >> 28);
-                EntityComponentDataAccessTestBridge.RemapDataComponentTypeId(
-                    EntityId.FromULong(parentRaw), staleTypeId, freshTypeId);
-                m_TargetEntityIds[i] = EntityId.FromULong(parentRaw | ((ulong)freshTypeId << 28));
+                EntityId ownerId = DataComponentEntityId.GetOwner(m_TargetEntityIds[i]);
+                uint staleTypeId = DataComponentEntityId.GetTypeId(m_TargetEntityIds[i]);
+                EntityComponentDataAccessTestBridge.RemapDataComponentTypeId(ownerId, staleTypeId, freshTypeId);
+                m_TargetEntityIds[i] = DataComponentEntityId.Make(ownerId, freshTypeId);
             }
             m_DataComponentType = freshType;
         }

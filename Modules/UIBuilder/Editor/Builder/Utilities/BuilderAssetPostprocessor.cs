@@ -86,6 +86,21 @@ namespace Unity.UI.Builder
             return m_OneTimeProcessors.Contains(processor);
         }
 
+        internal static bool IsProcessorRegistered(IBuilderAssetPostprocessor processor)
+        {
+            return m_Processors.Contains(processor);
+        }
+
+        internal static bool ContainsUxml(string[] assetPaths)
+        {
+            foreach (var path in assetPaths)
+            {
+                if (path.EndsWith(BuilderConstants.UxmlExtension, StringComparison.OrdinalIgnoreCase))
+                    return true;
+            }
+            return false;
+        }
+
         static bool ContainsBuilderFile(string[] assetPaths)
         {
             foreach (var path in assetPaths)

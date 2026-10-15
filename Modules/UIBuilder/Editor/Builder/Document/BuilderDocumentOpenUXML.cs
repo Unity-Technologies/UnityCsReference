@@ -79,6 +79,7 @@ namespace Unity.UI.Builder
         VisualTreeAsset m_VisualTreeAsset;
         VisualTreeAsset m_VisualTreeAssetBackup;
         VisualElement m_CurrentDocumentRootElement;
+        SelectionMarkerSnapshot? m_PendingSharedAssetResyncMarkers;
 
         //
         // Getters
@@ -1657,15 +1658,9 @@ namespace Unity.UI.Builder
             foreach (var openUSSFile in m_OpenUSSFiles)
                 openUSSFile.ResyncBackupToCurrentAsset();
 
-            if (string.IsNullOrEmpty(uxmlOldPath))
-                return;
-
-            var fresh = BuilderPackageUtilities.LoadAssetAtPath<VisualTreeAsset>(uxmlOldPath);
+            var fresh = AdoptFreshVisualTreeAsset();
             if (fresh == null)
                 return;
-
-            m_VisualTreeAsset = fresh;
-            m_VisualTreeAssetRef = fresh;
 
             if (m_VisualTreeAssetBackup == null)
             {
@@ -1683,6 +1678,59 @@ namespace Unity.UI.Builder
             fresh.DeepOverwrite(m_VisualTreeAssetBackup);
             ApplySelectionMarkers(m_VisualTreeAssetBackup, markers);
             ApplySelectionMarkers(fresh, markers);
+        }
+
+        internal void SetSharedAssetResyncPending(bool pending)
+        {
+            m_PendingSharedAssetResyncMarkers = pending ? CaptureSelectionMarkers(visualTreeAsset) : null;
+        }
+
+        internal bool ResyncAfterSharedAssetSettled(Object settledAsset)
+        {
+            if (!m_PendingSharedAssetResyncMarkers.HasValue)
+                return false;
+
+            var markers = m_PendingSharedAssetResyncMarkers.Value;
+            m_PendingSharedAssetResyncMarkers = null;
+
+            var settledPath = AssetDatabase.GetAssetPath(settledAsset);
+            foreach (var openUSSFile in m_OpenUSSFiles)
+            {
+                var previousSheet = openUSSFile.styleSheet;
+                if (!ReferenceEquals(previousSheet, settledAsset) &&
+                    (string.IsNullOrEmpty(settledPath) || openUSSFile.oldPath != settledPath))
+                    continue;
+
+                openUSSFile.ResyncBackupToCurrentAsset();
+                // Follow the swap, or the re-clone rebuilds StyleSheet Editing Mode around the stale object.
+                if (m_OpenedStyleSheet == previousSheet)
+                    m_OpenedStyleSheet = openUSSFile.styleSheet;
+                break;
+            }
+
+            var fresh = AdoptFreshVisualTreeAsset();
+            if (fresh == null)
+                return true;
+
+            // The UXML on disk did not change, so m_VisualTreeAssetBackup (what Discard reverts to) stays as is.
+            m_ContentHash = fresh.contentHash;
+            ApplySelectionMarkers(fresh, markers);
+            fileSettings.SetRootElementAsset(fresh);
+            return true;
+        }
+
+        VisualTreeAsset AdoptFreshVisualTreeAsset()
+        {
+            if (string.IsNullOrEmpty(uxmlOldPath))
+                return null;
+
+            var fresh = BuilderPackageUtilities.LoadAssetAtPath<VisualTreeAsset>(uxmlOldPath);
+            if (fresh == null)
+                return null;
+
+            m_VisualTreeAsset = fresh;
+            m_VisualTreeAssetRef = fresh;
+            return fresh;
         }
 
         bool PostSaveToDiskChecksAndFixes(string newUxmlPath, bool needsFullRefresh)

@@ -14,8 +14,6 @@ namespace UnityEditor.Build.Analysis
         private const string k_UxmlPath = "BuildAnalysis/UXML/AssetsTab.uxml";
         private const int k_InspectorPaneIndex = 1;
 
-        public event Action InspectorOpenRequested;
-
         private readonly VisualElement m_Root = new VisualElement();
         private VisualElement m_NoSelection;
         private VisualElement m_Body;
@@ -113,7 +111,6 @@ namespace UnityEditor.Build.Analysis
                     m_InspectedAssetId = asset.Value.Id;
                     BindReferenceSection(m_InspectedAssetId);
                 }
-                InspectorOpenRequested?.Invoke();
                 return;
             }
 
@@ -134,7 +131,6 @@ namespace UnityEditor.Build.Analysis
                 var rootAsset = ResolveAsset(r.AssetId);
 
                 m_AssetInspector.ShowRootAsset(r, rootAsset ?? default, m_CachedAssets);
-                InspectorOpenRequested?.Invoke();
                 return;
             }
 

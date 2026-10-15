@@ -210,6 +210,8 @@ namespace UnityEngine
 
         ///<summary>Add a simple field to the form.</summary>
         ///<remarks>Adds field <c>fieldName</c> with a given string value.</remarks>
+        ///<param name="fieldName">The name of the field to add.</param>
+        ///<param name="value">The string value to assign to the field.</param>
         public void AddField(string fieldName, string value)
         {
             AddField(fieldName, value, Encoding.UTF8);
@@ -217,6 +219,9 @@ namespace UnityEngine
 
         ///<summary>Add a simple field to the form.</summary>
         ///<remarks>Adds field <c>fieldName</c> with a given string value.</remarks>
+        ///<param name="fieldName">The name of the field to add.</param>
+        ///<param name="value">The string value to assign to the field.</param>
+        ///<param name="e">The encoding used to convert `value` to bytes.</param>
         public void AddField(string fieldName, string value, Encoding e)
         {
             fieldNames.Add(fieldName);
@@ -228,6 +233,8 @@ namespace UnityEngine
         ///<summary>Adds a simple field to the form.</summary>
         ///<remarks>Adds field <c>fieldName</c> with a given integer value. A conveinience for calling
         ///AddField(fieldName, i.ToString).</remarks>
+        ///<param name="fieldName">The name of the field to add.</param>
+        ///<param name="i">The integer value to assign to the field.</param>
         public void AddField(string fieldName, int i)
         {
             AddField(fieldName, i.ToString());
@@ -255,6 +262,10 @@ namespace UnityEngine
         ///If <c>mimeType</c> is not given and first 8 bytes of the data match PNG format header, then the
         ///data is sent with "<c>image/png</c>" mimetype. Otherwise it is sent with "<c>application/octet-stream</c>"
         ///mimetype.</remarks>
+        ///<param name="fieldName">The name of the field to add.</param>
+        ///<param name="contents">The binary data to upload.</param>
+        ///<param name="fileName">The file name to use when saving the uploaded file on the server. If `null`, Unity generates a file name from `fieldName`.</param>
+        ///<param name="mimeType">The MIME type of the uploaded data. If `null`, Unity uses `image/png` when the data starts with a PNG header, otherwise `application/octet-stream`.</param>
         public void AddBinaryData(string fieldName, byte[] contents, [DefaultValue("null")] string fileName, [DefaultValue("null")] string mimeType)
         {
             containsFiles = true;

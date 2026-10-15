@@ -168,6 +168,7 @@ namespace Unity.UIToolkit.Editor
             asset.CloneTree(this);
 
             m_AttributesView = this.Q<UxmlAttributesView>(AttributesViewName);
+            m_AttributesView.Context = new UxmlAttributesEditingContext(new UxmlAttributesEditingController());
 
             // The binding editor edits binding data; ancestor Attribute Overrides never apply here.
             m_AttributesView.Context.suppressAncestorOverrides = true;

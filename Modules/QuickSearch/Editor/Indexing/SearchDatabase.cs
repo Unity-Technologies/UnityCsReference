@@ -44,7 +44,7 @@ namespace UnityEditor.Search
     }
 
     [ExcludeFromPreset]
-    class SearchDatabase : ScriptableObject, ITaskReporter, ISearchDatabase
+    partial class SearchDatabase : ScriptableObject, ITaskReporter, ISearchDatabase
     {
         // 1- First version
         // 2- Rename ADBIndex for SearchDatabase
@@ -248,6 +248,13 @@ namespace UnityEditor.Search
         internal static event Action<SearchDatabase> indexLoaded;
         [NoAutoStaticsCleanup]
         internal static List<SearchDatabase> s_DBs;
+
+        // A code reload gives every SearchDatabase a new managed wrapper, so cached entries are stale after it
+        [OnCodeLoaded]
+        static void ResetDatabases()
+        {
+            s_DBs = null;
+        }
 
         private static SearchDatabase Create(string settingsPath)
         {
@@ -530,6 +537,7 @@ namespace UnityEditor.Search
                 currentDb = AssetDatabase.LoadAssetAtPath<SearchDatabase>(settingsPath);
                 if (!currentDb)
                     currentDb = Create(settingsPath);
+                s_DBs ??= new List<SearchDatabase>();
                 s_DBs.Add(currentDb);
             }
 

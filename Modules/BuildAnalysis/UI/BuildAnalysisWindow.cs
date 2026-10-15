@@ -227,7 +227,7 @@ namespace UnityEditor.Build.Analysis
             m_InspectorToggle.AddToClassList("inspector-toggle");
             tabViewport.Add(m_InspectorToggle);
 
-            m_InspectorToggle.SetValueWithoutNotify(EditorPrefs.GetBool(k_InspectorOpenKey, false));
+            m_InspectorToggle.SetValueWithoutNotify(EditorPrefs.GetBool(k_InspectorOpenKey, true));
             m_InspectorToggle.RegisterValueChangedCallback(evt =>
             {
                 EditorPrefs.SetBool(k_InspectorOpenKey, evt.newValue);
@@ -251,9 +251,7 @@ namespace UnityEditor.Build.Analysis
             m_TabHost = new BuildAnalysisTabHost(m_TabView);
             m_TabHost.Register(m_OverviewTab, new OverviewTabView());
 
-            var assetsTabView = new AssetsTabView(m_GraphService);
-            assetsTabView.InspectorOpenRequested += () => m_InspectorToggle.value = true;
-            m_TabHost.Register(m_AssetsTab, assetsTabView);
+            m_TabHost.Register(m_AssetsTab, new AssetsTabView(m_GraphService));
 
             m_ExternalViews = new ExternalViewRouter(m_TabView.parent, m_TabView);
             m_ExternalViews.Enable();

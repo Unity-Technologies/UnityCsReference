@@ -562,6 +562,7 @@ namespace UnityEditorInternal
 
         int m_FocusedElementIndex = -1;
         int m_FocusedElementControlID;
+        int m_FocusedElementPrecedingControlCount;
 
         // A culled element stops consuming control ids, letting another element claim its focused id (UUM-150677).
         void EndFocusedElementEditingBeforeCulling()
@@ -993,6 +994,7 @@ namespace UnityEditorInternal
                 else
                 {
                     // if we aren't dragging, we just draw all of the elements in order
+                    int listStartControlCount = GUIUtility.s_ControlCount;
                     for (int i = 0; i < m_Count; i++)
                     {
                         if (useCulling)
@@ -1031,6 +1033,13 @@ namespace UnityEditorInternal
 
                         elementContentRect = GetContentRect(elementRect);
                         int initialControlCount = GUIUtility.s_ControlCount;
+
+                        // When the ids consumed before the focused element change (a row with controls was
+                        // culled or unculled above), the focused field no longer draws with the id the
+                        // keyboard focus holds, and another element inherits it.
+                        if (i == m_FocusedElementIndex && initialControlCount - listStartControlCount != m_FocusedElementPrecedingControlCount)
+                            EndFocusedElementEditingBeforeCulling();
+
                         int keyboardControlBefore = GUIUtility.keyboardControl;
 
                         // do the callback for the element
@@ -1053,6 +1062,7 @@ namespace UnityEditorInternal
                         {
                             m_FocusedElementIndex = GUIUtility.keyboardControl != 0 ? i : -1;
                             m_FocusedElementControlID = GUIUtility.keyboardControl;
+                            m_FocusedElementPrecedingControlCount = initialControlCount - listStartControlCount;
                         }
 
                         if (handlingInput && Event.current.type == EventType.Used)

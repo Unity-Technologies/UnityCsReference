@@ -53,8 +53,10 @@ namespace UnityEngine
         ///<param name="color">Renderer multiply color.</param>
         public extern void SetColor(Color color);
         ///<summary>Get the current color of the renderer.</summary>
+        ///<returns>The current color of the renderer.</returns>
         public extern Color GetColor();
         ///<summary>Enables rect clipping on the CanvasRendered. Geometry outside of the specified rect will be clipped (not rendered).</summary>
+        ///<param name="rect">The rectangle outside of which geometry is clipped.</param>
         ///<seealso cref="CanvasRenderer.DisableRectClipping" />
         public extern void EnableRectClipping(Rect rect);
         ///<summary>The clipping softness to apply to the renderer.</summary>
@@ -75,10 +77,15 @@ namespace UnityEngine
         ///<returns>Result.</returns>
         public extern Material GetMaterial(int index);
         ///<summary>Set the material for the canvas renderer. Used internally for masking.</summary>
+        ///<param name="material">The material to use for the pop draw call.</param>
+        ///<param name="index">The material index.</param>
         public extern void SetPopMaterial(Material material, int index);
         ///<summary>Gets the current <see cref="Material" /> assigned to the CanvasRenderer. Used internally for masking.</summary>
+        ///<param name="index">The material index.</param>
+        ///<returns>The material used for the pop draw call at the specified index.</returns>
         public extern Material GetPopMaterial(int index);
         ///<summary>Sets the texture used by this renderer's material.</summary>
+        ///<param name="texture">The texture to use for the renderer's material.</param>
         public extern void SetTexture(Texture texture);
         ///<summary>Get the number of secondary textures usable by this renderer.</summary>
         ///<returns>The number of secondary textures.</returns>
@@ -103,6 +110,7 @@ namespace UnityEngine
         ///<param name="texture">The Texture to be passed.</param>
         public extern void SetAlphaTexture(Texture texture);
         ///<summary>Sets the Mesh used by this renderer. Note the Mesh must be read/write enabled.</summary>
+        ///<param name="mesh">The mesh to use for rendering.</param>
         public extern void SetMesh(Mesh mesh);
         ///<summary>Returns the current mesh used to render the canvas content into.</summary>
         ///<returns>The current mesh for the canvas.</returns>
@@ -112,6 +120,7 @@ namespace UnityEngine
         public extern void Clear();
 
         ///<summary>Get the current alpha of the renderer.</summary>
+        ///<returns>The current alpha of the renderer.</returns>
         public float GetAlpha()
         {
             return GetColor().a;
@@ -152,6 +161,14 @@ namespace UnityEngine
         }
 
         ///<summary>Given a list of UIVertex, split the stream into its component types.</summary>
+        ///<param name="verts">The UIVertex list to split.</param>
+        ///<param name="positions">The destination list for the vertex positions.</param>
+        ///<param name="colors">The destination list for the vertex colors.</param>
+        ///<param name="uv0S">The destination list for the vertex uv0s.</param>
+        ///<param name="uv1S">The destination list for the vertex uv1s.</param>
+        ///<param name="normals">The destination list for the vertex normals.</param>
+        ///<param name="tangents">The destination list for the vertex tangents.</param>
+        ///<param name="indices">The destination list for the triangle indices.</param>
         public static void SplitUIVertexStreams(List<UIVertex> verts, List<Vector3> positions, List<Color32> colors, List<Vector4> uv0S, List<Vector4> uv1S,
             List<Vector3> normals, List<Vector4> tangents, List<int> indices)
         {
@@ -159,12 +176,33 @@ namespace UnityEngine
         }
 
         ///<summary>Given a list of UIVertex, split the stream into its component types.</summary>
+        ///<param name="verts">The UIVertex list to split.</param>
+        ///<param name="positions">The destination list for the vertex positions.</param>
+        ///<param name="colors">The destination list for the vertex colors.</param>
+        ///<param name="uv0S">The destination list for the vertex uv0s.</param>
+        ///<param name="uv1S">The destination list for the vertex uv1s.</param>
+        ///<param name="uv2S">The destination list for the vertex uv2s.</param>
+        ///<param name="uv3S">The destination list for the vertex uv3s.</param>
+        ///<param name="normals">The destination list for the vertex normals.</param>
+        ///<param name="tangents">The destination list for the vertex tangents.</param>
+        ///<param name="indices">The destination list for the triangle indices.</param>
         public static void SplitUIVertexStreams(List<UIVertex> verts, List<Vector3> positions, List<Color32> colors, List<Vector4> uv0S, List<Vector4> uv1S,
             List<Vector4> uv2S, List<Vector4> uv3S, List<Vector3> normals, List<Vector4> tangents, List<int> indices)
         {
             SplitUIVertexStreams(verts, positions, colors, uv0S, uv1S, uv2S, uv3S, normals, tangents, new List<Vector4>(), indices);
         }
         ///<summary>Given a list of UIVertex, split the stream into its component types.</summary>
+        ///<param name="verts">The UIVertex list to split.</param>
+        ///<param name="positions">The destination list for the vertex positions.</param>
+        ///<param name="colors">The destination list for the vertex colors.</param>
+        ///<param name="uv0S">The destination list for the vertex uv0s.</param>
+        ///<param name="uv1S">The destination list for the vertex uv1s.</param>
+        ///<param name="uv2S">The destination list for the vertex uv2s.</param>
+        ///<param name="uv3S">The destination list for the vertex uv3s.</param>
+        ///<param name="normals">The destination list for the vertex normals.</param>
+        ///<param name="tangents">The destination list for the vertex tangents.</param>
+        ///<param name="prevPositions">The destination list for the previous vertex positions.</param>
+        ///<param name="indices">The destination list for the triangle indices.</param>
         public static void SplitUIVertexStreams(List<UIVertex> verts, List<Vector3> positions, List<Color32> colors, List<Vector4> uv0S, List<Vector4> uv1S,
             List<Vector4> uv2S, List<Vector4> uv3S, List<Vector3> normals, List<Vector4> tangents, List<Vector4> prevPositions, List<int> indices)
         {
@@ -173,6 +211,14 @@ namespace UnityEngine
         }
 
         ///<summary>Convert a set of vertex components into a stream of UIVertex.</summary>
+        ///<param name="verts">The destination list for the created UIVertex stream.</param>
+        ///<param name="positions">The source list of vertex positions.</param>
+        ///<param name="colors">The source list of vertex colors.</param>
+        ///<param name="uv0S">The source list of vertex uv0s.</param>
+        ///<param name="uv1S">The source list of vertex uv1s.</param>
+        ///<param name="normals">The source list of vertex normals.</param>
+        ///<param name="tangents">The source list of vertex tangents.</param>
+        ///<param name="indices">The source list of triangle indices.</param>
         public static void CreateUIVertexStream(List<UIVertex> verts, List<Vector3> positions, List<Color32> colors, List<Vector4> uv0S, List<Vector4> uv1S, List<Vector3> normals, List<Vector4> tangents, List<int> indices)
         {
             var defaultValues = new List<Vector4>();
@@ -181,12 +227,34 @@ namespace UnityEngine
         }
 
         ///<summary>Convert a set of vertex components into a stream of UIVertex.</summary>
+        ///<param name="verts">The destination list for the created UIVertex stream.</param>
+        ///<param name="positions">The source list of vertex positions.</param>
+        ///<param name="colors">The source list of vertex colors.</param>
+        ///<param name="uv0S">The source list of vertex uv0s.</param>
+        ///<param name="uv1S">The source list of vertex uv1s.</param>
+        ///<param name="uv2S">The source list of vertex uv2s.</param>
+        ///<param name="uv3S">The source list of vertex uv3s.</param>
+        ///<param name="normals">The source list of vertex normals.</param>
+        ///<param name="tangents">The source list of vertex tangents.</param>
+        ///<param name="indices">The source list of triangle indices.</param>
         public static void CreateUIVertexStream(List<UIVertex> verts, List<Vector3> positions, List<Color32> colors, List<Vector4> uv0S, List<Vector4> uv1S, List<Vector4> uv2S, List<Vector4> uv3S, List<Vector3> normals, List<Vector4> tangents, List<int> indices)
         {
             var defaultValues = new List<Vector4>();
             NoAllocHelpers.EnsureListElemCount(defaultValues, positions.Count);
             CreateUIVertexStream(verts, positions, colors, uv0S, uv1S, uv2S, uv3S, normals, tangents, defaultValues, indices);
         }
+        ///<summary>Convert a set of vertex components into a stream of UIVertex.</summary>
+        ///<param name="verts">The destination list for the created UIVertex stream.</param>
+        ///<param name="positions">The source list of vertex positions.</param>
+        ///<param name="colors">The source list of vertex colors.</param>
+        ///<param name="uv0S">The source list of vertex uv0s.</param>
+        ///<param name="uv1S">The source list of vertex uv1s.</param>
+        ///<param name="uv2S">The source list of vertex uv2s.</param>
+        ///<param name="uv3S">The source list of vertex uv3s.</param>
+        ///<param name="normals">The source list of vertex normals.</param>
+        ///<param name="tangents">The source list of vertex tangents.</param>
+        ///<param name="prevPositions">The source list of vertex previous positions.</param>
+        ///<param name="indices">The source list of triangle indices.</param>
         public static void CreateUIVertexStream(List<UIVertex> verts, List<Vector3> positions, List<Color32> colors, List<Vector4> uv0S, List<Vector4> uv1S, List<Vector4> uv2S, List<Vector4> uv3S, List<Vector3> normals, List<Vector4> tangents, List<Vector4> prevPositions, List<int> indices)
         {
             CreateUIVertexStreamInternal(verts, NoAllocHelpers.CreateReadOnlySpan(positions), NoAllocHelpers.CreateReadOnlySpan(colors),
@@ -197,23 +265,42 @@ namespace UnityEngine
 
         ///<summary>Take the UIVertex stream and split it into the corresponding arrays (positions, colors, uv0s, uv1s, normals and tangents).</summary>
         ///<param name="verts">The UIVertex list to split.</param>
-        ///<param name="positions">The destination list for the verts positions.</param>
-        ///<param name="colors">The destination list for the verts colors.</param>
-        ///<param name="uv0S">The destination list for the verts uv0s.</param>
-        ///<param name="uv1S">The destination list for the verts uv1s.</param>
-        ///<param name="normals">The destination list for the verts normals.</param>
-        ///<param name="tangents">The destination list for the verts tangents.</param>
+        ///<param name="positions">The destination list for the vertex positions.</param>
+        ///<param name="colors">The destination list for the vertex colors.</param>
+        ///<param name="uv0S">The destination list for the vertex uv0s.</param>
+        ///<param name="uv1S">The destination list for the vertex uv1s.</param>
+        ///<param name="normals">The destination list for the vertex normals.</param>
+        ///<param name="tangents">The destination list for the vertex tangents.</param>
         public static void AddUIVertexStream(List<UIVertex> verts, List<Vector3> positions, List<Color32> colors, List<Vector4> uv0S, List<Vector4> uv1S, List<Vector3> normals, List<Vector4> tangents)
         {
             AddUIVertexStream(verts, positions, colors, uv0S, uv1S, new List<Vector4>(), new List<Vector4>(), normals, tangents, new List<Vector4>());
         }
 
         ///<summary>Take the UIVertex stream and split it into the corresponding arrays (positions, colors, uv0s, uv1s, uv2s, uv3s, normals and tangents).</summary>
+        ///<param name="verts">The UIVertex list to split.</param>
+        ///<param name="positions">The destination list for the vertex positions.</param>
+        ///<param name="colors">The destination list for the vertex colors.</param>
+        ///<param name="uv0S">The destination list for the vertex uv0s.</param>
+        ///<param name="uv1S">The destination list for the vertex uv1s.</param>
+        ///<param name="uv2S">The destination list for the vertex uv2s.</param>
+        ///<param name="uv3S">The destination list for the vertex uv3s.</param>
+        ///<param name="normals">The destination list for the vertex normals.</param>
+        ///<param name="tangents">The destination list for the vertex tangents.</param>
         public static void AddUIVertexStream(List<UIVertex> verts, List<Vector3> positions, List<Color32> colors, List<Vector4> uv0S, List<Vector4> uv1S, List<Vector4> uv2S, List<Vector4> uv3S, List<Vector3> normals, List<Vector4> tangents)
         {
             AddUIVertexStream(verts, positions, colors, uv0S, uv1S, uv2S, uv3S, normals, tangents, new List<Vector4>());
         }
         ///<summary>Take the UIVertex stream and split it into the corresponding arrays (positions, colors, uv0s, uv1s, uv2s, uv3s, normals, tangents and previous positions).</summary>
+        ///<param name="verts">The UIVertex list to split.</param>
+        ///<param name="positions">The destination list for the vertex positions.</param>
+        ///<param name="colors">The destination list for the vertex colors.</param>
+        ///<param name="uv0S">The destination list for the vertex uv0s.</param>
+        ///<param name="uv1S">The destination list for the vertex uv1s.</param>
+        ///<param name="uv2S">The destination list for the vertex uv2s.</param>
+        ///<param name="uv3S">The destination list for the vertex uv3s.</param>
+        ///<param name="normals">The destination list for the vertex normals.</param>
+        ///<param name="tangents">The destination list for the vertex tangents.</param>
+        ///<param name="prevPositions">The destination list for the previous vertex positions.</param>
         public static void AddUIVertexStream(List<UIVertex> verts, List<Vector3> positions, List<Color32> colors, List<Vector4> uv0S, List<Vector4> uv1S, List<Vector4> uv2S, List<Vector4> uv3S, List<Vector3> normals, List<Vector4> tangents, List<Vector4> prevPositions)
         {
             SplitUIVertexStreamsInternal(NoAllocHelpers.CreateReadOnlySpan(verts), positions, colors, uv0S, uv1S, uv2S, uv3S, normals, tangents, prevPositions);

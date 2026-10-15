@@ -272,6 +272,14 @@ namespace UnityEngine.UIElements
             GUIUtility.pixelsPerPoint = m_GUIGlobals.pixelsPerPoint;
         }
 
+        // IMGUI's pixel matrix only keeps z in [-100, 1], and a flat panel has no depth to show anyway.
+        private Matrix4x4 GetIMGUIRenderTransform(Matrix4x4 transform)
+        {
+            if (elementPanel is { isFlat: true })
+                UIRUtility.NeutralizeZ(ref transform);
+            return transform;
+        }
+
         static readonly ProfilerMarker k_OnGUIMarker = new ProfilerMarker("OnGUI");
 
         private void DoOnGUI(Event evt, Matrix4x4 parentTransform, Rect clippingRect, bool isComputingLayout, Rect layoutSize, Action onGUIHandler, bool canAffectFocus = true)
@@ -382,7 +390,7 @@ namespace UnityEngine.UIElements
 
             try
             {
-                using (new GUIClip.ParentClipScope(parentTransform, clippingRect))
+                using (new GUIClip.ParentClipScope(GetIMGUIRenderTransform(parentTransform), parentTransform, clippingRect))
                 {
                     using (k_OnGUIMarker.Auto())
                     {
@@ -574,7 +582,7 @@ namespace UnityEngine.UIElements
                 // any side-effects given that IMGUI already has a mechanism to clip its content (using the GUIClip.ParentClip feature).
                 UIR.Utility.DisableScissor();
 
-                using (new GUIClip.ParentClipScope(worldTransform, worldClip))
+                using (new GUIClip.ParentClipScope(GetIMGUIRenderTransform(worldTransform), worldTransform, worldClip))
                 {
                     m_CachedClippingRect = worldClip;
                     m_CachedTransform = worldTransform;

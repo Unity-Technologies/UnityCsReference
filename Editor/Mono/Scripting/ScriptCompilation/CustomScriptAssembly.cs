@@ -238,28 +238,28 @@ namespace UnityEditor.Scripting.ScriptCompilation
         // All entries are full package names including the "com.unity." prefix
         static readonly string[] k_WhitelistedPackages = new string[]
         {
-            "com.unity.ide.rider", // UAC0005/6/7/20
-            "com.unity.ide.visualstudio", // UAC0005/6/7 in Testing folder for test runner integration
+            "com.unity.ide.rider", // UUM-156130: UAC0005/6/7/20
+            "com.unity.ide.visualstudio", // UUM-156135: UAC0005/6/7 in Testing folder for test runner integration
             "com.unity.addressables", // UAC0023
-            "com.unity.memoryprofiler", // UAC0006
-            "com.unity.purchasing", // UAC0005
-            "com.unity.cinemachine", // UAC0005
-            "com.unity.learn.iet-framework", // UAC0005
-            "com.unity.polyspatial", // UAC0005/7
-            "com.unity.web.stripping-tool", // UAC0005/7
-            "com.unity.multiplayer.tools", // UAC0005
-            "com.unity.formats.alembic", // UAC0005
+            "com.unity.memoryprofiler", // UUM-156136: UAC0006
+            "com.unity.purchasing", // UUM-156137: UAC0005
+            "com.unity.cinemachine", // UUM-156138: UAC0005
+            "com.unity.learn.iet-framework", // UUM-156139: UAC0005
+            "com.unity.polyspatial", // UUM-156140: UAC0005/7
+            "com.unity.web.stripping-tool", // UUM-156141: UAC0005/7
+            "com.unity.multiplayer.tools", // UUM-156143: UAC0005
+            "com.unity.formats.alembic", // UUM-156145: UAC0005
             "com.unity.mars", // to be deprecated
             "com.unity.barracuda", // to be deprecated
             "com.unity.xrtools.utils", // to be deprecated
-            "com.unity.test-framework", // UAC0007
-            "com.unity.netcode", // UAC0005
-            "com.unity.scriptablebuildpipeline", // UAC0023
-            "com.unity.package-validation-suite", // UAC0005/7
-            "com.unity.searcher", // CS0618: obsolete API usage
-            "com.unity.xr.legacyinputhelpers", // CS0618: obsolete FindObjectsOfType
-            "com.unity.inputsystem", // CS0109: unnecessary new keyword
-            "com.unity.ads", // CS0168: unused variable
+            "com.unity.test-framework", // UUM-156148: UAC0007
+            "com.unity.netcode", // UUM-156149: UAC0005
+            "com.unity.scriptablebuildpipeline", // UUM-156150: UAC0023
+            "com.unity.package-validation-suite", // UUM-156151: UAC0005/7
+            "com.unity.searcher", // UUM-156153: CS0618: obsolete API usage
+            "com.unity.xr.legacyinputhelpers", // UUM-156154: CS0618: obsolete FindObjectsOfType
+            "com.unity.inputsystem", // UUM-156155: CS0109: unnecessary new keyword
+            "com.unity.ads", // UUM-156156: CS0168: unused variable
         };
 
         // Unity packages not yet migrated to AutoStatics cleanup, so

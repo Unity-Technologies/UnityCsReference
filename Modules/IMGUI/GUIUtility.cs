@@ -648,6 +648,12 @@ namespace UnityEngine
                 Internal_PushParentClip(objectTransform, clipRect);
             }
 
+            public ParentClipScope(Matrix4x4 renderTransform, Matrix4x4 inputTransform, Rect clipRect)
+            {
+                m_Disposed = false;
+                Internal_PushParentClip(renderTransform, inputTransform, clipRect, true);
+            }
+
             public void Dispose()
             {
                 if (m_Disposed)
