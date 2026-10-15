@@ -108,6 +108,7 @@ using System.Runtime.CompilerServices;
 [assembly: InternalsVisibleTo("UnityEngine.SpriteShapeModule")]
 [assembly: InternalsVisibleTo("Unity.RenderPipelines.Universal.2D.Runtime")]
 [assembly: InternalsVisibleTo("Unity.RenderPipelines.Universal.Editor")]
+[assembly: InternalsVisibleTo("Universal2DGraphicsTests")]
 [assembly: InternalsVisibleTo("Unity.2D.Sprite.Editor")]
 [assembly: InternalsVisibleTo("Unity.2D.Sprite.EditorTests")]
 [assembly: InternalsVisibleTo("Unity.UI.Builder.Editor")]

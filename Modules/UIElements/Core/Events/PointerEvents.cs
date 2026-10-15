@@ -540,18 +540,7 @@ namespace UnityEngine.UIElements
         /// </remarks>
         public bool actionKey
         {
-            get
-            {
-                if (Application.platform == RuntimePlatform.OSXEditor ||
-                    Application.platform == RuntimePlatform.OSXPlayer)
-                {
-                    return commandKey;
-                }
-                else
-                {
-                    return ctrlKey;
-                }
-            }
+            get { return UIElementsUtility.isCommandActionKeyPlatform ? commandKey : ctrlKey; }
         }
 
         bool IPointerEventInternal.triggeredByOS { get; set; }

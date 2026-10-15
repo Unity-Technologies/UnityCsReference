@@ -71,10 +71,19 @@ namespace UnityEditor
                 {
                     if (!m_OverlaysInitialized)
                     {
-                        var ve = overlayCanvas.rootVisualElement;
-                        baseRootVisualElement.Add(ve);
-                        overlayCanvas.Initialize(this);
+                        // Set before Initialize since Overlay content callbacks run inside it and may reenter this getter
                         m_OverlaysInitialized = true;
+                        try
+                        {
+                            var ve = overlayCanvas.rootVisualElement;
+                            baseRootVisualElement.Add(ve);
+                            overlayCanvas.Initialize(this);
+                        }
+                        catch
+                        {
+                            m_OverlaysInitialized = false;
+                            throw;
+                        }
                     }
 
                     return overlayCanvas.windowRoot;
