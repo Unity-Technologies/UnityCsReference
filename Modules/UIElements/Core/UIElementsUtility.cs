@@ -223,6 +223,9 @@ namespace UnityEngine.UIElements
             s_EnableOSXContextualMenuEventsOnNonOSXPlatforms = false;
         }
 
+        // The host OS, not Application.platform: Web builds report WebGLPlayer on every host.
+        internal static bool isCommandActionKeyPlatform => SystemInfo.operatingSystemFamily == OperatingSystemFamily.MacOSX;
+
         static internal List<Panel> s_PanelsIterationList = new List<Panel>();
 
         public static void RegisterCachedPanel(EntityId entityId, Panel panel)

@@ -87,6 +87,19 @@ namespace Unity.Hierarchy.Editor
         internal static int CurrentUndoId => EnsureCurrentEntry().UndoId;
 
         /// <summary>
+        /// Whether <paramref name="hierarchy"/> is the shared data for <paramref name="stage"/>.
+        /// </summary>
+        /// <remarks>
+        /// This can be false for the current stage while a stage switch is in progress, because consumers are only
+        /// moved onto the new stage's entry once the switch has completed.
+        /// </remarks>
+        internal static bool IsHierarchyOf(Stage stage, Hierarchy hierarchy)
+        {
+            var entry = FindEntry(stage);
+            return entry != null && ReferenceEquals(entry.Hierarchy, hierarchy);
+        }
+
+        /// <summary>
         /// Disposes every entry. The current stage's entry is recreated on next access.
         /// </summary>
         /// <remarks>

@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using System.Globalization;
 
 namespace UnityEngine.UIElements
 {
@@ -128,6 +129,11 @@ namespace UnityEngine.UIElements
             var success = UINumericFieldsUtils.TryConvertStringToFloat(newValue, previousValue, out var value, out var expression);
             expressionEvaluated?.Invoke(expression);
             return success ? value : 0;
+        }
+
+        internal override string ValueToString(float currentValue)
+        {
+            return String.Format(CultureInfo.InvariantCulture, "{0:g7}", currentValue);
         }
 
         internal override void ComputeValueFromKey(SliderKey sliderKey, bool isShift)

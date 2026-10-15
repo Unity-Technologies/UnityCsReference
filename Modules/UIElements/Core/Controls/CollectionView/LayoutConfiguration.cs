@@ -138,7 +138,7 @@ namespace UnityEngine.UIElements.HierarchyV2
             container.SetScrollableContainerOffset(m_HorizontalScroll);
             container.AddToClassList(MultiColumnController.rowContainerUssClassNameUnique);
 
-            foreach (var column in m_MultiColumnHeader.columns.visibleList)
+            foreach (var column in m_MultiColumnHeader.columns.visibleSpan)
             {
                 var cellContainer = new VisualElement();
                 cellContainer.AddToClassList(MultiColumnController.cellUssClassNameUnique);
@@ -159,7 +159,7 @@ namespace UnityEngine.UIElements.HierarchyV2
             var i = 0;
             row.SetScrollableContainerOffset(m_HorizontalScroll);
 
-            foreach (var column in m_MultiColumnHeader.columns.visibleList)
+            foreach (var column in m_MultiColumnHeader.columns.visibleSpan)
             {
                 if (!m_MultiColumnHeader.columnDataMap.TryGetValue(column, out var columnData))
                     continue;
@@ -211,7 +211,7 @@ namespace UnityEngine.UIElements.HierarchyV2
 
             var columnIndex = 0;
 
-            foreach (var column in m_MultiColumnHeader.columns.visibleList)
+            foreach (var column in m_MultiColumnHeader.columns.visibleSpan)
             {
                 if (columnIndex >= row.cells.Count)
                     break;
@@ -332,9 +332,10 @@ namespace UnityEngine.UIElements.HierarchyV2
             var column = header.columns[index];
             var visibleIndex = -1;
 
-            for (var i = 0; i < header.columns.visibleList.Count; i++)
+            var visibleColumns = header.columns.visibleSpan;
+            for (var i = 0; i < visibleColumns.Length; i++)
             {
-                if (header.columns.visibleList[i] == column)
+                if (visibleColumns[i] == column)
                 {
                     visibleIndex = i;
                     break;
@@ -481,7 +482,7 @@ namespace UnityEngine.UIElements.HierarchyV2
             if (m_MultiColumnHeader == null)
                 return;
 
-            foreach (var col in m_MultiColumnHeader.columns.visibleList)
+            foreach (var col in m_MultiColumnHeader.columns.visibleSpan)
             {
                 var freezeState = m_MultiColumnHeader.GetColumnFreezeState(col);
                 if (freezeState != FreezeState.None &&

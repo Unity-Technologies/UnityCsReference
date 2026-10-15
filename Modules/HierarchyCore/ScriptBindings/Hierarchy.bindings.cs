@@ -521,6 +521,19 @@ namespace Unity.Hierarchy
         public extern string GetName(in HierarchyNode node);
 
         /// <summary>
+        /// Gets a pointer to the UTF-8 name of a hierarchy node as a view over the hierarchy's native storage.
+        /// </summary>
+        /// <remarks>
+        /// The returned span is not owned by the caller: it points into native memory owned by the hierarchy
+        /// and is invalidated by the next hierarchy mutation. Do not hold onto it.
+        /// </remarks>
+        /// <param name="node">The hierarchy node.</param>
+        /// <returns>The name of the node as a Span of UTF-8 bytes.</returns>
+        [NativeMethod(IsThreadSafe = true, ThrowsException = true)]
+        [VisibleToOtherModules("UnityEngine.HierarchyModule")]
+        internal extern ReadOnlySpan<byte> GetNameRaw(in HierarchyNode node);
+
+        /// <summary>
         /// Gets the path of a hierarchy node.
         /// </summary>
         /// <param name="node">The hierarchy node.</param>

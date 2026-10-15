@@ -92,13 +92,12 @@ namespace Unity.Hierarchy.Editor
 
         internal static void SetNavigationButton(GameObject gameObject, HierarchyViewItem item)
         {
-            var btnContent = PrefabStageUtility.GetPrefabButtonContent(gameObject.GetEntityId());
             var navigateButton = item.NavigateIntoButton;
             if (navigateButton == null)
                 return;
 
             navigateButton.style.display = DisplayStyle.Flex;
-            navigateButton.tooltip = btnContent.tooltip;
+            navigateButton.tooltip = PrefabStageUtility.GetPrefabButtonTooltip();
 
             // TODO: when we support multiple actions for the navigation button this will have to change.
             // For now, it assumes that there is never more than a single distinct action

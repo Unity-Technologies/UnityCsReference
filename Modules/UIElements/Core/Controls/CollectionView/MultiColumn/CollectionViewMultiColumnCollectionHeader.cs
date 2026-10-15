@@ -357,7 +357,7 @@ internal class CollectionViewMultiColumnCollectionHeader : VisualElement, IDispo
         columnLayout = new ColumnLayout(columns);
         columnLayout.layoutRequested += ScheduleDoLayout;
 
-        foreach (var column in columns.visibleList)
+        foreach (var column in columns.visibleSpan)
         {
             OnColumnAdded(column);
         }
@@ -476,7 +476,7 @@ internal class CollectionViewMultiColumnCollectionHeader : VisualElement, IDispo
         var hasStretch = false;
         Column lastVisibleColumn = null;
 
-        foreach (var col in columns.visibleList)
+        foreach (var col in columns.visibleSpan)
         {
             hasStretch |= col.stretchable;
 
@@ -640,7 +640,7 @@ internal class CollectionViewMultiColumnCollectionHeader : VisualElement, IDispo
 
     void SeparateColumnsByFreezeState(List<Column> frozenLeft, List<Column> free, List<Column> frozenRight)
     {
-        foreach (var col in columns.visibleList)
+        foreach (var col in columns.visibleSpan)
         {
             var freezeState = GetColumnFreezeState(col);
 
@@ -705,9 +705,10 @@ internal class CollectionViewMultiColumnCollectionHeader : VisualElement, IDispo
     void OnContextualMenuManipulator(ContextualMenuPopulateEvent evt)
     {
         Column columnUnderMouse = null;
-        var canResizeToFit = columns.visibleList.Count > 0;
+        var visibleColumns = columns.visibleSpan;
+        var canResizeToFit = visibleColumns.Length > 0;
 
-        foreach (var column in columns.visibleList)
+        foreach (var column in visibleColumns)
         {
             if (columns.stretchMode == Columns.StretchMode.GrowAndFill && canResizeToFit && column.stretchable)
                 canResizeToFit = false;
@@ -810,7 +811,7 @@ internal class CollectionViewMultiColumnCollectionHeader : VisualElement, IDispo
 
         var frozenWidth = 0f;
 
-        foreach (var col in columns.visibleList)
+        foreach (var col in columns.visibleSpan)
         {
             var freezeState = GetColumnFreezeState(col);
 
@@ -959,12 +960,7 @@ internal class CollectionViewMultiColumnCollectionHeader : VisualElement, IDispo
         }
 
         // If multi sort is not active then clear
-        EventModifiers multiSortingModifier = EventModifiers.Control;
-
-        if (Application.platform is RuntimePlatform.OSXEditor or RuntimePlatform.OSXPlayer)
-        {
-            multiSortingModifier = EventModifiers.Command;
-        }
+        var multiSortingModifier = UIElementsUtility.isCommandActionKeyPlatform ? EventModifiers.Command : EventModifiers.Control;
 
         if (modifiers != multiSortingModifier)
         {
@@ -1000,7 +996,7 @@ internal class CollectionViewMultiColumnCollectionHeader : VisualElement, IDispo
 
     void ApplyColumnSorting()
     {
-        foreach (var column in columns.visibleList)
+        foreach (var column in columns.visibleSpan)
         {
             if (!columnDataMap.TryGetValue(column, out var columnData))
                 continue;
@@ -1037,11 +1033,12 @@ internal class CollectionViewMultiColumnCollectionHeader : VisualElement, IDispo
     void UpdateSortingStatus()
     {
         var hasSortableColumns = false;
+        var visibleColumns = columns.visibleSpan;
 
         // Perform a first pass to determine if any column is sortable
         if (sortingEnabled)
         {
-            foreach (var column in columns.visibleList)
+            foreach (var column in visibleColumns)
             {
                 if (!column.sortable)
                     continue;
@@ -1052,7 +1049,7 @@ internal class CollectionViewMultiColumnCollectionHeader : VisualElement, IDispo
         }
 
         // On second pass, update all columns based on result
-        foreach (var column in columns.visibleList)
+        foreach (var column in visibleColumns)
         {
             if (!columnDataMap.TryGetValue(column, out var columnData))
                 continue;

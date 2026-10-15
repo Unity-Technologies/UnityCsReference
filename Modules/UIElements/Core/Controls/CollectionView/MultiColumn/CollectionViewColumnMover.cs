@@ -278,7 +278,7 @@ class CollectionViewColumnMover : PointerManipulator
 
         var logicalPos = 0f;
 
-        foreach (var column in columns.visibleList)
+        foreach (var column in columns.visibleSpan)
         {
             var width = columnLayout.GetDesiredWidth(column);
             var freezeState = m_Header.GetColumnFreezeState(column);
@@ -343,7 +343,7 @@ class CollectionViewColumnMover : PointerManipulator
             var frozenLeftOffset = CollectionViewFrozenColumnUtility.CalculateFrozenLeftOffsetUpTo(m_Header, columnLayout, null);
             var scrollableOffset = 0f;
 
-            foreach (var col in columns.visibleList)
+            foreach (var col in columns.visibleSpan)
             {
                 if (col == m_ColumnToMove)
                     break;
@@ -387,7 +387,7 @@ class CollectionViewColumnMover : PointerManipulator
             var logicalPosition = 0f;
             var destFreezeState = m_Header.GetColumnFreezeState(m_DestinationColumn);
 
-            foreach (var col in columnLayout.columns.visibleList)
+            foreach (var col in columnLayout.columns.visibleSpan)
             {
                 if (col == m_DestinationColumn)
                     break;
@@ -437,7 +437,7 @@ class CollectionViewColumnMover : PointerManipulator
         var logicalPos = 0f;
         Column lastScrollableColumn = null;
 
-        foreach (var column in columnLayout.columns.visibleList)
+        foreach (var column in columnLayout.columns.visibleSpan)
         {
             var w = columnLayout.GetDesiredWidth(column);
             var freezeState = m_Header.GetColumnFreezeState(column);
@@ -483,7 +483,7 @@ class CollectionViewColumnMover : PointerManipulator
         if (m_DestinationColumn == null && lastScrollableColumn != null)
         {
             var lastScrollableVisualPos = frozenLeftWidth;
-            foreach (var col in columnLayout.columns.visibleList)
+            foreach (var col in columnLayout.columns.visibleSpan)
             {
                 if (col == lastScrollableColumn)
                     break;

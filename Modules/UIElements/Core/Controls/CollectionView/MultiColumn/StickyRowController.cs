@@ -17,7 +17,7 @@ interface IStickyRowController
 
 internal class StickyRowController : IStickyRowController
 {
-    readonly SortedSet<int> m_StickyItems = new();
+    readonly List<int> m_StickyItems = new();
 
     public event Action<int, bool> onStickyStateChanged;
 
@@ -30,13 +30,15 @@ internal class StickyRowController : IStickyRowController
     {
         if (enabled)
         {
-            if (m_StickyItems.Add(index))
+            if (!m_StickyItems.Contains(index))
+            {
+                m_StickyItems.Add(index);
                 onStickyStateChanged?.Invoke(index, true);
+            }
         }
-        else
+        else if (m_StickyItems.Remove(index))
         {
-            if (m_StickyItems.Remove(index))
-                onStickyStateChanged?.Invoke(index, false);
+            onStickyStateChanged?.Invoke(index, false);
         }
     }
 
@@ -49,9 +51,14 @@ internal class StickyRowController : IStickyRowController
     public void SetStickyWithoutNotify(int index, bool enabled)
     {
         if (enabled)
-            m_StickyItems.Add(index);
+        {
+            if (!m_StickyItems.Contains(index))
+                m_StickyItems.Add(index);
+        }
         else
+        {
             m_StickyItems.Remove(index);
+        }
     }
 
     /// <summary>
@@ -72,15 +79,15 @@ internal class StickyRowController : IStickyRowController
     /// <returns>The previous sticky index, or -1.</returns>
     public int GetPreviousStickyIndex(int startIndex)
     {
-        if (m_StickyItems.Count == 0 || startIndex < m_StickyItems.Min)
-            return -1;
-
+        // Linear scan for the largest index <= startIndex. The list is likely to be tiny, so this is faster and more
+        // cache-friendly than a binary search, and it avoids the need to sort.
+        // We can revisit this decision if/when it becomes a bottleneck.
         var result = -1;
-        foreach (var index in m_StickyItems)
+        for (var i = 0; i < m_StickyItems.Count; i++)
         {
-            if (index > startIndex)
-                break;
-            result = index;
+            var index = m_StickyItems[i];
+            if (index <= startIndex && index > result)
+                result = index;
         }
         return result;
     }

@@ -90,16 +90,6 @@ namespace UnityEngine.UIElements
             return new Rect(r.xMin - i, r.yMin - i, r.width + i + i, r.height + i + i);
         }
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Rect InflateByMargins(Rect r, PostProcessingMargins margins)
-        {
-            return new Rect(
-                r.xMin - margins.left,
-                r.yMin - margins.top,
-                r.width + margins.left + margins.right,
-                r.height + margins.top + margins.bottom);
-        }
-
         public static void ComputeMatrixRelativeToAncestor(RenderData renderData, RenderData ancestor, out Matrix4x4 transform)
         {
             ref var ancestorInverse = ref ancestor.owner.GetWorldTransformInverse(out bool isSingular);
@@ -122,7 +112,7 @@ namespace UnityEngine.UIElements
         // Returns the transform to be applied to vertices that are in their local space
         public static void GetVerticesTransformInfo(RenderData renderData, out Matrix4x4 transform)
         {
-            if (RenderData.AllocatesID(renderData.transformID) || renderData.isGroupTransform || renderData.isNestedRenderTreeRoot)
+            if (renderData.isBoneBarrier)
                 transform = Matrix4x4.identity;
             else if (renderData.boneTransformAncestor != null)
                 ComputeMatrixRelativeToAncestor(renderData, renderData.boneTransformAncestor, out transform);
@@ -133,6 +123,28 @@ namespace UnityEngine.UIElements
 
             if (renderData.owner.elementPanel is { isFlat: true })
                 transform.m22 = 1.0f; // Scaling in z means nothing for 2d ui, and break masking
+        }
+
+        // On a flat panel Z is a two-valued masking channel, not geometry: UIREntryProcessor pins it to
+        // k_MeshPosZ or k_MaskPosZ and UIRRenderTreeManager projects it with only 0.001 of slack past each.
+        // A GPU-applied transform must decouple from it both ways - the row displaces geometry out of that
+        // range, the column shifts the mask off the shape it clips - leaving the 2D affine part.
+        public static void NeutralizeZ(ref Matrix4x4 transform)
+        {
+            transform.m02 = 0.0f;
+            transform.m12 = 0.0f;
+            transform.m20 = 0.0f;
+            transform.m21 = 0.0f;
+            transform.m22 = 1.0f;
+            transform.m23 = 0.0f;
+        }
+
+        // The matrix installed as GL.modelview, by PushView or by Immediate; both must decouple from Z.
+        public static void GetViewMatrix(RenderData renderData, out Matrix4x4 transform)
+        {
+            ComputeMatrixRelativeToRenderTree(renderData, out transform);
+            if (renderData.owner.elementPanel is { isFlat: true })
+                NeutralizeZ(ref transform);
         }
 
         // Fallback for ComputeMatrixRelativeToAncestor when the ancestor's world matrix is singular
@@ -201,16 +213,6 @@ namespace UnityEngine.UIElements
         public static Rect CastToRect(RectInt rect)
         {
             return new Rect(rect.xMin, rect.yMin, rect.width, rect.height);
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static RectInt CastToRectInt(Rect rect)
-        {
-            return new RectInt(
-                Mathf.FloorToInt(rect.xMin),
-                Mathf.FloorToInt(rect.yMin),
-                Mathf.CeilToInt(rect.width),
-                Mathf.CeilToInt(rect.height));
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]

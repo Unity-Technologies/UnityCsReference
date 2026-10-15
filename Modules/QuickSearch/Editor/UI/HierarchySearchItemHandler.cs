@@ -212,7 +212,7 @@ namespace UnityEditor.Search
             throw new NotImplementedException();
         }
 
-        public string GetDisplayName(HierarchyView view, in HierarchyNode node)
+        public string GetDisplayNameOverride(HierarchyView view, in HierarchyNode node)
         {
             if (m_SearchItemHierarchyNodeMap.TryGetSearchItem(node, out var searchItem))
                 return searchItem.GetLabel(Context);

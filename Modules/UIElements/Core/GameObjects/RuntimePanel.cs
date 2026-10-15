@@ -329,6 +329,12 @@ namespace UnityEngine.UIElements
                 TrickleDown.TrickleDown);
         }
 
+        internal bool? animationPlaybackEnabledOverride { get; set; }
+
+        internal override bool animationPlaybackSuspended => animationPlaybackEnabledOverride.HasValue
+            ? !animationPlaybackEnabledOverride.Value
+            : !UIElementsRuntimeUtility.isPlayMode;
+
         internal override void Update()
         {
             if (m_PanelSettings != null)

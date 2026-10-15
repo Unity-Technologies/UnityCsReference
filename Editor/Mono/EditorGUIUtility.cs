@@ -873,21 +873,35 @@ namespace UnityEditor
             return tex;
         }
 
-        internal static Texture2D LoadIconForSkin(string name, int in_SkinIndex)
+        [Unity.Scripting.LifecycleManagement.AutoStaticsCleanupOnCodeReload]
+        private static readonly Dictionary<(string, int), string> s_IconNamePerSkinCache = new(32);
+
+        internal static string GetIconNameForSkin(string name, int in_SkinIndex)
         {
-            if (String.IsNullOrEmpty(name))
-                return null;
+            var key = (name, in_SkinIndex);
+            if (s_IconNamePerSkinCache.TryGetValue(key, out var cachedName))
+                return cachedName;
 
             if (in_SkinIndex == 0)
-                return LoadGeneratedIconOrNormalIcon(name);
+            {
+                s_IconNamePerSkinCache.Add(key, name);
+                return name;
+            }
 
-            //Remap file name for dark skin
             var newName = "d_" + Path.GetFileName(name);
             var dirName = Path.GetDirectoryName(name);
             if (!string.IsNullOrEmpty(dirName))
                 newName = $"{dirName}/{newName}";
+            s_IconNamePerSkinCache.Add(key, newName);
+            return newName;
+        }
 
-            Texture2D tex = LoadGeneratedIconOrNormalIcon(newName);
+        internal static Texture2D LoadIconForSkin(string name, int in_SkinIndex)
+        {
+            if (string.IsNullOrEmpty(name))
+                return null;
+
+            var tex = LoadGeneratedIconOrNormalIcon(GetIconNameForSkin(name, in_SkinIndex));
             if (!tex)
                 tex = LoadGeneratedIconOrNormalIcon(name);
             return tex;

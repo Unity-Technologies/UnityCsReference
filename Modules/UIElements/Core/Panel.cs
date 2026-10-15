@@ -781,6 +781,10 @@ namespace UnityEngine.UIElements
             get;
             set;
         }
+
+        // Authoring panels rely on this default; only the PanelSettings-owned game view panel overrides it.
+        internal virtual bool animationPlaybackSuspended => false;
+
         public abstract ContextType contextType { get; }
 
         private TimeFunction m_TimeSinceStartupFunc;

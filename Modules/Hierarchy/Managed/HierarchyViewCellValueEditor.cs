@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Bindings;
 using UnityEngine.UIElements;
@@ -21,6 +22,11 @@ namespace Unity.Hierarchy
         readonly Action<HierarchyViewCellValueEditor<TModel, TEditor, TValue>, TValue> m_OnSetEditorValue;
 
         EventModifiers m_LastEventModifiers;
+
+        // Cached to avoid a per-bind delegate allocation.
+        readonly EventCallback<PointerDownEvent> m_OnPointerDown;
+        readonly EventCallback<PointerUpEvent> m_OnPointerUp;
+        readonly EventCallback<ChangeEvent<TValue>> m_OnValueChanged;
 
         /// <summary>
         /// Gets whether the Alt/Option key was pressed during the last pointer down event on this editor element.
@@ -61,6 +67,10 @@ namespace Unity.Hierarchy
             m_SetModelValue = setModelValue;
             m_IsDefaultValue = isDefaultValue;
             m_OnSetEditorValue = onSetEditorValue;
+
+            m_OnPointerDown = OnPointerDown;
+            m_OnPointerUp = OnPointerUp;
+            m_OnValueChanged = SetModelValue;
         }
 
         /// <summary>
@@ -76,9 +86,9 @@ namespace Unity.Hierarchy
             Cell.userData = this;
             Element = editor;
             Element.visible = true;
-            Element.RegisterCallback<PointerDownEvent>(OnPointerDown);
-            Element.RegisterCallback<PointerUpEvent>(OnPointerUp);
-            Element.RegisterCallback<ChangeEvent<TValue>>(SetModelValue);
+            Element.RegisterCallback(m_OnPointerDown);
+            Element.RegisterCallback(m_OnPointerUp);
+            Element.RegisterCallback(m_OnValueChanged);
             SyncEditorValueWithoutNotify();
         }
 
@@ -90,9 +100,9 @@ namespace Unity.Hierarchy
             Cell.userData = null;
             Cell = null;
             Element.visible = false;
-            Element.UnregisterCallback<PointerDownEvent>(OnPointerDown);
-            Element.UnregisterCallback<PointerUpEvent>(OnPointerUp);
-            Element.UnregisterCallback<ChangeEvent<TValue>>(SetModelValue);
+            Element.UnregisterCallback(m_OnPointerDown);
+            Element.UnregisterCallback(m_OnPointerUp);
+            Element.UnregisterCallback(m_OnValueChanged);
             Element = null;
         }
 
@@ -114,7 +124,9 @@ namespace Unity.Hierarchy
             if (Cell == null)
                 return;
 
-            if (!GetModelValue().Equals(value))
+            // EqualityComparer<TValue>.Default dispatches to IEquatable<TValue> without boxing (and is null-safe),
+            // so we avoid the alloc without forcing an IEquatable constraint on this VisibleToOtherModules type.
+            if (!EqualityComparer<TValue>.Default.Equals(GetModelValue(), value))
             {
                 m_SetModelValue(this, value);
             }
@@ -145,7 +157,7 @@ namespace Unity.Hierarchy
         /// <param name="value">New value to apply to the editor.</param>
         public void SetEditorValueWithoutNotify(TValue value)
         {
-            if (!value.Equals(Element.value))
+            if (!EqualityComparer<TValue>.Default.Equals(value, Element.value))
             {
                 Element.SetValueWithoutNotify(value);
             }

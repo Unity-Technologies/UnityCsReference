@@ -82,7 +82,7 @@ namespace Unity.Hierarchy
                 return;
             }
 
-            foreach (var d in CellDescriptors)
+            foreach (var d in m_CellDescriptors)
             {
                 if (d.HandlerType == desc.HandlerType)
                 {
@@ -144,7 +144,7 @@ namespace Unity.Hierarchy
         internal void BindColumn(HierarchyView view)
         {
             Descriptor.InvokeBindColumn(this, view);
-            foreach (var cellDesc in CellDescriptors)
+            foreach (var cellDesc in m_CellDescriptors)
             {
                 cellDesc.InvokeBindColumn(Descriptor, view);
             }
@@ -152,7 +152,7 @@ namespace Unity.Hierarchy
 
         internal void UnbindColumn(HierarchyView view)
         {
-            foreach (var cellDesc in CellDescriptors)
+            foreach (var cellDesc in m_CellDescriptors)
             {
                 cellDesc.InvokeUnbindColumn(Descriptor, view);
             }
@@ -191,7 +191,7 @@ namespace Unity.Hierarchy
             if (cell.Handler == null)
                 return;
 
-            foreach (var desc in CellDescriptors)
+            foreach (var desc in m_CellDescriptors)
             {
                 if (desc.HandlerType == null || desc.HandlerType == cell.Handler.GetType())
                 {

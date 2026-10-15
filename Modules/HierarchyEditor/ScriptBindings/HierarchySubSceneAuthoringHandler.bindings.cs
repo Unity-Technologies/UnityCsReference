@@ -152,19 +152,16 @@ namespace Unity.Hierarchy.Editor
         bool IHierarchyEditorNodeTypeHandler.CanSetName(HierarchyView view, in HierarchyNode node) => false;
         bool IHierarchyEditorNodeTypeHandler.OnSetName(HierarchyView view, in HierarchyNode node, string name) => false;
 
-        string IHierarchyEditorNodeTypeHandler.GetDisplayName(HierarchyView view, in HierarchyNode node)
+        string IHierarchyEditorNodeTypeHandler.GetDisplayNameOverride(HierarchyView view, in HierarchyNode node)
         {
             if (!Hierarchy.Exists(node))
                 return node.ToString();
 
-            var name = Hierarchy.GetName(in node);
             var scene = GetScene(in node);
-            if (scene.IsValid())
-            {
-                if (scene.isDirty)
-                    name += "*";
-            }
-            return name;
+            if (!scene.IsValid() || !scene.isDirty)
+                return null;
+
+            return Hierarchy.GetName(in node) + "*";
         }
 
         bool IHierarchyEditorNodeTypeHandler.CanDuplicate(HierarchyView view) => false;

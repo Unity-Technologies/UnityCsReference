@@ -187,17 +187,20 @@ namespace Unity.Hierarchy.Editor
         bool IHierarchyEditorNodeTypeHandler.CanSetName(HierarchyView view, in HierarchyNode node) => false;
         bool IHierarchyEditorNodeTypeHandler.OnSetName(HierarchyView view, in HierarchyNode node, string name) => false;
 
-        string IHierarchyEditorNodeTypeHandler.GetDisplayName(HierarchyView view, in HierarchyNode node)
+        string IHierarchyEditorNodeTypeHandler.GetDisplayNameOverride(HierarchyView view, in HierarchyNode node)
         {
-            var name = Hierarchy.Exists(node) ? Hierarchy.GetName(in node) : node.ToString();
+            if (!Hierarchy.Exists(node))
+                return node.ToString();
+
             var scene = GetScene(node);
-            if (scene.IsValid())
-            {
-                if (!scene.isLoaded)
-                    name += " (not loaded)";
-                if (scene.isDirty)
-                    name += "*";
-            }
+            if (!scene.IsValid() || (scene.isLoaded && !scene.isDirty))
+                return null;
+
+            var name = Hierarchy.GetName(in node);
+            if (!scene.isLoaded)
+                name += " (not loaded)";
+            if (scene.isDirty)
+                name += "*";
             return name;
         }
 

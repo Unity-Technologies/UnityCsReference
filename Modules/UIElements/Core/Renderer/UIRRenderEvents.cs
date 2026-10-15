@@ -75,7 +75,10 @@ namespace UnityEngine.UIElements.UIR
             else
                 UIRUtility.ComputeMatrixRelativeToRenderTree(renderData, out transform);
 
-            transform.m22 = 1.0f; // Once world-space mode is introduced, this should become conditional
+            if (renderData.owner.elementPanel is { isFlat: true })
+                UIRUtility.NeutralizeZ(ref transform);
+            else
+                transform.m22 = 1.0f;
         }
 
         static Vector4 GetClipRectIDClipInfo(RenderData renderData)
@@ -853,9 +856,7 @@ namespace UnityEngine.UIElements.UIR
 
             if (transformChanged)
             {
-                promotedToBone = !RenderData.AllocatesID(renderData.transformID)
-                    && !renderData.isGroupTransform
-                    && !renderData.isNestedRenderTreeRoot
+                promotedToBone = !renderData.isBoneBarrier
                     && (!renderData.owner.hasDefaultRotationAndScale || renderData.owner.has3DTranslation)
                     && PromoteToBone(renderTreeManager, renderData);
 
@@ -882,12 +883,11 @@ namespace UnityEngine.UIElements.UIR
                 isAncestorOfChangeSkinned = true;
                 stats.boneTransformed++;
             }
-            else if (parentBoneChanged)
+            else if (parentBoneChanged && !renderData.isBoneBarrier)
             {
-                // An ancestor was promoted: re-point to the new nearest bone (the parent's bone) and rewrite the record.
-                var bone = RenderData.AllocatesID(renderData.parent.transformID) ? renderData.parent : renderData.parent.boneTransformAncestor;
-                renderData.boneTransformAncestor = bone;
-                renderData.transformID = bone.transformID;
+                // An ancestor was promoted: inherit the parent's bone, or whatever the parent inherits when it has none, and rewrite the record.
+                renderData.boneTransformAncestor = RenderData.AllocatesID(renderData.parent.transformID) ? renderData.parent : renderData.parent.boneTransformAncestor;
+                renderData.transformID = renderData.parent.transformID;
                 renderData.transformID.ownedState = OwnedState.Inherited;
                 renderTreeManager.MarkElementInfoDirty(renderData);
             }
@@ -895,9 +895,11 @@ namespace UnityEngine.UIElements.UIR
             {
                 // Only the clip info had to be updated, we can skip the other cases which are for transform changes only.
             }
-            else if (renderData.isGroupTransform)
+            else if (renderData.isBoneBarrier)
             {
-                stats.groupTransformElementsChanged++;
+                Debug.Assert(renderData.transformID.Equals(ShaderInfoAllocator.identityTransform) && renderData.boneTransformAncestor == null); // A group or nested root defines its own transform space and never inherits a bone
+                if (renderData.isGroupTransform)
+                    stats.groupTransformElementsChanged++;
             }
             else if (isAncestorOfChangeSkinned)
             {
@@ -923,8 +925,7 @@ namespace UnityEngine.UIElements.UIR
 
             if (!renderData.isGroupTransform)
             {
-                bool childParentBoneChanged = promotedToBone
-                    || (parentBoneChanged && !RenderData.AllocatesID(renderData.transformID) && !renderData.isNestedRenderTreeRoot);
+                bool childParentBoneChanged = promotedToBone || (parentBoneChanged && !renderData.isBoneBarrier);
 
                 // Recurse on children
                 var child = renderData.firstChild;

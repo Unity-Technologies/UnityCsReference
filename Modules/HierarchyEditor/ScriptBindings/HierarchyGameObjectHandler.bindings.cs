@@ -179,7 +179,7 @@ namespace Unity.Hierarchy.Editor
             item.EnableInClassList(k_GameObjectDisabledUssClass, disabled);
 
             var scene = gameObject.scene;
-            var isActiveScene = EditorSceneManager.GetActiveScene().guid == scene.guid;
+            var isActiveScene = EditorSceneManager.GetActiveScene().handle == scene.handle;
             var isDefaultParent = isActiveScene && gameObject.GetEntityId() == scene.defaultParent;
             item.EnableInClassList(k_GameObjectDefaultParentUssClass, isDefaultParent);
 
@@ -283,9 +283,9 @@ namespace Unity.Hierarchy.Editor
             return true;
         }
 
-        string IHierarchyEditorNodeTypeHandler.GetDisplayName(HierarchyView view, in HierarchyNode node)
+        string IHierarchyEditorNodeTypeHandler.GetDisplayNameOverride(HierarchyView view, in HierarchyNode node)
         {
-            return Hierarchy.Exists(in node) ? Hierarchy.GetName(in node) : node.ToString();
+            return Hierarchy.Exists(in node) ? null : node.ToString();
         }
 
         bool IHierarchyEditorNodeTypeHandler.CanDuplicate(HierarchyView view)
@@ -492,7 +492,7 @@ namespace Unity.Hierarchy.Editor
             {
                 menu.AppendAction(L10n.Tr("Set as Default Parent"), _ => SetAsDefaultParent(view), DropdownMenuAction.Status.Disabled);
             }
-            else if (gameObject != null && (gameObject.GetEntityId() != gameObject.scene.defaultParent || EditorSceneManager.GetActiveScene().guid != gameObject.scene.guid))
+            else if (gameObject != null && (gameObject.GetEntityId() != gameObject.scene.defaultParent || EditorSceneManager.GetActiveScene().handle != gameObject.scene.handle))
             {
                 menu.AppendAction(L10n.Tr("Set as Default Parent"), _ => SetAsDefaultParent(view));
             }

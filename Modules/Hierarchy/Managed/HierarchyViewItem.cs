@@ -59,6 +59,10 @@ namespace Unity.Hierarchy
         internal delegate void ExpandedStateChangedEventHandler(in HierarchyNode node, bool isExpanded, bool recursive);
         internal event ExpandedStateChangedEventHandler ExpandedStateChanged;
 
+        // Cached to avoid a per-bind delegate allocation.
+        readonly Action m_OnBeginRename;
+        readonly Action<string, bool> m_OnEndRename;
+
         /// <summary>
         /// Gets the <see cref="HierarchyNodeType"/> of the <see cref="HierarchyNode"/> bound to this <see cref="HierarchyViewItem"/>.
         /// </summary>
@@ -247,6 +251,9 @@ namespace Unity.Hierarchy
             SetName(k_UnityTreeViewItem);
             style.flexDirection = FlexDirection.Row;
 
+            m_OnBeginRename = OnBeginRename;
+            m_OnEndRename = OnEndRename;
+
             var root = new VisualElement();
             root.AddToClassList(k_HierarchyItemContainer);
             hierarchy.Add(root);
@@ -320,18 +327,26 @@ namespace Unity.Hierarchy
 
             var isExpanded = viewModel.HasFlags(in m_Node, HierarchyNodeFlags.Expanded);
             m_Toggle.SetValueWithoutNotify(showToggle && isExpanded);
+
             Icon.EnableInClassList(k_HierarchyItemIconCut, viewModel.HasFlags(in m_Node, HierarchyNodeFlags.Cut));
-            if (m_Handler is IHierarchyEditorNodeTypeHandler editorHandler)
-                m_Name.Text = editorHandler.GetDisplayName(m_View, in m_Node);
+
+            // A null override means "use the node's raw name": stream the node's native UTF-8 name straight
+            // into the text element without materializing a managed string. Handlers that need to decorate
+            // the name return a non-null override instead.
+            var overrideName = (m_Handler as IHierarchyEditorNodeTypeHandler)?.GetDisplayNameOverride(m_View, in m_Node);
+            if (overrideName != null)
+                m_Name.Text = overrideName;
+            else if (m_View.Source.Exists(in m_Node))
+                m_Name.Label.SetTextUtf8(m_View.Source.GetNameRaw(in m_Node));
             else
-                m_Name.Text = m_View.Source.Exists(in m_Node) ? m_View.Source.GetName(in m_Node) : string.Empty;
+                m_Name.Text = string.Empty;
 
             // Setup handler-specific or user-defined styling
             m_View.InvokeBindViewItem(this);
 
             // Register events
-            m_Name.OnBeginRename += OnBeginRename;
-            m_Name.OnEndRename += OnEndRename;
+            m_Name.OnBeginRename += m_OnBeginRename;
+            m_Name.OnEndRename += m_OnEndRename;
         }
 
         internal void Unbind()
@@ -339,12 +354,23 @@ namespace Unity.Hierarchy
             if (!Bound)
                 return;
 
-            if (RowContainer is not null && RowContainer.ClassListContains(HierarchyView.k_HierarchyPingBase))
+            // RowContainer is an expensive getter
+            var rowContainer = RowContainer;
+            if (rowContainer is not null && rowContainer.ClassListContains(HierarchyView.k_HierarchyPingBase))
             {
                 // Two TransitionEndEvents need to be sent because the fade in and fade out of the ping effect are two different
                 // transitions. Second event is ignored if these events are fired during the fade out.
-                RowContainer.SendEvent(new TransitionEndEvent() { target = RowContainer }, DispatchMode.Immediate);
-                RowContainer.SendEvent(new TransitionEndEvent() { target = RowContainer }, DispatchMode.Immediate);
+                using (var firstTransition = TransitionEndEvent.GetPooled())
+                {
+                    firstTransition.target = rowContainer;
+                    rowContainer.SendEvent(firstTransition, DispatchMode.Immediate);
+                }
+
+                using (var secondTransition = TransitionEndEvent.GetPooled())
+                {
+                    secondTransition.target = rowContainer;
+                    rowContainer.SendEvent(secondTransition, DispatchMode.Immediate);
+                }
             }
 
             // Reset handler-specific or user-defined styling
@@ -352,8 +378,8 @@ namespace Unity.Hierarchy
             m_View.InvokeUnbindViewItem(this);
 
             // Unregister events
-            m_Name.OnBeginRename -= OnBeginRename;
-            m_Name.OnEndRename -= OnEndRename;
+            m_Name.OnBeginRename -= m_OnBeginRename;
+            m_Name.OnEndRename -= m_OnEndRename;
 
             // Reset object
             m_Handler = null;
@@ -456,7 +482,11 @@ namespace Unity.Hierarchy
 
                 // The label was just set to the committed text, which carries none of the decorations the
                 // handler adds, and a rejected or no-op rename asks for no re-bind that would restore them.
-                m_Name.Text = editorHandler.GetDisplayName(m_View, in m_Node);
+                var overrideName = editorHandler.GetDisplayNameOverride(m_View, in m_Node);
+                if (overrideName != null)
+                    m_Name.Text = overrideName;
+                else if (m_View.Source.Exists(in m_Node))
+                    m_Name.Label.SetTextUtf8(m_View.Source.GetNameRaw(in m_Node));
             }
             else
             {

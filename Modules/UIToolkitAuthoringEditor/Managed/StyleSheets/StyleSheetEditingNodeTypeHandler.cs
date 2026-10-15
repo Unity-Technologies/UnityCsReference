@@ -468,7 +468,7 @@ internal class StyleSheetEditingNodeTypeHandler : StyleSheetNodeTypeHandler, IHi
             return false;
         }
 
-        var currentName = ((IHierarchyEditorNodeTypeHandler)this).GetDisplayName(view, hierarchyNode);
+        var currentName = ((IHierarchyEditorNodeTypeHandler)this).GetDisplayNameOverride(view, hierarchyNode);
         if (string.CompareOrdinal(currentName, name) == 0)
             return true;
 
@@ -496,7 +496,7 @@ internal class StyleSheetEditingNodeTypeHandler : StyleSheetNodeTypeHandler, IHi
         return true;
     }
 
-    string IHierarchyEditorNodeTypeHandler.GetDisplayName(HierarchyView view, in HierarchyNode hierarchyNode)
+    string IHierarchyEditorNodeTypeHandler.GetDisplayNameOverride(HierarchyView view, in HierarchyNode hierarchyNode)
     {
         if (!Mappings.TryGetValue(hierarchyNode, out var styleNode) || !styleNode.StyleSheet)
             return "<null>";

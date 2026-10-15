@@ -19,6 +19,12 @@ namespace UnityEditor.SceneManagement
     [MovedFrom("UnityEditor.Experimental.SceneManagement")]
     public static class PrefabStageUtility
     {
+        static readonly string k_PrefabModifierKey = Application.platform == RuntimePlatform.OSXEditor ? "Option" : "Alt";
+
+        static readonly string k_InContextTooltip = string.Format(L10n.Tr("Open Prefab Asset in context.\nPress the {0} modifier key to open in isolation."), k_PrefabModifierKey);
+
+        static readonly string k_InIsolationTooltip = string.Format(L10n.Tr("Open Prefab Asset in isolation.\nPress the {0} modifier key to open in context."), k_PrefabModifierKey);
+
         [Shortcut("Stage/Enter Prefab Mode", KeyCode.P, displayName = "Stage/Edit Prefab in Context")]
         static void EnterInContextPrefabModeShortcut()
         {
@@ -597,32 +603,25 @@ namespace UnityEditor.SceneManagement
 
         internal static PrefabStage.Mode GetPrefabStageModeFromModifierKeys()
         {
-            // Update GetPrefabButtonContent if this logic changes
+            // Update GetPrefabButtonTooltip if this logic changes
             var defaultPrefabMode = HierarchyPreferences.DefaultPrefabModeFromHierarchy;
             var alternativePrefabMode = (defaultPrefabMode == PrefabStage.Mode.InContext) ? PrefabStage.Mode.InIsolation : PrefabStage.Mode.InContext;
 
             return Event.current.alt ? alternativePrefabMode : defaultPrefabMode;
         }
 
-        internal static GUIContent GetPrefabButtonContent(EntityId entityId)
+        internal static string GetPrefabButtonTooltip()
         {
-            GUIContent result;
-            var defaultPrefabMode = HierarchyPreferences.DefaultPrefabModeFromHierarchy;
-            var modifierKey = Application.platform == RuntimePlatform.OSXEditor ? "Option" : "Alt";
-            switch (defaultPrefabMode)
+            switch (HierarchyPreferences.DefaultPrefabModeFromHierarchy)
             {
                 case PrefabStage.Mode.InContext:
-                    result = new GUIContent("", null, $"Open Prefab Asset in context.\nPress the {modifierKey} modifier key to open in isolation.");
-                    break;
+                    return k_InContextTooltip;
                 case PrefabStage.Mode.InIsolation:
-                    result = new GUIContent("", null, $"Open Prefab Asset in isolation.\nPress the {modifierKey} modifier key to open in context.");
-                    break;
+                    return k_InIsolationTooltip;
                 default:
-                    result = new GUIContent("");
                     Debug.LogError("Unhandled defaultPrefabMode enum");
-                    break;
+                    return "";
             }
-            return result;
         }
     }
 }

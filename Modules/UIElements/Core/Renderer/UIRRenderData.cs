@@ -254,6 +254,13 @@ namespace UnityEngine.UIElements.UIR
             get => (flags & RenderDataFlags.IsNestedRenderTreeRoot) == RenderDataFlags.IsNestedRenderTreeRoot;
         }
 
+        // Defines its own transform space (a bone, a group, or a nested render-tree root): bone inheritance and re-pointing stop here.
+        public bool isBoneBarrier
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get => isGroupTransform || isNestedRenderTreeRoot || AllocatesID(transformID);
+        }
+
         public bool isClippingRectDirty
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]

@@ -239,6 +239,19 @@ namespace UnityEngine.UIElements
         }
 
         /// <summary>
+        /// Returns the list of visible columns as a ReadOnlySpan.
+        /// </summary>
+        internal ReadOnlySpan<Column> visibleSpan
+        {
+            [VisibleToOtherModules("UnityEngine.HierarchyModule")]
+            get
+            {
+                UpdateVisibleColumns();
+                return NoAllocHelpers.CreateReadOnlySpan(m_VisibleColumns);
+            }
+        }
+
+        /// <summary>
         /// Event sent whenever properties of the column collection change.
         /// </summary>
         internal event Action<ColumnsDataType> changed;

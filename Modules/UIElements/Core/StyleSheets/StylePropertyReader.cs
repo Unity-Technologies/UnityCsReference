@@ -499,15 +499,16 @@ namespace UnityEngine.UIElements.StyleSheets
             using var list = new UnmanagedTempList<EasingFunction>(4);
             do
             {
-                var value = m_Values[m_CurrentValueIndex + index];
-                var handle = value.handle;
-                if (handle.valueType == StyleValueType.Enum)
+                if (GetValueType(index) != StyleValueType.Enum
+                    || !StylePropertyUtil.TryGetEnumIntValue(StyleEnumType.EasingMode, ReadAsString(index), out var mode))
                 {
-                    var enumString = value.sheet.ReadEnum(handle);
-                    StylePropertyUtil.TryGetEnumIntValue(StyleEnumType.EasingMode, enumString, out var intValue);
-                    list.Add(new EasingFunction((EasingMode)intValue));
-                    ++index;
+                    // Malformed values survive import with only a warning.
+                    result.CopyFrom(InitialStyle.transitionTimingFunction);
+                    return;
                 }
+
+                list.Add(new EasingFunction((EasingMode)mode));
+                ++index;
 
                 if (index < valueCount)
                 {

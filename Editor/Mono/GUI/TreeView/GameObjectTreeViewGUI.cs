@@ -761,7 +761,7 @@ namespace UnityEditor
                     GameObjectStyles.rightArrow.fixedHeight);
 
                 EntityId entityId = item.id;
-                GUIContent content = buttonRect.Contains(Event.current.mousePosition) ? PrefabStageUtility.GetPrefabButtonContent(entityId) : GUIContent.none;
+                GUIContent content = buttonRect.Contains(Event.current.mousePosition) ? GUIContent.Temp("", PrefabStageUtility.GetPrefabButtonTooltip()) : GUIContent.none;
                 if (GUI.Button(buttonRect, content, GameObjectStyles.rightArrow))
                 {
                     GameObject go = EditorUtility.EntityIdToObject(entityId) as GameObject;

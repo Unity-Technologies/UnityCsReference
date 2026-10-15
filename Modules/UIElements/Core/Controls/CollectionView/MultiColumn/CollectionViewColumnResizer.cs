@@ -167,7 +167,7 @@ class CollectionViewColumnResizer : PointerManipulator
             var frozenLeftWidth = CollectionViewFrozenColumnUtility.CalculateFrozenLeftOffsetUpTo(m_Header, columnLayout, null);
             var scrollableOffset = 0f;
 
-            foreach (var col in m_Header.columns.visibleList)
+            foreach (var col in m_Header.columns.visibleSpan)
             {
                 if (col == m_Column)
                 {

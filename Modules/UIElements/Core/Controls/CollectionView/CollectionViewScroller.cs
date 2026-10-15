@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using System.Globalization;
 using Unity.Properties;
 using UnityEngine.Bindings;
 
@@ -55,18 +56,9 @@ namespace UnityEngine.UIElements.HierarchyV2
             return 0;
         }
 
-        static double GetClosestPowerOfTen(double positiveNumber)
+        internal override string ValueToString(double currentValue)
         {
-            if (positiveNumber <= 0)
-                return 1;
-            return Math.Pow(10, Math.Round(Math.Log10(positiveNumber)));
-        }
-
-        static double RoundToMultipleOf(double value, double roundingValue)
-        {
-            if (roundingValue == 0)
-                return value;
-            return Math.Round(value / roundingValue) * roundingValue;
+            return String.Format(CultureInfo.InvariantCulture, "{0:g7}", currentValue);
         }
 
         internal override void ComputeValueFromKey(SliderKey sliderKey, bool isShift)

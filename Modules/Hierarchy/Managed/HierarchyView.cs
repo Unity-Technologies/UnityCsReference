@@ -109,6 +109,9 @@ namespace Unity.Hierarchy
         readonly ProfilerMarker m_RefreshItemsProfilerMarker = new ProfilerMarker("HierarchyView.RefreshItems");
         readonly ProfilerMarker m_SetSelectionMarker = new ProfilerMarker("HierarchyView.SetSelection");
 
+        // Cached to avoid a per-bind delegate allocation.
+        readonly HierarchyViewItem.ExpandedStateChangedEventHandler m_OnExpandedStateChanged;
+
         /// <summary>
         /// Delegate type used to handle the <see cref="SourceHierarchyChanging"/> event.
         /// </summary>
@@ -379,6 +382,8 @@ namespace Unity.Hierarchy
         public HierarchyView()
         {
             HierarchyLogging.Log($"HierarchyView({GetHashCode():X}).New()");
+
+            m_OnExpandedStateChanged = SetExpandedState;
 
             // UX elements
             AddToClassList(k_HierarchyViewRootStyleName);
@@ -1889,12 +1894,12 @@ namespace Unity.Hierarchy
 
         void OnBindItem(HierarchyViewItem item)
         {
-            item.ExpandedStateChanged += SetExpandedState;
-		}
+            item.ExpandedStateChanged += m_OnExpandedStateChanged;
+        }
 
         void OnUnbindItem(HierarchyViewItem element)
         {
-            element.ExpandedStateChanged -= SetExpandedState;
+            element.ExpandedStateChanged -= m_OnExpandedStateChanged;
         }
 
         void OnHandlerCreated(HierarchyNodeTypeHandlerBase handler)

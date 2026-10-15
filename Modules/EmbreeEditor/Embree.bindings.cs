@@ -38,7 +38,18 @@ namespace UnityEditor.Embree
     [NativeHeader("Modules/EmbreeEditor/Embree.bindings.h")]
     public static class GpuBvh
     {
-        extern public static uint[] Build(GpuBvhBuildOptions options, Span<GpuBvhPrimitiveDescriptor> prims);
+        // Embree::LeafNode holds at most kMaxPrimPerLeaf primitive ids, see Modules/EmbreeEditor/GpuBvhBuild.cpp
+        const uint k_MaxLeafSize = 4;
 
+        public static uint[] Build(GpuBvhBuildOptions options, Span<GpuBvhPrimitiveDescriptor> prims)
+        {
+            if (options.maxLeafSize == 0 || options.maxLeafSize > k_MaxLeafSize)
+                throw new ArgumentException($"{nameof(GpuBvhBuildOptions.maxLeafSize)} must be between 1 and {k_MaxLeafSize}, but was {options.maxLeafSize}.", nameof(options));
+
+            return BuildInternal(options, prims);
+        }
+
+        [NativeName("Build")]
+        static extern uint[] BuildInternal(GpuBvhBuildOptions options, Span<GpuBvhPrimitiveDescriptor> prims);
     }
 }

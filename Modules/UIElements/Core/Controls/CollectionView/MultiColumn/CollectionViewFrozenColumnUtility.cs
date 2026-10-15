@@ -38,11 +38,11 @@ internal static class CollectionViewFrozenColumnUtility
     /// <returns>Total width of all frozen columns in pixels.</returns>
     public static float CalculateTotalFrozenWidth(CollectionViewMultiColumnCollectionHeader header, Columns columns)
     {
-        if (header?.columnDataMap == null || columns?.visibleList == null)
+        if (header?.columnDataMap == null || columns == null)
             return 0f;
 
         var frozenWidth = 0f;
-        foreach (var col in columns.visibleList)
+        foreach (var col in columns.visibleSpan)
         {
             var freezeState = header.GetColumnFreezeState(col);
             if (freezeState != FreezeState.None &&
@@ -70,10 +70,10 @@ internal static class CollectionViewFrozenColumnUtility
         frozenLeftWidth = 0f;
         frozenRightWidth = 0f;
 
-        if (header == null || columnLayout?.columns?.visibleList == null)
+        if (header == null || columnLayout?.columns == null)
             return;
 
-        foreach (var col in columnLayout.columns.visibleList)
+        foreach (var col in columnLayout.columns.visibleSpan)
         {
             var freezeState = header.GetColumnFreezeState(col);
             if (freezeState == FreezeState.FreezeLeft)
@@ -93,7 +93,7 @@ internal static class CollectionViewFrozenColumnUtility
     public static float CalculateFrozenLeftOffsetUpTo(CollectionViewMultiColumnCollectionHeader header, ColumnLayout columnLayout, Column targetColumn)
     {
         var offset = 0f;
-        foreach (var col in columnLayout.columns.visibleList)
+        foreach (var col in columnLayout.columns.visibleSpan)
         {
             if (col == targetColumn && targetColumn != null) // Add null check
                 break;
@@ -116,7 +116,7 @@ internal static class CollectionViewFrozenColumnUtility
     public static float CalculateFrozenRightOffsetUpTo(CollectionViewMultiColumnCollectionHeader header, ColumnLayout columnLayout, Column targetColumn)
     {
         var offset = 0f;
-        foreach (var col in columnLayout.columns.visibleList)
+        foreach (var col in columnLayout.columns.visibleSpan)
         {
             if (col == targetColumn)
                 break;

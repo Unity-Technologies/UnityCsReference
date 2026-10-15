@@ -506,7 +506,7 @@ internal abstract class VisualElementNodeTypeHandler :
         return true;
     }
 
-    string IHierarchyEditorNodeTypeHandler.GetDisplayName(HierarchyView view, in HierarchyNode node)
+    string IHierarchyEditorNodeTypeHandler.GetDisplayNameOverride(HierarchyView view, in HierarchyNode node)
     {
         if (!m_Mappings.TryGetValue(node, out var element) || element == null)
             return "<null>";

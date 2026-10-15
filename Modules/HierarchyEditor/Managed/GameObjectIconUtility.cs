@@ -13,7 +13,7 @@ namespace Unity.Hierarchy.Editor
     /// <summary>
     /// Gameobject icon utility class.
     /// </summary>
-    static class GameObjectIconUtility
+    static partial class GameObjectIconUtility
     {
         [NoAutoStaticsCleanup] // pre-allocated marshal buffer; reused per-call, no user type retention
         static readonly List<Component> s_ComponentBuffer = new List<Component>(16);
@@ -49,19 +49,19 @@ namespace Unity.Hierarchy.Editor
             { "sv_label_7", "Hv2/Pills/PillPurple" },
         };
 
-        // Textures resolved from s_Hv2GizmoIconPaths on first use and cached here.
-        [NoAutoStaticsCleanup] // texture cache for fixed editor icon paths; safe to persist across code reload
-        static readonly Dictionary<string, Texture2D> s_Hv2GizmoIconCache = new(s_Hv2GizmoIconPaths.Count);
+        [AutoStaticsCleanupOnCodeReload] // Texture references could become stale, let's not hold on to them forever
+        static readonly Dictionary<EntityId, Texture2D> s_Hv2IconByIconId = new(s_Hv2GizmoIconPaths.Count);
 
-        static Texture2D GetHv2GizmoIcon(string iconName)
+        static Texture2D GetHierarchyIcon(Texture2D icon)
         {
-            if (!s_Hv2GizmoIconCache.TryGetValue(iconName, out var texture))
+            var iconId = icon.GetEntityId();
+            if (!s_Hv2IconByIconId.TryGetValue(iconId, out var hv2Icon))
             {
-                s_Hv2GizmoIconPaths.TryGetValue(iconName, out var path);
-                texture = path != null ? EditorGUIUtility.LoadIcon(path) : null;
-                s_Hv2GizmoIconCache[iconName] = texture;
+                hv2Icon = s_Hv2GizmoIconPaths.TryGetValue(icon.name, out var hv2Path) ? EditorGUIUtility.LoadIcon(hv2Path) : null;
+                s_Hv2IconByIconId[iconId] = hv2Icon;
             }
-            return texture;
+
+            return hv2Icon != null ? hv2Icon : icon;
         }
 
         static HierarchyPreferences.IconMode CurrentIconMode => (HierarchyPreferences.IconMode)HierarchyPreferences.GameObjectIconMode.value;
@@ -89,7 +89,7 @@ namespace Unity.Hierarchy.Editor
             var gameObjectIcon = ShouldShowUserDefinedIcons ? EditorGUIUtility.GetIconForObject(gameObject) : null;
             if (gameObjectIcon != null)
             {
-                icon = GetHv2GizmoIcon(gameObjectIcon.name) ?? gameObjectIcon;
+                icon = GetHierarchyIcon(gameObjectIcon);
                 HierarchyViewPrefabStyleUtility.ClearPrefabRootStyle(item);
             }
 
@@ -111,7 +111,7 @@ namespace Unity.Hierarchy.Editor
                     // Use topmost component, if none use transform
                     var thumbnail = AssetPreview.GetMiniThumbnail(s_ComponentBuffer.Count > 1 ? s_ComponentBuffer[1] : s_ComponentBuffer[0]);
                     if (thumbnail != null)
-                        icon = GetHv2GizmoIcon(thumbnail.name) ?? thumbnail;
+                        icon = GetHierarchyIcon(thumbnail);
                 }
             }
 

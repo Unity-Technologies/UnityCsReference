@@ -486,6 +486,9 @@ internal class StyleSheetNodeTypeHandler : HierarchyNodeTypeHandler
                     m_Mappings.TryRemove(node);
                     m_Mappings.TryAdd(node, new Node(styleSheet, remap.Remapped), ruleEntityId);
 
+                    // Sorting looks rules up by their current instance
+                    existingRuleNodes[remap.Remapped] = node;
+
                     if (remap.Previous == m_HoveredRule)
                         HoveredRule = remap.Remapped;
 

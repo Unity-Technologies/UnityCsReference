@@ -300,6 +300,8 @@ namespace UnityEngine.UIElements
 
         private static bool s_IsPlayMode = false;
 
+        internal static bool isPlayMode => s_IsPlayMode;
+
         public static void RegisterEventSystem(Object eventSystem)
         {
             if (activeEventSystem != null && activeEventSystem != eventSystem && eventSystem.GetType().Name == "EventSystem")
