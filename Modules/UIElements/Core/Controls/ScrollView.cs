@@ -2017,7 +2017,9 @@ namespace UnityEngine.UIElements
             var updateContentViewTransform = false;
             var canUseVerticalScroll = mode != ScrollViewMode.Horizontal && scrollableHeight > 0;
             var canUseHorizontalScroll = mode != ScrollViewMode.Vertical && scrollableWidth > 0;
-            var horizontalScrollDelta = canUseHorizontalScroll && !canUseVerticalScroll ? evt.delta.y : evt.delta.x;
+            var remapVerticalWheelToHorizontal = canUseHorizontalScroll && !canUseVerticalScroll;
+            // Only remap when the vertical wheel dominates: a trackpad's horizontal swipe also carries a small, sign-flipping delta.y (UUM-152573).
+            var horizontalScrollDelta = remapVerticalWheelToHorizontal && Mathf.Abs(evt.delta.y) > Mathf.Abs(evt.delta.x) ? evt.delta.y : evt.delta.x;
 
             if ((canUseHorizontalScroll || canUseVerticalScroll) && !m_MouseWheelScrollSizeIsInline)
             {

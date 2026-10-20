@@ -6132,9 +6132,6 @@
     <Compile Include="..\..\Modules\MultiplayerEditor\Managed\MultiplayerPlayMode\VirtualProjects\Messaging\Messages\BroadcastOpenPlayerWindowMessage.cs">
       <Link>Modules\MultiplayerEditor\Managed\MultiplayerPlayMode\VirtualProjects\Messaging\Messages\BroadcastOpenPlayerWindowMessage.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\MultiplayerEditor\Managed\MultiplayerPlayMode\VirtualProjects\Messaging\Messages\CloneInitializedMessage.cs">
-      <Link>Modules\MultiplayerEditor\Managed\MultiplayerPlayMode\VirtualProjects\Messaging\Messages\CloneInitializedMessage.cs</Link>
-    </Compile>
     <Compile Include="..\..\Modules\MultiplayerEditor\Managed\MultiplayerPlayMode\VirtualProjects\Messaging\Messages\LogMessage.cs">
       <Link>Modules\MultiplayerEditor\Managed\MultiplayerPlayMode\VirtualProjects\Messaging\Messages\LogMessage.cs</Link>
     </Compile>

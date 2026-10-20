@@ -25,10 +25,10 @@ namespace UnityEngine.UIElements.UIR
         {
             var ve = mgc.visualElement;
             RenderTree nestedRenderTree = ve.nestedRenderData.renderTree;
-            RectInt quad = nestedRenderTree.quadRect;
+            Rect quad = nestedRenderTree.quadRect;
             var uvRect = nestedRenderTree.quadUVRect;
 
-            if (quad != RectInt.zero)
+            if (quad != Rect.zero)
             {
                 var color = Color.white;
 

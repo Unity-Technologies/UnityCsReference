@@ -2662,6 +2662,8 @@ namespace UnityEditor
 
                 if (currentEditor == null)
                 {
+                    currentElement.RemoveFromHierarchy();
+                    m_EditorElementUpdater.Remove(currentElement);
                     ++previousEditorsIndex;
                     continue;
                 }
@@ -2678,6 +2680,7 @@ namespace UnityEditor
                         currentElement.ReinitCulled(newEditorsIndex, editors);
                         if (!InspectorElement.disabledThrottling)
                             m_EditorElementUpdater.Add(currentElement);
+                        editorToElementMap[ed.target.GetInstanceID()] = currentElement;
 
                         // We need to move forward as the current element is the culled one, so we're not really
                         // interested in it.
@@ -2689,7 +2692,27 @@ namespace UnityEditor
 
                 if (currentEditor && ed.target != currentEditor.target)
                 {
-                    return null;
+                    if (editorToElementMap.Count == 0)
+                        return null;
+
+                    // Keep the matched elements so their IMGUI control IDs stay stable
+                    var firstStaleChildIndex = editorsElement.IndexOf((VisualElement)currentElement);
+                    for (int i = editorsElement.childCount - 1; i >= firstStaleChildIndex; --i)
+                    {
+                        editorsElement.RemoveAt(i);
+                    }
+
+                    m_EditorElementUpdater.Clear();
+                    if (!InspectorElement.disabledThrottling)
+                    {
+                        foreach (var child in editorsElement.Children())
+                        {
+                            if (child is IEditorElement keptElement)
+                                m_EditorElementUpdater.Add(keptElement);
+                        }
+                    }
+
+                    return editorToElementMap;
                 }
 
                 editors[newEditorsIndex].propertyViewer = this;

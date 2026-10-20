@@ -13,6 +13,7 @@ namespace UnityEngine.TextCore.Text
         /// <summary>
         /// HashSet containing instance ID of font assets already searched.
         /// </summary>
+        [ThreadStatic]
         static HashSet<int> k_SearchedAssets;
 
         /// <summary>

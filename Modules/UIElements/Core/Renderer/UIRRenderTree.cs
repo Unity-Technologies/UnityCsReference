@@ -103,7 +103,7 @@ namespace UnityEngine.UIElements.UIR
         RenderData m_RootRenderData;
 
         public TextureId quadTextureId;
-        public RectInt quadRect;
+        public Rect quadRect;
         public Rect quadUVRect;
         
         public GCHandlePool m_GCHandlePool = new();

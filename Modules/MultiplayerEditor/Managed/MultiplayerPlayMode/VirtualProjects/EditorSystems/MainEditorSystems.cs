@@ -51,7 +51,7 @@ namespace Unity.Multiplayer.PlayMode.Editor
                     AssetImportEvents.InvokeRequestImport(didDomainReload, numAssetsChanged);
             };
 
-            vpContext.MessagingService.Receive<CloneInitializedMessage>(message =>
+            vpContext.MessagingService.Receive<PlayerInitializedMessage>(message =>
             {
                 if (!vpContext.StateRepository.ContainsKey(message.Identifier))
                 {
