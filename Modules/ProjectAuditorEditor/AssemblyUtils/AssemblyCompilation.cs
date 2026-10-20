@@ -60,7 +60,7 @@ namespace Unity.ProjectAuditor.Editor.AssemblyUtils
         [Obsolete("Please use CodeAnalysisFlags instead", true)]
         public CompilationMode CompilationMode = CompilationMode.Player;
         public CodeAnalysisFlags CodeAnalysisFlags = CodeAnalysisFlagsExtensions.Default;
-        internal CodeOwnerFlags CodeOwnerFlags = CodeOwnerFlags.User;
+        internal OwnerFlags OwnerFlags = OwnerFlags.User;
         public BuildTarget Platform = EditorUserBuildSettings.activeBuildTarget;
         public string[] RoslynAnalyzers;
 
@@ -125,7 +125,7 @@ namespace Unity.ProjectAuditor.Editor.AssemblyUtils
 #pragma warning restore UAC2001
 
             // If only auditing Unity code, remove all User assemblies (can't do this the other way around because User code depends on Unity code)
-            if ((CodeOwnerFlags & CodeOwnerFlags.All) == CodeOwnerFlags.Unity)
+            if ((OwnerFlags & OwnerFlags.All) == OwnerFlags.Unity)
             {
 #pragma warning disable UAC2001 // Avoid Linq
                 editorPaths = editorPaths.Where(p => p.IsUnityOwned).ToList();
@@ -140,7 +140,7 @@ namespace Unity.ProjectAuditor.Editor.AssemblyUtils
 #pragma warning restore UAC2001
 
             // Add Unity assemblies
-            if ((CodeOwnerFlags & CodeOwnerFlags.Unity) != 0)
+            if ((OwnerFlags & OwnerFlags.Unity) != 0)
                 FindUnityModuleDLLs(editorPaths, playerPaths);
 
             onComplete.Invoke(editorPaths, playerPaths);
@@ -285,6 +285,7 @@ namespace Unity.ProjectAuditor.Editor.AssemblyUtils
             var globalConfig = new StringBuilder();
             globalConfig.Append(
                 "is_global = true\n" +
+                "global_level = -1\n" + // Rank below the project's own globalconfig files so user settings are preserved.
                 "build_property.UnityEnableAutoStaticsCleanupAnalysis = true\n" +
                 // Report the statics-cleanup diagnostics as warnings rather than the analyzer's
                 // default Error severity, so that referenced assemblies still compile and dependent
@@ -385,7 +386,7 @@ namespace Unity.ProjectAuditor.Editor.AssemblyUtils
                 assemblyBuilder.referencesOptions = ReferencesOptions.UseEngineModules;
 
                 bool editorAssembly = (assembly.flags & AssemblyFlags.EditorAssembly) != 0;
-                m_AssemblyCompilationTasks.Add(assemblyName, new AssemblyCompilationTask(assemblyBuilder, editorAssembly, CodeAnalysisFlags, CodeOwnerFlags)
+                m_AssemblyCompilationTasks.Add(assemblyName, new AssemblyCompilationTask(assemblyBuilder, editorAssembly, CodeAnalysisFlags, OwnerFlags)
                 {
                     OnCompilationFinished = (result =>
                     {

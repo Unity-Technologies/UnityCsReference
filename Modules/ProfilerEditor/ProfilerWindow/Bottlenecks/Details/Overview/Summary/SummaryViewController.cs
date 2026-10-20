@@ -131,6 +131,10 @@ namespace Unity.Profiling.Editor.UI
             {
                 // Expected when cancelling. Don't report error.
             }
+            catch (Exception) when (cancellationToken.IsCancellationRequested)
+            {
+                // Profiler data can be cleared before the builder observes cancellation.
+            }
             catch (Exception e)
             {
                 Debug.LogException(e);

@@ -4178,7 +4178,7 @@ namespace UnityEngine.UIElements
                     if (sv.keyword == StyleKeyword.Initial)
                         InitialStyle.Get().rareData.Read().backdropFilter.CopyTo(ref to);
                     else
-                        to = (List<FilterFunction>)sv.value;
+                        to = (List<FilterFunction>)sv.value ?? to;
                     return element.styleAnimation.Start(StylePropertyId.BackdropFilter, from, to, durationMs, delayMs, easingCurve);
                 }
 
@@ -4197,7 +4197,7 @@ namespace UnityEngine.UIElements
                     if (sv.keyword == StyleKeyword.Initial)
                         InitialStyle.Get().rareData.Read().filter.CopyTo(ref to);
                     else
-                        to = (List<FilterFunction>)sv.value;
+                        to = (List<FilterFunction>)sv.value ?? to;
                     return element.styleAnimation.Start(StylePropertyId.Filter, from, to, durationMs, delayMs, easingCurve);
                 }
 

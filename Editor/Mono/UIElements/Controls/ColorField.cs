@@ -104,6 +104,8 @@ namespace UnityEditor.UIElements
         VisualElement m_RightAlphaGradient;
         VisualElement m_ColorElement;
         ProgressBar m_AlphaElement;
+        VisualElement m_AlphaBackgroundElement;
+        VisualElement m_AlphaProgressElement;
         VisualElement m_EyeDropperElement;
 
         /// <summary>
@@ -173,6 +175,8 @@ namespace UnityEditor.UIElements
             m_ColorContainer = new VisualElement() { name = "unity-color-container" };
             m_ColorElement = new VisualElement() { name = internalColorFieldName };
             m_AlphaElement = new ProgressBar() { name = "unity-alpha-progress", title = string.Empty, lowValue = 0.0f, highValue = 100.0f };
+            m_AlphaBackgroundElement = m_AlphaElement.Q(className: ProgressBar.backgroundUssClassName);
+            m_AlphaProgressElement = m_AlphaElement.Q(className: ProgressBar.progressUssClassName);
             m_HDRLabel = new Label("HDR") { name = "unity-hdr-label" };
             m_EyeDropperElement = new VisualElement() { name = "unity-eyedropper" };
 
@@ -215,7 +219,10 @@ namespace UnityEditor.UIElements
             m_ColorContainer.RegisterCallback<PointerDownEvent>(OnColorFieldClicked);
             visualInput.RegisterCallback<KeyDownEvent>(OnColorFieldKeyDown);
             m_EyeDropperElement.RegisterCallback<PointerDownEvent>(OnEyeDropperClicked);
+            m_EyeDropperElement.RegisterCallback<KeyDownEvent>(OnEyeDropperKeyDown);
+
             RegisterCallback<ExecuteCommandEvent>(OnCommandExecute);
+            m_EyeDropperElement.focusable = true;
 
             m_ColorContainer.AddManipulator(new ContextualMenuManipulator(BuildContextualMenu));
 
@@ -283,13 +290,27 @@ namespace UnityEditor.UIElements
             if (EyeDropper.IsOpened || evt.button != (int)MouseButton.LeftMouse)
                 return;
 
+            OpenEyeDropper();
+            evt.StopPropagation();
+        }
+
+        void OnEyeDropperKeyDown(KeyDownEvent evt)
+        {
+            if (evt.keyCode is KeyCode.Space or KeyCode.KeypadEnter or KeyCode.Return)
+            {
+                OpenEyeDropper();
+                evt.StopPropagation();
+            }
+        }
+
+        void OpenEyeDropper()
+        {
             EyeDropper.Start(OnEyeDropperColorSelected);
             m_EyeDropperScheduler = schedule
                 .Execute(OnEyeDropperMove)
                 .Every(10)
                 .StartingIn(10)
                 .Until(ShouldStopWatchingEyeDropper);
-            evt.StopPropagation();
         }
 
         void OnEyeDropperMove(TimerState state)
@@ -357,6 +378,19 @@ namespace UnityEditor.UIElements
 
             if (m_AlphaElement != null)
                 m_AlphaElement.value = color.a * 100.0f;
+
+            // Paint background area white when full alpha, due to rounded corners.
+            // Otherwise we get pixelated corners.
+            if (Mathf.Approximately(color.a, 1.0f))
+            {
+                m_AlphaProgressElement.style.display = DisplayStyle.None;
+                m_AlphaBackgroundElement.style.backgroundColor = Color.white;
+            }
+            else
+            {
+                m_AlphaProgressElement.style.display = DisplayStyle.Flex;
+                m_AlphaBackgroundElement.style.backgroundColor = Color.black;
+            }
 
             var colorWithoutAlpha = new Color(color.r, color.g, color.b);
 

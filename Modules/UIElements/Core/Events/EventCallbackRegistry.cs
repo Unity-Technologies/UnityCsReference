@@ -428,8 +428,15 @@ namespace UnityEngine.UIElements
                     {
                         if (m_Callbacks != EventCallbackList.EmptyList)
                             ReleaseCallbackList(m_Callbacks);
-                        m_Callbacks = GetCallbackList(m_TemporaryCallbacks);
-                        ReleaseCallbackList(m_TemporaryCallbacks);
+                        if (m_TemporaryCallbacks.Count > 0)
+                        {
+                            m_Callbacks = m_TemporaryCallbacks;
+                        }
+                        else
+                        {
+                            ReleaseCallbackList(m_TemporaryCallbacks);
+                            m_Callbacks = EventCallbackList.EmptyList;
+                        }
                         m_TemporaryCallbacks = null;
                     }
 

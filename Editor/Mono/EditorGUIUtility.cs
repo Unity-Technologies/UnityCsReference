@@ -1796,33 +1796,39 @@ namespace UnityEditor
 
         internal static void DrawColorSwatch(Rect position, Color color, bool showAlpha)
         {
-            DrawColorSwatch(position, color, showAlpha, false);
+            DrawColorSwatch(position, -1, color, showAlpha, false);
         }
 
         internal static void DrawColorSwatch(Rect position, Color color, bool showAlpha, bool hdr)
         {
+            DrawColorSwatch(position, -1, color, showAlpha, hdr);
+        }
+
+        internal static void DrawColorSwatch(Rect position, int id, Color color, bool showAlpha, bool hdr)
+        {
             if (Event.current.type != EventType.Repaint)
                 return;
 
+            Event evt = Event.current;
             Color oldColor = GUI.color;
             Color oldBackgroundColor = GUI.backgroundColor;
 
             float a = GUI.enabled ? 1 : 2;
 
-            GUI.color = EditorGUI.showMixedValue ? new Color(0.82f, 0.82f, 0.82f, a) * oldColor : new Color(color.r, color.g, color.b, a);
+            Color computedColor = EditorGUI.showMixedValue ? new Color(0.82f, 0.82f, 0.82f, a) * oldColor : new Color(color.r, color.g, color.b, a);
             if (hdr)
-                GUI.color = GUI.color.gamma;
-            GUI.backgroundColor = Color.white;
+                computedColor = computedColor.gamma;
 
-            GUIStyle gs = whiteTextureStyle;
-            gs.Draw(position, false, false, false, false);
+            // Draw background color of the color field
+            GUI.backgroundColor = computedColor;
+            EditorStyles.colorFieldColorBar.Draw(position, GUIContent.none, id, false, false);
 
             // Render LDR -> HDR gradients on the sides when having HDR values (to let the user see what the normalized color looks like)
             if (hdr)
             {
                 Color32 baseColor;
                 float exposure;
-                ColorMutator.DecomposeHdrColor(GUI.color.linear, out baseColor, out exposure);
+                ColorMutator.DecomposeHdrColor(computedColor.linear, out baseColor, out exposure);
 
                 if (!Mathf.Approximately(exposure, 0f))
                 {
@@ -1831,17 +1837,19 @@ namespace UnityEditor
                     Rect rightRect = new Rect(position.xMax - gradientWidth, position.y, gradientWidth,
                         position.height);
 
-                    Color orgColor = GUI.color;
-                    GUI.color = ((Color)baseColor).gamma;
+                    Color orgColor = computedColor;
+                    GUI.backgroundColor = ((Color)baseColor).gamma;
                     GUIStyle basicStyle = GetBasicTextureStyle(whiteTexture);
                     basicStyle.Draw(leftRect, false, false, false, false);
                     basicStyle.Draw(rightRect, false, false, false, false);
+                    GUI.backgroundColor = computedColor;
                     GUI.color = orgColor;
 
                     basicStyle = GetBasicTextureStyle(ColorPicker.GetGradientTextureWithAlpha0To1());
                     basicStyle.Draw(leftRect, false, false, false, false);
                     basicStyle = GetBasicTextureStyle(ColorPicker.GetGradientTextureWithAlpha1To0());
                     basicStyle.Draw(rightRect, false, false, false, false);
+                    GUI.color = oldColor;
                 }
             }
 
@@ -1849,22 +1857,35 @@ namespace UnityEditor
             {
                 if (showAlpha)
                 {
-                    GUI.color = new Color(0, 0, 0, a);
-                    float alphaHeight = Mathf.Clamp(position.height * .2f, 2, 20);
+                    GUI.backgroundColor = new Color(0, 0, 0, a);
+                    float alphaHeight = Mathf.Clamp(position.height * (1f/4f), 2, 20);
                     Rect alphaBarRect = new Rect(position.x, position.yMax - alphaHeight, position.width, alphaHeight);
-                    gs.Draw(alphaBarRect, false, false, false, false);
+                    EditorStyles.colorFieldFullAlphaBar.Draw(alphaBarRect, false, false, false, false);
 
-                    GUI.color = new Color(1, 1, 1, a);
+                    GUI.backgroundColor = new Color(1, 1, 1, a);
                     alphaBarRect.width *= Mathf.Clamp01(color.a);
-                    gs.Draw(alphaBarRect, false, false, false, false);
+
+                    // Right border radius of the alpha bar is drawn with a different style if alpha is full.
+                    if (Mathf.Approximately(color.a, 1f))
+                    {
+                        EditorStyles.colorFieldFullAlphaBar.Draw(alphaBarRect, false, false, false, false);
+                    }
+                    else
+                    {
+                        EditorStyles.colorFieldAlphaBar.Draw(alphaBarRect, false, false, false, false);
+                    }
                 }
             }
             else
             {
                 EditorGUI.BeginHandleMixedValueContentColor();
-                gs.Draw(position, EditorGUI.mixedValueContent, false, false, false, false);
+                EditorStyles.colorFieldAlphaBar.Draw(position, EditorGUI.mixedValueContent, false, false, false, false);
                 EditorGUI.EndHandleMixedValueContentColor();
             }
+
+            // Draw outline for ColorField
+            GUI.backgroundColor = Color.clear;
+            EditorStyles.colorFieldColorBar.Draw(position, GUIContent.none, id, false, position.Contains(evt.mousePosition));
 
             GUI.color = oldColor;
             GUI.backgroundColor = oldBackgroundColor;
@@ -1920,7 +1941,9 @@ namespace UnityEditor
                 return;
 
             int previewWidth = (int)position.width;
-            int previewHeight = (int)position.height;
+            int previewHeight = (int)position.height * 2; // Double the texture height for better quality
+            if (previewWidth <= 0 || previewHeight <= 0)
+                return;
             int maxTextureDim = SystemInfo.maxTextureSize;
 
             bool stretchX = previewWidth > maxTextureDim;
@@ -1967,7 +1990,7 @@ namespace UnityEditor
                 if (!stretchX && preview)
                     position.width = preview.width;
                 if (!stretchY && preview)
-                    position.height = preview.height;
+                    position.height = preview.height * 0.5f; // Scale down the texture resolution to match the control size
 
                 gs.Draw(position, false, false, false, false);
             }

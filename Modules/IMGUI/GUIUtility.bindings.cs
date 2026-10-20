@@ -30,6 +30,9 @@ namespace UnityEngine
             set;
         }
 
+        [NativeProperty("GetGUIState().m_TargetPixelSize", true, TargetType.Field)]
+        internal static extern Vector2 rootTargetPixelSize { get; set; }
+
         [NativeProperty("GetGUIState().m_OnGUIDepth", true, TargetType.Field)]
         internal static extern int guiDepth
         {
@@ -119,6 +122,9 @@ namespace UnityEngine
         ///<param name="heightInPixels">Height, in pixel units, of the axis-aligned bounding box that encompasses the aligned points.</param>
         ///<returns>The aligned rectangle in local space.</returns>
         public static extern Rect AlignRectToDevice(Rect rect, out int widthInPixels, out int heightInPixels);
+
+        // Snaps each edge to the device pixel grid on every event type, unlike AlignRectToDevice which only snaps during Repaint.
+        internal static extern Rect AlignRectToPixelGrid(Rect rect);
 
         // Need to reverse the dependency here when moving native legacy Input code out of Core module.
         [StaticAccessor("InputBindings", StaticAccessorType.DoubleColon)]

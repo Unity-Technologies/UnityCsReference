@@ -990,7 +990,6 @@ namespace UnityEditor
         {
             GUILayout.FlexibleSpace();
 
-
             if (canInstallInBuildFolder)
             {
                 GUILayout.BeginHorizontal();
@@ -1065,16 +1064,10 @@ namespace UnityEditor
             {
                 // Build Button
                 GUI.enabled = enableBuildButton;
-
                 {
-                    Rect buildRect = GUILayoutUtility.GetRect(buildButton, EditorStyles.dropDownToggleButton,
-                        GUILayout.Width(Styles.kButtonWidth));
-                    Rect buildRectPopupButton = buildRect;
-                    buildRectPopupButton.x += buildRect.width - 16;
-                    buildRectPopupButton.width = 16;
+                    var clicked = false;
 
-                    if (EditorGUI.DropdownButton(buildRectPopupButton, GUIContent.none, FocusType.Passive,
-                        GUIStyle.none))
+                    if (EditorGUILayout.DropDownToggle(ref clicked, buildButton, EditorStyles.dropDownToggle, GUILayout.Width(Styles.kButtonWidth)))
                     {
                         GenericMenu menu = new GenericMenu();
                         menu.AddItem(new GUIContent("Clean Build…"), false,
@@ -1089,9 +1082,10 @@ namespace UnityEditor
                                 CallBuildMethods(askForBuildLocation,
                                     BuildOptions.ShowBuiltPlayer | BuildOptions.BuildScriptsOnly);
                             });
-                        menu.DropDown(buildRect);
+
+                        menu.DropDown(GUILayoutUtility.topLevel.GetLast());
                     }
-                    else if (GUI.Button(buildRect, buildButton, EditorStyles.dropDownToggleButton))
+                    else if (clicked)
                     {
                         CallBuildMethods(askForBuildLocation, BuildOptions.ShowBuiltPlayer);
                         GUIUtility.ExitGUI();

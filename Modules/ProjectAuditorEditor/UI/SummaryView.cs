@@ -566,7 +566,7 @@ namespace Unity.ProjectAuditor.Editor.UI
             {
                 keyValues.Add(new KeyValuePair<string, string>("Code Analysis Areas", ObjectNames.NicifyVariableName(sessionInfo.CodeAnalysisFlags.Value.ToString())));
                 if (Unsupported.IsDeveloperMode())
-                    keyValues.Add(new KeyValuePair<string, string>("Code Owners", sessionInfo.CodeOwnerFlags.ToString()));
+                    keyValues.Add(new KeyValuePair<string, string>("Owners", sessionInfo.OwnerFlags.ToString()));
             }
 
             using (new EditorGUILayout.HorizontalScope())

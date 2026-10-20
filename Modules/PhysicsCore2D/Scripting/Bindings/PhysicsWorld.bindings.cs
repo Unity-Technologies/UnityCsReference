@@ -26,6 +26,8 @@ namespace Unity.U2D.Physics
         [NativeMethod(Name = "PhysicsWorld::IsEmpty", IsThreadSafe = true)] extern internal static bool PhysicsWorld_IsEmpty(PhysicsWorld world);
         [NativeMethod(Name = "PhysicsWorld::SetPaused", IsThreadSafe = true)] extern internal static void PhysicsWorld_SetPaused(PhysicsWorld world, bool flag);
         [NativeMethod(Name = "PhysicsWorld::GetPaused", IsThreadSafe = true)] extern internal static bool PhysicsWorld_GetPaused(PhysicsWorld world);
+        [NativeMethod(Name = "PhysicsWorld::SetDisableDrawOverride", IsThreadSafe = true)] extern internal static void PhysicsWorld_SetDisableDrawOverride(PhysicsWorld world, bool flag);
+        [NativeMethod(Name = "PhysicsWorld::GetDisableDrawOverride", IsThreadSafe = true)] extern internal static bool PhysicsWorld_GetDisableDrawOverride(PhysicsWorld world);
         [NativeMethod(Name = "PhysicsWorld::SetSleepingAllowed", IsThreadSafe = true)] extern internal static void PhysicsWorld_SetSleepingAllowed(PhysicsWorld world, bool flag);
         [NativeMethod(Name = "PhysicsWorld::GetSleepingAllowed", IsThreadSafe = true)] extern internal static bool PhysicsWorld_GetSleepingAllowed(PhysicsWorld world);
         [NativeMethod(Name = "PhysicsWorld::SetContinuousAllowed", IsThreadSafe = true)] extern internal static void PhysicsWorld_SetContinuousAllowed(PhysicsWorld world, bool flag);

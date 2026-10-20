@@ -8,11 +8,15 @@ namespace Unity.Scripting.LowLevel;
 
 // Forwards to the ScriptingCore Debug bridge (CoreModule injects the implementation at
 // startup) so these messages go through the full UnityEngine.Debug pipeline with stack traces.
+// Warnings go to the native log directly: the CoreCLR bridge has no warning level.
 [VisibleToOtherModules]
 internal static partial class Debug
 {
     [VisibleToOtherModules]
-    internal static void LogWarning(string message) => Unity.Scripting.Debug.LogWarning(message);
+    internal static void Log(string message) => Unity.Scripting.Debug.Log(message);
+
+    [VisibleToOtherModules]
+    internal static void LogWarning(string message) => LogWarningMessage(message);
 
     [VisibleToOtherModules]
     internal static void LogError(string message) => Unity.Scripting.Debug.LogError(message);

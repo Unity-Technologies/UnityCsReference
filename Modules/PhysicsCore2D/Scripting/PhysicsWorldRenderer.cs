@@ -28,6 +28,14 @@ namespace Unity.U2D.Physics
         [NoAutoStaticsCleanup] static DrawerGroup[] s_DrawerGroups = null; // engine drawer groups disposed by ShutdownRendering (native), no user-code reference, safe to persist across a code reload
         [NoAutoStaticsCleanup] static Mesh s_RenderMesh = null; // engine Mesh destroyed by ShutdownRendering (native), no user-code reference, safe to persist across a code reload
 
+        // Installed by the Editor while its draw override hides physics drawing in views with gizmos off; null renders every view.
+        // It points at editor code, so ShutdownRendering drops it on code unloading and the Editor installs it again when it loads.
+        // Persisted rather than auto-cleaned for the same stripping reason as the other statics in this module (see PhysicsEvents.s_PreSimulate).
+        [NoAutoStaticsCleanup] internal static Func<bool> s_RenderViewCheck = null;
+
+        // Whether the view being rendered hides physics drawing, decided once per view from the check above and read as each world's results arrive.
+        [NoAutoStaticsCleanup] static bool s_ViewHidden = false; // per-view scratch value, rewritten before every draw, safe to persist across a code reload
+
         // Shader property IDs resolved once from fixed names and never reassigned; readonly unmanaged value types are auto-exempt.
         static readonly int s_ElementBufferShaderProperty = Shader.PropertyToID("element_buffer");
         static readonly int s_TransformPlaneShaderProperty = Shader.PropertyToID("transform_plane");
@@ -70,6 +78,9 @@ namespace Unity.U2D.Physics
         {
             // Runs on code unloading so the Unity objects used for rendering are released while they are still valid.
             // Native calls it outside a code reload, such as when rendering is disabled or the editor quits.
+
+            // The view check points at editor code, so it never spans a code reload.
+            s_RenderViewCheck = null;
 
             // Finish if not initialized.
             if (!s_IsInitialized)
@@ -185,6 +196,9 @@ namespace Unity.U2D.Physics
 
             using (s_DrawWorldsMarker.Auto())
             {
+                // Decide once whether the Editor hides this view; SendDrawResults applies it per world as the results arrive.
+                s_ViewHidden = s_RenderViewCheck != null && !s_RenderViewCheck();
+
                 // Draw all the worlds.
                 PhysicsWorld.DrawAllWorlds(drawAABB: GetCameraViewAABB(camera), cameraTarget: GetCameraDrawTarget(camera));
 
@@ -207,8 +221,13 @@ namespace Unity.U2D.Physics
 
         /// <undoc/>
         [RequiredByNativeCode]
-        static void SendDrawResults(bool isRenderingAllowed, bool alwaysDrawWorlds, PhysicsWorld physicsWorld, ref PhysicsWorld.DrawResults drawResults, PhysicsWorld.TransformPlane transformPlane, ref Matrix4x4 transformPlaneCustomMatrix, float thickness, float fillAlpha)
+        static void SendDrawResults(bool isRenderingAllowed, bool alwaysDrawWorlds, PhysicsWorld physicsWorld, ref PhysicsWorld.DrawResults drawResults, PhysicsWorld.TransformPlane transformPlane, ref Matrix4x4 transformPlaneCustomMatrix, float thickness, float fillAlpha, bool disableDrawOverride)
         {
+            // The Editor can hide the view being rendered; a world that opts out of the draw override is never hidden.
+            // The world draw results event below still fires either way.
+            if (s_ViewHidden && !disableDrawOverride)
+                isRenderingAllowed = false;
+
             // Is rendering allowed?
             if (isRenderingAllowed)
             {

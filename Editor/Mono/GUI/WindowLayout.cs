@@ -1052,9 +1052,9 @@ namespace UnityEditor
             }
         }
 
-        internal static void MaximizeGestureHandler()
+        internal static void MaximizeGestureHandler(Event evt)
         {
-            if (Event.current.type != EditorGUIUtility.magnifyGestureEventType || GUIUtility.hotControl != 0)
+            if (evt.type != EditorGUIUtility.magnifyGestureEventType || GUIUtility.hotControl != 0)
                 return;
 
             var mouseOverWindow = EditorWindow.mouseOverWindow;
@@ -1063,9 +1063,9 @@ namespace UnityEditor
 
             var args = new ShortcutArguments { stage = ShortcutStage.End };
             if (IsMaximized(mouseOverWindow))
-                args.context = Event.current.delta.x < -0.05f ? mouseOverWindow : null;
+                args.context = evt.delta.x < -0.05f ? mouseOverWindow : null;
             else
-                args.context = Event.current.delta.x > 0.05f ? mouseOverWindow : null;
+                args.context = evt.delta.x > 0.05f ? mouseOverWindow : null;
 
             if (args.context != null)
                 MaximizeKeyHandler(args);

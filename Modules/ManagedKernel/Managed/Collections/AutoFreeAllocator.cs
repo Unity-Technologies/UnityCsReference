@@ -9,6 +9,7 @@ using AOT;
 using Unity.Burst;
 using Unity.Collections.LowLevel.Unsafe;
 using Unity.Mathematics;
+using UnityEngine.Bindings;
 
 namespace Unity.Collections
 {
@@ -144,6 +145,7 @@ namespace Unity.Collections
     }
 
     [BurstCompile]
+    [VisibleToOtherModules("UnityEngine.EntitiesModule")]
     internal struct AutoFreeAllocator : AllocatorManager.IAllocator
     {
         ArrayOfArrays<IntPtr> m_allocated;

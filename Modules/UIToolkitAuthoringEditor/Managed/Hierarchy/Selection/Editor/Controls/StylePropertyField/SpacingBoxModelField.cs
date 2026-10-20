@@ -273,12 +273,12 @@ namespace Unity.UIToolkit.Editor
                 if (m_MarginLeft == value)
                     return;
 
-                var previousValue = m_MarginBottom;
+                var previousValue = m_MarginLeft;
                 m_MarginLeft = value;
                 m_SpacingField.marginBox.leftField.SetValueWithoutNotify(value);
 
                 Refresh();
-                NotifyStylePropertyChanged(marginLeftProperty, previousValue, m_MarginBottom);
+                NotifyStylePropertyChanged(marginLeftProperty, previousValue, m_MarginLeft);
             }
         }
 

@@ -101,10 +101,8 @@ namespace Unity.GraphToolkit.Editor
             if ((e.pressedButtons & (1 << m_MouseButton)) == 0)
             {
                 StopManipulation();
+                return;
             }
-
-            if (!target.HasPointerCapture(e.pointerId))
-                target.CapturePointer(e.pointerId);
 
             var diff = graphView.ChangeCoordinatesTo(graphView.ContentViewContainer, e.localPosition) - m_Start;
 
@@ -114,6 +112,14 @@ namespace Unity.GraphToolkit.Editor
             if (m_DidDrag || m_MouseButton != (int)MouseButton.RightMouse || diff.sqrMagnitude > kDragThreshold*kDragThreshold)
             {
                 m_DidDrag = true;
+
+                // Defer pointer capture until the drag threshold is confirmed. Taking capture
+                // immediately (even for sub-threshold movements) causes PointerUpEvent to be
+                // routed to GraphView instead of the node under the cursor, which makes
+                // GraphView's ContextualMenuManipulator show the graph menu instead of the
+                // node's menu on a right-click with any incidental mouse movement.
+                if (!target.HasPointerCapture(e.pointerId))
+                    target.CapturePointer(e.pointerId);
 
                 // During the drag update only the view
                 var scale = graphView.ContentViewContainer.resolvedStyle.scale.value;

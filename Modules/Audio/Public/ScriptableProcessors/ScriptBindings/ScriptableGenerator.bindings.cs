@@ -749,6 +749,9 @@ namespace UnityEngine.Audio
                     var context = new ControlContext(pResources);
                     runtimeHandle = definition.CreateInstance(context, null, default(GeneratorInstance.CreationParameters));
 
+                    // Set source asset entity ID for profiler display
+                    if (runtimeHandle.m_ProcessorInstance.Handle.WasCreated)
+                        SetProcessorSourceAssetEntityId(pResources, runtimeHandle.m_ProcessorInstance.Handle, generatorObjectDefinition.GetEntityId());
 
                     if (context.Exists(runtimeHandle))
                     {
@@ -794,5 +797,8 @@ namespace UnityEngine.Audio
         [NativeMethod(Name = "audio::InitializeGeneratorHandle", IsFreeFunction = true, ThrowsException = true)]
         static extern unsafe DualThreadHandle InternalInitializeGeneratorHandle(/*Generator.GeneratorHeader* */void* header, int tailSize, /*ControlHeader*/ void* control, AudioConfiguration* nestedConfiguration, ProcessorInstance.InitializationFlags flags);
 
+        [NativeConditional("ENABLE_PROFILER")]
+        [NativeMethod(Name = "audio::SetProcessorSourceAssetEntityId", IsFreeFunction = true)]
+        static extern unsafe void SetProcessorSourceAssetEntityId(/*ControlHeader*/ void* control, DualThreadHandle handle, EntityId entityId);
     }
 }

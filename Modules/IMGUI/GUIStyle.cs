@@ -472,7 +472,7 @@ namespace UnityEngine
         ///}
         ///]]></code>
         ///</example>
-        public float lineHeight => Mathf.Round(IMGUITextHandle.GetLineHeight(this));
+        public float lineHeight => GUIUtility.RoundToPixelGrid(IMGUITextHandle.GetLineHeight(this), GUIUtility.pixelsPerPoint);
 
         ///<summary>Draw this GUIStyle on to the screen, internal version.</summary>
         ///<remarks>Draw plain GUIStyle without text nor image.</remarks>

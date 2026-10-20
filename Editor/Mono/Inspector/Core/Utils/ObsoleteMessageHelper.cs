@@ -87,7 +87,7 @@ namespace UnityEditor
         {
             // targetType is null for editors without any target (real null and data-component
             // with unresolvable TypeId); Object editors resolve via target.GetType(),
-            // data-component editors via m_DataComponentType, so [Obsolete] on component
+            // editors with no target Object via m_NonObjectTargetType, so [Obsolete] on component
             // types surfaces in the inspector too.
             var targetType = editor != null ? editor.targetType : null;
             if (targetType == null)

@@ -183,6 +183,8 @@ namespace UnityEngine.PlayerLoop
         public struct NewInputUpdate {}
         [RequiredByNativeCode]
         public struct InputForUIUpdate { }
+        [RequiredByNativeCode]
+        public struct UIElementsPreparePanelRenderers {}
     }
     [RequiredByNativeCode]
     [MovedFrom("UnityEngine.Experimental.PlayerLoop")]

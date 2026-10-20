@@ -1691,7 +1691,9 @@ namespace UnityEngine
     public static partial class ParticlePhysicsExtensions
     {
         ///<summary>Safe array size for use with <see cref="ParticlePhysicsExtensions.GetCollisionEvents" />.</summary>
-        ///<remarks>This is guaranteed to be large enough to use with <see cref="ParticlePhysicsExtensions.GetCollisionEvents" /> for the current frame. GetCollisionEvents may return fewer elements for some GameObjects though.</remarks>
+        ///<remarks>This is guaranteed to be large enough to use with <see cref="ParticlePhysicsExtensions.GetCollisionEvents" /> for the current frame. GetCollisionEvents might return fewer elements for some GameObjects.</remarks>
+        ///<param name="ps">The particle system that the colliding particles belong to.</param>
+        ///<returns>The minimum array size needed to capture every collision event for the particle system in the current frame.</returns>
         public static int GetSafeCollisionEventSize(this ParticleSystem ps)
         {
             return ParticleSystemExtensionsImpl.GetSafeCollisionEventSize(ps);
@@ -1721,7 +1723,7 @@ namespace UnityEngine
             return ParticleSystemExtensionsImpl.GetSafeTriggerParticlesSize(ps, (int)type);
         }
 
-        ///<summary>Get the particles that met the condition in the particle trigger module. Returns the number of particles written to the array.</summary>
+        ///<summary>Gets the particles that meet the condition in the particle trigger module.</summary>
         ///<remarks>This method is typically called from <see cref="M:UnityEngine.MonoBehaviour.OnParticleTrigger" /> in response to a trigger callback.</remarks>
         ///<param name="ps">Particle system.</param>
         ///<param name="type">Type of trigger to return particles for.</param>
@@ -1732,6 +1734,17 @@ namespace UnityEngine
             return ParticleSystemExtensionsImpl.GetTriggerParticles(ps, (int)type, particles);
         }
 
+        ///<summary>Gets the particles that met a condition in the trigger module, along with the collider data for those particles.</summary>
+        ///<remarks>This method is typically called from <see cref="M:UnityEngine.MonoBehaviour.OnParticleTrigger" /> in response to a trigger callback. The method writes the matching particles to `particles` and returns how many it wrote.
+        ///
+        ///To get collider data, set <see cref="ParticleSystem.TriggerModule.colliderQueryMode" /> to <see cref="ParticleSystemColliderQueryMode.One" /> or <see cref="ParticleSystemColliderQueryMode.All" />. If it's set to <see cref="ParticleSystemColliderQueryMode.Disabled" />, the method still returns the matching particles, but the collider data contains no colliders for them and Unity logs a warning.
+        ///
+        ///This overload throws an `InvalidOperationException` if `type` is <see cref="ParticleSystemTriggerEventType.Exit" /> or <see cref="ParticleSystemTriggerEventType.Outside" />, because collider data isn't available for those event types.</remarks>
+        ///<param name="ps">The particle system to get trigger particles from.</param>
+        ///<param name="type">The type of trigger event to get particles for.</param>
+        ///<param name="particles">The list that the method fills with the particles that match the trigger event type.</param>
+        ///<param name="colliderData">The collider data for the particles that match the trigger event type.</param>
+        ///<returns>The number of particles that match the trigger event type.</returns>
         public static int GetTriggerParticles(this ParticleSystem ps, ParticleSystemTriggerEventType type, List<ParticleSystem.Particle> particles, out ParticleSystem.ColliderData colliderData)
         {
             if (type == ParticleSystemTriggerEventType.Exit)

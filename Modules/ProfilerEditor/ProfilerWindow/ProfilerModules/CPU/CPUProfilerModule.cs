@@ -210,6 +210,7 @@ namespace UnityEditorInternal.Profiling
         {
             if (m_ViewType == ProfilerViewType.TimelineV2)
             {
+                CurrentFrameIndex = (int)ProfilerWindow.selectedFrameIndex;
                 using (var iter = fetchData ? new ProfilerFrameDataIterator() : null)
                 {
                     int threadCount = fetchData ? iter.GetThreadCount(CurrentFrameIndex) : 0;

@@ -44,6 +44,7 @@ internal static class StageContextMenuUtility
     internal static readonly string SaveUxml = L10n.Tr("Save UXML", null);
     internal static readonly string SaveUxmlFormat = L10n.Tr("Save {0}", null);
     internal static readonly string DiscardUxml = L10n.Tr("Discard UXML", null);
+    internal static readonly string DiscardUxmlFormat = L10n.Tr("Discard {0}", null);
     internal static readonly string OpenAsset = L10n.Tr("Open Asset", null);
     internal static readonly string SelectUxmlAsset = L10n.Tr("Select UXML Asset", null);
     internal static readonly string FindReferencesInScene = L10n.Tr("Find References In Scene", null);
@@ -669,6 +670,12 @@ internal static class StageContextMenuUtility
         return string.IsNullOrEmpty(fileName) ? SaveUxml : string.Format(SaveUxmlFormat, fileName);
     }
 
+    internal static string GetDiscardUxmlLabel(VisualTreeAsset vta)
+    {
+        var fileName = vta ? Path.GetFileName(AssetDatabase.GetAssetPath(vta.GetEntityId())) : null;
+        return string.IsNullOrEmpty(fileName) ? DiscardUxml : string.Format(DiscardUxmlFormat, fileName);
+    }
+
     /// <summary>
     /// Appends "Save UXML" and "Discard UXML", which settle <paramref name="vta"/>'s file and nothing else:
     /// the style sheets it references, and any document that instantiates it, keep whatever they have unsaved.
@@ -686,7 +693,7 @@ internal static class StageContextMenuUtility
             status);
 
         menu.AppendAction(
-            DiscardUxml,
+            GetDiscardUxmlLabel(vta),
             _ => UIAssetSavePrompt.ConfirmAndDiscardSingleAsset(vta, CommandSources.Hierarchy),
             status);
     }

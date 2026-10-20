@@ -1435,26 +1435,6 @@ namespace Unity.Hierarchy.Editor
             {
                 m_HierarchyView.EnqueuePostUpdateAction(() =>
                 {
-                    // Always force expand the Preview Scene root "Prefab Mode In Context" node when restoring
-                    // a view model state. This node cannot be serialized since it is recreated every time, and should always be expanded.
-                    // This is in line with the legacy hierarchy behavior, which always expands this node when entering a prefab stage in context.
-                    // When there is no view model state, all nodes will be expanded by default when entering a prefab stage.
-                    // For prefabs in isolation, all nodes represent game objects that are persisted and serializable, therefore their view model
-                    // state can be restored correctly.
-                    if (hasViewModelState && StageUtility.GetCurrentStage() is PrefabStage { mode: PrefabStage.Mode.InContext } ps)
-                    {
-                        // The dummy "Prefab Mode In Context" node only appears if the "openedFromInstance" game object is under
-                        // a valid transform. Therefore, we have to validate that it does in fact exist to expand it.
-                        var contentRootParent = ps.prefabContentsRoot.transform.parent;
-                        var contentRootParentGo = contentRootParent?.gameObject;
-                        if (contentRootParentGo != null && contentRootParentGo.name == PrefabUtility.kDummyPrefabStageRootObjectName)
-                        {
-                            // Handler and node should exist at this point since this is a post update action.
-                            var gameObjectHandler = m_Hierarchy.GetNodeTypeHandler<HierarchyGameObjectHandler>();
-                            var node = gameObjectHandler.GetOrCreateNode(contentRootParentGo);
-                            m_HierarchyView.ViewModel.SetFlags(in node, HierarchyNodeFlags.Expanded);
-                        }
-                    }
                     if (m_HierarchyView.ViewModel.HasFlags(HierarchyNodeFlags.Selected) || !GlobalSelectionIsOnlyAssets())
                         m_SelectionHandler.SyncGlobalSelectionFromViewModel();
                 });

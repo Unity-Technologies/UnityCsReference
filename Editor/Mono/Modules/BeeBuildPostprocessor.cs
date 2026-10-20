@@ -107,13 +107,8 @@ namespace UnityEditor.Modules
             }
 
 
-            if ((options & BuildOptions.Development) != 0)
-            {
-                if ((options & BuildOptions.EnableDeepProfilingSupport) != 0)
-                {
-                    config.Set("profiler-enable-deep-profiling-support", "1");
-                }
-            }
+            if ((options & BuildOptions.EnableDeepProfilingSupport) != 0)
+                config.Set("profiler-enable-deep-profiling-support", "1");
         }
 
         protected virtual string GetIl2CppDataBackupFolderName(BuildPostProcessArgs args) => $"{args.installPath.ToNPath().FileNameWithoutExtension}{kBackupFolderPostfix}";
@@ -127,6 +122,9 @@ namespace UnityEditor.Modules
         static void BeginProfile() => UnityBeeDriverProfilerSession.Start($"{DagDirectory}/buildreport.json");
 
         [RequiredByNativeCode]
+        static void BeginNativeTrace() => UnityBeeDriverProfilerSession.StartNativeTrace();
+
+        [RequiredByNativeCode]
         static void EndProfile() => UnityBeeDriverProfilerSession.Finish();
 
         // The session only writes its output file when it is finished, so consumers of that file can use
@@ -135,10 +133,10 @@ namespace UnityEditor.Modules
         static bool IsProfilerSessionActive() => UnityBeeDriverProfilerSession.PerformingPlayerBuild;
 
         [RequiredByNativeCode]
-        static void BeginBuildSection(string name) => UnityBeeDriverProfilerSession.BeginSection(name);
+        static void BeginBuildSection(string name, long beganAtProfilerUs) => UnityBeeDriverProfilerSession.BeginSection(name, beganAtProfilerUs);
 
         [RequiredByNativeCode]
-        static void EndBuildSection() => UnityBeeDriverProfilerSession.EndSection();
+        static void EndBuildSection(long endedAtProfilerUs) => UnityBeeDriverProfilerSession.EndSection(endedAtProfilerUs);
 
         protected virtual IPluginImporterExtension GetPluginImpExtension() => new EditorPluginImporterExtension();
 
@@ -421,9 +419,6 @@ namespace UnityEditor.Modules
             if (CrashReportingSettings.canUploadReports)
                 additionalArgs.Add("--emit-source-mapping");
 
-            if (IsBuildOptionSet(args.report.summary.options, BuildOptions.EnableCodeCoverage))
-                additionalArgs.Add("--enable-code-coverage");
-
             var namedBuildTarget = GetNamedBuildTarget(args);
             var apiCompatibilityLevel = PlayerSettings.GetApiCompatibilityLevel(namedBuildTarget);
             var il2cppCodeGeneration = PlayerSettings.GetIl2CppCodeGeneration(namedBuildTarget);
@@ -480,7 +475,6 @@ namespace UnityEditor.Modules
                 ToolChainPath = toolchainPath,
                 RelativeDataPath = relativeDataPath,
                 ExtraTypes = extraTypesFile?.ToString(),
-                GenerateUsymFile = PlayerSettings.GetIl2CppStacktraceInformation(namedBuildTarget) == Il2CppStacktraceInformation.MethodFileLineNumber,
                 UsymtoolPath = GetUsymtoolPath(),
                 LtoMode = (BuildProgramLTOMode)PlayerSettings.GetIl2CppLTOMode(namedBuildTarget)
             };
@@ -521,6 +515,7 @@ namespace UnityEditor.Modules
 #pragma warning restore UAC2001
                     if (setupResult.displayName != null)
                         settings.DisplayName = setupResult.displayName;
+                    settings.RequiresLinkedAssemblySymbols |= setupResult.requiresManagedSymbols;
                     settings.HasCallback = true;
                 }
             }
@@ -543,6 +538,8 @@ namespace UnityEditor.Modules
             ScriptingBackend = GetScriptingBackend(args),
             Architecture = GetArchitecture(args),
             DataFolder = GetDataFolderFor(args),
+            ManagedStackTracesIncludeFileAndLineNumbers = PlayerSettings.GetManagedStackTraceInformation(GetNamedBuildTarget(args)) == ManagedStackTraceInformation.MethodFileLineNumber,
+            EnableCodeCoverage = IsBuildOptionSet(args.options, BuildOptions.EnableCodeCoverage),
             GenerateNativePluginsForAssembliesSettings = GetGenerateNativePluginsForAssembliesSettings(args),
             Services = new ()
             {

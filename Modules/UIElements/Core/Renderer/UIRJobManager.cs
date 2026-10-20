@@ -113,8 +113,6 @@ namespace UnityEngine.UIElements.UIR
         public int indexOffset;
 
         public int flipIndices;
-        public int forceZ;
-        public float positionZ;
 
         public int remapUVs;
         public Rect atlasRect;

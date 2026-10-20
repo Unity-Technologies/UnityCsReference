@@ -34,6 +34,7 @@ namespace UnityEditor
             public static readonly GUIStyle progressBarUnresponsive = EditorStyles.FromUSS(progressBar, "status-bar-progress-unresponsive");
             public static readonly GUIStyle progressBarIndefinite = EditorStyles.FromUSS(progressBar, "status-bar-progress-indefinite");
             public static readonly GUIStyle progressBarBack = EditorStyles.FromUSS(EditorStyles.progressBarBack, "status-bar-progress-background");
+            public static readonly GUIStyle progressBarBorder = EditorStyles.FromUSS(EditorStyles.progressBarBorder, "status-bar-progress-border");
             public static readonly GUIStyle progressBarText = EditorStyles.FromUSS(statusLabel, "status-bar-progress-text");
 
             public static readonly GUIContent[] statusWheel;
@@ -269,7 +270,7 @@ namespace UnityEditor
             var progressBarContent = GetProgressBarContent(m_ProgressStatus);
             var progressRect = EditorGUILayout.GetControlRect(false, position.height, Styles.progressBarBack, Styles.progressBarWidth);
             if (EditorGUI.ProgressBar(progressRect, globalProgress, progressBarContent, true,
-                Styles.progressBarBack, progressBarStyle, Styles.progressBarText))
+                Styles.progressBarBack,  Styles.progressBarBorder, progressBarStyle, Styles.progressBarText))
                 Progress.ShowDetails(false);
 
             if (globalProgress == -1.0f)

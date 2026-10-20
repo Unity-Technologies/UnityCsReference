@@ -202,7 +202,7 @@ namespace UnityEngine.Animations
 
             int floatPropertyCount = 0;
             int discretePropertiesCount = 0;
-            int instanceIDPropertiesCount = 0;
+            int entityIdPropertiesCount = 0;
             for (int i = 0; i < genericBindings.Length; i++)
             {
                 // Transform bindings is not supported
@@ -212,21 +212,21 @@ namespace UnityEngine.Animations
                 if (genericBindings[i].isDiscrete)
                     discretePropertiesCount++;
                 if (genericBindings[i].isObjectReference)
-                    instanceIDPropertiesCount++;
+                    entityIdPropertiesCount++;
                 else
                     floatPropertyCount++;
             }
 
             floatProperties = new NativeArray<BoundProperty>(floatPropertyCount, allocator);
             discreteProperties = new NativeArray<BoundProperty>(discretePropertiesCount, allocator);
-            instanceIDProperties = new NativeArray<BoundProperty>(instanceIDPropertiesCount, allocator);
+            instanceIDProperties = new NativeArray<BoundProperty>(entityIdPropertiesCount, allocator);
 
             void* genericBidingsPtr = genericBindings.GetUnsafePtr();
             void* floatPropertiesPtr = NativeArrayUnsafeUtility.GetUnsafePtr(floatProperties);
             void* discretePropertiesPtr = NativeArrayUnsafeUtility.GetUnsafePtr(discreteProperties);
-            void* instanceIDPropertiesPtr = NativeArrayUnsafeUtility.GetUnsafePtr(instanceIDProperties);
+            void* entityIdPropertiesPtr = NativeArrayUnsafeUtility.GetUnsafePtr(instanceIDProperties);
 
-            Internal_BindProperties(rootGameObject, genericBidingsPtr, genericBindings.Length, floatPropertiesPtr, discretePropertiesPtr, instanceIDPropertiesPtr);
+            Internal_BindProperties(rootGameObject, genericBidingsPtr, genericBindings.Length, floatPropertiesPtr, discretePropertiesPtr, entityIdPropertiesPtr);
         }
 
         [NativeMethod(IsThreadSafe = false)]

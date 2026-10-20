@@ -147,6 +147,17 @@ namespace UnityEngine.UIElements
         internal const int k_NumberOfEventsWithStackInfo = 10;
         internal const int k_NumberOfEventsWithEventInfo = 100;
         internal uint GateDepth { get => m_GateDepth; }//for unit test
+        internal int CountQueuedEvents(long eventTypeId)//for unit test
+        {
+            var count = 0;
+            foreach (var record in m_Queue)
+            {
+                if (record.m_Event.eventTypeId == eventTypeId)
+                    count++;
+            }
+            return count;
+        }
+
         int m_DispatchStackFrame=0; //To record where the stack begin to be relevent for the user when we log the stack
         private EventBase m_CurrentEvent;
         #endregion
@@ -202,6 +213,7 @@ namespace UnityEngine.UIElements
             get { return m_Immediate || m_GateCount == 0; }
         }
 
+        // Only meaningful outside dispatch: nested queue drains reset it while an outer drain is still running.
         internal bool processingEvents { get; private set; }
 
         internal void Dispatch(EventBase evt, [NotNull] BaseVisualElementPanel panel, DispatchMode dispatchMode)
@@ -337,6 +349,9 @@ namespace UnityEngine.UIElements
 
         void ProcessEventQueue()
         {
+            if (m_Queue.Count == 0)
+                return;
+
             // While processing the current queue, we need a new queue to store additional events that
             // might be generated during current queue events processing. Thanks to the gate mechanism,
             // events put in the new queue will be processed before the remaining events in the current

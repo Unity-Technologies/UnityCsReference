@@ -20,7 +20,6 @@ namespace UnityEditor.Shaders
         private SerializedObject m_SettingsDataStore = null;
         private SerializedProperty m_SettingsProperty = null;
         private bool m_IsTargetingBuildProfile = false;
-        private bool m_HasUnsavedChanges = false;
         private BuildProfile m_CachedBuildProfile = null;
         private BuildTarget? m_LastBuildTarget = null;
         private List<GraphicsDeviceType> m_SelectableApisCache = null;
@@ -57,6 +56,32 @@ namespace UnityEditor.Shaders
         // Shown in place of the settings data while Fast Build is on. Never saved; see BuildFastBuildDisplayedOverrides.
         private readonly List<ShaderBuildSettings.KeywordDeclarationOverride> m_FastBuildDisplayedOverrides = new();
 
+        private readonly List<ShaderBuildSettings.KeywordDeclarationOverride> m_AppliedKeywordDeclarationOverrides = new();
+        private readonly List<ShaderBuildSettings.ShaderCompilerSettings> m_AppliedCompilerBackendSettings = new();
+        private readonly List<string> m_AppliedConstantDefines = new();
+        private bool m_AppliedDebugSymbols;
+        private ShaderBuildSettings.ShaderOptimizationLevel m_AppliedOptimizationLevel;
+        private ShaderBuildSettingsPendingState m_PendingState;
+        private const string k_AddKeywordOverrideUndoName = "Add Keyword Declaration Override";
+        private const string k_RemoveKeywordOverrideUndoName = "Remove Keyword Declaration Override";
+        internal const string k_ReorderKeywordOverrideUndoName = "Reorder Keyword Declaration Overrides";
+        internal const string k_EditKeywordsUndoName = "Edit Keyword Declaration Override Keywords";
+        internal const string k_ChangeVariantGenerationModeUndoName = "Change Variant Generation Mode";
+        internal const string k_ToggleKeywordInBuildUndoName = "Toggle Keyword In Build";
+        private const string k_ChangeFastBuildModeUndoName = "Change Fast Build Mode";
+        private const string k_AddConstantDefinesUndoName = "Add Shader Constant Defines";
+        private const string k_RemoveConstantDefinesUndoName = "Remove Shader Constant Defines";
+        private const string k_ReorderConstantDefinesUndoName = "Reorder Shader Constant Defines";
+        private const string k_EditConstantDefinesUndoName = "Edit Shader Constant Defines";
+        private const string k_AddCompilerBackendUndoName = "Add Compiler Backend Settings";
+        private const string k_RemoveCompilerBackendUndoName = "Remove Compiler Backend Settings";
+        private const string k_ChangeCompilerBackendAPIUndoName = "Change Compiler Backend API Settings";
+        private const string k_ChangeCompilerBackendCompilerUndoName = "Change Compiler Backend Settings";
+        private const string k_ChangeEnableDebugSymbolsUndoName = "Change Enable Debug Symbols";
+        private const string k_ChangeOptimizationLevelUndoName = "Change Optimization Level";
+        private const string k_RevertUndoName = "Revert Shader Build Settings";
+        private int m_ConstantDefinesTypingUndoGroup = -1;
+
         private static string CompilerDisplayName(ShaderBuildSettings.ShaderCompilerToolchain compiler)
         {
             switch (compiler)
@@ -90,7 +115,16 @@ namespace UnityEditor.Shaders
             }
         }
 
-        public bool HasUnsavedChanges => m_HasUnsavedChanges || m_FastBuildEnabled != m_AppliedFastBuildEnabled;
+        // When Undoing all the way back it reads it as clean.
+        public bool HasUnsavedChanges =>
+            m_FastBuildEnabled != m_AppliedFastBuildEnabled ||
+            !ListsEqual(m_KeywordDeclarationOverrides, m_AppliedKeywordDeclarationOverrides,
+                static (a, b) => a.ValueEquals(b)) ||
+            !ListsEqual(m_ConstantDefines, m_AppliedConstantDefines, static (a, b) => a == b) ||
+            !ListsEqual(m_CompilerBackendSettings, m_AppliedCompilerBackendSettings,
+                static (a, b) => a.ValueEquals(b)) ||
+            (m_EnableDebugSymbolsToggle != null && m_EnableDebugSymbolsToggle.value != m_AppliedDebugSymbols) ||
+            (m_OptimizationLevelDropdown != null && m_OptimizationLevelDropdown.value != m_AppliedOptimizationLevel);
 
         public void Initialize(VisualElement root, SerializedObject settingsDataStore, bool isTargetingBuildProfile)
         {
@@ -121,18 +155,18 @@ namespace UnityEditor.Shaders
             m_KeywordDeclarationOverridesListView.unbindItem = UnbindKeywordFoldoutItem;
             m_KeywordDeclarationOverridesListView.makeItem = MakeKeywordFoldoutItem;
 
-            m_KeywordDeclarationOverridesListView.itemsAdded += OnItemsAdded;
-            m_KeywordDeclarationOverridesListView.itemsRemoved += OnItemsRemoved;
-            m_KeywordDeclarationOverridesListView.itemIndexChanged += OnItemIndexChanged;
+            m_KeywordDeclarationOverridesListView.itemsAdded += OnKeywordOverridesAdded;
+            m_KeywordDeclarationOverridesListView.onRemove = RemoveKeywordOverrides;
+            m_KeywordDeclarationOverridesListView.itemIndexChanged += OnKeywordOverrideIndexChanged;
 
             m_ConstantDefinesListView = shaderBuildSettingsUI.Q<ListView>("ShaderConstDefines");
             m_ConstantDefinesListView.itemsSource = m_ConstantDefines;
             m_ConstantDefinesListView.makeItem = MakeConstantDefineItem;
             m_ConstantDefinesListView.bindItem = BindConstantDefineItem;
             m_ConstantDefinesListView.unbindItem = UnbindConstantDefineItem;
-            m_ConstantDefinesListView.itemsAdded += OnItemsAdded;
-            m_ConstantDefinesListView.itemsRemoved += OnItemsRemoved;
-            m_ConstantDefinesListView.itemIndexChanged += OnItemIndexChanged;
+            m_ConstantDefinesListView.itemsAdded += OnConstantDefinesAdded;
+            m_ConstantDefinesListView.onRemove = RemoveConstantDefines;
+            m_ConstantDefinesListView.itemIndexChanged += OnConstantDefinesIndexChanged;
 
             var compilerBackendFoldout = shaderBuildSettingsUI.Q<Foldout>("CompilerBackendFoldout");
             if (m_IsTargetingBuildProfile)
@@ -171,7 +205,24 @@ namespace UnityEditor.Shaders
             m_RevertButton = shaderBuildSettingsUI.Q<Button>("RevertButton");
             m_RevertButton.RegisterCallback<ClickEvent>(OnRevertClicked);
 
+            // Make sure it's a clean undo history
+            ClearUIUndo();
+            m_PendingState = ScriptableObject.CreateInstance<ShaderBuildSettingsPendingState>();
+            m_PendingState.hideFlags = HideFlags.HideAndDontSave;
+            Undo.undoRedoEvent += OnUndoRedo;
+
             LoadSettingsData();
+        }
+
+        public void ClearUIUndo()
+        {
+            Undo.undoRedoEvent -= OnUndoRedo;
+            if (m_PendingState == null)
+                return;
+
+            Undo.ClearUndo(m_PendingState);
+            UnityEngine.Object.DestroyImmediate(m_PendingState);
+            m_PendingState = null;
         }
 
         private VisualElement MakeKeywordFoldoutItem()
@@ -260,12 +311,14 @@ namespace UnityEditor.Shaders
 
             if (index < m_ConstantDefines.Count)
             {
-                textField.value = m_ConstantDefines[index];
+                textField.SetValueWithoutNotify(m_ConstantDefines[index]);
                 textField.userData = index;
                 ValidateConstantDefineAndUpdateErrorBox(element, m_ConstantDefines[index]);
             }
 
             textField.RegisterValueChangedCallback(OnConstantDefineValueChanged);
+            textField.RegisterCallback<FocusInEvent>(OnConstantDefinesFieldFocusIn);
+            textField.RegisterCallback<FocusOutEvent>(OnConstantDefinesFieldFocusOut);
         }
 
         private void UnbindConstantDefineItem(VisualElement element, int index)
@@ -274,6 +327,9 @@ namespace UnityEditor.Shaders
             if (textField != null)
             {
                 textField.UnregisterValueChangedCallback(OnConstantDefineValueChanged);
+                textField.UnregisterCallback<FocusInEvent>(OnConstantDefinesFieldFocusIn);
+                textField.UnregisterCallback<FocusOutEvent>(OnConstantDefinesFieldFocusOut);
+                CollapseConstantDefinesTyping();
             }
         }
 
@@ -286,20 +342,33 @@ namespace UnityEditor.Shaders
                 {
                     m_ConstantDefines[index] = evt.newValue;
                     ValidateConstantDefineAndUpdateErrorBox(textField.parent, evt.newValue);
-                    SettingsChanged();
+                    RecordPendingState(k_EditConstantDefinesUndoName);
                 }
             }
         }
 
-        public void SettingsChanged()
+        private void OnConstantDefinesFieldFocusIn(FocusInEvent evt)
         {
-            m_HasUnsavedChanges = true;
-            RefreshApplyRevertButtons();
+            Undo.IncrementCurrentGroup();
+            m_ConstantDefinesTypingUndoGroup = Undo.GetCurrentGroup();
+        }
+
+        private void OnConstantDefinesFieldFocusOut(FocusOutEvent evt)
+        {
+            CollapseConstantDefinesTyping();
+        }
+
+        private void CollapseConstantDefinesTyping()
+        {
+            if (m_ConstantDefinesTypingUndoGroup < 0)
+                return;
+
+            Undo.CollapseUndoOperations(m_ConstantDefinesTypingUndoGroup);
+            m_ConstantDefinesTypingUndoGroup = -1;
         }
 
         private void ClearSettingsChangedState()
         {
-            m_HasUnsavedChanges = false;
             RefreshApplyRevertButtons();
         }
 
@@ -313,19 +382,148 @@ namespace UnityEditor.Shaders
             m_RevertButton.SetEnabled(hasChanges);
         }
 
-        private void OnItemsAdded(IEnumerable<int> items)
+        private void OnConstantDefinesAdded(IEnumerable<int> items)
         {
-            SettingsChanged();
+            RecordPendingState(k_AddConstantDefinesUndoName);
         }
 
-        private void OnItemsRemoved(IEnumerable<int> items)
+        private void RemoveConstantDefines(BaseListView listView)
         {
-            SettingsChanged();
+            var indices = new List<int>(listView.selectedIndices);
+            if (indices.Count == 0 && m_ConstantDefines.Count > 0)
+                indices.Add(m_ConstantDefines.Count - 1);
+            if (indices.Count == 0)
+                return;
+
+            listView.viewController.RemoveItems(indices);
+            listView.ClearSelection();
+
+            RecordPendingState(k_RemoveConstantDefinesUndoName);
         }
 
-        private void OnItemIndexChanged(int oldIndex, int newIndex)
+        private void OnConstantDefinesIndexChanged(int oldIndex, int newIndex)
         {
-            SettingsChanged();
+            RecordPendingState(k_ReorderConstantDefinesUndoName);
+        }
+
+        private void OnKeywordOverridesAdded(IEnumerable<int> items)
+        {
+            RecordPendingState(k_AddKeywordOverrideUndoName);
+        }
+
+        private void OnKeywordOverrideIndexChanged(int oldIndex, int newIndex)
+        {
+            RecordPendingState(k_ReorderKeywordOverrideUndoName);
+        }
+
+        private void RemoveKeywordOverrides(BaseListView listView)
+        {
+            var indices = new List<int>(listView.selectedIndices);
+            if (indices.Count == 0 && m_KeywordDeclarationOverrides.Count > 0)
+                indices.Add(m_KeywordDeclarationOverrides.Count - 1);
+            if (indices.Count == 0)
+                return;
+
+            listView.viewController.RemoveItems(indices);
+            listView.ClearSelection();
+
+            RecordPendingState(k_RemoveKeywordOverrideUndoName);
+        }
+
+        // The pending state still holds the previous values when recorded, so this runs after the working state changed.
+        internal void RecordPendingState(string undoName)
+        {
+            Undo.RecordObject(m_PendingState, undoName);
+            CopyWorkingStateToPendingState();
+            RefreshApplyRevertButtons();
+        }
+
+        private void CopyWorkingStateToPendingState()
+        {
+            CopyKeywordOverrides(m_KeywordDeclarationOverrides, m_PendingState.m_KeywordDeclarationOverrides);
+            m_PendingState.m_FastBuildEnabled = m_FastBuildEnabled;
+            CopyBetweenLists(m_ConstantDefines, m_PendingState.m_ShaderConstantDefines);
+            CopyBetweenLists(m_CompilerBackendSettings, m_PendingState.m_CompilerBackendSettings);
+            m_PendingState.m_EnableDebugSymbols = m_EnableDebugSymbolsToggle.value;
+            m_PendingState.m_OptimizationLevel = m_OptimizationLevelDropdown.value;
+            m_PendingState.m_OptLevelBeforeDebugForced = m_OptLevelBeforeDebugForced;
+        }
+
+        private void OnUndoRedo(in UndoRedoInfo info)
+        {
+            if (m_PendingState == null)
+                return;
+
+            if (!(m_PendingState.m_FastBuildEnabled == m_FastBuildEnabled &&
+                  ListsEqual(m_PendingState.m_KeywordDeclarationOverrides, m_KeywordDeclarationOverrides, static (a, b) => a.ValueEquals(b))))
+            {
+                m_KeywordDeclarationOverridesListView.ClearSelection();
+                CopyKeywordOverrides(m_PendingState.m_KeywordDeclarationOverrides, m_KeywordDeclarationOverrides);
+                m_FastBuildEnabled = m_PendingState.m_FastBuildEnabled;
+
+                BuildFastBuildDisplayedOverrides();
+                RefreshKeywordOverridesListView();
+            }
+
+            if (m_ConstantDefinesListView != null &&
+                    !ListsEqual(m_PendingState.m_ShaderConstantDefines, m_ConstantDefines,
+                        static (a, b) => a == b))
+            {
+                m_ConstantDefinesListView.ClearSelection();
+                CopyBetweenLists(m_PendingState.m_ShaderConstantDefines, m_ConstantDefines);
+                m_ConstantDefinesListView.RefreshItems();
+            }
+
+            if (m_CompilerBackendListView != null &&
+                !ListsEqual(m_PendingState.m_CompilerBackendSettings, m_CompilerBackendSettings,
+                    static (a, b) => a.ValueEquals(b)))
+            {
+                m_CompilerBackendListView.ClearSelection();
+                CopyBetweenLists(m_PendingState.m_CompilerBackendSettings, m_CompilerBackendSettings);
+                m_CompilerBackendListView.RefreshItems();
+                UpdateAddCompilerBackendButtonState();
+            }
+
+            m_OptLevelBeforeDebugForced = m_PendingState.m_OptLevelBeforeDebugForced;
+            m_EnableDebugSymbolsToggle.SetValueWithoutNotify(m_PendingState.m_EnableDebugSymbols);
+            m_OptimizationLevelDropdown.SetValueWithoutNotify(m_PendingState.m_OptimizationLevel);
+            UpdateOptimizationLevelEnabledState();
+            RefreshApiDependentUI(GetEnabledApisForCurrentTarget());
+
+            RefreshApplyRevertButtons();
+        }
+
+        private static void CopyBetweenLists<T>(List<T> source, List<T> destination)
+        {
+            destination.Clear();
+            foreach (var item in source)
+            {
+                destination.Add(item);
+            }
+        }
+
+        private static void CopyKeywordOverrides(List<ShaderBuildSettings.KeywordDeclarationOverride> source,
+            List<ShaderBuildSettings.KeywordDeclarationOverride> destination)
+        {
+            destination.Clear();
+            foreach (var keywordOverride in source)
+            {
+                destination.Add(keywordOverride.DeepCopy());
+            }
+        }
+
+        private static bool ListsEqual<T>(List<T> lhs, List<T> rhs, Func<T, T, bool> elementsEqual)
+        {
+            if (lhs.Count != rhs.Count)
+                return false;
+
+            for (int i = 0; i < lhs.Count; ++i)
+            {
+                if (!elementsEqual(lhs[i], rhs[i]))
+                    return false;
+            }
+
+            return true;
         }
 
         public void HandleUnsavedChangesDialog(string buildProfileName = null)
@@ -367,13 +565,15 @@ namespace UnityEditor.Shaders
             if (isValidData)
             {
                 SaveSettingsData(mergedCompilerSettings);
-                m_AppliedFastBuildEnabled = m_FastBuildEnabled;
+                SaveAppliedStates();
                 UpdateFastBuildControls();
                 ClearSettingsChangedState();
 
                 // Applying can be the first import of a shader authored since the last gather, reimport will be triggered anyway.
                 m_GatheredDeclarations = null;
                 EnsureKeywordDeclarationsGathered();
+
+                Undo.ClearUndo(m_PendingState);
             }
             else
             {
@@ -400,6 +600,7 @@ namespace UnityEditor.Shaders
 
         internal void RevertSettings()
         {
+            Undo.RecordObject(m_PendingState, k_RevertUndoName);
             LoadSettingsData();
             ClearSettingsChangedState();
         }
@@ -542,7 +743,6 @@ namespace UnityEditor.Shaders
                 ReadKeywordDeclarationOverrides(GetKeywordDeclarationOverridesProperty(), m_KeywordDeclarationOverrides);
 
                 m_FastBuildEnabled = ReadFastBuildMode() == ShaderBuildSettings.FastBuildMode.On;
-                m_AppliedFastBuildEnabled = m_FastBuildEnabled;
 
                 BuildFastBuildDisplayedOverrides();
 
@@ -585,6 +785,21 @@ namespace UnityEditor.Shaders
             UpdateAddCompilerBackendButtonState();
 
             LoadDebugOptAndRefreshWarnings();
+
+            // Intentionally called after LoadDebugOptAndRefreshWarnings (it's what sets the debug and optimization controls).
+            SaveAppliedStates();
+        }
+
+        private void SaveAppliedStates()
+        {
+            m_AppliedFastBuildEnabled = m_FastBuildEnabled;
+            CopyKeywordOverrides(m_KeywordDeclarationOverrides, m_AppliedKeywordDeclarationOverrides);
+            CopyBetweenLists(m_ConstantDefines, m_AppliedConstantDefines);
+            CopyBetweenLists(m_CompilerBackendSettings, m_AppliedCompilerBackendSettings);
+            m_AppliedDebugSymbols = m_EnableDebugSymbolsToggle.value;
+            m_AppliedOptimizationLevel = m_OptimizationLevelDropdown.value;
+
+            CopyWorkingStateToPendingState();
         }
 
         private void SaveSettingsData(ShaderBuildSettings.ShaderCompilerSettings[] merged)
@@ -627,7 +842,8 @@ namespace UnityEditor.Shaders
                     }
                 }
 
-                m_SettingsDataStore.ApplyModifiedProperties();
+                // Apply shouldn't generate an Undo
+                m_SettingsDataStore.ApplyModifiedPropertiesWithoutUndo();
 
                 // Ensure that the re-imports are triggered if the currently active settings were touched
                 BuildProfile activeBuildProfile = BuildProfile.GetActiveBuildProfile();
@@ -718,7 +934,7 @@ namespace UnityEditor.Shaders
             BuildFastBuildDisplayedOverrides();
             RefreshKeywordOverridesListView();
             // Deliberately not SettingsChanged() so that back and forth fast build mode will not leave apply button enabled
-            RefreshApplyRevertButtons();
+            RecordPendingState(k_ChangeFastBuildModeUndoName);
         }
 
         // An approximation of what Fast Build resolves to for the project as it stands, shown instead
@@ -966,8 +1182,8 @@ namespace UnityEditor.Shaders
             row.compilerToolchainOverride = PickRecommendedCompilerToolchainForAPI(api);
             m_CompilerBackendSettings[rowIndex] = row;
             m_CompilerBackendListView.RefreshItems();
-            SettingsChanged();
             UpdateAddCompilerBackendButtonState();
+            RecordPendingState(k_ChangeCompilerBackendAPIUndoName);
         }
 
         private void OnCompilerBackendCompilerChanged(ChangeEvent<ShaderBuildSettings.ShaderCompilerToolchain> evt)
@@ -981,7 +1197,7 @@ namespace UnityEditor.Shaders
             m_CompilerBackendSettings[rowIndex] = row;
             if (evt.target is VisualElement el)
                 el.tooltip = CompilerTooltipFor(row.graphicsAPI, compiler);
-            SettingsChanged();
+            RecordPendingState(k_ChangeCompilerBackendCompilerUndoName);
         }
 
         // Recommended = first non-Default in the native list; Default if the API has no override entry.
@@ -1028,13 +1244,13 @@ namespace UnityEditor.Shaders
             });
             m_CompilerBackendListView.RefreshItems();
             UpdateAddCompilerBackendButtonState();
-            SettingsChanged();
+            RecordPendingState(k_AddCompilerBackendUndoName);
         }
 
         private void OnCompilerBackendItemsRemoved(IEnumerable<int> indices)
         {
-            SettingsChanged();
             m_CompilerBackendListView?.schedule.Execute(UpdateAddCompilerBackendButtonState);
+            RecordPendingState(k_RemoveCompilerBackendUndoName);
         }
 
         private void UpdateAddCompilerBackendButtonState()
@@ -1106,6 +1322,7 @@ namespace UnityEditor.Shaders
                 return false;
 
             LoadDebugOptAndRefreshWarnings();
+            SaveAppliedStates();
             return true;
         }
 
@@ -1114,19 +1331,22 @@ namespace UnityEditor.Shaders
             if (m_OptimizationLevelDropdown != null)
             {
                 if (evt.newValue)
+                {
                     m_OptLevelBeforeDebugForced = m_OptimizationLevelDropdown.value;
+                    RecordPendingState(k_ChangeOptimizationLevelUndoName);
+                }
                 else
                     m_OptimizationLevelDropdown.SetValueWithoutNotify(m_OptLevelBeforeDebugForced);
             }
             UpdateOptimizationLevelEnabledState();
             RefreshApiDependentUI(GetEnabledApisForCurrentTarget());
-            SettingsChanged();
+            RecordPendingState(k_ChangeEnableDebugSymbolsUndoName);
         }
 
         private void OnOptimizationLevelChanged(ChangeEvent<ShaderBuildSettings.ShaderOptimizationLevel> evt)
         {
             RefreshApiDependentUI(GetEnabledApisForCurrentTarget());
-            SettingsChanged();
+            RecordPendingState(k_ChangeOptimizationLevelUndoName);
         }
 
 

@@ -123,7 +123,7 @@ namespace Unity.ProjectAuditor.Editor.UI
             new Step
             {
                 Title = L10n.Tr("Create URP asset", null),
-                Heading = L10n.TextContent("Unity will now assign Render Pipeline assets to your project.", null, null, null),
+                Heading = L10n.TextContent("Unity will now create and assign Render Pipeline assets to your project.", null, null, null),
                 Contents =
                 [
                     L10n.TextContent("Create URP Asset", "Create the Render Pipeline Assets and assign them to your project.", null, null),
@@ -141,7 +141,7 @@ namespace Unity.ProjectAuditor.Editor.UI
 
                 DrawButtonUI = (ProjectAuditorWindow window, Step step, bool enabled) =>
                 {
-                    if (CenteredButton(enabled ? step.Contents[0] : step.Contents[1]))
+                    if (CenteredButton(enabled ? step.Contents[0] : step.Contents[1]) && ConfirmAssignUrpAsset())
                     {
                         MigrationToURPUtilities.ApplyTargetPipelineToQualitySettings(SelectedTargetPipeline);
                         GUIUtility.ExitGUI();
@@ -525,6 +525,11 @@ namespace Unity.ProjectAuditor.Editor.UI
             }
         }
 
+        static bool ConfirmAssignUrpAsset()
+        {
+            return EditorDialog.DisplayDecisionDialog(Contents.AssignUrpAssetTitle, Contents.AssignUrpAssetMessage, Contents.Assign, Contents.Cancel);
+        }
+
         bool DrawBackupConfirmation()
         {
             bool toggled;
@@ -718,6 +723,10 @@ namespace Unity.ProjectAuditor.Editor.UI
         {
             public static readonly GUIContent ReanalyzeButton = L10n.TextContent("Re-run Analysis", null, null, null);
             public static readonly GUIContent BackupAcknowledgement = L10n.TextContent(" I've backed my project up", "Confirm you have a backup or version control commit to return to.", null, null);
+            public static readonly string AssignUrpAssetTitle = L10n.Tr("Assigning a URP asset cannot be undone", null);
+            public static readonly string AssignUrpAssetMessage = L10n.Tr("Proceed only if you have backed up your project or are using version control.", null);
+            public static readonly string Assign = L10n.Tr("Assign", null);
+            public static readonly string Cancel = L10n.Tr("Cancel", null);
             public static readonly GUIContent CurrentRenderPipeline = L10n.TextContent("Current Render Pipeline:", null, null, null);
             public static readonly GUIContent TargetRenderPipeline = L10n.TextContent("Target Render Pipeline:", null, null, null);
             public static readonly GUIContent TargetPipeline = L10n.TextContent("Target Universal Render Pipeline:", null, null, null);

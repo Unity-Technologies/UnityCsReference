@@ -228,7 +228,8 @@ namespace UnityEditor.Experimental
             {
                 "StyleSheets/Extensions/base/common.uss",
                 "UIPackageResources/StyleSheets/Default/Variables/Public/common.uss",
-                "StyleSheets/Northstar/common.uss"
+                "StyleSheets/Northstar/common.uss",
+                "UIPackageResources/StyleSheets/Default/Northstar/Palette/common.uss"
             };
 
             if (LocalizationDatabase.currentEditorLanguage == SystemLanguage.English)
@@ -237,7 +238,6 @@ namespace UnityEditor.Experimental
 
                 catalogFiles.Add(currentFontStyleSheet);
             }
-
             catalogFiles.Add(useDarkTheme ? "StyleSheets/Extensions/base/dark.uss" : "StyleSheets/Extensions/base/light.uss");
             catalogFiles.Add(useDarkTheme ? "UIPackageResources/StyleSheets/Default/Northstar/Palette/dark.uss" : "UIPackageResources/StyleSheets/Default/Northstar/Palette/light.uss");
             return catalogFiles;

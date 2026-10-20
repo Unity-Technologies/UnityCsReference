@@ -137,6 +137,7 @@ namespace UnityEngine.UIElements.UIR
         static readonly int s_TextCorePagePosID = Shader.PropertyToID("_TextCorePagePos");
         static readonly int s_ElementInfoPagePosID = Shader.PropertyToID("_ElementInfoPagePos");
         static readonly int s_SkipGammaConversionID = Shader.PropertyToID("_SkipGammaConversion");
+        static readonly int s_FlatPanelID = Shader.PropertyToID("_UIEFlatPanel");
         static readonly int s_PageTablesID = Shader.PropertyToID("UIE_PageTables");
 
         static readonly ProfilerMarker s_MarkerFree = new ProfilerMarker(ProfilerCategory.UIToolkit, "UIR.Free");
@@ -1079,6 +1080,7 @@ namespace UnityEngine.UIElements.UIR
 
         private void InitializeConstantProperties(MaterialPropertyBlock constantProps, Texture gradientSettings, ShaderInfoAllocator shaderInfoAllocator)
         {
+            constantProps.SetFloat(s_FlatPanelID, isFlat ? 1.0f : 0.0f);
             if (gradientSettings != null)
                 constantProps.SetTexture(s_GradientSettingsTexID, gradientSettings);
             if (shaderInfoAllocator != null)

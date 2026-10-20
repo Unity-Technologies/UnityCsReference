@@ -26,6 +26,7 @@ namespace UnityEngine.UIElements
         internal extern void AddDrawCallData(int safeFrameIndex, Material mat, uint textureSlotCount, uint forceRenderType, IntPtr serializedCommandsPtr, int commandCount, CommandListState state);
         internal extern void ResetDrawCallData(int safeFrameIndex);
         internal extern void ResetAllDrawCallData();
+        internal extern void ClearDrawCallData();
         internal extern int GetDrawCallDataCount();
     }
 }

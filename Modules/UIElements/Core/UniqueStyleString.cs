@@ -52,12 +52,14 @@ public readonly partial struct UniqueStyleString : IEquatable<UniqueStyleString>
             m_PrevIndexToString = k_IndexToString;
             k_StringToIndex = new() { { "", 1 } };
             k_IndexToString = new() { null, "" };
+            StyleSheets.LegacySelectorHelper.ResetClassCache();
         }
 
         public void Dispose()
         {
             k_StringToIndex = m_PrevStringToIndex;
             k_IndexToString = m_PrevIndexToString;
+            StyleSheets.LegacySelectorHelper.ResetClassCache();
         }
     }
 

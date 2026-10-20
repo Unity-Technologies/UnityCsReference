@@ -5,6 +5,7 @@
 using System;
 using Unity.GraphToolkit.InternalBridge;
 using Unity.GraphToolsAuthoringFramework.InternalEditorBridge;
+using Unity.Scripting.LifecycleManagement;
 using UnityEditor;
 using UnityEngine;
 using UnityEngine.UIElements;
@@ -32,6 +33,27 @@ namespace Unity.GraphToolkit.Editor
         /// The USS name of the expand toggle element.
         /// </summary>
         public static readonly string expandToggleUssName = "expand-toggle";
+
+        /// <summary>
+        /// The USS name of the arrow drawn in the expand toggle.
+        /// </summary>
+        public static readonly string expandArrowUssName = "expand-arrow";
+
+        [NoAutoStaticsCleanup] // CSS custom property descriptor value is a fixed CSS property name
+        static readonly CustomStyleProperty<Color> k_ExpandArrowColorProperty = new CustomStyleProperty<Color>("--expand-arrow-color");
+
+        // Size of the foldout image the arrow geometry is taken from.
+        const float k_ExpandArrowImageSize = 13;
+
+        // Arrow geometry in foldout image pixels, for the down arrow. The right arrow uses the same values with x and y swapped.
+        // The wide edge spans pixels 2 to 10, so it goes from 2 to 11 and is centered on the image middle, where the hierarchy line is aligned.
+        const float k_ExpandArrowEdgeStart = 2;
+        const float k_ExpandArrowEdgeEnd = 11;
+        const float k_ExpandArrowEdgeMiddle = k_ExpandArrowImageSize / 2;
+        // The wide edge is on pixel row 3.
+        const float k_ExpandArrowBase = 3;
+        // The tip is the far side of pixel row 10.
+        const float k_ExpandArrowTip = 11;
 
         /// <summary>
         /// The USS name of the expand spacer element.
@@ -120,6 +142,8 @@ namespace Unity.GraphToolkit.Editor
         public Toggle ExpandToggle => m_ExpandToggle;
 
         VisualElement m_HitBoxLimitElement;
+        VisualElement m_ExpandArrow;
+        Color m_ExpandArrowColor = Color.gray;
         bool m_IsPolymorphic;
 
         internal VisualElement ExpandSpacer => m_ExpandSpacer;
@@ -181,6 +205,17 @@ namespace Unity.GraphToolkit.Editor
                         m_ExpandToggle.value = true;
                     }
                 });
+
+                // The arrow is drawn instead of using the theme image, so that its color can be set from USS.
+                m_ExpandArrow = m_ExpandToggle.Q(className: Toggle.checkmarkUssClassName);
+                if (m_ExpandArrow != null)
+                {
+                    m_ExpandArrow.AddToClassList(ussClassName.WithUssElement(expandArrowUssName));
+                    m_ExpandArrow.style.backgroundImage = StyleKeyword.None;
+                    m_ExpandArrow.RegisterCallback<CustomStyleResolvedEvent>(OnExpandArrowCustomStyleResolved);
+                    m_ExpandArrow.generateVisualContent += GenerateExpandArrow;
+                    m_ExpandToggle.RegisterValueChangedCallback(_ => m_ExpandArrow.MarkDirtyRepaint());
+                }
 
                 // The expand toggle should be on top of the port hit box.
                 m_Root.Add(m_ExpandToggle);
@@ -273,12 +308,62 @@ namespace Unity.GraphToolkit.Editor
                 m_ConnectorLabel.style.display = DisplayStyle.None;
         }
 
+        void OnExpandArrowCustomStyleResolved(CustomStyleResolvedEvent evt)
+        {
+            m_ExpandArrowColor = evt.customStyle.TryGetValue(k_ExpandArrowColorProperty, out var color) ? color : Color.gray;
+            m_ExpandArrow.MarkDirtyRepaint();
+        }
+
+        void GenerateExpandArrow(MeshGenerationContext mgc)
+        {
+            var scale = m_ExpandArrow.layout.width / k_ExpandArrowImageSize;
+            var painter2D = mgc.painter2D;
+            painter2D.fillColor = m_ExpandArrowColor;
+            painter2D.BeginPath();
+
+            // Triangles traced from the 13x13 foldout image (down when expanded, right when collapsed), scaled to the element size.
+            // Both are centered on 6.5, the image middle, where the hierarchy line is aligned.
+
+            // col:      0123456789012
+            // row  0    .............
+            // row  1    .............
+            // row  2    .............
+            // row  3    ..+++++++++..   <- top edge: columns 2 to 10
+            // row  4    ...+++++++...
+            // row  5    ...+++++++...
+            // row  6    ....+++++....
+            // row  7    ....+++++....
+            // row  8    .....+++.....
+            // row  9    .....+++.....
+            // row 10    ......+......   <- tip: single pixel at column 6
+            // row 11    .............
+            // row 12    .............
+
+            if (m_ExpandToggle.value)
+            {
+                // Down arrow (expanded).
+                painter2D.MoveTo(new Vector2(k_ExpandArrowEdgeStart, k_ExpandArrowBase) * scale);
+                painter2D.LineTo(new Vector2(k_ExpandArrowEdgeEnd, k_ExpandArrowBase) * scale);
+                painter2D.LineTo(new Vector2(k_ExpandArrowEdgeMiddle, k_ExpandArrowTip) * scale);
+            }
+            else
+            {
+                // Right arrow (collapsed).
+                painter2D.MoveTo(new Vector2(k_ExpandArrowBase, k_ExpandArrowEdgeStart) * scale);
+                painter2D.LineTo(new Vector2(k_ExpandArrowTip, k_ExpandArrowEdgeMiddle) * scale);
+                painter2D.LineTo(new Vector2(k_ExpandArrowBase, k_ExpandArrowEdgeEnd) * scale);
+            }
+            painter2D.ClosePath();
+            painter2D.Fill();
+        }
+
         /// <inheritdoc />
         public override void UpdateUIFromModel(UpdateFromModelVisitor visitor)
         {
             if (m_Model is PortModel portModel)
             {
                 m_ExpandToggle.SetValueWithoutNotify(portModel.IsExpandedSelf);
+                m_ExpandArrow?.MarkDirtyRepaint();
 
                 int rank = 0;
                 var current = portModel.ParentPort;

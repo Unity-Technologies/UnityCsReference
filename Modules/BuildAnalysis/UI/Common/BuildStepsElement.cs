@@ -42,6 +42,10 @@ namespace UnityEditor.Build.Analysis
         private readonly MultiColumnTreeView m_TreeView;
         private readonly Label m_EmptyLabel;
 
+        // A step's id is its index in its own report, so expansion is remembered by path of names, not by id.
+        private readonly HashSet<string> m_ExpandedStepPaths = new HashSet<string>(StringComparer.Ordinal);
+        private readonly Dictionary<int, string> m_StepPathById = new Dictionary<int, string>();
+
         // Null collapses the section body when there are no steps.
         [UxmlAttribute]
         public string emptyStateText
@@ -154,6 +158,9 @@ namespace UnityEditor.Build.Analysis
         // A totalTimeMs of zero or less falls back to the sum of the steps.
         public void Bind(BuildAnalysisStep[] steps, long totalTimeMs, BuildLogMessages messages = null)
         {
+            // SetRootItems drops expansion state (no viewDataKey), so re-apply it by step-name path, since ids are report-local indices.
+            CaptureExpandedStepPaths();
+
             if (steps == null || steps.Length == 0)
             {
                 SetEmpty();
@@ -173,7 +180,8 @@ namespace UnityEditor.Build.Analysis
                 totalMs = 1;
 
             var badges = ComputeStepBadges(steps, messages);
-            var items = BuildTreeViewItems(steps, totalMs, badges);
+            m_StepPathById.Clear();
+            var items = BuildTreeViewItems(steps, totalMs, badges, m_StepPathById);
             if (items.Count == 0)
             {
                 SetEmpty();
@@ -181,6 +189,7 @@ namespace UnityEditor.Build.Analysis
             }
 
             m_TreeView.SetRootItems(items);
+            RestoreExpandedStepPaths();
             m_TreeView.Rebuild();
 
             m_TreeView.style.height = Math.Min(items.Count, k_MaxVisibleRows) * k_FixedItemHeight;
@@ -188,8 +197,33 @@ namespace UnityEditor.Build.Analysis
 
         private void SetEmpty()
         {
+            m_StepPathById.Clear();
             m_TreeView.style.height = 0;
             m_EmptyLabel.style.display = string.IsNullOrEmpty(m_EmptyLabel.text) ? DisplayStyle.None : DisplayStyle.Flex;
+        }
+
+        private void CaptureExpandedStepPaths()
+        {
+            foreach (var pair in m_StepPathById)
+            {
+                // A row without children cannot be expanded, so it says nothing about what the user chose.
+                if (!m_TreeView.viewController.HasChildren(pair.Key))
+                    continue;
+
+                if (m_TreeView.IsExpanded(pair.Key))
+                    m_ExpandedStepPaths.Add(pair.Value);
+                else
+                    m_ExpandedStepPaths.Remove(pair.Value);
+            }
+        }
+
+        private void RestoreExpandedStepPaths()
+        {
+            foreach (var pair in m_StepPathById)
+            {
+                if (m_ExpandedStepPaths.Contains(pair.Value))
+                    m_TreeView.ExpandItem(pair.Key, refresh: false);
+            }
         }
 
         private void BindNameCell(VisualElement element, int index)
@@ -302,11 +336,22 @@ namespace UnityEditor.Build.Analysis
             return result;
         }
 
+        // Without escaping, a step named "Copy/files" would key identically to "files" nested under "Copy".
+        private static string EscapePathSegment(string name)
+        {
+            if (name.IndexOf('\\') < 0 && name.IndexOf('/') < 0 && name.IndexOf('#') < 0)
+                return name;
+
+            return name.Replace("\\", "\\\\").Replace("/", "\\/").Replace("#", "\\#");
+        }
+
         private static List<TreeViewItemData<StepItemData>> BuildTreeViewItems(
-            BuildAnalysisStep[] steps, long totalMs, Dictionary<int, (int Warnings, int Errors)> badges)
+            BuildAnalysisStep[] steps, long totalMs, Dictionary<int, (int Warnings, int Errors)> badges,
+            Dictionary<int, string> pathById)
         {
             var roots = BuildStepTree(steps);
             var result = new List<TreeViewItemData<StepItemData>>();
+            var pathOccurrences = new Dictionary<string, int>(StringComparer.Ordinal);
 
             for (var i = 0; i < roots.Count; i++)
             {
@@ -316,11 +361,11 @@ namespace UnityEditor.Build.Analysis
                 if (root.Step.Depth == 0)
                 {
                     for (var j = 0; j < root.Children.Count; j++)
-                        result.Add(ConvertNode(root.Children[j], totalMs, badges));
+                        result.Add(ConvertNode(root.Children[j], totalMs, badges, string.Empty, pathById, pathOccurrences));
                 }
                 else
                 {
-                    result.Add(ConvertNode(root, totalMs, badges));
+                    result.Add(ConvertNode(root, totalMs, badges, string.Empty, pathById, pathOccurrences));
                 }
             }
 
@@ -328,14 +373,24 @@ namespace UnityEditor.Build.Analysis
         }
 
         private static TreeViewItemData<StepItemData> ConvertNode(
-            StepNode node, long totalMs, Dictionary<int, (int Warnings, int Errors)> badges)
+            StepNode node, long totalMs, Dictionary<int, (int Warnings, int Errors)> badges,
+            string parentPath, Dictionary<int, string> pathById, Dictionary<string, int> pathOccurrences)
         {
             var percent = (float)node.Step.DurationMs * 100f / totalMs;
             badges.TryGetValue(node.Step.Id, out var counts);
 
+            var name = node.Step.Name ?? "Unknown";
+            var segment = EscapePathSegment(name);
+            var namePath = parentPath.Length == 0 ? segment : parentPath + "/" + segment;
+            // Same-named siblings are common (e.g. one "Load object" per object), so number repeats in tree order.
+            pathOccurrences.TryGetValue(namePath, out var occurrence);
+            pathOccurrences[namePath] = occurrence + 1;
+            var path = occurrence == 0 ? namePath : namePath + "#" + occurrence;
+            pathById[node.Step.Id] = path;
+
             var data = new StepItemData
             {
-                Name = FormatUtility.FormatStepName(node.Step.Name ?? "Unknown"),
+                Name = FormatUtility.FormatStepName(name),
                 DurationMs = node.Step.DurationMs,
                 PercentOfTotal = percent,
                 WarningCount = counts.Warnings,
@@ -347,7 +402,7 @@ namespace UnityEditor.Build.Analysis
 
             var children = new List<TreeViewItemData<StepItemData>>(node.Children.Count);
             for (var i = 0; i < node.Children.Count; i++)
-                children.Add(ConvertNode(node.Children[i], totalMs, badges));
+                children.Add(ConvertNode(node.Children[i], totalMs, badges, path, pathById, pathOccurrences));
 
             return new TreeViewItemData<StepItemData>(node.Step.Id, data, children);
         }

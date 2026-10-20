@@ -27,28 +27,6 @@ namespace Unity.UI.Builder
             return false;
         }
 
-        // Grid enum toggle-button groups (grid-auto-flow, justify-items, justify-self) have no icons
-        // yet, so their buttons would render as blank squares. Give them word labels instead.
-        static readonly string[] k_GridEnumToggleStyles = { "grid-auto-flow", "justify-items", "justify-self" };
-
-        internal static bool TryGetGridEnumButtonLabel(string styleName, string enumAsDash, out string label)
-        {
-            label = null;
-            if (System.Array.IndexOf(k_GridEnumToggleStyles, styleName) < 0)
-                return false;
-            label = enumAsDash switch
-            {
-                "flex-start" => "Start",
-                "flex-end" => "End",
-                "row-dense" => "Row Dense",
-                "column-dense" => "Col Dense",
-                _ => string.IsNullOrEmpty(enumAsDash)
-                    ? enumAsDash
-                    : char.ToUpperInvariant(enumAsDash[0]) + enumAsDash.Substring(1)
-            };
-            return true;
-        }
-
         void BindGridTrackField(BuilderStyleRow styleRow, string styleName, TextField field)
         {
             field.SetContainingRow(styleRow);

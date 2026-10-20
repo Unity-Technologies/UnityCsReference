@@ -239,18 +239,24 @@ namespace UnityEditor.Rendering
 
         public static void SetShaderBuildSettings(ShaderBuildSettings settings)
         {
+            settings = SanitizeCompilerSettings(settings, nameof(SetShaderBuildSettings));
+
+            ShaderBuildSettings.CheckKeywordDeclarationOverridesHaveMatches(settings.keywordDeclarationOverrides);
+
+            SetShaderBuildSettingsImpl(settings);
+        }
+
+        internal static ShaderBuildSettings SanitizeCompilerSettings(ShaderBuildSettings settings, string caller)
+        {
             // Sanitize instead of throwing: compilerSettings is internal, so a caller editing
             // something else (e.g. Defines) can't repair bad rows read from disk (e.g. a project
             // saved by an older editor version or hand-edited YAML).
             var original = settings.compilerSettings ?? Array.Empty<ShaderBuildSettings.ShaderCompilerSettings>();
             var sanitized = ShaderBuildSettings.SanitizeShaderCompilerSettings(original);
             if (!ReferenceEquals(sanitized, original))
-                Debug.LogWarning("SetShaderBuildSettings: dropped invalid or duplicate shader compiler settings rows.");
+                Debug.LogWarning($"{caller}: dropped invalid or duplicate shader compiler settings rows.");
             settings.compilerSettings = sanitized;
-
-            ShaderBuildSettings.CheckKeywordDeclarationOverridesHaveMatches(settings.keywordDeclarationOverrides);
-
-            SetShaderBuildSettingsImpl(settings);
+            return settings;
         }
         extern public static bool ShouldValidateGraphicsForActiveBuildTarget();
 

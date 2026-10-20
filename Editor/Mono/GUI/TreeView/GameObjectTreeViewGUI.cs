@@ -726,7 +726,16 @@ namespace UnityEditor
             }
 
             // Draw text
-            lineStyle.Draw(rect, label, false, false, selected, focused);
+            var textRect = rect;
+
+            // center vertically
+            if (lineStyle.fixedHeight > 0.1)
+            {
+                textRect.height = lineStyle.fixedHeight;
+                textRect.y = rect.yMin + (rect.height - textRect.height) / 2;
+            }
+
+            lineStyle.Draw(textRect, label, false, false, selected, focused);
         }
 
         private Asset GetAsset(GameObjectTreeViewItem item)
@@ -756,7 +765,7 @@ namespace UnityEditor
             float contentRectRight = selectionRect.xMax;
             if (item.showPrefabModeButton)
             {
-                float yOffset = (selectionRect.height - GameObjectStyles.rightArrow.fixedWidth) / 2;
+                float yOffset = (selectionRect.height - GameObjectStyles.rightArrow.fixedHeight) / 2;
                 Rect buttonRect = new Rect(
                     selectionRect.xMax - GameObjectStyles.rightArrow.fixedWidth - GameObjectStyles.rightArrow.margin.right,
                     selectionRect.y + yOffset,

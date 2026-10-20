@@ -117,7 +117,7 @@ namespace UnityEngine.UIElements
             var scrollableHeight = Mathf.Max(0, contentHeight - m_ScrollView.contentViewport.layout.height);
             var scrollOffset = Mathf.Min(m_ScrollView.scrollOffset.y, scrollableHeight);
             m_ScrollView.verticalScroller.slider.SetHighValueWithoutNotify(scrollableHeight);
-            m_ScrollView.verticalScroller.slider.SetValueWithoutNotify(scrollOffset);
+            m_ScrollView.SetScrollOffsetWithoutNotify(new Vector2(m_ScrollView.scrollOffset.x, scrollOffset));
 
             // Add only extra items if the list is actually visible.
             var itemCountFromHeight = 0;

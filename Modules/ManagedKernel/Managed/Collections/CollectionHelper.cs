@@ -13,6 +13,7 @@ using Unity.Jobs.LowLevel.Unsafe;
 using Unity.Mathematics;
 using System.Reflection;
 using System.Runtime.CompilerServices;
+using UnityEngine.Bindings;
 
 namespace Unity.Collections
 {
@@ -152,6 +153,7 @@ namespace Unity.Collections
         /// <param name="alignmentPowerOfTwo">A non-zero, positive power of two.</param>
         /// <returns>The smallest address that is greater than or equal to <paramref name="ptr"/> and is a multiple of <paramref name="alignmentPowerOfTwo"/>.</returns>
         /// <exception cref="ArgumentException">Thrown if <paramref name="alignmentPowerOfTwo"/> is not a non-zero, positive power of two.</exception>
+        [VisibleToOtherModules("UnityEngine.EntitiesModule")]
         internal static unsafe void* AlignPointer(void* ptr, int alignmentPowerOfTwo)
         {
             if (alignmentPowerOfTwo == 0)
@@ -237,6 +239,7 @@ namespace Unity.Collections
             }
         }
 
+        [VisibleToOtherModules("UnityEngine.EntitiesModule")]
         internal static bool ShouldDeallocate(AllocatorManager.AllocatorHandle allocator)
         {
             // Allocator.Invalid == container is not initialized.
@@ -267,6 +270,7 @@ namespace Unity.Collections
         }
 
         [GenerateTestsForBurstCompatibility(RequiredUnityDefine = "ENABLE_UNITY_COLLECTIONS_CHECKS", GenericTypeArguments = new[] { typeof(NativeArray<int>) })]
+        [VisibleToOtherModules("UnityEngine.EntitiesModule")]
         internal static void InitNativeContainer<T>(AtomicSafetyHandle handle)
         {
             if (UnsafeUtility.IsNativeContainerType<T>())
@@ -295,6 +299,7 @@ namespace Unity.Collections
 
         [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS"), Conditional("UNITY_ENABLE_CHECKS")]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [VisibleToOtherModules("UnityEngine.EntitiesModule")]
         internal static void CheckIndexInRange(int index, int length)
         {
             // This checks both < 0 and >= Length with one comparison

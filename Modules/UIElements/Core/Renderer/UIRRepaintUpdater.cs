@@ -18,6 +18,11 @@ namespace UnityEngine.UIElements
         /// drawInCameras must be false for this flag to have an effect. Otherwise, it is ignored.
         /// </summary>
         bool forceGammaRendering { get; set; }
+        /// <summary>
+        /// Indicates whether the fragment shader currently outputs sRGB-encoded values, after the color space and
+        /// drawInCameras conditions are applied.
+        /// </summary>
+        bool effectiveForceGammaRendering { get; }
         uint vertexBudget { get; set; }
         TextureSlotCount textureSlotCount { get; set; }
         ExtraVertexChannels extraVertexChannels { get; set; }
@@ -53,6 +58,8 @@ namespace UnityEngine.UIElements
                 DestroyRenderChain();
             }
         }
+
+        public bool effectiveForceGammaRendering => renderTreeManager?.forceGammaRendering ?? false;
 
         uint m_VertexBudget;
 

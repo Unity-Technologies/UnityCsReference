@@ -272,37 +272,24 @@ namespace Unity.UIToolkit.Editor
     [UxmlElement]
     internal partial class GridAutoFlowStyleEnumField : StyleEnumField<GridAutoFlow>
     {
-        public GridAutoFlowStyleEnumField() : base(false)
+        public GridAutoFlowStyleEnumField() : base(true)
         {
             // The inner toggle group self-aligns (reserves an empty-label width), which offsets the
             // buttons from the value column the other grid fields use. Drop it so it aligns with them.
             valueField.toggleButtonGroup.RemoveFromClassList(BaseField<int>.alignedFieldUssClassName);
-            valueField.SetTextForEnumValue(GridAutoFlow.Row, "Row");
-            valueField.SetTextForEnumValue(GridAutoFlow.Column, "Column");
-            valueField.SetTextForEnumValue(GridAutoFlow.RowDense, "Row Dense");
-            valueField.SetTextForEnumValue(GridAutoFlow.ColumnDense, "Col Dense");
-            valueField.SetTooltipForEnumValue(GridAutoFlow.Row, "Fill each row in turn, adding rows as needed (default).");
-            valueField.SetTooltipForEnumValue(GridAutoFlow.Column, "Fill each column in turn, adding columns as needed.");
-            valueField.SetTooltipForEnumValue(GridAutoFlow.RowDense, "Row flow that backfills earlier holes when a later item fits.");
-            valueField.SetTooltipForEnumValue(GridAutoFlow.ColumnDense, "Column flow that backfills earlier holes when a later item fits.");
+            valueField.SetTooltipForEnumValue(GridAutoFlow.Row, "Auto-placed items fill each row in turn, adding new rows as needed.");
+            valueField.SetTooltipForEnumValue(GridAutoFlow.Column, "Auto-placed items fill each column in turn, adding new columns as needed.");
+            valueField.SetTooltipForEnumValue(GridAutoFlow.RowDense, "Fills rows and backfills earlier gaps, which can change item order.");
+            valueField.SetTooltipForEnumValue(GridAutoFlow.ColumnDense, "Fills columns and backfills earlier gaps, which can change item order.");
         }
     }
 
     [UxmlElement]
-    internal partial class GridJustifyStyleEnumField : StyleEnumField<Align>
+    internal partial class GridJustifyStyleEnumField : AlignStyleEnumField
     {
-        public GridJustifyStyleEnumField() : base(false)
+        public GridJustifyStyleEnumField()
         {
             valueField.toggleButtonGroup.RemoveFromClassList(BaseField<int>.alignedFieldUssClassName);
-            valueField.SetTextForEnumValue(Align.FlexStart, "Start");
-            valueField.SetTextForEnumValue(Align.Center, "Center");
-            valueField.SetTextForEnumValue(Align.FlexEnd, "End");
-            valueField.SetTextForEnumValue(Align.Stretch, "Stretch");
-            valueField.SetTooltipForEnumValue(Align.Auto, "Use the container's Justify Items value.");
-            valueField.SetTooltipForEnumValue(Align.FlexStart, "Align to the inline (horizontal) start of the cell.");
-            valueField.SetTooltipForEnumValue(Align.Center, "Center on the inline (horizontal) axis of the cell.");
-            valueField.SetTooltipForEnumValue(Align.FlexEnd, "Align to the inline (horizontal) end of the cell.");
-            valueField.SetTooltipForEnumValue(Align.Stretch, "Fill the cell on the inline (horizontal) axis.");
         }
     }
 }

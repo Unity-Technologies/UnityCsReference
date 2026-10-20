@@ -21,6 +21,13 @@ namespace UnityEditor.Build.Profile
                 var method = foundEntryPoints[i];
                 var attribute = method.GetCustomAttributes(typeof(BuildProfileSettingsProviderAttribute), false)[0] as BuildProfileSettingsProviderAttribute;
                 var settingsType = attribute.settingsType;
+
+                if (settingsType == typeof(BuildProfileGraphicsSettings) || settingsType == typeof(BuildProfileQualitySettings))
+                {
+                    Debug.LogWarning($"{settingsType.Name} is a built-in build profile override and can't be provided by a package. The provider is ignored.");
+                    continue;
+                }
+
                 var packageInfo = PackageManager.PackageInfo.FindForAssembly(method.DeclaringType.Assembly);
 
                 if (packageInfo == null)

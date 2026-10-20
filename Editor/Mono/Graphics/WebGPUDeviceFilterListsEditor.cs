@@ -6,6 +6,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Text;
+using Unity.Scripting.LifecycleManagement;
 using UnityEditor.Collaboration;
 using UnityEditorInternal;
 using UnityEngine;
@@ -320,7 +321,7 @@ namespace UnityEditor
     }
 
     [CustomEditor(typeof(UnityEngine.WebGPUDeviceFilterLists))]
-    internal class WebGPUDeviceFilterListsEditor : Editor
+    internal partial class WebGPUDeviceFilterListsEditor : Editor
     {
         internal class ReorderableFilterList
         {
@@ -400,11 +401,15 @@ namespace UnityEditor
         bool m_ShowAllow = false;
         bool m_ShowDeny = false;
 
-        List<bool> m_AllowDeviceIdFoldouts = new List<bool>();
-        List<bool> m_DenyDeviceIdFoldouts = new List<bool>();
+        [AutoStaticsCleanupOnCodeReload]
+        static List<bool> s_AllowDeviceIdFoldouts = new List<bool>();
+        [AutoStaticsCleanupOnCodeReload]
+        static List<bool> s_DenyDeviceIdFoldouts = new List<bool>();
 
-        List<bool> m_AllowCapabilityMetricsFoldouts = new List<bool>();
-        List<bool> m_DenyCapabilityMetricsFoldouts = new List<bool>();
+        [AutoStaticsCleanupOnCodeReload]
+        static List<bool> s_AllowCapabilityMetricsFoldouts = new List<bool>();
+        [AutoStaticsCleanupOnCodeReload]
+        static List<bool> s_DenyCapabilityMetricsFoldouts = new List<bool>();
 
         private void DrawDeviceFilterListElement(ReorderableList list, Rect rect, int index, bool isActive, bool isFocused)
         {
@@ -417,14 +422,13 @@ namespace UnityEditor
             elementRect.width -= EditorGUI.kIndentPerLevel;
 
             if (list.serializedProperty.name == "m_AllowFilterList")
-                WebGPUDeviceFilterUI.Utils.DrawDeviceFilterList(filterListProp, index, ref elementRect, ref m_AllowDeviceIdFoldouts, ref m_AllowCapabilityMetricsFoldouts);
+                WebGPUDeviceFilterUI.Utils.DrawDeviceFilterList(filterListProp, index, ref elementRect, ref s_AllowDeviceIdFoldouts, ref s_AllowCapabilityMetricsFoldouts);
             else if (list.serializedProperty.name == "m_DenyFilterList")
-                WebGPUDeviceFilterUI.Utils.DrawDeviceFilterList(filterListProp, index, ref elementRect, ref m_DenyDeviceIdFoldouts, ref m_DenyCapabilityMetricsFoldouts);
+                WebGPUDeviceFilterUI.Utils.DrawDeviceFilterList(filterListProp, index, ref elementRect, ref s_DenyDeviceIdFoldouts, ref s_DenyCapabilityMetricsFoldouts);
         }
 
         private void AddDeviceFilterListElement(ReorderableList filterList, WebGPUComparator defaultComparator, ref List<bool> deviceIdFoldouts, ref List<bool> capabilityMetricsFoldout)
         {
-            UnityEngine.Debug.Log($"Adding new WebGPU Device Filter List Element: {filterList != null} {filterList.serializedProperty != null} {defaultComparator} {deviceIdFoldouts != null} {capabilityMetricsFoldout != null}");
             var list = filterList.serializedProperty;
             var index = list.arraySize++;
             filterList.index = index;
@@ -440,12 +444,12 @@ namespace UnityEditor
 
         private void AddAllowFilterListElement(ReorderableList filterList)
         {
-            AddDeviceFilterListElement(filterList, WebGPUComparator.GreaterThanOrEqualTo, ref m_AllowDeviceIdFoldouts, ref m_AllowCapabilityMetricsFoldouts);
+            AddDeviceFilterListElement(filterList, WebGPUComparator.GreaterThanOrEqualTo, ref s_AllowDeviceIdFoldouts, ref s_AllowCapabilityMetricsFoldouts);
         }
 
         private void AddDenyFilterListElement(ReorderableList filterList)
         {
-            AddDeviceFilterListElement(filterList, WebGPUComparator.LessThanOrEqualTo, ref m_DenyDeviceIdFoldouts, ref m_DenyCapabilityMetricsFoldouts);
+            AddDeviceFilterListElement(filterList, WebGPUComparator.LessThanOrEqualTo, ref s_DenyDeviceIdFoldouts, ref s_DenyCapabilityMetricsFoldouts);
         }
 
         private void Swap(ref List<bool> list, int oldIndex, int newIndex)
@@ -457,13 +461,13 @@ namespace UnityEditor
 
         private void ReorderAllowFilterList(ReorderableList filterList, int oldIndex, int newIndex)
         {
-            Swap(ref m_AllowDeviceIdFoldouts, oldIndex, newIndex);
-            Swap(ref m_AllowCapabilityMetricsFoldouts, oldIndex, newIndex);
+            Swap(ref s_AllowDeviceIdFoldouts, oldIndex, newIndex);
+            Swap(ref s_AllowCapabilityMetricsFoldouts, oldIndex, newIndex);
         }
         private void ReorderDenyFilterList(ReorderableList filterList, int oldIndex, int newIndex)
         {
-            Swap(ref m_DenyDeviceIdFoldouts, oldIndex, newIndex);
-            Swap(ref m_DenyCapabilityMetricsFoldouts, oldIndex, newIndex);
+            Swap(ref s_DenyDeviceIdFoldouts, oldIndex, newIndex);
+            Swap(ref s_DenyCapabilityMetricsFoldouts, oldIndex, newIndex);
         }
 
         private void GetAllowElementHeight(ReorderableList list, int index, out float height)
@@ -473,7 +477,7 @@ namespace UnityEditor
             var limitsProp = filterProp.FindPropertyRelative(WebGPUDeviceFilterUI.Styles.limitsText);
             int featuresCount = featuresProp != null ? featuresProp.arraySize : 0;
             int limitsCount = limitsProp != null ? limitsProp.arraySize : 0;
-            height = WebGPUDeviceFilterUI.Utils.CalculateElementHeight(WebGPUDeviceFilterUI.Styles.kNumStaticItemsInFilter, m_AllowDeviceIdFoldouts[index], m_AllowCapabilityMetricsFoldouts[index], featuresCount, limitsCount);
+            height = WebGPUDeviceFilterUI.Utils.CalculateElementHeight(WebGPUDeviceFilterUI.Styles.kNumStaticItemsInFilter, s_AllowDeviceIdFoldouts[index], s_AllowCapabilityMetricsFoldouts[index], featuresCount, limitsCount);
         }
 
         private void GetDenyElementHeight(ReorderableList list, int index, out float height)
@@ -483,7 +487,7 @@ namespace UnityEditor
             var limitsProp = filterProp.FindPropertyRelative(WebGPUDeviceFilterUI.Styles.limitsText);
             int featuresCount = featuresProp != null ? featuresProp.arraySize : 0;
             int limitsCount = limitsProp != null ? limitsProp.arraySize : 0;
-            height = WebGPUDeviceFilterUI.Utils.CalculateElementHeight(WebGPUDeviceFilterUI.Styles.kNumStaticItemsInFilter, m_DenyDeviceIdFoldouts[index], m_DenyCapabilityMetricsFoldouts[index], featuresCount, limitsCount);
+            height = WebGPUDeviceFilterUI.Utils.CalculateElementHeight(WebGPUDeviceFilterUI.Styles.kNumStaticItemsInFilter, s_DenyDeviceIdFoldouts[index], s_DenyCapabilityMetricsFoldouts[index], featuresCount, limitsCount);
         }
 
         public void OnEnable()
@@ -498,14 +502,14 @@ namespace UnityEditor
 
             for (int i = 0; i < m_AllowReorderableFilterList.reorderableList.count; i++)
             {
-                m_AllowDeviceIdFoldouts.Add(true);
-                m_AllowCapabilityMetricsFoldouts.Add(true);
+                s_AllowDeviceIdFoldouts.Add(true);
+                s_AllowCapabilityMetricsFoldouts.Add(true);
             }
 
             for (int i = 0; i < m_DenyReorderableFilterList.reorderableList.count; i++)
             {
-                m_DenyDeviceIdFoldouts.Add(true);
-                m_DenyCapabilityMetricsFoldouts.Add(true);
+                s_DenyDeviceIdFoldouts.Add(true);
+                s_DenyCapabilityMetricsFoldouts.Add(true);
             }
         }
 

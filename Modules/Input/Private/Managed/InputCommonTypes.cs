@@ -101,5 +101,10 @@ namespace UnityEngineInternal.Input
         /// opposed to the constant 1.0f reported by platforms without pressure.
         /// </summary>
         public const int queryTouchPressureSupported = ('Q' << 24) | ('T' << 16) | ('P' << 8) | 'S';
+
+        /// <summary>
+        /// 'QVDS'. Whether this build includes virtual devices. Never Unknown.
+        /// </summary>
+        public const int queryVirtualDevicesSupported = ('Q' << 24) | ('V' << 16) | ('D' << 8) | 'S';
     }
 }

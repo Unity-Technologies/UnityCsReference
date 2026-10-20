@@ -46,7 +46,7 @@ namespace UnityEditor
 
         // This is only used internally for deleting curves
         internal int  classID;
-        internal EntityId  scriptInstanceID;
+        internal EntityId  scriptEntityId;
 
         public AnimationClipCurveData()
         {
@@ -59,7 +59,7 @@ namespace UnityEditor
             propertyName = binding.propertyName;
             curve = null;
             classID = binding.m_ClassID;
-            scriptInstanceID = binding.m_ScriptInstanceID;
+            scriptEntityId = binding.m_ScriptEntityId;
         }
     }
 

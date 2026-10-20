@@ -282,6 +282,9 @@ namespace UnityEditor.PackageManager
 
             string fullPath = assembly.GetLoadedAssemblyPath();
 
+            if (string.IsNullOrEmpty(fullPath))
+                return null;
+
             // See if there is an asmdef file for this assembly - use it if so
             var asmdefPath = CompilationPipeline.GetAssemblyDefinitionFilePathFromAssemblyName(fullPath);
             if (!String.IsNullOrEmpty(asmdefPath))

@@ -108,7 +108,13 @@ namespace UnityEngine.UIElements.UIR
                 var uiRenderer = cmdList.m_UIRenderer;
                 if (uiRenderer != null)
                 {
-                    uiRenderer.commandLists = m_CommandListsArray;
+                    if (uiRenderer.commandLists != m_CommandListsArray)
+                    {
+                        // The renderer may have moved from another panel, whose stale draw call data must be dropped.
+                        // Keep the command frames since the render thread may still use those of the previous panel.
+                        uiRenderer.ClearDrawCallData();
+                        uiRenderer.commandLists = m_CommandListsArray;
+                    }
                     bool forceSingleTexture = (cmdList.flags & CommandFlags.ForceSingleTextureSlot) != 0;
                     uint forceRenderType = (uint)(cmdList.flags & CommandFlags.ForceRenderTypeBits) >> (int)CommandFlags.ForceRenderTypeBitOffset;
 
@@ -137,7 +143,13 @@ namespace UnityEngine.UIElements.UIR
                 var panelRenderer = cmdList.m_PanelRenderer;
                 if (panelRenderer != null)
                 {
-                    panelRenderer.commandLists = m_CommandListsArray;
+                    if (panelRenderer.commandLists != m_CommandListsArray)
+                    {
+                        // The renderer may have moved from another panel, whose stale draw call data must be dropped.
+                        // Keep the command frames since the render thread may still use those of the previous panel.
+                        panelRenderer.ClearDrawCallData();
+                        panelRenderer.commandLists = m_CommandListsArray;
+                    }
                     bool forceSingleTexture = (cmdList.flags & CommandFlags.ForceSingleTextureSlot) != 0;
                     uint forceRenderType = (uint)(cmdList.flags & CommandFlags.ForceRenderTypeBits) >> (int)CommandFlags.ForceRenderTypeBitOffset;
 
@@ -185,8 +197,9 @@ namespace UnityEngine.UIElements.UIR
             foreach (var renderer in m_UIRenderersWithDrawCallData)
             {
                 // The renderer may become (fake-)null if the managed part has been destroyed,
-                // so it's important to do the null test.
-                if (renderer != null)
+                // so it's important to do the null test. Skip renderers that have moved to another
+                // panel, otherwise we would clear the draw call data added by that panel.
+                if (renderer != null && renderer.commandLists == m_CommandListsArray)
                     renderer.ResetDrawCallData((int)m_SafeFrameIndex);
             }
             m_UIRenderersWithDrawCallData.Clear();
@@ -195,7 +208,7 @@ namespace UnityEngine.UIElements.UIR
             {
                 // The renderer may become (fake-)null if the managed part has been destroyed,
                 // so it's important to do the null test.
-                if (renderer != null)
+                if (renderer != null && renderer.commandLists == m_CommandListsArray)
                     renderer.ResetDrawCallData((int)m_SafeFrameIndex);
             }
             m_PanelRenderersWithDrawCallData.Clear();
@@ -217,13 +230,13 @@ namespace UnityEngine.UIElements.UIR
                     for (int j = 0; j < commandLists.Count; ++j)
                     {
                         var cmdList = commandLists[j];
-                        if (cmdList.m_UIRenderer != null)
+                        if (cmdList.m_UIRenderer != null && cmdList.m_UIRenderer.commandLists == m_CommandListsArray)
                         {
                             // It's safe to reset all draw call data here because
                             // the Dispose() is done after the render thread has finished processing.
                             cmdList.m_UIRenderer.ResetAllDrawCallData();
                         }
-                        if (cmdList.m_PanelRenderer != null)
+                        if (cmdList.m_PanelRenderer != null && cmdList.m_PanelRenderer.commandLists == m_CommandListsArray)
                         {
                             // It's safe to reset all draw call data here because
                             // the Dispose() is done after the render thread has finished processing.

@@ -675,11 +675,15 @@ namespace UnityEngine.UIElements
                 if (child.resourcesReleased)
                     throw new InvalidOperationException("You can't insert a VisualElement after its resources are released. This usually happens when PanelRenderer releases elements during UI reload or cleanup. Make sure that you don't hold stale references to elements.");
 
-                child.RemoveFromHierarchy();
+                var oldParent = child.hierarchy.parent;
+                if (oldParent != null)
+                {
+                    oldParent.hierarchy.Remove(child);
 
-                // A detach callback may have moved m_Owner under child.
-                if (child.m_Children.Count > 0 && child.Contains(m_Owner))
-                    throw new ArgumentException(k_HierarchyCycleMsg);
+                    // A detach or child-removed callback may have moved m_Owner under child.
+                    if (child.m_Children.Count > 0 && child.Contains(m_Owner))
+                        throw new ArgumentException(k_HierarchyCycleMsg);
+                }
 
                 if (ReferenceEquals(m_Owner.m_Children, s_EmptyList))
                 {

@@ -446,6 +446,18 @@ namespace UnityEditor.Shaders
                 static (a, b) => a.ValueEquals(b));
         }
 
+        // Copying the struct alone still shares its arrays. This does a deep copy instead.
+        internal ShaderBuildSettings DeepCopy()
+        {
+            var copy = this;
+            copy.defines = (string[])defines?.Clone();
+            copy.compilerSettings = (ShaderCompilerSettings[])compilerSettings?.Clone();
+            copy.keywordDeclarationOverrides = keywordDeclarationOverrides == null
+                ? null
+                : Array.ConvertAll(keywordDeclarationOverrides, o => o.DeepCopy());
+            return copy;
+        }
+
         internal void AddInternalDefine(string define)
         {
             int numDefines = 1;

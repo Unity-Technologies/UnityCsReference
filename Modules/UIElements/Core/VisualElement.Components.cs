@@ -182,7 +182,7 @@ namespace UnityEngine.UIElements
         {
             if (ReferenceEquals(capturedSet, m_ComponentTypeSet) && ReferenceEquals(capturedSlots, m_ComponentSlots))
             {
-                capturedSlots[index].onChanged?.Invoke(this);
+                InvokeComponentChangedHandler(capturedSlots[index].onChanged);
                 return;
             }
 
@@ -192,7 +192,24 @@ namespace UnityEngine.UIElements
 
             var current = FindComponentIndex(types[index]);
             if (current >= 0)
-                m_ComponentSlots[current].onChanged?.Invoke(this);
+                InvokeComponentChangedHandler(m_ComponentSlots[current].onChanged);
+        }
+
+        // A throwing handler is reported and the flush moves on to the next dirty slot; the mask was
+        // cleared up front, so the failing handler is not retried unless a new change flags it again.
+        void InvokeComponentChangedHandler(Action<VisualElement> onChanged)
+        {
+            if (onChanged == null)
+                return;
+
+            try
+            {
+                onChanged(this);
+            }
+            catch (Exception e)
+            {
+                Debug.LogException(e);
+            }
         }
 
         // Called when the element (re)attaches to a panel. A change made while detached only set the dirty

@@ -644,7 +644,7 @@ namespace UnityEditor
                 return 0f;
 
             float scale = Mathf.Clamp01(Mathf.Min(contentRect.width / iconWidth, contentRect.height / iconHeight));
-            return Mathf.Round(iconWidth * scale);
+            return iconWidth * scale;
         }
     }
 

@@ -206,10 +206,27 @@ namespace Unity.ProjectAuditor.Editor.AssemblyUtils
             var fullPath = PathUtils.GetFullPath(path);
             // if it's a package, resolve from absolute+physical to logical+relative path
             if (!string.IsNullOrEmpty(assemblyInfo.PackageResolvedPath))
-                return fullPath.Replace(assemblyInfo.PackageResolvedPath, assemblyInfo.RelativePath);
+            {
+                var packagePath = assemblyInfo.PackageResolvedPath;
+                // MSBuild on macOS reports diagnostics against the real path of a symlinked package folder
+                if (!IsInDirectory(fullPath, packagePath))
+                {
+                    assemblyInfo.PackageSymlinkResolvedPath ??= PathUtils.ReplaceSeparators(UnityEditor.Unsupported.ResolveSymlinks(packagePath));
+                    packagePath = assemblyInfo.PackageSymlinkResolvedPath;
+                }
+                return IsInDirectory(fullPath, packagePath)
+                    ? assemblyInfo.RelativePath + fullPath.Substring(packagePath.Length)
+                    : fullPath;
+            }
 
             // if it lives in Assets/... convert to relative path
             return fullPath.Replace(ProjectAuditor.ProjectPath + PathUtils.Separator, "");
+        }
+
+        static bool IsInDirectory(string path, string directory)
+        {
+            return path.StartsWith(directory, StringComparison.Ordinal)
+                && (path.Length == directory.Length || path[directory.Length] == PathUtils.Separator);
         }
     }
 }

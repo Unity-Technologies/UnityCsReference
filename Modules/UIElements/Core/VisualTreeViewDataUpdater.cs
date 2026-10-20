@@ -74,15 +74,13 @@ namespace UnityEngine.UIElements
             // does have a viewDataKey, if its logical parent does not have a viewDataKey.
             enablePersistence = ve.IsViewDataPersitenceSupportedOnChildren(enablePersistence);
 
-            if (m_UpdateList.Contains(ve))
+            if (m_UpdateList.Remove(ve))
             {
-                m_UpdateList.Remove(ve);
                 ve.OnViewDataReady(enablePersistence);
             }
 
-            if (m_ParentList.Contains(ve))
+            if (m_ParentList.Remove(ve))
             {
-                m_ParentList.Remove(ve);
                 var childCount = ve.hierarchy.childCount;
                 for (int i = 0; i < childCount; ++i)
                 {

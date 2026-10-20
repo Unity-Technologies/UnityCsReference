@@ -26,6 +26,7 @@ namespace UnityEditor.UIElements
             m_Panel = EditorPanel.FindOrCreate(model as ScriptableObject);
 
             m_Panel.visualTree.SetSize(m_Model.size);
+            m_AppliedWindowSize = m_Model.size;
             m_Panel.IMGUIEventInterests = m_Model.eventInterests;
 
             imguiContainer = new IMGUIContainer(m_Model.onGUIHandler) { useOwnerObjectGUIState = true };
@@ -50,6 +51,8 @@ namespace UnityEditor.UIElements
             // less points displayed, hence the division by 2.
 
             OnBackingScaleFactorChanged();
+            m_AppliedWindowSize = m_Model.size;
+            m_AppliedScale = m_Panel.scale;
             m_Panel.visualTree.SetSize(m_Model.size / m_Panel.scale);
         }
 
@@ -118,7 +121,25 @@ namespace UnityEditor.UIElements
         public bool ProcessEvent( Event e)
         {
             using var scope = new UITKScope();
+            ValidateAgainstHostView();
             return EditorEventDispatchUtility.DoDispatch(panel, e);
+        }
+
+        Vector2 m_AppliedWindowSize;
+        float m_AppliedScale = 1;
+
+        // The GUIView sets up IMGUI before each event; the panel must already hold the same values.
+        void ValidateAgainstHostView()
+        {
+            if (m_Panel is not EditorPanel editorPanel)
+                return;
+
+            var checks = editorPanel.hostViewChecks;
+            if (!checks.PixelsPerPointMatches(GUIUtility.pixelsPerPoint, m_Model))
+                m_Panel.pixelsPerPoint = GUIUtility.pixelsPerPoint;
+
+            if (!checks.SizeMatches(m_AppliedWindowSize, m_AppliedScale, m_Model.size, m_Model))
+                SizeChanged();
         }
     }
 }

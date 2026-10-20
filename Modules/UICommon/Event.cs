@@ -479,9 +479,9 @@ namespace UnityEngine
                 case "insert":      evt.keyCode = KeyCode.Insert; evt.modifiers |= EventModifiers.FunctionKey; break;
                 case "home":        evt.keyCode = KeyCode.Home; evt.modifiers |= EventModifiers.FunctionKey; break;
                 case "end":         evt.keyCode = KeyCode.End; evt.modifiers |= EventModifiers.FunctionKey; break;
-                case "pgup":        evt.keyCode = KeyCode.PageDown; evt.modifiers |= EventModifiers.FunctionKey; break;
+                case "pgup":        evt.keyCode = KeyCode.PageUp; evt.modifiers |= EventModifiers.FunctionKey; break;
                 case "page up":     evt.keyCode = KeyCode.PageUp; evt.modifiers |= EventModifiers.FunctionKey; break;
-                case "pgdown":      evt.keyCode = KeyCode.PageUp; evt.modifiers |= EventModifiers.FunctionKey; break;
+                case "pgdown":      evt.keyCode = KeyCode.PageDown; evt.modifiers |= EventModifiers.FunctionKey; break;
                 case "page down":   evt.keyCode = KeyCode.PageDown; evt.modifiers |= EventModifiers.FunctionKey; break;
                 case "backspace":   evt.keyCode = KeyCode.Backspace; evt.modifiers |= EventModifiers.FunctionKey; break;
                 case "delete":      evt.keyCode = KeyCode.Delete; evt.modifiers |= EventModifiers.FunctionKey; break;

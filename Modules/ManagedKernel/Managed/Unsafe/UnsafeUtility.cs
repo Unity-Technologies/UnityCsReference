@@ -68,7 +68,7 @@ namespace Unity.Collections.LowLevel.Unsafe
             return GetReasonForTypeNonBlittableImpl(t, t.Name);
         }
 
-        [VisibleToOtherModules("UnityEngine.CoreModule")]
+        [VisibleToOtherModules("UnityEngine.CoreModule", "UnityEngine.EntitiesModule")]
         internal static string GetReasonForTypeNonBlittable(Type t)
         {
             return GetReasonForTypeNonBlittableImpl(t, t.Name);

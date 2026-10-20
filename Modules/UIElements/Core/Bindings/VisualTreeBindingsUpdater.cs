@@ -5,8 +5,8 @@
 using System;
 using Unity.Scripting.LifecycleManagement;
 using System.Collections.Generic;
+using UnityEngine.Pool;
 using UnityEngine.Profiling;
-using System.Linq;
 using Unity.Profiling;
 
 namespace UnityEngine.UIElements
@@ -169,7 +169,11 @@ namespace UnityEngine.UIElements
 
         void StopTrackingRecursive(VisualElement ve)
         {
-            StopTracking(ve);
+            if (m_ElementsWithBindings.Count == 0 && m_ElementsToAdd.Count == 0 && m_ElementsToBind.Count == 0)
+                return;
+
+            if (m_ElementsWithBindings.Contains(ve) || m_ElementsToAdd.Contains(ve))
+                StopTracking(ve);
 
             var bindingRequest = ve.GetProperty(s_BindingRequestObjectVEPropertyName);
             if (bindingRequest != null)
@@ -264,35 +268,37 @@ namespace UnityEngine.UIElements
                 using (s_ProfilerBindingRequestsMarker.Auto())
                 {
                     long startTime = CurrentTime();
-                    while (m_ElementsToBind.Count > 0 && ShouldProcessBindings(startTime))
+                    using (ListPool<VisualElement>.Get(out var batch))
                     {
-                        #pragma warning disable UAC2011 // Avoid Linq
-                        var element = m_ElementsToBind.FirstOrDefault();
-#pragma warning restore UAC2011
-
-                        if (element != null)
+                        while (m_ElementsToBind.Count > 0 && ShouldProcessBindings(startTime))
                         {
-                            m_ElementsToBind.Remove(element);
-
-                            var bindingRequests =
-                                element.GetProperty(s_BindingRequestObjectVEPropertyName) as List<IBindingRequest>;
-
-                            if (bindingRequests != null)
+                            batch.AddRange(m_ElementsToBind);
+                            foreach (var element in batch)
                             {
-                                element.SetProperty(s_BindingRequestObjectVEPropertyName, null);
+                                if (!ShouldProcessBindings(startTime))
+                                    break;
 
-                                foreach (var req in bindingRequests)
+                                if (!m_ElementsToBind.Remove(element))   // StopTrackingRecursive dropped it mid-batch
+                                    continue;
+
+                                var bindingRequests =
+                                    element.GetProperty(s_BindingRequestObjectVEPropertyName) as List<IBindingRequest>;
+
+                                if (bindingRequests != null)
                                 {
-                                    req.Bind(element);
-                                    req.Release();
-                                }
+                                    element.SetProperty(s_BindingRequestObjectVEPropertyName, null);
 
-                                RequestObjectListPool.Release(bindingRequests);
+                                    foreach (var req in bindingRequests)
+                                    {
+                                        req.Bind(element);
+                                        req.Release();
+                                    }
+
+                                    RequestObjectListPool.Release(bindingRequests);
+                                }
                             }
-                        }
-                        else
-                        {
-                            break;
+
+                            batch.Clear();
                         }
                     }
                 }

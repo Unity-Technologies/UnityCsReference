@@ -514,7 +514,7 @@ namespace UnityEngine.UIElements
         protected void NotifyPropertyChanged(in BindingId property)
         {
             var element = this as VisualElement;
-            if (null == element?.elementPanel)
+            if (null == element?.elementPanel || !element.HasSelfEventInterests(PropertyChangedEvent.EventCategory))
                 return;
 
             using var evt = PropertyChangedEvent.GetPooled(property);

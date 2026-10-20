@@ -570,6 +570,7 @@ namespace UnityEngine.UIElements
                     UIElementsUtility.RemoveCachedPanel(ownerObject.GetEntityId());
 
                 PointerDeviceState.RemovePanelData(this);
+                dispatcher?.m_ClickDetector.Cleanup(this);
             }
             else
                 DisposeHelper.NotifyMissingDispose(this);

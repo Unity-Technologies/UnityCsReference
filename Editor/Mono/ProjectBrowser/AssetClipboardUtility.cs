@@ -9,6 +9,7 @@ using System.Linq;
 using System.Text.RegularExpressions;
 using Unity.Scripting.LifecycleManagement;
 using UnityEditor.Build.Content;
+using UnityEditor.Utils;
 using UnityEngine;
 using UnityEngine.Internal;
 using Object = UnityEngine.Object;
@@ -153,7 +154,7 @@ namespace UnityEditor
                         Path.GetDirectoryName(assetPath),
                         Path.DirectorySeparatorChar,
                         newAssetName,
-                        extension);
+                        extension).ConvertSeparatorsToUnity();
 
                     assetPath = AssetDatabase.GenerateUniqueAssetPath(GetValidPath(newPath, destination));
                     AssetDatabase.CreateAsset(Object.Instantiate(asset), assetPath);
@@ -366,7 +367,7 @@ namespace UnityEditor
             if (target == null)
                 return assetPath;
 
-            string[] pathSplit = assetPath.Split('/', Path.DirectorySeparatorChar);
+            string[] pathSplit = assetPath.Split('/');
             return target + '/' + pathSplit[pathSplit.Length - 1];
         }
 

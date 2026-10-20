@@ -969,7 +969,7 @@ namespace Unity.Burst.Intrinsics
             /// <summary>
             /// Convert packed 32-bit integers in a to packed double-precision (64-bit) floating-point elements, and store the results in dst.
             /// </summary>
-            /// <param name="a"></param>
+            /// <param name="a">Vector a</param>
             /// <remarks>
             /// **** VCVTDQ2PD ymm1, xmm2/v128
             /// Converts four packed signed doubleword integers in the source operand to

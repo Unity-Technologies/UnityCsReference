@@ -231,7 +231,7 @@ namespace UnityEngine.UIElements
         [AutoStaticsCleanupOnCodeReload]
         internal static Color editorPlayModeTintColor = Color.white;
         // The usual height used for a control, such as a one-line text field. See --unity-metrics-single_line-height and EditorGUIUtility.singleLineHeight.
-        internal static readonly float singleLineHeight = 18;
+        internal static readonly float singleLineHeight = 20;
 
         public const string hiddenClassName = "unity-hidden";
         internal static readonly UniqueStyleString hiddenClassNameUnique = new(hiddenClassName);

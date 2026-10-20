@@ -545,6 +545,8 @@ namespace UnityEditor.Build
         ///
         ///Unity invokes the `OnProcessShader` callback in Player, AssetBundle, and content directory builds. If there are any shaders already in the cache, then this method isn't invoked for those shaders. To ensure the callback runs for all shaders, perform a [clean build](xref:um-build-clean-build). To run it for a specific shader, modify that shader or one of its dependent assets.
         ///
+        ///In content directory builds, Unity also invokes the callback again for cached shaders when the version of its <see cref="Build.BuildCallbackVersionAttribute" /> changes. Increment the version whenever you change the callback's code.
+        ///
         ///To help you identify keywords and variants to strip, you can [check what shader variants you have in your project](xref:um-shader-how-many-variants). For example if you [declare a keyword](xref:um-sl-multiple-program-variants) called `DEBUG` in your shader code using `#pragma multi_compile _ DEBUG`, the following [Editor script](xref:um-special-folders) finds and strips shader variants that use the keyword.
         ///
         ///The script does the following when you build your application:
@@ -626,6 +628,8 @@ namespace UnityEditor.Build
         ///
         ///This callback is invoked for Player, AssetBundle, and content directory builds.
         ///
+        ///In content directory builds, Unity invokes the callback again for cached compute shaders when the version of its <see cref="Build.BuildCallbackVersionAttribute" /> changes. Increment the version whenever you change the callback's code.
+        ///
         ///For more information about build callbacks, refer to [Use build callbacks](xref:um-build-callbacks)</remarks>
         ///<param name="shader">The compute shader that Unity is about to compile.</param>
         ///<param name="kernelName">The name of the kernel that Unity is about to compile.</param>
@@ -702,6 +706,10 @@ namespace UnityEditor.Build
 
             // Message to be shown in the progress bar when the GenerateNativePluginsForAssemblies method is run.
             public string displayName { get; set; }
+
+            // Set to true if GenerateNativePluginsForAssemblies reads the managed debug symbols (.pdb) of the assemblies it is given.
+            // The player build then makes sure they are written next to the assemblies, but only ships them with the player if the build asks for it.
+            public bool requiresManagedSymbols { get; set; }
         }
 
         // Prepare method which is called on the main thread before the incremental player build starts.
@@ -1137,8 +1145,15 @@ namespace UnityEditor.Build
 
         internal static void PreparePlayerBuild(BuildPlayerContext context)
         {
-            foreach (var p in processors.buildPlayerProcessors ?? new List<BuildPlayerProcessor>())
-                p.PrepareForBuild(context);
+            // Use a managed-side profiler section rather than ScopeTraceProfileBlock: native TEP capture is deliberately started later (after PreparePlayerBuild) so nested content
+            // builds can claim TEP for their own trace files — see BuildPlayer.cpp CBD-2169 comment.
+            List<BuildPlayerProcessor> playerProcessors = processors.buildPlayerProcessors ?? new List<BuildPlayerProcessor>();
+            for (int i = 0; i < playerProcessors.Count; i++)
+            {
+                BuildPlayerProcessor p = playerProcessors[i];
+                using (Scripting.ScriptCompilation.UnityBeeDriverProfilerSession.ScopedManagedSection($"{p.GetType().Name}.PrepareForBuild"))
+                    p.PrepareForBuild(context);
+            }
         }
 
         [RequiredByNativeCode]
@@ -1221,6 +1236,17 @@ namespace UnityEditor.Build
             {
                 foreach (IProcessSceneWithReport processor in processors.sceneProcessorsWithReport)
                 {
+                    if (processor is AttributeCallbackWrapper wrapper)
+                    {
+                        MethodInfo method = wrapper.m_method;
+                        hashVersion.Append(method.DeclaringType.AssemblyQualifiedName);
+                        hashVersion.Append(method.Name);
+
+                        var postProcessSceneAttribute = (Callbacks.PostProcessSceneAttribute)Attribute.GetCustomAttribute(method, typeof(Callbacks.PostProcessSceneAttribute));
+                        hashVersion.Append(postProcessSceneAttribute.GetVersion());
+                        continue;
+                    }
+
                     Type processorType = processor.GetType();
                     hashVersion.Append(processorType.AssemblyQualifiedName);
 
@@ -1228,6 +1254,49 @@ namespace UnityEditor.Build
                     hashVersion.Append(attribute != null ? attribute.Version : 1);
                 }
             }
+        }
+
+        [RequiredByNativeCode]
+        internal static void OnShaderProcess_HashVersion(out Hash128 hashVersion)
+        {
+            hashVersion = ComputeCallbackVersionHash(GetConcreteCallbackTypes(TypeCache.GetTypesDerivedFrom<IPreprocessShaders>()));
+        }
+
+        [RequiredByNativeCode]
+        internal static void OnComputeShaderProcess_HashVersion(out Hash128 hashVersion)
+        {
+            hashVersion = ComputeCallbackVersionHash(GetConcreteCallbackTypes(TypeCache.GetTypesDerivedFrom<IPreprocessComputeShaders>()));
+        }
+
+        static List<Type> GetConcreteCallbackTypes(TypeCache.TypeCollection types)
+        {
+            var callbackTypes = new List<Type>();
+            foreach (var type in types)
+            {
+                if (!type.IsAbstract && !type.IsInterface)
+                    callbackTypes.Add(type);
+            }
+            return callbackTypes;
+        }
+
+        internal static Hash128 ComputeCallbackVersionHash(List<Type> callbackTypes)
+        {
+            var sortedTypes = new List<Type>(callbackTypes);
+            sortedTypes.Sort((a, b) => string.CompareOrdinal(a.AssemblyQualifiedName, b.AssemblyQualifiedName));
+
+            var hashVersion = new Hash128();
+            foreach (var type in sortedTypes)
+            {
+                hashVersion.Append(type.AssemblyQualifiedName);
+                hashVersion.Append(GetCallbackVersion(type));
+            }
+            return hashVersion;
+        }
+
+        internal static uint GetCallbackVersion(Type callbackType)
+        {
+            var attribute = Attribute.GetCustomAttribute(callbackType, typeof(BuildCallbackVersionAttribute), false) as BuildCallbackVersionAttribute;
+            return attribute != null ? attribute.Version : 1;
         }
 
         [RequiredByNativeCode]

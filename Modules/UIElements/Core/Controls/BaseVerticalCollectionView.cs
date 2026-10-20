@@ -1620,10 +1620,19 @@ namespace UnityEngine.UIElements
             return false;
         }
 
+        // Pointer events bubbling up from a nested collection view belong to that view, not to the item hosting it.
+        // The target can already be detached here, for example when a nested view's selection change rebuilds this view,
+        // so this only looks for the nearest collection view instead of checking that the target is still a descendant.
+        internal bool IsFromNestedCollectionView(IEventHandler target)
+        {
+            var nearestCollectionView = (target as VisualElement)?.GetFirstOfType<BaseVerticalCollectionView>();
+            return nearestCollectionView != null && nearestCollectionView != this;
+        }
+
         private void OnPointerMove(PointerMoveEvent evt)
         {
             // Support cases where PointerMove corresponds to a MouseDown or MouseUp event with multiple buttons.
-            if (evt.button == (int)MouseButton.LeftMouse)
+            if (evt.button == (int)MouseButton.LeftMouse && !IsFromNestedCollectionView(evt.target))
             {
                 if ((evt.pressedButtons & (1 << (int)MouseButton.LeftMouse)) == 0)
                 {
@@ -1638,6 +1647,9 @@ namespace UnityEngine.UIElements
 
         private void OnPointerDown(PointerDownEvent evt)
         {
+            if (IsFromNestedCollectionView(evt.target))
+                return;
+
             ProcessPointerDown(evt);
         }
 
@@ -1646,7 +1658,7 @@ namespace UnityEngine.UIElements
             if (!HasValidDataAndBindings())
                 return;
 
-            if (!evt.isPrimary)
+            if (!evt.isPrimary || IsFromNestedCollectionView(evt.target))
                 return;
 
             ClearSelection();
@@ -1654,6 +1666,9 @@ namespace UnityEngine.UIElements
 
         private void OnPointerUp(PointerUpEvent evt)
         {
+            if (IsFromNestedCollectionView(evt.target))
+                return;
+
             ProcessPointerUp(evt);
         }
 

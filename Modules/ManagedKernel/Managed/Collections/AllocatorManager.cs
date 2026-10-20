@@ -16,6 +16,7 @@ using Unity.Jobs.LowLevel.Unsafe;
 using System.Runtime.CompilerServices;
 using System.Threading;
 using Unity.Scripting.LifecycleManagement;
+using UnityEngine.Bindings;
 
 namespace Unity.Collections
 {
@@ -131,6 +132,7 @@ namespace Unity.Collections
             return (void*)AllocateBlock(ref t, sizeOf, alignOf, items).Range.Pointer;
         }
 
+        [VisibleToOtherModules("UnityEngine.EntitiesModule")]
         internal static unsafe U* Allocate<T,U>(ref this T t, U u, int items) where T : unmanaged, IAllocator where U : unmanaged
         {
             return (U*)Allocate(ref t, UnsafeUtility.SizeOf<U>(), UnsafeUtility.AlignOf<U>(), items);
@@ -149,6 +151,7 @@ namespace Unity.Collections
             CheckFailedToFree(error);
         }
 
+        [VisibleToOtherModules("UnityEngine.EntitiesModule")]
         internal static unsafe void Free<T>(ref this T t, void* pointer, int sizeOf, int alignOf, int items) where T : unmanaged, IAllocator
         {
             if (pointer == null)
@@ -161,6 +164,7 @@ namespace Unity.Collections
             t.FreeBlock(ref block);
         }
 
+        [VisibleToOtherModules("UnityEngine.EntitiesModule")]
         internal static unsafe void Free<T,U>(ref this T t, U* pointer, int items) where T : unmanaged, IAllocator where U : unmanaged
         {
             Free(ref t, pointer, UnsafeUtility.SizeOf<U>(), UnsafeUtility.AlignOf<U>(), items);
@@ -307,6 +311,7 @@ namespace Unity.Collections
                 }
             }
 
+            [VisibleToOtherModules("UnityEngine.EntitiesModule")]
             internal void Rewind()
             {
                 InvalidateDependents();
@@ -365,6 +370,7 @@ namespace Unity.Collections
             /// <value>For internal use only.</value>
             public const int InvalidChildSafetyHandleIndex = -1;
 
+            [VisibleToOtherModules("UnityEngine.EntitiesModule")]
             internal int AddSafetyHandle(AtomicSafetyHandle handle)
             {
                 if(!NeedsUseAfterFreeTracking())
@@ -1090,6 +1096,7 @@ namespace Unity.Collections
             error = function(tableEntry.state, ref block);
         }
 
+        [VisibleToOtherModules("UnityEngine.EntitiesModule")]
         internal static Allocator LegacyOf(AllocatorHandle handle)
         {
             if (handle.Value >= FirstUserIndex)
@@ -1521,8 +1528,10 @@ namespace Unity.Collections
         static partial class AllocatorCache<T> where T : unmanaged, IAllocator
         {
             [AutoStaticsCleanup]
+            [IgnoreForUAL0015("Memo of the allocator's function pointer; Register recomputes it when CachedFunction doesn't match")]
             public static FunctionPointer<TryFunction> TryFunction;
             [AutoStaticsCleanup]
+            [IgnoreForUAL0015("Memo of the allocator's function pointer; Register recomputes it when CachedFunction doesn't match")]
             public static TryFunction CachedFunction;
         }
 
@@ -1654,6 +1663,7 @@ namespace Unity.Collections
         /// Number of global scratchpad allocators reserved in the global function table.
         /// </summary>
         /// <remarks>Number of global scratchpad allocators reserved in the global function table. Make sure it is larger than or equals to the max number of jobs that can run at the same time.</remarks>
+        [VisibleToOtherModules("UnityEngine.EntitiesModule")]
         internal static readonly ushort NumGlobalScratchAllocators = (ushort) (JobsUtility.ThreadIndexCount);
 
         /// <summary>
@@ -1668,6 +1678,7 @@ namespace Unity.Collections
         /// <remarks>The indexes from `GlobalAllocatorBaseIndex` up to `MaxNumCustomAllocators` are reserved which
         /// should not be used for your own allocators.</remarks>
         /// <value>Base index in the global function table for global allocators.</value>
+        [VisibleToOtherModules("UnityEngine.EntitiesModule")]
         internal static readonly uint GlobalAllocatorBaseIndex = (uint)(MaxNumCustomAllocators - MaxNumGlobalAllocators);
 
         /// <summary>

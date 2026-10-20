@@ -97,6 +97,7 @@ namespace Unity.Burst.Intrinsics
         }
 
         /// <summary>Constructs a half value from a half value.</summary>
+        /// <param name="x">The half value to copy.</param>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public f16(f16 x)
         {
@@ -104,6 +105,7 @@ namespace Unity.Burst.Intrinsics
         }
 
         /// <summary>Constructs a half value from a float value.</summary>
+        /// <param name="v">The float value to convert to a half value.</param>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public f16(float v)
         {
@@ -111,6 +113,9 @@ namespace Unity.Burst.Intrinsics
         }
 
         /// <summary>Returns whether two f16 values are equal.</summary>
+        /// <param name="lhs">The first half to compare.</param>
+        /// <param name="rhs">The second half to compare.</param>
+        /// <returns>True if the two halves are equal. Otherwise, false.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool operator ==(f16 lhs, f16 rhs)
         {
@@ -118,6 +123,9 @@ namespace Unity.Burst.Intrinsics
         }
 
         /// <summary>Returns whether two f16 values are different.</summary>
+        /// <param name="lhs">The first half to compare.</param>
+        /// <param name="rhs">The second half to compare.</param>
+        /// <returns>True if the two halves aren't equal. Otherwise, false.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool operator !=(f16 lhs, f16 rhs)
         {
@@ -125,6 +133,8 @@ namespace Unity.Burst.Intrinsics
         }
 
         /// <summary>Returns true if the f16 is equal to a given f16, false otherwise.</summary>
+        /// <param name="rhs">The half to compare with this instance.</param>
+        /// <returns>True if the specified half is equal to this instance. Otherwise, false.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public bool Equals(f16 rhs)
         {
@@ -132,9 +142,13 @@ namespace Unity.Burst.Intrinsics
         }
 
         /// <summary>Returns true if the half is equal to a given half, false otherwise.</summary>
+        /// <param name="o">The object to compare with the current instance. It must be a boxed `f16`.</param>
+        /// <returns>True if the specified object is equal to the current instance. Otherwise, false.</returns>
+        /// <remarks>This method unboxes `o` to `f16` before comparing. If `o` is null, it throws a `NullReferenceException`. If `o` is any other type, it throws an `InvalidCastException`.</remarks>
         public override bool Equals(object o) { return Equals((f16)o); }
 
         /// <summary>Returns a hash code for the half.</summary>
+        /// <returns>A hash code for the current instance.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public override int GetHashCode() { return (int)value; }
 

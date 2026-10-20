@@ -6,6 +6,7 @@ using System;
 using System.Diagnostics;
 using ManagedKernel.Assertions;
 using Unity.Collections.LowLevel.Unsafe;
+using UnityEngine.Bindings;
 
 namespace Unity.Collections
 {
@@ -107,6 +108,7 @@ namespace Unity.Collections
             UpdateAllocatorHelper1.Dispose();
         }
 
+        [VisibleToOtherModules("UnityEngine.EntitiesModule")]
         internal bool EnableBlockFree
         {
             get

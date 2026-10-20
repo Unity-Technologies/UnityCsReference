@@ -11,15 +11,18 @@ using Unity.Mathematics;
 using Unity.Jobs;
 using System.Runtime.InteropServices;
 using Unity.Jobs.LowLevel.Unsafe;
+using UnityEngine.Bindings;
 
 namespace Unity.Collections.LowLevel.Unsafe
 {
     [StructLayout(LayoutKind.Sequential)]
     [GenerateTestsForBurstCompatibility(GenericTypeArguments = new[] { typeof(int) })]
+    [VisibleToOtherModules("UnityEngine.EntitiesModule")]
     internal unsafe struct HashMapHelper<TKey>
         where TKey : unmanaged, IEquatable<TKey>
     {
         [NativeDisableUnsafePtrRestriction]
+        [VisibleToOtherModules("UnityEngine.EntitiesModule")]
         internal byte* Ptr;
 
         [NativeDisableUnsafePtrRestriction]
@@ -228,6 +231,7 @@ namespace Unity.Collections.LowLevel.Unsafe
             return (int)((uint)key.GetHashCode() & (BucketCapacity - 1));
         }
 
+        [VisibleToOtherModules("UnityEngine.EntitiesModule")]
         internal int TryAdd(in TKey key)
         {
             if (-1 == Find(key))
@@ -275,6 +279,7 @@ namespace Unity.Collections.LowLevel.Unsafe
             return -1;
         }
 
+        [VisibleToOtherModules("UnityEngine.EntitiesModule")]
         internal int Find(TKey key)
         {
             if (AllocatedIndex > 0)
@@ -556,6 +561,7 @@ namespace Unity.Collections.LowLevel.Unsafe
         where TValue : unmanaged
     {
         [NativeDisableUnsafePtrRestriction]
+        [VisibleToOtherModules("UnityEngine.EntitiesModule")]
         internal HashMapHelper<TKey> m_Data;
 
         /// <summary>

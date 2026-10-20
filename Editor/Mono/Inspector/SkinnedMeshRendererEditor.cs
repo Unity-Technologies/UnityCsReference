@@ -19,10 +19,14 @@ namespace UnityEditor
             public static readonly GUIContent legacyClampBlendShapeWeightsInfo = L10n.TextContent("Note that BlendShape weight range is clamped. This can be disabled in Player Settings.", null, null, null);
             public static readonly GUIContent meshNotSupportingSkinningInfo = L10n.TextContent("The assigned mesh is missing either bone weights with bind pose, or blend shapes. This might cause the mesh not to render in the Player. If your mesh does not have either bone weights with bind pose, or blend shapes, use a Mesh Renderer instead of Skinned Mesh Renderer.", null, null, null);
             public static readonly GUIContent bounds = L10n.TextContent("Bounds", "The bounding box that encapsulates the mesh.", null, null);
-            public static readonly GUIContent quality = L10n.TextContent("Quality", "Number of bones to use per vertex during skinning.", null, null);
-            public static readonly GUIContent updateWhenOffscreen = L10n.TextContent("Update When Offscreen", "If an accurate bounding volume representation should be calculated every frame. ", null, null);
+            public static readonly GUIContent quality = L10n.TextContent("Quality", "The maximum number of bones to use per vertex during skinning.", null, null);
+            public static readonly GUIContent updateWhenOffscreen = L10n.TextContent("Update When Offscreen", "If true, the bounding box is updated to fit the skinned pose every frame, and the skinned pose is updated even while offscreen. If false, the bounding box remains unchanged, and the skinned pose only updates while visible.", null, null);
             public static readonly GUIContent mesh = L10n.TextContent("Mesh", "The mesh used by this renderer.", null, null);
             public static readonly GUIContent rootBone = L10n.TextContent("Root Bone", "Transform with which the bounds move, and the space in which skinning is computed.", null, null);
+
+            public static readonly GUIContent boundSettings = L10n.TextContent("Bounds", null, null, null);
+            public static readonly GUIContent skinningSettings = L10n.TextContent("Skinning", null, null, null);
+            public static readonly GUIContent blendShapeSettings = L10n.TextContent("Blend Shapes", null, null, null);
         }
 
         private SerializedProperty m_AABB;
@@ -34,6 +38,10 @@ namespace UnityEditor
         private SerializedProperty m_RootBone;
 
         private BoxBoundsHandle m_BoundsHandle = new BoxBoundsHandle();
+
+        private SavedBool m_ShowBoundSettings;
+        private SavedBool m_ShowSkinningSettings;
+        private SavedBool m_ShowBlendShapeSettings;
 
         public override void OnEnable()
         {
@@ -48,6 +56,10 @@ namespace UnityEditor
             m_RootBone = serializedObject.FindProperty("m_RootBone");
 
             m_BoundsHandle.SetColor(Handles.s_BoundingBoxHandleColor);
+
+            m_ShowBoundSettings = new SavedBool($"{target.GetType()}.ShowBoundSettings", true);
+            m_ShowSkinningSettings = new SavedBool($"{target.GetType()}.ShowSkinningSettings", true);
+            m_ShowBlendShapeSettings = new SavedBool($"{target.GetType()}.ShowBlendShapeSettings", true);
         }
 
         public void OnDisable()
@@ -59,41 +71,14 @@ namespace UnityEditor
         {
             serializedObject.Update();
 
-            EditMode.DoEditModeInspectorModeButton(
-                EditMode.SceneViewEditMode.Collider,
-                "Edit Bounds",
-                PrimitiveBoundsHandle.editModeButton,
-                this
-            );
-            EditorGUI.BeginChangeCheck();
-            EditorGUILayout.PropertyField(m_AABB, Styles.bounds);
-            // If we set m_AABB then we need to set m_DirtyAABB to false
-            if (EditorGUI.EndChangeCheck())
-                m_DirtyAABB.boolValue = false;
-
             OnMeshUI();
-
+            OnSkinningUI();
             OnBlendShapeUI();
-
-            EditorGUILayout.PropertyField(m_Quality, Styles.quality);
-            EditorGUILayout.PropertyField(m_UpdateWhenOffscreen, Styles.updateWhenOffscreen);
-
-            EditorGUILayout.PropertyField(m_RootBone, Styles.rootBone);
-
+            OnBoundsUI();
             DrawMaterials();
             LightingSettingsGUI(false);
             RayTracingSettingsGUI();
-
-            EditorApplication.update -= MeshLODUpdate;
-            SkinnedMeshRenderer renderer = (SkinnedMeshRenderer)target;
-            if (renderer != null && renderer.sharedMesh != null)
-            {               
-                if (renderer.sharedMesh.isLodSelectionActive)
-                {
-                    MeshLodSettingsGUI(renderer.sharedMesh.lodCount);
-                }
-            }
-
+            OnMeshLodUI();
             OtherSettingsGUI(false, true);
 
             serializedObject.ApplyModifiedProperties();
@@ -121,6 +106,21 @@ namespace UnityEditor
             }
         }
 
+        public void OnSkinningUI()
+        {
+            m_ShowSkinningSettings.value = EditorGUILayout.BeginFoldoutHeaderGroup(m_ShowSkinningSettings.value, Styles.skinningSettings);
+            using (new EditorGUI.IndentLevelScope())
+            {
+                if (m_ShowSkinningSettings.value)
+                {
+                    EditorGUILayout.PropertyField(m_Quality, Styles.quality);
+                    EditorGUILayout.PropertyField(m_RootBone, Styles.rootBone);
+                }
+            }
+
+            EditorGUILayout.EndFoldoutHeaderGroup();
+        }
+
         public void OnBlendShapeUI()
         {
             SkinnedMeshRenderer renderer = (SkinnedMeshRenderer)target;
@@ -128,59 +128,102 @@ namespace UnityEditor
             if (blendShapeCount == 0)
                 return;
 
-            GUIContent content = new GUIContent();
-            content.text = "BlendShapes";
-
-            EditorGUILayout.PropertyField(m_BlendShapeWeights, content, false);
-            if (!m_BlendShapeWeights.isExpanded)
-                return;
-
-            EditorGUI.indentLevel++;
-
-            if (PlayerSettings.legacyClampBlendShapeWeights)
-                EditorGUILayout.HelpBox(Styles.legacyClampBlendShapeWeightsInfo.text, MessageType.Info);
-
-            Mesh m = renderer.sharedMesh;
-
-            int arraySize = m_BlendShapeWeights.arraySize;
-            for (int i = 0; i < blendShapeCount; i++)
+            m_ShowBlendShapeSettings.value = EditorGUILayout.BeginFoldoutHeaderGroup(m_ShowBlendShapeSettings.value, Styles.blendShapeSettings);
+            using (new EditorGUI.IndentLevelScope())
             {
-                content.text = m.GetBlendShapeName(i);
-
-                // Calculate the min and max values for the slider from the frame blendshape weights
-                float sliderMin = 0f, sliderMax = 0f;
-
-                int frameCount = m.GetBlendShapeFrameCount(i);
-                for (int j = 0; j < frameCount; j++)
+                if (m_ShowBlendShapeSettings.value)
                 {
-                    float frameWeight = m.GetBlendShapeFrameWeight(i, j);
-                    sliderMin = Mathf.Min(frameWeight, sliderMin);
-                    sliderMax = Mathf.Max(frameWeight, sliderMax);
-                }
+                    if (PlayerSettings.legacyClampBlendShapeWeights)
+                        EditorGUILayout.HelpBox(Styles.legacyClampBlendShapeWeightsInfo.text, MessageType.Info);
 
-                // The SkinnedMeshRenderer blendshape weights array size can be out of sync with the size defined in the mesh
-                // (default values in that case are 0)
-                // The desired behaviour is to resize the blendshape array on edit.
+                    Mesh m = renderer.sharedMesh;
+                    GUIContent content = new GUIContent();
 
-                // Default path when the blend shape array size is big enough.
-                if (i < arraySize)
-                    EditorGUILayout.Slider(m_BlendShapeWeights.GetArrayElementAtIndex(i), sliderMin, sliderMax, float.MinValue, float.MaxValue, content);
-                // Fall back to 0 based editing &
-                else
-                {
-                    EditorGUI.BeginChangeCheck();
-
-                    float value = EditorGUILayout.Slider(content, 0f, sliderMin, sliderMax, float.MinValue, float.MaxValue);
-                    if (EditorGUI.EndChangeCheck())
+                    int arraySize = m_BlendShapeWeights.arraySize;
+                    for (int i = 0; i < blendShapeCount; i++)
                     {
-                        m_BlendShapeWeights.arraySize = blendShapeCount;
-                        arraySize = blendShapeCount;
-                        m_BlendShapeWeights.GetArrayElementAtIndex(i).floatValue = value;
+                        content.text = m.GetBlendShapeName(i);
+
+                        // Calculate the min and max values for the slider from the frame blendshape weights
+                        float sliderMin = 0f, sliderMax = 0f;
+
+                        int frameCount = m.GetBlendShapeFrameCount(i);
+                        for (int j = 0; j < frameCount; j++)
+                        {
+                            float frameWeight = m.GetBlendShapeFrameWeight(i, j);
+                            sliderMin = Mathf.Min(frameWeight, sliderMin);
+                            sliderMax = Mathf.Max(frameWeight, sliderMax);
+                        }
+
+                        // The SkinnedMeshRenderer blendshape weights array size can be out of sync with the size defined in the mesh
+                        // (default values in that case are 0)
+                        // The desired behaviour is to resize the blendshape array on edit.
+
+                        // Default path when the blend shape array size is big enough.
+                        if (i < arraySize)
+                        {
+                            EditorGUILayout.Slider(m_BlendShapeWeights.GetArrayElementAtIndex(i), sliderMin, sliderMax, float.MinValue, float.MaxValue, content);
+                        }
+                        // Fall back to 0 based editing &
+                        else
+                        {
+                            EditorGUI.BeginChangeCheck();
+
+                            float value = EditorGUILayout.Slider(content, 0f, sliderMin, sliderMax, float.MinValue, float.MaxValue);
+                            if (EditorGUI.EndChangeCheck())
+                            {
+                                m_BlendShapeWeights.arraySize = blendShapeCount;
+                                arraySize = blendShapeCount;
+                                m_BlendShapeWeights.GetArrayElementAtIndex(i).floatValue = value;
+                            }
+                        }
                     }
                 }
             }
+            EditorGUILayout.EndFoldoutHeaderGroup();
+        }
 
-            EditorGUI.indentLevel--;
+        public void OnBoundsUI()
+        {
+            m_ShowBoundSettings.value = EditorGUILayout.BeginFoldoutHeaderGroup(m_ShowBoundSettings.value, Styles.boundSettings);
+            using (new EditorGUI.IndentLevelScope())
+            {
+                if (m_ShowBoundSettings.value)
+                {
+                    EditorGUILayout.PropertyField(m_UpdateWhenOffscreen, Styles.updateWhenOffscreen);
+
+                    bool isDisabledButton = m_UpdateWhenOffscreen.boolValue || m_UpdateWhenOffscreen.hasMultipleDifferentValues;
+                    EditorGUI.BeginDisabled(isDisabledButton);
+                    EditMode.DoEditModeInspectorModeButton(
+                        EditMode.SceneViewEditMode.Collider,
+                        "Edit Bounds",
+                        PrimitiveBoundsHandle.editModeButton,
+                        this,
+                        true
+                    );
+                    EditorGUI.BeginChangeCheck();
+
+                    EditorGUILayout.PropertyField(m_AABB, Styles.bounds);
+                    // If we set m_AABB then we need to set m_DirtyAABB to false
+                    if (EditorGUI.EndChangeCheck())
+                        m_DirtyAABB.boolValue = false;
+                    EditorGUI.EndDisabled();
+                }
+            }
+            EditorGUILayout.EndFoldoutHeaderGroup();
+        }
+
+        public void OnMeshLodUI()
+        {
+            EditorApplication.update -= MeshLODUpdate;
+            SkinnedMeshRenderer renderer = (SkinnedMeshRenderer)target;
+            if (renderer != null && renderer.sharedMesh != null)
+            {
+                if (renderer.sharedMesh.isLodSelectionActive)
+                {
+                    MeshLodSettingsGUI(renderer.sharedMesh.lodCount);
+                }
+            }
         }
 
         public void OnSceneGUI()

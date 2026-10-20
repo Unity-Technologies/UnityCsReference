@@ -163,7 +163,12 @@ namespace UnityEditorInternal
             DoEditModeInspectorModeButton(mode, label, icon, null, owner);
         }
 
-        private static void DoEditModeInspectorModeButton(SceneViewEditMode mode, string label, GUIContent icon, Func<Bounds> getBoundsOfTargets, IToolModeOwner owner)
+        internal static void DoEditModeInspectorModeButton(SceneViewEditMode mode, string label, GUIContent icon, IToolModeOwner owner, bool isMarginAlignedLabel)
+        {
+            DoEditModeInspectorModeButton(mode, label, icon, null, owner, isMarginAlignedLabel);
+        }
+
+        private static void DoEditModeInspectorModeButton(SceneViewEditMode mode, string label, GUIContent icon, Func<Bounds> getBoundsOfTargets, IToolModeOwner owner, bool isMarginAlignedLabel = false)
         {
             Rect rect = EditorGUILayout.GetControlRect(true, k_EditColliderbuttonHeight, Styles.singleButtonStyle);
             Rect buttonRect = new Rect(rect.xMin + EditorGUIUtility.labelWidth, rect.yMin, k_EditColliderbuttonWidth, k_EditColliderbuttonHeight);
@@ -172,8 +177,8 @@ namespace UnityEditorInternal
             Vector2 labelSize = GUI.skin.label.CalcSize(labelContent);
 
             Rect labelRect = new Rect(
-                buttonRect.xMax + k_SpaceBetweenLabelAndButton,
-                rect.yMin + (rect.height - labelSize.y) * .5f,
+                isMarginAlignedLabel ? rect.xMin - 1 : buttonRect.xMax + k_SpaceBetweenLabelAndButton,
+                isMarginAlignedLabel ? rect.yMin     : rect.yMin + (rect.height - labelSize.y) * .5f,
                 labelSize.x,
                 rect.height);
 

@@ -22,14 +22,14 @@ namespace UnityEditor.Mono.BuildPipeline
             public string path;
             public string contentHash;
 
-            public BuildDataInputFile(NPath npath, bool developmentBuild)
+            public BuildDataInputFile(NPath npath)
             {
                 path = npath.ToString();
                 if (npath.HasExtension("cs"))
                 {
                     var monoScript = AssetDatabase.LoadAssetAtPath<MonoScript>(path);
                     if (monoScript != null)
-                        contentHash = monoScript.GetPropertiesHashString(developmentBuild);
+                        contentHash = monoScript.GetPropertiesHashString();
                 }
                 else
                     contentHash = AssetDatabase.GetAssetDependencyHash(npath.ToString()).ToString();
@@ -82,7 +82,7 @@ namespace UnityEditor.Mono.BuildPipeline
             {
                 var monoScript = AssetDatabase.LoadAssetAtPath<MonoScript>(path.ToString());
                 if (monoScript != null)
-                    contentHash = monoScript.GetPropertiesHashString(buildOptions.HasFlag(BuildOptions.Development));
+                    contentHash = monoScript.GetPropertiesHashString();
             }
             else
                 contentHash = AssetDatabase.GetAssetDependencyHash(file.path).ToString();
@@ -174,25 +174,24 @@ namespace UnityEditor.Mono.BuildPipeline
         [RequiredByNativeCode]
         static public void WriteBuildData(string buildDataPath, BuildReport report, string[] scenes, string[] prefabs, string activeBuildProfilePath, string[] assemblyNames)
         {
-            var developmentBuild = report.summary.options.HasFlag(BuildOptions.Development);
             var inputScenes = new List<BuildDataInputFile>();
             foreach (var scene in scenes)
-                inputScenes.Add(new BuildDataInputFile(scene, developmentBuild));
+                inputScenes.Add(new BuildDataInputFile(scene));
 
             var inputFiles = new List<BuildDataInputFile>();
             foreach (var scene in scenes)
-                inputFiles.Add(new BuildDataInputFile(scene, developmentBuild));
+                inputFiles.Add(new BuildDataInputFile(scene));
             foreach (var prefab in prefabs)
-                inputFiles.Add(new BuildDataInputFile(prefab, developmentBuild));
+                inputFiles.Add(new BuildDataInputFile(prefab));
 #pragma warning disable UAC2001 // Avoid Linq
             foreach (var assetInfo in report.packedAssets.SelectMany(a => a.contents))
 #pragma warning restore UAC2001
             {
                 if (assetInfo.sourceAssetPath.ToNPath().FileExists() && !assetInfo.sourceAssetPath.StartsWith("."))
-                    inputFiles.Add(new BuildDataInputFile(assetInfo.sourceAssetPath, developmentBuild));
+                    inputFiles.Add(new BuildDataInputFile(assetInfo.sourceAssetPath));
             }
             foreach (var projectSetting in new NPath("ProjectSettings").Files("*.asset", true))
-                inputFiles.Add(new BuildDataInputFile(projectSetting, developmentBuild));
+                inputFiles.Add(new BuildDataInputFile(projectSetting));
 
             var resourcePaths = ResourcesAPIInternal.GetAllPaths("");
             Array.Sort(resourcePaths);
@@ -204,7 +203,7 @@ namespace UnityEditor.Mono.BuildPipeline
             {
                 scenes = inputScenes.ToArray(),
                 inputFiles = inputFiles.ToArray(),
-                activeBuildProfile = new BuildDataInputFile(activeBuildProfilePath, developmentBuild),
+                activeBuildProfile = new BuildDataInputFile(activeBuildProfilePath),
                 buildOptions = report.summary.options & BuildData.BuildOptionsMask,
                 unityVersion = Application.unityVersion,
                 resourcePaths = resourcePaths,

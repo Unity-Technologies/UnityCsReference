@@ -1476,9 +1476,7 @@ namespace UnityEditor.StyleSheets
             try
             {
                 var resolver = new StyleSheetResolver();
-                #pragma warning disable UAC2001 // Avoid Linq
-                resolver.AddStyleSheets(sheets.ToArray());
-#pragma warning restore UAC2001
+                resolver.AddStyleSheets(ConverterUtils.GetFlattenedRecursiveStyleSheets(sheets));
                 resolver.Resolve();
                 Load(resolver);
             }

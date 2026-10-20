@@ -118,8 +118,6 @@ namespace Unity.ProjectAuditor.Editor.UI
 
             switch (sessionInfo.ScriptingBackend.Value)
             {
-                case ScriptingImplementation.Mono2x:
-                    return Contents.MonoRuntimeValue;
                 case ScriptingImplementation.CoreCLR:
                     return Contents.CoreCLRRuntimeValue;
                 default:

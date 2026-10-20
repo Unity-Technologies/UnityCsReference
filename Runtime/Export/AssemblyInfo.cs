@@ -233,6 +233,8 @@ using System.Runtime.CompilerServices;
 [assembly: InternalsVisibleTo("Unity.Services.QoS")] // TODO: Remove this when we fix transport
 [assembly: InternalsVisibleTo("Unity.Logging")]
 [assembly: InternalsVisibleTo("Unity.Entities")]
+[assembly: InternalsVisibleTo("Unity.Entities.Hybrid")]
+[assembly: InternalsVisibleTo("Unity.Scenes.Editor")]
 [assembly: InternalsVisibleTo("Unity.Entities.Tests")]
 [assembly: InternalsVisibleTo("Unity.Collections")]
 [assembly: InternalsVisibleTo("Unity.Runtime")]

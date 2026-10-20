@@ -18,6 +18,13 @@ namespace Unity.UIToolkit.Editor;
 /// </summary>
 internal static class AttributeOverridesMenu
 {
+    enum NameElementAction
+    {
+        None,
+        FocusInPlace,
+        OpenOwnDocument,
+    }
+
     internal static readonly string k_OverridesMenuName = L10n.Tr("Overrides", null);
     internal static readonly string k_UnsavedDocumentText = L10n.Tr("(unsaved document)", null);
     internal static readonly string k_UnresolvedDocumentText = L10n.Tr("(unresolved document)", null);
@@ -56,7 +63,7 @@ internal static class AttributeOverridesMenu
         // Overrides are authored by name, but a driven unnamed element still needs the navigation.
         if (string.IsNullOrEmpty(element.name) && !UxmlAssetUtilities.TryGetDrivingAttributeOverride(element, attribute, out _))
         {
-            AppendNameElementAction(menu, context);
+            AppendNameElementAction(menu, context, inspectorPanel);
             return;
         }
 
@@ -105,13 +112,42 @@ internal static class AttributeOverridesMenu
             static _ => DropdownMenuAction.Status.Disabled);
     }
 
-    static void AppendNameElementAction(DropdownMenu menu, UxmlAttributesEditingContext context)
+    static void AppendNameElementAction(DropdownMenu menu, UxmlAttributesEditingContext context, IPanel inspectorPanel)
     {
         menu.AppendAction($"{k_OverridesMenuName}/{Sanitize(k_UnnamedElementText)}",
-            _ => NameField(context)?.RevealAndFocus(),
-            _ => NameField(context) != null
+            _ => NameElement(context, inspectorPanel),
+            _ => GetNameElementAction(context) != NameElementAction.None
                 ? DropdownMenuAction.Status.Normal
                 : DropdownMenuAction.Status.Disabled);
+    }
+
+    static NameElementAction GetNameElementAction(UxmlAttributesEditingContext context)
+    {
+        var element = context.element;
+        var field = NameField(context);
+        if (element == null || field == null)
+            return NameElementAction.None;
+
+        if (field.enabledInHierarchy)
+            return NameElementAction.FocusInPlace;
+
+        return !UIToolkitStageUtility.GetEditFlags(element).IsFullyEditable() && element.visualTreeAssetSource != null
+            ? NameElementAction.OpenOwnDocument
+            : NameElementAction.None;
+    }
+
+    static void NameElement(UxmlAttributesEditingContext context, IPanel inspectorPanel)
+    {
+        switch (GetNameElementAction(context))
+        {
+            case NameElementAction.FocusInPlace:
+                NameField(context).RevealAndFocus();
+                break;
+
+            case NameElementAction.OpenOwnDocument:
+                OpenInContext(context, k_NameAttributePath, inspectorPanel, context.element.visualTreeAssetSource);
+                break;
+        }
     }
 
     // Null in an inspector with no Name field of its own, such as a drawer without the element header.

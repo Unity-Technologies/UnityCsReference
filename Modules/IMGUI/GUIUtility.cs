@@ -431,20 +431,29 @@ namespace UnityEngine
                     "While IMGUI and UI Toolkit are tightly coupled in the editor right now, it may change in future versions of Unity.");
         }
 
+        // Device pixels of float error ignored when snapping, as in UI Toolkit's AlignmentUtils and the native IMGUIPixelGrid.
+        const float k_PixelGridTolerance = 0.02f;
+
         [VisibleToOtherModules("UnityEngine.UIElementsModule")]
         internal static float RoundToPixelGrid(float v)
         {
             WarnOnGUI();
-            // Using same rounding constant as GUITexture::AlignPointToDevice
-            const float kNearestRoundingOffset = 0.48f;
-            return Mathf.Floor((v * GUIUtility.pixelsPerPoint) + kNearestRoundingOffset) / GUIUtility.pixelsPerPoint;
+            return RoundToPixelGrid(v, GUIUtility.pixelsPerPoint);
         }
 
         internal static float RoundToPixelGrid(float v, float scale)
         {
-            // Using same rounding constant as GUITexture::AlignPointToDevice
-            const float kNearestRoundingOffset = 0.48f;
-            return Mathf.Floor((v * scale) + kNearestRoundingOffset) / scale;
+            return Mathf.Floor(v * scale + 0.5f + k_PixelGridTolerance) / scale;
+        }
+
+        internal static float CeilToPixelGrid(float v, float scale)
+        {
+            return Mathf.Ceil(v * scale - k_PixelGridTolerance) / scale;
+        }
+
+        internal static bool IsGreaterThanOnPixelGrid(float value, float reference, float scale)
+        {
+            return (value - reference) * scale > k_PixelGridTolerance;
         }
 
         ///<summary>Convert a point from GUI position to screen space.</summary>

@@ -37,7 +37,7 @@ namespace Unity.ProjectAuditor.Editor.AssemblyUtils
 
         private bool m_EditorAssembly;
         private CodeAnalysisFlags m_CodeAnalysisFlags;
-        private CodeOwnerFlags m_CodeOwnerFlags;
+        private OwnerFlags m_OwnerFlags;
 
         public string AssemblyPath => m_Builder.assemblyPath;
 
@@ -69,13 +69,13 @@ namespace Unity.ProjectAuditor.Editor.AssemblyUtils
         public Action<AssemblyCompilationResult> OnCompilationFinished;
 
 #pragma warning disable 618 // disable warning for obsolete AssemblyBuilder
-        public AssemblyCompilationTask(AssemblyBuilder assemblyBuilder, bool editorAssembly, CodeAnalysisFlags codeAnalysisFlags, CodeOwnerFlags codeOwnerFlags)
+        public AssemblyCompilationTask(AssemblyBuilder assemblyBuilder, bool editorAssembly, CodeAnalysisFlags codeAnalysisFlags, OwnerFlags ownerFlags)
         {
             m_Builder = assemblyBuilder;
             m_Builder.buildFinished += OnAssemblyBuilderFinished;
             m_EditorAssembly = editorAssembly;
             m_CodeAnalysisFlags = codeAnalysisFlags;
-            m_CodeOwnerFlags = codeOwnerFlags;
+            m_OwnerFlags = ownerFlags;
         }
 
 #pragma warning restore 618
@@ -143,7 +143,7 @@ namespace Unity.ProjectAuditor.Editor.AssemblyUtils
             foreach (var msg in originalMessages)
             {
                 var unityMsg = UnityCompilerMessageToProjectAuditorCompilerMessage(msg);
-                if (CodeModule.PathPackageFilter(unityMsg.File, m_CodeAnalysisFlags, m_CodeOwnerFlags))
+                if (CodeModule.PathPackageFilter(unityMsg.File, m_CodeAnalysisFlags, m_OwnerFlags))
                     results.Add(unityMsg);
             }
 

@@ -831,7 +831,21 @@ namespace UnityEngine.UIElements
             if (inlineValue.keyword == StyleKeyword.Null)
             {
                 m_HasInlineCursor = false;
-                return RemoveInlineStyle(StylePropertyId.Cursor);
+                var rulesHash = ve.computedStyle.matchingRulesHash;
+                var revertedSynchronously = rulesHash == 0 || StyleCache.TryGetValue(rulesHash, out _);
+                var result = RemoveInlineStyle(StylePropertyId.Cursor);
+
+                // Only refresh the live cursor when computedStyle.cursor was just reverted synchronously above;
+                // otherwise it still holds the removed value until the restyle RemoveInlineStyle scheduled runs.
+                if (revertedSynchronously)
+                {
+                    var capturingElement = ve.elementPanel?.GetCapturingElement(PointerId.mousePointerId);
+                    var cursorOwner = capturingElement ?? ve.elementPanel?.GetTopElementUnderPointer(PointerId.mousePointerId);
+                    if (cursorOwner == ve)
+                        ve.elementPanel.cursorManager.SetCursor(ve.computedStyle.cursor);
+                }
+
+                return result;
             }
 
             m_InlineCursor = styleCursor;

@@ -14,6 +14,7 @@ using Unity.Jobs;
 using Unity.Jobs.LowLevel.Unsafe;
 using ManagedKernel.Assertions;
 using System.Runtime.CompilerServices;
+using UnityEngine.Bindings;
 
 namespace Unity.Collections.LowLevel.Unsafe
 {
@@ -66,6 +67,7 @@ namespace Unity.Collections.LowLevel.Unsafe
 
     [StructLayout(LayoutKind.Explicit)]
     [GenerateTestsForBurstCompatibility]
+    [VisibleToOtherModules("UnityEngine.EntitiesModule")]
     internal unsafe struct UnsafeParallelHashMapData
     {
         [FieldOffset(0)]
@@ -1117,6 +1119,7 @@ namespace Unity.Collections.LowLevel.Unsafe
         where TValue : unmanaged
     {
         [NativeDisableUnsafePtrRestriction]
+        [VisibleToOtherModules("UnityEngine.EntitiesModule")]
         internal UnsafeParallelHashMapData* m_Buffer;
         internal AllocatorManager.AllocatorHandle m_AllocatorLabel;
 

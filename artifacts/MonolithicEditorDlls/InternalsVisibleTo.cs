@@ -99,6 +99,7 @@ using System.Runtime.CompilerServices;
 [assembly: InternalsVisibleTo("UnityEditor.DiagnosticsModule")]
 [assembly: InternalsVisibleTo("UnityEngine.DSPGraphModule")]
 [assembly: InternalsVisibleTo("UnityEditor.EmbreeModule")]
+[assembly: InternalsVisibleTo("UnityEngine.EntitiesPropertiesModule")]
 [assembly: InternalsVisibleTo("UnityEngine.GameCenterModule")]
 [assembly: InternalsVisibleTo("UnityEditor.GenericRemoteModule")]
 [assembly: InternalsVisibleTo("UnityEditor.GraphToolkitModule")]

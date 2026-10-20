@@ -27,6 +27,7 @@ namespace UnityEditor.Build.Analysis
         private readonly MultiColumnListView m_ListView;
         private readonly Label m_FooterCountLabel;
         private readonly ZebraEmptyBody m_EmptyBody;
+        private readonly Label m_NoResultsLabel;
 
         private BuildAnalysisAsset[] m_Assets = Array.Empty<BuildAnalysisAsset>();
         private string[] m_Names = Array.Empty<string>();
@@ -57,6 +58,13 @@ namespace UnityEditor.Build.Analysis
 
             m_EmptyBody = new ZebraEmptyBody(m_ListView);
             m_ListView.parent.Add(m_EmptyBody);
+
+            // Must be added after the zebra overlay so it draws on top of the stripes.
+            m_NoResultsLabel = new Label { name = "no-results-label", pickingMode = PickingMode.Ignore, enableRichText = false };
+            m_NoResultsLabel.AddToClassList("asset-table__no-results");
+            m_NoResultsLabel.style.display = DisplayStyle.None;
+            m_ListView.parent.Add(m_NoResultsLabel);
+            m_EmptyBody.RegisterCallback<GeometryChangedEvent>(_ => SyncNoResultsLabelGeometry());
 
             m_ViewDropdown.choices = new List<string> { k_AllExtensions };
             m_ViewDropdown.SetValueWithoutNotify(k_AllExtensions);
@@ -248,6 +256,7 @@ namespace UnityEditor.Build.Analysis
             m_ListView.RefreshItems();
             UpdateFooter();
             m_EmptyBody.Refresh();
+            UpdateNoResultsLabel();
         }
 
         private void ApplySort()
@@ -302,6 +311,25 @@ namespace UnityEditor.Build.Analysis
         private void UpdateFooter()
         {
             m_FooterCountLabel.text = $"Showing {m_FilteredIndices.Count}/{m_Assets.Length}";
+        }
+
+        private void UpdateNoResultsLabel()
+        {
+            // The view dropdown only lists extensions present in the build, so only a search can filter out every asset.
+            var noResults = m_FilteredIndices.Count == 0 && m_Assets.Length > 0;
+            m_NoResultsLabel.style.display = noResults ? DisplayStyle.Flex : DisplayStyle.None;
+            var scope = m_ViewFilterId == k_NoExtensionId ? "assets" : $"{m_ExtensionPool[m_ViewFilterId]} assets";
+            m_NoResultsLabel.text = noResults ? $"No {scope} match '{m_SearchText}'." : string.Empty;
+        }
+
+        private void SyncNoResultsLabelGeometry()
+        {
+            var bodyRect = m_EmptyBody.layout;
+            m_NoResultsLabel.style.left = bodyRect.x;
+            m_NoResultsLabel.style.top = bodyRect.y;
+            m_NoResultsLabel.style.width = bodyRect.width;
+            // One row slot, so the text sits on a single stripe instead of straddling a stripe boundary.
+            m_NoResultsLabel.style.height = Mathf.Min(m_ListView.fixedItemHeight, bodyRect.height);
         }
 
         private static VisualElement MakeNameCell()

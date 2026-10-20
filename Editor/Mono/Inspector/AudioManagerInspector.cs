@@ -22,7 +22,7 @@ namespace UnityEditor
             public static readonly GUIContent DefaultSpeakerMode     = L10n.TextContent("Default Speaker Mode", "Speaker mode at start of the game. This may be changed at runtime using the AudioSettings.Reset function.", null, null);
             public static readonly GUIContent SampleRate             = L10n.TextContent("System Sample Rate", "Sample rate at which the output device of the audio system runs. Individual sounds may run at different sample rates and will be slowed down/sped up accordingly to match the output rate.", null, null);
             public static readonly GUIContent DSPBufferSize          = L10n.TextContent("DSP Buffer Size", "Length of mixing buffer. This determines the output latency of the game.", null, null);
-            public static readonly GUIContent AudioFoundation        = L10n.TextContent("Audio Foundation", "Low-level, platform audio layer. Classic is the same, mature platform layer from previous versions of Unity. Enhanced is the new platform audio layer and is supported on Windows, macOS, Linux, iOS, Android (8.1 and later), XBOX Series X|S, XBOX One, PlayStation®5, Nintendo Switch™, and Nintendo Switch™ 2. The benefits include asynchronous starting and stopping of devices and greater control over audio engine behavior. On platforms that don't have enhanced mode yet, the engine will fall back to using classic mode.", null, null);
+            public static readonly GUIContent AudioFoundation        = L10n.TextContent("Use Enhanced Audio", "Use the new low-level platform audio layer, with asynchronous starting and stopping of devices and greater control over audio engine behavior. When disabled, the classic platform layer from previous versions of Unity is used. Platforms that don't support the enhanced foundation will fall back to the classic one.", null, null);
             public static readonly GUIContent OutputChannelLayout    = L10n.TextContent("Output Channel Layout", "The audio engine will always run at the selected channel layout and up-mixing or down-mixing will occur to match the device's native channel layout. Alternatively, if DeviceNative is selected, the engine will always run at the device's native channel count, and will be reset if that native channel count changes (i.e. when the default device changes).", null, null);
             public static readonly GUIContent OutputSamplingRate     = L10n.TextContent("Output Sampling Rate", "The audio engine will always run at the selected sampling rate and sample-rate conversion will occur to match the device's native sampling rate. Alternatively, if DeviceNative is selected, the engine will always run at the device's native sampling rate, and will be reset if that native sampling rate changes (i.e. when the default device changes).", null, null);
             public static readonly GUIContent VirtualVoiceCount      = L10n.TextContent("Max Virtual Voices", "Maximum number of sounds managed by the system. Even though at most RealVoiceCount of the loudest sounds will be physically playing, the remaining sounds will still be updating their play position.", null, null);
@@ -38,8 +38,9 @@ namespace UnityEditor
         private class StylesNonSearchable
         {
             public static readonly GUIContent DSPBufferSizeInfo = L10n.TextContent("The requested buffer size ({0}) has been overridden to {1} by the operating system", null, null, null);
-            public static readonly GUIContent EnhancedAudioFoundationInfo = L10n.TextContent("Enhanced will be used on Windows, macOS, Linux, iOS, Android (8.1 and later), XBOX Series X|S, XBOX One, PlayStation®5, Nintendo Switch™, and Nintendo Switch™ 2. Other platforms will use Classic.", null, null, null);
+            public static readonly GUIContent EnhancedAudioFoundationInfo = L10n.TextContent("Classic Audio Settings will be used on WebGL, tvOS, visionOS, Universal Windows Platform, PlayStation®4, Embedded Linux, QNX, and Android (below 8.1), as Enhanced is not supported on these platforms.", null, null, null);
             public static readonly GUIContent PassthroughChannelLayoutInfo = L10n.TextContent("This layout is sent directly to the OS spatializer instead of being down-mixed on macOS, Windows, XBOX Series X|S, XBOX One devices, on Meta Quest devices and on Android devices that support spatial audio.", null, null, null);
+            public static readonly GUIContent ClassicAudioHeader = L10n.TextContent("Classic Audio", null, null, null);
         }
 
         static readonly string[] k_AdditionalSearchKeywords =
@@ -106,23 +107,14 @@ namespace UnityEditor
         {
             serializedObject.Update();
 
-            EditorGUILayout.PropertyField(m_Volume, Styles.Volume);
-            EditorGUILayout.PropertyField(m_RolloffScale, Styles.RolloffScale);
-            EditorGUILayout.PropertyField(m_DopplerFactor, Styles.DopplerFactor);
-            EditorGUILayout.PropertyField(m_DefaultSpeakerMode, Styles.DefaultSpeakerMode);
-            EditorGUILayout.DelayedIntField(m_SampleRate, Styles.SampleRate);
-            EditorGUILayout.PropertyField(m_RequestedDSPBufferSize, Styles.DSPBufferSize);
-            if (m_RequestedDSPBufferSize.intValue != m_ActualDSPBufferSize.intValue)
-                EditorGUILayout.HelpBox(
-                    string.Format(StylesNonSearchable.DSPBufferSizeInfo.text,
-                        m_RequestedDSPBufferSize.intValue == 0 ? "default" : m_RequestedDSPBufferSize.intValue.ToString(),
-                        m_ActualDSPBufferSize.intValue),
-                    MessageType.Info);
+            bool enhanced = m_AudioFoundation.intValue == (int)AudioFoundation.Enhanced;
+            EditorGUI.BeginChangeCheck();
+            enhanced = EditorGUILayout.Toggle(Styles.AudioFoundation, enhanced);
+            if (EditorGUI.EndChangeCheck())
+                m_AudioFoundation.intValue = (int)(enhanced ? AudioFoundation.Enhanced : AudioFoundation.Classic);
 
-            EditorGUILayout.PropertyField(m_AudioFoundation, Styles.AudioFoundation);
-            if (m_AudioFoundation.intValue.Equals(1))
+            using (new EditorGUI.DisabledScope(!enhanced))
             {
-                EditorGUILayout.HelpBox(StylesNonSearchable.EnhancedAudioFoundationInfo.text, MessageType.Info);
                 EditorGUI.indentLevel++;
                 EditorGUILayout.PropertyField(m_OutputChannelLayout, Styles.OutputChannelLayout);
                 if (m_OutputChannelLayout.intValue == (int)ChannelLayoutBehavior.Surround_7_1_4)
@@ -130,6 +122,25 @@ namespace UnityEditor
                 EditorGUILayout.PropertyField(m_OutputSamplingRate, Styles.OutputSamplingRate);
                 EditorGUI.indentLevel--;
             }
+
+            EditorGUILayout.LabelField(StylesNonSearchable.ClassicAudioHeader);
+            EditorGUI.indentLevel++;
+            EditorGUILayout.PropertyField(m_DefaultSpeakerMode, Styles.DefaultSpeakerMode);
+            EditorGUILayout.DelayedIntField(m_SampleRate, Styles.SampleRate);
+            if (enhanced)
+                EditorGUILayout.HelpBox(StylesNonSearchable.EnhancedAudioFoundationInfo.text, MessageType.Info);
+            EditorGUI.indentLevel--;
+
+            EditorGUILayout.PropertyField(m_Volume, Styles.Volume);
+            EditorGUILayout.PropertyField(m_RolloffScale, Styles.RolloffScale);
+            EditorGUILayout.PropertyField(m_DopplerFactor, Styles.DopplerFactor);
+            EditorGUILayout.PropertyField(m_RequestedDSPBufferSize, Styles.DSPBufferSize);
+            if (m_RequestedDSPBufferSize.intValue != m_ActualDSPBufferSize.intValue)
+                EditorGUILayout.HelpBox(
+                    string.Format(StylesNonSearchable.DSPBufferSizeInfo.text,
+                        m_RequestedDSPBufferSize.intValue == 0 ? "default" : m_RequestedDSPBufferSize.intValue.ToString(),
+                        m_ActualDSPBufferSize.intValue),
+                    MessageType.Info);
 
             EditorGUILayout.PropertyField(m_VirtualVoiceCount, Styles.VirtualVoiceCount);
             EditorGUILayout.PropertyField(m_RealVoiceCount, Styles.RealVoiceCount);

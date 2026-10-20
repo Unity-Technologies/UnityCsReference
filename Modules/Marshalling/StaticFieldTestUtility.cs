@@ -54,6 +54,10 @@ namespace UnityEngine
         public struct ValueTypeWrapper
         {
             public T ObjectField;
+
+            // Field signatures on a generic type encode T as VAR, so ObjectField never exercises the closed
+            // GENERICINST value-type walk; this field's signature is OBJECT regardless of T.
+            public object ConcreteObjectField;
         }
 
         [NoAutoStaticsCleanup]

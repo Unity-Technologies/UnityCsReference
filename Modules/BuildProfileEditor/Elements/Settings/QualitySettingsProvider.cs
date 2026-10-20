@@ -20,16 +20,9 @@ namespace UnityEditor.Build.Profile.Elements
 
         public bool HasSettings(BuildProfile profile) => profile.qualitySettings != null;
 
-        public void OnAdd(BuildProfile profile)
-        {
-            BuildProfileModuleUtil.CreateQualitySettings(profile);
-            profile.ResetToGlobalQualitySettingsValues();
-        }
+        public void OnAdd(BuildProfile profile) => BuildProfileModuleUtil.CreateQualitySettings(profile);
 
-        public void OnRemove(BuildProfile profile)
-        {
-            BuildProfileModuleUtil.RemoveQualitySettings(profile);
-        }
+        public void OnRemove(BuildProfile profile) => BuildProfileModuleUtil.RemoveQualitySettings(profile);
 
         public Action<BuildProfile> GetResetAction() => OnReset;
 
@@ -46,6 +39,6 @@ namespace UnityEditor.Build.Profile.Elements
             return new EditorAsVisualElement(profile.qualitySettings, true);
         }
 
-        void OnReset(BuildProfile profile) => profile.ResetToGlobalQualitySettingsValues();
+        void OnReset(BuildProfile profile) => profile.qualitySettings.ResetToGlobalValues(profile);
     }
 }

@@ -658,7 +658,7 @@ namespace Unity.Mathematics
             return v + q.value.w * t + cross(q.value.xyz, t);
         }
 
-        /// <summary>Returns the result of a normalized linear interpolation between two quaternions q1 and a2 using an interpolation parameter t.</summary>
+        /// <summary>Returns the result of a normalized linear interpolation between two quaternions q1 and q2 using an interpolation parameter t.</summary>
         /// <remarks>
         /// Prefer to use this over slerp() when you know the distance between q1 and q2 is small. This can be much
         /// higher performance due to avoiding trigonometric function evaluations that occur in slerp().

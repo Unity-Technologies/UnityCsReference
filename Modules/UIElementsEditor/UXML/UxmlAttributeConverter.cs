@@ -93,6 +93,9 @@ namespace UnityEditor.UIElements
         [IgnoreForUAL0015("Lazy converter cache, re-created on demand by GetOrCreateConverter after cleanup")]
         private static Dictionary<Type, IUxmlAttributeConverter> s_Converters = new();
 
+        // Using the lookahead assertion to split the string by commas that are not inside parentheses
+        static readonly Regex s_CommaOutsideParenthesesRegex = new Regex(@",(?![^(]*\))");
+
         // s_RegisteredConverterTypes is cleared on code reload, and the create-on-miss fallback in
         // TryGetConverterType only derives enum/List/array shapes from the entries registered here, so
         // the scan has to re-run on every code load rather than once per static-constructor run.
@@ -178,6 +181,14 @@ namespace UnityEditor.UIElements
         public static bool TryGetConverter<T>(out IUxmlAttributeConverter converter)
         {
             return TryGetConverter(typeof(T), out converter);
+        }
+
+        internal static string[] SplitListItems<T>(string value)
+        {
+            if (typeof(T) == typeof(Color) && value.Contains("("))
+                return s_CommaOutsideParenthesesRegex.Split(value);
+
+            return value.Split(',');
         }
 
         public static bool TryGetConverterType(Type type, out Type converterType)
@@ -765,12 +776,7 @@ namespace UnityEditor.UIElements
             if (value == null)
                 return null;
 
-            var items = value.Split(',');
-            if (typeof(T) == typeof(Color) && value.Contains("("))
-            {
-                // Using the lookahead assertion to split the string by commas that are not inside parentheses
-                items = Regex.Split(value, @"(?<=\)),");
-            }
+            var items = UxmlAttributeConverter.SplitListItems<T>(value);
 
             if (items.Length <= 0 || !UxmlAttributeConverter.TryGetConverter<T>(out var converter))
                 return null;
@@ -871,20 +877,22 @@ namespace UnityEditor.UIElements
             if (value == null)
                 throw new ArgumentOutOfRangeException(nameof(value), "Cannot parse a null string to an AnimationCurve.");
 
-            var animationItems = value.Split('+');
-            if (animationItems.Length < 2)
+            var wrapModesSeparator = value.LastIndexOf("+(", StringComparison.Ordinal);
+            if (wrapModesSeparator < 0)
                 throw new ArgumentOutOfRangeException(nameof(value), "AnimationCurve does not have the correct format.");
 
-            var keyFrameItems = animationItems[0].Split(';');
-            if (keyFrameItems.Length <= 0)
-                throw new ArgumentOutOfRangeException(nameof(value), "AnimationCurve does not have the correct format.");
+            var keyFramesGroup = value[..wrapModesSeparator].Trim();
+            var keyFrameItems = keyFramesGroup.Length == 0 ? Array.Empty<string>() : keyFramesGroup.Split(';');
 
             using var pool = ListPool<Keyframe>.Get(out var keyFrames);
-            foreach (var item in keyFrameItems)
+            foreach (var untrimmedItem in keyFrameItems)
             {
-                var valueList = item.Trim().Substring(1, item.Length - 2); // Remove brackets
-                var keyItems = valueList.Split(',');
-                if (keyItems.Length < 8)
+                var item = untrimmedItem.Trim();
+                if (item.Length < 2 || item[0] != '{' || item[^1] != '}')
+                    throw new ArgumentOutOfRangeException(nameof(value), "AnimationCurve's KeyFrame does not have the correct format.");
+
+                var keyItems = item[1..^1].Split(',');
+                if (keyItems.Length < 10)
                     throw new ArgumentOutOfRangeException(nameof(value), "AnimationCurve's KeyFrame does not have enough values.");
 
                 var success = UxmlUtility.TryParseFloat(keyItems[0], out var keyTime);
@@ -908,11 +916,13 @@ namespace UnityEditor.UIElements
                 keyFrames.Add(keyFrame);
             }
 
-            var wrapModesGroup = animationItems[1];
-            var wrapModeArray = wrapModesGroup.Substring(1, wrapModesGroup.Length - 2); // Remove parenthesis
-            var wrapModes = wrapModeArray.Split(',');
-            var parsed = Enum.TryParse<WrapMode>(wrapModes[0], out var preWrapMode);
-            parsed &= Enum.TryParse<WrapMode>(wrapModes[1], out var postWrapMode);
+            var wrapModesGroup = value[(wrapModesSeparator + 1)..].Trim();
+            var wrapModes = wrapModesGroup.EndsWith(')') ? wrapModesGroup[1..^1].Split(',') : Array.Empty<string>();
+            var preWrapMode = default(WrapMode);
+            var postWrapMode = default(WrapMode);
+            var parsed = wrapModes.Length == 2 &&
+                Enum.TryParse(wrapModes[0], out preWrapMode) &&
+                Enum.TryParse(wrapModes[1], out postWrapMode);
 
             if (!parsed)
                 throw new ArgumentOutOfRangeException(nameof(value), "AnimationCurve's wrap modes do not have the correct format.");
@@ -957,31 +967,35 @@ namespace UnityEditor.UIElements
             if (value == null)
                 throw new ArgumentOutOfRangeException(nameof(value), "Cannot parse a null string to a Gradient.");
 
-            var index = value.IndexOf(":");
+            var index = value.IndexOf(":", StringComparison.Ordinal);
             if (index == -1)
                 throw new ArgumentOutOfRangeException(nameof(value), "Gradient mode does not have the correct format.");
 
-            var mode = value[..index];
+            var mode = value[..index].Trim();
             var keys = value.Remove(0, index + 1);
             var parsedMode = Enum.TryParse<GradientMode>(mode, out var gradientMode);
             if (!parsedMode)
                 throw new ArgumentOutOfRangeException(nameof(value), "Gradient mode cannot be parsed correctly.");
 
-            var gradientItems = keys.Split('+');
-            if (gradientItems.Length <= 0)
+            // Only alpha values can contain a '+' (exponent): times are normalized and colors are hex.
+            var alphaKeysSeparator = keys.IndexOf("+", StringComparison.Ordinal);
+            if (alphaKeysSeparator < 0)
                 throw new ArgumentOutOfRangeException(nameof(value), "Gradient's keys do not have the correct format.");
 
             using var poolColor = ListPool<GradientColorKey>.Get(out var gradientColorKeys);
-            var colorKeyItems = gradientItems[0].Split(';');
-            foreach (var item in colorKeyItems)
+            var colorKeyItems = keys[..alphaKeysSeparator].Split(';');
+            foreach (var untrimmedItem in colorKeyItems)
             {
-                var valueList = item.Trim().Substring(1, item.Length - 2); // Remove brackets
-                var colorKeys = valueList.Split(',');
-                if (colorKeys.Length <= 0)
-                    throw new ArgumentOutOfRangeException(nameof(value), "Gradient's color key does not have enough values.");
+                var item = untrimmedItem.Trim();
+                if (item.Length < 2 || item[0] != '{' || item[^1] != '}')
+                    throw new ArgumentOutOfRangeException(nameof(value), "Gradient's color key does not have the correct format.");
+
+                var colorKeys = item[1..^1].Split(',');
+                if (colorKeys.Length != 2)
+                    throw new ArgumentOutOfRangeException(nameof(value), "Gradient's color key does not have the expected number of values.");
 
                 var success = UxmlUtility.TryParseFloat(colorKeys[0], out var time);
-                success &= ColorUtility.TryParseHtmlString(colorKeys[1], out var color);
+                success &= ColorUtility.TryParseHtmlString(colorKeys[1].Trim(), out var color);
 
                 if (!success)
                     throw new ArgumentOutOfRangeException(nameof(value), "Gradient's color key could not be parsed correctly.");
@@ -990,13 +1004,16 @@ namespace UnityEditor.UIElements
             }
 
             using var poolAlpha = ListPool<GradientAlphaKey>.Get(out var gradientAlphaKeys);
-            var alphaKeyItems = gradientItems[1].Split(';');
-            foreach (var item in alphaKeyItems)
+            var alphaKeyItems = keys[(alphaKeysSeparator + 1)..].Split(';');
+            foreach (var untrimmedItem in alphaKeyItems)
             {
-                var valueList = item.Trim().Substring(1, item.Length - 2); // Remove brackets
-                var alphaKeys = valueList.Split(',');
-                if (alphaKeys.Length <= 0)
-                    throw new ArgumentOutOfRangeException(nameof(value), "Gradient's alpha key does not have enough values.");
+                var item = untrimmedItem.Trim();
+                if (item.Length < 2 || item[0] != '{' || item[^1] != '}')
+                    throw new ArgumentOutOfRangeException(nameof(value), "Gradient's alpha key does not have the correct format.");
+
+                var alphaKeys = item[1..^1].Split(',');
+                if (alphaKeys.Length != 2)
+                    throw new ArgumentOutOfRangeException(nameof(value), "Gradient's alpha key does not have the expected number of values.");
 
                 var success = UxmlUtility.TryParseFloat(alphaKeys[0], out var time);
                 success &= UxmlUtility.TryParseFloat(alphaKeys[1], out var alpha);

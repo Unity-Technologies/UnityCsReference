@@ -247,10 +247,10 @@ namespace Unity.ProjectAuditor.Editor.Modules
         internal const string k_ComputeShaderMayHaveBadVariants = "Compute shader may have bad (but unused) variants preventing this from being evaluated.";
 
         [AutoStaticsCleanupOnCodeReload]
-        static Dictionary<Shader, List<ShaderVariantData>> s_ShaderVariantData =
+        internal static Dictionary<Shader, List<ShaderVariantData>> s_ShaderVariantData =
             new Dictionary<Shader, List<ShaderVariantData>>();
         [AutoStaticsCleanupOnCodeReload]
-        static Dictionary<ComputeShader, List<ComputeShaderVariantData>> s_ComputeShaderVariantData =
+        internal static Dictionary<ComputeShader, List<ComputeShaderVariantData>> s_ComputeShaderVariantData =
             new Dictionary<ComputeShader, List<ComputeShaderVariantData>>();
 
         public override string Name => "Shaders";
@@ -316,7 +316,10 @@ namespace Unity.ProjectAuditor.Editor.Modules
             var builtShaderPaths = GetBuiltShaderPaths();
 
             foreach (var builtShader in builtShaderPaths)
-                onShaderFound.Invoke(builtShader.Key, builtShader.Value);
+            {
+                if (IsAssetPathOwnerIncluded(builtShader.Value, context.Params.OwnerFlags))
+                    onShaderFound.Invoke(builtShader.Key, builtShader.Value);
+            }
 
             progress?.Clear(progressState);
         }
@@ -438,6 +441,9 @@ namespace Unity.ProjectAuditor.Editor.Modules
                 var computeShaderName = shaderCompilerData.Key.name;
                 if (AdvanceAsyncProgress(progress, progressState, computeShaderName) == false)
                     break;
+
+                if (!IsAssetPathOwnerIncluded(AssetDatabase.GetAssetPath(shaderCompilerData.Key), context.Params.OwnerFlags))
+                    continue;
 
                 foreach (var shaderVariantData in shaderCompilerData.Value)
                 {

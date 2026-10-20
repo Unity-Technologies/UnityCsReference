@@ -931,6 +931,9 @@ internal sealed partial class UIAssetRegistry : ScriptableSingleton<UIAssetRegis
     /// <summary>Reverts a single tracked asset to its on-disk state, dropping unsaved changes.</summary>
     public void DiscardAsset(UnityEngine.Object asset, object source = null)
     {
+        if (asset == null)
+            return;
+
         source ??= CommandSources.Registry;
         switch (asset)
         {
@@ -940,7 +943,11 @@ internal sealed partial class UIAssetRegistry : ScriptableSingleton<UIAssetRegis
             case StyleSheet styleSheet:
                 DiscardStandalone(styleSheet, source);
                 break;
+            default:
+                return;
         }
+
+        UIAssetRegistrySceneTracking.FlushPendingReloadNow();
     }
 
     void DiscardDocument(VisualTreeAsset vta, object source)
@@ -1323,6 +1330,12 @@ internal sealed partial class UIAssetRegistry : ScriptableSingleton<UIAssetRegis
 
         Close(id, asset, s_AutoTrackOwner);
     }
+
+    /// <summary>
+    /// Tracks an asset that was just created on disk, before anything edits it, so its clean baseline is the
+    /// content it was created with.
+    /// </summary>
+    internal void TrackCreatedAsset(UnityEngine.Object asset) => Open(asset, s_AutoTrackOwner, UIAssetAccess.ReadWrite);
 
     void RefreshSnapshot(EntityId id, UnityEngine.Object asset)
     {

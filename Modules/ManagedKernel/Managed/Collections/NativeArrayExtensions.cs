@@ -6,6 +6,7 @@ using System;
 using System.Diagnostics;
 using Unity.Collections.LowLevel.Unsafe;
 using Unity.Burst;
+using UnityEngine.Bindings;
 using static Unity.Collections.AllocatorManager;
 
 namespace Unity.Collections
@@ -23,6 +24,7 @@ namespace Unity.Collections
         public struct NativeArrayStaticId<T>
             where T : unmanaged
         {
+            [VisibleToOtherModules("UnityEngine.EntitiesModule")]
             internal static readonly SharedStatic<int> s_staticSafetyId = SharedStatic<int>.GetOrCreate<NativeArray<T>>();
         }
 

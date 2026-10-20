@@ -371,9 +371,9 @@ namespace UnityEditor
                 return true;
 
             // Null target renders in two cases: missing-script MonoBehaviours
-            // (SO carries m_Script) and data-component editors.
+            // (SO carries m_Script) and editors with no target Object.
             if (editor.target == null
-                && (editor.isDataComponentEditor
+                && (!editor.hasUnityObjectTargets
                     || editor.serializedObject?.FindProperty("m_Script") != null))
                 return false;
 

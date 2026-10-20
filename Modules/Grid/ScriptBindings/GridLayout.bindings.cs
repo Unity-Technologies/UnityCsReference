@@ -81,6 +81,7 @@ namespace UnityEngine
         }
 
         ///<summary>Returns the local bounds for a cell at the location.</summary>
+        ///<remarks>The bounds are centered on the center of the cell and have the size of <see cref="GridLayout.cellSize" />.</remarks>
         ///<param name="cellPosition">Location of the cell.</param>
         ///<returns>Local bounds of cell at the location.</returns>
         [FreeFunction("GridLayoutBindings::GetBoundsLocal", HasExplicitThis = true)]

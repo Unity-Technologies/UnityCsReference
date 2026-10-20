@@ -1413,6 +1413,9 @@ namespace UnityEditor
         // Binding only created for testing
         internal static int TestOnlyDeleteAllNonPrimaryArtifacts(Type[] importers, bool deleteUnusedContentFiles)
         {
+            foreach (var importer in importers)
+                AssetDatabaseExperimental.ThrowIfNotImporterType(importer);
+
             return DeleteAllNonPrimaryArtifacts_Importer(importers, deleteUnusedContentFiles);
         }
 

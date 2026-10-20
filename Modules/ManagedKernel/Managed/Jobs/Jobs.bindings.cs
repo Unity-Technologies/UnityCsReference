@@ -292,18 +292,24 @@ namespace Unity.Jobs.LowLevel.Unsafe
         internal static bool JobBatchingEnabled => GetJobBatchingEnabled();
 
         [FreeFunction("JobDebuggerGetSystemIdCellPtr")]
+        [VisibleToOtherModules("UnityEngine.EntitiesModule")]
         internal static extern IntPtr GetSystemIdCellPtr();
 
         [FreeFunction("JobDebuggerClearSystemIds")]
+        [VisibleToOtherModules("UnityEngine.EntitiesModule")]
         internal static extern void ClearSystemIds();
 
         [FreeFunction("JobDebuggerGetSystemIdMappings")]
+        [VisibleToOtherModules("UnityEngine.EntitiesModule")]
         internal static unsafe extern int GetSystemIdMappings(JobHandle* handles, int* systemIds, int maxCount);
 
         ///<exclude />
+        [VisibleToOtherModules("UnityEngine.EntitiesModule")]
         internal delegate void PanicFunction_();
 
         [AutoStaticsCleanupOnCodeReload]
+        [IgnoreForUAL0015("Installed again by its owner whenever it is null, e.g. by every new Entities world")]
+        [VisibleToOtherModules("UnityEngine.EntitiesModule")]
         internal static PanicFunction_ PanicFunction;
 
         [RequiredByNativeCode]

@@ -19,22 +19,20 @@ namespace UnityEditor.Build.Profile
     {
         const string k_Uxml = "BuildProfile/UXML/BuildProfileCommonGraphicsSettings.uxml";
         const string k_StyleSheet = "BuildProfile/StyleSheets/BuildProfile.uss";
-        const string k_LastDefaultPropertyPath = "m_EditorClassIdentifier";
-        const string k_ShaderBuildSettingsTypeName = "ShaderBuildSettings";
 
         ShaderBuildSettingsUI m_ShaderBuildSettingsUI = new();
         EnumField m_DefaultMeshBufferTargetField;
 
         void OnDisable()
         {
-            if (!m_ShaderBuildSettingsUI.HasUnsavedChanges)
-                return;
+            if (m_ShaderBuildSettingsUI.HasUnsavedChanges)
+            {
+                var parentProfile = FindProfileStillOwningTarget();
+                if (parentProfile != null)
+                    m_ShaderBuildSettingsUI.HandleUnsavedChangesDialog(parentProfile.name);
+            }
 
-            var parentProfile = FindProfileStillOwningTarget();
-            if (parentProfile == null)
-                return;
-
-            m_ShaderBuildSettingsUI.HandleUnsavedChangesDialog(parentProfile.name);
+            m_ShaderBuildSettingsUI.ClearUIUndo();
         }
 
         BuildProfile FindProfileStillOwningTarget()
@@ -209,36 +207,6 @@ namespace UnityEditor.Build.Profile
                 typeToCheck = typeToCheck.BaseType;
             }
             return false;
-        }
-
-        public void ResetToGlobalGraphicsSettingsValues()
-        {
-            var globalGraphicsSettings = GraphicsSettings.GetGraphicsSettings();
-            var globalGraphicsSettingsSO = new SerializedObject(globalGraphicsSettings);
-            var profileSerializedProperty = serializedObject.FindProperty(k_LastDefaultPropertyPath);
-
-            while (profileSerializedProperty.Next(false))
-            {
-                var globalSerializedProperty = globalGraphicsSettingsSO.FindProperty(profileSerializedProperty.name);
-                if (profileSerializedProperty.isArray)
-                {
-                    profileSerializedProperty.arraySize = globalSerializedProperty.arraySize;
-                    for (int i = 0; i < profileSerializedProperty.arraySize; i++)
-                    {
-                        var profileArrayElement = profileSerializedProperty.GetArrayElementAtIndex(i);
-                        var globalArrayElement = globalSerializedProperty.GetArrayElementAtIndex(i);
-                        profileArrayElement.boxedValue = globalArrayElement.boxedValue;
-                    }
-                }
-                else
-                {
-                    profileSerializedProperty.boxedValue = profileSerializedProperty.type == k_ShaderBuildSettingsTypeName
-                        ? EditorGraphicsSettings.GetShaderBuildSettings()
-                        : globalSerializedProperty.boxedValue;
-                }
-            }
-
-            serializedObject.ApplyModifiedProperties();
         }
     }
 }

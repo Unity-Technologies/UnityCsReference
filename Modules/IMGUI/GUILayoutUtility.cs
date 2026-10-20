@@ -219,16 +219,24 @@ namespace UnityEngine
         [Obsolete("EndGroup has no effect and will be removed", false)]
         public static void EndGroup(string groupName) {}
 
+        static Vector2 GetRootPixelSize()
+        {
+            // Screen is display 0; the root target is the display this OnGUI renders to
+            Vector2 size = GUIUtility.rootTargetPixelSize;
+            return size.x > 0 && size.y > 0 ? size : new Vector2(Screen.width, Screen.height);
+        }
+
         internal static void Layout()
         {
             if (current.topLevel.windowID == -1)
             {
                 // Normal GUILayout.whatever -outside beginArea calls.
                 // Here we go over all entries and calculate their sizes
+                Vector2 rootSize = GetRootPixelSize() / GUIUtility.pixelsPerPoint;
                 current.topLevel.CalcWidth();
-                current.topLevel.SetHorizontal(0, Mathf.Min(Screen.width / GUIUtility.pixelsPerPoint, current.topLevel.maxWidth));
+                current.topLevel.SetHorizontal(0, Mathf.Min(rootSize.x, current.topLevel.maxWidth));
                 current.topLevel.CalcHeight();
-                current.topLevel.SetVertical(0, Mathf.Min(Screen.height / GUIUtility.pixelsPerPoint, current.topLevel.maxHeight));
+                current.topLevel.SetVertical(0, Mathf.Min(rootSize.y, current.topLevel.maxHeight));
 
                 LayoutFreeGroup(current.windows);
             }
@@ -518,8 +526,8 @@ namespace UnityEngine
 
                         Vector2 size = style.CalcSizeWithConstraints(content, sizeConstraints);
                         // This is needed on non-integer scale ratios to avoid errors to accumulate in further layout calculations
-                        size.x = Mathf.Ceil(size.x);
-                        size.y = Mathf.Ceil(size.y);
+                        size.x = GUIUtility.CeilToPixelGrid(size.x, GUIUtility.pixelsPerPoint);
+                        size.y = GUIUtility.CeilToPixelGrid(size.y, GUIUtility.pixelsPerPoint);
                         current.topLevel.Add(new GUILayoutEntry(size.x, size.x, size.y, size.y, style, options));
                     }
                     return kDummyRect;

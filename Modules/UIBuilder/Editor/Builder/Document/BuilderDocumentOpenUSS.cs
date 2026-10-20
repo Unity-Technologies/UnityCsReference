@@ -121,8 +121,9 @@ namespace Unity.UI.Builder
                 return false;
             }
 
+            GeneratePreview();
 
-            bool shouldSave = m_OldPath != newUSSPath;
+            bool shouldSave = m_OldPath != newUSSPath || UIAssetRegistry.instance.IsDirty(m_StyleSheet);
             if (!shouldSave && m_BackupStyleSheet)
             {
                 var backUss = m_BackupStyleSheet.GenerateUSS();

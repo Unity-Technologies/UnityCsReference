@@ -23,7 +23,7 @@ namespace UnityEditor.Build.Content
         DisableWriteTypeTree = 1 << 0,
         ///<summary>Build Flag to indicate the Unity Version should not be written to the serialized file.</summary>
         StripUnityVersion = 1 << 1,
-        ///<summary>Build a development version of the content files.</summary>
+        [Obsolete("ContentBuildFlags.DevelopmentBuild is obsolete and has no effect: the Development Build setting no longer affects content builds or script compilation.", true)]
         DevelopmentBuild = 1 << 2,
         /// <summary>
         /// Build flag to indicate that TypeTree data is to be stripped from the serialized files and saved separately.  The file path of the extracted data is recorded in the UnityEditor.Build.Content.WriteResult in the field 'extractedTypeTreeDataPath'.

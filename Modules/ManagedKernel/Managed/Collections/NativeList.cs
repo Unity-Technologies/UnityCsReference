@@ -12,6 +12,7 @@ using System.Threading;
 using Unity.Burst;
 using Unity.Collections.LowLevel.Unsafe;
 using Unity.Jobs;
+using UnityEngine.Bindings;
 
 namespace Unity.Collections
 {
@@ -85,11 +86,14 @@ namespace Unity.Collections
         , IEnumerable<T> // Used by collection initializers.
         where T : unmanaged
     {
+        [VisibleToOtherModules("UnityEngine.EntitiesModule")]
         internal AtomicSafetyHandle m_Safety;
         internal int m_SafetyIndexHint;
+        [VisibleToOtherModules("UnityEngine.EntitiesModule")]
         internal static readonly SharedStatic<int> s_staticSafetyId = SharedStatic<int>.GetOrCreate<NativeList<T>>();
 
         [NativeDisableUnsafePtrRestriction]
+        [VisibleToOtherModules("UnityEngine.EntitiesModule")]
         internal UnsafeList<T>* m_ListData;
 
         /// <summary>

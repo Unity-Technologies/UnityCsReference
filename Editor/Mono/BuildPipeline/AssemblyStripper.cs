@@ -99,19 +99,6 @@ namespace UnityEditorInternal
             linkXmlFiles.AddRange(ProcessBuildPipelineGenerateAdditionalLinkXmlFiles(args));
             linkXmlFiles.AddRange(GetUserBlacklistFiles());
 
-            var isMonoBackend = PlayerSettings.GetScriptingBackend(NamedBuildTarget.FromActiveSettings(args.target)) == ScriptingImplementation.Mono2x;
-            if (isMonoBackend)
-            {
-                // The old Mono assembly stripper uses per-platform link.xml files if available. Apply these here.
-                var buildToolsDirectory = BuildPipeline.GetBuildToolsDirectory(args.target);
-                if (!string.IsNullOrEmpty(buildToolsDirectory))
-                {
-                    var platformDescriptor = Path.Combine(buildToolsDirectory, "link.xml");
-                    if (File.Exists(platformDescriptor))
-                        linkXmlFiles.Add(platformDescriptor);
-                }
-            }
-
 #pragma warning disable UAC2001 // Avoid Linq
             return linkXmlFiles
 #pragma warning restore UAC2001

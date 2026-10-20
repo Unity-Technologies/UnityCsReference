@@ -197,17 +197,14 @@ namespace UnityEditor.Actions
             return contextMenu;
         }
 
-        internal static void ShowActionMenu()
+        internal static void ShowActionMenu(Vector2 mousePosition)
         {
-            if (Event.current == null)
-                return;
-
             var dropdownMenu = CreateActionMenu();
             if (dropdownMenu.MenuItems().Count == 0)
                 AddAction(dropdownMenu, "No Actions for this Context", null, false);
 
 #pragma warning disable CS0618 // Type or member is obsolete
-            EditorMenuExtensions.DoDisplayEditorMenuFromImGUI(dropdownMenu, new Rect(Event.current.mousePosition, Vector2.zero));
+            EditorMenuExtensions.DoDisplayEditorMenuFromImGUI(dropdownMenu, new Rect(mousePosition, Vector2.zero));
 #pragma warning restore CS0618 // Type or member is obsolete
         }
 

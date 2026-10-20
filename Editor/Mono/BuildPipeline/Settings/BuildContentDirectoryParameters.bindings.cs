@@ -55,6 +55,11 @@ namespace UnityEditor
         /// without an archive wrapper. Set <see cref="BuildContentOptions.UseArchive"/> to wrap the output in archive (.archive)
         /// files instead. Any other compression setting always produces archive files.
         ///
+        /// The compression <see cref="BuildCompression"/> chosen must be supported by the target platform, otherwise the build
+        /// will fail.
+        /// 
+        /// LZMA <see cref="BuildCompression.LZMA"/> compression is not supported and will result in a failed build.
+        /// 
         /// <see cref="Unity.Loading.ContentLoadManager.RegisterContentDirectory(string)"/> can load a content directory whether
         /// its content is stored as loose files or wrapped in archive files. You can also create archive files from loose-file
         /// output as a separate step after the build with

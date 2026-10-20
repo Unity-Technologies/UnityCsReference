@@ -154,39 +154,71 @@ namespace UnityEngine.TextCore
 
         // TODO : It's not ideal to have GetHashCode both in C# and C++. We would ideally keep only C++, but because of the string marshalling involved this is too costly for IMGUI.
         // Remove this once we have a free interop to native.
+        // Must mix: with a linear hash, "0" and "1" collide when their widths differ slightly (UUM-147879)
         public override unsafe int GetHashCode()
         {
-            unchecked
+            var hash = new HashCode();
+            hash.Add(fontAsset);
+            hash.Add(textSettings);
+
+            if (textBufferPtr != IntPtr.Zero && textBufferLength > 0)
             {
-                int hash = 17;
-                hash = hash * 23 + fontAsset.GetHashCode();
-                hash = hash * 23 + textSettings.GetHashCode();
-
-                if (textBufferPtr != IntPtr.Zero && textBufferLength > 0)
-                {
-                    char* p = (char*)textBufferPtr;
-                    for (int i = 0; i < textBufferLength; i++)
-                        hash = hash * 23 + p[i];
-                }
-
-                hash = hash * 23 + screenWidth;
-                hash = hash * 23 + screenHeight;
-                hash = hash * 23 + fontSize;
-                hash = hash * 23 + fontStyle.GetHashCode();
-                hash = hash * 23 + fontWeight.GetHashCode();
-                hash = hash * 23 + wordWrapEnabled.GetHashCode();
-                hash = hash * 23 + overflow.GetHashCode();
-                hash = hash * 23 + languageDirection.GetHashCode();
-                hash = hash * 23 + horizontalAlignment.GetHashCode();
-                hash = hash * 23 + verticalAlignment.GetHashCode();
-                hash = hash * 23 + bestFit.GetHashCode();
-                hash = hash * 23 + disableAdvancedFontFeatures.GetHashCode();
-                hash = hash * 23 + color.GetHashCode();
-                hash = hash * 23 + richTextEnabled.GetHashCode();
-                hash = hash * 23 + minContentMeasure.GetHashCode();
-                hash = hash * 23 + flipYAxis.GetHashCode();
-                return hash;
+                char* p = (char*)textBufferPtr;
+                for (int i = 0; i < textBufferLength; i++)
+                    hash.Add(p[i]);
             }
+
+            hash.Add(screenWidth);
+            hash.Add(screenHeight);
+            hash.Add(fontSize);
+            hash.Add(fontStyle);
+            hash.Add(fontWeight);
+            hash.Add(wordWrapEnabled);
+            hash.Add(overflow);
+            hash.Add(languageDirection);
+            hash.Add(horizontalAlignment);
+            hash.Add(verticalAlignment);
+            hash.Add(bestFit);
+            hash.Add(disableAdvancedFontFeatures);
+            hash.Add(color);
+            hash.Add(richTextEnabled);
+            hash.Add(minContentMeasure);
+            hash.Add(flipYAxis);
+            return hash.ToHashCode();
+        }
+
+        // GetHashCode can collide; caches keyed by it confirm hits with this plus a text comparison
+        [VisibleToOtherModules("UnityEngine.IMGUIModule")]
+        internal bool EqualsIgnoringTextBuffer(in NativeTextGenerationSettings other)
+        {
+            return fontAsset == other.fontAsset
+                && textSettings == other.textSettings
+                && screenWidth == other.screenWidth
+                && screenHeight == other.screenHeight
+                && wordWrapEnabled == other.wordWrapEnabled
+                && overflow == other.overflow
+                && languageDirection == other.languageDirection
+                && vertexPadding == other.vertexPadding
+                && horizontalAlignment == other.horizontalAlignment
+                && verticalAlignment == other.verticalAlignment
+                && preProcessFlags == other.preProcessFlags
+                && fontSize == other.fontSize
+                && bestFit == other.bestFit
+                && maxFontSize == other.maxFontSize
+                && minFontSize == other.minFontSize
+                && fontStyle == other.fontStyle
+                && fontWeight == other.fontWeight
+                && characterSpacing == other.characterSpacing
+                && wordSpacing == other.wordSpacing
+                && paragraphSpacing == other.paragraphSpacing
+                && lineSpacing == other.lineSpacing
+                && color.Equals(in other.color)
+                && disableAdvancedFontFeatures == other.disableAdvancedFontFeatures
+                && richTextEnabled == other.richTextEnabled
+                && hoveredTag == other.hoveredTag
+                && pixelsPerPointFixed64 == other.pixelsPerPointFixed64
+                && minContentMeasure == other.minContentMeasure
+                && flipYAxis == other.flipYAxis;
         }
     }
 

@@ -44,14 +44,17 @@ namespace Unity.Collections
     public unsafe struct NativeArray<T> : IDisposable, IEnumerable<T>, IEquatable<NativeArray<T>> where T : struct
     {
         [NativeDisableUnsafePtrRestriction]
-        [VisibleToOtherModules("UnityEngine.CoreModule", "UnityEngine.ContentLoadModule", "UnityEngine.TilemapModule", "UnityEditor.CoreModule")]
+        [VisibleToOtherModules("UnityEngine.CoreModule", "UnityEngine.ContentLoadModule", "UnityEngine.TilemapModule", "UnityEditor.CoreModule", "UnityEngine.EntitiesModule")]
         internal void*                    m_Buffer;
 
+        [VisibleToOtherModules("UnityEngine.EntitiesModule")]
         internal int                      m_Length;
 
+        [VisibleToOtherModules("UnityEngine.EntitiesModule")]
         internal int                      m_MinIndex;
+        [VisibleToOtherModules("UnityEngine.EntitiesModule")]
         internal int                      m_MaxIndex;
-        [VisibleToOtherModules("UnityEngine.CoreModule")]
+        [VisibleToOtherModules("UnityEngine.CoreModule", "UnityEngine.EntitiesModule")]
         internal AtomicSafetyHandle       m_Safety;
 
         internal unsafe ref DisposeSentinel.Dummy m_DisposeSentinel
@@ -76,7 +79,7 @@ namespace Unity.Collections
         }
 
 
-        [VisibleToOtherModules("UnityEngine.CoreModule", "UnityEditor.CoreModule")]
+        [VisibleToOtherModules("UnityEngine.CoreModule", "UnityEditor.CoreModule", "UnityEngine.EntitiesModule")]
         internal Allocator                m_AllocatorLabel;
 
         ///<summary>Creates a new NativeArray and allocates enough memory to fit the provided amount of elements.</summary>

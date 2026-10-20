@@ -13,10 +13,17 @@ using System.Runtime.CompilerServices;
 [assembly: InternalsVisibleTo("UnityEditor.Rendering.ShaderBuildSettings.Tests")]
 namespace UnityEditor.Build.Profile
 {
+    /// <summary>
+    /// A build profile component that overrides the global graphics settings.
+    /// </summary>
+    [ExcludeFromObjectFactory]
+    [ExcludeFromPreset]
     [VisibleToOtherModules("UnityEditor.BuildProfileModule")]
-    sealed class BuildProfileGraphicsSettings : ScriptableObject
+    public sealed class BuildProfileGraphicsSettings : ScriptableObject
     {
         internal const int k_InvalidGraphicsSetting = -2;
+        const string k_LastDefaultPropertyPath = "m_EditorClassIdentifier";
+        const string k_ShaderBuildSettingsTypeName = "ShaderBuildSettings";
 
         [SerializeField] StrippingModes m_LightmapStripping = StrippingModes.Automatic;
         [SerializeField] bool m_LightmapKeepPlain = true;
@@ -49,6 +56,10 @@ namespace UnityEditor.Build.Profile
         [SerializeField] ShaderVariantCollection[] m_PreloadedShaders = Array.Empty<ShaderVariantCollection>();
         [SerializeField] int m_PreloadShadersBatchTimeLimit = -1;
         [SerializeField] ShaderBuildSettings m_ShaderBuildSettings;
+
+        internal BuildProfileGraphicsSettings()
+        {
+        }
 
         internal StrippingModes lightmapStripping
         {
@@ -128,28 +139,56 @@ namespace UnityEditor.Build.Profile
             set => m_BrgStripping = value;
         }
 
-        internal bool logWhenShaderIsCompiled
+        /// <summary>
+        /// Whether Unity adds a log entry each time it compiles a shader at runtime.
+        /// </summary>
+        public bool logWhenShaderIsCompiled
         {
             get => m_LogWhenShaderIsCompiled;
-            set => m_LogWhenShaderIsCompiled = value;
+            set
+            {
+                m_LogWhenShaderIsCompiled = value;
+                EditorUtility.SetDirty(this);
+            }
         }
 
-        internal bool cameraRelativeLightCulling
+        /// <summary>
+        /// Whether Unity uses the camera position instead of the world space origin as the reference point for culling lights.
+        /// </summary>
+        public bool cameraRelativeLightCulling
         {
             get => m_CameraRelativeLightCulling;
-            set => m_CameraRelativeLightCulling = value;
+            set
+            {
+                m_CameraRelativeLightCulling = value;
+                EditorUtility.SetDirty(this);
+            }
         }
 
-        internal bool cameraRelativeShadowCulling
+        /// <summary>
+        /// Whether Unity uses the camera position instead of the world space origin as the reference point for culling shadows.
+        /// </summary>
+        public bool cameraRelativeShadowCulling
         {
             get => m_CameraRelativeShadowCulling;
-            set => m_CameraRelativeShadowCulling = value;
+            set
+            {
+                m_CameraRelativeShadowCulling = value;
+                EditorUtility.SetDirty(this);
+            }
         }
 
-        internal VideoShadersIncludeMode videoShadersIncludeMode
+        /// <summary>
+        /// Whether and when Unity includes video shaders in the build.
+        /// </summary>
+        public VideoShadersIncludeMode videoShadersIncludeMode
         {
             get => m_VideoShadersIncludeMode;
-            set => m_VideoShadersIncludeMode = value;
+            set
+            {
+                m_VideoShadersIncludeMode = value;
+                EditorUtility.SetDirty(this);
+            }
         }
 
         internal Shader[] alwaysIncludedShaders
@@ -158,10 +197,17 @@ namespace UnityEditor.Build.Profile
             set => m_AlwaysIncludedShaders = value;
         }
 
-        internal LightProbeOutsideHullStrategy lightProbeOutsideHullStrategy
+        /// <summary>
+        /// How Unity lights a Renderer that uses Light Probes but is outside the Light Probe tetrahedral hull.
+        /// </summary>
+        public LightProbeOutsideHullStrategy lightProbeOutsideHullStrategy
         {
             get => m_LightProbeOutsideHullStrategy;
-            set => m_LightProbeOutsideHullStrategy = value;
+            set
+            {
+                m_LightProbeOutsideHullStrategy = value;
+                EditorUtility.SetDirty(this);
+            }
         }
 
         internal GraphicsStateCollection graphicsStateCollection
@@ -229,19 +275,40 @@ namespace UnityEditor.Build.Profile
             set => m_PreloadShadersBatchTimeLimit = value;
         }
 
-        internal ShaderBuildSettings shaderBuildSettings
+        /// <summary>
+        /// The shader build settings, such as shader defines and keyword declaration overrides.
+        /// </summary>
+        public ShaderBuildSettings shaderBuildSettings
         {
-            get => m_ShaderBuildSettings;
-            set => m_ShaderBuildSettings = value;
+            get => m_ShaderBuildSettings.DeepCopy();
+            set
+            {
+                var settings = EditorGraphicsSettings.SanitizeCompilerSettings(value.DeepCopy(), nameof(shaderBuildSettings));
+                var changed = !m_ShaderBuildSettings.ValueEquals(settings);
+                m_ShaderBuildSettings = settings;
+                EditorUtility.SetDirty(this);
+
+                var activeProfile = BuildProfileContext.activeProfile;
+                if (activeProfile == null || activeProfile.graphicsSettings != this)
+                    return;
+
+                ShaderBuildSettings.CheckKeywordDeclarationOverridesHaveMatches(settings.keywordDeclarationOverrides);
+
+                if (changed)
+                    AssetDatabase.Refresh();
+            }
         }
 
-        public void Instantiate()
+        // For values that EditorGraphicsSettings.SetShaderBuildSettings already sanitized.
+        internal void SetShaderBuildSettings_Internal(ShaderBuildSettings settings) => m_ShaderBuildSettings = settings;
+
+        internal void Instantiate()
         {
             name = "Graphics Settings";
             hideFlags = HideFlags.HideInHierarchy | HideFlags.HideInInspector;
         }
 
-        public void SetGraphicsSetting(string settingName, int value)
+        internal void SetGraphicsSetting(string settingName, int value)
         {
             switch (settingName)
             {
@@ -325,7 +392,7 @@ namespace UnityEditor.Build.Profile
             static bool IntegerToBoolean(int value) => value != 0;
         }
 
-        public int GetGraphicsSetting(string settingName)
+        internal int GetGraphicsSetting(string settingName)
         {
             return settingName switch
             {
@@ -358,6 +425,39 @@ namespace UnityEditor.Build.Profile
             };
 
             static int BooleanToInteger(bool value) => value ? 1 : 0;
+        }
+
+        [VisibleToOtherModules("UnityEditor.BuildProfileModule")]
+        internal void ResetToGlobalValues()
+        {
+            using var serializedObject = new SerializedObject(this);
+            var globalGraphicsSettings = GraphicsSettings.GetGraphicsSettings();
+            using var globalGraphicsSettingsSO = new SerializedObject(globalGraphicsSettings);
+            var profileSerializedProperty = serializedObject.FindProperty(k_LastDefaultPropertyPath);
+
+            while (profileSerializedProperty.Next(false))
+            {
+                var globalSerializedProperty = globalGraphicsSettingsSO.FindProperty(profileSerializedProperty.name);
+                if (profileSerializedProperty.isArray)
+                {
+                    profileSerializedProperty.arraySize = globalSerializedProperty.arraySize;
+                    for (int i = 0; i < profileSerializedProperty.arraySize; i++)
+                    {
+                        var profileArrayElement = profileSerializedProperty.GetArrayElementAtIndex(i);
+                        var globalArrayElement = globalSerializedProperty.GetArrayElementAtIndex(i);
+                        profileArrayElement.boxedValue = globalArrayElement.boxedValue;
+                    }
+                }
+                else
+                {
+                    profileSerializedProperty.boxedValue = profileSerializedProperty.type == k_ShaderBuildSettingsTypeName
+                        ? EditorGraphicsSettings.GetShaderBuildSettings()
+                        : globalSerializedProperty.boxedValue;
+                }
+            }
+
+            serializedObject.ApplyModifiedProperties();
+            EditorUtility.SetDirty(this);
         }
     }
 }

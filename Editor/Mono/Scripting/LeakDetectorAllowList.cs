@@ -65,12 +65,13 @@ namespace UnityEditor.Scripting.CodeReload
     {
         internal static IReadOnlyList<LeakAllowListEntry> Entries => LeakDetectorAllowListEntries.Entries;
 
-        internal static bool IsAllowed(in LeakIdentity identity)
+        internal static bool IsAllowed(in LeakIdentity identity) => IsAllowed(identity, Entries);
+
+        internal static bool IsAllowed(in LeakIdentity identity, IReadOnlyList<LeakAllowListEntry> entries)
         {
             if (!identity.IsValid)
                 return false;
 
-            var entries = Entries;
             for (int i = 0; i < entries.Count; ++i)
             {
                 if (entries[i].Identity.Equals(identity))
@@ -102,12 +103,15 @@ namespace UnityEditor.Scripting.CodeReload
             return identities;
         }
 
-        internal static SortedDictionary<LeakIdentity, int> GetDisallowedLeaks(IEnumerable<LeakIdentity> observed)
+        internal static SortedDictionary<LeakIdentity, int> GetDisallowedLeaks(IEnumerable<LeakIdentity> observed) =>
+            GetDisallowedLeaks(observed, Entries);
+
+        internal static SortedDictionary<LeakIdentity, int> GetDisallowedLeaks(IEnumerable<LeakIdentity> observed, IReadOnlyList<LeakAllowListEntry> entries)
         {
             var disallowed = new SortedDictionary<LeakIdentity, int>();
             foreach (var identity in observed)
             {
-                if (IsAllowed(identity))
+                if (IsAllowed(identity, entries))
                     continue;
 
                 disallowed.TryGetValue(identity, out var count);
@@ -117,12 +121,15 @@ namespace UnityEditor.Scripting.CodeReload
             return disallowed;
         }
 
-        internal static List<LeakAllowListEntry> GetUnusedEntries(IEnumerable<LeakIdentity> observed)
+        internal static List<LeakAllowListEntry> GetUnusedEntries(IEnumerable<LeakIdentity> observed) =>
+            GetUnusedEntries(observed, Entries);
+
+        internal static List<LeakAllowListEntry> GetUnusedEntries(IEnumerable<LeakIdentity> observed, IReadOnlyList<LeakAllowListEntry> entries)
         {
             var observedSet = new HashSet<LeakIdentity>(observed);
             var unused = new List<LeakAllowListEntry>();
 
-            foreach (var entry in Entries)
+            foreach (var entry in entries)
             {
                 if (!observedSet.Contains(entry.Identity))
                     unused.Add(entry);

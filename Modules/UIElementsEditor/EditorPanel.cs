@@ -38,6 +38,7 @@ namespace UnityEditor.UIElements
             panelDebug = new PanelDebug(this);
             uiElementsBridge = new EditorUIElementsBridge();
             CreateMenuFunctor = () => new GenericOSMenu();
+            hostViewChecks = new HostViewChecks(this);
         }
 
         public static void InitEditorUpdater(BaseVisualElementPanel panel, VisualTreeUpdater visualTreeUpdater)
@@ -66,39 +67,20 @@ namespace UnityEditor.UIElements
             };
         }
 
-        private void CheckPanelScaling()
-        {
-            // Can be disabled for setting a manual scale for testing
-            if (!overrideScalingForTests && ownerObject != null)
-            {
+        internal HostViewChecks hostViewChecks { get; }
 
-                //check that the scaling is up to date
-                var windowScaling = GetBackingScaleFactor();
-                if (windowScaling == null || windowScaling.Value == -1)
-                {
-                    Debug.Assert(windowScaling != null, "got -1 here!!");
-                    // if we have -1, we were able to get to a GuiView, but the native call returned -1 because there is no containerWindow
-                    // if the windowScaling == null we were simply not able to get to a GuiView
-                    // in both cases, we want to update the scaling like the old behavior.
-                    pixelsPerPoint = GUIUtility.pixelsPerPoint;
-                }
-                else
-                {
-                    if (pixelsPerPoint != windowScaling.Value)
-                        Debug.LogAssertion($"Scaling mismatch between the EditorWindow ({windowScaling.Value}) and the Editor Panel {name} ({pixelsPerPoint}). OnBackingScaleFactorChangedInternal was probably not call upon scaling change");
-                    pixelsPerPoint = windowScaling.Value;// AKA silence the assert after the first occurence
-                }
-            }
-        }
-        public override void ValidateLayout()
+        // Set by UI test fixtures whose window size the native window may not have applied.
+        internal bool skipRenderTargetCheckForTests { get; set; }
+
+        public override void Render()
         {
-            CheckPanelScaling();
-            base.ValidateLayout();
+            // macOS clips the native view to its screen in GUIView::SetPosition and the managed size never follows.
+            hostViewChecks.CheckRenderTarget();
+            base.Render();
         }
 
         protected override void UpdateForRepaint()
         {
-            CheckPanelScaling();
             visualTreeUpdater.UpdateForEditor();
             base.UpdateForRepaint();
         }

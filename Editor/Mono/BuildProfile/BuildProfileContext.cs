@@ -867,6 +867,7 @@ namespace UnityEditor.Build.Profile
                 return false;
 
             activeProfile.graphicsSettings.SetGraphicsSetting(settingName, value);
+            EditorUtility.SetDirty(activeProfile.graphicsSettings);
             return true;
         }
 
@@ -886,6 +887,7 @@ namespace UnityEditor.Build.Profile
                 return false;
 
             activeProfile.graphicsSettings.alwaysIncludedShaders = shaders;
+            EditorUtility.SetDirty(activeProfile.graphicsSettings);
             return true;
         }
 
@@ -952,6 +954,7 @@ namespace UnityEditor.Build.Profile
                 return false;
 
             activeProfile.graphicsSettings.preloadedShaders = collection;
+            EditorUtility.SetDirty(activeProfile.graphicsSettings);
             return true;
         }
 
@@ -982,14 +985,15 @@ namespace UnityEditor.Build.Profile
             if (!ActiveProfileHasGraphicsSettings())
                 return false;
 
-            activeProfile.graphicsSettings.shaderBuildSettings = new ShaderBuildSettings
+            activeProfile.graphicsSettings.SetShaderBuildSettings_Internal(new ShaderBuildSettings
             {
                 keywordDeclarationOverrides = keywordDeclarationOverrides,
                 defines = defines,
                 numInternalDefines = (uint)numInternalDefines,
                 compilerSettings = compilerSettings,
                 fastBuildMode = (ShaderBuildSettings.FastBuildMode)fastBuildMode
-            };
+            });
+            EditorUtility.SetDirty(activeProfile.graphicsSettings);
             return true;
         }
 

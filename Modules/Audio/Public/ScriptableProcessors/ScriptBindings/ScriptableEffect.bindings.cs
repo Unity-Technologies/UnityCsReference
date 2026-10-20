@@ -616,6 +616,10 @@ namespace UnityEngine.Audio
                 {
                     runtimeHandle = definition.CreateInstance(new ControlContext(pResources), null, default);
 
+                    // Tie the created processor to its owning asset (ScriptableObject / Component)
+                    // so the SAP profiler UI can label the row correctly. Mirrors the generator side.
+                    if (runtimeHandle.m_Processor.Handle.WasCreated)
+                        SetProcessorSourceAssetEntityId(pResources, runtimeHandle.m_Processor.Handle, effectDefinitionObject.GetEntityId());
                 }
             }
             else
@@ -641,5 +645,8 @@ namespace UnityEngine.Audio
         [NativeMethod(Name = "audio::InitializeEffectHandle", IsFreeFunction = true, ThrowsException = true)]
         static extern unsafe DualThreadHandle InternalInitializeEffectHandle(/*EffectHeader*/ void* header, int tailSize, /*ControlHeader*/ void* control, AudioConfiguration* nestedConfiguration, ProcessorInstance.InitializationFlags flags);
 
+        [NativeConditional("ENABLE_PROFILER")]
+        [NativeMethod(Name = "audio::SetProcessorSourceAssetEntityId", IsFreeFunction = true)]
+        static extern unsafe void SetProcessorSourceAssetEntityId(/*ControlHeader*/ void* control, DualThreadHandle handle, EntityId entityId);
     }
 }

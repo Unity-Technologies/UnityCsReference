@@ -115,8 +115,12 @@ namespace UnityEditor.ShortcutManagement
         [RequiredByNativeCode]
         static void SetShortcutIntegrationEnabled(bool enable) => enabled = enable;
 
+        // The global event handler runs outside OnGUI, where Event.current is null; native menu commands it triggers ask for its modifiers.
+        [AutoStaticsCleanupOnCodeReload]
+        static Event s_HandledEvent;
+
         [RequiredByNativeCode]
-        static bool HasModifiers(EventModifiers modifiers) => Event.current?.modifiers == modifiers;
+        internal static bool HasModifiers(EventModifiers modifiers) => (Event.current ?? s_HandledEvent)?.modifiers == modifiers;
 
         [OnCodeLoaded]
         static void Initialize()
@@ -147,11 +151,20 @@ namespace UnityEditor.ShortcutManagement
             return instance.HasAnyEntries(Event.current);
         }
 
-        static void EventHandler()
+        static void EventHandler(Event evt)
         {
             if (s_IgnoreWhenPlayModeFocused && EditorWindow.focusedWindow is GameView && Application.isPlaying) return;
             instance.contextManager.SetFocusedWindow(EditorWindow.focusedWindow);
-            instance.HandleKeyEvent(Event.current);
+            var previous = s_HandledEvent;
+            s_HandledEvent = evt;
+            try
+            {
+                instance.HandleKeyEvent(evt);
+            }
+            finally
+            {
+                s_HandledEvent = previous;
+            }
         }
 
         static void BeforeEventProcessedHandler(EventType type, KeyCode keyCode, EventModifiers modifiers)

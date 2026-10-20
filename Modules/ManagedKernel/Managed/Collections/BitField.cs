@@ -6,10 +6,12 @@ using System;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using Unity.Mathematics;
+using UnityEngine.Bindings;
 
 namespace Unity.Collections
 {
     [GenerateTestsForBurstCompatibility]
+    [VisibleToOtherModules("UnityEngine.EntitiesModule")]
     internal unsafe struct Bitwise
     {
         internal static int AlignDown(int value, int alignPow2)
@@ -594,6 +596,7 @@ namespace Unity.Collections
             return count;
         }
 
+        [VisibleToOtherModules("UnityEngine.EntitiesModule")]
         internal static bool IsSet(ulong* ptr, int pos)
         {
             var idx = pos >> 6;

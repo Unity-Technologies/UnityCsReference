@@ -869,7 +869,7 @@ namespace UnityEngine.TextCore.Text
         [AutoStaticsCleanupOnCodeReload]
         internal static Func<FontAsset, Font> ResolveDynamicSourceFont;
 
-        // Set by TextCorePreBuildProcessor once it has emptied this asset, cleared by TextCorePostBuildProcessor.
+        // Set by TextCorePreBuildProcessor on every session-only asset under Assets/, cleared by TextCorePostBuildProcessor.
         internal bool m_ClearedForBuild;
 
         internal static void OnBuildCompletedForAll()
@@ -1830,7 +1830,7 @@ namespace UnityEngine.TextCore.Text
         /// <summary>
         /// Clear OpenType font features
         /// </summary>
-        void ClearFontFeaturesTables()
+        internal void ClearFontFeaturesTables()
         {
             // Clear Ligature Table
             if (m_FontFeatureTable != null && m_FontFeatureTable.m_LigatureSubstitutionRecords != null)

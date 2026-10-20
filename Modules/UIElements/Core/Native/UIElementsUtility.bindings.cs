@@ -14,11 +14,19 @@ namespace UnityEngine.UIElements
     internal static partial class UIElementsRuntimeUtilityNative
     {
         [NoAutoStaticsCleanup] // set once per ALC by UIElementsRuntimeUtility, only targets UIElementsModule which unloads with this field
+        internal static Action PreparePanelRenderersCallback;
+        [NoAutoStaticsCleanup] // set once per ALC by UIElementsRuntimeUtility, only targets UIElementsModule which unloads with this field
         internal static Action UpdatePanelsCallback;
         [AutoStaticsCleanupOnCodeReload]
         private static Action<bool> RepaintPanelsCallback;
         [AutoStaticsCleanupOnCodeReload]
         private static Action RenderOffscreenPanelsCallback;
+
+        [RequiredByNativeCode]
+        public static void PreparePanelRenderers()
+        {
+            PreparePanelRenderersCallback?.Invoke();
+        }
 
         [RequiredByNativeCode]
         public static void UpdatePanels()
@@ -38,9 +46,10 @@ namespace UnityEngine.UIElements
             RenderOffscreenPanelsCallback?.Invoke();
         }
 
-        public static void SetUpdateCallback(Action callback)
+        public static void SetUpdateCallbacks(Action preparePanelRenderers, Action updatePanels)
         {
-            UpdatePanelsCallback = callback;
+            PreparePanelRenderersCallback = preparePanelRenderers;
+            UpdatePanelsCallback = updatePanels;
         }
 
         public static void SetRenderingCallbacks(Action<bool> repaintPanels, Action renderOffscreenPanels)

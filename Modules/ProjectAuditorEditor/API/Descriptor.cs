@@ -15,7 +15,7 @@ namespace Unity.ProjectAuditor.Editor
     public sealed class Descriptor : IEquatable<Descriptor>
     {
         /// <summary>
-        /// An unique identifier for the issue. IDs must have exactly 3 upper case characters, followed by 4 digits.
+        /// An unique identifier for the issue. IDs must have 2 or 3 upper case characters, followed by 4 digits.
         /// </summary>
         public string Id;
 

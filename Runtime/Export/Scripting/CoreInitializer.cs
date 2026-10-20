@@ -35,8 +35,8 @@ namespace UnityEngine
             if (runOnceOnly)
                 Object.MarshalledUnityObject.Initialize();
 
-            // 1. EntityIdStore FIRST: every UnityEngine.Object resolves its native object through
-            //    EntityIdStore.GetNativeObject(id), which reads the store's native tables.
+            // 1. EntityIdStore FIRST: every UnityEngine.Object resolves its native object through the store's
+            //    native tables, which this also hands to EntityIdStore.WrapperLookup for wrapper lookups.
             //    Runs every reload: Burst zeroes its SharedStatic on each one, whatever the ALC layout.
             EntityIdStore.Initialize();
 

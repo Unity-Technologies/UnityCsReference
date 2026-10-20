@@ -972,7 +972,6 @@ namespace UnityEngine.UIElements.UIR
             // The emptied lists stay on the pooled ExtraRenderData for reuse.
             ReleaseFilterCallbackBlocks(extraData.filterCallbackPropertyBlocks);
             ReleaseFilterCallbackBlocks(extraData.backdropFilterCallbackPropertyBlocks);
-            ChildrenDirtyTracker.OnExtraDataFreed(renderData, extraData);
 
             m_ExtraDataPool.Return(extraData);
 

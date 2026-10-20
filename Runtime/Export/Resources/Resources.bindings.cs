@@ -81,15 +81,12 @@ namespace UnityEngine
             [AutoStaticsCleanupOnCodeReload]
             internal static AdditionalRootsHandlerDelegate AdditionalRootsHandler;
 
+            // The Entities hooks register one as code loads, so others add to it rather than replace it.
             internal static void RegisterAdditionalRootsHandler(AdditionalRootsHandlerDelegate newAdditionalRootsHandler)
             {
-                if(AdditionalRootsHandler == null)
-                {
+                if (AdditionalRootsHandler == null)
                     EnableEntitiesAssetGCCallback();
-                    AdditionalRootsHandler = newAdditionalRootsHandler;
-                }
-                else
-                    UnityEngine.Debug.LogWarning("Attempting to register more than one AdditionalRootsHandlerDelegate! Only one may be registered at a time.");
+                AdditionalRootsHandler += newAdditionalRootsHandler;
             }
 
             [RequiredByNativeCode]

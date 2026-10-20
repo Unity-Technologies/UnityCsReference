@@ -3169,9 +3169,10 @@ namespace UnityEditor
             if(context == null)
                 return;
 
-            if (ve == context.window.cameraViewVisualElement)
+            var evt = args.sourceEvent ?? Event.current;
+            if (evt != null && ve == context.window.cameraViewVisualElement)
             {
-                ContextMenuUtility.ShowActionMenu();
+                ContextMenuUtility.ShowActionMenu(evt.mousePosition);
                 // UUM-61727 - Force an InputEvent in IMGUI so the ContextMenu will actually open on all platforms
                 context.window.SendEvent(new Event { type = EventType.Layout });
             }

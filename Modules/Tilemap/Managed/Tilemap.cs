@@ -17,15 +17,69 @@ namespace UnityEngine.Tilemaps
         // player-shipped module forces the Tilemap module into stripped player builds
         // (TestStrippingDependencies). Persist as before until lifecycle registration is strip-safe.
 
+        // Explicit accessors so native can cache whether any of the three is subscribed.
+        [NoAutoStaticsCleanup] // see stripping note above
+        private static Action<Tilemap, SyncTile[]> s_TilemapTileChanged;
+        [NoAutoStaticsCleanup] // see stripping note above
+        private static Action<Tilemap, NativeArray<Vector3Int>> s_TilemapPositionsChanged;
+        [NoAutoStaticsCleanup] // see stripping note above
+        private static Action<Tilemap, NativeArray<SyncTile>, TileChangeReason> s_TilemapTilesChanged;
+
+        // Serializes each delegate update with the native cache push, so a concurrent remove cannot
+        // publish a stale false after another thread's subscribe.
+        [NoAutoStaticsCleanup] // see stripping note above
+        private static readonly object s_SyncTileCallbackLock = new object();
+
+        private static void UpdateHasAnySyncTileCallback()
+        {
+            SetHasAnySyncTileCallback(s_TilemapTileChanged != null
+                || s_TilemapPositionsChanged != null
+                || s_TilemapTilesChanged != null);
+        }
+
         ///<summary>Callback when Tiles on a Tilemap have changed.</summary>
         ///<remarks>This returns the positions on the Tilemap which have been updated and the Tile Data of each position that has been updated.</remarks>
-        [NoAutoStaticsCleanup] // see stripping note above
-        public static event Action<Tilemap, SyncTile[]> tilemapTileChanged;
+        public static event Action<Tilemap, SyncTile[]> tilemapTileChanged
+        {
+            add
+            {
+                lock (s_SyncTileCallbackLock)
+                {
+                    s_TilemapTileChanged += value;
+                    UpdateHasAnySyncTileCallback();
+                }
+            }
+            remove
+            {
+                lock (s_SyncTileCallbackLock)
+                {
+                    s_TilemapTileChanged -= value;
+                    UpdateHasAnySyncTileCallback();
+                }
+            }
+        }
 
         ///<summary>Callback when Tiles on a Tilemap have changed.</summary>
         ///<remarks>This returns the list of positions on the Tilemap which have been updated.</remarks>
-        [NoAutoStaticsCleanup] // see stripping note above
-        public static event Action<Tilemap, NativeArray<Vector3Int>> tilemapPositionsChanged;
+        public static event Action<Tilemap, NativeArray<Vector3Int>> tilemapPositionsChanged
+        {
+            add
+            {
+                lock (s_SyncTileCallbackLock)
+                {
+                    s_TilemapPositionsChanged += value;
+                    UpdateHasAnySyncTileCallback();
+                }
+            }
+            remove
+            {
+                lock (s_SyncTileCallbackLock)
+                {
+                    s_TilemapPositionsChanged -= value;
+                    UpdateHasAnySyncTileCallback();
+                }
+            }
+        }
 
         ///<summary>Callback when Tiles on a Tilemap have changed, without allocating.</summary>
         ///<remarks>This returns the cells which have been updated and why. The cells are only valid for the duration of the callback.</remarks>
@@ -62,8 +116,25 @@ namespace UnityEngine.Tilemaps
         ///}
         ///]]></code>
         ///</example>
-        [NoAutoStaticsCleanup] // see stripping note above
-        public static event Action<Tilemap, NativeArray<SyncTile>, TileChangeReason> tilemapTilesChanged;
+        public static event Action<Tilemap, NativeArray<SyncTile>, TileChangeReason> tilemapTilesChanged
+        {
+            add
+            {
+                lock (s_SyncTileCallbackLock)
+                {
+                    s_TilemapTilesChanged += value;
+                    UpdateHasAnySyncTileCallback();
+                }
+            }
+            remove
+            {
+                lock (s_SyncTileCallbackLock)
+                {
+                    s_TilemapTilesChanged -= value;
+                    UpdateHasAnySyncTileCallback();
+                }
+            }
+        }
 
         ///<summary>Callback when a Tilemap itself has changed, rather than the Tiles on it.</summary>
         ///<remarks>This returns why the Tilemap changed, for map-wide changes such as the tile anchor, orientation, cell layout, origin or size.</remarks>
@@ -162,17 +233,17 @@ namespace UnityEngine.Tilemaps
 
         internal static bool HasSyncTileCallback()
         {
-            return (Tilemap.tilemapTileChanged != null);
+            return (s_TilemapTileChanged != null);
         }
 
         internal static bool HasPositionsChangedCallback()
         {
-            return (Tilemap.tilemapPositionsChanged != null);
+            return (s_TilemapPositionsChanged != null);
         }
 
         private void HandleSyncTileCallback(SyncTile[] syncTiles)
         {
-            if (Tilemap.tilemapTileChanged == null)
+            if (s_TilemapTileChanged == null)
                 return;
 
             SendTilemapTileChangedCallback(syncTiles);
@@ -195,7 +266,7 @@ namespace UnityEngine.Tilemaps
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static bool HasTilesChangedCallback() => (Tilemap.tilemapTilesChanged != null);
+        internal static bool HasTilesChangedCallback() => (s_TilemapTilesChanged != null);
 
         private unsafe void HandleTilesChangedCallback(int count, IntPtr entriesIntPtr, TileChangeReason reason)
         {
@@ -217,7 +288,7 @@ namespace UnityEngine.Tilemaps
         {
             try
             {
-                Tilemap.tilemapTilesChanged(this, entries, reason);
+                s_TilemapTilesChanged(this, entries, reason);
             }
             catch (Exception e)
             {
@@ -246,7 +317,7 @@ namespace UnityEngine.Tilemaps
         {
             try
             {
-                Tilemap.tilemapTileChanged(this, syncTiles);
+                s_TilemapTileChanged(this, syncTiles);
             }
             catch (Exception e)
             {
@@ -259,7 +330,7 @@ namespace UnityEngine.Tilemaps
         {
             try
             {
-                Tilemap.tilemapPositionsChanged(this, positions);
+                s_TilemapPositionsChanged(this, positions);
             }
             catch (Exception e)
             {

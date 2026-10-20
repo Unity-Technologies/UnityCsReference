@@ -1422,7 +1422,7 @@ namespace UnityEngine.UIElements
         protected internal override void PostDispatch(IPanel panel)
         {
             panel.focusController.SwitchFocusOnEvent(panel.focusController.GetLeafFocusedElement(), this);
-            panel.dispatcher.m_ClickDetector.ProcessEvent(this);
+            panel.dispatcher.m_ClickDetector.ProcessEvent(this, panel);
 
             base.PostDispatch(panel);
         }
@@ -1515,7 +1515,7 @@ namespace UnityEngine.UIElements
 
         protected internal override void PostDispatch(IPanel panel)
         {
-            panel.dispatcher.m_ClickDetector.ProcessEvent(this);
+            panel.dispatcher.m_ClickDetector.ProcessEvent(this, panel);
             base.PostDispatch(panel);
         }
 
@@ -1628,7 +1628,7 @@ namespace UnityEngine.UIElements
         protected internal override void PostDispatch(IPanel panel)
         {
             // UUM-54208: Process ClickEvent before releasing the pointer
-            panel.dispatcher.m_ClickDetector.ProcessEvent(this);
+            panel.dispatcher.m_ClickDetector.ProcessEvent(this, panel);
 
             if (PointerType.IsDirectManipulationDevice(pointerType))
             {
@@ -1702,7 +1702,7 @@ namespace UnityEngine.UIElements
 
         protected internal override void PostDispatch(IPanel panel)
         {
-            panel.dispatcher.m_ClickDetector.ProcessEvent(this);
+            panel.dispatcher.m_ClickDetector.ProcessEvent(this, panel);
 
             if (PointerType.IsDirectManipulationDevice(pointerType))
             {

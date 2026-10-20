@@ -149,20 +149,47 @@ namespace UnityEngine.UIElements
             public long version;
             public BindingTarget target;
             public Binding binding;
+            public IDataSourceProvider dataSourceProvider;
 
             private DataSourceContext m_LastContext;
 
             public object localDataSource { get; set; }
+            public PropertyPath localDataSourcePath { get; set; }
+            public bool hasHierarchicalContext { get; private set; }
+            public bool isContextResolved { get; set; }
+            public DataSourceContext hierarchicalContext { get; private set; }
 
             public void Reset()
             {
                 ++version;
                 target = default;
                 binding = default;
+                dataSourceProvider = default;
                 localDataSource = default;
+                localDataSourcePath = default;
                 m_LastContext = default;
+                InvalidateHierarchicalContext();
                 m_SourceToUILastUpdate = null;
                 m_UIToSourceLastUpdate = null;
+            }
+
+            public void SetHierarchicalContext(in DataSourceContext hierarchical)
+            {
+                if (hasHierarchicalContext &&
+                    hierarchicalContext.dataSource == hierarchical.dataSource &&
+                    hierarchicalContext.dataSourcePath == hierarchical.dataSourcePath)
+                    return;
+
+                hierarchicalContext = hierarchical;
+                hasHierarchicalContext = true;
+                isContextResolved = false;
+            }
+
+            public void InvalidateHierarchicalContext()
+            {
+                hierarchicalContext = default;
+                hasHierarchicalContext = false;
+                isContextResolved = false;
             }
 
             public DataSourceContext context
@@ -241,7 +268,7 @@ namespace UnityEngine.UIElements
                 return m_OrderedBindings;
             }
 
-            public IEnumerable<VisualElement> GetUnorderedBoundElements()
+            public HashSet<VisualElement> GetUnorderedBoundElements()
             {
                 return m_BoundElements;
             }
@@ -416,6 +443,8 @@ namespace UnityEngine.UIElements
                     m_VisitedElements = new HashSet<VisualElement>();
                 }
 
+                public HashSet<VisualElement> visitedElements => m_VisitedElements;
+
                 public void Invalidate(List<VisualElement> addedOrMovedElements, HashSet<VisualElement> removedElements)
                 {
                     m_VisitedElements.Clear();
@@ -438,13 +467,12 @@ namespace UnityEngine.UIElements
 
                 public override void TraverseRecursive(VisualElement element, int depth)
                 {
-                    if (m_VisitedElements.Contains(element))
-                        return;
-
                     if (depth > 0 && null != element.dataSource)
                         return;
 
-                    m_VisitedElements.Add(element);
+                    if (!m_VisitedElements.Add(element))
+                        return;
+
                     m_DataSourceTracker.RemoveHierarchyDataSourceContextFromElement(element);
 
                     Recurse(element, depth);
@@ -501,7 +529,8 @@ namespace UnityEngine.UIElements
                     refCount = 0;
                 }
 
-                if (binding is IDataSourceProvider dataSourceProvider)
+                var dataSourceProvider = bindingData.dataSourceProvider;
+                if (null != dataSourceProvider)
                 {
                     IncreaseRefCount(dataSourceProvider.dataSource);
                     bindingData.localDataSource = dataSourceProvider.dataSource;
@@ -530,8 +559,8 @@ namespace UnityEngine.UIElements
                     m_BindingRefCount[binding] = refCount - 1;
                 }
 
-                if (binding is IDataSourceProvider dataSourceProvider)
-                    DecreaseRefCount(dataSourceProvider.dataSource);
+                if (null != bindingData.dataSourceProvider)
+                    DecreaseRefCount(bindingData.dataSourceProvider.dataSource);
             }
 
             internal void IncreaseRefCount(object dataSource)
@@ -630,6 +659,9 @@ namespace UnityEngine.UIElements
                         toInvalidate.Add(element);
 
                     m_InvalidateResolvedDataSources.Invalidate(toInvalidate, removedElements);
+
+                    // Contexts must be recomputed after the whole traversal, as it can invalidate an ancestor of an already visited element.
+                    UpdateHierarchicalDataSourceContexts(m_InvalidateResolvedDataSources.visitedElements);
                 }
                 finally
                 {
@@ -642,48 +674,95 @@ namespace UnityEngine.UIElements
                 object localDataSource = null;
                 PropertyPath localDataSourcePath = default;
 
-                if (bindingData.binding is IDataSourceProvider dataSourceProvider)
+                var dataSourceProvider = bindingData.dataSourceProvider;
+                if (null != dataSourceProvider)
                 {
                     localDataSource = dataSourceProvider.dataSource;
                     localDataSourcePath = dataSourceProvider.dataSourcePath;
                 }
 
+                if (bindingData.isContextResolved &&
+                    localDataSource == bindingData.localDataSource &&
+                    localDataSourcePath == bindingData.localDataSourcePath)
+                    return bindingData.context;
+
+                return ResolveDataSourceContext(element, bindingData, localDataSource, localDataSourcePath);
+            }
+
+            DataSourceContext ResolveDataSourceContext(VisualElement element, BindingData bindingData, object localDataSource, in PropertyPath localDataSourcePath)
+            {
                 var lastLocalDataSource = bindingData.localDataSource;
-                var resolvedDataSource = localDataSource;
-                PropertyPath resolvedDataSourcePath = localDataSourcePath;
+                bindingData.localDataSource = localDataSource;
+                bindingData.localDataSourcePath = localDataSourcePath;
 
-                try
+                if (localDataSource != lastLocalDataSource)
                 {
-                    if (null == localDataSource)
-                    {
-                        // We need to untrack previous local source.
-                        DecreaseRefCount(lastLocalDataSource);
-
-                        var resolvedHierarchicalContext = GetHierarchicalDataSourceContext(element);
-                        resolvedDataSource = resolvedHierarchicalContext.dataSource;
-                        resolvedDataSourcePath = !localDataSourcePath.IsEmpty
-                            ? PropertyPath.Combine(resolvedHierarchicalContext.dataSourcePath, localDataSourcePath)
-                            : resolvedHierarchicalContext.dataSourcePath;
-
-                        return new DataSourceContext(resolvedDataSource, resolvedDataSourcePath);
-                    }
-
-                    // We need to update the source
-                    if (localDataSource != lastLocalDataSource)
-                    {
-                        DecreaseRefCount(lastLocalDataSource);
-                        IncreaseRefCount(localDataSource);
-                    }
-                }
-                finally
-                {
-                    bindingData.localDataSource = localDataSource;
-                    var newResolvedContext = new DataSourceContext(resolvedDataSource, resolvedDataSourcePath);
-
-                    bindingData.context = newResolvedContext;
+                    DecreaseRefCount(lastLocalDataSource);
+                    IncreaseRefCount(localDataSource);
                 }
 
-                return new DataSourceContext(resolvedDataSource, resolvedDataSourcePath);
+                DataSourceContext resolvedContext;
+                if (null != localDataSource)
+                {
+                    resolvedContext = new DataSourceContext(localDataSource, localDataSourcePath);
+                }
+                else
+                {
+                    if (!bindingData.hasHierarchicalContext)
+                        bindingData.SetHierarchicalContext(GetHierarchicalDataSourceContext(element));
+
+                    var hierarchicalContext = bindingData.hierarchicalContext;
+                    resolvedContext = new DataSourceContext(
+                        hierarchicalContext.dataSource,
+                        PropertyPath.Combine(hierarchicalContext.dataSourcePath, localDataSourcePath));
+                }
+
+                bindingData.isContextResolved = true;
+                bindingData.context = resolvedContext;
+                return resolvedContext;
+            }
+
+            void UpdateHierarchicalDataSourceContexts(HashSet<VisualElement> invalidatedElements)
+            {
+                var bindingsTracker = m_DataBindingManager.m_BindingsTracker;
+                var boundElements = bindingsTracker.GetUnorderedBoundElements();
+
+                // Iterate over the smallest set to limit the number of lookups.
+                if (invalidatedElements.Count <= boundElements.Count)
+                {
+                    foreach (var element in invalidatedElements)
+                    {
+                        if (bindingsTracker.TryGetBindingCollection(element, out var collection))
+                            UpdateHierarchicalDataSourceContext(element, collection.GetBindings());
+                    }
+                }
+                else
+                {
+                    foreach (var element in boundElements)
+                    {
+                        if (invalidatedElements.Contains(element) && bindingsTracker.TryGetBindingCollection(element, out var collection))
+                            UpdateHierarchicalDataSourceContext(element, collection.GetBindings());
+                    }
+                }
+            }
+
+            void UpdateHierarchicalDataSourceContext(VisualElement element, List<BindingData> bindings)
+            {
+                if (element.panel == m_DataBindingManager.m_Panel)
+                {
+                    var hierarchicalContext = GetHierarchicalDataSourceContext(element);
+                    for (var i = 0; i < bindings.Count; ++i)
+                    {
+                        bindings[i].SetHierarchicalContext(hierarchicalContext);
+                    }
+                }
+                else
+                {
+                    for (var i = 0; i < bindings.Count; ++i)
+                    {
+                        bindings[i].InvalidateHierarchicalContext();
+                    }
+                }
             }
 
             private void TrackPropertyChanges(object sender, BindablePropertyChangedEventArgs args)
@@ -1253,6 +1332,7 @@ namespace UnityEngine.UIElements
 
             data.target = target;
             data.binding = binding;
+            data.dataSourceProvider = binding as IDataSourceProvider;
             return data;
         }
 

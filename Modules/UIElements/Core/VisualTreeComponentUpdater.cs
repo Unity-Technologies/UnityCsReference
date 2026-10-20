@@ -34,14 +34,23 @@ namespace UnityEngine.UIElements
             // Swap before iterating
             (m_Processing, m_DirtyElements) = (m_DirtyElements, m_Processing);
 
-            foreach (var ve in m_Processing)
+            // Handler exceptions are caught per handler inside the flush, so nothing should escape here;
+            // the finally is the guarantee that a set left uncleared never strands the rest of its work.
+            try
             {
-                if (ve.elementPanel == panel)
-                    ve.FlushComponentChanges();
+                foreach (var ve in m_Processing)
+                {
+                    if (ve.elementPanel == panel)
+                        FlushElement(ve);
+                }
             }
-
-            m_Processing.Clear();
+            finally
+            {
+                m_Processing.Clear();
+            }
         }
+
+        protected virtual void FlushElement(VisualElement ve) => ve.FlushComponentChanges();
 
         protected override void Dispose(bool disposing)
         {

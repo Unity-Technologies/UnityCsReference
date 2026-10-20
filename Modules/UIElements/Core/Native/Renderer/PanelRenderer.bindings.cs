@@ -92,6 +92,15 @@ namespace UnityEngine.UIElements
         /// <summary>
         /// The <see cref="VisualTreeAsset"/> automatically loaded into the root visual element.
         /// </summary>
+        /// <remarks>
+        /// This property is optional. If it's null, the root visual element is an empty container, and you can add elements to it
+        /// from a UI reload callback. Changing this property rebuilds the UI and invokes the callbacks registered with
+        /// <see cref="RegisterUIReloadCallback(VersionedUIReloadCallback)"/>.
+        /// </remarks>
+        /// <example>
+        /// The following example leaves this property empty and builds the UI from C# code in a UI reload callback.
+        /// <code source="../../../../../Documentation/ManualDocs/com.unity.documentation-examples/UIToolkit/get-started-runtime-ui/SimpleRuntimeUI.cs"/>
+        /// </example>
         public VisualTreeAsset visualTreeAsset
         {
             get => nativeVisualTreeAsset as VisualTreeAsset;
@@ -152,6 +161,14 @@ namespace UnityEngine.UIElements
         /// <param name="panelRenderer">The PanelRenderer in which the UI was reloaded.</param>
         /// <param name="rootElement">The root visual element that was reloaded in the PanelRenderer.</param>
         /// <param name="version">The version of the UI that was reloaded.</param>
+        /// <remarks>
+        /// The version increases only when the Panel Renderer rebuilds its visual tree, for example when live reload applies a change
+        /// to the UXML document. It stays the same when the component is disabled and re-enabled.
+        /// </remarks>
+        /// <example>
+        /// The following example keeps the state of a heads-up display (HUD) in fields, and applies it to the new elements when the UI is rebuilt.
+        /// <code source="../../../../../Documentation/ManualDocs/com.unity.documentation-examples/UIToolkit/panel-renderer-examples/PlayerHud.cs"/>
+        /// </example>
         public delegate void VersionedUIReloadCallback(PanelRenderer panelRenderer, VisualElement rootElement, int version);
 
 #pragma warning disable CS0618
@@ -198,9 +215,10 @@ namespace UnityEngine.UIElements
         /// actually reloaded since the last time the callback was invoked.
         /// </remarks>
         /// <example>
-        /// The following example registers a versioned callback to initialize the UI. If the component is repeatedly disabled an
-        /// re-enabled, the callback version will stay the same. So, the callback can safely skip the initialization logic after the first time.
-        /// <code source="../../../../../Documentation/ManualDocs/com.unity.documentation-examples/UIToolkit/get-started-runtime-ui/VersionedPanelRendererCallback.cs"/>
+        /// The following example registers a callback in <c>Awake</c> to initialize the UI, and reads the cached element in <c>Update</c>.
+        /// If the component is disabled and re-enabled, the version stays the same, so the callback skips the initialization logic.
+        /// For more examples, refer to [[wiki:ui-systems/panel-renderer-examples|Panel Renderer script examples]].
+        /// <code source="../../../../../Documentation/ManualDocs/com.unity.documentation-examples/UIToolkit/panel-renderer-examples/HealthBarController.cs"/>
         /// </example>
         public void RegisterUIReloadCallback(VersionedUIReloadCallback callback)
         {
@@ -550,6 +568,7 @@ namespace UnityEngine.UIElements
         internal extern void AddDrawCallData(int safeFrameIndex, Material mat, uint textureSlotCount, uint forceRenderType, IntPtr serializedCommandsPtr, int commandCount, CommandListState state);
         internal extern void ResetDrawCallData(int safeFrameIndex);
         internal extern void ResetAllDrawCallData();
+        internal extern void ClearDrawCallData();
 
         #endregion
 
@@ -575,7 +594,9 @@ namespace UnityEngine.UIElements
 
             SetAllDirty();
 
-            // Initialize previous state tracking
+            // Initialize previous state tracking. SetAllDirty already queues the insertion, and seeding previousEnabled
+            // keeps the next UpdateEnabledState from reinserting a root that PreparePanelRenderers just attached.
+            previousEnabled = enabled;
             previousSortingOrder = sortingOrder;
 
             // When instantiated from a prefab, the panel settings may already be set.
@@ -590,6 +611,14 @@ namespace UnityEngine.UIElements
                 // Skip when the root is still attached (e.g., entering playmode without domain
                 // reload), the immediate-fire branch of RegisterUIReloadCallback handles that.
                 m_UIReloadCallbackPending = true;
+            }
+
+            // ApplyModifiedProperties (Inspector, Undo) and animation also re-run AwakeFromLoad, possibly with a root
+            // that is still attached from before they disabled us.
+            if (!enabled && rootVisualElement?.parent != null)
+            {
+                // The previousEnabled seed above hides the change from UpdateEnabledState, so detach here instead.
+                RemoveFromHierarchy();
             }
         }
 

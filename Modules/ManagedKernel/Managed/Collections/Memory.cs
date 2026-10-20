@@ -7,28 +7,34 @@ using System.Diagnostics;
 using Unity.Collections.LowLevel.Unsafe;
 using Unity.Mathematics;
 using Unity.Jobs.LowLevel.Unsafe;
+using UnityEngine.Bindings;
 
 
 namespace Unity.Collections
 {
     [GenerateTestsForBurstCompatibility]
+    [VisibleToOtherModules("UnityEngine.EntitiesModule")]
     unsafe internal struct Memory
     {
         internal const long k_MaximumRamSizeInBytes = 1L << 40; // a terabyte
 
         [GenerateTestsForBurstCompatibility]
+        [VisibleToOtherModules("UnityEngine.EntitiesModule")]
         internal struct Unmanaged
         {
+            [VisibleToOtherModules("UnityEngine.EntitiesModule")]
             internal static void* Allocate(long size, int align, AllocatorManager.AllocatorHandle allocator)
             {
                 return Array.Resize(null, 0, 1, allocator, size, align);
             }
             
+            [VisibleToOtherModules("UnityEngine.EntitiesModule")]
             internal static void* Allocate(long size, int align, MemoryLabel label)
             {
                 return Array.Resize(null, 0, 1, label, size, align);
             }            
 
+            [VisibleToOtherModules("UnityEngine.EntitiesModule")]
             internal static void Free(void* pointer, AllocatorManager.AllocatorHandle allocator)
             {
                 if (pointer == null)
@@ -36,6 +42,7 @@ namespace Unity.Collections
                 Array.Resize(pointer, 1, 0, allocator, 1, 1);
             }
             
+            [VisibleToOtherModules("UnityEngine.EntitiesModule")]
             internal static void Free(void* pointer, MemoryLabel label)
             {
                 if (pointer == null)
@@ -44,18 +51,21 @@ namespace Unity.Collections
             }            
 
             [GenerateTestsForBurstCompatibility(GenericTypeArguments = new [] { typeof(int) })]
+            [VisibleToOtherModules("UnityEngine.EntitiesModule")]
             internal static T* Allocate<T>(AllocatorManager.AllocatorHandle allocator) where T : unmanaged
             {
                 return Array.Resize<T>(null, 0, 1, allocator);
             }
             
             [GenerateTestsForBurstCompatibility(GenericTypeArguments = new [] { typeof(int) })]
+            [VisibleToOtherModules("UnityEngine.EntitiesModule")]
             internal static T* Allocate<T>(MemoryLabel label) where T : unmanaged
             {
                 return Array.Resize<T>(null, 0, 1, label);
             }            
 
             [GenerateTestsForBurstCompatibility(GenericTypeArguments = new [] { typeof(int) })]
+            [VisibleToOtherModules("UnityEngine.EntitiesModule")]
             internal static void Free<T>(T* pointer, AllocatorManager.AllocatorHandle allocator) where T : unmanaged
             {
                 if (pointer == null)
@@ -64,6 +74,7 @@ namespace Unity.Collections
             }
             
             [GenerateTestsForBurstCompatibility(GenericTypeArguments = new [] { typeof(int) })]
+            [VisibleToOtherModules("UnityEngine.EntitiesModule")]
             internal static void Free<T>(T* pointer, MemoryLabel label) where T : unmanaged
             {
                 if (pointer == null)
@@ -72,6 +83,7 @@ namespace Unity.Collections
             }            
 
             [GenerateTestsForBurstCompatibility]
+            [VisibleToOtherModules("UnityEngine.EntitiesModule")]
             internal struct Array
             {
                 static bool IsCustom(AllocatorManager.AllocatorHandle allocator)
@@ -151,6 +163,7 @@ namespace Unity.Collections
                 }                
 
                 [GenerateTestsForBurstCompatibility(GenericTypeArguments = new [] { typeof(int) })]
+                [VisibleToOtherModules("UnityEngine.EntitiesModule")]
                 internal static T* Allocate<T>(long count, AllocatorManager.AllocatorHandle allocator)
                     where T : unmanaged
                 {
@@ -158,6 +171,7 @@ namespace Unity.Collections
                 }
                 
                 [GenerateTestsForBurstCompatibility(GenericTypeArguments = new [] { typeof(int) })]
+                [VisibleToOtherModules("UnityEngine.EntitiesModule")]
                 internal static T* Allocate<T>(long count, MemoryLabel label)
                     where T : unmanaged
                 {
@@ -186,6 +200,7 @@ namespace Unity.Collections
         }
 
         [GenerateTestsForBurstCompatibility]
+        [VisibleToOtherModules("UnityEngine.EntitiesModule")]
         internal struct Array
         {
             [GenerateTestsForBurstCompatibility(GenericTypeArguments = new [] { typeof(int) })]
@@ -198,6 +213,7 @@ namespace Unity.Collections
             }
 
             [GenerateTestsForBurstCompatibility(GenericTypeArguments = new [] { typeof(int) })]
+            [VisibleToOtherModules("UnityEngine.EntitiesModule")]
             internal static void Clear<T>(T* pointer, long count) where T : unmanaged
             {
                 long bytesToClear = count * sizeof(T);
@@ -206,6 +222,7 @@ namespace Unity.Collections
             }
 
             [GenerateTestsForBurstCompatibility(GenericTypeArguments = new [] { typeof(int) })]
+            [VisibleToOtherModules("UnityEngine.EntitiesModule")]
             internal static void Copy<T>(T* dest, T* src, long count) where T : unmanaged
             {
                 long bytesToCopy = count * sizeof(T);
@@ -224,6 +241,7 @@ namespace Unity.Collections
         }
 
         [GenerateTestsForBurstCompatibility]
+        [VisibleToOtherModules("UnityEngine.EntitiesModule")]
         internal static MemoryLabel CreateLabel(FixedString32Bytes category, FixedString64Bytes name, Allocator allocator = Allocator.Persistent)
         {
             return MemoryLabel.Create(category, name, allocator);

@@ -45,7 +45,7 @@ namespace UnityEngine.UIElements
             }
         }
 
-        void StartClickTracking(EventBase evt)
+        void StartClickTracking(EventBase evt, IPanel panel)
         {
             IPointerEvent pe = evt as IPointerEvent;
             if (pe == null)
@@ -54,6 +54,14 @@ namespace UnityEngine.UIElements
             }
 
             var clickStatus = m_ClickStatus[pe.pointerId];
+
+            // A callback of this event may have disposed the panel, after Cleanup(panel) already ran.
+            // Tracking its elements now would keep the disposed panel reachable from this ClickDetector.
+            if (panel is BaseVisualElementPanel { disposed: true })
+            {
+                clickStatus.Reset();
+                return;
+            }
 
             var newTarget = evt.elementTarget;
 
@@ -117,19 +125,19 @@ namespace UnityEngine.UIElements
             clickStatus.Reset();
         }
 
-        public void ProcessEvent<TEvent>(PointerEventBase<TEvent> evt)
+        public void ProcessEvent<TEvent>(PointerEventBase<TEvent> evt, IPanel panel)
             where TEvent : PointerEventBase<TEvent>, new()
         {
             if (evt.eventTypeId == PointerDownEvent.TypeId() && evt.button == 0)
             {
-                StartClickTracking(evt);
+                StartClickTracking(evt, panel);
             }
             else if (evt.eventTypeId == PointerMoveEvent.TypeId())
             {
                 // Button 1 pressed while another button was already pressed.
                 if (evt.button == 0 && (evt.pressedButtons & 1) == 1)
                 {
-                    StartClickTracking(evt);
+                    StartClickTracking(evt, panel);
                 }
                 // Button 1 released while another button is still pressed.
                 else if (evt.button == 0 && (evt.pressedButtons & 1) == 0)
@@ -178,16 +186,36 @@ namespace UnityEngine.UIElements
         }
 
         //Called when a visual element is removed from a panel to clear all reference to the visual element
-        internal void Cleanup(List<VisualElement> elements)
+        internal void Cleanup(VisualElement root)
         {
             foreach (var status in m_ClickStatus)
             {
-                if( status.m_Target == null)
-                    continue;
-
-                if(elements.Contains(status.m_Target))
+                var target = status.m_Target;
+                if (target != null && (target == root || root.Contains(target)))
                     status.Reset();
             }
+        }
+
+        // Called when disposing panel. The panel's root element never leaves the panel, so Cleanup above never
+        // sees it, and the dispatcher can be shared by many panels and outlive this one.
+        internal void Cleanup(BaseVisualElementPanel panel)
+        {
+            foreach (var status in m_ClickStatus)
+            {
+                if (status.m_Target != null && status.m_Target.elementPanel == panel)
+                    status.Reset();
+            }
+        }
+
+        // For tests only.
+        internal bool IsTrackingElementOf(BaseVisualElementPanel panel)
+        {
+            foreach (var status in m_ClickStatus)
+            {
+                if (status.m_Target != null && status.m_Target.elementPanel == panel)
+                    return true;
+            }
+            return false;
         }
     }
 }

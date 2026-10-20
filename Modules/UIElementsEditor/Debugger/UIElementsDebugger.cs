@@ -662,6 +662,7 @@ namespace UnityEditor.UIElements.Debugger
         {
             readonly TextField nameField;
             readonly TextField scale;
+            readonly FloatField m_PanelScale;
             readonly ObjectField panelSettings;
             readonly TextField m_totalVisualElements;
             readonly TextField cacheSummary;
@@ -709,6 +710,8 @@ namespace UnityEditor.UIElements.Debugger
                 Add(panelSettings = new ObjectField("Owner/Panel Settings") { allowSceneObjects = false});
                 #pragma warning restore UAL0015
                 Add(scale = new TextField("Scale") { isReadOnly = true });
+                Add(m_PanelScale = new FloatField("Panel Scale") { isDelayed = true });
+                m_PanelScale.RegisterValueChangedCallback(OnPanelScaleChanged);
                 Add(m_totalVisualElements = new TextField("Total Visual Elements") { isReadOnly = true });
                 Add(cacheSummary = new TextField("Cache Summary") { isReadOnly = true, multiline = true });
 
@@ -749,6 +752,34 @@ namespace UnityEditor.UIElements.Debugger
                 Add(RenderStatsFoldout);
             }
 
+            const float k_MinPanelScale = 0.25f;
+            const float k_MaxPanelScale = 4f;
+
+            // Play mode views map game input through window coordinates, which ignore the panel scale.
+            static GUIView GetScalableView(BaseVisualElementPanel panel)
+            {
+                if (panel.ownerObject is not GUIView view || view.windowBackend == null)
+                    return null;
+                if (view is HostView hostView && hostView.actualView is PlayModeView)
+                    return null;
+                return view;
+            }
+
+            void OnPanelScaleChanged(ChangeEvent<float> evt)
+            {
+                var panel = selectedElement?.elementPanel;
+                if (panel == null)
+                    return;
+                var view = GetScalableView(panel);
+                if (view == null)
+                    return;
+
+                panel.scale = Mathf.Clamp(evt.newValue, k_MinPanelScale, k_MaxPanelScale);
+                view.windowBackend.SizeChanged();
+                view.Repaint();
+                m_PanelScale.SetValueWithoutNotify(panel.scale);
+            }
+
             protected override void Refresh()
             {
                 if (selectedElement != null)
@@ -756,6 +787,8 @@ namespace UnityEditor.UIElements.Debugger
                     var panel = selectedElement.elementPanel;
                     nameField.text = panel.ownerObject.name;
                     scale.text = $" scale: { panel.scale}, pixelPerPoint {panel.pixelsPerPoint}, scaledPixelPerPoint {panel.scaledPixelsPerPoint}";
+                    m_PanelScale.SetValueWithoutNotify(panel.scale);
+                    m_PanelScale.SetEnabled(GetScalableView(panel) != null);
                     panelSettings.value = panel.ownerObject;
                     m_totalVisualElements.text = $" { panel.visualTree.Query<VisualElement>().ToList().Count.ToString()}, {panel.visualTree.Query<VisualElement>().Where(e => e.resolvedStyle.display != DisplayStyle.None).ToList().Count.ToString()} diplayNone";
 

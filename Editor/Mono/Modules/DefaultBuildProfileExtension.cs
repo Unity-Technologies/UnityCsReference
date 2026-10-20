@@ -117,6 +117,7 @@ namespace UnityEditor.Modules
         public virtual bool ShouldDrawExplicitNullCheckbox() => false;
         public virtual bool ShouldDrawExplicitDivideByZeroCheckbox() => false;
         public virtual bool ShouldDrawExplicitArrayBoundsCheckbox() => false;
+        public virtual bool ShouldDrawExplicitCompressionMethodPopup() => true;
         public virtual bool ShouldDrawInstallInBuildFolderCheckbox()
         {
             return Unsupported.IsSourceBuild() && PostprocessBuildPlayer.SupportsInstallInBuildFolder(m_BuildTarget);
@@ -344,26 +345,9 @@ namespace UnityEditor.Modules
                 ShowArrayBoundsChecksToggle();
             }
 
-            var postprocessor = ModuleManager.GetBuildPostProcessor(m_BuildTarget);
-
-            if (postprocessor != null && postprocessor.SupportsCompression(Compression.Lz4))
+            if (ShouldDrawExplicitCompressionMethodPopup())
             {
-                using (var vertical = new EditorGUILayout.VerticalScope())
-                using (var propertyScope = new EditorGUI.PropertyScope(vertical.rect, GUIContent.none, m_CompressionType))
-                {
-                    var cmpIdx = Array.IndexOf(k_CompressionTypes, (Compression)m_CompressionType.intValue);
-                    if (cmpIdx == BuildProfilePlatformSettingsBase.k_InvalidCompressionIdx)
-                        cmpIdx = Array.IndexOf(k_CompressionTypes, postprocessor.GetDefaultCompression());
-                    if (cmpIdx == BuildProfilePlatformSettingsBase.k_InvalidCompressionIdx)
-                        cmpIdx = (int)CompressionType.Lz4;  // Lz4 by default.
-                    cmpIdx = EditorGUILayout.Popup(k_CompressionMethod, cmpIdx, k_CompressionStrings);
-                    m_CompressionType.intValue = (int)k_CompressionTypes[cmpIdx];
-
-                    if (m_BuildTargetGroup == BuildTargetGroup.Standalone && m_IsClassicProfile)
-                    {
-                        m_SharedSettings.compressionType = (Compression)m_CompressionType.intValue;
-                    }
-                }
+                ShowCompressionMethodPopup();
             }
 
             if (ShouldDrawInstallInBuildFolderCheckbox())
@@ -579,6 +563,31 @@ namespace UnityEditor.Modules
             if (m_IsClassicProfile)
             {
                 m_SharedSettings.explicitArrayBoundsChecks = m_ExplicitArrayBoundsChecks.boolValue;
+            }
+        }
+
+        protected virtual void ShowCompressionMethodPopup()
+        {
+            var postprocessor = ModuleManager.GetBuildPostProcessor(m_BuildTarget);
+
+            if (postprocessor != null && postprocessor.SupportsCompression(Compression.Lz4))
+            {
+                using (var vertical = new EditorGUILayout.VerticalScope())
+                using (var propertyScope = new EditorGUI.PropertyScope(vertical.rect, GUIContent.none, m_CompressionType))
+                {
+                    var cmpIdx = Array.IndexOf(k_CompressionTypes, (Compression)m_CompressionType.intValue);
+                    if (cmpIdx == BuildProfilePlatformSettingsBase.k_InvalidCompressionIdx)
+                        cmpIdx = Array.IndexOf(k_CompressionTypes, postprocessor.GetDefaultCompression());
+                    if (cmpIdx == BuildProfilePlatformSettingsBase.k_InvalidCompressionIdx)
+                        cmpIdx = (int)CompressionType.Lz4;  // Lz4 by default.
+                    cmpIdx = EditorGUILayout.Popup(k_CompressionMethod, cmpIdx, k_CompressionStrings);
+                    m_CompressionType.intValue = (int)k_CompressionTypes[cmpIdx];
+
+                    if (m_BuildTargetGroup == BuildTargetGroup.Standalone && m_IsClassicProfile)
+                    {
+                        m_SharedSettings.compressionType = (Compression)m_CompressionType.intValue;
+                    }
+                }
             }
         }
 

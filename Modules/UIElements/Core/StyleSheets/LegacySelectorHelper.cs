@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using Unity.Scripting.LifecycleManagement;
 using UnityEngine.Bindings;
 
 namespace UnityEngine.UIElements.StyleSheets
@@ -14,6 +15,33 @@ namespace UnityEngine.UIElements.StyleSheets
     [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
     internal static class LegacySelectorHelper
     {
+        // Caches an id from UniqueStyleString's table, which persists across code reload.
+        [NoAutoStaticsCleanup]
+        static string s_LastClass;
+        [NoAutoStaticsCleanup]
+        static UniqueStyleString s_LastClassResolved;
+
+        static bool ClassListContains(VisualElement element, string cls)
+        {
+            if (!ReferenceEquals(s_LastClass, cls))
+            {
+                // Misses are not cached: a predicate may add this class to the string table later in the same query.
+                if (!UniqueStyleString.TryGet(cls, out var resolved))
+                    return false;
+
+                s_LastClass = cls;
+                s_LastClassResolved = resolved;
+            }
+
+            return element.ClassListContains(s_LastClassResolved);
+        }
+
+        internal static void ResetClassCache()
+        {
+            s_LastClass = null;
+            s_LastClassResolved = default;
+        }
+
         public static bool MatchesSelector(VisualElement element, StyleSelector selector)
         {
             bool match = true;
@@ -28,9 +56,7 @@ namespace UnityEngine.UIElements.StyleSheets
                     case StyleSelectorType.Wildcard:
                         break;
                     case StyleSelectorType.Class:
-#pragma warning disable RS0030
-                        match = element.ClassListContains(parts[i].value);
-#pragma warning restore RS0030
+                        match = ClassListContains(element, parts[i].value);
                         break;
                     case StyleSelectorType.ID:
                         match = string.Equals(element.name, parts[i].value, StringComparison.Ordinal);

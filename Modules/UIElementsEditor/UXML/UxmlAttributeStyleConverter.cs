@@ -3,7 +3,6 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
-using System.Text.RegularExpressions;
 using UnityEngine;
 using UnityEngine.UIElements;
 using Cursor = UnityEngine.UIElements.Cursor;
@@ -61,12 +60,7 @@ internal class StyleListAttributeConverter<T> : IUxmlAttributeConverter
         if (value.AsSpan().Trim().Equals("none", StringComparison.OrdinalIgnoreCase))
             return StyleKeyword.None;
 
-        var items = value.Split(',');
-        if (typeof(T) == typeof(Color) && value.Contains("("))
-        {
-            // Using the lookahead assertion to split the string by commas that are not inside parentheses
-            items = Regex.Split(value, @"(?<=\)),");
-        }
+        var items = UxmlAttributeConverter.SplitListItems<T>(value);
 
         if (items.Length <= 0 || !UxmlAttributeConverter.TryGetConverter<T>(out var converter))
             return null;

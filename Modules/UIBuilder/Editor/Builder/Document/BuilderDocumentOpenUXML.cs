@@ -573,7 +573,8 @@ namespace Unity.UI.Builder
                 foreach (var openUXMLFile in openUXMLFiles)
                     openUXMLFile.PreSaveSyncBackup();
 
-                bool shouldSave = m_OpenendVisualTreeAssetOldPath != newUxmlPath;
+                // LoadDocument copies the backup from the live asset, so it can already hold another tool's unsaved edit.
+                bool shouldSave = m_OpenendVisualTreeAssetOldPath != newUxmlPath || UIAssetRegistry.instance.IsDirty(visualTreeAsset);
                 var uxmlText = visualTreeAsset.GenerateUXML();
 
                 if (uxmlText != null)
@@ -641,7 +642,6 @@ namespace Unity.UI.Builder
 
                 foreach (var openUSSFile in m_OpenUSSFiles)
                 {
-                    openUSSFile.GeneratePreview();
                     if (openUSSFile.SaveToDisk(visualTreeAsset, out var ussFailed))
                         savedUSSFiles.Add(openUSSFile);
                     succeeded &= !ussFailed;

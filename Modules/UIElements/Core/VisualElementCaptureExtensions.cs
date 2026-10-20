@@ -3,7 +3,6 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
-using UnityEngine.Rendering;
 
 namespace UnityEngine.UIElements
 {
@@ -80,9 +79,6 @@ namespace UnityEngine.UIElements
         /// The texture to render into. The caller owns and is responsible for releasing it. The
         /// element is captured at the panel's scale and aligned to the top-left of the texture.
         /// Content that does not fit is cropped, and any uncovered region is left transparent.
-        /// On platforms without <see cref="CopyTextureSupport.Basic"/>, the capture falls back to a
-        /// blit that scales the element across the destination, so the result may be stretched and
-        /// is not offset within a larger destination.
         /// </param>
         /// <exception cref="ArgumentNullException">
         /// Throws if <paramref name="element"/> or <paramref name="destination"/> is null.
@@ -125,9 +121,6 @@ namespace UnityEngine.UIElements
         /// The texture to render into. The caller owns and is responsible for releasing it. The
         /// element is captured at the panel's scale and aligned to the top-left of the texture.
         /// Content that does not fit is cropped, and any uncovered region is left transparent.
-        /// On platforms without <see cref="CopyTextureSupport.Basic"/>, the capture falls back to a
-        /// blit that scales the element across the destination, so the result may be stretched and
-        /// is not offset within a larger destination.
         /// </param>
         /// <returns>
         /// Returns <c>true</c> if the capture succeeded. Returns <c>false</c> if <paramref name="element"/> is not
@@ -168,8 +161,8 @@ namespace UnityEngine.UIElements
         {
             float pixelsPerPoint = panel.scaledPixelsPerPoint;
             var panelLayout = panel.visualTree.layout;
-            int panelWidth = Mathf.Max(1, Mathf.CeilToInt(panelLayout.width * pixelsPerPoint));
-            int panelHeight = Mathf.Max(1, Mathf.CeilToInt(panelLayout.height * pixelsPerPoint));
+            int panelWidth = Mathf.Max(1, Mathf.RoundToInt(AlignmentUtils.CeilToPixelGrid(panelLayout.width, pixelsPerPoint) * pixelsPerPoint));
+            int panelHeight = Mathf.Max(1, Mathf.RoundToInt(AlignmentUtils.CeilToPixelGrid(panelLayout.height, pixelsPerPoint) * pixelsPerPoint));
 
             // Clear so any region not covered by the element (when partially off-panel, or smaller
             // than the destination) stays transparent.
@@ -179,8 +172,10 @@ namespace UnityEngine.UIElements
             RenderTexture.active = prevActive;
 
             // 24-bit depth gives the temp texture the stencil buffer UI clipping/masking needs.
-            // Match the destination's format so the GPU copy below is format-compatible.
-            var panelCapture = RenderTexture.GetTemporary(panelWidth, panelHeight, 24, destination.format);
+            // Takes its sRGB mode from the panel so gamma output is not encoded twice.
+            bool gammaOutput = panel.panelRenderer?.effectiveForceGammaRendering ?? false;
+            var readWrite = gammaOutput ? RenderTextureReadWrite.Linear : RenderTextureReadWrite.Default;
+            var panelCapture = RenderTexture.GetTemporary(panelWidth, panelHeight, 24, RenderTextureFormat.ARGB32, readWrite);
             try
             {
                 if (!panel.TryRenderIntoTexture(panelCapture))
@@ -211,35 +206,14 @@ namespace UnityEngine.UIElements
                 int copyWidth = iHi - iLo;
                 int copyHeight = jHi - jLo;
                 if (copyWidth > 0 && copyHeight > 0)
-                    CopyRegion(panelCapture, elemSrcX + iLo, elemSrcY + jLo, copyWidth, copyHeight,
-                        destination, iLo, dstBaseY + jLo);
+                    UIRUtility.CopyRegion(panelCapture, new RectInt(elemSrcX + iLo, elemSrcY + jLo, copyWidth, copyHeight),
+                        destination, new Vector2Int(iLo, dstBaseY + jLo));
             }
             finally
             {
                 RenderTexture.ReleaseTemporary(panelCapture);
             }
             return true;
-        }
-
-        // Copies an integer sub-rect from 'source' into 'destination' at the given offset. Uses the
-        // GPU copy path when supported (preserves the transparent border for partially off-panel
-        // elements) and falls back to a Blit on platforms without copy support.
-        static void CopyRegion(RenderTexture source, int srcX, int srcY, int width, int height,
-            RenderTexture destination, int dstX, int dstY)
-        {
-            if ((SystemInfo.copyTextureSupport & CopyTextureSupport.Basic) != 0)
-            {
-                Graphics.CopyTexture(source, 0, 0, srcX, srcY, width, height, destination, 0, 0, dstX, dstY);
-                return;
-            }
-
-            // Portable fallback: Blit fills the whole destination, so it ignores the destination
-            // offset and stretches the source region rather than placing it 1:1.
-            var scale = new Vector2((float)width / source.width, (float)height / source.height);
-            var offset = new Vector2((float)srcX / source.width, (float)srcY / source.height);
-            var prevActive = RenderTexture.active;
-            Graphics.Blit(source, destination, scale, offset);
-            RenderTexture.active = prevActive;
         }
 
         static void DestroyTexture(RenderTexture renderTexture)

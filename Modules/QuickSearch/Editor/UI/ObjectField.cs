@@ -802,7 +802,7 @@ namespace UnityEditor.Search
                             style.Draw(position, temp, id, DragAndDrop.activeControlID == id, position.Contains(Event.current.mousePosition));
 
                             Rect buttonRect = Utils.objectFieldButton.margin.Remove(GetButtonRect(visualType, position));
-                            Utils.objectFieldButton.Draw(buttonRect, GUIContent.none, id, DragAndDrop.activeControlID == id, buttonRect.Contains(Event.current.mousePosition));
+                            Utils.objectFieldButton.Draw(buttonRect, GUIContent.none, buttonRect.Contains(Event.current.mousePosition), GUIUtility.hotControl == id, DragAndDrop.activeControlID == id, GUIUtility.keyboardControl == id);
                             EditorGUI.EndHandleMixedValueContentColor();
                             break;
                         case ObjectFieldVisualType.LargePreview:

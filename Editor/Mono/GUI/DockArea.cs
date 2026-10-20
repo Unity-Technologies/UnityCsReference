@@ -58,7 +58,7 @@ namespace UnityEditor
         internal const int kFloatingWindowTopBorderWidth = 2;
         internal const float kTabHeight = 25 - 1; // This constant is duplicated in native code. See ContainerWindow.cpp. (Tab height -1)
         internal const float kDockHeight = 39;
-        internal const float kSideBorders = 1.0f;
+        internal const float kSideBorders = 2.0f;
         internal const float kBottomBorders = 2.0f;
 
         // Which pane window would we drop the currently dragged pane over
@@ -1282,7 +1282,7 @@ namespace UnityEditor
 
             Rect r = windowPosition;
             if (r.xMin != 0)
-                m_BorderSize.left += (int)kSideBorders;
+                m_BorderSize.left += (int)kSideBorders - 1;
             if (Mathf.Abs(r.xMax - GUIUtility.RoundToPixelGrid(window.position.width, scale)) > 0.02f)
                 m_BorderSize.right += (int)kSideBorders;
 

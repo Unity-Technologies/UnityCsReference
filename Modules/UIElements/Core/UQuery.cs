@@ -77,6 +77,9 @@ namespace UnityEngine.UIElements
         {
             internal List<RuleMatcher> m_Matchers;
 
+            // Set when OnRuleMatchedElement returns true, which only happens once a single-result query has its result.
+            bool m_Done;
+
             protected UQueryMatcher()
             {
             }
@@ -93,6 +96,9 @@ namespace UnityEngine.UIElements
 
             public override void TraverseRecursive(VisualElement element, int depth)
             {
+                if (m_Done)
+                    return;
+
                 int originalCount = m_Matchers.Count;
 
                 int count = m_Matchers.Count; // changes while we iterate so save
@@ -103,9 +109,9 @@ namespace UnityEngine.UIElements
 
                     if (LegacySelectorHelper.MatchRightToLeft(element, matcher.complexSelector))
                     {
-                        // use by uQuery to determine if we need to stop
                         if (OnRuleMatchedElement(matcher, element))
                         {
+                            m_Done = true;
                             return;
                         }
                     }
@@ -122,6 +128,7 @@ namespace UnityEngine.UIElements
 
             public virtual void Run(VisualElement root, List<RuleMatcher> matchers)
             {
+                m_Done = false;
                 m_Matchers = matchers;
                 Traverse(root);
             }

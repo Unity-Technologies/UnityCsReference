@@ -17,6 +17,7 @@ using UnityEditor.Build.Profile;
 using UnityEditorInternal;
 using UnityEngine.Internal;
 using UnityEngine.Scripting;
+using UnityEditor.Modules;
 
 namespace UnityEditor
 {
@@ -235,35 +236,10 @@ namespace UnityEditor
                     buildPlayerOptions.scenes[i] = buildPlayerOptions.scenes[i].Replace('\\', '/').Replace("//", "/");
             }
 
-            if ((buildPlayerOptions.options & BuildOptions.Development) == 0)
+            if ((buildPlayerOptions.options & BuildOptions.EnableCodeCoverage) != 0)
             {
-                if ((buildPlayerOptions.options & BuildOptions.AllowDebugging) != 0)
-                {
-                    throw new ArgumentException("Non-development build cannot allow debugging. Either add the Development build option, or remove the AllowDebugging build option.");
-                }
-
-                if ((buildPlayerOptions.options & BuildOptions.EnableCodeCoverage) != 0)
-                {
-                    throw new ArgumentException("Non-development build cannot allow code coverage. Either add the Development build option, or remove the EnableCodeCoverage build option.");
-                }
-
-                if ((buildPlayerOptions.options & BuildOptions.EnableDeepProfilingSupport) != 0)
-                {
-                    throw new ArgumentException("Non-development build cannot allow deep profiling support. Either add the Development build option, or remove the EnableDeepProfilingSupport build option.");
-                }
-
-                if ((buildPlayerOptions.options & BuildOptions.ConnectWithProfiler) != 0)
-                {
-                    throw new ArgumentException("Non-development build cannot allow auto-connecting the profiler. Either add the Development build option, or remove the ConnectWithProfiler build option.");
-                }
-            }
-            else
-            {
-                if ((buildPlayerOptions.options & BuildOptions.EnableCodeCoverage) != 0)
-                {
-                    if (!BuildProfileModuleUtil.IsBuildTargetSupportedByCoverage(buildPlayerOptions.target))
-                        throw new ArgumentException("Code coverage is unavailable for the selected build target. Remove the EnableCodeCoverage build option.");
-                }
+                if (!BuildProfileModuleUtil.IsBuildTargetSupportedByCoverage(buildPlayerOptions.target))
+                    throw new ArgumentException("Code coverage is unavailable for the selected build target. Remove the EnableCodeCoverage build option.");
             }
 
             try
@@ -453,6 +429,7 @@ namespace UnityEditor
         /// <param name="buildParameters">The build settings to use for the build, such as paths, roots, options, and compression.</param>
         /// <returns>The <see cref="BuildReport"/> that contains the results and details of the build.</returns>
         /// <exception cref="ArgumentException"><see cref="BuildContentDirectoryParameters.outputPath"/> is null or empty.</exception>
+        /// <exception cref="ArgumentException"><see cref="BuildContentDirectoryParameters.compression"/> the compression type is not supported for the target platform.</exception>
         /// <seealso cref="BuildContentDirectoryParameters"/>
         /// <seealso cref="Unity.Loading.ContentLoadManager"/>
         public static BuildReport BuildContentDirectory(BuildContentDirectoryParameters buildParameters)
@@ -475,6 +452,16 @@ namespace UnityEditor
 
             if (string.IsNullOrEmpty(buildParameters.outputPath))
                 throw new ArgumentException("BuildContentDirectoryParameters.outputPath cannot be empty");
+
+            var postprocess = ModuleManager.GetBuildPostProcessor(buildParameters.targetPlatform);
+            var compressionType = (Compression)buildParameters.compression.compression;
+            if (postprocess != null && !postprocess.SupportsCompression(compressionType))
+            {
+                Compression defaultCompression = postprocess.GetDefaultCompression();
+                throw new ArgumentException($"Content Directory build compression type '{buildParameters.compression.compression.ToString()}' is not supported on " +
+                    $"'{GetBuildTargetName(buildParameters.targetPlatform)}', using this compression type might cause performance degradation or unintended behavior. " +
+                    $"Please choose another compression type, or use the default compression type '{defaultCompression.ToString()}'.");
+            }
 
             if (!Directory.Exists(buildParameters.outputPath))
             {

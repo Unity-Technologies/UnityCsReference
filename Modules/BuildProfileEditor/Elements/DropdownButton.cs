@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using UnityEditor;
 using UnityEngine;
 using UnityEngine.UIElements;
 
@@ -69,6 +70,7 @@ namespace UnityEditor.Build.Profile.Elements
             AddToClassList("unity-button");
             AddToClassList("form-button");
             AddToClassList("ml-medium");
+            AddToClassList("profile-dropdown-button");
         }
 
         public void SetText(string text)

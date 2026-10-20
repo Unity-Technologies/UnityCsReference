@@ -116,20 +116,20 @@ namespace Unity.U2D.Physics
         public static PhysicsRotate LerpRotation(PhysicsRotate rotationA, PhysicsRotate rotationB, float interval) => PhysicsRotate_LerpRotation(rotationA, rotationB, interval);
 
         /// <summary>
-        /// Calculate the angular velocity necessary to rotate the current rotation and the specified rotation over a give time.
+        /// Calculate the angular velocity necessary to rotate the current rotation and the specified rotation over a given time.
         /// </summary>
         /// <param name="rotation">The rotation used as a calculation to rotate to.</param>
-        /// <param name="deltaTime">The delta time over which the rotation would take place.</param>
-        /// <returns>The angular velocity required to rotate to the specified rotation.</returns>
+        /// <param name="deltaTime">The delta time over which the rotation would take place, in seconds.</param>
+        /// <returns>The angular velocity required to rotate to the specified rotation, in radians per second.</returns>
         public readonly float AngularVelocity(PhysicsRotate rotation, float deltaTime) => PhysicsRotate_AngularVelocity(this, rotation, deltaTime);
 
         /// <summary>
-        /// Calculate the angular velocity necessary to rotate between two rotations over a give time.
+        /// Calculate the angular velocity necessary to rotate between two rotations over a given time.
         /// </summary>
         /// <param name="rotationA">The rotation to rotate from.</param>
         /// <param name="rotationB">The rotation to rotate to.</param>
-        /// <param name="deltaTime">The delta time over which the rotation would take place.</param>
-        /// <returns>The angular velocity required to rotate between the specified rotations.</returns>
+        /// <param name="deltaTime">The delta time over which the rotation would take place, in seconds.</param>
+        /// <returns>The angular velocity required to rotate between the specified rotations, in radians per second.</returns>
         public static float AngularVelocity(PhysicsRotate rotationA, PhysicsRotate rotationB, float deltaTime) => PhysicsRotate_AngularVelocity(rotationA, rotationB, deltaTime);
 
         /// <summary>
@@ -164,7 +164,7 @@ namespace Unity.U2D.Physics
         /// Calculate a new rotation of the current rotation by the specified angle.
         /// </summary>
         /// <param name="deltaAngle">The change in angle, in radians.</param>
-        /// <returns></returns>
+        /// <returns>The rotation after rotating by deltaAngle.</returns>
         public readonly PhysicsRotate Rotate(float deltaAngle) => PhysicsRotate_Rotate(this, deltaAngle);
 
         /// <summary>
@@ -246,7 +246,7 @@ namespace Unity.U2D.Physics
 
         /// <undoc/>
         [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
-        public static explicit operator Quaternion(PhysicsRotate rotate) => new(0.0f, 0.0f, rotate.sin, rotate.cos);
+        public static explicit operator Quaternion(PhysicsRotate rotate) => PhysicsMath.ToRotationFast3D(rotate.radians, PhysicsWorld.TransformPlane.XY);
 
         /// <undoc/>
         public void OnBeforeSerialize()
@@ -265,6 +265,6 @@ namespace Unity.U2D.Physics
         }
 
         /// <undoc/>
-        public override readonly string ToString() => $"angle={degrees} (rad), cos={cos}, sin={sin}";
+        public override readonly string ToString() => $"angle={degrees} (deg), cos={cos}, sin={sin}";
     }
 }

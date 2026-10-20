@@ -534,6 +534,9 @@ namespace Unity.UI.Builder
         public static string GetVisualTreeAssetAssetName(VisualTreeAsset visualTreeAsset, bool hasUnsavedChanges) =>
             GetAssetName(visualTreeAsset, BuilderConstants.UxmlExtension, hasUnsavedChanges);
 
+        public static string GetStyleSheetEditingPreviewName(VisualTreeAsset previewHost) =>
+            previewHost == null ? GetVisualTreeAssetAssetName(null, false) : previewHost.name + BuilderConstants.UxmlExtension;
+
         public static string GetStyleSheetAssetName(StyleSheet styleSheet, bool hasUnsavedChanges) =>
             GetAssetName(styleSheet, BuilderConstants.UssExtension, hasUnsavedChanges);
 

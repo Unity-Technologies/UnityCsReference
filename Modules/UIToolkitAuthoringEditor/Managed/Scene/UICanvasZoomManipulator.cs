@@ -19,6 +19,9 @@ sealed class UICanvasZoomManipulator : PointerManipulator
     const int LowScaleIncrement = 5;        // Low scale increment step (5%)
     const int MiddleScaleIncrement = 25;    // Middle scale increment step (25%)
     const int HighScaleIncrement = 250;     // High scale increment step (100%)
+    public const float MinZoomScale = MinScaleStart / 100f;
+    public const float MaxZoomScale = MaxScaleEnd / 100f;
+
     List<float> m_ZoomScaleValues;
     const float DefaultScale = 1;
     const float ZoomStepDistance = 10;

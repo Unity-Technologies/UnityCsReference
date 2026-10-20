@@ -13,6 +13,7 @@ namespace Unity.Collections
     /// These bypass the bridge indirection by calling directly into NativeKernel.
     /// </summary>
     [NativeHeader("ManagedKernel/Profiler/KernelProfiler.bindings.h")]
+    [VisibleToOtherModules("UnityEngine.EntitiesModule")]
     internal static unsafe class KernelProfiler
     {
         internal const ushort CategoryScripts = 1;
@@ -20,8 +21,10 @@ namespace Unity.Collections
         internal const ushort MarkerFlagAvailabilityEditor = 4;
 
         [NativeMethod(IsThreadSafe = true)]
+        [VisibleToOtherModules("UnityEngine.EntitiesModule")]
         internal static extern IntPtr CreateMarker(byte* name, int nameLen, ushort categoryId, ushort flags, int metadataCount);
 
+        [VisibleToOtherModules("UnityEngine.EntitiesModule")]
         internal static IntPtr CreateMarker(string name, ushort categoryId, ushort flags, int metadataCount)
         {
             if (string.IsNullOrEmpty(name))
@@ -39,9 +42,11 @@ namespace Unity.Collections
         }
 
         [NativeMethod(IsThreadSafe = true)]
+        [VisibleToOtherModules("UnityEngine.EntitiesModule")]
         internal static extern void BeginSample(IntPtr markerPtr);
 
         [NativeMethod(IsThreadSafe = true)]
+        [VisibleToOtherModules("UnityEngine.EntitiesModule")]
         internal static extern void EndSample(IntPtr markerPtr);
     }
 }

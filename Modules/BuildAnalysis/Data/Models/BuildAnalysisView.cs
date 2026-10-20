@@ -2,6 +2,9 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System;
+using System.Collections.Generic;
+
 namespace UnityEditor.Build.Analysis
 {
     /// <summary>
@@ -20,11 +23,15 @@ namespace UnityEditor.Build.Analysis
         // through BuildLogMessages.Status, not by leaving this unset.
         public BuildLogMessages Messages { get; }
 
-        public BuildAnalysisView(BuildEntry entry, AnalyzedBuild analyzed)
+        // The listed builds this one ran nested in or contains, ancestors first. Never null.
+        public IReadOnlyList<BuildEntry> RelatedBuilds { get; }
+
+        public BuildAnalysisView(BuildEntry entry, AnalyzedBuild analyzed, IReadOnlyList<BuildEntry> relatedBuilds = null)
         {
             Entry = entry;
             Analysis = analyzed.Analysis;
             Messages = analyzed.Messages;
+            RelatedBuilds = relatedBuilds ?? Array.Empty<BuildEntry>();
         }
     }
 }

@@ -258,7 +258,6 @@ namespace UnityEditor.Scripting.ScriptCompilation
             "com.unity.package-validation-suite", // UUM-156151: UAC0005/7
             "com.unity.searcher", // UUM-156153: CS0618: obsolete API usage
             "com.unity.xr.legacyinputhelpers", // UUM-156154: CS0618: obsolete FindObjectsOfType
-            "com.unity.inputsystem", // UUM-156155: CS0109: unnecessary new keyword
             "com.unity.ads", // UUM-156156: CS0168: unused variable
         };
 

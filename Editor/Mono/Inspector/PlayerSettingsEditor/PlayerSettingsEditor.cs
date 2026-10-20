@@ -253,12 +253,11 @@ namespace UnityEditor
             public static readonly GUIContent il2cppCompilerConfiguration = L10n.TextContent("C++ Compiler Configuration", "The C++ compiler configuration used when compiling IL2CPP generated code.", null, null);
             public static readonly GUIContent il2cppCodeGeneration = L10n.TextContent("IL2CPP Code Generation", "Determines whether IL2CPP should generate code optimized for runtime performance or build size/iteration.", null, null);
             public static readonly GUIContent[] il2cppCodeGenerationNames =  new GUIContent[] { L10n.TextContent("Optimize for runtime speed", null, null, null), L10n.TextContent("Optimize for code size and build time", null, null, null) };
-            public static readonly GUIContent il2cppStacktraceInformation = L10n.TextContent("IL2CPP Stacktrace Information", "Which information to include in stack traces. Including the file name and line number may increase build size.", null, null);
+            public static readonly GUIContent managedStackTraceInformation = L10n.TextContent("Managed Stack Trace Information", "Which information to include in managed stack traces. Including file names and line numbers adds debug information to the build, which increases its size.", null, null);
             public static readonly GUIContent il2CppLTOMode = L10n.TextContent("IL2CPP LTO Mode", "Link Time Optimization mode. Full LTO produces smaller and faster code but takes longer to link. Thin LTO is faster to link with nearly equivalent optimization.", null, null);
             public static readonly GUIContent il2CppLTOModeDisabled = L10n.TextContent("IL2CPP LTO Mode", "LTO is only applied in Master builds. Switch the C++ Compiler Configuration to Master to enable LTO.", null, null);
             public static readonly GUIContent[] il2CppLTOModeOptions = SettingsContentNonSearchable.il2CppLTOModeOptions;
             public static readonly GUIContent[] il2CppLTOModeNoneOption = SettingsContentNonSearchable.il2CppLTOModeNoneOption;
-            public static readonly GUIContent scriptingMono2x = L10n.TextContent("Mono", null, null, null);
             public static readonly GUIContent scriptingIL2CPP = L10n.TextContent("IL2CPP", null, null, null);
             public static readonly GUIContent scriptingCoreCLR = L10n.TextContent("CoreCLR", null, null, null);
             public static readonly GUIContent apiCompatibilityLevel = L10n.TextContent("Api Compatibility Level*", null, null, null);
@@ -509,7 +508,7 @@ namespace UnityEditor
         SerializedProperty m_EditorAssembliesCompatibilityLevel;
         SerializedProperty m_Il2CppCompilerConfiguration;
         SerializedProperty m_Il2CppCodeGeneration;
-        SerializedProperty m_Il2CppStacktraceInformation;
+        SerializedProperty m_ManagedStackTraceInformation;
         SerializedProperty m_Il2CppLTOMode;
         SerializedProperty m_ScriptingDefines;
         SerializedProperty m_AdditionalCompilerArguments;
@@ -1030,7 +1029,7 @@ namespace UnityEditor
             m_EditorAssembliesCompatibilityLevel = FindPropertyAssert("editorAssembliesCompatibilityLevel");
             m_Il2CppCompilerConfiguration   = FindPropertyAssert("il2cppCompilerConfiguration");
             m_Il2CppCodeGeneration          = FindPropertyAssert("il2cppCodeGeneration");
-            m_Il2CppStacktraceInformation   = FindPropertyAssert("il2cppStacktraceInformation");
+            m_ManagedStackTraceInformation  = FindPropertyAssert("il2cppStacktraceInformation");
             m_Il2CppLTOMode                 = FindPropertyAssert("il2cppLTOMode");
             m_ScriptingDefines              = FindPropertyAssert("scriptingDefineSymbols");
             m_StackTraceTypes               = FindPropertyAssert("m_StackTraceTypes");
@@ -3859,12 +3858,12 @@ namespace UnityEditor
                 return Il2CppCodeGeneration.OptimizeSpeed;
         }
 
-        private Il2CppStacktraceInformation GetCurrentIl2CppStacktraceInformationOptionForTarget(NamedBuildTarget namedBuildTarget)
+        private ManagedStackTraceInformation GetCurrentManagedStackTraceInformationOptionForTarget(NamedBuildTarget namedBuildTarget)
         {
-            if (m_Il2CppStacktraceInformation.TryGetMapEntry(namedBuildTarget.TargetName, out var entry))
-                return (Il2CppStacktraceInformation)entry.FindPropertyRelative("second").intValue;
+            if (m_ManagedStackTraceInformation.TryGetMapEntry(namedBuildTarget.TargetName, out var entry))
+                return (ManagedStackTraceInformation)entry.FindPropertyRelative("second").intValue;
             else
-                return Il2CppStacktraceInformation.MethodOnly;
+                return ManagedStackTraceInformation.MethodOnly;
         }
 
         private Il2CppLTOMode GetCurrentIl2CppLTOModeForTarget(NamedBuildTarget namedBuildTarget, ISettingEditorExtension settingsExtension)
@@ -4160,16 +4159,16 @@ namespace UnityEditor
                 }
 
 
-                // Il2Cpp Stacktrace Configuration
-                using (new EditorGUI.DisabledScope(currentBackend != ScriptingImplementation.IL2CPP || platform.namedBuildTarget == NamedBuildTarget.WebGL))
+                // Managed Stack Trace Configuration
+                using (new EditorGUI.DisabledScope(platform.namedBuildTarget == NamedBuildTarget.WebGL))
                 {
-                    Il2CppStacktraceInformation config = GetCurrentIl2CppStacktraceInformationOptionForTarget(platform.namedBuildTarget);
+                    ManagedStackTraceInformation config = GetCurrentManagedStackTraceInformationOptionForTarget(platform.namedBuildTarget);
 
-                    var newConfiguration = BuildEnumPopup(SettingsContent.il2cppStacktraceInformation, config,
-                        GetIl2CppStacktraceOptions(), GetIl2CppStacktraceOptionNames());
+                    var newConfiguration = BuildEnumPopup(SettingsContent.managedStackTraceInformation, config,
+                        GetManagedStackTraceOptions(), GetManagedStackTraceOptionNames());
 
                     if (config != newConfiguration)
-                        m_Il2CppStacktraceInformation.SetMapValue(platform.namedBuildTarget.TargetName, (int)newConfiguration);
+                        m_ManagedStackTraceInformation.SetMapValue(platform.namedBuildTarget.TargetName, (int)newConfiguration);
                 }
 
                 if (currentBackend == ScriptingImplementation.CoreCLR)
@@ -4777,27 +4776,27 @@ namespace UnityEditor
             return m_Il2cppCompilerConfigurationNames;
         }
 
-        static readonly Il2CppStacktraceInformation[] m_Il2cppStacktraceOptions = (Il2CppStacktraceInformation[])Enum.GetValues(typeof(Il2CppStacktraceInformation));
+        static readonly ManagedStackTraceInformation[] m_ManagedStackTraceOptions = (ManagedStackTraceInformation[])Enum.GetValues(typeof(ManagedStackTraceInformation));
         [NoAutoStaticsCleanup] // lazy-built GUIContent names; rebuilt on next GUI call if null
-        static GUIContent[] m_Il2cppStacktraceOptionNames;
+        static GUIContent[] m_ManagedStackTraceOptionNames;
 
-        private Il2CppStacktraceInformation[] GetIl2CppStacktraceOptions()
+        private ManagedStackTraceInformation[] GetManagedStackTraceOptions()
         {
-            return m_Il2cppStacktraceOptions;
+            return m_ManagedStackTraceOptions;
         }
 
-        private GUIContent[] GetIl2CppStacktraceOptionNames()
+        private GUIContent[] GetManagedStackTraceOptionNames()
         {
-            if (m_Il2cppStacktraceOptionNames == null)
+            if (m_ManagedStackTraceOptionNames == null)
             {
-                m_Il2cppStacktraceOptionNames = new GUIContent[]
+                m_ManagedStackTraceOptionNames = new GUIContent[]
                 {
                     EditorGUIUtility.TextContent("Method Name"),
                     EditorGUIUtility.TextContent("Method Name, File Name, and Line Number"),
                 };
             }
 
-            return m_Il2cppStacktraceOptionNames;
+            return m_ManagedStackTraceOptionNames;
         }
 
         private void OtherSectionLoggingGUI()
@@ -4901,8 +4900,6 @@ namespace UnityEditor
         {
             switch (scriptingBackend)
             {
-                case ScriptingImplementation.Mono2x:
-                    return SettingsContent.scriptingMono2x;
                 case ScriptingImplementation.IL2CPP:
                     return SettingsContent.scriptingIL2CPP;
                 case ScriptingImplementation.CoreCLR:

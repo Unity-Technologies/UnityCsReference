@@ -16,9 +16,8 @@ namespace UnityEditor.ShaderApiReflection
         // Public API
 
         public VirtualFunctionDeclaration Declaration { get; internal set; }
-        public ReadOnlyCollection<VirtualFunctionOverride> LocalOverrides => m_LocalOverrides.AsReadOnly();
         public bool HasDefinition { get; internal set; }
-        public Shader DeclarationOwner { get; internal set; }
+        public ReadOnlyCollection<VirtualFunctionOverride> LocalOverrides => m_LocalOverrides.AsReadOnly();
 
         // Private API
 
@@ -31,7 +30,7 @@ namespace UnityEditor.ShaderApiReflection
             public bool m_IsPureVirtual;
             public ShaderScope m_Scope;
             public ReflectedFunction.MarshalledType m_Signature;
-            public VirtualFunctionOverride[] m_LocalOverrides;
+            public VirtualFunctionOverride.MarshalledType[] m_LocalOverrides;
             public bool m_HasDefinition;
             public Shader m_DeclarationOwner;
         }
@@ -40,10 +39,14 @@ namespace UnityEditor.ShaderApiReflection
         {
             VirtualFunctionDeclaration.Attribute attribute = nativeData.m_IsPureVirtual ?
                 VirtualFunctionDeclaration.Attribute.PureVirtual : VirtualFunctionDeclaration.Attribute.Virtual;
-            Declaration = new(attribute, nativeData.m_Scope, new ReflectedFunction(nativeData.m_Signature));
-            m_LocalOverrides = new(nativeData.m_LocalOverrides);
+            Declaration = new(attribute,
+                nativeData.m_DeclarationOwner,
+                nativeData.m_Scope,
+                new ReflectedFunction(nativeData.m_Signature));
+            m_LocalOverrides = new List<VirtualFunctionOverride>(nativeData.m_LocalOverrides.Length);
+            foreach (var nativeOverride in nativeData.m_LocalOverrides)
+                m_LocalOverrides.Add(new(nativeOverride));
             HasDefinition = nativeData.m_HasDefinition;
-            DeclarationOwner = nativeData.m_DeclarationOwner;
         }
     }
 }

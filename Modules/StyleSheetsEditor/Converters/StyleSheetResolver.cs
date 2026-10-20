@@ -667,7 +667,7 @@ namespace UnityEditor.StyleSheets
                         // env(--my-variable, "pow");
                         variableValues = functionValue.args[1];
                     }
-                    else
+                    else if (options != null && options.ThrowIfCannotResolve)
                     {
                         throw new Exception($"Cannot resolve variable: \"{functionValue.args[0][0].AsString()}\"");
                     }

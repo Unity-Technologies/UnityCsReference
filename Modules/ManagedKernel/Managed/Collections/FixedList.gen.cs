@@ -25,6 +25,7 @@ using Unity.Mathematics;
 using UnityEngine.Internal;
 using UnityEngine;
 using Unity.Properties;
+using UnityEngine.Bindings;
 
 namespace Unity.Collections
 {
@@ -662,6 +663,7 @@ namespace Unity.Collections
         internal readonly unsafe byte* Buffer
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            [VisibleToOtherModules("UnityEngine.EntitiesModule")]
             get
             {
                 return buffer + FixedList.PaddingBytes<T>();
@@ -1903,6 +1905,7 @@ namespace Unity.Collections
         internal readonly unsafe byte* Buffer
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            [VisibleToOtherModules("UnityEngine.EntitiesModule")]
             get
             {
                 return buffer + FixedList.PaddingBytes<T>();
@@ -3144,6 +3147,7 @@ namespace Unity.Collections
         internal readonly unsafe byte* Buffer
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            [VisibleToOtherModules("UnityEngine.EntitiesModule")]
             get
             {
                 return buffer + FixedList.PaddingBytes<T>();
@@ -4385,6 +4389,7 @@ namespace Unity.Collections
         internal readonly unsafe byte* Buffer
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            [VisibleToOtherModules("UnityEngine.EntitiesModule")]
             get
             {
                 return buffer + FixedList.PaddingBytes<T>();
@@ -5626,6 +5631,7 @@ namespace Unity.Collections
         internal readonly unsafe byte* Buffer
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            [VisibleToOtherModules("UnityEngine.EntitiesModule")]
             get
             {
                 return buffer + FixedList.PaddingBytes<T>();

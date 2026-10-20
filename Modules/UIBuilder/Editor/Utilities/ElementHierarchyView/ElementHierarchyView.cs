@@ -584,7 +584,10 @@ namespace Unity.UI.Builder
             if (BuilderSharedStyles.IsDocumentElement(documentElement))
             {
                 var uxmlAsset = documentElement.GetVisualTreeAsset();
-                var ssLabel = new Label(BuilderAssetUtilities.GetVisualTreeAssetAssetName(uxmlAsset, hasUnsavedChanges));
+                var ssLabelText = m_PaneWindow.document.isStyleSheetEditingMode
+                    ? BuilderAssetUtilities.GetStyleSheetEditingPreviewName(uxmlAsset)
+                    : BuilderAssetUtilities.GetVisualTreeAssetAssetName(uxmlAsset, hasUnsavedChanges);
+                var ssLabel = new Label(ssLabelText);
                 ssLabel.AddToClassList(BuilderConstants.ExplorerItemLabelClassName);
                 ssLabel.AddToClassList("unity-debugger-tree-item-type");
                 row.AddToClassList(BuilderConstants.ExplorerHeaderRowClassName);

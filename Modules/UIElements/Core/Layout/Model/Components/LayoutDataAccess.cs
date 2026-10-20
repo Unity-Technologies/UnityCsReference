@@ -16,8 +16,9 @@ namespace UnityEngine.UIElements.Layout;
 readonly unsafe struct LayoutDataAccess
 {
     readonly int m_Manager;
-    readonly UnmanagedDataStore m_Nodes;
     readonly UnmanagedDataStore m_Configs;
+    // Last, so the node store pointer sits right before the handle that follows in LayoutNode.
+    readonly UnmanagedDataStore m_Nodes;
 
     public bool IsValid => m_Nodes.IsValid && m_Configs.IsValid;
 

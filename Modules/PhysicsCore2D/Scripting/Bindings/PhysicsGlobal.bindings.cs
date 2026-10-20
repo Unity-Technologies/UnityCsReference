@@ -13,6 +13,7 @@ namespace Unity.U2D.Physics
     {
         [NativeMethod(Name = "PhysicsCore2D::Global_ReadProjectSettings")] extern internal static void PhysicsGlobal_ReadProjectSettings();
         [NativeMethod(Name = "PhysicsCore2D::Global_GetPhysicsCoreSettings")] extern internal static UnityEngine.Object PhysicsGlobal_GetPhysicsCoreSettings();
+        [NativeMethod(Name = "PhysicsCore2D::Global_SetDrawOverrides")] extern internal static void PhysicsGlobal_SetDrawOverrides(bool enabled, PhysicsWorld.DrawOverrides drawOverrides);
 
         [NativeMethod(Name = "PhysicsCore2D::Global_GetObject", IsThreadSafe = true)] extern internal static UnityEngine.Object PhysicsGlobal_GetObject(EntityId entityId);
         [NativeMethod(Name = "PhysicsCore2D::Global_GetDefaultWorld", IsThreadSafe = true)] extern internal static PhysicsWorld PhysicsGlobal_GetDefaultWorld();

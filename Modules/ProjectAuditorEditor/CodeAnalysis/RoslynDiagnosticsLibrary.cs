@@ -184,6 +184,8 @@ namespace Unity.ProjectAuditor.Editor.CodeAnalysis
                     area = Areas.CPU;
                 else if (diagnostic.category == "CodeReloadSafety")
                     area = Areas.IterationTime | Areas.MigrationToCoreCLR;
+                else if (diagnostic.category == "BinaryFormatter")
+                    area = Areas.MigrationToCoreCLR;
             }
 
             var messageParts = diagnostic.messageFormat.Split('\n');

@@ -3750,7 +3750,7 @@ namespace UnityEngine
                 retval[i] = new Rect(xPos, yPos, elemWidth, elemHeight);
 
                 //we round the values to the dpi-aware pixel grid
-                retval[i] = GUIUtility.AlignRectToDevice(retval[i]);
+                retval[i] = GUIUtility.AlignRectToPixelGrid(retval[i]);
 
                 xPos = retval[i].xMax + spacingHorizontal;
 
@@ -3968,7 +3968,7 @@ namespace UnityEngine
                 retval[i] = new Rect(xPos, yPos, w, elemHeight);
 
                 //we round the values to the dpi-aware pixel grid
-                retval[i] = GUIUtility.AlignRectToDevice(retval[i]);
+                retval[i] = GUIUtility.AlignRectToPixelGrid(retval[i]);
 
                 GUIStyle nextStyle = midStyle;
                 if (i == count - 2 || i == xCount - 2)
@@ -5042,7 +5042,8 @@ namespace UnityEngine
                     }
                     break;
             }
-            GUIClip.Push(clipRect, new Vector2(Mathf.Round(-scrollPosition.x - viewRect.x), Mathf.Round(-scrollPosition.y - viewRect.y)), Vector2.zero, false);
+            var pixelsPerPoint = GUIUtility.pixelsPerPoint;
+            GUIClip.Push(clipRect, new Vector2(GUIUtility.RoundToPixelGrid(-scrollPosition.x - viewRect.x, pixelsPerPoint), GUIUtility.RoundToPixelGrid(-scrollPosition.y - viewRect.y, pixelsPerPoint)), Vector2.zero, false);
             return scrollPosition;
         }
 

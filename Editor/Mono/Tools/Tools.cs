@@ -205,7 +205,12 @@ namespace UnityEditor
             
             using (s_GetHandlePositionMarker.Auto())
             {
-                return EditorPivotManager.GetActivePivotMode(typeof(SceneView)).position + totalOffset;
+                var pivotPosition = EditorPivotManager.GetActivePivotMode(typeof(SceneView)).position;
+
+                if (float.IsInfinity(pivotPosition.x) || float.IsInfinity(pivotPosition.y) || float.IsInfinity(pivotPosition.z))
+                    pivotPosition = t.position;
+
+                return pivotPosition + totalOffset;
             }
         }
         

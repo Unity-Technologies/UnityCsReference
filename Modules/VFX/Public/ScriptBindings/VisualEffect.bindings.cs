@@ -78,6 +78,7 @@ namespace UnityEngine.VFX
         ///
         ///This example logs detailed information regarding all exposed properties:</remarks>
         ///<param name="nameID">The ID of the property. This is the same ID that <see cref="Shader.PropertyToID" /> returns.</param>
+        ///<returns>The texture dimension of the named exposed texture.</returns>
         ///<example nocheck="true">
         ///  <code><![CDATA[{code Tests/SRPTests/Packages/com.unity.testing.visualeffectgraph/Runtime/Examples/LogExposedProperties.cs}]]></code>
         ///</example>
@@ -160,6 +161,7 @@ namespace UnityEngine.VFX
         ///
         ///This example logs detailed information regarding all exposed properties:</remarks>
         ///<param name="name">The name of the property.</param>
+        ///<returns>The texture dimension of the named exposed texture.</returns>
         ///<example nocheck="true">
         ///  <code><![CDATA[{code Tests/SRPTests/Packages/com.unity.testing.visualeffectgraph/Runtime/Examples/LogExposedProperties.cs}]]></code>
         ///</example>
@@ -272,6 +274,7 @@ namespace UnityEngine.VFX
 
         ///<summary>Use this method to create a new VFXEventAttribute.</summary>
         ///<remarks>You can pass a VFXEventAttribute to <see cref="VFX.VisualEffect.SendEvent" />.</remarks>
+        ///<returns>A new VFXEventAttribute, or null if the VisualEffect doesn't have a VisualEffectAsset assigned.</returns>
         public VFXEventAttribute CreateVFXEventAttribute()
         {
             if (visualEffectAsset == null)
@@ -702,48 +705,63 @@ namespace UnityEngine.VFX
         // Values check
         ///<summary>Gets expected texture dimension for a named exposed texture.</summary>
         ///<param name="nameID">The ID of the property. This is the same ID that <see cref="Shader.PropertyToID" /> returns.</param>
+        ///<returns>The expected dimension of the named exposed texture.</returns>
         [FreeFunction(Name = "VisualEffectBindings::GetTextureDimensionFromScript", HasExplicitThis = true)] extern public UnityEngine.Rendering.TextureDimension GetTextureDimension(int nameID);
         ///<summary>Checks if the Visual Effect can override a bool with the name you pass in.</summary>
         ///<param name="nameID">The ID of the property. This is the same ID that <see cref="Shader.PropertyToID" /> returns.</param>
+        ///<returns>True if the Visual Effect can override a bool with that name. Otherwise, false.</returns>
         [FreeFunction(Name = "VisualEffectBindings::HasValueFromScript<bool>", HasExplicitThis = true)] extern public bool HasBool(int nameID);
         ///<summary>Checks if the Visual Effect can override an integer with the name you pass in.</summary>
         ///<param name="nameID">The ID of the property. This is the same ID that <see cref="Shader.PropertyToID" /> returns.</param>
+        ///<returns>True if the Visual Effect can override an integer with that name. Otherwise, false.</returns>
         [FreeFunction(Name = "VisualEffectBindings::HasValueFromScript<int>", HasExplicitThis = true)] extern public bool HasInt(int nameID);
         ///<summary>Checks if the Visual Effect can override an unsigned integer with the name you pass in.</summary>
         ///<param name="nameID">The ID of the property. This is the same ID that <see cref="Shader.PropertyToID" /> returns.</param>
+        ///<returns>True if the Visual Effect can override an unsigned integer with that name. Otherwise, false.</returns>
         [FreeFunction(Name = "VisualEffectBindings::HasValueFromScript<UInt32>", HasExplicitThis = true)] extern public bool HasUInt(int nameID);
         ///<summary>Checks if the Visual Effect can override a float with the name you pass in.</summary>
         ///<param name="nameID">The ID of the property. This is the same ID that <see cref="Shader.PropertyToID" /> returns.</param>
+        ///<returns>True if the Visual Effect can override a float with that name. Otherwise, false.</returns>
         [FreeFunction(Name = "VisualEffectBindings::HasValueFromScript<float>", HasExplicitThis = true)] extern public bool HasFloat(int nameID);
         ///<summary>Checks if the Visual Effect can override a Vector2 with the name you pass in.</summary>
         ///<param name="nameID">The ID of the property. This is the same ID that <see cref="Shader.PropertyToID" /> returns.</param>
+        ///<returns>True if the Visual Effect can override a Vector2 with that name. Otherwise, false.</returns>
         [FreeFunction(Name = "VisualEffectBindings::HasValueFromScript<Vector2f>", HasExplicitThis = true)] extern public bool HasVector2(int nameID);
         ///<summary>Checks if the Visual Effect can override a Vector3 with the name you pass in.</summary>
         ///<param name="nameID">The ID of the property. This is the same ID that <see cref="Shader.PropertyToID" /> returns.</param>
+        ///<returns>True if the Visual Effect can override a Vector3 with that name. Otherwise, false.</returns>
         [FreeFunction(Name = "VisualEffectBindings::HasValueFromScript<Vector3f>", HasExplicitThis = true)] extern public bool HasVector3(int nameID);
         ///<summary>Checks if the Visual Effect can override a Vector4 or Color with the name you pass in.</summary>
         ///<param name="nameID">The ID of the property. This is the same ID that <see cref="Shader.PropertyToID" /> returns.</param>
+        ///<returns>True if the Visual Effect can override a Vector4 or Color with that name. Otherwise, false.</returns>
         [FreeFunction(Name = "VisualEffectBindings::HasValueFromScript<Vector4f>", HasExplicitThis = true)] extern public bool HasVector4(int nameID);
         ///<summary>Checks if the Visual Effect can override a Matrix4x4 with the name you pass in.</summary>
         ///<param name="nameID">The ID of the property. This is the same ID that <see cref="Shader.PropertyToID" /> returns.</param>
+        ///<returns>True if the Visual Effect can override a Matrix4x4 with that name. Otherwise, false.</returns>
         [FreeFunction(Name = "VisualEffectBindings::HasValueFromScript<Matrix4x4f>", HasExplicitThis = true)] extern public bool HasMatrix4x4(int nameID);
         ///<summary>Checks if the Visual Effect can override a texture with the name you pass in.</summary>
         ///<param name="nameID">The ID of the property. This is the same ID that <see cref="Shader.PropertyToID" /> returns.</param>
+        ///<returns>True if the Visual Effect can override a texture with that name. Otherwise, false.</returns>
         [FreeFunction(Name = "VisualEffectBindings::HasValueFromScript<Texture*>", HasExplicitThis = true)] extern public bool HasTexture(int nameID);
         ///<summary>Checks if the Visual Effect can override an Animation Curve with the name you pass in.</summary>
         ///<param name="nameID">The ID of the property. This is the same ID that <see cref="Shader.PropertyToID" /> returns.</param>
+        ///<returns>True if the Visual Effect can override an Animation Curve with that name. Otherwise, false.</returns>
         [FreeFunction(Name = "VisualEffectBindings::HasValueFromScript<AnimationCurve*>", HasExplicitThis = true)] extern public bool HasAnimationCurve(int nameID);
         ///<summary>Checks if the Visual Effect can override a Gradient with the name you pass in.</summary>
         ///<param name="nameID">The ID of the property. This is the same ID that <see cref="Shader.PropertyToID" /> returns.</param>
+        ///<returns>True if the Visual Effect can override a Gradient with that name. Otherwise, false.</returns>
         [FreeFunction(Name = "VisualEffectBindings::HasValueFromScript<Gradient*>", HasExplicitThis = true)] extern public bool HasGradient(int nameID);
         ///<summary>Checks if the Visual Effect can override a Mesh with the name you pass in.</summary>
         ///<param name="nameID">The ID of the property. This is the same ID that <see cref="Shader.PropertyToID" /> returns.</param>
+        ///<returns>True if the Visual Effect can override a Mesh with that name. Otherwise, false.</returns>
         [FreeFunction(Name = "VisualEffectBindings::HasValueFromScript<Mesh*>", HasExplicitThis = true)] extern public bool HasMesh(int nameID);
         ///<summary>Checks if the Visual Effect can override a Skinned Mesh Renderer with the name you pass in.</summary>
         ///<param name="nameID">The ID of the property. This is the same ID that <see cref="Shader.PropertyToID" /> returns.</param>
+        ///<returns>True if the Visual Effect can override a Skinned Mesh Renderer with that name. Otherwise, false.</returns>
         [FreeFunction(Name = "VisualEffectBindings::HasValueFromScript<SkinnedMeshRenderer*>", HasExplicitThis = true)] extern public bool HasSkinnedMeshRenderer(int nameID);
         ///<summary>Checks if the Visual Effect can override a GraphicsBuffer with the name you pass in.</summary>
         ///<param name="nameID">The ID of the property. This is the same ID that <see cref="Shader.PropertyToID" /> returns.</param>
+        ///<returns>True if the Visual Effect can override a GraphicsBuffer with that name. Otherwise, false.</returns>
         [FreeFunction(Name = "VisualEffectBindings::HasValueFromScript<GraphicsBuffer*>", HasExplicitThis = true)] extern public bool HasGraphicsBuffer(int nameID);
 
         // Value setters
@@ -926,6 +944,7 @@ namespace UnityEngine.VFX
         ///<summary>Gets state on a spawn system.</summary>
         ///<remarks>Use <see cref="VFXSpawnerState" /> as parameter to avoid an allocation.</remarks>
         ///<param name="nameID">The system ID. This is the same ID that <see cref="Shader.PropertyToID" /> returns.</param>
+        ///<returns>A <see cref="VFXSpawnerState" /> instance.</returns>
         public VFXSpawnerState GetSpawnSystemInfo(int nameID)
         {
             var spawnState = new VFXSpawnerState();
@@ -1012,6 +1031,7 @@ namespace UnityEngine.VFX
         // Values check
         ///<summary>Checks if the Visual Effect can override an integer with the name you pass in.</summary>
         ///<param name="name">The name of the property.</param>
+        ///<returns>True if the Visual Effect can override an integer with that name. Otherwise, false.</returns>
         public bool HasInt(string name)
         {
             return HasInt(Shader.PropertyToID(name));
@@ -1019,6 +1039,7 @@ namespace UnityEngine.VFX
 
         ///<summary>Checks if the Visual Effect can override an unsigned integer with the name you pass in.</summary>
         ///<param name="name">The name of the property.</param>
+        ///<returns>True if the Visual Effect can override an unsigned integer with that name. Otherwise, false.</returns>
         public bool HasUInt(string name)
         {
             return HasUInt(Shader.PropertyToID(name));
@@ -1026,6 +1047,7 @@ namespace UnityEngine.VFX
 
         ///<summary>Checks if the Visual Effect can override a float with the name you pass in.</summary>
         ///<param name="name">The name of the property.</param>
+        ///<returns>True if the Visual Effect can override a float with that name. Otherwise, false.</returns>
         public bool HasFloat(string name)
         {
             return HasFloat(Shader.PropertyToID(name));
@@ -1033,6 +1055,7 @@ namespace UnityEngine.VFX
 
         ///<summary>Checks if the Visual Effect can override a Vector2 with the name you pass in.</summary>
         ///<param name="name">The name of the property.</param>
+        ///<returns>True if the Visual Effect can override a Vector2 with that name. Otherwise, false.</returns>
         public bool HasVector2(string name)
         {
             return HasVector2(Shader.PropertyToID(name));
@@ -1040,6 +1063,7 @@ namespace UnityEngine.VFX
 
         ///<summary>Checks if the Visual Effect can override a Vector3 with the name you pass in.</summary>
         ///<param name="name">The name of the property.</param>
+        ///<returns>True if the Visual Effect can override a Vector3 with that name. Otherwise, false.</returns>
         public bool HasVector3(string name)
         {
             return HasVector3(Shader.PropertyToID(name));
@@ -1047,6 +1071,7 @@ namespace UnityEngine.VFX
 
         ///<summary>Checks if the Visual Effect can override a Vector4 or Color with the name you pass in.</summary>
         ///<param name="name">The name of the property.</param>
+        ///<returns>True if the Visual Effect can override a Vector4 or Color with that name. Otherwise, false.</returns>
         public bool HasVector4(string name)
         {
             return HasVector4(Shader.PropertyToID(name));
@@ -1054,6 +1079,7 @@ namespace UnityEngine.VFX
 
         ///<summary>Checks if the Visual Effect can override a Matrix4x4 with the name you pass in.</summary>
         ///<param name="name">The name of the property.</param>
+        ///<returns>True if the Visual Effect can override a Matrix4x4 with that name. Otherwise, false.</returns>
         public bool HasMatrix4x4(string name)
         {
             return HasMatrix4x4(Shader.PropertyToID(name));
@@ -1061,6 +1087,7 @@ namespace UnityEngine.VFX
 
         ///<summary>Checks if the Visual Effect can override a texture with the name you pass in.</summary>
         ///<param name="name">The name of the property.</param>
+        ///<returns>True if the Visual Effect can override a texture with that name. Otherwise, false.</returns>
         public bool HasTexture(string name)
         {
             return HasTexture(Shader.PropertyToID(name));
@@ -1068,6 +1095,7 @@ namespace UnityEngine.VFX
 
         ///<summary>Gets expected texture dimension for a named exposed texture.</summary>
         ///<param name="name">The name of the property.</param>
+        ///<returns>The expected dimension of the named exposed texture.</returns>
         public UnityEngine.Rendering.TextureDimension GetTextureDimension(string name)
         {
             return GetTextureDimension(Shader.PropertyToID(name));
@@ -1075,6 +1103,7 @@ namespace UnityEngine.VFX
 
         ///<summary>Checks if the Visual Effect can override an Animation Curve with the name you pass in.</summary>
         ///<param name="name">The name of the property.</param>
+        ///<returns>True if the Visual Effect can override an Animation Curve with that name. Otherwise, false.</returns>
         public bool HasAnimationCurve(string name)
         {
             return HasAnimationCurve(Shader.PropertyToID(name));
@@ -1082,6 +1111,7 @@ namespace UnityEngine.VFX
 
         ///<summary>Checks if the Visual Effect can override a Gradient with the name you pass in.</summary>
         ///<param name="name">The name of the property.</param>
+        ///<returns>True if the Visual Effect can override a Gradient with that name. Otherwise, false.</returns>
         public bool HasGradient(string name)
         {
             return HasGradient(Shader.PropertyToID(name));
@@ -1089,6 +1119,7 @@ namespace UnityEngine.VFX
 
         ///<summary>Checks if the Visual Effect can override a Mesh with the name you pass in.</summary>
         ///<param name="name">The name of the property.</param>
+        ///<returns>True if the Visual Effect can override a Mesh with that name. Otherwise, false.</returns>
         public bool HasMesh(string name)
         {
             return HasMesh(Shader.PropertyToID(name));
@@ -1096,6 +1127,7 @@ namespace UnityEngine.VFX
 
         ///<summary>Checks if the Visual Effect can override a Skinned Mesh Renderer with the name you pass in.</summary>
         ///<param name="name">The name of the property.</param>
+        ///<returns>True if the Visual Effect can override a Skinned Mesh Renderer with that name. Otherwise, false.</returns>
         public bool HasSkinnedMeshRenderer(string name)
         {
             return HasSkinnedMeshRenderer(Shader.PropertyToID(name));
@@ -1103,6 +1135,7 @@ namespace UnityEngine.VFX
 
         ///<summary>Checks if the Visual Effect can override a GraphicsBuffer with the name you pass in.</summary>
         ///<param name="name">The name of the property.</param>
+        ///<returns>True if the Visual Effect can override a GraphicsBuffer with that name. Otherwise, false.</returns>
         public bool HasGraphicsBuffer(string name)
         {
             return HasGraphicsBuffer(Shader.PropertyToID(name));
@@ -1110,6 +1143,7 @@ namespace UnityEngine.VFX
 
         ///<summary>Checks if the Visual Effect can override a bool with the name you pass in.</summary>
         ///<param name="name">The name of the property.</param>
+        ///<returns>True if the Visual Effect can override a bool with that name. Otherwise, false.</returns>
         public bool HasBool(string name)
         {
             return HasBool(Shader.PropertyToID(name));
@@ -1389,6 +1423,8 @@ namespace UnityEngine.VFX
 
         ///<summary>Gets state on a spawn system.</summary>
         ///<remarks>Use <see cref="VFXSpawnerState" /> as parameter to avoid an allocation.</remarks>
+        ///<param name="name">The name of the spawn system.</param>
+        ///<returns>A <see cref="VFXSpawnerState" /> instance.</returns>
         public VFXSpawnerState GetSpawnSystemInfo(string name)
         {
             return GetSpawnSystemInfo(Shader.PropertyToID(name));

@@ -38,6 +38,8 @@ namespace Unity.Baselib.LowLevel
         /// | With a futex the two Thread 1 operations become a single op.
         ///
         /// Spurious Wakeup - This function is subject to spurious wakeups.
+        ///
+        /// Memory ordering - Acquire: when woken by Baselib_SystemFutex_Notify, writes made before that Notify are visible.
         /// </remarks>
         /// <param name="address">Any address that can be read from both user and kernel space.</param>
         /// <param name="expected">What address points to will be checked against this value. If the values don't match thread will not enter a waiting state.</param>
@@ -45,6 +47,7 @@ namespace Unity.Baselib.LowLevel
         [FreeFunction(IsThreadSafe = true)]
         public static extern void Baselib_SystemFutex_Wait(IntPtr address, Int32 expected, UInt32 timeoutInMilliseconds);
         /// <summary>Notify threads waiting on a specific address.</summary>
+        /// <remarks>Memory ordering - Release: writes made before this call are visible to threads it wakes from Baselib_SystemFutex_Wait.</remarks>
         /// <param name="address">Any address that can be read from both user and kernel space</param>
         /// <param name="count">Number of waiting threads to wakeup.</param>
         /// <param name="wakeupFallbackStrategy">Platforms that don't support waking up a specific number of threads will use this strategy.</param>

@@ -53,6 +53,13 @@ namespace Unity.U2D.Physics
         /// <summary>
         /// Create a PhysicsMask by specifying multiple bits to set (1).
         /// </summary>
+        /// <remarks>
+        /// Each value is the index of a single bit to set, not a mask of bits.
+        /// An integer that holds a layer mask, such as the value of a <see cref="UnityEngine.LayerMask"/>, is not converted here and is read as a bit index instead.
+        /// For example, a layer mask with only layer 8 set has the value 256, which is read as bit index 256 and throws an exception, and a layer mask of 3 sets bit 3 rather than bits 0 and 1.
+        /// To create a PhysicsMask from a layer mask, pass the <see cref="UnityEngine.LayerMask"/> itself to <see cref="PhysicsMask(LayerMask)"/>.
+        /// If the layer mask is held in an integer, convert it first, for example `new PhysicsMask((LayerMask)layerMaskValue)`.
+        /// </remarks>
         /// <param name="bitIndices">The indices of the bits to set in the mask. An index must be in the range [0, 63].</param>
         /// <exception cref="System.ArgumentOutOfRangeException">Thrown if any of the provided bits are out of the range [0, 63].</exception>
         public PhysicsMask(params int[] bitIndices)
@@ -82,7 +89,7 @@ namespace Unity.U2D.Physics
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public PhysicsMask(LayerMask layerMask)
         {
-            bitMask = (UInt64)layerMask.value;
+            bitMask = (UInt64)(UInt32)layerMask.value;
         }
 
         /// <summary>
@@ -162,7 +169,7 @@ namespace Unity.U2D.Physics
         /// <param name="physicsMask">The PhysicsMask bits to compare to this PhysicsMask. If this is zero, false will always be returned.</param>
         /// <returns>True if all bits in the specified PhysicsMask are also set in this PhysicsMask, false otherwise.</returns>
         [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
-        public readonly bool AreBitsSet(PhysicsMask physicsMask) => (bitMask & physicsMask) == physicsMask;
+        public readonly bool AreBitsSet(PhysicsMask physicsMask) => physicsMask.bitMask != 0 && (bitMask & physicsMask) == physicsMask;
 
         /// <summary>
         /// Checks if any of the provided PhysicsMask set bits are also set in this PhysicsMask.
@@ -251,24 +258,34 @@ namespace Unity.U2D.Physics
         /// Bitwise LEFT-SHIFT operator for PhysicsMask.
         /// </summary>
         /// <param name="bitMask">The PhysicsMask to perform the operation with.</param>
-        /// <param name="bitShift">The number of bits to shift the bitmask.</param>
+        /// <param name="bitShift">The number of bits to shift the bitmask, in the range [0, 63].</param>
         /// <returns>The bit-wise operation using both BitMasks.</returns>
+        /// <exception cref="System.ArgumentOutOfRangeException">Thrown if <paramref name="bitShift"/> is out of range [0, 63].</exception>
         [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
         public static PhysicsMask operator <<(PhysicsMask bitMask, int bitShift)
         {
-            return bitMask.bitMask << bitShift;
+            if (bitShift >= 0 && bitShift <= 63)
+                return bitMask.bitMask << bitShift;
+
+            // Invalid.
+            throw new ArgumentOutOfRangeException(nameof(bitShift), $"Bit shift is out of range [0, 63]: {bitShift}.");
         }
 
         /// <summary>
         /// Bitwise RIGHT-SHIFT operator for PhysicsMask.
         /// </summary>
         /// <param name="bitMask">The PhysicsMask to perform the operation with.</param>
-        /// <param name="bitShift">The number of bits to shift the bitmask.</param>
+        /// <param name="bitShift">The number of bits to shift the bitmask, in the range [0, 63].</param>
         /// <returns>The bit-wise operation using both BitMasks.</returns>
+        /// <exception cref="System.ArgumentOutOfRangeException">Thrown if <paramref name="bitShift"/> is out of range [0, 63].</exception>
         [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
         public static PhysicsMask operator >>(PhysicsMask bitMask, int bitShift)
         {
-            return bitMask.bitMask >> bitShift;
+            if (bitShift >= 0 && bitShift <= 63)
+                return bitMask.bitMask >> bitShift;
+
+            // Invalid.
+            throw new ArgumentOutOfRangeException(nameof(bitShift), $"Bit shift is out of range [0, 63]: {bitShift}.");
         }
 
         /// <summary>
@@ -291,38 +308,40 @@ namespace Unity.U2D.Physics
         /// </summary>
         public struct ResetBitIterator : IEnumerable<int>, IEnumerator<int>
         {
-            private int m_BitIndex = -1;
+            // The next bit index to check, so that a default iterator starts at bit zero.
+            private int m_NextBitIndex;
             private UInt64 bitMask;
 
             /// <undoc/>
-            public ResetBitIterator(PhysicsMask bitMask) => this.bitMask = bitMask;
+            public ResetBitIterator(PhysicsMask bitMask)
+            {
+                m_NextBitIndex = 0;
+                this.bitMask = bitMask;
+            }
 
             /// <undoc/>
-            readonly int IEnumerator<int>.Current => m_BitIndex;
+            readonly int IEnumerator<int>.Current => m_NextBitIndex - 1;
 
             /// <undoc/>
-            readonly object IEnumerator.Current => m_BitIndex;
+            readonly object IEnumerator.Current => m_NextBitIndex - 1;
 
             /// <undoc/>
             bool IEnumerator.MoveNext()
             {
-                if (m_BitIndex >= 63)
-                    return false;
-
                 // Find the next reset bit.
-                while (++m_BitIndex < 64)
+                while (m_NextBitIndex < 64)
                 {
-                    if ((bitMask & ((UInt64)1 << m_BitIndex)) == 0)
-                        break;
+                    if ((bitMask & ((UInt64)1 << m_NextBitIndex++)) == 0)
+                        return true;
                 }
 
-                return m_BitIndex < 64;
+                return false;
             }
 
             /// <undoc/>
             void IEnumerator.Reset()
             {
-                m_BitIndex = -1;
+                m_NextBitIndex = 0;
             }
 
             /// <undoc/>
@@ -340,38 +359,43 @@ namespace Unity.U2D.Physics
         /// </summary>
         public struct SetBitIterator : IEnumerable<int>, IEnumerator<int>
         {
-            private int m_BitIndex = -1;
+            // The next bit index to check, so that a default iterator starts at bit zero.
+            private int m_NextBitIndex;
             private UInt64 bitMask;
 
             /// <undoc/>
-            public SetBitIterator(PhysicsMask bitMask) => this.bitMask = bitMask;
+            public SetBitIterator(PhysicsMask bitMask)
+            {
+                m_NextBitIndex = 0;
+                this.bitMask = bitMask;
+            }
 
             /// <undoc/>
-            readonly int IEnumerator<int>.Current => m_BitIndex;
+            readonly int IEnumerator<int>.Current => m_NextBitIndex - 1;
 
             /// <undoc/>
-            readonly object IEnumerator.Current => m_BitIndex;
+            readonly object IEnumerator.Current => m_NextBitIndex - 1;
 
             /// <undoc/>
             bool IEnumerator.MoveNext()
             {
-                if (bitMask == 0 || m_BitIndex >= 63)
+                if (bitMask == 0)
                     return false;
 
                 // Find the next set bit.
-                while (++m_BitIndex < 64)
+                while (m_NextBitIndex < 64)
                 {
-                    if ((bitMask & ((UInt64)1 << m_BitIndex)) != 0)
-                        break;
+                    if ((bitMask & ((UInt64)1 << m_NextBitIndex++)) != 0)
+                        return true;
                 }
 
-                return m_BitIndex < 64;
+                return false;
             }
 
             /// <undoc/>
             void IEnumerator.Reset()
             {
-                m_BitIndex = -1;
+                m_NextBitIndex = 0;
             }
 
             /// <undoc/>

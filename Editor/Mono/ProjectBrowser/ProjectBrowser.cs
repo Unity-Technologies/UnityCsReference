@@ -233,7 +233,8 @@ namespace UnityEditor
         const float k_MinWidthOneColumn = 230f;// could be 205 with special handling
         const float k_MinWidthTwoColumns = 230f;
         static float k_ToolbarHeight => EditorGUI.kWindowToolbarHeight;
-        static float k_BottomBarHeight => EditorGUI.kWindowToolbarHeight;
+        static float k_BreadCrumbBarHeight => EditorGUI.kWindowMiniToolbarHeight;
+        static float k_BottomBarHeight => EditorGUI.kWindowMiniToolbarHeight;
 
         [SerializeField]
         float m_DirectoriesAreaWidth = k_MinWidthTwoColumns / 2;
@@ -2142,8 +2143,8 @@ namespace UnityEditor
         float GetListHeaderHeight()
         {
             if (!m_SearchFilter.IsSearching())
-                return k_ToolbarHeight;
-            return m_SearchFilter.GetState() == SearchFilter.State.EmptySearchFilter ? 0f : k_ToolbarHeight;
+                return k_BreadCrumbBarHeight;
+            return m_SearchFilter.GetState() == SearchFilter.State.EmptySearchFilter ? 0f : k_BreadCrumbBarHeight;
         }
 
         void CalculateRects()

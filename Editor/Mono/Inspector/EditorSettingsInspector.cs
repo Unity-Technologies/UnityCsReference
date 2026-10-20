@@ -54,7 +54,7 @@ namespace UnityEditor
             public static readonly GUIContent buildPipelineHeader = L10n.TextContent("Build Pipeline", null, null, null);
 
             public static readonly GUIContent sceneHandlingHeader = L10n.TextContent("Scene Handling", null, null, null);
-            public static readonly GUIContent forceAssetUnloadAndGCOnSceneLoad = L10n.TextContent("Force Asset Unload & GC on Scene Load", "Force a managed heap garbage collection and unload unused assets after loading scenes in single mode in the Editor or exiting Prefab Mode. In complex projects, this can slow down performance. Disable this if you do not require class finalizers to run at the end of scene loading. Note that regular dynamic GC and unused asset unloading still occur when memory usage is high, but without this option, class finalizers might not run immediately after each scene load.", null, null);
+            public static readonly GUIContent unloadUnusedAssetsOnSceneLoad = L10n.TextContent("Unload Unused Assets on Scene Load", "Unload unused assets after loading scenes in single mode in the Editor or exiting Prefab Mode. In complex projects, this can slow down performance. Disable this if you do not require unused assets to be unloaded at the end of scene loading. Note that unloading unused assets will still occur when memory usage is high.", null, null);
 
             public static readonly GUIContent graphics = L10n.TextContent("Graphics", null, null, null);
             public static readonly GUIContent showLightmapResolutionOverlay = L10n.TextContent("Show Lightmap Resolution Overlay", null, null, null);
@@ -97,15 +97,15 @@ namespace UnityEditor
             public static readonly GUIContent enterPlayModeOptions = L10n.TextContent("When entering Play Mode", "Reload options when entering Play Mode.", null, null);
             public static readonly GUIContent[] enterPlayModeOptionNames =
             {
-                L10n.TextContent("Reload Domain and Scene", null, null, null), // Default
-                L10n.TextContent("Reload Scene only", null, null, null),
+                L10n.TextContent("Reload Domain and Scene", null, null, null),
+                L10n.TextContent("Reload Scene only", null, null, null), // Default
                 L10n.TextContent("Reload Domain only", null, null, null),
                 L10n.TextContent("Do not reload Domain or Scene", null, null, null)
             };
             public static readonly int[] enterPlayModeOptionValues =
             {
-                (int)EnterPlayModeOptions.None, // Default
-                (int)EnterPlayModeOptions.DisableDomainReload,
+                (int)EnterPlayModeOptions.None,
+                (int)EnterPlayModeOptions.DisableDomainReload, // Default
                 (int)EnterPlayModeOptions.DisableSceneReload,
                 (int)(EnterPlayModeOptions.DisableDomainReload | EnterPlayModeOptions.DisableSceneReload)
             };
@@ -469,10 +469,10 @@ namespace UnityEditor
 
             GUILayout.Label(Content.sceneHandlingHeader, EditorStyles.boldLabel);
             EditorGUI.BeginChangeCheck();
-            bool forceAssetUnloadAndGCOnSceneLoad = EditorSettings.forceAssetUnloadAndGCOnSceneLoad;
-            forceAssetUnloadAndGCOnSceneLoad = EditorGUILayout.Toggle(Content.forceAssetUnloadAndGCOnSceneLoad, forceAssetUnloadAndGCOnSceneLoad);
+            bool unloadUnusedAssetsOnSceneLoad = EditorSettings.unloadUnusedAssetsOnSceneLoad;
+            unloadUnusedAssetsOnSceneLoad = EditorGUILayout.Toggle(Content.unloadUnusedAssetsOnSceneLoad, unloadUnusedAssetsOnSceneLoad);
             if (EditorGUI.EndChangeCheck())
-                EditorSettings.forceAssetUnloadAndGCOnSceneLoad = forceAssetUnloadAndGCOnSceneLoad;
+                EditorSettings.unloadUnusedAssetsOnSceneLoad = unloadUnusedAssetsOnSceneLoad;
 
             GUILayout.Space(10);
 

@@ -2,6 +2,8 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System;
+using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
 using UnityEditor;
@@ -14,6 +16,8 @@ namespace UnityEditor.Build.Analysis
     internal class OverviewTabView : IBuildAnalysisTabView
     {
         private const string k_UxmlPath = "BuildAnalysis/UXML/OverviewTab.uxml";
+
+        private readonly Action<GUID> m_SelectBuild;
 
         private readonly VisualElement m_Root = new VisualElement();
         private VisualElement m_NoSelection;
@@ -33,12 +37,29 @@ namespace UnityEditor.Build.Analysis
         private Label m_BuildOptionsValue;
         private Label m_ContentOptionsValue;
         private Label m_BuildProfileValue;
+        private Label m_RelatedBuildsValue;
+        private RelatedBuildLinks m_RelatedBuildsLinks;
+        private GUID m_ShownBuild;
         private string m_CurrentOutputPath = string.Empty;
 
         private BuildStepsElement m_Steps;
         private MessagesConsole m_Messages;
 
         public VisualElement Root => m_Root;
+
+        // Empty when no build is shown.
+        internal GUID ShownBuild => m_ShownBuild;
+
+        public OverviewTabView()
+            : this(_ => {})
+        {
+        }
+
+        /// <param name="selectBuild">Selects a build in the window when its Related Builds link is clicked.</param>
+        public OverviewTabView(Action<GUID> selectBuild)
+        {
+            m_SelectBuild = selectBuild ?? throw new ArgumentNullException(nameof(selectBuild));
+        }
 
         public void Initialize()
         {
@@ -69,6 +90,10 @@ namespace UnityEditor.Build.Analysis
             m_OutputPathOpenButton = m_Root.Q<Button>("output-path-open-button");
             m_OutputPathOpenButton.text = BuildAnalysisConstants.k_ShowInFileBrowserLabel;
             m_OutputPathOpenButton.clicked += OnOutputPathOpenClicked;
+            // The row shows one link per build, or its value label reading None when there are none.
+            m_RelatedBuildsValue = m_Root.Q<Label>("related-builds-value");
+            m_RelatedBuildsLinks = m_Root.Q<RelatedBuildLinks>("related-builds-links");
+            m_RelatedBuildsLinks.buildClicked += guid => m_SelectBuild(guid);
 
             m_Steps = m_Root.Q<BuildStepsElement>("build-steps");
             m_Messages = new MessagesConsole();
@@ -82,11 +107,13 @@ namespace UnityEditor.Build.Analysis
             var hasSelection = view?.Entry != null && view.Analysis != null;
             m_NoSelection.style.display = hasSelection ? DisplayStyle.None : DisplayStyle.Flex;
             m_ScrollView.style.display = hasSelection ? DisplayStyle.Flex : DisplayStyle.None;
+            m_ShownBuild = hasSelection ? view.Entry.BuildSessionGUID : default;
 
             if (!hasSelection)
                 return;
 
             BindSummary(view.Entry, view.Analysis, view.Messages);
+            SetRelatedBuilds(view.RelatedBuilds);
         }
 
         private void BindSummary(BuildEntry selection, BuildAnalysis analysis, BuildLogMessages messages)
@@ -114,6 +141,15 @@ namespace UnityEditor.Build.Analysis
 
             m_Steps.Bind(analysis, messages);
             m_Messages.Bind(messages, RootStepName(analysis));
+        }
+
+        // Also called when the build history changes while the same build stays shown.
+        public void SetRelatedBuilds(IReadOnlyList<BuildEntry> relatedBuilds)
+        {
+            bool hasRelatedBuilds = relatedBuilds.Count > 0;
+            m_RelatedBuildsLinks.SetBuilds(relatedBuilds);
+            m_RelatedBuildsValue.text = hasRelatedBuilds ? string.Empty : L10n.Tr("None", null);
+            m_RelatedBuildsValue.style.display = hasRelatedBuilds ? DisplayStyle.None : DisplayStyle.Flex;
         }
 
         public void OnTabVisibilityChanged(bool isVisible)

@@ -212,7 +212,7 @@ namespace UnityEditor
 
             Vector2 oldIconSize = EditorGUIUtility.GetIconSize();
             if (visualType == ObjectFieldVisualType.IconAndText)
-                EditorGUIUtility.SetIconSize(new Vector2(12, 12));  // Have to be this small to fit inside a single line height ObjectField
+                EditorGUIUtility.SetIconSize(new Vector2(16, 16));  // Have to be this small to fit inside a single line height ObjectField
             else if (visualType == ObjectFieldVisualType.LargePreview)
                 EditorGUIUtility.SetIconSize(new Vector2(64, 64));
 

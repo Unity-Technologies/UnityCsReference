@@ -373,32 +373,22 @@ sealed partial class UIViewport : VisualElement
         if (float.IsNaN(surfaceWidth) || float.IsNaN(surfaceHeight) || surfaceWidth <= 0 || surfaceHeight <= 0)
             return;
 
+        if (target == null)
+        {
+            if (m_Canvas.TryComputeFitToViewport(new Vector2(surfaceWidth, surfaceHeight), out var zoom, out var offset))
+                StartFitAnimation(zoom, offset);
+            return;
+        }
+
         var currentZoom = m_Canvas.ZoomScale;
         var currentOffset = m_Canvas.Offset;
 
-        float targetLeft, targetTop, targetWidth, targetHeight;
-
-        if (target != null)
-        {
-            var ppp = m_Canvas.PanelElement?.SubPanelPixelsPerPoint ?? 1f;
-            var bounds = target.worldBound;
-            targetLeft = bounds.x / ppp;
-            targetTop = bounds.y / ppp;
-            targetWidth = bounds.width / ppp;
-            targetHeight = bounds.height / ppp;
-        }
-        else
-        {
-            var canvasBaseSize = m_Canvas.BaseSize;
-            if (canvasBaseSize.x <= 0 || canvasBaseSize.y <= 0)
-                return;
-
-            // Canvas is visually positioned at Offset with visual size = BaseSize * ZoomScale
-            targetLeft = currentOffset.x;
-            targetTop = currentOffset.y;
-            targetWidth = canvasBaseSize.x * currentZoom;
-            targetHeight = canvasBaseSize.y * currentZoom;
-        }
+        var ppp = m_Canvas.PanelElement?.SubPanelPixelsPerPoint ?? 1f;
+        var bounds = target.worldBound;
+        var targetLeft = bounds.x / ppp;
+        var targetTop = bounds.y / ppp;
+        var targetWidth = bounds.width / ppp;
+        var targetHeight = bounds.height / ppp;
 
         // Convert visual size to canvas-local (unscaled) space; clamp to prevent division-by-zero
         var baseWidth = Mathf.Max(targetWidth / currentZoom, 0.001f);

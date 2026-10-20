@@ -885,8 +885,7 @@ namespace UnityEditor.UIElements
                     m_IgnoreOnInspectorGUIErrors = true;
                 }
 
-                if ((targetEditor.target == null
-                     && !targetEditor.isDataComponentEditor
+                if ((targetEditor.hasDestroyedObjectTarget
                      && !GenericInspector.ObjectIsMonoBehaviourOrScriptableObjectWithoutScript(targetEditor.target)) ||
                     !targetEditor.serializedObject.isValid)
                 {

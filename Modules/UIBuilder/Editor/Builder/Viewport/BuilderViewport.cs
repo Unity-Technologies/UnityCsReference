@@ -22,6 +22,15 @@ namespace Unity.UI.Builder
         static readonly float s_CanvasViewportMinWidthDiff = 30;
         static readonly float s_CanvasViewportMinHeightDiff = 36;
 
+        const string k_DisableInitialViewFitKey = "UIBuilder.DisableInitialViewFit";
+
+        // Test hook. Lives in SessionState so it survives the domain reloads some tests trigger.
+        internal static bool disableInitialViewFit
+        {
+            get => SessionState.GetBool(k_DisableInitialViewFitKey, false);
+            set => SessionState.SetBool(k_DisableInitialViewFitKey, value);
+        }
+
         BuilderPaneWindow m_PaneWindow;
 
         VisualElement m_Toolbar;
@@ -54,6 +63,9 @@ namespace Unity.UI.Builder
         List<VisualElement> m_PickedElements = new List<VisualElement>();
 
         internal const int k_AnimationDuration = 250;
+        const int k_MaxInitialViewFitAttempts = 10;
+        int m_InitialViewFitAttempts;
+        IVisualElementScheduledItem m_InitialViewFitRetry;
         ValueAnimation<float> m_ZoomAnimation;
         ValueAnimation<Vector2> m_ContentOffsetAnimation;
         readonly Action<VisualElement, float> m_ZoomAnimationAction;
@@ -273,6 +285,7 @@ namespace Unity.UI.Builder
             // Restore the zoom scale
             zoomScale = paneWindow.document.viewportZoomScale;
             contentOffset = paneWindow.document.viewportContentOffset;
+            m_Viewport.RegisterCallback<GeometryChangedEvent>(OnViewportGeometryChanged);
 
             // Repaint bug workaround.
             m_CheckerboardBackground = this.Q<CheckerboardBackground>();
@@ -313,19 +326,106 @@ namespace Unity.UI.Builder
 
         public void SetViewFromDocumentSetting()
         {
+            CancelInitialViewFitRetry();
             contentOffset = m_PaneWindow.document.viewportContentOffset;
             zoomScale = m_PaneWindow.document.viewportZoomScale;
             canvas.SetSizeFromDocumentSettings();
+            FitViewportWhenViewUnset();
         }
 
         public void ResetView()
         {
+            CancelInitialViewFitRetry();
+            if (m_PaneWindow.document)
+                m_PaneWindow.document.settings.ViewIsUnset = false;
+
             ResetViewTransform();
             canvas.ResetSize();
             CenterCanvas();
 
             // Clear selection state
             m_PickedElements.Clear();
+        }
+
+        void OnViewportGeometryChanged(GeometryChangedEvent evt) => FitViewportWhenViewUnset();
+
+        void CancelInitialViewFitRetry()
+        {
+            m_InitialViewFitAttempts = 0;
+            m_InitialViewFitRetry?.Pause();
+        }
+
+        void ScheduleInitialViewFitRetry()
+        {
+            m_InitialViewFitRetry ??= m_Viewport.schedule.Execute(FitViewportWhenViewUnset).Every(0);
+            m_InitialViewFitRetry.Resume();
+        }
+
+        // A document with no saved view settings is grown to its content (never shrunk) and framed once.
+        void FitViewportWhenViewUnset()
+        {
+            if (disableInitialViewFit || !m_PaneWindow.document || !m_PaneWindow.document.settings.ViewIsUnset)
+            {
+                CancelInitialViewFitRetry();
+                return;
+            }
+
+            var viewportWidth = m_Viewport.resolvedStyle.width;
+            var viewportHeight = m_Viewport.resolvedStyle.height;
+            if (float.IsNaN(viewportWidth) || float.IsNaN(viewportHeight) || viewportWidth <= 0 || viewportHeight <= 0)
+            {
+                CancelInitialViewFitRetry();
+                return;
+            }
+
+            if (!TryMeasureDocumentContentSize(out var contentSize))
+            {
+                if (++m_InitialViewFitAttempts < k_MaxInitialViewFitAttempts)
+                {
+                    ScheduleInitialViewFitRetry();
+                    return;
+                }
+
+                contentSize = Vector2.zero;
+            }
+
+            CancelInitialViewFitRetry();
+            m_PaneWindow.document.settings.ViewIsUnset = false;
+
+            // Measured once so percentage-sized content cannot feed its own result back.
+            if (!canvas.matchGameView)
+            {
+                if (contentSize.x >= 1f)
+                    canvas.width = Mathf.Max(canvas.width, contentSize.x);
+                if (contentSize.y >= 1f)
+                    canvas.height = Mathf.Max(canvas.height, contentSize.y);
+            }
+
+            FitViewport(null, animated: false);
+        }
+
+        // Returns false while the document content has no computed layout yet.
+        bool TryMeasureDocumentContentSize(out Vector2 contentSize)
+        {
+            contentSize = Vector2.zero;
+
+            var hasBounds = false;
+            var bounds = default(Rect);
+            if (!VisualElementBoundsUtility.TryEncapsulateDescendants(m_DocumentRootElement, ref bounds, ref hasBounds))
+                return false;
+
+            if (!hasBounds)
+                return true;
+
+            var scale = zoomScale > 0 ? zoomScale : 1f;
+            contentSize = (bounds.max - m_DocumentRootElement.worldBound.position) / scale;
+            if (float.IsNaN(contentSize.x) || float.IsNaN(contentSize.y))
+            {
+                contentSize = Vector2.zero;
+                return false;
+            }
+
+            return true;
         }
 
         public void SetTargetZoomScale(float targetZoomScale, Action<VisualElement, float> updateAction = null, int animationDuration = k_AnimationDuration)
@@ -391,7 +491,7 @@ namespace Unity.UI.Builder
 
         public void FitViewport() => FitViewport(selection.selection.FirstOrDefault());
 
-        public void FitViewport(VisualElement target)
+        public void FitViewport(VisualElement target, bool animated = true)
         {
             float elementWidth = target == null ? m_Canvas.width : target.worldBound.width / zoomScale;
             float elementHeight = target == null ? m_Canvas.height : target.worldBound.height / zoomScale;
@@ -430,8 +530,16 @@ namespace Unity.UI.Builder
                 (m_Viewport.resolvedStyle.width - (elementWidth * targetZoom)) / 2,
                 (m_Viewport.resolvedStyle.height - (elementHeight * targetZoom)) / 2);
 
-            SetTargetZoomScale(targetZoom);
-            SetTargetContentOffset(targetOffset);
+            if (animated)
+            {
+                SetTargetZoomScale(targetZoom);
+                SetTargetContentOffset(targetOffset);
+            }
+            else
+            {
+                zoomScale = targetZoom;
+                contentOffset = targetOffset;
+            }
         }
 
         void OnCanvasHeaderClick(EventBase obj)

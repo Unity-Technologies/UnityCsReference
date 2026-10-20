@@ -252,6 +252,25 @@ namespace Unity.UIToolkit.Editor
             }
         }
 
+        static bool TryConvertLengthToFloat<T>(StylePropertyId stylePropertyId, in T value, out StyleFloat converted)
+        {
+            converted = default;
+            if (StyleDebug.GetComputedStyleType(stylePropertyId) != typeof(float))
+                return false;
+
+            switch (value)
+            {
+                case StyleLength styleLength:
+                    converted = new StyleFloat(styleLength.value.value);
+                    return true;
+                case Length length:
+                    converted = new StyleFloat(length.value);
+                    return true;
+                default:
+                    return false;
+            }
+        }
+
         internal static bool TryRecordStylePropertyChange<T>(VisualElement element, StylePropertyId stylePropertyId, bool hasPreviousValue, in T previousValue, in T currentValue)
         {
             if (StyleDebug.IsShorthandProperty(stylePropertyId))
@@ -261,6 +280,12 @@ namespace Unity.UIToolkit.Editor
 
             if (!typeof(T).IsValueType && ReferenceEquals(currentValue, null))
                 return false;
+
+            if (TryConvertLengthToFloat(stylePropertyId, in currentValue, out var currentFloat))
+            {
+                TryConvertLengthToFloat(stylePropertyId, in previousValue, out var previousFloat);
+                return TryRecordStylePropertyChange(element, stylePropertyId, hasPreviousValue, in previousFloat, in currentFloat);
+            }
 
             // Route to a per-element UIAnimationClip preview when one is active; otherwise
             // fall through to the panel-wide PanelRenderer path below.
@@ -417,6 +442,8 @@ namespace Unity.UIToolkit.Editor
                 return false;
             if (!typeof(T).IsValueType && ReferenceEquals(currentValue, null))
                 return false;
+            if (TryConvertLengthToFloat(stylePropertyId, in currentValue, out var currentFloat))
+                return TryRecordStyleRulePropertyChange(rule, stylePropertyId, in currentFloat);
 
             if (!StyleRuleAnimationContext.TryResolveForRule(rule, out var uiClip))
                 return false;

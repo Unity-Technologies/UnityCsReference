@@ -1347,7 +1347,7 @@ namespace UnityEditor
         {
             foreach (var editor in editors)
             {
-                if (editor && editor.target == null)
+                if (editor && editor.hasDestroyedObjectTarget)
                     return true;
             }
             return false;
@@ -2885,7 +2885,7 @@ namespace UnityEditor
                         currentElement.ReinitCulled(newEditorsIndex, editors);
                         if (!InspectorElement.disabledThrottling)
                             m_EditorElementUpdater.Add(currentElement);
-                        editorToElementMap[ed.target.GetEntityId()] = currentElement;
+                        editorToElementMap[ed.targetEntityId] = currentElement;
 
                         // We need to move forward as the current element is the culled one, so we're not really
                         // interested in it.
@@ -2895,7 +2895,7 @@ namespace UnityEditor
                     continue;
                 }
 
-                if (currentEditor && ed.target != currentEditor.target)
+                if (currentEditor && ed.targetEntityId != currentEditor.targetEntityId)
                 {
                     if (editorToElementMap.Count == 0)
                         return null;

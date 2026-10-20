@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using UnityEditor.Build;
 using UnityEngine;
 using UnityEngine.Bindings;
 using Unity.Scripting.LifecycleManagement;
@@ -103,6 +104,14 @@ namespace UnityEditor
         Aspect16by9 = 4,
     }
 
+    // deprecated in 7.0
+    [Obsolete("Il2CppStacktraceInformation has been renamed to ManagedStackTraceInformation. #from(7000.0) (UnityUpgradable) -> ManagedStackTraceInformation", false)]
+    public enum Il2CppStacktraceInformation
+    {
+        MethodOnly = 0,
+        MethodFileLineNumber = 1,
+    }
+
     public partial class PlayerSettings
     {
         // deprecated since forever
@@ -141,6 +150,15 @@ namespace UnityEditor
         [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
         [Obsolete("SetAspectRatio is deprecated, Unity supports all aspect ratios.", false)]
         public static void SetAspectRatio(AspectRatio aspectRatio, bool enable) { }
+
+        // deprecated in 7.0
+        [Obsolete("PlayerSettings.GetIl2CppStacktraceInformation has been renamed to GetManagedStackTraceInformation. #from(7000.0) (UnityUpgradable) -> GetManagedStackTraceInformation(*)", false)]
+        public static Il2CppStacktraceInformation GetIl2CppStacktraceInformation(NamedBuildTarget buildTarget) =>
+            (Il2CppStacktraceInformation)GetManagedStackTraceInformation(buildTarget);
+
+        [Obsolete("PlayerSettings.SetIl2CppStacktraceInformation has been renamed to SetManagedStackTraceInformation. #from(7000.0) (UnityUpgradable) -> SetManagedStackTraceInformation(*)", false)]
+        public static void SetIl2CppStacktraceInformation(NamedBuildTarget buildTarget, Il2CppStacktraceInformation option) =>
+            SetManagedStackTraceInformation(buildTarget, (ManagedStackTraceInformation)option);
     }
 
     public partial class PlayerSettings

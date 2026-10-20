@@ -54,6 +54,46 @@ namespace UnityEditor
             OnWizardUpdate();
         }
 
+        // Removing or restoring prototypes while a wizard is open moves the edited prototype, so wizards look for it again
+        // by content. The old index is trusted only while the array keeps its length. The prototype is missing if no
+        // prototype matches or more than one does. Returns true if it moved to another index or went missing since the last call.
+        internal static bool UpdateEditedPrototype<T>(T[] prototypes, ref T edited, ref int index, ref int count, ref bool missing, Func<T, T, bool> isSame) where T : class
+        {
+            // Prototypes are not serializable, so a domain reload keeps the index but clears the edited copy.
+            if (edited == null && !missing && index < prototypes.Length)
+            {
+                edited = prototypes[index];
+                count = prototypes.Length;
+            }
+
+            T target = edited;
+            Predicate<T> isEdited = p => isSame(p, target);
+            int found;
+            if (prototypes.Length == count && index < prototypes.Length && isEdited(prototypes[index]))
+                found = index;
+            else
+            {
+                found = Array.FindIndex(prototypes, isEdited);
+                if (found != Array.FindLastIndex(prototypes, isEdited))
+                    found = -1;
+            }
+
+            bool isMissing = found == -1;
+            if (!isMissing)
+                count = prototypes.Length;
+            if (isMissing == missing && (isMissing || found == index))
+                return false;
+
+            missing = isMissing;
+            if (!isMissing)
+                index = found;
+            return true;
+        }
+
+        // DetailPrototype.Equals does not compare alignToGround and positionJitter.
+        internal static bool IsSameDetail(DetailPrototype a, DetailPrototype b)
+            => a.Equals(b) && a.alignToGround == b.alignToGround && a.positionJitter == b.positionJitter;
+
         internal void FlushHeightmapModification()
         {
             //@TODO:        m_Terrain.treeDatabase.RecalculateTreePosition();
@@ -361,6 +401,9 @@ namespace UnityEditor
         public int          m_NavMeshLod;
         private int         m_PrototypeIndex = -1;
         private bool        m_IsValidTree = false;
+        private TreePrototype m_EditedPrototype;
+        private int         m_PrototypeCount;
+        private bool        m_EditedPrototypeMissing = false;
 
         public void OnEnable()
         {
@@ -384,19 +427,24 @@ namespace UnityEditor
         {
             base.terrain = terrain;
             m_PrototypeIndex = index;
+            m_EditedPrototypeMissing = false;
 
             if (m_PrototypeIndex == -1)
             {
                 m_Tree = null;
                 m_BendFactor = 0.0f;
                 m_NavMeshLod = kNavMeshLodLast;
+                m_EditedPrototype = null;
             }
             else
             {
-                TreePrototype treePrototype = base.terrain.terrainData.treePrototypes[m_PrototypeIndex];
+                TreePrototype[] treePrototypes = base.terrain.terrainData.treePrototypes;
+                TreePrototype treePrototype = treePrototypes[m_PrototypeIndex];
                 m_Tree =            treePrototype.prefab;
                 m_BendFactor =      treePrototype.bendFactor;
                 m_NavMeshLod =      treePrototype.navMeshLod;
+                m_EditedPrototype = treePrototype;
+                m_PrototypeCount =  treePrototypes.Length;
             }
 
             m_IsValidTree = IsValidTree(m_Tree, m_PrototypeIndex, terrain);
@@ -404,9 +452,24 @@ namespace UnityEditor
             OnWizardUpdate();
         }
 
+        private bool UpdatePrototypeIndex()
+        {
+            if (m_PrototypeIndex == -1 || terrainData == null)
+                return false;
+            if (!UpdateEditedPrototype(terrainData.treePrototypes, ref m_EditedPrototype, ref m_PrototypeIndex, ref m_PrototypeCount, ref m_EditedPrototypeMissing, (a, b) => a.Equals(b)))
+                return false;
+
+            m_IsValidTree = IsValidTree(m_Tree, m_PrototypeIndex, terrain);
+            return true;
+        }
+
         void DoApply()
         {
             if (terrainData == null)
+                return;
+
+            UpdatePrototypeIndex();
+            if (m_EditedPrototypeMissing)
                 return;
 
             var paintTrees = (PaintTreesTool)EditorTools.EditorToolManager.GetSingleton(typeof(PaintTreesTool));
@@ -432,6 +495,9 @@ namespace UnityEditor
                 trees[m_PrototypeIndex].navMeshLod = m_NavMeshLod;
                 terrain.terrainData.treePrototypes = trees;
             }
+            trees = terrain.terrainData.treePrototypes;
+            m_EditedPrototype = trees[m_PrototypeIndex];
+            m_PrototypeCount = trees.Length;
             terrain.Flush();
             EditorUtility.SetDirty(terrain);
         }
@@ -448,6 +514,9 @@ namespace UnityEditor
 
         protected override bool DrawWizardGUI()
         {
+            if (UpdatePrototypeIndex())
+                UpdateErrorState();
+
             EditorGUI.BeginChangeCheck();
 
             bool allowSceneObjects = !EditorUtility.IsPersistent(terrain.terrainData); // sometimes user prefers saving terrainData with the scene file
@@ -497,11 +566,16 @@ namespace UnityEditor
             return changed;
         }
 
-        internal override void OnWizardUpdate()
+        void UpdateErrorState()
         {
             base.OnWizardUpdate();
 
-            if (m_Tree == null)
+            if (m_EditedPrototypeMissing)
+            {
+                errorString = "The tree being edited was removed or changed outside this window";
+                isValid = false;
+            }
+            else if (m_Tree == null)
             {
                 errorString = "Please assign a tree";
                 isValid = false;
@@ -511,10 +585,15 @@ namespace UnityEditor
                 errorString = "Tree has already been selected as a prototype";
                 isValid = false;
             }
-            else if (m_PrototypeIndex != -1)
-            {
+        }
+
+        internal override void OnWizardUpdate()
+        {
+            UpdatePrototypeIndex();
+            UpdateErrorState();
+
+            if (isValid && m_PrototypeIndex != -1)
                 DoApply();
-            }
         }
     }
 
@@ -581,6 +660,9 @@ namespace UnityEditor
         float        positionJitter;
         float        m_TargetCoverage;
         int          m_PrototypeIndex = -1;
+        DetailPrototype m_EditedPrototype;
+        int          m_PrototypeCount;
+        bool         m_EditedPrototypeMissing = false;
 
         public void OnEnable()
         {
@@ -603,7 +685,13 @@ namespace UnityEditor
                 };
             }
             else
-                prototype = base.terrain.terrainData.detailPrototypes[m_PrototypeIndex];
+            {
+                DetailPrototype[] prototypes = base.terrain.terrainData.detailPrototypes;
+                prototype = prototypes[m_PrototypeIndex];
+                m_PrototypeCount = prototypes.Length;
+            }
+            m_EditedPrototype = m_PrototypeIndex == -1 ? null : prototype;
+            m_EditedPrototypeMissing = false;
 
             m_DetailPrefab = prototype.prototype;
             m_MinWidth = prototype.minWidth;
@@ -667,9 +755,17 @@ namespace UnityEditor
             };
         }
 
+        private bool UpdatePrototypeIndex()
+            => m_PrototypeIndex != -1 && terrainData != null
+            && UpdateEditedPrototype(terrainData.detailPrototypes, ref m_EditedPrototype, ref m_PrototypeIndex, ref m_PrototypeCount, ref m_EditedPrototypeMissing, IsSameDetail);
+
         void DoApply()
         {
             if (terrainData == null)
+                return;
+
+            UpdatePrototypeIndex();
+            if (m_EditedPrototypeMissing)
                 return;
 
             DetailPrototype[] prototypes = terrainData.detailPrototypes;
@@ -684,6 +780,9 @@ namespace UnityEditor
             prototypes[m_PrototypeIndex] = MakePrototype();
 
             terrainData.detailPrototypes = prototypes;
+            prototypes = terrainData.detailPrototypes;
+            m_EditedPrototype = prototypes[m_PrototypeIndex];
+            m_PrototypeCount = prototypes.Length;
             EditorUtility.SetDirty(terrainData);
         }
 
@@ -697,26 +796,39 @@ namespace UnityEditor
             DoApply();
         }
 
-        internal override void OnWizardUpdate()
+        void UpdateErrorState()
         {
             base.OnWizardUpdate();
 
             if (!isValid)
                 return;
 
-            if (!MakePrototype().Validate(out var errorMessage))
+            if (m_EditedPrototypeMissing)
+            {
+                errorString = "The detail being edited was removed or changed outside this window";
+                isValid = false;
+            }
+            else if (!MakePrototype().Validate(out var errorMessage))
             {
                 errorString = errorMessage;
                 isValid = false;
             }
-            else if (m_PrototypeIndex != -1)
-            {
+        }
+
+        internal override void OnWizardUpdate()
+        {
+            UpdatePrototypeIndex();
+            UpdateErrorState();
+
+            if (isValid && m_PrototypeIndex != -1)
                 DoApply();
-            }
         }
 
         protected override bool DrawWizardGUI()
         {
+            if (UpdatePrototypeIndex())
+                UpdateErrorState();
+
             EditorGUI.BeginChangeCheck();
 
             m_DetailPrefab = EditorGUILayout.ObjectField("Detail Prefab", m_DetailPrefab, typeof(GameObject), !TerrainDataIsPersistent) as GameObject;
@@ -789,6 +901,9 @@ namespace UnityEditor
         float        m_PositionJitter;
 
         int      m_PrototypeIndex = -1;
+        DetailPrototype m_EditedPrototype;
+        int      m_PrototypeCount;
+        bool     m_EditedPrototypeMissing = false;
 
         public void OnEnable()
         {
@@ -811,7 +926,13 @@ namespace UnityEditor
                     prototype.renderMode = DetailRenderMode.Grass;
             }
             else
-                prototype = base.terrain.terrainData.detailPrototypes[m_PrototypeIndex];
+            {
+                DetailPrototype[] prototypes = base.terrain.terrainData.detailPrototypes;
+                prototype = prototypes[m_PrototypeIndex];
+                m_PrototypeCount = prototypes.Length;
+            }
+            m_EditedPrototype = m_PrototypeIndex == -1 ? null : prototype;
+            m_EditedPrototypeMissing = false;
 
             m_DetailTexture = prototype.prototypeTexture;
             m_MinWidth = prototype.minWidth;
@@ -860,9 +981,17 @@ namespace UnityEditor
             };
         }
 
+        private bool UpdatePrototypeIndex()
+            => m_PrototypeIndex != -1 && terrainData != null
+            && UpdateEditedPrototype(terrainData.detailPrototypes, ref m_EditedPrototype, ref m_PrototypeIndex, ref m_PrototypeCount, ref m_EditedPrototypeMissing, IsSameDetail);
+
         void DoApply()
         {
             if (terrainData == null)
+                return;
+
+            UpdatePrototypeIndex();
+            if (m_EditedPrototypeMissing)
                 return;
 
             DetailPrototype[] prototypes = terrainData.detailPrototypes;
@@ -877,6 +1006,9 @@ namespace UnityEditor
             prototypes[m_PrototypeIndex] = MakePrototype();
 
             terrainData.detailPrototypes = prototypes;
+            prototypes = terrainData.detailPrototypes;
+            m_EditedPrototype = prototypes[m_PrototypeIndex];
+            m_PrototypeCount = prototypes.Length;
             EditorUtility.SetDirty(terrainData);
         }
 
@@ -897,24 +1029,37 @@ namespace UnityEditor
             m_MinWidth = Mathf.Max(0f, m_MinWidth);
             m_MaxWidth = Mathf.Max(m_MinWidth, m_MaxWidth);
 
+            UpdatePrototypeIndex();
+            UpdateErrorState();
+
+            if (isValid && m_PrototypeIndex != -1)
+                DoApply();
+        }
+
+        void UpdateErrorState()
+        {
             base.OnWizardUpdate();
 
             if (!isValid)
                 return;
 
-            if (!MakePrototype().Validate(out var errorMessage))
+            if (m_EditedPrototypeMissing)
+            {
+                errorString = "The detail being edited was removed or changed outside this window";
+                isValid = false;
+            }
+            else if (!MakePrototype().Validate(out var errorMessage))
             {
                 errorString = errorMessage;
                 isValid = false;
-            }
-            else if (m_PrototypeIndex != -1)
-            {
-                DoApply();
             }
         }
 
         protected override bool DrawWizardGUI()
         {
+            if (UpdatePrototypeIndex())
+                UpdateErrorState();
+
             EditorGUI.BeginChangeCheck();
 
             Rect r = EditorGUILayout.GetControlRect(true, EditorGUIUtility.singleLineHeight);

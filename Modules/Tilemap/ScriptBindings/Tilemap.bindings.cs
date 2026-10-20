@@ -827,6 +827,9 @@ namespace UnityEngine.Tilemaps
         [FreeFunction(Name = "TilemapBindings::RefreshTileAssetsNative", HasExplicitThis = true)]
         internal extern unsafe void RefreshTilesNative(void* positions, int count, bool needSortRemoveDup);
 
+        [FreeFunction(Name = "TilemapBindings::SetHasAnySyncTileCallback")]
+        internal static extern void SetHasAnySyncTileCallback(bool hasAnySyncTileCallback);
+
         ///<summary>Refreshes all <see cref="Tile" />s in the <see cref="Tilemap" />. The Tilemap will retrieve the rendering data, animation data and other data for all tiles and update all relevant components.</summary>
         ///<remarks>Refer to [Scriptable Tiles](xref:Tilemap-ScriptableTiles-TileBase) and [Tilemap](xref:class-Tilemap) for more information.</remarks>
         [NativeMethod(Name = "RefreshAllTileAssets")]

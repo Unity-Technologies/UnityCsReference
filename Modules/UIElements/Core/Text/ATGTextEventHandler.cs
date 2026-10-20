@@ -220,40 +220,33 @@ namespace UnityEngine.UIElements
             var pos = pme.localPosition - new Vector3(m_TextElement.contentRect.min.x, m_TextElement.contentRect.min.y);
             // Convert UITK pos to ATG pos
             var info = m_TextElement.uitkTextHandle.ATGFindIntersectingLink(pos, out var linkText);
+            var hoveredLinkId = info.value != null && !info.isHyperlink ? info.id : -1;
 
-            if (info.value != null && !info.isHyperlink)
-            {
-                // PointerOver
-                if (currentLinkIDHash == -1)
-                {
-                    currentLinkIDHash = 0; // Placeholder for link.hashCode
-                    using (var e = Experimental.PointerOverLinkTagEvent.GetPooled(pme, info.value, linkText))
-                    {
-                        e.elementTarget = m_TextElement;
-                        m_TextElement.SendEvent(e);
-                    }
-
-                    return;
-                }
-
-                // PointerMove
-                if (currentLinkIDHash == 0) // Placeholder for link.hashCode
-                {
-                    using (var e = Experimental.PointerMoveLinkTagEvent.GetPooled(pme, info.value, linkText))
-                    {
-                        e.elementTarget = m_TextElement;
-                        m_TextElement.SendEvent(e);
-                    }
-
-                    return;
-                }
-            }
-
-            // PointerOut
-            if (currentLinkIDHash != -1)
+            if (currentLinkIDHash != -1 && currentLinkIDHash != hoveredLinkId)
             {
                 currentLinkIDHash = -1;
                 using (var e = Experimental.PointerOutLinkTagEvent.GetPooled(pme, string.Empty))
+                {
+                    e.elementTarget = m_TextElement;
+                    m_TextElement.SendEvent(e);
+                }
+            }
+
+            if (hoveredLinkId == -1)
+                return;
+
+            if (currentLinkIDHash == -1)
+            {
+                currentLinkIDHash = hoveredLinkId;
+                using (var e = Experimental.PointerOverLinkTagEvent.GetPooled(pme, info.value, linkText))
+                {
+                    e.elementTarget = m_TextElement;
+                    m_TextElement.SendEvent(e);
+                }
+            }
+            else
+            {
+                using (var e = Experimental.PointerMoveLinkTagEvent.GetPooled(pme, info.value, linkText))
                 {
                     e.elementTarget = m_TextElement;
                     m_TextElement.SendEvent(e);

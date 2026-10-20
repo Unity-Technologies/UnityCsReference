@@ -163,6 +163,7 @@ namespace UnityEditor.UIElements
             static readonly string iconUssClassName = ussClassName + "__icon";
             internal static readonly string labelUssClassName = ussClassName + "__label";
             internal static readonly string nullLabelUssClassName = labelUssClassName + "--value-null";
+            internal static readonly string nullIconUssClassName = iconUssClassName + "--value-null";
             static readonly string acceptDropVariantUssClassName = ussClassName + "--accept-drop";
 
             internal void ShowMixedValue(bool show)
@@ -213,6 +214,7 @@ namespace UnityEditor.UIElements
 
                 var content = EditorGUIUtility.ObjectContent(m_ObjectField.value, m_ObjectField.objectType, property);
                 m_ObjectIcon.image = content.image;
+                m_ObjectIcon.EnableInClassList(nullIconUssClassName, m_ObjectField.value == null);
                 // if selecting a normal map, use GetCachedIcon which in turn does the swizzle for us and ensures consistent rendering between Project & Inspector
                 if (m_ObjectField.value is Texture nmTex && nmTex != null && TextureUtil.IsNormalMapUsageMode(TextureUtil.GetUsageMode(nmTex)))
                     m_ObjectIcon.image = AssetDatabase.GetCachedIcon(AssetDatabase.GetAssetPath(nmTex));

@@ -22,6 +22,7 @@ namespace Unity.Jobs
         public delegate void EarlyInitFunction();
 
         [AutoStaticsCleanup]
+        [IgnoreForUAL0015("Pending list that FlushEarlyInits drains; AddEarlyInitFunction starts a new one on demand")]
         private static List<EarlyInitFunction> s_PendingDelegates;
 
         [OnCodeLoaded]

@@ -26,6 +26,7 @@ namespace UnityEditor.Shaders
         private HelpBox m_ErrorBox;
         private HelpBox m_WarnBox;
         private bool m_IsReadOnly;
+        private int m_KeywordsTypingUndoGroup = -1;
 
         public ShaderKeywordDeclarationOverrideFoldout() : base()
         {
@@ -83,12 +84,18 @@ namespace UnityEditor.Shaders
         {
             // Register state change callbacks on the UI elements in the header
             m_KeywordsField.RegisterCallback<ChangeEvent<string>>(OnKeywordListChanged);
+            m_KeywordsField.RegisterCallback<FocusInEvent>(OnKeywordsFieldFocusIn);
+            m_KeywordsField.RegisterCallback<FocusOutEvent>(OnKeywordsFieldFocusOut);
             m_VariantGenerationModeDropdown.RegisterCallback<ChangeEvent<string>>(OnVariantGenerationModeDropdownChanged);
         }
 
         public void UnregisterChangeEventCallbacks()
         {
             m_KeywordsField.UnregisterCallback<ChangeEvent<string>>(OnKeywordListChanged);
+            m_KeywordsField.UnregisterCallback<FocusInEvent>(OnKeywordsFieldFocusIn);
+            m_KeywordsField.UnregisterCallback<FocusOutEvent>(OnKeywordsFieldFocusOut);
+            // A recycled row can lose its binding while still focused, and would then never see the focus out.
+            CollapseKeywordsTypingUndo();
             m_VariantGenerationModeDropdown.UnregisterCallback<ChangeEvent<string>>(OnVariantGenerationModeDropdownChanged);
         }
 
@@ -213,10 +220,31 @@ namespace UnityEditor.Shaders
             return kwInfoList.ToArray();
         }
 
+        // Each keystroke is a change event
+        private void OnKeywordsFieldFocusIn(FocusInEvent evt)
+        {
+            Undo.IncrementCurrentGroup();
+            m_KeywordsTypingUndoGroup = Undo.GetCurrentGroup();
+        }
+
+        private void OnKeywordsFieldFocusOut(FocusOutEvent evt)
+        {
+            CollapseKeywordsTypingUndo();
+        }
+
+        private void CollapseKeywordsTypingUndo()
+        {
+            if (m_KeywordsTypingUndoGroup < 0)
+                return;
+
+            Undo.CollapseUndoOperations(m_KeywordsTypingUndoGroup);
+            m_KeywordsTypingUndoGroup = -1;
+        }
+
         private void OnKeywordListChanged(ChangeEvent<string> evt)
         {
             SetKeywords(BuildKeywordOverrideInfoArray(evt.newValue, DataSource[DataIndex]));
-            ParentShaderBuildSettingsUI.SettingsChanged();
+            ParentShaderBuildSettingsUI.RecordPendingState(ShaderBuildSettingsUI.k_EditKeywordsUndoName);
         }
 
         private void OnVariantGenerationModeDropdownChanged(ChangeEvent<string> evt)
@@ -227,7 +255,7 @@ namespace UnityEditor.Shaders
             dataItem.variantGenerationMode = (ShaderBuildSettings.ShaderVariantGenerationMode)index;
             DataSource[DataIndex] = dataItem;
 
-            ParentShaderBuildSettingsUI.SettingsChanged();
+            ParentShaderBuildSettingsUI.RecordPendingState(ShaderBuildSettingsUI.k_ChangeVariantGenerationModeUndoName);
         }
 
         private void OnKeywordIncludedToggleChanged(ChangeEvent<bool> evt)
@@ -238,7 +266,7 @@ namespace UnityEditor.Shaders
             dataIitem.keywords[kwIndex].keepInBuild = evt.newValue;
 
             SetKeywords(dataIitem.keywords);
-            ParentShaderBuildSettingsUI.SettingsChanged();
+            ParentShaderBuildSettingsUI.RecordPendingState(ShaderBuildSettingsUI.k_ToggleKeywordInBuildUndoName);
         }
     }
 }

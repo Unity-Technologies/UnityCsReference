@@ -288,32 +288,53 @@ namespace UnityEngine
         // (When inside a scrollview, we can be told to layout twice, so we need to know the difference)
         readonly float m_ForcedMinHeight;
         readonly float m_ForcedMaxHeight;
+        readonly float m_ForcedMinWidth;
+        readonly float m_ForcedMaxWidth;
+        // Measuring generates the text, and scroll views call CalcWidth twice per layout.
+        bool m_WidthMeasured;
 
         public GUIWordWrapSizer(GUIStyle style, GUIContent content, GUILayoutOption[] options) : base(0, 0, 0, 0, style)
         {
             m_Content = new GUIContent(content);
             ApplyOptions(options);
+            // ApplyOptions also raises the max to a MinWidth or MinHeight option, which must not cap the wrapped content.
+            m_ForcedMinWidth = minWidth;
+            m_ForcedMaxWidth = HasOption(options, GUILayoutOption.Type.fixedWidth) || HasOption(options, GUILayoutOption.Type.maxWidth) ? maxWidth : 0;
             m_ForcedMinHeight = minHeight;
-            m_ForcedMaxHeight = maxHeight;
+            m_ForcedMaxHeight = HasOption(options, GUILayoutOption.Type.fixedHeight) || HasOption(options, GUILayoutOption.Type.maxHeight) ? maxHeight : 0;
+        }
+
+        static bool HasOption(GUILayoutOption[] options, GUILayoutOption.Type type)
+        {
+            if (options == null)
+                return false;
+            foreach (var option in options)
+            {
+                if (option.type == type)
+                    return true;
+            }
+            return false;
         }
 
         public override void CalcWidth()
         {
-            if (minWidth == 0 || maxWidth == 0)
+            if (!m_WidthMeasured && (m_ForcedMinWidth == 0 || m_ForcedMaxWidth == 0))
             {
+                m_WidthMeasured = true;
                 float _minWidth, _maxWidth;
                 style.CalcMinMaxWidth(m_Content, out _minWidth, out _maxWidth);
 
                 // Further layout calculations might round this value to nearest which could force the text over several lines
                 // when rounding down. Make sure to actual give enough space by always rounding up (case 1047812).
-                _minWidth = Mathf.Ceil(_minWidth);
-                _maxWidth = Mathf.Ceil(_maxWidth);
-
-                if (minWidth == 0)
-                    minWidth = _minWidth;
-                if (maxWidth == 0)
-                    maxWidth = _maxWidth;
+                minWidth = m_ForcedMinWidth != 0 ? m_ForcedMinWidth : CapToForcedMax(GUIUtility.CeilToPixelGrid(_minWidth, GUIUtility.pixelsPerPoint), m_ForcedMaxWidth);
+                maxWidth = m_ForcedMaxWidth != 0 ? m_ForcedMaxWidth : Mathf.Max(GUIUtility.CeilToPixelGrid(_maxWidth, GUIUtility.pixelsPerPoint), minWidth);
             }
+        }
+
+        // A MaxWidth or MaxHeight option caps the measured minimum too, as ApplyOptions does for a MinWidth or MinHeight option.
+        static float CapToForcedMax(float measured, float forcedMax)
+        {
+            return forcedMax != 0 ? Mathf.Min(measured, forcedMax) : measured;
         }
 
         public override void CalcHeight()
@@ -322,16 +343,10 @@ namespace UnityEngine
             // Hence, we need to use the separately cached values for min & maxHeight coming from the user...
             if (m_ForcedMinHeight == 0 || m_ForcedMaxHeight == 0)
             {
-                float height = style.CalcHeight(m_Content, rect.width);
-                if (m_ForcedMinHeight == 0)
-                    minHeight = height;
-                else
-                    minHeight = m_ForcedMinHeight;
-
-                if (m_ForcedMaxHeight == 0)
-                    maxHeight = height;
-                else
-                    maxHeight = m_ForcedMaxHeight;
+                // Whole device pixels, so the height survives the edge snapping in LayoutGroup.
+                float height = GUIUtility.CeilToPixelGrid(style.CalcHeight(m_Content, rect.width), GUIUtility.pixelsPerPoint);
+                minHeight = m_ForcedMinHeight != 0 ? m_ForcedMinHeight : CapToForcedMax(height, m_ForcedMaxHeight);
+                maxHeight = m_ForcedMaxHeight != 0 ? m_ForcedMaxHeight : Mathf.Max(height, minHeight);
             }
         }
     }

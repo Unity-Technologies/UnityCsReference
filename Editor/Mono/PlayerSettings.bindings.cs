@@ -49,8 +49,8 @@ namespace UnityEditor
         Master = 2,
     }
 
-    // Must be in sync with Il2CppStacktraceInformation enum in BuildPlayerEnums.h
-    public enum Il2CppStacktraceInformation
+    // Must be in sync with ManagedStackTraceInformation enum in BuildPlayerEnums.h
+    public enum ManagedStackTraceInformation
     {
         MethodOnly = 0,
         MethodFileLineNumber = 1,
@@ -1214,22 +1214,22 @@ namespace UnityEditor
         }
 
         [StaticAccessor("GetPlayerSettings().GetEditorOnly()")]
-        [NativeMethod("GetIl2CppStacktraceInformation", ThrowsException = true)]
-        private static extern Il2CppStacktraceInformation GetIl2CppStacktraceInformationInternal(string buildTargetName);
-        public static Il2CppStacktraceInformation GetIl2CppStacktraceInformation(NamedBuildTarget buildTarget) =>
-            GetIl2CppStacktraceInformationInternal(buildTarget.TargetName);
+        [NativeMethod("GetManagedStackTraceInformation", ThrowsException = true)]
+        private static extern ManagedStackTraceInformation GetManagedStackTraceInformationInternal(string buildTargetName);
+        public static ManagedStackTraceInformation GetManagedStackTraceInformation(NamedBuildTarget buildTarget) =>
+            GetManagedStackTraceInformationInternal(buildTarget.TargetName);
 
         [StaticAccessor("GetPlayerSettings().GetEditorOnlyForUpdate()")]
-        [NativeMethod("SetIl2CppStacktraceInformation", ThrowsException = true)]
-        private static extern void SetIl2CppStacktraceInformationInternal(string buildTargetName, Il2CppStacktraceInformation option);
-        public static void SetIl2CppStacktraceInformation(NamedBuildTarget buildTarget, Il2CppStacktraceInformation option)
+        [NativeMethod("SetManagedStackTraceInformation", ThrowsException = true)]
+        private static extern void SetManagedStackTraceInformationInternal(string buildTargetName, ManagedStackTraceInformation option);
+        public static void SetManagedStackTraceInformation(NamedBuildTarget buildTarget, ManagedStackTraceInformation option)
         {
-            if (buildTarget == NamedBuildTarget.WebGL && option == Il2CppStacktraceInformation.MethodFileLineNumber)
+            if (buildTarget == NamedBuildTarget.WebGL && option == ManagedStackTraceInformation.MethodFileLineNumber)
             {
-                Debug.LogWarning("The \"Method Name, File Name, and Line Number\" option for IL2CPP stack traces is not supported on WebGL.");
-                option = Il2CppStacktraceInformation.MethodOnly;
+                Debug.LogWarning("The \"Method Name, File Name, and Line Number\" option for managed stack traces is not supported on WebGL.");
+                option = ManagedStackTraceInformation.MethodOnly;
             }
-            SetIl2CppStacktraceInformationInternal(buildTarget.TargetName, option);
+            SetManagedStackTraceInformationInternal(buildTarget.TargetName, option);
         }
 
         [StaticAccessor("GetPlayerSettings().GetEditorOnly()")]

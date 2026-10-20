@@ -104,27 +104,35 @@ namespace UnityEngine.VFX
 
         ///<summary>Use this method to check if the VFXEventAttribute stores a bool with the name you pass in.</summary>
         ///<param name="nameID">The ID of the property. This is the same ID that <see cref="Shader.PropertyToID" /> returns.</param>
+        ///<returns>True if the VFXEventAttribute stores a bool with that name. Otherwise, false.</returns>
         [NativeName("HasValueFromScript<bool>")] extern public bool HasBool(int nameID);
         ///<summary>Use this method to check if the VFXEventAttribute stores a integer with the name you pass in.</summary>
         ///<param name="nameID">The ID of the property. This is the same ID that <see cref="Shader.PropertyToID" /> returns.</param>
+        ///<returns>True if the VFXEventAttribute stores an integer with that name. Otherwise, false.</returns>
         [NativeName("HasValueFromScript<int>")] extern public bool HasInt(int nameID);
         ///<summary>Use this method to check if the VFXEventAttribute stores a unsigned integer with the name you pass in.</summary>
         ///<param name="nameID">The ID of the property. This is the same ID that <see cref="Shader.PropertyToID" /> returns.</param>
+        ///<returns>True if the VFXEventAttribute stores an unsigned integer with that name. Otherwise, false.</returns>
         [NativeName("HasValueFromScript<UInt32>")] extern public bool HasUint(int nameID);
         ///<summary>Use this method to check if the VFXEventAttribute stores a float with the name you pass in.</summary>
         ///<param name="nameID">The ID of the property. This is the same ID that <see cref="Shader.PropertyToID" /> returns.</param>
+        ///<returns>True if the VFXEventAttribute stores a float with that name. Otherwise, false.</returns>
         [NativeName("HasValueFromScript<float>")] extern public bool HasFloat(int nameID);
         ///<summary>Use this method to check if the VFXEventAttribute stores a Vector2 with the name you pass in.</summary>
         ///<param name="nameID">The ID of the property. This is the same ID that <see cref="Shader.PropertyToID" /> returns.</param>
+        ///<returns>True if the VFXEventAttribute stores a Vector2 with that name. Otherwise, false.</returns>
         [NativeName("HasValueFromScript<Vector2f>")] extern public bool HasVector2(int nameID);
         ///<summary>Use this method to check if the VFXEventAttribute stores a Vector3 with the name you pass in.</summary>
         ///<param name="nameID">The ID of the property. This is the same ID that <see cref="Shader.PropertyToID" /> returns.</param>
+        ///<returns>True if the VFXEventAttribute stores a Vector3 with that name. Otherwise, false.</returns>
         [NativeName("HasValueFromScript<Vector3f>")] extern public bool HasVector3(int nameID);
         ///<summary>Use this method to check if the VFXEventAttribute stores a Vector4 with the name you pass in.</summary>
         ///<param name="nameID">The ID of the property. This is the same ID that <see cref="Shader.PropertyToID" /> returns.</param>
+        ///<returns>True if the VFXEventAttribute stores a Vector4 with that name. Otherwise, false.</returns>
         [NativeName("HasValueFromScript<Vector4f>")] extern public bool HasVector4(int nameID);
         ///<summary>Use this method to check if the VFXEventAttribute stores a Matrix4x4 with the name you pass in.</summary>
         ///<param name="nameID">The ID of the property. This is the same ID that <see cref="Shader.PropertyToID" /> returns.</param>
+        ///<returns>True if the VFXEventAttribute stores a Matrix4x4 with that name. Otherwise, false.</returns>
         [NativeName("HasValueFromScript<Matrix4x4f>")] extern public bool HasMatrix4x4(int nameID);
 
         ///<summary>Use this method to set the value of a bool with the name you pass in.</summary>
@@ -195,6 +203,7 @@ namespace UnityEngine.VFX
 
         ///<summary>Use this method to check if the VFXEventAttribute stores a bool with the name you pass in.</summary>
         ///<param name="name">The name of the property.</param>
+        ///<returns>True if the VFXEventAttribute stores a bool with that name. Otherwise, false.</returns>
         public bool HasBool(string name)
         {
             return HasBool(Shader.PropertyToID(name));
@@ -202,6 +211,7 @@ namespace UnityEngine.VFX
 
         ///<summary>Use this method to check if the VFXEventAttribute stores a integer with the name you pass in.</summary>
         ///<param name="name">The name of the property.</param>
+        ///<returns>True if the VFXEventAttribute stores an integer with that name. Otherwise, false.</returns>
         public bool HasInt(string name)
         {
             return HasInt(Shader.PropertyToID(name));
@@ -209,6 +219,7 @@ namespace UnityEngine.VFX
 
         ///<summary>Use this method to check if the VFXEventAttribute stores a unsigned integer with the name you pass in.</summary>
         ///<param name="name">The name of the property.</param>
+        ///<returns>True if the VFXEventAttribute stores an unsigned integer with that name. Otherwise, false.</returns>
         public bool HasUint(string name)
         {
             return HasUint(Shader.PropertyToID(name));
@@ -216,6 +227,7 @@ namespace UnityEngine.VFX
 
         ///<summary>Use this method to check if the VFXEventAttribute stores a float with the name you pass in.</summary>
         ///<param name="name">The name of the property.</param>
+        ///<returns>True if the VFXEventAttribute stores a float with that name. Otherwise, false.</returns>
         public bool HasFloat(string name)
         {
             return HasFloat(Shader.PropertyToID(name));
@@ -223,6 +235,7 @@ namespace UnityEngine.VFX
 
         ///<summary>Use this method to check if the VFXEventAttribute stores a Vector2 with the name you pass in.</summary>
         ///<param name="name">The name of the property.</param>
+        ///<returns>True if the VFXEventAttribute stores a Vector2 with that name. Otherwise, false.</returns>
         public bool HasVector2(string name)
         {
             return HasVector2(Shader.PropertyToID(name));
@@ -230,6 +243,7 @@ namespace UnityEngine.VFX
 
         ///<summary>Use this method to check if the VFXEventAttribute stores a Vector3 with the name you pass in.</summary>
         ///<param name="name">The name of the property.</param>
+        ///<returns>True if the VFXEventAttribute stores a Vector3 with that name. Otherwise, false.</returns>
         public bool HasVector3(string name)
         {
             return HasVector3(Shader.PropertyToID(name));
@@ -237,6 +251,7 @@ namespace UnityEngine.VFX
 
         ///<summary>Use this method to check if the VFXEventAttribute stores a Vector4 with the name you pass in.</summary>
         ///<param name="name">The name of the property.</param>
+        ///<returns>True if the VFXEventAttribute stores a Vector4 with that name. Otherwise, false.</returns>
         public bool HasVector4(string name)
         {
             return HasVector4(Shader.PropertyToID(name));
@@ -244,6 +259,7 @@ namespace UnityEngine.VFX
 
         ///<summary>Use this method to check if the VFXEventAttribute stores a Matrix4x4 with the name you pass in.</summary>
         ///<param name="name">The name of the property.</param>
+        ///<returns>True if the VFXEventAttribute stores a Matrix4x4 with that name. Otherwise, false.</returns>
         public bool HasMatrix4x4(string name)
         {
             return HasMatrix4x4(Shader.PropertyToID(name));

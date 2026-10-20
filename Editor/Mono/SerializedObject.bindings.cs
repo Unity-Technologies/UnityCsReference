@@ -227,12 +227,12 @@ namespace UnityEditor
         public extern Object targetObject { get; }
 
         // The inspected objects (RO). Returns an empty array when the SerializedObject
-        // targets components; use targetEntityIds in that case. Mirrors targetObject's
-        // null-for-component behavior at the managed layer so callers see consistent
-        // Object-vs-EntityId projection across the pair.
+        // targets data components or entities; use targetEntityIds in that case. Mirrors
+        // targetObject's null-for-component behavior at the managed layer so callers see
+        // consistent Object-vs-EntityId projection across the pair.
         public Object[] targetObjects
         {
-            get => isTargetDataComponent ? Array.Empty<Object>() : GetTargetObjectsInternal();
+            get => hasUnityObjectTargets ? GetTargetObjectsInternal() : Array.Empty<Object>();
         }
 
         [NativeMethod("GetTargetObjects")]
@@ -242,6 +242,13 @@ namespace UnityEditor
         internal extern bool isTargetDataComponent
         {
             [NativeMethod("IsTargetDataComponent")]
+            get;
+        }
+
+        // False when the targets are data components or entities, which have no UnityEngine.Object.
+        internal extern bool hasUnityObjectTargets
+        {
+            [NativeMethod("HasTargetObject")]
             get;
         }
 

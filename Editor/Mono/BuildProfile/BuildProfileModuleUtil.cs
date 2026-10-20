@@ -606,7 +606,21 @@ namespace UnityEditor.Build.Profile
         public static IBuildProfileExtension GetBuildProfileExtension(GUID platformId) =>
             ModuleManager.GetBuildProfileExtension(platformId);
 
-        public static GUIStyle dropDownToggleButton => EditorStyles.dropDownToggleButton;
+        [AutoStaticsCleanupOnCodeReload]
+        private static GUIStyle s_DropDownToggle = null;
+
+        public static GUIStyle dropDownToggle
+        {
+            get
+            {
+                if (s_DropDownToggle == null)
+                {
+                    s_DropDownToggle = new GUIStyle(EditorStyles.dropDownToggle);
+                    s_DropDownToggle.margin = new RectOffset();
+                }
+                return s_DropDownToggle;
+            }
+        }
 
         /// <summary>
         /// Returns all discovered platform keys that are possible Build Profile targets.
@@ -718,18 +732,20 @@ namespace UnityEditor.Build.Profile
         }
 
         /// <summary>
-        /// Create graphics settings override for build profile
+        /// Create graphics settings override for build profile, initialized to the project's graphics settings.
         /// </summary>
         public static void CreateGraphicsSettings(BuildProfile buildProfile)
         {
             if (buildProfile.graphicsSettings != null)
                 return;
 
-            buildProfile.graphicsSettings = ScriptableObject.CreateInstance<BuildProfileGraphicsSettings>();
-            buildProfile.graphicsSettings.Instantiate();
-            AssetDatabase.AddObjectToAsset(buildProfile.graphicsSettings, buildProfile);
+            buildProfile.graphicsSettings = AddSettingsSubAsset<BuildProfileGraphicsSettings>(buildProfile, s => s.Instantiate());
+            buildProfile.graphicsSettings.ResetToGlobalValues();
             EditorUtility.SetDirty(buildProfile);
             UpdateActiveEditors(buildProfile);
+
+            if (buildProfile == BuildProfileContext.activeProfile)
+                OnActiveProfileGraphicsSettingsChanged(true);
         }
 
         /// <summary>
@@ -740,23 +756,29 @@ namespace UnityEditor.Build.Profile
             if (buildProfile.graphicsSettings == null)
                 return;
 
-            AssetDatabase.RemoveObjectFromAsset(buildProfile.graphicsSettings);
+            var removed = buildProfile.graphicsSettings;
+            AssetDatabase.RemoveObjectFromAsset(removed);
             buildProfile.graphicsSettings = null;
             EditorUtility.SetDirty(buildProfile);
             UpdateActiveEditors(buildProfile);
+
+            if (buildProfile == BuildProfileContext.activeProfile)
+                OnActiveProfileGraphicsSettingsChanged(false);
+
+            UnityEngine.Object.DestroyImmediate(removed, true);
         }
 
         /// <summary>
-        /// Create graphics settings quality for build profile
+        /// Create quality settings override for build profile, initialized to the project's quality levels
+        /// for the profile's platform.
         /// </summary>
         public static void CreateQualitySettings(BuildProfile buildProfile)
         {
             if (buildProfile.qualitySettings != null)
                 return;
 
-            buildProfile.qualitySettings = ScriptableObject.CreateInstance<BuildProfileQualitySettings>();
-            buildProfile.qualitySettings.Instantiate();
-            AssetDatabase.AddObjectToAsset(buildProfile.qualitySettings, buildProfile);
+            buildProfile.qualitySettings = AddSettingsSubAsset<BuildProfileQualitySettings>(buildProfile, s => s.Instantiate());
+            buildProfile.qualitySettings.ResetToGlobalValues(buildProfile);
             EditorUtility.SetDirty(buildProfile);
             UpdateActiveEditors(buildProfile);
 
@@ -771,12 +793,32 @@ namespace UnityEditor.Build.Profile
             if (buildProfile.qualitySettings == null)
                 return;
 
-            AssetDatabase.RemoveObjectFromAsset(buildProfile.qualitySettings);
+            var removed = buildProfile.qualitySettings;
+            AssetDatabase.RemoveObjectFromAsset(removed);
             buildProfile.qualitySettings = null;
             EditorUtility.SetDirty(buildProfile);
             UpdateActiveEditors(buildProfile);
 
             BuildProfileQualitySettingsEditor.RefreshCachedQualitySettingEntities();
+
+            UnityEngine.Object.DestroyImmediate(removed, true);
+        }
+
+        static T AddSettingsSubAsset<T>(BuildProfile buildProfile, Action<T> instantiate) where T : ScriptableObject
+        {
+            var settings = ScriptableObject.CreateInstance<T>();
+            instantiate(settings);
+            try
+            {
+                AssetDatabase.AddObjectToAsset(settings, buildProfile);
+            }
+            catch
+            {
+                UnityEngine.Object.DestroyImmediate(settings);
+                throw;
+            }
+
+            return settings;
         }
 
         public static void NotifyBuildProfileExtensionOfCreation(BuildProfile buildProfile, int preconfiguredSettingsVariant)

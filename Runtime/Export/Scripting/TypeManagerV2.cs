@@ -183,6 +183,30 @@ namespace UnityEngine
             return ((delegate*<EntityId, object?>)table[runtimeTypeIndex])(id);
         }
 
+        // The dense id EntityId.TypeId carries for this value-type component; minted on first call,
+        // then stable while the type stays registered. Native returns zero both when the type
+        // registered no component type class and when the 12-bit id space is exhausted.
+        internal static int GetComponentTypeId(RuntimeTypeHandle typeHandle)
+        {
+            uint componentTypeId = GetOrMintComponentTypeId(typeHandle.Value);
+            if (componentTypeId == 0)
+            {
+                // Not every component type has a generated registration: generic instantiations
+                // (CompanionComponent<T>), types created on demand by TypeManager.GetOrCreateTypeIndex,
+                // and reference types all reach this fallback.
+                using (BeginRegistration(typeHandle))
+                {
+                    RegisterComponentTypeClass(typeHandle.Value, CurrentRegistrationContext);
+                }
+            }
+
+            componentTypeId = GetOrMintComponentTypeId(typeHandle.Value);
+            if (componentTypeId == 0)
+                throw new ArgumentException($"No component type id for '{Type.GetTypeFromHandle(typeHandle)}': it registered no component type class, or the component type id space is exhausted.");
+
+            return (int)componentTypeId;
+        }
+
         // Used in testing only
         internal static unsafe object? Produce(RuntimeTypeHandle typeHandle)
         {
@@ -238,6 +262,9 @@ namespace UnityEngine
         // context like every other registration.
         [NativeMethod(Name = "TypeManager_RegisterComponentTypeClass", IsFreeFunction = true, IsThreadSafe = true)]
         extern static void RegisterComponentTypeClass(IntPtr backendTypePtr, IntPtr contextHandle);
+
+        [NativeMethod(Name = "TypeManager_GetOrMintComponentTypeId", IsFreeFunction = true, IsThreadSafe = true)]
+        extern static uint GetOrMintComponentTypeId(IntPtr backendTypePtr);
 
         [NativeMethod(Name = "TypeManager_IsManagedTypeRegistered", IsFreeFunction = true, IsThreadSafe = true)]
         extern static bool IsManagedTypeRegistered(IntPtr backendTypePtr);

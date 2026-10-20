@@ -34,6 +34,8 @@ namespace PlayerBuildProgramLibrary.Data
         public bool HasCallback;
         public string DisplayName;
         public string[] AdditionalInputFiles = new string[0];
+        // The callbacks read the symbols (.pdb) of the assemblies UnityLinker outputs, so UnityLinker has to write them.
+        public bool RequiresLinkedAssemblySymbols;
     }
 
     public class PlayerBuildConfig
@@ -52,6 +54,9 @@ namespace PlayerBuildProgramLibrary.Data
         public bool GenerateIdeProject;
         public bool Development;
         public bool UseNewInputSystem;
+        // True when the Managed Stack Trace Information player setting asks for file names and line numbers (MethodFileLineNumber).
+        public bool ManagedStackTracesIncludeFileAndLineNumbers;
+        public bool EnableCodeCoverage;
         public GenerateNativePluginsForAssembliesSettings GenerateNativePluginsForAssembliesSettings;
         public Services Services;
         public string[] ManagedAssemblies;
@@ -106,7 +111,6 @@ namespace PlayerBuildProgramLibrary.Data
         public string SysRootPath;
         public string ToolChainPath;
         public string RelativeDataPath;
-        public bool GenerateUsymFile;
         public string UsymtoolPath;
         public BuildProgramLTOMode LtoMode;
     }

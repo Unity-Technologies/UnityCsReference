@@ -377,7 +377,14 @@ namespace UnityEditor
         public static extern bool referencedClipsExactNaming { get; set; }
 
         [StaticAccessor("GetEditorSettings()", StaticAccessorType.Dot)]
-        public static extern bool forceAssetUnloadAndGCOnSceneLoad { get; set; }
+        public static extern bool unloadUnusedAssetsOnSceneLoad { get; set; }
+
+        [Obsolete("Use EditorSettings.unloadUnusedAssetsOnSceneLoad instead. (UnityUpgradable) -> unloadUnusedAssetsOnSceneLoad")]
+        public static bool forceAssetUnloadAndGCOnSceneLoad
+        {
+            get { return unloadUnusedAssetsOnSceneLoad; }
+            set { unloadUnusedAssetsOnSceneLoad = value; }
+        }
 
         [StaticAccessor("GetEditorSettings()", StaticAccessorType.Dot)]
         public static extern bool hideBuildProfileClassicPlatforms { get; set; }

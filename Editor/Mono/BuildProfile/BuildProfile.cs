@@ -341,31 +341,6 @@ namespace UnityEditor.Build.Profile
             return BuildProfileModuleUtil.GetLastRunnableBuildKeyFromAssetPath(assetPath, key);
         }
 
-        [VisibleToOtherModules]
-        internal void ResetToGlobalQualitySettingsValues()
-        {
-            var namedBuildTargetName = NamedBuildTarget.FromTargetAndSubtarget(buildTarget, (int)subtarget).TargetName;
-            var globalQualityLevels = QualitySettings.GetActiveQualityLevelsForPlatform(namedBuildTargetName);
-
-            var newBuildProfileQualityLevels = new string[globalQualityLevels.Length];
-
-            // populates newBuildProfileQualityLevels array with global quality levels in their existing order
-            for (int i = 0; i < globalQualityLevels.Length; i++)
-            {
-                newBuildProfileQualityLevels[i] = QualitySettings.names[globalQualityLevels[i]];
-            }
-
-            var globalDefaultQualityLevelIndex = QualitySettings.GetDefaultQualityForPlatform(namedBuildTargetName);
-            if (globalDefaultQualityLevelIndex != -1)
-                qualitySettings.defaultQualityLevel = QualitySettings.names[globalDefaultQualityLevelIndex];
-            else
-                qualitySettings.defaultQualityLevel = newBuildProfileQualityLevels.Length > 0 ? QualitySettings.names[globalQualityLevels[0]] : string.Empty;
-
-            qualitySettings.qualityLevels = newBuildProfileQualityLevels;
-
-            EditorUtility.SetDirty(qualitySettings);
-        }
-
         void OnEnable()
         {
             isMultiTarget = BuildTargetDiscovery.BuildPlatformIsMultiTargetPlatform(platformGuid);

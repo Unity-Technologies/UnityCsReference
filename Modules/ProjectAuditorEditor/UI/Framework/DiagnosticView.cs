@@ -4,7 +4,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.IO;
 using Unity.ProjectAuditor.Editor.Core;
 using UnityEditor;
 using UnityEngine;
@@ -261,32 +260,17 @@ namespace Unity.ProjectAuditor.Editor.UI.Framework
 
         protected override void Export(Func<ReportItem, bool> predicate = null)
         {
-            var path = EditorUtility.SaveFilePanel("Save to CSV file", UserPreferences.LoadSavePath, string.Format("project-auditor-{0}.csv", m_Desc.Category).ToLower(), "csv");
-            if (path.Length != 0)
+            base.Export((issue) =>
             {
-                using (var exporter = new CsvExporter(m_ViewManager.Report))
-                {
-                    var issues = GetIssuesToExport();
-                    exporter.Export(path, m_Layout.Category, issues, (issue) =>
-                    {
-                        if (!issue.Id.IsValid())
-                            return false;
-                        if (!Match(issue))
-                            return false;
+                if (!issue.Id.IsValid())
+                    return false;
+                if (issue.IsIgnored && !m_Table.showIgnoredIssues)
+                    return false;
+                if (predicate != null && !predicate(issue))
+                    return false;
 
-                        if (predicate != null && !predicate(issue))
-                            return false;
-
-                        return m_Rules.GetAction(issue.Id, issue.GetContext()) != Severity.None;
-                    });
-                }
-
-                EditorUtility.RevealInFinder(path);
-
-                m_ViewManager.OnViewExportCompleted?.Invoke();
-
-                UserPreferences.LoadSavePath = Path.GetDirectoryName(path);
-            }
+                return m_Rules.GetAction(issue.Id, issue.GetContext()) != Severity.None;
+            });
         }
 
         public override bool Match(ReportItem issue)

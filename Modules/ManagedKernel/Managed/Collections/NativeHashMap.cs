@@ -11,6 +11,7 @@ using System.Runtime.InteropServices;
 using Unity.Burst;
 using Unity.Collections.LowLevel.Unsafe;
 using Unity.Jobs;
+using UnityEngine.Bindings;
 
 namespace Unity.Collections
 {
@@ -135,6 +136,7 @@ namespace Unity.Collections
         where TValue : unmanaged
     {
         [NativeDisableUnsafePtrRestriction]
+        [VisibleToOtherModules("UnityEngine.EntitiesModule")]
         internal HashMapHelper<TKey>* m_Data;
 
         internal AtomicSafetyHandle m_Safety;

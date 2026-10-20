@@ -214,10 +214,16 @@ namespace UnityEngine
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         static unsafe void* GetNativeObjectForWrapper(EntityId storedId)
         {
-            void* nativeObject = EntityIdStore.GetRawNativeObject(storedId);
+            void* nativeObject = EntityIdStore.WrapperLookup.GetRawNativeObject(storedId);
             if (nativeObject == null && IsReleasedWrapperId(storedId))
-                nativeObject = EntityIdStore.GetNativeObject(UntagReleasedWrapperId(storedId));
+                nativeObject = GetNativeObjectForReleasedWrapper(storedId);
             return nativeObject;
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        static unsafe void* GetNativeObjectForReleasedWrapper(EntityId storedId)
+        {
+            return EntityIdStore.GetNativeObject(UntagReleasedWrapperId(storedId));
         }
 
         // Called by constructors of UnityEngine.Object subclasses with the EntityId returned by their native
@@ -1172,7 +1178,7 @@ namespace UnityEngine
                     return EntityId.None;
 
                 var storedId = obj.m_EntityId;
-                if (EntityIdStore.GetRawNativeObject(storedId) != null)
+                if (EntityIdStore.WrapperLookup.GetRawNativeObject(storedId) != null)
                     return storedId;
                 if (IsReleasedWrapperId(storedId))
                     return MarshalReleasedWrapperId(obj, storedId);
@@ -1189,7 +1195,7 @@ namespace UnityEngine
                 var entityId = UntagReleasedWrapperId(storedId);
                 if (EntityIdStore.GetNativeObject(entityId) != null)
                     return entityId;
-                if (EntityIdStore.GetRawNativeObject(entityId) == null)
+                if (EntityIdStore.WrapperLookup.GetRawNativeObject(entityId) == null)
                     return IsScriptDerivedClass(obj) ? EntityId.None : entityId;
 
                 // Still loading or being destroyed: the PersistentManager waits for a load in flight
@@ -1336,7 +1342,7 @@ namespace UnityEngine
                 if (id == EntityId.None)
                     return UnmarshalNullOrFakeNull<T>();
 
-                void* objPtr = EntityIdStore.GetRawNativeObject(id);
+                void* objPtr = EntityIdStore.WrapperLookup.GetRawNativeObject(id);
                 if (objPtr == null)
                     return UnmarshalNullOrFakeNull<T>();
 

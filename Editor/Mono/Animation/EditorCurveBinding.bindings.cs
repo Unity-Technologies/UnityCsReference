@@ -46,8 +46,8 @@ namespace UnityEditor
         [NativeName("classID")]
         internal int  m_ClassID;
 
-        [NativeName("monoScriptInstanceID")]
-        internal EntityId  m_ScriptInstanceID;
+        [NativeName("monoScriptEntityId")]
+        internal EntityId  m_ScriptEntityId;
 
         public bool  isPPtrCurve { get { return m_isPPtrCurve != 0; } }
         public bool  isDiscreteCurve { get { return m_isDiscreteCurve != 0; } }
@@ -60,7 +60,7 @@ namespace UnityEditor
             // Only if classID actually has been setup do we compare it (It might only be type)
             if (lhs.m_ClassID != 0 && rhs.m_ClassID != 0)
             {
-                if (lhs.m_ClassID != rhs.m_ClassID || lhs.m_ScriptInstanceID != rhs.m_ScriptInstanceID)
+                if (lhs.m_ClassID != rhs.m_ClassID || lhs.m_ScriptEntityId != rhs.m_ScriptEntityId)
                     return false;
             }
 
@@ -90,7 +90,7 @@ namespace UnityEditor
         public Type type
         {
             get { return m_type; }
-            set { m_type = value; m_ClassID = 0; m_ScriptInstanceID = EntityId.None; }
+            set { m_type = value; m_ClassID = 0; m_ScriptEntityId = EntityId.None; }
         }
 
         static private void BaseCurve(string inPath, System.Type inType, string inPropertyName, out EditorCurveBinding binding)

@@ -35,6 +35,9 @@ public sealed partial class EditorGUILayout
     static readonly GUIStyle s_TabMiddle = "Tab middle";
     static readonly GUIStyle s_TabLast = "Tab last";
 
+    [NoAutoStaticsCleanup] // control id hash; value type computed from string literal, safe to persist
+    static int s_DropdownToggleHash = "DropdownToggle".GetHashCode();
+
     [ExcludeFromDocs]
     public static bool Foldout(bool foldout, string content)
     {
@@ -2460,44 +2463,81 @@ public sealed partial class EditorGUILayout
     }
 
     // A toggle that returns true on mouse down - like a popup button and returns true if checked
-    internal static bool DropDownToggle(ref bool toggled, GUIContent content, GUIStyle toggleStyle)
+    internal static bool DropDownToggle(ref bool toggled, GUIContent content, GUIStyle toggleStyle, params GUILayoutOption[] options)
     {
-        GUIStyle buttonStyle = GUIStyle.none;
+        GUIStyle labelButtonStyle = GUIStyle.none;
+        GUIStyle arrowButtonStyle = GUIStyle.none;
 
         // This is to be compatible with existing code
         if (toggleStyle == EditorStyles.toolbarDropDownToggle || toggleStyle == EditorStyles.toolbarDropDownToggleRight)
-            buttonStyle = EditorStyles.toolbarDropDownToggleButton;
+        {
+            arrowButtonStyle = EditorStyles.toolbarDropDownToggleButton;
+            labelButtonStyle = EditorStyles.toolbarDropDownToggleLabelButton;
+        }
+        // Check for the name because EditorStyles.dropDownToggle may have been copied
+        else if (toggleStyle.name == EditorStyles.dropDownToggle.name)
+        {
+            arrowButtonStyle = EditorStyles.dropDownToggleButton;
+            labelButtonStyle = EditorStyles.dropDownToggleLabelButton;
+        }
 
-        return DropDownToggle(ref toggled, content, toggleStyle, buttonStyle);
+        return DropDownToggle(ref toggled, content, toggleStyle, labelButtonStyle, arrowButtonStyle, options);
     }
 
-    internal static bool DropDownToggle(ref bool toggled, GUIContent content, GUIStyle toggleStyle, GUIStyle toggleDropdownButtonStyle)
+    internal static bool DropDownToggle(ref bool toggled, GUIContent content, GUIStyle toggleStyle, GUIStyle toggleDropdownLabelButtonStyle, GUIStyle toggleDropdownArrowButtonStyle, params GUILayoutOption[] options)
     {
-        Rect toggleRect = GUILayoutUtility.GetRect(content, toggleStyle);
+        Rect toggleRect = GUILayoutUtility.GetRect(content, toggleStyle, options);
         Rect arrowRightRect = Rect.zero;
 
-        if (toggleDropdownButtonStyle != null)
+        if (toggleDropdownArrowButtonStyle != null)
         {
-            arrowRightRect = new Rect(toggleRect.xMax - toggleDropdownButtonStyle.fixedWidth - toggleDropdownButtonStyle.margin.right, toggleRect.y, toggleDropdownButtonStyle.fixedWidth, toggleRect.height);
+            arrowRightRect = new Rect(toggleRect.xMax - toggleDropdownArrowButtonStyle.fixedWidth - toggleDropdownArrowButtonStyle.margin.right, toggleRect.y, toggleDropdownArrowButtonStyle.fixedWidth, toggleRect.height);
         }
         else
         {
             arrowRightRect = new Rect(toggleRect.xMax - toggleStyle.padding.right, toggleRect.y, toggleStyle.padding.right, toggleRect.height);
         }
 
+        int dropdownArrowButtonID = GUIUtility.GetControlID(EditorGUI.s_DropdownButtonHash, FocusType.Passive, arrowRightRect);
+        bool clicked = EditorGUI.DropdownButton(dropdownArrowButtonID, arrowRightRect, GUIContent.none, GUIStyle.none);
+        int dropdownToggleID = 0;
 
-        int dropdownButtonId = GUIUtility.GetControlID(EditorGUI.s_DropdownButtonHash, FocusType.Passive, arrowRightRect);
-        bool clicked = EditorGUI.DropdownButton(dropdownButtonId, arrowRightRect, GUIContent.none, GUIStyle.none);
+        // When toggleDropdownLabelButtonStyle is defined, then we use toggleStyle to only draw the background of the
+        // whole toggle while toggleDropdownLabelButtonStyle is used to draw the content (text and icon) of the toggle
+        // and the background of the left part.
+        if (toggleDropdownLabelButtonStyle != null && toggleDropdownLabelButtonStyle != GUIStyle.none)
+        {
+            var labelButtonRect = toggleRect;
+
+            labelButtonRect.xMax = arrowRightRect.xMin;
+
+            dropdownToggleID = GUIUtility.GetControlID(s_DropdownToggleHash, FocusType.Passive, labelButtonRect);
+
+            // Use toggleStyle only to draw the background of the dropdown toggle (without the text or icon).
+            if (Event.current.type == EventType.Repaint)
+            {
+                toggleStyle.Draw(toggleRect, GUIContent.none, dropdownToggleID, toggled,
+                    toggleRect.Contains(Event.current.mousePosition));
+            }
+
+            // To draw the label button (left part of the dropdown toggle) on top of the background.
+            toggleRect = labelButtonRect;
+            toggleStyle = toggleDropdownLabelButtonStyle;
+        }
+        else
+        {
+            dropdownToggleID = GUIUtility.GetControlID(s_DropdownToggleHash, FocusType.Passive, toggleRect);
+        }
 
         if (!clicked)
         {
-            toggled = GUI.Toggle(toggleRect, toggled, content, toggleStyle);
+            toggled = GUI.Toggle(toggleRect, dropdownToggleID, toggled, content, toggleStyle);
         }
 
         // Ensure that the dropdown button is rendered on top of the toggle
-        if (Event.current.type == EventType.Repaint && toggleDropdownButtonStyle != null && toggleDropdownButtonStyle != GUIStyle.none)
+        if (Event.current.type == EventType.Repaint && toggleDropdownArrowButtonStyle != null && toggleDropdownArrowButtonStyle != GUIStyle.none)
         {
-            EditorGUI.DropdownButton(dropdownButtonId, arrowRightRect, GUIContent.none, toggleDropdownButtonStyle);
+            EditorGUI.DropdownButton(dropdownArrowButtonID, arrowRightRect, GUIContent.none, toggled, toggleDropdownArrowButtonStyle);
         }
 
         return clicked;

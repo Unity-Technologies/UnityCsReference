@@ -643,6 +643,10 @@ namespace UnityEditor
                     foreach (var shader in shaders)
                     {
                         var shaderName = shader.name;
+
+                        if (string.IsNullOrEmpty(shaderName))
+                            continue;
+
                         if (shaderName.StartsWith("Deprecated") || shaderName.StartsWith("Hidden"))
                             continue;
 

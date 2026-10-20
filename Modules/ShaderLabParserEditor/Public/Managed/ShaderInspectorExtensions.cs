@@ -28,6 +28,7 @@ namespace UnityEditor.ShaderApiReflection
                 public const string kAccentText = "accent-text";
                 public const string kBoldFoldout = "bold-foldout";
                 public const string kCodeBlock = "code-block";
+                public const string kMultilineText = "multiline-text";
                 public const string kOverridableFunction = "overridable-function";
                 public const string kVirtualFunctionMetaRow = "virtual-function-meta-row";
             }
@@ -36,7 +37,6 @@ namespace UnityEditor.ShaderApiReflection
             {
                 public const string kHeader = "header";
                 public const string kHeaderBase = "header-base";
-                public const string kNoOverridesText = "no-overrides-text";
                 public const string kOverridableFunctions = "overridable-functions";
             }
         }
@@ -193,10 +193,8 @@ namespace UnityEditor.ShaderApiReflection
             if (functions.Count == 0)
             {
                 var noOverridesLabel = new Label("This shader doesn't extend another shader or declare any"
-                    + " overridable functions, so there's nothing to override.")
-                {
-                    name = USS.Names.kNoOverridesText,
-                };
+                    + " overridable functions, so there's nothing to override.");
+                noOverridesLabel.AddToClassList(USS.Classes.kMultilineText);
                 foldout.Add(noOverridesLabel);
             }
 
@@ -236,7 +234,7 @@ namespace UnityEditor.ShaderApiReflection
             // If the function is pure virtual and not implemented, throw up a help box.
             // If the function is declared within this shader, though, the user obviously knows it's pure virtual,
             // so skip it.
-            if (IsUnimplementedPureVirtual(function) && function.DeclarationOwner != inspectorTarget)
+            if (IsUnimplementedPureVirtual(function) && function.Declaration.Owner != inspectorTarget)
             {
                 string helpText = $"{declaration.Name} is not implemented. It is declared as a pure virtual"
                     + " function, so this shader cannot compile. To make the shader compilable, implement it.";
@@ -257,6 +255,24 @@ namespace UnityEditor.ShaderApiReflection
                 declLabel.isSelectable = true;
                 declLabel.AddToClassList(USS.Classes.kCodeBlock);
                 functionFoldout.Add(declLabel);
+            }
+
+            // Add summary, if present
+            if (function.Declaration.Hints.TryGetValue("summary", out string summaryText)
+                && !string.IsNullOrWhiteSpace(summaryText))
+            {
+                // Make the summary text presentable
+                var textLines = summaryText.Split('\n');
+                for (int i = 0; i < textLines.Length; ++i)
+                    textLines[i] = textLines[i].Trim();
+                summaryText = string.Join('\n', textLines);
+
+                var summaryLabel = new Label(summaryText)
+                {
+                    tooltip = "The function's summary, extracted from its original declaration's doc comment.",
+                };
+                summaryLabel.AddToClassList(USS.Classes.kMultilineText);
+                functionFoldout.Add(summaryLabel);
             }
 
             // Add declaration scope
@@ -289,9 +305,9 @@ namespace UnityEditor.ShaderApiReflection
                     functionFoldout.Add(overridesMetadata);
                 }
             }
-            else if (function.DeclarationOwner != inspectorTarget)
+            else if (function.Declaration.Owner != inspectorTarget)
             {
-                var ownerName = function.DeclarationOwner?.name ?? "unknown";
+                var ownerName = function.Declaration.Owner?.name ?? "unknown";
                 var declarationMetadata = new FunctionMetadataRow("Declared in", ownerName)
                 {
                     tooltip = $"The name of the shader which first declares {function.Declaration.Name}.",

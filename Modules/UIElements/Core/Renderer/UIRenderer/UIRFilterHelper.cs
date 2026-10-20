@@ -65,6 +65,40 @@ namespace UnityEngine.UIElements.UIR
             };
         }
 
+        // Keyed on the clamped value so a transition animating past the range warns once, not every frame.
+        [NoAutoStaticsCleanup] // identity hashes only, keeps no element reference
+        static readonly HashSet<(int element, string property, int definition, int parameter, float clamped)> s_ClampWarningLogged = new();
+
+        public static void WarnIfFilterParametersClamped(VisualElement ve, ReadOnlySpan<UnmanagedFilterFunction> filters, string propertyName)
+        {
+            for (int i = 0; i < filters.Length; i++)
+            {
+                var filterFunc = (FilterFunction)filters[i];
+                var def = filterFunc.GetDefinition();
+                var declarations = def != null ? def.parameters : null;
+                if (declarations == null)
+                    continue;
+
+                int count = Math.Min(filterFunc.parameterCount, declarations.Length);
+                for (int j = 0; j < count; j++)
+                {
+                    var p = filterFunc.GetParameter(j);
+                    if (p.type != FilterParameterType.Float || !declarations[j].hasFloatRange)
+                        continue;
+
+                    float clamped = declarations[j].ClampFloat(p.floatValue);
+                    if (clamped == p.floatValue)
+                        continue;
+
+                    if (!s_ClampWarningLogged.Add((ve.GetHashCode(), propertyName, def.GetHashCode(), j, clamped)))
+                        continue;
+
+                    Debug.LogWarning($"The {propertyName} '{def.filterName}' on element '{ve}' has a parameter value of {p.floatValue}, " +
+                        $"which is outside the supported range [{declarations[j].minFloatValue}, {declarations[j].maxFloatValue}]; {clamped} is used instead.");
+                }
+            }
+        }
+
         public static PostProcessingMargins GetReadMargins(PostProcessingPass pass, FilterFunction filterFunc)
         {
             filterFunc = filterFunc.GetClampedToDefinition();

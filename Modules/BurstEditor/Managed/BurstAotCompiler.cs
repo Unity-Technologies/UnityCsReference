@@ -137,7 +137,10 @@ namespace Unity.Burst.Editor
                     // if the contents have not changed).
                     BurstLoader.BclConfiguration.ExecutablePath,
                 },
-                displayName = "Running Burst Compiler"
+                displayName = "Running Burst Compiler",
+
+                // UnityLinker only writes pdbs when asked to, and Burst needs them for the source lines of its native debug info.
+                requiresManagedSymbols = settings.RequiresManagedSymbols
             };
         }
 
@@ -184,6 +187,7 @@ namespace Unity.Burst.Editor
                     out settings.targetCpus, settings.aotSettingsForTarget);
 
                 var buildTarget = NamedBuildTarget.FromBuildTargetGroup(BuildPipeline.GetBuildTargetGroup(settings.summary.platform));
+                settings.managedCodeVariant = PlayerSettings.GetManagedCodeVariant(settings.summary.namedBuildTarget);
                 settings.scriptingBackend = PlayerSettings.GetScriptingBackend(buildTarget);
                 settings.apiCompatibilityLevel = PlayerSettings.GetApiCompatibilityLevel(buildTarget);
 
@@ -305,10 +309,17 @@ namespace Unity.Burst.Editor
             public List<BurstAotCompiler.BurstOutputCombination> combinations;
             public ScriptingImplementation scriptingBackend;
             public ApiCompatibilityLevel apiCompatibilityLevel;
+            public ManagedCodeVariant managedCodeVariant;
             public string productName;
             public bool isSupported;
             public List<string> extraOptions;
             public Hash128 symbolDefinesHash;
+
+            // Burst emits native debug info in development builds, and in other builds when the AOT settings ask for it.
+            public bool EmitDebugInfo => (summary.options & BuildOptions.Development) != 0 || aotSettingsForTarget.EnableDebugInAllBuilds;
+
+            // The native debug info gets its source lines from the managed symbols of the assemblies Burst compiles.
+            public bool RequiresManagedSymbols => isSupported && aotSettingsForTarget.EnableBurstCompilation && EmitDebugInfo;
 
             // Hash any fields that might have an effect on whether Bursted code needs to be recompiled
             // Note that the BurstPlatformAotSettings are saved and used separately, so they don't need to
@@ -317,6 +328,7 @@ namespace Unity.Burst.Editor
             {
                 var hc = new Hash128();
                 hc.Append((int)(summary.options & BuildOptions.Development));
+                hc.Append((int)managedCodeVariant);
                 hc.Append((int)targetPlatform);
                 hc.Append(isSupported ? 1 : 0);
 
@@ -664,7 +676,7 @@ namespace Unity.Burst.Editor
                 // Allow burst to find managed symbols in the backup location in case the symbols are stripped in the build location
                 options.Add(GetOption(OptionAotPdbSearchPaths, TempManagedSymbols));
 
-                if (isDevelopmentBuild && Environment.GetEnvironmentVariable("UNITY_BURST_ENABLE_SAFETY_CHECKS_IN_PLAYER_BUILD") != null)
+                if (settings.managedCodeVariant <= ManagedCodeVariant.Checked)
                 {
                     options.Add("--global-safety-checks-setting=ForceOn");
                 }
@@ -677,7 +689,7 @@ namespace Unity.Burst.Editor
                     options.Add(GetOption(OptionDisableWarnings, settings.aotSettingsForTarget.DisabledWarnings));
                 }
 
-                if (isDevelopmentBuild || settings.aotSettingsForTarget.EnableDebugInAllBuilds)
+                if (settings.EmitDebugInfo)
                 {
                     if (!isDevelopmentBuild)
                     {
@@ -774,7 +786,7 @@ namespace Unity.Burst.Editor
                 }
             }
 
-            var pdbsRemainInBuild = isDevelopmentBuild || settings.aotSettingsForTarget.EnableDebugInAllBuilds || settings.targetPlatform == TargetPlatform.UWP;
+            var pdbsRemainInBuild = settings.EmitDebugInfo || settings.targetPlatform == TargetPlatform.UWP;
 
             // Finally move out any symbols/misc files from the final output
             return CollateMiscFiles(settings.combinations, pdbsRemainInBuild);

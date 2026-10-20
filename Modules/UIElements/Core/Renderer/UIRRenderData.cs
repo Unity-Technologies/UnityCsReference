@@ -55,37 +55,6 @@ namespace UnityEngine.UIElements.UIR
         // render-chain cut and whether z-indexed descendants may be promoted past this element.
         CutsRenderChain = 1 << 12,
         HasBackdropFilter = 1 << 13,
-
-        // Set when a descendant is dirty for the matching class, so a dirty-class pass can descend
-        // straight to the dirty elements instead of walking the whole tree. One bit per class rather
-        // than one shared bit, because the five passes are separate: a shared bit would make each of
-        // them descend the union of all the classes' closures.
-        //
-        // These must stay contiguous and in RenderDataDirtyTypeClasses order -- the bit for a class is
-        // obtained by shifting SubtreeDirtyClipping left by the class index.
-        SubtreeDirtyClipping = 1 << 14,
-        SubtreeDirtyOpacity = 1 << 15,
-        SubtreeDirtyColor = 1 << 16,
-        SubtreeDirtyTransformSize = 1 << 17,
-        SubtreeDirtyVisuals = 1 << 18,
-
-        SubtreeDirtyAll = SubtreeDirtyClipping | SubtreeDirtyOpacity | SubtreeDirtyColor | SubtreeDirtyTransformSize | SubtreeDirtyVisuals,
-
-        // Set on a parent that holds a ChildrenDirtyTracker, so the walk skips the ExtraRenderData lookup
-        // for the parents that never needed one.
-        HasChildrenTracker = 1 << 19,
-
-        // Set while this element sits in its parent's ChildrenDirtyTracker.
-        TrackedByParent = 1 << 20,
-
-        // Set on a parent that has given up on tracking which of its children are dirty, because too many
-        // of them are. Its walk goes back to the child list until the subtree comes clean. A new tracker
-        // starts in this state, since the children dirtied before it are not tracked.
-        ChildrenTrackerSaturated = 1 << 21,
-
-        // Set on a parent whose children's sibling keys no longer order them: it just started tracking, or
-        // an insertion found no gap. The keys are rebuilt the next time its tracker is iterated.
-        ChildrenKeysStale = 1 << 22,
     }
 
     // This is intended for data that used infrequently, to such an extent, that it's not worth being directly in RenderChainVEData.
@@ -117,9 +86,6 @@ namespace UnityEngine.UIElements.UIR
         // The element's world rect clipped to its ancestors, fixed at mesh-record time. The UV corners above
         // are normalized within it, so the render phase sizes the texture from this and not from ve.worldBound.
         public Rect backdropFilterRecordedRect;
-
-        // Null until this element first has ChildrenDirtyTracker.k_MinTrackedChildCount children.
-        public ChildrenDirtyTracker childrenTracker;
     }
 
     struct GraphicEntry
@@ -131,7 +97,7 @@ namespace UnityEngine.UIElements.UIR
     }
 
     // IMPORTANT: Initialize all fields in this struct in RenderTreeManager.InitRenderData()
-    class RenderData
+    sealed class RenderData
     {
         public VisualElement owner;
         public RenderTree renderTree;
@@ -139,9 +105,7 @@ namespace UnityEngine.UIElements.UIR
         public RenderData firstChild, lastChild;
         public RenderData groupTransformAncestor, boneTransformAncestor;
         public RenderDataFlags flags;
-        public int depthInRenderTree;
-        public int childCount;
-        public int siblingKey; // Gapped label ordering this element among its siblings; assigned by SpliceAfter.
+        public long preOrderLabel; // Increases in draw order within the render tree, with gaps for insertions (see RenderTree)
         public RenderDataDirtyTypes dirtiedValues;
         public uint dirtyID;
         public RenderChainCommand firstHeadCommand, lastHeadCommand; // Sequential for the same owner
@@ -195,9 +159,7 @@ namespace UnityEngine.UIElements.UIR
             groupTransformAncestor = null;
             boneTransformAncestor = null;
             flags = RenderDataFlags.IsClippingRectDirty;
-            depthInRenderTree = 0;
-            childCount = 0;
-            siblingKey = 0;
+            preOrderLabel = 0;
             dirtiedValues = RenderDataDirtyTypes.None;
             dirtyID = 0;
             firstHeadCommand = null;
@@ -266,19 +228,6 @@ namespace UnityEngine.UIElements.UIR
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             get => (flags & RenderDataFlags.CutsRenderChain) == RenderDataFlags.CutsRenderChain;
-        }
-
-        public bool hasChildrenTracker
-        {
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            get => (flags & RenderDataFlags.HasChildrenTracker) == RenderDataFlags.HasChildrenTracker;
-        }
-
-        // Dirty itself, or on the path to a dirty descendant, for any dirty class.
-        public bool isOnDirtyPath
-        {
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            get => dirtiedValues != RenderDataDirtyTypes.None || (flags & RenderDataFlags.SubtreeDirtyAll) != 0;
         }
 
         // Explicit z-index (auto is encoded as int.MinValue; 0 keeps document order, so both are excluded).

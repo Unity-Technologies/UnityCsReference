@@ -335,6 +335,9 @@ namespace UnityEngine
         internal extern void Internal_DrawContent(Rect screenRect, GUIContent content, bool isHover, bool isActive, bool on, bool hasKeyboardFocus,
             bool hasTextInput, bool drawSelectionAsComposition, Vector2 cursorFirst, Vector2 cursorLast, Color cursorColor, Color selectionColor,
             Color imageColor, float textOffsetX, float textOffsetY, float imageTopOffset, float imageLeftOffset, bool overflowX, bool overflowY);
+        [FreeFunction(Name = "GUIStyle_Bindings::Internal_CalcContentLayoutForTests", HasExplicitThis = true)]
+        internal extern bool Internal_CalcContentLayoutForTests(Rect position, GUIContent content, bool overflowX, bool overflowY,
+            out Rect contentRect, out Rect textRect, out Rect imageRect, out Rect clipRect);
 
         [FreeFunction(Name = "GUIStyle_Bindings::Internal_GetTextRectOffset", HasExplicitThis = true)]
         internal extern Vector2 Internal_GetTextRectOffset(Rect screenRect, GUIContent content, Vector2 textSize);

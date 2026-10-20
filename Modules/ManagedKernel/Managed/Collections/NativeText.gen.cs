@@ -25,6 +25,7 @@ using Unity.Collections.LowLevel.Unsafe;
 using Unity.Jobs;
 using UnityEngine.Internal;
 using Unity.Properties;
+using UnityEngine.Bindings;
 
 namespace Unity.Collections
 {
@@ -1111,6 +1112,7 @@ namespace Unity.Collections
             internal AtomicSafetyHandle m_Safety;
             internal static readonly SharedStatic<int> s_staticSafetyId = SharedStatic<int>.GetOrCreate<NativeText.ReadOnly>();
 
+            [VisibleToOtherModules("UnityEngine.EntitiesModule")]
             internal ReadOnly(UnsafeText* text, AtomicSafetyHandle safety)
             {
                 m_Data = text;

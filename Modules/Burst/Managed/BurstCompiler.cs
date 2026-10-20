@@ -377,8 +377,7 @@ namespace Unity.Burst
                     if (Unity.Burst.LowLevel.BurstCompilerService.IsInBurstedJob())
                     {
                         Unity.Scripting.LowLevel.Debug.LogException(
-                            ConstructException(e.GetType().FullName, e.Message, e.StackTrace),
-                            invokePostProcessCallbacks: true);
+                            ConstructException(e.GetType().FullName, e.Message, e.StackTrace));
                         return;
                     } else
                     {
@@ -399,7 +398,7 @@ namespace Unity.Burst
             if (Unity.Burst.LowLevel.BurstCompilerService.IsInBurstedJob())
             {
                 var e = ConstructException(kind, message, callstack);
-                Unity.Scripting.LowLevel.Debug.LogException(e, invokePostProcessCallbacks: true);
+                Unity.Scripting.LowLevel.Debug.LogException(e);
             }
             else if ((threadUserCallbacks != null) && (threadUserCallbacks.Count > 0))
             {

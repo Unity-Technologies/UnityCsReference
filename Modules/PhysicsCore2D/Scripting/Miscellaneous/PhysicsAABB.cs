@@ -164,7 +164,7 @@ namespace Unity.U2D.Physics
         public readonly Vector2 extents => PhysicsAABB_Extents(this);
 
         /// <summary>
-        /// Get the surface area (perimeter length) of the AABB.
+        /// Get the perimeter length of the AABB, which is twice the sum of its width and height.
         /// </summary>
         public readonly float perimeter => PhysicsAABB_Perimeter(this);
 

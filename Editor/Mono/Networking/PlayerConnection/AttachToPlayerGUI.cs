@@ -85,7 +85,7 @@ namespace UnityEditor.Networking.PlayerConnection
                 style = Styles.defaultDropdown;
             Styles.dropdownButton.text = ConnectionUIHelper.GetToolbarContent(state.connectionName, style, maxWidth );
             var size = style.CalcSize(Styles.dropdownButton);
-            Rect connectRect = GUILayoutUtility.GetRect(size.x, size.y);
+            Rect connectRect = GUILayoutUtility.GetRect(size.x, size.y, style);
 
             if(connectRect.width > size.x)
                 Styles.dropdownButton.text = ConnectionUIHelper.GetToolbarContent(state.connectionName, style, (int)connectRect.width);

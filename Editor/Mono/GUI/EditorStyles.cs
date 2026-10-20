@@ -142,6 +142,18 @@ namespace UnityEditor
         public static GUIStyle colorField { get { return s_Current.m_ColorField; }  }
         private GUIStyle m_ColorField;
 
+        internal static GUIStyle colorFieldButton { get { return s_Current.m_ColorFieldButton; } }
+        private GUIStyle m_ColorFieldButton;
+
+        internal static GUIStyle colorFieldColorBar { get { return s_Current.m_ColorFieldColorBar; } }
+        private GUIStyle m_ColorFieldColorBar;
+
+        internal static GUIStyle colorFieldAlphaBar { get { return s_Current.m_ColorFieldAlphaBar; } }
+        private GUIStyle m_ColorFieldAlphaBar;
+
+        internal static GUIStyle colorFieldFullAlphaBar { get { return s_Current.m_ColorFieldFullAlphaBar; } }
+        private GUIStyle m_ColorFieldFullAlphaBar;
+
         // Style used for headings for Layer masks.
         public static GUIStyle layerMaskField { get { return s_Current.m_LayerMaskField; } }
         private GUIStyle m_LayerMaskField;
@@ -240,6 +252,10 @@ namespace UnityEditor
         // Toolbar Dropdown Toggle Button
         internal static GUIStyle toolbarDropDownToggleButton { get { return s_Current.m_ToolbarDropDownToggleButton; } }
         private GUIStyle m_ToolbarDropDownToggleButton;
+
+        // Toolbar Dropdown Toggle Label Button
+        internal static GUIStyle toolbarDropDownToggleLabelButton { get { return s_Current.m_ToolbarDropDownToggleLabelButton; } }
+        private GUIStyle m_ToolbarDropDownToggleLabelButton;
 
         // Toolbar Dropdown Toggle Right
         internal static GUIStyle toolbarDropDownToggleRight { get { return s_Current.m_ToolbarDropDownToggleRight; } }
@@ -401,6 +417,12 @@ namespace UnityEditor
         internal static GUIStyle dropDownList { get { return s_Current.m_DropDownList; } }
         private GUIStyle m_DropDownList;
 
+        internal static GUIStyle dropDownToggle { get { return s_Current.m_DropDownToggle; } }
+        private GUIStyle m_DropDownToggle;
+
+        internal static GUIStyle dropDownToggleLabelButton { get { return s_Current.m_DropDownToggleLabelButton; } }
+        private GUIStyle m_DropDownToggleLabelButton;
+
         internal static GUIStyle advancedDropdownItem => s_Current.m_AdvancedDropdownItem;
         private GUIStyle m_AdvancedDropdownItem;
 
@@ -431,9 +453,10 @@ namespace UnityEditor
         private GUIStyle m_MinMaxStateDropdown;
 
         internal static GUIStyle progressBarBack { get { return s_Current.m_ProgressBarBack; } }
+        internal static GUIStyle progressBarBorder { get { return s_Current.m_ProgressBarBorder; } }
         internal static GUIStyle progressBarBar { get { return s_Current.m_ProgressBarBar; } }
         internal static GUIStyle progressBarText { get { return s_Current.m_ProgressBarText; } }
-        private GUIStyle m_ProgressBarBar, m_ProgressBarText, m_ProgressBarBack;
+        private GUIStyle m_ProgressBarBar, m_ProgressBarText, m_ProgressBarBack, m_ProgressBarBorder;
 
         internal static GUIStyle scrollViewAlt { get { return s_Current.m_ScrollViewAlt; } }
         private GUIStyle m_ScrollViewAlt;
@@ -496,6 +519,11 @@ namespace UnityEditor
         private void InitSharedStyles()
         {
             m_ColorPickerBox = GetStyle("ColorPickerBox");
+            m_ColorFieldButton = GetStyle("ColorFieldButton");
+            m_ColorFieldColorBar = GetStyle("ColorFieldColorBar");
+            m_ColorFieldAlphaBar = GetStyle("ColorFieldAlphaBar");
+
+            m_ColorFieldFullAlphaBar = GetStyle("ColorFieldFullAlphaBar");
             m_ViewBg = GetStyle("TabWindowBackground");
 
             m_InspectorBig = GetStyle("In BigTitle");
@@ -530,6 +558,7 @@ namespace UnityEditor
             m_ToolbarDropDownToggle = GetStyle("toolbarDropDownToggle");
             m_ToolbarDropDownToggleButton = GetStyle("ToolbarDropDownToggleButton");
             m_ToolbarDropDownToggleRight = GetStyle("toolbarDropDownToggleRight");
+            m_ToolbarDropDownToggleLabelButton = GetStyle("ToolbarDropDownToggleLabelButton");
             m_ToolbarCreateAddNewDropDown = GetStyle("ToolbarCreateAddNewDropDown");
             m_ToolbarTextField = GetStyle("toolbarTextField");
             m_ToolbarLabel = GetStyle("ToolbarLabel");
@@ -556,6 +585,8 @@ namespace UnityEditor
             m_ToolbarSlider = GetStyle("ToolbarSlider");
             m_MinMaxHorizontalSliderThumb = GetStyle("MinMaxHorizontalSliderThumb");
             m_DropDownList = GetStyle("DropDownButton");
+            m_DropDownToggle = GetStyle("DropDownToggle");
+            m_DropDownToggleLabelButton = GetStyle("DropDownToggleLabelButton");
             m_AdvancedDropdownItem = GetStyle("DD ItemStyle");
             var faintColor = EditorGUIUtility.isProSkin ? new Color(0.5f, 0.5f, 0.5f, 1f) : new Color(0.25f, 0.25f, 0.25f, 1f);
             m_AdvancedDropdownItemFaint = new GUIStyle(m_AdvancedDropdownItem);
@@ -574,6 +605,7 @@ namespace UnityEditor
             m_DropDownToggleButton = GetStyle("DropDownToggleButton");
             m_MinMaxStateDropdown = GetStyle("IN MinMaxStateDropdown");
             m_ProgressBarBack = GetStyle("ProgressBarBack");
+            m_ProgressBarBorder = GetStyle("ProgressBarBorder");
             m_ProgressBarBar = GetStyle("ProgressBarBar");
             m_ProgressBarText = GetStyle("ProgressBarText");
             m_FoldoutPreDrop = GetStyle("FoldoutPreDrop");

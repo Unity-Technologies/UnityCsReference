@@ -291,6 +291,7 @@ namespace UnityEngine
         public override void SetHorizontal(float x, float width)
         {
             base.SetHorizontal(x, width);
+            float pixelsPerPoint = GUIUtility.pixelsPerPoint;
 
             if (resetCoords)
                 x = 0;
@@ -309,9 +310,9 @@ namespace UnityEngine
                         float thisX = x + leftMar;
                         float thisWidth = width - Mathf.Max(i.marginRight, padding.right) - leftMar;
                         if (i.stretchWidth != 0)
-                            i.SetHorizontal(thisX, thisWidth);
+                            SetHorizontalOnPixelGrid(i, thisX, thisWidth, pixelsPerPoint);
                         else
-                            i.SetHorizontal(thisX, Mathf.Clamp(thisWidth, i.minWidth, i.maxWidth));
+                            SetHorizontalOnPixelGrid(i, thisX, Mathf.Clamp(thisWidth, i.minWidth, i.maxWidth), pixelsPerPoint);
                     }
                 }
                 else
@@ -323,10 +324,10 @@ namespace UnityEngine
                     {
                         if (i.stretchWidth != 0)
                         {
-                            i.SetHorizontal(thisX + i.marginLeft, thisWidth - i.marginHorizontal);
+                            SetHorizontalOnPixelGrid(i, thisX + i.marginLeft, thisWidth - i.marginHorizontal, pixelsPerPoint);
                         }
                         else
-                            i.SetHorizontal(thisX + i.marginLeft, Mathf.Clamp(thisWidth - i.marginHorizontal, i.minWidth, i.maxWidth));
+                            SetHorizontalOnPixelGrid(i, thisX + i.marginLeft, Mathf.Clamp(thisWidth - i.marginHorizontal, i.minWidth, i.maxWidth), pixelsPerPoint);
                     }
                 }
             }
@@ -388,7 +389,7 @@ namespace UnityEngine
                         lastMargin = i.marginRight;
                     }
 
-                    i.SetHorizontal(Mathf.Round(x), Mathf.Round(thisWidth));
+                    SetHorizontalOnPixelGrid(i, x, thisWidth, pixelsPerPoint);
                     x += thisWidth + spacing;
                 }
             }
@@ -523,6 +524,7 @@ namespace UnityEngine
         public override void SetVertical(float y, float height)
         {
             base.SetVertical(y, height);
+            float pixelsPerPoint = GUIUtility.pixelsPerPoint;
 
             if (entries.Count == 0)
                 return;
@@ -583,7 +585,7 @@ namespace UnityEngine
                         y += margin;
                         lastMargin = i.marginBottom;
                     }
-                    i.SetVertical(Mathf.Round(y), Mathf.Round(thisHeight));
+                    SetVerticalOnPixelGrid(i, y, thisHeight, pixelsPerPoint);
                     y += thisHeight + spacing;
                 }
             }
@@ -599,9 +601,9 @@ namespace UnityEngine
                         float thisHeight = height - Mathf.Max(i.marginBottom, padding.bottom) - topMar;
 
                         if (i.stretchHeight != 0)
-                            i.SetVertical(thisY, thisHeight);
+                            SetVerticalOnPixelGrid(i, thisY, thisHeight, pixelsPerPoint);
                         else
-                            i.SetVertical(thisY, Mathf.Clamp(thisHeight, i.minHeight, i.maxHeight));
+                            SetVerticalOnPixelGrid(i, thisY, Mathf.Clamp(thisHeight, i.minHeight, i.maxHeight), pixelsPerPoint);
                     }
                 }
                 else
@@ -612,12 +614,25 @@ namespace UnityEngine
                     foreach (GUILayoutEntry i in entries)
                     {
                         if (i.stretchHeight != 0)
-                            i.SetVertical(thisY + i.marginTop, thisHeight - i.marginVertical);
+                            SetVerticalOnPixelGrid(i, thisY + i.marginTop, thisHeight - i.marginVertical, pixelsPerPoint);
                         else
-                            i.SetVertical(thisY + i.marginTop, Mathf.Clamp(thisHeight - i.marginVertical, i.minHeight, i.maxHeight));
+                            SetVerticalOnPixelGrid(i, thisY + i.marginTop, Mathf.Clamp(thisHeight - i.marginVertical, i.minHeight, i.maxHeight), pixelsPerPoint);
                     }
                 }
             }
+        }
+
+        // Snaps both edges so neighbours share them and sizes come from the snapped edges.
+        static void SetHorizontalOnPixelGrid(GUILayoutEntry entry, float x, float width, float pixelsPerPoint)
+        {
+            float left = GUIUtility.RoundToPixelGrid(x, pixelsPerPoint);
+            entry.SetHorizontal(left, GUIUtility.RoundToPixelGrid(x + width, pixelsPerPoint) - left);
+        }
+
+        static void SetVerticalOnPixelGrid(GUILayoutEntry entry, float y, float height, float pixelsPerPoint)
+        {
+            float top = GUIUtility.RoundToPixelGrid(y, pixelsPerPoint);
+            entry.SetVertical(top, GUIUtility.RoundToPixelGrid(y + height, pixelsPerPoint) - top);
         }
 
         public override string ToString()

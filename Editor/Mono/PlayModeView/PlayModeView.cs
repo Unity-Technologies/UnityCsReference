@@ -26,7 +26,7 @@ namespace UnityEditor
     }
 
     [Serializable]
-    [VisibleToOtherModules("UnityEditor.PlayModeModule")]
+    [VisibleToOtherModules("UnityEditor.PlayModeModule", "UnityEditor.UIToolkitAuthoringModule")]
     internal abstract partial class PlayModeView : EditorWindow, ISerializationCallbackReceiver, IGameViewRenderInfo
     {
         [AutoStaticsCleanupOnCodeReload]
@@ -453,6 +453,7 @@ namespace UnityEditor
             return s_RenderingView;
         }
 
+        [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
         internal static PlayModeView GetMainPlayModeView()
         {
             if (s_LastFocused == null && s_PlayModeViews != null)
@@ -507,6 +508,7 @@ namespace UnityEditor
             return new Vector2(640f, 480f);
         }
 
+        [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
         internal Vector2 GetPlayModeViewSize()
         {
             return targetSize;

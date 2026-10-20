@@ -48,7 +48,7 @@ namespace UnityEditor
             // Removing the default margin for inspectors
             if (EditorGUIUtility.hierarchyMode)
             {
-                position.xMin -= EditorStyles.inspectorDefaultMargins.padding.left - EditorStyles.inspectorDefaultMargins.padding.right;
+                position.xMin -= EditorStyles.inspectorDefaultMargins.padding.left;
                 position.xMax += EditorStyles.inspectorDefaultMargins.padding.right;
             }
 

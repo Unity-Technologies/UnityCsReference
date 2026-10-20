@@ -50,6 +50,9 @@ namespace UnityEditor.Build.Analysis
         private Tab m_AssetsTab;
         private LoadingOverlay m_LoadingOverlay;
         private BuildListPanel m_BuildListPanel;
+        private OverviewTabView m_OverviewTabView;
+        private BuildEntry[] m_Builds = Array.Empty<BuildEntry>();
+        private BuildRelationships m_Relationships = new BuildRelationships();
 
         private BuildAnalysisService m_Service;
         private DependencyGraphService m_GraphService;
@@ -249,7 +252,8 @@ namespace UnityEditor.Build.Analysis
         private void SetupTabs()
         {
             m_TabHost = new BuildAnalysisTabHost(m_TabView);
-            m_TabHost.Register(m_OverviewTab, new OverviewTabView());
+            m_OverviewTabView = new OverviewTabView(SelectRelatedBuild);
+            m_TabHost.Register(m_OverviewTab, m_OverviewTabView);
 
             m_TabHost.Register(m_AssetsTab, new AssetsTabView(m_GraphService));
 
@@ -286,20 +290,43 @@ namespace UnityEditor.Build.Analysis
 
         private void RefreshBuildList()
         {
-            var builds = m_Service.GetBuilds();
-            m_BuildListPanel.SetBuilds(builds, ResolveRelationships(builds), BuildHistory.BuildHistoryLimit);
+            m_Builds = m_Service.GetBuilds();
+            m_Relationships = ResolveRelationships(m_Builds);
+            m_BuildListPanel.SetBuilds(m_Builds, m_Relationships, BuildHistory.BuildHistoryLimit);
+
+            // SetBuilds keeps the selection without reloading it, so its related builds would go stale.
+            var shownBuild = m_OverviewTabView.ShownBuild;
+            if (!shownBuild.Empty())
+                m_OverviewTabView.SetRelatedBuilds(GetRelatedBuilds(shownBuild));
         }
 
         private BuildRelationships ResolveRelationships(BuildEntry[] builds)
         {
-            var links = new List<(GUID Parent, GUID Child)>();
-            foreach (var build in builds)
+            var guids = new GUID[builds.Length];
+            for (var i = 0; i < builds.Length; i++)
+                guids[i] = builds[i].BuildSessionGUID;
+
+            return BuildRelationships.FromHistory(m_BuildHistory, guids);
+        }
+
+        // Builds missing from the list, such as deleted ones, are left out.
+        private List<BuildEntry> GetRelatedBuilds(GUID buildSessionGUID)
+        {
+            var related = new List<BuildEntry>();
+            foreach (var guid in m_Relationships.GetRelated(buildSessionGUID))
             {
-                if (m_BuildHistory.TryGetParentBuild(build.BuildSessionGUID, out var parent))
-                    links.Add((parent, build.BuildSessionGUID));
+                var index = Array.FindIndex(m_Builds, build => build.BuildSessionGUID == guid);
+                if (index >= 0)
+                    related.Add(m_Builds[index]);
             }
 
-            return new BuildRelationships(links);
+            return related;
+        }
+
+        private void SelectRelatedBuild(GUID buildSessionGUID)
+        {
+            if (!m_BuildListPanel.SelectBuild(buildSessionGUID))
+                Debug.LogWarning($"{BuildAnalysisConstants.k_ConsoleLogPrefix} The build '{buildSessionGUID}' is no longer in the build history.");
         }
 
         private async void OnBuildSelectionChanged(BuildEntry selection)
@@ -387,7 +414,7 @@ namespace UnityEditor.Build.Analysis
             if (m_Gate.IsStale(seq))
                 return;
 
-            m_TabHost.Apply(new BuildAnalysisView(build, analyzed));
+            m_TabHost.Apply(new BuildAnalysisView(build, analyzed, GetRelatedBuilds(build.BuildSessionGUID)));
             m_LoadingOverlay.Hide();
 
             // A build that produced no analysis isn't shown — drop the target so re-selecting retries.

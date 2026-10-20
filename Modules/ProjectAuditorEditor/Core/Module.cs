@@ -48,6 +48,10 @@ namespace Unity.ProjectAuditor.Editor.Core
             #pragma warning disable UAC2001 // Avoid Linq
             var assetsEnumerable = AssetDatabase.FindAssets(filter).Select(AssetDatabase.GUIDToAssetPath);
 #pragma warning restore UAC2001
+            OwnerFlags ownerFlags = context.Params.OwnerFlags;
+            #pragma warning disable UAC2001 // Avoid Linq
+            assetsEnumerable = assetsEnumerable.Where(path => IsAssetPathOwnerIncluded(path, ownerFlags));
+#pragma warning restore UAC2001
             if (context.Params.AssetPathFilter != null)
             {
                 #pragma warning disable UAC2001 // Avoid Linq
@@ -59,17 +63,30 @@ namespace Unity.ProjectAuditor.Editor.Core
 #pragma warning restore UAC2001
         }
 
+        // Assets in com.unity.* packages are owned by Unity, matching how CodeModule decides which assemblies Unity owns.
+        // Built-in resources are Unity's too, like the engine's own precompiled assemblies.
+        internal static bool IsAssetPathOwnerIncluded(string assetPath, OwnerFlags ownerFlags)
+        {
+            if (ownerFlags == OwnerFlags.All)
+                return true;
+            var isUnityOwned = assetPath.StartsWith("Packages/com.unity.", StringComparison.Ordinal) ||
+                assetPath.Equals("Resources/unity_builtin_extra", StringComparison.Ordinal) ||
+                assetPath.StartsWith("Library/unity ", StringComparison.Ordinal);
+            return (ownerFlags & (isUnityOwned ? OwnerFlags.Unity : OwnerFlags.User)) != 0;
+        }
+
         static string[] FilterAssetPathsArray(AnalysisContext context, string[] assets)
         {
             var filter = context.Params.AssetPathFilter;
-            if (filter != null)
+            OwnerFlags ownerFlags = context.Params.OwnerFlags;
+            if (filter != null || ownerFlags != OwnerFlags.All)
             {
                 var readIndex = 0;
                 var writeIndex = 0;
                 for (; readIndex < assets.Length; readIndex++)
                 {
                     var asset = assets[readIndex];
-                    if (filter(asset))
+                    if (IsAssetPathOwnerIncluded(asset, ownerFlags) && (filter == null || filter(asset)))
                     {
                         assets[writeIndex] = asset;
                         writeIndex++;

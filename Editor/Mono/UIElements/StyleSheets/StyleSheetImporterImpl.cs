@@ -1411,8 +1411,8 @@ namespace UnityEditor.UIElements.StyleSheets
                 // Note: we must rely on recursion to correctly handle parser types here
                  VisitBaseSelector(rule.Selector);
 
-                foreach (var nestedRule in rule.NestedRules)
-                    m_Errors.AddSemanticError(StyleSheetImportErrorCode.UnsupportedSelectorFormat, string.Format(glossary.unsupportedSelectorFormat, nestedRule.SelectorText), m_CurrentLine);
+                if (rule.NestedRules.Count != 0)
+                    m_Errors.AddSemanticError(StyleSheetImportErrorCode.UnsupportedSelectorFormat, glossary.nestedStyleRulesNotSupported, m_CurrentLine);
 
                 foreach (var property in rule.Style.Declarations)
                 {

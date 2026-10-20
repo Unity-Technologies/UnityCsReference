@@ -20,6 +20,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         TrustPolicyLevel trustPolicyLevel { get; set; }
         TrustPolicyLevel trustPolicyLevelDraft { get; set; }
+        bool trustDisabled { get; }
         bool dismissPreviewPackagesInUse { get; set; }
         bool enablePreReleasePackages { get; set; }
         bool advancedSettingsExpanded { get; set; }
@@ -74,6 +75,8 @@ namespace UnityEditor.PackageManager.UI.Internal
         }
 
         public void ClearTrustPolicyLevelDraft() => PackageManagerProjectSettings.instance.ClearTrustPolicyLevelDraft();
+
+        public bool trustDisabled => TrustPolicySettings.trustDisabled;
 
         public bool dismissPreviewPackagesInUse
         {

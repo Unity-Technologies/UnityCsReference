@@ -51,6 +51,18 @@ namespace UnityEditor.Build.Profile
             ThrowIfComponentExists(typeof(T));
 
             var type = typeof(T);
+            if (type == typeof(BuildProfileGraphicsSettings))
+            {
+                BuildProfileModuleUtil.CreateGraphicsSettings(this);
+                return graphicsSettings as T;
+            }
+
+            if (type == typeof(BuildProfileQualitySettings))
+            {
+                BuildProfileModuleUtil.CreateQualitySettings(this);
+                return qualitySettings as T;
+            }
+
             if (type.IsSubclassOf(typeof(ScriptableObject)))
             {
                 var objectToAdd = ScriptableObject.CreateInstance(type);
@@ -100,13 +112,17 @@ namespace UnityEditor.Build.Profile
         /// <param name="objectToAdd">The object to add to the build profile.</param>
         /// <exception cref="ArgumentNullException">Thrown when <paramref name="objectToAdd"/> is null.</exception>
         /// <exception cref="ArgumentException">Thrown when the build profile already contains a component of
-        /// type <typeparamref name="T"/>.</exception>
+        /// type <typeparamref name="T"/>, or when <paramref name="objectToAdd"/> is a
+        /// built-in override that only <see cref="CreateComponent{T}"/> can add.</exception>
         public void AddComponent<T>(T objectToAdd) where T : UnityEngine.Object
         {
             if (objectToAdd == null)
             {
                 throw new ArgumentNullException(nameof(objectToAdd), "The object to add cannot be null.");
             }
+
+            if (IsSettingsOverrideType(objectToAdd.GetType()))
+                throw new ArgumentException($"{objectToAdd.GetType().Name} can't be added to a build profile as an existing object. Use {nameof(CreateComponent)}<{objectToAdd.GetType().Name}>() instead.", nameof(objectToAdd));
 
             ThrowIfComponentExists(typeof(T));
 
@@ -138,7 +154,7 @@ namespace UnityEditor.Build.Profile
             if (Array.IndexOf(requiredComponents, toRemove) > -1)
                 throw new ArgumentException($"The component {typeof(T).Name} is required and cannot be removed from the build profile {name}.");
 
-            AssetDatabase.RemoveObjectFromAsset(toRemove);
+            RemoveComponentObject(toRemove);
         }
 
         /// <summary>
@@ -178,17 +194,21 @@ namespace UnityEditor.Build.Profile
             if (Array.IndexOf(requiredComponents, objectToRemove) > -1)
                 throw new ArgumentException($"The component {typeof(T).Name} is required and cannot be removed from the build profile {name}.");
 
-            AssetDatabase.RemoveObjectFromAsset(toRemove);
+            RemoveComponentObject(toRemove);
         }
 
         /// <summary>
         /// Adds a reference to a standalone on-disk settings asset, or an unassigned reference when
         /// <paramref name="reference"/> is null.
         /// </summary>
-        /// <exception cref="ArgumentException">Thrown when a component of the same type already exists.</exception>
+        /// <exception cref="ArgumentException">Thrown when a component of the same type already exists, or when
+        /// <paramref name="componentType"/> is a built-in override that only <see cref="CreateComponent{T}"/> can add.</exception>
         /// <exception cref="InvalidOperationException">Thrown when a non-null reference is not an on-disk asset.</exception>
         internal void AddReferenceComponent(Type componentType, ScriptableObject reference)
         {
+            if (IsSettingsOverrideType(componentType))
+                throw new ArgumentException($"{componentType.Name} can't be added to a build profile as a reference. Use {nameof(CreateComponent)}<{componentType.Name}>() instead.", nameof(componentType));
+
             ThrowIfComponentExists(componentType);
             ThrowIfNotOnDisk(reference);
 
@@ -230,7 +250,7 @@ namespace UnityEditor.Build.Profile
                 return;
             }
 
-            AssetDatabase.RemoveObjectFromAsset(toRemove);
+            RemoveComponentObject(toRemove);
         }
 
         /// <summary>
@@ -255,6 +275,20 @@ namespace UnityEditor.Build.Profile
         {
             var path = AssetDatabase.GetAssetPath(this);
             return AssetDatabase.LoadAllAssetsAtPath(path);
+        }
+
+        // The engine reads these overrides only through the cached fields, which BuildProfileModuleUtil keeps in sync.
+        static bool IsSettingsOverrideType(Type componentType) =>
+            componentType == typeof(BuildProfileGraphicsSettings) || componentType == typeof(BuildProfileQualitySettings);
+
+        void RemoveComponentObject(UnityEngine.Object toRemove)
+        {
+            if (toRemove is BuildProfileGraphicsSettings)
+                BuildProfileModuleUtil.RemoveGraphicsSettings(this);
+            else if (toRemove is BuildProfileQualitySettings)
+                BuildProfileModuleUtil.RemoveQualitySettings(this);
+            else
+                AssetDatabase.RemoveObjectFromAsset(toRemove);
         }
 
         UnityEngine.Object FindComponentObject(Type componentType)

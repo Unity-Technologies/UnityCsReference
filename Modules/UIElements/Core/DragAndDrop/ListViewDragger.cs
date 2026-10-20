@@ -92,6 +92,11 @@ namespace UnityEngine.UIElements
         public ListViewDragger(BaseVerticalCollectionView listView)
             : base(listView) {}
 
+        protected override bool ShouldHandlePointerDown(PointerDownEvent evt)
+        {
+            return !targetView.IsFromNestedCollectionView(evt.target);
+        }
+
         protected override bool CanStartDrag(Vector3 pointerPosition, EventModifiers modifiers)
         {
             if (dragAndDropController == null)

@@ -201,7 +201,7 @@ namespace UnityEditor
             m_SceneHierarchy.GameObjectCreateDropdownButton();
 
             //Search field GUI
-            GUILayout.Space(6);
+            GUILayout.Space(2);
 
             GUILayout.FlexibleSpace();
             Event evt = Event.current;

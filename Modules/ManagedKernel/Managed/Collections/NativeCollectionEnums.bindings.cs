@@ -31,16 +31,23 @@ namespace Unity.Collections
         TempJob = 3,
         ///<summary>Use a persistent allocation.</summary>
         ///<remarks>The slowest allocation but can last as long as you need it to, and if necessary, throughout the application's lifetime. It's a wrapper for a 
-        ///direct call to malloc. Longer jobs can use this NativeContainer allocation type. Don't use Persistent where performance is essential.</remarks>
+        ///direct call to `malloc`. Longer jobs can use this NativeContainer allocation type. Don't use `Persistent` where performance is essential.
+        ///
+        ///Unity doesn't free this allocation type automatically. To free it, call <see cref="NativeArray{T}.Dispose()" /> on the container that owns the
+        ///allocation, the same way you free any other manual allocation. Unlike <see cref="Temp" /> and <see cref="TempJob" />, this allocation type has no
+        ///frame limit, so Unity doesn't warn you if you keep it for many frames.</remarks>
         Persistent = 4,
         ///<summary>Use an allocation associated with a DSPGraph audio kernel.</summary>
         AudioKernel = 5,
         ///<summary>Use an allocation associated with the lifetime of a domain.</summary>
-        ///<remarks>You don't need to free this memory, because Unity frees it automatically at domain unload. However, to conserve memory, 
+        ///<remarks>The domain is the scripting domain that holds the managed state of your scripts. Unity unloads and recreates it during a
+        ///[[wiki:domain-reloading|domain reload]], for example when scripts recompile or when you enter Play mode with domain reload enabled.
+        ///
+        ///You don't need to free this memory, because Unity frees it automatically at domain unload. However, to conserve memory, 
         ///you can free it at any time. Freeing a large number of such allocations in one frame, such that the array of freed pointers is larger than L2 cache, 
         ///might exhibit a measurable loss of performance.
         ///
-        ///**Note**: The Domain allocator can track a maximum of 262144 (256 * 1024) individual allocations. If the number of allocations exceeds that number, Unity logs an error and does not free excessive allocations automatically.</remarks>
+        ///**Note**: The Domain allocator can track a maximum of 262144 (256 * 1024) individual allocations. If the number of allocations exceeds that number, Unity logs an error and doesn't free excessive allocations automatically.</remarks>
         Domain = 6,
         ///<summary>The first index that a custom allocator can get.</summary>
         FirstUserIndex = 64,

@@ -42,7 +42,7 @@ namespace UnityEngine.UIElements
             Canvas.externRenderOverlaysBefore = (displayIndex, sortOrder) => RenderOverlaysBeforePriority(displayIndex, sortOrder);
             Canvas.externEndRenderOverlays = EndRenderOverlays;
 
-            UIElementsRuntimeUtilityNative.SetUpdateCallback(UpdatePanels);
+            UIElementsRuntimeUtilityNative.SetUpdateCallbacks(PreparePanelRenderers, UpdatePanels);
         }
 #pragma warning restore UAL0015
 
@@ -352,6 +352,19 @@ namespace UnityEngine.UIElements
         internal static DefaultEventSystem defaultEventSystem =>
             s_DefaultEventSystem ?? (s_DefaultEventSystem = new DefaultEventSystem());
 
+        // Runs at the end of PreUpdate so PanelRenderers awoken earlier in the frame invoke their UI reload callbacks before Update (UUM-154853).
+        // Polling enabled state and sorting order is left to UpdatePanels, so this only processes renderers that were marked dirty.
+        public static void PreparePanelRenderers()
+        {
+            if (s_DirtyPanelRenderers.Count == 0 && !PanelRenderer.shouldCheckForRequiredReinsertions)
+                return;
+
+            using (s_PreUpdatePanelRenderersMarker.Auto())
+            {
+                ProcessDirtyPanelRenderers();
+            }
+        }
+
         public static void UpdatePanels()
         {
             RemoveUnusedPanels();
@@ -469,6 +482,11 @@ namespace UnityEngine.UIElements
                 UpdateSortingOrder(panelRenderer);
             }
 
+            ProcessDirtyPanelRenderers();
+        }
+
+        private static void ProcessDirtyPanelRenderers()
+        {
             // Process dirty assets
             PanelRenderer.shouldCheckForRequiredReinsertions |= s_DirtyPanelRenderers.Count > 0;
 

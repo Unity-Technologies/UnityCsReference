@@ -106,6 +106,7 @@ namespace UnityEditor
         private static readonly int s_ObjectFieldHash = "s_ObjectFieldHash".GetHashCode();
         private static readonly int s_ToggleHash = "s_ToggleHash".GetHashCode();
         private static readonly int s_ColorHash = "s_ColorHash".GetHashCode();
+        private static readonly int s_ColorFieldButtonHash = "s_ColorFieldButton".GetHashCode();
         private static readonly int s_CurveHash = "s_CurveHash".GetHashCode();
         private static readonly int s_LayerMaskField = "s_LayerMaskField".GetHashCode();
         private static readonly int s_MaskField = "s_MaskField".GetHashCode();
@@ -159,7 +160,7 @@ namespace UnityEditor
         internal const float kSpacingSubLabel = 4;
         internal const float kSliderMinW = 50;
         internal const float kSliderMaxW = 100;
-        internal const float kSingleLineHeight = 18f;
+        internal const float kSingleLineHeight = 20f;
         internal const float kSingleSmallLineHeight = 16f;
         internal const float kStructHeaderLineHeight = 18;
         internal const float kObjectFieldThumbnailHeight = 64;
@@ -192,6 +193,8 @@ namespace UnityEditor
         internal const int kInspTitlebarFoldoutIconWidth = 13;
         [NoAutoStaticsCleanup] // themed style constant (SVC), immutable, safe to persist
         internal static readonly SVC<float> kWindowToolbarHeight = new SVC<float>("--window-toolbar-height", 21f);
+        [NoAutoStaticsCleanup] // themed style constant (SVC), immutable, safe to persist
+        internal static readonly SVC<float> kWindowMiniToolbarHeight = new SVC<float>("--window-mini-toolbar-height", 21f);
         internal const int kTabButtonHeight = 22;
         internal const int kLargeButtonHeight = 24;
         private const string kEnabledPropertyName = "m_Enabled";
@@ -230,8 +233,10 @@ namespace UnityEditor
 
         [NoAutoStaticsCleanup] // transient control id; value type
         private static int s_CurveID;
-        internal static readonly Color kCurveColor = Color.green;
-        internal static readonly Color kCurveBGColor = new Color(0.337f, 0.337f, 0.337f, 1f);
+        [NoAutoStaticsCleanup] // themed style constant (SVC), immutable, safe to persist
+        internal static readonly SVC<Color> kCurveColor = new SVC<Color>("--curve_field-curve-color", new Color(20f / 255f, 211f / 255f, 104f / 255f, 1f));
+        [NoAutoStaticsCleanup] // themed style constant (SVC), immutable, safe to persist
+        internal static readonly SVC<Color> kCurveBGColor = new SVC<Color>("--curve_field-background-color", new Color(80f / 255f, 80f / 255f, 80f / 255f, 1f));
         [NoAutoStaticsCleanup] // immutable skinned color constant, safe to persist
         internal static readonly EditorGUIUtility.SkinnedColor kSplitLineSkinnedColor = new EditorGUIUtility.SkinnedColor(new Color(0.6f, 0.6f, 0.6f, 1.333f), new Color(0.12f, 0.12f, 0.12f, 1.333f));
 
@@ -1773,7 +1778,7 @@ namespace UnityEditor
 
         internal static Rect GetInspectorTitleBarObjectFoldoutRenderRect(Rect rect, GUIStyle baseStyle)
         {
-            return new Rect(rect.x + EditorStyles.titlebarFoldout.margin.left + 1f, rect.y + (rect.height - kInspTitlebarFoldoutIconWidth) / 2 + (baseStyle != null ? baseStyle.padding.top : 0), kInspTitlebarFoldoutIconWidth, kInspTitlebarFoldoutIconWidth);
+            return new Rect(rect.x + EditorStyles.titlebarFoldout.margin.left, rect.y + (rect.height - kInspTitlebarFoldoutIconWidth) / 2 + (baseStyle != null ? baseStyle.padding.top : 0), kInspTitlebarFoldoutIconWidth, kInspTitlebarFoldoutIconWidth);
         }
 
         [SuppressMessage("ReSharper", "RedundantCast.0")]
@@ -1802,11 +1807,11 @@ namespace UnityEditor
             var enabled = GUI.enabled;
             GUI.enabled = true;
 
-            // Data-component editors have no UnityEngine.Object target; the
-            // Object-only branches below (drag-source, drop-target) are skipped
-            // and the context menu is replaced by the data-component one.
+            // Data-component and entity editors have no UnityEngine.Object target; the
+            // Object-only branches below (drag-source, drop-target) are skipped.
+            // Data components get the data-component context menu; entities get none.
+            bool hasUnityObjectTargets = editor == null || editor.hasUnityObjectTargets;
             bool isDataComponentEditor = editor != null && editor.isDataComponentEditor;
-            bool hasTargetObject = !isDataComponentEditor;
 
             // Context menu
             Event evt = Event.current;
@@ -1856,7 +1861,7 @@ namespace UnityEditor
                     break;
 
                 case EventType.MouseDrag:
-                    if (hasTargetObject && GUIUtility.hotControl == id)
+                    if (hasUnityObjectTargets && GUIUtility.hotControl == id)
                     {
                         DragAndDropDelay delay = (DragAndDropDelay)GUIUtility.GetStateObject(typeof(DragAndDropDelay), id);
                         if (delay.CanStartDrag())
@@ -1878,7 +1883,7 @@ namespace UnityEditor
                     break;
 
                 case EventType.DragUpdated:
-                    if (!hasTargetObject)
+                    if (!hasUnityObjectTargets)
                         break;
                     if (s_DragUpdatedOverID == id)
                     {
@@ -1912,7 +1917,7 @@ namespace UnityEditor
                     break;
 
                 case EventType.DragPerform:
-                    if (hasTargetObject && interactionRect.Contains(evt.mousePosition))
+                    if (hasUnityObjectTargets && interactionRect.Contains(evt.mousePosition))
                     {
                         DragAndDrop.visualMode = DragAndDrop.DropOnInspectorWindow(targetObjs, true);
                         DragAndDrop.AcceptDrag();
@@ -5942,8 +5947,10 @@ namespace UnityEditor
             GUIStyle style = EditorStyles.colorField;
             Color origColor = value;
             value = showMixedValue ? Color.white : value;
-            bool hovered = position.Contains(evt.mousePosition);
+            Rect colorFieldRect = showEyedropper ? new Rect(position.x, position.y, position.width - style.padding.right, position.height) : position;
+            bool hovered = colorFieldRect.Contains(evt.mousePosition);
             bool hoveredEyedropper = new Rect(position.x + position.width - kEyedropperSize, position.y, kEyedropperSize, position.height).Contains(evt.mousePosition);
+            int colorFieldButtonID = GUIUtility.GetControlID(s_ColorFieldButtonHash, showEyedropper ? FocusType.Keyboard : FocusType.Passive, position);
 
             var wasEnabled = GUI.enabled;
             var eventType = GetEventTypeForControlAllowDisabledContextMenuPaste(evt, id);
@@ -5951,11 +5958,6 @@ namespace UnityEditor
             switch (eventType)
             {
                 case EventType.MouseDown:
-                    if (showEyedropper)
-                    {
-                        hovered ^= hoveredEyedropper;
-                    }
-
                     if (hovered)
                     {
                         switch (evt.button)
@@ -6005,7 +6007,7 @@ namespace UnityEditor
                     {
                         if (hoveredEyedropper && wasEnabled)
                         {
-                            GUIUtility.keyboardControl = id;
+                            GUIUtility.keyboardControl = colorFieldButtonID;
                             EyeDropper.Start(GUIView.current);
                             s_ColorPickID = id;
                             GUIUtility.ExitGUI();
@@ -6017,15 +6019,6 @@ namespace UnityEditor
                     Rect position2;
                     position2 = showEyedropper ? style.padding.Remove(position) : EditorStyles.colorPickerBox.padding.Remove(position);
 
-                    if (showEyedropper)
-                    {
-                        style.Draw(position, GUIContent.none, id, false, hovered); // Draw box outline and eyedropper icon
-                    }
-                    else
-                    {
-                        EditorStyles.colorPickerBox.Draw(position, GUIContent.none, id, false, hovered); // Draw box outline
-                    }
-
                     // Draw color field
                     if (showEyedropper && s_ColorPickID == id)
                     {
@@ -6033,11 +6026,22 @@ namespace UnityEditor
                         c.a = value.a;
                         if (hdr)
                             c = c.linear;
-                        EditorGUIUtility.DrawColorSwatch(position2, c, showAlpha, hdr);
+                        EditorGUIUtility.DrawColorSwatch(position2, id, c, showAlpha, hdr);
                     }
                     else
                     {
-                        EditorGUIUtility.DrawColorSwatch(position2, value, showAlpha, hdr);
+                        EditorGUIUtility.DrawColorSwatch(position2, id, value, showAlpha, hdr);
+                    }
+
+                    if (showEyedropper)
+                    {
+                        style.Draw(colorFieldRect, GUIContent.none, id, false, hovered); // Draw box outline
+                        var buttonRect = new Rect(position.xMax - kEyedropperSize, position.y, kEyedropperSize, position.height);
+                        EditorStyles.colorFieldButton.Draw(buttonRect, GUIContent.none, colorFieldButtonID, DragAndDrop.activeControlID == colorFieldButtonID, buttonRect.Contains(Event.current.mousePosition)); // Draw eyedropper button
+                    }
+                    else
+                    {
+                        EditorStyles.colorPickerBox.Draw(position, GUIContent.none, id, false, hovered); // Draw box outline
                     }
 
                     break;
@@ -6063,14 +6067,33 @@ namespace UnityEditor
                 case EventType.ExecuteCommand:
 
                     // Cancel EyeDropper if we change focus.
-                    if (showEyedropper && Event.current.commandName == EventCommandNames.NewKeyboardFocus)
+                    if (showEyedropper && Event.current.commandName == EventCommandNames.NewKeyboardFocus && GUIUtility.keyboardControl != colorFieldButtonID)
                     {
                         EyeDropper.End();
                         s_ColorPickID = 0;
                     }
 
-                    // when ColorPicker sends an event back to this control's GUIView, it sometimes retains keyboardControl
+                    // ColorPicker events
                     if (GUIUtility.keyboardControl == id || ColorPicker.originalKeyboardControl == id)
+                    {
+                        switch (evt.commandName)
+                        {
+                            case EventCommandNames.Copy:
+                                Clipboard.colorValue = value;
+                                evt.Use();
+                                break;
+                            case EventCommandNames.Paste:
+                                PasteColor(ref origColor, showAlpha, hdr);
+                                break;
+                            case EventCommandNames.ColorPickerChanged:
+                                GUI.changed = true;
+                                HandleUtility.Repaint();
+                                return ColorPicker.color;
+                        }
+                    }
+
+                    // when ColorPickerButton sends an event back to this control's GUIView, it sometimes retains keyboardControl
+                    if (GUIUtility.keyboardControl == colorFieldButtonID || ColorPicker.originalKeyboardControl == colorFieldButtonID)
                     {
                         switch (evt.commandName)
                         {
@@ -6088,17 +6111,6 @@ namespace UnityEditor
                                 HandleUtility.Repaint();
                                 s_ColorPickID = 0;
                                 break;
-                            case EventCommandNames.ColorPickerChanged:
-                                GUI.changed = true;
-                                HandleUtility.Repaint();
-                                return ColorPicker.color;
-                            case EventCommandNames.Copy:
-                                Clipboard.colorValue = value;
-                                evt.Use();
-                                break;
-                            case EventCommandNames.Paste:
-                                PasteColor(ref origColor, showAlpha, hdr);
-                                break;
                         }
                     }
                     break;
@@ -6108,6 +6120,13 @@ namespace UnityEditor
                         evt.Use();
                         showMixedValue = false;
                         ColorPicker.Show(GUIView.current, value, showAlpha, hdr);
+                        GUIUtility.ExitGUI();
+                    }
+                    else if (showEyedropper && evt.MainActionKeyForControl(colorFieldButtonID))
+                    {
+                        evt.Use();
+                        EyeDropper.Start(GUIView.current);
+                        s_ColorPickID = id;
                         GUIUtility.ExitGUI();
                     }
                     else if (evt.modifiers == EventModifiers.Control && GUIUtility.keyboardControl == id)
@@ -6253,18 +6272,16 @@ namespace UnityEditor
                     }
                     break;
                 case EventType.Repaint:
-                    Rect position2 = position;
-                    position2.y += 1;
-                    position2.height -= 1;
+                    Rect r2 = new Rect(position.x + 1, position.y + 1, position.width - 2, position.height - 2);    // Adjust for box drawn on top
                     if (ranges != new Rect())
                     {
-                        EditorGUIUtility.DrawCurveSwatch(position2, value, property, color, kCurveBGColor, ranges);
+                        EditorGUIUtility.DrawCurveSwatch(r2, value, property, color, kCurveBGColor, ranges);
                     }
                     else
                     {
-                        EditorGUIUtility.DrawCurveSwatch(position2, value, property, color, kCurveBGColor);
+                        EditorGUIUtility.DrawCurveSwatch(r2, value, property, color, kCurveBGColor);
                     }
-                    EditorStyles.colorPickerBox.Draw(position2, GUIContent.none, id, false);
+                    EditorStyles.colorPickerBox.Draw(position, GUIContent.none, id, false, position.Contains(evt.mousePosition));
                     break;
                 case EventType.ExecuteCommand:
                     if (s_CurveID == id && GUIView.current == CurveEditorWindow.delegateView)
@@ -6540,18 +6557,16 @@ namespace UnityEditor
 
         // Make an inspector-window-like titlebar.
         //
-        // editor is optional. When present and it's a data-component editor,
-        // hasTargetObject is false and every Object-deref site is skipped —
-        // targetObjs is null-filled for data components, and the icon,
-        // enabled-toggle and header items are Object-specific concerns; the
-        // options menu is the data-component one. The title falls back to Editor.GetInspectorTitle
-        // which dispatches correctly for both target kinds.
+        // editor is optional. Without UnityEngine.Object targets (data components, entities) targetObjs is null-filled and the
+        // Object-only parts are skipped; data components get their own options menu.
         internal static void DoInspectorTitlebar(Rect position, int id, bool foldout, Object[] targetObjs, Editor editor, SerializedProperty enabledProperty, GUIStyle baseStyle)
         {
+            bool hasUnityObjectTargets = editor == null || editor.hasUnityObjectTargets;
             bool isDataComponentEditor = editor != null && editor.isDataComponentEditor;
-            bool hasTargetObject = !isDataComponentEditor;
+            // Entities have no options menu.
+            bool hasOptionsMenu = hasUnityObjectTargets || isDataComponentEditor;
 
-            if (hasTargetObject && ShouldSkipInspectorTitlebar(targetObjs[0]))
+            if (hasUnityObjectTargets && ShouldSkipInspectorTitlebar(targetObjs[0]))
                 return;
 
             GUIStyle textStyle = EditorStyles.inspectorTitlebarText;
@@ -6571,17 +6586,17 @@ namespace UnityEditor
             }
 
             bool isAddedComponentAndEventIsRepaint = false;
-            Component comp = hasTargetObject ? targetObjs[0] as Component : null;
-            if (hasTargetObject && ShouldDrawOverrideBackground(targetObjs, evt, comp))
+            Component comp = hasUnityObjectTargets ? targetObjs[0] as Component : null;
+            if (hasUnityObjectTargets && ShouldDrawOverrideBackground(targetObjs, evt, comp))
             {
                 isAddedComponentAndEventIsRepaint = true;
                 DrawOverrideBackgroundApplicable(position, true);
             }
 
-            if (hasTargetObject)
+            if (hasUnityObjectTargets)
                 DoInspectorEnabledToggle(position, targetObjs, comp, iconRect, enabledProperty);
 
-            if (hasTargetObject)
+            if (hasUnityObjectTargets)
             {
                 Rect headerItemRect = settingsRect;
                 headerItemRect.x -= kInspTitlebarIconWidth + kInspTitlebarSpacing;
@@ -6590,11 +6605,11 @@ namespace UnityEditor
             }
             else
             {
-                // No header items on a data-component titlebar; extend text to the settings rect.
+                // No header items without Object targets; extend text to the settings rect.
                 textRect.xMax = settingsRect.xMin - kInspTitlebarSpacing;
             }
 
-            if (evt.type == EventType.Repaint && hasTargetObject)
+            if (evt.type == EventType.Repaint && hasUnityObjectTargets)
             {
                 var icon = AssetPreview.GetMiniThumbnail(targetObjs[0]);
                 GUIStyle.none.Draw(iconRect, EditorGUIUtility.TempContent(icon), iconRect.Contains(Event.current.mousePosition), false, false, false);
@@ -6615,7 +6630,7 @@ namespace UnityEditor
             switch (evt.type)
             {
                 case EventType.MouseDown:
-                    if (EditorGUIUtility.comparisonViewMode == EditorGUIUtility.ComparisonViewMode.None && settingsRect.Contains(evt.mousePosition))
+                    if (hasOptionsMenu && EditorGUIUtility.comparisonViewMode == EditorGUIUtility.ComparisonViewMode.None && settingsRect.Contains(evt.mousePosition))
                     {
                         if (isDataComponentEditor)
                             DisplayDataComponentContextMenu(settingsRect, editor);
@@ -6628,7 +6643,7 @@ namespace UnityEditor
                     string title = editor?.GetInspectorTitle(targetObjs.Length > 1)
                         ?? ObjectNames.GetInspectorTitle(targetObjs[0], targetObjs.Length > 1);
                     textStyle.Draw(textRect, EditorGUIUtility.TempContent(title), hovered, pressed, foldout, hasFocus);
-                    if (EditorGUIUtility.comparisonViewMode == EditorGUIUtility.ComparisonViewMode.None)
+                    if (hasOptionsMenu && EditorGUIUtility.comparisonViewMode == EditorGUIUtility.ComparisonViewMode.None)
                     {
                         EditorStyles.optionsButtonStyle.Draw(settingsRect, GUIContent.none, id, foldout, settingsRect.Contains(Event.current.mousePosition));
                     }
@@ -6992,6 +7007,9 @@ namespace UnityEditor
         {
             Rect origPosition = position;
             position = style.margin.Remove(position);
+            bool hasHoverStyle = style.hover != null;
+            bool isHovered = hasHoverStyle && position.Contains(Event.current.mousePosition);
+
             if (EditorGUIUtility.hierarchyMode)
             {
                 int offset = (EditorStyles.foldout.padding.left - EditorStyles.label.padding.left);
@@ -7054,7 +7072,7 @@ namespace UnityEditor
                     // in the Inspector has different values. Don't show it when expanded, since the difference will be visible further down.
                     if (showMixedValue && !foldout)
                     {
-                        style.Draw(drawRect, content, id, false, false);
+                        style.Draw(drawRect, content, id, false, isHovered);
 
                         BeginHandleMixedValueContentColor();
                         Rect fieldPosition = origPosition;
@@ -7064,7 +7082,7 @@ namespace UnityEditor
                     }
                     else
                     {
-                        style.Draw(drawRect, content, id, foldout, false);
+                        style.Draw(drawRect, content, id, foldout, isHovered);
                     }
                     break;
                 case EventType.KeyDown:
@@ -7119,11 +7137,12 @@ namespace UnityEditor
         // Make a progress bar.
         public static void ProgressBar(Rect position, float value, string text)
         {
-            ProgressBar(position, value, GUIContent.Temp(text), false, EditorStyles.progressBarBack, EditorStyles.progressBarBar, EditorStyles.progressBarText);
+            ProgressBar(position, value, GUIContent.Temp(text), false, EditorStyles.progressBarBack,
+                EditorStyles.progressBarBorder, EditorStyles.progressBarBar, EditorStyles.progressBarText);
         }
 
         internal static bool ProgressBar(Rect position, float value, GUIContent content, bool textOnBar,
-            GUIStyle progressBarBackgroundStyle, GUIStyle progressBarStyle, GUIStyle progressBarTextStyle)
+            GUIStyle progressBarBackgroundStyle, GUIStyle progressBarBorderStyle, GUIStyle progressBarStyle, GUIStyle progressBarTextStyle)
         {
             bool mouseHover = position.Contains(Event.current.mousePosition);
             int id = GUIUtility.GetControlID(s_ProgressBarHash, FocusType.Keyboard, position);
@@ -7142,21 +7161,24 @@ namespace UnityEditor
                     if (value > 0.0f)
                     {
                         value = Mathf.Clamp01(value);
-                        var barRect = new Rect(position);
+                        var barRect = progressBarStyle.margin.Remove(new Rect(position));
                         barRect.width *= value;
                         if (barRect.width >= 1f)
+                        {
                             progressBarStyle.Draw(barRect, GUIContent.none, mouseHover, false, false, false);
+                        }
                     }
                     else if (value == -1.0f)
                     {
-                        float barWidth = position.width * 0.2f;
+                        var contentRect = progressBarStyle.margin.Remove(new Rect(position));
+                        float barWidth = contentRect.width * 0.2f;
                         float halfBarWidth = barWidth / 2.0f;
                         float cos = Mathf.Cos((float)EditorApplication.timeSinceStartup * 2f);
-                        float rb = position.x + halfBarWidth;
-                        float re = position.xMax - halfBarWidth;
+                        float rb = contentRect.x + halfBarWidth;
+                        float re = contentRect.xMax - halfBarWidth;
                         float scale = (re - rb) / 2f;
                         float cursor = scale * cos;
-                        var barRect = new Rect(position.x + cursor + scale, position.y, barWidth, position.height);
+                        var barRect = new Rect(contentRect.x + cursor + scale, contentRect.y, barWidth, contentRect.height);
                         progressBarStyle.Draw(barRect, GUIContent.none, mouseHover, false, false, false);
                     }
                     var contentTextToDisplay = content;
@@ -7175,6 +7197,7 @@ namespace UnityEditor
                         while (progressBarTextStyle.CalcSize(contentTextToDisplay).x > position.width);
                     }
                     progressBarTextStyle.Draw(position, contentTextToDisplay, mouseHover, false, false, false);
+                    progressBarBorderStyle.Draw(position, mouseHover, false, false, false);
                     break;
             }
 
@@ -8568,6 +8591,11 @@ namespace UnityEditor
         // A button that returns true on mouse down - like a popup button
         internal static bool DropdownButton(int id, Rect position, GUIContent content, GUIStyle style)
         {
+            return DropdownButton(id, position, content, false, style);
+        }
+
+        internal static bool DropdownButton(int id, Rect position, GUIContent content, bool on, GUIStyle style)
+        {
             Event evt = Event.current;
             switch (evt.type)
             {
@@ -8576,11 +8604,11 @@ namespace UnityEditor
                     if (showMixedValue)
                     {
                         BeginHandleMixedValueContentColor();
-                        style.Draw(position, s_MixedValueContent, id, false, hovered);
+                        style.Draw(position, s_MixedValueContent, id, on, hovered);
                         EndHandleMixedValueContentColor();
                     }
                     else
-                        style.Draw(position, content, id, false, hovered);
+                        style.Draw(position, content, id, on, hovered);
                     break;
                 case EventType.MouseDown:
                     if (GUIUtility.HitTest(position, evt) && evt.button == 0)

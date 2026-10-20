@@ -243,7 +243,11 @@ class UnityEditorMSBuildPropsTargetsGeneration
     private static string s_cachedUnitySdkVersion;
 
     // Reads the version from Unity.Sdk.<version>.nupkg so global.json tracks CI's bumped value
-    // (in sdk/UnitySdksCommon.props) instead of a hardcoded literal.
+    // (in sdk/UnitySdksCommon.props) instead of a hardcoded literal. When multiple versions are
+    // present (e.g. a dev iterating on the SDK accumulates older .nupkgs alongside the current
+    // one), picks the highest version by numeric comparison. Prior to that fix this returned
+    // whichever file the OS enumerated first, which was typically the oldest alphabetically
+    // (1.0.70 winning over 1.0.81) and silently kept dev machines pinned to a stale SDK.
     private static string GetUnitySdkVersion(string sdkNugetsPath)
     {
         if (s_cachedUnitySdkVersion != null)
@@ -255,6 +259,8 @@ class UnityEditorMSBuildPropsTargetsGeneration
         if (!Directory.Exists(sdkNugetsPath))
             throw new DirectoryNotFoundException($"Unity SDK nuget feed not found at {sdkNugetsPath}");
 
+        string bestCandidate = null;
+        Version bestVersion = null;
         foreach (var file in Directory.EnumerateFiles(sdkNugetsPath, $"{prefix}*{suffix}"))
         {
             var name = Path.GetFileName(file);
@@ -265,11 +271,21 @@ class UnityEditorMSBuildPropsTargetsGeneration
             if (candidate.Length == 0 || !char.IsDigit(candidate[0]))
                 continue;
 
-            s_cachedUnitySdkVersion = candidate;
-            return candidate;
+            if (!Version.TryParse(candidate, out var parsed))
+                continue;
+
+            if (bestVersion == null || parsed > bestVersion)
+            {
+                bestVersion = parsed;
+                bestCandidate = candidate;
+            }
         }
 
-        throw new FileNotFoundException($"No {prefix}*{suffix} package found in {sdkNugetsPath}");
+        if (bestCandidate == null)
+            throw new FileNotFoundException($"No {prefix}*{suffix} package found in {sdkNugetsPath}");
+
+        s_cachedUnitySdkVersion = bestCandidate;
+        return bestCandidate;
     }
 
     [NoAutoStaticsCleanup] // cached .NET SDK version string (fixed per install), safe to persist across reload

@@ -173,7 +173,7 @@ namespace UnityEditor.ShortcutManagement
                 // We need to delay updating the shortcuts to prevent the UI from refreshing before the click event is handled
                 // (e.g., when opening the shortcut manager by clicking on a shortcut).
                 // This update should also occur after the Clutch contexts are set.
-                EditorApplication.shortcutHelperBarEventHandler += UpdateShortcuts;
+                EditorApplication.shortcutHelperBarEventHandler += OnShortcutHelperBarEvent;
                 Selection.selectionChanged += UpdateShortcuts;
                 SceneView.lastActiveSceneViewChanged += SceneViewChanged;
                 EditorToolManager.activeToolChanged += ActiveToolChanged;
@@ -226,7 +226,7 @@ namespace UnityEditor.ShortcutManagement
             if (s_Clients.Count == 0)
             {
                 GUIView.beforeEventProcessed -= HandleKey;
-                EditorApplication.shortcutHelperBarEventHandler -= UpdateShortcuts;
+                EditorApplication.shortcutHelperBarEventHandler -= OnShortcutHelperBarEvent;
                 Selection.selectionChanged -= UpdateShortcuts;
                 SceneView.lastActiveSceneViewChanged -= SceneViewChanged;
                 EditorToolManager.activeToolChanged -= ActiveToolChanged;
@@ -316,6 +316,8 @@ namespace UnityEditor.ShortcutManagement
             if (!isCorrectInputEventType)
                 UpdateShortcuts();
         }
+
+        static void OnShortcutHelperBarEvent(Event evt) => UpdateShortcuts();
 
         static void UpdateShortcuts()
         {

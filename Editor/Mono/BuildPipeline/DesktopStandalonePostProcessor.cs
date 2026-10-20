@@ -17,6 +17,7 @@ internal abstract class DesktopStandalonePostProcessor : BeeBuildPostprocessor
     {
         return new Compression[]
         {
+            Compression.None,
             Compression.Lz4,
             Compression.Lz4HC
         };

@@ -6,6 +6,7 @@ using System;
 using Unity.Profiling;
 using Unity.Profiling.Editor;
 using Unity.Scripting.LifecycleManagement;
+using UnityEditorInternal;
 
 namespace UnityEditor.Networking
 {
@@ -44,6 +45,11 @@ namespace UnityEditor.Networking
             k_Category.Name,
         };
 
+        // Not on the details view: that is disposed whenever another module is selected.
+        readonly WebRequestProfilerCaptureLog m_CaptureLog = new WebRequestProfilerCaptureLog();
+
+        internal event Action captureLogChanged;
+
         public WebRequestProfilerModule()
             : base(k_ChartCounters, ProfilerModuleChartType.Line, k_AutoEnabledCategoryNames)
         {
@@ -51,7 +57,43 @@ namespace UnityEditor.Networking
 
         public override ProfilerModuleViewController CreateDetailsViewController()
         {
-            return new WebRequestDetailsViewController(ProfilerWindow);
+            return new WebRequestDetailsViewController(ProfilerWindow, this);
+        }
+
+        internal WebRequestProfilerCaptureLog captureLog => m_CaptureLog;
+
+        internal override void OnEnable()
+        {
+            base.OnEnable();
+            ProfilerDriver.NewProfilerFrameRecorded += OnNewProfilerFrameRecorded;
+        }
+
+        internal override void OnDisable()
+        {
+            ProfilerDriver.NewProfilerFrameRecorded -= OnNewProfilerFrameRecorded;
+            base.OnDisable();
+        }
+
+        // Called on both a clear and a load. A load restarts frame numbers and request ids, so read it fresh.
+        internal override void Clear()
+        {
+            base.Clear();
+            m_CaptureLog.Clear();
+            m_CaptureLog.Sync(ProfilerDriver.firstFrameIndex, ProfilerDriver.lastFrameIndex);
+            captureLogChanged?.Invoke();
+        }
+
+        internal void SyncCaptureLog()
+        {
+            if (m_CaptureLog.Sync(ProfilerDriver.firstFrameIndex, ProfilerDriver.lastFrameIndex))
+                captureLogChanged?.Invoke();
+        }
+
+        // An inactive module has its category switched off, so its frames carry nothing to read.
+        void OnNewProfilerFrameRecorded(int _, int __)
+        {
+            if (active)
+                SyncCaptureLog();
         }
     }
 }

@@ -419,6 +419,7 @@ namespace Unity.ProjectAuditor.Editor.UI.Framework
         {
         }
 
+        // Whether the page this view heads has nothing that applies to the project.
         public virtual bool IsPageOutOfScope()
         {
             return false;
@@ -819,28 +820,19 @@ namespace Unity.ProjectAuditor.Editor.UI.Framework
 
         protected virtual void Export(Func<ReportItem, bool> predicate = null)
         {
-            var path = EditorUtility.SaveFilePanel("Save to CSV file", UserPreferences.LoadSavePath, string.Format("project-auditor-{0}.csv", m_Desc.Category).ToLower(),
-                "csv");
+            var path = EditorUtility.SaveFilePanel("Save to CSV file", UserPreferences.LoadSavePath, string.Format("project-auditor-{0}.csv", m_Desc.Category).ToLower(), "csv");
             if (path.Length != 0)
             {
                 using (var exporter = new CsvExporter(m_ViewManager.Report))
                 {
                     var issues = GetIssuesToExport();
-                    exporter.Export(path, m_Layout.Category, issues, (issue) =>
-                    {
-                        if (!Match(issue))
-                            return false;
-                        if (predicate != null && !predicate(issue))
-                            return false;
-
-                        return true;
-                    });
+                    exporter.Export(path, m_Layout.Category, issues, issue =>
+                        MatchesPage(issue) && (predicate == null || predicate(issue)));
                 }
 
                 EditorUtility.RevealInFinder(path);
 
-                if (m_ViewManager.OnViewExportCompleted != null)
-                    m_ViewManager.OnViewExportCompleted();
+                m_ViewManager.OnViewExportCompleted?.Invoke();
 
                 UserPreferences.LoadSavePath = Path.GetDirectoryName(path);
             }

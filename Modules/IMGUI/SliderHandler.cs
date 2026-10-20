@@ -3,6 +3,8 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using System.Collections.Generic;
+using Unity.Scripting.LifecycleManagement;
 using UnityEngine.Scripting;
 
 namespace UnityEngine
@@ -19,7 +21,7 @@ namespace UnityEngine
     }
 
     // TODO: Make the thumb positioning / sizing be right
-    internal struct SliderHandler
+    internal partial struct SliderHandler
     {
         readonly Rect position;
         readonly float currentValue;
@@ -31,6 +33,24 @@ namespace UnityEngine
         readonly GUIStyle thumbExtent;
         readonly bool horiz;
         readonly int id;
+
+        [AutoStaticsCleanupOnCodeReload]
+        private static Dictionary<string, GUIStyle> s_SliderTrackStyleCache = new();
+
+        static GUIStyle GetTrackStyle(GUIStyle style)
+        {
+            if (style == null)
+                return null;
+
+            var skin = GUISkin.current;
+            var cacheKey = skin.name + "|" + style.name;
+            if (!s_SliderTrackStyleCache.TryGetValue(cacheKey, out var trackStyle))
+            {
+                trackStyle = skin.FindStyle(style.name + "Track");
+                s_SliderTrackStyleCache[cacheKey] = trackStyle;
+            }
+            return trackStyle;
+        }
 
         public SliderHandler(Rect position, float currentValue, float size, float start, float end, GUIStyle slider, GUIStyle thumb, bool horiz, int id, GUIStyle thumbExtent = null)
         {
@@ -147,19 +167,25 @@ namespace UnityEngine
         private float OnRepaint()
         {
             bool hover = GUIUtility.HitTest(position, CurrentEvent());
+            var thumbRect = ThumbRect();
 
             slider.Draw(position, GUIContent.none, id, false, hover);
+
+            var track = GetTrackStyle(slider);
+            if (track != null)
+                track.Draw(position, GUIContent.none, id, false, hover);
+
             if (currentValue >= Mathf.Min(start, end) && currentValue <= Mathf.Max(start, end))
             {
+                bool thumbHovered = GUIUtility.HitTest(thumbRect, CurrentEvent());
+
                 if (thumbExtent != null)
-                    thumbExtent.Draw(ThumbExtRect(), GUIContent.none, id, false, hover);
-                thumb.Draw(ThumbRect(), GUIContent.none, id, false, hover);
+                    thumbExtent.Draw(ThumbExtRect(), GUIContent.none, id, false, thumbHovered);
+                thumb.Draw(ThumbRect(), GUIContent.none, id, false, thumbHovered);
             }
 
             if (GUIUtility.hotControl != id || !hover || IsEmptySlider())
                 return currentValue;
-
-            var thumbRect = ThumbRect();
 
             // If the slider is horizontal then use its entire height to hit test on the thumb
             if (this.horiz)

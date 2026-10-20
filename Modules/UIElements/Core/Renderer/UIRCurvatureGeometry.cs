@@ -295,15 +295,20 @@ namespace UnityEngine.UIElements.UIR
             BuildConformChain(ve, chain, out Matrix4x4 toElement, out int segX, out int segY);
             Matrix4x4 corr = PickCorrection(ve);
 
-            int nx = Mathf.Clamp(segX, 1, k_MaxPickSegments);
-            int ny = Mathf.Clamp(segY, 1, k_MaxPickSegments);
+            PickSegmentCounts(segX, segY, out int nx, out int ny);
 
             float bestT = float.PositiveInfinity;
             bool hit = false;
 
+            Span<Vector3> row0 = stackalloc Vector3[nx + 1];
+            Span<Vector3> row1 = stackalloc Vector3[nx + 1];
+            BendRow(row0, 0f, w, nx, chain, toElement, zScale, corr);
+
             for (int j = 0; j < ny; j++)
             {
                 float v0 = h * j / ny, v1 = h * (j + 1) / ny;
+                BendRow(row1, v1, w, nx, chain, toElement, zScale, corr);
+
                 for (int i = 0; i < nx; i++)
                 {
                     float u0 = w * i / nx, u1 = w * (i + 1) / nx;
@@ -313,10 +318,10 @@ namespace UnityEngine.UIElements.UIR
                     var f11 = new Vector3(u1, v1, 0f);
                     var f01 = new Vector3(u0, v1, 0f);
 
-                    Vector3 b00 = corr.MultiplyPoint3x4(Bend(f00, chain, toElement, zScale));
-                    Vector3 b10 = corr.MultiplyPoint3x4(Bend(f10, chain, toElement, zScale));
-                    Vector3 b11 = corr.MultiplyPoint3x4(Bend(f11, chain, toElement, zScale));
-                    Vector3 b01 = corr.MultiplyPoint3x4(Bend(f01, chain, toElement, zScale));
+                    Vector3 b00 = row0[i];
+                    Vector3 b10 = row0[i + 1];
+                    Vector3 b11 = row1[i + 1];
+                    Vector3 b01 = row1[i];
 
                     if (RayTriangle(localRay, b00, b10, b11, out float t, out float wa, out float wb, out float wc)
                         && t < bestT)
@@ -333,6 +338,10 @@ namespace UnityEngine.UIElements.UIR
                         hit = true;
                     }
                 }
+
+                var swap = row0;
+                row0 = row1;
+                row1 = swap;
             }
 
             if (!hit)
@@ -340,6 +349,19 @@ namespace UnityEngine.UIElements.UIR
 
             surfaceLocalPoint = localRay.origin + localRay.direction * bestT;
             return true;
+        }
+
+        static void BendRow(Span<Vector3> row, float v, float w, int nx, ReadOnlySpan<RootBend> chain, Matrix4x4 toElement,
+            float zScale, Matrix4x4 corr)
+        {
+            for (int i = 0; i <= nx; i++)
+                row[i] = corr.MultiplyPoint3x4(Bend(new Vector3(w * i / nx, v, 0f), chain, toElement, zScale));
+        }
+
+        static void PickSegmentCounts(int segX, int segY, out int nx, out int ny)
+        {
+            nx = Mathf.Clamp(segX, 1, k_MaxPickSegments);
+            ny = Mathf.Clamp(segY, 1, k_MaxPickSegments);
         }
 
         // Möller–Trumbore ray/triangle intersection, double-sided (no back-face cull). On a hit, returns the ray
@@ -395,8 +417,7 @@ namespace UnityEngine.UIElements.UIR
 
             // A coarse sample suffices: the arc is monotone per axis, so its Z extremes live at the rect edges
             // and its X/Y stay within the rect. Reuse the pick cap so a steep bend can't blow this up.
-            int nx = Mathf.Clamp(segX, 1, k_MaxPickSegments);
-            int ny = Mathf.Clamp(segY, 1, k_MaxPickSegments);
+            PickSegmentCounts(segX, segY, out int nx, out int ny);
 
             Vector3 min = new Vector3(float.PositiveInfinity, float.PositiveInfinity, float.PositiveInfinity);
             Vector3 max = new Vector3(float.NegativeInfinity, float.NegativeInfinity, float.NegativeInfinity);
@@ -423,6 +444,17 @@ namespace UnityEngine.UIElements.UIR
             public static bool TryIntersect(VisualElement ve, Ray localRay, float zScale,
                 out Vector3 flatLocalPoint, out Vector3 surfaceLocalPoint)
                 => UIRCurvatureGeometry.TryIntersect(ve, localRay, zScale, out flatLocalPoint, out surfaceLocalPoint);
+
+            public static bool RayTriangle(Ray ray, Vector3 a, Vector3 b, Vector3 c,
+                out float t, out float w0, out float w1, out float w2)
+                => UIRCurvatureGeometry.RayTriangle(ray, a, b, c, out t, out w0, out w1, out w2);
+
+            public static void PickSegments(VisualElement ve, out int nx, out int ny)
+            {
+                Span<RootBend> chain = stackalloc RootBend[CountChain(ve)];
+                BuildConformChain(ve, chain, out _, out int segX, out int segY);
+                PickSegmentCounts(segX, segY, out nx, out ny);
+            }
 
             // Forward bend of a flat element-local point onto the curved surface, for round-trip tests: a ray
             // built through BendPoint(p) must make TryIntersect recover p (with the same zScale).

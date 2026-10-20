@@ -73,6 +73,8 @@ namespace Unity.ProjectAuditor.Editor.UI
             }
         }
 
+        // The migration pages report against a project that can still migrate, so HDRP and custom SRPs
+        // leave nothing that applies - including under a report analyzed before the switch.
         public override bool IsPageOutOfScope()
         {
             return MigrationToURPUtilities.IsProjectUsingOtherSRP();

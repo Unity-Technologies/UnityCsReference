@@ -12,10 +12,10 @@ namespace Unity.Scripting.LowLevel;
 [StaticAccessor("DebugLowLevel", StaticAccessorType.DoubleColon)]
 internal static partial class Debug
 {
-    // Burst cannot compile the managed LogError(string) above, because the ScriptingCore bridge it
+    // Burst cannot compile the managed Log/LogWarning/LogError(string) above, because the ScriptingCore bridge it
     // forwards to dispatches through a static property returning an interface. Instead, Burst rewrites
-    // calls to LogError(string) into this overload and hands over the UTF-8 buffer it already built for
-    // the interpolated string, so callers keep using LogError($"...") unchanged in both paths.
+    // calls to each of them into its __Unmanaged overload and hands over the UTF-8 buffer it already built for
+    // the interpolated string, so callers keep using LogError($"...") and the others unchanged in both paths.
     //
     // The __Unmanaged suffix and the (byte*, int) pair per string parameter are what Burst matches on;
     // renaming either breaks the rewrite silently in bursted code. Same pattern as
@@ -28,11 +28,23 @@ internal static partial class Debug
     [NativeMethod(IsThreadSafe = true)]
     internal static extern unsafe void LogError__Unmanaged(byte* message, int messageLen);
 
-    // Unlike the warning and error paths, this one stays on the native binding rather than the
-    // ScriptingCore Debug bridge: invokePostProcessCallbacks has to reach ScriptingLogException, and the
-    // bridge's log_exception callback carries only the exception pointer. Callers in bursted jobs need
-    // the post-process callbacks to run so the exception reaches LogAssert.
+    [RequiredMember]
     [VisibleToOtherModules]
     [NativeMethod(IsThreadSafe = true)]
-    internal extern static void LogException(Exception e, bool invokePostProcessCallbacks = false);
+    internal static extern unsafe void Log__Unmanaged(byte* message, int messageLen);
+
+    [RequiredMember]
+    [VisibleToOtherModules]
+    [NativeMethod(IsThreadSafe = true)]
+    internal static extern unsafe void LogWarning__Unmanaged(byte* message, int messageLen);
+
+    [NativeMethod("LogWarning", IsThreadSafe = true)]
+    static extern void LogWarningMessage(string message);
+
+    // Stays on the native binding rather than the ScriptingCore Debug bridge, whose log_exception callback
+    // skips the post-process callbacks; like UnityEngine.Debug.LogException, this runs them so the exception
+    // reaches LogAssert.
+    [VisibleToOtherModules]
+    [NativeMethod(IsThreadSafe = true)]
+    internal extern static void LogException(Exception e);
 }

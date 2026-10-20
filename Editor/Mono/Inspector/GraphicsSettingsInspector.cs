@@ -104,6 +104,7 @@ namespace UnityEditor
         internal void Dispose()
         {
             m_ShaderBuildSettingsUI.HandleUnsavedChangesDialog();
+            m_ShaderBuildSettingsUI.ClearUIUndo();
 
             UserSettings.ToConfig(m_CurrentRoot);
 

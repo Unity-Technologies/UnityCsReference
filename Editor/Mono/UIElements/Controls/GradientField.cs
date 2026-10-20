@@ -125,8 +125,8 @@ namespace UnityEditor.UIElements
         [Obsolete("borderUssClass is not used anymore", true)]
         public static readonly string borderUssClassName = ussClassName + "__border";
 
-        VisualElement m_GradientTextureImage;
         readonly Background m_DefaultBackground = new Background();
+        VisualElement m_GradientPreview;
 
         internal bool isShowingGradientPicker => GradientPicker.visible && rawValue != null && ReferenceEquals(GradientPicker.gradient, rawValue);
 
@@ -145,14 +145,12 @@ namespace UnityEditor.UIElements
             AddToClassList(ussClassName);
             labelElement.AddToClassList(labelUssClassName);
             visualInput.AddToClassList(inputUssClassName);
+            visualInput.AddToClassList(backgroundUssClassName);
+            visualInput.AddToClassList(contentUssClassName);
 
-            var background = new VisualElement { pickingMode = PickingMode.Ignore };
-            background.AddToClassList(backgroundUssClassName);
-            visualInput.Add(background);
-
-            m_GradientTextureImage = new VisualElement { pickingMode = PickingMode.Ignore };
-            m_GradientTextureImage.AddToClassList(contentUssClassName);
-            background.Add(m_GradientTextureImage);
+            m_GradientPreview = new VisualElement();
+            visualInput.Add(m_GradientPreview);
+            m_GradientPreview.StretchToParentSize();
 
             rawValue = new Gradient();
         }
@@ -211,10 +209,10 @@ namespace UnityEditor.UIElements
             if (isShowingGradientPicker)
                 GradientPicker.CloseWindow(false);
 
-            if (style.backgroundImage.value.texture != null)
+            if (m_GradientPreview.style.backgroundImage.value.texture != null)
             {
-                Object.DestroyImmediate(style.backgroundImage.value.texture);
-                style.backgroundImage = new Background();
+                Object.DestroyImmediate(m_GradientPreview.style.backgroundImage.value.texture);
+                m_GradientPreview.style.backgroundImage = new Background();
             }
         }
 
@@ -286,12 +284,13 @@ namespace UnityEditor.UIElements
             if (m_ValueNull || showMixedValue)
             {
                 visualInput.style.backgroundImage = m_DefaultBackground;
+                m_GradientPreview.style.backgroundImage = m_DefaultBackground;
             }
             else
             {
-                Texture2D gradientTexture = UnityEditorInternal.GradientPreviewCache.GenerateGradientPreview(value, resolvedStyle.backgroundImage.texture, colorSpace == ColorSpace.Linear);
-                m_GradientTextureImage.style.backgroundImage = gradientTexture;
-
+                visualInput.style.backgroundImage = StyleKeyword.Null;
+                Texture2D gradientTexture = UnityEditorInternal.GradientPreviewCache.GenerateGradientPreview(value, m_GradientPreview.resolvedStyle.backgroundImage.texture, colorSpace == ColorSpace.Linear);
+                m_GradientPreview.style.backgroundImage = gradientTexture;
                 IncrementVersion(VersionChangeType.Repaint); // since the Texture2D object can be reused, force dirty because the backgroundImage change will only trigger the Dirty if the Texture2D objects are different.
             }
         }

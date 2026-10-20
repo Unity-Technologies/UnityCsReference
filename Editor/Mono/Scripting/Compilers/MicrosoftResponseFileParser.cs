@@ -140,7 +140,7 @@ namespace UnityEditor.Scripting.Compilers
             var responseArguments = new List<string>();
             var defines = new List<string>();
             var references = new List<string>();
-            bool unsafeDefined = false;
+            bool? unsafeDefined = null;
             var errors = new List<string>();
 
             foreach (var option in compilerOptions)
@@ -175,11 +175,17 @@ namespace UnityEditor.Scripting.Compilers
                 }
             }
 
+            // Unsafe alone cannot express an explicit disable, which consumers need to override assemblies that allow unsafe code.
+            if (unsafeDefined == false)
+            {
+                responseArguments.Add("/unsafe-");
+            }
+
             var responseFileData = new ResponseFileData
             {
                 Defines = defines.ToArray(),
                 FullPathReferences = references.ToArray(),
-                Unsafe = unsafeDefined,
+                Unsafe = unsafeDefined == true,
                 Errors = errors.ToArray(),
                 OtherArguments = responseArguments.ToArray(),
             };
@@ -241,8 +247,7 @@ namespace UnityEditor.Scripting.Compilers
                 return false;
             }
 
-            return compilerOption.Arg.Equals("/unsafe", StringComparison.Ordinal)
-                || compilerOption.Arg.Equals("/unsafe+", StringComparison.Ordinal);
+            return compilerOption.Arg.Equals("/unsafe-", StringComparison.Ordinal);
         }
 
         private static bool TryGetReference(ScriptCompilerBase.CompilerOption option, string fileName,

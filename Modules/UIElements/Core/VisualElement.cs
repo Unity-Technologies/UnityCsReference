@@ -701,12 +701,14 @@ namespace UnityEngine.UIElements
                 if (isLayoutManual)
                     return manualLayout;
 
-                if (!layoutNode.IsUndefined)
+                unsafe
                 {
-                    return layoutNode.GetLayoutRect();
-                }
+                    var computed = m_ComputedLayoutPtr;
+                    if (computed == null)
+                        return new(float.NaN, float.NaN, float.NaN, float.NaN);
 
-                return new(float.NaN, float.NaN, float.NaN, float.NaN);
+                    return computed->GetRect();
+                }
             }
 
             internal set
@@ -984,10 +986,7 @@ namespace UnityEngine.UIElements
                 }
 
                 if (isLocalBounds3DDirty)
-                {
                     UpdateBounds3D();
-                    isLocalBounds3DDirty = false;
-                }
 
                 return WorldSpaceDataStore.GetWorldSpaceData(this).localBounds3D;
             }
@@ -1004,10 +1003,7 @@ namespace UnityEngine.UIElements
                 }
 
                 if (isLocalBounds3DDirty)
-                {
                     UpdateBounds3D();
-                    isLocalBounds3DDirty = false;
-                }
 
                 return WorldSpaceDataStore.GetWorldSpaceData(this).localBoundsPicking3D;
             }
@@ -1024,10 +1020,7 @@ namespace UnityEngine.UIElements
                 }
 
                 if (isLocalBoundsWithoutNested3DDirty)
-                {
                     UpdateBounds3D();
-                    isLocalBoundsWithoutNested3DDirty = false;
-                }
 
                 return WorldSpaceDataStore.GetWorldSpaceData(this).localBoundsWithoutNested3D;
             }
@@ -1038,6 +1031,7 @@ namespace UnityEngine.UIElements
             if (!areAncestorsAndSelfDisplayed)
             {
                 WorldSpaceDataStore.ClearLocalBounds3DData(this);
+                ClearBounds3DDirtyFlags();
                 return;
             }
 
@@ -1100,6 +1094,13 @@ namespace UnityEngine.UIElements
             data.localBoundsPicking3D = pickingBounds;
             data.localBoundsWithoutNested3D = localBoundsWithoutNested;
             WorldSpaceDataStore.SetWorldSpaceData(this, data);
+            ClearBounds3DDirtyFlags();
+        }
+
+        // Safe to clear both: UpdateBounds3D rewrites all three bounds from fresh child reads, whichever flag triggered it.
+        void ClearBounds3DDirtyFlags()
+        {
+            transformFlags &= ~(VisualElementTransformFlags.LocalBounds3DDirty | VisualElementTransformFlags.LocalBoundsWithoutNested3DDirty);
         }
 
         /// <summary>
@@ -1149,7 +1150,14 @@ namespace UnityEngine.UIElements
                 if (isLayoutManual)
                     return manualLayout.size;
 
-                return layoutNode.GetLayoutSize();
+                unsafe
+                {
+                    var computed = m_ComputedLayoutPtr;
+                    if (computed == null)
+                        return new(float.NaN, float.NaN);
+
+                    return computed->GetSize();
+                }
             }
         }
 
@@ -1162,10 +1170,16 @@ namespace UnityEngine.UIElements
                 if (isLayoutManual)
                     return manualLayout.min;
 
-                return layoutNode.GetLayoutPosition();
+                unsafe
+                {
+                    var computed = m_ComputedLayoutPtr;
+                    if (computed == null)
+                        return new(float.NaN, float.NaN);
+
+                    return computed->GetPosition();
+                }
             }
         }
-
 
         internal bool isWorldSpaceRootPanelComponent
         {
@@ -2000,6 +2014,8 @@ namespace UnityEngine.UIElements
         }
 
         private readonly unsafe VisualElementTransformData* m_TransformDataPTr;
+        // Read instead of the node, so rect is one 8-byte load from the element; null once released.
+        unsafe LayoutComputedData* m_ComputedLayoutPtr;
         private unsafe ref VisualElementTransformData transformData => ref *m_TransformDataPTr;
 
         // Fast-tracked access to the selector data component; mirrors the m_TransformDataPTr pattern so
@@ -2100,6 +2116,7 @@ namespace UnityEngine.UIElements
                 // Fast-tracked access to the transform matrices and flags, as their access is quite frequent.
                 // Removing this direct access makes Picking ~25% slower. See UIElementsEvents.OptimizePick tests.
                 m_TransformDataPTr = layoutNode.VisualElementTransformDataPtr;
+                m_ComputedLayoutPtr = layoutNode.ComputedDataPtr;
                 m_SelectorDataPtr = layoutNode.VisualElementSelectorDataPtr;
             }
 
@@ -2200,9 +2217,15 @@ namespace UnityEngine.UIElements
 
         internal void ReleaseResourcesNoChecks()
         {
-            flags |= VisualElementFlags.Released;
+            if (HasSelfEventInterests(ReleasingResourcesEvent.EventCategory))
+            {
+                using var evt = ReleasingResourcesEvent.GetPooled();
+                EventDispatchUtilities.SendEventDirectlyToTarget(evt, elementPanel, this);
+            }
 
+            flags |= VisualElementFlags.Released;
             LayoutManager.RecycleNode(ref m_LayoutNode);
+            unsafe { m_ComputedLayoutPtr = null; }
 
             ReleaseComponentStorage();
 
@@ -2308,7 +2331,7 @@ namespace UnityEngine.UIElements
                 {
                     elementPanel?.liveReloadSystem.StopTracking(elements);
 
-                    panel?.dispatcher?.m_ClickDetector.Cleanup(elements);
+                    panel?.dispatcher?.m_ClickDetector.Cleanup(this);
                     foreach (var e in elements)
                     {
                         e.WillChangePanel(p);
@@ -2336,7 +2359,7 @@ namespace UnityEngine.UIElements
                         e.elementPanel = p;
                         e.elementPanel?.MemberElementsByHandle.Add(e.layoutNode.Handle, e);
 
-                        e.flags |= flagToAdd;
+                        e.m_Flags |= flagToAdd;
                         e.m_CachedNextParentWithEventInterests = null;
                         e.layoutNode.Config = layoutConfig;
                         if (checkCurved && e.hasCurvature)
@@ -2386,18 +2409,16 @@ namespace UnityEngine.UIElements
                 }
 
                 // Only send this event if the element isn't waiting for an attach event already
-                if ((m_Flags & VisualElementFlags.NeedsAttachToPanelEvent) == 0)
+                if ((m_Flags & VisualElementFlags.NeedsAttachToPanelEvent) == 0 &&
+                    HasSelfEventInterests(DetachFromPanelEvent.EventCategory))
                 {
-                    if (HasSelfEventInterests(DetachFromPanelEvent.EventCategory))
+                    using (var e = DetachFromPanelEvent.GetPooled(elementPanel, destinationPanel))
                     {
-                        using (var e = DetachFromPanelEvent.GetPooled(elementPanel, destinationPanel))
-                        {
-                            EventDispatchUtilities.SendEventDirectlyToTarget(e, elementPanel, this);
-                        }
+                        EventDispatchUtilities.SendEventDirectlyToTarget(e, elementPanel, this);
                     }
                 }
 
-                // Disable the started animations which have possibly started in the DetachFromPanelEvent callback.
+                // Binding deactivation, pointer capture release and the detach event can all start animations.
                 UnregisterRunningAnimations();
             }
         }

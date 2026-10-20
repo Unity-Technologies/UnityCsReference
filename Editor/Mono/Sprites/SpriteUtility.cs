@@ -270,6 +270,7 @@ namespace UnityEditor
             // Use same name compare as when we sort in the backend: See AssetDatabase.cpp: SortChildren
             System.Array.Sort(frames, (a, b) => EditorUtility.NaturalCompare(a.name, b.name));
 
+            bool hadAnimationPlayer = MecanimUtilities.GetClosestAnimationPlayerComponentInParents(gameObject.transform) != null;
             Animator animator = MecanimUtilities.EnsureActiveAnimationPlayer(gameObject)
                 ? MecanimUtilities.GetClosestAnimatorInParents(gameObject.transform)
                 : null;
@@ -282,8 +283,11 @@ namespace UnityEditor
 
                 if (string.IsNullOrEmpty(newClipPath))
                 {
-                    Undo.ClearUndo(animator);
-                    Object.DestroyImmediate(animator);
+                    if (!hadAnimationPlayer)
+                    {
+                        Undo.ClearUndo(animator);
+                        Object.DestroyImmediate(animator);
+                    }
                     return false;
                 }
                 else

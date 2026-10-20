@@ -506,7 +506,7 @@ namespace UnityEditor.UIElements
 
             var inputSize = visualInput.layoutSize;
             int previewWidth = (int)inputSize.x;
-            int previewHeight = (int)inputSize.y;
+            int previewHeight = (int)inputSize.y * 2; // Double the texture height for better quality
 
             // The default range is (0,0,-1,-1), see AnimationCurvePreviewCache.cpp
             // This will mimic the IMGUI curve since the range will be calculated by the CurvePreview if the range is at the default value...
@@ -551,8 +551,9 @@ namespace UnityEditor.UIElements
                 if (m_Texture != null)
                 {
                     var rectPlayModeTintColor = mgc.visualElement?.playModeTintColor ?? Color.white;
+                    // Scale down the texture resolution to match the control size
                     var rectParams = UnityEngine.UIElements.UIR.MeshGenerator.RectangleParams.MakeTextured(
-                        new Rect(0, 0, m_Texture.width, m_Texture.height), new Rect(0, 0, 1, 1), m_Texture, ScaleMode.StretchToFill, rectPlayModeTintColor);
+                        new Rect(0, 0, m_Texture.width, m_Texture.height * 0.5f), new Rect(0, 0, 1, 1), m_Texture, ScaleMode.StretchToFill, rectPlayModeTintColor);
                     mgc.meshGenerator.DrawRectangle(rectParams);
                 }
             }

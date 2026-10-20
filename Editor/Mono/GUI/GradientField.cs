@@ -150,7 +150,7 @@ namespace UnityEditor
                         GradientEditor.DrawGradientSwatch(r2, property, Color.white, space);
                     else
                         GradientEditor.DrawGradientSwatch(r2, value, Color.white, space);
-                    EditorStyles.colorPickerBox.Draw(position, GUIContent.none, id);
+                    EditorStyles.colorPickerBox.Draw(position, GUIContent.none, id, false, position.Contains(evt.mousePosition));
                     break;
                 }
                 case EventType.ExecuteCommand:

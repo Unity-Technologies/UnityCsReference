@@ -15,6 +15,7 @@ namespace UnityEngine.UIElements.Experimental
         private readonly Delegate m_Callback;
         private readonly EventBase m_Event;
         private readonly long m_Start;
+        private readonly bool m_Timed;
         private readonly bool m_IsPropagationStopped;
         private readonly bool m_IsImmediatePropagationStopped;
         public EventDebuggerLogCall(Delegate callback, EventBase evt)
@@ -22,14 +23,15 @@ namespace UnityEngine.UIElements.Experimental
             m_Callback = callback;
             m_Event = evt;
 
-            m_Start = (long)(Time.realtimeSinceStartup * 1000.0f);
+            m_Timed = evt.log;
+            m_Start = m_Timed ? (long)(Time.realtimeSinceStartup * 1000.0f) : 0;
             m_IsPropagationStopped = evt.isPropagationStopped;
             m_IsImmediatePropagationStopped = evt.isImmediatePropagationStopped;
         }
 
         public void Dispose()
         {
-            if (m_Event != null && m_Event.log)
+            if (m_Timed && m_Event.log)
             {
                 IPanel panel = m_Event.elementTarget?.panel;
                 IEventHandler capture = panel?.GetCapturingElement(PointerId.mousePointerId);
@@ -72,15 +74,17 @@ namespace UnityEngine.UIElements.Experimental
     {
         private readonly EventBase m_Event;
         private readonly long m_Start;
+        private readonly bool m_Timed;
         public EventDebuggerLogIMGUICall(EventBase evt)
         {
             m_Event = evt;
-            m_Start = (long)(Time.realtimeSinceStartup * 1000.0f);
+            m_Timed = evt.log;
+            m_Start = m_Timed ? (long)(Time.realtimeSinceStartup * 1000.0f) : 0;
         }
 
         public void Dispose()
         {
-            if (m_Event != null && m_Event.log)
+            if (m_Timed && m_Event.log)
             {
                 IPanel panel = m_Event.elementTarget?.panel;
                 IEventHandler capture = panel?.GetCapturingElement(PointerId.mousePointerId);
@@ -94,15 +98,17 @@ namespace UnityEngine.UIElements.Experimental
     {
         private readonly EventBase m_Event;
         private readonly long m_Start;
+        private readonly bool m_Timed;
         public EventDebuggerLogExecuteDefaultAction(EventBase evt)
         {
             m_Event = evt;
-            m_Start = (long)(Time.realtimeSinceStartup * 1000.0f);
+            m_Timed = evt.log;
+            m_Start = m_Timed ? (long)(Time.realtimeSinceStartup * 1000.0f) : 0;
         }
 
         public void Dispose()
         {
-            if (m_Event != null && m_Event.log)
+            if (m_Timed && m_Event.log)
             {
                 IPanel panel = m_Event.elementTarget?.panel;
                 IEventHandler capture = panel?.GetCapturingElement(PointerId.mousePointerId);

@@ -287,7 +287,7 @@ namespace UnityEngine
         ///</example>
         public AnimationClip clip
         {
-            get {return m_ClipEntityId != EntityId.None ? InstanceIDToAnimationClipPPtr(m_ClipEntityId) : null; }
+            get {return m_ClipEntityId != EntityId.None ? EntityIdToAnimationClipPPtr(m_ClipEntityId) : null; }
         }
 
         // The weight of the animation clip
@@ -297,8 +297,8 @@ namespace UnityEngine
             get { return m_Weight; }
         }
 
-        [FreeFunction("AnimationBindings::InstanceIDToAnimationClipPPtr")]
-        extern private static AnimationClip InstanceIDToAnimationClipPPtr(EntityId entityId);
+        [FreeFunction("AnimationBindings::EntityIdToAnimationClipPPtr")]
+        extern private static AnimationClip EntityIdToAnimationClipPPtr(EntityId entityId);
 
         private EntityId m_ClipEntityId;
         private float m_Weight;

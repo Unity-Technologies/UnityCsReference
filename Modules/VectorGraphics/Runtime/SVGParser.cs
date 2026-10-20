@@ -397,8 +397,8 @@ namespace Unity.VectorGraphics
 
             float cx = AttribLengthVal(node, "cx", 0.0f, DimType.Width);
             float cy = AttribLengthVal(node, "cy", 0.0f, DimType.Height);
-            float rx = AttribLengthVal(node, "rx", 0.0f, DimType.Length);
-            float ry = AttribLengthVal(node, "ry", 0.0f, DimType.Length);
+            float rx = AttribLengthVal(node, "rx", 0.0f, DimType.Width);
+            float ry = AttribLengthVal(node, "ry", 0.0f, DimType.Height);
 
             var ellipse = new Shape();
             VectorUtils.MakeEllipseShape(ellipse, new Vector2(cx, cy), rx, ry);
@@ -1067,10 +1067,10 @@ namespace Unity.VectorGraphics
 
             float x = AttribLengthVal(node, "x", 0.0f, DimType.Width);
             float y = AttribLengthVal(node, "y", 0.0f, DimType.Height);
-            float rx = AttribLengthVal(node, "rx", -1.0f, DimType.Length);
-            float ry = AttribLengthVal(node, "ry", -1.0f, DimType.Length);
-            float width = AttribLengthVal(node, "width", 0.0f, DimType.Length);
-            float height = AttribLengthVal(node, "height", 0.0f, DimType.Length);
+            float rx = AttribLengthVal(node, "rx", -1.0f, DimType.Width);
+            float ry = AttribLengthVal(node, "ry", -1.0f, DimType.Height);
+            float width = AttribLengthVal(node, "width", 0.0f, DimType.Width);
+            float height = AttribLengthVal(node, "height", 0.0f, DimType.Height);
 
             if ((rx < 0.0f) && (ry >= 0.0f))
                 rx = ry;

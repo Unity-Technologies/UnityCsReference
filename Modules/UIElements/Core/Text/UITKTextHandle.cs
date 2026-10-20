@@ -7,6 +7,7 @@ using System;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using Unity.Jobs.LowLevel.Unsafe;
+using UnityEngine.TextCore.LowLevel;
 using UnityEngine.TextCore.Text;
 using UnityEngine.UIElements.Internal;
 using UnityEngine.UIElements.UIR;
@@ -335,7 +336,13 @@ namespace UnityEngine.UIElements
             float blurRadius = Mathf.Abs(style.textShadow.blurRadius);
 
             if (outlineThickness <= 0.0f && offsetX <= 0.0f && offsetY <= 0.0f && blurRadius <= 0.0f)
-                return k_MinPadding;
+            {
+                var renderMode = fontAsset.atlasRenderMode;
+                if (renderMode == GlyphRenderMode.SMOOTH || renderMode == GlyphRenderMode.COLOR)
+                    return k_MinPadding;
+
+                return Mathf.Min(k_MinPadding, fontAsset.atlasPadding + 1);
+            }
 
             horizontalPadding = Mathf.Max(offsetX + blurRadius, outlineThickness);
             verticalPadding = Mathf.Max(offsetY + blurRadius, outlineThickness);

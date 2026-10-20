@@ -141,7 +141,7 @@ namespace Unity.UIToolkit.Editor
                 {
                     var field = m_FloatFields[floatFieldIndex++];
                     field.label = label;
-                    field.SetValueWithoutNotify(pVal.floatValue);
+                    field.SetValueWithoutNotify(pDef.ClampFloat(pVal.floatValue));
                     field.userData = i;
                     field.style.display = DisplayStyle.Flex;
                 }

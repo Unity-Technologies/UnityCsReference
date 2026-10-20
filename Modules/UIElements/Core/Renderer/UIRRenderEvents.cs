@@ -78,10 +78,7 @@ namespace UnityEngine.UIElements.UIR
             else
                 UIRUtility.ComputeMatrixRelativeToRenderTree(renderData, out transform);
 
-            if (renderData.owner.elementPanel is { isFlat: true })
-                UIRUtility.NeutralizeZ(ref transform);
-            else
-                transform.m22 = 1.0f;
+            transform.m22 = 1.0f;
         }
 
         static Vector4 GetClipRectIDClipInfo(RenderData renderData)
@@ -159,7 +156,6 @@ namespace UnityEngine.UIElements.UIR
 
                 renderData.parent = parentRenderData;
                 renderData.renderTree = renderData.parent.renderTree;
-                renderData.depthInRenderTree = renderData.parent.depthInRenderTree + 1;
 
                 if (parentRenderData.isGroupTransform)
                     renderData.groupTransformAncestor = parentRenderData;
@@ -254,7 +250,6 @@ namespace UnityEngine.UIElements.UIR
 
             renderData.zIndex = zIndex;
 
-            // Registered once linked: the parent's tracker orders its dirty children by their place among their siblings.
             if (renderData.isSubTreeQuad)
             {
                 renderTreeManager.UIEOnClippingChanged(ve, true);
@@ -398,8 +393,6 @@ namespace UnityEngine.UIElements.UIR
 
                 if (renderData.nextSibling == null)
                     parentRenderData.lastChild = renderData.prevSibling;
-
-                ChildrenDirtyTracker.OnChildUnlinked(parentRenderData, renderData);
             }
 
             if (renderData.prevSibling != null)
@@ -495,7 +488,7 @@ namespace UnityEngine.UIElements.UIR
             else
                 parent.lastChild = node;
 
-            ChildrenDirtyTracker.OnChildLinked(parent, node, insertAfter, nextSibling);
+            parent.renderTree.OnRenderDataInserted(node);
         }
 
         static void DisconnectRenderTreeFromParent(RenderTree parentTree, RenderTree nestedTree)
@@ -520,6 +513,7 @@ namespace UnityEngine.UIElements.UIR
                 --renderTreeManager.zIndexElementCount;
 
             RenderTree renderTree = renderData.renderTree;
+            renderTree.OnRenderDataRemoved(renderData);
             CommandManipulator.ResetCommands(renderTreeManager, renderData);
 
             // Ahead of every teardown it depends on: the state lives in the extra data freed below, and a root
@@ -543,7 +537,6 @@ namespace UnityEngine.UIElements.UIR
             renderData.nextSibling = null;
             renderData.firstChild = null;
             renderData.lastChild = null;
-            renderData.childCount = 0;
             renderData.renderTree = null;
 
             renderTreeManager.ResetGraphicEntries(renderData);
@@ -1366,6 +1359,9 @@ namespace UnityEngine.UIElements.UIR
             // Unsupported on world-space (camera-drawn) panels; and the parent owns the backdrop, so a nested-render-tree root must not (nothing behind it to capture).
             bool isEnabled = ve.hasBackdropFilter && !renderTreeManager.drawInCameras && !renderData.isNestedRenderTreeRoot;
 
+            if (isEnabled)
+                FilterHelper.WarnIfFilterParametersClamped(ve, ve.computedStyle.backdropFilter, "backdrop-filter");
+
             if (wasEnabled == isEnabled)
                 return;
 
@@ -1402,6 +1398,8 @@ namespace UnityEngine.UIElements.UIR
             // root to avoid invoking user callbacks twice per frame for the same element.
             if (renderData.isNestedRenderTreeRoot)
                 return;
+
+            FilterHelper.WarnIfFilterParametersClamped(renderData.owner, renderData.owner.computedStyle.filter, "filter");
 
             bool wasEnabled = renderData.isRegisteredForFilterCallbacks;
             bool isEnabled = renderData.owner.computedStyle.filter.Length > 0;

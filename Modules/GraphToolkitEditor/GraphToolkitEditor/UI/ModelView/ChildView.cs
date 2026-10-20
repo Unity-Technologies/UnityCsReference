@@ -39,6 +39,9 @@ namespace Unity.GraphToolkit.Editor
             set => this.ReplaceManipulator(ref m_ContextualMenuManipulator, value);
         }
 
+        // For tests
+        internal ContextualMenuManipulator InternalContextualMenuManipulator => m_ContextualMenuManipulator;
+
         /// <summary>
         /// Initializes a new instance of the <see cref="ChildView"/> class.
         /// </summary>

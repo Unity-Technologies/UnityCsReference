@@ -26,6 +26,7 @@ namespace Unity.ProjectAuditor.Editor.AssemblyUtils
         public bool IsUnityInternalAssembly;
         public bool IsUnityOwned;      // includes internal precompiled assemblies, but also unity packages
         public string PackageResolvedPath;
+        public string PackageSymlinkResolvedPath; // lazily cached by AssemblyInfoProvider.ResolveAssetPath
 
         public string GetTypeString()
         {

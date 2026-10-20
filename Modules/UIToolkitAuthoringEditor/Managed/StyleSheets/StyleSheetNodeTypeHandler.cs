@@ -971,9 +971,9 @@ internal class StyleSheetNodeTypeHandler : HierarchyNodeTypeHandler
         DragPreviewWindow.UpdatePosition(UnityEditor.Editor.GetCurrentMousePosition());
     }
 
-    void OnDragEnd()
+    void OnDragEnd(Event evt)
     {
-        if (Event.current?.type != EventType.MouseDrag)
+        if (evt.type != EventType.MouseDrag)
             return;
 
         // Don't close if drag just started (rogue MouseDrag event on fresh load)

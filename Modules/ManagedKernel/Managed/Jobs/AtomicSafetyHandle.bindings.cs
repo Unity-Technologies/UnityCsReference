@@ -141,6 +141,7 @@ namespace Unity.Collections.LowLevel.Unsafe
         public static extern bool IsDefaultValue(in AtomicSafetyHandle handle);
 
         [NativeMethod(IsThreadSafe = true)]
+        [VisibleToOtherModules("UnityEngine.EntitiesModule")]
         internal static extern void SetExclusiveWeak(ref AtomicSafetyHandle handle, bool enabled);
 
         [NativeMethod(IsThreadSafe = true)]
@@ -531,7 +532,7 @@ namespace Unity.Collections.LowLevel.Unsafe
             }
         }
 
-        [VisibleToOtherModules("UnityEngine.CoreModule", "UnityEngine.AIModule")]
+        [VisibleToOtherModules("UnityEngine.CoreModule", "UnityEngine.AIModule", "UnityEngine.EntitiesModule")]
         internal static void DisposeHandle(ref AtomicSafetyHandle safety)
         {
             CheckDeallocateAndThrow(safety);

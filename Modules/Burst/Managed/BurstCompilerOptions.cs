@@ -90,6 +90,8 @@ namespace Unity.Burst
         internal const string OptionDisableVectors = "disable-vectors";
         [VisibleToOtherModules("UnityEditor.BurstModule")]
         internal const string OptionDebug = "debug=";
+        [VisibleToOtherModules("UnityEditor.BurstModule")]
+        internal const string OptionDebugLogSourceLocations = "debug-log-source-locations=";
         internal const string OptionDebugMode = "debugMode";
         [VisibleToOtherModules("UnityEditor.BurstModule")]
         internal const string OptionStaticLinkage = "generate-static-linkage-methods";

@@ -14,6 +14,7 @@ using UnityEditor.UIElements.StyleSheets;
 using UnityEngine;
 using UnityEngine.Bindings;
 using UnityEngine.UIElements;
+using UnityEngine.Pool;
 using UnityEngine.UIElements.StyleSheets;
 using Object = UnityEngine.Object;
 
@@ -842,6 +843,45 @@ namespace UnityEditor.StyleSheets
                 dst.scaledBackgrounds = new[] { ConvertToPackageAsset(src.scaledBackgrounds[0]) };
         }
 
+        internal static StyleSheet[] GetFlattenedRecursiveStyleSheets(IEnumerable<StyleSheet> sheets)
+        {
+            using var _ = ListPool<StyleSheet>.Get(out var flattenedStyleSheets);
+
+            foreach (var sheet in sheets)
+            {
+                if (sheet == null)
+                    continue;
+
+                if (sheet.flattenedRecursiveImports != null)
+                {
+                    for (var i = 0; i < sheet.flattenedRecursiveImports.Count; i++)
+                    {
+                        flattenedStyleSheets.Add(sheet.flattenedRecursiveImports[i]);
+                    }
+                }
+                flattenedStyleSheets.Add(sheet);
+            }
+
+            return flattenedStyleSheets.ToArray();
+        }
+
+        internal static StyleSheet[] GetFlattenedRecursiveStyleSheets(IEnumerable<string> sheetPaths)
+        {
+            using var _ = ListPool<StyleSheet>.Get(out var sheets);
+
+            foreach (var sheetPath in sheetPaths)
+            {
+                var sheet = ConverterUtils.LoadResourceRequired<StyleSheet>(sheetPath);
+
+                if (sheet == null)
+                    continue;
+
+                sheets.Add(sheet);
+            }
+
+            return GetFlattenedRecursiveStyleSheets(sheets);
+        }
+
         internal static StyleSheet ResolveSheets(params string[] sheetPaths)
         {
             var resolver = new StyleSheetResolver();
@@ -869,11 +909,20 @@ namespace UnityEditor.StyleSheets
                 throw new Exception("Cannot find sheets to generate skin");
             }
 
+            using var _ = ListPool<StyleSheet>.Get(out var sheets);
             var resolver = new StyleSheetResolver(options ?? new StyleSheetResolver.ResolvingOptions() { ThrowIfCannotResolve = true });
-            foreach (var sheet in sheetPaths)
+
+            foreach (var sheetPath in sheetPaths)
             {
-                resolver.AddStyleSheets(sheet);
+                var sheet = ConverterUtils.LoadResourceRequired<StyleSheet>(sheetPath);
+
+                if (sheet == null)
+                    continue;
+
+                sheets.Add(sheet);
             }
+
+            resolver.AddStyleSheets(GetFlattenedRecursiveStyleSheets(sheets));
 
             return resolver;
         }

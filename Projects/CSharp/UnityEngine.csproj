@@ -10,7 +10,7 @@
     <GenerateDocumentationFile>false</GenerateDocumentationFile>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <EnableDefaultItems>false</EnableDefaultItems>
-    <DefineConstants>$(DefineConstants);ALLOW_IMPLICIT_INTERNAL_VISIBILITY;ALLOW_IMPLICIT_INTERNAL_VISIBILITY;COMBINED_ASSEMBLIES;DEBUGGER_LISTENS_FIXED_PORT;EDITOR_ONLY_NAVMESH_BUILDER_DEPRECATED;ENABLE_ACCELERATOR_CLIENT_DEBUGGING;ENABLE_ALTERNATIVE_LISTEN_PORT;ENABLE_AMD;ENABLE_AUDIO;ENABLE_AUDIO_MANAGER_BASED_SCHEDULING;ENABLE_AUDIO_SCRIPTABLE_PIPELINE;ENABLE_BURST;ENABLE_CACHING;ENABLE_CLOTH;ENABLE_CLOUD_LICENSE;ENABLE_CLOUD_SERVICES;ENABLE_CLOUD_SERVICES_ADS;ENABLE_CLOUD_SERVICES_ANALYTICS;ENABLE_CLOUD_SERVICES_BUILD;ENABLE_CLOUD_SERVICES_CRASH_REPORTING;ENABLE_CLOUD_SERVICES_ENGINE_DIAGNOSTICS;ENABLE_CLOUD_SERVICES_PURCHASING;ENABLE_CLOUD_SERVICES_USE_WEBREQUEST;ENABLE_CLUSTERINPUT;ENABLE_CLUSTER_SYNC;ENABLE_CORECLR;ENABLE_CORECLR_FIXME;ENABLE_CRUNCH_TEXTURE_COMPRESSION;ENABLE_DIRECTOR_AUDIO;ENABLE_DIRECTOR_TEXTURE;ENABLE_EDITOR_GAME_SERVICES;ENABLE_EDITOR_HUB_LICENSE;ENABLE_ETC_COMPRESSION;ENABLE_EVENT_QUEUE;ENABLE_GAMECENTER_API;ENABLE_GENERATE_NATIVE_PLUGINS_FOR_ASSEMBLIES_API;ENABLE_LOCALIZATION_RUNTIME;ENABLE_LZMA;ENABLE_MANAGED_ANIMATION_JOBS;ENABLE_MANAGED_AUDIO_JOBS;ENABLE_MANAGED_CAPTURE;ENABLE_MANAGED_JOBS;ENABLE_MANAGED_TRANSFORM_JOBS;ENABLE_MANAGED_UNITYTLS;ENABLE_MARSHALLING_TESTS;ENABLE_METALFX;ENABLE_MICROPHONE;ENABLE_MULTIPLE_DISPLAYS;ENABLE_MULTI_WINDOWING;ENABLE_NAVIGATION_OFFMESHLINK_TO_NAVMESHLINK;ENABLE_NETWORK;ENABLE_NINTENDO_CORE_SCRIPT_BINDINGS;ENABLE_NVIDIA;ENABLE_PHYSICS;ENABLE_RUNTIME_GI;ENABLE_SCRIPTING_GC_SAFE;ENABLE_SCRIPTING_GC_WBARRIERS;ENABLE_SMARTSTRINGS;ENABLE_TEXTURE_STREAMING;ENABLE_UNITYEVENTS;ENABLE_UNITYWEBREQUEST;ENABLE_UNITY_CLOUD_IDENTIFIERS;ENABLE_UNITY_COLLECTIONS_CHECKS;ENABLE_UNITY_COLLECTIONS_CHECKS;ENABLE_UNITY_CONSENT;ENABLE_UNITY_GAME_SERVICES_ANALYTICS_SUPPORT;ENABLE_VERSION_CONTROL_INTEGRATION;ENABLE_VIDEO;ENABLE_VIRTUALTEXTURING;ENABLE_VR;ENABLE_WEBCAM;ENABLE_WEBSOCKET_CLIENT;ENABLE_WINDOW_ABSTRACTION;ENABLE_WWW;INCLUDE_DYNAMIC_GI;INCLUDE_UNIFIED_RAYTRACING_COMPUTE_BACKEND;INCLUDE_UNIFIED_RAYTRACING_HARDWARE_BACKEND;NET_BCL_ATTRS_VISIBLE_TO_MODULES;PLATFORM_SUPPORTS_GAMEPAD_AUDIO;PLAYERCONNECTION_LISTENS_FIXED_PORT;RENDER_SOFTWARE_CURSOR;TEXTCORE_1_0_OR_NEWER;TRACE;UNITY_ANDROID_API;UNITY_ASSEMBLIES_API;UNITY_ASSERTIONS;UNITY_ASSERTIONS;UNITY_CURL_BUILT_IN;UNITY_EDITOR;UNITY_EDITOR_API;UNITY_IPHONE_API;UNITY_METRO_API;UNITY_PS4_API;UNITY_PS5_API;UNITY_STANDALONE_LINUX_API;UNITY_STANDALONE_OSX_API;UNITY_STANDALONE_WIN_API;UNITY_TINYPROFILING_INTERNAL;UNITY_TVOS_API;UNITY_WEBGL_API;USE_PROPERTIES_MODULE</DefineConstants>
+    <DefineConstants>$(DefineConstants);ALLOW_IMPLICIT_INTERNAL_VISIBILITY;ALLOW_IMPLICIT_INTERNAL_VISIBILITY;COMBINED_ASSEMBLIES;DEBUGGER_LISTENS_FIXED_PORT;EDITOR_ONLY_NAVMESH_BUILDER_DEPRECATED;ENABLE_ACCELERATOR_CLIENT_DEBUGGING;ENABLE_ALTERNATIVE_LISTEN_PORT;ENABLE_AMD;ENABLE_AUDIO;ENABLE_AUDIO_MANAGER_BASED_SCHEDULING;ENABLE_AUDIO_SCRIPTABLE_PIPELINE;ENABLE_BURST;ENABLE_CACHING;ENABLE_CLOTH;ENABLE_CLOUD_LICENSE;ENABLE_CLOUD_SERVICES;ENABLE_CLOUD_SERVICES_ADS;ENABLE_CLOUD_SERVICES_ANALYTICS;ENABLE_CLOUD_SERVICES_BUILD;ENABLE_CLOUD_SERVICES_CRASH_REPORTING;ENABLE_CLOUD_SERVICES_ENGINE_DIAGNOSTICS;ENABLE_CLOUD_SERVICES_PURCHASING;ENABLE_CLOUD_SERVICES_USE_WEBREQUEST;ENABLE_CLUSTERINPUT;ENABLE_CLUSTER_SYNC;ENABLE_CORECLR;ENABLE_CORECLR_FIXME;ENABLE_CRUNCH_TEXTURE_COMPRESSION;ENABLE_DIRECTOR_AUDIO;ENABLE_DIRECTOR_TEXTURE;ENABLE_EDITOR_GAME_SERVICES;ENABLE_EDITOR_HUB_LICENSE;ENABLE_ETC_COMPRESSION;ENABLE_EVENT_QUEUE;ENABLE_GAMECENTER_API;ENABLE_GENERATE_NATIVE_PLUGINS_FOR_ASSEMBLIES_API;ENABLE_LOCALIZATION_RUNTIME;ENABLE_LZMA;ENABLE_MANAGED_ANIMATION_JOBS;ENABLE_MANAGED_AUDIO_JOBS;ENABLE_MANAGED_CAPTURE;ENABLE_MANAGED_JOBS;ENABLE_MANAGED_TRANSFORM_JOBS;ENABLE_MANAGED_UNITYTLS;ENABLE_MARSHALLING_TESTS;ENABLE_METALFX;ENABLE_MICROPHONE;ENABLE_MULTIPLE_DISPLAYS;ENABLE_MULTI_WINDOWING;ENABLE_NAVIGATION_OFFMESHLINK_TO_NAVMESHLINK;ENABLE_NETWORK;ENABLE_NINTENDO_CORE_SCRIPT_BINDINGS;ENABLE_NVIDIA;ENABLE_PHYSICS;ENABLE_PROFILER;ENABLE_RUNTIME_GI;ENABLE_SCRIPTING_GC_SAFE;ENABLE_SCRIPTING_GC_WBARRIERS;ENABLE_SMARTSTRINGS;ENABLE_TEXTURE_STREAMING;ENABLE_UNITYEVENTS;ENABLE_UNITYWEBREQUEST;ENABLE_UNITY_CLOUD_IDENTIFIERS;ENABLE_UNITY_COLLECTIONS_CHECKS;ENABLE_UNITY_COLLECTIONS_CHECKS;ENABLE_UNITY_CONSENT;ENABLE_UNITY_GAME_SERVICES_ANALYTICS_SUPPORT;ENABLE_VERSION_CONTROL_INTEGRATION;ENABLE_VIDEO;ENABLE_VIRTUALTEXTURING;ENABLE_VR;ENABLE_WEBCAM;ENABLE_WEBSOCKET_CLIENT;ENABLE_WINDOW_ABSTRACTION;ENABLE_WWW;INCLUDE_DYNAMIC_GI;INCLUDE_UNIFIED_RAYTRACING_COMPUTE_BACKEND;INCLUDE_UNIFIED_RAYTRACING_HARDWARE_BACKEND;NET_BCL_ATTRS_VISIBLE_TO_MODULES;PLATFORM_SUPPORTS_GAMEPAD_AUDIO;PLAYERCONNECTION_LISTENS_FIXED_PORT;RENDER_SOFTWARE_CURSOR;TEXTCORE_1_0_OR_NEWER;TRACE;UNITY_ANDROID_API;UNITY_ASSEMBLIES_API;UNITY_ASSERTIONS;UNITY_ASSERTIONS;UNITY_CURL_BUILT_IN;UNITY_DOTS_DEBUG;UNITY_EDITOR;UNITY_EDITOR_API;UNITY_IPHONE_API;UNITY_METRO_API;UNITY_PS4_API;UNITY_PS5_API;UNITY_STANDALONE_LINUX_API;UNITY_STANDALONE_OSX_API;UNITY_STANDALONE_WIN_API;UNITY_TINYPROFILING_INTERNAL;UNITY_TVOS_API;UNITY_WEBGL_API;USE_PROPERTIES_MODULE</DefineConstants>
     <LangVersion>14.0</LangVersion>
     <NoWarn>1701;626;8632</NoWarn>
     <Nullable>disable</Nullable>
@@ -1285,8 +1285,602 @@
     <Compile Include="..\..\Modules\Director\ScriptBindings\PlayableSystems.bindings.cs">
       <Link>Modules\Director\ScriptBindings\PlayableSystems.bindings.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\EntitiesProperties\Managed\AssemblyInfo.cs">
+      <Link>Modules\EntitiesProperties\Managed\AssemblyInfo.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\EntitiesProperties\Managed\Properties\UniqueReferenceExcludeAdapter.cs">
+      <Link>Modules\EntitiesProperties\Managed\Properties\UniqueReferenceExcludeAdapter.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\EntitiesProperties\Managed\Serialization\Binary\Adapters\Internal\BinaryAdapter+Primitives.cs">
+      <Link>Modules\EntitiesProperties\Managed\Serialization\Binary\Adapters\Internal\BinaryAdapter+Primitives.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\EntitiesProperties\Managed\Serialization\Binary\Adapters\Internal\BinaryAdapter+System.cs">
+      <Link>Modules\EntitiesProperties\Managed\Serialization\Binary\Adapters\Internal\BinaryAdapter+System.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\EntitiesProperties\Managed\Serialization\Binary\Adapters\Internal\BinaryAdapter+UnityEngine.cs">
+      <Link>Modules\EntitiesProperties\Managed\Serialization\Binary\Adapters\Internal\BinaryAdapter+UnityEngine.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\EntitiesProperties\Managed\Serialization\Binary\BinarySerialization+FromBinary.cs">
+      <Link>Modules\EntitiesProperties\Managed\Serialization\Binary\BinarySerialization+FromBinary.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\EntitiesProperties\Managed\Serialization\Binary\BinarySerialization+ToBinary.cs">
+      <Link>Modules\EntitiesProperties\Managed\Serialization\Binary\BinarySerialization+ToBinary.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\EntitiesProperties\Managed\Serialization\Binary\BinarySerialization.cs">
+      <Link>Modules\EntitiesProperties\Managed\Serialization\Binary\BinarySerialization.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\EntitiesProperties\Managed\Serialization\Binary\Properties\Internal\BinaryPropertyReader.cs">
+      <Link>Modules\EntitiesProperties\Managed\Serialization\Binary\Properties\Internal\BinaryPropertyReader.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\EntitiesProperties\Managed\Serialization\Binary\Properties\Internal\BinaryPropertyVisitor.cs">
+      <Link>Modules\EntitiesProperties\Managed\Serialization\Binary\Properties\Internal\BinaryPropertyVisitor.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\EntitiesProperties\Managed\Serialization\Binary\Properties\Internal\BinaryPropertyWriter.cs">
+      <Link>Modules\EntitiesProperties\Managed\Serialization\Binary\Properties\Internal\BinaryPropertyWriter.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\EntitiesProperties\Managed\Serialization\Binary\Utility\DefaultTypeConstruction.cs">
+      <Link>Modules\EntitiesProperties\Managed\Serialization\Binary\Utility\DefaultTypeConstruction.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\EntitiesProperties\Managed\Serialization\Binary\Utility\PropertyChecks.cs">
+      <Link>Modules\EntitiesProperties\Managed\Serialization\Binary\Utility\PropertyChecks.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\EntitiesProperties\Managed\Serialization\Binary\Utility\PropertyWrapper.cs">
+      <Link>Modules\EntitiesProperties\Managed\Serialization\Binary\Utility\PropertyWrapper.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\EntitiesProperties\Managed\Serialization\Binary\Utility\SerializedReferenceVisitor.cs">
+      <Link>Modules\EntitiesProperties\Managed\Serialization\Binary\Utility\SerializedReferenceVisitor.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\Entities\AssemblyInfo.cs">
       <Link>Modules\Entities\AssemblyInfo.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Entities\Managed\AlwaysSynchronizeSystemAttribute.cs">
+      <Link>Modules\Entities\Managed\AlwaysSynchronizeSystemAttribute.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Entities\Managed\AlwaysUpdateSystemAttribute.cs">
+      <Link>Modules\Entities\Managed\AlwaysUpdateSystemAttribute.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Entities\Managed\AssemblyInfo.cs">
+      <Link>Modules\Entities\Managed\AssemblyInfo.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Entities\Managed\BakingVersionAttribute.cs">
+      <Link>Modules\Entities\Managed\BakingVersionAttribute.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Entities\Managed\BlobBuilder.cs">
+      <Link>Modules\Entities\Managed\BlobBuilder.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Entities\Managed\Blobs.cs">
+      <Link>Modules\Entities\Managed\Blobs.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Entities\Managed\BlobsDebug.cs">
+      <Link>Modules\Entities\Managed\BlobsDebug.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Entities\Managed\BlockAllocator.cs">
+      <Link>Modules\Entities\Managed\BlockAllocator.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Entities\Managed\BufferAllocator.cs">
+      <Link>Modules\Entities\Managed\BufferAllocator.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Entities\Managed\BufferAllocatorHeap.cs">
+      <Link>Modules\Entities\Managed\BufferAllocatorHeap.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Entities\Managed\ChangeVersionUtility.cs">
+      <Link>Modules\Entities\Managed\ChangeVersionUtility.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Entities\Managed\ChunkDataUtility.cs">
+      <Link>Modules\Entities\Managed\ChunkDataUtility.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Entities\Managed\ChunkListMap.cs">
+      <Link>Modules\Entities\Managed\ChunkListMap.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Entities\Managed\CompanionComponentStore.cs">
+      <Link>Modules\Entities\Managed\CompanionComponentStore.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Entities\Managed\CompanionGameObjectBindings.bindings.cs">
+      <Link>Modules\Entities\Managed\CompanionGameObjectBindings.bindings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Entities\Managed\ComponentDependencyManager.cs">
+      <Link>Modules\Entities\Managed\ComponentDependencyManager.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Entities\Managed\ComponentSafetyHandles.cs">
+      <Link>Modules\Entities\Managed\ComponentSafetyHandles.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Entities\Managed\ComponentSystemBase.cs">
+      <Link>Modules\Entities\Managed\ComponentSystemBase.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Entities\Managed\ComponentSystemGroup.cs">
+      <Link>Modules\Entities\Managed\ComponentSystemGroup.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Entities\Managed\ComponentSystemSorter.cs">
+      <Link>Modules\Entities\Managed\ComponentSystemSorter.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Entities\Managed\CopyUtility.cs">
+      <Link>Modules\Entities\Managed\CopyUtility.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Entities\Managed\CoreModuleLightShim.cs">
+      <Link>Modules\Entities\Managed\CoreModuleLightShim.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Entities\Managed\DOTSCompilerGeneratedAttribute.cs">
+      <Link>Modules\Entities\Managed\DOTSCompilerGeneratedAttribute.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Entities\Managed\DOTSCompilerPatchedMethodAttribute.cs">
+      <Link>Modules\Entities\Managed\DOTSCompilerPatchedMethodAttribute.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Entities\Managed\DebugView.cs">
+      <Link>Modules\Entities\Managed\DebugView.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Entities\Managed\DebuggerDataAccess.cs">
+      <Link>Modules\Entities\Managed\DebuggerDataAccess.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Entities\Managed\DefaultWorld.cs">
+      <Link>Modules\Entities\Managed\DefaultWorld.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Entities\Managed\Diff\DynamicBlobAssetBatch.cs">
+      <Link>Modules\Entities\Managed\Diff\DynamicBlobAssetBatch.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Entities\Managed\Diff\EntityChangeSet.cs">
+      <Link>Modules\Entities\Managed\Diff\EntityChangeSet.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Entities\Managed\Diff\EntityDiffer.cs">
+      <Link>Modules\Entities\Managed\Diff\EntityDiffer.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Entities\Managed\Diff\EntityDifferArchetypeChanges.cs">
+      <Link>Modules\Entities\Managed\Diff\EntityDifferArchetypeChanges.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Entities\Managed\Diff\EntityDifferBlobs.cs">
+      <Link>Modules\Entities\Managed\Diff\EntityDifferBlobs.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Entities\Managed\Diff\EntityDifferClearMissingReferences.cs">
+      <Link>Modules\Entities\Managed\Diff\EntityDifferClearMissingReferences.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Entities\Managed\Diff\EntityDifferComponentChanges.cs">
+      <Link>Modules\Entities\Managed\Diff\EntityDifferComponentChanges.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Entities\Managed\Diff\EntityDifferCopyAndReplace.cs">
+      <Link>Modules\Entities\Managed\Diff\EntityDifferCopyAndReplace.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Entities\Managed\Diff\EntityDifferEntityInChunkChanges.cs">
+      <Link>Modules\Entities\Managed\Diff\EntityDifferEntityInChunkChanges.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Entities\Managed\Diff\EntityDifferValidation.cs">
+      <Link>Modules\Entities\Managed\Diff\EntityDifferValidation.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Entities\Managed\Diff\EntityManagerDiffer.cs">
+      <Link>Modules\Entities\Managed\Diff\EntityManagerDiffer.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Entities\Managed\Diff\EntityPatcher.cs">
+      <Link>Modules\Entities\Managed\Diff\EntityPatcher.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Entities\Managed\Diff\EntityPatcherBlobs.cs">
+      <Link>Modules\Entities\Managed\Diff\EntityPatcherBlobs.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Entities\Managed\DisallowRefReturnCrossingThisAttribute.cs">
+      <Link>Modules\Entities\Managed\DisallowRefReturnCrossingThisAttribute.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Entities\Managed\ECBInterop.cs">
+      <Link>Modules\Entities\Managed\ECBInterop.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Entities\Managed\ECBInterop.interop.gen.cs">
+      <Link>Modules\Entities\Managed\ECBInterop.interop.gen.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Entities\Managed\EditorLightShim.cs">
+      <Link>Modules\Entities\Managed\EditorLightShim.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Entities\Managed\EntityBatchInChunk.cs">
+      <Link>Modules\Entities\Managed\EntityBatchInChunk.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Entities\Managed\EntityCommandBuffer.cs">
+      <Link>Modules\Entities\Managed\EntityCommandBuffer.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Entities\Managed\EntityCommandBufferCommands.cs">
+      <Link>Modules\Entities\Managed\EntityCommandBufferCommands.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Entities\Managed\EntityCommandBufferDebug.cs">
+      <Link>Modules\Entities\Managed\EntityCommandBufferDebug.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Entities\Managed\EntityCommandBufferInternals.cs">
+      <Link>Modules\Entities\Managed\EntityCommandBufferInternals.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Entities\Managed\EntityCommandBufferParallelWriter.cs">
+      <Link>Modules\Entities\Managed\EntityCommandBufferParallelWriter.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Entities\Managed\EntityCommandBufferPlayback.cs">
+      <Link>Modules\Entities\Managed\EntityCommandBufferPlayback.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Entities\Managed\EntityCommandBufferSystem.cs">
+      <Link>Modules\Entities\Managed\EntityCommandBufferSystem.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Entities\Managed\EntityComponentStore.cs">
+      <Link>Modules\Entities\Managed\EntityComponentStore.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Entities\Managed\EntityComponentStoreChangeArchetype.cs">
+      <Link>Modules\Entities\Managed\EntityComponentStoreChangeArchetype.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Entities\Managed\EntityComponentStoreChunk.cs">
+      <Link>Modules\Entities\Managed\EntityComponentStoreChunk.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Entities\Managed\EntityComponentStoreCreateArchetype.cs">
+      <Link>Modules\Entities\Managed\EntityComponentStoreCreateArchetype.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Entities\Managed\EntityComponentStoreCreateDestroyEntities.cs">
+      <Link>Modules\Entities\Managed\EntityComponentStoreCreateDestroyEntities.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Entities\Managed\EntityComponentStoreDebug.cs">
+      <Link>Modules\Entities\Managed\EntityComponentStoreDebug.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Entities\Managed\EntityComponentStoreEntities.cs">
+      <Link>Modules\Entities\Managed\EntityComponentStoreEntities.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Entities\Managed\EntityDataAccess.cs">
+      <Link>Modules\Entities\Managed\EntityDataAccess.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Entities\Managed\EntityInChunk.cs">
+      <Link>Modules\Entities\Managed\EntityInChunk.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Entities\Managed\EntityManager.cs">
+      <Link>Modules\Entities\Managed\EntityManager.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Entities\Managed\EntityManagerDebug.cs">
+      <Link>Modules\Entities\Managed\EntityManagerDebug.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Entities\Managed\EntityManagerExclusiveEntityTransaction.cs">
+      <Link>Modules\Entities\Managed\EntityManagerExclusiveEntityTransaction.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Entities\Managed\EntityManagerTransformParenting.cs">
+      <Link>Modules\Entities\Managed\EntityManagerTransformParenting.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Entities\Managed\EntityNameStorage.cs">
+      <Link>Modules\Entities\Managed\EntityNameStorage.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Entities\Managed\EntityNameStoreAccess.cs">
+      <Link>Modules\Entities\Managed\EntityNameStoreAccess.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Entities\Managed\EntityRemapUtility.cs">
+      <Link>Modules\Entities\Managed\EntityRemapUtility.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Entities\Managed\ExclusiveEntityTransaction.cs">
+      <Link>Modules\Entities\Managed\ExclusiveEntityTransaction.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Entities\Managed\ForeachQueryEnumerable.cs">
+      <Link>Modules\Entities\Managed\ForeachQueryEnumerable.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Entities\Managed\GenerateBurstMonoInteropAttribute.cs">
+      <Link>Modules\Entities\Managed\GenerateBurstMonoInteropAttribute.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Entities\Managed\IComponentData.cs">
+      <Link>Modules\Entities\Managed\IComponentData.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Entities\Managed\IJobChunk.cs">
+      <Link>Modules\Entities\Managed\IJobChunk.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Entities\Managed\IJobEntity.cs">
+      <Link>Modules\Entities\Managed\IJobEntity.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Entities\Managed\IRefCounted.cs">
+      <Link>Modules\Entities\Managed\IRefCounted.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Entities\Managed\ISystem.cs">
+      <Link>Modules\Entities\Managed\ISystem.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Entities\Managed\ImHexPatternEntitySceneBinaryWriter.cs">
+      <Link>Modules\Entities\Managed\ImHexPatternEntitySceneBinaryWriter.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Entities\Managed\Internal\InternalCompilerInterface.cs">
+      <Link>Modules\Entities\Managed\Internal\InternalCompilerInterface.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Entities\Managed\Internal\InternalEntityQueryEnumerator.cs">
+      <Link>Modules\Entities\Managed\Internal\InternalEntityQueryEnumerator.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Entities\Managed\Internal\InternalGatherEntitiesResult.cs">
+      <Link>Modules\Entities\Managed\Internal\InternalGatherEntitiesResult.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Entities\Managed\Iterators\ArchetypeChunkArray.cs">
+      <Link>Modules\Entities\Managed\Iterators\ArchetypeChunkArray.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Entities\Managed\Iterators\BufferLookup.cs">
+      <Link>Modules\Entities\Managed\Iterators\BufferLookup.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Entities\Managed\Iterators\ChunkDataGatherJobs.cs">
+      <Link>Modules\Entities\Managed\Iterators\ChunkDataGatherJobs.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Entities\Managed\Iterators\ChunkEntityEnumerator.cs">
+      <Link>Modules\Entities\Managed\Iterators\ChunkEntityEnumerator.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Entities\Managed\Iterators\ChunkIterationUtility.cs">
+      <Link>Modules\Entities\Managed\Iterators\ChunkIterationUtility.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Entities\Managed\Iterators\ComponentLookup.cs">
+      <Link>Modules\Entities\Managed\Iterators\ComponentLookup.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Entities\Managed\Iterators\DynamicBuffer.cs">
+      <Link>Modules\Entities\Managed\Iterators\DynamicBuffer.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Entities\Managed\Iterators\EnabledMask.cs">
+      <Link>Modules\Entities\Managed\Iterators\EnabledMask.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Entities\Managed\Iterators\EnabledRefRO.cs">
+      <Link>Modules\Entities\Managed\Iterators\EnabledRefRO.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Entities\Managed\Iterators\EnabledRefRW.cs">
+      <Link>Modules\Entities\Managed\Iterators\EnabledRefRW.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Entities\Managed\Iterators\EntityQuery.cs">
+      <Link>Modules\Entities\Managed\Iterators\EntityQuery.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Entities\Managed\Iterators\EntityQuery.interop.gen.cs">
+      <Link>Modules\Entities\Managed\Iterators\EntityQuery.interop.gen.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Entities\Managed\Iterators\EntityQueryBuilder.cs">
+      <Link>Modules\Entities\Managed\Iterators\EntityQueryBuilder.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Entities\Managed\Iterators\EntityQueryFilter.cs">
+      <Link>Modules\Entities\Managed\Iterators\EntityQueryFilter.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Entities\Managed\Iterators\EntityQueryManager.cs">
+      <Link>Modules\Entities\Managed\Iterators\EntityQueryManager.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Entities\Managed\Iterators\EntityStorageInfoLookup.cs">
+      <Link>Modules\Entities\Managed\Iterators\EntityStorageInfoLookup.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Entities\Managed\Iterators\RefRO.cs">
+      <Link>Modules\Entities\Managed\Iterators\RefRO.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Entities\Managed\Iterators\RefRW.cs">
+      <Link>Modules\Entities\Managed\Iterators\RefRW.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Entities\Managed\Iterators\TransformLookup.cs">
+      <Link>Modules\Entities\Managed\Iterators\TransformLookup.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Entities\Managed\Iterators\UnsafeChunkCacheIterator.cs">
+      <Link>Modules\Entities\Managed\Iterators\UnsafeChunkCacheIterator.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Entities\Managed\LowLevel\SpinLock.cs">
+      <Link>Modules\Entities\Managed\LowLevel\SpinLock.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Entities\Managed\ProfilerModules\EntitiesProfiler+ArchetypeComponentData.cs">
+      <Link>Modules\Entities\Managed\ProfilerModules\EntitiesProfiler+ArchetypeComponentData.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Entities\Managed\ProfilerModules\EntitiesProfiler+ArchetypeData.cs">
+      <Link>Modules\Entities\Managed\ProfilerModules\EntitiesProfiler+ArchetypeData.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Entities\Managed\ProfilerModules\EntitiesProfiler+ComponentTypeData.cs">
+      <Link>Modules\Entities\Managed\ProfilerModules\EntitiesProfiler+ComponentTypeData.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Entities\Managed\ProfilerModules\EntitiesProfiler+DataTag.cs">
+      <Link>Modules\Entities\Managed\ProfilerModules\EntitiesProfiler+DataTag.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Entities\Managed\ProfilerModules\EntitiesProfiler+FixedComponentTypeDataList.cs">
+      <Link>Modules\Entities\Managed\ProfilerModules\EntitiesProfiler+FixedComponentTypeDataList.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Entities\Managed\ProfilerModules\EntitiesProfiler+StaticData.cs">
+      <Link>Modules\Entities\Managed\ProfilerModules\EntitiesProfiler+StaticData.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Entities\Managed\ProfilerModules\EntitiesProfiler+SystemData.cs">
+      <Link>Modules\Entities\Managed\ProfilerModules\EntitiesProfiler+SystemData.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Entities\Managed\ProfilerModules\EntitiesProfiler+WorldData.cs">
+      <Link>Modules\Entities\Managed\ProfilerModules\EntitiesProfiler+WorldData.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Entities\Managed\ProfilerModules\EntitiesProfiler.cs">
+      <Link>Modules\Entities\Managed\ProfilerModules\EntitiesProfiler.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Entities\Managed\ProfilerModules\ProfilerClock.bindings.cs">
+      <Link>Modules\Entities\Managed\ProfilerModules\ProfilerClock.bindings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Entities\Managed\ProfilerModules\StructuralChangesProfiler+Recorder.cs">
+      <Link>Modules\Entities\Managed\ProfilerModules\StructuralChangesProfiler+Recorder.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Entities\Managed\ProfilerModules\StructuralChangesProfiler+StructuralChangeType.cs">
+      <Link>Modules\Entities\Managed\ProfilerModules\StructuralChangesProfiler+StructuralChangeType.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Entities\Managed\ProfilerModules\StructuralChangesProfiler+StructuralChangesData.cs">
+      <Link>Modules\Entities\Managed\ProfilerModules\StructuralChangesProfiler+StructuralChangesData.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Entities\Managed\ProfilerModules\StructuralChangesProfiler.cs">
+      <Link>Modules\Entities\Managed\ProfilerModules\StructuralChangesProfiler.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Entities\Managed\ProfilerModules\UnsafeStack.cs">
+      <Link>Modules\Entities\Managed\ProfilerModules\UnsafeStack.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Entities\Managed\QueryEnumerable\QueryEnumerable.gen.cs">
+      <Link>Modules\Entities\Managed\QueryEnumerable\QueryEnumerable.gen.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Entities\Managed\RateUtils.cs">
+      <Link>Modules\Entities\Managed\RateUtils.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Entities\Managed\RequireMatchingQueriesForUpdateAttribute.cs">
+      <Link>Modules\Entities\Managed\RequireMatchingQueriesForUpdateAttribute.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Entities\Managed\RetainBlobAssetSystem.cs">
+      <Link>Modules\Entities\Managed\RetainBlobAssetSystem.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Entities\Managed\RuntimeApplication.cs">
+      <Link>Modules\Entities\Managed\RuntimeApplication.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Entities\Managed\ScratchpadAllocator.cs">
+      <Link>Modules\Entities\Managed\ScratchpadAllocator.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Entities\Managed\Serialization\BinarySerialization.cs">
+      <Link>Modules\Entities\Managed\Serialization\BinarySerialization.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Entities\Managed\Serialization\Binary\Adapters\BinarySerializationContext.cs">
+      <Link>Modules\Entities\Managed\Serialization\Binary\Adapters\BinarySerializationContext.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Entities\Managed\Serialization\Binary\Adapters\IBinaryAdapter.cs">
+      <Link>Modules\Entities\Managed\Serialization\Binary\Adapters\IBinaryAdapter.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Entities\Managed\Serialization\Binary\Adapters\Internal\BinaryAdapterCollection.cs">
+      <Link>Modules\Entities\Managed\Serialization\Binary\Adapters\Internal\BinaryAdapterCollection.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Entities\Managed\Serialization\DotsSerialization.cs">
+      <Link>Modules\Entities\Managed\Serialization\DotsSerialization.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Entities\Managed\Serialization\EntitiesSerializationAttributes.cs">
+      <Link>Modules\Entities\Managed\Serialization\EntitiesSerializationAttributes.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Entities\Managed\Serialization\ImHexSettings.cs">
+      <Link>Modules\Entities\Managed\Serialization\ImHexSettings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Entities\Managed\Serialization\RuntimeGlobalObjectId.cs">
+      <Link>Modules\Entities\Managed\Serialization\RuntimeGlobalObjectId.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Entities\Managed\Serialization\SerializeUtility.cs">
+      <Link>Modules\Entities\Managed\Serialization\SerializeUtility.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Entities\Managed\Serialization\UnityObjectRef.cs">
+      <Link>Modules\Entities\Managed\Serialization\UnityObjectRef.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Entities\Managed\Serialization\WeakReferenceId.cs">
+      <Link>Modules\Entities\Managed\Serialization\WeakReferenceId.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Entities\Managed\Serialization\YamlWriter.cs">
+      <Link>Modules\Entities\Managed\Serialization\YamlWriter.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Entities\Managed\SortingUtilities.cs">
+      <Link>Modules\Entities\Managed\SortingUtilities.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Entities\Managed\Static.cs">
+      <Link>Modules\Entities\Managed\Static.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Entities\Managed\StructuralChange.cs">
+      <Link>Modules\Entities\Managed\StructuralChange.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Entities\Managed\Stubs\Unity\Entities\EntitiesProfilerMarker.cs">
+      <Link>Modules\Entities\Managed\Stubs\Unity\Entities\EntitiesProfilerMarker.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Entities\Managed\SystemAPI.cs">
+      <Link>Modules\Entities\Managed\SystemAPI.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Entities\Managed\SystemAPIQueryBuilder.cs">
+      <Link>Modules\Entities\Managed\SystemAPIQueryBuilder.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Entities\Managed\SystemBase.cs">
+      <Link>Modules\Entities\Managed\SystemBase.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Entities\Managed\SystemBaseRegistry.cs">
+      <Link>Modules\Entities\Managed\SystemBaseRegistry.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Entities\Managed\SystemDependencySafetyUtility.cs">
+      <Link>Modules\Entities\Managed\SystemDependencySafetyUtility.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Entities\Managed\SystemOrderAttributes.cs">
+      <Link>Modules\Entities\Managed\SystemOrderAttributes.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Entities\Managed\SystemState.cs">
+      <Link>Modules\Entities\Managed\SystemState.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Entities\Managed\TransformRef\HierarchyTransformAccess.bindings.cs">
+      <Link>Modules\Entities\Managed\TransformRef\HierarchyTransformAccess.bindings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Entities\Managed\TransformRef\TransformRef.cs">
+      <Link>Modules\Entities\Managed\TransformRef\TransformRef.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Entities\Managed\TransformRef\TransformUnion.cs">
+      <Link>Modules\Entities\Managed\TransformRef\TransformUnion.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Entities\Managed\Types\Archetype.cs">
+      <Link>Modules\Entities\Managed\Types\Archetype.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Entities\Managed\Types\ArchetypeChunkData.cs">
+      <Link>Modules\Entities\Managed\Types\ArchetypeChunkData.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Entities\Managed\Types\BufferHeader.cs">
+      <Link>Modules\Entities\Managed\Types\BufferHeader.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Entities\Managed\Types\BurstCompatibleTypes.cs">
+      <Link>Modules\Entities\Managed\Types\BurstCompatibleTypes.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Entities\Managed\Types\CalculateReaderWriterDependency.cs">
+      <Link>Modules\Entities\Managed\Types\CalculateReaderWriterDependency.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Entities\Managed\Types\Chunk.cs">
+      <Link>Modules\Entities\Managed\Types\Chunk.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Entities\Managed\Types\CleanupEntity.cs">
+      <Link>Modules\Entities\Managed\Types\CleanupEntity.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Entities\Managed\Types\ComponentType.cs">
+      <Link>Modules\Entities\Managed\Types\ComponentType.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Entities\Managed\Types\ComponentTypeInArchetype.cs">
+      <Link>Modules\Entities\Managed\Types\ComponentTypeInArchetype.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Entities\Managed\Types\ComponentTypeSet.cs">
+      <Link>Modules\Entities\Managed\Types\ComponentTypeSet.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Entities\Managed\Types\Entity.cs">
+      <Link>Modules\Entities\Managed\Types\Entity.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Entities\Managed\Types\EntityArchetype.cs">
+      <Link>Modules\Entities\Managed\Types\EntityArchetype.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Entities\Managed\Types\EntityDebugProxy.cs">
+      <Link>Modules\Entities\Managed\Types\EntityDebugProxy.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Entities\Managed\Types\FastEquality.cs">
+      <Link>Modules\Entities\Managed\Types\FastEquality.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Entities\Managed\Types\Hash128.cs">
+      <Link>Modules\Entities\Managed\Types\Hash128.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Entities\Managed\Types\HideFlags.cs">
+      <Link>Modules\Entities\Managed\Types\HideFlags.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Entities\Managed\Types\RegisterGenericComponentTypeAttribute.cs">
+      <Link>Modules\Entities\Managed\Types\RegisterGenericComponentTypeAttribute.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Entities\Managed\Types\RegisterGenericSystemTypeAttribute.cs">
+      <Link>Modules\Entities\Managed\Types\RegisterGenericSystemTypeAttribute.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Entities\Managed\Types\RegisterUnityEngineComponentTypeAttribute.cs">
+      <Link>Modules\Entities\Managed\Types\RegisterUnityEngineComponentTypeAttribute.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Entities\Managed\Types\SceneTagComponent.cs">
+      <Link>Modules\Entities\Managed\Types\SceneTagComponent.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Entities\Managed\Types\SharedComponentValues.cs">
+      <Link>Modules\Entities\Managed\Types\SharedComponentValues.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Entities\Managed\Types\TypeHash.cs">
+      <Link>Modules\Entities\Managed\Types\TypeHash.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Entities\Managed\Types\TypeManager.cs">
+      <Link>Modules\Entities\Managed\Types\TypeManager.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Entities\Managed\Types\TypeManagerSystems.cs">
+      <Link>Modules\Entities\Managed\Types\TypeManagerSystems.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Entities\Managed\Unity.Core\AssemblyInfo.cs">
+      <Link>Modules\Entities\Managed\Unity.Core\AssemblyInfo.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Entities\Managed\Unity.Core\Compression\Codec.cs">
+      <Link>Modules\Entities\Managed\Unity.Core\Compression\Codec.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Entities\Managed\Unity.Core\Hashes\XXHash.cs">
+      <Link>Modules\Entities\Managed\Unity.Core\Hashes\XXHash.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Entities\Managed\Unity.Core\TimeData.cs">
+      <Link>Modules\Entities\Managed\Unity.Core\TimeData.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Entities\Managed\World.cs">
+      <Link>Modules\Entities\Managed\World.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Entities\Managed\WorldDebuggingTools.cs">
+      <Link>Modules\Entities\Managed\WorldDebuggingTools.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Entities\Managed\WorldSystemFiltering.cs">
+      <Link>Modules\Entities\Managed\WorldSystemFiltering.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Entities\Managed\WorldTime.cs">
+      <Link>Modules\Entities\Managed\WorldTime.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Entities\Managed\WorldUnmanaged.cs">
+      <Link>Modules\Entities\Managed\WorldUnmanaged.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Entities\Managed\WorldUnmanagedImpl.Memory.cs">
+      <Link>Modules\Entities\Managed\WorldUnmanagedImpl.Memory.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Entities\Managed\WorldUpdateAllocator.cs">
+      <Link>Modules\Entities\Managed\WorldUpdateAllocator.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\Entities\Public\EntityId.bindings.cs">
       <Link>Modules\Entities\Public\EntityId.bindings.cs</Link>
@@ -1675,11 +2269,23 @@
     <Compile Include="..\..\Modules\Input\Private\InputModule.bindings.cs">
       <Link>Modules\Input\Private\InputModule.bindings.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\Input\Private\Managed\InputCommandResult.cs">
+      <Link>Modules\Input\Private\Managed\InputCommandResult.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\Input\Private\Managed\InputCommonTypes.cs">
       <Link>Modules\Input\Private\Managed\InputCommonTypes.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\Input\Private\Managed\InputFocusEvent.cs">
       <Link>Modules\Input\Private\Managed\InputFocusEvent.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Input\Private\Managed\VirtualDevice.cs">
+      <Link>Modules\Input\Private\Managed\VirtualDevice.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Input\Private\Managed\VirtualDeviceBackend.cs">
+      <Link>Modules\Input\Private\Managed\VirtualDeviceBackend.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Input\Private\Managed\VirtualDevicePayloads.cs">
+      <Link>Modules\Input\Private\Managed\VirtualDevicePayloads.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\Insights\EngineDiagnostics.bindings.cs">
       <Link>Modules\Insights\EngineDiagnostics.bindings.cs</Link>
@@ -2157,6 +2763,9 @@
     </Compile>
     <Compile Include="..\..\Modules\ManagedKernel\Managed\Export\Profiling\KernelProfiler.bindings.cs">
       <Link>Modules\ManagedKernel\Managed\Export\Profiling\KernelProfiler.bindings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\ManagedKernel\Managed\File\ReadCommand.cs">
+      <Link>Modules\ManagedKernel\Managed\File\ReadCommand.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\ManagedKernel\Managed\Jobs\AtomicSafetyHandle.bindings.cs">
       <Link>Modules\ManagedKernel\Managed\Jobs\AtomicSafetyHandle.bindings.cs</Link>
@@ -5041,6 +5650,9 @@
     <Compile Include="..\..\Modules\UIElements\Core\Events\PropagationPaths.cs">
       <Link>Modules\UIElements\Core\Events\PropagationPaths.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Events\ReleasingResourcesEvent.cs">
+      <Link>Modules\UIElements\Core\Events\ReleasingResourcesEvent.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\UIElements\Core\Events\StyleEvents.cs">
       <Link>Modules\UIElements\Core\Events\StyleEvents.cs</Link>
     </Compile>
@@ -5385,9 +5997,6 @@
     </Compile>
     <Compile Include="..\..\Modules\UIElements\Core\Renderer\UIRAtlasManager.cs">
       <Link>Modules\UIElements\Core\Renderer\UIRAtlasManager.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIElements\Core\Renderer\UIRChildrenDirtyTracker.cs">
-      <Link>Modules\UIElements\Core\Renderer\UIRChildrenDirtyTracker.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\UIElements\Core\Renderer\UIRCommandList.cs">
       <Link>Modules\UIElements\Core\Renderer\UIRCommandList.cs</Link>
@@ -6916,6 +7525,21 @@
     <Compile Include="..\..\Runtime\Export\ETW\EventProvider.bindings.cs">
       <Link>Runtime\Export\ETW\EventProvider.bindings.cs</Link>
     </Compile>
+    <Compile Include="..\..\Runtime\Export\Entities\CompanionComponent.cs">
+      <Link>Runtime\Export\Entities\CompanionComponent.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Runtime\Export\Entities\CoreModuleLightShimHooks.cs">
+      <Link>Runtime\Export\Entities\CoreModuleLightShimHooks.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Runtime\Export\Entities\EntitiesCoreCallbacks.bindings.cs">
+      <Link>Runtime\Export\Entities\EntitiesCoreCallbacks.bindings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Runtime\Export\Entities\GUIDHash128Conversions.cs">
+      <Link>Runtime\Export\Entities\GUIDHash128Conversions.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Runtime\Export\Entities\UnityObjectRef.cs">
+      <Link>Runtime\Export\Entities\UnityObjectRef.cs</Link>
+    </Compile>
     <Compile Include="..\..\Runtime\Export\ExpressionEvaluator.cs">
       <Link>Runtime\Export\ExpressionEvaluator.cs</Link>
     </Compile>
@@ -8271,7 +8895,7 @@
     </PropertyGroup>
   </Target>
   <ItemGroup>
-    <Analyzer Include="/tmp/uitoolkit_gen_hss3wqf1/Unity.UIToolkit.SourceGenerator.dll" />
+    <Analyzer Include="/tmp/uitoolkit_gen_tn9e38db/Unity.UIToolkit.SourceGenerator.dll" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="10.0.8" />

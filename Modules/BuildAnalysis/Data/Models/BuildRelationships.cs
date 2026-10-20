@@ -46,6 +46,18 @@ namespace UnityEditor.Build.Analysis
             }
         }
 
+        public static BuildRelationships FromHistory(IBuildHistoryProvider history, IReadOnlyList<GUID> builds)
+        {
+            var links = new List<(GUID Parent, GUID Child)>();
+            foreach (var build in builds)
+            {
+                if (history.TryGetParentBuild(build, out var parent))
+                    links.Add((parent, build));
+            }
+
+            return new BuildRelationships(links);
+        }
+
         public bool HasAny => m_ParentOf.Count > 0;
 
         public bool TryGetParent(GUID child, out GUID parent)
@@ -57,6 +69,39 @@ namespace UnityEditor.Build.Analysis
         public IReadOnlyList<GUID> GetChildren(GUID parent)
         {
             return m_ChildrenOf.TryGetValue(parent, out var children) ? children : Array.Empty<GUID>();
+        }
+
+        /// <summary>Every ancestor, root first, then every descendant in build list order. Excludes the build itself.</summary>
+        public IReadOnlyList<GUID> GetRelated(GUID build)
+        {
+            var related = new List<GUID>();
+            // Shared by both walks so a parent loop in the history can't recurse forever or list a build twice.
+            var visited = new HashSet<GUID> { build };
+            AddAncestors(build, related, visited);
+            AddDescendants(build, related, visited);
+            return related;
+        }
+
+        // Root first, so the parent is added after its own ancestors.
+        private void AddAncestors(GUID child, List<GUID> result, HashSet<GUID> visited)
+        {
+            if (!TryGetParent(child, out var parent) || !visited.Add(parent))
+                return;
+
+            AddAncestors(parent, result, visited);
+            result.Add(parent);
+        }
+
+        private void AddDescendants(GUID parent, List<GUID> result, HashSet<GUID> visited)
+        {
+            foreach (var child in GetChildren(parent))
+            {
+                if (!visited.Add(child))
+                    continue;
+
+                result.Add(child);
+                AddDescendants(child, result, visited);
+            }
         }
     }
 }

@@ -365,6 +365,11 @@ namespace Unity.Profiling.Editor.UI
                     buildModelCancellation.Cancel();
                     success = false;
                 }
+                catch (Exception) when (buildModelCancellation.Token.IsCancellationRequested)
+                {
+                    // Profiler data can be cleared before the builder observes cancellation.
+                    success = false;
+                }
                 catch (Exception e)
                 {
                     success = false;

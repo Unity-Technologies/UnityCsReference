@@ -54,22 +54,42 @@ namespace Unity.GraphToolkit.Editor
         [NoAutoStaticsCleanup] // reusable string builder used as a scratch buffer within BuildUI; cleared before each use
         static StringBuilder s_BuildPartUI_typeText = new StringBuilder(16);
 
+        [NoAutoStaticsCleanup] // immutable lookup table of types and labels; safe to reuse across reloads
+        static readonly (Type type, string displayName)[] k_CommonTypes =
+        {
+            (typeof(NodeModel), "Node"),
+            (typeof(VariableDeclarationModelBase), "Variable"),
+            (typeof(PlacematModel), "Placemat"),
+            (typeof(StickyNoteModel), "Sticky Note"),
+            (typeof(WireModel), "Wire")
+        };
+
+        static string GetTypeDisplayName(Type type)
+        {
+            foreach (var commonType in k_CommonTypes)
+            {
+                if (commonType.type == type)
+                    return commonType.displayName;
+            }
+
+            return TypeHelpers.GetFriendlyName(type).Replace("Model", string.Empty);
+        }
+
         protected override void BuildUI(VisualElement parent)
         {
             base.BuildUI(parent);
             m_Root.AddPackageStylesheet("ModelsFieldsInspector.uss");
-            var commonTypes = new[] { typeof(NodeModel), typeof(VariableDeclarationModelBase), typeof(PlacematModel), typeof(StickyNoteModel), typeof(WireModel) };
 
             var modelsByType = new Dictionary<Type, List<Model>>();
 
             foreach (var model in m_Models)
             {
                 var type = model.GetType();
-                foreach (var commonType in commonTypes)
+                foreach (var commonType in k_CommonTypes)
                 {
-                    if (commonType.IsAssignableFrom(type))
+                    if (commonType.type.IsAssignableFrom(type))
                     {
-                        type = commonType;
+                        type = commonType.type;
                         break;
                     }
                 }
@@ -91,7 +111,7 @@ namespace Unity.GraphToolkit.Editor
             foreach (var kv in modelsByType)
             {
                 s_BuildPartUI_typeText.Length = 0;
-                s_BuildPartUI_typeText.Append(TypeHelpers.GetFriendlyName(kv.Key).Replace("Model", string.Empty));
+                s_BuildPartUI_typeText.Append(GetTypeDisplayName(kv.Key));
                 if (kv.Value.Count > 1)
                     s_BuildPartUI_typeText.Append("s");
                 var button = new Button() { text = $@"{kv.Value.Count} {s_BuildPartUI_typeText}" };

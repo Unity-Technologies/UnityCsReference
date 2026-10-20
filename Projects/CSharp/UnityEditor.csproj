@@ -10,7 +10,7 @@
     <GenerateDocumentationFile>false</GenerateDocumentationFile>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <EnableDefaultItems>false</EnableDefaultItems>
-    <DefineConstants>$(DefineConstants);ALLOW_IMPLICIT_INTERNAL_VISIBILITY;COMBINED_ASSEMBLIES;DEBUGGER_LISTENS_FIXED_PORT;EDITOR_ONLY_NAVMESH_BUILDER_DEPRECATED;ENABLE_ACCELERATOR_CLIENT_DEBUGGING;ENABLE_ALTERNATIVE_LISTEN_PORT;ENABLE_AMD;ENABLE_AUDIO;ENABLE_AUDIO_MANAGER_BASED_SCHEDULING;ENABLE_AUDIO_SCRIPTABLE_PIPELINE;ENABLE_BURST;ENABLE_CACHING;ENABLE_CLOTH;ENABLE_CLOUD_LICENSE;ENABLE_CLOUD_SERVICES;ENABLE_CLOUD_SERVICES_ADS;ENABLE_CLOUD_SERVICES_ANALYTICS;ENABLE_CLOUD_SERVICES_BUILD;ENABLE_CLOUD_SERVICES_CRASH_REPORTING;ENABLE_CLOUD_SERVICES_ENGINE_DIAGNOSTICS;ENABLE_CLOUD_SERVICES_PURCHASING;ENABLE_CLOUD_SERVICES_USE_WEBREQUEST;ENABLE_CLUSTERINPUT;ENABLE_CLUSTER_SYNC;ENABLE_CORECLR;ENABLE_CORECLR_FIXME;ENABLE_CRUNCH_TEXTURE_COMPRESSION;ENABLE_DIRECTOR_AUDIO;ENABLE_DIRECTOR_TEXTURE;ENABLE_EDITOR_GAME_SERVICES;ENABLE_EDITOR_HUB_LICENSE;ENABLE_ETC_COMPRESSION;ENABLE_EVENT_QUEUE;ENABLE_GAMECENTER_API;ENABLE_GENERATE_NATIVE_PLUGINS_FOR_ASSEMBLIES_API;ENABLE_LOCALIZATION_RUNTIME;ENABLE_LZMA;ENABLE_MANAGED_ANIMATION_JOBS;ENABLE_MANAGED_AUDIO_JOBS;ENABLE_MANAGED_JOBS;ENABLE_MANAGED_TRANSFORM_JOBS;ENABLE_MANAGED_UNITYTLS;ENABLE_MARSHALLING_TESTS;ENABLE_METALFX;ENABLE_MICROPHONE;ENABLE_MULTIPLE_DISPLAYS;ENABLE_MULTI_WINDOWING;ENABLE_NAVIGATION_OFFMESHLINK_TO_NAVMESHLINK;ENABLE_NETWORK;ENABLE_NINTENDO_CORE_SCRIPT_BINDINGS;ENABLE_NVIDIA;ENABLE_PHYSICS;ENABLE_RUNTIME_GI;ENABLE_SCRIPTING_GC_SAFE;ENABLE_SCRIPTING_GC_WBARRIERS;ENABLE_SMARTSTRINGS;ENABLE_TEXTURE_STREAMING;ENABLE_UNITYEVENTS;ENABLE_UNITYWEBREQUEST;ENABLE_UNITY_CLOUD_IDENTIFIERS;ENABLE_UNITY_COLLECTIONS_CHECKS;ENABLE_UNITY_CONSENT;ENABLE_UNITY_GAME_SERVICES_ANALYTICS_SUPPORT;ENABLE_UTF8_VALIDATION_ON_STRING_DESERIALIZATION;ENABLE_VERSION_CONTROL_INTEGRATION;ENABLE_VIDEO;ENABLE_VIRTUALTEXTURING;ENABLE_VR;ENABLE_WEBCAM;ENABLE_WEBSOCKET_CLIENT;ENABLE_WEBSOCKET_HOST;ENABLE_WINDOW_ABSTRACTION;ENABLE_WWW;INCLUDE_DYNAMIC_GI;INCLUDE_UNIFIED_RAYTRACING_COMPUTE_BACKEND;INCLUDE_UNIFIED_RAYTRACING_HARDWARE_BACKEND;PLATFORM_SUPPORTS_GAMEPAD_AUDIO;PLAYERCONNECTION_LISTENS_FIXED_PORT;RENDER_SOFTWARE_CURSOR;TEXTCORE_1_0_OR_NEWER;TRACE;UNITY_ANDROID_API;UNITY_ASSEMBLIES_API;UNITY_ASSERTIONS;UNITY_CAN_SHOW_SPLASH_SCREEN;UNITY_EDITOR;UNITY_EDITOR_API;UNITY_EDITOR_LINUX;UNITY_IPHONE_API;UNITY_METRO_API;UNITY_PS4_API;UNITY_PS5_API;UNITY_STANDALONE_LINUX_API;UNITY_STANDALONE_OSX_API;UNITY_STANDALONE_WIN_API;UNITY_TINYPROFILING_INTERNAL;UNITY_TVOS_API;UNITY_UNITYADS_API;UNITY_WEBGL_API</DefineConstants>
+    <DefineConstants>$(DefineConstants);ALLOW_IMPLICIT_INTERNAL_VISIBILITY;COMBINED_ASSEMBLIES;DEBUGGER_LISTENS_FIXED_PORT;EDITOR_ONLY_NAVMESH_BUILDER_DEPRECATED;ENABLE_ACCELERATOR_CLIENT_DEBUGGING;ENABLE_ALTERNATIVE_LISTEN_PORT;ENABLE_AMD;ENABLE_AUDIO;ENABLE_AUDIO_MANAGER_BASED_SCHEDULING;ENABLE_AUDIO_SCRIPTABLE_PIPELINE;ENABLE_BURST;ENABLE_CACHING;ENABLE_CLOTH;ENABLE_CLOUD_LICENSE;ENABLE_CLOUD_SERVICES;ENABLE_CLOUD_SERVICES_ADS;ENABLE_CLOUD_SERVICES_ANALYTICS;ENABLE_CLOUD_SERVICES_BUILD;ENABLE_CLOUD_SERVICES_CRASH_REPORTING;ENABLE_CLOUD_SERVICES_ENGINE_DIAGNOSTICS;ENABLE_CLOUD_SERVICES_PURCHASING;ENABLE_CLOUD_SERVICES_USE_WEBREQUEST;ENABLE_CLUSTERINPUT;ENABLE_CLUSTER_SYNC;ENABLE_CORECLR;ENABLE_CORECLR_FIXME;ENABLE_CRUNCH_TEXTURE_COMPRESSION;ENABLE_DIRECTOR_AUDIO;ENABLE_DIRECTOR_TEXTURE;ENABLE_EDITOR_GAME_SERVICES;ENABLE_EDITOR_HUB_LICENSE;ENABLE_ETC_COMPRESSION;ENABLE_EVENT_QUEUE;ENABLE_GAMECENTER_API;ENABLE_GENERATE_NATIVE_PLUGINS_FOR_ASSEMBLIES_API;ENABLE_LOCALIZATION_RUNTIME;ENABLE_LZMA;ENABLE_MANAGED_ANIMATION_JOBS;ENABLE_MANAGED_AUDIO_JOBS;ENABLE_MANAGED_JOBS;ENABLE_MANAGED_TRANSFORM_JOBS;ENABLE_MANAGED_UNITYTLS;ENABLE_MARSHALLING_TESTS;ENABLE_METALFX;ENABLE_MICROPHONE;ENABLE_MULTIPLE_DISPLAYS;ENABLE_MULTI_WINDOWING;ENABLE_NAVIGATION_OFFMESHLINK_TO_NAVMESHLINK;ENABLE_NETWORK;ENABLE_NINTENDO_CORE_SCRIPT_BINDINGS;ENABLE_NVIDIA;ENABLE_PHYSICS;ENABLE_RUNTIME_GI;ENABLE_SCRIPTING_GC_SAFE;ENABLE_SCRIPTING_GC_WBARRIERS;ENABLE_SMARTSTRINGS;ENABLE_TEXTURE_STREAMING;ENABLE_UNITYEVENTS;ENABLE_UNITYWEBREQUEST;ENABLE_UNITY_CLOUD_IDENTIFIERS;ENABLE_UNITY_COLLECTIONS_CHECKS;ENABLE_UNITY_CONSENT;ENABLE_UNITY_GAME_SERVICES_ANALYTICS_SUPPORT;ENABLE_UTF8_VALIDATION_ON_STRING_DESERIALIZATION;ENABLE_VERSION_CONTROL_INTEGRATION;ENABLE_VIDEO;ENABLE_VIRTUALTEXTURING;ENABLE_VR;ENABLE_WEBCAM;ENABLE_WEBSOCKET_CLIENT;ENABLE_WEBSOCKET_HOST;ENABLE_WINDOW_ABSTRACTION;ENABLE_WWW;INCLUDE_DYNAMIC_GI;INCLUDE_UNIFIED_RAYTRACING_COMPUTE_BACKEND;INCLUDE_UNIFIED_RAYTRACING_HARDWARE_BACKEND;PLATFORM_SUPPORTS_GAMEPAD_AUDIO;PLAYERCONNECTION_LISTENS_FIXED_PORT;RENDER_SOFTWARE_CURSOR;TEXTCORE_1_0_OR_NEWER;TRACE;UNITY_ANDROID_API;UNITY_ASSEMBLIES_API;UNITY_ASSERTIONS;UNITY_CAN_SHOW_SPLASH_SCREEN;UNITY_DOTS_DEBUG;UNITY_EDITOR;UNITY_EDITOR_API;UNITY_EDITOR_LINUX;UNITY_IPHONE_API;UNITY_METRO_API;UNITY_PS4_API;UNITY_PS5_API;UNITY_STANDALONE_LINUX_API;UNITY_STANDALONE_OSX_API;UNITY_STANDALONE_WIN_API;UNITY_TINYPROFILING_INTERNAL;UNITY_TVOS_API;UNITY_UNITYADS_API;UNITY_WEBGL_API</DefineConstants>
     <LangVersion>14.0</LangVersion>
     <NoWarn>1701;169;649;626;UA1002</NoWarn>
     <Nullable>disable</Nullable>
@@ -1122,6 +1122,12 @@
     </Compile>
     <Compile Include="..\..\Editor\Mono\EditorWindow.cs">
       <Link>Editor\Mono\EditorWindow.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Mono\Entities\EditorLightShimHooks.cs">
+      <Link>Editor\Mono\Entities\EditorLightShimHooks.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Mono\Entities\EntityComponentDataAccessCallbacks.bindings.cs">
+      <Link>Editor\Mono\Entities\EntityComponentDataAccessCallbacks.bindings.cs</Link>
     </Compile>
     <Compile Include="..\..\Editor\Mono\EntityComponentDataAccess.bindings.cs">
       <Link>Editor\Mono\EntityComponentDataAccess.bindings.cs</Link>
@@ -3646,6 +3652,9 @@
     <Compile Include="..\..\Editor\Mono\Scripting\ScriptCompilation\BeeDriver\BeeScriptCompilation.cs">
       <Link>Editor\Mono\Scripting\ScriptCompilation\BeeDriver\BeeScriptCompilation.cs</Link>
     </Compile>
+    <Compile Include="..\..\Editor\Mono\Scripting\ScriptCompilation\BeeDriver\NativeProfilerClock.bindings.cs">
+      <Link>Editor\Mono\Scripting\ScriptCompilation\BeeDriver\NativeProfilerClock.bindings.cs</Link>
+    </Compile>
     <Compile Include="..\..\Editor\Mono\Scripting\ScriptCompilation\BeeDriver\PotentiallyUpdatableErrorMessages.cs">
       <Link>Editor\Mono\Scripting\ScriptCompilation\BeeDriver\PotentiallyUpdatableErrorMessages.cs</Link>
     </Compile>
@@ -3939,6 +3948,9 @@
     </Compile>
     <Compile Include="..\..\Editor\Mono\Shaders\ShaderBuildSettings.cs">
       <Link>Editor\Mono\Shaders\ShaderBuildSettings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Mono\Shaders\ShaderBuildSettingsPendingState.cs">
+      <Link>Editor\Mono\Shaders\ShaderBuildSettingsPendingState.cs</Link>
     </Compile>
     <Compile Include="..\..\Editor\Mono\Shaders\ShaderBuildSettingsUI.cs">
       <Link>Editor\Mono\Shaders\ShaderBuildSettingsUI.cs</Link>
@@ -5434,6 +5446,9 @@
     <Compile Include="..\..\Modules\BuildAnalysis\UI\Common\LoadingOverlay.cs">
       <Link>Modules\BuildAnalysis\UI\Common\LoadingOverlay.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\BuildAnalysis\UI\Common\RelatedBuildLinks.cs">
+      <Link>Modules\BuildAnalysis\UI\Common\RelatedBuildLinks.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\BuildAnalysis\UI\Common\StatCard.cs">
       <Link>Modules\BuildAnalysis\UI\Common\StatCard.cs</Link>
     </Compile>
@@ -5916,6 +5931,9 @@
     </Compile>
     <Compile Include="..\..\Modules\ContentBuild\Editor\Managed\SinglePassShaderImporter.cs">
       <Link>Modules\ContentBuild\Editor\Managed\SinglePassShaderImporter.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\ContentBuild\Editor\Managed\TraceEventProfileTestBindings.bindings.cs">
+      <Link>Modules\ContentBuild\Editor\Managed\TraceEventProfileTestBindings.bindings.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\ContentBuild\Editor\Managed\TypeDB.bindings.cs">
       <Link>Modules\ContentBuild\Editor\Managed\TypeDB.bindings.cs</Link>
@@ -12187,6 +12205,9 @@
     <Compile Include="..\..\Modules\PhysicsCore2DEditor\Settings\PhysicsCoreSettings2DEditor.cs">
       <Link>Modules\PhysicsCore2DEditor\Settings\PhysicsCoreSettings2DEditor.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\PhysicsCore2DEditor\Settings\PhysicsDrawOverride.cs">
+      <Link>Modules\PhysicsCore2DEditor\Settings\PhysicsDrawOverride.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\PhysicsEditor\ArticulationBodyEditor.cs">
       <Link>Modules\PhysicsEditor\ArticulationBodyEditor.cs</Link>
     </Compile>
@@ -13114,9 +13135,6 @@
     <Compile Include="..\..\Modules\ProjectAuditorEditor\API\Enums\CodeOptimization.cs">
       <Link>Modules\ProjectAuditorEditor\API\Enums\CodeOptimization.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\ProjectAuditorEditor\API\Enums\CodeOwnerFlags.cs">
-      <Link>Modules\ProjectAuditorEditor\API\Enums\CodeOwnerFlags.cs</Link>
-    </Compile>
     <Compile Include="..\..\Modules\ProjectAuditorEditor\API\Enums\CompilationMode.cs">
       <Link>Modules\ProjectAuditorEditor\API\Enums\CompilationMode.cs</Link>
     </Compile>
@@ -13125,6 +13143,9 @@
     </Compile>
     <Compile Include="..\..\Modules\ProjectAuditorEditor\API\Enums\LogLevel.cs">
       <Link>Modules\ProjectAuditorEditor\API\Enums\LogLevel.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\ProjectAuditorEditor\API\Enums\OwnerFlags.cs">
+      <Link>Modules\ProjectAuditorEditor\API\Enums\OwnerFlags.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\ProjectAuditorEditor\API\Enums\Severity.cs">
       <Link>Modules\ProjectAuditorEditor\API\Enums\Severity.cs</Link>
@@ -14454,6 +14475,9 @@
     </Compile>
     <Compile Include="..\..\Modules\ShaderApiReflectionEditor\Public\Managed\IHasFunctionSignature.cs">
       <Link>Modules\ShaderApiReflectionEditor\Public\Managed\IHasFunctionSignature.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\ShaderApiReflectionEditor\Public\Managed\IHasHints.cs">
+      <Link>Modules\ShaderApiReflectionEditor\Public\Managed\IHasHints.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\ShaderApiReflectionEditor\Public\Managed\ShaderIncludeEditorExtensions.cs">
       <Link>Modules\ShaderApiReflectionEditor\Public\Managed\ShaderIncludeEditorExtensions.cs</Link>
@@ -16303,6 +16327,9 @@
     <Compile Include="..\..\Modules\UIElementsEditor\GameObjects\VisualTreeAssetHierarchyDropHandler.cs">
       <Link>Modules\UIElementsEditor\GameObjects\VisualTreeAssetHierarchyDropHandler.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\UIElementsEditor\HostViewChecks.cs">
+      <Link>Modules\UIElementsEditor\HostViewChecks.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\UIElementsEditor\PanelDebug.cs">
       <Link>Modules\UIElementsEditor\PanelDebug.cs</Link>
     </Compile>
@@ -17884,6 +17911,9 @@
     <Compile Include="..\..\Modules\UIToolkitAuthoringEditor\Managed\Utilities\UIAnimationClipFactory.cs">
       <Link>Modules\UIToolkitAuthoringEditor\Managed\Utilities\UIAnimationClipFactory.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\UIToolkitAuthoringEditor\Managed\Utilities\VisualElementBoundsUtility.cs">
+      <Link>Modules\UIToolkitAuthoringEditor\Managed\Utilities\VisualElementBoundsUtility.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\UIToolkitAuthoringEditor\Managed\Utilities\VisualElementUtility.cs">
       <Link>Modules\UIToolkitAuthoringEditor\Managed\Utilities\VisualElementUtility.cs</Link>
     </Compile>
@@ -18166,10 +18196,10 @@
     <Compile Include="..\..\artifacts\MonolithicEditorDlls\InternalsVisibleTo.cs">
       <Link>artifacts\MonolithicEditorDlls\InternalsVisibleTo.cs</Link>
     </Compile>
-    <Reference Include="..\..\artifacts\Stevedore\unity-compiler-win-x64_9182\Unity.CompilationPipeline.Common\Unity.CompilationPipeline.Common.dll" />
-    <Reference Include="..\..\artifacts\Stevedore\msbu-tools_51d6\buildTools\UnityEditor.MSBuild.dll" />
-    <Reference Include="..\..\artifacts\Stevedore\msbu-tools_51d6\buildTools\Unity.BuildService.dll" />
-    <Reference Include="..\..\artifacts\Stevedore\msbu-tools_51d6\asmDefToCSProj\AsmDefToCSProjLib.dll" />
+    <Reference Include="..\..\artifacts\Stevedore\unity-compiler-win-x64_b781\Unity.CompilationPipeline.Common\Unity.CompilationPipeline.Common.dll" />
+    <Reference Include="..\..\artifacts\Stevedore\msbu-tools_cc89\buildTools\UnityEditor.MSBuild.dll" />
+    <Reference Include="..\..\artifacts\Stevedore\msbu-tools_cc89\buildTools\Unity.BuildService.dll" />
+    <Reference Include="..\..\artifacts\Stevedore\msbu-tools_cc89\asmDefToCSProj\AsmDefToCSProjLib.dll" />
     <Reference Include="..\..\External\Unity.Cecil\builds\lib\net40\Unity.Cecil.dll" />
     <Reference Include="..\..\External\ExCSS\builds\builds\lib\netstandard2.0\ExCSS.Unity.dll" />
     <Reference Include="..\..\Tools\Bee\build\Distribution\BeeDriver2\Bee.BeeDriver2.dll" />
@@ -18202,7 +18232,7 @@
     </PropertyGroup>
   </Target>
   <ItemGroup>
-    <Analyzer Include="/tmp/uitoolkit_gen_hss3wqf1/Unity.UIToolkit.SourceGenerator.dll" />
+    <Analyzer Include="/tmp/uitoolkit_gen_tn9e38db/Unity.UIToolkit.SourceGenerator.dll" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="10.0.8" />

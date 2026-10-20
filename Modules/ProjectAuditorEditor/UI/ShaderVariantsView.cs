@@ -284,14 +284,7 @@ namespace Unity.ProjectAuditor.Editor.UI
             if (path.Length != 0)
             {
 #pragma warning disable UAC2001 // Avoid Linq
-                var variants = m_Issues.Where(issue =>
-                {
-                    if (!Match(issue))
-                        return false;
-                    if (predicate != null && !predicate(issue))
-                        return false;
-                    return true;
-                });
+                var variants = m_Issues.Where(issue => MatchesPage(issue) && (predicate == null || predicate(issue)));
 #pragma warning restore UAC2001
 
                 ShadersModule.ExportVariantsToSvc(svcName, path, variants);

@@ -109,7 +109,7 @@ namespace UnityEngine.UIElements
         {
             get
             {
-                return Mathf.Ceil(cache.topLevel.maxWidth);
+                return AlignmentUtils.CeilToPixelGrid(cache.topLevel.maxWidth, scaledPixelsPerPoint);
             }
         }
 
@@ -117,7 +117,7 @@ namespace UnityEngine.UIElements
         {
             get
             {
-                return Mathf.Ceil(cache.topLevel.maxHeight);
+                return AlignmentUtils.CeilToPixelGrid(cache.topLevel.maxHeight, scaledPixelsPerPoint);
             }
         }
 
@@ -534,7 +534,7 @@ namespace UnityEngine.UIElements
 
             // See if the container size has changed. This is to make absolutely sure the VisualElement resizes
             // if the IMGUI content resizes.
-            if (evt.type == EventType.Layout &&
+            if (evt.type == EventType.Layout && panel != null &&
                 (!Mathf.Approximately(previousMeasuredWidth, layoutMeasuredWidth) || !Mathf.Approximately(previousMeasuredHeight, layoutMeasuredHeight)))
             {
                 if (isComputingLayout && clippingRect == Rect.zero)
@@ -996,8 +996,11 @@ namespace UnityEngine.UIElements
                 // global GUIClip.visibleRect which IMGUI code could be using to influence
                 // size. See case 1111923 and 1158089.
                 DoOnGUI(s_MeasureEvent, m_CachedTransform, m_CachedClippingRect, true, layoutRect, onGUIHandler, true);
-                measuredWidth = layoutMeasuredWidth;
-                measuredHeight = layoutMeasuredHeight;
+                if (panel != null)
+                {
+                    measuredWidth = layoutMeasuredWidth;
+                    measuredHeight = layoutMeasuredHeight;
+                }
 
                 if (restoreCurrentEvent)
                     Event.current.CopyFrom(s_CurrentEvent);

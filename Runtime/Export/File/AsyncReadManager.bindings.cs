@@ -16,14 +16,6 @@ using Unity.Jobs;
 namespace Unity.IO.LowLevel.Unsafe
 {
     [StructLayout(LayoutKind.Sequential)]
-    unsafe public struct ReadCommand
-    {
-        public void* Buffer;
-        public long Offset;
-        public long Size;
-    }
-
-    [StructLayout(LayoutKind.Sequential)]
     unsafe public struct ReadCommandArray
     {
         public ReadCommand* ReadCommands;
@@ -51,21 +43,6 @@ namespace Unity.IO.LowLevel.Unsafe
     {
         public long      FileSize;
         public FileState FileState;
-    }
-
-    // When adding a subsystem, keep in sync with AssetContext.h
-    public enum AssetLoadingSubsystem
-    {
-        Other = 0,
-        Texture,
-        VirtualTexture,
-        Mesh,
-        Audio,
-        Scripts,
-        EntitiesScene,
-        EntitiesStreamBinaryReader,
-        FileInfo,
-        ContentLoading
     }
 
     public enum ReadStatus

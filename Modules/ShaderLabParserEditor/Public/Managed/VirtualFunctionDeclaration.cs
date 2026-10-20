@@ -10,7 +10,7 @@ using UnityEngine.Bindings;
 namespace UnityEditor.ShaderApiReflection
 {
     [ShouldBePublic]
-    internal struct VirtualFunctionDeclaration : IHasFunctionSignature
+    internal struct VirtualFunctionDeclaration : IHasFunctionSignature, IHasHints
     {
         // Public API
 
@@ -21,8 +21,10 @@ namespace UnityEditor.ShaderApiReflection
         }
         public Attribute VirtualAttribute { get; internal set; }
 
+        public Shader Owner { get; internal set; }
         public ShaderScope Scope { get; internal set; }
 
+        public ReadOnlyDictionary<string, string> Hints => m_Signature.Hints;
         public ReadOnlyCollection<string> EnclosingNamespace => m_Signature.EnclosingNamespace;
         public string ReturnTypeName => m_Signature.ReturnTypeName;
         public string Name => m_Signature.Name;
@@ -43,10 +45,12 @@ namespace UnityEditor.ShaderApiReflection
         private ReflectedFunction m_Signature;
 
         internal VirtualFunctionDeclaration(Attribute attribute,
+            Shader owner,
             ShaderScope scope,
             ReflectedFunction signature)
         {
             VirtualAttribute = attribute;
+            Owner = owner;
             Scope = scope;
             m_Signature = signature;
         }

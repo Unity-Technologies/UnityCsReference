@@ -471,11 +471,7 @@ namespace Unity.UI.Builder
                         }
                         else
                         {
-                            var enumButton = new Button() { name = enumAsDash, tooltip = tooltip };
-                            // Grid enum toggles have no icons yet; label them so they aren't blank squares.
-                            if (TryGetGridEnumButtonLabel(styleName, enumAsDash, out var gridLabel))
-                                enumButton.text = gridLabel;
-                            uiField.Add(enumButton);
+                            uiField.Add(new Button() { name = enumAsDash, tooltip = tooltip });
                         }
                     }
 

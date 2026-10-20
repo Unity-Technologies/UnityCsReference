@@ -375,9 +375,9 @@ namespace UnityEditor
         // Subscribers attach through their own lifecycle: ShortcutIntegration re-adds its handler when the
         // enabled flag is set again while lazily recreating its controller.
         [IgnoreForUAL0015("Event whose subscribers re-register through their own lifecycle after a code reload")]
-        internal static CallbackFunction globalEventHandler;
+        internal static Action<Event> globalEventHandler;
         [AutoStaticsCleanupOnCodeReload]
-        internal static CallbackFunction shortcutHelperBarEventHandler;
+        internal static Action<Event> shortcutHelperBarEventHandler;
 
         // Returns true when the pressed keys are defined in the Trigger
         [AutoStaticsCleanupOnCodeReload]
@@ -715,11 +715,12 @@ namespace UnityEditor
         [RequiredByNativeCode]
         static void Internal_CallGlobalEventHandler()
         {
-            globalEventHandler?.Invoke();
-            shortcutHelperBarEventHandler?.Invoke();
+            var evt = Event.current;
+            globalEventHandler?.Invoke(evt);
+            shortcutHelperBarEventHandler?.Invoke(evt);
 
             // Ensure this is called last in order to make sure no null current events are passed to other handlers
-            WindowLayout.MaximizeGestureHandler();
+            WindowLayout.MaximizeGestureHandler(evt);
 
             Event.current = null;
         }

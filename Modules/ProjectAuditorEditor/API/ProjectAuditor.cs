@@ -87,18 +87,30 @@ namespace Unity.ProjectAuditor.Editor
         /// <param name="progress"> Progress bar, if applicable </param>
         /// <returns> Generated report </returns>
         /// <exception cref="System.InvalidOperationException">Thrown if the Project Auditor Rules package is not installed.</exception>
+        /// <exception cref="System.ArgumentException">Thrown if analysisParams.Categories contains a summary category, such as IssueCategory.OptimizationSummary.</exception>
         public Report Audit(AnalysisParams analysisParams, IProgress progress = null)
         {
             Report report = null;
 
-            analysisParams.OnCompleted += result => { report = result; };
+            // Prepended, so a throwing handler added by the caller can't stop the report being captured and leave the loop below spinning
+            Action<Report> captureReport = result => { report = result; };
+            analysisParams.OnCompleted = captureReport + analysisParams.OnCompleted;
 
-            AuditAsync(analysisParams, progress);
-
-            while (report == null)
+            var wasBlocking = analysisParams.Blocking;
+            analysisParams.Blocking = true;
+            try
             {
-                AnalysisCoroutine.ForceMoveNext();
-                Thread.Yield();
+                AuditAsync(analysisParams, progress);
+
+                while (report == null)
+                {
+                    AnalysisCoroutine.ForceMoveNext();
+                    Thread.Yield();
+                }
+            }
+            finally
+            {
+                analysisParams.Blocking = wasBlocking;
             }
 
             return report;
@@ -111,10 +123,15 @@ namespace Unity.ProjectAuditor.Editor
         /// <param name="analysisParams"> Parameters to control the audit process </param>
         /// <param name="progress"> Progress bar, if applicable </param>
         /// <exception cref="System.InvalidOperationException">Thrown if the Project Auditor Rules package is not installed.</exception>
+        /// <exception cref="System.ArgumentException">Thrown if analysisParams.Categories contains a summary category, such as IssueCategory.OptimizationSummary.</exception>
         public void AuditAsync(AnalysisParams analysisParams, IProgress progress = null)
         {
             if (!ProjectAuditorRulesPackage.IsInstalled)
                 throw new InvalidOperationException("Install the Project Auditor Rules package before using Project Auditor");
+
+            var summaryIndex = analysisParams.Categories == null ? -1 : Array.FindIndex(analysisParams.Categories, c => c.Value.IsSummary());
+            if (summaryIndex >= 0)
+                throw new ArgumentException($"{analysisParams.Categories[summaryIndex].Value} is a summary category: summary categories are UI-only views and can't be requested for analysis. Request the categories it summarizes instead.", nameof(analysisParams));
 
             if (analysisParams.Platform == BuildTarget.NoTarget)
                 analysisParams.Platform = EditorUserBuildSettings.activeBuildTarget;
@@ -144,7 +161,7 @@ namespace Unity.ProjectAuditor.Editor
                 if (categories.Contains(IssueCategory.Code))
                 {
                     report.SessionInfo.CodeAnalysisFlags = analysisParams.CodeAnalysisFlags;
-                    report.SessionInfo.CodeOwnerFlags = analysisParams.CodeOwnerFlags;
+                    report.SessionInfo.OwnerFlags = analysisParams.OwnerFlags;
                 }
 
                 foreach (var category in categories)
@@ -218,6 +235,8 @@ namespace Unity.ProjectAuditor.Editor
 
                 var moduleParams = new AnalysisParams(analysisParams)
                 {
+                    // Without progress, AuditAsync runs the whole analysis before it returns
+                    Blocking = analysisParams.Blocking || progress == null,
                     OnIncomingIssues = results =>
                     {
                         if (analysisParams.ExistingReport != null)

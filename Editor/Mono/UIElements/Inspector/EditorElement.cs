@@ -62,6 +62,7 @@ namespace UnityEditor.UIElements
 #pragma warning restore UAC2001
 
         Object m_EditorTarget;
+        EntityId m_EditorTargetEntityId;
         Editor m_EditorUsedInDecorators;
 
         int m_EditorIndex;
@@ -159,6 +160,7 @@ namespace UnityEditor.UIElements
         {
             PopulateCache(editors);
             m_EditorTarget = editor.targets[0];
+            m_EditorTargetEntityId = editor.targetEntityId;
             var editorTitle = editor.GetInspectorTitle(editor.targets.Length > 1);
 
             m_Header = BuildHeaderElement(editorTitle, out m_HeaderIMGUIContainer);
@@ -249,13 +251,14 @@ namespace UnityEditor.UIElements
 
             // If the target change we need to invalidate IMGUI container cached measurements
             // See https://fogbugz.unity3d.com/f/cases/1279830/
-            if (m_EditorTarget != editorTarget)
+            if (m_EditorTargetEntityId != editor.targetEntityId)
             {
                 m_HeaderIMGUIContainer.MarkDirtyLayout();
                 m_Footer.MarkDirtyLayout();
             }
 
             m_EditorTarget = editorTarget;
+            m_EditorTargetEntityId = editor.targetEntityId;
             m_EditorIndex = editorIndex;
 
             m_HeaderIMGUIContainer.onGUIHandler = HeaderOnGUI;
@@ -329,7 +332,7 @@ namespace UnityEditor.UIElements
         {
             if (editor == null)
                 return "Nothing Selected";
-            // targetType is m_DataComponentType for data-component editors and the
+            // targetType is m_NonObjectTargetType for editors with no target Object and the
             // first target's runtime type otherwise; falls back to "Component" if the
             // type isn't resolvable.
             var typeName = editor.targetType != null ? editor.targetType.Name : "Component";
@@ -441,10 +444,10 @@ namespace UnityEditor.UIElements
             // - ActiveEditorTracker will automatically create editors for materials of components on tracked game objects
             // - UnityEngine.UI.Mask will destroy this material in OnDisable (e.g. disabling it with the checkbox) causing problems when drawing the material editor
             //
-            // Component editors intentionally have a null target (data lives in the tracker's
-            // EntityIds via m_TargetEntityIds); they must proceed with rendering.
+            // Data-component and entity editors intentionally have a null target (their targets are
+            // the EntityIds in m_TargetEntityIds); they must proceed with rendering.
             var target = editor.target;
-            if (target == null && !editor.isDataComponentEditor && !NativeClassExtensionUtilities.ExtendsANativeType(target))
+            if (editor.hasDestroyedObjectTarget && !NativeClassExtensionUtilities.ExtendsANativeType(target))
             {
                 if (m_InspectorElement != null)
                 {

@@ -20,13 +20,11 @@ namespace UnityEditor.ShaderApiReflection
         // Public API
 
         public Shader BaseShader => GetBaseShader();
-        public ReadOnlyCollection<VirtualFunctionDeclaration> OverridableFunctions
-            => GetVirtualFunctionDeclarations().AsReadOnly();
+        /// <summary>
+        /// Every virtual function defined in this shader or its ancestors.
+        /// </summary>
+        public ReadOnlyCollection<VirtualFunction> VirtualFunctions => GetOrLoadVirtualFunctions().AsReadOnly();
         public ReadOnlyCollection<PartialStruct> PartialStructs => GetOrLoadPartialStructs().AsReadOnly();
-
-        // Internal API
-
-        internal ReadOnlyCollection<VirtualFunction> VirtualFunctions => GetOrLoadAllVirtualFunctions().AsReadOnly();
 
         // Private API
 
@@ -39,7 +37,7 @@ namespace UnityEditor.ShaderApiReflection
         private extern PartialStruct.MarshalledType[] GetPartialStructsFromNative();
         private extern Shader GetBaseShader();
 
-        private List<VirtualFunction> GetOrLoadAllVirtualFunctions()
+        private List<VirtualFunction> GetOrLoadVirtualFunctions()
         {
             if (m_AllVirtualFunctions == null)
             {
@@ -61,14 +59,6 @@ namespace UnityEditor.ShaderApiReflection
                     m_PartialStructs.Add(new(nativeData));
             }
             return m_PartialStructs;
-        }
-
-        private List<VirtualFunctionDeclaration> GetVirtualFunctionDeclarations()
-        {
-            List<VirtualFunctionDeclaration> result = new();
-            foreach (VirtualFunction func in VirtualFunctions)
-                result.Add(func.Declaration);
-            return result;
         }
     }
 }

@@ -43,8 +43,11 @@ namespace UnityEditor.Networking
         const string k_CredentialIconClass = "web-request-details-view__credential-icon";
         const string k_TruncationNoteClass = "web-request-details-view__truncation-note";
         const string k_StatusSuccessClass = "web-request-details-view__status--success";
+        const string k_StatusWarningClass = "web-request-details-view__status--warning";
         const string k_StatusErrorClass = "web-request-details-view__status--error";
         const string k_StatusInFlightClass = "web-request-details-view__status--in-flight";
+        const string k_CopiedClass = "web-request-details-view__body-copy--copied";
+        const long k_CopiedFeedbackMs = 1500;
         const string k_HiddenClass = "web-request-details-view--hidden";
         const string k_InsecureIconHiddenClass = "web-request-details-view__insecure-icon--hidden";
         const string k_ContainerClass = "web-request-details-view__container";
@@ -59,7 +62,8 @@ namespace UnityEditor.Networking
         // Must match the inspector's USS min-width, or the drag line is placed where the pane is not.
         const float k_InspectorMinWidth = 220f;
 
-        readonly WebRequestProfilerCaptureLog m_Log = new WebRequestProfilerCaptureLog();
+        readonly WebRequestProfilerModule m_Module;
+        readonly WebRequestProfilerCaptureLog m_Log;
 
         // What the list shows: the log's records that pass the filter, in the user's sort order. The log
         // itself stays in capture order, because the merge keys off it and the summary totals the whole
@@ -97,6 +101,7 @@ namespace UnityEditor.Networking
         Label m_FieldUrl;
         Label m_FieldMethod;
         Label m_FieldStatus;
+        VisualElement m_FieldStatusDot;
         Label m_FieldSource;
         Label m_FieldType;
         Label m_FieldTransferred;
@@ -122,7 +127,12 @@ namespace UnityEditor.Networking
         TextField m_ResponseBodyText;
         TreeView m_ResponseBodyTree;
 
-        public WebRequestDetailsViewController(ProfilerWindow profilerWindow) : base(profilerWindow) {}
+        public WebRequestDetailsViewController(ProfilerWindow profilerWindow, WebRequestProfilerModule module)
+            : base(profilerWindow)
+        {
+            m_Module = module;
+            m_Log = module.captureLog;
+        }
 
         protected override VisualElement CreateView()
         {
@@ -152,12 +162,15 @@ namespace UnityEditor.Networking
             m_PayloadTab = view.Q<Tab>("web-request-details-view__payload-tab");
             m_QueryParameters = view.Q<Foldout>("web-request-details-view__query-parameters");
             m_RequestPayload = view.Q<Foldout>("web-request-details-view__request-payload");
+            MoveIntoHeader(m_QueryParameters, view.Q("web-request-details-view__query-parameters-toolbar"));
+            MoveIntoHeader(m_RequestPayload, view.Q("web-request-details-view__request-payload-toolbar"));
             m_ResponseHeaders = view.Q<Foldout>("web-request-details-view__response-headers");
             m_RequestHeaders = view.Q<Foldout>("web-request-details-view__request-headers");
             m_RequestWireHeaders = view.Q<Foldout>("web-request-details-view__request-wire-headers");
             m_FieldUrl = view.Q<Label>("web-request-details-view__field-url");
             m_FieldMethod = view.Q<Label>("web-request-details-view__field-method");
             m_FieldStatus = view.Q<Label>("web-request-details-view__field-status");
+            m_FieldStatusDot = view.Q("web-request-details-view__field-status-dot");
             m_FieldSource = view.Q<Label>("web-request-details-view__field-source");
             m_FieldType = view.Q<Label>("web-request-details-view__field-type");
             m_FieldTransferred = view.Q<Label>("web-request-details-view__field-transferred");
@@ -200,19 +213,9 @@ namespace UnityEditor.Networking
             m_ListView.selectionChanged += OnSelectionChanged;
             m_ListView.columnSortingChanged += OnColumnSortingChanged;
 
-            ReloadData(force: true);
-            ProfilerWindow.SelectedFrameIndexChanged += OnSelectedFrameIndexChanged;
-
-            // Frames keep arriving while the cursor stays put: a user who selects a frame during a
-            // recording pins selectedFrameIndex, so the event above stops firing and the log would stop
-            // ingesting until they moved it again. Cheap per frame, because ReloadData early-outs when
-            // Sync reports it read nothing.
-            ProfilerDriver.NewProfilerFrameRecorded += OnNewProfilerFrameRecorded;
-
-            // ProfilerModule.Clear() is the usual hook but cannot reach here - the details view
-            // controller is private to the base class.
-            ProfilerDriver.profileCleared += OnProfileCleared;
-            ProfilerDriver.profileLoaded += OnProfileLoaded;
+            m_Module.SyncCaptureLog();
+            ReloadData();
+            m_Module.captureLogChanged += ReloadData;
 
             return view;
         }
@@ -222,10 +225,7 @@ namespace UnityEditor.Networking
             if (!disposing)
                 return;
 
-            ProfilerWindow.SelectedFrameIndexChanged -= OnSelectedFrameIndexChanged;
-            ProfilerDriver.NewProfilerFrameRecorded -= OnNewProfilerFrameRecorded;
-            ProfilerDriver.profileCleared -= OnProfileCleared;
-            ProfilerDriver.profileLoaded -= OnProfileLoaded;
+            m_Module.captureLogChanged -= ReloadData;
             if (m_ListView != null)
             {
                 m_ListView.selectionChanged -= OnSelectionChanged;
@@ -296,11 +296,8 @@ namespace UnityEditor.Networking
             BindColumn(k_StatusColumn, (label, record) =>
             {
                 label.text = WebRequestProfilerFormatting.FormatStatusCode(record);
-
-                label.RemoveFromClassList(k_StatusSuccessClass);
-                label.RemoveFromClassList(k_StatusErrorClass);
-                label.RemoveFromClassList(k_StatusInFlightClass);
-                label.AddToClassList(StatusClassFor(record));
+                label.tooltip = WebRequestProfilerFormatting.FormatStatus(record);
+                SetStatusClass(label, record);
             });
 
             // One-based: the first request a user made is "1", not "0".
@@ -379,14 +376,9 @@ namespace UnityEditor.Networking
                 label.text = record.url;
                 label.tooltip = record.url;
 
-                // Hidden rather than removed from layout, so every URL in the column starts at the same x.
-                // A hidden element still hit-tests, so the tooltip and picking come off with it - otherwise
-                // hovering the empty icon slot on an HTTPS row reports it as unencrypted.
                 var warning = element.Q<Image>("insecure");
-                var insecure = IsInsecure(record.url);
-                warning.EnableInClassList(k_InsecureIconHiddenClass, !insecure);
-                warning.pickingMode = insecure ? PickingMode.Position : PickingMode.Ignore;
-                warning.tooltip = insecure ? k_InsecureTooltip : null;
+                warning.EnableInClassList(k_InsecureIconHiddenClass, !IsInsecure(record.url));
+                warning.tooltip = k_InsecureTooltip;
             };
         }
 
@@ -433,7 +425,16 @@ namespace UnityEditor.Networking
             return builder.ToString();
         }
 
-        static string StatusClassFor(WebRequestProfilerRecord record)
+        static void SetStatusClass(VisualElement element, WebRequestProfilerRecord record)
+        {
+            element.RemoveFromClassList(k_StatusSuccessClass);
+            element.RemoveFromClassList(k_StatusWarningClass);
+            element.RemoveFromClassList(k_StatusErrorClass);
+            element.RemoveFromClassList(k_StatusInFlightClass);
+            element.AddToClassList(StatusClassFor(record));
+        }
+
+        internal static string StatusClassFor(WebRequestProfilerRecord record)
         {
             switch (record.state)
             {
@@ -443,57 +444,32 @@ namespace UnityEditor.Networking
                     return k_StatusErrorClass;
                 default:
                     // A request can complete transport-wise and still carry an HTTP error status.
+                    if (IsWarningStatus(record.statusCode))
+                        return k_StatusWarningClass;
                     return record.statusCode >= 400 ? k_StatusErrorClass : k_StatusSuccessClass;
             }
         }
 
-        void OnSelectedFrameIndexChanged(long _)
+        // A final 3xx means the redirect was not followed; the 4xx here are ones the caller is expected to handle.
+        static bool IsWarningStatus(ushort statusCode)
         {
-            ReloadData();
+            switch (statusCode)
+            {
+                case 401:
+                case 407:
+                case 408:
+                case 429:
+                    return true;
+                default:
+                    return statusCode >= 300 && statusCode < 400;
+            }
         }
 
-        // ProfilerDriver hands over the frame range; neither argument is needed here, because Sync
-        // reads the range off the driver itself.
-        void OnNewProfilerFrameRecorded(int _, int __)
-        {
-            ReloadData();
-        }
-
-        // Clearing need not move the selected frame, and a replacement capture renumbers frames from
-        // zero, so neither the frame-changed event nor the ingested range can catch it.
-        void OnProfileCleared()
-        {
-            m_Log.Clear();
-            ReloadData(force: true);
-        }
-
-        // A loaded capture is a different session: its frames renumber from zero and its request ids
-        // start over, so merging it into what is already ingested would mix two sessions under colliding
-        // ids. Sync cannot notice on its own - it only ever reads forward, so a load at least as long as
-        // the current session leaves the ingested mark ahead of every loaded frame and reads none of them.
-        void OnProfileLoaded()
-        {
-            m_Log.Clear();
-            ReloadData(force: true);
-        }
-
-        // force covers the cases Sync cannot report on: a Clear leaves it with nothing to ingest, so it
-        // returns false while the rows it emptied are still on screen.
-        void ReloadData(bool force = false)
+        void ReloadData()
         {
             // Tracked by id, not row index: a newly ingested frame can add requests above this one, and
             // so can a re-sort.
             var previouslySelected = SelectedRequestId();
-
-            // Every frame in the buffer, not the selected one. A request is emitted in each frame it is
-            // alive in and then dropped, so its completion - and with it the status code and content
-            // type - exists in exactly one frame.
-            var changed = m_Log.Sync(ProfilerDriver.firstFrameIndex, ProfilerDriver.lastFrameIndex);
-
-            // Scrubbing raises a frame change per frame and the log spans the whole recording, so
-            // re-filtering and re-sorting it for an unchanged list gets steadily more expensive.
-            if (!changed && !force)
-                return;
 
             RebuildRows();
             RestoreSelection(previouslySelected);
@@ -849,6 +825,7 @@ namespace UnityEditor.Networking
             m_FieldUrl.text = record.url;
             m_FieldMethod.text = record.method;
             m_FieldStatus.text = WebRequestProfilerFormatting.FormatStatus(record);
+            SetStatusClass(m_FieldStatusDot, record);
             m_FieldSource.text = WebRequestProfilerFormatting.FormatSource(record);
             m_FieldType.text = string.IsNullOrEmpty(record.contentType) ? "-" : record.contentType;
             m_FieldTransferred.text = $"{WebRequestProfilerFormatting.FormatDownloadSize(record)} down / {WebRequestProfilerFormatting.FormatUploadSize(record)} up";
@@ -923,6 +900,12 @@ namespace UnityEditor.Networking
             SetDisplayed(tab.tabHeader, visible);
         }
 
+        static void MoveIntoHeader(Foldout section, VisualElement toolbar)
+        {
+            section.Q(className: Foldout.inputUssClassName).Add(toolbar);
+            toolbar.Query<UnityEngine.UIElements.Button>().ForEach(button => button.clicked += () => section.value = true);
+        }
+
         static void SetDisplayed(VisualElement element, bool displayed)
         {
             element.EnableInClassList(k_HiddenClass, !displayed);
@@ -955,11 +938,23 @@ namespace UnityEditor.Networking
         {
             // Qualified: UnityEditorInternal has a Button too, and this file uses both namespaces.
             var button = view.Q<UnityEngine.UIElements.Button>(buttonName);
+            var label = button.text;
+            IVisualElementScheduledItem revert = null;
             button.clicked += () =>
             {
                 var text = textToCopy();
-                if (!string.IsNullOrEmpty(text))
-                    EditorGUIUtility.systemCopyBuffer = text;
+                if (string.IsNullOrEmpty(text))
+                    return;
+
+                EditorGUIUtility.systemCopyBuffer = text;
+                button.text = "Copied";
+                button.AddToClassList(k_CopiedClass);
+                revert?.Pause();
+                revert = button.schedule.Execute(() =>
+                {
+                    button.text = label;
+                    button.RemoveFromClassList(k_CopiedClass);
+                }).StartingIn(k_CopiedFeedbackMs);
             };
             return button;
         }

@@ -244,6 +244,7 @@ namespace UnityEngine
             ctx.CacheBackupOffset = (int)EntityIdStoreBindings.GetCacheBackupOffset();
             ctx.NativeStore              = EntityIdStoreBindings.GetEntityIdAllocatorStore();
             ctx.NullSlot                 = default;
+            WrapperLookup.Initialize(ctx);
             // The Block struct below hardcodes the native block geometry; a
             // mismatch would misplace the bitmaps inside the slot array.
             Assert.AreEqual(1u << ctx.BlockShift, (uint)k_NativeBlockSlots);
@@ -392,22 +393,54 @@ namespace UnityEngine
             return (void*)ptr;
         }
 
-        // Mirrors native EntityIdStore_GetRawNativePtr: resolves an Object in any state, published, still loading or
-        // being destroyed. For lookups from a managed wrapper; lookups by a bare id use GetNativeObject.
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public unsafe static void* GetRawNativeObject(EntityId entity)
+        // No static constructor, so IL2CPP emits no class-init check. Burst cannot read these plain statics.
+        [VisibleToOtherModules("UnityEngine.CoreModule")]
+        internal static class WrapperLookup
         {
-            ref EntitySlot slot = ref GetSlot(entity.Index);
+            [NoAutoStaticsCleanup] static void* s_NativeStore;
+            // Null on the page-table path.
+            [NoAutoStaticsCleanup] static uint* s_CommittedIndexBound;
 
-            IntPtr ptr = Volatile.Read(ref slot.nativeObjectPtr);
-            ulong vac = Volatile.Read(ref slot.versionAndChunk);
+            internal static void Initialize(in ContextData ctx)
+            {
+                s_NativeStore = ctx.NativeStore;
+                s_CommittedIndexBound = ctx.CommittedIndexBound;
+            }
 
-            // Leaving the two low kind bits out of the compare accepts every kind an Object can have while still
-            // rejecting a pointer that is not an Object.
-            if ((uint)(vac & (k_SlotVersionMask | k_SlotNotAnObjectMask)) != entity.Version)
-                return null;
+            // Mirrors native EntityIdStore_GetRawNativePtr: resolves an Object in any state, published, still loading
+            // or being destroyed. For ids held by a wrapper or just returned by native; other ids use GetNativeObject.
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public static void* GetRawNativeObject(EntityId entity)
+            {
+                uint index = entity.Index;
+                void* store = s_NativeStore;
+                uint* committedIndexBound = s_CommittedIndexBound;
+                EntitySlot* slots;
+                if (committedIndexBound != null)
+                {
+                    if (index >= Volatile.Read(ref *committedIndexBound))
+                        return null;
+                    slots = (EntitySlot*)store;
+                }
+                else
+                {
+                    slots = (EntitySlot*)Volatile.Read(ref ((IntPtr*)store)[index / k_NativeBlockSlots]);
+                    if (slots == null)
+                        return null;
+                    index %= k_NativeBlockSlots;
+                }
 
-            return (void*)ptr;
+                ref EntitySlot slot = ref slots[index];
+                IntPtr ptr = Volatile.Read(ref slot.nativeObjectPtr);
+                ulong vac = Volatile.Read(ref slot.versionAndChunk);
+
+                // Leaving the two low kind bits out of the compare accepts every kind an Object can have while still
+                // rejecting a pointer that is not an Object.
+                if ((uint)(vac & (k_SlotVersionMask | k_SlotNotAnObjectMask)) != entity.Version)
+                    return null;
+
+                return (void*)ptr;
+            }
         }
 
         // Resolves an Object that is published or still loading, never one being destroyed. For lookups by a bare id

@@ -2088,9 +2088,9 @@ namespace NiceIO
                 {
                     using (var fs = new FileStream(handle, FileAccess.Write))
                     {
-                        using (var sw = new StreamWriter(fs))
+                        using (var sw = new StreamWriter(fs, new UTF8Encoding(false, true)))
                         {
-                            sw.Write(contents, new UTF8Encoding(false, true));
+                            sw.Write(contents);
                         }
                     }
                 }

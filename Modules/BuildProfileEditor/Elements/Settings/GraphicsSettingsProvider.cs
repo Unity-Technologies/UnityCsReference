@@ -20,22 +20,9 @@ namespace UnityEditor.Build.Profile.Elements
 
         public bool HasSettings(BuildProfile profile) => profile.graphicsSettings != null;
 
-        public void OnAdd(BuildProfile profile)
-        {
-            BuildProfileModuleUtil.CreateGraphicsSettings(profile);
-            OnReset(profile);
+        public void OnAdd(BuildProfile profile) => BuildProfileModuleUtil.CreateGraphicsSettings(profile);
 
-            if (profile == BuildProfileContext.activeProfile)
-                BuildProfileModuleUtil.OnActiveProfileGraphicsSettingsChanged(true);
-        }
-
-        public void OnRemove(BuildProfile profile)
-        {
-            BuildProfileModuleUtil.RemoveGraphicsSettings(profile);
-
-            if (profile == BuildProfileContext.activeProfile)
-                BuildProfileModuleUtil.OnActiveProfileGraphicsSettingsChanged(false);
-        }
+        public void OnRemove(BuildProfile profile) => BuildProfileModuleUtil.RemoveGraphicsSettings(profile);
 
         public Action<BuildProfile> GetResetAction() => OnReset;
 
@@ -52,12 +39,6 @@ namespace UnityEditor.Build.Profile.Elements
             return new EditorAsVisualElement(profile.graphicsSettings, true);
         }
 
-        void OnReset(BuildProfile profile)
-        {
-            var editor = Editor.CreateEditor(profile.graphicsSettings) as BuildProfileGraphicsSettingsEditor;
-            editor.ResetToGlobalGraphicsSettingsValues();
-            UnityEngine.Object.DestroyImmediate(editor);
-            EditorUtility.SetDirty(profile.graphicsSettings);
-        }
+        void OnReset(BuildProfile profile) => profile.graphicsSettings.ResetToGlobalValues();
     }
 }

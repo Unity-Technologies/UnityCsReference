@@ -119,6 +119,7 @@ namespace UnityEditor
 
             public static readonly GUIContent renderdocContent;
             public static readonly GUIStyle gameViewBackgroundStyle;
+            public static readonly GUIStyle zoomSliderContainerStyle;
 
             // The ordering here must correspond with ordering in UnityEngine.XR.GameViewRenderMode
             public static readonly GUIContent[] xrRenderingModes = { EditorGUIUtility.TextContent("Left Eye|Left eye is displayed in play mode."), EditorGUIUtility.TextContent("Right Eye|Right eye is displayed in play mode."), EditorGUIUtility.TextContent("Both Eyes|Both eyes are displayed in play mode."), EditorGUIUtility.TextContent("Occlusion Mesh|Both eyes are displayed in play mode along with the occlusion mesh.") };
@@ -126,6 +127,7 @@ namespace UnityEditor
             static Styles()
             {
                 gameViewBackgroundStyle = "GameViewBackground";
+                zoomSliderContainerStyle = "GameViewZoomSliderContainer";
                 renderdocContent = L10n.IconContent("FrameCapture", RenderDocUtil.openInRenderDocTooltip, null);
             }
         }
@@ -590,22 +592,29 @@ namespace UnityEditor
 
         void DoZoomSlider()
         {
-            GUILayout.Label(Styles.zoomSliderContent);
-            EditorGUI.BeginChangeCheck();
-            // Zooming feels more natural on a log scale
-            var logScale = Mathf.Log10(m_ZoomArea.scale.y);
-            var logMin = Mathf.Log10(minScale);
-            var logMax = Mathf.Log10(maxScale);
-            logScale = GUILayout.HorizontalSlider(logScale, logMin, logMax, GUILayout.MaxWidth(kScaleSliderMaxWidth), GUILayout.MinWidth(kScaleSliderMinWidth));
-            if (EditorGUI.EndChangeCheck())
+            GUILayout.BeginHorizontal(Styles.zoomSliderContainerStyle);
             {
-                var newZoom = Mathf.Pow(10f, logScale);
-                SnapZoom(newZoom);
+                GUILayout.Label(Styles.zoomSliderContent);
+                EditorGUI.BeginChangeCheck();
+                // Zooming feels more natural on a log scale
+                var logScale = Mathf.Log10(m_ZoomArea.scale.y);
+                var logMin = Mathf.Log10(minScale);
+                var logMax = Mathf.Log10(maxScale);
+                logScale = GUILayout.HorizontalSlider(logScale, logMin, logMax,
+                    GUILayout.MaxWidth(kScaleSliderMaxWidth), GUILayout.MinWidth(kScaleSliderMinWidth));
+                if (EditorGUI.EndChangeCheck())
+                {
+                    var newZoom = Mathf.Pow(10f, logScale);
+                    SnapZoom(newZoom);
+                }
+
+                var scaleContent = EditorGUIUtility.TempContent($"{(m_ZoomArea.scale.y).ToString("G2", CultureInfo.InvariantCulture.NumberFormat)}x");
+                scaleContent.tooltip = Styles.zoomSliderContent.tooltip;
+                GUILayout.Label(scaleContent, GUILayout.Width(kScaleLabelWidth));
+                scaleContent.tooltip = string.Empty;
+
+                GUILayout.EndHorizontal();
             }
-            var scaleContent = EditorGUIUtility.TempContent(string.Format("{0}x", (m_ZoomArea.scale.y).ToString("G2", CultureInfo.InvariantCulture.NumberFormat)));
-            scaleContent.tooltip = Styles.zoomSliderContent.tooltip;
-            GUILayout.Label(scaleContent, GUILayout.Width(kScaleLabelWidth));
-            scaleContent.tooltip = string.Empty;
         }
 
         private bool ShouldShowMetalFrameCaptureGUI()
@@ -1021,8 +1030,8 @@ namespace UnityEditor
 
             if (type == EventType.MouseDown || type == EventType.MouseUp)
             {
-                EditorApplication.globalEventHandler?.Invoke();
-                EditorApplication.shortcutHelperBarEventHandler?.Invoke();
+                EditorApplication.globalEventHandler?.Invoke(Event.current);
+                EditorApplication.shortcutHelperBarEventHandler?.Invoke(Event.current);
             }
 
             // This isn't ideal. Custom Cursors set by editor extensions for other windows can leak into the game view.

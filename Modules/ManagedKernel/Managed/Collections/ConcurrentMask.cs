@@ -6,6 +6,7 @@ using System;
 using System.Threading;
 using Unity.Collections.LowLevel.Unsafe;
 using Unity.Mathematics;
+using UnityEngine.Bindings;
 
 #pragma warning disable 0649
 
@@ -38,8 +39,10 @@ namespace Unity.Collections
         }
     }
 
+    [VisibleToOtherModules("UnityEngine.EntitiesModule")]
     internal class ConcurrentMask
     {
+        [VisibleToOtherModules("UnityEngine.EntitiesModule")]
         internal static long AtomicOr(ref long destination, long source)
         {
             var readValue = Interlocked.Read(ref destination);
@@ -53,6 +56,7 @@ namespace Unity.Collections
             return writtenValue;
         }
 
+        [VisibleToOtherModules("UnityEngine.EntitiesModule")]
         internal static long AtomicAnd(ref long destination, long source)
         {
             var readValue = Interlocked.Read(ref destination);
@@ -91,6 +95,7 @@ namespace Unity.Collections
             return count >= minimum;
         }
 
+        [VisibleToOtherModules("UnityEngine.EntitiesModule")]
         internal static bool foundAtLeastThisManyConsecutiveZeroes(long value, int minimum, out int offset, out int count)
         {
             return foundAtLeastThisManyConsecutiveOnes(~value, minimum, out offset, out count);
@@ -107,6 +112,7 @@ namespace Unity.Collections
             return error >= 0;
         }
 
+        [VisibleToOtherModules("UnityEngine.EntitiesModule")]
         internal static long MakeMask(int offset, int bits)
         {
             return (long)(~0UL >> (64-bits)) << offset;
@@ -128,6 +134,7 @@ namespace Unity.Collections
             return math.countbits(readValue); // how many bits were set, before i allocated? sometimes if 0, do something special (allocate chunk?)
         }
 
+        [VisibleToOtherModules("UnityEngine.EntitiesModule")]
         internal static int TryFree(ref long l, int offset, int bits)
         {
             var mask = MakeMask(offset, bits);
@@ -169,6 +176,7 @@ namespace Unity.Collections
             return TryAllocate(ref t.ElementAt(wordOffset), bitOffset, bits);
         }
 
+        [VisibleToOtherModules("UnityEngine.EntitiesModule")]
         internal static int TryFree<T>(ref T t, int offset, int bits) where T : IIndexable<long>
         {
             var wordOffset = offset >> 6;

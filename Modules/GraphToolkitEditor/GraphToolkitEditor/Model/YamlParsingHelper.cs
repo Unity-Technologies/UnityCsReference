@@ -46,6 +46,201 @@ namespace Unity.GraphToolkit.Editor
             return TryParseStringFormat1(data, field, startingIndex, out parsedString) || TryParseStringFormat2(data, field, startingIndex, out parsedString);
         }
 
+        /// <summary>
+        /// Counts the managed reference ids that an object of a text serialized file references but that have no entry in its references.
+        /// </summary>
+        /// <param name="data">The content of the file.</param>
+        /// <returns>The number of reference ids without an entry, which happens when the file is truncated or was badly merged.</returns>
+        public static int CountDanglingManagedReferences(string data)
+        {
+            var listItemPrefix = "- rid: ".AsSpan();
+            var fieldPrefix = "rid: ".AsSpan();
+
+            var danglingIdCount = 0;
+            var referencedIds = new HashSet<long>();
+            var entryIds = new HashSet<long>();
+            var refIdsIndent = -1;
+            var openQuote = '\0';
+            var openedValueIndent = -1;
+
+            for (var lineStart = 0; lineStart < data.Length;)
+            {
+                var line = GetLine(data, lineStart, out var nextLineStart);
+                lineStart = nextLineStart;
+
+                // The continuation lines of a quoted value are text, whatever they contain.
+                if (openQuote != '\0')
+                {
+                    if (ClosesQuotedValue(line, 0, openQuote))
+                        openQuote = '\0';
+                    continue;
+                }
+
+                if (line.IsWhiteSpace())
+                    continue;
+
+                // Reference ids are only unique within an object of the file.
+                if (line.StartsWith("--- !u!".AsSpan(), StringComparison.Ordinal))
+                {
+                    danglingIdCount += CountReferencesWithoutEntry(referencedIds, entryIds);
+                    referencedIds.Clear();
+                    entryIds.Clear();
+                    refIdsIndent = -1;
+                    openedValueIndent = -1;
+                    continue;
+                }
+
+                var indent = GetIndent(line);
+                var content = line.Slice(indent);
+                openQuote = GetUnclosedQuote(content);
+                var parentValueIndent = openedValueIndent;
+                openedValueIndent = GetOpenedValueIndent(content, indent);
+
+                if (refIdsIndent != -1 && (indent < refIdsIndent || (indent == refIdsIndent && !content.StartsWith("- ".AsSpan(), StringComparison.Ordinal))))
+                    refIdsIndent = -1;
+
+                if (content.Equals("RefIds:".AsSpan(), StringComparison.Ordinal))
+                {
+                    refIdsIndent = indent;
+                    continue;
+                }
+
+                var isListItem = content.StartsWith(listItemPrefix, StringComparison.Ordinal);
+                if (!isListItem && !content.StartsWith(fieldPrefix, StringComparison.Ordinal))
+                    continue;
+
+                var idText = content.Slice(isListItem ? listItemPrefix.Length : fieldPrefix.Length);
+                if (!long.TryParse(idText, NumberStyles.Integer, CultureInfo.InvariantCulture, out var id))
+                    continue;
+
+                var nextLine = GetNextContentLine(data, nextLineStart, out var nextIndent);
+                if (isListItem && indent == refIdsIndent)
+                {
+                    // An entry is followed by its type, unless the file was cut right after it.
+                    if (nextIndent > indent && nextLine.Slice(nextIndent).StartsWith("type: {".AsSpan(), StringComparison.Ordinal))
+                        entryIds.Add(id);
+                    else
+                        referencedIds.Add(id);
+                    continue;
+                }
+
+                // A reference is the only key of the value it is written in, unlike a field that happens to be named rid.
+                var isOnlyKey = isListItem ? nextIndent < indent + 2 : indent == parentValueIndent && nextIndent < indent;
+                if (isOnlyKey)
+                    referencedIds.Add(id);
+            }
+
+            return danglingIdCount + CountReferencesWithoutEntry(referencedIds, entryIds);
+
+            static int CountReferencesWithoutEntry(HashSet<long> referencedIds, HashSet<long> entryIds)
+            {
+                var count = 0;
+                foreach (var id in referencedIds)
+                {
+                    // Negative ids stand for null and unknown references, which have no entry.
+                    if (id >= 0 && !entryIds.Contains(id))
+                        count++;
+                }
+
+                return count;
+            }
+        }
+
+        // Returns the line starting at lineStart, without its line break.
+        static ReadOnlySpan<char> GetLine(string data, int lineStart, out int nextLineStart)
+        {
+            if (lineStart >= data.Length)
+            {
+                nextLineStart = data.Length;
+                return ReadOnlySpan<char>.Empty;
+            }
+
+            var lineBreak = data.IndexOf('\n', lineStart);
+            var lineEnd = lineBreak == -1 ? data.Length : lineBreak;
+            nextLineStart = lineBreak == -1 ? data.Length : lineBreak + 1;
+            if (lineEnd > lineStart && data[lineEnd - 1] == '\r')
+                lineEnd--;
+
+            return data.AsSpan(lineStart, lineEnd - lineStart);
+        }
+
+        static int GetIndent(ReadOnlySpan<char> line)
+        {
+            var indent = 0;
+            while (indent < line.Length && line[indent] == ' ')
+                indent++;
+
+            return indent;
+        }
+
+        // The indent is -1 when no line with content follows.
+        static ReadOnlySpan<char> GetNextContentLine(string data, int lineStart, out int indent)
+        {
+            while (lineStart < data.Length)
+            {
+                var line = GetLine(data, lineStart, out lineStart);
+                if (!line.IsWhiteSpace())
+                {
+                    indent = GetIndent(line);
+                    return line;
+                }
+            }
+
+            indent = -1;
+            return ReadOnlySpan<char>.Empty;
+        }
+
+        // Returns the indent of the content of a value that this line opens, like "key:" or "- key:", or -1.
+        static int GetOpenedValueIndent(ReadOnlySpan<char> content, int indent)
+        {
+            if (!content.TrimEnd().EndsWith(":".AsSpan(), StringComparison.Ordinal))
+                return -1;
+
+            var keyIndent = content.StartsWith("- ".AsSpan(), StringComparison.Ordinal) ? indent + 2 : indent;
+            return keyIndent + 2;
+        }
+
+        // Returns the quote of a quoted value that starts on this line but continues on the next ones, or '\0'.
+        static char GetUnclosedQuote(ReadOnlySpan<char> content)
+        {
+            var keyEnd = content.IndexOf(": ".AsSpan(), StringComparison.Ordinal);
+            var valueStart = keyEnd != -1 ? keyEnd + 2 : content.StartsWith("- ".AsSpan(), StringComparison.Ordinal) ? 2 : -1;
+            if (valueStart == -1 || valueStart >= content.Length)
+                return '\0';
+
+            var quote = content[valueStart];
+            if (quote != '\'' && quote != '"')
+                return '\0';
+
+            return ClosesQuotedValue(content, valueStart + 1, quote) ? '\0' : quote;
+        }
+
+        static bool ClosesQuotedValue(ReadOnlySpan<char> text, int start, char quote)
+        {
+            for (var i = start; i < text.Length; i++)
+            {
+                if (quote == '"' && text[i] == '\\')
+                {
+                    i++;
+                    continue;
+                }
+
+                if (text[i] != quote)
+                    continue;
+
+                // Single quotes are escaped by doubling them.
+                if (quote == '\'' && i + 1 < text.Length && text[i + 1] == '\'')
+                {
+                    i++;
+                    continue;
+                }
+
+                return true;
+            }
+
+            return false;
+        }
+
         public static bool TryParseList(string listField, string elementField, string data, int parentIndex, out List<string> listStr)
         {
             listStr = new List<string>();
