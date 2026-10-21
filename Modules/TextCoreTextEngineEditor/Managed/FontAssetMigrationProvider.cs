@@ -216,7 +216,7 @@ namespace UnityEditor.TextCore.Text
             }
 
             SetAtlasPopulationMode(fontAsset, dynamic: true);
-            // Keeps the baked tables from being wiped on build and editor quit.
+            // Keeps the baked tables from being wiped on build and on save.
             SetClearDynamicDataOnBuild(fontAsset, false);
             FontAssetStaticMigrator.MakeAtlasTexturesReadable(GetAtlasTextures(fontAsset));
 
@@ -329,7 +329,8 @@ namespace UnityEditor.TextCore.Text
         protected override void SetAtlasPopulationMode(FontAsset fontAsset, bool dynamic) =>
             fontAsset.atlasPopulationMode = dynamic ? AtlasPopulationMode.Dynamic : AtlasPopulationMode.Static;
 
-        protected override void SetClearDynamicDataOnBuild(FontAsset fontAsset, bool clear) => fontAsset.clearDynamicDataOnBuild = clear;
+        protected override void SetClearDynamicDataOnBuild(FontAsset fontAsset, bool clear) =>
+            fontAsset.dynamicDataPersistence = clear ? DynamicDataPersistence.SessionOnly : DynamicDataPersistence.Persistent;
 
         protected override void ClearStandardPipelineTables(FontAsset fontAsset)
         {

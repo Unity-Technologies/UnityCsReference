@@ -754,7 +754,6 @@ namespace UnityEditor.Search
 
             throw new Exception("Failed to deserialize game object property");
         }
-
     }
 
     class SearchItemQueryEngine : QueryEngine<SearchItem>

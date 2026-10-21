@@ -182,13 +182,13 @@ internal partial class VisualElementNodeHandler :
         {
             foreach (var remap in remappings)
             {
-                if (TryGetValue(remap.Previous, out var node))
-                {
-                    m_Map[node] = remap.Remapped;
-                    m_ReversedMap[remap.Remapped] = node;
-                    m_ReversedMap.Remove(remap.Previous);
-                    // Intentionally not remapping selection, because it's based on the node.
-                }
+                if (!TryGetValue(remap.Previous, out var node) || m_ReversedMap.ContainsKey(remap.Remapped))
+                    continue;
+
+                m_Map[node] = remap.Remapped;
+                m_ReversedMap[remap.Remapped] = node;
+                m_ReversedMap.Remove(remap.Previous);
+                // Intentionally not remapping selection, because it's based on the node.
             }
         }
     }
@@ -325,9 +325,9 @@ internal partial class VisualElementNodeHandler :
 
     protected internal NodeHandlerStageStrategy StageStrategy => m_StageStrategy;
 
-    static NodeHandlerStageStrategy CreateStrategyFromStage()
+    NodeHandlerStageStrategy CreateStrategyFromStage()
     {
-        var stage = StageUtility.GetCurrentStage();
+        var stage = HierarchyWindow.GetStage(Hierarchy);
         return stage switch
         {
             MainStage or PrefabStage => new MainStageNodeHandlerStrategy(stage),
@@ -337,7 +337,7 @@ internal partial class VisualElementNodeHandler :
     }
 
     /// <summary>
-    /// The stage integration this handler runs with. Defaults to the strategy matching the current stage;
+    /// The stage integration this handler runs with. Defaults to the strategy matching the stage of its hierarchy;
     /// a handler that registers its own panels can supply an inert strategy instead.
     /// </summary>
     protected virtual NodeHandlerStageStrategy CreateStageStrategy() => CreateStrategyFromStage();

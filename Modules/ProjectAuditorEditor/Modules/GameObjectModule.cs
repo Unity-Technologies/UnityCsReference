@@ -201,7 +201,11 @@ namespace Unity.ProjectAuditor.Editor.Core
                 var reportItemBuilders = analyzer.Analyze(gameObjectAnalysisContext);
                 var reportItems = new List<ReportItem>();
                 foreach (var item in reportItemBuilders)
+                {
+                    if (((ReportItem)item).Location == null)
+                        item.WithLocation(issuePath);
                     reportItems.Add(item.WithCustomProperties([issuePath]));
+                }
                 analysisParams.OnIncomingIssues(reportItems);
             }
 

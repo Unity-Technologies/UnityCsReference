@@ -60,9 +60,14 @@ namespace Unity.Hierarchy
                     icon = Background.FromTexture2D(Descriptor.Icon);
             }
 
+            if (descriptor.MinWidth >= 0)
+            {
+                minWidth = descriptor.MinWidth;
+            }
+
             if (descriptor.DefaultWidth > 0)
             {
-                this.width = descriptor.DefaultWidth;
+                this.width = Mathf.Max(descriptor.DefaultWidth, descriptor.MinWidth);
             }
 
             makeCell += MakeCell;
@@ -108,6 +113,8 @@ namespace Unity.Hierarchy
         {
             if (newWidth <= 0)
                 return;
+            if (col is HierarchyViewColumn hc && hc.Descriptor.MinWidth > 0)
+                newWidth = Mathf.Max(newWidth, hc.Descriptor.MinWidth);
             col.width = newWidth;
             if (col.minWidth.value > newWidth)
             {
@@ -183,13 +190,19 @@ namespace Unity.Hierarchy
 
             var node = m_View.ViewModel[index];
             if (node == HierarchyNode.Null)
+            {
+                cell.HideCachedEditor();
                 return;
+            }
 
             cell.Node = node;
             cell.NodeIndex = index;
             cell.Handler = m_View.ViewModel.GetNodeTypeHandler(node);
             if (cell.Handler == null)
+            {
+                cell.HideCachedEditor();
                 return;
+            }
 
             foreach (var desc in m_CellDescriptors)
             {
@@ -202,6 +215,7 @@ namespace Unity.Hierarchy
 
             if (cell.Descriptor == null)
             {
+                cell.HideCachedEditor();
                 return;
             }
             cell.BindCell();

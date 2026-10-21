@@ -57,6 +57,7 @@ namespace Unity.ProjectAuditor.Editor.UI.Framework
 
         Dictionary<string, IssueTableItem> m_TreeViewItemGroupsLookup = new Dictionary<string, IssueTableItem>();
         Dictionary<int, IssueTableItem> m_TreeViewItemIssues;
+        readonly HashSet<string> m_ExpandedGroupNames = new HashSet<string>();
         List<IssueTableItem> m_SelectedIssues = new List<IssueTableItem>();
         List<IssueTableItem> m_SelectedGroupIssues = new List<IssueTableItem>();
         ReportItem[] m_SelectedReportItems;
@@ -128,7 +129,13 @@ namespace Unity.ProjectAuditor.Editor.UI.Framework
             {
                 // if necessary, create a group
                 if (!m_TreeViewItemGroupsLookup.ContainsKey(name))
-                    m_TreeViewItemGroupsLookup[name] = new IssueTableItem(m_NextId++, 0, name);
+                {
+                    var group = new IssueTableItem(m_NextId++, 0, name);
+                    m_TreeViewItemGroupsLookup[name] = group;
+
+                    if (m_ExpandedGroupNames.Contains(name))
+                        state.expandedIDs.Add(group.id);
+                }
             }
 
             var items = new Dictionary<int, IssueTableItem>(issues.Count);
@@ -156,8 +163,29 @@ namespace Unity.ProjectAuditor.Editor.UI.Framework
             ClearSelection();
         }
 
+        public void CollapseAllGroups()
+        {
+            m_ExpandedGroupNames.Clear();
+            SetExpanded(new List<int>());
+        }
+
         void ResetIssues()
         {
+            // group IDs are reassigned on rebuild, so carry the expanded state over by group name
+            // an already empty table keeps the names saved by an earlier reset (e.g. Clear then Refresh)
+            if (m_TreeViewItemGroupsLookup.Count > 0)
+            {
+                m_ExpandedGroupNames.Clear();
+                foreach (var group in m_TreeViewItemGroupsLookup)
+                {
+                    if (state.expandedIDs.Contains(group.Value.id))
+                        m_ExpandedGroupNames.Add(group.Key);
+                }
+
+                // IDs restart on rebuild, so a leftover issue ID could match a new group
+                state.expandedIDs.Clear();
+            }
+
             m_NextId = k_FirstId;
             m_TreeViewItemGroupsLookup.Clear();
             m_TreeViewItemIssues = new Dictionary<int, IssueTableItem>();

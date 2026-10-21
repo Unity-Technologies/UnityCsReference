@@ -559,14 +559,8 @@ namespace UnityEngine.UIElements
         // rect.Contains / ContainsPoint / event coordinates expect, so downstream input handling is unchanged.
         internal static bool IntersectLocalRay([NotNull] this VisualElement ve, Ray localRay, out Vector3 localPoint, out Vector3 surfaceLocalPoint)
         {
-            // Curved path: only on a non-flat WorldSpace panel with the panel's sticky
-            // curvature bit set, and only for an element that is actually in a curved conform chain
-            // (CountChain > 0 — this includes flat descendants of a curved ancestor, which are still bent, and
-            // respects the explicit-0deg flat-barrier opt-out). Such an element is NOT flat in its own local
-            // space, so it must never fall back to the Z=0 plane test.
-            if (ve.mayBeInCurvedChain &&
-                ve.elementPanel is BaseRuntimePanel { isFlat: false } &&
-                UIRCurvatureGeometry.CountChain(ve) > 0)
+            // A bent element is NOT flat in its own local space, so it must never fall back to the Z=0 plane test.
+            if (ve.isInCurvedChain)
             {
                 if (UIRCurvatureGeometry.TryIntersect(ve, localRay, UIRCurvatureGeometry.PickZScale(ve),
                         out localPoint, out surfaceLocalPoint))

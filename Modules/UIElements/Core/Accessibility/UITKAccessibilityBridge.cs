@@ -955,7 +955,7 @@ namespace UnityEngine.UIElements
                 return;
 
             if (s_NodeMap.TryGetNode(ve, out var node))
-                node.state = AccessibilityTreeGenerator.DeriveState(ve);
+                node.state = AccessibilityTreeGenerator.DeriveState(ve, node.state);
         }
 
         /// <summary>
@@ -989,7 +989,7 @@ namespace UnityEngine.UIElements
             // setters no-op when nothing changed.
             if (evt.property == BaseField<bool>.valueProperty)
             {
-                node.state = AccessibilityTreeGenerator.DeriveState(element);
+                node.state = AccessibilityTreeGenerator.DeriveState(element, node.state);
                 node.value = AccessibilityTreeGenerator.DeriveValue(element);
             }
             else if (evt.property == TextElement.textProperty || evt.property == AbstractBaseField.labelProperty)
@@ -1287,10 +1287,12 @@ namespace UnityEngine.UIElements
             return false;
         }
 
-        // Resolves what regenerates for a structural change: the nearest mapped Container
-        // ancestor's children, or the component's root segment when there is none. The context
-        // sits strictly above the element because the change may alter the element's own
-        // representation. Known-control internals and omitted subtrees resolve to nothing.
+        // Resolves what regenerates for a structural change: the element itself when its own node
+        // survives the change, otherwise the nearest mapped Container ancestor's children, or the
+        // component's root segment when there is none. Climbing is the fallback rather than the
+        // rule because only a change that alters the element's own representation — it gains or
+        // loses its last child, its label, or its display — needs a context above it.
+        // Known-control internals and omitted subtrees resolve to nothing.
         static bool TryFindScopeToRegenerate(VisualElement element, out AccessibilityNode contextNode,
             out VisualElement contextElement, out IPanelComponent rootSegmentComponent)
         {
@@ -1306,6 +1308,19 @@ namespace UnityEngine.UIElements
                     return false;
 
                 rootSegmentComponent = componentRoot.panelComponent;
+                return true;
+            }
+
+            // Adding or removing a child marks the parent as changed too, so the element here is
+            // often the parent of the real change. While it still produces the same container
+            // node, regenerating its children is enough: its own label, state and frame are kept
+            // up to date by the relabel, state and frame-refresh updates, not by this walk.
+            if (s_NodeMap.TryGetNode(element, out var ownNode) &&
+                ownNode.role == AccessibilityRole.Container &&
+                AccessibilityTreeGenerator.WouldGenerateContainerNode(element))
+            {
+                contextNode = ownNode;
+                contextElement = element;
                 return true;
             }
 

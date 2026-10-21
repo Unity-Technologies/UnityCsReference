@@ -395,6 +395,14 @@ internal sealed partial class VisualElementSelectionRegistry : IVisualElementCha
                 // Reclaim: a new clone of an already-known identity. Transfer the same selection
                 // object (preserving its EntityId) from the old instance to the new one.
                 var old = entry.Instance;
+
+                // A still-attached owner means a duplicate clone (a document instantiating itself), not a re-clone.
+                if (old != null && old != element && old.panel != null)
+                {
+                    TrackUnstable(element, panel);
+                    return;
+                }
+
                 if (old != null && old != element)
                 {
                     remaps?.Add(new VisualElementRemap(old, element));
@@ -426,19 +434,24 @@ internal sealed partial class VisualElementSelectionRegistry : IVisualElementCha
         }
         else
         {
-            // Code-created / temporary element: no stable identity, tracked per instance and
-            // destroyed on removal (no cross-clone survival).
-            var selectionObject = CreateSelectionObject(element, panel);
-            var entry = new Entry
-            {
-                SelectionObject = selectionObject,
-                Instance = element,
-                Panel = panel,
-                IsStable = false,
-            };
-            m_ElementToEntry[element] = entry;
-            element.SetSelectionObject(selectionObject);
+            TrackUnstable(element, panel);
         }
+    }
+
+    void TrackUnstable(VisualElement element, Panel panel)
+    {
+        // Code-created / temporary element: no stable identity, tracked per instance and
+        // destroyed on removal (no cross-clone survival).
+        var selectionObject = CreateSelectionObject(element, panel);
+        var entry = new Entry
+        {
+            SelectionObject = selectionObject,
+            Instance = element,
+            Panel = panel,
+            IsStable = false,
+        };
+        m_ElementToEntry[element] = entry;
+        element.SetSelectionObject(selectionObject);
     }
 
     void Remove(VisualElement element)

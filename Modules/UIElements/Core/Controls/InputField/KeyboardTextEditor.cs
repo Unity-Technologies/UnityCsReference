@@ -65,17 +65,46 @@ namespace UnityEngine.UIElements
             }
         }
 
+        bool m_PublishingCursorPosition;
+
         void OnFocus(FocusEvent _)
         {
             (textElement.panel as BaseVisualElementPanel).OnIsEnteringTextChanged_internal(true);
             textElement.edition.SaveValueAndText();
+            StartPublishingCursorPosition();
         }
 
         void OnBlur(BlurEvent _)
         {
+            StopPublishingCursorPosition();
             (textElement.panel as BaseVisualElementPanel).OnIsEnteringTextChanged_internal(false);
             m_compositionString = string.Empty;
             editingUtilities.isCompositionActive = false;
+        }
+
+        void StartPublishingCursorPosition()
+        {
+            if (m_PublishingCursorPosition)
+                return;
+            m_PublishingCursorPosition = true;
+            Panel.afterRepaint += PublishCursorPosition;
+        }
+
+        void StopPublishingCursorPosition()
+        {
+            if (!m_PublishingCursorPosition)
+                return;
+            m_PublishingCursorPosition = false;
+            Panel.afterRepaint -= PublishCursorPosition;
+        }
+
+        // Published on every repaint, like IMGUI's DrawCursor: other fields (IMGUI, runtime panels) share the same OS slot.
+        void PublishCursorPosition(Panel panel)
+        {
+            if (textElement.panel != panel || textElement.edition.isReadOnly)
+                return;
+
+            panel.OnCursorPositonChanged_internal(textElement.LocalToWorld(textElement.selection.cursorPosition));
         }
 
         void OnIMEInput(IMEEvent e)
@@ -222,11 +251,6 @@ namespace UnityEngine.UIElements
             // unrelated to IME (Cut/Paste/Delete/text edits) would unnecessarily poke the
             // IME state machine.
             var imeEnabled = editingUtilities.isCompositionActive;
-            if (imeEnabled && editingUtilities.ShouldUpdateImeWindowPosition())
-            {
-                var cursorPos = editingUtilities.GetCurrentCursorPosition();
-                (textElement.panel as BaseVisualElementPanel).OnCursorPositonChanged( new Vector2(textElement.worldBound.x, textElement.worldBound.y) + cursorPos);
-            }
 
             var fullText = generatePreview ? editingUtilities.GeneratePreviewString(textElement.enableRichText, m_compositionString) : editingUtilities.text;
 

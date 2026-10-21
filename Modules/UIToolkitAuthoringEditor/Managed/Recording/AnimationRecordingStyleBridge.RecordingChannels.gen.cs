@@ -88,14 +88,6 @@ namespace Unity.UIToolkit.Editor
                     return StylePropertyRecordingChannel.EnumInt;
                 case StylePropertyId.FontSize:
                     return StylePropertyRecordingChannel.Length1;
-                case StylePropertyId.GridColumnEnd:
-                    return StylePropertyRecordingChannel.EnumInt;
-                case StylePropertyId.GridColumnStart:
-                    return StylePropertyRecordingChannel.EnumInt;
-                case StylePropertyId.GridRowEnd:
-                    return StylePropertyRecordingChannel.EnumInt;
-                case StylePropertyId.GridRowStart:
-                    return StylePropertyRecordingChannel.EnumInt;
                 case StylePropertyId.Height:
                     return StylePropertyRecordingChannel.Length1;
                 case StylePropertyId.JustifyContent:
@@ -166,16 +158,8 @@ namespace Unity.UIToolkit.Editor
                     return StylePropertyRecordingChannel.EnumInt;
                 case StylePropertyId.UnityParagraphSpacing:
                     return StylePropertyRecordingChannel.Length1;
-                case StylePropertyId.UnitySliceBottom:
-                    return StylePropertyRecordingChannel.Int1;
-                case StylePropertyId.UnitySliceLeft:
-                    return StylePropertyRecordingChannel.Int1;
-                case StylePropertyId.UnitySliceRight:
-                    return StylePropertyRecordingChannel.Int1;
                 case StylePropertyId.UnitySliceScale:
                     return StylePropertyRecordingChannel.Float1;
-                case StylePropertyId.UnitySliceTop:
-                    return StylePropertyRecordingChannel.Int1;
                 case StylePropertyId.UnitySliceType:
                     return StylePropertyRecordingChannel.EnumInt;
                 case StylePropertyId.UnityTextAlign:

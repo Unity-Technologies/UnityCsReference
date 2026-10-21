@@ -163,6 +163,26 @@ namespace UnityEngine.UIElements
         /// </summary>
         internal static string DeriveLabel(VisualElement element)
         {
+            var source = GetLabelSource(element, out var isName);
+            return isName ? HumanizeName(source) : source;
+        }
+
+        /// <summary>
+        /// Whether <see cref="DeriveLabel"/> returns a label, answered without building it: the
+        /// inclusion and scope rechecks ask on every style and structural change and only need
+        /// the answer, while humanizing a name allocates.
+        /// </summary>
+        internal static bool HasLabel(VisualElement element)
+        {
+            var source = GetLabelSource(element, out var isName);
+            return isName ? HasWordCharacter(source) : source != null;
+        }
+
+        // The text a label comes from, and whether it is an element name still to be humanized.
+        static string GetLabelSource(VisualElement element, out bool isName)
+        {
+            isName = false;
+
             if (element is IPrefixLabel prefixLabel && !string.IsNullOrEmpty(prefixLabel.label))
                 return prefixLabel.label;
 
@@ -181,7 +201,10 @@ namespace UnityEngine.UIElements
             var name = element.name;
             if (!string.IsNullOrEmpty(name) && !name.StartsWith(k_InternalNamePrefix, System.StringComparison.Ordinal) &&
                 !IsInsideCompositeFieldInternals(element))
-                return HumanizeName(name);
+            {
+                isName = true;
+                return name;
+            }
 
             return null;
         }
@@ -237,7 +260,7 @@ namespace UnityEngine.UIElements
             {
                 var c = name[i];
 
-                if (c is '-' or '_' or '.' || char.IsWhiteSpace(c))
+                if (IsWordSeparator(c))
                 {
                     FlushWord();
                     continue;
@@ -281,6 +304,20 @@ namespace UnityEngine.UIElements
             return label.ToString();
         }
 
+        // HumanizeName's word boundaries; a name made only of these has no readable label.
+        static bool IsWordSeparator(char c) => c is '-' or '_' or '.' || char.IsWhiteSpace(c);
+
+        static bool HasWordCharacter(string name)
+        {
+            foreach (var c in name)
+            {
+                if (!IsWordSeparator(c))
+                    return true;
+            }
+
+            return false;
+        }
+
         static bool IsAcronym(string word)
         {
             if (word.Length < 2)
@@ -317,7 +354,23 @@ namespace UnityEngine.UIElements
                 return false;
 
             // Unknown leaves and branches alike only get a node when a label is derivable.
-            return DeriveLabel(element) != null;
+            return HasLabel(element);
+        }
+
+        /// <summary>
+        /// Whether the element still resolves to a <see cref="AccessibilityRole.Container"/> node —
+        /// the generation walk's labeled-branch case. A structural change under an element whose
+        /// own answer here is unchanged cannot alter its node, which is what lets the change
+        /// regenerate that element's children instead of its parent's context.
+        /// </summary>
+        internal static bool WouldGenerateContainerNode(VisualElement element)
+        {
+            return !IsOmittedSubtree(element) &&
+                !AccessibilityRoleRegistry.TryGetRole(element, out _) &&
+                !IsDropdownMenuItem(element) &&
+                element.hierarchy.childCount > 0 &&
+                element.pickingMode != PickingMode.Ignore &&
+                HasLabel(element);
         }
 
         /// <summary>
@@ -404,9 +457,7 @@ namespace UnityEngine.UIElements
                 // the frame getter and inbound action handlers already capture this element.
                 node.label = label;
 
-                // Expanded is session state owned by the bridge (set while the element's dropdown
-                // menu is open), not derivable from the element; a reusing walk must not clear it.
-                node.state = DeriveState(element) | (node.state & AccessibilityState.Expanded);
+                node.state = DeriveState(element, node.state);
 
                 node.value = DeriveValue(element);
                 node.isActive = !AccessibilityFrameProjection.IsFullyOutOfView(inheritedClipState, element.worldBound);
@@ -442,12 +493,31 @@ namespace UnityEngine.UIElements
             // with panel-cover hiding.
             node.isActive = !AccessibilityFrameProjection.IsFullyOutOfView(inheritedClipState, element.worldBound);
             node.frameGetter = () => AccessibilityFrameProjection.GetScreenFrame(element);
-            node.focusChanged += (_, focused) => OnScreenReaderFocusChanged(element, node, focused);
+            node.focusChanged += GetFocusChangedHandler(nodeMap);
 
             WireActions(element, node);
 
             nodeMap.Set(element, node);
             return node;
+        }
+
+        // The focus event carries the node it fired for, so the element resolves through the map the
+        // node was created in and one handler serves every node in that map. This getter must stay
+        // lambda-free: a method that closes over an argument allocates the capture environment on
+        // every call, which would cost one allocation per created node — the very cost the shared
+        // handler exists to remove — so the closure lives in the rarely-taken method below.
+        static Action<AccessibilityNode, bool> GetFocusChangedHandler(AccessibilityNodeMap nodeMap)
+        {
+            return nodeMap.focusChangedHandler ?? CreateFocusChangedHandler(nodeMap);
+        }
+
+        static Action<AccessibilityNode, bool> CreateFocusChangedHandler(AccessibilityNodeMap nodeMap)
+        {
+            return nodeMap.focusChangedHandler = (node, focused) =>
+            {
+                if (nodeMap.TryGetElement(node, out var element))
+                    OnScreenReaderFocusChanged(element, node, focused);
+            };
         }
 
         // Inbound screen reader actions are wired when the node is created, before the hierarchy
@@ -900,6 +970,14 @@ namespace UnityEngine.UIElements
                 state |= AccessibilityState.Selected;
 
             return state;
+        }
+
+        // Re-derivation for a node that already exists. Expanded is session state owned by the
+        // bridge (set while the element's dropdown menu is open) and is not derivable from the
+        // element, so every path that re-derives an existing node's state must carry it over.
+        internal static AccessibilityState DeriveState(VisualElement element, AccessibilityState previousState)
+        {
+            return DeriveState(element) | (previousState & AccessibilityState.Expanded);
         }
 
         /// <summary>

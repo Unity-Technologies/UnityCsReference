@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Bindings;
@@ -14,8 +15,8 @@ namespace UnityEditor.UIElements
     [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
     internal class GridTemplatePreview : VisualElement
     {
-        List<GridTrackSize> m_Columns = new();
-        List<GridTrackSize> m_Rows = new();
+        readonly List<GridTrackSize> m_Columns = new();
+        readonly List<GridTrackSize> m_Rows = new();
 
         public GridTemplatePreview()
         {
@@ -36,16 +37,20 @@ namespace UnityEditor.UIElements
             Rebuild();
         }
 
-        public void SetColumns(List<GridTrackSize> tracks)
+        public void SetColumns(List<GridTrackSize> tracks) => SetColumns(tracks != null ? tracks.ToArray() : default);
+
+        public void SetRows(List<GridTrackSize> tracks) => SetRows(tracks != null ? tracks.ToArray() : default);
+
+        public void SetColumns(ReadOnlySpan<GridTrackSize> tracks)
         {
-            m_Columns = tracks ?? new List<GridTrackSize>();
-            Rebuild();
+            if (GridTrackSizeListUtility.CopyIfChanged(tracks, m_Columns))
+                Rebuild();
         }
 
-        public void SetRows(List<GridTrackSize> tracks)
+        public void SetRows(ReadOnlySpan<GridTrackSize> tracks)
         {
-            m_Rows = tracks ?? new List<GridTrackSize>();
-            Rebuild();
+            if (GridTrackSizeListUtility.CopyIfChanged(tracks, m_Rows))
+                Rebuild();
         }
 
         void Rebuild()

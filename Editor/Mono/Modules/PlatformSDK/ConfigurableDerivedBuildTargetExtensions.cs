@@ -2,8 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-using System;
-using System.Collections.Generic;
 using UnityEditor.Build.Profile;
 using UnityEngine.UIElements;
 using static UnityEditor.Modules.DerivedBuildTargetExtensionsProvider;
@@ -15,7 +13,7 @@ internal class ConfigurableDerivedBuildTargetExtensions : IDerivedBuildTargetExt
     SDKPlatformProvider m_SDKPlatformProvider;
     CreateBuildProfileExtensionFunction m_CreateBaseBuildProfileExtensionFunction;
 
-    public ICompilationExtension CompilationExtension { get; }
+    public ICompilationExtension AdditionalCompilationExtension { get; }
     public IBuildPostprocessor BuildPostprocessor { get; }
     public IDerivedBuildTarget DerivedBuildTarget { get; }
 
@@ -30,26 +28,9 @@ internal class ConfigurableDerivedBuildTargetExtensions : IDerivedBuildTargetExt
     {
         m_SDKPlatformProvider = sdkPlatformProvider;
         m_CreateBaseBuildProfileExtensionFunction = createBaseBuildProfileExtensionFunction;
-        CompilationExtension = new ConfigurableCompilationExtension(sdkPlatformProvider.platformDefine, Array.Empty<string>(), Array.Empty<string>());
+        AdditionalCompilationExtension = new ConfigurableCompilationExtension(sdkPlatformProvider.platformDefine);
         BuildPostprocessor = null;
         DerivedBuildTarget = derivedBuildTarget;
-    }
-}
-
-internal class ConfigurableCompilationExtension : DefaultCompilationExtension
-{
-    List<string> m_AdditionalDefines = new();
-    List<string> m_AdditionalEditorDefines = new();
-
-    public override string[] GetAdditionalDefines() => m_AdditionalDefines.ToArray();
-    public override string[] GetAdditionalEditorDefines() => m_AdditionalEditorDefines.ToArray();
-
-    public ConfigurableCompilationExtension(string platformDefine, string[] additionalDefines, string[] additionalEditorDefines)
-    {
-        m_AdditionalDefines.Add(platformDefine);
-        m_AdditionalDefines.AddRange(additionalDefines);
-        m_AdditionalEditorDefines.Add(platformDefine);
-        m_AdditionalEditorDefines.AddRange(additionalEditorDefines);
     }
 }
 

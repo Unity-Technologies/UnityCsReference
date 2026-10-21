@@ -174,6 +174,7 @@ internal sealed partial class StyleRuleInspector : UIInspector
 
                 m_StyleInspector.Target = new StyleInspectorTarget(m_Element, m_StyleRule?.styleSheet, m_StyleRule);
 
+                Panel.beforeTickingAnyScheduledPanel += OnBeforeTickingAnyScheduledPanel;
                 Undo.undoRedoPerformed += OnUndoRedoPerformed;
                 UICommandQueue.RegisterHandler<SetPreviewThemeCommand>(OnPreviewThemeChanged);
                 UICommandQueue.RegisterHandlerForCategory(CommandCategory.Variables, OnVariableChange);
@@ -197,6 +198,7 @@ internal sealed partial class StyleRuleInspector : UIInspector
 
                 m_StyleInspector.Target = default;
 
+                Panel.beforeTickingAnyScheduledPanel -= OnBeforeTickingAnyScheduledPanel;
                 m_PanelElement.DestroySubPanel();
                 m_Element = null;
                 m_PanelElement = null;
@@ -268,6 +270,20 @@ internal sealed partial class StyleRuleInspector : UIInspector
             Apply(UIToolkitProjectSettings.enableGridLayout);
         });
         gridSection.RegisterCallback<DetachFromPanelEvent>(_ => UIToolkitProjectSettings.onEnableGridLayoutChanged -= Apply);
+    }
+
+    // The sub-panel is excluded from runtime panel updates, so the host tick is its only driver.
+    void OnBeforeTickingAnyScheduledPanel(Panel p)
+    {
+        if (p != panel)
+            return;
+
+        var subPanel = m_PanelElement?.SubPanel;
+        if (subPanel == null)
+            return;
+
+        subPanel.ApplyStyles();
+        subPanel.UpdateAuthoring();
     }
 
     void SetSelectorElementInlineStyles()

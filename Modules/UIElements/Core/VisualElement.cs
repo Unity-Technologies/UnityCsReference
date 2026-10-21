@@ -560,6 +560,14 @@ namespace UnityEngine.UIElements
         // skip the per-element CountChain ancestor walk on the picking/bounds hot paths.
         internal bool mayBeInCurvedChain => elementPanel is { mayHaveCurvedElements: true };
 
+        // The bounds and picking paths must agree on what counts as bent, so they share this one test.
+        // mayHaveCurvedElements is sticky, so isFlat is load-bearing: a panel that went non-flat and back
+        // keeps the bit set, and without the isFlat check its bounds would still be inflated by the sag.
+        internal bool isInCurvedChain =>
+            mayBeInCurvedChain &&
+            elementPanel is BaseRuntimePanel { isFlat: false } &&
+            UIRCurvatureGeometry.CountChain(this) > 0;
+
         /// <summary>
         /// Returns a transform styles object for this VisualElement.
         /// </summary>
@@ -1042,7 +1050,7 @@ namespace UnityEngine.UIElements
             // bend math as the renderer and the pick raycast — so localBoundsPicking3D encloses the curved surface
             // and the ray early-out (bb.IntersectRay) can't drop rays that hit a receded region. The recursive
             // Encapsulate below then carries the depth up to the document root.
-            if (mayBeInCurvedChain && UIRCurvatureGeometry.CountChain(this) > 0)
+            if (isInCurvedChain)
             {
                 var sagBounds = UIRCurvatureGeometry.SagLocalBounds(this, UIRCurvatureGeometry.PickZScale(this));
                 localBoundsWithoutNested.Encapsulate(sagBounds);
@@ -2325,10 +2333,9 @@ namespace UnityEngine.UIElements
                     var layoutConfig = p != null ? p.layoutConfig : LayoutManager.SharedManager.GetDefaultConfig();
 
                     InvokeHierarchyChanged(HierarchyChangeType.DetachedFromPanel, elements);
-                    // Off-panel style changes never version (IncrementVersion is panel-gated), so an attaching
-                    // subtree's curvature can't be observed by the hierarchy updater nor read from carried
-                    // transform flags — check the computed style directly (stops after the first hit).
-                    bool checkCurved = p != null && !p.mayHaveCurvedElements;
+                    // Curvature only bends non-flat WorldSpace panels, so a flat panel never needs the probe.
+                    // A panel that turns non-flat later seeds the bit from its existing tree, in isFlat.
+                    bool checkCurved = p is { isFlat: false, mayHaveCurvedElements: false };
                     foreach (var e in elements)
                     {
                         e.elementPanel?.MemberElementsByHandle.Remove(e.layoutNode.Handle);

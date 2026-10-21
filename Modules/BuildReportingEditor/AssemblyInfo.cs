@@ -7,3 +7,5 @@ using System.Runtime.CompilerServices;
 [assembly: InternalsVisibleTo("BuildPipelineTestUtilities")]
 [assembly: InternalsVisibleTo("Assembly-CSharp-Editor-testable")]
 [assembly: InternalsVisibleTo("Unity.Modules.BuildAnalysis.Tests.Editor")]
+[assembly: InternalsVisibleTo("Unity.Addressables.Editor")]                 // RegisterExternalBuild and ExternalBuildInfo
+[assembly: InternalsVisibleTo("Unity.Addressables.Editor.Tests")]

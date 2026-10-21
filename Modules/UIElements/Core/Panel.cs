@@ -8,6 +8,7 @@ using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using Unity.Profiling;
 using UnityEngine.Bindings;
+using UnityEngine.Pool;
 using UnityEngine.UIElements.Layout;
 using UnityEngine.UIElements.Unmanaged;
 
@@ -531,6 +532,7 @@ namespace UnityEngine.UIElements
 
         protected BaseVisualElementPanel()
         {
+            OnCursorPositonChanged = SetCompositionCursorPos;
             layoutConfig = LayoutManager.SharedManager.CreateConfig();
             layoutConfig.Measure = VisualElement.Measure;
             PanelsByHandle[layoutConfig.Handle] = this;
@@ -934,8 +936,66 @@ namespace UnityEngine.UIElements
                     ? transformFlags | PanelTransformFlags.IsFlat
                     : transformFlags & ~PanelTransformFlags.IsFlat;
 
+                // Going flat has to re-version BEFORE the updater swap: only the world-space updater dirties
+                // LocalBounds3DDirty, and without it localBoundsPicking3D keeps handing back the cached
+                // sag-inflated bounds instead of recomputing them now that nothing bends.
+                if (value)
+                    RefreshCurvedElements(markPanelCurved: false);
+
                 SetSpecializedHierarchyFlagsUpdater();
                 isFlatChanged?.Invoke();
+
+                if (!value)
+                    RefreshCurvedElements(markPanelCurved: true);
+            }
+        }
+
+        // Elements attached under the previous flatness were never versioned for it. Roots get a version bump
+        // (repaint + Needs3DBounds propagation); descendants get their 3D bounds flags set directly, because the
+        // downward pass drops a flag at the first node already carrying it. Barriers are over-dirtied on purpose.
+        void RefreshCurvedElements(bool markPanelCurved)
+        {
+            const VisualElementTransformFlags k_Subtree3DBoundsFlags =
+                VisualElementTransformFlags.Needs3DBounds |
+                VisualElementTransformFlags.LocalBounds3DDirty |
+                VisualElementTransformFlags.LocalBoundsWithoutNested3DDirty;
+
+            var root = visualTree;
+            if (root == null)
+                return;
+
+            using (ListPool<VisualElement>.Get(out var pending))
+            using (ListPool<bool>.Get(out var pendingUnderCurvedRoot))
+            {
+                pending.Add(root);
+                pendingUnderCurvedRoot.Add(false);
+
+                while (pending.Count > 0)
+                {
+                    int last = pending.Count - 1;
+                    var ve = pending[last];
+                    var underCurvedRoot = pendingUnderCurvedRoot[last];
+                    pending.RemoveAt(last);
+                    pendingUnderCurvedRoot.RemoveAt(last);
+
+                    if (ve.hasCurvature)
+                    {
+                        if (markPanelCurved)
+                            mayHaveCurvedElements = true;
+                        ve.IncrementVersion(VersionChangeType.Transform);
+                        underCurvedRoot = true;
+                    }
+
+                    if (underCurvedRoot)
+                        ve.transformFlags |= k_Subtree3DBoundsFlags;
+
+                    var hierarchy = ve.hierarchy;
+                    for (int i = 0, count = hierarchy.childCount; i < count; ++i)
+                    {
+                        pending.Add(hierarchy[i]);
+                        pendingUnderCurvedRoot.Add(underCurvedRoot);
+                    }
+                }
             }
         }
 
@@ -1094,10 +1154,23 @@ namespace UnityEngine.UIElements
         }
 
         /// <summary>
-        /// The new cursor position in panel coordinates
+        /// Caret position of the focused text input, in panel coordinates. Refreshed on every caret repaint so the OS
+        /// can place IME candidate windows and the character palette before any composition starts.
         /// </summary>
-        internal Action<Vector2> OnCursorPositonChanged =
-            (v2) => Input.compositionCursorPos = v2; // Scaled pixels in the editor (should match the panel postion when not in test). Undefined at runtime.
+        internal Action<Vector2> OnCursorPositonChanged;
+
+        void SetCompositionCursorPos(Vector2 panelPosition)
+        {
+            if (TryGetCompositionCursorPos(panelPosition, out var screenPosition))
+                Input.compositionCursorPos = screenPosition;
+        }
+
+        // Editor panels live in a view whose points are the panel coordinates.
+        internal virtual bool TryGetCompositionCursorPos(Vector2 panelPosition, out Vector2 screenPosition)
+        {
+            screenPosition = panelPosition;
+            return true;
+        }
 
         internal void PointerLeavesPanel(int pointerId, EventBase triggerEvent = null)
         {
@@ -2025,6 +2098,13 @@ namespace UnityEngine.UIElements
 
         [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
         internal int targetDisplay { get; set;}
+
+        // Top-left screen pixels, the same convention uGUI writes. Texture, world-space and custom-mapped panels have no inverse.
+        internal override bool TryGetCompositionCursorPos(Vector2 panelPosition, out Vector2 screenPosition)
+        {
+            screenPosition = panelPosition * scale;
+            return targetTexture == null && !drawsInCameras && screenToPanelSpace == DefaultScreenToPanelSpace;
+        }
 
         internal int screenRenderingWidth => getScreenRenderingWidth(targetDisplay);
         internal int screenRenderingHeight => getScreenRenderingHeight(targetDisplay);

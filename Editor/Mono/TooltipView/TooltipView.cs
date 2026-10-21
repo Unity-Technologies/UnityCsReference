@@ -76,63 +76,67 @@ namespace UnityEditor
             m_VisualRoot.Clear();
             m_tooltip.text = tooltip;
 
-            Size = m_Style.CalcSize(m_tooltip);
+            SetSizeAndPosition(CalcOptimalSize(m_Style, m_tooltip));
 
             window.ShowTooltip();
             s_guiView.mouseRayInvisible = true;
         }
 
-        Vector2 Size
+        internal static Vector2 CalcOptimalSize(GUIStyle style, GUIContent content)
         {
-            get { return position.size; }
-            set
+            style.wordWrap = false;
+            var size = style.CalcSize(content);
+            if (size.x <= MAX_WIDTH)
+                return size;
+
+            style.wordWrap = true;
+            var height = style.CalcHeight(content, MAX_WIDTH);
+            var width = Mathf.Ceil(style.CalcSizeWithConstraints(content, new Vector2(MAX_WIDTH, 0)).x);
+            // Wrapped lines rarely span MAX_WIDTH, so shrink to the longest line unless that would re-wrap the text.
+            if (width >= MAX_WIDTH || style.CalcHeight(content, width) != height)
+                width = MAX_WIDTH;
+            return new Vector2(width, height);
+        }
+
+        void SetSizeAndPosition(Vector2 size)
+        {
+            m_optimalSize = size;
+
+            var popupPosition = new Rect
+                (
+                Mathf.Floor(m_hoverRect.x + (m_hoverRect.width / 2) - (m_optimalSize.x / 2)),
+                Mathf.Floor(m_hoverRect.y + (m_hoverRect.height) + 10.0f),
+                m_optimalSize.x, m_optimalSize.y
+                );
+
+            if (hostView != null)
             {
-                m_Style.wordWrap = false;
-                m_optimalSize = value;
+                var viewRect = hostView.screenPosition;
+                if (popupPosition.x < viewRect.x)
+                    popupPosition.x = viewRect.x;
+                if (popupPosition.xMax > viewRect.xMax)
+                    popupPosition.x -= popupPosition.xMax - viewRect.xMax;
+                if (popupPosition.y < viewRect.y)
+                    popupPosition.y = viewRect.y;
+                if (popupPosition.yMax > viewRect.yMax)
+                    popupPosition.y -= popupPosition.yMax - viewRect.yMax;
 
-                if (m_optimalSize.x > MAX_WIDTH)
-                {
-                    m_Style.wordWrap = true;
-                    m_optimalSize.x = MAX_WIDTH;
-                    m_optimalSize.y = m_Style.CalcHeight(m_tooltip, MAX_WIDTH);
-                }
-
-                var popupPosition = new Rect
-                    (
-                    Mathf.Floor(m_hoverRect.x + (m_hoverRect.width / 2) - (m_optimalSize.x / 2)),
-                    Mathf.Floor(m_hoverRect.y + (m_hoverRect.height) + 10.0f),
-                    m_optimalSize.x, m_optimalSize.y
-                    );
-
-                if (hostView != null)
-                {
-                    var viewRect = hostView.screenPosition;
-                    if (popupPosition.x < viewRect.x)
-                        popupPosition.x = viewRect.x;
-                    if (popupPosition.xMax > viewRect.xMax)
-                        popupPosition.x -= popupPosition.xMax - viewRect.xMax;
-                    if (popupPosition.y < viewRect.y)
-                        popupPosition.y = viewRect.y;
-                    if (popupPosition.yMax > viewRect.yMax)
-                        popupPosition.y -= popupPosition.yMax - viewRect.yMax;
-
-                    popupPosition.y = Mathf.Max(popupPosition.y, Mathf.Floor(m_hoverRect.y + (m_hoverRect.height) + 10.0f));
-                }
-
-                // If when fitted to screen, the tooltip would overlap the hover area
-                // (and thus potentially mouse) -- for example when the control is near
-                // the bottom of screen, place it atop of the hover area instead.
-                var fittedToScreen = ContainerWindow.FitRectToMouseScreen(popupPosition, true, null);
-                if (fittedToScreen.Overlaps(m_hoverRect))
-                {
-                    popupPosition.y = m_hoverRect.y - m_optimalSize.y - 10.0f;
-                }
-
-                window.position = popupPosition;
-                m_VisualRoot.style.width = m_optimalSize.x;
-                m_VisualRoot.style.height = m_optimalSize.y;
-                position = new Rect(0, 0, m_optimalSize.x, m_optimalSize.y);
+                popupPosition.y = Mathf.Max(popupPosition.y, Mathf.Floor(m_hoverRect.y + (m_hoverRect.height) + 10.0f));
             }
+
+            // If when fitted to screen, the tooltip would overlap the hover area
+            // (and thus potentially mouse) -- for example when the control is near
+            // the bottom of screen, place it atop of the hover area instead.
+            var fittedToScreen = ContainerWindow.FitRectToMouseScreen(popupPosition, true, null);
+            if (fittedToScreen.Overlaps(m_hoverRect))
+            {
+                popupPosition.y = m_hoverRect.y - m_optimalSize.y - 10.0f;
+            }
+
+            window.position = popupPosition;
+            m_VisualRoot.style.width = m_optimalSize.x;
+            m_VisualRoot.style.height = m_optimalSize.y;
+            position = new Rect(0, 0, m_optimalSize.x, m_optimalSize.y);
         }
 
         [RequiredByNativeCode]

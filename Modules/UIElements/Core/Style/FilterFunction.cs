@@ -317,11 +317,7 @@ namespace UnityEngine.UIElements
 
             var def = GetDefinition();
             if (def != null)
-            {
-                int expectedParamCount = GetDefinition().parameters.Length;
-                if (expectedParamCount != paramCount)
-                    Debug.LogError($"Invalid parameter count provided with filter of type {type}: provided {paramCount} but expected {expectedParamCount}");
-            }
+                ReconcileParametersWithDefinition(def, paramCount);
         }
 
         internal FilterFunction(FilterFunctionDefinition customDefinition, FixedBuffer4<FilterParameter> parameters, int paramCount)
@@ -332,44 +328,49 @@ namespace UnityEngine.UIElements
             m_ParameterCount = paramCount;
 
             if (customDefinition != null)
-            {
-                int expectedParamCount = customDefinition.parameters?.Length ?? 0;
-
-                if (paramCount < expectedParamCount)
-                {
-                    Debug.LogWarning($"FilterFunction '{customDefinition.filterName}' expects {expectedParamCount} parameters but only {paramCount} were provided. Missing parameters will be set to their default values.");
-
-                    // The definition has more parameters than provided. We will pad with default values.
-                    for (int i = paramCount; i < expectedParamCount; ++i)
-                    {
-                        var pDef = customDefinition.parameters[i];
-                        m_Parameters[i] = pDef.interpolationDefaultValue;
-                    }
-                }
-
-                // Sanitize the types
-                for (int i = 0; i < expectedParamCount; ++i)
-                {
-                    var pDef = customDefinition.parameters[i];
-                    var pVal = m_Parameters[i];
-                    if (pDef.interpolationDefaultValue.type != pVal.type)
-                    {
-                        Debug.LogWarning($"FilterFunction '{customDefinition.filterName}' expects parameter {i} to be of type {pDef.interpolationDefaultValue.type} but got {pVal.type}. The parameter will be reset to its default value.");
-                        m_Parameters[i] = pDef.interpolationDefaultValue;
-                    }
-                }
-
-                if (paramCount > expectedParamCount)
-                {
-                    Debug.LogWarning($"FilterFunction '{customDefinition.filterName}' expects {expectedParamCount} parameters but {paramCount} were provided. Extra parameters will be ignored.");
-                }
-
-                m_ParameterCount = expectedParamCount;
-            }
+                ReconcileParametersWithDefinition(customDefinition, paramCount);
             else
-            {
                 m_ParameterCount = 0;
+        }
+
+        // paramCount is the number of arguments written in USS and can exceed the stored parameters.
+        void ReconcileParametersWithDefinition(FilterFunctionDefinition def, int paramCount)
+        {
+            int expectedParamCount = def.parameters?.Length ?? 0;
+
+            // defaultValue isn't serialized, so a custom definition deserialized from disk never has it set.
+            bool isBuiltin = m_Type != FilterFunctionType.Custom;
+
+            if (paramCount < expectedParamCount)
+            {
+                Debug.LogWarning($"FilterFunction '{def.filterName}' expects {expectedParamCount} parameters but only {paramCount} were provided. Missing parameters will be set to their default values.");
+
+                // The definition has more parameters than provided. We will pad with default values.
+                for (int i = paramCount; i < expectedParamCount; ++i)
+                {
+                    var pDef = def.parameters[i];
+                    m_Parameters[i] = isBuiltin ? pDef.defaultValue : pDef.interpolationDefaultValue;
+                }
             }
+
+            // Sanitize the types
+            for (int i = 0; i < expectedParamCount; ++i)
+            {
+                var pDef = def.parameters[i];
+                var pVal = m_Parameters[i];
+                if (pDef.interpolationDefaultValue.type != pVal.type)
+                {
+                    Debug.LogWarning($"FilterFunction '{def.filterName}' expects parameter {i} to be of type {pDef.interpolationDefaultValue.type} but got {pVal.type}. The parameter will be reset to its default value.");
+                    m_Parameters[i] = isBuiltin ? pDef.defaultValue : pDef.interpolationDefaultValue;
+                }
+            }
+
+            if (paramCount > expectedParamCount)
+            {
+                Debug.LogWarning($"FilterFunction '{def.filterName}' expects {expectedParamCount} parameters but {paramCount} were provided. Extra parameters will be ignored.");
+            }
+
+            m_ParameterCount = expectedParamCount;
         }
 
         internal FilterFunction(FilterFunctionType type, FixedBuffer4<FilterParameter> parameters, int paramCount, FilterFunctionDefinition customDefinition)

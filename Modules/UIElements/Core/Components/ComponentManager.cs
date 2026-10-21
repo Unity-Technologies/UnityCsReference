@@ -26,6 +26,9 @@ namespace UnityEngine.UIElements
         public ManagedComponentRegistry managedRegistry;
         public RuntimeTypeHandle typeHandle;
 
+        public Action<VisualElement> onChanged;
+        public ComponentBindingDispatcher bindingDispatcher;
+
         // Number of live slots for this type. Mutated on the main thread only: incremented by
         // AddComponent, decremented when the deferred free is drained by Collect().
         public int liveCount;
@@ -115,10 +118,9 @@ namespace UnityEngine.UIElements
         // ManagedComponentBox.
         public IManagedComponentBox managedBox;
 
-        // The component's shared [OnComponentChanged] dispatcher, or null when it declares no handler.
-        // Set at AddComponent from the generated hooks; travels with the slot through the shifts.
-        public Action<VisualElement> onChanged;
-        public ComponentBindingDispatcher bindingDispatcher;
+        // Null-tolerant: a slot past the live range is cleared, and the dirty-mask tail can still reach it.
+        public Action<VisualElement> onChanged => record?.onChanged;
+        public ComponentBindingDispatcher bindingDispatcher => record?.bindingDispatcher;
     }
 
     /// <summary>
@@ -543,6 +545,9 @@ namespace UnityEngine.UIElements
 
             s_Record = ComponentManager.SharedManager.GetOrCreateStore<T>(IsUnmanaged, initialCapacity);
             s_Registry = s_Record.managedRegistry as ManagedComponentRegistry<T>;
+
+            s_Record.onChanged = default(T).__GetComponentChangedDispatcher();
+            s_Record.bindingDispatcher = default(T).__GetComponentBindingDispatcher();
 
             if (IsUnmanaged && ReleaseResourcesHandler != null)
                 unsafe { s_Record.releaseResources = &ReleaseResourcesAt; }

@@ -306,28 +306,7 @@ namespace Unity.ProjectAuditor.Editor.UI
 
                 if (GUILayout.Button(content, GUILayout.Width(k_ButtonWidth), GUILayout.Height(k_ButtonHeight)))
                 {
-                    bool canAnalyze = true;
-
-                    // m_Report can be null here (e.g. after cancelling an analysis)
-                    // In this case, there is nothing to save/discard.
-                    if (window.m_Report != null && window.m_Report.NeedsSaving)
-                    {
-                        DialogResult response = DialogResult.DefaultAction;
-                        if (analysisState == AnalysisState.Valid)
-                            response = EditorDialog.DisplayComplexDecisionDialog(Contents.Discard, Contents.DiscardQuestion, "Discard", "Save", "Cancel");
-                        else
-                            response = EditorUtility.DisplayDialog(Contents.Discard, Contents.DiscardQuestion, "Discard", "Cancel") ? DialogResult.DefaultAction : DialogResult.Cancel;
-
-                        if (response == DialogResult.AlternateAction)
-                        {
-                            if (!ProjectAuditorWindow.SaveReport(window.m_Report, out var _))
-                                canAnalyze = false;
-                        }
-                        else if (response == DialogResult.Cancel)
-                        {
-                            canAnalyze = false;
-                        }
-                    }
+                    bool canAnalyze = ConfirmDiscardCurrentReport();
 
                     ProjectAreaFlags areasToAnalyze = UserPreferences.ProjectAreasToAnalyze;
                     if (canAnalyze)
@@ -362,6 +341,28 @@ namespace Unity.ProjectAuditor.Editor.UI
                     }
                 }
             }
+        }
+
+        // Returns false if the user chose to keep the current report.
+        internal static bool ConfirmDiscardCurrentReport()
+        {
+            var window = ProjectAuditorWindow.Instance;
+
+            // m_Report can be null here (e.g. after cancelling an analysis)
+            // In this case, there is nothing to save/discard.
+            if (window.m_Report == null)
+                return true;
+
+            DialogResult response;
+            if (window.m_Report.NeedsSaving && window.m_AnalysisState == AnalysisState.Valid)
+                response = EditorDialog.DisplayComplexDecisionDialog(Contents.Discard, Contents.DiscardQuestion, "Discard", "Save", "Cancel");
+            else
+                response = EditorUtility.DisplayDialog(Contents.Discard, Contents.DiscardQuestion, "Discard", "Cancel") ? DialogResult.DefaultAction : DialogResult.Cancel;
+
+            if (response == DialogResult.AlternateAction)
+                return ProjectAuditorWindow.SaveReport(window.m_Report, out var _);
+
+            return response != DialogResult.Cancel;
         }
 
         static void DrawPreferencesButton()

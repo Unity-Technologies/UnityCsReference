@@ -1258,6 +1258,31 @@ sealed partial class StylePropertyBinding : CustomBinding, ITrackablePropertyPro
         }
     }
 
+    static void WriteFloat(StyleProperty property, StyleSheet sheet, float value)
+    {
+        var unit = GetFloatUnit(property.id);
+        if (unit == Dimension.Unit.Unitless)
+            property.SetFloat(sheet, value);
+        else
+            property.SetDimension(sheet, new Dimension(value, unit));
+    }
+
+    static void WriteFloatList(StyleProperty property, StyleSheet sheet, List<float> value)
+    {
+        if (GetFloatUnit(property.id) != Dimension.Unit.Second)
+        {
+            property.SetFloatList(sheet, value);
+            return;
+        }
+
+        using var _ = ListPool<TimeValue>.Get(out var times);
+        foreach (var seconds in value)
+        {
+            times.Add(new TimeValue(seconds, TimeUnit.Second));
+        }
+        property.SetTimeValueList(sheet, times);
+    }
+
     static void SetStyleValue<TStyleValue, TValue>(StyleProperty property, StyleSheet sheet, TStyleValue styleValue, Action<StyleProperty, StyleSheet, TValue> setterDelegate)
         where TStyleValue : IStyleValue<TValue>
     {

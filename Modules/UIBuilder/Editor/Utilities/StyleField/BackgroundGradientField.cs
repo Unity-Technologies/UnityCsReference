@@ -42,6 +42,7 @@ namespace Unity.UI.Builder
         internal Func<string, Color?> resolveVariableColor { get; set; }
         internal Func<VisualElement> getCurrentVisualElement { get; set; }
         internal Func<bool> getEditorExtensionMode { get; set; }
+        internal Func<VisualElement> getVariableScopeElement { get; set; }
 
         readonly GradientVarBindingTracker m_VarBindings = new();
 
@@ -222,6 +223,7 @@ namespace Unity.UI.Builder
             m_StopsEditor.resolveVariableColor = name => resolveVariableColor?.Invoke(name);
             m_StopsEditor.getCurrentVisualElement = () => getCurrentVisualElement?.Invoke();
             m_StopsEditor.getEditorExtensionMode = () => getEditorExtensionMode?.Invoke() ?? false;
+            m_StopsEditor.getVariableScopeElement = () => getVariableScopeElement?.Invoke();
             RefreshStopsEditor();
             m_StopsEditor.stopsChanged += OnStopsEdited;
 

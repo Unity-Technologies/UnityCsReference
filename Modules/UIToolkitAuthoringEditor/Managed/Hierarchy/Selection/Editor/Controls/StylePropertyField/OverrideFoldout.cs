@@ -232,6 +232,7 @@ namespace Unity.UIToolkit.Editor
                 {
                     case StyleDiff.ContextType.StyleSheet:
                     {
+                        var target = styleDiff.currentTarget;
                         foreach (var propertyName in propertyNames)
                         {
                             if (propertyName.StartsWith(VariablesInspector.k_VariablePrefix))
@@ -247,6 +248,8 @@ namespace Unity.UIToolkit.Editor
                                     styleDiff.currentStyleSheet, styleDiff.currentRule, id);
                         }
 
+                        target?.UpdateInlineRule(styleDiff.currentStyleSheet, styleDiff.currentRule, target.variableContext);
+                        target?.IncrementVersion(VersionChangeType.StyleSheet | VersionChangeType.Styles);
                         break;
                     }
                     case StyleDiff.ContextType.VisualElement:

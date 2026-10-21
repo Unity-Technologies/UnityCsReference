@@ -4,6 +4,7 @@
 
 using System;
 using UnityEditor.Build.Profile;
+using UnityEditor.Scripting.ScriptCompilation;
 using UnityEngine;
 
 namespace UnityEditor.Modules;
@@ -52,6 +53,7 @@ class SDKPlatformProvider
     static readonly string k_UnrecognizedVersionError = L10n.Tr("unrecognized version {0}.", null);
     static readonly string k_RequiredPropertyError = L10n.Tr("required property '{0}' is missing.", null);
     static readonly string k_PropertyTypeError = L10n.Tr("property '{0}' must be of type {1}.", null);
+    static readonly string k_InvalidPlatformDefineError = L10n.Tr("property '{0}' value '{1}' is not a valid scripting define symbol.", null);
 
     SDKPlatformProvider(IPlatformProvider provider, SDKPlatformType platformType)
     {
@@ -182,7 +184,7 @@ class SDKPlatformProvider
         switch (provider.version)
         {
             case 1:
-                return HasRequiredCoreProperties(provider.GetType(), out error);
+                return HasRequiredCoreProperties(provider, out error);
             default:
                 error = FormatUnrecognizedVersionError(provider.version);
                 return false;
@@ -194,7 +196,7 @@ class SDKPlatformProvider
         switch (provider.version)
         {
             case 1:
-                return HasRequiredCoreProperties(provider.GetType(), out error);
+                return HasRequiredCoreProperties(provider, out error);
             default:
                 error = FormatUnrecognizedVersionError(provider.version);
                 return false;
@@ -202,13 +204,21 @@ class SDKPlatformProvider
     }
 
     // guid is excluded here as it is validated separately in TryGetProviderGuid
-    static bool HasRequiredCoreProperties(Type providerType, out string error)
+    static bool HasRequiredCoreProperties(IPlatformProvider provider, out string error)
     {
+        var providerType = provider.GetType();
         if (!HasRequiredProperty(providerType, k_TargetName, typeof(string), out error))
             return false;
 
         if (!HasRequiredProperty(providerType, k_PlatformDefine, typeof(string), out error))
             return false;
+
+        var platformDefine = (string)providerType.GetProperty(k_PlatformDefine).GetValue(provider);
+        if (!SymbolNameRestrictions.IsValid(platformDefine))
+        {
+            error = string.Format(k_InvalidPlatformDefineError, k_PlatformDefine, platformDefine);
+            return false;
+        }
 
         return true;
     }

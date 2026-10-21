@@ -113,10 +113,10 @@ namespace Unity.VectorGraphics.Editor
             if (SpriteAlignment != m_PrevAlignment || SpritePivot != m_PrevPivot)
             {
                 // Only apply the alignment if it changed, otherwise we may override the special "SVG Origin" value
-                var alignSP = so.FindProperty("SpriteAlignment");
+                var alignSP = so.FindProperty("m_Alignment");
                 alignSP.intValue = (int)SpriteAlignment;
 
-                var pivotSP = so.FindProperty("SpritePivot");
+                var pivotSP = so.FindProperty("m_CustomPivot");
                 pivotSP.vector2Value = SpritePivot;
             }
 

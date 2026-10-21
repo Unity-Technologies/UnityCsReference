@@ -49,6 +49,7 @@ namespace Unity.UI.Builder
         static readonly ProfilerMarker k_RefreshStyleFieldValueMarker = new (refreshStyleFieldValueMarkerName);
 
         VisualElement currentVisualElement => m_Inspector.currentVisualElement;
+        VisualElement variableScopeElement => m_Inspector.variableScopeElement;
         StyleSheet styleSheet => m_Inspector.styleSheet;
         StyleRule currentRule => m_Inspector.currentRule;
 
@@ -739,6 +740,22 @@ namespace Unity.UI.Builder
         {
             using var marker = k_RefreshStyleFieldValueMarker.Auto();
 
+            // CSS Grid track lists are edited via a visual GridTrackAxisEditor backed by a hidden TextField (see +Grid.cs).
+            if (fieldElement is TextField gridTextField)
+            {
+                if (IsGridTrackListStyle(styleName))
+                {
+                    RefreshGridTrackField(styleName, gridTextField);
+                    return true;
+                }
+
+                if (IsGridLineStyle(styleName))
+                {
+                    RefreshGridLineField(styleName, gridTextField);
+                    return true;
+                }
+            }
+
             var styleType = StyleDebug.GetComputedStyleType(styleName);
             if (styleType == null)
             {
@@ -765,19 +782,6 @@ namespace Unity.UI.Builder
             var styleProperty = GetLastStyleProperty(currentRule, cSharpStyleName);
             var hasBinding = BuilderInspectorUtilities.HasBinding(m_Inspector, fieldElement);
             var useStyleProperty = styleProperty != null && !styleProperty.ContainsVariable() && (!hasBinding || forceInlineValue);
-
-            // CSS Grid track lists are edited via a visual GridTrackAxisEditor backed by a hidden TextField (see +Grid.cs).
-            if (IsGridTrackListStyle(styleName) && fieldElement is TextField gridTrackField)
-            {
-                RefreshGridTrackField(styleName, gridTrackField);
-                return true;
-            }
-
-            if (IsGridLineStyle(styleName) && fieldElement is TextField gridLineField)
-            {
-                RefreshGridLineField(styleName, gridLineField);
-                return true;
-            }
 
             if (IsComputedStyleFloat(val) && fieldElement is FloatField)
             {
@@ -1170,6 +1174,7 @@ namespace Unity.UI.Builder
                     imageStyleField.gradientField.resolveVariableColor = ResolveGradientVariableColor;
                     imageStyleField.gradientField.getCurrentVisualElement = () => currentVisualElement;
                     imageStyleField.gradientField.getEditorExtensionMode = () => m_Inspector.document.fileSettings.editorExtensionMode;
+                    imageStyleField.gradientField.getVariableScopeElement = () => variableScopeElement;
                 }
                 else
                 {
@@ -1215,6 +1220,7 @@ namespace Unity.UI.Builder
                 bgGradientField.resolveVariableColor = ResolveGradientVariableColor;
                 bgGradientField.getCurrentVisualElement = () => currentVisualElement;
                 bgGradientField.getEditorExtensionMode = () => m_Inspector.document.fileSettings.editorExtensionMode;
+                bgGradientField.getVariableScopeElement = () => variableScopeElement;
                 return true;
             }
 
@@ -2906,7 +2912,7 @@ namespace Unity.UI.Builder
             if (currentVisualElement == null)
                 return null;
             var varInfo = StyleVariableUtility.FindVariable(currentVisualElement, varName,
-                m_Inspector.document.fileSettings.editorExtensionMode);
+                m_Inspector.document.fileSettings.editorExtensionMode, variableScopeElement);
             return varInfo.Sheet;
         }
 
@@ -2915,7 +2921,7 @@ namespace Unity.UI.Builder
             if (currentVisualElement == null)
                 return null;
             var varInfo = StyleVariableUtility.FindVariable(currentVisualElement, varName,
-                m_Inspector.document.fileSettings.editorExtensionMode);
+                m_Inspector.document.fileSettings.editorExtensionMode, variableScopeElement);
             var handles = varInfo.StyleVariable.handles;
             if (varInfo.Sheet == null || handles == null || handles.Length == 0)
                 return null;

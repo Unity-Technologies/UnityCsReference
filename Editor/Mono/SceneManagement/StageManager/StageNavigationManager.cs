@@ -28,6 +28,7 @@ namespace UnityEditor.SceneManagement
 
         public event Action<Stage, Stage> stageChanging;                             // previousStage, newStage
         public event Action<Stage, Stage> stageChanged;                              // previousStage, newStage
+        public event Action<Stage, Stage> recoveredFromStageChangeError;             // previousStage, newStage
         public event Action<Stage> beforeSwitchingAwayFromStage;
         public event Action<Stage> afterSuccessfullySwitchedToStage;
         public event Action StagesTicked;
@@ -361,6 +362,15 @@ namespace UnityEditor.SceneManagement
                 {
                     // Here the Hierarchy and SceneView sync's up to the new stage
                     stageChanged?.Invoke(previousStage, m_NavigationHistory.GetMainStage());
+                }
+                catch (Exception e)
+                {
+                    Debug.LogError("Error while recovering from Stage change error: " + e);
+                }
+
+                try
+                {
+                    recoveredFromStageChangeError?.Invoke(previousStage, m_NavigationHistory.GetMainStage());
                 }
                 catch (Exception e)
                 {

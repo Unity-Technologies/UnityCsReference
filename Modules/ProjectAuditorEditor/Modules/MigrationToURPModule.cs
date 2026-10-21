@@ -130,7 +130,7 @@ namespace Unity.ProjectAuditor.Editor.Modules
             // judge readiness for whichever pipeline it cares about.
             var qualityContext = new AnalysisContext { Params = analysisParams };
 
-            MigrationToURPUtilities.AreQualitySettingsReadyForTargetPipelines([MigrationToURPUtilities.Urp3DContainer, MigrationToURPUtilities.Urp2DContainer], out var results);
+            MigrationToURPUtilities.AreQualitySettingsReadyForUrpTargetPipelines([MigrationToURPUtilities.Urp3DContainer, MigrationToURPUtilities.Urp2DContainer], out var results);
             if (!results[0])
                 analysisParams.OnIncomingIssues([qualityContext.CreateIssue(IssueCategory.ProjectSetting, k_QualitySettings3DNotReadyDescriptor.Id).WithLocation(k_QualitySettingsLocation)]);
             if (!results[1])

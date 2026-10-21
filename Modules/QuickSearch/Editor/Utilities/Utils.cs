@@ -19,7 +19,6 @@ using UnityEditor.PackageManager;
 
 using Debug = UnityEngine.Debug;
 
-
 using UnityEditor.Connect;
 using UnityEditor.StyleSheets;
 using Unity.Scripting.LifecycleManagement;
@@ -41,7 +40,6 @@ using Unity.Scripting.LifecycleManagement;
 
 namespace UnityEditor.Search
 {
-
     static class EventModifiersExtensions
     {
         public static bool HasAny(this EventModifiers flags, EventModifiers f) => (flags & f) != 0;
@@ -54,7 +52,6 @@ namespace UnityEditor.Search
     static partial class Utils
     {
         const int k_MaxRegexTimeout = 25;
-
 
         internal static readonly bool isDeveloperBuild = false;
         [NoAutoStaticsCleanup]
@@ -96,7 +93,6 @@ namespace UnityEditor.Search
         // every drag, and a code reload ends any drag, so nothing is left to lose.
         [IgnoreForUAL0015("Per-gesture drag payload, reassigned at the start of every drag")]
         private static UnityEngine.Object[] s_LastDraggedObjects;
-
 
         public static GUIStyle objectFieldButton
         {
@@ -1127,8 +1123,6 @@ namespace UnityEditor.Search
             return new InspectorWindowUtils.LayoutGroupChecker();
         }
 
-
-
         internal static string GetConnectAccessToken()
         {
             return UnityConnect.instance.GetAccessToken();
@@ -1469,7 +1463,6 @@ namespace UnityEditor.Search
         {
             return evt.MainActionKeyForControl(id);
         }
-
 
         public static bool IsNavigationKey(in Event evt)
         {
@@ -1892,5 +1885,4 @@ namespace UnityEditor.Search
             return type;
         }
     }
-
 }

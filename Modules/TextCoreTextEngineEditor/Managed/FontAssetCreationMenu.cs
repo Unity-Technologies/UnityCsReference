@@ -103,7 +103,7 @@ namespace UnityEditor.TextCore.Text
             FontAsset fontAsset = ScriptableObject.CreateInstance<FontAsset>();
             AssetDatabase.CreateAsset(fontAsset, newAssetFilePathWithName);
 
-            fontAsset.version = "1.1.0";
+            fontAsset.version = FontAsset.k_Version;
             fontAsset.faceInfo = FontEngine.GetFaceInfo();
 
             // Set font reference and GUID
@@ -112,7 +112,6 @@ namespace UnityEditor.TextCore.Text
             fontAsset.m_SourceFontFile_EditorRef = font;
 
             fontAsset.atlasPopulationMode = AtlasPopulationMode.Dynamic;
-            //fontAsset.clearDynamicDataOnBuild = TextSettings.clearDynamicDataOnBuild;
 
             // Default atlas resolution is 1024 x 1024.
             fontAsset.atlasTextures = new Texture2D[1];

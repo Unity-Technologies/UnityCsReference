@@ -35,6 +35,30 @@ static class ComponentValueReflection
         return (bool)k_HasComponentMethod.MakeGenericMethod(componentType).Invoke(element, null);
     }
 
+    [NoAutoStaticsCleanup]
+    internal static readonly MethodInfo SetComponentValueMethod =
+        typeof(ComponentValueReflection).GetMethod(nameof(SetComponentValue), BindingFlags.Static | BindingFlags.NonPublic);
+
+    [NoAutoStaticsCleanup]
+    internal static readonly MethodInfo CreateComponentValueMethod =
+        typeof(ComponentValueReflection).GetMethod(nameof(CreateComponentValue), BindingFlags.Static | BindingFlags.NonPublic);
+
+    [NoAutoStaticsCleanup]
+    internal static readonly MethodInfo MarkComponentDirtyMethod =
+        typeof(ComponentValueReflection).GetMethod(nameof(MarkComponentDirty), BindingFlags.Static | BindingFlags.NonPublic);
+
     static T GetComponentValue<T>(VisualElement element) where T : struct, IVisualElementComponent
         => element.GetComponent<T>();
+
+    static void SetComponentValue<T>(VisualElement element, T value) where T : struct, IVisualElementComponent
+        => element.GetComponent<T>() = value;
+
+    // Same construction GetOrAddComponent uses, so a [UxmlCreateInstanceMethod] factory is honored.
+    static T CreateComponentValue<T>() where T : struct, IVisualElementComponent
+    {
+        return default(T).__GetComponentCreateInstanceFactory() is Func<T> factory ? factory() : default;
+    }
+
+    static void MarkComponentDirty<T>(VisualElement element) where T : struct, IVisualElementComponent
+        => element.MarkComponentDirty<T>();
 }

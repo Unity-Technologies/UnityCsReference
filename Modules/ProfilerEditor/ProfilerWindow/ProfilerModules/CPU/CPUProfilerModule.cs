@@ -156,9 +156,15 @@ namespace UnityEditorInternal.Profiling
             m_DetailsViewController?.ViewOptionsMenuContributor?.AddViewOptionsMenuItems(menu);
         }
 
+        internal override ProfilerViewType ViewType
+        {
+            get { return m_ViewType; }
+            set { CPUViewTypeChanged(value); }
+        }
+
         protected void CPUViewTypeChanged(ProfilerViewType newViewType)
         {
-            m_DetailsViewController.SetViewType(newViewType);
+            m_DetailsViewController?.SetViewType(newViewType);
 
             base.CPUOrGPUViewTypeChanged(newViewType);
         }

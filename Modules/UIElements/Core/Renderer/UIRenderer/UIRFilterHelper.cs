@@ -143,7 +143,8 @@ namespace UnityEngine.UIElements.UIR
             Rect? sourceUVRect = null,
             RectInt? drawBounds = null,
             Rect? viewport = null,
-            bool usePixelMatrix = true)
+            bool usePixelMatrix = true,
+            bool clearTarget = false)
         {
             var uvRect = sourceUVRect ?? new Rect(0, 0, 1, 1);
             var bounds = drawBounds ?? new RectInt(0, 0, target.width, target.height);
@@ -155,6 +156,12 @@ namespace UnityEngine.UIElements.UIR
             propertyBlock.SetTexture(s_MainTexId, source);
 
             RenderTexture.active = target;
+
+            if (clearTarget)
+            {
+                // Right after the bind, so tile-based GPUs fold it into the pass's load action
+                GL.Clear(false, true, Color.clear);
+            }
 
             // Filter material is shared across panels: set the keyword every call so a stale value can't leak gamma state between them.
             if (outputLinear)
@@ -214,6 +221,9 @@ namespace UnityEngine.UIElements.UIR
                 if (filterDef == null || filterDef.passes == null)
                     continue; // Occupies no block slots (see CountFilterChainPasses)
 
+                // Pooled RTs keep another chain's output. Built-in passes overwrite every pixel; a custom pass may blend over it.
+                bool clearsPassTargets = filterFunc.type == FilterFunctionType.Custom;
+
                 bool retainsInput = false;
                 for (int j = 0; j < filterDef.passes.Length; j++)
                 {
@@ -256,7 +266,8 @@ namespace UnityEngine.UIElements.UIR
                         pass: pass,
                         propertyBlock: perPassBlocks[flatBlockIndex],
                         outputLinear: false,
-                        usePixelMatrix: usePixelMatrix
+                        usePixelMatrix: usePixelMatrix,
+                        clearTarget: clearsPassTargets
                     );
 
                     if (current != source && current != filterInput)

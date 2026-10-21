@@ -120,8 +120,8 @@ namespace UnityEngine.UIElements
     /// <summary>
     /// Dispatches component-targeted data bindings (<c>${component:Type}.field</c>) into the live
     /// component data of an element. The generated <c>__GetComponentBindingDispatcher</c> hook returns
-    /// <see cref="ComponentBindingDispatcher{T}.Instance"/>, and AddComponent caches it in the
-    /// component's slot, so binding updates dispatch without reflection.
+    /// <see cref="ComponentBindingDispatcher{T}.Instance"/>, which is held once per component type,
+    /// so binding updates dispatch without reflection.
     /// </summary>
     public abstract class ComponentBindingDispatcher
     {

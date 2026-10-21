@@ -12,10 +12,11 @@ namespace UnityEditor.Build
     /// <remarks>
     /// Pass this structure to <see cref="BuildHistory.RegisterExternalBuild"/> to record a build performed outside
     /// the Unity build pipeline. Unity derives the stored <see cref="BuildReportSummary"/> from these values.
+    /// Exists only for the Addressables package, which has access through InternalsVisibleTo.
     /// </remarks>
     /// <seealso cref="BuildHistory.RegisterExternalBuild"/>
     /// <seealso cref="BuildReportSummary"/>
-    public struct ExternalBuildInfo
+    internal struct ExternalBuildInfo
     {
         /// <summary>A unique identifier for the build session. Required.</summary>
         /// <remarks>For more information, refer to <see cref="BuildReportSummary.BuildSessionGUID"/>.</remarks>

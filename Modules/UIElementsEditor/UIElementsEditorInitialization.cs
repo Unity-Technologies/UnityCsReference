@@ -31,8 +31,6 @@ namespace UnityEditor.UIElements
                 RegisterSerializationLayoutDependency();
                 UnityEngine.UIElements.UIElementsInitialization.InitializeUIElementsManaged();
                 VisualTreeAssetHierarchyDropHandler.Register();
-
-                UnityEngine.UIElements.PanelRenderer.RegisterPanelRendererAnimationBinding();
             }
             catch (Exception ex)
             {

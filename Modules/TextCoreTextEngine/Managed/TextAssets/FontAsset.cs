@@ -7,7 +7,6 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
-using Unity.Jobs.LowLevel.Unsafe;
 using Unity.Profiling;
 using Unity.Scripting.LifecycleManagement;
 using UnityEngine.Bindings;
@@ -93,16 +92,25 @@ namespace UnityEngine.TextCore.Text
         }
     }
 
-    ///<summary>Options to specify the atlas population mode, which defines the type of font asset.</summary>
+    /// <summary>Options to specify the atlas population mode, which defines the type of font asset.</summary>
     public enum AtlasPopulationMode
     {
-        ///<summary>Static font assets offer the best performance of any font asset type. You create and pre-populate them in the Editor.They cannot be modified at runtime. A static font asset is standalone. Its source font file is not included in builds.</summary>
+        /// <summary>Static font assets offer the best performance of any font asset type. You create and pre-populate them in the Editor.They cannot be modified at runtime. A static font asset is standalone. Its source font file is not included in builds.</summary>
         [Obsolete("AtlasPopulationMode.Static is deprecated. Use Dynamic or DynamicOS instead. See https://docs.unity3d.com/Manual/ui-systems/migrate-static-font-assets.html for migration guidance.")]
         Static = 0x0,
-        ///<summary>Dynamic font assets can be populated at runtime, but incur a higher performance overhead than static font assets. A dynamic font asset depends on its source font file, which is included in builds.</summary>
+        /// <summary>Dynamic font assets can be populated at runtime, but incur a higher performance overhead than static font assets. A dynamic font asset depends on its source font file, which is included in builds.</summary>
         Dynamic = 0x1,
-        ///<summary>Dynamic OS font assets provide the same functionality and performance as dynamic font assets. In the Editor, a Dynamic OS font asset depends on its source font file. For a Dynamic OS font asset to work in a build, the target platform must contain its source font file.</summary>
+        /// <summary>Dynamic OS font assets provide the same functionality and performance as dynamic font assets. In the Editor, a Dynamic OS font asset depends on its source font file. For a Dynamic OS font asset to work in a build, the target platform must contain its source font file.</summary>
         DynamicOS = 0x2
+    }
+
+    /// <summary>Options to specify whether the glyphs and atlas textures that a dynamic font asset generates in the Editor are stored in the asset.</summary>
+    public enum DynamicDataPersistence
+    {
+        /// <summary>Glyphs generated in the Editor stay in memory until the Editor closes. The asset file is not modified and builds start with an empty atlas.</summary>
+        SessionOnly,
+        /// <summary>Glyphs generated in the Editor are saved into the asset file and shipped in builds.</summary>
+        Persistent,
     }
 
     /// <summary>
@@ -113,6 +121,10 @@ namespace UnityEngine.TextCore.Text
     [HelpURL("UIE-font-asset-landing")]
     public partial class FontAsset : TextAsset
     {
+        internal const string k_Version = "1.2.0";
+        // Version that introduced m_DynamicDataPersistence; assets saved at or after it are never re-upgraded.
+        internal const string k_DynamicDataPersistenceVersion = "1.2.0";
+
         static void EnsureAdditionalCapacity<T>(List<T> container, int additionalCapacity)
         {
             var desiredCapacity = container.Count + additionalCapacity;
@@ -347,17 +359,48 @@ namespace UnityEngine.TextCore.Text
         [SerializeField]
         private bool m_GetFontFeatures = true;
 
+        // Legacy; only read to upgrade assets saved before version 1.2.0.
+        [SerializeField, HideInInspector]
+        bool m_ClearDynamicDataOnBuild = true;
+
         /// <summary>
-        /// Determines if dynamic font asset data should be cleared before builds.
+        /// Determines if the dynamic font asset data generated in the Editor is stored in the asset file.
         /// </summary>
-        internal bool clearDynamicDataOnBuild
+        public DynamicDataPersistence dynamicDataPersistence
         {
-            get { return m_ClearDynamicDataOnBuild; }
-            set { m_ClearDynamicDataOnBuild = value; }
+            get
+            {
+                UpgradeDynamicDataPersistenceIfNeeded();
+                return m_DynamicDataPersistence;
+            }
+            set
+            {
+                UpgradeDynamicDataPersistenceIfNeeded();
+                m_DynamicDataPersistence = value;
+            }
         }
 
         [SerializeField]
-        bool m_ClearDynamicDataOnBuild = true;
+        DynamicDataPersistence m_DynamicDataPersistence;
+
+        internal bool hasSessionOnlyDynamicData => dynamicDataPersistence == DynamicDataPersistence.SessionOnly && (m_AtlasPopulationMode == AtlasPopulationMode.Dynamic || m_AtlasPopulationMode == AtlasPopulationMode.DynamicOS);
+
+        void UpgradeDynamicDataPersistenceIfNeeded()
+        {
+            if (IsVersionAtLeast(m_Version, k_DynamicDataPersistenceVersion))
+                return;
+
+            // A static asset only exists to hold its baked data, whatever the legacy flag said.
+            m_DynamicDataPersistence = (m_AtlasPopulationMode == AtlasPopulationMode.Static || !m_ClearDynamicDataOnBuild)
+                ? DynamicDataPersistence.Persistent
+                : DynamicDataPersistence.SessionOnly;
+            m_Version = k_Version;
+        }
+
+        internal static bool IsVersionAtLeast(string version, string minimum)
+        {
+            return System.Version.TryParse(version, out var parsed) && parsed >= System.Version.Parse(minimum);
+        }
 
         /// <summary>
         /// The width of the atlas texture(s) used by this font asset.
@@ -697,7 +740,7 @@ namespace UnityEngine.TextCore.Text
             // Create new font asset
             FontAsset fontAsset = CreateInstance<FontAsset>();
 
-            fontAsset.m_Version = "1.1.0";
+            fontAsset.m_Version = k_Version;
             fontAsset.faceInfo = FontEngine.GetFaceInfo(faceHandle);
 
             if (renderMode == GlyphRenderMode.DEFAULT)
@@ -713,7 +756,8 @@ namespace UnityEngine.TextCore.Text
             }
 
             fontAsset.atlasPopulationMode = atlasPopulationMode;
-            // Need to eventually add support for setting default state related to Clear Dynamic Data on Build.
+            if (atlasPopulationMode == AtlasPopulationMode.Static)
+                fontAsset.dynamicDataPersistence = DynamicDataPersistence.Persistent;
 
             fontAsset.atlasWidth = atlasWidth;
             fontAsset.atlasHeight = atlasHeight;
@@ -809,6 +853,10 @@ namespace UnityEngine.TextCore.Text
         internal static Action<FontAsset> RegisterResourceForReimport;
         [AutoStaticsCleanupOnCodeReload]
         internal static Action<Texture2D, bool> SetAtlasTextureIsReadable;
+        [AutoStaticsCleanupOnCodeReload]
+        internal static Action<FontAsset> OnAtlasTexturePersistenceChanged;
+        [AutoStaticsCleanupOnCodeReload]
+        internal static Action<Texture2D> OnAtlasTextureUploaded;
         [AutoStaticsCleanupOnCodeReload]
         internal static Func<string, Font> GetSourceFontRef;
         [AutoStaticsCleanupOnCodeReload]
@@ -966,6 +1014,8 @@ namespace UnityEngine.TextCore.Text
             {
                 //Debug.Log("Reading Font Asset Definition for " + this.name + ".");
 
+                UpgradeDynamicDataPersistenceIfNeeded();
+
                 // Initialize lookup tables for characters and glyphs.
                 InitializeDictionaryLookupTables();
 
@@ -1005,14 +1055,8 @@ namespace UnityEngine.TextCore.Text
                 // Update Units per EM for pre-existing font assets.
                 if (m_FaceInfo.unitsPerEM == 0 && atlasPopulationMode != AtlasPopulationMode.Static)
                 {
-                    // Only retrieve Units Per EM if we are on the main thread.
-                    if (!JobsUtility.IsExecutingJob)
-                    {
-                        m_FaceInfo.unitsPerEM = FontEngine.GetFaceInfo(m_FontFaceHandle).unitsPerEM;
-                        Debug.Log("Font Asset [" + name + "] Units Per EM set to " + m_FaceInfo.unitsPerEM + ". Please commit the newly serialized value.", this);
-                    }
-                    else
-                        Debug.LogError("Font Asset [" + name + "] is missing Units Per EM. Please select the 'Reset FaceInfo' menu item on Font Asset [" + name + "] to ensure proper serialization.", this);
+                    m_FaceInfo.unitsPerEM = FontEngine.GetFaceInfo(m_FontFaceHandle).unitsPerEM;
+                    Debug.Log("Font Asset [" + name + "] Units Per EM set to " + m_FaceInfo.unitsPerEM + ". Please commit the newly serialized value.", this);
                 }
 
                 // Compute hash codes for various properties of the font asset used for lookup.
@@ -1027,6 +1071,8 @@ namespace UnityEngine.TextCore.Text
                 IsFontAssetLookupTablesDirty = false;
 
                 RegisterCallbackInstance(this);
+
+                OnAtlasTexturePersistenceChanged?.Invoke(this);
             }
         }
 
@@ -1723,6 +1769,32 @@ namespace UnityEngine.TextCore.Text
 
             // Makes the changes to the font asset persistent.
             RegisterResourceForUpdate?.Invoke(this);
+        }
+
+        internal void ClearSessionDynamicData()
+        {
+            if ((m_GlyphTable == null || m_GlyphTable.Count == 0) && (m_AtlasTextures == null || m_AtlasTextures.Length <= 1))
+                return;
+
+            ClearCharacterAndGlyphTables();
+            ClearFontFeaturesTables();
+
+            if (m_AtlasTextures != null && m_AtlasTextures.Length > 1)
+            {
+                for (int i = 1; i < m_AtlasTextures.Length; i++)
+                {
+                    if (m_AtlasTextures[i] != null)
+                        DestroyImmediate(m_AtlasTextures[i], true);
+                }
+
+                Array.Resize(ref m_AtlasTextures, 1);
+                m_AtlasTextureIndex = 0;
+                m_AtlasTexture = m_AtlasTextures[0];
+            }
+
+            ReadFontAssetDefinition();
+
+            TextEventManager.ON_FONT_PROPERTY_CHANGED(true, this);
         }
 
         /// <summary>

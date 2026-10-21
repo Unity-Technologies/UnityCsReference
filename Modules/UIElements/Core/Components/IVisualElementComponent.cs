@@ -46,14 +46,14 @@ namespace UnityEngine.UIElements
 
         // Generator-emitted; do not call directly. Returns the component's shared [OnComponentChanged]
         // dispatcher (a per-type static delegate, so no per-instance allocation), or null when the
-        // component declares no handler. AddComponent stores the result in the component's slot.
+        // component declares no handler. Held once per component type, not per component instance.
         /// <undoc/>
         [EditorBrowsable(EditorBrowsableState.Never)]
         System.Action<VisualElement> __GetComponentChangedDispatcher();
 
         // Generator-emitted; do not call directly. Returns the shared per-type dispatcher that routes
         // component-targeted data bindings (${component:Type}.field) into the live component data.
-        // AddComponent stores the result in the component's slot.
+        // Held once per component type, not per component instance.
         /// <undoc/>
         [EditorBrowsable(EditorBrowsableState.Never)]
         ComponentBindingDispatcher __GetComponentBindingDispatcher();

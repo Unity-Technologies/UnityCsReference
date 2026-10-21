@@ -656,14 +656,14 @@ namespace UnityEngine.UIElements
 
         private static readonly ProfilerMarker s_FillMarker = new ProfilerMarker(ProfilerCategory.UIToolkit, "Painter2D.Fill");
 
-        private static void SetSolidTextureData(Texture2D targetTexture, Color color, int width, int height)
+        private static void SetSolidTextureData(Texture2D targetTexture, Color color, int x, int y, int width, int height)
         {
             NativeArray<Color32> texels = targetTexture.GetRawTextureData<Color32>();
             var textureWidth = targetTexture.width;
-            for (int y = 0; y < height; ++y)
+            for (int j = 0; j < height; ++j)
             {
-                for (int x = 0; x < width; ++x)
-                    texels[x + y * textureWidth] = color;
+                for (int i = 0; i < width; ++i)
+                    texels[x + i + (y + j) * textureWidth] = color;
             }
         }
 
@@ -1013,8 +1013,8 @@ namespace UnityEngine.UIElements
 
             int padding = 1;
             UIRAtlasAllocator atlasAllocator = new UIRAtlasAllocator(64, 4096);
-            List<RectInt> textureAllocations = new List<RectInt>();
-            List<int> gradientMeshIndex = new List<int>();
+            var atlasSlots = new List<AtlasSlot>();
+            bool hasTextureSlot = false;
 
             bool hasRect = viewport != Rect.zero;
 
@@ -1022,7 +1022,7 @@ namespace UnityEngine.UIElements
             {
                 // Reserve the first gradient entry to a white texture for solid geometry
                 atlasAllocator.TryAllocate(1 + 2 * padding, 1 + 2 * padding, out RectInt location);
-                textureAllocations.Add(location);
+                atlasSlots.Add(new AtlasSlot { location = location, gradientMeshIndex = -1, textureMeshIndex = -1 });
             }
 
             for (int meshIndex = 0; meshIndex < meshes.Count; ++meshIndex)
@@ -1038,8 +1038,7 @@ namespace UnityEngine.UIElements
                         Debug.LogError("SaveToVectorImage cannot save VectorImage since texture atlas has no space left.");
                         return false;
                     }
-                    textureAllocations.Add(location);
-                    gradientMeshIndex.Add(meshIndex);
+                    atlasSlots.Add(new AtlasSlot { location = location, gradientMeshIndex = meshIndex, textureMeshIndex = -1 });
                     hasGradient = true;
                 }
 
@@ -1051,8 +1050,8 @@ namespace UnityEngine.UIElements
                         Debug.LogError("SaveToVectorImage cannot save VectorImage since texture atlas has no space left.");
                         return false;
                     }
-                    textureAllocations.Add(location);
-                    gradientMeshIndex.Add(-1);
+                    atlasSlots.Add(new AtlasSlot { location = location, gradientMeshIndex = -1, textureMeshIndex = meshIndex });
+                    hasTextureSlot = true;
                     hasGradient = true;
                 }
 
@@ -1079,7 +1078,7 @@ namespace UnityEngine.UIElements
                         tint = v.tint,
                         uv = v.uv,
                         vertexFlags = v.flags,
-                        settingIndex = hasGradient ? (UInt32)(textureAllocations.Count - 1) : 0,
+                        settingIndex = hasGradient ? (UInt32)(atlasSlots.Count - 1) : 0,
                         circle = v.circle
                     };
                 }
@@ -1095,76 +1094,92 @@ namespace UnityEngine.UIElements
             vectorImage.indices = allInds;
             vectorImage.size = hasRect ? viewport.size : bbox.size;
 
-            if (textureAllocations.Count > 0)
+            if (atlasSlots.Count > 0)
             {
-                RenderTexture atlasTexture = new RenderTexture(atlasAllocator.physicalWidth, atlasAllocator.physicalHeight, 0, RenderTextureFormat.ARGB32);
-                List<GradientSettings> gradientSettingsList = new List<GradientSettings>(textureAllocations.Count);
+                Texture2D atlas = CreateGradientLutTexture(atlasAllocator.physicalWidth, atlasAllocator.physicalHeight);
 
-                for (int i = 0; i < textureAllocations.Count; ++i)
+                // ReadPixels overwrites the whole atlas, so it must run before the CPU writes below.
+                if (hasTextureSlot)
+                    DrawTextureFillsIntoAtlas(atlas, atlasSlots);
+                else
                 {
-                    var r = textureAllocations[i];
-                    int gradIndex = (i > 0) ? gradientMeshIndex[i-1] : -1;
+                    NativeArray<Color32> texels = atlas.GetRawTextureData<Color32>();
+                    UnsafeUtility.MemClear(texels.GetUnsafePtr(), (long)texels.Length * UnsafeUtility.SizeOf<Color32>());
+                }
 
-                    Texture2D tempTexture = null;
+                List<GradientSettings> gradientSettingsList = new List<GradientSettings>(atlasSlots.Count);
+
+                for (int i = 0; i < atlasSlots.Count; ++i)
+                {
+                    var slot = atlasSlots[i];
+                    var r = slot.location;
 
                     // First gradient is reserved for solid geometry
                     if (i == 0)
                     {
-                        tempTexture = new Texture2D(r.width, r.height, TextureFormat.RGBA32, false);
-                        SetSolidTextureData(tempTexture, Color.white, r.width, r.height);
-                        tempTexture.Apply(false, true);
-
+                        SetSolidTextureData(atlas, Color.white, r.x, r.y, r.width, r.height);
                         SetupSolidColor(r.width, r.height, r.x + padding, r.y + padding, out GradientSettings gradientSettings);
                         gradientSettingsList.Add(gradientSettings);
                     }
-                    else if (gradIndex != -1)
+                    else if (slot.gradientMeshIndex != -1)
                     {
-                        // Fill Gradient
-                        FillGradient fillGradient = m_DetachedAllocator.GetGradientFromMeshIndex(gradIndex);
-
-                        tempTexture = new Texture2D(r.width, r.height, TextureFormat.RGBA32, false);
-                        SetGradientTextureData(tempTexture, r.width - 2 * padding, padding, padding, fillGradient.gradient, true);
-                        tempTexture.Apply(false, true);
+                        FillGradient fillGradient = m_DetachedAllocator.GetGradientFromMeshIndex(slot.gradientMeshIndex);
+                        SetGradientTextureData(atlas, r.width - 2 * padding, r.x + padding, r.y + padding, fillGradient.gradient, true);
                         SetupGradient(ref fillGradient, r.width - 2 * padding, r.x + padding, r.y + padding, out GradientSettings gradientSettings);
                         gradientSettingsList.Add(gradientSettings);
                     }
                     else
                     {
-                        RenderTexture.active = atlasTexture;
-                        Rect destRect = new Rect(r.x, atlasTexture.height - r.height - r.y, r.width, r.height);
-                        Texture texture = m_DetachedAllocator.GetTextureFromMeshIndex(i-1);
-                        GL.PushMatrix();
-                        GL.LoadPixelMatrix(0, atlasTexture.width, atlasTexture.height, 0);
-                        Graphics.DrawTexture(destRect, texture);
-                        GL.PopMatrix();
-                        RenderTexture.active = null;
-
                         SetupGradientForTexture(r.width, r.height, r.x, r.y, out GradientSettings gradientSettings);
                         gradientSettingsList.Add(gradientSettings);
                     }
-
-                    if (tempTexture != null)
-                    {
-                        // Copy temp texture into atlas
-                        Graphics.CopyTexture(
-                            tempTexture, 0, 0, 0, 0, r.width, r.height,
-                            atlasTexture, 0, 0, r.x, r.y);
-
-                        UIRUtility.Destroy(tempTexture);
-                    }
                 }
 
-                RenderTexture.active = atlasTexture;
-                Texture2D atlasTexture2D = CreateGradientLutTexture(atlasTexture.width, atlasTexture.height);
-                atlasTexture2D.ReadPixels(new Rect(0, 0, atlasTexture.width, atlasTexture.height), 0, 0);
-                atlasTexture2D.Apply();
-                RenderTexture.active = null;
-                vectorImage.atlas = atlasTexture2D;
+                atlas.Apply();
+                vectorImage.atlas = atlas;
                 vectorImage.settings = gradientSettingsList.ToArray();
-                atlasTexture.Release();
             }
 
             return true;
+        }
+
+        void DrawTextureFillsIntoAtlas(Texture2D atlas, List<AtlasSlot> atlasSlots)
+        {
+            var renderTexture = new RenderTexture(atlas.width, atlas.height, 0, RenderTextureFormat.ARGB32);
+            RenderTexture previousActive = RenderTexture.active;
+            RenderTexture.active = renderTexture;
+            GL.PushMatrix();
+            try
+            {
+                GL.Clear(false, true, Color.clear);
+                GL.LoadPixelMatrix(0, atlas.width, atlas.height, 0);
+
+                foreach (var slot in atlasSlots)
+                {
+                    if (slot.textureMeshIndex == -1)
+                        continue;
+
+                    var r = slot.location;
+                    Texture texture = m_DetachedAllocator.GetTextureFromMeshIndex(slot.textureMeshIndex);
+                    Graphics.DrawTexture(new Rect(r.x, atlas.height - r.height - r.y, r.width, r.height), texture);
+                }
+
+                atlas.ReadPixels(new Rect(0, 0, atlas.width, atlas.height), 0, 0);
+            }
+            finally
+            {
+                GL.PopMatrix();
+                RenderTexture.active = previousActive;
+                renderTexture.Release();
+                UIRUtility.Destroy(renderTexture);
+            }
+        }
+
+        struct AtlasSlot
+        {
+            public RectInt location;
+            public int gradientMeshIndex;
+            public int textureMeshIndex;
         }
     }
 }

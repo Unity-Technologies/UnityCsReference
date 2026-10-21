@@ -5,7 +5,6 @@
 using System;
 using System.Collections.Generic;
 using System.Reflection;
-using Unity.ProjectAuditor.Editor.UI;
 using UnityEditor;
 using UnityEngine;
 using UnityEngine.Rendering;
@@ -28,10 +27,18 @@ namespace Unity.ProjectAuditor.Editor.Modules
 
         internal static string DefaultTargetPipelineContainer => Urp3DContainer;
 
+        internal static class Contents
+        {
+            public static readonly string URP = L10n.Tr("Universal Render Pipeline", null);
+            public static readonly string HDRP = L10n.Tr("High Definition Render Pipeline", null);
+            public static readonly string BuiltIn = L10n.Tr("Built-in Render Pipeline", null);
+            public static readonly string Mixed = L10n.Tr("Mixed", null);
+        }
+
         /// <summary>
         /// Link to the documentation.
         /// </summary>
-        public static string DocumentationUrl => "https://docs.unity3d.com/Packages/com.unity.render-pipelines.universal@latest/index.html?subfolder=/manual/upgrade-guides.html";
+        public static string DocumentationUrl => "https://docs.unity3d.com/Manual/urp/upgrade-guides.html";
 
         /// <summary>
         /// Shows where to install the URP package, and opens the Render Pipeline Converter tool.
@@ -140,120 +147,151 @@ namespace Unity.ProjectAuditor.Editor.Modules
             return (asset == null) ? GraphicsSettings.defaultRenderPipeline : asset;
         }
 
-        // Unlike the migration checks in DescriptorExtensions, Built-in is not a match: is every asset in use URP?
-        internal static bool IsProjectFullyOnUrp()
+        internal static bool IsProjectFullyOnUrp(string targetPipeline)
         {
             var qualityLevelCount = QualitySettings.names.Length;
+            var assetCreator = FindAssetCreator();
 
-            // With no Quality Levels, Unity uses the project-wide asset and there is nothing else in play.
+            // With no Quality Levels, Unity uses the project-wide asset.
             if (qualityLevelCount == 0)
-                return HasDefaultUrpRenderPipeline();
+                return AssetMatchesUrpTargetPipeline(assetCreator, GraphicsSettings.defaultRenderPipeline, targetPipeline);
 
+            // Check quality levels.
             for (var i = 0; i < qualityLevelCount; ++i)
             {
-                // A level left on Built-in reads as a match for migration, but it is not URP.
                 var asset = GetEffectiveRenderPipelineAssetAt(i);
-                if (asset == null || !ShouldMigrateRenderPipelineAsset(asset))
+                if (!AssetMatchesUrpTargetPipeline(assetCreator, asset, targetPipeline))
                     return false;
             }
 
             return true;
         }
 
-        // Neither the wizard nor the Render Pipeline Converter support migrating from HDRP or custom SRPs to URP.
-        // Only a null asset reads as in scope, so null is unambiguously "no unsupported pipeline in use".
-        static RenderPipelineAsset GetUnsupportedRenderPipelineAsset()
+        internal static bool IsProjectUsingSRP()
         {
-            // The wizard writes the project-wide default, so it counts even when every quality level overrides it.
-            // This covers the no-Quality-Levels case too, where the default is all there is.
-            var defaultAsset = GraphicsSettings.defaultRenderPipeline;
-            if (!ShouldMigrateRenderPipelineAsset(defaultAsset))
-                return defaultAsset;
+            var qualityLevelCount = QualitySettings.names.Length;
 
-            for (int i = 0, c = QualitySettings.names.Length; i < c; ++i)
+            // With no Quality Levels, Unity uses the project-wide asset.
+            if (qualityLevelCount == 0)
             {
-                var asset = GetEffectiveRenderPipelineAssetAt(i);
-                if (!ShouldMigrateRenderPipelineAsset(asset))
-                    return asset;
+                var rp = GraphicsSettings.defaultRenderPipeline;
+                return rp != null;
             }
 
-            return null;
+            // Check quality levels.
+            for (var i = 0; i < qualityLevelCount; ++i)
+            {
+                var asset = GetEffectiveRenderPipelineAssetAt(i);
+                if (asset != null)
+                    return true;
+            }
+
+            return false;
         }
 
         internal static bool IsProjectUsingOtherSRP()
         {
-            return GetUnsupportedRenderPipelineAsset() != null;
+            var qualityLevelCount = QualitySettings.names.Length;
+
+            // With no Quality Levels, Unity uses the project-wide asset.
+            if (qualityLevelCount == 0)
+            {
+                var rp = GraphicsSettings.defaultRenderPipeline;
+                return rp != null && !IsAssetOfType(rp, k_UrpAssetTypeName);
+            }
+
+            // Check quality levels.
+            for (var i = 0; i < qualityLevelCount; ++i)
+            {
+                var asset = GetEffectiveRenderPipelineAssetAt(i);
+                if (asset != null && !IsAssetOfType(asset, k_UrpAssetTypeName))
+                    return true;
+            }
+
+            return false;
         }
 
         internal static bool IsProjectUsingHDRP()
         {
-            var asset = GetUnsupportedRenderPipelineAsset();
-            return asset != null && IsAssetOfType(asset, k_HdrpAssetTypeName);
+            var qualityLevelCount = QualitySettings.names.Length;
+
+            // With no Quality Levels, Unity uses the project-wide asset.
+            if (qualityLevelCount == 0)
+                return IsAssetOfType(GraphicsSettings.defaultRenderPipeline, k_HdrpAssetTypeName);
+
+            // Check quality levels.
+            for (var i = 0; i < qualityLevelCount; ++i)
+            {
+                var asset = GetEffectiveRenderPipelineAssetAt(i);
+                if (IsAssetOfType(asset, k_HdrpAssetTypeName))
+                    return true;
+            }
+
+            return false;
         }
 
-        // A default from another SRP leaves the wizard's work undone, so only a URP default counts as assigned.
-        // ShouldMigrateRenderPipelineAsset reads a null asset as Built-in, which is not a default at all.
-        internal static bool HasDefaultUrpRenderPipeline()
+        // Prefers an asset already in the project; creation is delegated via TypeCache to avoid referencing URP.
+        internal static void ApplyTargetPipelineToQualitySettings(string targetPipeline)
         {
-            var asset = GraphicsSettings.defaultRenderPipeline;
-            return asset != null && ShouldMigrateRenderPipelineAsset(asset);
+            var creator = FindAssetCreator();
+
+            var matchingAsset = FindAssetMatchingTargetPipeline(creator, targetPipeline);
+            if (matchingAsset != null)
+            {
+                ReplaceMismatchedQualityLevelAssets(creator, matchingAsset, targetPipeline);
+
+                // Levels without an asset of their own render with the default, so it has to match too.
+                if (!AssetMatchesUrpTargetPipeline(creator, GraphicsSettings.defaultRenderPipeline, targetPipeline))
+                    GraphicsSettings.defaultRenderPipeline = matchingAsset;
+
+                return;
+            }
+
+            // Null if no render-pipeline package with a creator is installed.
+            var createdAsset = creator?.CreateAndAssignDefault(targetPipeline);
+            if (createdAsset != null)
+                ReplaceMismatchedQualityLevelAssets(creator, createdAsset, targetPipeline);
         }
 
-        // A mixed project can hold assets for other SRPs, and any of those promoted project-wide would switch
-        // every Built-in quality level to the wrong pipeline, so only URP assets are candidates.
-        // Reads each level's own asset rather than its effective one: the default is what this feeds.
-        internal static RenderPipelineAsset GetCurrentQualityUrpAsset()
+        // The default if it matches, otherwise the first quality level's own asset that does.
+        static RenderPipelineAsset FindAssetMatchingTargetPipeline(IRenderPipelineAssetCreator creator, string targetPipeline)
         {
-            var currentQualityAsset = QualitySettings.renderPipeline;
-            if (currentQualityAsset != null && ShouldMigrateRenderPipelineAsset(currentQualityAsset))
-                return currentQualityAsset;
+            var defaultAsset = GraphicsSettings.defaultRenderPipeline;
+            if (AssetMatchesUrpTargetPipeline(creator, defaultAsset, targetPipeline))
+                return defaultAsset;
 
             for (int i = 0, c = QualitySettings.names.Length; i < c; ++i)
             {
                 var asset = QualitySettings.GetRenderPipelineAssetAt(i);
-                if (asset != null && ShouldMigrateRenderPipelineAsset(asset))
+                if (AssetMatchesUrpTargetPipeline(creator, asset, targetPipeline))
                     return asset;
             }
 
             return null;
         }
 
-        // The Render Pipeline Converter assigns a URP asset to each quality level but never sets a default.
-        internal static RenderPipelineAsset AssignCurrentQualityUrpAssetAsDefault()
+        // Assigns the replacement to every level whose own asset doesn't match the target pipeline. Levels with no
+        // asset use the default, so are not replaced.
+        static void ReplaceMismatchedQualityLevelAssets(IRenderPipelineAssetCreator creator, RenderPipelineAsset replacement, string targetPipeline)
         {
-            var asset = GetCurrentQualityUrpAsset();
-            if (asset != null)
-                GraphicsSettings.defaultRenderPipeline = asset;
-            return asset;
-        }
-
-        // Whether the project's default render pipeline asset is already set up for the given target pipeline
-        // (eg has a 2D Renderer assigned, for "BuiltInToURP2D").
-        internal static bool DefaultRenderPipelineMatchesTargetPipeline(string targetPipeline)
-        {
-            return AssetMatchesTargetPipeline(FindAssetCreator(), GraphicsSettings.defaultRenderPipeline, targetPipeline);
-        }
-
-        // Prefers an asset the Converter already assigned; creation is delegated via TypeCache to avoid referencing URP.
-        internal static RenderPipelineAsset EnsureDefaultRenderPipelineAsset(string targetPipeline)
-        {
-            var creator = FindAssetCreator();
-
-            // Already done: re-promoting a quality asset over an existing URP default would only change its settings.
-            if (AssetMatchesTargetPipeline(creator, GraphicsSettings.defaultRenderPipeline, targetPipeline))
-                return GraphicsSettings.defaultRenderPipeline;
-
-            // Checked (rather than calling AssignCurrentQualityUrpAssetAsDefault outright) so a quality-level asset
-            // for the wrong renderer isn't promoted over a default that's merely missing, when creating a fresh
-            // one for the right renderer is possible instead.
-            var qualityAsset = GetCurrentQualityUrpAsset();
-            if (AssetMatchesTargetPipeline(creator, qualityAsset, targetPipeline))
+            var originalLevel = QualitySettings.GetQualityLevel();
+            try
             {
-                GraphicsSettings.defaultRenderPipeline = qualityAsset;
-                return qualityAsset;
-            }
+                for (int i = 0, c = QualitySettings.names.Length; i < c; ++i)
+                {
+                    var asset = QualitySettings.GetRenderPipelineAssetAt(i);
+                    if (asset == null || AssetMatchesUrpTargetPipeline(creator, asset, targetPipeline))
+                        continue;
 
-            return creator?.CreateAndAssignDefault(targetPipeline); // null if no render-pipeline package with a creator is installed.
+                    // There is no per-level setter, only one for the current level.
+                    QualitySettings.SetQualityLevel(i, false);
+                    QualitySettings.renderPipeline = replacement;
+                }
+            }
+            finally
+            {
+                QualitySettings.SetQualityLevel(originalLevel, false);
+            }
         }
 
         static IRenderPipelineAssetCreator FindAssetCreator()
@@ -263,50 +301,55 @@ namespace Unity.ProjectAuditor.Editor.Modules
                 if (type.IsAbstract)
                     continue;
 
-                var creator = TryCreateAssetCreator(type);
-                if (creator != null)
-                    return creator;
+                try
+                {
+                    var creator = Activator.CreateInstance(type, nonPublic: true) as IRenderPipelineAssetCreator;       // Creators ship inside render-pipeline packages, so neither the type nor its constructor is guaranteed to be public.
+                    if (creator != null)
+                        return creator;
+                }
+                catch (Exception e)
+                {
+                    Debug.LogWarning($"Could not create an instance of {type.FullName}: {e.Message}");
+                }
             }
 
             return null;
         }
 
-        // Creators ship inside render-pipeline packages, so neither the type nor its constructor is guaranteed to be public.
-        static IRenderPipelineAssetCreator TryCreateAssetCreator(Type type)
+        internal static string GetCurrentRenderPipelineDisplayName()
         {
-            try
+            var qualityLevelCount = QualitySettings.names.Length;
+
+            // With no Quality Levels, Unity uses the project-wide asset.
+            if (qualityLevelCount == 0)
+                return GetRenderPipelineDisplayName(GraphicsSettings.defaultRenderPipeline);
+
+            // Levels using different assets of the same pipeline are not mixed.
+            var displayName = GetRenderPipelineDisplayName(GetEffectiveRenderPipelineAssetAt(0));
+            for (var i = 1; i < qualityLevelCount; ++i)
             {
-                return Activator.CreateInstance(type, nonPublic: true) as IRenderPipelineAssetCreator;
+                if (GetRenderPipelineDisplayName(GetEffectiveRenderPipelineAssetAt(i)) != displayName)
+                    return Contents.Mixed;
             }
-            catch (Exception e)
-            {
-                // One creator we cannot construct must not stop the wizard from trying the others.
-                Debug.LogWarning($"Could not create an instance of {type.FullName}: {e.Message}");
-                return null;
-            }
+
+            return displayName;
         }
 
-        internal static string GetDefaultRenderPipelineDisplayName()
+        static string GetRenderPipelineDisplayName(RenderPipelineAsset asset)
         {
-            var asset = GraphicsSettings.defaultRenderPipeline;
             if (asset == null)
-                return string.Empty;
-
+                return Contents.BuiltIn;
             if (IsAssetOfType(asset, k_UrpAssetTypeName))
-                return MigrationWorkflowView.Contents.URP;
-
+                return Contents.URP;
             if (IsAssetOfType(asset, k_HdrpAssetTypeName))
-                return MigrationWorkflowView.Contents.HDRP;
-
-            // A custom SRP has no product name to show, so its asset type is the closest thing to one.
+                return Contents.HDRP;
             return asset.GetType().Name;
         }
 
         // Whether every Quality Level (or the project-wide default, if there are no Quality Levels) already has a
         // Render Pipeline Asset matching the given target pipeline (eg every level uses the 2D Renderer, for
-        // "BuiltInToURP2D"). Catches a level with its own override asset for the wrong renderer, which the
-        // project default alone (DefaultRenderPipelineMatchesTargetPipeline) wouldn't see.
-        internal static void AreQualitySettingsReadyForTargetPipelines(string[] targetPipelines, out bool[] results)
+        // "BuiltInToURP2D"). Catches a level with its own override asset for the wrong renderer.
+        internal static void AreQualitySettingsReadyForUrpTargetPipelines(string[] targetPipelines, out bool[] results)
         {
             var creator = FindAssetCreator();
             var qualityLevelCount = QualitySettings.names.Length;
@@ -318,14 +361,14 @@ namespace Unity.ProjectAuditor.Editor.Modules
 
                 if (qualityLevelCount == 0)
                 {
-                    results[j] = AssetMatchesTargetPipeline(creator, GraphicsSettings.defaultRenderPipeline, targetPipeline);
+                    results[j] = AssetMatchesUrpTargetPipeline(creator, GraphicsSettings.defaultRenderPipeline, targetPipeline);
                 }
                 else
                 {
                     results[j] = true;
                     for (var i = 0; i < qualityLevelCount; ++i)
                     {
-                        if (!AssetMatchesTargetPipeline(creator, GetEffectiveRenderPipelineAssetAt(i), targetPipeline))
+                        if (!AssetMatchesUrpTargetPipeline(creator, GetEffectiveRenderPipelineAssetAt(i), targetPipeline))
                         {
                             results[j] = false;
                             break;
@@ -337,40 +380,19 @@ namespace Unity.ProjectAuditor.Editor.Modules
 
         // Null or non-URP hasn't migrated at all. A URP asset with no creator available to confirm the specific
         // renderer is accepted, matching how the rest of the wizard treats a missing creator.
-        static bool AssetMatchesTargetPipeline(IRenderPipelineAssetCreator creator, RenderPipelineAsset asset, string targetPipeline)
+        static bool AssetMatchesUrpTargetPipeline(IRenderPipelineAssetCreator creator, RenderPipelineAsset asset, string targetPipeline)
         {
-            if (asset == null || !IsAssetOfType(asset, k_UrpAssetTypeName))
+            if (!IsAssetOfType(asset, k_UrpAssetTypeName))
                 return false;
-
             return creator == null || creator.MatchesTargetPipeline(asset, targetPipeline);
-        }
-
-        internal static List<int> FindQualitySettingsToMigrate()
-        {
-            var qualityLevelsToMigrate = new List<int>();
-            for (int i = 0, c = QualitySettings.names.Length; i < c; ++i)
-            {
-                if (ShouldMigrateRenderPipelineAsset(GetEffectiveRenderPipelineAssetAt(i)))
-                    qualityLevelsToMigrate.Add(i);
-            }
-
-            return qualityLevelsToMigrate;
-        }
-
-        // Built-in (a null asset) and URP both match; any other SRP does not.
-        internal static bool ShouldMigrateRenderPipelineAsset(RenderPipelineAsset asset)
-        {
-            // BiRP
-            if (asset == null)
-                return true;
-
-            // URP; any other SRP is not a migration target.
-            return IsAssetOfType(asset, k_UrpAssetTypeName);
         }
 
         // Matched by type name because no render pipeline package is referenced from this assembly.
         static bool IsAssetOfType(RenderPipelineAsset asset, string assetTypeName)
         {
+            if (asset == null)
+                return false;
+
             for (var type = asset.GetType(); type != null; type = type.BaseType)
             {
                 if (type.FullName == assetTypeName)

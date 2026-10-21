@@ -17,7 +17,6 @@ using UnityEditor.SceneManagement;
 using UnityEditorInternal;
 using UnityEngine;
 
-
 namespace UnityEditor.Search
 {
     public readonly struct AssetIndexChangeSet
@@ -407,7 +406,6 @@ namespace UnityEditor.Search
             return Task.WhenAll(propertyDatabase.TriggerBackgroundUpdate(), propertyAliases.TriggerBackgroundUpdate());
         }
 
-
         internal static void PrintInfo()
         {
             var sb = new StringBuilder();
@@ -426,7 +424,6 @@ namespace UnityEditor.Search
                 s_DelayedInvalidate.ForceExecute();
             return new SearchMonitorView(propertyDatabase, propertyAliases, delayedSync);
         }
-
 
         static void OnPlayModeChanged(PlayModeStateChange playMode)
         {
@@ -634,7 +631,6 @@ namespace UnityEditor.Search
         {
             Debug.LogFormat(LogType.Log, LogOption.NoStacktrace, null, $"{message}: <b>{recordKey.documentKey}</b>, {recordKey.propertyKey}={value}");
         }
-
     }
 
     static class AssetDatabaseAPI

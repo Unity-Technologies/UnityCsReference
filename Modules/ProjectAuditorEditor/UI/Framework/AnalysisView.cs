@@ -204,7 +204,7 @@ namespace Unity.ProjectAuditor.Editor.UI.Framework
             MarkDirty();
         }
 
-        void AdjustColumnWidths()
+        internal void AdjustColumnWidths()
         {
             bool flatView = m_Table.flatView;
             bool showIgnoredIssues = m_Table.showIgnoredIssues;
@@ -220,9 +220,19 @@ namespace Unity.ProjectAuditor.Editor.UI.Framework
 
             var rows = m_Table.GetRows();
 
-            if (rows == null || rows.Count == 0 || m_Table.GetNumMatchingIssues() == 0)
-                return;
+            if (rows != null && rows.Count > 0 && m_Table.GetNumMatchingIssues() > 0)
+                SetColumnWidthsFromRows(rows);
 
+            if (needToExpand)
+            {
+                m_Table.flatView = flatView;
+                m_Table.showIgnoredIssues = showIgnoredIssues;
+                m_Table.Reload();
+            }
+        }
+
+        void SetColumnWidthsFromRows(IList<TreeViewItem<int>> rows)
+        {
             var header = m_Table.multiColumnHeader;
 
             for (var columnIndex = 0; columnIndex < m_Layout.Properties.Length; columnIndex++)
@@ -316,13 +326,6 @@ namespace Unity.ProjectAuditor.Editor.UI.Framework
                     width = clamp;
 
                 header.GetColumn(columnIndex).width = width;
-            }
-
-            if (needToExpand)
-            {
-                m_Table.flatView = flatView;
-                m_Table.showIgnoredIssues = showIgnoredIssues;
-                m_Table.Reload();
             }
         }
 
@@ -549,7 +552,6 @@ namespace Unity.ProjectAuditor.Editor.UI.Framework
         // the pending string is the text typed since the last debounce, so it is what the field shows
         string SearchString => m_PendingSearchString ?? m_TextFilter.searchString;
 
-        // internal for testing
         internal ISearchView OpenIssuesInSearchWindow()
         {
             return Utility.SearchWindow(IssueSearchProvider.kProviderId, "Project Auditor Report", SearchString);
@@ -806,7 +808,7 @@ namespace Unity.ProjectAuditor.Editor.UI.Framework
             }
             else
             {
-                m_Table.SetExpanded(new List<int>());
+                m_Table.CollapseAllGroups();
             }
         }
 
@@ -917,15 +919,14 @@ namespace Unity.ProjectAuditor.Editor.UI.Framework
             EditorPrefs.SetString(GetPrefKey(k_SearchStringKey), m_TextFilter.searchString);
         }
 
-        string GetPrefKey(string key)
+        internal string GetPrefKey(string key)
         {
-            return $"{k_PrefKeyPrefix}.{m_Desc.DisplayName}.{key}";
+            return $"{k_PrefKeyPrefix}.{ProjectAuditor.GetCategoryName(m_Desc.Category)}.{key}";
         }
 
-        // Keyed by category rather than by display name, which two views can share. UUM-154765
         string GetGroupPrefKey()
         {
-            return $"{k_PrefKeyPrefix}.{ProjectAuditor.GetCategoryName(m_Desc.Category)}.{k_GroupPropertyKey}";
+            return GetPrefKey(k_GroupPropertyKey);
         }
 
         public static void DrawActionButton(GUIContent guiContent, Action onClick)

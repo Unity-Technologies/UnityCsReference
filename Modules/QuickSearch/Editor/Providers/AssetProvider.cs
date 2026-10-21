@@ -974,6 +974,7 @@ namespace UnityEditor.Search.Providers
                 },
                 new SearchAction(type, "properties", null, "Properties", OpenPropertyEditorsOnSelection)
                 {
+                    enabled = items => items.Count >= 1,
                 }
             };
         }

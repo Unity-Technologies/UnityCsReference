@@ -125,6 +125,13 @@ sealed class AddElementDropManipulator : Manipulator
                 return;
             }
 
+            if (!LegacyHierarchyGuard.EnsureNewHierarchy())
+            {
+                m_Indicator.Hide();
+                evt.StopPropagation();
+                return;
+            }
+
             DragAndDrop.AcceptDrag();
             m_Indicator.Hide();
 
@@ -147,6 +154,13 @@ sealed class AddElementDropManipulator : Manipulator
         {
             var placement = ComputePlacement(evt.mousePosition);
             if (!placement.CanDrop)
+            {
+                m_Indicator.Hide();
+                evt.StopPropagation();
+                return;
+            }
+
+            if (!LegacyHierarchyGuard.EnsureNewHierarchy())
             {
                 m_Indicator.Hide();
                 evt.StopPropagation();

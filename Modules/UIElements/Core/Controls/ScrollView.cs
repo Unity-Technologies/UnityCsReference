@@ -126,6 +126,7 @@ namespace UnityEngine.UIElements
         internal static readonly BindingId scrollDecelerationRateProperty = nameof(scrollDecelerationRate);
         internal static readonly BindingId elasticityProperty = nameof(elasticity);
         internal static readonly BindingId touchScrollBehaviorProperty = nameof(touchScrollBehavior);
+        internal static readonly BindingId touchScrollDirectionProperty = nameof(touchScrollDirection);
         internal static readonly BindingId nestedInteractionKindProperty = nameof(nestedInteractionKind);
         internal static readonly BindingId modeProperty = nameof(mode);
         internal static readonly BindingId elasticAnimationIntervalMsProperty = nameof(elasticAnimationIntervalMs);
@@ -444,6 +445,31 @@ namespace UnityEngine.UIElements
             }
         }
 
+        private TouchScrollDirection m_TouchScrollDirection;
+        /// <summary>
+        /// The direction in which the content moves when a user drags it using touch, a pen, or a tracked device.
+        /// </summary>
+        /// <remarks>
+        /// This applies to touch, pen, and tracked device input, such as XR controllers, on both screen-space and
+        /// world-space panels. It doesn't affect dragging with a mouse, dragging the scrollers, or scrolling with a
+        /// mouse wheel.
+        /// The default is <see cref="TouchScrollDirection.Natural"/>.
+        /// </remarks>
+        [UxmlAttribute]
+        [CreateProperty]
+        public TouchScrollDirection touchScrollDirection
+        {
+            get => m_TouchScrollDirection;
+            set
+            {
+                if (m_TouchScrollDirection == value)
+                    return;
+
+                m_TouchScrollDirection = value;
+                NotifyPropertyChanged(touchScrollDirectionProperty);
+            }
+        }
+
 
         internal float scrollableWidth
         {
@@ -567,6 +593,21 @@ namespace UnityEngine.UIElements
             /// The content position is clamped to the ScrollView boundaries.
             /// </summary>
             Clamped,
+        }
+
+        /// <summary>
+        /// The direction in which the content of a <see cref="ScrollView"/> moves when a user drags it using touch, a pen, or a tracked device.
+        /// </summary>
+        public enum TouchScrollDirection
+        {
+            /// <summary>
+            /// The content follows the pointer, so the point under the finger or pen stays under it.
+            /// </summary>
+            Natural,
+            /// <summary>
+            /// The content moves opposite to the pointer, like when dragging a scroller.
+            /// </summary>
+            Inverted,
         }
 
         /// <summary>
@@ -1593,14 +1634,13 @@ namespace UnityEngine.UIElements
             }
 
             // Calculate the movement delta based on the current pointer position.
-            Vector2 position = evt.position;
-            var delta = position - m_PointerStartPosition;
+            var position = (Vector2)evt.position;
+            var delta = ConvertTouchScrollDelta(position - m_PointerStartPosition);
 
-            // Apply XR-specific transformations.
+            // Handle large, unreasonable XR deltas caused by coordinate system jumps (e.g., UI layer exit/re-entry).
             if (evt.pointerType == PointerType.tracked)
             {
-                // Handle large, unreasonable deltas caused by coordinate system jumps (e.g., UI layer exit/re-entry).
-                const float maxReasonableDelta = 10f; // Maximum allowed delta in meters per frame.
+                const float maxReasonableDelta = 1000f; // Pixels per frame, 10 meters at the default 100 pixels per unit.
                 if (delta.sqrMagnitude > maxReasonableDelta * maxReasonableDelta)
                 {
                     // Reset tracking and zero out the delta for this frame, but keep scrolling state active.
@@ -1608,15 +1648,10 @@ namespace UnityEngine.UIElements
                     m_StartPosition = scrollOffset;
                     delta = Vector2.zero;
                 }
-
-                // Scale the delta from world space (meters) to pixel space.
-                // XR needs amplification: 1 meter of controller movement = 100 pixels of scroll.
-                const float xrScrollScale = 100f;
-                delta *= xrScrollScale;
-
-                // Invert the Y-axis for natural scrolling behavior in XR.
-                delta.y = -delta.y;
             }
+
+            if (touchScrollDirection == TouchScrollDirection.Inverted)
+                delta = -delta;
 
             // Restrict movement based on the ScrollView's mode (horizontal, vertical, or both).
             if (mode == ScrollViewMode.Horizontal)
@@ -1629,8 +1664,6 @@ namespace UnityEngine.UIElements
                 return;
 
             // Compute the new scroll position using the processed delta.
-            // For XR: delta is already scaled and Y-inverted
-            // For touch: delta is raw from pointer movement
             var scrollPosition = m_PointerStartPosition + delta;
             var scrollResult = ComputeTouchScrolling(scrollPosition);
 
@@ -1674,6 +1707,17 @@ namespace UnityEngine.UIElements
         // Internal for tests.
         internal void InitTouchScrolling(Vector2 position) =>
             InitTouchScrolling(position, PointerId.invalidPointerId);
+
+        // World-space panels report pointer positions in the document's local space, which is scaled by
+        // 1 / pixelsPerUnit and Y-flipped relative to the panel. Convert the delta through the panel component's root
+        // element so a drag matches panel pixels, as it does on flat panels. The root does not move when a parent
+        // ScrollView scrolls, and transforms between the root and this element are ignored, as on flat panels.
+        Vector2 ConvertTouchScrollDelta(Vector2 pointerDelta)
+        {
+            if (elementPanel is { isFlat: false } && GetFirstOfType<IPanelComponentRootElement>() is VisualElement root)
+                return root.worldTransformInverse.MultiplyVector(pointerDelta);
+            return pointerDelta;
+        }
 
         private void InitTouchScrolling(Vector2 position, int pointerId)
         {

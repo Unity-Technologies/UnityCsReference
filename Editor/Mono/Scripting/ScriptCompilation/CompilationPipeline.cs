@@ -494,7 +494,8 @@ namespace UnityEditor.Compilation
                     CompilationOptions = EditorScriptCompilationOptions.BuildingForEditor | EditorScriptCompilationOptions.BuildingWithAsserts | EditorScriptCompilationOptions.BuildingWithInstrumentation,
                     // Without this the platform's own defines are missing, so define constraints that depend on
                     // them are reported as unsatisfied in the assembly definition Inspector.
-                    CompilationExtension = ModuleManager.FindPlatformSupportModule(ModuleManager.GetTargetStringFromBuildTarget(buildTarget))?.CreateCompilationExtension()
+                    CompilationExtension = SDKPlatformCompilationUtil.CreateActiveCompilationExtension(
+                        ModuleManager.FindPlatformSupportModule(ModuleManager.GetTargetStringFromBuildTarget(buildTarget)))
                 };
 
                 return editorCompilation.GetTargetAssemblyDefines(assembly, scriptAssemblySettings);

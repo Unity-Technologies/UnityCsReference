@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System;
 using System.Collections.Generic;
 using UnityEngine.Accessibility;
 
@@ -24,6 +25,14 @@ namespace UnityEngine.UIElements
         readonly Dictionary<AccessibilityNode, VisualElement> m_ElementByNode = new();
 
         public int count => m_NodeByElement.Count;
+
+        /// <summary>
+        /// The focus-changed subscription shared by every node generated into this map (see
+        /// <see cref="AccessibilityTreeGenerator"/>). It lives here because it resolves through
+        /// this map and is therefore created once per map, where a per-node closure would cost
+        /// one delegate for every node in the hierarchy.
+        /// </summary>
+        public Action<AccessibilityNode, bool> focusChangedHandler { get; set; }
 
         // Concrete collection types on purpose: foreach binds the dictionary's struct enumerator,
         // where the interface would box it on every iteration of the per-frame refresh path.

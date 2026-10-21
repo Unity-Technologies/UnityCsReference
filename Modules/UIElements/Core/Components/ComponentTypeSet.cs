@@ -20,6 +20,21 @@ namespace UnityEngine.UIElements
         ComponentTypeSet m_NextWithSameHash;
         int m_RefCount;                       // elements currently pointing at this record
 
+        // Main-thread only, like the rest of the registry.
+        // Hashed rather than scanned: Empty's fan-out is every type that can start an element, and a
+        // linear scan of those costs more from two entries up.
+        AddSuccessor[] m_AddSuccessors;         // open-addressed on the added handle, power-of-two length
+        int m_AddSuccessorCount;
+        ComponentTypeSet[] m_RemoveSuccessors;  // indexed by the removed entry's position
+        int m_SuccessorGeneration;
+
+        struct AddSuccessor
+        {
+            internal RuntimeTypeHandle type;
+            internal ComponentTypeSet set;
+            internal int insertIndex;
+        }
+
         internal int Count => types.Length;
 
         internal int refCount => m_RefCount;  // test and diagnostics only
@@ -28,6 +43,7 @@ namespace UnityEngine.UIElements
         {
             types = sortedTypes;
             m_Hash = hash;
+            m_SuccessorGeneration = s_Generation;
         }
 
         // Never in the registry table and stable across resets, so element handles to it cannot go stale.
@@ -40,6 +56,11 @@ namespace UnityEngine.UIElements
 
         [NoAutoStaticsCleanup]
         static int s_RecordCount;
+
+        // Bumped by every registry swap, never restored: a restored value would revalidate the successors a
+        // surviving record memoized against a table that is no longer active.
+        [NoAutoStaticsCleanup]
+        static int s_Generation;
 
         // Releases from GC-finalized elements; the finalizer only enqueues, the main thread drains.
         [NoAutoStaticsCleanup]
@@ -63,6 +84,7 @@ namespace UnityEngine.UIElements
             DrainPendingReleases();
             s_HashToFirstRecord = new Dictionary<int, ComponentTypeSet>();
             s_RecordCount = 0;
+            s_Generation++;
         }
 
         // Test-only: swaps in a fresh registry and restores the old one on dispose. Records created
@@ -83,6 +105,7 @@ namespace UnityEngine.UIElements
             {
                 s_HashToFirstRecord = m_HashToFirstRecord;
                 s_RecordCount = m_RecordCount;
+                s_Generation++;
             }
         }
 
@@ -114,10 +137,37 @@ namespace UnityEngine.UIElements
             return false;
         }
 
-        // The shared record for current plus added; allocates only when no such record exists yet.
-        internal static ComponentTypeSet GetWithAdded(ComponentTypeSet current, RuntimeTypeHandle added, int insertIndex)
-            => FindOrCreateRecord(current.m_Hash ^ added.GetHashCode(),
+        internal static ComponentTypeSet GetWithAdded(ComponentTypeSet current, RuntimeTypeHandle added, out int insertIndex)
+        {
+            current.EnsureSuccessorsCurrent();
+
+            var successors = current.m_AddSuccessors;
+            if (successors != null)
+            {
+                var mask = successors.Length - 1;
+                for (var probe = SuccessorBucket(added, mask); ; probe = (probe + 1) & mask)
+                {
+                    ref var entry = ref successors[probe];
+                    if (entry.set == null)
+                        break;
+
+                    if (entry.type.Equals(added))
+                    {
+                        insertIndex = entry.insertIndex;
+                        return entry.set;
+                    }
+                }
+            }
+
+            var duplicate = current.Find(added, out insertIndex);
+            // Callers reject duplicates before requirements resolution; a hit here means that broke.
+            Debug.Assert(!duplicate, "Adding a component type that is already in the element's type set.");
+            var successor = FindOrCreateRecord(current.m_Hash ^ added.GetHashCode(),
                 new SingleTypeChange(current, added, insertIndex, isAdd: true));
+
+            current.StoreAddSuccessor(added, successor, insertIndex);
+            return successor;
+        }
 
         // The shared record for current without the entry at removeIndex; order preserved.
         internal static ComponentTypeSet GetWithRemoved(ComponentTypeSet current, int removeIndex)
@@ -125,8 +175,72 @@ namespace UnityEngine.UIElements
             if (current.types.Length == 1)
                 return s_Empty;
 
-            return FindOrCreateRecord(current.m_Hash ^ current.types[removeIndex].GetHashCode(),
+            current.EnsureSuccessorsCurrent();
+
+            var successors = current.m_RemoveSuccessors ??= new ComponentTypeSet[current.types.Length];
+            var memoized = successors[removeIndex];
+            if (memoized != null)
+                return memoized;
+
+            var successor = FindOrCreateRecord(current.m_Hash ^ current.types[removeIndex].GetHashCode(),
                 new SingleTypeChange(current, default, removeIndex, isAdd: false));
+
+            successors[removeIndex] = successor;
+            return successor;
+        }
+
+        // A handle is pointer-aligned, so the low bits carry nothing; fold two shifted copies instead.
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        static int SuccessorBucket(RuntimeTypeHandle handle, int mask)
+        {
+            var key = SortKey(handle);
+            return (int)(((key >> 4) ^ (key >> 20)) & (ulong)mask);
+        }
+
+        void EnsureSuccessorsCurrent()
+        {
+            if (m_SuccessorGeneration == s_Generation)
+                return;
+
+            m_AddSuccessors = null;
+            m_AddSuccessorCount = 0;
+            m_RemoveSuccessors = null;
+            m_SuccessorGeneration = s_Generation;
+        }
+
+        void StoreAddSuccessor(RuntimeTypeHandle added, ComponentTypeSet successor, int insertIndex)
+        {
+            if (m_AddSuccessors == null)
+                m_AddSuccessors = new AddSuccessor[4];
+            else if ((m_AddSuccessorCount + 1) * 2 > m_AddSuccessors.Length)
+                GrowAddSuccessors();
+
+            PlaceAddSuccessor(m_AddSuccessors, added, successor, insertIndex);
+            m_AddSuccessorCount++;
+        }
+
+        void GrowAddSuccessors()
+        {
+            var grown = new AddSuccessor[m_AddSuccessors.Length * 2];
+            foreach (var entry in m_AddSuccessors)
+            {
+                if (entry.set != null)
+                    PlaceAddSuccessor(grown, entry.type, entry.set, entry.insertIndex);
+            }
+
+            m_AddSuccessors = grown;
+        }
+
+        static void PlaceAddSuccessor(AddSuccessor[] successors, RuntimeTypeHandle added, ComponentTypeSet successor, int insertIndex)
+        {
+            var mask = successors.Length - 1;
+            var probe = SuccessorBucket(added, mask);
+            while (successors[probe].set != null)
+                probe = (probe + 1) & mask;
+
+            successors[probe].type = added;
+            successors[probe].set = successor;
+            successors[probe].insertIndex = insertIndex;
         }
 
         // One type added to or removed from `current` at `index`. The lookup below takes this rather than a

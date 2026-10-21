@@ -1700,6 +1700,19 @@ namespace Unity.U2D.Physics
         public PhysicsShapeDefinition definition { get => PhysicsShape_ReadDefinition(this); set => PhysicsShape_WriteDefinition(this, value, false); }
 
         /// <summary>
+        /// Set the same shape definition on a batch of shapes by writing all of its properties to each shape, as <see cref="definition"/> would.
+        /// </summary>
+        /// <remarks>
+        /// This is faster than setting <see cref="definition"/> on each shape.
+        /// Writing every property is slower than setting only the properties you need, so this is best kept out of per-frame code.
+        /// See <see cref="definition"/>.
+        /// </remarks>
+        /// <param name="shapes">The shapes to set the definition on.</param>
+        /// <param name="definition">The definition to set on every shape.</param>
+        /// <returns>The number of shapes that were ignored (not set because the shape was invalid). A single warning is logged when any are ignored.</returns>
+        public static int SetBatchDefinition(ReadOnlySpan<PhysicsShape> shapes, PhysicsShapeDefinition definition) => PhysicsShape_WriteDefinitionSpan(shapes, definition);
+
+        /// <summary>
         /// Check if the shape is valid.
         /// </summary>
         public readonly bool isValid => PhysicsShape_IsValid(this);
@@ -2214,7 +2227,7 @@ namespace Unity.U2D.Physics
         ///- A <see cref="PhysicsEvents.ContactBeginEvent"/> with call <see cref="PhysicsCallbacks.IContactCallback"/>.
         ///- A <see cref="PhysicsEvents.ContactEndEvent"/> with call <see cref="PhysicsCallbacks.IContactCallback"/>.
         /// </summary>
-        public readonly System.Object callbackTarget { get => PhysicsShape_GetCallbackTarget(this); set => PhysicsShape_SetCallbackTarget(this, value); }
+        public readonly System.Object callbackTarget { get => PhysicsShape_GetCallbackTarget(this); set => PhysicsShape_SetCallbackTarget(this, value, System.Runtime.CompilerServices.RuntimeHelpers.GetHashCode(value)); }
 
         /// <summary>
         /// Get/Set <see cref="PhysicsUserData"/> that can be used for any purpose.
@@ -2267,6 +2280,32 @@ namespace Unity.U2D.Physics
         /// <param name="physicsUserData">The user data to set on every shape.</param>
         /// <returns>The number of shapes that were ignored (not set because the shape was invalid). A single warning is logged when any are ignored.</returns>
         public static int SetUserData(ReadOnlySpan<PhysicsShape> shapes, PhysicsUserData physicsUserData) => PhysicsShape_SetUserDataSpanAll(shapes, physicsUserData);
+
+        /// <summary>
+        /// Set the same <see cref="PhysicsWorld.PhysicsGroup"/> on a batch of shapes.
+        /// Each shape is assigned the group as <see cref="physicsGroup"/> would, and a shape that already has a group is left unchanged.
+        /// </summary>
+        /// <remarks>
+        /// Every shape given the same group must belong to the same body, otherwise the first and last marking of their events is unreliable.
+        /// Shapes on more than one body are still assigned the group, and a single warning is logged.
+        /// See <see cref="PhysicsWorld.PhysicsGroup"/> and <see cref="PhysicsWorld.CreateGroup"/>.
+        /// </remarks>
+        /// <param name="shapes">The shapes to set the group on.</param>
+        /// <param name="physicsGroup">The group to set on every shape.</param>
+        /// <returns>The number of shapes that were ignored (not set because the shape was invalid or already had a group). A single warning is logged when any are ignored. If the group is empty, nothing is set and every shape is counted as ignored.</returns>
+        public static int SetPhysicsGroup(ReadOnlySpan<PhysicsShape> shapes, PhysicsWorld.PhysicsGroup physicsGroup) => PhysicsShape_SetPhysicsGroupSpan(shapes, physicsGroup);
+
+        /// <summary>
+        /// Set the same <see cref="System.Object"/> that callbacks will be sent to on a batch of shapes.
+        /// Each shape is assigned the callback target as <see cref="callbackTarget"/> would, and setting it to NULL removes it.
+        /// </summary>
+        /// <remarks>
+        /// This is faster than setting <see cref="callbackTarget"/> on each shape.
+        /// </remarks>
+        /// <param name="shapes">The shapes to set the callback target on.</param>
+        /// <param name="callbackTarget">The callback target to set on every shape, or NULL to remove it.</param>
+        /// <returns>The number of shapes that were ignored (not set because the shape was invalid). A single warning is logged when any are ignored.</returns>
+        public static int SetCallbackTarget(ReadOnlySpan<PhysicsShape> shapes, System.Object callbackTarget) => PhysicsShape_SetCallbackTargetSpan(shapes, callbackTarget, System.Runtime.CompilerServices.RuntimeHelpers.GetHashCode(callbackTarget));
 
         /// <summary>
         /// Set the <see cref="ContactFilter"/> on a batch of shapes.

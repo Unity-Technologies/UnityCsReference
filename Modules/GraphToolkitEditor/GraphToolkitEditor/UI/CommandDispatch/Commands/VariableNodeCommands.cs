@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using JetBrains.Annotations;
@@ -146,8 +147,11 @@ namespace Unity.GraphToolkit.Editor
                 {
                     if (graphModel.GetConstantType(variableModel.DataType) == null)
                         continue;
-                    var constantModel = graphModel.CreateConstantNode(variableModel.DataType, variableModel.Title, variableModel.Position);
-                    constantModel.Value.ObjectValue = variableModel.VariableDeclarationModel?.InitializationModel?.ObjectValue;
+                    var initialValue = CopyIfCollection(variableModel.VariableDeclarationModel?.InitializationModel?.ObjectValue);
+
+                    // The value must be set before the node is defined, since collection subports are built from it.
+                    var constantModel = graphModel.CreateConstantNode(variableModel.DataType, variableModel.Title, variableModel.Position,
+                        initializationCallback: c => c.Value.ObjectValue = initialValue);
                     constantModel.State = variableModel.State;
                     if (variableModel.ElementColor.HasUserColor)
                         constantModel.SetColor(variableModel.ElementColor.Color);
@@ -167,6 +171,26 @@ namespace Unity.GraphToolkit.Editor
 
                 graphUpdater.MarkUpdated(changeScope.ChangeDescription);
                 selectionUpdater.SelectElements(changeScope.ChangeDescription.DeletedModels, false);
+            }
+        }
+
+        static object CopyIfCollection(object value)
+        {
+            switch (value)
+            {
+                case Array array:
+                    return array.Clone();
+                case IList list:
+                {
+                    var copy = (IList)Activator.CreateInstance(list.GetType());
+                    foreach (var item in list)
+                    {
+                        copy.Add(item);
+                    }
+                    return copy;
+                }
+                default:
+                    return value;
             }
         }
     }

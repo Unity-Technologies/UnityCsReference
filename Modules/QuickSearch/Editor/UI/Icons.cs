@@ -4,7 +4,6 @@
 
 using UnityEngine;
 
-
 namespace UnityEditor.Search
 {
     static class Icons

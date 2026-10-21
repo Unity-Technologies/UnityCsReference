@@ -613,6 +613,27 @@ namespace UnityEngine.UIElements
             UIElementsRuntimeUtility.RemovePanelRenderer(this);
         }
 
+        // UUM-154720: PanelRenderer is a native component and doesn't receive OnTransformParentChanged like
+        // UIDocument does, so the native side forwards it. Sent to the whole moved subtree.
+        [RequiredByNativeCode(Optional = true)]
+        [RequiredMember]
+        void OnPanelRendererTransformParentChanged()
+        {
+            // Disabled renderers re-resolve their parent when they're enabled again.
+            if (!IsActiveAndEnabled() || rootVisualElement == null)
+                return;
+
+            // Descendants whose closest PanelRenderer didn't change move along with their parent's root.
+            if (FindParentPanelRenderer() == parentUI)
+                return;
+
+            // Detach from the previous owner (parent or PanelSettings) while parentUI still identifies it.
+            // The new owner may be on another panel; AddRootVisualElementToTree registers the tracker again.
+            RemoveVisualTreeAssetTracker();
+            RemoveFromHierarchy();
+            requiresReinsertion = true;
+        }
+
         [RequiredByNativeCode(Optional = true)]
         [RequiredMember]
         void OnPanelRendererCheckConsistency()
@@ -730,16 +751,9 @@ namespace UnityEngine.UIElements
 
         private PanelRenderer FindParentPanelRenderer()
         {
-            Transform t = transform;
-            Transform parentTransform = t.parent;
-            if (parentTransform != null)
-            {
-                var potentialParents = parentTransform.GetComponentsInParent<PanelRenderer>(true);
-                if (potentialParents != null && potentialParents.Length > 0)
-                    return potentialParents[0];
-            }
-
-            return null;
+            // Starts at the parent itself and walks up, returning the closest ancestor PanelRenderer.
+            Transform parentTransform = transform.parent;
+            return parentTransform != null ? parentTransform.GetComponentInParent<PanelRenderer>(true) : null;
         }
 
         internal void AddRootVisualElementToTree()
@@ -819,8 +833,10 @@ namespace UnityEngine.UIElements
             {
                 SetupFromHierarchy();
                 SetupRootClassList();
-                AddRootVisualElementToTree();
+                // Cleared before inserting: UI reload callbacks run during insertion and may reparent us,
+                // which must queue another reinsertion. The setup calls above set the flag themselves.
                 requiresReinsertion = false;
+                AddRootVisualElementToTree();
             }
         }
 
@@ -1250,9 +1266,6 @@ namespace UnityEngine.UIElements
         // instead of depending on lazy binder creation.
         [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
         internal extern UIAnimationBinder GetOrCreateAnimationBinder();
-
-        [NativeMethod("RegisterPanelRendererAnimationBinding")]
-        internal static extern void RegisterPanelRendererAnimationBinding();
 
         [RequiredByNativeCode(Optional = true)]
         [RequiredMember]

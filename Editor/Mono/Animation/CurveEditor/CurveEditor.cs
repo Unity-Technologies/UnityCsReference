@@ -2769,6 +2769,14 @@ namespace UnityEditor
         const string kPointTimeFieldName = "pointTimeField";
         string m_FocusedPointField = null;
         Vector2 m_PointEditingFieldPosition;
+        Rect m_PointEditingFieldsRect;
+
+        // Keep the keyboard control on an open "Edit Key..." field when it is the thing being clicked,
+        // otherwise the click counts as an initial one and re-selects all of its text. (UUM-140166)
+        protected override bool captureKeyboardControlOnMouseDown
+        {
+            get { return !(m_EditingPoints && m_PointEditingFieldsRect.Contains(Event.current.mousePosition)); }
+        }
 
         Vector2 GetPointEditionFieldPosition()
         {
@@ -2801,6 +2809,7 @@ namespace UnityEditor
         void StartEditingSelectedPoints(Vector2 fieldPosition)
         {
             m_PointEditingFieldPosition = fieldPosition;
+            m_PointEditingFieldsRect = Rect.zero;
             m_FocusedPointField = kPointValueFieldName;
             m_TimeWasEdited = false;
             m_ValueWasEdited = false;
@@ -2869,6 +2878,9 @@ namespace UnityEditor
             var drawAreaInMargins = Rect.MinMaxRect(leftmargin, topmargin, rect.width - rightmargin, rect.height - bottommargin);
             fieldPosition.x = Mathf.Clamp(fieldPosition.x, drawAreaInMargins.xMin, drawAreaInMargins.xMax - kFieldWidth);
             fieldPosition.y = Mathf.Clamp(fieldPosition.y, drawAreaInMargins.yMin, drawAreaInMargins.yMax - kFieldHeight * 2);
+
+            // Covers both fields, in drawRect space, which is also the space the zoomable area handles its events in.
+            m_PointEditingFieldsRect = new Rect(fieldPosition.x, fieldPosition.y, kFieldWidth, kFieldHeight * 2);
 
             EditorGUI.BeginChangeCheck();
             GUI.SetNextControlName(kPointTimeFieldName);

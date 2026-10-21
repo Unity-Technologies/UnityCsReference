@@ -1375,6 +1375,9 @@
     <Compile Include="..\..\Modules\Hierarchy\Managed\IHierarchyEntityIdConverter.cs">
       <Link>Modules\Hierarchy\Managed\IHierarchyEntityIdConverter.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\Hierarchy\Managed\IHierarchyNodeTypeHandlerViewState.cs">
+      <Link>Modules\Hierarchy\Managed\IHierarchyNodeTypeHandlerViewState.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\Hierarchy\ScriptBindings\HierarchyUndoManager.bindings.cs">
       <Link>Modules\Hierarchy\ScriptBindings\HierarchyUndoManager.bindings.cs</Link>
     </Compile>
@@ -2431,6 +2434,9 @@
     <Compile Include="..\..\Modules\PhysicsCore2D\Scripting\Assets\PhysicsCoreSettings2D.cs">
       <Link>Modules\PhysicsCore2D\Scripting\Assets\PhysicsCoreSettings2D.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\PhysicsCore2D\Scripting\Bindings\PhysicsAABB.bindings.cs">
+      <Link>Modules\PhysicsCore2D\Scripting\Bindings\PhysicsAABB.bindings.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\PhysicsCore2D\Scripting\Bindings\PhysicsBody.bindings.cs">
       <Link>Modules\PhysicsCore2D\Scripting\Bindings\PhysicsBody.bindings.cs</Link>
     </Compile>
@@ -2449,23 +2455,38 @@
     <Compile Include="..\..\Modules\PhysicsCore2D\Scripting\Bindings\PhysicsGeometry.bindings.cs">
       <Link>Modules\PhysicsCore2D\Scripting\Bindings\PhysicsGeometry.bindings.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\PhysicsCore2D\Scripting\Bindings\PhysicsGlobal.bindings.cs">
+      <Link>Modules\PhysicsCore2D\Scripting\Bindings\PhysicsGlobal.bindings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\PhysicsCore2D\Scripting\Bindings\PhysicsHandle.bindings.cs">
+      <Link>Modules\PhysicsCore2D\Scripting\Bindings\PhysicsHandle.bindings.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\PhysicsCore2D\Scripting\Bindings\PhysicsJoint.bindings.cs">
       <Link>Modules\PhysicsCore2D\Scripting\Bindings\PhysicsJoint.bindings.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\PhysicsCore2D\Scripting\Bindings\PhysicsList.bindings.cs">
       <Link>Modules\PhysicsCore2D\Scripting\Bindings\PhysicsList.bindings.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\PhysicsCore2D\Scripting\Bindings\PhysicsMiscellaneous.bindings.cs">
-      <Link>Modules\PhysicsCore2D\Scripting\Bindings\PhysicsMiscellaneous.bindings.cs</Link>
+    <Compile Include="..\..\Modules\PhysicsCore2D\Scripting\Bindings\PhysicsMath.bindings.cs">
+      <Link>Modules\PhysicsCore2D\Scripting\Bindings\PhysicsMath.bindings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\PhysicsCore2D\Scripting\Bindings\PhysicsPlane.bindings.cs">
+      <Link>Modules\PhysicsCore2D\Scripting\Bindings\PhysicsPlane.bindings.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\PhysicsCore2D\Scripting\Bindings\PhysicsQuery.bindings.cs">
       <Link>Modules\PhysicsCore2D\Scripting\Bindings\PhysicsQuery.bindings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\PhysicsCore2D\Scripting\Bindings\PhysicsRotate.bindings.cs">
+      <Link>Modules\PhysicsCore2D\Scripting\Bindings\PhysicsRotate.bindings.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\PhysicsCore2D\Scripting\Bindings\PhysicsShape.bindings.cs">
       <Link>Modules\PhysicsCore2D\Scripting\Bindings\PhysicsShape.bindings.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\PhysicsCore2D\Scripting\Bindings\PhysicsSpace.bindings.cs">
       <Link>Modules\PhysicsCore2D\Scripting\Bindings\PhysicsSpace.bindings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\PhysicsCore2D\Scripting\Bindings\PhysicsTransform.bindings.cs">
+      <Link>Modules\PhysicsCore2D\Scripting\Bindings\PhysicsTransform.bindings.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\PhysicsCore2D\Scripting\Bindings\PhysicsTransformWatcher.bindings.cs">
       <Link>Modules\PhysicsCore2D\Scripting\Bindings\PhysicsTransformWatcher.bindings.cs</Link>
@@ -8076,7 +8097,7 @@
     </PropertyGroup>
   </Target>
   <ItemGroup>
-    <Analyzer Include="/tmp/uitoolkit_gen_shtozom8/Unity.UIToolkit.SourceGenerator.dll" />
+    <Analyzer Include="/tmp/uitoolkit_gen_7b1dq6ik/Unity.UIToolkit.SourceGenerator.dll" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="10.0.8" />

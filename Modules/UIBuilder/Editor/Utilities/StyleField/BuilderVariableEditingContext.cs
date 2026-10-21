@@ -21,6 +21,7 @@ namespace Unity.UI.Builder
         }
 
         public VisualElement CurrentVisualElement => m_Inspector.currentVisualElement;
+        public VisualElement VariableScopeElement => m_Inspector.variableScopeElement;
         public StyleRule CurrentRule => m_Inspector.currentRule;
         public StyleSheet CurrentStyleSheet => m_Inspector.styleSheet;
         public bool EditorExtensionMode => m_Inspector.document.fileSettings.editorExtensionMode;

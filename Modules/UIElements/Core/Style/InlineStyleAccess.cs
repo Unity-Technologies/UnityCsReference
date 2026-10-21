@@ -39,7 +39,7 @@ namespace UnityEngine.UIElements
         {
             var inline = new StyleValue();
             if (TryGetStyleValue(id, ref inline))
-                return new StyleInt((int)inline.number, inline.keyword);
+                return new StyleInt(inline.intValue, inline.keyword);
             return StyleKeyword.Null;
         }
 
@@ -86,12 +86,12 @@ namespace UnityEngine.UIElements
             return StyleKeyword.Null;
         }
 
-        // CSS Grid. GridLine is carried as its raw sign-encoded int in StyleValue.number.
+        // CSS Grid. GridLine is carried as its raw sign-encoded int in StyleValue.intValue.
         public StyleGridLine GetStyleGridLine(StylePropertyId id)
         {
             var inline = new StyleValue();
             if (TryGetStyleValue(id, ref inline))
-                return new StyleGridLine(GridLine.FromRawValue((int)inline.number));
+                return new StyleGridLine(GridLine.FromRawValue(inline.intValue));
             return StyleKeyword.Null;
         }
 
@@ -634,7 +634,7 @@ namespace UnityEngine.UIElements
             var sv = new StyleValue();
             if (TryGetStyleValue(id, ref sv))
             {
-                if (sv.number == inlineValue.value && sv.keyword == inlineValue.keyword)
+                if (sv.intValue == inlineValue.value && sv.keyword == inlineValue.keyword)
                     return false;
             }
             else if (inlineValue.keyword == StyleKeyword.Null)
@@ -644,7 +644,7 @@ namespace UnityEngine.UIElements
 
             sv.id = id;
             sv.keyword = inlineValue.keyword;
-            sv.number = inlineValue.value;
+            sv.intValue = inlineValue.value;
 
             SetStyleValue(sv);
 
@@ -687,7 +687,7 @@ namespace UnityEngine.UIElements
             int intValue = UnsafeUtility.EnumToInt(inlineValue.value);
             if (TryGetStyleValue(id, ref sv))
             {
-                if (sv.number == intValue && sv.keyword == inlineValue.keyword)
+                if (sv.intValue == intValue && sv.keyword == inlineValue.keyword)
                     return false;
             }
             else if (inlineValue.keyword == StyleKeyword.Null)
@@ -697,7 +697,7 @@ namespace UnityEngine.UIElements
 
             sv.id = id;
             sv.keyword = inlineValue.keyword;
-            sv.number = intValue;
+            sv.intValue = intValue;
 
             SetStyleValue(sv);
 
@@ -765,7 +765,7 @@ namespace UnityEngine.UIElements
             var sv = new StyleValue();
             if (TryGetStyleValue(id, ref sv))
             {
-                if (sv.number == raw && sv.keyword == inlineValue.keyword)
+                if (sv.intValue == raw && sv.keyword == inlineValue.keyword)
                     return false;
             }
             else if (inlineValue.keyword == StyleKeyword.Null)
@@ -775,7 +775,7 @@ namespace UnityEngine.UIElements
 
             sv.id = id;
             sv.keyword = inlineValue.keyword;
-            sv.number = raw;
+            sv.intValue = raw;
 
             SetStyleValue(sv);
 

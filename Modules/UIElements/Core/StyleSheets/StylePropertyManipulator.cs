@@ -896,9 +896,10 @@ namespace UnityEngine.UIElements
 
                 for (var i = 0; i < parameterCount; ++i, ++currentIndex)
                 {
+                    FilterParameter parameter;
                     if (m_StyleSheet.TryReadColor(m_Property.values[currentIndex], out var color))
                     {
-                        parameters[i] = new FilterParameter
+                        parameter = new FilterParameter
                         {
                             type = FilterParameterType.Color,
                             colorValue = color
@@ -906,7 +907,7 @@ namespace UnityEngine.UIElements
                     }
                     else if (m_StyleSheet.TryReadFloat(m_Property.values[currentIndex], out var dimValue))
                     {
-                        parameters[i] = new FilterParameter()
+                        parameter = new FilterParameter()
                         {
                             type = FilterParameterType.Float,
                             floatValue = dimValue
@@ -920,7 +921,11 @@ namespace UnityEngine.UIElements
                     else
                     {
                         Debug.LogError($"Unexpected value type {m_Property.values[currentIndex].valueType} in filter function argument");
+                        continue;
                     }
+
+                    if (i < FixedBuffer4<FilterParameter>.Length)
+                        parameters[i] = parameter;
                 }
 
                 value = isCustom

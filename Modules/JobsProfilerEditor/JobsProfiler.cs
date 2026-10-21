@@ -8,6 +8,7 @@ using Unity.Profiling.Editor;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEditor;
+using UnityEditor.Profiling;
 using UnityEngine;
 using UnityEngine.UIElements;
 using UnityEditor.UIElements;
@@ -17,6 +18,7 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Threading;
 using UnityEditorInternal;
+using UnityEditorInternal.Profiling;
 
 using Unity.Burst;
 using Unity.Collections;
@@ -52,6 +54,44 @@ internal class JobsProfiler : VisualElement
     VisualElement m_filterSpacer;
     long m_currentFrame = 0;
     bool m_disposed = false;
+
+    internal event Action<int, int, int> sampleSelected;
+    internal event Action sampleSelectionCleared;
+
+    internal void SetSampleSelection(int frameIndex, int threadIndex, int rawSampleIndex, bool focus)
+    {
+        if (m_disposed)
+            return;
+
+        m_timelineView.SetSampleSelection(frameIndex, threadIndex, rawSampleIndex, focus);
+    }
+
+    internal void ClearSampleSelection()
+    {
+        if (m_disposed)
+            return;
+
+        m_timelineView.ClearSampleSelection();
+    }
+
+    void OnEventSelected(int frameIndex, int eventIndex)
+    {
+        FrameData frameData;
+        if (m_frameCache.GetFrame(frameIndex, out frameData) &&
+            SampleEventMapping.TryFindRawSample(frameData, eventIndex, out int threadIndex, out int rawSampleIndex))
+        {
+            sampleSelected?.Invoke(frameIndex, threadIndex, rawSampleIndex);
+        }
+        else
+        {
+            sampleSelectionCleared?.Invoke();
+        }
+    }
+
+    void OnEventSelectionCleared()
+    {
+        sampleSelectionCleared?.Invoke();
+    }
 
     internal void SelectFrame(long frame)
     {
@@ -147,6 +187,8 @@ internal class JobsProfiler : VisualElement
         tree.Add(themeColorReader);
 
         m_timelineView = new TimelineBarView(mv, tree, m_frameCache, m_filter);
+        m_timelineView.eventSelected += OnEventSelected;
+        m_timelineView.eventSelectionCleared += OnEventSelectionCleared;
 
         // Get reference to timeline element for dynamic searchbar sizing
         m_timeline = m_timelineView.Query<VisualElement>("timeline").First();
@@ -182,6 +224,11 @@ internal class JobsProfiler : VisualElement
         JobsProfilerSettings.ColorBlindModeChanged -= OnColorBlindModeChanged;
         UnregisterCallback<GeometryChangedEvent>(OnGeometryChangedEvent);
         UnregisterCallback<DetachFromPanelEvent>(OnDetachFromPanel);
+        if (m_timelineView != null)
+        {
+            m_timelineView.eventSelected -= OnEventSelected;
+            m_timelineView.eventSelectionCleared -= OnEventSelectionCleared;
+        }
         m_timelineView?.Dispose();
         m_filter?.Dispose();
         m_frameCache?.Dispose();
@@ -203,6 +250,63 @@ internal class JobsProfilerViewController : ProfilerModuleViewController, IProfi
 {
     internal JobsProfilerViewController(ProfilerWindow profilerWindow) : base(profilerWindow) { }
     private JobsProfiler m_jobsProfiler;
+    private IProfilerFrameTimeViewSampleSelectionController m_cpuModule;
+    private bool m_isSettingCpuModuleSelection;
+
+    void ApplyCpuModuleSelection()
+    {
+        var selection = m_cpuModule?.selection;
+        int frameIndex = (int)ProfilerWindow.selectedFrameIndex;
+        if (frameIndex == FrameDataView.invalidOrCurrentFrameIndex)
+            frameIndex = ProfilerDriver.lastFrameIndex;
+
+        if (selection != null && SampleEventMapping.TryFindRawSample(selection, m_cpuModule as IProfilerSampleNameProvider, frameIndex, out int threadIndex, out int rawSampleIndex))
+            m_jobsProfiler.SetSampleSelection(frameIndex, threadIndex, rawSampleIndex, true);
+        else
+            m_jobsProfiler.ClearSampleSelection();
+    }
+
+    void OnCpuModuleSelectionChanged(IProfilerFrameTimeViewSampleSelectionController controller, ProfilerTimeSampleSelection selection)
+    {
+        if (!m_isSettingCpuModuleSelection)
+            ApplyCpuModuleSelection();
+    }
+
+    void OnSampleSelected(int frameIndex, int threadIndex, int rawSampleIndex)
+    {
+        using (var frameData = ProfilerDriver.GetRawFrameDataView(frameIndex, threadIndex))
+        {
+            if (m_cpuModule == null || frameData == null || !frameData.valid)
+                return;
+
+            var selection = new ProfilerTimeSampleSelection(frameIndex, frameData.threadGroupName, frameData.threadName, frameData.threadId, rawSampleIndex, frameData.GetSampleName(rawSampleIndex));
+            m_isSettingCpuModuleSelection = true;
+            try
+            {
+                m_cpuModule.SetSelection(selection);
+            }
+            finally
+            {
+                m_isSettingCpuModuleSelection = false;
+            }
+        }
+    }
+
+    void OnSampleSelectionCleared()
+    {
+        if (m_cpuModule == null)
+            return;
+
+        m_isSettingCpuModuleSelection = true;
+        try
+        {
+            m_cpuModule.ClearSelection();
+        }
+        finally
+        {
+            m_isSettingCpuModuleSelection = false;
+        }
+    }
 
     public void AddViewOptionsMenuItems(GenericMenu menu)
     {
@@ -221,6 +325,8 @@ internal class JobsProfilerViewController : ProfilerModuleViewController, IProfi
 
         m_jobsProfiler = new JobsProfiler();
         m_jobsProfiler.Create();
+        m_jobsProfiler.sampleSelected += OnSampleSelected;
+        m_jobsProfiler.sampleSelectionCleared += OnSampleSelectionCleared;
 
         ProfilerWindow.SelectedFrameIndexChanged += OnSelectedFrameIndexChanged;
         m_jobsProfiler.style.flexShrink = 1;
@@ -229,12 +335,19 @@ internal class JobsProfilerViewController : ProfilerModuleViewController, IProfi
 
         ProfilerDriver.profileLoaded += LoadedProfile;
 
+        m_cpuModule = ProfilerWindow.GetFrameTimeViewSampleSelectionController(ProfilerWindow.cpuModuleIdentifier);
+        if (m_cpuModule != null)
+            m_cpuModule.selectionChanged += OnCpuModuleSelectionChanged;
+        ApplyCpuModuleSelection();
+
         return m_jobsProfiler;
     }
 
     void OnSelectedFrameIndexChanged(long selectedFrameIndex)
     {
         m_jobsProfiler.SelectFrame(selectedFrameIndex);
+        if (!m_isSettingCpuModuleSelection)
+            ApplyCpuModuleSelection();
     }
 
     protected override void Dispose(bool disposing)
@@ -243,6 +356,13 @@ internal class JobsProfilerViewController : ProfilerModuleViewController, IProfi
         {
             ProfilerWindow.SelectedFrameIndexChanged -= OnSelectedFrameIndexChanged;
             ProfilerDriver.profileLoaded -= LoadedProfile;
+            if (m_cpuModule != null)
+                m_cpuModule.selectionChanged -= OnCpuModuleSelectionChanged;
+            if (m_jobsProfiler != null)
+            {
+                m_jobsProfiler.sampleSelected -= OnSampleSelected;
+                m_jobsProfiler.sampleSelectionCleared -= OnSampleSelectionCleared;
+            }
             m_jobsProfiler?.Cleanup();
         }
         base.Dispose(disposing);

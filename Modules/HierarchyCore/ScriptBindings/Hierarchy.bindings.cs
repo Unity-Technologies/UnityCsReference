@@ -438,6 +438,15 @@ namespace Unity.Hierarchy
         public extern int GetSortIndex(in HierarchyNode node);
 
         /// <summary>
+        /// Gets the sort index of a hierarchy node, if the node still exists.
+        /// </summary>
+        /// <param name="node">The hierarchy node.</param>
+        /// <param name="sortIndex">The sort index of the node, or 0 when the node does not exist.</param>
+        /// <returns><see langword="true"/> if the sort index was retrieved, <see langword="false"/> otherwise.</returns>
+        [NativeMethod(IsThreadSafe = true)]
+        internal extern bool TryGetSortIndex(in HierarchyNode node, out int sortIndex);
+
+        /// <summary>
         /// Sorts the child nodes of a hierarchy node according to their sort index.
         /// </summary>
         /// <param name="node">The hierarchy node.</param>
@@ -534,6 +543,22 @@ namespace Unity.Hierarchy
         [NativeMethod(IsThreadSafe = true, ThrowsException = true)]
         [VisibleToOtherModules("UnityEngine.HierarchyModule")]
         internal extern ReadOnlySpan<byte> GetNameRaw(in HierarchyNode node);
+
+        /// <summary>
+        /// Gets the UTF-8 name of a hierarchy node as a view over the hierarchy's native storage, if the node still exists.
+        /// </summary>
+        /// <remarks>
+        /// The span points into native memory owned by the hierarchy and is invalidated by the next hierarchy mutation. Do not hold onto it.
+        /// </remarks>
+        /// <param name="node">The hierarchy node.</param>
+        /// <param name="name">The name of the node as a span of UTF-8 bytes, or an empty span when the node does not exist.</param>
+        /// <returns><see langword="true"/> if the name was retrieved, <see langword="false"/> otherwise.</returns>
+        [VisibleToOtherModules("UnityEngine.HierarchyModule", "UnityEditor.HierarchyModule")]
+        internal bool TryGetNameRaw(in HierarchyNode node, out ReadOnlySpan<byte> name)
+        {
+            name = TryGetNameRawInternal(in node, out var found);
+            return found;
+        }
 
         /// <summary>
         /// Gets the path of a hierarchy node.
@@ -688,6 +713,9 @@ namespace Unity.Hierarchy
 
         [FreeFunction("HierarchyBindings::ExistsSpan", HasExplicitThis = true, IsThreadSafe = true, ThrowsException = true)]
         extern bool ExistsSpan(ReadOnlySpan<HierarchyNode> nodes, Span<bool> exists);
+
+        [FreeFunction("HierarchyBindings::TryGetNameRaw", HasExplicitThis = true, IsThreadSafe = true)]
+        extern ReadOnlySpan<byte> TryGetNameRawInternal(in HierarchyNode node, out bool found);
 
         #region Called from native
         [RequiredByNativeCode]

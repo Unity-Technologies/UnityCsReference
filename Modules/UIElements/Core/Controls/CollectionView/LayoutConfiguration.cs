@@ -10,12 +10,20 @@ using UnityEngine.UIElements.Internal;
 
 namespace UnityEngine.UIElements.HierarchyV2
 {
+    // A cell of a CellRow, holding the cell's content element and the column it is bound to.
+    [VisibleToOtherModules("UnityEngine.HierarchyModule")]
+    internal class CellContainer : VisualElement
+    {
+        public VisualElement cellItem;
+        public Column boundColumn;
+    }
+
     [VisibleToOtherModules("UnityEngine.HierarchyModule")]
     internal class CellRow : VisualElement
     {
         public VisualElement scrollableClip;
         public VisualElement scrollableContainer;
-        public List<VisualElement> cells = new();
+        public List<CellContainer> cells = new();
 
         public static readonly UniqueStyleString frozenCellUssClassName = new("unity-multi-column-view__cell--frozen");
 
@@ -29,7 +37,7 @@ namespace UnityEngine.UIElements.HierarchyV2
 
         public void SetScrollableContainerOffset(float value) => scrollableContainer.style.translate = new Vector2(value, 0);
 
-        public void AddCell(VisualElement cellContainer, FreezeState freezeState)
+        public void AddCell(CellContainer cellContainer, FreezeState freezeState)
         {
             cells.Add(cellContainer);
             switch (freezeState)
@@ -68,8 +76,6 @@ namespace UnityEngine.UIElements.HierarchyV2
         VisualElement m_HeaderContainer;
         const string k_HeaderViewDataKey = "Header";
         const string k_HeaderContainerViewDataKey = "unity-multi-column-header-container";
-        readonly PropertyName k_BoundColumnVePropertyName = "__unity-multi-column-bound-column";
-        readonly PropertyName bindableElementPropertyName = "__unity-multi-column-bindable-element";
 
         static readonly UniqueStyleString k_HierarchyLastColumnHeader = new(MultiColumnHeaderColumn.ussClassName+"__last");
         static readonly UniqueStyleString k_FrozenColumnBackgroundUssClassName = new("unity-multi-column-view__frozen-column-background");
@@ -140,11 +146,11 @@ namespace UnityEngine.UIElements.HierarchyV2
 
             foreach (var column in m_MultiColumnHeader.columns.visibleSpan)
             {
-                var cellContainer = new VisualElement();
+                var cellContainer = new CellContainer();
                 cellContainer.AddToClassList(MultiColumnController.cellUssClassNameUnique);
 
                 var cellItem = column.makeCell?.Invoke() ?? DefaultMakeCellItem();
-                cellContainer.SetProperty(bindableElementPropertyName, cellItem);
+                cellContainer.cellItem = cellItem;
 
                 cellContainer.Add(cellItem);
                 container.AddCell(cellContainer, header.GetColumnFreezeState(column));
@@ -165,7 +171,7 @@ namespace UnityEngine.UIElements.HierarchyV2
                     continue;
 
                 var cellContainer = row.cells[i++];
-                var cellItem = cellContainer.GetProperty(bindableElementPropertyName) as VisualElement;
+                var cellItem = cellContainer.cellItem;
 
                 if (column.bindCell != null)
                 {
@@ -174,7 +180,7 @@ namespace UnityEngine.UIElements.HierarchyV2
 
                 var width = columnData.control.resolvedStyle.width;
                 cellContainer.style.width = width;
-                cellContainer.SetProperty(k_BoundColumnVePropertyName, column);
+                cellContainer.boundColumn = column;
             }
 
             var frozenWidth = CalculateTotalFrozenWidth();
@@ -237,11 +243,11 @@ namespace UnityEngine.UIElements.HierarchyV2
             // Use the cells list instead of Children()
             foreach (var cellContainer in row.cells)
             {
-                if (cellContainer.GetProperty(k_BoundColumnVePropertyName) is not Column column)
+                var column = cellContainer.boundColumn;
+                if (column == null)
                     continue;
 
-                var cellItem = cellContainer.GetProperty(bindableElementPropertyName) as VisualElement;
-                column.unbindCell?.Invoke(cellItem, index);
+                column.unbindCell?.Invoke(cellContainer.cellItem, index);
             }
         }
 
@@ -252,13 +258,12 @@ namespace UnityEngine.UIElements.HierarchyV2
 
             foreach (var cellContainer in row.cells)
             {
-                var column = cellContainer.GetProperty(k_BoundColumnVePropertyName) as Column;
+                var column = cellContainer.boundColumn;
                 if (column == null)
                     continue;
 
-                var cellItem = cellContainer.GetProperty(bindableElementPropertyName) as VisualElement;
-                column.destroyCell?.Invoke(cellItem);
-                cellContainer.ClearProperty(k_BoundColumnVePropertyName);
+                column.destroyCell?.Invoke(cellContainer.cellItem);
+                cellContainer.boundColumn = null;
             }
         }
 

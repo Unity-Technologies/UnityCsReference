@@ -1872,6 +1872,11 @@ namespace Unity.ProjectAuditor.Editor.UI
             }
         }
 
+        static bool ShouldDrawReportName(AnalysisView view, Report report)
+        {
+            return view is SummaryView && !(view is BuildView) && !string.IsNullOrEmpty(report?.DisplayName);
+        }
+
         void DrawReport()
         {
             GUILayout.Space(2);
@@ -1884,7 +1889,7 @@ namespace Unity.ProjectAuditor.Editor.UI
 
                     GUILayout.Label(activeView.Desc.DisplayName, SharedStyles.MediumTitleLabel);
 
-                    if (activeView is SummaryView && m_Report != null && !(activeView is BuildView))
+                    if (ShouldDrawReportName(activeView, m_Report))
                     {
                         GUILayout.Label(" | ", SharedStyles.MediumTitleLabel);
 

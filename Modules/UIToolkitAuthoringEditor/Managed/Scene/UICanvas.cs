@@ -619,14 +619,9 @@ partial class UICanvas : VisualElement, IVisualElementChangeProcessor
         m_PanelElement.PickAll(m_DocumentRoot.WorldToLocal(worldPosition), results);
     }
 
-    void OnSubPanelBeforeRender()
+    CanvasBackdropTexture.Settings GetBackdropSettings(float pixelsPerPoint)
     {
-        var renderTexture = m_PanelElement?.RenderTexture;
-        if (renderTexture == null || panel is not Panel hostPanel)
-            return;
-
-        var pixelsPerPoint = hostPanel.pixelsPerPoint;
-        var settings = new CanvasBackdropTexture.Settings
+        return new CanvasBackdropTexture.Settings
         {
             CanvasRect = new Rect(Offset * pixelsPerPoint, BaseSize * ZoomScale * pixelsPerPoint),
             PixelsPerPoint = pixelsPerPoint,
@@ -640,7 +635,15 @@ partial class UICanvas : VisualElement, IVisualElementChangeProcessor
             BackgroundImageOpacity = EffectiveBackgroundImageOpacity,
             BackgroundImageScaleMode = EffectiveBackgroundImageScaleMode,
         };
+    }
 
+    void OnSubPanelBeforeRender()
+    {
+        var renderTexture = m_PanelElement?.RenderTexture;
+        if (renderTexture == null || panel is not Panel hostPanel)
+            return;
+
+        var settings = GetBackdropSettings(hostPanel.pixelsPerPoint);
         var texture = m_BackdropTexture.Update(renderTexture.width, renderTexture.height, settings);
         if (texture == null)
             return;
@@ -657,20 +660,34 @@ partial class UICanvas : VisualElement, IVisualElementChangeProcessor
         m_PanelElement.MarkTargetPrefilled();
     }
 
+    // Backdrop inputs live outside the sub-panel, so they change without making it dirty.
+    void RequestRenderIfBackdropStale()
+    {
+        var renderTexture = m_PanelElement?.RenderTexture;
+        if (renderTexture == null || renderTexture.width <= 0 || renderTexture.height <= 0 || panel is not Panel hostPanel)
+            return;
+
+        var settings = GetBackdropSettings(hostPanel.pixelsPerPoint);
+        if (!m_BackdropTexture.IsCurrent(renderTexture.width, renderTexture.height, settings))
+            m_PanelElement.RequestRender();
+    }
+
     void ForceRuntimePanelUpdate(Panel p)
     {
         if (p != panel)
             return;
 
+        RequestRenderIfBackdropStale();
+
         // A pure display-scale change fires no canvas event; recommit so the target resizes with it.
         if (m_PanelElement != null && p.pixelsPerPoint != m_PanelElement.SubPanelPixelsPerPoint)
             CommitToPanelElement();
         else
-            m_PanelElement?.FrameUpdate();
+            m_PanelElement?.TickUpdate();
 
         // The commit early-outs while a manipulation scope is open; keep the sub-panel ticking meanwhile.
         if (m_PanelElement != null && p.pixelsPerPoint != m_PanelElement.SubPanelPixelsPerPoint)
-            m_PanelElement.FrameUpdate();
+            m_PanelElement.TickUpdate();
 
         var subPanel = m_PanelElement?.SubPanel;
         if (subPanel == null)

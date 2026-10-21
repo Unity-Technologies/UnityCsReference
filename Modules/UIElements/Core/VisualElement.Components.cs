@@ -304,11 +304,6 @@ namespace UnityEngine.UIElements
 
             record.liveCount++;
 
-            // Cache the component's shared per-type dispatchers ([OnComponentChanged]; binding dispatch),
-            // so later code can invoke them without knowing T. Constrained generic calls, no boxing.
-            slot.onChanged = value.__GetComponentChangedDispatcher();
-            slot.bindingDispatcher = value.__GetComponentBindingDispatcher();
-
             insertIndex = InsertComponentSlot(typeHandle, slot);
 
             value.__RegisterComponentCallbacks(this);
@@ -655,10 +650,7 @@ namespace UnityEngine.UIElements
         int InsertComponentSlot(RuntimeTypeHandle typeHandle, ComponentSlot slot)
         {
             var set = m_ComponentTypeSet;
-            var found = set.Find(typeHandle, out var index);
-            // Callers reject duplicates before requirements resolution; a hit here means that broke.
-            Debug.Assert(!found, "Inserting a component type that is already in the element's type set.");
-            var successor = ComponentTypeSet.GetWithAdded(set, typeHandle, index);
+            var successor = ComponentTypeSet.GetWithAdded(set, typeHandle, out var index);
 
             var count = set.Count;
             var capacity = m_ComponentSlots?.Length ?? 0;
@@ -704,7 +696,7 @@ namespace UnityEngine.UIElements
             for (var i = index; i < last; i++)
                 m_ComponentSlots[i] = m_ComponentSlots[i + 1];
 
-            // Clear the freed tail slot so it can't root a dispatcher past the live range. Capacity is kept,
+            // Clear the freed tail slot so it can't root a managed box past the live range. Capacity is kept,
             // even at count 0, so steady-state add/remove churn never reallocates the array.
             m_ComponentSlots[last] = default;
 

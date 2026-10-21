@@ -130,7 +130,6 @@ namespace UnityEditor.Search.Providers
             System.Threading.Tasks.Task.Run(() => BuildMenus(itemNames));
         }
 
-
         private static void BuildMenus(List<string> itemNames)
         {
             var localMenus = new List<MenuData>();

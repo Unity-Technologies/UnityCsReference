@@ -101,6 +101,12 @@ namespace UnityEditor
         [FreeFunction("ClearGlobalInteractionContext")]
         private static extern void ClearGlobalInteractionContext();
 
+        internal static class TestAccess
+        {
+            // True while a context is installed to answer dialogs programmatically.
+            public static bool isInstalled => GetGlobalInteractionContext() != null;
+        }
+
         new internal static class BindingsMarshaller
         {
             public static IntPtr ConvertToNative(GlobalInteractionContext context) => context.m_NativePtr;

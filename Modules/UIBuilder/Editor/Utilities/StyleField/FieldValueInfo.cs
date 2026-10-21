@@ -354,7 +354,7 @@ namespace Unity.UI.Builder
 
                 if (!string.IsNullOrEmpty(varName))
                 {
-                    var varInfo = StyleVariableUtility.FindVariable(inspector.currentVisualElement, varName, inspector.document.fileSettings.editorExtensionMode);
+                    var varInfo = StyleVariableUtility.FindVariable(inspector.currentVisualElement, varName, inspector.document.fileSettings.editorExtensionMode, inspector.variableScopeElement);
 
                     // If the variable cannot be resolved then at least set the name
                     if (!varInfo.IsValid())

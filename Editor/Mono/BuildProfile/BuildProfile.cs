@@ -391,12 +391,13 @@ namespace UnityEditor.Build.Profile
             // On disk changes invoke OnEnable,
             // Check against the last observed editor defines.
             string[] lastCompiledDefines = BuildProfileContext.instance.cachedEditorScriptingDefines;
+            string[] lastCompiledSDKPlatformDefines = BuildProfileContext.instance.cachedSDKPlatformDefines.defines;
             m_ScriptingDefines = BuildProfileModuleUtil.RemoveInvalidScriptingDefines(m_ScriptingDefines);
-            if (ArrayUtility.ArrayEquals(m_ScriptingDefines, lastCompiledDefines))
+            if (ArrayUtility.ArrayEquals(m_ScriptingDefines, lastCompiledDefines) &&
+                ArrayUtility.ArrayEquals(SDKPlatformCompilationUtil.GetActivePlatformEditorDefines(), lastCompiledSDKPlatformDefines))
             {
                 return;
             }
-            BuildProfileContext.instance.cachedEditorScriptingDefines = m_ScriptingDefines;
             BuildProfileModuleUtil.RequestScriptCompilation(this);
         }
 

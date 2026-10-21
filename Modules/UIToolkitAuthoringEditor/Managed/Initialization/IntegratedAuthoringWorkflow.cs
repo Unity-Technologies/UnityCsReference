@@ -18,12 +18,27 @@ static class IntegratedAuthoringWorkflow
     private static void RegisterStageHandlers()
     {
         UIStageNavigation.StageChanging += OnStageWillChange;
+        EditorSettings.useLegacyHierarchyChanged += OnUseLegacyHierarchyChanged;
     }
 
     [/*BeforeManagedObjectsDisabled,*/ UsedImplicitly]
     private static void UnregisterStageHandlers()
     {
         UIStageNavigation.StageChanging -= OnStageWillChange;
+        EditorSettings.useLegacyHierarchyChanged -= OnUseLegacyHierarchyChanged;
+    }
+
+    // Only the new Hierarchy can display a VisualElementEditingStage.
+    private static void OnUseLegacyHierarchyChanged()
+    {
+        if (!EditorSettings.useLegacyHierarchy || StageUtility.GetCurrentStage() is not VisualElementEditingStage)
+            return;
+
+        StageUtility.GoToStage(StageNavigationManager.instance.stageHistory.FindLast(s => s is not VisualElementEditingStage), false);
+
+        // The user kept the stage at its unsaved-changes prompt.
+        if (StageUtility.GetCurrentStage() is VisualElementEditingStage)
+            EditorSettings.useLegacyHierarchy = false;
     }
 
     private static void OnStageWillChange(Stage previousStage, Stage nextStage)

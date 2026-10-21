@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using UnityEngine.Bindings;
 using UnityEngine.UIElements;
 
 namespace Unity.Hierarchy
@@ -16,6 +17,19 @@ namespace Unity.Hierarchy
 
         bool m_IsCellBound;
         bool m_IsDefaultValue;
+
+        internal VisualElement CachedEditor { get; set; }
+
+        // The HierarchyViewCellValueEditor bound to this cell, or null when the cell is unbound.
+        // Typed as object because the editor is generic and has no non-generic base type to store instead.
+        [VisibleToOtherModules]
+        internal object ValueEditor { get; set; }
+
+        internal void HideCachedEditor()
+        {
+            if (CachedEditor != null)
+                CachedEditor.visible = false;
+        }
 
         /// <summary>
         /// Gets the parent column of this <see cref="HierarchyViewCell"/>.
@@ -48,6 +62,7 @@ namespace Unity.Hierarchy
                 {
                     // Clear any custom ui that might have been added by the Cell Handler.
                     Clear();
+                    CachedEditor = null;
                 }
             }
 

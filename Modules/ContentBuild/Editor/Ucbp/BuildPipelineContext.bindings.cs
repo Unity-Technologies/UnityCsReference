@@ -7,10 +7,16 @@ using UnityEngine.Bindings;
 
 namespace UnityEditor.Build
 {
-    ///<summary>Attribute to provide a version number for IProcessSceneWithReport callbacks.</summary>
-    ///<remarks>This attribute is used to inform the build system when the callback implementation changes and the build result needs to be regenerated. Therefore, developers should bump the version number when changing the implementation of the callback. If the attribute is not specified, the implied version number is 1.</remarks>
-    ///<seealso cref="Build.IProcessSceneWithReport" />
-    ///<seealso cref="EditorBuildSettings.UseParallelAssetBundleBuilding" />
+    /// <summary>Defines a version number for build callbacks.</summary>
+    /// <remarks>
+    /// Unity uses this version number to detect when the callback implementation changes
+    /// and rebuilds the affected results.
+    /// Increment the version number when you change the implementation of the callback.
+    /// If you don't apply the attribute, Unity uses version 1.
+    /// </remarks>
+    /// <seealso cref="AssetPostprocessor.GetVersion" />
+    /// <seealso cref="Build.IProcessSceneWithReport" />
+    /// <seealso cref="EditorBuildSettings.UseParallelAssetBundleBuilding" />
     [System.AttributeUsage(System.AttributeTargets.Class, AllowMultiple = false, Inherited = false)]
     public class BuildCallbackVersionAttribute : System.Attribute
     {

@@ -46,8 +46,8 @@ namespace UnityEditor
     }
 
     // Lets you programmatically build players or AssetBundles which can be loaded from the web.
-    ///<summary>API for building players or AssetBundles.</summary>
-    ///<remarks>The BuildPipeline class in the Unity Editor namespace provides essential tools to programmatically <see cref="BuildPipeline.BuildPlayer">Build Players</see> and <see cref="BuildPipeline.BuildAssetBundles">Build AssetBundles</see>.
+    ///<summary>API for building Players or content builds.</summary>
+    ///<remarks>The BuildPipeline class in the Unity Editor namespace provides tools to <see cref="BuildPipeline.BuildPlayer">build Players</see> and create <see cref="BuildPipeline.BuildContentDirectory">content directory</see> or <see cref="BuildPipeline.BuildAssetBundles">AssetBundle</see> builds.
     ///AssetBundles can be loaded from external sources such as the web, enhancing the flexibility and scalability of content delivery in Unity applications.
     ///The class contains several static properties and methods to facilitate building workflows.</remarks>
     ///<seealso href="xref:um-asset-bundles-intro">AssetBundles</seealso>
@@ -183,7 +183,7 @@ namespace UnityEditor
         ///
         ///Calling this method will invalidate any variables in the editor script that reference GameObjects, so they will need to be reacquired after the call.
         ///
-        ///Scripts can run at strategic points during the build by implementing one of the supported callback interfaces, for example <see cref="BuildPlayerProcessor" />, <see cref="IPreprocessBuildWithContext" />, <see cref="IProcessSceneWithReport" /> and <see cref="IPostprocessBuildWithContext" />.
+        ///Scripts can run at strategic points during the build by implementing one of the supported callback interfaces, for example <see cref="BuildPlayerProcessor" />, <see cref="IPreprocessBuildWithContext" /> and <see cref="IPostprocessBuildWithContext" />, or by overriding <see cref="AssetPostprocessor.OnProcessScene" />.
         ///
         ///Note: Be aware that changes to [scripting symbols](xref:um-platform-dependent-compilation) only take effect at the next domain reload, when scripts are recompiled.
         ///
@@ -372,9 +372,9 @@ namespace UnityEditor
         internal static extern bool IsFeatureSupported(string define, BuildTarget platform);
 
         // Is a player currently building?
-        ///<summary>Returns true when Unity is actively building a Player or AssetBundles</summary>
-        ///<remarks>This returns true during Player builds (<see cref="BuildPipeline.BuildPlayer" />) and AssetBundle builds (<see cref="BuildPipeline.BuildAssetBundles" />).
-        ///It can be used to check the context inside script code that could be triggered during a build, for example when <see cref="ExecuteAlways" /> is being used on a <see cref="MonoBehaviour" />.</remarks>
+        ///<summary>Checks whether Unity is actively building a Player or a content build.</summary>
+        ///<remarks>This returns true during Player builds (<see cref="BuildPipeline.BuildPlayer" />), content directory builds (<see cref="BuildPipeline.BuildContentDirectory"/>), and AssetBundle builds (<see cref="BuildPipeline.BuildAssetBundles" />).
+        ///Use it to check the context inside script code that might be triggered during a build, for example when <see cref="ExecuteAlways" /> is used on a <see cref="MonoBehaviour" />.</remarks>
         public static extern bool isBuildingPlayer { [FreeFunction("IsBuildingPlayer")] get; }
 
 
@@ -585,7 +585,7 @@ namespace UnityEditor
         ///  <para>This signature of BuildAssetBundles is recommended and exposes the most functionality. The other signatures, documented below,
         ///are retained for backward compatibility and convenience.
         ///
-        ///During the <see cref="AssetBundle" /> build process, classes that implement <see cref="IProcessSceneWithReport" /> are called as scenes are processed. Similarly the way shaders are built can be influenced by implementing <see cref="IPreprocessShaders" /> or <see cref="IPreprocessComputeShaders" />.
+        ///During the <see cref="AssetBundle" /> build process, classes derived from <see cref="AssetPostprocessor" /> that define <see cref="AssetPostprocessor.OnProcessScene" /> are called as scenes are processed. Similarly the way shaders are built can be influenced by implementing <see cref="IPreprocessShaders" /> or <see cref="IPreprocessComputeShaders" />.
         ///
         ///This method returns an <see cref="AssetBundleManifest" /> instance that describes the AssetBundles produced.
         ///

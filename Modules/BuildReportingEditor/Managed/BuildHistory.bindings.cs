@@ -374,12 +374,10 @@ namespace UnityEditor.Build
         /// <remarks>
         /// Call this method from the main thread when a build performed outside the Unity build pipeline has finished,
         /// to make it appear in the build history and the **Build Analysis** window alongside Player and
-        /// Content Directory builds.
+        /// Content Directory builds. Exists only for the Addressables package, which has access through
+        /// InternalsVisibleTo.
         /// </remarks>
-        /// <example>
-        /// <code source="../Tests/BuildReporting/Assets/Editor/ReferenceExamples/RegisterExternalBuild.cs"/>
-        /// </example>
-        public static string RegisterExternalBuild(ExternalBuildInfo buildInfo)
+        internal static string RegisterExternalBuild(ExternalBuildInfo buildInfo)
         {
             if (buildInfo.BuildSessionGUID.Empty())
                 throw new ArgumentException("BuildSessionGUID must not be empty.", nameof(buildInfo));

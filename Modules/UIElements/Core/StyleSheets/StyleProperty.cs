@@ -2596,35 +2596,33 @@ namespace UnityEngine.UIElements
                     }
 
                     --argCount;
-
-                    if (customDef.parameters.Length != argCount)
-                    {
-                        value.Clear();
-                        return false;
-                    }
                 }
 
                 var args = new FixedBuffer4<FilterParameter>();
                 for (int p = 0; p < argCount; ++p)
                 {
                     var paramHandle = m_Values[i++];
+                    FilterParameter param;
                     if (styleSheet.TryReadDimension(paramHandle, out Dimension dim))
                     {
-                        args[p] = new FilterParameter(ConvertDimensionToFilterFloat(dim));
+                        param = new FilterParameter(ConvertDimensionToFilterFloat(dim));
                     }
                     else if (styleSheet.TryReadFloat(paramHandle, out float f))
                     {
-                        args[p] = new FilterParameter(f);
+                        param = new FilterParameter(f);
                     }
                     else if (styleSheet.TryReadColor(paramHandle, out Color color))
                     {
-                        args[p] = new FilterParameter(color);
+                        param = new FilterParameter(color);
                     }
                     else
                     {
                         value.Clear();
                         return false;
                     }
+
+                    if (p < FixedBuffer4<FilterParameter>.Length)
+                        args[p] = param;
                 }
 
                 if (func == StyleValueFunction.CustomFilter)

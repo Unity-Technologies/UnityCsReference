@@ -10,7 +10,7 @@ namespace UnityEditor
     // Target build platform.
     // When adding new platform, read this first - https://confluence.hq.unity3d.com/display/DEV/Adding+new+platform
     // When removing platform, read this first - https://confluence.hq.unity3d.com/display/DEV/Removing+platform
-    ///<summary>Specifies the target platform for a Player or AssetBundle build.</summary>
+    ///<summary>Specifies the target platform for a Player or content build.</summary>
     ///<remarks>Pass a platform property to <c>BuildTarget</c> to specify the target platform to build a Player for. For example, use <see cref="BuildTarget.Android" /> to target the Android platform. At runtime, use <c>BuildTarget</c> to identify the currently selected build target. Only actively supported platforms are documented in this list.
     ///
     ///**Important**: When targeting Windows, it's recommended to use the <c>StandaloneWindow64</c> target unless you specifically need to target devices that use a 32-bit CPU.</remarks>

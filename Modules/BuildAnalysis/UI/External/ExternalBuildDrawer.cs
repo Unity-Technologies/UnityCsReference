@@ -8,11 +8,12 @@ using UnityEngine.UIElements;
 namespace UnityEditor.Build.Analysis
 {
     /// <summary>Draws the report for builds made outside the Unity build pipeline, in the <b>Build Analysis</b> window.</summary>
-    /// <remarks>Mark an implementation with <see cref="ExternalBuildDrawerAttribute"/> to declare which package's
+    /// <remarks>Exists only for the Addressables package, which has access through InternalsVisibleTo.
+    /// Mark an implementation with <see cref="ExternalBuildDrawerAttribute"/> to declare which package's
     /// builds it draws. The window gives the drawer its whole content area, so the drawer supplies its own tabs
     /// and toolbar.</remarks>
     /// <seealso cref="BuildHistory.RegisterExternalBuild"/>
-    public abstract class ExternalBuildDrawer
+    internal abstract class ExternalBuildDrawer
     {
         /// <summary>Creates the content that fills the window while this drawer's builds are selected.</summary>
         /// <returns>The root of the content. Must not be `null`.</returns>
@@ -34,7 +35,7 @@ namespace UnityEditor.Build.Analysis
 
     /// <summary>Declares the package whose builds an <see cref="ExternalBuildDrawer"/> draws.</summary>
     [AttributeUsage(AttributeTargets.Class, Inherited = false)]
-    public sealed class ExternalBuildDrawerAttribute : Attribute
+    internal sealed class ExternalBuildDrawerAttribute : Attribute
     {
         /// <param name="producerPackage">The package name, for example `com.unity.addressables`. The window draws a
         /// build with this drawer when the build's <see cref="BuildReportSummary.ProducerPackage"/> matches.</param>

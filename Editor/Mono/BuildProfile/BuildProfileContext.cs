@@ -53,6 +53,9 @@ namespace UnityEditor.Build.Profile
         string[] m_CachedEditorScriptingDefines = Array.Empty<string>();
 
         [SerializeField]
+        CachedSDKPlatformDefines m_CachedSDKPlatformDefines = new() { platformGuid = string.Empty, defines = Array.Empty<string>() };
+
+        [SerializeField]
         List<string> m_LastRunnableBuildPathKeys = new();
         internal List<string> LastRunnableBuildPathKeys => m_LastRunnableBuildPathKeys;
 
@@ -71,6 +74,19 @@ namespace UnityEditor.Build.Profile
         {
             get => m_CachedEditorScriptingDefines;
             set => m_CachedEditorScriptingDefines = value;
+        }
+
+        /// <summary>
+        /// Cached SDK platform defines for the active profile.
+        /// On editor startup, scripts compile before SDK platforms are registered
+        /// from their packages, so the cached value supplies their defines.
+        /// On disk changes to build profile asset, cached value is referenced
+        /// when determining if a recompilation is required.
+        /// </summary>
+        internal CachedSDKPlatformDefines cachedSDKPlatformDefines
+        {
+            get => m_CachedSDKPlatformDefines;
+            set => m_CachedSDKPlatformDefines = value;
         }
 
         /// <summary>
@@ -100,6 +116,7 @@ namespace UnityEditor.Build.Profile
             {
                 var prev = EditorUserBuildSettings.activeBuildProfile;
                 var prevDefines = BuildDefines.GetBuildProfileScriptDefines();
+                var prevSDKPlatformDefines = SDKPlatformCompilationUtil.GetActivePlatformEditorDefines();
 
                 if (value == null || value.platformBuildProfile == null)
                 {
@@ -111,7 +128,9 @@ namespace UnityEditor.Build.Profile
                     EditorGraphicsSettings.activeProfileHasGraphicsSettings = false;
 
                     var defines = BuildDefines.GetBuildProfileScriptDefines();
-                    if (!ArrayUtility.ArrayEquals(prevDefines, defines))
+                    var sdkPlatformDefines = SDKPlatformCompilationUtil.GetActivePlatformEditorDefines();
+                    if (!ArrayUtility.ArrayEquals(prevDefines, defines) ||
+                        !ArrayUtility.ArrayEquals(prevSDKPlatformDefines, sdkPlatformDefines))
                         BuildProfileModuleUtil.RequestScriptCompilation(null);
 
                     return;
@@ -144,7 +163,8 @@ namespace UnityEditor.Build.Profile
                 EditorGraphicsSettings.activeProfileHasGraphicsSettings = ActiveProfileHasGraphicsSettings();
                 value.scriptingDefines = BuildProfileModuleUtil.RemoveInvalidScriptingDefines(value.scriptingDefines);
 
-                if (!ArrayUtility.ArrayEquals(prevDefines, value.scriptingDefines))
+                if (!ArrayUtility.ArrayEquals(prevDefines, value.scriptingDefines) ||
+                    !ArrayUtility.ArrayEquals(prevSDKPlatformDefines, SDKPlatformCompilationUtil.GetActivePlatformEditorDefines()))
                     BuildProfileModuleUtil.RequestScriptCompilation(value);
             }
         }

@@ -612,9 +612,6 @@ internal class Stats : VisualElement, IDisposable
     /// </summary>
     void CalculateStats(int frameIndex)
     {
-        m_stats.Clear();
-        m_jobOutputStats.Clear();
-
         var cachedFrames = m_frameCache.Frames;
 
         if (frameIndex == 0 && cachedFrames.Count == 0)
@@ -626,10 +623,15 @@ internal class Stats : VisualElement, IDisposable
         // So we set the state that we should retrying getting the frame data next update
         if (!cachedFrames.TryGetValue(frameIndex, out frameData))
         {
-            m_state = State.RetryFrame;
+            if (m_frameCache.IsFrameEmpty(frameIndex))
+                ClearData();
+            else
+                m_state = State.RetryFrame;
+
             return;
         }
 
+        m_jobOutputStats.Clear();
         m_jobHandle = SetupGenerateFrameStatsJob(frameData);
 
         foreach (var v in m_tempClearLists)
@@ -722,12 +724,12 @@ internal class Stats : VisualElement, IDisposable
 
         // If the number of stats has changed, we need to rebuild the list. If count has been
         // zero twice we don't rebuild
-        if ((m_lastCount != m_jobOutputStats.Length) || m_filter.HasChanged)
+        if ((m_lastCount != m_stats.Count) || m_filter.HasChanged)
         {
             m_statsList.RefreshItems();
         }
 
-        m_lastCount = m_jobOutputStats.Length;
+        m_lastCount = m_stats.Count;
 
         m_state = State.Idle;
     }
@@ -781,7 +783,6 @@ internal class Stats : VisualElement, IDisposable
         CalculateStats(index);
 
         m_selectedFrame = index;
-        m_statsList.RefreshItems();
     }
 
     internal void SelectRowByMarkerId(int id)

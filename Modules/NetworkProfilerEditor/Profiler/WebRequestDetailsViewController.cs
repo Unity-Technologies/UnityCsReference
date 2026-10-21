@@ -26,6 +26,8 @@ namespace UnityEditor.Networking
         const string k_UssDarkResourceName = "WebRequest/StyleSheets/Profiler/WebRequestDetailsViewDark.uss";
         const string k_InsecureIconResourceName = "WebRequest/Icons/UnsafeConnection.png";
 
+        const int k_NativeTrackedRequestCap = 1024;
+
         const string k_OrderColumn = "order-column";
         const string k_StatusColumn = "status-column";
         const string k_MethodColumn = "method-column";
@@ -43,6 +45,9 @@ namespace UnityEditor.Networking
         const string k_StatusSuccessClass = "web-request-details-view__status--success";
         const string k_StatusErrorClass = "web-request-details-view__status--error";
         const string k_StatusInFlightClass = "web-request-details-view__status--in-flight";
+        const string k_HiddenClass = "web-request-details-view--hidden";
+        const string k_InsecureIconHiddenClass = "web-request-details-view__insecure-icon--hidden";
+        const string k_ContainerClass = "web-request-details-view__container";
 
         const string k_InsecureTooltip = "Sent over plain HTTP, so the request and response were not encrypted.";
 
@@ -81,7 +86,11 @@ namespace UnityEditor.Networking
         ToolbarButton m_InspectorToggle;
         VisualElement m_Inspector;
         Label m_InspectorEmpty;
-        VisualElement m_Tabs;
+        TabView m_Tabs;
+        Tab m_PayloadTab;
+        Tab m_HeadersTab;
+        Foldout m_QueryParameters;
+        Foldout m_RequestPayload;
         Foldout m_ResponseHeaders;
         Foldout m_RequestHeaders;
         Foldout m_RequestWireHeaders;
@@ -94,11 +103,22 @@ namespace UnityEditor.Networking
         Label m_FieldDuration;
         Label m_TimingEmpty;
         VisualElement m_TimingPhases;
-        Foldout m_QueryParameters;
-        Label m_RequestPayloadEmpty;
+        VisualElement m_QueryParameterRows;
+        TextField m_QueryParametersText;
+        UnityEngine.UIElements.Button m_QueryParametersSource;
+        UnityEngine.UIElements.Button m_RequestPayloadSource;
+        UnityEngine.UIElements.Button m_QueryParametersCopy;
+        UnityEngine.UIElements.Button m_RequestPayloadCopy;
+        UnityEngine.UIElements.Button m_ResponseBodyCopy;
+        string m_SelectedUrl = string.Empty;
+        bool m_QueryParametersShowSource;
+        bool m_RequestPayloadShowSource;
+        Label m_RequestPayloadStatus;
         TextField m_RequestPayloadText;
-        Label m_ResponseBodyEmpty;
+        TreeView m_RequestPayloadTree;
+        Label m_ResponseBodyStatus;
         TextField m_ResponseBodyText;
+        TreeView m_ResponseBodyTree;
 
         public WebRequestDetailsViewController(ProfilerWindow profilerWindow) : base(profilerWindow) {}
 
@@ -111,7 +131,7 @@ namespace UnityEditor.Networking
                 EditorGUIUtility.isProSkin ? k_UssDarkResourceName : k_UssLightResourceName) as StyleSheet;
 
             var view = tree.Instantiate();
-            view.style.flexGrow = 1f;
+            view.AddToClassList(k_ContainerClass);
             view.styleSheets.Add(style);
             view.styleSheets.Add(themedStyle);
 
@@ -125,7 +145,11 @@ namespace UnityEditor.Networking
 
             m_Inspector = view.Q<VisualElement>("web-request-details-view__inspector");
             m_InspectorEmpty = view.Q<Label>("web-request-details-view__inspector-empty");
-            m_Tabs = view.Q<VisualElement>("web-request-details-view__tabs");
+            m_Tabs = view.Q<TabView>("web-request-details-view__tabs");
+            m_HeadersTab = view.Q<Tab>("web-request-details-view__headers-tab");
+            m_PayloadTab = view.Q<Tab>("web-request-details-view__payload-tab");
+            m_QueryParameters = view.Q<Foldout>("web-request-details-view__query-parameters");
+            m_RequestPayload = view.Q<Foldout>("web-request-details-view__request-payload");
             m_ResponseHeaders = view.Q<Foldout>("web-request-details-view__response-headers");
             m_RequestHeaders = view.Q<Foldout>("web-request-details-view__request-headers");
             m_RequestWireHeaders = view.Q<Foldout>("web-request-details-view__request-wire-headers");
@@ -135,18 +159,30 @@ namespace UnityEditor.Networking
             m_FieldSource = view.Q<Label>("web-request-details-view__field-source");
             m_FieldType = view.Q<Label>("web-request-details-view__field-type");
             m_FieldTransferred = view.Q<Label>("web-request-details-view__field-transferred");
+            m_FieldUrl.enableRichText = false;
+            m_FieldType.enableRichText = false;
             m_FieldDuration = view.Q<Label>("web-request-details-view__field-duration");
             m_TimingEmpty = view.Q<Label>("web-request-details-view__timing-empty");
             m_TimingPhases = view.Q<VisualElement>("web-request-details-view__timing-phases");
 
-            m_QueryParameters = view.Q<Foldout>("web-request-details-view__query-parameters");
-            m_RequestPayloadEmpty = view.Q<Label>("web-request-details-view__request-payload-empty");
+            m_QueryParameterRows = view.Q<VisualElement>("web-request-details-view__query-parameters-rows");
+            m_QueryParametersText = view.Q<TextField>("web-request-details-view__query-parameters-text");
+            m_RequestPayloadStatus = view.Q<Label>("web-request-details-view__request-payload-status");
             m_RequestPayloadText = view.Q<TextField>("web-request-details-view__request-payload-text");
-            m_ResponseBodyEmpty = view.Q<Label>("web-request-details-view__response-body-empty");
+            m_ResponseBodyStatus = view.Q<Label>("web-request-details-view__response-body-status");
             m_ResponseBodyText = view.Q<TextField>("web-request-details-view__response-body-text");
 
-            SetUpCopyButton(view, "web-request-details-view__request-payload-copy", () => m_RequestPayloadText.value);
-            SetUpCopyButton(view, "web-request-details-view__response-body-copy", () => m_ResponseBodyText.value);
+            m_RequestPayloadTree = SetUpBodyTree(view, "web-request-details-view__request-payload-tree");
+            m_ResponseBodyTree = SetUpBodyTree(view, "web-request-details-view__response-body-tree");
+
+            m_QueryParametersSource = SetUpSourceButton(view, "web-request-details-view__query-parameters-source",
+                () => m_QueryParametersShowSource = !m_QueryParametersShowSource);
+            m_RequestPayloadSource = SetUpSourceButton(view, "web-request-details-view__request-payload-source",
+                () => m_RequestPayloadShowSource = !m_RequestPayloadShowSource);
+
+            m_QueryParametersCopy = SetUpCopyButton(view, "web-request-details-view__query-parameters-copy", () => WebRequestProfilerUrl.RawQueryString(m_SelectedUrl));
+            m_RequestPayloadCopy = SetUpCopyButton(view, "web-request-details-view__request-payload-copy", () => m_RequestPayloadText.value);
+            m_ResponseBodyCopy = SetUpCopyButton(view, "web-request-details-view__response-body-copy", () => m_ResponseBodyText.value);
 
             SetUpInspectorToggle(view);
 
@@ -294,7 +330,7 @@ namespace UnityEditor.Networking
             var column = m_ListView.columns[columnName];
             column.makeCell = () =>
             {
-                var label = new Label();
+                var label = CapturedTextLabel();
                 label.AddToClassList(k_CellClass);
                 AddRowContextMenu(label);
                 return label;
@@ -323,7 +359,7 @@ namespace UnityEditor.Networking
                 warning.image = EditorGUIUtility.LoadIcon(k_InsecureIconResourceName);
                 cell.Add(warning);
 
-                var label = new Label();
+                var label = CapturedTextLabel();
                 label.AddToClassList(k_CellClass);
                 cell.Add(label);
 
@@ -344,7 +380,7 @@ namespace UnityEditor.Networking
                 // hovering the empty icon slot on an HTTPS row reports it as unencrypted.
                 var warning = element.Q<Image>("insecure");
                 var insecure = IsInsecure(record.url);
-                warning.style.visibility = insecure ? Visibility.Visible : Visibility.Hidden;
+                warning.EnableInClassList(k_InsecureIconHiddenClass, !insecure);
                 warning.pickingMode = insecure ? PickingMode.Position : PickingMode.Ignore;
                 warning.tooltip = insecure ? k_InsecureTooltip : null;
             };
@@ -620,20 +656,21 @@ namespace UnityEditor.Networking
 
         void UpdateSummary()
         {
-            var completed = 0;
-            var errors = 0;
-            var pending = 0;
-            ulong bytesDown = 0;
-            ulong bytesUp = 0;
+            var evicted = m_Log.Evicted;
+            var completed = evicted.completed;
+            var errors = evicted.errors;
+            var pending = evicted.pending;
+            var bytesDown = evicted.bytesDown;
+            var bytesUp = evicted.bytesUp;
             var records = m_Log.Records;
             var durations = new List<ulong>(records.Count);
 
             // A capture can mix transports that count bytes with ones that do not, so a sum over some
             // of the rows is a floor and FormatTransferTotal marks it as one.
-            var measuredDown = false;
-            var measuredUp = false;
-            var unmeasuredDown = false;
-            var unmeasuredUp = false;
+            var measuredDown = evicted.measuredDown;
+            var measuredUp = evicted.measuredUp;
+            var unmeasuredDown = evicted.unmeasuredDown;
+            var unmeasuredUp = evicted.unmeasuredUp;
 
             foreach (var record in records)
             {
@@ -677,9 +714,32 @@ namespace UnityEditor.Networking
 
             // Every total covers the whole capture rather than the filtered rows; the request count is the
             // only one that says how many are visible, so a filter cannot make the totals mean two things.
-            m_SummaryRequests.text = m_Rows.Count == records.Count
-                ? WebRequestProfilerFormatting.FormatCount(records.Count, "Request")
-                : $"{m_Rows.Count} of {WebRequestProfilerFormatting.FormatCount(records.Count, "Request")}";
+            var captured = records.Count + evicted.count;
+            var requests = m_Rows.Count == captured
+                ? WebRequestProfilerFormatting.FormatCount(captured, "Request")
+                : $"{m_Rows.Count} of {WebRequestProfilerFormatting.FormatCount(captured, "Request")}";
+
+
+            var dropped = m_Log.DroppedRequests;
+            var coverage = captured > 0
+                ? m_Log.DroppedRequestsCoverage
+                : WebRequestProfilerDropCoverage.Complete;
+            var suffix = DropSuffix(coverage, dropped);
+            m_SummaryRequests.text = suffix == null ? requests : $"{requests} · {suffix}";
+
+            var note = evicted.count > 0
+                ? $"{evicted.count} of {captured} requests are no longer listed, but are still counted in these totals."
+                : string.Empty;
+            var lossNote = DropNote(coverage, dropped);
+            if (lossNote.Length > 0)
+            {
+                if (note.Length > 0)
+                    note += " ";
+
+                note += lossNote;
+            }
+
+            m_SummaryRequests.tooltip = note;
             m_SummaryCompleted.text = $"{completed} Completed";
             // Both directions in one figure, so it is a floor as soon as either of them is.
             var anyUnmeasured = unmeasuredDown || unmeasuredUp;
@@ -691,9 +751,44 @@ namespace UnityEditor.Networking
                 ? WebRequestProfilerFormatting.FormatDuration(Percentile(durations, 0.95f))
                 : "-";
             m_SummaryLatency.text = $"Latency p95: {latency}";
+            m_SummaryLatency.tooltip = evicted.count > 0
+                ? $"Over the {durations.Count} finished requests still listed. A further {evicted.count} are no longer held."
+                : string.Empty;
             m_SummaryErrors.text = WebRequestProfilerFormatting.FormatCount(errors, "Error");
             m_SummaryBytes.text = $"Total Bytes Down/Up: {WebRequestProfilerFormatting.FormatTransferTotal(bytesDown, measuredDown, unmeasuredDown)} / {WebRequestProfilerFormatting.FormatTransferTotal(bytesUp, measuredUp, unmeasuredUp)}";
             m_SummaryBytes.tooltip = anyUnmeasured ? WebRequestProfilerFormatting.PartialTotalTooltip : string.Empty;
+        }
+
+        internal static string DropSuffix(WebRequestProfilerDropCoverage coverage, int dropped)
+        {
+            switch (coverage)
+            {
+                case WebRequestProfilerDropCoverage.None:
+                    return "drops not recorded";
+                case WebRequestProfilerDropCoverage.Partial:
+                    return dropped > 0 ? $"at least {dropped} dropped" : "drops partly recorded";
+                default:
+                    return dropped > 0 ? $"{dropped} dropped" : null;
+            }
+        }
+
+        internal static string DropNote(WebRequestProfilerDropCoverage coverage, int dropped)
+        {
+            const string why = "The Web Requests counters are only captured while this module is open.";
+
+            switch (coverage)
+            {
+                case WebRequestProfilerDropCoverage.None:
+                    return "Whether any requests were refused was not recorded in this capture. " + why;
+                case WebRequestProfilerDropCoverage.Partial:
+                    return "Some frames in this capture were recorded without the drop counter, so more "
+                        + $"than these {dropped} may have been refused. " + why;
+                default:
+                    return dropped > 0
+                        ? $"{dropped} more ran but were never recorded: the profiler tracks at most "
+                            + $"{k_NativeTrackedRequestCap} requests at once."
+                        : string.Empty;
+            }
         }
 
         // Nearest-rank percentile: interpolating between neighbours would imply more precision than a
@@ -739,9 +834,9 @@ namespace UnityEditor.Networking
         {
             var hasSelection = index >= 0 && index < m_Rows.Count;
 
-            m_InspectorEmpty.style.display = hasSelection ? DisplayStyle.None : DisplayStyle.Flex;
+            SetDisplayed(m_InspectorEmpty, !hasSelection);
             // The TabView owns each tab's content, so this one toggle covers all of them.
-            m_Tabs.style.display = hasSelection ? DisplayStyle.Flex : DisplayStyle.None;
+            SetDisplayed(m_Tabs, hasSelection);
 
             if (!hasSelection)
                 return;
@@ -761,18 +856,97 @@ namespace UnityEditor.Networking
 
             PopulateHeaders(m_ResponseHeaders, record, WebRequestProfilerHeaderKind.Response);
             PopulateHeaders(m_RequestHeaders, record, WebRequestProfilerHeaderKind.Request);
-
             PopulateHeaders(m_RequestWireHeaders, record, WebRequestProfilerHeaderKind.RequestWire,
                 "Not captured. The headers sent are only recorded on supported platforms, and are "
                 + "unavailable if the request failed before anything went out.");
-            PopulateQueryParameters(m_QueryParameters, record);
-            PopulateBody(m_RequestPayloadEmpty, m_RequestPayloadText, record, record.requestBody);
-            PopulateBody(m_ResponseBodyEmpty, m_ResponseBodyText, record, record.responseBody);
+
+            m_SelectedUrl = record.url;
+
+            var showQuery = ShouldShowQueryParameters(record.url);
+            var showPayload = ShouldShowRequestPayload(record.requestBody);
+            SetDisplayed(m_QueryParameters, showQuery);
+            SetDisplayed(m_RequestPayload, showPayload);
+            SetTabVisible(m_PayloadTab, showQuery || showPayload);
+
+            if (showQuery)
+                PopulateQueryParameters(record);
+
+            PopulateBody(m_RequestPayloadStatus, m_RequestPayloadText, m_RequestPayloadTree,
+                m_RequestPayloadSource, m_RequestPayloadCopy, record, record.requestBody, m_RequestPayloadShowSource);
+
+            PopulateBody(m_ResponseBodyStatus, m_ResponseBodyText, m_ResponseBodyTree,
+                null, m_ResponseBodyCopy, record, record.responseBody, showSource: false);
             PopulateTiming(record);
         }
 
+        static TreeView SetUpBodyTree(VisualElement view, string treeName)
+        {
+            var tree = view.Q<TreeView>(treeName);
+            tree.selectionType = SelectionType.None;
+            tree.focusable = false;
+            tree.makeItem = () =>
+            {
+                var label = CapturedTextLabel();
+                label.AddToClassList("web-request-details-view__body-tree-row");
+                return label;
+            };
+            tree.bindItem = (element, index) =>
+                ((Label)element).text = tree.GetItemDataForIndex<WebRequestProfilerJsonNode>(index).label;
+            tree.itemExpandedChanged += _ => FitTreeToContent(tree);
+            return tree;
+        }
+
+        static void FitTreeToContent(TreeView tree)
+        {
+            var visibleRows = tree.viewController?.itemsSource?.Count ?? 0;
+            tree.style.height = visibleRows * tree.fixedItemHeight;
+        }
+
+        static Label CapturedTextLabel(string text = null)
+        {
+            var label = new Label(text);
+            label.enableRichText = false;
+            return label;
+        }
+
+        void SetTabVisible(Tab tab, bool visible)
+        {
+            if (!visible && m_Tabs.activeTab == tab)
+                m_Tabs.activeTab = m_HeadersTab;
+
+            SetDisplayed(tab, visible);
+            SetDisplayed(tab.tabHeader, visible);
+        }
+
+        static void SetDisplayed(VisualElement element, bool displayed)
+        {
+            element.EnableInClassList(k_HiddenClass, !displayed);
+        }
+
+        UnityEngine.UIElements.Button SetUpSourceButton(VisualElement view, string buttonName, Action toggle)
+        {
+            var button = view.Q<UnityEngine.UIElements.Button>(buttonName);
+            button.clicked += () =>
+            {
+                toggle();
+                UpdateInspector(m_ListView.selectedIndex);
+            };
+            return button;
+        }
+
+        internal static bool ShouldShowQueryParameters(string url) => WebRequestProfilerUrl.ParseQueryParameters(url).Count > 0;
+
+        internal static bool ShouldShowRequestPayload(in WebRequestProfilerBody body) =>
+            !(body.captured && body.totalLength == 0);
+
+        internal static bool AcceptIncompleteTree(bool incomplete, bool isTruncated) =>
+            !incomplete || isTruncated;
+
+        internal static bool ShouldShowPayloadTab(string url, in WebRequestProfilerBody requestBody) =>
+            ShouldShowQueryParameters(url) || ShouldShowRequestPayload(requestBody);
+
         // Copies what the box shows, so a truncated body copies the part that exists.
-        static void SetUpCopyButton(VisualElement view, string buttonName, Func<string> textToCopy)
+        static UnityEngine.UIElements.Button SetUpCopyButton(VisualElement view, string buttonName, Func<string> textToCopy)
         {
             // Qualified: UnityEditorInternal has a Button too, and this file uses both namespaces.
             var button = view.Q<UnityEngine.UIElements.Button>(buttonName);
@@ -782,87 +956,97 @@ namespace UnityEditor.Networking
                 if (!string.IsNullOrEmpty(text))
                     EditorGUIUtility.systemCopyBuffer = text;
             };
+            return button;
         }
 
-        // Parsed rather than captured: the url is already on the record, so this half of the Payload
-        // tab needs no captured body.
-        internal static List<KeyValuePair<string, string>> ParseQueryParameters(string url)
+
+        void PopulateQueryParameters(WebRequestProfilerRecord record)
         {
-            var parameters = new List<KeyValuePair<string, string>>();
-            if (string.IsNullOrEmpty(url))
-                return parameters;
+            var raw = WebRequestProfilerUrl.RawQueryString(record.url);
+            m_QueryParametersCopy.SetEnabled(raw.Length > 0);
+            m_QueryParametersSource.text = m_QueryParametersShowSource ? "View Parsed" : "View Source";
+            m_QueryParametersText.SetValueWithoutNotify(raw);
+            SetDisplayed(m_QueryParametersText, m_QueryParametersShowSource);
+            SetDisplayed(m_QueryParameterRows, !m_QueryParametersShowSource);
 
-            // Fragment first: a '?' inside one starts no query, so host/path#section?example has none.
-            var fragment = url.IndexOf('#');
-            if (fragment >= 0)
-                url = url.Substring(0, fragment);
+            if (m_QueryParametersShowSource)
+                return;
 
-            var query = url.IndexOf('?');
-            if (query < 0)
-                return parameters;
-
-            foreach (var pair in url.Substring(query + 1).Split('&'))
-            {
-                if (pair.Length == 0)
-                    continue;
-
-                var equals = pair.IndexOf('=');
-                var name = equals >= 0 ? pair.Substring(0, equals) : pair;
-                var value = equals >= 0 ? pair.Substring(equals + 1) : string.Empty;
-
-                // Decoded, which is what the parameter means; General above has the raw url. Invalid
-                // escaping is shown as it stands rather than throwing into the view.
-                parameters.Add(new KeyValuePair<string, string>(Unescape(name), Unescape(value)));
-            }
-
-            return parameters;
+            PopulateQueryParameterRows(m_QueryParameterRows, record);
         }
 
-        static string Unescape(string text)
+        internal static void PopulateQueryParameterRows(VisualElement rows, WebRequestProfilerRecord record)
         {
-            try
-            {
-                return Uri.UnescapeDataString(text);
-            }
-            catch (UriFormatException)
-            {
-                return text;
-            }
-        }
+            rows.Clear();
 
-        internal static void PopulateQueryParameters(Foldout foldout, WebRequestProfilerRecord record)
-        {
-            foldout.Clear();
-
-            var parameters = ParseQueryParameters(record.url);
-            foreach (var parameter in parameters)
+            foreach (var parameter in WebRequestProfilerUrl.ParseQueryParameters(record.url))
             {
                 var field = new VisualElement();
                 field.AddToClassList("web-request-details-view__field");
 
-                var nameLabel = new Label(parameter.Key);
+                var nameLabel = CapturedTextLabel(parameter.Key);
                 nameLabel.AddToClassList("web-request-details-view__field-label");
 
-                var valueLabel = new Label(parameter.Value);
+                var valueLabel = CapturedTextLabel(parameter.Value);
                 valueLabel.AddToClassList("web-request-details-view__field-value");
                 valueLabel.selection.isSelectable = true;
 
                 field.Add(nameLabel);
                 field.Add(valueLabel);
-                foldout.Add(field);
-            }
-
-            if (parameters.Count == 0)
-            {
-                var empty = new Label("This request's URL has no query string.");
-                empty.AddToClassList("web-request-details-view__inspector-empty");
-                foldout.Add(empty);
+                rows.Add(field);
             }
         }
 
-        // Captured, never captured, or skipped by the type gate. Only the first has text.
-        static void PopulateBody(Label empty, TextField text, WebRequestProfilerRecord record,
-            in WebRequestProfilerBody body)
+        readonly struct BodyViewKey : IEquatable<BodyViewKey>
+        {
+            readonly ulong m_RequestId;
+            readonly WebRequestProfilerState m_State;
+            readonly WebRequestProfilerBodyCapture m_BodyCapture;
+            readonly string m_Text;
+            readonly string m_ContentType;
+            readonly ulong m_TotalLength;
+            readonly uint m_CapturedLength;
+            readonly WebRequestProfilerBodyFlags m_Flags;
+            readonly bool m_Captured;
+            readonly bool m_ShowSource;
+
+            public BodyViewKey(WebRequestProfilerRecord record, in WebRequestProfilerBody body, bool showSource)
+            {
+                m_RequestId = record.requestId;
+                m_State = record.state;
+                m_BodyCapture = record.bodyCapture;
+                m_Text = body.text;
+                m_ContentType = body.contentType;
+                m_TotalLength = body.totalLength;
+                m_CapturedLength = body.capturedLength;
+                m_Flags = body.flags;
+                m_Captured = body.captured;
+                m_ShowSource = showSource;
+            }
+
+            public bool Equals(BodyViewKey other) =>
+                m_RequestId == other.m_RequestId && m_State == other.m_State
+                && m_BodyCapture == other.m_BodyCapture && ReferenceEquals(m_Text, other.m_Text)
+                && m_ContentType == other.m_ContentType && m_TotalLength == other.m_TotalLength
+                && m_CapturedLength == other.m_CapturedLength && m_Flags == other.m_Flags
+                && m_Captured == other.m_Captured && m_ShowSource == other.m_ShowSource;
+
+            public override bool Equals(object obj) => obj is BodyViewKey other && Equals(other);
+            public override int GetHashCode() => (int)m_RequestId;
+        }
+
+        internal enum BodyState
+        {
+            Text,
+            Binary,
+            Empty,
+            InFlight,
+            TransportCannotReport,
+            NothingSent,
+            CaptureOff,
+        }
+
+        internal static BodyState ClassifyBody(WebRequestProfilerRecord record, in WebRequestProfilerBody body)
         {
             if (!body.captured)
             {
@@ -870,56 +1054,129 @@ namespace UnityEditor.Networking
                 var supported = (record.bodyCapture & WebRequestProfilerBodyCapture.Supported) != 0;
 
                 if (known && !supported)
-                {
-                    // Once a transport has answered, a request still running on it will never produce a
-                    // body. Before that, Supported is clear only because nothing has been asked.
-                    empty.text = "Not captured: the transport that ran this request cannot report bodies.";
-                }
-                else if (record.state == WebRequestProfilerState.InFlight)
-                {
-                    empty.text = "Bodies are recorded when a request finishes.";
-                }
-                else if (!known)
-                {
-                    empty.text = "Not captured: nothing was sent for this request, so there is no body to record.";
-                }
-                else
-                {
-                    empty.text = "Not captured: this capture was recorded with body capture turned off.";
-                }
-                empty.style.display = DisplayStyle.Flex;
-                text.style.display = DisplayStyle.None;
-                text.SetValueWithoutNotify(string.Empty);
-                return;
+                    return BodyState.TransportCannotReport;
+                if (record.state == WebRequestProfilerState.InFlight)
+                    return BodyState.InFlight;
+                return known ? BodyState.CaptureOff : BodyState.NothingSent;
             }
 
             if (body.IsBinary)
+                return BodyState.Binary;
+
+            return body.totalLength == 0 ? BodyState.Empty : BodyState.Text;
+        }
+
+        internal static string BodyStatusText(BodyState state, in WebRequestProfilerBody body)
+        {
+            switch (state)
             {
-                empty.text = $"Not captured (binary). {WebRequestProfilerFormatting.FormatBytes(body.totalLength)} of a content type that is not text.";
-                empty.style.display = DisplayStyle.Flex;
-                text.style.display = DisplayStyle.None;
+                case BodyState.TransportCannotReport:
+                    return "Not captured: the transport that ran this request cannot report bodies.";
+                case BodyState.InFlight:
+                    return "Bodies are recorded when a request finishes.";
+                case BodyState.NothingSent:
+                    return "Not captured: nothing was sent for this request, so there is no body to record.";
+                case BodyState.CaptureOff:
+                    return "Not captured: this capture was recorded with body capture turned off.";
+                case BodyState.Binary:
+                    return $"Not captured: binary content ({WebRequestProfilerFormatting.FormatBytes(body.totalLength)}). Only text bodies are shown.";
+                case BodyState.Empty:
+                    return "The body is empty.";
+                default:
+                    return string.Empty;
+            }
+        }
+
+        internal static bool CanCopyBody(BodyState state, string text) =>
+            state == BodyState.Text && !string.IsNullOrEmpty(text);
+
+        static void SetStatus(Label status, string text)
+        {
+            status.text = text;
+            SetDisplayed(status, !string.IsNullOrEmpty(text));
+        }
+
+        // The status line says why there is no body, or what is off about the one shown. The body
+        // fields only ever hold a body.
+        static void PopulateBody(Label status, TextField text, TreeView tree,
+            UnityEngine.UIElements.Button source, UnityEngine.UIElements.Button copy,
+            WebRequestProfilerRecord record, in WebRequestProfilerBody body, bool showSource)
+        {
+            var key = new BodyViewKey(record, body, showSource);
+            if (tree.userData is BodyViewKey shown && shown.Equals(key))
+                return;
+
+            tree.userData = key;
+
+            if (source != null)
+                SetDisplayed(source, false);
+
+            SetDisplayed(tree, false);
+            tree.SetRootItems(new List<TreeViewItemData<WebRequestProfilerJsonNode>>());
+            tree.Rebuild();
+
+            var state = ClassifyBody(record, body);
+            copy.SetEnabled(CanCopyBody(state, body.text));
+            if (state != BodyState.Text)
+            {
+                SetStatus(status, BodyStatusText(state, body));
+                SetDisplayed(text, false);
                 text.SetValueWithoutNotify(string.Empty);
                 return;
             }
 
-            if (body.totalLength == 0)
-            {
-                empty.text = "This request carried no body.";
-                empty.style.display = DisplayStyle.Flex;
-                text.style.display = DisplayStyle.None;
-                text.SetValueWithoutNotify(string.Empty);
-                return;
-            }
+            // Set even when the tree is what gets shown: Copy reads this field, and it is what View
+            // Source swaps to without having to re-decode anything.
+            text.SetValueWithoutNotify(body.text);
 
             // Both figures are bytes, which is what the cap counts; the decoded string's length would
             // be UTF-16 code units.
-            empty.text = body.IsTruncated
+            var note = body.IsTruncated
                 ? $"Showing the first {WebRequestProfilerFormatting.FormatBytes(body.capturedLength)} of {WebRequestProfilerFormatting.FormatBytes(body.totalLength)}."
                 : string.Empty;
-            empty.style.display = body.IsTruncated ? DisplayStyle.Flex : DisplayStyle.None;
 
-            text.style.display = DisplayStyle.Flex;
-            text.SetValueWithoutNotify(body.text);
+            var claimsJson = WebRequestProfilerJsonTree.IsJsonContentType(body.contentType);
+
+            List<TreeViewItemData<WebRequestProfilerJsonNode>> roots = null;
+            var incomplete = false;
+            var parsed = claimsJson
+                && WebRequestProfilerJsonTree.TryBuild(body.text, out roots, out incomplete)
+                && AcceptIncompleteTree(incomplete, body.IsTruncated);
+
+            if (parsed && source != null)
+            {
+                SetDisplayed(source, true);
+                source.text = showSource ? "View Parsed" : "View Source";
+            }
+
+            if (parsed && !showSource)
+            {
+                if (incomplete)
+                {
+                    note = body.IsTruncated
+                        ? note + " The structure is incomplete."
+                        : "The body ended mid-structure, so this tree is incomplete.";
+                }
+
+                SetStatus(status, note);
+                SetDisplayed(text, false);
+                tree.SetRootItems(roots);
+                tree.Rebuild();
+                tree.ExpandAll();
+                FitTreeToContent(tree);
+                SetDisplayed(tree, true);
+                return;
+            }
+
+            if (claimsJson && !parsed)
+            {
+                note = string.IsNullOrEmpty(note)
+                    ? "The body is not valid JSON. Showing the raw body."
+                    : note + " The body is not valid JSON. Showing the raw body.";
+            }
+
+            SetStatus(status, note);
+            SetDisplayed(text, true);
         }
 
         internal static void PopulateHeaders(Foldout foldout, WebRequestProfilerRecord record,
@@ -941,10 +1198,10 @@ namespace UnityEditor.Networking
                     var field = new VisualElement();
                     field.AddToClassList("web-request-details-view__field");
 
-                    var name = new Label(header.name);
+                    var name = CapturedTextLabel(header.name);
                     name.AddToClassList("web-request-details-view__field-label");
 
-                    var value = new Label(header.value);
+                    var value = CapturedTextLabel(header.value);
                     value.AddToClassList("web-request-details-view__field-value");
                     value.selection.isSelectable = true;
 
@@ -998,14 +1255,14 @@ namespace UnityEditor.Networking
 
             if (!record.hasTimings)
             {
-                m_TimingEmpty.style.display = DisplayStyle.Flex;
+                SetDisplayed(m_TimingEmpty, true);
                 m_TimingEmpty.text = record.state == WebRequestProfilerState.InFlight
                     ? "Timings are measured when the request finishes."
                     : "This request's transport does not measure per-phase timings.";
                 return;
             }
 
-            m_TimingEmpty.style.display = DisplayStyle.None;
+            SetDisplayed(m_TimingEmpty, false);
 
             var timings = record.timings;
 
@@ -1176,20 +1433,15 @@ namespace UnityEditor.Networking
             return spans;
         }
 
-        // start and fraction are both of the request's total duration, so the bars lay out as a
-        // waterfall: each one begins where the phase before it ended. Width alone would left-align every
-        // phase and lose the only thing the view is for - when each one happened.
-        // A phase shorter than a pixel of track still has to be visible - a request whose queueing took
-        // half a millisecond out of half a second is a real phase, and rounding it to nothing is how the
-        // tab loses the small ones. Two pixels reads as a deliberate hairline rather than an artefact.
-        const float k_MinPhaseBarPx = 2f;
-
         // The track's own width is not known until layout, so this is the fraction of it a hairline may
         // need. Reserving it keeps a bar that starts near the end from being clipped away entirely by
         // the track's overflow, at the cost of placing the very last sliver slightly early - which is a
         // better trade than drawing nothing.
         const float k_MaxPhaseStart = 0.98f;
 
+        // start and fraction are both of the request's total duration, so the bars lay out as a
+        // waterfall: each one begins where the phase before it ended. Width alone would left-align every
+        // phase and lose the only thing the view is for - when each one happened.
         static VisualElement MakePhaseRow(string label, string modifier, string value, float start, float fraction,
             bool hasBar)
         {
@@ -1218,7 +1470,6 @@ namespace UnityEditor.Networking
                 var width = Mathf.Clamp(fraction, 0f, 1f - left);
                 fill.style.left = Length.Percent(left * 100f);
                 fill.style.width = Length.Percent(width * 100f);
-                fill.style.minWidth = k_MinPhaseBarPx;
                 bar.Add(fill);
             }
 

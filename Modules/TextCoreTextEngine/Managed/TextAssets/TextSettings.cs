@@ -157,15 +157,13 @@ namespace UnityEngine.TextCore.Text
         // [SerializeField]
         // private bool m_GetFontFeaturesAtRuntime = true;
 
-        /// <summary>
-        /// Determines if the "Clear Dynamic Data on Build" property will be set to true or false on newly created dynamic font assets.
-        /// </summary>
+        [Obsolete("Has no effect. Set dynamicDataPersistence on each FontAsset instead.")]
         public bool clearDynamicDataOnBuild
         {
             get => m_ClearDynamicDataOnBuild;
             set => m_ClearDynamicDataOnBuild = value;
         }
-        [SerializeField]
+        [Obsolete("Has no effect."), SerializeField, HideInInspector]
         protected bool m_ClearDynamicDataOnBuild = true;
 
         [SerializeField]

@@ -46,8 +46,6 @@ namespace UnityEngine
         [VisibleToOtherModules("UnityEngine.UIElementsModule")]
         internal bool isCompositionActive;
 
-        bool m_UpdateImeWindowPosition;
-
         [VisibleToOtherModules("UnityEngine.IMGUIModule")]
         internal Action OnTextChanged;
 
@@ -201,10 +199,7 @@ namespace UnityEngine
             if (compositionString.Length > 0)
             {
                 if (!isCompositionActive)
-                {
-                    m_UpdateImeWindowPosition = true;
                     ReplaceSelection(string.Empty);
-                }
 
                 isCompositionActive = true;
             }
@@ -214,21 +209,6 @@ namespace UnityEngine
             }
 
             return wasCompositionActive != isCompositionActive;
-        }
-
-        public bool ShouldUpdateImeWindowPosition()
-        {
-            return m_UpdateImeWindowPosition;
-        }
-
-        public Vector2 GetCurrentCursorPosition()
-        {
-            if (useAdvancedText)
-            {
-               return textHandle.PixelsToPoints(TextSelectionService.GetCursorPositionFromCursorIndex(nativeTgi));
-            }
-
-            return textHandle.GetCursorPositionFromStringIndexUsingCharacterHeight(cursorIndex, true);
         }
 
         public string GeneratePreviewString(bool richText, string compositionString)

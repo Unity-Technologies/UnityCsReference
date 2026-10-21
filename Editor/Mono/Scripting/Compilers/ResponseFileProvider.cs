@@ -45,7 +45,7 @@ namespace UnityEditor.Scripting.Compilers
             return result;
         }
 
-        protected string GetCompilerSpecific(string path)
+        protected internal string GetCompilerSpecific(string path)
         {
             if (string.IsNullOrEmpty(path))
             {
@@ -62,7 +62,7 @@ namespace UnityEditor.Scripting.Compilers
             return null;
         }
 
-        protected string GetDefaultResponseFiles()
+        protected internal string GetDefaultResponseFiles()
         {
             var rootResponseFilePath = AssetPath.Combine(ProjectPath, k_AssetsFolder, ResponseFileName);
             if (File.Exists(rootResponseFilePath))

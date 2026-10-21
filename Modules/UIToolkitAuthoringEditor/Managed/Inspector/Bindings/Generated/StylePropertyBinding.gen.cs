@@ -825,9 +825,28 @@ namespace Unity.UIToolkit.Editor
             targetElement.UnregisterCallback<PropertyChangedEvent, CallbackContext>(binding.ProcessChange);
         }
 
+        internal static Dimension.Unit GetFloatUnit(StylePropertyId id)
+        {
+            switch (id)
+            {
+                case StylePropertyId.BorderBottomWidth:
+                case StylePropertyId.BorderLeftWidth:
+                case StylePropertyId.BorderRightWidth:
+                case StylePropertyId.BorderTopWidth:
+                case StylePropertyId.UnitySliceScale:
+                case StylePropertyId.UnityTextOutlineWidth:
+                    return Dimension.Unit.Pixel;
+                case StylePropertyId.AnimationDelay:
+                case StylePropertyId.AnimationDuration:
+                    return Dimension.Unit.Second;
+                default:
+                    return Dimension.Unit.Unitless;
+            }
+        }
+
         internal static void SetFloatList(StyleProperty property, StyleSheet sheet, List<float> value)
         {
-            property.SetFloatList(sheet, value);
+            WriteFloatList(property, sheet, value);
         }
 
         internal static void SetFloatList(StyleProperty property, StyleSheet sheet, StyleList<float> styleValue)
@@ -957,7 +976,7 @@ namespace Unity.UIToolkit.Editor
 
         internal static void SetFloat(StyleProperty property, StyleSheet sheet, float value)
         {
-            property.SetFloat(sheet, value);
+            WriteFloat(property, sheet, value);
         }
 
         internal static void SetFloat(StyleProperty property, StyleSheet sheet, StyleFloat styleValue)

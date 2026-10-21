@@ -123,14 +123,14 @@ namespace Unity.ProjectAuditor.Editor.UI
             new Step
             {
                 Title = L10n.Tr("Create URP asset", null),
-                Heading = L10n.TextContent("Unity will now assign a Render Pipeline asset as your project's default, creating one if needed.", null, null, null),
+                Heading = L10n.TextContent("Unity will now assign Render Pipeline assets to your project.", null, null, null),
                 Contents =
                 [
-                    L10n.TextContent("Create URP Asset", "Create the Render Pipeline Asset and assign it as the project's default.", null, null),
+                    L10n.TextContent("Create URP Asset", "Create the Render Pipeline Assets and assign them to your project.", null, null),
                     L10n.TextContent("Create URP Asset", $"Please install the rules package before starting migration ({ProjectAuditorRulesPackage.Name}).", null, null),
                 ],
 
-                IsComplete = (_) => MigrationToURPUtilities.DefaultRenderPipelineMatchesTargetPipeline(SelectedTargetPipeline),
+                IsComplete = (_) => MigrationToURPUtilities.IsProjectFullyOnUrp(SelectedTargetPipeline),
 
                 DrawUI = () =>
                 {
@@ -143,7 +143,7 @@ namespace Unity.ProjectAuditor.Editor.UI
                 {
                     if (CenteredButton(enabled ? step.Contents[0] : step.Contents[1]))
                     {
-                        MigrationToURPUtilities.EnsureDefaultRenderPipelineAsset(SelectedTargetPipeline);
+                        MigrationToURPUtilities.ApplyTargetPipelineToQualitySettings(SelectedTargetPipeline);
                         GUIUtility.ExitGUI();
                     }
 
@@ -279,7 +279,7 @@ namespace Unity.ProjectAuditor.Editor.UI
 
                         using (new EditorGUI.DisabledScope(window.m_ViewManager.HasPendingCategories() || m_ConverterRunning))
                         {
-                            if (CenteredButton(buttonLabel))
+                            if (CenteredButton(buttonLabel) && HomePage.ConfirmDiscardCurrentReport())
                             {
                                 window.Analyze(k_ProjectAreaFlags, k_CodeAnalysisFlags, PageId.None, SelectedTargetPipeline);
                                 GUIUtility.ExitGUI();
@@ -568,10 +568,10 @@ namespace Unity.ProjectAuditor.Editor.UI
 
         void DrawRenderPipelineUI()
         {
-            var currentName = MigrationToURPUtilities.GetDefaultRenderPipelineDisplayName();
-            DrawInfoRow(Contents.CurrentRenderPipeline, string.IsNullOrEmpty(currentName) ? Contents.BuiltIn : currentName);
+            var currentName = MigrationToURPUtilities.GetCurrentRenderPipelineDisplayName();
+            DrawInfoRow(Contents.CurrentRenderPipeline, currentName);
             GUILayout.Space(4);
-            DrawInfoRow(Contents.TargetRenderPipeline, Contents.URP);
+            DrawInfoRow(Contents.TargetRenderPipeline, MigrationToURPUtilities.Contents.URP);
             GUILayout.Space(32);
         }
 
@@ -743,10 +743,6 @@ namespace Unity.ProjectAuditor.Editor.UI
 
             public static readonly string ReportUnavailableHDRP = L10n.Tr("The Migration analysis report is available only for projects migrating from the Built-in Render Pipeline. Your project uses the High Definition Render Pipeline.", null);
             public static readonly string ReportUnavailableCustomSRP = L10n.Tr("The Migration analysis report is available only for projects migrating from the Built-in Render Pipeline. Your project uses a custom Render Pipeline.", null);
-
-            public static readonly string URP = L10n.Tr("Universal Render Pipeline", null);
-            public static readonly string HDRP = L10n.Tr("High Definition Render Pipeline", null);
-            public static readonly string BuiltIn = L10n.Tr("Built-in Render Pipeline", null);
 
             public static readonly string[] TargetPipelineDisplayNames =
             {

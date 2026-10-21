@@ -22,6 +22,15 @@ namespace UnityEditor.UIElements
             public GridTrackSize track = GridTrackSize.Fraction(1);
             public GridTemplateRepeatMode mode = GridTemplateRepeatMode.None;
             public int count = 2;
+
+            public GridTrackSize emittedTrack => mode switch
+            {
+                GridTemplateRepeatMode.AutoFill => GridTrackSize.RepeatAutoFill(track),
+                GridTemplateRepeatMode.AutoFit => GridTrackSize.RepeatAutoFit(track),
+                _ => track
+            };
+
+            public int emittedCount => mode == GridTemplateRepeatMode.Count ? Math.Max(1, count) : 1;
         }
 
         readonly List<Entry> m_Entries = new();
@@ -192,12 +201,18 @@ namespace UnityEditor.UIElements
             Notify();
         }
 
-        public void SetTracks(List<GridTrackSize> tracks)
+        public void SetTracks(List<GridTrackSize> tracks) => SetTracks(tracks != null ? tracks.ToArray() : default);
+
+        // Pass preserveRepeatRows false for another element's tracks, so an equal-flattening repeat row isn't kept.
+        public void SetTracks(ReadOnlySpan<GridTrackSize> tracks, bool preserveRepeatRows = true)
         {
+            if (Matches(tracks) && (preserveRepeatRows || !HasRepeatCountEntry()))
+                return;
+
             m_Notify = false;
             try
             {
-                if (tracks == null || tracks.Count == 0)
+                if (tracks.IsEmpty)
                 {
                     // Unset: keep a single editable row instead of the "List is empty" state.
                     m_Placeholder = true;
@@ -215,6 +230,31 @@ namespace UnityEditor.UIElements
             {
                 m_Notify = true;
             }
+        }
+
+        // Non-allocating equivalent of ToList().SequenceEqual(tracks).
+        bool Matches(ReadOnlySpan<GridTrackSize> tracks)
+        {
+            if (m_Placeholder)
+                return tracks.IsEmpty;
+
+            int i = 0;
+            foreach (var e in m_Entries)
+            {
+                var track = e.emittedTrack;
+                for (int k = e.emittedCount; k > 0; --k)
+                    if (i >= tracks.Length || !tracks[i++].Equals(track))
+                        return false;
+            }
+            return i == tracks.Length;
+        }
+
+        bool HasRepeatCountEntry()
+        {
+            foreach (var e in m_Entries)
+                if (e.mode == GridTemplateRepeatMode.Count)
+                    return true;
+            return false;
         }
 
         void RefreshView()
@@ -251,31 +291,16 @@ namespace UnityEditor.UIElements
                 return list; // unset -> empty value, clears the inline style
             foreach (var e in m_Entries)
             {
-                switch (e.mode)
-                {
-                    case GridTemplateRepeatMode.AutoFill:
-                        list.Add(GridTrackSize.RepeatAutoFill(e.track));
-                        break;
-                    case GridTemplateRepeatMode.AutoFit:
-                        list.Add(GridTrackSize.RepeatAutoFit(e.track));
-                        break;
-                    case GridTemplateRepeatMode.Count:
-                        for (int i = 0; i < Math.Max(1, e.count); ++i)
-                            list.Add(e.track);
-                        break;
-                    default:
-                        list.Add(e.track);
-                        break;
-                }
+                var track = e.emittedTrack;
+                for (int k = e.emittedCount; k > 0; --k)
+                    list.Add(track);
             }
             return list;
         }
 
-        void Reconstruct(List<GridTrackSize> tracks)
+        void Reconstruct(ReadOnlySpan<GridTrackSize> tracks)
         {
             m_Entries.Clear();
-            if (tracks == null)
-                return;
 
             // Each track is its own row; auto-fill / auto-fit map to a single repeat row. Identical
             // consecutive tracks are NOT auto-merged into a repeat(count) row (that is created explicitly

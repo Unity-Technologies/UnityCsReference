@@ -3432,6 +3432,16 @@ namespace Unity.U2D.Physics
         public readonly int awakeBodyCount => PhysicsWorld_GetAwakeBodyCount(this);
 
         /// <summary>
+        /// Get the number of distinct callback targets held by the bodies, chains, shapes and joints in the world.
+        /// Objects that share the same callback target object count it once, however many of them there are.
+        /// </summary>
+        /// <remarks>
+        /// See <see cref="PhysicsBody.callbackTarget"/>, <see cref="PhysicsChain.callbackTarget"/>, <see cref="PhysicsShape.callbackTarget"/> and <see cref="PhysicsJoint.callbackTarget"/>.
+        /// A callback target set on a shape or joint that is destroyed along with its body, or on a chain segment destroyed along with its chain, can still be counted until the world reuses that object's handle or the world is destroyed.
+        /// </remarks>
+        public readonly int callbackTargetCount => PhysicsWorld_GetCallbackTargetCount(this);
+
+        /// <summary>
         /// Get the world counters.
         /// </summary>
         public readonly WorldCounters counters => PhysicsWorld_GetCounters(this);

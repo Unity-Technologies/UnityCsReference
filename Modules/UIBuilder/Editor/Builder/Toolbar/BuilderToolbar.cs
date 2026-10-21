@@ -700,6 +700,9 @@ namespace Unity.UI.Builder
             m_CanvasThemeMenu.style.display = editingThemeStyleSheet ? DisplayStyle.None : DisplayStyle.Flex;
             if (editingThemeStyleSheet)
                 m_ResetThemeButton.style.display = DisplayStyle.None;
+
+            if (!isInit)
+                ApplyPreviewThemeToOtherWindows();
         }
 
         internal void ResetThemeToProjectSettings()
@@ -708,6 +711,16 @@ namespace Unity.UI.Builder
             ThemeUtility.ClearThemeOverrides();
             InitCanvasTheme(); // Refresh the current theme
             UpdateResetThemeButtonState();
+            ApplyPreviewThemeToOtherWindows();
+        }
+
+        void ApplyPreviewThemeToOtherWindows()
+        {
+            foreach (var builder in Resources.FindObjectsOfTypeAll<Builder>())
+            {
+                if (builder != m_PaneWindow)
+                    builder.toolbar?.InitCanvasTheme();
+            }
         }
 
         void UpdateResetThemeButtonState()

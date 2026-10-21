@@ -216,6 +216,19 @@ namespace Unity.Hierarchy.Editor
             HierarchyWindowManager.UnregisterNodeTypeHandler<T>();
 
         /// <summary>
+        /// Gets the stage <paramref name="hierarchy"/> shows, or the current stage for a hierarchy that no Hierarchy window shares.
+        /// </summary>
+        /// <remarks>
+        /// Node type handlers must use this instead of the current stage, because a stage's hierarchy can be created while another stage is current.
+        /// </remarks>
+        /// <param name="hierarchy">The hierarchy of a node type handler.</param>
+        /// <returns>The stage.</returns>
+        [VisibleToOtherModules]
+        internal static Stage GetStage(Hierarchy hierarchy) => HierarchyStageStack.GetStage(hierarchy);
+
+        internal static Stage GetStage(IntPtr hierarchyHandlePtr) => GetStage(Hierarchy.FromIntPtr(hierarchyHandlePtr));
+
+        /// <summary>
         /// Creates a new <see cref="HierarchyWindow"/>.
         /// </summary>
         public HierarchyWindow()

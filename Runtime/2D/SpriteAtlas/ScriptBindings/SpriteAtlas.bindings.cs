@@ -136,7 +136,7 @@ namespace UnityEngine.U2D
         public int GetSprites(Sprite[] sprites) { return GetSpritesScripting(sprites); }
         public int GetSprites(Sprite[] sprites, string name) {  return GetSpritesWithNameScripting(sprites, name); }
 
-        extern private int GetSpritesScripting([UnityMarshalAs(NativeType.ScriptingObjectPtr)] Sprite[] sprites);
-        extern private int GetSpritesWithNameScripting([UnityMarshalAs(NativeType.ScriptingObjectPtr)] Sprite[] sprites, string name);
+        extern private int GetSpritesScripting([NotNull][UnityMarshalAs(NativeType.ScriptingObjectPtr)] Sprite[] sprites);
+        extern private int GetSpritesWithNameScripting([NotNull][UnityMarshalAs(NativeType.ScriptingObjectPtr)] Sprite[] sprites, string name);
     }
 }

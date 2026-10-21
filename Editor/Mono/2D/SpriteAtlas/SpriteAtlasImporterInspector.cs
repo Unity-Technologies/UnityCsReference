@@ -86,6 +86,10 @@ namespace UnityEditor.U2D
             public readonly int packableSelectorHash = "PackableSelector".GetHashCode();
 
             public readonly string swapObjectRegisterUndo = L10n.Tr("Swap Packable", null);
+            public readonly string platformSettingsRegisterUndo = L10n.Tr("Sprite Atlas Platform Settings", null);
+            public readonly string secondaryColorSpaceRegisterUndo = L10n.Tr("Secondary Texture sRGB", null);
+            public readonly string deleteSecondarySettingsRegisterUndo = L10n.Tr("Delete Secondary Texture Settings", null);
+            public readonly string renameSecondarySettingsRegisterUndo = L10n.Tr("Rename Secondary Texture Settings", null);
             public readonly string secondaryTextureNameTextControlName = "secondary_texture_name_text_field";
             public readonly string defaultTextForSecondaryTextureName = L10n.Tr("(Matches the names of the Secondary Textures in your Sprites.)", null);
             public readonly string nameUniquenessWarning = L10n.Tr("Secondary Texture names must be unique within a Sprite or Sprite Atlas.", null);
@@ -319,6 +323,7 @@ namespace UnityEditor.U2D
         public override void OnEnable()
         {
             base.OnEnable();
+            Undo.undoRedoPerformed += OnUndoRedoPerformed;
             if (!AreImporterTargetsValid()) // asset gone: base already logged and bailed
                 return;
 
@@ -351,6 +356,36 @@ namespace UnityEditor.U2D
 
             m_AssetGUID = AssetDatabase.GUIDFromAssetPath(m_AssetPath);
             UpdateSpriteAtlasAssetSerializedObject();
+        }
+
+        public override void OnDisable()
+        {
+            Undo.undoRedoPerformed -= OnUndoRedoPerformed;
+            base.OnDisable();
+        }
+
+        // Platform settings are stored on the importer's native object and are not edited through
+        // SerializedProperties, so an Undo/Redo of them has to be picked up explicitly: the cached
+        // copies in m_TempPlatformSettings and the secondary texture name list are both stale by then.
+        private void OnUndoRedoPerformed()
+        {
+            if (!AreImporterTargetsValid())
+                return;
+
+            serializedObject.UpdateIfRequiredOrScript();
+
+            // Keep the dropdown on the same secondary texture if it survived the Undo/Redo.
+            var selectedName = secondaryTextureSelected ? m_PlatformSettingsOptions[m_SelectedPlatformSettings] : null;
+            PopulatePlatformSettingsOptions();
+            if (selectedName != null)
+            {
+                var index = m_PlatformSettingsOptions.IndexOf(selectedName);
+                if (index != -1)
+                    m_SelectedPlatformSettings = index;
+            }
+
+            SyncPlatformSettings();
+            Repaint();
         }
 
         private void UpdateSpriteAtlasAssetSerializedObject()
@@ -412,8 +447,19 @@ namespace UnityEditor.U2D
             }
         }
 
+        // Platform settings are written straight to the importer's native object instead of through
+        // SerializedProperties, so each such write has to record its own Undo entry. Pending property
+        // edits are flushed first so the snapshot does not roll them back along with the settings.
+        void RegisterPlatformSettingsUndo(string undoName)
+        {
+            serializedObject.ApplyModifiedProperties();
+            Undo.RegisterCompleteObjectUndo(spriteAtlasImporter, undoName);
+        }
+
         void RenameSecondaryPlatformSettings(string oldName, string newName)
         {
+            RegisterPlatformSettingsUndo(styles.renameSecondarySettingsRegisterUndo);
+
             spriteAtlasImporter.DeleteSecondaryPlatformSettings(oldName);
 
             var defaultPlatformSettings = m_TempPlatformSettings[TextureImporterInspector.s_DefaultPlatformName];
@@ -452,17 +498,18 @@ namespace UnityEditor.U2D
 
         protected override void Apply()
         {
-            if (HasModified())
+            var hasModified = HasModified();
+            if (hasModified && spriteAtlasAsset)
             {
-                if (spriteAtlasAsset)
-                {
-                    SpriteAtlasAsset.Save(spriteAtlasAsset, m_AssetPath);
-                    AssetDatabase.ImportAsset(m_AssetPath);
-                }
-
-                m_ContentHash = GetInspectorHash();
+                SpriteAtlasAsset.Save(spriteAtlasAsset, m_AssetPath);
+                AssetDatabase.ImportAsset(m_AssetPath);
             }
+
             base.Apply();
+
+            // Snapshot after base.Apply(), which flushes the importer's serialized properties.
+            if (hasModified)
+                UpdateContentHash();
         }
 
         protected override bool useAssetDrawPreview { get { return false; } }
@@ -501,7 +548,30 @@ namespace UnityEditor.U2D
 
         public override bool HasModified()
         {
-            return (base.HasModified() || m_ContentHash != GetInspectorHash());
+            // base.HasModified() flushes pending property edits, so it has to run before the Update()
+            // calls below. Both SerializedObjects must then be in sync with their native objects
+            // before hashing: HasModified() is also invoked from native (UpdateUnsavedChangesState,
+            // fired by RevertObject/UpdateSavedData) at a point where neither has been Update()d yet,
+            // and hashing the stale caches there reports the inspector as still dirty.
+            var baseModified = base.HasModified();
+            serializedObject.Update();
+            m_SerializedAssetObject?.Update();
+            return (baseModified || m_ContentHash != GetInspectorHash());
+        }
+
+        // Re-baselines the content hash and pushes the resulting state to hasUnsavedChanges. The
+        // explicit refresh is needed because the native UpdateSavedData/RevertObject callbacks
+        // evaluate HasModified() while m_ContentHash still describes the pre-apply/pre-revert state,
+        // so the flag they leave behind has to be recomputed once the baseline is up to date.
+        private void UpdateContentHash()
+        {
+            // Callers run after an apply/revert has already flushed pending edits, so syncing with
+            // the native objects here cannot drop user input, and the baseline must be taken from
+            // the synced state to match what HasModified() will hash.
+            serializedObject.Update();
+            m_SerializedAssetObject?.Update();
+            m_ContentHash = GetInspectorHash();
+            hasUnsavedChanges = HasModified();
         }
 
         private void ValidateMasterAtlas()
@@ -685,6 +755,7 @@ namespace UnityEditor.U2D
                     {
                         EditorGUI.EndEditingActiveTextField();
 
+                        RegisterPlatformSettingsUndo(styles.deleteSecondarySettingsRegisterUndo);
                         spriteAtlasImporter.DeleteSecondaryPlatformSettings(m_PlatformSettingsOptions[m_SelectedPlatformSettings]);
 
                         m_PlatformSettingsOptions.RemoveAt(m_SelectedPlatformSettings);
@@ -739,7 +810,10 @@ namespace UnityEditor.U2D
                         EditorGUI.BeginChangeCheck();
                         bool value = EditorGUILayout.Toggle(s_Styles.sRGBLabel, spriteAtlasImporter.GetSecondaryColorSpace(secondaryTextureName));
                         if (EditorGUI.EndChangeCheck())
+                        {
+                            RegisterPlatformSettingsUndo(styles.secondaryColorSpaceRegisterUndo);
                             spriteAtlasImporter.SetSecondaryColorSpace(secondaryTextureName, value);
+                        }
 
                         HandlePlatformSettingUI(textFieldText);
                     }
@@ -759,6 +833,7 @@ namespace UnityEditor.U2D
             {
                 if (m_TexturePlatformSettingsController.HandleDefaultSettings(defaultPlatformSettings, view, m_TexturePlatformSettingTextureHelper))
                 {
+                    RegisterPlatformSettingsUndo(styles.platformSettingsRegisterUndo);
                     for (var i = 0; i < defaultPlatformSettings.Count; ++i)
                     {
                         if (isSecondary)
@@ -797,6 +872,7 @@ namespace UnityEditor.U2D
                 m_TexturePlatformSettingsView.buildPlatformTitle = buildPlatform.title.text;
                 if (m_TexturePlatformSettingsController.HandlePlatformSettings(buildPlatform.defaultTarget, platformSettings, view, m_TexturePlatformSettingTextureHelper))
                 {
+                    RegisterPlatformSettingsUndo(styles.platformSettingsRegisterUndo);
                     for (var i = 0; i < platformSettings.Count; ++i)
                     {
                         if (isSecondary)
@@ -891,7 +967,7 @@ namespace UnityEditor.U2D
         public override void SaveChanges()
         {
             base.SaveChanges();
-            m_ContentHash = GetInspectorHash();
+            UpdateContentHash();
         }
 
         public override void DiscardChanges()
@@ -902,8 +978,12 @@ namespace UnityEditor.U2D
             UpdateSpriteAtlasAssetSerializedObject();
             if (EditorSettings.spritePackerMode == SpritePackerMode.SpriteAtlasV2)
                 m_PreviewStatus = PreviewStatus.Unknown;
-            m_ContentHash = GetInspectorHash();
+
+            // base.DiscardChanges() reverts the importer's serialized data, so the hash has to be
+            // snapshot after it. Taking it before leaves m_ContentHash describing the discarded state,
+            // which makes HasModified() report the inspector as dirty again right after a discard.
             base.DiscardChanges();
+            UpdateContentHash();
         }
 
         void UpdatePages()

@@ -379,7 +379,7 @@ namespace Unity.U2D.Physics
         /// 
         ///- A <see cref="PhysicsEvents.JointThresholdEvent"/> with call <see cref="PhysicsCallbacks.IJointThresholdCallback"/>.
         /// </summary>
-        public readonly System.Object callbackTarget { get => PhysicsJoint_GetCallbackTarget(this); set => PhysicsJoint_SetCallbackTarget(this, value); }
+        public readonly System.Object callbackTarget { get => PhysicsJoint_GetCallbackTarget(this); set => PhysicsJoint_SetCallbackTarget(this, value, System.Runtime.CompilerServices.RuntimeHelpers.GetHashCode(value)); }
 
         /// <summary>
         /// Get/Set <see cref="PhysicsUserData"/> that can be used for any purpose.
@@ -432,6 +432,18 @@ namespace Unity.U2D.Physics
         /// <param name="physicsUserData">The user data to set on every joint.</param>
         /// <returns>The number of joints that were ignored (not set because the joint was invalid). A single warning is logged when any are ignored.</returns>
         public static int SetUserData(ReadOnlySpan<PhysicsJoint> joints, PhysicsUserData physicsUserData) => PhysicsJoint_SetUserDataSpanAll(joints, physicsUserData);
+
+        /// <summary>
+        /// Set the same <see cref="System.Object"/> that event callbacks will be sent to on a batch of joints.
+        /// Each joint is assigned the callback target as <see cref="callbackTarget"/> would, and setting it to NULL removes it.
+        /// </summary>
+        /// <remarks>
+        /// This is faster than setting <see cref="callbackTarget"/> on each joint.
+        /// </remarks>
+        /// <param name="joints">The joints to set the callback target on.</param>
+        /// <param name="callbackTarget">The callback target to set on every joint, or NULL to remove it.</param>
+        /// <returns>The number of joints that were ignored (not set because the joint was invalid). A single warning is logged when any are ignored.</returns>
+        public static int SetCallbackTarget(ReadOnlySpan<PhysicsJoint> joints, System.Object callbackTarget) => PhysicsJoint_SetCallbackTargetSpan(joints, callbackTarget, System.Runtime.CompilerServices.RuntimeHelpers.GetHashCode(callbackTarget));
 
         /// <summary>
         /// Controls whether this joint is automatically drawn when the world is drawn.

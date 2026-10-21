@@ -371,6 +371,15 @@ namespace UnityEngine.Tilemaps
             , IntPtr newTilesIntPtr
             , IntPtr positionsIntPtr)
         {
+            // A Tile's RefreshTile or StartUp can re-enter this on the same cached ITilemap, so the
+            // refresh scratch state has to nest like a call frame rather than be overwritten.
+            var previousRefreshPos = tilemap.m_RefreshPos;
+            var previousRefreshCount = tilemap.m_RefreshCount;
+            var previousAddToList = tilemap.m_AddToList;
+            var previousNeedSort = tilemap.m_NeedSort;
+
+            tilemap.m_RefreshPos = default;
+            tilemap.m_RefreshCount = 0;
             tilemap.m_AddToList = true;
 
             var usedTilesPtr = usedTilesIntPtr.ToPointer();
@@ -399,12 +408,15 @@ namespace UnityEngine.Tilemaps
             finally
             {
                 // A Tile refreshing itself can throw, so always restore state for the next refresh.
-                tilemap.m_RefreshPos.Dispose();
-                tilemap.m_AddToList = false;
-                tilemap.m_NeedSort = true;
-            }
+                if (tilemap.m_RefreshPos.IsCreated)
+                    tilemap.m_RefreshPos.Dispose();
+                tilemap.m_RefreshPos = previousRefreshPos;
+                tilemap.m_RefreshCount = previousRefreshCount;
+                tilemap.m_AddToList = previousAddToList;
+                tilemap.m_NeedSort = previousNeedSort;
 
-            AtomicSafetyHandle.Release(ash);
+                AtomicSafetyHandle.Release(ash);
+            }
         }
 
         internal virtual bool PreGetAllTileData()
@@ -423,21 +435,26 @@ namespace UnityEngine.Tilemaps
             var ash = AtomicSafetyHandle.Create();
             NativeArrayUnsafeUtility.SetAtomicSafetyHandle(ref usedTileIds, ash);
 
-            for (int i = 0; i < usedTileCount; i++)
+            try
             {
-                var tileId = usedTileIds[i];
-                if (tileId != EntityId.None)
+                for (int i = 0; i < usedTileCount; i++)
                 {
-                    var tile = Resources.EntityIdToObject(tileId) as TileBase;
-                    if (tile != null)
+                    var tileId = usedTileIds[i];
+                    if (tileId != EntityId.None)
                     {
-                        tile.OnDisable();
-                        tile.OnEnable();
+                        var tile = Resources.EntityIdToObject(tileId) as TileBase;
+                        if (tile != null)
+                        {
+                            tile.OnDisable();
+                            tile.OnEnable();
+                        }
                     }
                 }
             }
-
-            AtomicSafetyHandle.Release(ash);
+            finally
+            {
+                AtomicSafetyHandle.Release(ash);
+            }
         }
 
         internal virtual unsafe JobHandle HandleGetAllTileData(int usedTileCount
@@ -656,10 +673,15 @@ namespace UnityEngine.Tilemaps
             NativeArrayUnsafeUtility.SetAtomicSafetyHandle(ref tileGameObjects, ash);
             NativeArrayUnsafeUtility.SetAtomicSafetyHandle(ref positions, ash);
 
-            var jobHandle = tilemap.HandleAllTileStartUp(usedTileCount, usedTileIds, usedTileHasStartUpArray, count, tiles, tileGameObjects, positions);
-            jobHandle.Complete();
-
-            AtomicSafetyHandle.Release(ash);
+            try
+            {
+                var jobHandle = tilemap.HandleAllTileStartUp(usedTileCount, usedTileIds, usedTileHasStartUpArray, count, tiles, tileGameObjects, positions);
+                jobHandle.Complete();
+            }
+            finally
+            {
+                AtomicSafetyHandle.Release(ash);
+            }
         }
     }
 }

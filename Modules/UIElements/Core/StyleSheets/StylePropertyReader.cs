@@ -1208,7 +1208,7 @@ namespace UnityEngine.UIElements.StyleSheets
                 }
 
                 var args = new FixedBuffer4<FilterParameter>();
-                int writtenArgs = 0;
+                int providedArgs = 0;
                 for (int i = 0; i < argCount; i++)
                 {
                     var valueType = GetValueType(index);
@@ -1219,46 +1219,47 @@ namespace UnityEngine.UIElements.StyleSheets
                         continue;
                     }
 
-                    if (writtenArgs == FixedBuffer4<FilterParameter>.Length)
-                    {
-                        malformed = true;
-                        break;
-                    }
-
-                    if (valueType == StyleValueType.Color || valueType == StyleValueType.Enum)
-                    {
-                        var color = ReadColor(index++);
-                        args[writtenArgs++] = new FilterParameter()
-                        {
-                            type = FilterParameterType.Color,
-                            colorValue = color
-                        };
-                    }
-                    else if (valueType == StyleValueType.Dimension || valueType == StyleValueType.Float)
-                    {
-                        var dimValue = GetValue(index++);
-                        var dim = dimValue.sheet.ReadDimension(dimValue.handle);
-                        args[writtenArgs++] = new FilterParameter()
-                        {
-                            type = FilterParameterType.Float,
-                            floatValue = StyleProperty.ConvertDimensionToFilterFloat(dim)
-                        };
-                    }
-                    else
+                    bool isColor = valueType == StyleValueType.Color || valueType == StyleValueType.Enum;
+                    if (!isColor && valueType != StyleValueType.Dimension && valueType != StyleValueType.Float)
                     {
                         Debug.LogError($"Unexpected value type {valueType} in filter function argument");
                         malformed = true;
                         break;
                     }
+
+                    if (providedArgs < FixedBuffer4<FilterParameter>.Length)
+                    {
+                        if (isColor)
+                        {
+                            args[providedArgs] = new FilterParameter()
+                            {
+                                type = FilterParameterType.Color,
+                                colorValue = ReadColor(index)
+                            };
+                        }
+                        else
+                        {
+                            var dimValue = GetValue(index);
+                            var dim = dimValue.sheet.ReadDimension(dimValue.handle);
+                            args[providedArgs] = new FilterParameter()
+                            {
+                                type = FilterParameterType.Float,
+                                floatValue = StyleProperty.ConvertDimensionToFilterFloat(dim)
+                            };
+                        }
+                    }
+
+                    ++index;
+                    ++providedArgs;
                 }
 
                 if (malformed)
                     break;
 
                 if (isCustom)
-                    list.Add(new FilterFunction(filterDef, args, writtenArgs));
+                    list.Add(new FilterFunction(filterDef, args, providedArgs));
                 else
-                    list.Add(new FilterFunction(StyleProperty.ToFilterFunctionType(filterType), args, writtenArgs));
+                    list.Add(new FilterFunction(StyleProperty.ToFilterFunctionType(filterType), args, providedArgs));
             }
             while (index < valueCount);
 
@@ -1302,7 +1303,9 @@ namespace UnityEngine.UIElements.StyleSheets
             using var list = new UnmanagedTempList<float>(4);
             do
             {
-                list.Add(ReadFloat(index));
+                var value = m_Values[m_CurrentValueIndex + index];
+                var isTime = value.handle.valueType == StyleValueType.Dimension && value.sheet.ReadDimension(value.handle).IsTimeValue();
+                list.Add(isTime ? ReadTimeValueAsSeconds(index) : ReadFloat(index));   // var() keeps the unit; the importer pre-converts literals to seconds
                 ++index;
 
                 if (index < valueCount)

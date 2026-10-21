@@ -74,75 +74,109 @@ internal static partial class StyleVariableUtility
         }
     }
 
-    public static IEnumerable<VariableInfo> GetAllAvailableVariables(VisualElement currentVisualElement, ReadOnlySpan<StyleValueType> compatibleTypes, bool editorExtensionMode)
+    public static IEnumerable<VariableInfo> GetAllAvailableVariables(VisualElement currentVisualElement, ReadOnlySpan<StyleValueType> compatibleTypes, bool editorExtensionMode, VisualElement fallbackScopeElement = null)
     {
         var result = new List<VariableInfo>();
         var seenVariables = new HashSet<StyleVariable>();
 
-        var variables = currentVisualElement.variableContext.variables;
+        CollectAvailableVariables(currentVisualElement, compatibleTypes, editorExtensionMode, currentVisualElement, fallbackScopeElement, result, seenVariables, null);
+
+        if (fallbackScopeElement != null && fallbackScopeElement != currentVisualElement)
+        {
+            var currentNames = new HashSet<string>();
+            var currentVariables = currentVisualElement.variableContext.variables;
+            for (int i = 0; i < currentVariables.Count; i++)
+            {
+                if (editorExtensionMode || !currentVariables[i].sheet.IsUnityEditorStyleSheet())
+                    currentNames.Add(currentVariables[i].name);
+            }
+
+            CollectAvailableVariables(fallbackScopeElement, compatibleTypes, editorExtensionMode, currentVisualElement, fallbackScopeElement, result, seenVariables, currentNames);
+        }
+
+        return result;
+    }
+
+    static void CollectAvailableVariables(VisualElement element, ReadOnlySpan<StyleValueType> compatibleTypes, bool editorExtensionMode,
+        VisualElement currentVisualElement, VisualElement fallbackScopeElement, List<VariableInfo> result, HashSet<StyleVariable> seenVariables, HashSet<string> excludedNames)
+    {
+        var variables = element.variableContext.variables;
         for (int i = 0; i < variables.Count; i++)
         {
             var variable = variables[i];
-
-            if (variable.name == SelectedStyleRulePropertyName)
+            if (!TryGetAvailableVariable(variable, compatibleTypes, editorExtensionMode, currentVisualElement, fallbackScopeElement, out var info))
                 continue;
 
-            if (variable.name.StartsWith(USSVariableUIBuilderPrefix))
-                continue;
-
-            var isUnityEditorStyleSheet = variable.sheet.IsUnityEditorStyleSheet();
-            if (!editorExtensionMode && isUnityEditorStyleSheet)
-                continue;
-
-            var valueHandle = variable.handles[0];
-            var valueType = valueHandle.valueType;
-            if (valueType == StyleValueType.Enum)
-            {
-                var colorName = variable.sheet.ReadAsString(valueHandle);
-                if (StyleSheetColor.TryGetColor(colorName.ToLowerInvariant(), out var color))
-                    valueType = StyleValueType.Color;
-            }
-
-            if (valueType == StyleValueType.Function)
-            {
-                var function = (StyleValueFunction)valueHandle.valueIndex;
-                if (function == StyleValueFunction.Var)
-                {
-                    var varName = variable.sheet.ReadVariable(variable.handles[2]);
-                    var varInfo = FindVariable(currentVisualElement, varName, editorExtensionMode);
-                    if (varInfo.StyleVariable.handles != null)
-                        valueType = varInfo.StyleVariable.handles[0].valueType;
-                }
-            }
-
-            var isCompatibleType = compatibleTypes == null;
-            if (!isCompatibleType)
-            {
-                for (int j = 0; j < compatibleTypes.Length; j++)
-                {
-                    if (compatibleTypes[j] == valueType)
-                    {
-                        isCompatibleType = true;
-                        break;
-                    }
-                }
-            }
-
-            if (!isCompatibleType || variable.name.StartsWith("--unity-theme"))
+            if (excludedNames != null && excludedNames.Contains(variable.name))
                 continue;
 
             if (!seenVariables.Add(variable))
                 continue;
 
-            string descr = null;
-            if (isUnityEditorStyleSheet)
-            {
-                editorVariableDescriptions.TryGetValue(variable.name, out descr);
-            }
-            result.Add(new VariableInfo(variable, descr));
+            result.Add(info);
+        }
+    }
+
+    static bool TryGetAvailableVariable(StyleVariable variable, ReadOnlySpan<StyleValueType> compatibleTypes, bool editorExtensionMode,
+        VisualElement currentVisualElement, VisualElement fallbackScopeElement, out VariableInfo info)
+    {
+        info = default;
+
+        if (variable.name == SelectedStyleRulePropertyName)
+            return false;
+
+        if (variable.name.StartsWith(USSVariableUIBuilderPrefix))
+            return false;
+
+        var isUnityEditorStyleSheet = variable.sheet.IsUnityEditorStyleSheet();
+        if (!editorExtensionMode && isUnityEditorStyleSheet)
+            return false;
+
+        var valueHandle = variable.handles[0];
+        var valueType = valueHandle.valueType;
+        if (valueType == StyleValueType.Enum)
+        {
+            var colorName = variable.sheet.ReadAsString(valueHandle);
+            if (StyleSheetColor.TryGetColor(colorName.ToLowerInvariant(), out var color))
+                valueType = StyleValueType.Color;
         }
 
-        return result;
+        if (valueType == StyleValueType.Function)
+        {
+            var function = (StyleValueFunction)valueHandle.valueIndex;
+            if (function == StyleValueFunction.Var)
+            {
+                var varName = variable.sheet.ReadVariable(variable.handles[2]);
+                var varInfo = FindVariable(currentVisualElement, varName, editorExtensionMode, fallbackScopeElement);
+                if (varInfo.StyleVariable.handles != null)
+                    valueType = varInfo.StyleVariable.handles[0].valueType;
+            }
+        }
+
+        var isCompatibleType = compatibleTypes == null;
+        if (!isCompatibleType)
+        {
+            for (int j = 0; j < compatibleTypes.Length; j++)
+            {
+                if (compatibleTypes[j] == valueType)
+                {
+                    isCompatibleType = true;
+                    break;
+                }
+            }
+        }
+
+        if (!isCompatibleType || variable.name.StartsWith("--unity-theme"))
+            return false;
+
+        string descr = null;
+        if (isUnityEditorStyleSheet)
+        {
+            editorVariableDescriptions.TryGetValue(variable.name, out descr);
+        }
+
+        info = new VariableInfo(variable, descr);
+        return true;
     }
 
     public static VariableEditingHandler GetOrCreateVarHandler(BindableElement field, IVariableEditingContext context, VisualElement styleRow = null, bool attachCompleterOnTarget = true)
@@ -173,9 +207,18 @@ internal static partial class StyleVariableUtility
         return field.GetProperty(ElementLinkedVariableHandlerVEPropertyName) as VariableEditingHandler;
     }
 
-    public static VariableInfo FindVariable(VisualElement currentVisualElement, string variableName, bool editorExtensionMode)
+    public static VariableInfo FindVariable(VisualElement currentVisualElement, string variableName, bool editorExtensionMode, VisualElement fallbackScopeElement = null)
     {
-        var variables = currentVisualElement.variableContext.variables;
+        var info = FindVariableInElement(currentVisualElement, variableName, editorExtensionMode);
+        if (info.StyleVariable.handles == null && fallbackScopeElement != null && fallbackScopeElement != currentVisualElement)
+            info = FindVariableInElement(fallbackScopeElement, variableName, editorExtensionMode);
+
+        return info;
+    }
+
+    static VariableInfo FindVariableInElement(VisualElement element, string variableName, bool editorExtensionMode)
+    {
+        var variables = element.variableContext.variables;
 
         for (int i = variables.Count - 1; i >= 0; --i)
         {

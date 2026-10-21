@@ -59,8 +59,7 @@ sealed class CanvasBackdropTexture
         }
 
         var graphicsFormat = PanelElement.GetRenderTextureGraphicsFormat();
-        if (m_Texture == null || m_Texture.width != width || m_Texture.height != height ||
-            m_Texture.graphicsFormat != graphicsFormat)
+        if (!MatchesTexture(width, height, graphicsFormat))
         {
             var descriptor = new RenderTextureDescriptor(width, height, graphicsFormat, GraphicsFormat.None);
             if (m_Texture == null)
@@ -91,6 +90,18 @@ sealed class CanvasBackdropTexture
             Redraw();
 
         return m_Texture;
+    }
+
+    public bool IsCurrent(int width, int height, in Settings settings)
+    {
+        return MatchesTexture(width, height, PanelElement.GetRenderTextureGraphicsFormat()) &&
+            !m_Dirty && m_Settings.Equals(settings) && m_Texture.IsCreated();
+    }
+
+    bool MatchesTexture(int width, int height, GraphicsFormat graphicsFormat)
+    {
+        return m_Texture != null && m_Texture.width == width && m_Texture.height == height &&
+            m_Texture.graphicsFormat == graphicsFormat;
     }
 
     public void Release()

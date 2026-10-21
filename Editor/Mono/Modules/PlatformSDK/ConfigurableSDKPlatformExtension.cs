@@ -11,6 +11,7 @@ class ConfigurableSDKPlatformExtension : ISDKPlatformExtension
 {
     public SDKPlatformProvider sdkPlatformProvider { get; private set; }
     public ConfigurableBuildTarget sdkPlatformBuildTarget { get; private set; }
+    public ICompilationExtension additionalCompilationExtension { get; private set; }
 
     public bool shouldShowPlatformSettings => sdkPlatformProvider.shouldShowPlatformSettings;
     public bool shouldShowAdditionalSettings => sdkPlatformProvider.shouldShowAdditionalSettings;
@@ -29,5 +30,6 @@ class ConfigurableSDKPlatformExtension : ISDKPlatformExtension
     {
         sdkPlatformProvider = provider;
         sdkPlatformBuildTarget = buildTarget;
+        additionalCompilationExtension = new ConfigurableCompilationExtension(provider.platformDefine);
     }
 }

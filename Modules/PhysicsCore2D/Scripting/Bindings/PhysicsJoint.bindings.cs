@@ -48,7 +48,8 @@ namespace Unity.U2D.Physics
         [NativeMethod(Name = "PhysicsJoint::SetOwner", IsThreadSafe = true)] extern internal static void PhysicsJoint_SetOwner(ReadOnlySpan<PhysicsJoint> joints, UnityEngine.Object ownerObject, int ownerKey);
         [NativeMethod(Name = "PhysicsJoint::GetOwner", IsThreadSafe = true)] extern internal static UnityEngine.Object PhysicsJoint_GetOwner(PhysicsJoint joint);
         [NativeMethod(Name = "PhysicsJoint::IsOwned", IsThreadSafe = true)] extern internal static bool PhysicsJoint_IsOwned(PhysicsJoint joint);
-        [NativeMethod(Name = "PhysicsJoint::SetCallbackTarget", IsThreadSafe = true)] extern internal static void PhysicsJoint_SetCallbackTarget(PhysicsJoint joint, System.Object callbackTarget);
+        [NativeMethod(Name = "PhysicsJoint::SetCallbackTarget", IsThreadSafe = true)] extern internal static void PhysicsJoint_SetCallbackTarget(PhysicsJoint joint, System.Object callbackTarget, int callbackTargetHash);
+        [NativeMethod(Name = "PhysicsJoint::SetCallbackTargetSpan", IsThreadSafe = true)] extern internal static int PhysicsJoint_SetCallbackTargetSpan(ReadOnlySpan<PhysicsJoint> joints, System.Object callbackTarget, int callbackTargetHash);
         [NativeMethod(Name = "PhysicsJoint::GetCallbackTarget", IsThreadSafe = true)] extern internal static System.Object PhysicsJoint_GetCallbackTarget(PhysicsJoint joint);
         [NativeMethod(Name = "PhysicsJoint::SetUserData", IsThreadSafe = true)] extern internal static void PhysicsJoint_SetUserData(PhysicsJoint joint, PhysicsUserData physicsUserData);
         [NativeMethod(Name = "PhysicsJoint::SetUserDataSpan", IsThreadSafe = true)] extern internal static int PhysicsJoint_SetUserDataSpan(ReadOnlySpan<PhysicsJoint> joints, ReadOnlySpan<PhysicsUserData> userDatas);

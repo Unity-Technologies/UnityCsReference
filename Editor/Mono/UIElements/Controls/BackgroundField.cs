@@ -102,7 +102,6 @@ namespace UnityEditor.UIElements
 
             m_GradientColorsField = new GradientField("Gradient Stops")
             {
-                value = new Gradient(),
                 tooltip = "The color stops of the gradient. Click to edit. Up to 4 stops are supported.",
             };
             m_GradientColorsField.RegisterValueChangedCallback(_ => OnGradientControlChanged());
@@ -123,6 +122,9 @@ namespace UnityEditor.UIElements
             m_GradientPositionField.RegisterValueChangedCallback(_ => OnGradientControlChanged());
             m_GradientRadialOnlyContainer.Add(m_GradientPositionField);
             m_GradientContainer.Add(m_GradientRadialOnlyContainer);
+
+            // SetValueWithoutNotify is skipped while the value stays default, so seed the controls here.
+            PushGradientToControls(defaultAuthoringGradient);
 
             visualInput.Add(m_GradientContainer);
 

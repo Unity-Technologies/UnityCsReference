@@ -37,7 +37,7 @@ namespace UnityEditor.Modules
             var activePlatformGuid = EditorUserBuildSettings.activePlatformGuid;
             if (m_DerivedBuildTargetExtensions.TryGetValue(activePlatformGuid, out var derivedBuildTargetExtensions))
             {
-                return derivedBuildTargetExtensions.CompilationExtension ?? baseCompilationExtension;
+                return derivedBuildTargetExtensions.CreateCompilationExtension(baseCompilationExtension);
             }
             return baseCompilationExtension;
         }

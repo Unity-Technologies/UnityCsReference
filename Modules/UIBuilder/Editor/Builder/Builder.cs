@@ -666,7 +666,11 @@ namespace Unity.UI.Builder
             var panel = rootVisualElement.panel as BaseVisualElementPanel;
             var styleUpdater = panel.GetUpdater(VisualTreeUpdatePhase.Styles) as VisualTreeStyleUpdater;
 
-            styleUpdater.traversal = new BuilderVisualTreeStyleUpdaterTraversal(m_Viewport.documentRootElement);
+            // Register the preview before its first style pass, or it keeps the Editor theme context.
+            styleUpdater.traversal = new BuilderVisualTreeStyleUpdaterTraversal(m_Viewport.documentRootElement)
+            {
+                previewDocument = rootVisualElement.Q<BuilderTooltipPreview>("library-tooltip-preview")
+            };
 
             // We don't want the Builder to live reload anything except text elements.
             panel.liveReloadSystem.enabledTrackers = LiveReloadTrackers.Text;

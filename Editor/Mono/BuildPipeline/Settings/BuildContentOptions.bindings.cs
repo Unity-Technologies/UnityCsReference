@@ -63,6 +63,7 @@ namespace UnityEditor
         /// When this flag is set, errors logged from these build callbacks also fail the build:
         /// <see cref="Build.IPreprocessBuildWithContext.OnPreprocessBuild"/>,
         /// <see cref="Build.IPostprocessBuildWithContext.OnPostprocessBuild"/>,
+        /// <see cref="AssetPostprocessor.OnProcessScene"/>,
         /// <see cref="Build.IProcessSceneWithReport.OnProcessScene"/>,
         /// <see cref="Build.IPreprocessShaders.OnProcessShader"/>, and
         /// <see cref="Build.IPreprocessComputeShaders.OnProcessComputeShader"/>.

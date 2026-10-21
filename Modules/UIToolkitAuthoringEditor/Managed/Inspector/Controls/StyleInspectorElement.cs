@@ -357,7 +357,6 @@ internal sealed partial class StyleInspectorElement : VisualElement, IVisualElem
                     m_Context.Refresh(m_Target.Element);
                     break;
                 case StyleDiff.ContextType.StyleSheet:
-                    m_Context.AnimationController = null;
                     m_Context.RefreshRule(m_Target.Element, m_Target.Sheet, m_Target.Rule);
                     break;
                 default:

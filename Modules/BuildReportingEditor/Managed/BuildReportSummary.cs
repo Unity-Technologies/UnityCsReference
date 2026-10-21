@@ -102,9 +102,9 @@ namespace UnityEditor.Build
         /// <remarks>This value corresponds to <see cref="Build.Reporting.BuildSummary.platform"/>.</remarks>
         public string PlatformName;
 
-        /// <summary>For builds registered with <see cref="BuildHistory.RegisterExternalBuild"/>, the name of the package whose build pipeline made the build. An empty string for all other builds.</summary>
-        /// <remarks>This value corresponds to <see cref="ExternalBuildInfo.ProducerPackage"/>. It is `null` when read
-        /// from a summary written before this field existed, so test it with `string.IsNullOrEmpty`.</remarks>
+        /// <summary>For builds made by a package's own build pipeline, such as Addressables AssetBundle builds, the name of that package, for example `com.unity.addressables`. An empty string for all other builds.</summary>
+        /// <remarks>It is `null` when read from a summary written before this field existed, so test it with
+        /// `string.IsNullOrEmpty`.</remarks>
         public string ProducerPackage;
 
         /// <summary>The subtarget the build was created for, as an integer.</summary>

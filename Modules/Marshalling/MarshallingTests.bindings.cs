@@ -155,6 +155,7 @@ namespace UnityEngine
         [NativeMethod(ThrowsException = true)] public static extern void ParameterStructIntByRef(ref StructInt param);
         [NativeMethod(ThrowsException = true)] public static extern void ParameterStructIntIn(in StructInt param);
         [NativeMethod(ThrowsException = true)] public static extern void ParameterStructIntOut(out StructInt param);
+        [NativeMethod(ThrowsException = true)] public static extern void ParameterStructIntAndMarshalAsBool(StructInt param1, [MarshalAs(UnmanagedType.U1)] bool param2);
 
         public static extern void ParameterStructInt2(StructInt2 param);
 
