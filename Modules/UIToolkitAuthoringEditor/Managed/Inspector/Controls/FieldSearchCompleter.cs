@@ -75,7 +75,7 @@ class FieldSearchCompleter<TData> : IFieldSearchCompleter
     VisualElement m_DetailsContent;
     VisualElement m_Footer;
 
-    private Rect m_PreviousTextFieldWorldPosition;
+    private Vector2? m_PreviousWindowPosition;
 
     private bool m_TemporarilyDontShowPopup;
 
@@ -475,7 +475,7 @@ class FieldSearchCompleter<TData> : IFieldSearchCompleter
             AttachedTextField.RegisterCallback<FocusOutEvent>(OnTextFieldFocusOut);
             AttachedTextField.RegisterCallback<FocusInEvent>(OnTextFieldFocusInPrepareTracking);
             AttachedTextField.RegisterCallback<GeometryChangedEvent>(OnTextFieldGeometryChangedEvent);
-            m_PreviousTextFieldWorldPosition = GUIUtility.GUIToScreenRect(AttachedTextField.visualInput.worldBound);
+            m_PreviousWindowPosition = null;
         }
     }
 
@@ -494,6 +494,7 @@ class FieldSearchCompleter<TData> : IFieldSearchCompleter
             return;
 
         UpdateAnchoredControlScreenPosition();
+        m_PreviousWindowPosition ??= GetHostScreenPosition(window);
         window.OnWindowGeometryChanged += OnWindowGeometryChanged;
     }
 
@@ -520,10 +521,9 @@ class FieldSearchCompleter<TData> : IFieldSearchCompleter
         UpdateAnchoredControlScreenPosition();
 
         // If the window is moved, we need to hide the popup
-        var textFieldPositionPostUpdate = (Rect)AttachedTextField.visualInput
-            .GetProperty(Unity.UIToolkit.Editor.Popup.k_AnchoredElementCachedScreenRectVEPropertyName);
+        var windowPosition = GetHostScreenPosition(window);
 
-        if (m_PreviousTextFieldWorldPosition.Equals(textFieldPositionPostUpdate))
+        if (m_PreviousWindowPosition == windowPosition)
             return;
 
         if (window.baseRootVisualElement.focusController.focusedElement == AttachedTextField)
@@ -536,7 +536,7 @@ class FieldSearchCompleter<TData> : IFieldSearchCompleter
             window.baseRootVisualElement.focusController.BlurLastFocusedElement();
         }
 
-        m_PreviousTextFieldWorldPosition = textFieldPositionPostUpdate;
+        m_PreviousWindowPosition = windowPosition;
         m_Popup?.Hide();
     }
 
@@ -921,6 +921,11 @@ class FieldSearchCompleter<TData> : IFieldSearchCompleter
         {
             ScheduleTextChange();
         }
+    }
+
+    Vector2 GetHostScreenPosition(EditorWindow window)
+    {
+        return AttachedTextField.elementPanel.ownerObject is View view ? view.screenPosition.position : window.position.position;
     }
 
     EditorWindow GetEditorWindow()

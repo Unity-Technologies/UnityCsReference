@@ -113,6 +113,16 @@ namespace UnityEngine.UIElements.UIR
             }
         }
 
+        // A nested tree rendered above the panel's density magnifies the capture by that factor too
+        static Vector2 IncludeTreeDensity(VisualElement ve, RenderData owner, Vector2 contentScale)
+        {
+            float panelPixelsPerPoint = ve.scaledPixelsPerPoint;
+            if (panelPixelsPerPoint <= 0)
+                return contentScale;
+            Vector2 treePixelsPerPoint = FilterHelper.GetRenderTreePixelsPerPoint(owner.renderTree, panelPixelsPerPoint);
+            return Vector2.Scale(contentScale, treePixelsPerPoint / panelPixelsPerPoint);
+        }
+
         // Scale of the element relative to its render tree root. The backdrop is captured
         // post-transform, so point-based filter parameters (blur sigma, shadow offsets, capture
         // margins) must scale by this on top of the DPI factor. Not the full world scale: a nested
@@ -120,14 +130,7 @@ namespace UnityEngine.UIElements.UIR
         static Vector2 ComputeContentScale(RenderData owner)
         {
             UIRUtility.ComputeMatrixRelativeToRenderTree(owner, out Matrix4x4 m);
-            return GetScale(in m);
-        }
-
-        static Vector2 GetScale(in Matrix4x4 m)
-        {
-            return new Vector2(
-                new Vector3(m.m00, m.m10, m.m20).magnitude,
-                new Vector3(m.m01, m.m11, m.m21).magnitude);
+            return UIRUtility.GetAxisScale(in m);
         }
 
         // Smallest per-pass sigma worth downsampling for; below it the kernel is already cheap.
@@ -135,15 +138,15 @@ namespace UnityEngine.UIElements.UIR
 
         // Largest built-in sigma in the chain, in points. Custom filters contribute nothing: their
         // cost is unknown, so they never trigger downscaling and always run at full resolution.
-        static float ComputeMaxChainSigma(System.ReadOnlySpan<UnmanagedFilterFunction> filters)
+        public static float ComputeMaxChainSigma(System.ReadOnlySpan<UnmanagedFilterFunction> filters, bool includeDropShadow = true)
         {
             float maxSigma = 0f;
             for (int i = 0; i < filters.Length; i++)
             {
-                var filterFunc = (FilterFunction)filters[i];
+                var filterFunc = ((FilterFunction)filters[i]).GetClampedToDefinition();
                 if (filterFunc.type == FilterFunctionType.Blur && filterFunc.parameterCount > 0)
                     maxSigma = Mathf.Max(maxSigma, filterFunc.parameters[0].floatValue);
-                else if (filterFunc.type == FilterFunctionType.DropShadow && filterFunc.parameterCount > 2)
+                else if (includeDropShadow && filterFunc.type == FilterFunctionType.DropShadow && filterFunc.parameterCount > 2)
                     maxSigma = Mathf.Max(maxSigma, filterFunc.parameters[2].floatValue);
             }
             return maxSigma;
@@ -157,11 +160,16 @@ namespace UnityEngine.UIElements.UIR
         // e.g. tint-only, must stay crisp).
         public static int ComputeDownscaleShift(System.ReadOnlySpan<UnmanagedFilterFunction> filters, Vector2 contentScale, float scaledPixelsPerPoint)
         {
+            return ComputeDownscaleShift(ComputeMaxChainSigma(filters), contentScale, scaledPixelsPerPoint);
+        }
+
+        public static int ComputeDownscaleShift(float maxSigma, Vector2 contentScale, float scaledPixelsPerPoint)
+        {
             float minScale = Mathf.Min(contentScale.x, contentScale.y);
             if (minScale <= 1f)
                 return 0;
 
-            float sigmaDevice = ComputeMaxChainSigma(filters) * scaledPixelsPerPoint * Mathf.Sqrt(contentScale.x * contentScale.y);
+            float sigmaDevice = maxSigma * scaledPixelsPerPoint * Mathf.Sqrt(contentScale.x * contentScale.y);
             float budget = Mathf.Min(minScale, sigmaDevice / k_MinChainSigma);
             if (budget <= 1f)
                 return 0;
@@ -200,7 +208,7 @@ namespace UnityEngine.UIElements.UIR
             // Per-axis so a non-uniform content scale keeps drop-shadow offsets and per-pass blur
             // sigmas on the right axis; the downscale shift divides out what the chain will not
             // render at (see ComputeDownscaleShift).
-            Vector2 contentScale = ComputeContentScale(owner);
+            Vector2 contentScale = IncludeTreeDensity(ve, owner, ComputeContentScale(owner));
             int downscaleShift = ComputeDownscaleShift(backdropFilters, contentScale, ve.scaledPixelsPerPoint);
             Vector2 pixelsPerPoint = contentScale * (ve.scaledPixelsPerPoint / (1 << downscaleShift));
 
@@ -376,7 +384,7 @@ namespace UnityEngine.UIElements.UIR
                     return;
 
                 captureRect = pixelRect;
-                contentScale = GetScale(in elementToTreeRoot);
+                contentScale = UIRUtility.GetAxisScale(in elementToTreeRoot);
                 InflateCapture(ref captureRect, chainMargins, topOriginRows,
                     scaleX * contentScale.x, scaleY * contentScale.y);
 
@@ -445,7 +453,7 @@ namespace UnityEngine.UIElements.UIR
             // Run the chain on a downscaled capture when the content scale allows it; the update phase
             // divided the callbacks' sigma/offsets by the same power of two, so the visual result only
             // changes by the resampling. Stepped by 2x so each bilinear tap is a proper prefilter.
-            int downscaleShift = ComputeDownscaleShift(ve.computedStyle.backdropFilter, contentScale, ve.scaledPixelsPerPoint);
+            int downscaleShift = ComputeDownscaleShift(ve.computedStyle.backdropFilter, IncludeTreeDensity(ve, owner, contentScale), ve.scaledPixelsPerPoint);
             if (downscaleShift > 0)
             {
                 var resamplePass = new PostProcessingPass { material = normalizeMaterial };

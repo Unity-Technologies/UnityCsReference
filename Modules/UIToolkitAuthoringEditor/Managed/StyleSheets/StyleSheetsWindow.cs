@@ -262,7 +262,7 @@ internal class StyleSheetsWindow : EditorWindow
         GetActiveStyleSheetQuery.QueryPayload.Execute(CommandSources.StyleSheets, styleSheet);
     }
 
-    void Update()
+    internal void Update()
     {
         if (m_HierarchyView?.UpdateNeeded == true)
         {

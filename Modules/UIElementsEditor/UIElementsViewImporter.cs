@@ -1429,6 +1429,20 @@ namespace UnityEditor.UIElements
                         return true;
                     }
 
+                    foreach (var rule in parsed.StyleRules)
+                    {
+                        if (rule.NestedRules.Count != 0)
+                        {
+                            LogWarning(
+                                vta,
+                                ImportErrorType.Semantic,
+                                ImportErrorCode.InvalidCssInStyleAttribute,
+                                "Nested style rules are not supported",
+                                xattr);
+                            return true;
+                        }
+                    }
+
                     // Each vea will creates 0 or 1 style rule, with one or more properties
                     // they don't have selectors and are directly referenced by index
                     // it's then applied during tree cloning

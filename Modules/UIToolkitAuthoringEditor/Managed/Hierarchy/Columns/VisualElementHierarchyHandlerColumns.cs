@@ -6,7 +6,7 @@ using Unity.Hierarchy;
 using Unity.Hierarchy.Editor;
 using UnityEngine.UIElements;
 
-using VisualElementCellToggleEditor = Unity.Hierarchy.HierarchyViewCellValueEditor<UnityEngine.UIElements.VisualElement, UnityEngine.UIElements.Toggle, bool>;
+using VisualElementCellToggleEditor = Unity.Hierarchy.HierarchyViewCellValueEditor<Unity.Hierarchy.HierarchyNode, UnityEngine.UIElements.Toggle, bool>;
 
 namespace Unity.UIToolkit.Editor;
 
@@ -48,7 +48,7 @@ internal static class VisualElementHierarchyHandlerColumns
         };
         desc.UnbindCell = cell =>
         {
-            if (cell.userData is VisualElementCellToggleEditor editor)
+            if (cell.ValueEditor is VisualElementCellToggleEditor editor)
             {
                 editor.Unbind();
             }

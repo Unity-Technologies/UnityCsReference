@@ -40,10 +40,27 @@ namespace Unity.Hierarchy.Editor
             public static IntPtr ConvertToUnmanaged(HierarchySceneHandler handler) => handler.m_Ptr;
         }
 
+        sealed class StickyRows : IHierarchyNodeTypeHandlerViewState
+        {
+            public readonly StickyRowController Controller = new();
+            public HierarchyView View;
+            public Action Update;
+
+            public void Dispose()
+            {
+                if (View == null)
+                    return;
+
+                View.ListView.BeforeRefreshingItems -= Update;
+                if (View.ListView.stickyRowController == Controller)
+                    View.ListView.stickyRowController = null;
+                View = null;
+            }
+        }
+
         HierarchyNodeType m_NodeType;
+        Stage m_Stage;
         bool m_IsMainStage;
-        HierarchyView m_BoundView;
-        StickyRowController m_StickyRowController;
 
         HierarchySceneHandler()
         {
@@ -58,7 +75,8 @@ namespace Unity.Hierarchy.Editor
         {
             base.Initialize();
 
-            m_IsMainStage = StageUtility.GetCurrentStage() is MainStage;
+            m_Stage = HierarchyWindow.GetStage(Hierarchy);
+            m_IsMainStage = m_Stage is MainStage;
             EditorSceneManager.activeSceneChangedInEditMode += OnActiveSceneChanged;
             EditorSceneManager.sceneDirtied += OnSceneDirty;
             EditorSceneManager.sceneSaved += OnSceneSaved;
@@ -96,6 +114,11 @@ namespace Unity.Hierarchy.Editor
         /// <returns>The <see cref="Scene"/> that corresponds to the specified <see cref="HierarchyNode"/>.</returns>
         [NativeMethod(IsThreadSafe = true)]
         public extern Scene GetScene(in HierarchyNode node);
+
+        /// <summary>
+        /// The stage this handler was created for, which is not necessarily the current stage.
+        /// </summary>
+        internal Stage Stage => m_Stage;
 
         /// <summary>
         /// Gets the <see cref="HierarchyNodeType"/> for this <see cref="HierarchySceneHandler"/>.
@@ -136,30 +159,27 @@ namespace Unity.Hierarchy.Editor
 
         protected override void OnBindView(HierarchyView view)
         {
-            m_BoundView = view;
-            m_StickyRowController = new StickyRowController();
-            view.ListView.stickyRowController = m_StickyRowController;
-            view.ListView.BeforeRefreshingItems += UpdateStickyIndices;
+            var stickyRows = view.GetOrCreateHandlerState<StickyRows>(this);
+            if (stickyRows.View != null)
+                return;
+
+            stickyRows.View = view;
+            stickyRows.Update = () => UpdateStickyIndices(view, stickyRows.Controller);
+            view.ListView.stickyRowController = stickyRows.Controller;
+            view.ListView.BeforeRefreshingItems += stickyRows.Update;
         }
 
         protected override void OnUnbindView(HierarchyView view)
         {
-            if (m_BoundView != null)
-            {
-                m_BoundView.ListView.BeforeRefreshingItems -= UpdateStickyIndices;
-                m_BoundView.ListView.stickyRowController = null;
-            }
-
-            m_BoundView = null;
-            m_StickyRowController = null;
+            // Kept to avoid a public API change
         }
 
-        void UpdateStickyIndices()
+        void UpdateStickyIndices(HierarchyView view, StickyRowController stickyRowController)
         {
-            if (m_StickyRowController == null || m_BoundView?.ViewModel is not { IsCreated: true } viewModel)
+            if (Hierarchy is not { IsCreated: true } || view.ViewModel is not { IsCreated: true } viewModel)
                 return;
 
-            m_StickyRowController.ClearWithoutNotify();
+            stickyRowController.ClearWithoutNotify();
 
             var sceneCount = SceneManager.sceneCount;
             for (var i = 0; i < sceneCount; i++)
@@ -171,7 +191,7 @@ namespace Unity.Hierarchy.Editor
 
                 var viewModelIndex = viewModel.IndexOf(in node);
                 if (viewModelIndex >= 0)
-                    m_StickyRowController.SetStickyWithoutNotify(viewModelIndex, true);
+                    stickyRowController.SetStickyWithoutNotify(viewModelIndex, true);
             }
         }
 
@@ -189,14 +209,14 @@ namespace Unity.Hierarchy.Editor
 
         string IHierarchyEditorNodeTypeHandler.GetDisplayNameOverride(HierarchyView view, in HierarchyNode node)
         {
-            if (!Hierarchy.Exists(node))
-                return node.ToString();
+            if (!Hierarchy.TryGetNameRaw(in node, out var rawName))
+                return null;
 
             var scene = GetScene(node);
             if (!scene.IsValid() || (scene.isLoaded && !scene.isDirty))
                 return null;
 
-            var name = Hierarchy.GetName(in node);
+            var name = Encoding.UTF8.GetString(rawName);
             if (!scene.isLoaded)
                 name += " (not loaded)";
             if (scene.isDirty)
@@ -786,6 +806,10 @@ namespace Unity.Hierarchy.Editor
             handler.Initialize();
             return GCHandle.ToIntPtr(GCHandle.Alloc(handler));
         }
+
+        // Empty for the main stage, whose scenes are the ones tracked by the scene manager
+        [RequiredByNativeCode(Optional = true)]
+        static Scene[] GetStageScenes(IntPtr hierarchyHandlePtr) => StageUtility.GetStageScenes(HierarchyWindow.GetStage(hierarchyHandlePtr));
         #endregion
     }
 }

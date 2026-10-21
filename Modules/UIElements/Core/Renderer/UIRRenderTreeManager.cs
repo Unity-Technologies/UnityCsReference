@@ -549,7 +549,7 @@ namespace UnityEngine.UIElements.UIR
             m_Compositor.RenderNestedPasses();
         }
 
-        public void RenderSingleTree(RenderTree renderTree, RenderTexture nestedTreeRT, RectInt nestedTreeViewport, Rect bounds)
+        public void RenderSingleTree(RenderTree renderTree, RenderTexture nestedTreeRT, RectInt nestedTreeViewport, Rect bounds, float treePixelsPerPoint = 0)
         {
             // This function is not supposed to be used to draw the root render tree of a panel that draws in cameras.
             Debug.Assert(!drawInCameras || renderTree != m_RootRenderTree);
@@ -566,7 +566,7 @@ namespace UnityEngine.UIElements.UIR
             if (prevInvertCulling)
                 GL.invertCulling = false;
 
-            float pixelsPerPoint = panel.scaledPixelsPerPoint;
+            float pixelsPerPoint = treePixelsPerPoint > 0 ? treePixelsPerPoint : panel.scaledPixelsPerPoint;
 
             Rect scissor;
             if (renderTree == m_RootRenderTree)

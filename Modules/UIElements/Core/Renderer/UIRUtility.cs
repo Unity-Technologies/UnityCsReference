@@ -203,6 +203,13 @@ namespace UnityEngine.UIElements
             return rect.width > k_Epsilon && rect.height > k_Epsilon;
         }
 
+        public static Vector2 GetAxisScale(in Matrix4x4 m)
+        {
+            return new Vector2(
+                new Vector3(m.m00, m.m10, m.m20).magnitude,
+                new Vector3(m.m01, m.m11, m.m21).magnitude);
+        }
+
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool RectHasArea(RectInt rect)
         {

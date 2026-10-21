@@ -11,6 +11,7 @@ using UnityEngine.Scripting;
 using RequiredByNativeCodeAttribute = UnityEngine.Scripting.RequiredByNativeCodeAttribute;
 using Unity.Collections;
 using Unity.Collections.LowLevel.Unsafe;
+using Unity.Scripting.LifecycleManagement;
 
 using Unity.Jobs;
 using Unity.Jobs.LowLevel.Unsafe;
@@ -187,14 +188,40 @@ namespace UnityEngine
         extern public bool IsAlive([DefaultValue("true")] bool withChildren);
         public bool IsAlive() { return IsAlive(true); }
 
+        /// <summary>
+        /// A callback used by polyspatial to capture emits driven by script and replay it.
+        /// </summary>
+        /// <remarks>
+        /// Arguments, in order:
+        /// <list type="number">
+        /// <item><description>The ParticleSystem that emitted.</description></item>
+        /// <item><description>The EmitParams that were passed, or default when Emit(int) was called.</description></item>
+        /// <item><description>The number of particles requested.</description></item>
+        /// <item><description>True when the call supplied EmitParams. The two overloads do not share a start path, so a consumer replaying the call needs to know which one to use.</description></item>
+        /// </list>
+        /// </remarks>
+        [AutoStaticsCleanupOnCodeReload]
+        internal static event Action<ParticleSystem, EmitParams, int, bool> onEmit;
+
         // Emission
         [RequiredByNativeCode]
-        public void Emit(int count) { Emit_Internal(count); }
+        public void Emit(int count)
+        {
+            Emit_Internal(count);
+            onEmit?.Invoke(this, default, count, false);
+        }
+
         [NativeName("SyncJobs()->Emit")]
         extern private void Emit_Internal(int count);
 
+        public void Emit(EmitParams emitParams, int count)
+        {
+            EmitWithParams_Internal(emitParams, count);
+            onEmit?.Invoke(this, emitParams, count, true);
+        }
+
         [NativeName("SyncJobs()->EmitParticlesExternal")]
-        extern public void Emit(EmitParams emitParams, int count);
+        extern private void EmitWithParams_Internal(EmitParams emitParams, int count);
 
         [NativeName("SyncJobs()->EmitParticleExternal")]
         extern private void EmitOld_Internal(ref ParticleSystem.Particle particle);

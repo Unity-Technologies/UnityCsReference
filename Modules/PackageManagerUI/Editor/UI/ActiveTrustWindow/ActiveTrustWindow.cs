@@ -12,19 +12,27 @@ using UnityEngine.UIElements;
 
 namespace UnityEditor.PackageManager.UI.Internal
 {
+    // Values must stay in sync with the native TrustCheckResult in AssetPackage.h.
+    internal enum TrustCheckResult
+    {
+        Proceed = 0,
+        Cancel = 1,
+        Delay = 2
+    }
+
     internal static class ActiveTrustWindow
     {
         private const int k_WindowWidthWithTechnicalName = 680;
         private const int k_WindowWidthNoTechnicalName = 580;
 
         [UsedByNativeCode]
-        internal static bool ShouldProceedAfterTrustCheck(string packagePath, IntPtr nativeAssetPackageInfo, int productId, string packageName, string packageVersion, int uploadId, bool isReimport)
+        internal static TrustCheckResult ShouldProceedAfterTrustCheck(string packagePath, IntPtr nativeAssetPackageInfo, int productId, string packageName, string packageVersion, int uploadId, bool isReimport)
         {
             // In batchmode without an Asset Store origin (productId == 0), the import is automated,
             // not a user action. Skip the gate so nothing gets logged. Even Debug.Log would break tests
             // like PackageImportExport.BatchModeExportAndImport, since Log.Expect ignores severity.
             if (productId <= 0 && Application.isBatchMode)
-                return true;
+                return TrustCheckResult.Proceed;
 
             var assetPackageInfo = PackageImport.GetAssetPackageInfo(nativeAssetPackageInfo);
 
@@ -32,7 +40,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             var origin = new AssetOrigin(productId, packageName, packageVersion, uploadId);
             var viewData = CreateViewData(packagePath, origin, assetPackageInfo, isReimport, applicationProxy.shortUnityVersion);
             if (viewData == null)
-                return true;
+                return TrustCheckResult.Proceed;
 
             if (Application.isBatchMode)
             {
@@ -41,10 +49,15 @@ namespace UnityEditor.PackageManager.UI.Internal
                 Debug.Log(string.Format(
                     L10n.Tr("[Package Import] Package signature check for '{0}': packageStatus={1}, signature={2}. This package was imported as part of batch processing."),
                     packagePath, assetPackageInfo.trustLevel, assetPackageInfo.signature?.status));
-                return true;
+                return TrustCheckResult.Proceed;
             }
 
-            return Show(viewData) == ActiveTrustReturnValue.ProceedAnyway;
+            // Showing a modal window during initialization leaves the editor stuck in an unusable state (UUM-139988),
+            // so we tell the native side to delay the trust check to a later tick.
+            if (!PackageManagerWindow.isInitializationFrameDone)
+                return TrustCheckResult.Delay;
+
+            return Show(viewData) == ActiveTrustReturnValue.ProceedAnyway ? TrustCheckResult.Proceed : TrustCheckResult.Cancel;
         }
 
         internal class RowData

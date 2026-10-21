@@ -109,6 +109,7 @@ namespace UnityEngine.UIElements.UIR
         public TextureId quadTextureId;
         public Rect quadRect;
         public Rect quadUVRect;
+        public Vector2 rasterPixelsPerPoint;
         // Gamma-encoded quad (force-gamma); the parent samples it without re-encoding (UI-5094).
         public bool quadIsGammaEncoded;
 
@@ -147,6 +148,7 @@ namespace UnityEngine.UIElements.UIR
             m_DirtyTracker.owner = this;
 
             quadTextureId = TextureId.invalid;
+            rasterPixelsPerPoint = Vector2.zero;
             quadIsGammaEncoded = false;
 
             parent = null;
@@ -247,6 +249,45 @@ namespace UnityEngine.UIElements.UIR
         {
             Debug.Assert((m_AllowedDirtyClasses & AllowedClasses.Visuals) != 0);
             m_DirtyTracker.RegisterDirty(renderData, RenderDataDirtyTypes.Visuals | (hierarchical ? RenderDataDirtyTypes.VisualsHierarchy : 0), RenderDataDirtyTypeClasses.Visuals);
+        }
+
+        public bool hasBackdropFilters => m_BackdropFilterRenderDatas != null && m_BackdropFilterRenderDatas.Count > 0;
+
+        // Includes the backdrop-filters that will register when this frame's visual changes are processed
+        public bool HasBackdropFiltersIncludingPending()
+        {
+            if (hasBackdropFilters)
+                return true;
+
+            int dirtyClass = (int)RenderDataDirtyTypeClasses.Visuals;
+            for (int depth = m_DirtyTracker.minDepths[dirtyClass]; depth <= m_DirtyTracker.maxDepths[dirtyClass]; depth++)
+            {
+                for (RenderData renderData = m_DirtyTracker.heads[depth]; renderData != null; renderData = renderData.nextDirty)
+                {
+                    if ((renderData.dirtiedValues & RenderDataDirtyTypes.AllVisuals) == 0)
+                        continue;
+                    if (IsBackdropFilter(renderData))
+                        return true;
+                    if ((renderData.dirtiedValues & RenderDataDirtyTypes.VisualsHierarchy) != 0 && HasBackdropFilterBelow(renderData))
+                        return true;
+                }
+            }
+            return false;
+        }
+
+        static bool IsBackdropFilter(RenderData renderData)
+        {
+            return !renderData.isNestedRenderTreeRoot && renderData.owner.hasBackdropFilter;
+        }
+
+        static bool HasBackdropFilterBelow(RenderData renderData)
+        {
+            for (RenderData child = renderData.firstChild; child != null; child = child.nextSibling)
+            {
+                if (IsBackdropFilter(child) || HasBackdropFilterBelow(child))
+                    return true;
+            }
+            return false;
         }
 
         public void RegisterBackdropFilter(RenderData renderData)

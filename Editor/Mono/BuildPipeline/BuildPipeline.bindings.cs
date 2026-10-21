@@ -46,8 +46,8 @@ namespace UnityEditor
     }
 
     // Lets you programmatically build players or AssetBundles which can be loaded from the web.
-    ///<summary>API for building players or AssetBundles.</summary>
-    ///<remarks>The BuildPipeline class in the Unity Editor namespace provides essential tools to programmatically <see cref="BuildPipeline.BuildPlayer">Build Players</see> and <see cref="BuildPipeline.BuildAssetBundles">Build AssetBundles</see>.
+    ///<summary>API for building Players or content builds.</summary>
+    ///<remarks>The BuildPipeline class in the Unity Editor namespace provides tools to <see cref="BuildPipeline.BuildPlayer">build Players</see> and create <see cref="BuildPipeline.BuildContentDirectory">content directory</see> or <see cref="BuildPipeline.BuildAssetBundles">AssetBundle</see> builds.
     ///AssetBundles can be loaded from external sources such as the web, enhancing the flexibility and scalability of content delivery in Unity applications.
     ///The class contains several static properties and methods to facilitate building workflows.</remarks>
     ///<seealso href="xref:um-asset-bundles-intro">AssetBundles</seealso>
@@ -372,9 +372,9 @@ namespace UnityEditor
         internal static extern bool IsFeatureSupported(string define, BuildTarget platform);
 
         // Is a player currently building?
-        ///<summary>Returns true when Unity is actively building a Player or AssetBundles</summary>
-        ///<remarks>This returns true during Player builds (<see cref="BuildPipeline.BuildPlayer" />) and AssetBundle builds (<see cref="BuildPipeline.BuildAssetBundles" />).
-        ///It can be used to check the context inside script code that could be triggered during a build, for example when <see cref="ExecuteAlways" /> is being used on a <see cref="MonoBehaviour" />.</remarks>
+        ///<summary>Checks whether Unity is actively building a Player or a content build.</summary>
+        ///<remarks>This returns true during Player builds (<see cref="BuildPipeline.BuildPlayer" />), content directory builds (<see cref="BuildPipeline.BuildContentDirectory"/>), and AssetBundle builds (<see cref="BuildPipeline.BuildAssetBundles" />).
+        ///Use it to check the context inside script code that might be triggered during a build, for example when <see cref="ExecuteAlways" /> is used on a <see cref="MonoBehaviour" />.</remarks>
         public static extern bool isBuildingPlayer { [FreeFunction("IsBuildingPlayer")] get; }
 
 

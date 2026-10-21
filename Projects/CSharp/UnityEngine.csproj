@@ -1352,6 +1352,9 @@
     <Compile Include="..\..\Modules\Hierarchy\Managed\IHierarchyEntityIdConverter.cs">
       <Link>Modules\Hierarchy\Managed\IHierarchyEntityIdConverter.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\Hierarchy\Managed\IHierarchyNodeTypeHandlerViewState.cs">
+      <Link>Modules\Hierarchy\Managed\IHierarchyNodeTypeHandlerViewState.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\Hierarchy\ScriptBindings\HierarchyUndoManager.bindings.cs">
       <Link>Modules\Hierarchy\ScriptBindings\HierarchyUndoManager.bindings.cs</Link>
     </Compile>
@@ -4448,6 +4451,9 @@
     <Compile Include="..\..\Modules\UIElements\Core\Renderer\UIRRenderTreeCompositor.cs">
       <Link>Modules\UIElements\Core\Renderer\UIRRenderTreeCompositor.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Renderer\UIRRenderTreeDensity.cs">
+      <Link>Modules\UIElements\Core\Renderer\UIRRenderTreeDensity.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\UIElements\Core\Renderer\UIRRenderTreeManager.cs">
       <Link>Modules\UIElements\Core\Renderer\UIRRenderTreeManager.cs</Link>
     </Compile>
@@ -7135,7 +7141,7 @@
     </PropertyGroup>
   </Target>
   <ItemGroup>
-    <Analyzer Include="/tmp/uitoolkit_gen_q253a4aa/Unity.UIToolkit.SourceGenerator.dll" />
+    <Analyzer Include="/tmp/uitoolkit_gen_explvcbt/Unity.UIToolkit.SourceGenerator.dll" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="8.0.2" />

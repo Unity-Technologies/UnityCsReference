@@ -62,6 +62,11 @@ namespace Unity.Hierarchy
         public int DefaultWidth { get; set; } = -1;
 
         /// <summary>
+        /// Gets or sets the minimum width of the column. Users cannot resize the column below this width. If you set it to a negative value, the column uses the default minimum width.
+        /// </summary>
+        public int MinWidth { get; set; } = -1;
+
+        /// <summary>
         /// Gets or sets whether the column is initially visible.
         /// </summary>
         public bool DefaultVisibility { get; set; }

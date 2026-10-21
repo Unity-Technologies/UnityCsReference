@@ -139,7 +139,7 @@ namespace UnityEditor
                 if (singleFunctionName && selectedParameter != null)
                 {
                     EditorGUILayout.Space();
-                    if (selectedParameter == typeof(AnimationEvent))
+                    if (IsEventDataType(selectedParameter))
                         EditorGUILayout.PrefixLabel("Event Data");
                     else
                         EditorGUILayout.PrefixLabel("Parameters");
@@ -273,7 +273,7 @@ namespace UnityEditor
 
         static Dictionary<Type, IReadOnlyList<AnimationMethodMap>> s_TypeAnimationMethodMapCache = new Dictionary<Type, IReadOnlyList<AnimationMethodMap>>();
 
-        static void CollectSupportedMethods(GameObject gameObject, List<AnimationMethodMap> supportedMethods, List<AnimationMethodMap> overloadedMethods, List<AnimationMethodMap> duplicatedMethods)
+        internal static void CollectSupportedMethods(GameObject gameObject, List<AnimationMethodMap> supportedMethods, List<AnimationMethodMap> overloadedMethods, List<AnimationMethodMap> duplicatedMethods)
         {
             if (gameObject == null)
                 return;
@@ -312,7 +312,7 @@ namespace UnityEditor
                                 if (!(parameterType == typeof(string) ||
                                       parameterType == typeof(float) ||
                                       parameterType == typeof(int) ||
-                                      parameterType == typeof(AnimationEvent) ||
+                                      IsEventDataType(parameterType) ||
                                       parameterType == typeof(UnityEngine.Object) ||
                                       parameterType.IsSubclassOf(typeof(UnityEngine.Object)) ||
                                       parameterType.IsEnum))
@@ -369,7 +369,7 @@ namespace UnityEditor
         /// Maps the methodInfo and paramter type of a considered animation method to a source monobeheaviour.
         /// Mimics the structure of <see cref="UnityEditorInternal.UnityEventDrawer.ValidMethodMap"/>
         /// </summary>
-        struct AnimationMethodMap
+        internal struct AnimationMethodMap
         {
             public Object sourceBehaviour;
             public MethodInfo methodInfo;
@@ -423,8 +423,9 @@ namespace UnityEditor
         private static void DoEditRegularParameters(AnimationEvent[] events, Type selectedParameter)
         {
             AnimationEvent firstEvent = events[0];
+            bool isEventData = IsEventDataType(selectedParameter);
 
-            if (selectedParameter == typeof(AnimationEvent) || selectedParameter == typeof(float))
+            if (isEventData || selectedParameter == typeof(float))
             {
                 bool singleParamValue = Array.TrueForAll(events, evt => evt.floatParameter == firstEvent.floatParameter);
 
@@ -440,7 +441,7 @@ namespace UnityEditor
                 }
             }
 
-            if (selectedParameter == typeof(AnimationEvent) || selectedParameter == typeof(int) || selectedParameter.IsEnum)
+            if (isEventData || selectedParameter == typeof(int) || selectedParameter.IsEnum)
             {
                 bool singleParamValue = Array.TrueForAll(events, evt => evt.intParameter == firstEvent.intParameter);
 
@@ -460,7 +461,7 @@ namespace UnityEditor
                 }
             }
 
-            if (selectedParameter == typeof(AnimationEvent) || selectedParameter == typeof(string))
+            if (isEventData || selectedParameter == typeof(string))
             {
                 bool singleParamValue = Array.TrueForAll(events, evt => evt.stringParameter == firstEvent.stringParameter);
 
@@ -476,13 +477,13 @@ namespace UnityEditor
                 }
             }
 
-            if (selectedParameter == typeof(AnimationEvent) || selectedParameter.IsSubclassOf(typeof(UnityEngine.Object)) || selectedParameter == typeof(UnityEngine.Object))
+            if (isEventData || selectedParameter.IsSubclassOf(typeof(UnityEngine.Object)) || selectedParameter == typeof(UnityEngine.Object))
             {
                 bool singleParamValue = Array.TrueForAll(events, evt => evt.objectReferenceParameter == firstEvent.objectReferenceParameter);
 
                 EditorGUI.BeginChangeCheck();
                 Type type = typeof(UnityEngine.Object);
-                if (selectedParameter != typeof(AnimationEvent))
+                if (!isEventData)
                     type = selectedParameter;
 
                 EditorGUI.showMixedValue = !singleParamValue;
@@ -517,6 +518,11 @@ namespace UnityEditor
             }
         }
 
+        private static bool IsEventDataType(Type type)
+        {
+            return type == typeof(AnimationEvent) || type == typeof(AnimationEventInfo);
+        }
+
         private static bool IsSupportedMethodName(string name)
         {
             return name != "Main" && name != "Start" && name != "Awake" && name != "Update";
@@ -544,7 +550,7 @@ namespace UnityEditor
             if (paramType.IsEnum)
                 return " ( " + paramType.Name + "." + Enum.GetName(paramType, evt.intParameter) + " )";
 
-            if (paramType == typeof(AnimationEvent))
+            if (IsEventDataType(paramType))
                 return " ( "
                     + evt.floatParameter + " / "
                     + evt.intParameter + " / \""

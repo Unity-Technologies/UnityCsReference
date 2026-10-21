@@ -52,3 +52,4 @@ using System.Runtime.CompilerServices;
 [assembly: InternalsVisibleTo("LifecycleTestAssembly4")]
 [assembly: InternalsVisibleTo("Unity.IntegrationTests.Scripting")]
 [assembly: InternalsVisibleTo("UnityEngine.AdaptivePerformanceModule")]
+[assembly: InternalsVisibleTo("UnityEngine.ParticleSystemModule")]

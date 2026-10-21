@@ -46,6 +46,8 @@ namespace UnityEditor.PackageManager.UI
     internal class PackageManagerWindow : EditorWindow
     {
         private static bool s_IsInitializationFrame = true;
+        public static bool isInitializationFrameDone => !s_IsInitializationFrame;
+
         static PackageManagerWindow()
         {
             EditorApplication.delayCall += () => s_IsInitializationFrame = false;

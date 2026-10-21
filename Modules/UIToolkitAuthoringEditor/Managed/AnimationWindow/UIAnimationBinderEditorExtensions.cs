@@ -5,6 +5,7 @@
 using UnityEditor.UIElements;
 using UnityEngine;
 using UnityEngine.UIElements;
+using UnityEngine.UIElements.StyleSheets;
 
 namespace Unity.UIToolkit.Editor
 {
@@ -45,6 +46,22 @@ namespace Unity.UIToolkit.Editor
                 return false;
             binder.SetObjectValue(elementIndex, propertyId, channel, value);
             return true;
+        }
+
+        public static bool TryResolveBoundElementAndProperty(this UIAnimationBinder binder, string propertyName,
+            out VisualElement element, out StylePropertyId id)
+        {
+            element = null;
+            id = StylePropertyId.Unknown;
+
+            binder.UpdateElementNamesIfNeeded();
+            if (!UIAnimationBinderEditorBindings.TryResolveAttribute(
+                    binder, propertyName, out var elementIndex, out var propertyId, out _, out _))
+                return false;
+
+            element = binder.GetElementAt(elementIndex);
+            id = (StylePropertyId)propertyId;
+            return element != null;
         }
 
         public static bool TryGetChannelKindForBinding(string propertyName, out UIAnimationBinder.AnimationChannelKind kind)

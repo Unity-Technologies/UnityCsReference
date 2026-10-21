@@ -11,6 +11,7 @@ namespace UnityEditor.QuickInstall
     {
         readonly MenuConfig m_Config;
         readonly string m_PackageName;
+        bool m_MenuItemAdded;
         static bool s_RefreshScheduled = false;
 
         internal QuickInstallMenuItem(string packageName, MenuConfig config)
@@ -39,6 +40,7 @@ namespace UnityEditor.QuickInstall
             
             Action onClick = () => QuickInstaller.InstallPackage(m_PackageName, InstallMethod.MenuItem);
             Menu.AddMenuItem(m_Config.MenuPath, "", false, m_Config.Priority, onClick, null);
+            m_MenuItemAdded = true;
             if (Application.platform == RuntimePlatform.LinuxEditor && !s_RefreshScheduled)
             {
                 s_RefreshScheduled = true;
@@ -48,10 +50,12 @@ namespace UnityEditor.QuickInstall
 
         internal void RemoveMenuItem()
         {
-            if (!Menu.MenuItemExists(m_Config.MenuPath))
+            // The installed package may declare its own [MenuItem] at the same path; only remove the placeholder.
+            if (!m_MenuItemAdded || !Menu.MenuItemExists(m_Config.MenuPath))
                 return;
-            
+
             Menu.RemoveMenuItem(m_Config.MenuPath);
+            m_MenuItemAdded = false;
 
             // Traverse up the menu path and remove any empty submenus. Exit early if we encounter a non-empty submenu.
             var subpath = m_Config.MenuPath;

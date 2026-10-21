@@ -1800,19 +1800,6 @@ static void BurstSetup()
 
             private static void RunNativeProgram(string exePath, List<string> arguments, string workingDirectory, CompilerOutputParserBase parser)
             {
-                // On non Windows platform, make sure that the command is executable
-                // This is a workaround - occasionally the execute bits are lost from our package
-                if (Application.platform != RuntimePlatform.WindowsEditor && Path.IsPathRooted(exePath))
-                {
-                    var escapedExePath = EscapeForShell(exePath, singleQuoteWrapped: true);
-                    var shArgs = $"-c '[ ! -x {escapedExePath} ] && chmod 755 {escapedExePath}'";
-
-                    var p = new Program(new ProcessStartInfo("sh", shArgs) { CreateNoWindow = true});
-                    p.GetProcessStartInfo().WorkingDirectory = workingDirectory;
-                    p.Start();
-                    p.WaitForExit();
-                }
-
                 var startInfo = new ProcessStartInfo(exePath)
                 {
                     CreateNoWindow = true

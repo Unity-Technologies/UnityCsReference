@@ -76,6 +76,7 @@ namespace Unity.Hierarchy
         HierarchyViewModel m_HierarchyViewModel;
         bool m_OwnsHierarchyFlattened;
         uint m_Version;
+        Dictionary<HierarchyNodeTypeHandler, IHierarchyNodeTypeHandlerViewState> m_HandlerStates;
 
         // Data update state
         UpdateStage m_UpdateStage = UpdateStage.First;
@@ -107,7 +108,6 @@ namespace Unity.Hierarchy
 
         // Profiler markers
         readonly ProfilerMarker m_RefreshItemsProfilerMarker = new ProfilerMarker("HierarchyView.RefreshItems");
-        readonly ProfilerMarker m_SetSelectionMarker = new ProfilerMarker("HierarchyView.SetSelection");
 
         // Cached to avoid a per-bind delegate allocation.
         readonly HierarchyViewItem.ExpandedStateChangedEventHandler m_OnExpandedStateChanged;
@@ -488,8 +488,6 @@ namespace Unity.Hierarchy
                 m_Hierarchy.HandlerCreated -= OnHandlerCreated;
             if (m_HierarchyViewModel != null)
                 m_HierarchyViewModel.FlagsChanged -= OnViewModelFlagsChanged;
-            if (m_CollectionView != null)
-                m_CollectionView.BeforeRefreshingItems -= UpdateData;
 
             // Invoke source hierarchy changing
             SourceHierarchyChanging?.Invoke(this, m_Hierarchy, hierarchy, defaultFlags);
@@ -558,13 +556,6 @@ namespace Unity.Hierarchy
             // Register events
             m_Hierarchy.HandlerCreated += OnHandlerCreated;
             m_HierarchyViewModel.FlagsChanged += OnViewModelFlagsChanged;
-
-            // Subscribe to BeforeRefreshingItems and calling UpdateData to make sure the data
-            // of Hierarchy, Flattened and ViewModel, alongside all handlers state are up to date for the collection view
-            // to iterate over it.
-            // We had a case where a node was removed from the GameObjectHandler mapping but the node was
-            // still in the hierarchy because the command list was not done being processed.
-            m_CollectionView.BeforeRefreshingItems += UpdateData;
         }
 
         /// <summary>
@@ -1326,6 +1317,62 @@ namespace Unity.Hierarchy
         }
 
         /// <summary>
+        /// Gets the state a node type handler keeps for this view.
+        /// </summary>
+        /// <param name="handler">The handler owning the state.</param>
+        /// <param name="state">When this method returns, the state, or <see langword="null"/> when there is none.</param>
+        /// <typeparam name="T">The type of state the handler stores.</typeparam>
+        /// <returns><see langword="true"/> if the handler has state of that type, <see langword="false"/> otherwise.</returns>
+        [VisibleToOtherModules]
+        internal bool TryGetHandlerState<T>(HierarchyNodeTypeHandler handler, out T state)
+            where T : class, IHierarchyNodeTypeHandlerViewState
+        {
+            state = m_HandlerStates != null && m_HandlerStates.TryGetValue(handler, out var existing) ? existing as T : null;
+            return state != null;
+        }
+
+        /// <summary>
+        /// Gets the state a node type handler keeps for this view, creating it when there is none.
+        /// </summary>
+        /// <param name="handler">The handler owning the state.</param>
+        /// <typeparam name="T">The type of state the handler stores.</typeparam>
+        /// <returns>The state.</returns>
+        [VisibleToOtherModules]
+        internal T GetOrCreateHandlerState<T>(HierarchyNodeTypeHandler handler)
+            where T : class, IHierarchyNodeTypeHandlerViewState, new()
+        {
+            if (TryGetHandlerState<T>(handler, out var existing))
+                return existing;
+
+            var state = new T();
+            m_HandlerStates ??= new Dictionary<HierarchyNodeTypeHandler, IHierarchyNodeTypeHandlerViewState>();
+            if (m_HandlerStates.TryGetValue(handler, out var previous))
+                previous?.Dispose();
+
+            m_HandlerStates[handler] = state;
+            return state;
+        }
+
+        void DestroyHandlerState(HierarchyNodeTypeHandler handler)
+        {
+            if (m_HandlerStates == null || !m_HandlerStates.Remove(handler, out var state))
+                return;
+
+            state?.Dispose();
+        }
+
+        void DestroyHandlerStates()
+        {
+            if (m_HandlerStates == null)
+                return;
+
+            foreach (var state in m_HandlerStates.Values)
+                state?.Dispose();
+
+            m_HandlerStates.Clear();
+        }
+
+        /// <summary>
         /// Reset the view to its initial state.
         /// </summary>
         internal void Reset()
@@ -1334,6 +1381,9 @@ namespace Unity.Hierarchy
 
             // Unbind handlers
             UnbindHandlers();
+
+            // Handlers are not unbound when the hierarchy is already gone, so their state is released here
+            DestroyHandlerStates();
 
             // Remove then style container
             m_StyleContainer.Remove(m_CollectionView);
@@ -1671,7 +1721,10 @@ namespace Unity.Hierarchy
 
             var handlers = m_Hierarchy.EnumerateNodeTypeHandlers();
             foreach (var handler in handlers)
+            {
                 handler.Internal_UnbindView(this);
+                DestroyHandlerState(handler);
+            }
         }
 
         void OnClickEvent(ClickEvent evt)

@@ -346,7 +346,16 @@ namespace UnityEngine.UIElements.UIR
                 readsGamma: activeIsGamma || forceGamma,
                 writesGamma: activeIsGamma,
                 lastPassWritesGamma: activeIsGamma || forceGamma,
-                ve.scaledPixelsPerPoint);
+                GetRenderTreePixelsPerPoint(ve.nestedRenderData?.renderTree, ve.scaledPixelsPerPoint));
+        }
+
+        // Set by the compositor, which runs before the callbacks
+        public static Vector2 GetRenderTreePixelsPerPoint(RenderTree renderTree, float panelPixelsPerPoint)
+        {
+            Vector2 density = renderTree?.rasterPixelsPerPoint ?? Vector2.zero;
+            if (density.x > 0 && density.y > 0)
+                return density;
+            return new Vector2(panelPixelsPerPoint, panelPixelsPerPoint);
         }
 
         // Called when the element's `filter` chain becomes empty. Element removal returns the

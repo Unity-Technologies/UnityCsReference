@@ -430,7 +430,7 @@ namespace UnityEditor
         extern public static void SetAnimationClipSettings([NotNull] AnimationClip clip, AnimationClipSettings srcClipInfo);
         extern internal static void SetAnimationClipSettingsNoDirty([NotNull] AnimationClip clip, AnimationClipSettings srcClipInfo);
 
-        extern public static void SetAdditiveReferencePose(AnimationClip clip, AnimationClip referenceClip, float time);
+        extern public static void SetAdditiveReferencePose([NotNull] AnimationClip clip, [NotNull] AnimationClip referenceClip, float time);
 
         extern internal static bool IsValidOptimizedPolynomialCurve(AnimationCurve curve);
         extern public static void ConstrainToPolynomialCurve(AnimationCurve curve);

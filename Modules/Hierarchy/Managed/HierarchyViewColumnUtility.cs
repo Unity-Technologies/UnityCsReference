@@ -66,7 +66,7 @@ namespace Unity.Hierarchy
         /// <param name="pool"></param>
         public static void UnbindCellFromValueEditor<TModel, TEditor, TValue>(HierarchyViewCell cell, HierarchyViewColumnContextPool<HierarchyViewCellValueEditor<TModel, TEditor, TValue>> pool) where TEditor : VisualElement, INotifyValueChanged<TValue>, new()
         {
-            if (cell.userData is HierarchyViewCellValueEditor<TModel, TEditor, TValue> editor)
+            if (cell.ValueEditor is HierarchyViewCellValueEditor<TModel, TEditor, TValue> editor)
             {
                 pool.Release(cell.View.GetHashCode(), editor);
                 editor.Unbind();
@@ -82,6 +82,9 @@ namespace Unity.Hierarchy
         /// <returns></returns>
         public static TEditor GetOrCreateEditor<TEditor>(HierarchyViewCell cell, params UniqueStyleString[] classes) where TEditor : VisualElement, new()
         {
+            if (cell.CachedEditor is TEditor cached && cached.parent == cell)
+                return cached;
+
             var editor = cell.Q<TEditor>();
             if (editor == null)
             {
@@ -90,6 +93,8 @@ namespace Unity.Hierarchy
                 editor.AddToClassList(classes);
                 cell.Add(editor);
             }
+
+            cell.CachedEditor = editor;
             return editor;
         }
 

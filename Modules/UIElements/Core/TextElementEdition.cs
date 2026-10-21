@@ -491,7 +491,7 @@ namespace UnityEngine.UIElements
         {
             var mLength = edition.maxLength;
             if (mLength >= 0 && s != null && s.Length > mLength)
-                return s.Substring(0, mLength);
+                return s.Substring(0, AvoidSurrogateSplit(s, mLength));
             return s;
         }
 

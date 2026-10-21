@@ -87,8 +87,8 @@ namespace Unity.Hierarchy.Editor
 
         protected override void Initialize()
         {
-            var currentStage = StageUtility.GetCurrentStage();
-            m_CustomParentForNewGameObjects = currentStage is PrefabStage prefabStage ? prefabStage.prefabContentsRoot.transform : null;
+            var stage = HierarchyWindow.GetStage(Hierarchy);
+            m_CustomParentForNewGameObjects = stage is PrefabStage prefabStage ? prefabStage.prefabContentsRoot.transform : null;
         }
 
         /// <summary>
@@ -281,11 +281,6 @@ namespace Unity.Hierarchy.Editor
             Undo.RecordObject(go, "Rename");
             go.name = name;
             return true;
-        }
-
-        string IHierarchyEditorNodeTypeHandler.GetDisplayNameOverride(HierarchyView view, in HierarchyNode node)
-        {
-            return Hierarchy.Exists(in node) ? null : node.ToString();
         }
 
         bool IHierarchyEditorNodeTypeHandler.CanDuplicate(HierarchyView view)

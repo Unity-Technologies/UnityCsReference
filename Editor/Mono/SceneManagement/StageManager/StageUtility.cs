@@ -156,16 +156,15 @@ namespace UnityEditor.SceneManagement
             CallAwakeFromLoadOnSubHierarchyInternal(prefabInstanceRoot);
         }
 
-        [RequiredByNativeCode]
-        internal static Scene[] GetCurrentStageScenes()
+        // Empty for the main stage, since its scenes are the ones tracked by the scene manager.
+        internal static Scene[] GetStageScenes(Stage stage)
         {
-            var currentStage = GetCurrentStage();
-            if (currentStage is MainStage)
+            if (stage == null || stage is MainStage)
                 return Array.Empty<Scene>();
 
-            var scenes = new Scene[currentStage.sceneCount];
-            for (int i = 0; i < currentStage.sceneCount; ++i)
-                scenes[i] = currentStage.GetSceneAt(i);
+            var scenes = new Scene[stage.sceneCount];
+            for (int i = 0; i < stage.sceneCount; ++i)
+                scenes[i] = stage.GetSceneAt(i);
 
             return scenes;
         }

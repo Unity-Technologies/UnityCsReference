@@ -83,6 +83,12 @@ namespace UnityEngine.UIElements
         int GetElementCount() => m_Elements?.Count ?? -1;
 
         [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
+        internal VisualElement GetElementAt(int elementIndex)
+        {
+            return elementIndex >= 0 && elementIndex < GetElementCount() ? m_Elements[elementIndex].Value : null;
+        }
+
+        [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
         internal void SetFloatValue(int elementIndex, int propertyId, int channel, float value)
         {
             if (elementIndex < 0 || elementIndex >= GetElementCount())

@@ -9,6 +9,8 @@ using UnityEditor;
 using UnityEditorInternal;
 using UnityEngine;
 using UnityEngine.UIElements;
+using UnityEngine.UIElements.Layout;
+using UnityEngine.UIElements.StyleSheets;
 using Object = UnityEngine.Object;
 
 namespace Unity.UIToolkit.Editor
@@ -492,6 +494,9 @@ namespace Unity.UIToolkit.Editor
         // current resolved style instead of a placeholder zero.
         public float GetFloatValue(EditorCurveBinding binding)
         {
+            if (TryGetPixelSeed(binding.propertyName, k_LengthValueSuffix, out var seededPixels))
+                return seededPixels;
+
             return TryReadBoundValue(binding, out var kind, out var f, out var i, out _)
                 && kind == UIAnimationBinder.AnimationChannelKind.Float
                 ? f
@@ -500,9 +505,106 @@ namespace Unity.UIToolkit.Editor
 
         public int GetIntValue(EditorCurveBinding binding)
         {
+            if (TryGetPixelSeed(binding.propertyName, k_LengthUnitSuffix, out _))
+                return (int)LengthUnit.Pixel;
+
             return TryReadBoundValue(binding, out var kind, out _, out var i, out _) && kind == UIAnimationBinder.AnimationChannelKind.Int
                 ? i
                 : 0;
+        }
+
+        const string k_LengthValueSuffix = ".value";
+        const string k_LengthUnitSuffix = ".unit";
+
+        // Every layout Length computes to auto (or none, for max-*) unless USS says otherwise, and
+        // Length.unit casts the internal 4-value LayoutUnit straight through - so an untouched seed
+        // carries a unit the curve cannot drive, and the property animates to nothing. Rewrite those
+        // seeds to the pixel value the element is already laid out at.
+        // Only reached for the two-channel Lengths named below; nested Length blocks
+        // (BackgroundSize.x.unit, Translate.y.unit, ...) never compute to auto/none.
+        bool TryGetPixelSeed(string propertyName, string expectedSuffix, out float pixels)
+        {
+            pixels = 0f;
+            if (propertyName == null || !propertyName.EndsWith(expectedSuffix, StringComparison.Ordinal))
+                return false;
+
+            var binder = m_Selection?.GetCanonicalBinder();
+            if (binder == null)
+                return false;
+
+            // Resolve and classify before reading the unit: the switch rejects every property that
+            // can't be seeded without a second native round-trip, and these run per row per repaint.
+            if (!binder.TryResolveBoundElementAndProperty(propertyName, out var element, out var id)
+                || !TryResolveLayoutPixels(element, id, out pixels))
+                return false;
+
+            // The seed is only rewritten when the element really is at auto/none; an explicit
+            // `width: 50%` must keep its unit and its percentage.
+            var unitName = propertyName.Substring(0, propertyName.Length - expectedSuffix.Length) + k_LengthUnitSuffix;
+            if (!binder.TryReadCurrentBoundValue(unitName, out var kind, out _, out var unit, out _)
+                || kind != UIAnimationBinder.AnimationChannelKind.Int
+                || unit < (int)LayoutUnit.Auto)
+            {
+                pixels = 0f;
+                return false;
+            }
+
+            // Layout values are NaN until the element has been laid out at least once; keep the
+            // original seed rather than writing a NaN keyframe into the clip.
+            if (float.IsNaN(pixels))
+            {
+                pixels = 0f;
+                return false;
+            }
+            return true;
+        }
+
+        // The pixel value that leaves the element laid out as it is. none/auto on max-* and flex-basis
+        // have no exact equivalent, so those pin the current size: a fixed point today, a real bound
+        // once the layout around the element changes - still better than a px row that drives nothing.
+        static bool TryResolveLayoutPixels(VisualElement element, StylePropertyId id, out float pixels)
+        {
+            var resolved = element.resolvedStyle;
+            switch (id)
+            {
+                case StylePropertyId.Width:
+                case StylePropertyId.MaxWidth: pixels = resolved.width; return true;
+                case StylePropertyId.Height:
+                case StylePropertyId.MaxHeight: pixels = resolved.height; return true;
+                case StylePropertyId.MarginTop: pixels = resolved.marginTop; return true;
+                case StylePropertyId.MarginBottom: pixels = resolved.marginBottom; return true;
+                case StylePropertyId.MarginLeft: pixels = resolved.marginLeft; return true;
+                case StylePropertyId.MarginRight: pixels = resolved.marginRight; return true;
+                case StylePropertyId.PaddingTop: pixels = resolved.paddingTop; return true;
+                case StylePropertyId.PaddingBottom: pixels = resolved.paddingBottom; return true;
+                case StylePropertyId.PaddingLeft: pixels = resolved.paddingLeft; return true;
+                case StylePropertyId.PaddingRight: pixels = resolved.paddingRight; return true;
+
+                // auto defers to width/height; take the one that runs along the parent's main axis.
+                case StylePropertyId.FlexBasis:
+                    var direction = element.parent?.resolvedStyle.flexDirection ?? FlexDirection.Column;
+                    pixels = direction == FlexDirection.Row || direction == FlexDirection.RowReverse
+                        ? resolved.width
+                        : resolved.height;
+                    return true;
+
+                // resolvedStyle.top/bottom/left/right report the element's laid-out position inside
+                // its parent (LayoutY / LayoutBottom / LayoutX / LayoutRight), not the resolved
+                // offset, so seeding from them would displace the element. `auto` means "no offset".
+                case StylePropertyId.Top:
+                case StylePropertyId.Bottom:
+                case StylePropertyId.Left:
+                case StylePropertyId.Right:
+                // min-* of auto imposes no lower bound, so 0px is the same constraint.
+                case StylePropertyId.MinWidth:
+                case StylePropertyId.MinHeight:
+                    pixels = 0f;
+                    return true;
+
+                default:
+                    pixels = 0f;
+                    return false;
+            }
         }
 
         public Object GetObjectReferenceValue(EditorCurveBinding binding)

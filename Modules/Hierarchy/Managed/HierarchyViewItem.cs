@@ -63,6 +63,10 @@ namespace Unity.Hierarchy
         readonly Action m_OnBeginRename;
         readonly Action<string, bool> m_OnEndRename;
 
+        VisualElement m_NavigateButtonRow;
+        int m_NavigateButtonRowChildCount = -1;
+        Button m_NavigateButton;
+
         /// <summary>
         /// Gets the <see cref="HierarchyNodeType"/> of the <see cref="HierarchyNode"/> bound to this <see cref="HierarchyViewItem"/>.
         /// </summary>
@@ -172,8 +176,15 @@ namespace Unity.Hierarchy
                 if (row == null)
                     return null;
 
-                // Query for the button in the navigate column
-                return row.Q<Button>(className: "hierarchy-item__right-arrow-button");
+                // Re-queries the row only when the row or its cell count changes; a missing button is cached as null.
+                if (!ReferenceEquals(row, m_NavigateButtonRow) || row.childCount != m_NavigateButtonRowChildCount)
+                {
+                    m_NavigateButton = row.Q<Button>(className: "hierarchy-item__right-arrow-button");
+                    m_NavigateButtonRow = row;
+                    m_NavigateButtonRowChildCount = row.childCount;
+                }
+
+                return m_NavigateButton;
             }
         }
 
@@ -330,14 +341,14 @@ namespace Unity.Hierarchy
 
             Icon.EnableInClassList(k_HierarchyItemIconCut, viewModel.HasFlags(in m_Node, HierarchyNodeFlags.Cut));
 
-            // A null override means "use the node's raw name": stream the node's native UTF-8 name straight
-            // into the text element without materializing a managed string. Handlers that need to decorate
-            // the name return a non-null override instead.
+            // Shows the handler's override name if it returns one, otherwise streams the node's native UTF-8 name into
+            // the label without allocating a managed string. If the node was already removed from the hierarchy but is
+            // still listed by the view model, clears the text left on the recycled row by its previous node.
             var overrideName = (m_Handler as IHierarchyEditorNodeTypeHandler)?.GetDisplayNameOverride(m_View, in m_Node);
             if (overrideName != null)
                 m_Name.Text = overrideName;
-            else if (m_View.Source.Exists(in m_Node))
-                m_Name.Label.SetTextUtf8(m_View.Source.GetNameRaw(in m_Node));
+            else if (m_View.Source.TryGetNameRaw(in m_Node, out var name))
+                m_Name.Label.SetTextUtf8(name);
             else
                 m_Name.Text = string.Empty;
 
