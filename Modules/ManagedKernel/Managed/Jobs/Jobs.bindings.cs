@@ -185,8 +185,8 @@ namespace Unity.Jobs.LowLevel.Unsafe
         ///<summary>Set whether to use the jobs debugger at runtime.</summary>
         ///<remarks>The jobs debugger is only supported in the Editor, so this property only has effect in the Editor.</remarks>
         public static extern bool JobDebuggerEnabled { [FreeFunction] get; [FreeFunction] set; }
-        ///<summary>Set whether to run jobs in Mono or Burst.</summary>
-        ///<remarks>When disabled, this forces jobs that have already been compiled with Burst to run in Mono instead. For example, if you want to debug jobs 
+        ///<summary>Set whether to run jobs as managed code or as Burst-compiled code.</summary>
+        ///<remarks>When disabled, this forces jobs that have already been compiled with Burst to run in managed code instead. For example, if you want to debug jobs 
         ///or want to compare behavior or performance.</remarks>
         public static extern bool JobCompilerEnabled { [FreeFunction] get; [FreeFunction] set; }
 

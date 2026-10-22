@@ -1106,7 +1106,7 @@ namespace Unity.VectorGraphics
             string stopColor = styles.Evaluate("stop-color");
             Color color = stopColor != null ? SVGAttribParser.ParseColor(stopColor) : Color.black;
 
-            color.a = AttribFloatVal("stop-opacity", 1.0f);
+            color.a *= AttribOpacityVal("stop-opacity");
             stop.Color = color;
 
             string offsetString = styles.Evaluate("offset");
@@ -1694,11 +1694,9 @@ namespace Unity.VectorGraphics
             return (val != null) ? int.Parse(val) : defaultVal;
         }
 
-        float AttribFloatVal(string attribName) { return AttribFloatVal(attribName, 0.0f); }
-        float AttribFloatVal(string attribName, float defaultVal)
+        float AttribOpacityVal(string attribName)
         {
-            string val = styles.Evaluate(attribName);
-            return (val != null) ? SVGAttribParser.ParseFloat(val) : defaultVal;
+            return SVGAttribParser.ParseOpacityValue(styles.Evaluate(attribName));
         }
 
         float AttribLengthVal(XmlReaderIterator.Node node, string attribName, DimType dimType) { return AttribLengthVal(node, attribName, 0.0f, dimType); }
@@ -1954,7 +1952,7 @@ namespace Unity.VectorGraphics
 
         float ParseOpacity(SceneNode sceneNode)
         {
-            float opacity = AttribFloatVal("opacity", 1.0f);
+            float opacity = AttribOpacityVal("opacity");
             if (opacity != 1.0f && sceneNode != null)
                 nodeOpacity[sceneNode] = opacity;
             return opacity;
@@ -2831,7 +2829,7 @@ namespace Unity.VectorGraphics
         public static IFill ParseFill(XmlReaderIterator.Node node, SVGDictionary dict, SVGPostponedFills postponedFills, SVGStyleResolver styles, Inheritance inheritance, out bool isDefaultFill)
         {
             string opacityAttrib = styles.Evaluate("fill-opacity", inheritance);
-            float opacity = (opacityAttrib != null) ? ParseFloat(opacityAttrib) : 1.0f;
+            float opacity = ParseOpacityValue(opacityAttrib);
             string fillMode = styles.Evaluate("fill-rule", inheritance);
             FillMode mode = FillMode.NonZero;
             if (fillMode != null)
@@ -2862,7 +2860,7 @@ namespace Unity.VectorGraphics
                 return null; // If stroke is not specified, no other stroke properties matter
 
             string opacityAttrib = styles.Evaluate("stroke-opacity", inheritance);
-            float opacity = (opacityAttrib != null) ? ParseFloat(opacityAttrib) : 1.0f;
+            float opacity = ParseOpacityValue(opacityAttrib);
 
             IFill strokeFill = null;
             try
@@ -2882,6 +2880,7 @@ namespace Unity.VectorGraphics
 
         public static Color ParseColor(string colorString)
         {
+            colorString = colorString.Trim();
             if (colorString[0] == '#')
             {
                 // Hex format
@@ -2889,10 +2888,21 @@ namespace Unity.VectorGraphics
                 if (colorString.Length == 4)
                 {
                     // #ABC >> #AABBCC
+                    return new Color(HexNibble(hexVal, 8), HexNibble(hexVal, 4), HexNibble(hexVal, 0));
+                }
+                else if (colorString.Length == 5)
+                {
+                    // #ABCD >> #AABBCCDD
+                    return new Color(HexNibble(hexVal, 12), HexNibble(hexVal, 8), HexNibble(hexVal, 4), HexNibble(hexVal, 0));
+                }
+                else if (colorString.Length == 9)
+                {
+                    // #RRGGBBAA
                     return new Color(
-                        ((((hexVal >> 8) & 0xF) << 0) | (((hexVal >> 8) & 0xF) << 4)) / 255.0f,
-                        ((((hexVal >> 4) & 0xF) << 0) | (((hexVal >> 4) & 0xF) << 4)) / 255.0f,
-                        ((((hexVal >> 0) & 0xF) << 0) | (((hexVal >> 0) & 0xF) << 4)) / 255.0f);
+                        ((hexVal >> 24) & 0xFF) / 255.0f,
+                        ((hexVal >> 16) & 0xFF) / 255.0f,
+                        ((hexVal >> 8) & 0xFF) / 255.0f,
+                        ((hexVal >> 0) & 0xFF) / 255.0f);
                 }
                 else
                 {
@@ -2906,24 +2916,25 @@ namespace Unity.VectorGraphics
             if (colorString.StartsWith("rgb(") && colorString.EndsWith(")"))
             {
                 string numbersString = colorString.Substring(4, colorString.Length-5);
-                string[] numbers = numbersString.Split(new char[] { ',', '%' }, StringSplitOptions.RemoveEmptyEntries);
+                string[] numbers = numbersString.Split(new char[] { ',' }, StringSplitOptions.RemoveEmptyEntries);
                 if (numbers.Length != 3)
                     throw new Exception("Invalid rgb() color specification");
-                float divisor = colorString.Contains("%") ? 100.0f : 255.0f;
-                return new Color(Byte.Parse(numbers[0]) / divisor, Byte.Parse(numbers[1]) / divisor, Byte.Parse(numbers[2]) / divisor);
+                return new Color(
+                    ParseColorComponent(numbers[0], 255.0f),
+                    ParseColorComponent(numbers[1], 255.0f),
+                    ParseColorComponent(numbers[2], 255.0f));
             }
             else if (colorString.StartsWith("rgba(") && colorString.EndsWith(")"))
             {
                 string numbersString = colorString.Substring(5, colorString.Length-6);
-                string[] numbers = numbersString.Split(new char[] { ',', '%' }, StringSplitOptions.RemoveEmptyEntries);
+                string[] numbers = numbersString.Split(new char[] { ',' }, StringSplitOptions.RemoveEmptyEntries);
                 if (numbers.Length != 4)
                     throw new Exception("Invalid rgba() color specification");
-                float divisor = colorString.Contains("%") ? 100.0f : 255.0f;
                 return new Color(
-                    Byte.Parse(numbers[0]) / divisor,
-                    Byte.Parse(numbers[1]) / divisor,
-                    Byte.Parse(numbers[2]) / divisor,
-                    divisor == 100.0f ? Byte.Parse(numbers[3]) / divisor : ParseFloat(numbers[3]));
+                    ParseColorComponent(numbers[0], 255.0f),
+                    ParseColorComponent(numbers[1], 255.0f),
+                    ParseColorComponent(numbers[2], 255.0f),
+                    ParseColorComponent(numbers[3], 1.0f));
             }
             else if(colorString.StartsWith("hsl(") && colorString.EndsWith(")"))
             {
@@ -2943,6 +2954,24 @@ namespace Unity.VectorGraphics
             if (namedColors == null)
                 namedColors = new NamedWebColorDictionary();
             return namedColors[colorString.ToLower()];
+        }
+
+        static float HexNibble(uint hexVal, int shift)
+        {
+            return ((hexVal >> shift) & 0xF) * 0x11 / 255.0f;
+        }
+
+        internal static float ParseOpacityValue(string val)
+        {
+            return (val != null) ? ParseColorComponent(val, 1.0f) : 1.0f;
+        }
+
+        static float ParseColorComponent(string part, float scale)
+        {
+            part = part.TrimEnd();
+            if (part.EndsWith("%"))
+                return Mathf.Clamp01(ParseFloat(part.Substring(0, part.Length - 1)) / 100.0f);
+            return Mathf.Clamp01(ParseFloat(part) / scale);
         }
 
         private static float HueToValue(float p, float q, float t)

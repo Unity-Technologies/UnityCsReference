@@ -51,6 +51,9 @@ namespace Unity.UIToolkit.Editor
         // Cached fan-out delegate + its per-pass state, so ResampleAnimation doesn't allocate a
         // capturing closure every frame while scrubbing / playing.
         [NonSerialized] Action<VisualElement, UIAnimationBinder> m_SampleTargetAction;
+        // Cleared by exactly this list on stop: a rule's matched set can change while it previews.
+        [NonSerialized] readonly HashSet<VisualElement> m_PreviewFlaggedElements = new();
+        [NonSerialized] Action<VisualElement, UIAnimationBinder> m_FlagTargetAction;
         [NonSerialized] UIAnimationClip m_SampleUiClip;
         [NonSerialized] UIAnimationClip m_SampleCandidateClip;
         [NonSerialized] float m_SampleTime;
@@ -215,12 +218,7 @@ namespace Unity.UIToolkit.Editor
 
             AnimationMode.StartAnimationMode(driver);
 
-            // The target owns its inspector recording-context (per-element vs per-rule).
-            if (uiClip != null)
-                m_Selection.ActivateRecordingContext(uiClip, driver);
-
-            // Flag every driven element previewing so its style resolution yields to the clip.
-            m_Selection?.ForEachPreviewTarget(static (element, _) => element?.SetUIAnimationClipPreviewing(true));
+            ApplyPreviewToTargets(uiClip, driver);
 
             SubscribeBinderHook();
             SubscribeUndoPostprocess();
@@ -253,7 +251,7 @@ namespace Unity.UIToolkit.Editor
             if (AnimationPropertyContextualMenu.Instance.IsResponder(this))
                 AnimationPropertyContextualMenu.Instance.SetResponder(null);
 
-            m_Selection?.ForEachPreviewTarget(static (element, _) => element?.SetUIAnimationClipPreviewing(false));
+            ClearPreviewFlags();
 
             // Restore snapshot before StopAnimationMode / UnregisterProperties so the inspector
             // tint sees the original values while registrations are still active.
@@ -272,6 +270,49 @@ namespace Unity.UIToolkit.Editor
             AnimationMode.StopAnimationMode(GetOrCreateDriver());
         }
 
+        void ApplyPreviewToTargets(UIAnimationClip uiClip, AnimationModeDriver driver)
+        {
+            // The target owns its inspector recording-context (per-element vs per-rule).
+            if (uiClip != null)
+                m_Selection.ActivateRecordingContext(uiClip, driver);
+
+            // Flag every driven element previewing so its style resolution yields to the clip.
+            m_Selection?.ForEachPreviewTarget(m_FlagTargetAction ??= FlagPreviewTarget);
+        }
+
+        void FlagPreviewTarget(VisualElement element, UIAnimationBinder _)
+        {
+            if (element == null)
+                return;
+            element.SetUIAnimationClipPreviewing(true);
+            m_PreviewFlaggedElements.Add(element);
+        }
+
+        void ClearPreviewFlags()
+        {
+            foreach (var element in m_PreviewFlaggedElements)
+                element.SetUIAnimationClipPreviewing(false);
+            m_PreviewFlaggedElements.Clear();
+        }
+
+        // A replaced target holds none of the preview state, and the snapshot was read from its predecessor.
+        internal void OnPreviewTargetReplaced(bool clipChanged)
+        {
+            if (!previewing)
+                return;
+
+            // Unkeyed edits made against the previous clip must not be promoted into the new one.
+            if (clipChanged)
+                ClearCandidates();
+
+            m_PreviewFlaggedElements.RemoveWhere(static element => element.panel == null);
+
+            var uiClip = m_Selection?.uiAnimationClip;
+            CapturePrePreviewSnapshot(uiClip, m_Selection?.GetCanonicalBinder());
+            ApplyPreviewToTargets(uiClip, GetOrCreateDriver());
+            ResampleAnimation();
+        }
+
         void ClearTransientPreviewState()
         {
             UnsubscribeUndoPostprocess();
@@ -280,6 +321,7 @@ namespace Unity.UIToolkit.Editor
             DestroyCandidateClip();
             m_PrePreviewSnapshot = null;
             // Defensive: in case of race conditions
+            ClearPreviewFlags();
             m_Selection?.ForEachPreviewTarget(static (element, _) => element?.SetUIAnimationClipPreviewing(false));
             if (AnimationPropertyContextualMenu.Instance.IsResponder(this))
                 AnimationPropertyContextualMenu.Instance.SetResponder(null);

@@ -97,6 +97,33 @@ namespace UnityEditor.Build.Analysis
             m_ListView.selectedIndex = -1;
         }
 
+        /// <summary>
+        /// Clears both filters, then selects and reveals the asset as a click would, raising
+        /// SelectionChanged. The one deliberate way something other than the user moves this table.
+        /// </summary>
+        public bool SelectAsset(int assetId)
+        {
+            if ((uint)assetId >= (uint)m_Assets.Length)
+                return false;
+            ResetFilterState();
+            ApplyFilters();
+            var index = m_FilteredIndices.IndexOf(assetId);
+            m_ListView.SetSelection(index);
+            m_ListView.ScrollToItem(index);
+            return true;
+        }
+
+        /// <summary>Highlights and reveals an asset's row without raising SelectionChanged.</summary>
+        public bool SelectAssetWithoutNotify(int assetId)
+        {
+            var index = m_FilteredIndices.IndexOf(assetId);
+            if (index < 0)
+                return false;
+            m_ListView.SetSelectionWithoutNotify(new[] { index });
+            m_ListView.ScrollToItem(index);
+            return true;
+        }
+
         private void OnListSelectionChanged(IEnumerable<object> items)
         {
             BuildAnalysisAsset? asset = null;

@@ -181,6 +181,18 @@ internal partial class VisualElementNodeHandler
                 return DragVisualMode.Rejected;
         }
 
+        if (data.Parent != Hierarchy.Root)
+        {
+            var addedCount = 0;
+            foreach (var visualElement in draggedVisualElements)
+            {
+                if (visualElement.parent != dropParent)
+                    ++addedCount;
+            }
+            if (!VisualElementUtility.CanAddChildren(dropParent, addedCount))
+                return DragVisualMode.Rejected;
+        }
+
         switch (data.DropPosition)
         {
             case DragAndDropPosition.OverItem:
@@ -500,6 +512,10 @@ internal partial class VisualElementNodeHandler
                 return DragVisualMode.Rejected;
         }
 
+        if (data.DropPosition != DragAndDropPosition.OutsideItems &&
+            !VisualElementUtility.CanAddChildren(dropParent, visualTreeAssets.Count))
+            return DragVisualMode.Rejected;
+
         switch (data.DropPosition)
         {
             case DragAndDropPosition.OverItem:
@@ -541,8 +557,10 @@ internal partial class VisualElementNodeHandler
 
         var index = ResolveAssetInsertIndex(parentElement, childIndex, parentAsset);
 
-        AddTemplatesToElementCommand.Execute(CommandSources.Hierarchy, parentAsset, index,
+        var status = AddTemplatesToElementCommand.Execute(CommandSources.Hierarchy, parentAsset, index,
             visualTreeAssets.ToArray());
+        if (status != CommandExecutionStatus.Success)
+            return DragVisualMode.Rejected;
 
         // The command asked for the instances it created by asset alone; point that at the one dropped into.
         ScopePendingSelectionRequestsTo(parentElement);
@@ -577,6 +595,10 @@ internal partial class VisualElementNodeHandler
 
         var elementType = libraryItem.libraryType.type;
         var variantName = libraryItem.libraryType.variantName;
+        if (data.DropPosition != DragAndDropPosition.OutsideItems &&
+            !VisualElementUtility.CanAddChildren(dropParent, 1))
+            return DragVisualMode.Rejected;
+
         switch (data.DropPosition)
         {
             case DragAndDropPosition.OverItem:
@@ -626,8 +648,10 @@ internal partial class VisualElementNodeHandler
 
         // The new element is authored in the document that owns the parent asset, which in the Main Stage is
         // whichever scene document (or nested template) the drop landed in.
-        AddElementCommand.Execute(CommandSources.Hierarchy, elementType, parentAsset.visualTreeAsset, parentAsset,
-            index, variantName);
+        var status = AddElementCommand.Execute(CommandSources.Hierarchy, elementType, parentAsset.visualTreeAsset,
+            parentAsset, index, variantName);
+        if (status != CommandExecutionStatus.Success)
+            return DragVisualMode.Rejected;
 
         // The command asked for what it created by asset alone; point that at the instance dropped into.
         ScopePendingSelectionRequestsTo(parentElement);

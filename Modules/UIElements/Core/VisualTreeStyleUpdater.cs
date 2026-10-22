@@ -29,6 +29,12 @@ namespace UnityEngine.UIElements
         [NoAutoStaticsCleanup] // cleaned by ClearStyleCache on unloading
         private static Dictionary<int, ComputedTransitionProperty[]> s_ComputedTransitionsCache = new Dictionary<int, ComputedTransitionProperty[]>();
 
+        [NoAutoStaticsCleanup] // cleaned by ClearStyleCache on unloading
+        private static HashSet<Int64> s_ValidatedThisPass = new HashSet<Int64>();
+
+        [NoAutoStaticsCleanup] // reset by every validation pass
+        private static bool s_TrustValidatedEntries;
+
         static StyleCache()
         {
             UnloadingUtility.InitializeOnEveryCodeLoad(UnloadingSubscriber.StyleCache, Reinitialize);
@@ -44,6 +50,36 @@ namespace UnityEngine.UIElements
             return s_ComputedStyleCache.TryGetValue(hash, out data);
         }
 
+        public static bool TryGetValidatedValue(Int64 hash, out ComputedStyle data)
+        {
+            if (!s_ComputedStyleCache.TryGetValue(hash, out data))
+                return false;
+
+            if (s_TrustValidatedEntries && s_ValidatedThisPass.Contains(hash))
+                return true;
+
+            if (ComputedStyleUtility.HasStaleAssetReference(ref data))
+            {
+                data = default;
+                return false;
+            }
+
+            s_ValidatedThisPass.Add(hash);
+            return true;
+        }
+
+        public static void BeginValidationPass(bool trustValidatedEntries)
+        {
+            s_ValidatedThisPass.Clear();
+            s_TrustValidatedEntries = trustValidatedEntries;
+        }
+
+        public static void EndValidationPass()
+        {
+            s_ValidatedThisPass.Clear();
+            s_TrustValidatedEntries = false;
+        }
+
         public static void SetValue(Int64 hash, ref ComputedStyle data)
         {
             // No need to acquire ComputedStyle here because it's freshly created and already has the correct ref count.
@@ -51,6 +87,7 @@ namespace UnityEngine.UIElements
             if (s_ComputedStyleCache.TryGetValue(hash, out var existing))
                 existing.Release();
             s_ComputedStyleCache[hash] = data;
+            s_ValidatedThisPass.Add(hash);
         }
 
         public static bool TryGetValue(int hash, out StyleVariableContext data)
@@ -79,6 +116,7 @@ namespace UnityEngine.UIElements
                 kvp.Value.Release();
 
             s_ComputedStyleCache.Clear();
+            s_ValidatedThisPass.Clear();
             s_StyleVariableContextCache.Clear();
             s_ComputedTransitionsCache.Clear();
         }
@@ -293,6 +331,7 @@ namespace UnityEngine.UIElements
     internal class VisualTreeStyleUpdaterTraversal<TStyleProfiler> : HierarchyTraversal where TStyleProfiler : struct, IStyleProfiler
     {
         private StyleVariableContext m_ProcessVarContext = new StyleVariableContext();
+        private StyleVariableContext m_InlineVarContext = new StyleVariableContext();
 
         private List<StyleSelectorMatch> m_TempMatchResults = new List<StyleSelectorMatch>();
 
@@ -319,6 +358,8 @@ namespace UnityEngine.UIElements
         public override void Traverse(VisualElement element)
         {
             m_CustomStyleResolvedElements = VisualElementListPool.Get();
+            // A panel change receiver runs user code mid-traversal that may destroy assets, so validate every lookup.
+            StyleCache.BeginValidationPass(trustValidatedEntries: (currentPanel as Panel)?.panelChangeReceiver == null);
 
             try
             {
@@ -336,6 +377,7 @@ namespace UnityEngine.UIElements
                     // (UUM-153734), so reset here; this relies on nothing catching mid-traversal.
                     m_StyleMatchingContext.Reset();
                     m_TempMatchResults.Clear();
+                    StyleCache.EndValidationPass();
 
                     // Set flag to false before dispatching events - user callbacks can directly modify elements
                     m_IsApplyingStyles = false;
@@ -465,40 +507,39 @@ namespace UnityEngine.UIElements
                     var variableContext = m_StyleMatchingContext.variableContext;
                     var rule = element.inlineStyleAccess.inlineRule.rule;
                     if (rule != null && rule.customPropertiesCount > 0)
-                    {
-                        variableContext = new StyleVariableContext(m_StyleMatchingContext.variableContext);
-                        foreach (var property in rule.properties)
-                        {
-                            if (!property.isCustomProperty)
-                                continue;
-                            // Inline styles are always local content
-                            var sv = new StyleVariable(property.customNameId, rule.styleSheet, property.values, StyleSheetPriority.Default);
-                            variableContext.Add(sv);
-                        }
-                    }
+                        variableContext = GetInlineVariableContext(variableContext, rule);
                     element.inlineStyleAccess.ApplyInlineStyles(ref newStyle, variableContext);
                 }
 
-                ComputedTransitionUtils.UpdateComputedTransitions(ref newStyle, out var computedTransitions);
+                // SetComputedStyle ignores a style with the same rules hash, so every transition would be a no-op.
+                var sameMatchingRules = element.styleInitialized && element.computedStyle.matchingRulesHash == newStyle.matchingRulesHash;
+                // A transition is the only path that moves an existing element off a destroyed asset.
+                if (sameMatchingRules && !newStyle.transitionData.ReferenceEquals(InitialStyle.Get().transitionData))
+                    sameMatchingRules = !ComputedStyleUtility.HasStaleAssetReference(ref element.computedStyle);
 
-                if (element.hasRunningAnimations &&
-                    !ComputedTransitionUtils.SameTransitionProperty(ref element.computedStyle, ref newStyle))
+                if (!sameMatchingRules)
                 {
-                    CancelAnimationsWithNoTransitionProperty(computedTransitions, element, ref newStyle);
-                }
+                    ComputedTransitionUtils.UpdateComputedTransitions(ref newStyle, out var computedTransitions);
 
-                if (computedTransitions.Length > 0 && element.styleInitialized)
-                {
-                    // Start the transitions. Note that the element still has its old style at this point.
-                    ProcessTransitions(computedTransitions, element, ref element.computedStyle, ref newStyle);
+                    if (element.hasRunningAnimations &&
+                        !ComputedTransitionUtils.SameTransitionProperty(ref element.computedStyle, ref newStyle))
+                    {
+                        CancelAnimationsWithNoTransitionProperty(computedTransitions, element, ref newStyle);
+                    }
 
-                    // Set entire new computed style but immediately force the animated values to be updated again.
-                    element.SetComputedStyle(ref newStyle);
-                    ForceUpdateTransitions(element);
-                }
-                else
-                {
-                    element.SetComputedStyle(ref newStyle);
+                    if (computedTransitions.Length > 0 && element.styleInitialized)
+                    {
+                        // Start the transitions. Note that the element still has its old style at this point.
+                        ProcessTransitions(computedTransitions, element, ref element.computedStyle, ref newStyle);
+
+                        // Set entire new computed style but immediately force the animated values to be updated again.
+                        element.SetComputedStyle(ref newStyle);
+                        ForceUpdateTransitions(element);
+                    }
+                    else
+                    {
+                        element.SetComputedStyle(ref newStyle);
+                    }
                 }
 
                 newStyle.Release();
@@ -523,11 +564,12 @@ namespace UnityEngine.UIElements
                 m_CustomStyleResolvedElements.Add(element);
             }
 
-            m_StyleMatchingContext.ancestorFilter.PushElement(element);
-
-            Recurse(element, depth);
-
-            m_StyleMatchingContext.ancestorFilter.PopElement();
+            if (element.hierarchy.childCount > 0)
+            {
+                m_StyleMatchingContext.ancestorFilter.PushElement(element);
+                Recurse(element, depth);
+                m_StyleMatchingContext.ancestorFilter.PopElement();
+            }
 
             // Clear flags after traversing children (so children can see parent's dirty state during traversal)
             element.stylesDirty = false;
@@ -578,6 +620,29 @@ namespace UnityEngine.UIElements
                     element.styleAnimation.CancelAnimation(id);
             }
             m_AnimatedProperties.Clear();
+        }
+
+        StyleVariableContext GetInlineVariableContext(StyleVariableContext parentContext, StyleRule rule)
+        {
+            m_InlineVarContext.AddInitialRange(parentContext);
+            foreach (var property in rule.properties)
+            {
+                if (!property.isCustomProperty)
+                    continue;
+                // Inline styles are always local content
+                var sv = new StyleVariable(property.customNameId, rule.styleSheet, property.values, StyleSheetPriority.Default);
+                m_InlineVarContext.Add(sv);
+            }
+
+            var hash = m_InlineVarContext.GetVariableHash();
+            if (!StyleCache.TryGetValue(hash, out StyleVariableContext ctx))
+            {
+                ctx = new StyleVariableContext(m_InlineVarContext);
+                StyleCache.SetValue(hash, ctx);
+            }
+
+            m_InlineVarContext.Clear();
+            return ctx;
         }
 
         ComputedStyle ProcessMatchedRules(VisualElement element, List<StyleSelectorMatch> matchingSelectors)
@@ -655,7 +720,7 @@ namespace UnityEngine.UIElements
 
             // Re-resolve when a cached style's baked-in asset EntityIds were destroyed (e.g. an Addressables
             // bundle unloaded) so the reloaded asset replaces the stale, now-invalid reference.
-            if (!StyleCache.TryGetValue(matchingRulesHash, out var resolvedStyles) || ComputedStyleUtility.HasStaleAssetReference(ref resolvedStyles))
+            if (!StyleCache.TryGetValidatedValue(matchingRulesHash, out var resolvedStyles))
             {
                 ref var parentStyle = ref parent?.computedStyle != null ? ref parent.computedStyle : ref InitialStyle.Get();
                 resolvedStyles = ComputedStyle.Create(ref parentStyle);

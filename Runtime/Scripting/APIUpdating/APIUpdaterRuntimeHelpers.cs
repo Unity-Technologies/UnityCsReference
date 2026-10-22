@@ -16,12 +16,18 @@ namespace UnityEngine._Scripting.APIUpdating // Funky name because bindings gen 
     //----------------------------------------------------------------------------------------------------------------------
     internal class APIUpdaterRuntimeHelpers
     {
+        // The *HasValue flags let native callers tell a null field (unchanged) from an empty one (e.g. moved from the
+        // global namespace), since both marshal to an empty native string.
         [RequiredByNativeCode]
-        internal static bool GetMovedFromAttributeDataForType(Type sourceType, out string assembly, out string nsp, out string klass)
+        internal static bool GetMovedFromAttributeDataForType(Type sourceType, out string assembly, out string nsp, out string klass,
+            out bool assemblyHasValue, out bool nspHasValue, out bool klassHasValue)
         {
             klass = null;
             nsp = null;
             assembly = null;
+            klassHasValue = false;
+            nspHasValue = false;
+            assemblyHasValue = false;
 
             var attrs = sourceType.GetCustomAttributes(typeof(MovedFromAttribute), false);
 
@@ -31,6 +37,9 @@ namespace UnityEngine._Scripting.APIUpdating // Funky name because bindings gen 
             klass = attr.data.className;
             nsp = attr.data.nameSpace;
             assembly = attr.data.assembly;
+            klassHasValue = klass != null;
+            nspHasValue = nsp != null;
+            assemblyHasValue = assembly != null;
 
             return true;
         }

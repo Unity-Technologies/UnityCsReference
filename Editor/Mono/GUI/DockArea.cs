@@ -10,8 +10,6 @@ using UnityEditor.StyleSheets;
 using UnityEditor.Experimental;
 using UnityEditorInternal;
 using UnityEngine.XR;
-using System.Threading;
-using System.Threading.Tasks;
 using Unity.Scripting.LifecycleManagement;
 
 namespace UnityEditor
@@ -119,8 +117,9 @@ namespace UnityEditor
         private Rect m_TabAreaRect = Rect.zero;
         private int? newlyAddedTabIndex = null;
 
-        internal int pendingSelect = -1;
-        internal int pendingSelectVersion = 0;
+        private int m_PendingSelect = -1;
+        private double m_PendingSelectTimestamp;
+
         public int selected
         {
             get { return m_Selected; }
@@ -457,6 +456,10 @@ namespace UnityEditor
             // If the left scroll button is visible then clip the tabs a bit more because of the top left border radius of the scroll left button
             if (m_ScrollOffset > 0f)
                 clipRect.xMin += 3;
+
+            // Need to clear current "pending tab" if mouse moves outside of Tab's area during DragDrop
+            if (Event.current.type == EventType.DragUpdated && !clipRect.Contains(Event.current.mousePosition))
+                m_PendingSelect = -1;
 
             using (new GUI.ClipScope(clipRect, new Vector2(-m_ScrollOffset - 1f, 0)))
             {
@@ -887,45 +890,25 @@ namespace UnityEditor
 
         private void OpenTabDelayed(int tabToOpen)
         {
-            if (tabToOpen == selected)
+            if (tabToOpen == -1 || tabToOpen == selected)
             {
+                m_PendingSelect = -1;
                 return;
             }
 
-            if (tabToOpen == -1)
+            // Delay a short time before selecting the specified Tab
+            double now = EditorApplication.timeSinceStartup;
+            if (tabToOpen != m_PendingSelect)
             {
+                m_PendingSelect = tabToOpen;
+                m_PendingSelectTimestamp = now;
                 return;
             }
 
-            if (Interlocked.Exchange(ref pendingSelect, tabToOpen) == tabToOpen)
-            {
+            if (now - m_PendingSelectTimestamp < 0.25)
                 return;
-            }
 
-            int pendingVersion = Interlocked.Increment(ref pendingSelectVersion);
-
-            var t = Task.Run(async delegate
-            {
-                await Task.Delay(250);
-                return 0;
-            });
-
-            t.Wait();
-
-            Vector2 mousePos = GUIUtility.ScreenToGUIPoint(Editor.GetCurrentMousePosition());
-            int tabUnderMouse = GetTabAtMousePos(tabStyle, mousePos);
-
-            if (tabUnderMouse != tabToOpen)
-            {
-                Interlocked.CompareExchange(ref pendingSelect, -1, tabToOpen);
-                return;
-            }
-
-            if (pendingVersion != pendingSelectVersion)
-            {
-                return;
-            }
-
+            m_PendingSelect = -1;
             selected = tabToOpen;
         }
 
@@ -1165,7 +1148,7 @@ namespace UnityEditor
 
                 case EventType.DragExited:
                     {
-                        Interlocked.Exchange(ref pendingSelect, -1);
+                        m_PendingSelect = -1;
                         break;
                     }
 

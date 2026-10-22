@@ -21,9 +21,17 @@ namespace UnityEditor.Build.Analysis
         // 4: analyses now generate a DependencyGraph.bin sibling, so pre-graph caches regenerate once and write it.
         public const int k_SchemaVersion = 4;
 
-        // The one ContentLayout.json shape the dependency-graph reader understands.
-        // Keep in sync with kContentLayoutVersion in Modules/BuildReportingEditor/Managed/ContentLayout.cs.
+        // The ContentLayout.json versions the dependency-graph reader understands. The newest is the
+        // one the editor writes (keep in sync with kContentLayoutVersion in
+        // Modules/BuildReportingEditor/Managed/ContentLayout.cs); the oldest is the first whose fields
+        // the reader uses are all present. Version 4 only changed what StableId holds, which the
+        // reader never reads, so builds in the history from version 3 stay readable. Version 2 has no
+        // ArtifactIndex and reads as garbage, so it is refused.
+        public const int k_MinContentLayoutVersion = 3;
         public const int k_SupportedContentLayoutVersion = 4;
+
+        public static bool IsSupportedContentLayoutVersion(int version) =>
+            version >= k_MinContentLayoutVersion && version <= k_SupportedContentLayoutVersion;
 
         // Subfolder inside a build's metadata folder for regenerable cache files.
         public const string k_BuildHistoryCacheSubfolder = "cache";

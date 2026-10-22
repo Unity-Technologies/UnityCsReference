@@ -237,6 +237,17 @@ namespace UnityEngine.UIElements.StyleSheets
             return ReadCurvature(valueCount, val1, val2);
         }
 
+        public BoxShadow ReadBoxShadow(int index)
+        {
+            var val1 = m_Values[m_CurrentValueIndex + index];
+            var val2 = valueCount > 1 ? m_Values[m_CurrentValueIndex + index + 1] : default;
+            var val3 = valueCount > 2 ? m_Values[m_CurrentValueIndex + index + 2] : default;
+            var val4 = valueCount > 3 ? m_Values[m_CurrentValueIndex + index + 3] : default;
+            var val5 = valueCount > 4 ? m_Values[m_CurrentValueIndex + index + 4] : default;
+            var val6 = valueCount > 5 ? m_Values[m_CurrentValueIndex + index + 5] : default;
+            return ReadBoxShadow(valueCount, val1, val2, val3, val4, val5, val6);
+        }
+
         public float ReadFloat(int index)
         {
             var value = m_Values[m_CurrentValueIndex + index];
@@ -919,6 +930,14 @@ namespace UnityEngine.UIElements.StyleSheets
             if (mid < 0f) mid += twoPi;
             if (mid >= twoPi) mid -= twoPi;
             return mid;
+        }
+
+        internal static bool IsRadialGradientPrefixKeyword(string ident)
+        {
+            return string.Equals(ident, "circle", StringComparison.OrdinalIgnoreCase) ||
+                string.Equals(ident, "ellipse", StringComparison.OrdinalIgnoreCase) ||
+                string.Equals(ident, "at", StringComparison.OrdinalIgnoreCase) ||
+                TryGetRadialExtent(ident, out _);
         }
 
         static bool TryGetRadialExtent(string kw, out BackgroundGradientSize size)

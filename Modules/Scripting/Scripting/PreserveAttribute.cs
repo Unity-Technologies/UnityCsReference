@@ -6,13 +6,14 @@ using System;
 
 namespace UnityEngine.Scripting
 {
-    ///<summary>PreserveAttribute prevents byte code stripping from removing a class, method, field, or property.</summary>
-    ///<remarks>
-    ///  <para>When you create a build, Unity will try to strip unused code from your project. This is great to get small builds. However, sometimes you want some code to not be stripped, even if it looks like it is not used. This can happen for instance if you use reflection to call a method, or instantiate an object of a certain class.
-    ///You can apply the [Preserve] attribute to classes, methods, fields and properties. In addition to using PreserveAttribute, you can also use the traditional method of a link.xml file to tell the linker to not remove things. PreserveAttribute and link.xml work for both the Mono and IL2CPP scripting backends.
+    ///<summary>Prevents byte code stripping from removing a class, method, field, or property.</summary>
+    ///<remarks>When you create a build, Unity tries to strip unused code from your project, which can help keep build sizes small. However, you might want some code to not be stripped, even if it looks like it's not used. This can happen if for example you use reflection to call a method, or instantiate an object of a certain class.
     ///
-    ///For more details on <c>[Preserve]</c> and link.xml, refer to [Managed code stripping](xref:managed-code-stripping).</para>
-    ///  <para>For 3rd party libraries that do not want to take on a dependency on UnityEngine.dll, it is also possible to define their own PreserveAttribute. The code stripper will respect that too, and it will consider any attribute with the exact name "PreserveAttribute" as a reason not to strip the thing it is applied on, regardless of the namespace or assembly of the attribute.</para>
+    ///You can apply the `[Preserve]` attribute to classes, methods, fields and properties. You can also use a link.xml file to tell the linker to not remove things.
+    ///
+    ///For more details on `[Preserve]` and link.xml, refer to [Managed code stripping](xref:um-managed-code-stripping).
+    ///
+    /// For third party libraries that don't take on a dependency on UnityEngine.dll, they can define their own `PreserveAttribute`. The code stripper respects that and also considers any attribute with the exact name `PreserveAttribute` as a reason not to code strip, regardless of the namespace or assembly of the attribute.
     ///</remarks>
     ///<example>
     ///  <code><![CDATA[

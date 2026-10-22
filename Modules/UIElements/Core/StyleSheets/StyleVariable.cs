@@ -98,6 +98,14 @@ namespace UnityEngine.UIElements
                     {
                         // Found the variable: Remove it and let it be re-added at the end.
                         m_VariableHash ^= ComputeOrderSensitiveHash(variableIndex);
+                        unchecked
+                        {
+                            for (int i = variableIndex + 1; i < span.Length; i++)
+                            {
+                                var shiftedHash = span[i].hash;
+                                m_VariableHash ^= (i + 1) * shiftedHash ^ i * shiftedHash;   // entry shifts down one slot
+                            }
+                        }
                         m_Variables.RemoveAt(variableIndex);
                         break;
                     }

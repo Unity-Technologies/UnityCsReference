@@ -21,6 +21,7 @@ namespace UnityEditor.Build.Profile.Internal
             public AddSettingsDropdownItem(int key, string displayName) : base(displayName)
             {
                 this.Key = key;
+                tooltip = displayName;
             }
         }
 

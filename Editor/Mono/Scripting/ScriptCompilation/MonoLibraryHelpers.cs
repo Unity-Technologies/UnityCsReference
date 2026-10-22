@@ -6,6 +6,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using UnityEditor.Scripting;
 using UnityEditor.Scripting.Compilers;
 using UnityEditor.Utils;
 using UnityEngine.Scripting;
@@ -17,6 +18,13 @@ namespace UnityEditor.Scripting.ScriptCompilation
     {
         [NoAutoStaticsCleanup] // cache keyed by enum with string[] values (no user refs), safe to persist across reload
         static Dictionary<ApiCompatibilityLevel, string[]> cachedApiCompatibilityLevelReferences = new Dictionary<ApiCompatibilityLevel, string[]>();
+
+        public static string GetDefaultLanguageVersion(ApiCompatibilityLevel apiCompatibilityLevel)
+        {
+#pragma warning disable CS0618
+            return apiCompatibilityLevel == ApiCompatibilityLevel.NET ? "latest" : "9.0";
+#pragma warning restore CS0618
+        }
 
         [RequiredByNativeCode]
         public static string[] GetSystemLibraryReferences(ApiCompatibilityLevel apiCompatibilityLevel)
@@ -30,11 +38,6 @@ namespace UnityEditor.Scripting.ScriptCompilation
             {
                 return Directory.GetFiles(NetStandardFinder.GetNetStandardEditorExtensionsDirectory(), "*.dll");
             }
-
-#pragma warning disable CS0618
-            if (apiCompatibilityLevel == ApiCompatibilityLevel.NET)
-#pragma warning restore CS0618
-                throw new NotImplementedException("CORECLR_FIXME");
 
             return System.Array.Empty<string>();
         }
@@ -69,11 +72,13 @@ namespace UnityEditor.Scripting.ScriptCompilation
 
             var references = new List<string>();
 
-
-            // CORECLR_FIXME : Once we want to allow compiling against .NET we need to add a separate if case for .NET
 #pragma warning disable CS0618
-            if (apiCompatibilityLevel == ApiCompatibilityLevel.NET_Standard || apiCompatibilityLevel == ApiCompatibilityLevel.NET)
+            if (apiCompatibilityLevel == ApiCompatibilityLevel.NET)
 #pragma warning restore CS0618
+            {
+                references.AddRange(GetNetCoreClassLibraries());
+            }
+            else if (apiCompatibilityLevel == ApiCompatibilityLevel.NET_Standard)
             {
                 references.AddRange(GetNetStandardClassLibraries());
             }
@@ -117,10 +122,18 @@ namespace UnityEditor.Scripting.ScriptCompilation
 
         public static string[] GetSystemReferenceDirectories(ApiCompatibilityLevel apiCompatibilityLevel)
         {
-            // CORECLR_FIXME Temporarily treat NET_10 as netstandard.  We are not ready to start compiling against net10 directly
 #pragma warning disable CS0618
-            if (apiCompatibilityLevel == ApiCompatibilityLevel.NET_Standard || apiCompatibilityLevel == ApiCompatibilityLevel.NET)
+            if (apiCompatibilityLevel == ApiCompatibilityLevel.NET)
 #pragma warning restore CS0618
+            {
+                return
+                [
+                    NetCoreReferenceFinder.GetReferenceDirectory(),
+                    Path.Combine(BCLExtensions.CoreCLRTargetingPackDirectory(), "ref")
+                ];
+            }
+
+            if (apiCompatibilityLevel == ApiCompatibilityLevel.NET_Standard)
             {
                 var systemReferenceDirectories = new List<string>();
                 systemReferenceDirectories.Add(NetStandardFinder.GetReferenceDirectory());
@@ -160,6 +173,11 @@ namespace UnityEditor.Scripting.ScriptCompilation
             classLibraries.AddRange(Directory.GetFiles(NetStandardFinder.GetDotNetFrameworkCompatShimsDirectory(), "*.dll"));
 
             return classLibraries.ToArray();
+        }
+
+        static string[] GetNetCoreClassLibraries()
+        {
+            return Directory.GetFiles(NetCoreReferenceFinder.GetReferenceDirectory(), "*.dll");
         }
 
         static string[] GetSystemReferences()

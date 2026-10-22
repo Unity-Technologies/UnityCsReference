@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using Unity.UIToolkit.Editor.Utilities;
 using UnityEngine.Pool;
 using UnityEngine.UIElements;
 
@@ -54,12 +55,15 @@ internal sealed class ReparentElementsCommand : Command<ReparentElementsCommand>
             return false;
         if (ChildrenAssets == null)
             return false;
+        var addedCount = 0;
         foreach (var asset in ChildrenAssets)
         {
             if (asset == null || asset.visualTreeAsset == null)
                 return false;
+            if (asset.parentAsset != ParentAsset)
+                ++addedCount;
         }
-        return true;
+        return VisualElementUtility.CanAddChildren(ParentAsset, addedCount);
     }
 
     public override void Prepare(in PrepareContext context)

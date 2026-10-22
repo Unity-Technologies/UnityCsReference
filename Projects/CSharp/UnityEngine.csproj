@@ -160,6 +160,15 @@
     <Compile Include="..\..\External\ScriptingCore\Unity.Scripting\LifecycleManagement\DependencyOrderedNativeCallbackProvider.cs">
       <Link>External\ScriptingCore\Unity.Scripting\LifecycleManagement\DependencyOrderedNativeCallbackProvider.cs</Link>
     </Compile>
+    <Compile Include="..\..\External\ScriptingCore\Unity.Scripting\LifecycleManagement\EntitiesScope.cs">
+      <Link>External\ScriptingCore\Unity.Scripting\LifecycleManagement\EntitiesScope.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\ScriptingCore\Unity.Scripting\LifecycleManagement\EntitiesSystemsScope.cs">
+      <Link>External\ScriptingCore\Unity.Scripting\LifecycleManagement\EntitiesSystemsScope.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\ScriptingCore\Unity.Scripting\LifecycleManagement\EntitiesWorldScope.cs">
+      <Link>External\ScriptingCore\Unity.Scripting\LifecycleManagement\EntitiesWorldScope.cs</Link>
+    </Compile>
     <Compile Include="..\..\External\ScriptingCore\Unity.Scripting\LifecycleManagement\INativeCallbackProvider.cs">
       <Link>External\ScriptingCore\Unity.Scripting\LifecycleManagement\INativeCallbackProvider.cs</Link>
     </Compile>
@@ -1414,80 +1423,29 @@
     <Compile Include="..\..\Modules\Entities\Managed\DefaultWorld.cs">
       <Link>Modules\Entities\Managed\DefaultWorld.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\Entities\Managed\DefaultWorldInitialization.cs">
+      <Link>Modules\Entities\Managed\DefaultWorldInitialization.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\Entities\Managed\Diff\DynamicBlobAssetBatch.cs">
       <Link>Modules\Entities\Managed\Diff\DynamicBlobAssetBatch.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\Entities\Managed\Diff\EntityChangeSet.cs">
       <Link>Modules\Entities\Managed\Diff\EntityChangeSet.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\Entities\Managed\Diff\EntityDiffer.cs">
-      <Link>Modules\Entities\Managed\Diff\EntityDiffer.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\Entities\Managed\Diff\EntityDifferArchetypeChanges.cs">
-      <Link>Modules\Entities\Managed\Diff\EntityDifferArchetypeChanges.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\Entities\Managed\Diff\EntityDifferBlobs.cs">
-      <Link>Modules\Entities\Managed\Diff\EntityDifferBlobs.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\Entities\Managed\Diff\EntityDifferClearMissingReferences.cs">
-      <Link>Modules\Entities\Managed\Diff\EntityDifferClearMissingReferences.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\Entities\Managed\Diff\EntityDifferComponentChanges.cs">
-      <Link>Modules\Entities\Managed\Diff\EntityDifferComponentChanges.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\Entities\Managed\Diff\EntityDifferCopyAndReplace.cs">
-      <Link>Modules\Entities\Managed\Diff\EntityDifferCopyAndReplace.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\Entities\Managed\Diff\EntityDifferEntityInChunkChanges.cs">
-      <Link>Modules\Entities\Managed\Diff\EntityDifferEntityInChunkChanges.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\Entities\Managed\Diff\EntityDifferValidation.cs">
-      <Link>Modules\Entities\Managed\Diff\EntityDifferValidation.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\Entities\Managed\Diff\EntityManagerDiffer.cs">
-      <Link>Modules\Entities\Managed\Diff\EntityManagerDiffer.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\Entities\Managed\Diff\EntityPatcher.cs">
-      <Link>Modules\Entities\Managed\Diff\EntityPatcher.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\Entities\Managed\Diff\EntityPatcherBlobs.cs">
-      <Link>Modules\Entities\Managed\Diff\EntityPatcherBlobs.cs</Link>
-    </Compile>
     <Compile Include="..\..\Modules\Entities\Managed\DisallowRefReturnCrossingThisAttribute.cs">
       <Link>Modules\Entities\Managed\DisallowRefReturnCrossingThisAttribute.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\Entities\Managed\ECBInterop.cs">
-      <Link>Modules\Entities\Managed\ECBInterop.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\Entities\Managed\ECBInterop.interop.gen.cs">
-      <Link>Modules\Entities\Managed\ECBInterop.interop.gen.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\Entities\Managed\EditorLightShim.cs">
       <Link>Modules\Entities\Managed\EditorLightShim.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\Entities\Managed\EntitiesLightShim.cs">
+      <Link>Modules\Entities\Managed\EntitiesLightShim.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Entities\Managed\EntitiesWorldHooks.cs">
+      <Link>Modules\Entities\Managed\EntitiesWorldHooks.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\Entities\Managed\EntityBatchInChunk.cs">
       <Link>Modules\Entities\Managed\EntityBatchInChunk.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\Entities\Managed\EntityCommandBuffer.cs">
-      <Link>Modules\Entities\Managed\EntityCommandBuffer.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\Entities\Managed\EntityCommandBufferCommands.cs">
-      <Link>Modules\Entities\Managed\EntityCommandBufferCommands.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\Entities\Managed\EntityCommandBufferDebug.cs">
-      <Link>Modules\Entities\Managed\EntityCommandBufferDebug.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\Entities\Managed\EntityCommandBufferInternals.cs">
-      <Link>Modules\Entities\Managed\EntityCommandBufferInternals.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\Entities\Managed\EntityCommandBufferParallelWriter.cs">
-      <Link>Modules\Entities\Managed\EntityCommandBufferParallelWriter.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\Entities\Managed\EntityCommandBufferPlayback.cs">
-      <Link>Modules\Entities\Managed\EntityCommandBufferPlayback.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\Entities\Managed\EntityCommandBufferSystem.cs">
-      <Link>Modules\Entities\Managed\EntityCommandBufferSystem.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\Entities\Managed\EntityComponentStore.cs">
       <Link>Modules\Entities\Managed\EntityComponentStore.cs</Link>
@@ -1636,32 +1594,8 @@
     <Compile Include="..\..\Modules\Entities\Managed\LowLevel\SpinLock.cs">
       <Link>Modules\Entities\Managed\LowLevel\SpinLock.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\Entities\Managed\ProfilerModules\EntitiesProfiler+ArchetypeComponentData.cs">
-      <Link>Modules\Entities\Managed\ProfilerModules\EntitiesProfiler+ArchetypeComponentData.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\Entities\Managed\ProfilerModules\EntitiesProfiler+ArchetypeData.cs">
-      <Link>Modules\Entities\Managed\ProfilerModules\EntitiesProfiler+ArchetypeData.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\Entities\Managed\ProfilerModules\EntitiesProfiler+ComponentTypeData.cs">
-      <Link>Modules\Entities\Managed\ProfilerModules\EntitiesProfiler+ComponentTypeData.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\Entities\Managed\ProfilerModules\EntitiesProfiler+DataTag.cs">
-      <Link>Modules\Entities\Managed\ProfilerModules\EntitiesProfiler+DataTag.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\Entities\Managed\ProfilerModules\EntitiesProfiler+FixedComponentTypeDataList.cs">
-      <Link>Modules\Entities\Managed\ProfilerModules\EntitiesProfiler+FixedComponentTypeDataList.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\Entities\Managed\ProfilerModules\EntitiesProfiler+StaticData.cs">
-      <Link>Modules\Entities\Managed\ProfilerModules\EntitiesProfiler+StaticData.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\Entities\Managed\ProfilerModules\EntitiesProfiler+SystemData.cs">
-      <Link>Modules\Entities\Managed\ProfilerModules\EntitiesProfiler+SystemData.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\Entities\Managed\ProfilerModules\EntitiesProfiler+WorldData.cs">
-      <Link>Modules\Entities\Managed\ProfilerModules\EntitiesProfiler+WorldData.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\Entities\Managed\ProfilerModules\EntitiesProfiler.cs">
-      <Link>Modules\Entities\Managed\ProfilerModules\EntitiesProfiler.cs</Link>
+    <Compile Include="..\..\Modules\Entities\Managed\ProfilerModules\EntitiesProfilerPackageCalls.cs">
+      <Link>Modules\Entities\Managed\ProfilerModules\EntitiesProfilerPackageCalls.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\Entities\Managed\ProfilerModules\ProfilerClock.bindings.cs">
       <Link>Modules\Entities\Managed\ProfilerModules\ProfilerClock.bindings.cs</Link>
@@ -5998,6 +5932,15 @@
     <Compile Include="..\..\Modules\UIElements\Core\Renderer\UIRAtlasManager.cs">
       <Link>Modules\UIElements\Core\Renderer\UIRAtlasManager.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Renderer\UIRBackdropReadRegions.cs">
+      <Link>Modules\UIElements\Core\Renderer\UIRBackdropReadRegions.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Renderer\UIRBoxShadowBounds.cs">
+      <Link>Modules\UIElements\Core\Renderer\UIRBoxShadowBounds.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Renderer\UIRBoxShadowProfile.cs">
+      <Link>Modules\UIElements\Core\Renderer\UIRBoxShadowProfile.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\UIElements\Core\Renderer\UIRCommandList.cs">
       <Link>Modules\UIElements\Core\Renderer\UIRCommandList.cs</Link>
     </Compile>
@@ -6241,6 +6184,9 @@
     <Compile Include="..\..\Modules\UIElements\Core\StyleSheets\SelectorAccelerationCacheBuilder.cs">
       <Link>Modules\UIElements\Core\StyleSheets\SelectorAccelerationCacheBuilder.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\StyleSheets\SelectorIdRegistry.cs">
+      <Link>Modules\UIElements\Core\StyleSheets\SelectorIdRegistry.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\UIElements\Core\StyleSheets\SelectorMatchRecord.cs">
       <Link>Modules\UIElements\Core\StyleSheets\SelectorMatchRecord.cs</Link>
     </Compile>
@@ -6384,6 +6330,15 @@
     </Compile>
     <Compile Include="..\..\Modules\UIElements\Core\Style\BackgroundGradient.cs">
       <Link>Modules\UIElements\Core\Style\BackgroundGradient.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Style\BoxShadow.Parser.cs">
+      <Link>Modules\UIElements\Core\Style\BoxShadow.Parser.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Style\BoxShadow.PropertyBag.cs">
+      <Link>Modules\UIElements\Core\Style\BoxShadow.PropertyBag.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Style\BoxShadow.cs">
+      <Link>Modules\UIElements\Core\Style\BoxShadow.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\UIElements\Core\Style\ComputedStyle.cs">
       <Link>Modules\UIElements\Core\Style\ComputedStyle.cs</Link>
@@ -6564,6 +6519,9 @@
     </Compile>
     <Compile Include="..\..\Modules\UIElements\Core\Style\StyleBackgroundSize.cs">
       <Link>Modules\UIElements\Core\Style\StyleBackgroundSize.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Style\StyleBoxShadow.cs">
+      <Link>Modules\UIElements\Core\Style\StyleBoxShadow.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\UIElements\Core\Style\StyleColor.cs">
       <Link>Modules\UIElements\Core\Style\StyleColor.cs</Link>
@@ -7290,6 +7248,9 @@
     </Compile>
     <Compile Include="..\..\Runtime\Export\Analytics\AnalyticsCommon.cs">
       <Link>Runtime\Export\Analytics\AnalyticsCommon.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Runtime\Export\Animation\AnimatableChannels.cs">
+      <Link>Runtime\Export\Animation\AnimatableChannels.cs</Link>
     </Compile>
     <Compile Include="..\..\Runtime\Export\Animation\AnimationCurve.bindings.cs">
       <Link>Runtime\Export\Animation\AnimationCurve.bindings.cs</Link>

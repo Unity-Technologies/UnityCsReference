@@ -398,6 +398,8 @@ namespace Unity.GraphToolkit.Editor
                         TrySetIconAndScopeFromTypeStyle();
                         RootView.TypeHandleInfos.AddUssClasses(VariableScopeImage.scopeImageDataTypeClassNamePrefix, m_ScopeImage, m_CurrentTypeHandle);
                         RootView.TypeHandleInfos.AddUssClasses(GraphElementHelper.iconDataTypeClassPrefix, m_Icon, m_CurrentTypeHandle);
+                        // The scope color is recomputed in ScopeImageStyleResolved, and the type classes may match no selector.
+                        m_ScopeImage.MarkDirtyStyles();
                     }
 
                     switch (NameLabel)

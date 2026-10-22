@@ -343,6 +343,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
                 scriptAssembly.CompilerOptions.AdditionalCompilerArguments = settings.AdditionalCompilerArguments;
 
                 scriptAssembly.CompilerOptions.ApiCompatibilityLevel = settings.PredefinedAssembliesCompilerOptions.ApiCompatibilityLevel;
+                scriptAssembly.CompilerOptions.LanguageVersion = MonoLibraryHelpers.GetDefaultLanguageVersion(scriptAssembly.CompilerOptions.ApiCompatibilityLevel);
 
                 if ((settings.CompilationOptions & EditorScriptCompilationOptions.BuildingUseDeterministicCompilation) == EditorScriptCompilationOptions.BuildingUseDeterministicCompilation)
                     scriptAssembly.CompilerOptions.UseDeterministicCompilation = true;

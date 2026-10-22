@@ -460,9 +460,13 @@ namespace UnityEngine.UIElements
             if (!string.IsNullOrEmpty(viewDataKey))
                 SaveViewData();
 
+            // Before ChangeEvent: a callback may select in the new text, and the keyboard needs that text to apply it.
+            SyncTouchScreenKeyboard();
+
             if (panel != null && HasParentEventInterests(EventCategory.ChangeValue))
             {
-                m_Text = textBuffer.Materialize();
+                if (m_IsTextBufferDirty)
+                    m_Text = textBuffer.Materialize();
                 SetRenderedText(m_Text);
                 m_IsTextBufferDirty = false;
                 using (var evt = ChangeEvent<string>.GetPooled(previousText ?? string.Empty, m_Text))
@@ -917,6 +921,33 @@ namespace UnityEngine.UIElements
                 editingManipulator.editingUtilities.text = newValue;
             else if (uitkTextHandle.IsCachedPermanentATG)
                 TextEditingService.SetText(uitkTextHandle.textGenerationInfo, newValue);
+
+            SyncTouchScreenKeyboard();
+        }
+
+        void SyncTouchScreenKeyboard()
+        {
+            if (m_TouchScreenKeyboard == null || m_SkipTouchScreenKeyboardSync)
+                return;
+
+            var currentText = text;
+            if (m_TouchScreenKeyboard.text == currentText)
+                return;
+
+            m_TouchScreenKeyboard.text = currentText;
+
+            if (!edition.hideMobileInput)
+                return;
+
+            var cursorIndex = selection.cursorIndex;
+            var selectIndex = selection.selectIndex;
+            if (cursorIndex < 0 || selectIndex < 0)
+                return;
+
+            // Setting the text moves the keyboard caret on some platforms.
+            cursorIndex = Mathf.Min(cursorIndex, currentText.Length);
+            selectIndex = Mathf.Min(selectIndex, currentText.Length);
+            m_TouchScreenKeyboard.selection = new RangeInt(Mathf.Min(cursorIndex, selectIndex), Mathf.Abs(selectIndex - cursorIndex));
         }
 
         /// <summary>

@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UIElements;
 using Cursor = UnityEngine.UIElements.Cursor;
@@ -65,7 +66,7 @@ internal class StyleListAttributeConverter<T> : IUxmlAttributeConverter
         if (items.Length <= 0 || !UxmlAttributeConverter.TryGetConverter<T>(out var converter))
             return null;
 
-        var result = new StyleList<T>();
+        var result = new StyleList<T>(new List<T>(items.Length));
         for (var i = 0; i < items.Length; i++)
         {
             var s = items[i].Trim();
@@ -122,6 +123,8 @@ internal class StyleRotateAttributeConverter : UxmlAttributeStyleConverter<Style
 internal class StyleScaleAttributeConverter : UxmlAttributeStyleConverter<StyleScale, Scale, ScaleAttributeConverter> {};
 
 internal class StyleTextAutoSizeAttributeConverter : UxmlAttributeStyleConverter<StyleTextAutoSize, TextAutoSize, TextAutoSizeAttributeConverter> {};
+
+internal class StyleBoxShadowAttributeConverter : UxmlAttributeStyleConverter<StyleBoxShadow, BoxShadow, BoxShadowAttributeConverter> {};
 
 internal class StyleTextShadowAttributeConverter : UxmlAttributeStyleConverter<StyleTextShadow, TextShadow, TextShadowAttributeConverter> {};
 

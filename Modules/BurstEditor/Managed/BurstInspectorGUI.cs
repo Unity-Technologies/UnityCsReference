@@ -12,6 +12,7 @@ using System.Threading.Tasks;
 using UnityEditor;
 using UnityEditor.IMGUI.Controls;
 using UnityEngine;
+using UnityEngine.UIElements;
 using TreeViewItem = UnityEditor.IMGUI.Controls.TreeViewItem<int>;
 using TreeViewState = UnityEditor.IMGUI.Controls.TreeViewState<int>;
 using Unity.Scripting.LifecycleManagement;
@@ -50,11 +51,21 @@ namespace Unity.Burst.Editor
 
         private static readonly GUIContent[] DisassemblyKindContents =
         {
-            new GUIContent("Assembly"),
-            new GUIContent(".NET IL"),
-            new GUIContent("LLVM IR (Unoptimized)"),
-            new GUIContent("LLVM IR (Optimized)"),
-            new GUIContent("LLVM IR Optimisation Diagnostics")
+            new GUIContent("Assembly", "The final optimized native code that Burst generated."),
+            new GUIContent(".NET IL", "The original .NET IL extracted from the job method."),
+            new GUIContent("LLVM IR (Unoptimized)", "The internal LLVM IR before optimizations."),
+            new GUIContent("LLVM IR (Optimized)", "The internal LLVM IR after optimizations."),
+            new GUIContent("LLVM IR Optimization Diagnostics", "LLVM diagnostics of the optimizations, such as whether they succeeded or failed.")
+        };
+
+        private static readonly string[] AssemblyOptionNames =
+        {
+            "Plain Without Debug Information",
+            "Plain With Debug Information",
+            "Enhanced With Minimal Debug Information",
+            "Enhanced With Full Debug Information",
+            "Coloured With Minimal Debug Information",
+            "Coloured With Full Debug Information"
         };
 
         internal enum AssemblyOptions
@@ -94,26 +105,16 @@ namespace Unity.Burst.Editor
             return DisasmOptions;
         }
 
-        [NoAutoStaticsCleanup] // UI layout state only, safe to persist across reload
-        private static readonly SplitterState TreeViewSplitterState = new SplitterState(new float[] { 30, 70 }, new int[] { 155, 128 }, null);
-
         private static readonly string[] TargetCpuNames = Enum.GetNames(typeof(BurstTargetCpu));
-        private static readonly string[] SIMDSmellTest = { "False", "True" };
 
         private static readonly int[] FontSizes =
         {
             8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 20
         };
 
-        [NoAutoStaticsCleanup] // lazily rebuilt on demand when null; not dependent on reload-sensitive state
-        private static string[] _fontSizesText;
         internal const int _scrollbarThickness = 14;
 
         internal float _buttonOverlapInspectorView = 0;
-
-        /// <remarks>Used because it's not legal to change layout of GUI in a frame without the users input.</remarks>
-        private float _buttonBarWidth = -1;
-        private float _compileTargetsPanelWidth = -1;
 
         [NonSerialized]
         internal readonly BurstDisassembler _burstDisassembler;
@@ -122,7 +123,7 @@ namespace Unity.Burst.Editor
 
         [SerializeField] private BurstTargetCpu _targetCpu = BurstTargetCpu.Auto;
 
-        [SerializeField] private DisassemblyKind _disasmKind = DisassemblyKind.Asm;
+        [SerializeField] internal DisassemblyKind _disasmKind = DisassemblyKind.Asm;
         [SerializeField] private DisassemblyKind _oldDisasmKind = DisassemblyKind.Asm;
 
         [NonSerialized]
@@ -139,7 +140,6 @@ namespace Unity.Burst.Editor
         [SerializeField] private string _searchFilterJobs;
         [SerializeField] private bool _showUnityNamespaceJobs = false;
         [SerializeField] private bool _showDOTSGeneratedJobs = false;
-        [SerializeField] private bool _flowCompileTogglesToNewLine = false;
         [SerializeField] private bool _focusTargetJob = true;
         [SerializeField] private string _searchFilterAssembly = String.Empty;
 
@@ -148,8 +148,6 @@ namespace Unity.Burst.Editor
         internal SearchField _searchFieldJobs;
         internal SearchField _searchFieldAssembly;
         private bool saveSearchFieldFromEvent = false;
-
-        [SerializeField] internal bool _searchBarVisible = true;
 
         [SerializeField] private string _selectedItem;
 
@@ -176,12 +174,30 @@ namespace Unity.Burst.Editor
         [NonSerialized]
         internal bool _initialized;
 
-        // Snapshot of _initialized at Layout, so Layout and Repaint take the same OnGUI branch within one frame.
         [NonSerialized]
-        private bool _initializedAtLayout;
+        private VisualElement _loadingView;
+        [NonSerialized]
+        private TwoPaneSplitView _splitView;
+        [NonSerialized]
+        internal TabView _disasmKindTabs;
+        [NonSerialized]
+        private IMGUIContainer _jobsPane;
+        [NonSerialized]
+        private IMGUIContainer _assemblyPane;
+
+        private const string StyleSheetPath = "Burst/StyleSheets/BurstInspector.uss";
+        private const string OutputTabsUssClassName = "burst-inspector__output-tabs";
+        private const float JobsPaneMinWidth = 155f;
+        private const float OutputPaneMinWidth = 128f;
 
         [NonSerialized]
         private bool _requiresRepaint;
+
+        [NonSerialized]
+        private Task<BurstReflection.FindExecuteMethodsResult> _loadTargetsTask;
+
+        [NonSerialized]
+        private bool _newTreeState;
 
         private int FontSize => FontSizes[fontSizeIndex];
 
@@ -194,30 +210,46 @@ namespace Unity.Burst.Editor
 
         [SerializeField] private bool _smellTest = false;
 
-        // Caching GUIContent and style options for button bar
+        // Caching GUIContent for the toolbars
         private readonly GUIContent _contentShowUnityNamespaceJobs = new GUIContent("Show Unity Namespace");
         private readonly GUIContent _contentShowDOTSGeneratedJobs = new GUIContent("Show \".Generated\"");
-        private readonly GUIContent _contentDisasm = new GUIContent("Enhanced With Minimal Debug Information");
-        private readonly GUIContent _contentCollapseToCode = new GUIContent("Focus on Code");
-        private readonly GUIContent _contentExpandAll = new GUIContent("Expand All");
-        private readonly GUIContent _contentBranchLines = new GUIContent("Show Branch Flow");
-        private readonly GUIContent[] _contentsTarget;
-        private readonly GUIContent[] _contentsFontSize;
-        private readonly GUIContent[] _contentsSmellTest =
-        {
-            new GUIContent("Highlight SIMD Scalar vs Packed (False)"),
-            new GUIContent("Highlight SIMD Scalar vs Packed (True)")
-        };
+        private readonly GUIContent _contentJobsFilter = new GUIContent("Filter", "Choose which compile targets to list.");
+        private readonly GUIContent _contentSafetyChecks = new GUIContent("Safety Checks", "Generate code that includes container access safety checks.");
+        private readonly GUIContent _contentView = new GUIContent("View", "Font size and display options for the output.");
+        private readonly GUIContent _contentCollapseToCode = new GUIContent("Focus on Code", "Collapse directives and data blocks.");
+        private readonly GUIContent _contentExpandAll = new GUIContent("Expand All", "Expand all collapsed blocks.");
+        private readonly GUIContent _contentShowBranchFlow = new GUIContent("Show Branch Flow");
+        private readonly GUIContent _contentHighlightSIMD = new GUIContent("Highlight SIMD Scalar vs Packed");
 
-        // content for button search bar
+        // content for search bar
         private readonly GUIContent _ignoreCase = new GUIContent("Match Case");
-        private readonly GUIContent _matchWord = new GUIContent("Whole words");
+        private readonly GUIContent _matchWord = new GUIContent("Whole Words");
         private readonly GUIContent _regexSearch = new GUIContent("Regex");
+        private GUIContent _previousSearchHit;
+        private GUIContent _nextSearchHit;
+        private GUIStyle _searchHitCountStyle;
 
-        private readonly GUILayoutOption[] _toolbarStyleOptions = { GUILayout.ExpandWidth(true), GUILayout.MinWidth(5 * 10) };
+        private readonly GUIContent _contentNoFunction = new GUIContent("Go to Function", "Jump to a function in the disassembly.");
+        private readonly GUIContent _contentFunctionsUnavailable = new GUIContent("Go to Function", "Function navigation is only available for Enhanced or Coloured Assembly output.");
+        private const string FunctionLabelPrefix = "Function: ";
+        private const float MinFunctionListWidth = 400f;
 
-        private readonly string[] _branchMarkerOptions = { "Hide Branch Flow", "Show Branch Flow" };
-        private readonly string[] _safetyCheckOptions = { "Safety Check On", "Safety Check Off" };
+        [NonSerialized]
+        private int _requestedFontSizeIndex = -1;
+        [NonSerialized]
+        private bool? _requestedSmellTest;
+        [NonSerialized]
+        private DisassemblyKind? _requestedDisasmKind;
+
+        // Number of lines kept above a function when jumping to it.
+        private const int FunctionJumpMarginLines = 2;
+
+        [NonSerialized]
+        private AdvancedDropdownState _functionDropdownState;
+        [NonSerialized]
+        internal int _pendingFunctionJump = -1;
+        [NonSerialized]
+        internal int _pendingSearchHitStep;
 
 
         private enum KeyboardOperation
@@ -229,8 +261,9 @@ namespace Unity.Burst.Editor
             MoveUp,
             MoveDown,
             Search,
-            Escape,
             Enter,
+            FindNext,
+            FindPrevious,
         }
 
         private Dictionary<Event, KeyboardOperation> _keyboardEvents;
@@ -248,7 +281,6 @@ namespace Unity.Burst.Editor
             _keyboardEvents.Add(Event.KeyboardEvent("#right"), KeyboardOperation.MoveRight);
             _keyboardEvents.Add(Event.KeyboardEvent("#down"), KeyboardOperation.MoveDown);
             _keyboardEvents.Add(Event.KeyboardEvent("#up"), KeyboardOperation.MoveUp);
-            _keyboardEvents.Add(Event.KeyboardEvent("escape"), KeyboardOperation.Escape);
             _keyboardEvents.Add(Event.KeyboardEvent("return"), KeyboardOperation.Enter);
             _keyboardEvents.Add(Event.KeyboardEvent("#return"), KeyboardOperation.Enter);
 
@@ -262,6 +294,8 @@ namespace Unity.Burst.Editor
                 _keyboardEvents.Add(Event.KeyboardEvent("%a"), KeyboardOperation.SelectAll);
                 _keyboardEvents.Add(Event.KeyboardEvent("%c"), KeyboardOperation.Copy);
                 _keyboardEvents.Add(Event.KeyboardEvent("%f"), KeyboardOperation.Search);
+                _keyboardEvents.Add(Event.KeyboardEvent("%g"), KeyboardOperation.FindNext);
+                _keyboardEvents.Add(Event.KeyboardEvent("%#g"), KeyboardOperation.FindPrevious);
             }
             else
             {
@@ -270,26 +304,14 @@ namespace Unity.Burst.Editor
                 _keyboardEvents.Add(Event.KeyboardEvent("^c"), KeyboardOperation.Copy);
                 _keyboardEvents.Add(Event.KeyboardEvent("^f"), KeyboardOperation.Search);
             }
+
+            _keyboardEvents.Add(Event.KeyboardEvent("f3"), KeyboardOperation.FindNext);
+            _keyboardEvents.Add(Event.KeyboardEvent("#f3"), KeyboardOperation.FindPrevious);
         }
 
         public BurstInspectorGUI()
         {
             _burstDisassembler = new BurstDisassembler();
-
-            string[] names = Enum.GetNames(typeof(BurstTargetCpu));
-            int size = names.Length;
-            _contentsTarget = new GUIContent[size];
-            for (int i = 0; i < size; i++)
-            {
-                _contentsTarget[i] = new GUIContent($"Target ({names[i]})");
-            }
-
-            size = FontSizes.Length;
-            _contentsFontSize = new GUIContent[size];
-            for (int i = 0; i < size; i++)
-            {
-                _contentsFontSize[i] = new GUIContent($"Font Size ({FontSizes[i].ToString()})");
-            }
         }
 
         private bool DisplayAssemblyKind(Enum assemblyKind)
@@ -321,69 +343,79 @@ namespace Unity.Burst.Editor
 
             if (_keyboardEvents == null) FillKeyboardEvent();
 
-            Task.Run(
-                    () =>
-                    {
-                        // Do this stuff asynchronously.
-                        var result = BurstReflection.FindExecuteMethods();
-                        _targets = result.CompileTargets;
-                        return result;
-                    })
-                .ContinueWith(t =>
+            // Find the targets off the main thread, then finish loading in Update, as the tree view must be used from the main thread.
+            _newTreeState = newTreeState;
+#pragma warning disable UAL0018 // non-serialized field of an EditorWindow, which is recreated on code reload; the task is also dropped in Update as soon as it completes
+            _loadTargetsTask = Task.Run(() => BurstReflection.FindExecuteMethods());
+#pragma warning restore UAL0018
+        }
+
+        private void FinishLoadingTargets(Task<BurstReflection.FindExecuteMethodsResult> t)
+        {
+            if (t.Status == TaskStatus.RanToCompletion)
+            {
+                _targets = t.Result.CompileTargets;
+
+                foreach (var logMessage in t.Result.LogMessages)
                 {
-                    // Do this stuff on the main (UI) thread.
-                    if (t.Status == TaskStatus.RanToCompletion)
+                    switch (logMessage.LogType)
                     {
-                        foreach (var logMessage in t.Result.LogMessages)
-                        {
-                            switch (logMessage.LogType)
-                            {
-                                case BurstReflection.LogType.Warning:
-                                    Debug.LogWarning(logMessage.Message);
-                                    break;
-                                case BurstReflection.LogType.Exception:
-                                    Debug.LogException(logMessage.Exception);
-                                    break;
-                                default:
-                                    throw new InvalidOperationException();
-                            }
-                        }
-
-                        var newNames = new List<string>(_targets.Length);
-                        foreach (var target in _targets)
-                        {
-                            newNames.Add(target.FullName);
-                        }
-
-                        bool identical = !newTreeState && newNames.Count == targetNames.Count;
-                        int len = newNames.Count;
-                        int i = 0;
-                        while (identical && i < len)
-                        {
-                            identical = newNames[i] == targetNames[i];
-                            i++;
-                        }
-                        targetNames = newNames;
-                        _treeView.Initialize(_targets, identical);
-
-                        if (_selectedItem == null || !_treeView.TrySelectByDisplayName(_selectedItem))
-                        {
-                            _previousTargetIndex = -1;
-                            _scrollPos = Vector2.zero;
-                        }
-
-                        _requiresRepaint = true;
-                        _initialized = true;
+                        case BurstReflection.LogType.Warning:
+                            Debug.LogWarning(logMessage.Message);
+                            break;
+                        case BurstReflection.LogType.Exception:
+                            Debug.LogException(logMessage.Exception);
+                            break;
+                        default:
+                            throw new InvalidOperationException();
                     }
-                    else if (t.Exception != null)
-                    {
-                        Debug.LogError($"Could not load Inspector: {t.Exception}");
-                    }
-                });
+                }
+
+                var newNames = new List<string>(_targets.Length);
+                foreach (var target in _targets)
+                {
+                    newNames.Add(target.FullName);
+                }
+
+                bool identical = !_newTreeState && newNames.Count == targetNames.Count;
+                int len = newNames.Count;
+                int i = 0;
+                while (identical && i < len)
+                {
+                    identical = newNames[i] == targetNames[i];
+                    i++;
+                }
+                targetNames = newNames;
+                _treeView.Initialize(_targets, identical);
+
+                if (_selectedItem == null || !_treeView.TrySelectByDisplayName(_selectedItem))
+                {
+                    _treeView.SetSelection(new List<int>());
+                    _previousTargetIndex = -1;
+                    _scrollPos = Vector2.zero;
+                }
+
+                _requiresRepaint = true;
+                _initialized = true;
+                UpdateInitializedView();
+            }
+            else if (t.Exception != null)
+            {
+                Debug.LogError($"Could not load Inspector: {t.Exception}");
+            }
         }
 
         public void Update()
         {
+            if (_loadTargetsTask != null && _loadTargetsTask.IsCompleted)
+            {
+                var task = _loadTargetsTask;
+                _loadTargetsTask = null;
+                FinishLoadingTargets(task);
+            }
+
+            UpdateOutputTabsVisibility();
+
             // Need to do this because if we call Repaint from anywhere else,
             // it doesn't do anything if this window is not currently focused.
             if (_requiresRepaint)
@@ -398,26 +430,6 @@ namespace Unity.Burst.Editor
             if (_target != null && _target.JustLoaded)
             {
                 Repaint();
-            }
-        }
-
-        /// <summary>
-        /// Checks if there is space for given content withs style, and starts new horizontalgroup
-        /// if there is no space on this line.
-        /// </summary>
-        private void FlowToNewLine(ref float remainingWidth, float width, Vector2 size)
-        {
-            float sizeX = size.x + _scrollbarThickness / 2;
-            if (sizeX >= remainingWidth)
-            {
-                _buttonOverlapInspectorView += size.y + 2;
-                remainingWidth = width - sizeX;
-                GUILayout.EndHorizontal();
-                GUILayout.BeginHorizontal();
-            }
-            else
-            {
-                remainingWidth -= sizeX;
             }
         }
 
@@ -442,13 +454,7 @@ namespace Unity.Burst.Editor
         /// </summary>
         private void HandleButtonBars(BurstCompileTarget target, bool targetChanged, out int fontIndex, out bool collapse, out bool focusCode)
         {
-            // We can only make an educated guess for the correct width.
-            if (_buttonBarWidth == -1)
-            {
-                _buttonBarWidth = (position.width * 2) / 3 - _scrollbarThickness;
-            }
-
-            RenderButtonBars(_buttonBarWidth, target, out fontIndex, out collapse, out focusCode);
+            RenderButtonBars(target, out fontIndex, out collapse, out focusCode);
 
             var disasmKindChanged = _oldDisasmKind != _disasmKind;
 
@@ -476,74 +482,219 @@ namespace Unity.Burst.Editor
             }
         }
 
-        private void RenderButtonBars(float width, BurstCompileTarget target, out int fontIndex, out bool collapse, out bool focus)
+        private void RenderButtonBars(BurstCompileTarget target, out int fontIndex, out bool collapse, out bool focus)
         {
-            var remainingWidth = width;
-            GUILayout.BeginHorizontal();
+            _oldDisasmKind = _disasmKind;
+            // Switch on Layout, so the Layout and Repaint of a frame draw the same toolbars.
+            if (_requestedDisasmKind.HasValue && Event.current.type == EventType.Layout)
+            {
+                _disasmKind = _requestedDisasmKind.Value;
+                _requestedDisasmKind = null;
+            }
 
-            // First button should never call beginHorizontal().
-            remainingWidth -= (EditorStyles.popup.CalcSize(_contentDisasm).x + _scrollbarThickness / 2f);
+            // Compilation and display options.
+            GUILayout.BeginHorizontal(EditorStyles.toolbar);
 
             EditorGUI.BeginDisabledGroup(target.DisassemblyKind == DisassemblyKind.IRPassAnalysis);
-
-            _assemblyKind = (AssemblyOptions)EditorGUILayout.EnumPopup(GUIContent.none, _assemblyKind, DisplayAssemblyKind, true);
-
+            ToolbarDropdown(new GUIContent(AssemblyOptionNames[(int)_assemblyKind], "Output format of the disassembly."), BuildAssemblyOptionsMenu);
             EditorGUI.EndDisabledGroup();
-
-            FlowToNewLine(ref remainingWidth, width, EditorStyles.popup.CalcSize(_contentBranchLines));
-            // Reversed "logic" to match the array of options, which has "positive" case on idx 0.
-            _safetyChecks = EditorGUILayout.Popup(_safetyChecks ? 0 : 1, _safetyCheckOptions) == 0;
 
             EditorGUI.BeginDisabledGroup(!target.IsValidTarget);
-
-            GUIContent targetContent = _contentsTarget[(int)_targetCpu];
-            FlowToNewLine(ref remainingWidth, width, EditorStyles.popup.CalcSize(targetContent));
-            _targetCpu = (BurstTargetCpu)LabeledPopup.Popup((int)_targetCpu, targetContent, TargetCpuNames);
-
-            GUIContent fontSizeContent = _contentsFontSize[fontSizeIndex];
-            FlowToNewLine(ref remainingWidth, width, EditorStyles.popup.CalcSize(fontSizeContent));
-            fontIndex = LabeledPopup.Popup(fontSizeIndex, fontSizeContent, _fontSizesText);
-
+            ToolbarDropdown(new GUIContent($"Target: {TargetCpuNames[(int)_targetCpu]}", "CPU architecture to compile for."), BuildTargetMenu);
             EditorGUI.EndDisabledGroup();
 
-            EditorGUI.BeginDisabledGroup(!IsEnhanced((AssemblyOptions)_assemblyKind) || !SupportsEnhancedRendering || _isCompileError);
+            GUILayout.Space(ToolbarGroupSpacing);
+            _safetyChecks = GUILayout.Toggle(_safetyChecks, _contentSafetyChecks, EditorStyles.toolbarButton);
 
-            FlowToNewLine(ref remainingWidth, width, EditorStyles.miniButton.CalcSize(_contentCollapseToCode));
-            focus = GUILayout.Button(_contentCollapseToCode, EditorStyles.miniButton);
-
-            FlowToNewLine(ref remainingWidth, width, EditorStyles.miniButton.CalcSize(_contentExpandAll));
-            collapse = GUILayout.Button(_contentExpandAll, EditorStyles.miniButton);
-
-            FlowToNewLine(ref remainingWidth, width, EditorStyles.popup.CalcSize(_contentBranchLines));
-            _showBranchMarkers = EditorGUILayout.Popup(Convert.ToInt32(_showBranchMarkers), _branchMarkerOptions) == 1;
-
-            int smellTestIdx = Convert.ToInt32(_smellTest);
-            GUIContent smellTestContent = _contentsSmellTest[smellTestIdx];
-            FlowToNewLine(ref remainingWidth, width, EditorStyles.popup.CalcSize(smellTestContent));
-            _smellTest = LabeledPopup.Popup(smellTestIdx, smellTestContent, SIMDSmellTest) == 1;
-
-            EditorGUI.EndDisabledGroup();
-
+            GUILayout.FlexibleSpace();
+            ToolbarDropdown(_contentView, BuildViewMenu);
             GUILayout.EndHorizontal();
 
-            _oldDisasmKind = _disasmKind;
+            // Navigation.
+            GUILayout.BeginHorizontal(EditorStyles.toolbar);
+            RenderFunctionDropdown();
 
-            GUILayout.BeginHorizontal();
-            remainingWidth = width;
-            // first button should just be rendered, no need to start a new line.
-            GUIContent firstDisassemblyContent = DisassemblyKindContents[0];
-            remainingWidth -= EditorStyles.toolbarButton.CalcSize(firstDisassemblyContent).x + _scrollbarThickness / 2f;
-            if (GUILayout.Toggle(_disasmKind == DisassemblyKind.Asm, firstDisassemblyContent, EditorStyles.toolbarButton))
-                _disasmKind = DisassemblyKind.Asm;
+            GUILayout.Space(ToolbarGroupSpacing);
+            EditorGUI.BeginDisabledGroup(!IsEnhancedViewAvailable);
+            focus = GUILayout.Button(_contentCollapseToCode, EditorStyles.toolbarButton, GUILayout.ExpandWidth(false));
+            collapse = GUILayout.Button(_contentExpandAll, EditorStyles.toolbarButton, GUILayout.ExpandWidth(false));
+            EditorGUI.EndDisabledGroup();
+            GUILayout.EndHorizontal();
 
-            for (int i = 1; i < DisassemblyKindContents.Length; i++)
+            _buttonOverlapInspectorView = HeaderToolbarCount * EditorStyles.toolbar.fixedHeight;
+
+            fontIndex = _requestedFontSizeIndex >= 0 ? _requestedFontSizeIndex : fontSizeIndex;
+            _requestedFontSizeIndex = -1;
+            if (_requestedSmellTest.HasValue)
             {
-                GUIContent content = DisassemblyKindContents[i];
-                FlowToNewLine(ref remainingWidth, width, EditorStyles.toolbarButton.CalcSize(content));
-                if (GUILayout.Toggle((int)_disasmKind == i, content, EditorStyles.toolbarButton))
-                    _disasmKind = (DisassemblyKind)i;
+                _smellTest = _requestedSmellTest.Value;
+                _requestedSmellTest = null;
             }
-            GUILayout.EndHorizontal();
+        }
+
+        private const int HeaderToolbarCount = 2;
+        private const float ToolbarGroupSpacing = 8f;
+
+        private bool IsEnhancedViewAvailable => IsEnhanced((AssemblyOptions)_assemblyKind) && SupportsEnhancedRendering && !_isCompileError;
+
+        private static void ToolbarDropdown(GUIContent content, Func<GenericMenu> buildMenu)
+        {
+            var rect = GUILayoutUtility.GetRect(content, EditorStyles.toolbarDropDown);
+            if (EditorGUI.DropdownButton(rect, content, FocusType.Passive, EditorStyles.toolbarDropDown))
+            {
+                buildMenu().DropDown(rect);
+            }
+        }
+
+        private GenericMenu BuildAssemblyOptionsMenu()
+        {
+            var menu = new GenericMenu();
+            for (var i = 0; i < AssemblyOptionNames.Length; i++)
+            {
+                var option = (AssemblyOptions)i;
+                var content = new GUIContent(AssemblyOptionNames[i]);
+                if (i > 0 && i % 2 == 0)
+                {
+                    menu.AddSeparator(string.Empty);
+                }
+
+                if (DisplayAssemblyKind(option))
+                {
+                    menu.AddItem(content, _assemblyKind == option, () =>
+                    {
+                        _assemblyKind = option;
+                        Repaint();
+                    });
+                }
+                else
+                {
+                    menu.AddDisabledItem(content, _assemblyKind == option);
+                }
+            }
+            return menu;
+        }
+
+        private GenericMenu BuildTargetMenu()
+        {
+            var menu = new GenericMenu();
+            for (var i = 0; i < TargetCpuNames.Length; i++)
+            {
+                var targetCpu = (BurstTargetCpu)i;
+                menu.AddItem(new GUIContent(TargetCpuNames[i]), _targetCpu == targetCpu, () =>
+                {
+                    _targetCpu = targetCpu;
+                    Repaint();
+                });
+            }
+            return menu;
+        }
+
+        private GenericMenu BuildViewMenu()
+        {
+            var menu = new GenericMenu();
+            for (var i = 0; i < FontSizes.Length; i++)
+            {
+                var index = i;
+                menu.AddItem(new GUIContent($"Font Size/{FontSizes[i]}"), fontSizeIndex == i, () =>
+                {
+                    _requestedFontSizeIndex = index;
+                    Repaint();
+                });
+            }
+
+            menu.AddSeparator(string.Empty);
+            if (IsEnhancedViewAvailable)
+            {
+                menu.AddItem(_contentShowBranchFlow, _showBranchMarkers, () =>
+                {
+                    _showBranchMarkers = !_showBranchMarkers;
+                    Repaint();
+                });
+                menu.AddItem(_contentHighlightSIMD, _smellTest, () =>
+                {
+                    _requestedSmellTest = !_smellTest;
+                    Repaint();
+                });
+            }
+            else
+            {
+                menu.AddDisabledItem(_contentShowBranchFlow, _showBranchMarkers);
+                menu.AddDisabledItem(_contentHighlightSIMD, _smellTest);
+            }
+            return menu;
+        }
+
+        private void RenderFunctionDropdown()
+        {
+            var functions = _textArea?.Functions;
+            var hasFunctions = functions != null && functions.Count > 0 && !_isCompileError;
+
+            GUIContent content;
+            if (!hasFunctions)
+            {
+                content = _contentFunctionsUnavailable;
+            }
+            else
+            {
+                var functionIdx = _textArea.GetFunctionIdxAtPositionY(_scrollPos.y + FunctionJumpMarginLines * _textArea.fontHeight);
+                content = functionIdx < 0
+                    ? _contentNoFunction
+                    : new GUIContent(FunctionLabelPrefix + functions[functionIdx].ShortName, functions[functionIdx].DisplayName);
+            }
+
+            var style = EditorStyles.toolbarDropDown;
+            var rect = GUILayoutUtility.GetRect(GUIContent.none, style, GUILayout.ExpandWidth(true));
+            content = new GUIContent(TruncateToWidth(content.text, style, rect.width), content.tooltip);
+
+            EditorGUI.BeginDisabledGroup(!hasFunctions);
+            if (EditorGUI.DropdownButton(rect, content, FocusType.Passive, style))
+            {
+                _functionDropdownState ??= new AdvancedDropdownState();
+                // The list stretches to the width of the rect it opens from, so open it from a narrow one and let it fit its content.
+                var listRect = new Rect(rect.x, rect.y, Math.Min(rect.width, MinFunctionListWidth), rect.height);
+                new BurstFunctionDropdown(_functionDropdownState, functions, idx =>
+                {
+                    _pendingFunctionJump = idx;
+                    Repaint();
+                }).Show(listRect);
+            }
+            EditorGUI.EndDisabledGroup();
+        }
+
+        private static string TruncateToWidth(string text, GUIStyle style, float width)
+        {
+            if (width <= 1f || style.CalcSize(new GUIContent(text)).x <= width)
+            {
+                return text;
+            }
+
+            const string ellipsis = "\u2026";
+            int low = 0, high = text.Length;
+            while (low < high)
+            {
+                var mid = (low + high + 1) / 2;
+                if (style.CalcSize(new GUIContent(text.Substring(0, mid) + ellipsis)).x <= width)
+                {
+                    low = mid;
+                }
+                else
+                {
+                    high = mid - 1;
+                }
+            }
+            return text.Substring(0, low) + ellipsis;
+        }
+
+        private void JumpToPendingFunction()
+        {
+            var functions = _textArea.Functions;
+            if (functions != null && _pendingFunctionJump < functions.Count)
+            {
+                var function = functions[_pendingFunctionJump];
+                var positionY = _textArea.GetLinePositionY(function.BlockIndex, function.LineInBlock);
+                _scrollPos.y = Math.Max(0f, positionY - FunctionJumpMarginLines * _textArea.fontHeight);
+            }
+            _pendingFunctionJump = -1;
         }
 
         /// <summary>
@@ -669,9 +820,7 @@ namespace Unity.Burst.Editor
                     evt.Use();
                     break;
                 case KeyboardOperation.Search:
-                    _searchBarVisible = true;
-                    EnsureSearchFieldAssembly();
-                    _searchFieldAssembly.SetFocus();
+                    FocusSearchField();
                     evt.Use();
                     break;
             }
@@ -689,6 +838,17 @@ namespace Unity.Burst.Editor
                 return;
             }
 
+            if (op == KeyboardOperation.FindNext || op == KeyboardOperation.FindPrevious)
+            {
+                if (_textArea.NrSearchHits > 0)
+                {
+                    _textArea.NextSearchHit(op == KeyboardOperation.FindPrevious, workingArea);
+                    saveSearchFieldFromEvent = _searchFieldAssembly != null && _searchFieldAssembly.HasFocus();
+                    evt.Use();
+                }
+                return;
+            }
+
             if (AssemblyFocused())
             {
                 // Do input handling for assembly view.
@@ -699,13 +859,6 @@ namespace Unity.Burst.Editor
                 // This amounts to logic for all else.
                 switch (op)
                 {
-                    case KeyboardOperation.Escape:
-                        if (_searchFieldAssembly != null && _searchFieldAssembly.HasFocus() && _searchFilterAssembly == "")
-                        {
-                            _searchBarVisible = false;
-                            evt.Use();
-                        }
-                        break;
                     case KeyboardOperation.Enter:
                         if (_searchFieldAssembly != null && _searchFieldAssembly.HasFocus())
                         {
@@ -715,64 +868,45 @@ namespace Unity.Burst.Editor
                         }
                         break;
                     case KeyboardOperation.Search:
-                        if (!_searchBarVisible)
-                        {
-                            _searchBarVisible = true;
-                            EnsureSearchFieldAssembly();
-                            _searchFieldAssembly.SetFocus();
-                            evt.Use();
-                        }
+                        FocusSearchField();
+                        evt.Use();
                         break;
                 }
             }
         }
 
-        private void RenderCompileTargetsFilters(float width)
+        private void RenderCompileTargetsToolbar()
         {
-            if (Event.current.type == EventType.Layout)
-            {
-                Vector2 unityToggleSize = EditorStyles.toggle.CalcSize(_contentShowUnityNamespaceJobs);
-                Vector2 dotsToggleSize = EditorStyles.toggle.CalcSize(_contentShowDOTSGeneratedJobs);
+            GUILayout.BeginHorizontal(EditorStyles.toolbar);
 
-                _flowCompileTogglesToNewLine = (unityToggleSize.x + dotsToggleSize.x + _scrollbarThickness) > width;
-            }
-
-            var newShowUnityTests = _showUnityNamespaceJobs;
-            var newShowDOTSGeneratedJobs = _showDOTSGeneratedJobs;
-            if (_flowCompileTogglesToNewLine)
-            {
-                GUILayout.BeginHorizontal();
-                newShowUnityTests = GUILayout.Toggle(_showUnityNamespaceJobs, _contentShowUnityNamespaceJobs);
-                GUILayout.EndHorizontal();
-
-                GUILayout.BeginHorizontal();
-                newShowDOTSGeneratedJobs = GUILayout.Toggle(_showDOTSGeneratedJobs, _contentShowDOTSGeneratedJobs);
-                GUILayout.EndHorizontal();
-            }
-            else
-            {
-                GUILayout.BeginHorizontal();
-                newShowUnityTests = GUILayout.Toggle(_showUnityNamespaceJobs, _contentShowUnityNamespaceJobs);
-                newShowDOTSGeneratedJobs = GUILayout.Toggle(_showDOTSGeneratedJobs, _contentShowDOTSGeneratedJobs);
-                GUILayout.EndHorizontal();
-            }
-
-            if (newShowUnityTests != _showUnityNamespaceJobs || newShowDOTSGeneratedJobs != _showDOTSGeneratedJobs)
-            {
-                _showDOTSGeneratedJobs = newShowDOTSGeneratedJobs;
-                _showUnityNamespaceJobs = newShowUnityTests;
-                _treeView.Reload();
-            }
-
-            // Handle and render search filter:
-            var newFilter = _searchFieldJobs.OnGUI(_searchFilterJobs);
+            var newFilter = _searchFieldJobs.OnToolbarGUI(_searchFilterJobs, GUILayout.ExpandWidth(true), GUILayout.MaxWidth(float.MaxValue));
             if (newFilter != _searchFilterJobs)
             {
                 _searchFilterJobs = newFilter;
                 _treeView.Reload();
             }
+
+            ToolbarDropdown(_contentJobsFilter, BuildJobsFilterMenu);
+            GUILayout.EndHorizontal();
         }
 
+        private GenericMenu BuildJobsFilterMenu()
+        {
+            var menu = new GenericMenu();
+            menu.AddItem(_contentShowUnityNamespaceJobs, _showUnityNamespaceJobs, () =>
+            {
+                _showUnityNamespaceJobs = !_showUnityNamespaceJobs;
+                _treeView.Reload();
+                Repaint();
+            });
+            menu.AddItem(_contentShowDOTSGeneratedJobs, _showDOTSGeneratedJobs, () =>
+            {
+                _showDOTSGeneratedJobs = !_showDOTSGeneratedJobs;
+                _treeView.Reload();
+                Repaint();
+            });
+            return menu;
+        }
 
         private void CompileNewTarget(BurstCompileTarget target)
         {
@@ -847,32 +981,6 @@ namespace Unity.Burst.Editor
             });
         }
 
-        private void RenderBurstJobMenu()
-        {
-            GUILayout.BeginVertical(GUILayout.Width(position.width / 3));
-
-            // Render Treeview showing burst targets:
-            GUILayout.Label("Compile Targets", EditorStyles.boldLabel);
-
-            // Dummy element to retrieve the width of the compile targets panel.
-            GUILayout.BeginHorizontal();
-            GUILayout.FlexibleSpace();
-            GUILayout.EndHorizontal();
-            if (Event.current.type == EventType.Repaint)
-            {
-                _compileTargetsPanelWidth = GUILayoutUtility.GetLastRect().width - _scrollbarThickness;
-            }
-
-            RenderCompileTargetsFilters(_compileTargetsPanelWidth);
-
-            // Does not give proper rect during layout event.
-            _inspectorView = GUILayoutUtility.GetRect(GUIContent.none, GUIStyle.none, GUILayout.ExpandHeight(true), GUILayout.ExpandWidth(true));
-
-            _treeView.OnGUI(_inspectorView);
-
-            GUILayout.EndVertical();
-        }
-
         private void HandleHorizontalFocus(float workingWidth, bool shouldSetupText, bool isTextFormatted)
         {
             if (!shouldSetupText || !isTextFormatted || !_burstDisassembler.IsInitialized) { return; }
@@ -899,30 +1007,111 @@ namespace Unity.Burst.Editor
             GUILayout.EndHorizontal();
         }
 
-        public void OnGUI()
+        public void CreateGUI()
         {
-            if (Event.current.type == EventType.Layout)
-            {
-                _initializedAtLayout = _initialized;
-            }
+            _loadingView = new IMGUIContainer(RenderLoading) { style = { flexGrow = 1 } };
 
-            if (!_initializedAtLayout)
+            _splitView = new TwoPaneSplitView(0, Mathf.Max(JobsPaneMinWidth, position.width * 0.3f), TwoPaneSplitViewOrientation.Horizontal)
             {
-                RenderLoading();
+                viewDataKey = "BurstInspectorSplitView",
+            };
+
+            _jobsPane = new IMGUIContainer(OnJobsPaneGUI) { style = { minWidth = JobsPaneMinWidth } };
+
+            var outputPane = new VisualElement { style = { minWidth = OutputPaneMinWidth } };
+            _disasmKindTabs = new TabView();
+            _disasmKindTabs.AddToClassList(OutputTabsUssClassName);
+            foreach (var content in DisassemblyKindContents)
+            {
+                _disasmKindTabs.Add(new Tab(content.text) { tooltip = content.tooltip });
+            }
+            _disasmKindTabs.selectedTabIndex = (int)_disasmKind;
+            _disasmKindTabs.activeTabChanged += OnDisasmKindTabChanged;
+            _assemblyPane = new IMGUIContainer(OnAssemblyPaneGUI) { style = { flexGrow = 1 } };
+            outputPane.Add(_disasmKindTabs);
+            outputPane.Add(_assemblyPane);
+
+            _splitView.Add(_jobsPane);
+            _splitView.Add(outputPane);
+
+            rootVisualElement.styleSheets.Add(EditorGUIUtility.LoadRequired(StyleSheetPath) as StyleSheet);
+            rootVisualElement.Add(_loadingView);
+            rootVisualElement.Add(_splitView);
+
+            // Listen above the dock area too, which takes the focus when the window's tab is clicked.
+            rootVisualElement.panel?.visualTree.RegisterCallback<KeyDownEvent>(OnWindowKeyDown);
+            rootVisualElement.RegisterCallback<AttachToPanelEvent>(evt => evt.destinationPanel.visualTree.RegisterCallback<KeyDownEvent>(OnWindowKeyDown));
+            rootVisualElement.RegisterCallback<DetachFromPanelEvent>(evt => evt.originPanel.visualTree.UnregisterCallback<KeyDownEvent>(OnWindowKeyDown));
+
+            UpdateInitializedView();
+            UpdateOutputTabsVisibility();
+        }
+
+        // The output tabs only apply to a selected compile target.
+        private void UpdateOutputTabsVisibility()
+        {
+            if (_disasmKindTabs == null) return;
+
+            var selection = _initialized ? _treeView.GetSelection() : null;
+            var hasTarget = selection != null && selection.Count == 1 && selection[0] >= 1 && selection[0] <= _targets.Length;
+            var display = hasTarget ? DisplayStyle.Flex : DisplayStyle.None;
+            if (_disasmKindTabs.style.display != display)
+            {
+                _disasmKindTabs.style.display = display;
+            }
+        }
+
+        private void UpdateInitializedView()
+        {
+            if (_splitView == null) return;
+
+            _loadingView.style.display = _initialized ? DisplayStyle.None : DisplayStyle.Flex;
+            _splitView.style.display = _initialized ? DisplayStyle.Flex : DisplayStyle.None;
+        }
+
+        private void OnDisasmKindTabChanged(Tab previous, Tab current)
+        {
+            _requestedDisasmKind = (DisassemblyKind)_disasmKindTabs.selectedTabIndex;
+            Repaint();
+        }
+
+        // Shortcuts that work wherever the focus is; the panes' IMGUI handles them first when it can.
+        private void OnWindowKeyDown(KeyDownEvent evt)
+        {
+            // Without a focused element the event goes on to the panes' IMGUI, which handles it.
+            if (evt.target == rootVisualElement.panel?.visualTree)
+            {
                 return;
             }
-            // used to give hot control to inspector when a mouseDown event has happened.
-            // This way we can register a mouseUp happening outside inspector.
-            int controlID = GUIUtility.GetControlID(FocusType.Passive);
 
+            if (evt.imguiEvent == null || _keyboardEvents == null || !_keyboardEvents.TryGetValue(evt.imguiEvent, out var op))
+            {
+                return;
+            }
+
+            switch (op)
+            {
+                case KeyboardOperation.Search:
+                    _assemblyPane.Focus();
+                    FocusSearchField();
+                    break;
+                case KeyboardOperation.FindNext:
+                case KeyboardOperation.FindPrevious:
+                    if (_textArea == null || _textArea.NrSearchHits == 0) return;
+                    _pendingSearchHitStep = op == KeyboardOperation.FindPrevious ? -1 : 1;
+                    break;
+                default:
+                    return;
+            }
+
+            Repaint();
+            evt.StopPropagation();
+        }
+
+        private void EnsureGUIResources()
+        {
             // Make sure that editor options are synchronized
             BurstEditorOptions.EnsureSynchronized();
-
-            if (_fontSizesText == null)
-            {
-                _fontSizesText = new string[FontSizes.Length];
-                for (var i = 0; i < FontSizes.Length; ++i) _fontSizesText[i] = FontSizes[i].ToString();
-            }
 
             if (fontSizeIndex == -1)
             {
@@ -944,15 +1133,34 @@ namespace Unity.Burst.Editor
             if (_searchFieldJobs == null) _searchFieldJobs = new SearchField();
 
             if (_textArea == null) _textArea = new LongTextArea();
+        }
 
-            // SplitterGUILayout.BeginHorizontalSplit is internal in Unity but we don't have much choice
-            SplitterGUILayout.BeginHorizontalSplit(TreeViewSplitterState);
+        private void OnJobsPaneGUI()
+        {
+            EnsureGUIResources();
 
-            RenderBurstJobMenu();
+            RenderCompileTargetsToolbar();
 
-            GUILayout.BeginVertical();
+            var treeRect = GUILayoutUtility.GetRect(GUIContent.none, GUIStyle.none, GUILayout.ExpandHeight(true), GUILayout.ExpandWidth(true));
+            _treeView.OnGUI(treeRect);
+        }
+
+        private void OnAssemblyPaneGUI()
+        {
+            EnsureGUIResources();
+
+            // used to give hot control to inspector when a mouseDown event has happened.
+            // This way we can register a mouseUp happening outside inspector.
+            int controlID = GUIUtility.GetControlID(FocusType.Passive);
 
             var selection = _treeView.GetSelection();
+            if (selection.Count == 1 && (selection[0] < 1 || selection[0] > _targets.Length))
+            {
+                // The selection does not refer to one of the current compile targets.
+                _treeView.SetSelection(new List<int>());
+                selection = _treeView.GetSelection();
+            }
+
             if (selection.Count == 1)
             {
                 var targetIndex = selection[0];
@@ -1026,16 +1234,19 @@ namespace Unity.Burst.Editor
                 HandleButtonBars(_target, targetChanged, out var fontSize, out var expandAllBlocks, out var focusCode);
                 var simdSmellTestChanged = oldSimdSmellTest != _smellTest;
 
+                // An output tab switch applied during this Layout: compile now, so this Layout and its Repaint both draw the loading view.
+                if (_target.DisassemblyKind != _disasmKind)
+                {
+                    _assemblyKindPrior = _assemblyKind;
+                    CompileNewTarget(_target);
+                }
+
                 // Guard against _textArea being used, as the assembly isn't ready yet.
                 // Have to test against event so it cannot finish between a Layout event and Repaint event;
                 // this is necessary as we cannot alter GUI between these events.
                 if (_target.IsValidTarget && (_target.IsLoading || (_target.JustLoaded && Event.current.type != EventType.Layout)))
                 {
                     RenderLoading();
-
-                    // Need to close the splits we opened.
-                    GUILayout.EndVertical();
-                    SplitterGUILayout.EndHorizontalSplit();
                     return;
                 }
 
@@ -1072,28 +1283,30 @@ namespace Unity.Burst.Editor
                         _scrollPos = Vector2.zero;
                     }
 
-                    HandleHorizontalFocus(
-                        _inspectorView.width == 1f ? _buttonBarWidth : _inspectorView.width,
-                        shouldSetupText,
-                        isTextFormatted
-                    );
-
-                    // Fixing lastRectSize to actually be size of scroll view
-                    _inspectorView.position = _scrollPos;
-                    _inspectorView.width = position.width - (_inspectorView.width + _scrollbarThickness);
-                    _inspectorView.height -= (_buttonOverlapInspectorView + 4); //+4 for alignment.
-                    if (_searchBarVisible) _inspectorView.height -= EditorStyles.searchField.CalcHeight(GUIContent.none, 2); // 2 is just arbitrary, as the width does not alter height
-
-                    // repaint indicate end of frame, so we can alter width for menu items to new correct.
-                    if (Event.current.type == EventType.Repaint)
+                    if (shouldSetupText)
                     {
-                        _buttonBarWidth = _inspectorView.width - _scrollbarThickness;
+                        _pendingFunctionJump = -1;
                     }
+
+                    var paneSize = _assemblyPane.contentRect.size;
+
+                    HandleHorizontalFocus(paneSize.x, shouldSetupText, isTextFormatted);
+
+                    // The visible text area: the pane minus the toolbars, the search bar and the scroll bars.
+                    _inspectorView.position = _scrollPos;
+                    _inspectorView.width = paneSize.x - _scrollbarThickness;
+                    _inspectorView.height = paneSize.y - _buttonOverlapInspectorView - EditorStyles.toolbar.fixedHeight - _scrollbarThickness;
 
                     // Do search if we did not try and find assembly and we were actually going to do a search.
                     if (_focusTargetJob && TryFocusJobInAssemblyView(ref _inspectorView, shouldSetupText, _target))
                     {
                         _scrollPos.y = _inspectorView.y - _textArea.fontHeight*10;
+                    }
+
+                    // Jump on layout, as unfolding the function's block changes the layout.
+                    if (_pendingFunctionJump >= 0 && Event.current.type == EventType.Layout)
+                    {
+                        JumpToPendingFunction();
                     }
 
                     _scrollPos = GUILayout.BeginScrollView(_scrollPos, true, true);
@@ -1106,7 +1319,7 @@ namespace Unity.Burst.Editor
                     // Set up search information if it is happening.
                     Regex regx = default;
                     SearchCriteria sc = default;
-                    var doSearch = _searchBarVisible && _searchFilterAssembly != "";
+                    var doSearch = _searchFilterAssembly != "";
                     var wrongRegx = false;
                     if (doSearch)
                     {
@@ -1141,6 +1354,14 @@ namespace Unity.Burst.Editor
                     {
                         HandleMouseEventForSelection(_inspectorView, controlID, _showBranchMarkers);
                         HandleKeyboardEventForSelection(_inspectorView, _showBranchMarkers);
+
+                        // The search buttons are outside the scroll view, so they can only request the scroll.
+                        if (_pendingSearchHitStep != 0 && Event.current.type == EventType.Repaint)
+                        {
+                            _textArea.NextSearchHit(_pendingSearchHitStep < 0, _inspectorView);
+                            _pendingSearchHitStep = 0;
+                            Repaint();
+                        }
                     }
 
                     if (_leftClicked)
@@ -1150,7 +1371,7 @@ namespace Unity.Burst.Editor
                         menu.AddItem(L10n.TextContent("Copy Selection", null, null, null), false, _textArea.DoSelectionCopy);
                         menu.AddItem(L10n.TextContent("Copy Color Tags", null, null, null), _textArea.CopyColorTags, _textArea.ChangeCopyMode);
                         menu.AddItem(L10n.TextContent("Select All", null, null, null), false, _textArea.SelectAll);
-                        menu.AddItem(L10n.TextContent($"Find in {DisassemblyKindContents[(int)_disasmKind].text}", null, null, null), _searchBarVisible, EnableDisableSearchBar);
+                        menu.AddItem(L10n.TextContent($"Find in {DisassemblyKindContents[(int)_disasmKind].text}", null, null, null), false, FocusSearchField);
                         menu.ShowAsContext();
 
                         _leftClicked = false;
@@ -1158,56 +1379,79 @@ namespace Unity.Burst.Editor
 
                     GUILayout.EndScrollView();
 
-                    if (_searchBarVisible)
+                    EnsureSearchFieldAssembly();
+
+                    int hitnumbers = _textArea.NrSearchHits > 0 ? _textArea.ActiveSearchNr + 1 : 0;
+                    var hitNumberContent = new GUIContent(hitnumbers + " of " + _textArea.NrSearchHits);
+
+                    GUILayout.BeginHorizontal(EditorStyles.toolbar);
+
+                    // Makes sure that on "enter" keyboard event, the focus is not taken away from searchField.
+                    if (saveSearchFieldFromEvent) GUI.FocusControl("BurstInspectorGUI");
+
+                    var searchFieldOptions = new[] { GUILayout.ExpandWidth(true), GUILayout.MaxWidth(float.MaxValue) };
+                    string newFilterAssembly;
+                    if (wrongRegx)
                     {
-                        EnsureSearchFieldAssembly();
-
-                        int hitnumbers = _textArea.NrSearchHits > 0 ? _textArea.ActiveSearchNr + 1 : 0;
-                        var hitNumberContent = new GUIContent("    " + hitnumbers + " of " + _textArea.NrSearchHits + " hits");
-
-                        GUILayout.BeginHorizontal();
-
-                        // Makes sure that on "enter" keyboard event, the focus is not taken away from searchField.
-                        if (saveSearchFieldFromEvent) GUI.FocusControl("BurstInspectorGUI");
-
-                        string newFilterAssembly;
-                        if (wrongRegx)
-                        {
-                            var colb = GUI.contentColor;
-                            GUI.contentColor = Color.red;
-                            newFilterAssembly = _searchFieldAssembly.OnGUI(_searchFilterAssembly);
-                            GUI.contentColor = colb;
-                        }
-                        else
-                        {
-                            newFilterAssembly = _searchFieldAssembly.OnGUI(_searchFilterAssembly);
-                        }
-                        // Give back focus to the searchField, if we took it away.
-                        if (saveSearchFieldFromEvent)
-                        {
-                            _searchFieldAssembly.SetFocus();
-                            saveSearchFieldFromEvent = false;
-                        }
-
-
-                        if (newFilterAssembly != _searchFilterAssembly)
-                        {
-                            _searchFilterAssembly = newFilterAssembly;
-                            _textArea.StopSearching();
-                        }
-
-                        _doIgnoreCase = GUILayout.Toggle(_doIgnoreCase, _ignoreCase);
-                        _doWholeWordMatch = GUILayout.Toggle(_doWholeWordMatch, _matchWord);
-                        _doRegex = GUILayout.Toggle(_doRegex, _regexSearch);
-                        GUILayout.Label(hitNumberContent);
-                        if (GUILayout.Button(GUIContent.none, EditorStyles.searchFieldCancelButton))
-                        {
-                            _searchBarVisible = false;
-                            _textArea.StopSearching();
-                        }
-
-                        GUILayout.EndHorizontal();
+                        var colb = GUI.contentColor;
+                        GUI.contentColor = Color.red;
+                        newFilterAssembly = _searchFieldAssembly.OnToolbarGUI(_searchFilterAssembly, searchFieldOptions);
+                        GUI.contentColor = colb;
                     }
+                    else
+                    {
+                        newFilterAssembly = _searchFieldAssembly.OnToolbarGUI(_searchFilterAssembly, searchFieldOptions);
+                    }
+                    // Give back focus to the searchField, if we took it away.
+                    if (saveSearchFieldFromEvent)
+                    {
+                        _searchFieldAssembly.SetFocus();
+                        saveSearchFieldFromEvent = false;
+                    }
+
+                    if (newFilterAssembly != _searchFilterAssembly)
+                    {
+                        _searchFilterAssembly = newFilterAssembly;
+                        _textArea.StopSearching();
+                    }
+
+                    GUILayout.Space(ToolbarGroupSpacing);
+                    _doIgnoreCase = GUILayout.Toggle(_doIgnoreCase, _ignoreCase, EditorStyles.toolbarButton);
+                    _doWholeWordMatch = GUILayout.Toggle(_doWholeWordMatch, _matchWord, EditorStyles.toolbarButton);
+                    _doRegex = GUILayout.Toggle(_doRegex, _regexSearch, EditorStyles.toolbarButton);
+
+                    GUILayout.Space(ToolbarGroupSpacing);
+                    // Laid out like the toolbar buttons beside it, so the text lines up with theirs.
+                    _searchHitCountStyle ??= new GUIStyle(EditorStyles.label)
+                    {
+                        alignment = TextAnchor.MiddleLeft,
+                        margin = EditorStyles.toolbarButton.margin,
+                        padding = EditorStyles.toolbarButton.padding,
+                        fixedHeight = EditorStyles.toolbarButton.fixedHeight,
+                    };
+                    GUILayout.Label(hitNumberContent, _searchHitCountStyle, GUILayout.ExpandWidth(false));
+
+                    if (_previousSearchHit == null)
+                    {
+                        var isMac = SystemInfo.operatingSystemFamily == OperatingSystemFamily.MacOSX;
+                        _previousSearchHit = new GUIContent("Previous", $"Go to the previous match (Shift+Enter, {(isMac ? "Shift+Cmd+G" : "Shift+F3")})");
+                        _nextSearchHit = new GUIContent("Next", $"Go to the next match (Enter, {(isMac ? "Cmd+G" : "F3")})");
+                    }
+
+                    EditorGUI.BeginDisabledGroup(_textArea.NrSearchHits == 0);
+                    if (GUILayout.Button(_previousSearchHit, EditorStyles.toolbarButton))
+                    {
+                        _pendingSearchHitStep = -1;
+                        Repaint();
+                    }
+                    if (GUILayout.Button(_nextSearchHit, EditorStyles.toolbarButton))
+                    {
+                        _pendingSearchHitStep = 1;
+                        Repaint();
+                    }
+                    EditorGUI.EndDisabledGroup();
+
+                    GUILayout.EndHorizontal();
                 }
 
                 if (fontSize != fontSizeIndex)
@@ -1229,9 +1473,6 @@ namespace Unity.Burst.Editor
                 }
             }
 
-            GUILayout.EndVertical();
-
-            SplitterGUILayout.EndHorizontalSplit();
         }
 
         public static bool IsBurstError(string disassembly)
@@ -1285,20 +1526,12 @@ namespace Unity.Burst.Editor
             return foundTarget;
         }
 
-        private void EnableDisableSearchBar()
+        private void FocusSearchField()
         {
-            _searchBarVisible = !_searchBarVisible;
-
-            if (_searchBarVisible)
-            {
-                EnsureSearchFieldAssembly();
-                _searchFieldAssembly.SetFocus();
-            }
-            else
-            {
-                _textArea.StopSearching();
-            }
+            EnsureSearchFieldAssembly();
+            _searchFieldAssembly.SetFocus();
         }
+
         private bool _doIgnoreCase = false;
         private bool _doWholeWordMatch = false;
         private bool _doRegex = false;
@@ -1590,6 +1823,64 @@ namespace Unity.Burst.Editor
         protected override bool CanMultiSelect(TreeViewItem item)
         {
             return false;
+        }
+    }
+
+    internal class BurstFunctionDropdown : AdvancedDropdown
+    {
+        private const string BurstInternalFunctionsName = "Burst Internal Functions";
+
+        private readonly List<BurstDisassembler.AsmFunction> _functions;
+        private readonly Action<int> _functionSelected;
+
+        public BurstFunctionDropdown(AdvancedDropdownState state, List<BurstDisassembler.AsmFunction> functions, Action<int> functionSelected)
+            : base(state)
+        {
+            _functions = functions;
+            _functionSelected = functionSelected;
+            minimumSize = new Vector2(0f, 300f);
+        }
+
+        protected override AdvancedDropdownItem BuildRoot()
+        {
+            return BuildFunctionTree(_functions);
+        }
+
+        /// <summary>
+        /// Lists the functions in disassembly order, with Burst internal functions in a sub-list, using the function index as item id.
+        /// </summary>
+        internal static AdvancedDropdownItem BuildFunctionTree(List<BurstDisassembler.AsmFunction> functions)
+        {
+            var root = new AdvancedDropdownItem("Functions");
+            AdvancedDropdownItem internalFunctions = null;
+            for (var i = 0; i < functions.Count; i++)
+            {
+                var function = functions[i];
+                var item = new AdvancedDropdownItem(function.ShortName);
+                if (function.IsBurstInternal)
+                {
+                    internalFunctions ??= new AdvancedDropdownItem(BurstInternalFunctionsName);
+                    internalFunctions.AddChild(item);
+                }
+                else
+                {
+                    root.AddChild(item);
+                }
+
+                // AddChild replaces the id with one derived from the name.
+                item.id = i;
+            }
+
+            if (internalFunctions != null)
+            {
+                root.AddChild(internalFunctions);
+            }
+            return root;
+        }
+
+        protected override void ItemSelected(AdvancedDropdownItem item)
+        {
+            _functionSelected(item.id);
         }
     }
 }

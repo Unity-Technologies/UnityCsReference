@@ -292,6 +292,7 @@ namespace UnityEngine.UIElements.UIR
             atlas = panel.atlas;
             vectorImageManager = new VectorImageManager(atlas);
             backgroundGradientBaker = new BackgroundGradientBaker();
+            boxShadowProfile = new BoxShadowProfile();
 
             // TODO: Share across all panels
             m_Compositor = new RenderTreeCompositor(this);
@@ -361,6 +362,9 @@ namespace UnityEngine.UIElements.UIR
 
                 backgroundGradientBaker?.Dispose();
                 backgroundGradientBaker = null;
+
+                boxShadowProfile?.Dispose();
+                boxShadowProfile = null;
 
                 shaderInfoAllocator.Dispose();
                 shaderInfoAllocator = null;
@@ -884,6 +888,7 @@ namespace UnityEngine.UIElements.UIR
         internal AtlasBase atlas { get; private set; }
         internal VectorImageManager vectorImageManager { get; private set; }
         internal BackgroundGradientBaker backgroundGradientBaker { get; private set; }
+        internal BoxShadowProfile boxShadowProfile { get; private set; }
         internal TempMeshAllocatorImpl tempMeshAllocator { get; private set; }
         internal MeshWriteDataPool meshWriteDataPool { get; } = new();
         public EntryRecorder entryRecorder;

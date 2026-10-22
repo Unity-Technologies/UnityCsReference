@@ -84,6 +84,16 @@ namespace UnityEditor.Build.Profile
         public static readonly string buildDestinationBrowseButton = L10n.Tr("Browse", null);
         public static readonly string buildDestinationFolderTitle = L10n.Tr("Select Build Destination Folder", null);
 
+        // Build Profile Post-process Build Callback Settings
+        public static readonly string postprocessBuildSettings = L10n.Tr("Post-Build Callbacks", null);
+        public static readonly string postprocessBuildCallbacksHeader = L10n.Tr("Callbacks", null);
+        public static readonly string postprocessBuildNoCallbacks = L10n.Tr("No post-build callbacks yet. Add one to run code after a build that uses this profile.", null);
+        public static readonly string postprocessBuildNoTypesFound = L10n.Tr("No IBuildProfilePostprocessBuild implementations found. Implement the interface on a serializable class.", null);
+        public static readonly string postprocessBuildTooltip =
+            L10n.Tr(
+                "Callbacks that run in order after the player and content builds for this build profile, whether they were successful, failed, or cancelled. Similar to IPostprocessBuildWithContext callbacks.",
+                null);
+
         // Build Profile Bootstrap View
         public static readonly string buildProfileConfiguration = L10n.Tr("Configuring Build Profile...", null);
         public static readonly string buildProfilePreparation = L10n.Tr("Preparing Build Profile...", null);

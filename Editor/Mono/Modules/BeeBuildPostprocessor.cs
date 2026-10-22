@@ -30,9 +30,6 @@ namespace UnityEditor.Modules
     {
         protected BeeDriverResult BeeDriverResult { get; set; }
 
-        [NoAutoStaticsCleanup] // build-in-progress flag, always reset to false at build start; safe to persist across reload
-        protected static bool isBuildingPlayer { get; set; }
-
         public static readonly string kBackupFolderPostfix = "_BackUpThisFolder_ButDontShipItWithYourGame";
 
         static readonly string kXrBootSettingsKey = "xr-boot-settings";
@@ -116,9 +113,6 @@ namespace UnityEditor.Modules
         public virtual string GetExtension(BuildTarget target, int subtarget, BuildOptions options) => string.Empty;
 
         [RequiredByNativeCode]
-        static bool IsBuildingPlayer() => isBuildingPlayer;
-
-        [RequiredByNativeCode]
         static void BeginProfile() => UnityBeeDriverProfilerSession.Start($"{DagDirectory}/buildreport.json");
 
         [RequiredByNativeCode]
@@ -139,8 +133,6 @@ namespace UnityEditor.Modules
         static void EndBuildSection(long endedAtProfilerUs) => UnityBeeDriverProfilerSession.EndSection(endedAtProfilerUs);
 
         protected virtual IPluginImporterExtension GetPluginImpExtension() => new EditorPluginImporterExtension();
-
-
 
         protected virtual PluginsData PluginsDataFor(BuildPostProcessArgs args)
         {
@@ -545,7 +537,7 @@ namespace UnityEditor.Modules
             {
                 EnableAnalytics = UnityEngine.Analytics.Analytics.enabled,
                 EnableCrashReporting = UnityEditor.CrashReporting.CrashReportingSettings.canUploadReports,
-                EnableInsights = EngineDiagnostics.EngineDiagnosticsSettings.enabled,
+                EnableInsights = EngineDiagnostics.EngineDiagnosticsSettings.IsEnabled(),
                 EnablePerformanceReporting = UnityEngine.Analytics.PerformanceReporting.enabled,
                 EnableUnityConnect = UnityEngine.Connect.UnityConnectSettings.enabled,
             },
@@ -907,46 +899,44 @@ namespace UnityEditor.Modules
                 buildRequest.RegisterRPCCallback<GenerateNativePluginsForAssembliesArgs>(nameof(GenerateNativePluginsForAssemblies), GenerateNativePluginsForAssemblies);
                 var activeBuild = BeeDriver.BuildAsync(buildRequest, cancellationToken: cancellationTokenSource.Token);
 
+                while (!activeBuild.TaskObject.IsCompleted)
                 {
-                    while (!activeBuild.TaskObject.IsCompleted)
+                    activeBuild.TaskObject.Wait(100);
+
+                    //important to keep on pumping the execution context here, as there might be async tasks being kicked off by the bee driver build that have to run on the main thread.
+                    ((UnitySynchronizationContext) SynchronizationContext.Current).Exec();
+
+                    var activeBuildStatus = activeBuild.Status;
+                    float progress = activeBuildStatus.Progress.HasValue
+                        ? activeBuildStatus.Progress.Value.nodesFinishedOrUpToDate / (float) activeBuildStatus.Progress.Value.totalNodesQeueued
+                        : 0f;
+                    if (EditorUtility.DisplayCancelableProgressBar("Incremental Player Build", activeBuildStatus.Description, progress))
                     {
-                        activeBuild.TaskObject.Wait(100);
-
-                        //important to keep on pumping the execution context here, as there might be async tasks being kicked off by the bee driver build that have to run on the main thread.
-                        ((UnitySynchronizationContext) SynchronizationContext.Current).Exec();
-
-                        var activeBuildStatus = activeBuild.Status;
-                        float progress = activeBuildStatus.Progress.HasValue
-                            ? activeBuildStatus.Progress.Value.nodesFinishedOrUpToDate / (float) activeBuildStatus.Progress.Value.totalNodesQeueued
-                            : 0f;
-                        if (EditorUtility.DisplayCancelableProgressBar("Incremental Player Build", activeBuildStatus.Description, progress))
-                        {
-                            EditorUtility.DisplayCancelableProgressBar("Incremental Player Build", "Canceling build", 1.0f);
-                            cancellationTokenSource.Cancel();
-                        }
+                        EditorUtility.DisplayCancelableProgressBar("Incremental Player Build", "Canceling build", 1.0f);
+                        cancellationTokenSource.Cancel();
                     }
-                    args.report.EndBuildStep(buildStep);
-
-                    BeeDriverResult = activeBuild.TaskObject.Result;
-
-                    UnityBeeDriverProfilerSession.AddTaskToWaitForBeforeFinishing(BeeDriverResult.ProfileOutputWritingTask);
-
-                    if (BeeDriverResult.Success)
-                    {
-                        PostProcessCompletedBuild(args);
-                    }
-                    ReportBuildResults();
-
-                    UnityBeeDriver.RunCleanBeeCache();
-
-                    if (BeeDriverResult.Success)
-                    {
-                        buildStep = args.report.BeginBuildStep("Report output files");
-                        ReportBuildOutputFiles(args);
-                        args.report.EndBuildStep(buildStep);
-                    } else
-                        throw new BuildFailedException($"Player build failed: {args.report.SummarizeErrors()}", silent: true);
                 }
+                args.report.EndBuildStep(buildStep);
+
+                BeeDriverResult = activeBuild.TaskObject.Result;
+
+                UnityBeeDriverProfilerSession.AddTaskToWaitForBeforeFinishing(BeeDriverResult.ProfileOutputWritingTask);
+
+                if (BeeDriverResult.Success)
+                {
+                    PostProcessCompletedBuild(args);
+                }
+                ReportBuildResults();
+
+                UnityBeeDriver.RunCleanBeeCache();
+
+                if (BeeDriverResult.Success)
+                {
+                    buildStep = args.report.BeginBuildStep("Report output files");
+                    ReportBuildOutputFiles(args);
+                    args.report.EndBuildStep(buildStep);
+                } else
+                    throw new BuildFailedException($"Player build failed: {args.report.SummarizeErrors()}", silent: true);
             }
             catch (OperationCanceledException)
             {

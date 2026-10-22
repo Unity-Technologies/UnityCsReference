@@ -82,6 +82,8 @@ namespace UnityEditor.Shaders
         private const string k_RevertUndoName = "Revert Shader Build Settings";
         private int m_ConstantDefinesTypingUndoGroup = -1;
 
+        private bool m_SkipUnsavedChangesDialog;
+
         private static string CompilerDisplayName(ShaderBuildSettings.ShaderCompilerToolchain compiler)
         {
             switch (compiler)
@@ -206,17 +208,23 @@ namespace UnityEditor.Shaders
             m_RevertButton.RegisterCallback<ClickEvent>(OnRevertClicked);
 
             // Make sure it's a clean undo history
-            ClearUIUndo();
+            ClearEditorEventsAndUndo();
             m_PendingState = ScriptableObject.CreateInstance<ShaderBuildSettingsPendingState>();
             m_PendingState.hideFlags = HideFlags.HideAndDontSave;
             Undo.undoRedoEvent += OnUndoRedo;
 
+            EditorApplication.wantsToQuit += OnEditorWantsToQuit;
+            EditorApplication.quitting += OnEditorQuitting; // EditorApplication.Exit should exit without asking to save changes
+
             LoadSettingsData();
         }
 
-        public void ClearUIUndo()
+        public void ClearEditorEventsAndUndo()
         {
+            EditorApplication.wantsToQuit -= OnEditorWantsToQuit;
+            EditorApplication.quitting -= OnEditorQuitting;
             Undo.undoRedoEvent -= OnUndoRedo;
+
             if (m_PendingState == null)
                 return;
 
@@ -365,11 +373,6 @@ namespace UnityEditor.Shaders
 
             Undo.CollapseUndoOperations(m_ConstantDefinesTypingUndoGroup);
             m_ConstantDefinesTypingUndoGroup = -1;
-        }
-
-        private void ClearSettingsChangedState()
-        {
-            RefreshApplyRevertButtons();
         }
 
         private void RefreshApplyRevertButtons()
@@ -526,18 +529,38 @@ namespace UnityEditor.Shaders
             return true;
         }
 
-        public void HandleUnsavedChangesDialog(string buildProfileName = null)
+        private void OnEditorQuitting()
         {
-            if (!HasUnsavedChanges)
-                return;
+            m_SkipUnsavedChangesDialog = true;
+        }
 
-            string message = string.IsNullOrEmpty(buildProfileName)
-                ? L10n.Tr("Shader Build Settings have been modified.\nDo you want to apply changes?", null)
-                : string.Format(L10n.Tr("Shader Build Settings have been modified in build profile \"{0}\".\nDo you want to apply changes?", null), buildProfileName);
+        private bool OnEditorWantsToQuit()
+        {
+            if (!HasUnsavedChanges || !UnityEditorInternal.InternalEditorUtility.isHumanControllingUs)
+                return true;
+
+            switch (EditorUtility.DisplayDialogComplex(L10n.Tr("Unapplied Changes", null),
+                        GetUnsavedChangesDialogMessage(), L10n.Tr("Apply", null),
+                        L10n.Tr("Cancel", null), L10n.Tr("Revert", null)))
+            {
+                case 0:
+                    return ApplySettings();
+                case 2:
+                    RevertSettings();
+                    return true;
+                default:
+                    return false;
+            }
+        }
+
+        public void HandleUnsavedChangesDialog()
+        {
+            if (!HasUnsavedChanges || m_SkipUnsavedChangesDialog)
+                return;
 
             if (EditorUtility.DisplayDialog(
                 L10n.Tr("Unapplied Changes", null),
-                message,
+                GetUnsavedChangesDialogMessage(),
                 L10n.Tr("Apply", null),
                 L10n.Tr("Revert", null)))
             {
@@ -545,12 +568,23 @@ namespace UnityEditor.Shaders
             }
             else
             {
-                LoadSettingsData();
-                ClearSettingsChangedState();
+                RevertSettings();
             }
         }
 
-        internal void ApplySettings()
+        private string GetUnsavedChangesDialogMessage()
+        {
+            string buildProfileName = null;
+            if (m_CachedBuildProfile != null)
+                buildProfileName = m_CachedBuildProfile.name;
+
+            return string.IsNullOrEmpty(buildProfileName)
+                ? L10n.Tr("Shader Build Settings have been modified.\nDo you want to apply changes?", null)
+                : string.Format(L10n.Tr("Shader Build Settings have been modified in build profile \"{0}\".\nDo you want to apply changes?",
+                    null), buildProfileName);
+        }
+
+        internal bool ApplySettings()
         {
             string kdoValidationErrorMsg, defineValidationErrorMsg, compilerValidationErrorMsg;
             int internalDefineCount = m_InternalConstantDefines.Count;
@@ -567,13 +601,14 @@ namespace UnityEditor.Shaders
                 SaveSettingsData(mergedCompilerSettings);
                 SaveAppliedStates();
                 UpdateFastBuildControls();
-                ClearSettingsChangedState();
+                RefreshApplyRevertButtons();
 
                 // Applying can be the first import of a shader authored since the last gather, reimport will be triggered anyway.
                 m_GatheredDeclarations = null;
                 EnsureKeywordDeclarationsGathered();
 
                 Undo.ClearUndo(m_PendingState);
+                return true;
             }
             else
             {
@@ -585,6 +620,8 @@ namespace UnityEditor.Shaders
 
                 if (compilerValidationErrorMsg.Length > 0)
                     Debug.LogError(compilerValidationErrorMsg);
+
+                return false;
             }
         }
 
@@ -595,14 +632,19 @@ namespace UnityEditor.Shaders
 
         private void OnRevertClicked(ClickEvent evt)
         {
+            RevertSettingsWithUndo();
+        }
+
+        internal void RevertSettingsWithUndo()
+        {
+            Undo.RecordObject(m_PendingState, k_RevertUndoName);
             RevertSettings();
         }
 
         internal void RevertSettings()
         {
-            Undo.RecordObject(m_PendingState, k_RevertUndoName);
             LoadSettingsData();
-            ClearSettingsChangedState();
+            RefreshApplyRevertButtons();
         }
 
         private SerializedProperty GetKeywordDeclarationOverridesProperty()
@@ -933,7 +975,6 @@ namespace UnityEditor.Shaders
 
             BuildFastBuildDisplayedOverrides();
             RefreshKeywordOverridesListView();
-            // Deliberately not SettingsChanged() so that back and forth fast build mode will not leave apply button enabled
             RecordPendingState(k_ChangeFastBuildModeUndoName);
         }
 

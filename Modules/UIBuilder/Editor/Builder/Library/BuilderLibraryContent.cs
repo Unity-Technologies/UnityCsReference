@@ -146,11 +146,11 @@ namespace Unity.UI.Builder
             public LazyInitStatics()
             {
                 #pragma warning disable UAL0015 // rebuilt/resubscribed wholesale on the next reload via this object's own lifecycle; a stale value in the interim is never observed
-                s_AssetModificationProcessor = new AssetModificationProcessor(() => { RegenerateLibraryContent(); });
-                #pragma warning restore UAL0015
-                s_AssetPostProcessor = new AssetPostprocessor(() => { RegenerateLibraryContent(); });
+                s_AssetModificationProcessor = new AssetModificationProcessor(RegenerateLibraryContentIfInUse);
+                s_AssetPostProcessor = new AssetPostprocessor(RegenerateLibraryContentIfInUse);
                 BuilderAssetModificationProcessor.Register(s_AssetModificationProcessor);
                 BuilderAssetPostprocessor.Register(s_AssetPostProcessor);
+                #pragma warning restore UAL0015
             }
         }
 
@@ -177,6 +177,13 @@ namespace Unity.UI.Builder
         public static bool IsStandardControl(string fullTypeName)
         {
             return s_StandardControls.Contains(fullTypeName);
+        }
+
+        // A library pane regenerates the content itself when it is created
+        static void RegenerateLibraryContentIfInUse()
+        {
+            if (OnLibraryContentUpdated != null)
+                RegenerateLibraryContent();
         }
 
         public static void RegenerateLibraryContent(bool mustRegisterProcessors = false)

@@ -136,8 +136,10 @@ namespace Unity.Entities
 
         internal readonly static SharedStatic<UnmanagedSystemTypeRegistryData> s_Data = SharedStatic<UnmanagedSystemTypeRegistryData>.GetOrCreate<Dummy>();
 
-        [OnCodeUnloading]
-        static void OnCodeUnloading()
+        // Shared by every World, so released with the rest of the Entities shared state. This must run before the inner
+        // code reload's leak check, which comes before [OnAssemblyUnloading]. Reloaded assemblies register again on load.
+        [EntitiesCleanup]
+        static void OnEntitiesCleanup()
         {
             s_Data.Data.Dispose();
             Managed.s_PendingRegistrations = null;
@@ -184,8 +186,6 @@ namespace Unity.Entities
             ForwardingFunc onDestroy, ForwardingFunc onStartRunning, ForwardingFunc onStopRunning, ForwardingFunc onCreateForCompiler,
             string debugName, int burstCompileBits)
         {
-            //Debug.Log($"Adding unmanaged system type {debugName}, bcb={burstCompileBits}");
-
             // Lazily create list to hold pending work items as needed. This will be called from early initialization code and we need to defer burst compilation.
             if (Managed.s_PendingRegistrations == null)
             {

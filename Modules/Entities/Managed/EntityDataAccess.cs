@@ -482,8 +482,13 @@ namespace Unity.Entities
         {
             fixed (EntityDataAccess* mgr = &this)
             {
-                ECBInterop.RemoveSharedComponentReferences(mgr, m_SharedComponentReferenceIndexList.Ptr,
-                    m_SharedComponentReferenceIndexList.Length);
+                int count = m_SharedComponentReferenceIndexList.Length;
+                int* sharedIndex = m_SharedComponentReferenceIndexList.Ptr;
+                for (var i = 0; i < count; i++)
+                {
+                    var sharedComponentIndex = sharedIndex[i];
+                    mgr->EntityComponentStore->RemoveSharedComponentReference_Unmanaged(sharedComponentIndex);
+                }
             }
 
             m_SharedComponentReferenceIndexList.Clear();

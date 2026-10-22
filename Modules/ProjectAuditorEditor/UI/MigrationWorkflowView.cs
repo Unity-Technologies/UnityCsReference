@@ -606,7 +606,7 @@ namespace Unity.ProjectAuditor.Editor.UI
 
         void RepaintWhileInstalling()
         {
-            if (ProjectAuditorWindow.Instance == null || m_UrpAddRequest == null || m_UrpAddRequest.IsCompleted)
+            if (!EditorWindow.HasOpenInstances<ProjectAuditorWindow>() || m_UrpAddRequest == null || m_UrpAddRequest.IsCompleted)
             {
                 if (m_UrpAddRequest != null)
                 {
@@ -638,6 +638,13 @@ namespace Unity.ProjectAuditor.Editor.UI
 
         void OnConverterFinished(string output)
         {
+            if (!EditorWindow.HasOpenInstances<ProjectAuditorWindow>())
+            {
+                m_ConverterRunning = false;
+                EditorApplication.update -= RepaintWhileConverterRunning;
+                return;
+            }
+
             var window = ProjectAuditorWindow.Instance;
             var report = window.m_Report;
 
@@ -709,7 +716,7 @@ namespace Unity.ProjectAuditor.Editor.UI
 
         void RepaintWhileConverterRunning()
         {
-            if (ProjectAuditorWindow.Instance == null)
+            if (!EditorWindow.HasOpenInstances<ProjectAuditorWindow>())
             {
                 m_ConverterRunning = false;
                 EditorApplication.update -= RepaintWhileConverterRunning;

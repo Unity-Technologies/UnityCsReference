@@ -30,15 +30,9 @@ class StopProcessNode : ExecutionNode
 
     internal static async Task StopProcessByIdAsync(int processId, CancellationToken cancellationToken)
     {
-        try
-        {
-            using var process = Process.GetProcessById(processId);
+        using var process = ProcessSystem.GetProcessById(processId);
+        if (process != null)
             await StopProcessAsync(process, cancellationToken);
-        }
-        catch (ArgumentException)
-        {
-            // Process already exited.
-        }
     }
 
     internal static async Task StopProcessAsync(Process process, CancellationToken cancellationToken)

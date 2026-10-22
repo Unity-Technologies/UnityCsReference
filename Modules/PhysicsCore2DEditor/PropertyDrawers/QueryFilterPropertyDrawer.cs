@@ -40,7 +40,7 @@ namespace Unity.U2D.Physics.Editor
             var hitCategoriesBindingPath = $"{hitCategoriesTypeName}.{nameof(PhysicsQuery.QueryFilter.hitCategories.bitMask)}";
 
             // Find if we need to show as a basic 64-bit mask.
-            var showAsPhysicsMask = PhysicsMaskPropertyDrawer.ShowAsPhysicsMask<PhysicsQuery.QueryFilter>(property);
+            var showAsPhysicsMask = PhysicsMaskPropertyDrawer.ShowAsPhysicsMask(property);
 
             // 64-bit mask.
             if (showAsPhysicsMask || PhysicsWorld.usePhysicsLayers)
@@ -79,11 +79,8 @@ namespace Unity.U2D.Physics.Editor
             else
             {
                 // 32-bit mask.
-                var categories = new LayerMaskField(categoriesProperty.displayName) { bindingPath = categoriesBindingPath };
-                var hitCategories = new LayerMaskField(hitCategoriesProperty.displayName) { bindingPath = hitCategoriesBindingPath };
-
-                categories.AddToClassList(LayerMaskField.alignedFieldUssClassName);
-                hitCategories.AddToClassList(LayerMaskField.alignedFieldUssClassName);
+                var categories = new LayerMaskField32(categoriesProperty.displayName) { bindingPath = categoriesBindingPath };
+                var hitCategories = new LayerMaskField32(hitCategoriesProperty.displayName) { bindingPath = hitCategoriesBindingPath };
 
                 body.Add(categories);
                 body.Add(hitCategories);
@@ -127,7 +124,7 @@ namespace Unity.U2D.Physics.Editor
         {
             label = EditorGUI.BeginProperty(position, label, property);
 
-            var showAsPhysicsMask = PhysicsMaskPropertyDrawer.ShowAsPhysicsMask<PhysicsQuery.QueryFilter>(property);
+            var showAsPhysicsMask = PhysicsMaskPropertyDrawer.ShowAsPhysicsMask(property);
 
             var foldoutRect = new Rect(position.x, position.y, position.width, EditorGUIUtility.singleLineHeight);
             property.isExpanded = EditorGUI.Foldout(foldoutRect, property.isExpanded, label, true);

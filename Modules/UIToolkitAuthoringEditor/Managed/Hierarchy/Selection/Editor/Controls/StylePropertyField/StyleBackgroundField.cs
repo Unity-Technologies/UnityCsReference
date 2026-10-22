@@ -166,6 +166,7 @@ namespace Unity.UIToolkit.Editor
         void IStylePropertyDataField<StyleBackground, Background>.SetValueFromStyleData(
             in StylePropertyData<StyleBackground, Background> data, VisualElement currentTarget, StyleSheet currentStyleSheet)
         {
+            m_VarContextElement = currentTarget;
             value = data.computedValue;
 
             // In VisualElement context currentStyleSheet is the UXML inline sheet, so the same
@@ -174,19 +175,17 @@ namespace Unity.UIToolkit.Editor
             var bindings = StyleProperty.GradientVarBindings.none;
             if (data.uxmlValue.isInlined && currentStyleSheet is { } gradientSheet)
             {
-                data.uxmlValue.inlineProperty.TryReadGradientVarBindings(gradientSheet, gradient, out bindings);
+                data.uxmlValue.inlineProperty.TryReadGradientVarBindings(gradientSheet, gradient, out bindings, ResolveVariableColor);
             }
             else if (data.selector.sheet != null
                      && data.selector.complexSelector?.rule?.FindLastProperty(data.id) is { } selectorProperty
-                     && selectorProperty.TryReadGradientVarBindings(data.selector.sheet, gradient, out var selectorBindings))
+                     && selectorProperty.TryReadGradientVarBindings(data.selector.sheet, gradient, out var selectorBindings, ResolveVariableColor))
             {
                 // Raw handles index the selector's sheet, but an edit writes to the inline
                 // sheet; carry only the names so fresh var() constructs are emitted.
                 bindings = selectorBindings.WithoutHandles();
             }
             SetVarBindings(bindings);
-
-            m_VarContextElement = currentTarget;
         }
 
         VariableInfo ResolveVariable(string varName)
@@ -196,20 +195,7 @@ namespace Unity.UIToolkit.Editor
             return StyleVariableUtility.FindVariable(m_VarContextElement, varName, false);
         }
 
-        Color? ResolveVariableColor(string varName)
-        {
-            var varInfo = ResolveVariable(varName);
-            var handles = varInfo.StyleVariable.handles;
-            if (varInfo.Sheet == null || handles == null || handles.Length == 0)
-                return null;
-
-            if (handles[0].valueType == StyleValueType.Color)
-                return varInfo.Sheet.ReadColor(handles[0]);
-            if (handles[0].valueType == StyleValueType.Enum
-                && StyleSheetColor.TryGetColor(varInfo.Sheet.ReadAsString(handles[0]).ToLowerInvariant(), out var namedColor))
-                return namedColor;
-            return null;
-        }
+        Color? ResolveVariableColor(string varName) => StyleVariableUtility.GetColor(ResolveVariable(varName));
 
         void OpenStopsPopup()
         {

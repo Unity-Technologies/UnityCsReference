@@ -91,6 +91,26 @@ namespace UnityEngine.UIElements
             return new Rect(r.xMin - i, r.yMin - i, r.width + i + i, r.height + i + i);
         }
 
+        public static Rect InflateByMargins(Rect r, PostProcessingMargins margins, Vector2 scale)
+        {
+            return new Rect(
+                r.xMin - margins.left * scale.x,
+                r.yMin - margins.top * scale.y,
+                r.width + (margins.left + margins.right) * scale.x,
+                r.height + (margins.top + margins.bottom) * scale.y);
+        }
+
+        public static Rect? Intersect(Rect a, Rect b)
+        {
+            float xMin = Mathf.Max(a.xMin, b.xMin);
+            float yMin = Mathf.Max(a.yMin, b.yMin);
+            float xMax = Mathf.Min(a.xMax, b.xMax);
+            float yMax = Mathf.Min(a.yMax, b.yMax);
+            if (xMax <= xMin || yMax <= yMin)
+                return null;
+            return Rect.MinMaxRect(xMin, yMin, xMax, yMax);
+        }
+
         public static void ComputeMatrixRelativeToAncestor(RenderData renderData, RenderData ancestor, out Matrix4x4 transform)
         {
             ref var ancestorInverse = ref ancestor.owner.GetWorldTransformInverse(out bool isSingular);

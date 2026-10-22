@@ -15,6 +15,7 @@ using UnityEngine.Bindings;
 using UnityEngine.Internal;
 using UnityEngine.Scripting;
 using Unity.Scripting.LifecycleManagement;
+using Unity.Collections.LowLevel.Unsafe;
 
 #pragma warning disable 169
 
@@ -766,6 +767,22 @@ namespace UnityEngine
         C = 2,
     }
 
+    [ExcludeFromDocs]
+    internal enum SomeEnum16 : ushort
+    {
+        A = 0,
+        B = 1,
+        C = 2,
+    }
+
+    [ExcludeFromDocs]
+    internal enum SomeEnum8 : byte
+    {
+        A = 0,
+        B = 1,
+        C = 2,
+    }
+
     [NativeHeader("Modules/Marshalling/MarshallingTests.h")]
     [ExcludeFromDocs]
     internal class EnumTests
@@ -1225,11 +1242,23 @@ namespace UnityEngine
         public static extern UIntPtr TestInvokeUIntPtr(UIntPtr arg);
         public static extern float TestInvokeFloat(float arg);
         public static extern double TestInvokeDouble(double arg);
-        public static extern SomeEnum TestInvokeEnum(SomeEnum arg);
+        public static extern SomeEnum TestInvokeEnum32(SomeEnum arg);
+        public static extern SomeEnum16 TestInvokeEnum16(SomeEnum16 arg);
+        public static extern SomeEnum8 TestInvokeEnum8(SomeEnum8 arg);
         public static extern System.Object TestInvokeObject(System.Object arg);
         public static extern System.Object TestInvokeObjectAsGcHandle(System.Object arg);
         public static extern System.Object TestInvokeObjectScriptingInvocation(System.Object arg);
         public static extern System.Object TestInvokeObjectAsGcHandleScriptingInvocation(System.Object arg);
+        public static extern System.Object TestInvokeObjectAsWeakGcHandle(System.Object arg);
+        public static extern System.Object TestInvokeObjectAsPinnedGcHandle(System.Object arg);
+        public static extern System.Object TestInvokeObjectWithEmptyGcHandle();
+        public static extern System.Object TestInvokeObjectAsGcHandleRepeated(System.Object arg, int iterations);
+        public static extern System.Object TestInvokeOutObject(System.Object arg);
+        public static extern System.Object TestInvokeRefObject(System.Object arg, System.Object initial);
+        public static extern void TestInvokeOutObjectDiscard(System.Object arg, int iterations);
+        public static extern System.Object TestInvokeThrowsCaptureException(System.Object payload);
+        public static extern void TestInvokeThrowsDiscard(System.Object payload, int iterations);
+        public static extern System.Object TestInvokeRefObjectThrows(System.Object arg, int iterations);
         // performance tests
         public static extern void TestInvokeObjectNoReturn(int iterations, System.Object arg);
         public static extern void TestInvokeObjectNoReturnAsGcHandle(int iterations, IntPtr handle);
@@ -1268,7 +1297,11 @@ namespace UnityEngine
         [RequiredMember, RequiredByNativeCode(Optional = true)]
         static double InvokeDouble(double arg) { return arg; }
         [RequiredMember, RequiredByNativeCode(Optional = true)]
-        static SomeEnum InvokeEnum(SomeEnum arg) { return arg; }
+        static int InvokeEnum32(SomeEnum arg) { return UnsafeUtility.As<SomeEnum, int>(ref arg); }
+        [RequiredMember, RequiredByNativeCode(Optional = true)]
+        static ushort InvokeEnum16(SomeEnum16 arg) { return UnsafeUtility.As<SomeEnum16, ushort>(ref arg); }
+        [RequiredMember, RequiredByNativeCode(Optional = true)]
+        static byte InvokeEnum8(SomeEnum8 arg) { return UnsafeUtility.As<SomeEnum8, byte>(ref arg); }
         [RequiredMember, RequiredByNativeCode(Optional = true)]
         static System.Object InvokeObject(System.Object obj)
         {
@@ -1278,6 +1311,35 @@ namespace UnityEngine
         [RequiredMember, RequiredByNativeCode(Optional = true)]
         static void InvokeObjectNoReturn(System.Object obj)
         {
+        }
+
+        public const string kProxyThrowMessage = "Thrown by InvokeTests proxy target";
+        public const string kProxyThrowPayloadKey = "payload";
+
+        [RequiredMember, RequiredByNativeCode(Optional = true)]
+        static void InvokeOutObject(System.Object arg, out System.Object result)
+        {
+            result = arg;
+        }
+
+        [RequiredMember, RequiredByNativeCode(Optional = true)]
+        static void InvokeRefObject(System.Object arg, ref System.Object value)
+        {
+            value = (string)value + (string)arg;
+        }
+
+        [RequiredMember, RequiredByNativeCode(Optional = true)]
+        static void InvokeRefObjectThrows(ref System.Object value)
+        {
+            throw new InvalidOperationException(kProxyThrowMessage);
+        }
+
+        [RequiredMember, RequiredByNativeCode(Optional = true)]
+        static void InvokeThrows(System.Object payload)
+        {
+            var exception = new InvalidOperationException(kProxyThrowMessage);
+            exception.Data[kProxyThrowPayloadKey] = payload;
+            throw exception;
         }
     }
 

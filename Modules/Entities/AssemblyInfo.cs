@@ -9,3 +9,7 @@ using System.Runtime.CompilerServices;
 // access it had while EntityIdStore lived in the Core module.
 [assembly: InternalsVisibleTo("Unity.Entities")]
 [assembly: InternalsVisibleTo("Unity.Entities.Tests")]
+
+// EntitiesWorldHooks hands the test framework its entry points into Unity.Entities.
+[assembly: InternalsVisibleTo("UnityEditor.TestRunner")]
+[assembly: InternalsVisibleTo("UnityEngine.TestRunner")]

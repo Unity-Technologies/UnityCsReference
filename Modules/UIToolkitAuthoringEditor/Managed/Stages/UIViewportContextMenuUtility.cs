@@ -90,8 +90,9 @@ internal static class UIViewportContextMenuUtility
                 return false;
 
             var arr = toPasteList.ToArray();
+            if (ReparentElementsCommand.Execute(source, parentAsset, -1, arr) != CommandExecutionStatus.Success)
+                return false;
             UIToolkitStageUtility.RequestSelectionOnNextUpdate(arr);
-            ReparentElementsCommand.Execute(source, parentAsset, -1, arr);
             UIToolkitStageUtility.ScopePendingSelectionRequestsTo(parentElement);
             clipboard.Clear();
             return true;

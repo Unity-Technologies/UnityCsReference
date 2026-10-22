@@ -218,7 +218,7 @@ namespace UnityEditor
                     ? TrustAndSignatureHelper.GetTrustAndSignature(assetPackageInfo)
                     : TrustAndSignature.NotApplicable;
 
-            if (trustAndSignature == TrustAndSignature.UntrustedNoSignature && (PackageTrustLevel.HasBypassPackageTrustEntitlement() || wizard.isAssetStorePackage))
+            if (trustAndSignature == TrustAndSignature.UntrustedNoSignature && wizard.isAssetStorePackage)
                 return TrustAndSignature.NotApplicable;
 
             return trustAndSignature;
@@ -613,8 +613,10 @@ namespace UnityEditor
         private AssetOrigin m_AssetOrigin;
         private string m_PackageExtractedPath;
         private AssetPackageInfo m_AssetPackageInfo;
+        [SerializeField]
+        private bool m_IsNestedAssetStorePackage;
         public AssetPackageInfo assetPackageInfo => m_AssetPackageInfo;
-        public bool isAssetStorePackage => m_AssetOrigin.IsValid();
+        public bool isAssetStorePackage => m_AssetOrigin.IsValid() || m_IsNestedAssetStorePackage;
 
         public void StartImport(string packagePath, ImportPackageItem[] items, string packageIconPath, AssetOrigin origin, string packageExtractedPath, AssetPackageInfo assetPackageInfo)
         {
@@ -626,6 +628,7 @@ namespace UnityEditor
             m_AssetOrigin = origin;
             m_PackageExtractedPath = packageExtractedPath;
             m_AssetPackageInfo = assetPackageInfo;
+            m_IsNestedAssetStorePackage = !origin.IsValid() && IsPackageNestedInsideAssetStoreAsset(packagePath);
 
             m_InitialImportItems = items;
             foreach (var item in items)
@@ -726,6 +729,19 @@ namespace UnityEditor
             m_IsMultiStepWizard = false;
             m_IsProjectSettingStep = false;
             m_AssetPackageInfo = null;
+            m_IsNestedAssetStorePackage = false;
+        }
+
+        // Some Asset Store packages bundle other .unitypackage files inside them (what we refer to as "nested" packages).
+        // We want to treat an inner one as asset-store-sourced so its import does not raise a trust warning for unsigned packages. 
+        static bool IsPackageNestedInsideAssetStoreAsset(string packagePath)
+        {
+            if (string.IsNullOrEmpty(packagePath))
+                return false;
+            var guid = AssetDatabase.AssetPathToGUID(packagePath, AssetPathToGUIDOptions.OnlyExistingAssets);
+            if (string.IsNullOrEmpty(guid))
+                return false;
+            return AssetDatabase.GetAssetOrigin(guid).IsValid();
         }
 
         public bool AreAnyElementsSelected()

@@ -246,6 +246,52 @@ namespace UnityEngine.UIElements.StyleSheets
             return true;
         }
 
+        static public BoxShadow ReadBoxShadow(int valCount, StylePropertyValue val1, StylePropertyValue val2, StylePropertyValue val3,
+            StylePropertyValue val4, StylePropertyValue val5, StylePropertyValue val6)
+        {
+            TryReadBoxShadow(valCount, val1, val2, val3, val4, val5, val6, out var boxShadow);
+            return boxShadow;
+        }
+
+        // Reads `none | [ inset? && <length>{2,4} && <color>? ]`. The lengths are offset-x, offset-y, blur-radius
+        // and spread-radius, in that order; the inset keyword and the color can come before or after them.
+        // False when the declaration is invalid, in which case the shadow falls back to none.
+        static public bool TryReadBoxShadow(int valCount, StylePropertyValue val1, StylePropertyValue val2, StylePropertyValue val3,
+            StylePropertyValue val4, StylePropertyValue val5, StylePropertyValue val6, out BoxShadow boxShadow)
+        {
+            boxShadow = BoxShadow.None();
+
+            if (valCount == 1 && val1.handle.valueType == StyleValueType.Keyword && (StyleValueKeyword)val1.handle.valueIndex == StyleValueKeyword.None)
+                return true;
+
+            if (valCount < 2 || valCount > 6)
+                return false;
+
+            var parser = new BoxShadow.Parser();
+            for (int i = 0; i < valCount; ++i)
+            {
+                var value = i switch { 0 => val1, 1 => val2, 2 => val3, 3 => val4, 4 => val5, _ => val6 };
+                var valueType = value.handle.valueType;
+
+                if (valueType == StyleValueType.Dimension || valueType == StyleValueType.Float)
+                {
+                    var dimension = value.sheet.ReadDimension(value.handle);
+                    if (dimension.unit == Dimension.Unit.Pixel || dimension.unit == Dimension.Unit.Unitless)
+                        parser.AddLength(dimension.value);
+                    else
+                        parser.AddInvalid();
+                }
+                else if (valueType == StyleValueType.Enum && value.sheet.ReadEnum(value.handle) == "inset")
+                    parser.AddInset();
+                else if (value.sheet.TryReadColor(value.handle, out var color))
+                    parser.AddColor(color);
+                else
+                    parser.AddInvalid();
+            }
+
+            return parser.TryGetValue(out boxShadow);
+        }
+
         static bool IsAngleValue(StylePropertyValue value)
         {
             var valueType = value.handle.valueType;

@@ -537,6 +537,28 @@ namespace UnityEngine
         internal static readonly int k_MinimumBaseMapResolution = GetBoundaryValue(BoundaryValueType.MinBaseMapRes);
         internal static readonly int k_MaximumBaseMapResolution = GetBoundaryValue(BoundaryValueType.MaxBaseMapRes);
 
+        ///<summary>The largest heightmap resolution. Setting <see cref="heightmapResolution" /> above it clamps the value to it and logs a warning.</summary>
+        ///<remarks>The heightmap resolution is rounded up to a power of two plus one, so a small value gives the smallest supported resolution and there is no separate minimum.</remarks>
+        public static int maxHeightmapResolution => k_MaximumResolution;
+
+        ///<summary>The smallest alphamap resolution. Setting <see cref="alphamapResolution" /> below it clamps the value to it and logs a warning.</summary>
+        public static int minAlphamapResolution => k_MinimumAlphamapResolution;
+
+        ///<summary>The largest alphamap resolution. Setting <see cref="alphamapResolution" /> above it clamps the value to it and logs a warning.</summary>
+        public static int maxAlphamapResolution => k_MaximumAlphamapResolution;
+
+        ///<summary>The smallest base map resolution. Setting <see cref="baseMapResolution" /> below it clamps the value to it and logs a warning.</summary>
+        public static int minBaseMapResolution => k_MinimumBaseMapResolution;
+
+        ///<summary>The largest base map resolution. Setting <see cref="baseMapResolution" /> above it clamps the value to it and logs a warning.</summary>
+        public static int maxBaseMapResolution => k_MaximumBaseMapResolution;
+
+        ///<summary>The smallest detail resolution per patch. <see cref="SetDetailResolution" /> clamps smaller values to it and logs a warning.</summary>
+        public static int minDetailResolutionPerPatch => k_MinimumDetailResolutionPerPatch;
+
+        ///<summary>The largest detail resolution per patch. <see cref="SetDetailResolution" /> clamps larger values to it and logs a warning.</summary>
+        public static int maxDetailResolutionPerPatch => k_MaximumDetailResolutionPerPatch;
+
         ///<exclude />
         public TerrainData()
         {

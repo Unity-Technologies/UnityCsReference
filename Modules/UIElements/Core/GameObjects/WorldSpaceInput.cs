@@ -428,12 +428,15 @@ internal static class WorldSpaceInput
         // Now since this is a virtual, we can't just start to call it with global pos... we could break client code.
         // EdgeControl and port connectors in GraphView overload this.
 
-        bool intersects = root.IntersectLocalRay(ray, out var point);
-        bool containsPoint = intersects && root.ContainsPoint(point);
-        // we only skip children in the case we visually clip them
-        if (!containsPoint && root.ShouldClip())
+        // A default ContainsPoint depends only on rect and ray, so its result can be computed on demand by PickRoot.
+        bool? containsPoint = null;
+        bool clips = root.ShouldClip();
+        if (clips || root.usesContainsPoint)
         {
-            return default;
+            containsPoint = ContainsLocalRay(root, ray);
+            // we only skip children in the case we visually clip them
+            if (!containsPoint.Value && clips)
+                return default;
         }
 
         VisualElement returnedChild = default;
@@ -445,7 +448,7 @@ internal static class WorldSpaceInput
 
         if (needsZIndexSort)
         {
-            if (PickChildrenInZIndexOrder(root, ray, containsPoint, outResults, ref returnedChild, ref rootPicked))
+            if (PickChildrenInZIndexOrder(root, ray, ref containsPoint, outResults, ref returnedChild, ref rootPicked))
                 return returnedChild;
         }
         else
@@ -459,13 +462,18 @@ internal static class WorldSpaceInput
         }
 
         if (!rootPicked)
-            PickRoot(root, containsPoint, outResults, ref returnedChild);
+            PickRoot(root, ray, ref containsPoint, outResults, ref returnedChild);
 
         return returnedChild;
     }
 
+    private static bool ContainsLocalRay(VisualElement ve, Ray ray)
+    {
+        return ve.IntersectLocalRay(ray, out var point) && ve.ContainsPoint(point);
+    }
+
     // Returns true when the pick is resolved and the root no longer needs to be tested.
-    private static bool PickChildrenInZIndexOrder(VisualElement root, Ray ray, bool containsPoint,
+    private static bool PickChildrenInZIndexOrder(VisualElement root, Ray ray, ref bool? containsPoint,
         List<VisualElement> outResults, ref VisualElement returnedChild, ref bool rootPicked)
     {
         s_PickScratch ??= new ChildPickEntry[16];
@@ -509,7 +517,7 @@ internal static class WorldSpaceInput
                 if (!rootPicked && entry.zIndex < 0 && IsPromotedOutOfParent(child))
                 {
                     rootPicked = true;
-                    if (PickRoot(root, containsPoint, outResults, ref returnedChild))
+                    if (PickRoot(root, ray, ref containsPoint, outResults, ref returnedChild))
                         return true;
                 }
 
@@ -552,10 +560,14 @@ internal static class WorldSpaceInput
     }
 
     // Returns true when the pick is resolved and the remaining children can be skipped.
-    private static bool PickRoot(VisualElement root, bool containsPoint, List<VisualElement> outResults,
+    private static bool PickRoot(VisualElement root, Ray ray, ref bool? containsPoint, List<VisualElement> outResults,
         ref VisualElement returnedChild)
     {
-        if (!root.visible || root.pickingMode != PickingMode.Position || !containsPoint)
+        if (!root.visible || root.pickingMode != PickingMode.Position)
+            return false;
+
+        containsPoint ??= ContainsLocalRay(root, ray);
+        if (!containsPoint.Value)
             return false;
 
         outResults?.Add(root);

@@ -294,10 +294,10 @@ namespace Unity.Entities
         [Obsolete("This enum value has been renamed to IncludeDisabledEntities. (RemovedAfter Entities 1.0) (UnityUpgradable) -> IncludeDisabledEntities", false)]
         IncludeDisabled = 2,
         /// <summary>
-        /// Obsolete. The query filters selected entities based on the
+        /// Deprecated. The query filters selected entities based on the
         /// <see cref="WriteGroupAttribute"/> settings of the components specified in the query description.
         /// </summary>
-        [Obsolete("Write groups are deprecated and will be removed. (RemovedAfter Entities 6.7)")]
+        [Obsolete("Write groups are deprecated and will be removed in a future release. (RemovedAfter Entities 6.7)")]
         FilterWriteGroup = 4,
         /// <summary>
         /// The query will match all entities in all the query's matching archetypes, regardless of whether any

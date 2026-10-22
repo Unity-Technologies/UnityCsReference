@@ -90,11 +90,15 @@ sealed class AddElementDropManipulator : Manipulator
         if (EditedVisualTreeAsset == null)
             return;
 
-        if (DragAndDrop.GetGenericData(LibraryItem.DragDataKey) is not LibraryItem
-            && !IsValidUxmlDrop())
+        int addedCount;
+        if (DragAndDrop.GetGenericData(LibraryItem.DragDataKey) is LibraryItem)
+            addedCount = 1;
+        else if (TryResolveDraggedVisualTreeAssets(out var vtas) && AreAllVisualTreeAssetsValid(vtas))
+            addedCount = vtas.Length;
+        else
             return;
 
-        var placement = ComputePlacement(evt.mousePosition);
+        var placement = ComputePlacement(evt.mousePosition, addedCount);
 
         if (!placement.CanDrop)
         {
@@ -117,7 +121,7 @@ sealed class AddElementDropManipulator : Manipulator
 
         if (DragAndDrop.GetGenericData(LibraryItem.DragDataKey) is LibraryItem libraryItem)
         {
-            var placement = ComputePlacement(evt.mousePosition);
+            var placement = ComputePlacement(evt.mousePosition, 1);
             if (!placement.CanDrop)
             {
                 m_Indicator.Hide();
@@ -135,7 +139,13 @@ sealed class AddElementDropManipulator : Manipulator
             DragAndDrop.AcceptDrag();
             m_Indicator.Hide();
 
-            AddElementCommand.Execute(CommandSources.Scene, libraryItem.libraryType.type, EditedVisualTreeAsset, placement.ParentVea, placement.Index, libraryItem.libraryType.variantName);
+            var status = AddElementCommand.Execute(CommandSources.Scene, libraryItem.libraryType.type,
+                EditedVisualTreeAsset, placement.ParentVea, placement.Index, libraryItem.libraryType.variantName);
+            if (status != CommandExecutionStatus.Success)
+            {
+                evt.StopPropagation();
+                return;
+            }
 
             // The command filed its selection request by asset alone; narrow it to the instance dropped into.
             // Resolved out of the canvas first: the Hierarchy scopes against the live tree, not this clone.
@@ -152,7 +162,7 @@ sealed class AddElementDropManipulator : Manipulator
 
         if (TryResolveDraggedVisualTreeAssets(out var vtas) && AreAllVisualTreeAssetsValid(vtas))
         {
-            var placement = ComputePlacement(evt.mousePosition);
+            var placement = ComputePlacement(evt.mousePosition, vtas.Length);
             if (!placement.CanDrop)
             {
                 m_Indicator.Hide();
@@ -172,7 +182,12 @@ sealed class AddElementDropManipulator : Manipulator
 
             var parentAsset = placement.ParentVea ?? EditedVisualTreeAsset.visualTree;
 
-            AddTemplatesToElementCommand.Execute(CommandSources.Viewport, parentAsset, placement.Index, vtas);
+            if (AddTemplatesToElementCommand.Execute(CommandSources.Viewport, parentAsset, placement.Index, vtas) !=
+                CommandExecutionStatus.Success)
+            {
+                evt.StopPropagation();
+                return;
+            }
 
             // Same for the templates just added: the command's request names the assets it created, not the
             // instance they landed in. It is the command's own list rather than one rebuilt from the insert
@@ -210,9 +225,6 @@ sealed class AddElementDropManipulator : Manipulator
         else
             m_Indicator.Hide();
     }
-
-    bool IsValidUxmlDrop()
-        => TryResolveDraggedVisualTreeAssets(out var vtas) && AreAllVisualTreeAssetsValid(vtas);
 
     bool TryResolveDraggedVisualTreeAssets(out VisualTreeAsset[] vtas)
     {
@@ -261,7 +273,7 @@ sealed class AddElementDropManipulator : Manipulator
         return true;
     }
 
-    Placement ComputePlacement(Vector2 mousePosition)
+    Placement ComputePlacement(Vector2 mousePosition, int addedCount)
     {
         Vector2 subPanelPos = m_DropContext.WorldToContentPosition(mousePosition);
 
@@ -283,7 +295,9 @@ sealed class AddElementDropManipulator : Manipulator
         var nearBottom = localPos.y > rect.height - k_EdgeThreshold;
 
         if (!nearLeft && !nearRight && !nearTop && !nearBottom)
-            return new Placement(element.visualElementAsset, -1, element, false, false, false, false, VisualElementUtility.CanReceiveChildren(element));
+            return new Placement(element.visualElementAsset, -1, element, false, false, false, false,
+                VisualElementUtility.CanReceiveChildren(element) &&
+                VisualElementUtility.CanAddChildren(element.visualElementAsset, addedCount));
 
         // Sibling insertion — derive parent from the VEA tree, not the runtime element
         // hierarchy, because the runtime root (TemplateContainer) has no visualElementAsset.
@@ -293,8 +307,9 @@ sealed class AddElementDropManipulator : Manipulator
             return new Placement(null, -1, element, nearLeft, nearRight, nearTop, nearBottom);
 
         var siblingIndex = siblingVea.SiblingIndex();
+        var canDrop = VisualElementUtility.CanAddChildren(parentVea, addedCount);
         if (siblingIndex < 0)
-            return new Placement(parentVea, -1, element, nearLeft, nearRight, nearTop, nearBottom);
+            return new Placement(parentVea, -1, element, nearLeft, nearRight, nearTop, nearBottom, canDrop);
 
         var reverseOrder =
             element.parent.resolvedStyle.flexDirection == FlexDirection.ColumnReverse ||
@@ -307,6 +322,7 @@ sealed class AddElementDropManipulator : Manipulator
             ? (reverseOrder ? 1 : 0)
             : (reverseOrder ? 0 : 1);
 
-        return new Placement(parentVea, siblingIndex + indexOffset, element, nearLeft, nearRight, nearTop, nearBottom);
+        return new Placement(parentVea, siblingIndex + indexOffset, element, nearLeft, nearRight, nearTop, nearBottom,
+            canDrop);
     }
 }

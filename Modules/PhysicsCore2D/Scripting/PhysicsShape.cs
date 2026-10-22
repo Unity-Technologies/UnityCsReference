@@ -1944,7 +1944,7 @@ namespace Unity.U2D.Physics
         /// Check the intersection between this shape and another shape.
         /// </summary>
         /// <param name="otherShape">The other shape used to check intersection against.</param>
-        /// <returns>The contact manifold fully detailing the intersection.</returns>
+        /// <returns>The contact manifold fully detailing the intersection. Its normal points from this shape to the other, and its points are listed in the same order.</returns>
         public readonly PhysicsShape.ContactManifold Intersect(PhysicsShape otherShape) => PhysicsQuery.ShapeAndShape(this, body.transform, otherShape, otherShape.body.transform);
 
         /// <summary>
@@ -1953,7 +1953,7 @@ namespace Unity.U2D.Physics
         /// <param name="transform">The transform used to specify where this shape is positioned.</param>
         /// <param name="otherShape">The other shape used to check intersection against.</param>
         /// <param name="otherTransform">The transform used to specify where the other shape is positioned.</param>
-        /// <returns>The contact manifold fully detailing the intersection.</returns>
+        /// <returns>The contact manifold fully detailing the intersection. Its normal points from this shape to the other, and its points are listed in the same order.</returns>
         public readonly PhysicsShape.ContactManifold Intersect(PhysicsTransform transform, PhysicsShape otherShape, PhysicsTransform otherTransform) => PhysicsQuery.ShapeAndShape(this, transform, otherShape, otherTransform);
 
         /// <summary>

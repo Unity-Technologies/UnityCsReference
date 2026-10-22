@@ -93,6 +93,7 @@ namespace UnityEditor.Build.Profile.Elements
         void OptionsClicked()
         {
             var menu = new GenericMenu();
+            AddCopyPasteItems(menu);
             if (m_OnReset != null)
                 menu.AddItem(s_ResetContent, false, OnReset);
             if (!m_Provider.GetIsRequired())
@@ -139,13 +140,16 @@ namespace UnityEditor.Build.Profile.Elements
         void FoldoutContextMenu()
         {
             var menu = new GenericMenu();
-
-            if(m_OnCopy is not null)
-                menu.AddItem(s_Copy, false, OnCopy);
-            if(m_OnPaste is not null)
-                menu.AddItem(s_Paste, false, OnPaste);
-
+            AddCopyPasteItems(menu);
             menu.ShowAsContext();
+        }
+
+        void AddCopyPasteItems(GenericMenu menu)
+        {
+            if (m_OnCopy is not null)
+                menu.AddItem(s_Copy, false, OnCopy);
+            if (m_OnPaste is not null)
+                menu.AddItem(s_Paste, false, OnPaste);
         }
 
         void OnCopy()

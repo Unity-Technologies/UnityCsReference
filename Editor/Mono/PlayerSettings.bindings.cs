@@ -209,6 +209,10 @@ namespace UnityEditor
         Default = 1,
         NET_Unity_4_8 = 2,
         NET_Standard = 3,
+
+        [Obsolete("The .NET (net10) editor assemblies compatibility level is still a work in progress and is disabled for now.")] // Hide from intellisense
+        [EditorBrowsable(EditorBrowsableState.Never)]
+        NET = 4,
     }
 
     public enum ManagedStrippingLevel
@@ -1273,6 +1277,11 @@ namespace UnityEditor
         private static extern ApiCompatibilityLevel GetApiCompatibilityLevelInternal(string buildTargetName);
         public static ApiCompatibilityLevel GetApiCompatibilityLevel(NamedBuildTarget buildTarget) => GetApiCompatibilityLevelInternal(buildTarget.TargetName);
 
+        [StaticAccessor("GetPlayerSettings().GetEditorOnly()")]
+        [NativeMethod("GetApiCompatibilityLevelWithoutIL2CPPForcing", ThrowsException = true)]
+        private static extern ApiCompatibilityLevel GetApiCompatibilityLevelWithoutIL2CPPForcingInternal(string buildTargetName);
+        internal static ApiCompatibilityLevel GetApiCompatibilityLevelWithoutIL2CPPForcing(NamedBuildTarget buildTarget) => GetApiCompatibilityLevelWithoutIL2CPPForcingInternal(buildTarget.TargetName);
+
         [StaticAccessor("PlayerSettingsBindings", StaticAccessorType.DoubleColon)]
         [NativeMethod("GetApiCompatibilityLevel_Internal", ThrowsException = true)]
         internal static extern ApiCompatibilityLevel GetApiCompatibilityLevel_Internal(PlayerSettings instance, string buildTargetName);
@@ -1293,6 +1302,12 @@ namespace UnityEditor
         {
             switch (level)
             {
+#pragma warning disable CS0618
+                case EditorAssembliesCompatibilityLevel.NET:
+                {
+                    return ApiCompatibilityLevel.NET;
+                }
+#pragma warning restore CS0618
                 case EditorAssembliesCompatibilityLevel.NET_Standard:
                 {
                     return ApiCompatibilityLevel.NET_Standard_2_0;

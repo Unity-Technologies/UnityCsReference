@@ -68,6 +68,8 @@ namespace Unity.UIToolkit.Editor
                     return StylePropertyRecordingChannel.Float1;
                 case StylePropertyId.Bottom:
                     return StylePropertyRecordingChannel.Length1;
+                case StylePropertyId.BoxShadow:
+                    return StylePropertyRecordingChannel.BoxShadow9;
                 case StylePropertyId.Color:
                     return StylePropertyRecordingChannel.Color4;
                 case StylePropertyId.ColumnGap:

@@ -10,6 +10,7 @@ using Unity.IO.LowLevel.Unsafe;
 using Unity.Scripting.LifecycleManagement;
 using UnityEngine;
 using UnityEngine.Assemblies;
+using UnityEngine.LowLevel;
 
 namespace Unity.Entities
 {
@@ -17,9 +18,9 @@ namespace Unity.Entities
     /// Installs what Entities needs from this module into Entities, which sits below it, and registers Entities'
     /// callbacks with the parts of this module that call back into it.
     /// </summary>
-    static partial class CoreModuleLightShimHooks
+    internal static partial class CoreModuleLightShimHooks
     {
-        [OnCodeLoaded]
+        [BurstInitialize]
         static void Install()
         {
             EntitiesCoreCallbacksBindings.Install();
@@ -36,6 +37,12 @@ namespace Unity.Entities
             public Type ExecuteAlwaysType => typeof(ExecuteAlways);
 
             public float FixedDeltaTime => Time.fixedDeltaTime;
+
+            public bool IsPlaying => Application.isPlaying;
+
+            public long ArchetypeAllocatorBudget => EntitiesMemorySetup.GetArchetypeAllocatorBudget();
+
+            public long QueryAllocatorBudget => EntitiesMemorySetup.GetQueryAllocatorBudget();
 
             public unsafe bool ReadFile(string path, ReadCommand* commands, uint commandCount, AssetLoadingSubsystem subsystem)
             {

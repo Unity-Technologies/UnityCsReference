@@ -56,7 +56,6 @@ namespace UnityEditor
 
         //realtime GI
         SerializedProperty m_EnableRealtimeGI;
-        SerializedProperty m_RealtimeResolution;
         SerializedProperty m_RealtimeEnvironmentLighting;
 
         //baked
@@ -67,6 +66,7 @@ namespace UnityEditor
         SerializedProperty m_LightmapParameters;
         SerializedProperty m_LightmapDirectionalMode;
         SerializedProperty m_BakeResolution;
+        SerializedProperty m_IndirectResolution;
         SerializedProperty m_Padding;
         SerializedProperty m_AmbientOcclusion;
         SerializedProperty m_AOMaxDistance;
@@ -262,7 +262,7 @@ namespace UnityEditor
             public static readonly GUIContent exportTrainingData = L10n.TextContent("Export Training Data", "Exports unfiltered textures, normals, positions.", null, null);
             public static readonly GUIContent trainingDataDestination = L10n.TextContent("Destination", "Destination for the training data, for example 'mysetup/30samples'. Will still be located at the first level in the project folder. ", null, null);
             public static readonly GUIContent concurrentJobs = L10n.TextContent("Concurrent Jobs", "The amount of simultaneously scheduled jobs.", null, null);
-            public static readonly GUIContent indirectResolution = L10n.TextContent("Indirect Resolution", "Sets the resolution in texels that are used per unit for objects being lit by indirect lighting. The higher this value is, the more time the Editor needs to bake lighting.", null, null);
+            public static readonly GUIContent indirectResolution = L10n.TextContent("Indirect Resolution", "Sets how finely the lightmapper rounds the lightmap UV aspect ratio of non-square Terrains, in texels per unit. This value is multiplied by the Resolution in the Lightmap Parameters asset. It has no effect on square Terrains or on Mesh Renderers. With Realtime Global Illumination enabled, it also sets the realtime lightmap resolution.", null, null);
             public static readonly GUIContent lightmapResolution = L10n.TextContent("Lightmap Resolution", "Sets the number of texels per unit assigned to objects receiving GI from lightmaps. Also affects the resolution of albedo and emission textures used in lighting calculations for both lightmaps and Light Probes. Higher values increase bake times.", null, null);
             public static readonly GUIContent padding = L10n.TextContent("Lightmap Padding", "Sets the separation in texels between shapes in the baked lightmap.", null, null);
             public static readonly GUIContent lightmapMaxSize = L10n.TextContent("Max Lightmap Size", "Sets the max size of the full lightmap Texture in pixels. Values are squared, so a setting of 1024 can produce a 1024x1024 pixel sized lightmap.", null, null);
@@ -357,7 +357,6 @@ namespace UnityEditor
                 return;
 
             //realtime GI
-            m_RealtimeResolution = lightingSettingsObject.FindProperty("m_RealtimeResolution");
             m_EnableRealtimeGI = lightingSettingsObject.FindProperty("m_EnableRealtimeLightmaps");
             m_RealtimeEnvironmentLighting = lightingSettingsObject.FindProperty("m_RealtimeEnvironmentLighting");
 
@@ -373,6 +372,7 @@ namespace UnityEditor
             m_LightmapParameters = lightingSettingsObject.FindProperty("m_LightmapParameters");
             m_LightmapDirectionalMode = lightingSettingsObject.FindProperty("m_LightmapsBakeMode");
             m_BakeResolution = lightingSettingsObject.FindProperty("m_BakeResolution");
+            m_IndirectResolution = lightingSettingsObject.FindProperty("m_RealtimeResolution");
             m_Padding = lightingSettingsObject.FindProperty("m_Padding");
             m_AmbientOcclusion = lightingSettingsObject.FindProperty("m_AO");
             m_AOMaxDistance = lightingSettingsObject.FindProperty("m_AOMaxDistance");
@@ -479,11 +479,6 @@ namespace UnityEditor
                     {
                         EditorGUILayout.PropertyField(m_EnableRealtimeGI, Styles.realtimeEnvironmentLighting);
                     }
-                }
-
-                using (new EditorGUI.DisabledScope(!enableRealtimeGI))
-                {
-                    DrawPropertyFieldWithPostfixLabel(m_RealtimeResolution, Styles.indirectResolution, Styles.texelsPerUnit);
                 }
 
                 EditorGUI.indentLevel -= 2;
@@ -749,6 +744,10 @@ namespace UnityEditor
                             }
 
                             DrawPropertyFieldWithPostfixLabel(m_BakeResolution, Styles.lightmapResolution, Styles.texelsPerUnit);
+                            if (!usingComputeLightBaker)
+                            {
+                                DrawPropertyFieldWithPostfixLabel(m_IndirectResolution, Styles.indirectResolution, Styles.texelsPerUnit);
+                            }
 
                             EditorGUILayout.IntPopup(m_LightmapMaxSize, Styles.lightmapMaxSizeStrings, Styles.lightmapMaxSizeValues, Styles.lightmapMaxSize);
 

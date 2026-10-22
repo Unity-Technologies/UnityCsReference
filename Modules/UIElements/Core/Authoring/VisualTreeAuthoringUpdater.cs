@@ -145,7 +145,9 @@ namespace UnityEngine.UIElements
         /// Any changes related to the styling context (style sheet, uss classes, etc.)
         /// </summary>
         private const VersionChangeType k_StylingContextChangedFlags =
-            VersionChangeType.StyleSheet;
+            VersionChangeType.StyleSheet |
+            VersionChangeType.ClassList |
+            VersionChangeType.Name;
 
         /// <summary>
         /// Any changes related to the binding context (registration, data sources, etc.)

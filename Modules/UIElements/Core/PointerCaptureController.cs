@@ -111,6 +111,11 @@ namespace UnityEngine.UIElements
             panel?.dispatcher?.pointerState.ProcessPointerCapture(pointerId);
         }
 
+        internal static void ProcessAllPointerCaptures(this IPanel panel)
+        {
+            panel?.dispatcher?.pointerState.ProcessAllPointerCaptures();
+        }
+
         internal static void ReleaseEditorMouseCapture()
         {
             EventDispatcher.editorDispatcher.pointerState.ReleasePointer(PointerId.mousePointerId);
@@ -130,6 +135,7 @@ namespace UnityEngine.UIElements
         private IEventHandler[] m_PendingPointerCapture = new IEventHandler[PointerId.maxPointers];
         private IEventHandler[] m_PointerCapture = new IEventHandler[PointerId.maxPointers];
         private bool[] m_ShouldSendCompatibilityMouseEvents = new bool[PointerId.maxPointers];
+        private bool m_HasPendingCaptureChange;
 
         public PointerDispatchState()
         {
@@ -144,7 +150,11 @@ namespace UnityEngine.UIElements
                 m_PointerCapture[i] = null;
                 m_ShouldSendCompatibilityMouseEvents[i] = true;
             }
+
+            m_HasPendingCaptureChange = false;
         }
+
+        internal bool hasPendingCaptureChange => m_HasPendingCaptureChange;
 
         public IEventHandler GetCapturingElement(int pointerId)
         {
@@ -169,6 +179,7 @@ namespace UnityEngine.UIElements
             }
 
             m_PendingPointerCapture[pointerId] = handler;
+            m_HasPendingCaptureChange = true;
 
             (oldHandler as VisualElement)?.UpdatePointerCaptureFlag();
             (handler as VisualElement)?.UpdatePointerCaptureFlag();
@@ -181,6 +192,7 @@ namespace UnityEngine.UIElements
                 return;
 
             m_PendingPointerCapture[pointerId] = null;
+            m_HasPendingCaptureChange = true;
 
             (oldHandler as VisualElement)?.UpdatePointerCaptureFlag();
         }
@@ -191,6 +203,16 @@ namespace UnityEngine.UIElements
             {
                 ReleasePointer(pointerId);
             }
+        }
+
+        public void ProcessAllPointerCaptures()
+        {
+            if (!m_HasPendingCaptureChange)
+                return;
+
+            m_HasPendingCaptureChange = false;
+            for (var i = 0; i < m_PointerCapture.Length; i++)
+                ProcessPointerCapture(i);
         }
 
         public void ProcessPointerCapture(int pointerId)

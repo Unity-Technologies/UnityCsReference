@@ -48,8 +48,6 @@ namespace UnityEngine.UIElements
         IsIMGUIContainer = 1L << 0,
         // Element can potentially receive focus
         IsFocusable = 1L << 1,
-        // Need to compute world clip
-        WorldClipDirty = 1L << 2,
         // Element delegates the focus to its children
         DelegatesFocus = 1L << 3,
         // Children of a composite appear at its tabIndex position in the focus ring, but the root itself doesn't
@@ -107,7 +105,7 @@ namespace UnityEngine.UIElements
         PrivateComponentMask = HasDataBindingComponent | HasAnimationComponent | HasPaintingComponent |
             HasViewDataComponent | HasStyleSheetsComponent,
         // Element initial flags
-        Init = WorldClipDirty | EventInterestParentCategoriesDirty | DetachedDataSource |
+        Init = EventInterestParentCategoriesDirty | DetachedDataSource |
             EligibleToReceiveFocusFromDisabledChild
     }
 
@@ -308,42 +306,8 @@ namespace UnityEngine.UIElements
 
         internal VisualElementFlags flags
         {
-            get {
-                // The WorldClipDirty flag is managed by the RenderData, so we combine it with m_Flags when set on
-                // either renderData or nestedRenderData. See the setter below for more information.
-                if (((renderData?.flags & RenderDataFlags.IsClippingRectDirty) == RenderDataFlags.IsClippingRectDirty) ||
-                    ((nestedRenderData?.flags & RenderDataFlags.IsClippingRectDirty) == RenderDataFlags.IsClippingRectDirty))
-                    return m_Flags | VisualElementFlags.WorldClipDirty;
-
-                return m_Flags;
-            }
-            set
-            {
-                m_Flags = value;
-
-                // UUM-91413: We avoid setting the WorldClipDirty flag on the VisualElement as the RenderData is responsible
-                // to clear it once computed, otherwise the flag will stick between updates.
-                if ((m_Flags & VisualElementFlags.WorldClipDirty) == VisualElementFlags.WorldClipDirty)
-                {
-                    // The RenderData (nested or not) is responsible for dealing with the dirty clipping rect.
-                    if (renderData != null)
-                    {
-                        renderData.flags |= RenderDataFlags.IsClippingRectDirty;
-                        m_Flags &= ~VisualElementFlags.WorldClipDirty;
-                    }
-                    if (nestedRenderData != null)
-                    {
-                        nestedRenderData.flags |= RenderDataFlags.IsClippingRectDirty;
-
-                        // No need to remove the flag from m_Flags as renderData is guaranteed to not be null here
-                        Debug.Assert(renderData != null, "renderData should not be null when nestedRenderData is not null");
-                    }
-
-                    // If the RenderData is not created yet, we temporarily allow the flag to be set on the VisualElement.
-                    // It will be reset once the RenderData is created (in UIRRenderEvents.DepthFirstOnChildAdded).
-                    // Doing so avoid useless recursions to set the flags in the HierarchyFlagsUpdater.
-                }
-            }
+            get => m_Flags;
+            set => m_Flags = value;
         }
 
         internal ref VisualElementTransformFlags transformFlags => ref transformData.Flags;
@@ -1340,10 +1304,7 @@ namespace UnityEngine.UIElements
         }
 
         // Only used in tests
-        internal bool isWorldClipDirty
-        {
-            get => (flags & VisualElementFlags.WorldClipDirty) == VisualElementFlags.WorldClipDirty;
-        }
+        internal bool isWorldClipDirty => renderData == null || renderData.isClippingRectDirty;
 
         internal Rect worldClip
         {
@@ -1657,8 +1618,11 @@ namespace UnityEngine.UIElements
         {
             if ((m_Flags & VisualElementFlags.Released) != 0)
                 throw new InvalidOperationException(k_ElementReleaseExceptionMessage);
+            var previousNameId = m_SelectorDataPtr->nameId;
             m_SelectorDataPtr->nameId = nameId;
-            IncrementVersion(VersionChangeType.StyleSheet | VersionChangeType.Name);
+            // Both ids: losing a #name a selector matched needs a restyle as much as gaining one.
+            var nameUsed = elementPanel != null && (stylesDirty || SelectorIdRegistry.IsNameUsed(previousNameId) || SelectorIdRegistry.IsNameUsed(nameId));
+            IncrementVersion(nameUsed ? VersionChangeType.StyleSheet | VersionChangeType.Name : VersionChangeType.Name);
             NotifyPropertyChanged(nameProperty);
         }
 
@@ -2017,6 +1981,7 @@ namespace UnityEngine.UIElements
         // Read instead of the node, so rect is one 8-byte load from the element; null once released.
         unsafe LayoutComputedData* m_ComputedLayoutPtr;
         private unsafe ref VisualElementTransformData transformData => ref *m_TransformDataPTr;
+        internal unsafe ref LayoutComputedData computedLayout => ref *m_ComputedLayoutPtr;   // not valid once released
 
         // Fast-tracked access to the selector data component; mirrors the m_TransformDataPTr pattern so
         // hot paths can avoid the per-call UnmanagedDataStore.GetComponentDataPtr chunk lookup.
@@ -3264,9 +3229,10 @@ namespace UnityEngine.UIElements
         {
             if (m_ClassList.Count > 0)
             {
+                var affectsStyles = elementPanel != null && (stylesDirty || SelectorIdRegistry.IsAnyClassUsed(m_ClassList.GetClassIds()));
                 m_ClassList.Clear();
                 UpdateClassSelectorData();
-                IncrementVersion(VersionChangeType.StyleSheet);
+                IncrementClassListVersion(affectsStyles);
             }
         }
 
@@ -3281,6 +3247,28 @@ namespace UnityEngine.UIElements
             ref var selectorData = ref *m_SelectorDataPtr;
             selectorData.classIdStart = m_ClassList.GetClassIdStartOffset();
             selectorData.classCount = m_ClassList.Count;
+        }
+
+        // Safe to drop StyleSheet when no touched id is registered: a sheet registers its ids before it ever takes part in matching.
+        // Detached and already-dirty elements skip the lookup: attaching to a panel forces a full restyle, and a dirty one is restyled anyway.
+        void IncrementClassListVersion(bool affectsStyles)
+        {
+            IncrementVersion(affectsStyles ? VersionChangeType.StyleSheet | VersionChangeType.ClassList : VersionChangeType.ClassList);
+        }
+
+        void IncrementClassListVersion(int classId)
+        {
+            IncrementClassListVersion(elementPanel != null && (stylesDirty || SelectorIdRegistry.IsClassUsed(classId)));
+        }
+
+        void IncrementClassListVersion(int classId, int classId2)
+        {
+            IncrementClassListVersion(elementPanel != null && (stylesDirty || SelectorIdRegistry.IsClassUsed(classId) || SelectorIdRegistry.IsClassUsed(classId2)));
+        }
+
+        void IncrementClassListVersion(ReadOnlySpan<UniqueStyleString> classNames)
+        {
+            IncrementClassListVersion(elementPanel != null && (stylesDirty || SelectorIdRegistry.IsAnyClassUsed(classNames)));
         }
 
         /// <summary>
@@ -3304,7 +3292,7 @@ namespace UnityEngine.UIElements
             if (added)
             {
                 UpdateClassSelectorData();
-                IncrementVersion(VersionChangeType.StyleSheet);
+                IncrementClassListVersion(className.id);
             }
         }
 
@@ -3337,7 +3325,7 @@ namespace UnityEngine.UIElements
             if (added)
             {
                 UpdateClassSelectorData();
-                IncrementVersion(VersionChangeType.StyleSheet);
+                IncrementClassListVersion(className.id, className2.id);
             }
         }
 
@@ -3387,7 +3375,7 @@ namespace UnityEngine.UIElements
             if (added)
             {
                 UpdateClassSelectorData();
-                IncrementVersion(VersionChangeType.StyleSheet);
+                IncrementClassListVersion(classNames);
             }
         }
 
@@ -3413,7 +3401,7 @@ namespace UnityEngine.UIElements
             if (removed)
             {
                 UpdateClassSelectorData();
-                IncrementVersion(VersionChangeType.StyleSheet);
+                IncrementClassListVersion(className.id);
             }
         }
 
@@ -3444,7 +3432,7 @@ namespace UnityEngine.UIElements
         {
             m_ClassList.Toggle(className);
             UpdateClassSelectorData();
-            IncrementVersion(VersionChangeType.StyleSheet);
+            IncrementClassListVersion(className.id);
         }
 
         /// <summary>
@@ -3478,7 +3466,7 @@ namespace UnityEngine.UIElements
             if (changed)
             {
                 UpdateClassSelectorData();
-                IncrementVersion(VersionChangeType.StyleSheet);
+                IncrementClassListVersion(className.id);
             }
         }
 

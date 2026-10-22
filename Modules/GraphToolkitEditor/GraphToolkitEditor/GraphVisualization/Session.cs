@@ -15,7 +15,6 @@ namespace Unity.GraphToolkit.Editor.GraphVisualization;
 /// </summary>
 class Session
 {
-    GraphView m_GraphView = null;
     bool m_SessionIsAttached;
 
     internal event Action isAttached;
@@ -57,19 +56,19 @@ class Session
     /// </summary>
     public Store Store { get; }
 
-    internal GraphView GraphView
-    {
-        get
-        {
-            if (m_GraphView == null)
-                ResolveGraphView();
-            return m_GraphView;
-        }
-    }
+    /// <summary>
+    /// The graph view of the window that has the session's graph open, or <c>null</c> if no open window has it.
+    /// </summary>
+    /// <remarks>
+    /// The window is matched on its root graph, so the view still resolves while the window displays a subgraph of
+    /// the session's graph. Resolved on every access rather than cached, since the window can be reloaded, closed,
+    /// or replaced independently of the session.
+    /// </remarks>
+    internal GraphView GraphView => ResolveWindow()?.GraphView;
 
     /// <summary>
-    /// The inspector view for the window currently showing the session's graph, or <c>null</c> if no window is
-    /// currently showing it, or it has no inspector overlay open.
+    /// The inspector view for the window that has the session's graph open, or <c>null</c> if no open window has
+    /// it, or it has no inspector overlay open.
     /// </summary>
     /// <remarks>
     /// Resolved on every access rather than cached, since the inspector overlay can be toggled or rebuilt
@@ -79,15 +78,9 @@ class Session
     {
         get
         {
-            var graphView = GraphView;
-            if (graphView == null)
-                return null;
-
-            foreach (var window in GraphViewEditorWindow.OpenedWindows)
-            {
-                if (window.GraphView == graphView && window.TryGetOverlay(ModelInspectorOverlay.idValue, out var inspectorOverlay))
-                    return inspectorOverlay.rootVisualElement?.Q<ModelInspectorView>();
-            }
+            var window = ResolveWindow();
+            if (window != null && window.TryGetOverlay(ModelInspectorOverlay.idValue, out var inspectorOverlay))
+                return inspectorOverlay.rootVisualElement?.Q<ModelInspectorView>();
 
             return null;
         }
@@ -101,20 +94,29 @@ class Session
         VisualizationContextID = Hash128Helpers.GenerateUnique();
         GraphID = graphID;
         Store = new Store();
-
-        ResolveGraphView();
     }
 
-    void ResolveGraphView()
+    /// <summary>
+    /// Binds a window's views to this session and applies the stored visuals to them.
+    /// </summary>
+    /// <remarks>
+    /// Unlike setting <see cref="SessionIsAttached"/>, this always raises <see cref="isAttached"/>, since a window can
+    /// bind to a session that is already attached, for example when the window is reopened.
+    /// </remarks>
+    internal void AttachViews()
+    {
+        m_SessionIsAttached = true;
+        isAttached?.Invoke();
+    }
+
+    GraphViewEditorWindow ResolveWindow()
     {
         foreach (var window in GraphViewEditorWindow.OpenedWindows)
         {
-            var graphModel = window.GraphView?.GraphModel;
-            if (graphModel != null && graphModel.Guid == GraphID)
-            {
-                m_GraphView = window.GraphView;
-                break;
-            }
+            if (window.GraphView != null && window.GetRootGraphModelGuid() == GraphID)
+                return window;
         }
+
+        return null;
     }
 }

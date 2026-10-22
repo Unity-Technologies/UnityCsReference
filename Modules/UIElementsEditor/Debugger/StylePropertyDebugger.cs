@@ -469,6 +469,10 @@ namespace UnityEditor.UIElements.Debugger
             {
                 UpdateORCreateField<CurvatureField, Curvature>(val);
             }
+            else if (val is BoxShadow)
+            {
+                UpdateORCreateField<BoxShadowField, BoxShadow>(val);
+            }
             else if (val is Scale scale)
             {
                 var vector3Field = UpdateORCreateField<Vector3Field, Vector3>(scale.value);
@@ -789,6 +793,10 @@ namespace UnityEditor.UIElements.Debugger
                 else if (newValue is Curvature curvature)
                 {
                     val = new StyleCurvature(curvature);
+                }
+                else if (newValue is BoxShadow boxShadow)
+                {
+                    val = new StyleBoxShadow(boxShadow);
                 }
                 else if (val is BackgroundPosition backgroundPosition)
                 {

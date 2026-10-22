@@ -177,8 +177,7 @@ namespace UnityEditor
                 // Note: report will be null, if delayToAfterScriptReload = true
                 var report = BuildPipeline.BuildPlayerFromUI(options, delayToAfterScriptReload);
 
-                if (report != null
-                )
+                if (report != null)
                 {
                     var resultStr = String.Format("Build completed with a result of '{0}' in {1} seconds ({2} ms) [{3} -> {4}, {5}]",
                         report.summary.result.ToString("g"),

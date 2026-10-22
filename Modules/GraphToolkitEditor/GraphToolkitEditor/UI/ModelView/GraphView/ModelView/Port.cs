@@ -502,6 +502,8 @@ namespace Unity.GraphToolkit.Editor
                     if (wasUpdatedAtLeastOnce)
                     {
                         RootView.TypeHandleInfos.RemoveUssClasses(portDataTypeClassNamePrefix, this, m_CurrentTypeHandle);
+                        // PortColor is recomputed in OnCustomStyleResolved, and the type classes may match no selector.
+                        MarkDirtyStyles();
                     }
                     m_CurrentTypeHandle = PortModel.DataTypeHandle;
                     RootView.TypeHandleInfos.AddUssClasses(portDataTypeClassNamePrefix, this, m_CurrentTypeHandle);

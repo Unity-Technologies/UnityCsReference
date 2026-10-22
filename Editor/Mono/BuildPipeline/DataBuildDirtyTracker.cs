@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using System.Linq;
 using NiceIO;
 using Unity.Collections;
+using UnityEditor.Build;
 using UnityEditor.Build.Reporting;
 using UnityEngine;
 using UnityEngine.Scripting;
@@ -46,6 +47,7 @@ namespace UnityEditor.Mono.BuildPipeline
             public string[] resourcePaths;
             public BuildOptions buildOptions;
             public string unityVersion;
+            public string sceneProcessorsHash;
 
             // These options could impact the cache data files.
             [NoAutoStaticsCleanup] // constant bitmask of BuildOptions enum flags (value type), never mutated; safe to persist
@@ -167,8 +169,23 @@ namespace UnityEditor.Mono.BuildPipeline
                 return true;
             }
 
+            if (ComputeSceneProcessorsHash() != buildData.sceneProcessorsHash)
+            {
+                Console.WriteLine("Rebuilding Data files because scene processing callbacks or their versions have changed");
+                return true;
+            }
+
             Console.WriteLine("Not rebuilding Data files -- no changes");
             return false;
+        }
+
+        static string ComputeSceneProcessorsHash()
+        {
+#pragma warning disable CS0618 // Type or member is obsolete
+            BuildPipelineInterfaces.OnSceneProcess_HashVersion(out var hash);
+#pragma warning restore CS0618
+            hash.Append(AssetPostprocessingInternal.GetSinglePassBuildSceneProcessorsHashString());
+            return hash.ToString();
         }
 
         [RequiredByNativeCode]
@@ -206,6 +223,7 @@ namespace UnityEditor.Mono.BuildPipeline
                 activeBuildProfile = new BuildDataInputFile(activeBuildProfilePath),
                 buildOptions = report.summary.options & BuildData.BuildOptionsMask,
                 unityVersion = Application.unityVersion,
+                sceneProcessorsHash = ComputeSceneProcessorsHash(),
                 resourcePaths = resourcePaths,
 #pragma warning disable UAC2001 // Avoid Linq
                 enabledModules = ModuleMetadata.GetModuleNames()

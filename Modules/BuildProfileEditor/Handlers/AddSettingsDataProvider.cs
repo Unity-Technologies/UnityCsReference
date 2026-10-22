@@ -27,7 +27,8 @@ namespace UnityEditor.Build.Profile.Handlers
             new Elements.GraphicsSettingsProvider(),
             new BuildAutomationSettingsProvider(),
             new AdaptivePerformanceSettingProvider(),
-            new BuildDestinationSettingsProvider()
+            new BuildDestinationSettingsProvider(),
+            new BuildProfilePostprocessBuildSettingsProvider()
         };
 
         [AutoStaticsCleanupOnCodeReload]

@@ -626,22 +626,8 @@ namespace UnityEditor
         // Matched by type: the window tab carries the translated title, so matching by name misses it.
         internal int GetPlayModeViewTypePopup(out Type[] types, out string[] names)
         {
-            var availableTypes = GetAvailableWindowTypes();
-            types = new Type[availableTypes.Count];
-            names = new string[availableTypes.Count];
-
-            var selectedIndex = 0;
-            var i = 0;
-            foreach (var availableType in availableTypes)
-            {
-                types[i] = availableType.Key;
-                names[i] = GetLocalizedWindowTitle(availableType.Key);
-                if (availableType.Key == GetType())
-                    selectedIndex = i;
-                i++;
-            }
-
-            return selectedIndex;
+            GetLocalizedAvailableWindowTypes(out types, out names);
+            return Math.Max(0, Array.IndexOf(types, GetType()));
         }
 
         private void DoToolbarGUI()
@@ -653,9 +639,9 @@ namespace UnityEditor
 
             GUILayout.BeginHorizontal(EditorStyles.toolbar);
             {
-                if (GetAvailableWindowTypes().Count > 1)
+                var selectedIndex = GetPlayModeViewTypePopup(out var types, out var typeNames);
+                if (types.Length > 1)
                 {
-                    var selectedIndex = GetPlayModeViewTypePopup(out var types, out var typeNames);
                     int viewIndex = EditorGUILayout.Popup(selectedIndex, typeNames,
                         EditorStyles.toolbarPopup,
                         GUILayout.Width(90));

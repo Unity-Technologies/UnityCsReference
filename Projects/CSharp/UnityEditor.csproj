@@ -763,6 +763,12 @@
     <Compile Include="..\..\Editor\Mono\BuildProfile\BuildProfilePlayerSettingsEditor.cs">
       <Link>Editor\Mono\BuildProfile\BuildProfilePlayerSettingsEditor.cs</Link>
     </Compile>
+    <Compile Include="..\..\Editor\Mono\BuildProfile\BuildProfilePostprocessBuild.cs">
+      <Link>Editor\Mono\BuildProfile\BuildProfilePostprocessBuild.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Mono\BuildProfile\BuildProfilePostprocessBuildDispatcher.cs">
+      <Link>Editor\Mono\BuildProfile\BuildProfilePostprocessBuildDispatcher.cs</Link>
+    </Compile>
     <Compile Include="..\..\Editor\Mono\BuildProfile\BuildProfileQualitySettings.cs">
       <Link>Editor\Mono\BuildProfile\BuildProfileQualitySettings.cs</Link>
     </Compile>
@@ -780,6 +786,9 @@
     </Compile>
     <Compile Include="..\..\Editor\Mono\BuildProfile\Events.cs">
       <Link>Editor\Mono\BuildProfile\Events.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Mono\BuildProfile\IBuildProfilePostprocessBuild.cs">
+      <Link>Editor\Mono\BuildProfile\IBuildProfilePostprocessBuild.cs</Link>
     </Compile>
     <Compile Include="..\..\Editor\Mono\BuildProfile\IPackageServiceInfoProvider.cs">
       <Link>Editor\Mono\BuildProfile\IPackageServiceInfoProvider.cs</Link>
@@ -1947,6 +1956,9 @@
     </Compile>
     <Compile Include="..\..\Editor\Mono\Inspector\AimConstraintEditor.cs">
       <Link>Editor\Mono\Inspector\AimConstraintEditor.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Mono\Inspector\AnimatableChannelsPropertyDrawer.cs">
+      <Link>Editor\Mono\Inspector\AnimatableChannelsPropertyDrawer.cs</Link>
     </Compile>
     <Compile Include="..\..\Editor\Mono\Inspector\AnimationClipEditor.cs">
       <Link>Editor\Mono\Inspector\AnimationClipEditor.cs</Link>
@@ -4456,6 +4468,9 @@
     <Compile Include="..\..\Editor\Mono\Utils\NetCoreProgram.cs">
       <Link>Editor\Mono\Utils\NetCoreProgram.cs</Link>
     </Compile>
+    <Compile Include="..\..\Editor\Mono\Utils\NetCoreReferenceFinder.cs">
+      <Link>Editor\Mono\Utils\NetCoreReferenceFinder.cs</Link>
+    </Compile>
     <Compile Include="..\..\Editor\Mono\Utils\NetStandardFinder.cs">
       <Link>Editor\Mono\Utils\NetStandardFinder.cs</Link>
     </Compile>
@@ -5365,6 +5380,9 @@
     <Compile Include="..\..\Modules\BuildAnalysis\Data\Models\IAssetReferenceProvider.cs">
       <Link>Modules\BuildAnalysis\Data\Models\IAssetReferenceProvider.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\BuildAnalysis\Data\Models\ReferencedByExpansion.cs">
+      <Link>Modules\BuildAnalysis\Data\Models\ReferencedByExpansion.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\BuildAnalysis\Data\Models\RootAssetStats.cs">
       <Link>Modules\BuildAnalysis\Data\Models\RootAssetStats.cs</Link>
     </Compile>
@@ -5403,6 +5421,9 @@
     </Compile>
     <Compile Include="..\..\Modules\BuildAnalysis\Services\DependencyGraphStore.cs">
       <Link>Modules\BuildAnalysis\Services\DependencyGraphStore.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\BuildAnalysis\Services\ReferencedByWalker.cs">
+      <Link>Modules\BuildAnalysis\Services\ReferencedByWalker.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\BuildAnalysis\Services\RootAssetStatsCalculator.cs">
       <Link>Modules\BuildAnalysis\Services\RootAssetStatsCalculator.cs</Link>
@@ -5485,8 +5506,14 @@
     <Compile Include="..\..\Modules\BuildAnalysis\UI\Tabs\Assets\AssetsTabView.cs">
       <Link>Modules\BuildAnalysis\UI\Tabs\Assets\AssetsTabView.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\BuildAnalysis\UI\Tabs\Assets\ReferenceFilter.cs">
+      <Link>Modules\BuildAnalysis\UI\Tabs\Assets\ReferenceFilter.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\BuildAnalysis\UI\Tabs\Assets\ReferenceSection.cs">
       <Link>Modules\BuildAnalysis\UI\Tabs\Assets\ReferenceSection.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\BuildAnalysis\UI\Tabs\Assets\ReferencedByTree.cs">
+      <Link>Modules\BuildAnalysis\UI\Tabs\Assets\ReferencedByTree.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\BuildAnalysis\UI\Tabs\Assets\RootAssetTable.cs">
       <Link>Modules\BuildAnalysis\UI\Tabs\Assets\RootAssetTable.cs</Link>
@@ -5613,6 +5640,12 @@
     </Compile>
     <Compile Include="..\..\Modules\BuildProfileEditor\Elements\Settings\BuildDestinationSettingsProvider.cs">
       <Link>Modules\BuildProfileEditor\Elements\Settings\BuildDestinationSettingsProvider.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\BuildProfileEditor\Elements\Settings\BuildProfilePostprocessBuildEditor.cs">
+      <Link>Modules\BuildProfileEditor\Elements\Settings\BuildProfilePostprocessBuildEditor.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\BuildProfileEditor\Elements\Settings\BuildProfilePostprocessBuildSettingsProvider.cs">
+      <Link>Modules\BuildProfileEditor\Elements\Settings\BuildProfilePostprocessBuildSettingsProvider.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\BuildProfileEditor\Elements\Settings\EditorAsVisualElement.cs">
       <Link>Modules\BuildProfileEditor\Elements\Settings\EditorAsVisualElement.cs</Link>
@@ -5802,9 +5835,6 @@
     </Compile>
     <Compile Include="..\..\Modules\BurstEditor\Managed\BurstStringSearch.cs">
       <Link>Modules\BurstEditor\Managed\BurstStringSearch.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\BurstEditor\Managed\LabeledPopup.cs">
-      <Link>Modules\BurstEditor\Managed\LabeledPopup.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\BurstEditor\Managed\LongTextArea.cs">
       <Link>Modules\BurstEditor\Managed\LongTextArea.cs</Link>
@@ -8926,6 +8956,9 @@
     <Compile Include="..\..\Modules\HierarchyEditor\ScriptBindings\TestNativeHierarchyNodeTypeHandler.bindings.cs">
       <Link>Modules\HierarchyEditor\ScriptBindings\TestNativeHierarchyNodeTypeHandler.bindings.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\InsightsEditor\ActiveBuildProfileChangeNotifier.cs">
+      <Link>Modules\InsightsEditor\ActiveBuildProfileChangeNotifier.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\InsightsEditor\AssemblyInfo.cs">
       <Link>Modules\InsightsEditor\AssemblyInfo.cs</Link>
     </Compile>
@@ -8934,9 +8967,6 @@
     </Compile>
     <Compile Include="..\..\Modules\InsightsEditor\BuildProfileInsightsSettingsVisualElement.cs">
       <Link>Modules\InsightsEditor\BuildProfileInsightsSettingsVisualElement.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\InsightsEditor\DisablementPopup.cs">
-      <Link>Modules\InsightsEditor\DisablementPopup.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\InsightsEditor\EditorAnalytics\InsightsEditorAnalytics.cs">
       <Link>Modules\InsightsEditor\EditorAnalytics\InsightsEditorAnalytics.cs</Link>
@@ -8973,6 +9003,9 @@
     </Compile>
     <Compile Include="..\..\Modules\InsightsEditor\RequiresInsightsAttribute.cs">
       <Link>Modules\InsightsEditor\RequiresInsightsAttribute.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\InsightsEditor\ServicesDiagnosticsSection.cs">
+      <Link>Modules\InsightsEditor\ServicesDiagnosticsSection.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\InsightsEditor\TrText.cs">
       <Link>Modules\InsightsEditor\TrText.cs</Link>
@@ -12124,6 +12157,9 @@
     <Compile Include="..\..\Modules\Physics2DEditor\Managed\Settings\Physics2DSettingsEditor.cs">
       <Link>Modules\Physics2DEditor\Managed\Settings\Physics2DSettingsEditor.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\PhysicsCore2DEditor\Controls\LayerMaskField32.cs">
+      <Link>Modules\PhysicsCore2DEditor\Controls\LayerMaskField32.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\PhysicsCore2DEditor\Controls\LayerMaskField64.cs">
       <Link>Modules\PhysicsCore2DEditor\Controls\LayerMaskField64.cs</Link>
     </Compile>
@@ -13230,9 +13266,6 @@
     </Compile>
     <Compile Include="..\..\Modules\ProjectAuditorEditor\CodeAnalysis\RoslynDiagnosticsLibrary.cs">
       <Link>Modules\ProjectAuditorEditor\CodeAnalysis\RoslynDiagnosticsLibrary.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\ProjectAuditorEditor\CompilerMessageAnalyzers\CodeQualityAnalyzer.cs">
-      <Link>Modules\ProjectAuditorEditor\CompilerMessageAnalyzers\CodeQualityAnalyzer.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\ProjectAuditorEditor\CompilerMessageAnalyzers\DefaultCompilerMessageAnalyzer.cs">
       <Link>Modules\ProjectAuditorEditor\CompilerMessageAnalyzers\DefaultCompilerMessageAnalyzer.cs</Link>
@@ -14773,6 +14806,12 @@
     <Compile Include="..\..\Modules\TerrainEditor\TreeAOImporter.cs">
       <Link>Modules\TerrainEditor\TreeAOImporter.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\TerrainEditor\Utilities\TerrainEditTypes.cs">
+      <Link>Modules\TerrainEditor\Utilities\TerrainEditTypes.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\TerrainEditor\Utilities\TerrainEditUtility.cs">
+      <Link>Modules\TerrainEditor\Utilities\TerrainEditUtility.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\TerrainEditor\Utilities\TerrainEditorUtility.cs">
       <Link>Modules\TerrainEditor\Utilities\TerrainEditorUtility.cs</Link>
     </Compile>
@@ -14787,6 +14826,9 @@
     </Compile>
     <Compile Include="..\..\Modules\TerrainEditor\Utilities\TerrainPaintUtilityEditor.cs">
       <Link>Modules\TerrainEditor\Utilities\TerrainPaintUtilityEditor.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\TerrainEditor\Utilities\TerrainRegion.cs">
+      <Link>Modules\TerrainEditor\Utilities\TerrainRegion.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\TextCoreFontEngineEditor\Managed\AssemblyInfo.cs">
       <Link>Modules\TextCoreFontEngineEditor\Managed\AssemblyInfo.cs</Link>
@@ -15931,6 +15973,9 @@
     <Compile Include="..\..\Modules\UIBuilder\Editor\Utilities\StyleField\BoxModelStyleField.cs">
       <Link>Modules\UIBuilder\Editor\Utilities\StyleField\BoxModelStyleField.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\UIBuilder\Editor\Utilities\StyleField\BoxShadowStyleField.cs">
+      <Link>Modules\UIBuilder\Editor\Utilities\StyleField\BoxShadowStyleField.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\UIBuilder\Editor\Utilities\StyleField\BoxType.cs">
       <Link>Modules\UIBuilder\Editor\Utilities\StyleField\BoxType.cs</Link>
     </Compile>
@@ -17002,6 +17047,9 @@
     <Compile Include="..\..\Modules\UIToolkitAuthoringEditor\Managed\Hierarchy\Selection\Editor\Controls\BackgroundSizeStyleField.cs">
       <Link>Modules\UIToolkitAuthoringEditor\Managed\Hierarchy\Selection\Editor\Controls\BackgroundSizeStyleField.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\UIToolkitAuthoringEditor\Managed\Hierarchy\Selection\Editor\Controls\BoxShadowField.cs">
+      <Link>Modules\UIToolkitAuthoringEditor\Managed\Hierarchy\Selection\Editor\Controls\BoxShadowField.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\UIToolkitAuthoringEditor\Managed\Hierarchy\Selection\Editor\Controls\DisplayStyleToggleField.cs">
       <Link>Modules\UIToolkitAuthoringEditor\Managed\Hierarchy\Selection\Editor\Controls\DisplayStyleToggleField.cs</Link>
     </Compile>
@@ -17103,6 +17151,9 @@
     </Compile>
     <Compile Include="..\..\Modules\UIToolkitAuthoringEditor\Managed\Hierarchy\Selection\Editor\Controls\StylePropertyField\StyleBackgroundSizeField.cs">
       <Link>Modules\UIToolkitAuthoringEditor\Managed\Hierarchy\Selection\Editor\Controls\StylePropertyField\StyleBackgroundSizeField.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIToolkitAuthoringEditor\Managed\Hierarchy\Selection\Editor\Controls\StylePropertyField\StyleBoxShadowField.cs">
+      <Link>Modules\UIToolkitAuthoringEditor\Managed\Hierarchy\Selection\Editor\Controls\StylePropertyField\StyleBoxShadowField.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\UIToolkitAuthoringEditor\Managed\Hierarchy\Selection\Editor\Controls\StylePropertyField\StyleColorField.cs">
       <Link>Modules\UIToolkitAuthoringEditor\Managed\Hierarchy\Selection\Editor\Controls\StylePropertyField\StyleColorField.cs</Link>
@@ -17950,9 +18001,6 @@
     <Compile Include="..\..\Modules\UnityConnectEditor\Analytics\EditorGameServicesAnalytics.cs">
       <Link>Modules\UnityConnectEditor\Analytics\EditorGameServicesAnalytics.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\UnityConnectEditor\AssemblyInfo.cs">
-      <Link>Modules\UnityConnectEditor\AssemblyInfo.cs</Link>
-    </Compile>
     <Compile Include="..\..\Modules\UnityConnectEditor\Common\AssemblyInfo.cs">
       <Link>Modules\UnityConnectEditor\Common\AssemblyInfo.cs</Link>
     </Compile>
@@ -18024,9 +18072,6 @@
     </Compile>
     <Compile Include="..\..\Modules\UnityConnectEditor\ProjectSettings\GeneralProjectSettings.cs">
       <Link>Modules\UnityConnectEditor\ProjectSettings\GeneralProjectSettings.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UnityConnectEditor\ProjectSettings\InsightsProjectSettings.cs">
-      <Link>Modules\UnityConnectEditor\ProjectSettings\InsightsProjectSettings.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\UnityConnectEditor\ProjectSettings\PurchasingProjectSettings.cs">
       <Link>Modules\UnityConnectEditor\ProjectSettings\PurchasingProjectSettings.cs</Link>
@@ -18197,9 +18242,9 @@
       <Link>artifacts\MonolithicEditorDlls\InternalsVisibleTo.cs</Link>
     </Compile>
     <Reference Include="..\..\artifacts\Stevedore\unity-compiler-win-x64_b781\Unity.CompilationPipeline.Common\Unity.CompilationPipeline.Common.dll" />
-    <Reference Include="..\..\artifacts\Stevedore\msbu-tools_cc89\buildTools\UnityEditor.MSBuild.dll" />
-    <Reference Include="..\..\artifacts\Stevedore\msbu-tools_cc89\buildTools\Unity.BuildService.dll" />
-    <Reference Include="..\..\artifacts\Stevedore\msbu-tools_cc89\asmDefToCSProj\AsmDefToCSProjLib.dll" />
+    <Reference Include="..\..\artifacts\Stevedore\msbu-tools_ccb6\buildTools\UnityEditor.MSBuild.dll" />
+    <Reference Include="..\..\artifacts\Stevedore\msbu-tools_ccb6\buildTools\Unity.BuildService.dll" />
+    <Reference Include="..\..\artifacts\Stevedore\msbu-tools_ccb6\asmDefToCSProj\AsmDefToCSProjLib.dll" />
     <Reference Include="..\..\External\Unity.Cecil\builds\lib\net40\Unity.Cecil.dll" />
     <Reference Include="..\..\External\ExCSS\builds\builds\lib\netstandard2.0\ExCSS.Unity.dll" />
     <Reference Include="..\..\Tools\Bee\build\Distribution\BeeDriver2\Bee.BeeDriver2.dll" />

@@ -24,6 +24,7 @@ namespace Unity.UI.Builder
         static readonly string s_OffsetYFieldName = s_TextShadowFieldName + "-offset-y";
         static readonly string s_BlurRadiusFieldName = s_TextShadowFieldName + "-blur-radius";
         private static readonly string s_ColorFieldName = s_TextShadowFieldName + "-color";
+        static readonly string s_OffsetLabelName = s_TextShadowFieldName + "-offset-label";
 
         DimensionStyleField m_OffsetXField;
         DimensionStyleField m_OffsetYField;
@@ -99,12 +100,14 @@ namespace Unity.UI.Builder
             };
         }
 
-        internal void UpdateSubFieldVisualInputTooltips(string offsetXTooltip, string offsetYTooltip, string blurRadiusTooltip, string colorTooltip)
+        // The descriptions are on the labels too, like the labels of top-level style fields
+        internal void UpdateSubFieldVisualInputTooltips(string offsetTooltip, string offsetXTooltip, string offsetYTooltip, string blurRadiusTooltip, string colorTooltip)
         {
-            m_OffsetXField.visualInput.tooltip = offsetXTooltip;
-            m_OffsetYField.visualInput.tooltip = offsetYTooltip;
-            m_BlurRadiusField.visualInput.tooltip = blurRadiusTooltip;
-            m_ColorField.visualInput.tooltip = colorTooltip;
+            this.Q<Label>(s_OffsetLabelName).tooltip = offsetTooltip;
+            m_OffsetXField.visualInput.tooltip = m_OffsetXField.labelElement.tooltip = offsetXTooltip;
+            m_OffsetYField.visualInput.tooltip = m_OffsetYField.labelElement.tooltip = offsetYTooltip;
+            m_BlurRadiusField.visualInput.tooltip = m_BlurRadiusField.labelElement.tooltip = blurRadiusTooltip;
+            m_ColorField.visualInput.tooltip = m_ColorField.labelElement.tooltip = colorTooltip;
         }
     }
 }

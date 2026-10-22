@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using Unity.UIToolkit.Editor.Importers;
+using Unity.UIToolkit.Editor.Utilities;
 using UnityEngine;
 using UnityEngine.Pool;
 using UnityEngine.UIElements;
@@ -41,7 +42,31 @@ internal sealed class PasteElementsCommand : Command<PasteElementsCommand>
         CopyIntoAsset = null;
     }
 
-    public override bool Validate() => CopyIntoAsset != null && CopyIntoAsset.visualTreeAsset != null;
+    public override bool Validate()
+        => CopyIntoAsset != null && CopyIntoAsset.visualTreeAsset != null &&
+           VisualElementUtility.CanAddChildren(CopyIntoAsset, CountCopiedElements());
+
+    int CountCopiedElements()
+    {
+        var importer = new TempVisualTreeAssetImporter();
+        // Paste is only validated when it executes, never when a menu opens
+        importer.ImportXmlFromString(CopiedContent, out var pasteVta);
+
+        try
+        {
+            var count = 0;
+            for (var i = 0; i < pasteVta.visualTree.childCount; ++i)
+            {
+                if (pasteVta.visualTree[i] is VisualElementAsset)
+                    ++count;
+            }
+            return count;
+        }
+        finally
+        {
+            Object.DestroyImmediate(pasteVta);
+        }
+    }
 
     public override void Prepare(in PrepareContext context)
     {
@@ -59,7 +84,10 @@ internal sealed class PasteElementsCommand : Command<PasteElementsCommand>
         try
         {
             for (var i = 0; i < pasteVta.visualTree.childCount; ++i)
-                toSelectAssets.Add(pasteVta.visualTree[i] as VisualElementAsset);
+            {
+                if (pasteVta.visualTree[i] is VisualElementAsset pastedElement)
+                    toSelectAssets.Add(pastedElement);
+            }
 
             CopyIntoAsset.visualTreeAsset.Swallow(CopyIntoAsset, pasteVta);
         }

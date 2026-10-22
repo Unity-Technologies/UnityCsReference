@@ -61,7 +61,7 @@ namespace Unity.Scripting.LifecycleManagement
             }
         }
 
-        public override ImplicitLifecycleScope[] ImplicitOuterScopes { get; } = new ImplicitLifecycleScope[] { BurstScope.Instance, UDMScope.Instance };
+        public override ImplicitLifecycleScope[] ImplicitOuterScopes { get; } = new ImplicitLifecycleScope[] { BurstScope.Instance, UDMScope.Instance, EntitiesScope.Instance };
 
         public CodeLoadedScope() : base(ScopeName)
         {

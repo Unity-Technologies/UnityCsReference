@@ -133,6 +133,8 @@ namespace Unity.UI.Builder
         void AttachToPanelCallback(AttachToPanelEvent e)
         {
             BuilderLibraryContent.OnLibraryContentUpdated += RebuildView;
+            // Detached (e.g. a background tab) nothing regenerates the content, so catch up; rebuilds the view if it changed
+            BuilderLibraryContent.RegenerateLibraryContent(mustRegisterProcessors: true);
         }
 
         void DetachFromPanelCallback(DetachFromPanelEvent e)

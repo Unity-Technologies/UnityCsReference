@@ -77,6 +77,10 @@ namespace UnityEngine.UIElements
         static StyleKeyword ConvertFloatToStyleKeyword(ref StyleFloat value) => value.keyword;
         static StyleFloat ConvertFloatToStyleFloat(ref float value) => value;
         static StyleFloat ConvertStyleKeywordToStyleFloat(ref StyleKeyword value) => value;
+        static BoxShadow ConvertStyleBoxShadowToBoxShadow(ref StyleBoxShadow value) => value.value;
+        static StyleKeyword ConvertBoxShadowToStyleKeyword(ref StyleBoxShadow value) => value.keyword;
+        static StyleBoxShadow ConvertBoxShadowToStyleBoxShadow(ref BoxShadow value) => value;
+        static StyleBoxShadow ConvertStyleKeywordToStyleBoxShadow(ref StyleKeyword value) => value;
         static Cursor ConvertStyleCursorToCursor(ref StyleCursor value) => value.value;
         static StyleKeyword ConvertCursorToStyleKeyword(ref StyleCursor value) => value.keyword;
         static StyleCursor ConvertCursorToStyleCursor(ref Cursor value) => value;
@@ -276,6 +280,10 @@ namespace UnityEngine.UIElements
             ConverterGroups.Unsafe.LazyRegisterGlobal(typeof(StyleFloat), typeof(StyleKeyword), () => (TypeConverter<StyleFloat, StyleKeyword>)ConvertFloatToStyleKeyword);
             ConverterGroups.Unsafe.LazyRegisterGlobal(typeof(float), typeof(StyleFloat), () => (TypeConverter<float, StyleFloat>)ConvertFloatToStyleFloat);
             ConverterGroups.Unsafe.LazyRegisterGlobal(typeof(StyleKeyword), typeof(StyleFloat), () => (TypeConverter<StyleKeyword, StyleFloat>)ConvertStyleKeywordToStyleFloat);
+            ConverterGroups.Unsafe.LazyRegisterGlobal(typeof(StyleBoxShadow), typeof(BoxShadow), () => (TypeConverter<StyleBoxShadow, BoxShadow>)ConvertStyleBoxShadowToBoxShadow);
+            ConverterGroups.Unsafe.LazyRegisterGlobal(typeof(StyleBoxShadow), typeof(StyleKeyword), () => (TypeConverter<StyleBoxShadow, StyleKeyword>)ConvertBoxShadowToStyleKeyword);
+            ConverterGroups.Unsafe.LazyRegisterGlobal(typeof(BoxShadow), typeof(StyleBoxShadow), () => (TypeConverter<BoxShadow, StyleBoxShadow>)ConvertBoxShadowToStyleBoxShadow);
+            ConverterGroups.Unsafe.LazyRegisterGlobal(typeof(StyleKeyword), typeof(StyleBoxShadow), () => (TypeConverter<StyleKeyword, StyleBoxShadow>)ConvertStyleKeywordToStyleBoxShadow);
             ConverterGroups.Unsafe.LazyRegisterGlobal(typeof(StyleCursor), typeof(Cursor), () => (TypeConverter<StyleCursor, Cursor>)ConvertStyleCursorToCursor);
             ConverterGroups.Unsafe.LazyRegisterGlobal(typeof(StyleCursor), typeof(StyleKeyword), () => (TypeConverter<StyleCursor, StyleKeyword>)ConvertCursorToStyleKeyword);
             ConverterGroups.Unsafe.LazyRegisterGlobal(typeof(Cursor), typeof(StyleCursor), () => (TypeConverter<Cursor, StyleCursor>)ConvertCursorToStyleCursor);

@@ -764,6 +764,9 @@ namespace UnityEngine.UIElements.StyleSheets
                 return s.Equals(keyword, StringComparison.OrdinalIgnoreCase);
             }
 
+            if (value.handle.valueType == StyleValueType.String && keyword == "/")
+                return value.sheet.ReadString(value.handle) == "/";
+
             return false;
         }
 
@@ -853,8 +856,9 @@ namespace UnityEngine.UIElements.StyleSheets
                     || string.Equals(s, "min-content", StringComparison.OrdinalIgnoreCase)
                     || string.Equals(s, "max-content", StringComparison.OrdinalIgnoreCase);
             }
-            // minmax()/repeat()/fit-content() arrive as a function handle in resolved values.
-            return value.handle.valueType == StyleValueType.Function;
+            return MatchFunction(StyleValueFunction.Minmax)
+                || MatchFunction(StyleValueFunction.Repeat)
+                || MatchFunction(StyleValueFunction.FitContent);
         }
 
         protected override bool MatchResource()
@@ -912,7 +916,11 @@ namespace UnityEngine.UIElements.StyleSheets
             var value = current;
             int argCount = (int)value.sheet.ReadFloat(value.handle);
             for (int i = 0; i < argCount && hasCurrent; ++i)
+            {
                 MoveNext();
+                if (hasCurrent && current.handle.valueType == StyleValueType.Function && !SkipFunctionArguments())
+                    return false;
+            }
 
             return true;
         }

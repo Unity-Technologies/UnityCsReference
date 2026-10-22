@@ -52,12 +52,16 @@ namespace Unity.PlayMode.Editor
 
         void StateSyncedSanityCheck()
         {
+            var state = GetState();
             var expectedState = ComputeExpectedState();
-            if (GetState() != expectedState)
-            {
-                Debug.LogAssertion($"Mismatched state in DefaultScenario, was {GetState()} but expected {expectedState}");
-                SetState(expectedState);
-            }
+            if (state == expectedState)
+                return;
+
+            // A pending domain reload can run inside ExitPlayMode, before EnteredEditMode fires (UUM-148454)
+            var reloadedWhileStopping = state == PlayModeScenarioState.Stopping && expectedState == PlayModeScenarioState.Idle;
+            if (!reloadedWhileStopping)
+                Debug.LogAssertion($"Mismatched state in DefaultScenario, was {state} but expected {expectedState}");
+            SetState(expectedState);
         }
 
         PlayModeScenarioState ComputeExpectedState()

@@ -118,14 +118,15 @@ sealed class WireVisualManager
 
     internal void PauseAnimation(WireReference wireReference)
     {
-        if (!m_Enabled || m_Session.GraphView == null)
+        var graphView = m_Session.GraphView;
+        if (!m_Enabled || graphView == null)
             return;
 
         if (!TryGetWireViews(wireReference, out var wireViews))
             return;
 
         foreach (var wireView in wireViews)
-            m_Session.GraphView.Animator.Pause(wireView);
+            graphView.Animator.Pause(wireView);
     }
 
     /// <summary>
@@ -191,10 +192,11 @@ sealed class WireVisualManager
     {
         wireViews = null;
 
-        if (m_Session.GraphView == null)
+        var graphView = m_Session.GraphView;
+        if (graphView == null)
             return false;
 
-        var graphModel = m_Session.GraphView.GraphModel;
+        var graphModel = graphView.GraphModel;
         if (!graphModel.TryGetModelFromGuid(outputPortID, out PortModel outputPort) || outputPort.Direction != PortDirection.Output)
             return false;
 
@@ -216,7 +218,7 @@ sealed class WireVisualManager
             if (wireModel == null)
                 continue;
 
-            var wireView = wireModel.GetView<WireView>(m_Session.GraphView);
+            var wireView = wireModel.GetView<WireView>(graphView);
             if (wireView == null)
                 continue;
 

@@ -192,11 +192,11 @@ namespace UnityEditor.Build.Analysis
 
         private static DependencyGraph BuildGraph(ContentLayout layout, BuildAnalysis analysis)
         {
-            // A layout of another schema version parses into these classes with defaulted fields
-            // (every v2 file reads as ArtifactIndex 0), so building from it is not just wasted work
-            // that the reader would refuse - it walks garbage indices. The analysis itself still
+            // A layout of an unsupported schema version parses into these classes with defaulted
+            // fields (every v2 file reads as ArtifactIndex 0), so building from it is not just wasted
+            // work that the reader would refuse - it walks garbage indices. The analysis itself still
             // degrades softly above; only the graph is withheld.
-            if (layout.Version != BuildAnalysisConstants.k_SupportedContentLayoutVersion)
+            if (!BuildAnalysisConstants.IsSupportedContentLayoutVersion(layout.Version))
                 return null;
 
             var assets = analysis.Tables.Assets;

@@ -6546,13 +6546,7 @@ namespace UnityEditor
                 return;
 
             foreach (EntityId componentId in componentIds)
-            {
-                if (!EntityComponentDataAccessTestBridge.RemoveComponent(componentId))
-                    continue;
-
-                // Dirtying the owning GameObject makes the trackers inspecting it drop the removed row on the next flush
-                EditorUtility.SetDirty(GetDataComponentOwner(componentId));
-            }
+                ComponentUtility.RemoveDataComponent(componentId);
         }
 
         // Make an inspector-window-like titlebar.

@@ -16,7 +16,7 @@ namespace UnityEngine.XR
     [RequiredByNativeCode]
     public static partial class InputTracking
     {
-        private enum TrackingStateEventType
+        internal enum TrackingStateEventType
         {
             NodeAdded,
             NodeRemoved,

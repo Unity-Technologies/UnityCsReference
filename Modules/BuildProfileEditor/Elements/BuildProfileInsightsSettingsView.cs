@@ -31,21 +31,12 @@ class BuildProfileInsightsSettingsView
             buildProfileInsightsSettingsVisualElement.RegisterSaveAction(() => EditorUtility.SetDirty(buildProfile));
         }
 
-        var projectSettingsValue = EngineDiagnostics.EngineDiagnosticsSettings.GetEngineDiagnosticsEnabledDefaultBuildValue();
-        buildProfileInsightsSettingsVisualElement.UpdateSavedProjectSettingsEngineDiagnosticsEnabledValue(projectSettingsValue);
-
-        InsightsEditorUtils.OnEngineDiagnosticsEnabledChanged += buildProfileInsightsSettingsVisualElement.OnProjectSettingsEngineDiagnosticsEnabledChanged;
-
         buildProfileInsightsSettingsVisualElement.InitializeGUI();
 
         var insightsSectionContainer = root.Q<VisualElement>("insights-analytics-base-root");
         insightsSectionContainer.Add(buildProfileInsightsSettingsVisualElement);
 
-        var showInsightsInfoBox = !InsightsEditorUtils.IsInsightsInfoBoxDismissed();
-        if (showInsightsInfoBox)
-        {
-            InsightsEditorUtils.DrawInsightsInfoBox(root);
-        }
+        InsightsEditorUtils.DrawInsightsInfoBox(root, buildProfileInsightsSettingsVisualElement);
 
         return true;
     }

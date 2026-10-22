@@ -288,6 +288,5 @@ namespace UnityEditor
         [Obsolete("Shader LiveLink is no longer supported.", true)]
         [ExcludeFromDocs]
         ShaderLivelinkSupport = 0,
-
     }
 }

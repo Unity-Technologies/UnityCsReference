@@ -9,11 +9,9 @@ using UnityEditor.Build.Reporting;
 using UnityEditor.EngineDiagnostics;
 using UnityEngine;
 using UnityEngine.Analytics;
-using UnityEngine.Bindings;
 
 namespace UnityEditor.InsightsEditor.EditorAnalytics;
 
-[VisibleToOtherModules]
 [AnalyticInfo(eventName: "engineDiagnostics", vendorKey: "unity.enginediagnostics", version: 2)]
 internal class InsightsEditorAnalytic : IAnalytic, IPostprocessBuildWithReport
 {
@@ -60,7 +58,6 @@ internal class InsightsEditorAnalytic : IAnalytic, IPostprocessBuildWithReport
     }
 
     [Serializable]
-    [VisibleToOtherModules]
     internal class InsightsEditorAnalyticsEvent : IAnalytic.IData
     {
         public ActionType ActionType { set => action = value.ToString(); }
@@ -73,32 +70,17 @@ internal class InsightsEditorAnalytic : IAnalytic, IPostprocessBuildWithReport
         internal string action = string.Empty;
         public InteractionContext interactionContext;
         public BuildProfileEngineDiagnosticsStateChange buildProfileEngineDiagnosticsStateChange;
-        public ProjectSettingsEngineDiagnosticsEnabledChange projectSettingsEngineDiagnosticsEnabledChange;
         public BuildProjectInfo buildProjectInfo;
-        public DisablementPopupInteraction disablementPopupInteraction;
     }
 
     [Serializable]
-    [VisibleToOtherModules]
     internal enum ActionType
     {
         BuildProject,
-        DisablementPopupInteraction,
-        EnterProjectSettingsMenu,
-        ChangeEngineDiagnosticsEnabled,
         ChangeBuildProfileEngineDiagnosticsState
     }
 
     [Serializable]
-    [VisibleToOtherModules]
-    internal enum PopupInteraction
-    {
-        Accept,
-        Cancel
-    }
-
-    [Serializable]
-    [VisibleToOtherModules]
     internal class InteractionContext
     {
         public string platformGuid;
@@ -106,7 +88,6 @@ internal class InsightsEditorAnalytic : IAnalytic, IPostprocessBuildWithReport
     }
 
     [Serializable]
-    [VisibleToOtherModules]
     internal class BuildProfileEngineDiagnosticsStateChange
     {
         public BuildProfileEngineDiagnosticsState FromState { set => fromState = value.ToString(); }
@@ -116,19 +97,6 @@ internal class InsightsEditorAnalytic : IAnalytic, IPostprocessBuildWithReport
         internal string fromState;
         [SerializeField]
         internal string toState;
-    }
-
-    [Serializable]
-    [VisibleToOtherModules]
-    internal class ProjectSettingsEngineDiagnosticsEnabledChange
-    {
-        public bool FromValue { set => fromValue = value.ToString(); }
-        public bool ToValue { set => toValue = value.ToString(); }
-
-        [SerializeField]
-        internal string fromValue;
-        [SerializeField]
-        internal string toValue;
     }
 
     [Serializable]
@@ -144,15 +112,6 @@ internal class InsightsEditorAnalytic : IAnalytic, IPostprocessBuildWithReport
         internal string buildSessionGuid;
     }
 
-    [Serializable]
-    internal class DisablementPopupInteraction
-    {
-        public PopupInteraction PopupInteraction { set => popupInteraction = value.ToString(); }
-
-        [SerializeField]
-        internal string popupInteraction;
-    }
-
     public int callbackOrder { get; }
 
     public void OnPostprocessBuild(BuildReport report)
@@ -162,7 +121,7 @@ internal class InsightsEditorAnalytic : IAnalytic, IPostprocessBuildWithReport
             ActionType = ActionType.BuildProject,
             buildProjectInfo = new BuildProjectInfo
             {
-                EngineDiagnosticsEnabled = EngineDiagnosticsSettings.enabled,
+                EngineDiagnosticsEnabled = EngineDiagnosticsSettings.IsEnabled(),
                 buildGuid = report.summary.guid.ToString(),
                 buildSessionGuid = EditorApplication.buildSessionGUID.ToString()
             }

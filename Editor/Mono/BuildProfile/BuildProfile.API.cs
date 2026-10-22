@@ -41,14 +41,29 @@ namespace UnityEditor.Build.Profile
         /// <summary>
         /// Instantiates a new component of type T and adds it as a sub-asset to the build profile.
         /// </summary>
-        /// <returns>Returns the newly created ScriptableObect.</returns>
+        /// <remarks>
+        /// When T is <see cref="BuildProfilePlayerSettings"/>, the new component starts as a copy of the global player
+        /// settings.
+        /// </remarks>
+        /// <returns>Returns the newly created component.</returns>
         /// <exception cref="ArgumentException">
-        /// Thrown when a component of the same type already exists in the build profile.
+        /// Thrown when a component of the same type already exists in the build profile, or when T is
+        /// <see cref="PlayerSettings"/>. To give a build profile its own player settings, use
+        /// <see cref="BuildProfilePlayerSettings"/> as T.
+        /// </exception>
+        /// <exception cref="InvalidOperationException">
+        /// Thrown when T is <see cref="BuildProfilePlayerSettings"/> and the build profile is a classic platform profile.
         /// </exception>
         [VisibleToOtherModules]
         public T CreateComponent<T>() where T : UnityEngine.Object
         {
+            if (typeof(T) == typeof(PlayerSettings))
+                throw new ArgumentException($"{nameof(PlayerSettings)} can't be created on a build profile. Use {nameof(CreateComponent)}<{nameof(BuildProfilePlayerSettings)}>() instead.");
+
             ThrowIfComponentExists(typeof(T));
+
+            if (typeof(T) == typeof(BuildProfilePlayerSettings))
+                return CreatePlayerSettingsComponent() as T;
 
             var type = typeof(T);
             if (type == typeof(BuildProfileGraphicsSettings))
@@ -79,6 +94,10 @@ namespace UnityEditor.Build.Profile
         /// Gets a component of type T associated with the build profile, its global fallback,
         /// or null if the component is not available.
         /// </summary>
+        /// <remarks>
+        /// <see cref="BuildProfilePlayerSettings"/> has no global fallback. A null result means that the build profile
+        /// uses the global player settings, which this method returns when T is <see cref="PlayerSettings"/>.
+        /// </remarks>
         public T GetComponent<T>() where T : UnityEngine.Object
         {
             if (typeof(T) == typeof(PlayerSettings))
@@ -87,6 +106,9 @@ namespace UnityEditor.Build.Profile
                     return m_PlayerSettings as T;
                 return s_GlobalPlayerSettings as T;
             }
+
+            if (typeof(T) == typeof(BuildProfilePlayerSettings))
+                return buildProfilePlayerSettings as T;
 
             var found = FindComponentObject(typeof(T));
             if (found is null)
@@ -114,6 +136,8 @@ namespace UnityEditor.Build.Profile
         /// <exception cref="ArgumentException">Thrown when the build profile already contains a component of
         /// type <typeparamref name="T"/>, or when <paramref name="objectToAdd"/> is a
         /// built-in override that only <see cref="CreateComponent{T}"/> can add.</exception>
+        /// <exception cref="NotSupportedException">Thrown when <paramref name="objectToAdd"/> is a
+        /// <see cref="BuildProfilePlayerSettings"/>. Use <see cref="CreateComponent{T}"/> instead.</exception>
         public void AddComponent<T>(T objectToAdd) where T : UnityEngine.Object
         {
             if (objectToAdd == null)
@@ -121,6 +145,8 @@ namespace UnityEditor.Build.Profile
                 throw new ArgumentNullException(nameof(objectToAdd), "The object to add cannot be null.");
             }
 
+            if (objectToAdd is BuildProfilePlayerSettings)
+                throw new NotSupportedException($"{nameof(BuildProfilePlayerSettings)} can't be added to a build profile. Use {nameof(CreateComponent)}<{nameof(BuildProfilePlayerSettings)}>() instead.");
             if (IsSettingsOverrideType(objectToAdd.GetType()))
                 throw new ArgumentException($"{objectToAdd.GetType().Name} can't be added to a build profile as an existing object. Use {nameof(CreateComponent)}<{objectToAdd.GetType().Name}>() instead.", nameof(objectToAdd));
 
@@ -142,8 +168,19 @@ namespace UnityEditor.Build.Profile
         /// <summary>
         /// Removes the first occurence of a component of type T from the build profile.
         /// </summary>
+        /// <remarks>
+        /// When T is <see cref="BuildProfilePlayerSettings"/>, the build profile falls back to the global player
+        /// settings. If the build profile is active, Unity recompiles scripts when the scripting defines change, and
+        /// logs a warning for settings that only take effect after an editor restart.
+        /// </remarks>
         public void RemoveComponent<T>() where T : UnityEngine.Object
         {
+            if (typeof(T) == typeof(BuildProfilePlayerSettings))
+            {
+                RemovePlayerSettingsComponent();
+                return;
+            }
+
             var toRemove = FindComponentObject(typeof(T));
             if (toRemove == null)
             {
@@ -172,6 +209,15 @@ namespace UnityEditor.Build.Profile
             if (objectToRemove == null)
             {
                 throw new ArgumentNullException(nameof(objectToRemove), "The object to remove cannot be null.");
+            }
+
+            if (objectToRemove is BuildProfilePlayerSettings)
+            {
+                if (objectToRemove != buildProfilePlayerSettings)
+                    throw new ArgumentException($"The object {objectToRemove} is not part of the build profile {name}.");
+
+                RemovePlayerSettingsComponent();
+                return;
             }
 
             // A profile holds at most one component per type, so a reference component of type T is the
@@ -243,6 +289,12 @@ namespace UnityEditor.Build.Profile
         [VisibleToOtherModules]
         internal void ForceRemoveComponent<T>() where T : UnityEngine.Object
         {
+            if (typeof(T) == typeof(BuildProfilePlayerSettings))
+            {
+                RemovePlayerSettingsComponent();
+                return;
+            }
+
             var toRemove = FindComponentObject(typeof(T));
             if (toRemove == null)
             {
@@ -257,6 +309,11 @@ namespace UnityEditor.Build.Profile
         /// Gets a component of type T associated with the currently active build profile,
         /// its global fallback, or null if the component is not available.
         /// </summary>
+        /// <remarks>
+        /// When T is <see cref="BuildProfilePlayerSettings"/>, a null result means that the global player settings apply,
+        /// either because no build profile is active or because the active build profile has no player settings
+        /// component. To read the player settings that apply, use <see cref="PlayerSettings"/> as T.
+        /// </remarks>
         public static T GetActiveComponent<T>() where T : UnityEngine.Object
         {
             var buildProfile = GetActiveBuildProfile();
@@ -340,6 +397,10 @@ namespace UnityEditor.Build.Profile
         {
             if (componentType == typeof(PlayerSettings))
                 return m_PlayerSettings != null || s_GlobalPlayerSettings != null;
+
+            // The field is set before the sub-asset is attached, e.g. while the profile isn't saved yet.
+            if (componentType == typeof(BuildProfilePlayerSettings))
+                return buildProfilePlayerSettings != null;
 
             return FindComponentObject(componentType) is not null;
         }

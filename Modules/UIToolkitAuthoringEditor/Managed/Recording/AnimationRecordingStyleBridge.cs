@@ -176,6 +176,14 @@ namespace Unity.UIToolkit.Editor
                 case TextShadow ts:
                     cs.ApplyPropertyAnimation(element, id, ts);
                     return true;
+                case StyleBoxShadow styleBoxShadow:
+                    if (styleBoxShadow.keyword != StyleKeyword.Undefined)
+                        return false;
+                    cs.ApplyPropertyAnimation(element, id, styleBoxShadow.value);
+                    return true;
+                case BoxShadow boxShadow:
+                    cs.ApplyPropertyAnimation(element, id, boxShadow);
+                    return true;
                 case StyleBackground sb:
                     if (sb.keyword != StyleKeyword.Undefined)
                         return false;
@@ -688,6 +696,14 @@ namespace Unity.UIToolkit.Editor
                 case TextShadow tsCur when previousValue is TextShadow tsPrev:
                     AddTextShadowMods(list, target, elementPath, propName, tsPrev, tsCur);
                     return true;
+                case StyleBoxShadow sbsCur when previousValue is StyleBoxShadow sbsPrev:
+                    if (sbsCur.keyword != StyleKeyword.Undefined || sbsPrev.keyword != StyleKeyword.Undefined)
+                        return false;
+                    AddBoxShadowMods(list, target, elementPath, propName, sbsPrev.value, sbsCur.value);
+                    return true;
+                case BoxShadow boxShadowCur when previousValue is BoxShadow boxShadowPrev:
+                    AddBoxShadowMods(list, target, elementPath, propName, boxShadowPrev, boxShadowCur);
+                    return true;
                 case StyleFont sfCur when previousValue is StyleFont sfPrev:
                     if (sfCur.keyword != StyleKeyword.Undefined || sfPrev.keyword != StyleKeyword.Undefined)
                         return false;
@@ -774,6 +790,17 @@ namespace Unity.UIToolkit.Editor
             AddModification(list, target, elementPath, propName, ".offset.x", prev.offset.x, cur.offset.x);
             AddModification(list, target, elementPath, propName, ".offset.y", prev.offset.y, cur.offset.y);
             AddModification(list, target, elementPath, propName, ".blurRadius", prev.blurRadius, cur.blurRadius);
+        }
+
+        // Emits 9 channels: .color.r/.g/.b/.a + .offset.x/.y + .blurRadius + .spreadRadius, then the discrete .inset.
+        internal static void AddBoxShadowMods(List<UndoPropertyModification> list, UnityEngine.Object target, string elementPath, string propName, BoxShadow prev, BoxShadow cur)
+        {
+            AddColorMods(list, target, elementPath, propName + ".color", prev.color, cur.color);
+            AddModification(list, target, elementPath, propName, ".offset.x", prev.offset.x, cur.offset.x);
+            AddModification(list, target, elementPath, propName, ".offset.y", prev.offset.y, cur.offset.y);
+            AddModification(list, target, elementPath, propName, ".blurRadius", prev.blurRadius, cur.blurRadius);
+            AddModification(list, target, elementPath, propName, ".spreadRadius", prev.spreadRadius, cur.spreadRadius);
+            AddModification(list, target, elementPath, propName, ".inset", prev.inset ? 1 : 0, cur.inset ? 1 : 0);
         }
 
         // Slot-by-slot diff against default(FilterFunction); only changed sub-channels are emitted.
@@ -1070,6 +1097,10 @@ namespace Unity.UIToolkit.Editor
                 return new StyleTextShadow(cs.ReadPropertyAnimationTextShadow(stylePropertyId));
             if (currentValue is TextShadow)
                 return cs.ReadPropertyAnimationTextShadow(stylePropertyId);
+            if (currentValue is StyleBoxShadow)
+                return new StyleBoxShadow(cs.ReadPropertyAnimationBoxShadow(stylePropertyId));
+            if (currentValue is BoxShadow)
+                return cs.ReadPropertyAnimationBoxShadow(stylePropertyId);
             if (currentValue is StyleBackground)
                 return new StyleBackground(cs.ReadPropertyAnimationBackground(stylePropertyId));
             if (currentValue is Background)
@@ -1237,6 +1268,16 @@ namespace Unity.UIToolkit.Editor
             else if (currentValue is TextShadow tsCur && previousValue is TextShadow tsPrev)
             {
                 AddTextShadowMods(list, panelRenderer, elementPath, propName, tsPrev, tsCur);
+            }
+            else if (currentValue is StyleBoxShadow styleBoxShadowCur && previousValue is StyleBoxShadow styleBoxShadowPrev)
+            {
+                if (styleBoxShadowCur.keyword != StyleKeyword.Undefined || styleBoxShadowPrev.keyword != StyleKeyword.Undefined)
+                    return null;
+                AddBoxShadowMods(list, panelRenderer, elementPath, propName, styleBoxShadowPrev.value, styleBoxShadowCur.value);
+            }
+            else if (currentValue is BoxShadow boxShadowCur && previousValue is BoxShadow boxShadowPrev)
+            {
+                AddBoxShadowMods(list, panelRenderer, elementPath, propName, boxShadowPrev, boxShadowCur);
             }
             else if (currentValue is StyleBackground sbCur && previousValue is StyleBackground sbPrev)
             {

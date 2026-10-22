@@ -183,6 +183,18 @@ namespace UnityEditor.Build.Profile
         {
             var settingsExtension = ModuleManager.GetEditorSettingsExtension(EditorUserBuildSettings.activePlatformGuid);
             settingsExtension?.OnActiveProfileChanged(previous, newProfile);
+
+            if (newProfile == null)
+                return;
+
+            // UUM-155741: activePlatformGuid is still the previous platform. The new platform also needs
+            // to know of the change to apply values
+            var newPlatformGuid = newProfile.isMultiTarget ? newProfile.selectedPlatformGuid : newProfile.platformGuid;
+            if (newPlatformGuid != EditorUserBuildSettings.activePlatformGuid)
+            {
+                var newSettingsExtension = ModuleManager.GetEditorSettingsExtension(newPlatformGuid);
+                newSettingsExtension?.OnActiveProfileChanged(previous, newProfile);
+            }
         }
 
         internal static void HandleScriptingDefinesChanged()
@@ -580,6 +592,7 @@ namespace UnityEditor.Build.Profile
                 EditorGraphicsSettings.activeProfileHasGraphicsSettings = ActiveProfileHasGraphicsSettings();
 
                 SyncClassicPlatformToEditorUserBuildSettings();
+                EngineDiagnosticsSettings.NotifyActiveBuildProfileChanged();
             }
             finally
             {
@@ -767,7 +780,7 @@ namespace UnityEditor.Build.Profile
             return buildProfile;
         }
 
-        static void SaveBuildProfileInProject(BuildProfile profile)
+        internal static void SaveBuildProfileInProject(BuildProfile profile)
         {
             if (!Directory.Exists(k_BuildProfilePath))
             {
@@ -1069,13 +1082,6 @@ namespace UnityEditor.Build.Profile
         }
 
 
-        [RequiredByNativeCode]
-        [VisibleToOtherModules]
-        internal static BuildProfileEngineDiagnosticsState GetActiveBuildProfileEngineDiagnosticsState()
-        {
-            var profile = activeProfile ?? instance.GetForClassicPlatform(EditorUserBuildSettings.activePlatformGuid);
-            return profile?.platformBuildProfile?.insightsSettingsContainer.buildProfileEngineDiagnosticsState ?? BuildProfileEngineDiagnosticsState.ProjectSettings;
-        }
 
         static bool ShouldReturnActiveProfile(GUID platformGuid, string sharedSetting = null)
         {

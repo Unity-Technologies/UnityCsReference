@@ -1082,6 +1082,7 @@ namespace UnityEngine.UIElements
             m_ScrollView.verticalScroller.valueChanged += v => OnScroll(new Vector2(0, v));
             // Grow only, so the horizontal range doesn't change during a drag
             m_ScrollView.horizontalScroller.valueChanged += x => UpdateHorizontalOffsetMinWidth(x, false);
+            m_ScrollView.contentContainer.RegisterCallback<GeometryChangedEvent>(_ => m_HorizontalOffsetIsStale = false);
 
             m_ScrollView.RegisterCallback<GeometryChangedEvent>(OnSizeChanged);
             RegisterCallback<CustomStyleResolvedEvent>(OnCustomStyleResolved);
@@ -1196,6 +1197,7 @@ namespace UnityEngine.UIElements
 
         void OnItemsSourceChanged()
         {
+            ResetHorizontalOffsetMinWidth();
             itemsSourceChanged?.Invoke();
             NotifyPropertyChanged(itemsSourceProperty);
         }
@@ -1273,7 +1275,7 @@ namespace UnityEngine.UIElements
                 RefreshSelection();
                 virtualizationController.Refresh(true);
                 PostRefresh();
-                UpdateHorizontalOffsetMinWidth(0f, true); // The old offset may be meaningless for the new items
+                ResetHorizontalOffsetMinWidth();
 
                 m_RebuildScheduled?.Pause();
             }
@@ -1428,8 +1430,17 @@ namespace UnityEngine.UIElements
         }
 
         float m_HorizontalOffsetMinWidth;
+        Length m_BaseContentMinWidth;
+        bool m_HorizontalOffsetIsStale;
 
         private protected virtual bool hasUniformItemWidth => false;
+
+        // The old offset may be meaningless for the new items, and it describes the old items until the next layout
+        void ResetHorizontalOffsetMinWidth()
+        {
+            m_HorizontalOffsetIsStale = m_ScrollView.scrollOffset.x > 0f;
+            UpdateHorizontalOffsetMinWidth(0f, true);
+        }
 
         // Reserves the width the horizontal offset needs, so binding narrower items doesn't clamp the offset
         void UpdateHorizontalOffsetMinWidth(float offsetX, bool canShrink)
@@ -1438,11 +1449,17 @@ namespace UnityEngine.UIElements
 
             var minWidth = 0f;
             var viewportWidth = m_ScrollView.contentViewport.layout.width;
-            if (horizontalScrollingEnabled && !hasUniformItemWidth && offsetX > 0f && !float.IsNaN(viewportWidth))
-                minWidth = offsetX + viewportWidth;
+            if (horizontalScrollingEnabled && !m_HorizontalOffsetIsStale && m_ViewController?.GetItemsCount() > 0) // Without items, there is no offset to preserve
+            {
+                if (!hasUniformItemWidth && offsetX > 0f && !float.IsNaN(viewportWidth))
+                    minWidth = offsetX + viewportWidth;
 
-            if (!canShrink)
-                minWidth = Mathf.Max(minWidth, m_HorizontalOffsetMinWidth);
+                if (!canShrink)
+                    minWidth = Mathf.Max(minWidth, m_HorizontalOffsetMinWidth);
+            }
+
+            if (minWidth > 0f && minWidth <= GetBaseContentMinWidth())
+                minWidth = 0f;
 
             if (Mathf.Approximately(minWidth, m_HorizontalOffsetMinWidth))
                 return;
@@ -1452,6 +1469,23 @@ namespace UnityEngine.UIElements
                 m_ScrollView.contentContainer.style.minWidth = minWidth;
             else
                 m_ScrollView.contentContainer.style.minWidth = StyleKeyword.Null;
+        }
+
+        float GetBaseContentMinWidth()
+        {
+            var contentContainer = m_ScrollView.contentContainer;
+            ref var computedStyle = ref contentContainer.computedStyle;
+
+            // Our inline value hides the style sheet one, so read it from the matched rules while we hold it
+            if (m_HorizontalOffsetMinWidth <= 0f)
+                m_BaseContentMinWidth = computedStyle.minWidth;
+            else if (computedStyle.matchingRulesHash == 0)
+                m_BaseContentMinWidth = StyleSheets.InitialStyle.minWidth;
+            else if (StyleCache.TryGetValue(computedStyle.matchingRulesHash, out var baseStyle))
+                m_BaseContentMinWidth = baseStyle.minWidth;
+
+            var resolved = contentContainer.ResolveLengthValue(m_BaseContentMinWidth, true);
+            return resolved.keyword == StyleKeyword.Undefined ? resolved.value : 0f;
         }
 
         private void Resize(Vector2 size)

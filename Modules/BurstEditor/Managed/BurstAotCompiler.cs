@@ -139,7 +139,7 @@ namespace Unity.Burst.Editor
                 },
                 displayName = "Running Burst Compiler",
 
-                // UnityLinker only writes pdbs when asked to, and Burst needs them for the source lines of its native debug info.
+                // UnityLinker only writes pdbs when asked to, and Burst needs them for the source lines of its native debug info and of Debug.Log calls.
                 requiresManagedSymbols = settings.RequiresManagedSymbols
             };
         }
@@ -190,6 +190,7 @@ namespace Unity.Burst.Editor
                 settings.managedCodeVariant = PlayerSettings.GetManagedCodeVariant(settings.summary.namedBuildTarget);
                 settings.scriptingBackend = PlayerSettings.GetScriptingBackend(buildTarget);
                 settings.apiCompatibilityLevel = PlayerSettings.GetApiCompatibilityLevel(buildTarget);
+                settings.managedStackTraceInformation = PlayerSettings.GetManagedStackTraceInformation(settings.summary.namedBuildTarget);
 
                 settings.combinations =
                     BurstAotCompiler.CollectCombinations(settings.targetPlatform, settings.targetCpus,
@@ -314,12 +315,17 @@ namespace Unity.Burst.Editor
             public bool isSupported;
             public List<string> extraOptions;
             public Hash128 symbolDefinesHash;
+            public ManagedStackTraceInformation managedStackTraceInformation;
 
             // Burst emits native debug info in development builds, and in other builds when the AOT settings ask for it.
             public bool EmitDebugInfo => (summary.options & BuildOptions.Development) != 0 || aotSettingsForTarget.EnableDebugInAllBuilds;
 
-            // The native debug info gets its source lines from the managed symbols of the assemblies Burst compiles.
-            public bool RequiresManagedSymbols => isSupported && aotSettingsForTarget.EnableBurstCompilation && EmitDebugInfo;
+            // Debug.Log calls carry the source file and line when the player is asked for file names and line numbers in managed stack traces.
+            // This is independent of EmitDebugInfo.
+            public bool EmbedDebugLogSourceLocations => managedStackTraceInformation == ManagedStackTraceInformation.MethodFileLineNumber;
+
+            // Both of the above get their source lines from the managed symbols of the assemblies Burst compiles.
+            public bool RequiresManagedSymbols => isSupported && aotSettingsForTarget.EnableBurstCompilation && (EmitDebugInfo || EmbedDebugLogSourceLocations);
 
             // Hash any fields that might have an effect on whether Bursted code needs to be recompiled
             // Note that the BurstPlatformAotSettings are saved and used separately, so they don't need to
@@ -365,6 +371,7 @@ namespace Unity.Burst.Editor
                 hc.Append((int)scriptingBackend);
                 hc.Append((int)apiCompatibilityLevel);
                 hc.Append(productName);
+                hc.Append((int)managedStackTraceInformation);
 
                 return hc;
             }
@@ -700,6 +707,9 @@ namespace Unity.Burst.Editor
                     options.Add(GetOption(OptionDebug,
                         (settings.aotSettingsForTarget.DebugDataKind == DebugDataKind.Full) && (!combination.WorkaroundFullDebugInfo) ? "Full" : "LineOnly"));
                 }
+
+                // Debug.Log source locations follow the stack trace setting, not the debug info setting above
+                options.Add(GetOption(OptionDebugLogSourceLocations, settings.EmbedDebugLogSourceLocations ? "true" : "false"));
 
                 if (settings.aotSettingsForTarget.StackProtector != StackProtector.Off)
                 {

@@ -255,7 +255,6 @@ namespace Unity.Entities
         internal void Initialize(World world)
         {
             TypeManager.Initialize();
-            ECBInterop.Initialize();
             EntityQueryImpl.Initialize();
             ComponentSafetyHandles.Initialize();
 
@@ -3164,68 +3163,6 @@ namespace Unity.Entities
 
                     RemoveComponent(instantiatedInDstWorld, ComponentType.ReadWrite<IsolateCopiedEntities>());
                 }
-            }
-        }
-
-        /// <summary>
-        /// Copies all entities from srcEntityManager and replaces all entities in this EntityManager
-        /// </summary>
-        /// <remarks>
-        /// Guarantees that the chunk layout and order of the entities will match exactly, thus this method can be used for deterministic rollback.
-        /// This feature is not complete and only supports a subset of the EntityManager features at the moment:
-        /// * Currently it copies all CleanupComponents (They should not be copied)
-        /// * Currently does not support class based components
-        /// </remarks>
-        /// <param name="srcEntityManager">The EntityManager to copy from</param>
-        /// <param name="remap">Array of source versions and terget entities to perform remapping</param>
-        [Obsolete("This function only works in a narrow set of circumstances and has semantics that differ from a regular copy.", false)]
-        [ExcludeFromBurstCompatTesting("Accesses managed component store")]
-        public void CopyAndReplaceEntitiesFrom(EntityManager srcEntityManager, NativeArray<EntityRemapUtility.EntityRemapInfo> remap = default)
-        {
-            srcEntityManager.CompleteAllTrackedJobs();
-            CompleteAllTrackedJobs();
-
-            var srcAccess = srcEntityManager.GetCheckedEntityDataAccess();
-            var selfAccess = GetCheckedEntityDataAccess();
-
-            using (var srcChunks = srcAccess->m_UniversalQueryWithChunksAndSystems.ToArchetypeChunkListAsync(Allocator.TempJob, out var srcChunksJob))
-            using (var dstChunks = selfAccess->m_UniversalQueryWithChunksAndSystems.ToArchetypeChunkListAsync(Allocator.TempJob, out var dstChunksJob))
-            {
-                srcChunksJob.Complete();
-                dstChunksJob.Complete();
-
-                using var archetypeChunkChanges = new EntityDiffer.ArchetypeChunkChanges(Allocator.TempJob);
-                var createdChunks = archetypeChunkChanges.CreatedSrcChunks;
-                var destroyedChunks = archetypeChunkChanges.DestroyedDstChunks;
-
-                {
-                    var chunks = createdChunks.Chunks;
-                    var flags = createdChunks.Flags;
-                    var entityCounts = createdChunks.EntityCounts;
-
-                    for (int ci = 0, cc = srcChunks.Length, count = 0; ci < cc; ci++)
-                    {
-                        chunks.Add(srcChunks[ci]);
-                        flags.Add(EntityDiffer.ArchetypeChunkChangeFlags.None);
-                        entityCounts.Add(count);
-                        count += srcChunks[ci].Count;
-                    }
-                }
-
-                {
-                    var chunks = destroyedChunks.Chunks;
-                    var flags = destroyedChunks.Flags;
-                    var entityCounts = destroyedChunks.EntityCounts;
-                    for (int ci = 0, cc = dstChunks.Length, count = 0; ci < cc; ci++)
-                    {
-                        chunks.Add(dstChunks[ci]);
-                        flags.Add(EntityDiffer.ArchetypeChunkChangeFlags.None);
-                        entityCounts.Add(count);
-                        count += dstChunks[ci].Count;
-                    }
-                }
-
-                EntityDiffer.CopyAndReplaceChunks(srcEntityManager, this, selfAccess->m_UniversalQueryWithChunksAndSystems, archetypeChunkChanges, remap);
             }
         }
 

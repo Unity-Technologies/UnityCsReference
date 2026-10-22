@@ -336,7 +336,8 @@ namespace UnityEngine.UIElements.UIR
                         child = child.nextSibling;
                     }
 
-                    Rect veBB = op.renderTree.rootRenderData.owner.boundingBox;
+                    var owner = op.renderTree.rootRenderData.owner;
+                    Rect veBB = BoxShadowBounds.EncapsulateOuterShadow(owner, owner.boundingBox);
                     if (UIRUtility.RectHasArea(veBB))
                         bounds = bounds == null ? veBB : UIRUtility.Encapsulate(bounds.Value, veBB);
                     else
@@ -346,7 +347,7 @@ namespace UnityEngine.UIElements.UIR
                     if (bounds != null && op.parent != null && TryGetVisibleBounds(op, out Rect visible))
                     {
                         clipped = true;
-                        bounds = Intersect(bounds.Value, visible);
+                        bounds = UIRUtility.Intersect(bounds.Value, visible);
                     }
 
                     op.pixelsPerPoint = ComputePixelsPerPoint(op, bounds, clipped);
@@ -380,7 +381,7 @@ namespace UnityEngine.UIElements.UIR
                     // Inflate for the parent read and write margins
                     var readMargins = parentOp.readMargins;
                     var writeMargins = parentOp.writeMargins;
-                    var inflated = InflateByMargins(InflateByMargins(r, readMargins, op.pixelsPerPoint), writeMargins, op.pixelsPerPoint);
+                    var inflated = UIRUtility.InflateByMargins(UIRUtility.InflateByMargins(r, readMargins, op.pixelsPerPoint), writeMargins, op.pixelsPerPoint);
                     rectInt = SnapOutwardToPixels(inflated);
 
                     if (ExceedsAtlasLimits(rectInt))
@@ -392,7 +393,7 @@ namespace UnityEngine.UIElements.UIR
                         rectInt = SnapOutwardToPixels(r);
                     }
 
-                    RectInt sourceBounds = SnapOutwardToPixels(InflateByMargins(r, writeMargins, op.pixelsPerPoint));
+                    RectInt sourceBounds = SnapOutwardToPixels(UIRUtility.InflateByMargins(r, writeMargins, op.pixelsPerPoint));
                     op.parent.drawSourceBounds = sourceBounds;
 
                     // Whole texels, so the effect samples its source texel-centered
@@ -483,10 +484,6 @@ namespace UnityEngine.UIElements.UIR
             if (!m_HasScreenClip)
                 return false;
 
-            // A backdrop-filter captures from this tree's texture and blurs past the visible edge
-            if (op.renderTree.HasBackdropFiltersIncludingPending())
-                return false;
-
             Rect? visibleRect = GetVisibleRect(op);
             if (visibleRect == null)
                 return false;
@@ -524,10 +521,6 @@ namespace UnityEngine.UIElements.UIR
             }
             else
             {
-                // A backdrop-filter in the parent tree captures this tree's content past the visible edge
-                if (parentTreeOp.renderTree.HasBackdropFiltersIncludingPending())
-                    return null;
-
                 // Overflow clips inside a filtered tree are left out, which only renders more than needed
                 Rect? parentVisible = GetVisibleRect(parentTreeOp);
                 if (parentVisible == null)
@@ -541,7 +534,10 @@ namespace UnityEngine.UIElements.UIR
 
             // Effects read and write past the visible edge (blur taps, shadow offsets)
             EnsureChainMargins(treeOp);
-            treeOp.visibleRect = InflateBy(VisualElement.CalculateConservativeRect(ref parentTreeToLocal, clip), treeOp.chainMargins);
+            Rect visible = InflateBy(VisualElement.CalculateConservativeRect(ref parentTreeToLocal, clip), treeOp.chainMargins);
+
+            // A backdrop-filter in this tree blurs what lies just past that edge too
+            treeOp.visibleRect = treeOp.renderTree.ExtendByBackdropReads(visible);
             return treeOp.visibleRect;
         }
 
@@ -560,17 +556,6 @@ namespace UnityEngine.UIElements.UIR
             inverse.m03 = -(inverse.m00 * m.m03 + inverse.m01 * m.m13);
             inverse.m13 = -(inverse.m10 * m.m03 + inverse.m11 * m.m13);
             return true;
-        }
-
-        static Rect? Intersect(Rect a, Rect b)
-        {
-            float xMin = Mathf.Max(a.xMin, b.xMin);
-            float yMin = Mathf.Max(a.yMin, b.yMin);
-            float xMax = Mathf.Min(a.xMax, b.xMax);
-            float yMax = Mathf.Min(a.yMax, b.yMax);
-            if (xMax <= xMin || yMax <= yMin)
-                return null;
-            return Rect.MinMaxRect(xMin, yMin, xMax, yMax);
         }
 
         // Rasterize at the owner's displayed density so a scaled element isn't magnified from a low-res texture
@@ -610,15 +595,6 @@ namespace UnityEngine.UIElements.UIR
             if (pixelsPerPoint.x <= 0 || pixelsPerPoint.y <= 0)
                 return Rect.zero;
             return ScaleRect(UIRUtility.CastToRect(r), new Vector2(1 / pixelsPerPoint.x, 1 / pixelsPerPoint.y));
-        }
-
-        static Rect InflateByMargins(Rect r, PostProcessingMargins margins, Vector2 scale)
-        {
-            return new Rect(
-                r.xMin - margins.left * scale.x,
-                r.yMin - margins.top * scale.y,
-                r.width + (margins.left + margins.right) * scale.x,
-                r.height + (margins.top + margins.bottom) * scale.y);
         }
 
         internal static RectInt SnapOutwardToPixels(Rect r)

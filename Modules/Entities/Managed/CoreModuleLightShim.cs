@@ -30,6 +30,9 @@ namespace Unity.Entities
             Type ExecuteAlwaysType { get; }
 
             float FixedDeltaTime { get; }
+            bool IsPlaying { get; }
+            long ArchetypeAllocatorBudget { get; }
+            long QueryAllocatorBudget { get; }
 
             IReadOnlyList<Assembly> GetLoadedAssemblies();
             string GetLoadedAssemblyPath(Assembly assembly);

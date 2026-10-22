@@ -275,6 +275,7 @@ namespace UnityEngine.UIElements
                         foreach (var part in selector.parts)
                         {
                             allParts[partIdx] = FlattenPart(part);
+                            SelectorIdRegistry.Register(part.type, part.cachedUniqueStyleStringId);
                             partIdx++;
                         }
 

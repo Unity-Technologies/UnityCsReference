@@ -5,6 +5,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Runtime.CompilerServices;
 using UnityEngine;
 using UnityEngine.Bindings;
 using UnityEngine.Scripting;
@@ -249,13 +250,16 @@ namespace UnityEditor.AssetImporters
 
         extern void AddImportLog(string msg, string file, int line, ImportLogFlags flags, UnityEngine.Object obj);
 
+        // The frame skip of the StackTrace ctor assumes this method and its public caller each keep their own frame, so neither may be inlined
+        [MethodImpl(MethodImplOptions.NoInlining)]
         void AddImportLog(string msg, ImportLogFlags flags, UnityEngine.Object obj)
         {
             var st = new StackTrace(2, true);
             var sf = st.GetFrame(0);
-            AddImportLog(msg, sf.GetFileName(), sf.GetFileLineNumber(), flags, obj);
+            AddImportLog(msg, sf?.GetFileName() ?? string.Empty, sf?.GetFileLineNumber() ?? 0, flags, obj);
         }
 
+        [MethodImpl(MethodImplOptions.NoInlining)]
         public void LogImportError(string msg, UnityEngine.Object obj = null)
         {
             AddImportLog(msg, ImportLogFlags.Error, obj);
@@ -266,6 +270,7 @@ namespace UnityEditor.AssetImporters
             AddImportLog(msg, file, line, ImportLogFlags.Error, obj);
         }
 
+        [MethodImpl(MethodImplOptions.NoInlining)]
         public void LogImportWarning(string msg, UnityEngine.Object obj = null)
         {
             AddImportLog(msg, ImportLogFlags.Warning, obj);

@@ -5,6 +5,7 @@
 using System;
 using System.Collections.Generic;
 using System.Text;
+using Unity.Scripting.LifecycleManagement;
 using UnityEditor.Collaboration;
 using UnityEditorInternal;
 using UnityEngine;
@@ -61,6 +62,27 @@ namespace UnityEditor
 
         internal static class Utils
         {
+            [NoAutoStaticsCleanup] // lazy GUIStyle cache; re-created when EditorStyles changes, safe to persist
+            static GUIStyle s_FoldoutHeaderStyle;
+            [NoAutoStaticsCleanup] // source of s_FoldoutHeaderStyle, compared to detect skin changes
+            static GUIStyle s_FoldoutHeaderBaseStyle;
+
+            static bool DrawFoldoutHeader(Rect rowRect, bool foldout, GUIContent content)
+            {
+                if (s_FoldoutHeaderBaseStyle != EditorStyles.foldout)
+                {
+                    s_FoldoutHeaderBaseStyle = EditorStyles.foldout;
+                    s_FoldoutHeaderStyle = new GUIStyle(s_FoldoutHeaderBaseStyle) { clipping = TextClipping.Ellipsis };
+                }
+
+                // Foldout sizes its label to labelWidth, which can be wider than a narrow row.
+                float labelWidth = EditorGUIUtility.labelWidth;
+                EditorGUIUtility.labelWidth = rowRect.width;
+                foldout = EditorGUI.Foldout(rowRect, foldout, content, s_FoldoutHeaderStyle);
+                EditorGUIUtility.labelWidth = labelWidth;
+                return foldout;
+            }
+
             private static bool DrawRegexWithErrorCheck(string name, SerializedProperty prop, GUIContent standardContent, string text, ref Rect elementRect, StringBuilder errorBuilder)
             {
                 prop.stringValue = EditorGUI.TextField(elementRect, standardContent, prop.stringValue);
@@ -166,7 +188,7 @@ namespace UnityEditor
 
                 bool result = true;
 
-                deviceIdFoldouts[index] = EditorGUI.Foldout(elementRect, deviceIdFoldouts[index], Styles.deviceIdentification);
+                deviceIdFoldouts[index] = DrawFoldoutHeader(elementRect, deviceIdFoldouts[index], Styles.deviceIdentification);
                 elementRect.y += Styles.kElementHeighWithSpace;
 
                 if (deviceIdFoldouts[index])
@@ -186,7 +208,7 @@ namespace UnityEditor
 
                 }
 
-                capabilityMetricsFoldouts[index] = EditorGUI.Foldout(elementRect, capabilityMetricsFoldouts[index], Styles.capabilityMetrics);
+                capabilityMetricsFoldouts[index] = DrawFoldoutHeader(elementRect, capabilityMetricsFoldouts[index], Styles.capabilityMetrics);
                 elementRect.y += Styles.kElementHeighWithSpace;
 
                 if (capabilityMetricsFoldouts[index])
@@ -447,21 +469,26 @@ namespace UnityEditor
             m_GfxJobsReorderableFilterList = new ReorderableFilterList(
                 serializedObject, "m_GraphicsJobsFilterList", DrawGfxJobsFilterListElement, AddGfxJobsFilterListElement, ReorderGfxJobsFilterList, GetGfxJobsElementHeight, gfxJobsElementHeight);
 
-            for (int i = 0; i < m_AllowReorderableFilterList.reorderableList.count; i++)
-            {
-                m_AllowDeviceIdFoldouts.Add(false);
-                m_AllowCapabilityMetricsFoldouts.Add(false);
-            }
-            for (int i = 0; i < m_DenyReorderableFilterList.reorderableList.count; i++)
-            {
-                m_DenyDeviceIdFoldouts.Add(false);
-                m_DenyCapabilityMetricsFoldouts.Add(false);
-            }
-            for (int i = 0; i < m_GfxJobsReorderableFilterList.reorderableList.count; i++)
-            {
-                m_GfxJobsDeviceIdFoldouts.Add(false);
-                m_GfxJobsCapabilityMetricsFoldouts.Add(false);
-            }
+            SyncFoldoutCounts();
+        }
+
+        private static void ResizeFoldouts(List<bool> foldouts, int count)
+        {
+            if (foldouts.Count > count)
+                foldouts.RemoveRange(count, foldouts.Count - count);
+            while (foldouts.Count < count)
+                foldouts.Add(false);
+        }
+
+        // The filter arrays can change outside this editor (another Inspector window, Undo), so the per-element foldout state must follow them.
+        private void SyncFoldoutCounts()
+        {
+            ResizeFoldouts(m_AllowDeviceIdFoldouts, m_AllowReorderableFilterList.reorderableList.count);
+            ResizeFoldouts(m_AllowCapabilityMetricsFoldouts, m_AllowReorderableFilterList.reorderableList.count);
+            ResizeFoldouts(m_DenyDeviceIdFoldouts, m_DenyReorderableFilterList.reorderableList.count);
+            ResizeFoldouts(m_DenyCapabilityMetricsFoldouts, m_DenyReorderableFilterList.reorderableList.count);
+            ResizeFoldouts(m_GfxJobsDeviceIdFoldouts, m_GfxJobsReorderableFilterList.reorderableList.count);
+            ResizeFoldouts(m_GfxJobsCapabilityMetricsFoldouts, m_GfxJobsReorderableFilterList.reorderableList.count);
         }
 
         struct ErrorInfo
@@ -514,6 +541,8 @@ namespace UnityEditor
 
             if (targetObj == null)
                 throw new InvalidCastException("Unable to case object to D3D12DeviceFilterLists!");
+
+            SyncFoldoutCounts();
 
             using (var changed = new ChangeCheckScope())
             {

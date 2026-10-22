@@ -516,7 +516,7 @@ namespace UnityEditorInternal
 
         internal static string[] GetCompilationDefines(EditorScriptCompilationOptions options, BuildTarget target, int subtarget)
         {
-            return GetCompilationDefines(options, target, subtarget, PlayerSettings.GetApiCompatibilityLevel(NamedBuildTarget.FromActiveSettings(target)));
+            return GetCompilationDefines(options, target, subtarget, PlayerSettings.GetApiCompatibilityLevelWithoutIL2CPPForcing(NamedBuildTarget.FromActiveSettings(target)));
         }
 
         public static void SetShowGizmos(bool value)

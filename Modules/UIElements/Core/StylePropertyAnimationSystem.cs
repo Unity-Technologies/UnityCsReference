@@ -22,6 +22,7 @@ namespace UnityEngine.UIElements
         bool StartTransition(VisualElement owner, StylePropertyId prop, EntityId startValue, EntityId endValue, int durationMs, int delayMs, [NotNull] Func<float, float> easingCurve);
         bool StartTransition(VisualElement owner, StylePropertyId prop, UnityEngine.UIElements.Cursor startValue, UnityEngine.UIElements.Cursor endValue, int durationMs, int delayMs, [NotNull] Func<float, float> easingCurve);
         bool StartTransition(VisualElement owner, StylePropertyId prop, TextShadow startValue, TextShadow endValue, int durationMs, int delayMs, [NotNull] Func<float, float> easingCurve);
+        bool StartTransition(VisualElement owner, StylePropertyId prop, BoxShadow startValue, BoxShadow endValue, int durationMs, int delayMs, [NotNull] Func<float, float> easingCurve);
         bool StartTransition(VisualElement owner, StylePropertyId prop, Scale startValue, Scale endValue, int durationMs, int delayMs, [NotNull] Func<float, float> easingCurve);
         bool StartTransition(VisualElement owner, StylePropertyId prop, TransformOrigin startValue, TransformOrigin endValue, int durationMs, int delayMs, [NotNull] Func<float, float> easingCurve);
         bool StartTransition(VisualElement owner, StylePropertyId prop, Translate startValue, Translate endValue, int durationMs, int delayMs, [NotNull] Func<float, float> easingCurve);
@@ -1142,6 +1143,40 @@ namespace UnityEngine.UIElements
             }
         }
 
+        class ValuesBoxShadow : Values<BoxShadow>
+        {
+            public override Func<BoxShadow, BoxShadow, bool> SameFunc { get; } = IsSame;
+            private static bool IsSame(BoxShadow a, BoxShadow b) => a == b;
+            private static BoxShadow Lerp(BoxShadow a, BoxShadow b, float t) => BoxShadow.LerpUnclamped(a, b, t);
+
+            protected sealed override void UpdateValues()
+            {
+                int n = running.count;
+                for (int i = 0; i < n; i++)
+                {
+                    ref var timing = ref running.timing[i];
+                    ref var style = ref running.style[i];
+                    style.currentValue = Lerp(style.startValue, style.endValue, timing.easedProgress);
+                }
+            }
+
+            protected sealed override void UpdateComputedStyle()
+            {
+                int n = running.count;
+                for (int i = 0; i < n; i++)
+                {
+                    running.elements[i].computedStyle.ApplyPropertyAnimation(running.elements[i],
+                        running.properties[i], running.style[i].currentValue);
+                }
+            }
+
+            protected sealed override void UpdateComputedStyle(int i)
+            {
+                running.elements[i].computedStyle.ApplyPropertyAnimation(running.elements[i],
+                    running.properties[i], running.style[i].currentValue);
+            }
+        }
+
         class ValuesScale : Values<Scale>
         {
             public override Func<Scale, Scale, bool> SameFunc { get; } = IsSame;
@@ -1824,6 +1859,7 @@ namespace UnityEngine.UIElements
         private ValuesEntityId m_EntityIds;
         private ValuesCursor m_Cursors;
         private ValuesTextShadow m_TextShadows;
+        private ValuesBoxShadow m_BoxShadows;
         private ValuesScale m_Scale;
         private ValuesRotate m_Rotate;
         private ValuesRatio m_Ratio;
@@ -2012,6 +2048,11 @@ namespace UnityEngine.UIElements
         public bool StartTransition(VisualElement owner, StylePropertyId prop, TextShadow startValue, TextShadow endValue, int durationMs, int delayMs, [NotNull] Func<float, float> easingCurve)
         {
             return StartTransition(owner, prop, startValue, endValue, durationMs, delayMs, easingCurve, GetOrCreate(ref m_TextShadows));
+        }
+
+        public bool StartTransition(VisualElement owner, StylePropertyId prop, BoxShadow startValue, BoxShadow endValue, int durationMs, int delayMs, [NotNull] Func<float, float> easingCurve)
+        {
+            return StartTransition(owner, prop, startValue, endValue, durationMs, delayMs, easingCurve, GetOrCreate(ref m_BoxShadows));
         }
 
         public bool StartTransition(VisualElement owner, StylePropertyId prop, Scale startValue, Scale endValue, int durationMs, int delayMs, [NotNull] Func<float, float> easingCurve)
@@ -2208,6 +2249,7 @@ namespace UnityEngine.UIElements
                         player.startTime = currentTime;
                         player.clipLength = clip.animationClip.length;
                         player.isPaused = false;
+                        player.isPreviewing = m_OwnerPanel != null && m_OwnerPanel.IsClipOwnerPreviewing(owner);
 
                         // Update() may already have sampled for this tick, which would leave the
                         // element on its un-animated value until the next one.
@@ -2417,6 +2459,11 @@ namespace UnityEngine.UIElements
         }
 
         public bool StartTransition(VisualElement owner, StylePropertyId prop, TextShadow startValue, TextShadow endValue, int durationMs, int delayMs, Func<float, float> easingCurve)
+        {
+            return false;
+        }
+
+        public bool StartTransition(VisualElement owner, StylePropertyId prop, BoxShadow startValue, BoxShadow endValue, int durationMs, int delayMs, Func<float, float> easingCurve)
         {
             return false;
         }

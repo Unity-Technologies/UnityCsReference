@@ -261,7 +261,9 @@ namespace UnityEngine.UIElements
             // Handle horizontal scrolling
             m_View.scrollView.horizontalScroller.valueChanged += OnHorizontalScrollerValueChanged;
             m_View.scrollView.contentViewport.RegisterCallback<GeometryChangedEvent>(OnViewportGeometryChanged);
+            m_View.scrollView.contentViewport.style.flexBasis = 0;
             m_MultiColumnHeader.columnContainer.RegisterCallback<GeometryChangedEvent>(OnColumnContainerGeometryChanged);
+            m_MultiColumnHeader.columnLayout.layoutPerformed += OnColumnLayoutPerformed;
         }
 
         /// <summary>
@@ -273,6 +275,8 @@ namespace UnityEngine.UIElements
             {
                 m_View.scrollView.horizontalScroller.valueChanged -= OnHorizontalScrollerValueChanged;
                 m_View.scrollView.contentViewport.UnregisterCallback<GeometryChangedEvent>(OnViewportGeometryChanged);
+                m_View.scrollView.contentViewport.style.flexBasis = StyleKeyword.Null;
+                m_MultiColumnHeader.columnLayout.layoutPerformed -= OnColumnLayoutPerformed;
                 m_View = null;
             }
 
@@ -301,9 +305,8 @@ namespace UnityEngine.UIElements
 
         void OnViewportGeometryChanged(GeometryChangedEvent evt)
         {
-            var headerPadding = m_MultiColumnHeader.resolvedStyle.paddingLeft + m_MultiColumnHeader.resolvedStyle.paddingRight;
-            m_MultiColumnHeader.style.maxWidth = evt.newRect.width - headerPadding;
-            m_MultiColumnHeader.style.maxWidth = evt.newRect.width - headerPadding;
+            var scrollView = m_View.scrollView;
+            m_HeaderContainer.style.paddingRight = scrollView.isVerticalScrollDisplayed ? scrollView.verticalScroller.layout.width : 0;
 
             UpdateContentContainer(m_View);
         }
@@ -313,9 +316,14 @@ namespace UnityEngine.UIElements
             UpdateContentContainer(m_View);
         }
 
+        void OnColumnLayoutPerformed()
+        {
+            UpdateContentContainer(m_View);
+        }
+
         void UpdateContentContainer(BaseVerticalCollectionView collectionView)
         {
-            var headerTotalWidth = m_MultiColumnHeader.columnContainer.layoutSize.x;
+            var headerTotalWidth = m_MultiColumnHeader.columnLayout.columnsWidth;
             var targetWidth = Mathf.Max(headerTotalWidth, collectionView.scrollView.contentViewport.resolvedStyle.width);
             collectionView.scrollView.contentContainer.style.width = targetWidth;
         }
@@ -526,6 +534,8 @@ namespace UnityEngine.UIElements
 
         void OnColumnResized(int index, float width)
         {
+            UpdateContentContainer(m_View);
+
             if (m_View.isRebuildScheduled)
             {
                 // We are waiting on a rebuild, so our elements are most likely not the right ones.

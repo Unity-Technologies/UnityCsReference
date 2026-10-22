@@ -133,7 +133,7 @@ namespace UnityEditor.Build.Analysis
         /// The asset is a loadable entry point - it appears in the layout's LoadableObjectIds or
         /// LoadableSceneIds. Surfaced as the italic "(loadable)" suffix on a tree row.
         /// </summary>
-        public bool IsLoadable(int assetId) => GetBit(m_Loadable, assetId);
+        public bool IsLoadable(int assetId) => TestBit(m_Loadable, assetId);
 
         /// <summary>
         /// The asset is in the graph at all: the layout attributed exactly one non-built-in SerializedFile
@@ -153,7 +153,7 @@ namespace UnityEditor.Build.Analysis
         /// the graph starts carrying their referrers, and this bit starts reporting them while an extension
         /// check would go on hiding them.
         /// </remarks>
-        public bool IsAttributed(int assetId) => GetBit(m_Attributed, assetId);
+        public bool IsAttributed(int assetId) => TestBit(m_Attributed, assetId);
 
         internal int[] Offsets => m_Offsets;
         internal int[] Targets => m_Targets;
@@ -165,12 +165,9 @@ namespace UnityEditor.Build.Analysis
 
         internal static void SetBit(uint[] bits, int index) => bits[index >> 5] |= 1u << (index & 31);
 
-        private bool GetBit(uint[] bits, int assetId)
-        {
-            if ((uint)assetId >= (uint)NodeCount)
-                return false;
-            return (bits[assetId >> 5] & (1u << (assetId & 31))) != 0;
-        }
+        internal static bool GetBit(uint[] bits, int index) => (bits[index >> 5] & (1u << (index & 31))) != 0;
+
+        private bool TestBit(uint[] bits, int assetId) => (uint)assetId < (uint)NodeCount && GetBit(bits, assetId);
 
         internal bool IsInverseBuilt => m_InverseOffsets != null;
 

@@ -91,7 +91,8 @@ namespace Unity.U2D.Physics
                 PhysicsMask physicsMask = PhysicsMask.None;
                 foreach (var name in layerNames)
                 {
-                    var layer = LayerMask.NameToLayer(name);
+                    // An empty name is never a layer name, but NameToLayer matches it to the first unnamed layer.
+                    var layer = name.Length == 0 ? InvalidLayerOrdinal : LayerMask.NameToLayer(name);
                     if (layer != PhysicsLayers.InvalidLayerOrdinal)
                     {
                         physicsMask |= new PhysicsMask(layer);
@@ -135,7 +136,8 @@ namespace Unity.U2D.Physics
 
             // 32-bit layers.
             {
-                var layerOrdinal = LayerMask.NameToLayer(layerName);
+                // An empty name is never a layer name, but NameToLayer matches it to the first unnamed layer.
+                var layerOrdinal = layerName.Length == 0 ? InvalidLayerOrdinal : LayerMask.NameToLayer(layerName);
                 if (layerOrdinal != InvalidLayerOrdinal)
                     return layerOrdinal;
 

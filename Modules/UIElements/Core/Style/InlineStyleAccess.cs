@@ -164,6 +164,9 @@ namespace UnityEngine.UIElements
         private bool m_HasInlineCurvature;
         private StyleCurvature m_InlineCurvature;
 
+        private bool m_HasInlineBoxShadow;
+        private StyleBoxShadow m_InlineBoxShadow;
+
         private bool m_HasInlineBackgroundSize;
         public StyleBackgroundSize m_InlineBackgroundSize;
 
@@ -233,6 +236,8 @@ namespace UnityEngine.UIElements
                     return m_HasInlineBackgroundSize;
                 case StylePropertyId.UnityCurvature:
                     return m_HasInlineCurvature;
+                case StylePropertyId.BoxShadow:
+                    return m_HasInlineBoxShadow;
                 default:
                     return false;
             }
@@ -308,6 +313,11 @@ namespace UnityEngine.UIElements
             if (m_HasInlineCurvature)
             {
                 computedStyle.ApplyStyleCurvature(ve.style.unityCurvature.value);
+            }
+
+            if (m_HasInlineBoxShadow)
+            {
+                computedStyle.ApplyStyleBoxShadow(ve.style.boxShadow.value);
             }
         }
 
@@ -502,6 +512,24 @@ namespace UnityEngine.UIElements
                 if (SetInlineCurvature(value))
                 {
                     ve.IncrementVersion(StylePropertyUtil.s_PropertyToChangeType[(int)StylePropertyId.UnityCurvature]);
+                }
+            }
+        }
+
+        StyleBoxShadow IStyle.boxShadow
+        {
+            get
+            {
+                var inlineBoxShadow = new StyleBoxShadow();
+                if (TryGetInlineBoxShadow(ref inlineBoxShadow))
+                    return inlineBoxShadow;
+                return StyleKeyword.Null;
+            }
+            set
+            {
+                if (SetInlineBoxShadow(value))
+                {
+                    ve.IncrementVersion(StylePropertyUtil.s_PropertyToChangeType[(int)StylePropertyId.BoxShadow]);
                 }
             }
         }
@@ -1149,6 +1177,43 @@ namespace UnityEngine.UIElements
             ve.computedStyle.ApplyStyleCurvature(curvature.value);
         }
 
+        private bool SetInlineBoxShadow(StyleBoxShadow inlineValue)
+        {
+            var styleBoxShadow = new StyleBoxShadow();
+            if (TryGetInlineBoxShadow(ref styleBoxShadow))
+            {
+                if (styleBoxShadow.value == inlineValue.value && styleBoxShadow.keyword == inlineValue.keyword)
+                    return false;
+            }
+            else if (inlineValue.keyword == StyleKeyword.Null)
+            {
+                return false;
+            }
+
+            if (inlineValue.keyword == StyleKeyword.Null)
+            {
+                m_HasInlineBoxShadow = false;
+                return RemoveInlineStyle(StylePropertyId.BoxShadow);
+            }
+
+            m_InlineBoxShadow = inlineValue;
+            m_HasInlineBoxShadow = true;
+            ApplyStyleBoxShadow(inlineValue);
+
+            return true;
+        }
+
+        private void ApplyStyleBoxShadow(StyleBoxShadow boxShadow)
+        {
+            if (TryStartInlineTransition(StylePropertyId.BoxShadow, out var t) &&
+                ComputedStyle.StartAnimationInlineBoxShadow(ve, ref ve.computedStyle, boxShadow, t.durationMs, t.delayMs, t.easingCurve))
+            {
+                return;
+            }
+
+            ve.computedStyle.ApplyStyleBoxShadow(boxShadow.value);
+        }
+
         private bool SetInlineBackgroundSize(StyleBackgroundSize inlineValue)
         {
             var styleBackgroundSize = new StyleBackgroundSize();
@@ -1313,6 +1378,8 @@ namespace UnityEngine.UIElements
                 changes |= StylePropertyUtil.s_PropertyToChangeType[(int)StylePropertyId.BackgroundSize];
             if (SetInlineCurvature(StyleKeyword.Null))
                 changes |= StylePropertyUtil.s_PropertyToChangeType[(int)StylePropertyId.UnityCurvature];
+            if (SetInlineBoxShadow(StyleKeyword.Null))
+                changes |= StylePropertyUtil.s_PropertyToChangeType[(int)StylePropertyId.BoxShadow];
 
             // Clear all inline style collections
             m_Values.Clear();
@@ -1420,6 +1487,16 @@ namespace UnityEngine.UIElements
             if (m_HasInlineCurvature)
             {
                 value = m_InlineCurvature;
+                return true;
+            }
+            return false;
+        }
+
+        public bool TryGetInlineBoxShadow(ref StyleBoxShadow value)
+        {
+            if (m_HasInlineBoxShadow)
+            {
+                value = m_InlineBoxShadow;
                 return true;
             }
             return false;

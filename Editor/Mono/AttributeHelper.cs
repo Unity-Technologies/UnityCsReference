@@ -22,7 +22,7 @@ namespace UnityEditor
     internal partial class AttributeHelper
     {
         [StructLayout(LayoutKind.Sequential)]
-        struct MonoGizmoMethod
+        internal struct MonoGizmoMethod
         {
             public MethodInfo drawGizmo;
             public Type       drawnType;
@@ -154,7 +154,7 @@ namespace UnityEditor
         }
 
         [StructLayout(LayoutKind.Sequential)]
-        struct MonoCreateAssetItem
+        internal struct MonoCreateAssetItem
         {
             public string menuItem;
             public string fileName;

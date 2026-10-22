@@ -76,8 +76,7 @@ namespace Unity.ProjectAuditor.Editor.UI
         // Serialized fields
         [SerializeField] string m_AreaSelectionSummary;
         [SerializeField] string[] m_AssemblyNames;
-        [SerializeField] bool[] m_AssemblyReadOnlyFlags;
-        [SerializeField] string m_AssemblySelectionSummary;
+        [SerializeField] internal string m_AssemblySelectionSummary;
         [SerializeField] internal Report m_Report;
         [SerializeField] internal AnalysisState m_AnalysisState = AnalysisState.Initializing;
         [SerializeField] ViewStates m_ViewStates = new ViewStates();
@@ -1521,7 +1520,7 @@ namespace Unity.ProjectAuditor.Editor.UI
             ShadersModule.ClearBuildData();
         }
 
-        void RefreshWindow()
+        internal void RefreshWindow()
         {
             if (!IsAnalysisValid())
                 return;
@@ -1531,7 +1530,7 @@ namespace Unity.ProjectAuditor.Editor.UI
             if (m_AnalysisState == AnalysisState.Completed)
             {
                 UpdateAssemblyNames();
-                UpdateAssemblySelection();
+                UpdateAssemblySelection(forceRefresh: true);
 
                 m_AnalysisState = AnalysisState.Valid;
 
@@ -1545,7 +1544,7 @@ namespace Unity.ProjectAuditor.Editor.UI
             }
         }
 
-        string GetSelectedAssembliesSummary()
+        internal string GetSelectedAssembliesSummary()
         {
             if (m_AssemblyNames != null && m_AssemblyNames.Length > 0)
                 return Utility.GetTreeViewSelectedSummary(m_AssemblySelection, m_AssemblyNames);
@@ -1988,14 +1987,13 @@ namespace Unity.ProjectAuditor.Editor.UI
             }
         }
 
-        void UpdateAssemblyNames()
+        internal void UpdateAssemblyNames()
         {
             if (m_Report == null || m_ViewManager.HasPendingCategory(IssueCategory.Assembly))
                 return;
 
 #pragma warning disable UAC2001, UAC2010 // Avoid Linq
-            var assemblyNames = m_Report.FindByCategory(IssueCategory.Assembly).Select(i => new System.Tuple<string, bool>(i.Description, i.GetCustomPropertyBool(AssemblyProperty.ReadOnly)));
-            var allAssemblies = assemblyNames.GroupBy(i => i.Item1).Select(g => g.First()).OrderBy(i => i.Item1).ToArray();
+            var allAssemblies = m_Report.FindByCategory(IssueCategory.Assembly).Select(i => i.Description).Distinct().OrderBy(name => name).ToArray();
 #pragma warning restore UAC2001, UAC2010
 
             var ownerFlags = m_Report.SessionInfo.OwnerFlags;
@@ -2006,14 +2004,13 @@ namespace Unity.ProjectAuditor.Editor.UI
 #pragma warning disable UAC2001 // Avoid Linq
             // update list of assembly names
             if (m_Report.IsForCurrentProject())
-                allAssemblies = allAssemblies.Where(a => !AssemblyInfoProvider.FilterAssembly(a.Item1, allowPackages, allowUnityCode, allowUserCode)).ToArray();
+                allAssemblies = allAssemblies.Where(a => !AssemblyInfoProvider.FilterAssembly(a, allowPackages, allowUnityCode, allowUserCode)).ToArray();
 #pragma warning restore UAC2001
 
-            m_AssemblyNames = Array.ConvertAll(allAssemblies, a => a.Item1);
-            m_AssemblyReadOnlyFlags = Array.ConvertAll(allAssemblies, a => a.Item2);
+            m_AssemblyNames = allAssemblies;
         }
 
-        void UpdateAssemblySelection(bool forceRefresh = false)
+        internal void UpdateAssemblySelection(bool forceRefresh = false)
         {
             if (m_AssemblyNames == null)
                 return;
@@ -2038,30 +2035,7 @@ namespace Unity.ProjectAuditor.Editor.UI
                 }
             }
 
-            if (m_Report != null && m_Report.IsForCurrentProject())
-            {
-                if (forceRefresh || m_AssemblySelection.selection.Count == 0)
-                {
-                    var ownerFlags = m_Report.SessionInfo.OwnerFlags;
-                    bool allowPackages = (m_Report.SessionInfo.CodeAnalysisFlags & CodeAnalysisFlags.Packages) != 0;
-                    bool allowUnityCode = (ownerFlags & OwnerFlags.Unity) != 0;
-                    bool allowUserCode = (ownerFlags & OwnerFlags.User) != 0;
-
-                    var compiledAssemblies = new List<string>(m_AssemblyNames.Length);
-                    for (int i = 0; i < m_AssemblyNames.Length; i++)
-                    {
-                        if (!m_AssemblyReadOnlyFlags[i])
-                            compiledAssemblies.Add(m_AssemblyNames[i]);
-                    }
-
-                    m_AssemblySelection.selection.AddRange(compiledAssemblies);
-
-                    if (m_AssemblySelection.selection.Count == 0 || compiledAssemblies.Count == m_AssemblyNames.Length)
-                        m_AssemblySelection.SetAll(m_AssemblyNames);
-                }
-            }
-
-            if (forceRefresh)
+            if (forceRefresh || (m_AssemblySelection.selection.Count == 0 && m_AssemblySelectionSummary != "None"))
                 m_AssemblySelection.SetAll(m_AssemblyNames);
 
             // update assembly selection summary

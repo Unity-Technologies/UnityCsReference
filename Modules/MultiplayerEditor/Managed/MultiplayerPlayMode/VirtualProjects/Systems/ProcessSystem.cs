@@ -136,6 +136,10 @@ namespace Unity.Multiplayer.PlayMode.Editor
 
         internal static Process GetProcessById(int processId)
         {
+            // The BCL reports pid 0 as a live process, and killing it would signal our own process group
+            if (processId <= 0)
+                return null;
+
             try { return Process.GetProcessById(processId); }
             catch (ArgumentException) { return null; }
         }

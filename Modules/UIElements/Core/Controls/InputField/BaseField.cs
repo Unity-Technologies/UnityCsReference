@@ -169,7 +169,7 @@ namespace UnityEngine.UIElements
             set => SetValueWithoutNotify(value);
         }
 
-        bool m_SkipValidation;
+        internal bool m_SkipValidation;
 
         // Sent whenever we overwrite the value from view data.
         internal event Action viewDataRestored;

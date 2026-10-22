@@ -1313,7 +1313,7 @@ namespace UnityEditor.UIElements.Debugger
             if ((changeTypeFlag & VersionChangeType.Hierarchy) == VersionChangeType.Hierarchy)
                 m_TreeViewContainer.hierarchyHasChanged = true;
 
-            if ((changeTypeFlag & VersionChangeType.StyleSheet) == VersionChangeType.StyleSheet
+            if ((changeTypeFlag & (VersionChangeType.StyleSheet | VersionChangeType.ClassList | VersionChangeType.Name)) != 0
                 && (changeTypeFlag & VersionChangeType.Styles) == 0
                 && ve == m_Context.selectedElement)
                 m_StylesDebuggerContainer.UpdateMatches();

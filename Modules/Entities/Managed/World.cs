@@ -6,6 +6,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
+using Unity.Burst;
 using System.Linq;
 using UnityEngine.Assertions;
 using Unity.Collections;
@@ -103,6 +104,14 @@ namespace Unity.Entities
         /// </summary>
         /// <param name="defaultWorldName">The name of the default <see cref="World"/> that will be created</param>
         /// <returns>true if the bootstrap has performed initialization, or false if default world initialization should be performed.</returns>
+        bool CreateDefaultWorldWithoutSystems(string defaultWorldName) { return false; }
+
+        /// <summary>
+        /// Called during default world initialization to give the application a chance to set up additional worlds beyond
+        /// (or instead of) the default world, and to perform additional one-time initialization before any worlds are created.
+        /// </summary>
+        /// <param name="defaultWorldName">The name of the default <see cref="World"/> that will be created</param>
+        /// <returns>true if the bootstrap has performed initialization, or false if default world initialization should be performed.</returns>
         /// <remarks>
         /// If this method returns true, it must also set <see cref="World.DefaultGameObjectInjectionWorld"/> to the world that
         /// GameObject-based code and the Editor integration should use. Unity asserts if the property is still null.
@@ -122,25 +131,179 @@ namespace Unity.Entities
     {
         [NoAutoStaticsCleanup] // DefaultWorldInitialization disposes every world as code unloads.
         internal static readonly List<World> s_AllWorlds = new List<World>();
+        internal static readonly SharedStatic<FixedList512Bytes<WorldUnmanaged>> s_ActiveWorldsStack = SharedStatic<FixedList512Bytes<WorldUnmanaged>>.GetOrCreate<ActiveWorldsStackIdentifier>();
+        internal struct ActiveWorldsStackIdentifier { }
 
         /// <summary>
-        /// The default <see cref="World"/>. The code that runs outside a system reads this property to reach a world.
+        /// The <see cref="World"/> that code running outside a system reaches for, at the top of the currently
+        /// active World stack. Null until Unity creates the first World.
         /// </summary>
         /// <remarks>
-        /// <see cref="DefaultWorldInitialization.Initialize"/> assigns this property, so it's null until Unity creates the default
-        /// world, and null again after you dispose that world.
-        ///
         /// Code that runs outside a system has no world to work from, so it reads this property instead. This applies both to
         /// your own MonoBehaviour scripts and to Editor tools such as the SubScene Inspector and the Entity Inspector. The most
         /// common use in your own code is to reach an <see cref="EntityManager"/>, for example
         /// `World.DefaultGameObjectInjectionWorld.EntityManager`.
         ///
-        /// Assigning a different world to this property redirects all of those callers to that world.
+        /// To change which World this reports, push one onto the stack with <see cref="ActiveWorldScope"/> and
+        /// let the scope restore the previous one.
         /// </remarks>
         /// <seealso cref="ICustomBootstrap"/>
         /// <seealso cref="DefaultWorldInitialization"/>
-        [NoAutoStaticsCleanup]
-        public static World DefaultGameObjectInjectionWorld { get; set; }
+        public static World DefaultGameObjectInjectionWorld
+        {
+            get => PeekWorldStack();
+            [Obsolete("Setting DefaultGameObjectInjectionWorld is deprecated. Use World.ActiveWorldScope, or World.PushWorldStack and World.PopWorldStack, instead.", false)]
+            set
+            {
+                var index = value == null ? -1 : s_ActiveWorldsStack.Data.IndexOf(value.m_Unmanaged);
+                if (index < 0)
+                {
+                    PushWorldStack(value);
+                    return;
+                }
+
+                while (s_ActiveWorldsStack.Data.Length > index + 1)
+                    s_ActiveWorldsStack.Data.RemoveAt(s_ActiveWorldsStack.Data.Length - 1);
+            }
+        }
+
+        /// <summary>
+        /// Renders the active World stack bottom-first, for error messages and tracing: who is where matters
+        /// more than the depth, because every stack fault is really about ordering.
+        /// </summary>
+        static string DescribeWorldStack()
+        {
+            var length = s_ActiveWorldsStack.Data.Length;
+            if (length == 0)
+                return "<empty>";
+
+            var sb = new System.Text.StringBuilder();
+            for (int i = 0; i < length; i++)
+            {
+                if (i > 0)
+                    sb.Append(" | ");
+                sb.Append('[').Append(i).Append("] ");
+                try
+                {
+                    var w = s_ActiveWorldsStack.Data[i].EntityManager.World;
+                    sb.Append(w == null ? "<null>" : w.Name);
+                }
+                catch (Exception e)
+                {
+                    sb.Append("<disposed: ").Append(e.GetType().Name).Append('>');
+                }
+            }
+            return sb.ToString();
+        }
+
+        /// <summary>
+        /// Returns the <see cref="World"/> on top of the currently active World stack, or null if no World has
+        /// been pushed.
+        /// </summary>
+        /// <returns>The currently active <see cref="World"/>, or null.</returns>
+        public static World PeekWorldStack()
+        {
+            return s_ActiveWorldsStack.Data.Length > 0 ? s_ActiveWorldsStack.Data[^1].EntityManager.World : null;
+        }
+
+        /// <summary>
+        /// Removes <paramref name="world"/> from the top of the currently active World stack.
+        /// </summary>
+        /// <param name="world">The <see cref="World"/> this caller pushed. Must still be on top.</param>
+        /// <exception cref="InvalidOperationException">Thrown if the stack is empty, if
+        /// <paramref name="world"/> is not the World on top, or if it is the only World on the stack.</exception>
+        public static void PopWorldStack(World world)
+        {
+            if (s_ActiveWorldsStack.Data.Length == 0)
+            {
+                throw new InvalidOperationException(
+                    $"Can't pop World '{world?.Name}': the World stack is empty. Stack: {DescribeWorldStack()}");
+            }
+
+            var top = PeekWorldStack();
+            if (top != world)
+            {
+                throw new InvalidOperationException(
+                    $"Worlds popped out of order: expected '{world?.Name}' on top of the World stack, found '{top?.Name}'. " +
+                    $"Pop Worlds in the reverse of the order you pushed them. Stack: {DescribeWorldStack()}");
+            }
+            if (s_ActiveWorldsStack.Data.Length == 1)
+            {
+                throw new InvalidOperationException(
+                    $"Can't pop World '{top.Name}': it is the only World on the stack. Stack: {DescribeWorldStack()}");
+            }
+
+            s_ActiveWorldsStack.Data.RemoveAt(s_ActiveWorldsStack.Data.Length - 1);
+        }
+
+        /// <summary>
+        /// Makes <paramref name="world"/> the <see cref="DefaultGameObjectInjectionWorld"/>.
+        /// </summary>
+        /// <remarks>
+        /// Every push should have a matching <see cref="PopWorldStack"/>. It is preferable to use <see cref="ActiveWorldScope"/>, which
+        /// pops for you even when the body throws.
+        /// </remarks>
+        /// <param name="world">The <see cref="World"/> to make the DefaultGameObjectInjectionWorld.</param>
+        /// <exception cref="ArgumentNullException">Thrown if <paramref name="world"/> is null.</exception>
+        /// <exception cref="InvalidOperationException">Thrown if the stack is full.</exception>
+        public static void PushWorldStack(World world)
+        {
+            if (world == null)
+                throw new ArgumentNullException(nameof(world));
+
+            if (s_ActiveWorldsStack.Data.Length == s_ActiveWorldsStack.Data.Capacity)
+            {
+                throw new InvalidOperationException(
+                    $"Can't push World '{world.Name}': the World stack is full at {s_ActiveWorldsStack.Data.Capacity} " +
+                    $"entries. Stack: {DescribeWorldStack()}");
+            }
+
+            s_ActiveWorldsStack.Data.Add(world.m_Unmanaged);
+        }
+
+        /// <summary>
+        /// Makes a <see cref="World"/> the <see cref="DefaultGameObjectInjectionWorld"/> for the lifetime of the scope,
+        /// and restores the previous one when the scope ends - including when the body throws.
+        /// </summary>
+        /// <remarks>
+        /// Use this wherever the borrow fits a single scope. Where it cannot - a borrow spanning a test's
+        /// setup and teardown, for example - call <see cref="PushWorldStack"/> and <see cref="PopWorldStack"/>
+        /// directly instead.
+        ///
+        /// Scopes must end in the reverse of the order they began; <see cref="Dispose"/> throws otherwise.
+        /// </remarks>
+        /// <example>
+        /// <code>
+        /// using (new World.ActiveWorldScope(myWorld))
+        /// {
+        ///     // World.DefaultGameObjectInjectionWorld is myWorld here.
+        /// }
+        /// </code>
+        /// </example>
+        public readonly struct ActiveWorldScope : IDisposable
+        {
+            readonly World m_World;
+
+            /// <summary>
+            /// Pushes <paramref name="world"/> onto the currently active World stack.
+            /// </summary>
+            /// <param name="world">The <see cref="World"/> to make active for the lifetime of this scope.</param>
+            public ActiveWorldScope(World world)
+            {
+                m_World = world;
+                PushWorldStack(world);
+            }
+
+            /// <summary>
+            /// Pops the <see cref="World"/> this scope pushed, restoring the previously active one.
+            /// </summary>
+            /// <exception cref="InvalidOperationException">Thrown if another <see cref="World"/> was pushed
+            /// after this scope began and has not been popped yet.</exception>
+            public void Dispose()
+            {
+                PopWorldStack(m_World);
+            }
+        }
 
         internal Dictionary<Type, ComponentSystemBase> m_SystemLookup = new Dictionary<Type, ComponentSystemBase>();
 
@@ -269,7 +432,7 @@ namespace Unity.Entities
 
             s_AllWorlds.Add(this);
 
-            m_TimeSingletonQuery = EntityManager.CreateEntityQuery( 
+            m_TimeSingletonQuery = EntityManager.CreateEntityQuery(
                 ComponentType.ReadWrite<WorldTime>(),
                 ComponentType.ReadWrite<WorldTimeQueue>(),
                 ComponentType.ReadWrite<HideInHierarchy>());
@@ -288,6 +451,11 @@ namespace Unity.Entities
 
             if (Unmanaged.ExecutingSystem != SystemHandle.Null)
                 throw new ArgumentException("The World can not be disposed while a system in that world is executing " + Unmanaged.ExecutingSystem.m_WorldSeqNo);
+
+            if (s_ActiveWorldsStack.Data.Contains(m_Unmanaged))
+                throw new ArgumentException(
+                    $"Can't dispose World '{Name}' while it is on the active World stack. Pop it first. " +
+                    $"Stack: {DescribeWorldStack()}");
 
             s_DisposeWorldMarker.Begin();
 
@@ -312,19 +480,50 @@ namespace Unity.Entities
             m_TimeSingletonQuery.Dispose();
             s_AllWorlds.Remove(this);
 
-            if (DefaultGameObjectInjectionWorld == this)
-                DefaultGameObjectInjectionWorld = null;
-
             m_Unmanaged.Dispose();
 
             s_DisposeWorldMarker.End();
         }
 
         /// <summary>
-        /// Destroys all existing Worlds
+        /// Destroys every existing <see cref="World"/> except the one at the bottom of the currently active
+        /// World stack.
         /// </summary>
         public static void DisposeAllWorlds()
         {
+            var baseWorld = s_ActiveWorldsStack.Data.Length > 0
+                ? s_ActiveWorldsStack.Data[0].EntityManager.World
+                : null;
+
+            while (s_ActiveWorldsStack.Data.Length > 1)
+            {
+                s_ActiveWorldsStack.Data.RemoveAt(s_ActiveWorldsStack.Data.Length - 1);
+            }
+
+            // Rescan every time: disposing one World can dispose others - a system's OnDestroy may own
+            // child Worlds - so any index cached across a Dispose can point at an already-disposed World.
+            while (true)
+            {
+                World next = null;
+                for (int i = 0; i < s_AllWorlds.Count; ++i)
+                {
+                    if (s_AllWorlds[i] != baseWorld)
+                    {
+                        next = s_AllWorlds[i];
+                        break;
+                    }
+                }
+
+                if (next == null)
+                    break;
+
+                next.Dispose();
+            }
+        }
+
+        internal static void DisposeAll()
+        {
+            s_ActiveWorldsStack.Data.Clear();
             while (s_AllWorlds.Count != 0)
             {
                 s_AllWorlds[0].Dispose();
@@ -476,7 +675,7 @@ namespace Unity.Entities
             }
             m_Unmanaged.BumpVersion();
 
-            EntitiesProfiler.OnSystemCreated(system.m_StatePtr->m_SystemTypeIndex, system.SystemHandle);
+            EntitiesProfilerPackageCalls.OnSystemCreated(system.m_StatePtr->m_SystemTypeIndex, system.SystemHandle);
 
             SystemCreated?.Invoke(this, system);
         }

@@ -57,6 +57,8 @@ namespace Unity.VectorGraphics
 
     internal static class SVGStyleSheetUtils
     {
+        static readonly Regex k_ImportantFlag = new Regex(@"\s*!\s*important\s*$", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
+
         public static SVGStyleSheet Parse(string cssText)
         {
             var result = new SVGStyleSheet();
@@ -153,7 +155,8 @@ namespace Unity.VectorGraphics
             string value;
             while (ParseProperty(tokens, out name, out value))
             {
-                props[name] = value;
+                if (value.Length > 0)
+                    props[name] = value;
                 while (PeekToken(tokens) == ";")
                     PopToken(tokens);
             }
@@ -185,6 +188,7 @@ namespace Unity.VectorGraphics
                     value += ParseParenValue(tokens);
             }
 
+            value = k_ImportantFlag.Replace(value, "");
             return true;
         }
 

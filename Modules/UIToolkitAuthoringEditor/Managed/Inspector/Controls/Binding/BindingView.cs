@@ -15,7 +15,7 @@ using Unity.Scripting.LifecycleManagement;
 
 namespace Unity.UIToolkit.Editor
 {
-    sealed class BindingView : VisualElement
+    sealed partial class BindingView : VisualElement
     {
         public enum BindingViewMode
         {
@@ -62,10 +62,14 @@ namespace Unity.UIToolkit.Editor
         public const string BindingConvertersToSourceFieldName = "BindingConvertersToSourceField";
         public const string BindingUpdateTriggerFieldName = "BindingUpdateTriggerField";
 
-        [NoAutoStaticsCleanup] // binding-type list built once, safe to persist
-        private static readonly BindingType[] k_UxmlBindingTypes;
-        [NoAutoStaticsCleanup] // display-names list, safe to persist
+        // Built from TypeCache, which includes the binding types of user code. This module stays loaded across a code
+        // reload, so the lists are dropped before the code deinitializes and rebuilt once the next code is initialized.
+        [NoAutoStaticsCleanup] // set by InitBindingTypes, cleared by ResetBindingTypes
+        private static BindingType[] k_UxmlBindingTypes;
+        [NoAutoStaticsCleanup] // filled by InitBindingTypes, cleared by ResetBindingTypes
         private static readonly List<string> k_UxmlBindingTypeDisplayNames = new();
+
+        internal static BindingType[] uxmlBindingTypes => k_UxmlBindingTypes;
 
         VisualElement m_Element;
 
@@ -194,9 +198,17 @@ namespace Unity.UIToolkit.Editor
             });
         }
 
-        static BindingView()
+        [OnCodeInitializing]
+        static void InitBindingTypes()
         {
             k_UxmlBindingTypes = LoadAllAvailableBindingClasses();
+        }
+
+        [OnCodeDeinitializing]
+        static void ResetBindingTypes()
+        {
+            k_UxmlBindingTypes = null;
+            k_UxmlBindingTypeDisplayNames.Clear();
         }
 
         static int IndexOfBindingType(string uxmlFullName)
@@ -572,9 +584,13 @@ namespace Unity.UIToolkit.Editor
 
             if (Mode != BindingViewMode.Create)
             {
+                // The binding's type can be missing from the list, for example after it was renamed or removed in user code.
                 var bindingTypeIndex = IndexOfBindingType(m_BindingUxmlSerializedDataDescription.uxmlFullName);
-                var choice = k_UxmlBindingTypes[bindingTypeIndex].displayName;
-                m_BindingTypeDropdown.SetValueWithoutNotify(choice);
+                if (bindingTypeIndex != -1)
+                {
+                    var choice = k_UxmlBindingTypes[bindingTypeIndex].displayName;
+                    m_BindingTypeDropdown.SetValueWithoutNotify(choice);
+                }
             }
 
             var sourceToUiConvertersField = m_RootPropertyField.Q<UxmlAttributeField>(BindingConvertersToUiFieldName).Q<PropertyField>();

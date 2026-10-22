@@ -51,7 +51,7 @@ internal static class UxmlAssetUtilities
     static readonly Dictionary<string, string[]> s_PathPartsCache = new();
     [NoAutoStaticsCleanup] // temp scratch list, safe to persist
     static readonly List<UxmlObjectAsset> s_TempUxmlAssets = new();
-    [NoAutoStaticsCleanup] // reusable marshaling buffer, safe to persist
+    [NoAutoStaticsCleanup] // reusable marshaling buffer, emptied after each use
     static readonly object[] s_SingleUxmlSerializedData = new object[1];
 
     [NoAutoStaticsCleanup] // within-operation flag, safe to persist
@@ -183,9 +183,20 @@ internal static class UxmlAssetUtilities
                 uxmlSerializedDataList = s_SingleUxmlSerializedData;
             }
 
-            if (!SyncUxmlAssetsFromSerializedData(visualTreeAsset, uxmlSerializedDataList, parentUxmlSerializedData,
+            bool synced;
+            try
+            {
+                synced = SyncUxmlAssetsFromSerializedData(visualTreeAsset, uxmlSerializedDataList, parentUxmlSerializedData,
                     currentAttributesUxmlOwner, attributeObjectDescription, changeUxmlAssets, onRecordUndo,
-                    isInTemplateInstance, element, onDeserializeElement, getVisualElementAsset))
+                    isInTemplateInstance, element, onDeserializeElement, getVisualElementAsset);
+            }
+            finally
+            {
+                // This module stays loaded across a code reload, and the serialized data can be of a type from user code.
+                s_SingleUxmlSerializedData[0] = null;
+            }
+
+            if (!synced)
             {
                 if (!changeUxmlAssets)
                 {

@@ -139,6 +139,31 @@ namespace UnityEngine.UIElements.UIR
             return UIRUtility.GetAxisScale(in m);
         }
 
+        // In the owner's render tree points, the area a nested tree's capture starts from
+        static Rect ComputeBoundsInRenderTree(RenderData owner, out Vector2 contentScale)
+        {
+            UIRUtility.ComputeMatrixRelativeToRenderTree(owner, out Matrix4x4 elementToTree);
+            contentScale = UIRUtility.GetAxisScale(in elementToTree);
+            return VisualElement.CalculateConservativeRect(ref elementToTree, new Rect(Vector2.zero, owner.owner.layoutSize));
+        }
+
+        // In the owner's render tree points: its bounds, what its capture copies, and how far past any point its chain reads within that capture
+        public static void ComputeReadGeometryInRenderTree(RenderData owner, out Rect bounds, out Rect capture, out float reach)
+        {
+            var filters = owner.owner.computedStyle.backdropFilter;
+            bounds = ComputeBoundsInRenderTree(owner, out Vector2 contentScale);
+            capture = UIRUtility.InflateByMargins(bounds, FilterHelper.ComputeBackdropCaptureReadMargins(filters), contentScale);
+
+            var margins = FilterHelper.ComputeChainReadMargins(filters);
+            float maxMargin = Mathf.Max(Mathf.Max(margins.left, margins.right), Mathf.Max(margins.top, margins.bottom));
+
+            // A downscaled blur also samples a bilinear footprint, which ComputeDownscaleShift keeps within one sigma
+            maxMargin += ComputeMaxChainSigma(filters);
+
+            // Sigma scales per element axis while the capture blurs along the tree's axes, so the larger scale bounds both
+            reach = maxMargin * Mathf.Max(contentScale.x, contentScale.y);
+        }
+
         // Smallest per-pass sigma worth downsampling for; below it the kernel is already cheap.
         const float k_MinChainSigma = 2f;
 
@@ -379,9 +404,7 @@ namespace UnityEngine.UIElements.UIR
             {
                 // Nested render texture: remap the element's local rect into the nested tree root's
                 // space and through the active viewport. The ancestor scissor is clamped below in that same space.
-                UIRUtility.ComputeMatrixRelativeToRenderTree(owner, out Matrix4x4 elementToTreeRoot);
-                Rect localRect = new Rect(0, 0, ve.layoutSize.x, ve.layoutSize.y);
-                Rect treeBound = VisualElement.CalculateConservativeRect(ref elementToTreeRoot, localRect);
+                Rect treeBound = ComputeBoundsInRenderTree(owner, out contentScale);
                 if (treeBound.width <= UIRUtility.k_Epsilon || treeBound.height <= UIRUtility.k_Epsilon)
                     return;
 
@@ -390,7 +413,6 @@ namespace UnityEngine.UIElements.UIR
                     return;
 
                 captureRect = pixelRect;
-                contentScale = UIRUtility.GetAxisScale(in elementToTreeRoot);
                 InflateCapture(ref captureRect, chainMargins, topOriginRows,
                     scaleX * contentScale.x, scaleY * contentScale.y);
 

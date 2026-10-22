@@ -6,6 +6,7 @@ using System;
 using System.Collections.Generic;
 using Object = UnityEngine.Object;
 using Unity.UIToolkit.Editor.Importers;
+using Unity.UIToolkit.Editor.Utilities;
 using UnityEditor;
 using UnityEditor.SceneManagement;
 using UnityEngine.Pool;
@@ -345,20 +346,24 @@ static class VisualElementEditingUtility
 
     /// <summary>
     /// Whether the cut elements can move under the paste parent: none of them is the parent or one of its
-    /// ancestors, and none would leave the target document instantiating itself.
+    /// ancestors, none would leave the target document instantiating itself, and the parent has room for them.
     /// </summary>
     public static bool CanMoveCutElements(IReadOnlyList<VisualElementAsset> cutElements, VisualElement parentElement,
         VisualElementAsset parentAsset)
     {
         var targetDocument = parentAsset.visualTreeAsset;
+        var addedCount = 0;
         for (var i = 0; i < cutElements.Count; ++i)
         {
             var cutAsset = cutElements[i];
-            if (cutAsset == null)
+            if (cutAsset == null || cutAsset.visualTreeAsset == null)
                 continue;
 
             if (cutAsset == parentAsset || cutAsset.IsAncestorOf(parentAsset))
                 return false;
+
+            if (cutAsset.parentAsset != parentAsset)
+                ++addedCount;
 
             // Pasting a cut element into another document re-homes it, template instances and all, exactly like a
             // drag does — and can close the same cycle.
@@ -367,7 +372,7 @@ static class VisualElementEditingUtility
                 return false;
         }
 
-        return true;
+        return VisualElementUtility.CanAddChildren(parentAsset, addedCount);
     }
 
     /// <summary>

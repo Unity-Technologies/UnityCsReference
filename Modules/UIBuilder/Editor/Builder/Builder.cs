@@ -143,8 +143,9 @@ namespace Unity.UI.Builder
 
         internal bool isPrimaryWindow => m_IsPrimaryWindow;
 
-        // How a secondary window remembers its open file across editor restarts: the layout serializes windows
-        // and their asset references. Kept current by BuilderDocument.SaveToDisk.
+        // How a window the layout recreates as a secondary one (restart or maximize) remembers its open file:
+        // the layout serializes windows and their asset references. Kept current by FindOrCreateDocument and
+        // BuilderDocument.SaveToDisk.
         [SerializeField]
         VisualTreeAsset m_LastOpenedAsset;
 
@@ -152,13 +153,36 @@ namespace Unity.UI.Builder
         [SerializeField]
         StyleSheet m_LastOpenedStyleSheet;
 
-        internal void RememberRootAssetForLayout()
+        static void GetRootFile(BuilderDocument rootDocument, out VisualTreeAsset asset, out StyleSheet styleSheet)
         {
-            var openFiles = document.openUXMLFiles;
+            var openFiles = rootDocument.openUXMLFiles;
             var rootFile = openFiles.Count > 0 ? openFiles[0] : null;
             var rootAsset = rootFile?.visualTreeAsset;
-            m_LastOpenedAsset = rootAsset != null && EditorUtility.IsPersistent(rootAsset) ? rootAsset : null;
-            m_LastOpenedStyleSheet = rootFile?.openedStyleSheet;
+            asset = rootAsset != null && EditorUtility.IsPersistent(rootAsset) ? rootAsset : null;
+            styleSheet = rootFile?.openedStyleSheet;
+        }
+
+        internal void RememberRootAssetForLayout(BuilderDocument rootDocument)
+            => GetRootFile(rootDocument, out m_LastOpenedAsset, out m_LastOpenedStyleSheet);
+
+        // A lone window keeps the current file; reclaim only when a restored sibling will reopen the leftover one.
+        bool DefaultDocumentBelongsToSibling(BuilderDocument defaultDocument)
+        {
+            if (m_LastOpenedAsset == null && m_LastOpenedStyleSheet == null)
+                return false;
+
+            GetRootFile(defaultDocument, out var asset, out var styleSheet);
+            if (asset == m_LastOpenedAsset && styleSheet == m_LastOpenedStyleSheet)
+                return false;
+
+            foreach (var builderWindow in Resources.FindObjectsOfTypeAll<Builder>())
+            {
+                if (builderWindow != this && builderWindow.m_LastOpenedAsset == asset
+                    && builderWindow.m_LastOpenedStyleSheet == styleSheet)
+                    return true;
+            }
+
+            return false;
         }
 
         [MenuItem(BuilderConstants.BuilderMenuEntry)]
@@ -283,12 +307,20 @@ namespace Unity.UI.Builder
 
         protected override BuilderDocument FindOrCreateDocument()
         {
-            // The first window to need a document claims the primary role and with it the default document.
-            if (!m_IsPrimaryWindow && !AnyOtherWindowIsPrimary())
-                m_IsPrimaryWindow = true;
+            // The first window to need a document is primary; a stale flag from a layout snapshot yields to a live one.
+            m_IsPrimaryWindow = !AnyOtherWindowIsPrimary();
 
             if (m_IsPrimaryWindow)
-                return BuilderDocument.FindOrCreateDefaultInstance();
+            {
+                var defaultDocument = BuilderDocument.FindOrCreateDefaultInstance();
+                // A teardown can hand the default document to a sibling that dies; reclaim this window's file in it.
+                if (DefaultDocumentBelongsToSibling(defaultDocument))
+                    defaultDocument.ReopenAsRoot(m_LastOpenedAsset, m_LastOpenedStyleSheet);
+
+                // The default document outlives its window, so a new primary may adopt one that will not save again soon.
+                RememberRootAssetForLayout(defaultDocument);
+                return defaultDocument;
+            }
 
             var newDocument = BuilderDocument.CreateSecondaryInstance();
 
@@ -318,6 +350,9 @@ namespace Unity.UI.Builder
             // Host migration: hand the primary role to another open window before this one is gone.
             if (m_IsPrimaryWindow)
             {
+                // Give up the role first, or the promoted window's first document lookup still sees this window as primary.
+                m_IsPrimaryWindow = false;
+
                 foreach (var builderWindow in Resources.FindObjectsOfTypeAll<Builder>())
                 {
                     if (builderWindow == this)

@@ -309,6 +309,7 @@ namespace UnityEngine.UIElements.Internal
             this.columns.columnChanged += OnColumnChanged;
             this.columns.columnReordered += OnColumnReordered;
             this.columns.columnResized += OnColumnResized;
+            this.columns.changed += OnColumnsChanged;
 
             this.AddManipulator(new ContextualMenuManipulator(OnContextualMenuManipulator));
             RegisterCallback<GeometryChangedEvent>(OnGeometryChanged);
@@ -386,11 +387,15 @@ namespace UnityEngine.UIElements.Internal
         void UpdateColumnControls()
         {
             bool hasStretch = false;
+            bool hasFlexibleWidth = false;
+            float intrinsicWidth = 0;
             Column lastVisibleColumn = null;
 
             foreach (var col in columns.visibleList)
             {
                 hasStretch |= col.stretchable;
+                hasFlexibleWidth |= col.stretchable || col.width.unit != LengthUnit.Pixel;
+                intrinsicWidth += GetIntrinsicWidth(col);
 
                 ColumnData columnData = null;
 
@@ -403,22 +408,35 @@ namespace UnityEngine.UIElements.Internal
                 lastVisibleColumn = col;
             }
 
+            columnContainer.style.flexBasis = intrinsicWidth;
+            columnContainer.style.flexGrow = hasFlexibleWidth ? 1 : 0;
+
             if (hasStretch)
             {
-                columnContainer.style.flexGrow = 1;
-
                 // If there is at least one stretchable column then hide the last resizer
                 if (columns.stretchMode == Columns.StretchMode.GrowAndFill && columnDataMap.TryGetValue(lastVisibleColumn, out var columnData))
                 {
                     columnData.resizeHandle.style.display = DisplayStyle.None;
                 }
             }
-            else
-            {
-                columnContainer.style.flexGrow = 0;
-            }
 
             UpdateSortingStatus();
+        }
+
+        float GetIntrinsicWidth(Column column)
+        {
+            var minWidth = column.GetMinWidth(0);
+            if (column.width.unit != LengthUnit.Pixel || (column.stretchable && columns.stretchMode == Columns.StretchMode.GrowAndFill))
+                return minWidth;
+
+            var maxWidth = column.maxWidth.unit == LengthUnit.Pixel ? column.maxWidth.value : Length.k_MaxValue;
+            return Mathf.Clamp(column.width.value, minWidth, maxWidth);
+        }
+
+        void OnColumnsChanged(ColumnsDataType type)
+        {
+            if (type == ColumnsDataType.StretchMode)
+                UpdateColumnControls();
         }
 
         void OnColumnAdded(Column column, int index) => OnColumnAdded(column);
@@ -876,6 +894,7 @@ namespace UnityEngine.UIElements.Internal
             columns.columnChanged -= OnColumnChanged;
             columns.columnReordered -= OnColumnReordered;
             columns.columnResized -= OnColumnResized;
+            columns.changed -= OnColumnsChanged;
 
             foreach (var data in columnDataMap.Values)
             {

@@ -19,6 +19,7 @@ namespace Unity.ProjectAuditor.Editor.Core
         FileType,
         Platform,
         IsIgnored,
+        Id,
         Num
     }
 

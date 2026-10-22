@@ -217,6 +217,20 @@ internal static partial class StyleVariableUtility
         return info;
     }
 
+    public static Color? GetColor(in VariableInfo varInfo)
+    {
+        var handles = varInfo.StyleVariable.handles;
+        if (varInfo.Sheet == null || handles == null || handles.Length == 0)
+            return null;
+
+        if (handles[0].valueType == StyleValueType.Color)
+            return varInfo.Sheet.ReadColor(handles[0]);
+        if (handles[0].valueType == StyleValueType.Enum
+            && StyleSheetColor.TryGetColor(varInfo.Sheet.ReadAsString(handles[0]).ToLowerInvariant(), out var namedColor))
+            return namedColor;
+        return null;
+    }
+
     static VariableInfo FindVariableInElement(VisualElement element, string variableName, bool editorExtensionMode)
     {
         var variables = element.variableContext.variables;

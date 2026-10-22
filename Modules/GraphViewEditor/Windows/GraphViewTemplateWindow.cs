@@ -1097,6 +1097,7 @@ namespace UnityEditor.Experimental.GraphView
                 m_TemplatesTree.Add(new TreeViewItemData<ITemplateDescriptor>(groupId, section, children));
             }
 
+            m_ListOfTemplates.ClearSelection();
             m_ListOfTemplates.SetRootItems(m_TemplatesTree);
             if (isSearchCompleted)
             {

@@ -173,9 +173,10 @@ namespace Unity.ProjectAuditor.Editor.CodeAnalysis
             LogWarnings(result.Warnings);
         }
 
-        static Descriptor ToDescriptor(Diagnostic diagnostic)
+        internal static Descriptor ToDescriptor(Diagnostic diagnostic)
         {
             Enum.TryParse(diagnostic.category, out Areas area);
+            var isCodeQualityRule = diagnostic.id.StartsWith("CA", StringComparison.Ordinal);
 
             // Map some areas used in our own analyzers, to areas Project Auditor understands
             if (area == Areas.None)
@@ -186,6 +187,8 @@ namespace Unity.ProjectAuditor.Editor.CodeAnalysis
                     area = Areas.IterationTime | Areas.MigrationToCoreCLR;
                 else if (diagnostic.category == "BinaryFormatter")
                     area = Areas.MigrationToCoreCLR;
+			    else if (isCodeQualityRule)
+                    area = Areas.Quality;
             }
 
             var messageParts = diagnostic.messageFormat.Split('\n');
@@ -199,7 +202,8 @@ namespace Unity.ProjectAuditor.Editor.CodeAnalysis
             )
             {
                 MessageFormat = messageParts[0].Contains("{0}") ? messageParts[0] : string.Empty,
-                DocumentationUrl = diagnostic.helpLinkUri
+                DocumentationUrl = diagnostic.helpLinkUri,
+                DefaultSeverity = isCodeQualityRule ? Severity.Minor : Severity.Moderate
             };
         }
 

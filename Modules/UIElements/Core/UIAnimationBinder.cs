@@ -267,6 +267,26 @@ namespace UnityEngine.UIElements
                     break;
                 }
 
+                case PropertyType.BoxShadow:
+                {
+                    // Layout: 0..3 = color.r/g/b/a, 4..5 = offset.x/y, 6 = blurRadius, 7 = spreadRadius, 8 = inset (Int).
+                    var bs = e.computedStyle.ReadPropertyAnimationBoxShadow(id);
+                    switch (channel)
+                    {
+                        case 0: bs.color.r = value; break;
+                        case 1: bs.color.g = value; break;
+                        case 2: bs.color.b = value; break;
+                        case 3: bs.color.a = value; break;
+                        case 4: bs.offset.x = value; break;
+                        case 5: bs.offset.y = value; break;
+                        case 6: bs.blurRadius = Mathf.Max(0, value); break;
+                        case 7: bs.spreadRadius = value; break;
+                        case 8: bs.inset = BitConverter.SingleToInt32Bits(value) != 0; break;
+                    }
+                    e.computedStyle.ApplyPropertyAnimation(e, id, bs);
+                    break;
+                }
+
                 case PropertyType.TransformOrigin:
                 {
                     // Layout: 0/1 = x LengthBlock, 2/3 = y LengthBlock. z exists on the struct but is not animated.
@@ -382,6 +402,20 @@ namespace UnityEngine.UIElements
                     4 => element.computedStyle.ReadPropertyAnimationTextShadow(id).offset.x,
                     5 => element.computedStyle.ReadPropertyAnimationTextShadow(id).offset.y,
                     6 => element.computedStyle.ReadPropertyAnimationTextShadow(id).blurRadius,
+                    _ => throw new NotImplementedException(),
+                },
+                PropertyType.BoxShadow => channel switch
+                {
+                    // Layout: 0..3 = color.r/g/b/a, 4..5 = offset.x/y, 6 = blurRadius, 7 = spreadRadius, 8 = inset (Int).
+                    0 => element.computedStyle.ReadPropertyAnimationBoxShadow(id).color.r,
+                    1 => element.computedStyle.ReadPropertyAnimationBoxShadow(id).color.g,
+                    2 => element.computedStyle.ReadPropertyAnimationBoxShadow(id).color.b,
+                    3 => element.computedStyle.ReadPropertyAnimationBoxShadow(id).color.a,
+                    4 => element.computedStyle.ReadPropertyAnimationBoxShadow(id).offset.x,
+                    5 => element.computedStyle.ReadPropertyAnimationBoxShadow(id).offset.y,
+                    6 => element.computedStyle.ReadPropertyAnimationBoxShadow(id).blurRadius,
+                    7 => element.computedStyle.ReadPropertyAnimationBoxShadow(id).spreadRadius,
+                    8 => BitConverter.Int32BitsToSingle(element.computedStyle.ReadPropertyAnimationBoxShadow(id).inset ? 1 : 0),
                     _ => throw new NotImplementedException(),
                 },
 
@@ -528,6 +562,7 @@ namespace UnityEngine.UIElements
                 PropertyType.BackgroundRepeat => throw new InvalidOperationException(),
                 PropertyType.BackgroundSize => throw new InvalidOperationException(),
                 PropertyType.TextShadow => throw new InvalidOperationException(),
+                PropertyType.BoxShadow => throw new InvalidOperationException(),
                 PropertyType.TextAutoSize => throw new InvalidOperationException(),
 
                 // `.p<n>` and `.type` go through GetFloatValue; only `.customDefinition` arrives here.

@@ -25,5 +25,18 @@ namespace UnityEngine.Bindings
         {
             return adelegate != null ? Marshal.GetFunctionPointerForDelegate(adelegate) : IntPtr.Zero;
         }
+
+        // The two proxy generators build the table field list independently, so only a runtime compare catches a mismatch
+        public static void ValidateFcnPtrStructSize(int nativeSize, int managedSize, string assemblyName)
+        {
+            if (nativeSize != managedSize)
+            {
+                throw new InvalidOperationException(
+                    "Proxy function pointer table size mismatch for " + assemblyName + ": native struct is " +
+                    nativeSize + " bytes, managed struct is " + managedSize +
+                    " bytes. The native and managed proxy generators disagree on which methods get a table entry; " +
+                    "populating the table would write outside the native allocation.");
+            }
+        }
     }
 }

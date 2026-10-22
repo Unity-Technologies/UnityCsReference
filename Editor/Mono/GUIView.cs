@@ -316,13 +316,13 @@ namespace UnityEditor
         }
 
         [RequiredByNativeCode]
-        internal string GetViewName()
+        internal static string GetViewName(ScriptableObject scriptableObject)
         {
-            var hostView = this as HostView;
+            var hostView = scriptableObject as HostView;
             if (hostView != null && hostView.actualView != null)
                 return hostView.actualView.GetType().Name;
 
-            return GetType().Name;
+            return scriptableObject?.GetType().Name ?? string.Empty;
         }
 
         [RequiredByNativeCode]

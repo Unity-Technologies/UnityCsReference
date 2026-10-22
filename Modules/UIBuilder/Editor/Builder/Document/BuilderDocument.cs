@@ -250,6 +250,21 @@ namespace Unity.UI.Builder
 
         internal void ReopenStyleSheet(StyleSheet styleSheet) => activeOpenUXMLFile.ReopenStyleSheet(styleSheet);
 
+        // Reopens the given file as the only root, in place, so whoever holds this document keeps it.
+        internal void ReopenAsRoot(VisualTreeAsset asset, StyleSheet styleSheet)
+        {
+            foreach (var openUXMLFile in m_OpenUXMLFiles)
+                openUXMLFile.Clear();
+            m_OpenUXMLFiles.Clear();
+
+            if (asset != null)
+                ReopenAsset(asset);
+            else if (styleSheet != null)
+                ReopenStyleSheet(styleSheet);
+
+            SaveToDisk();
+        }
+
         // Called when the owning secondary window closes for good: release what the open files hold (registry
         // references, backups) and destroy the document. The default document is never destroyed; it lingers so
         // the next primary window can restore it.
@@ -651,13 +666,11 @@ namespace Unity.UI.Builder
 
         public void SaveToDisk()
         {
+            (primaryViewportWindow as Builder)?.RememberRootAssetForLayout(this);
+
             // There is a single on-disk state file; a secondary document persisting would clobber the default's.
-            // Its window remembers the open file through the editor layout's serialization instead.
             if (!m_IsDefaultDocument)
-            {
-                (primaryViewportWindow as Builder)?.RememberRootAssetForLayout();
                 return;
-            }
 
             var json = EditorJsonUtility.ToJson(this, true);
 

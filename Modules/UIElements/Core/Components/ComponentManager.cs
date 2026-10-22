@@ -190,6 +190,13 @@ namespace UnityEngine.UIElements
 
         internal static bool IsSharedManagerShutDown => s_State == SharedManagerState.Shutdown;
 
+        // Test-only: DisposeAll is one-way, so a test flips the gate around the call under test and restores it.
+        internal static bool TestOnlyShutDownGate
+        {
+            get => IsSharedManagerShutDown;
+            set => s_State = value ? SharedManagerState.Shutdown : SharedManagerState.Initialized;
+        }
+
         // Registration bookkeeping, populated by GetOrCreateStore and enumerated by DisposeAll on
         // shutdown. The hot path reads ComponentManager<T>.Record directly, never this dictionary.
         readonly Dictionary<RuntimeTypeHandle, PerTypeStore> m_StoresByComponentType = new();
@@ -295,7 +302,7 @@ namespace UnityEngine.UIElements
         /// </summary>
         internal void EnqueueFree(PerTypeStore record, in UnmanagedDataHandle handle)
         {
-            if (record == null || handle.IsUndefined || !Owns(record))
+            if (record == null || handle.IsUndefined || !Owns(record) || IsSharedManagerShutDown)
                 return;
 
             m_ToFree.Enqueue(new FreeRequest { record = record, handle = handle });
@@ -313,11 +320,13 @@ namespace UnityEngine.UIElements
         /// <remarks>
         /// Holding the box strongly on the queue cannot re-root its element. The two callers are
         /// <c>RemoveComponent</c>, where the element is alive and holds the box anyway, and
-        /// <c>~VisualElement</c>, by which point the element is already unreachable.
+        /// <c>~VisualElement</c>, by which point the element is already unreachable. After shutdown
+        /// nothing drains the queue, so the request is dropped: a queued box would be rooted by the
+        /// shared manager for good, and <c>DisposeAll</c> already released it.
         /// </remarks>
         internal void EnqueueFree(PerTypeStore record, IManagedComponentBox box)
         {
-            if (record == null || box == null || !Owns(record))
+            if (record == null || box == null || !Owns(record) || IsSharedManagerShutDown)
                 return;
 
             m_ToFree.Enqueue(new FreeRequest { record = record, box = box });

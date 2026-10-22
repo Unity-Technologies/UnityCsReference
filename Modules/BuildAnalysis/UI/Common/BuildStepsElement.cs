@@ -148,6 +148,8 @@ namespace UnityEditor.Build.Analysis
             // resolves its width before Rebuild() is called — required for the
             // stretchable name column to size correctly.
             m_TreeView.style.height = 0;
+            // The default theme gives collection views a 40px min-height, which would keep the empty tree open.
+            m_TreeView.style.minHeight = 0;
         }
 
         public void Bind(BuildAnalysis analysis, BuildLogMessages messages)
@@ -198,6 +200,8 @@ namespace UnityEditor.Build.Analysis
         private void SetEmpty()
         {
             m_StepPathById.Clear();
+            m_TreeView.SetRootItems(new List<TreeViewItemData<StepItemData>>());
+            m_TreeView.Rebuild();
             m_TreeView.style.height = 0;
             m_EmptyLabel.style.display = string.IsNullOrEmpty(m_EmptyLabel.text) ? DisplayStyle.None : DisplayStyle.Flex;
         }

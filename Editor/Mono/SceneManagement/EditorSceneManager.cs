@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using System.Runtime.InteropServices;
 using Unity.Scripting.LifecycleManagement;
 using UnityEngine;
 using UnityEngine.Scripting;
@@ -102,8 +103,13 @@ namespace UnityEditor.SceneManagement
         private static EventWithPerformanceTracker<SceneDirtiedCallback> m_SceneDirtiedEvent = new EventWithPerformanceTracker<SceneDirtiedCallback>($"{nameof(EditorSceneManager)}.{nameof(sceneDirtied)}");
 
         [RequiredByNativeCode]
-        private static void Internal_SceneManagerSetupRestored(Scene[] scenes)
+        private static void Internal_SceneManagerSetupRestored(ReadOnlySpan<ulong> rawSceneHandles)
         {
+            var sceneHandles = MemoryMarshal.Cast<ulong, SceneHandle>(rawSceneHandles);
+            var scenes = new Scene[sceneHandles.Length];
+            for (int i = 0; i < sceneHandles.Length; i++)
+                scenes[i] = new Scene(sceneHandles[i]);
+
             foreach (var evt in m_SceneManagerSetupRestoredEvent)
                 evt(scenes);
         }

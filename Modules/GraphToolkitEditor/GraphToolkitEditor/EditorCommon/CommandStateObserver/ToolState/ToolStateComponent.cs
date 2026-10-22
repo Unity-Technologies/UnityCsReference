@@ -263,7 +263,6 @@ namespace Unity.GraphToolkit.Editor
         /// <returns>The <see cref="GraphModel"/> at index <paramref name="index"/> in the <see cref="SubgraphStack"/>.</returns>
         public GraphModel GetSubGraphModel(int index)
         {
-            var graphObject = GetSubGraphObject(index);
             if (m_CurrentGraph.GraphObject == null && !ReferenceEquals(m_CurrentGraph.GraphObject, null))
             {
                 return null;

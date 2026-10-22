@@ -97,12 +97,13 @@ namespace Unity.ProjectAuditor.Editor.Modules
             }
         };
 
-        static readonly IssueLayout k_IssueLayout = new IssueLayout
+        internal static readonly IssueLayout k_IssueLayout = new IssueLayout
         {
             Category = IssueCategory.Code,
             Properties = new[]
             {
                 new PropertyDefinition { Type = PropertyType.Description, Name = "Issue", LongName = "Issue description", MaxAutoWidth = 800 },
+                new PropertyDefinition { Type = PropertyType.Id, Name = "ID", LongName = "Rule ID"},
                 new PropertyDefinition { Type = PropertyType.Severity, Format = PropertyFormat.String, Name = "Severity"},
                 new PropertyDefinition { Type = PropertyType.Areas, Name = "Areas", LongName = "The areas the issue might have an impact on"},
                 new PropertyDefinition { Type = PropertyTypeUtil.FromCustom(CodeProperty.CodeLocation), Format = PropertyFormat.String, Name = "Location", LongName = "Code Location" },
@@ -119,7 +120,7 @@ namespace Unity.ProjectAuditor.Editor.Modules
             Properties = new[]
             {
                 new PropertyDefinition { Type = PropertyType.LogLevel, Name = "Log Level"},
-                new PropertyDefinition { Type = PropertyTypeUtil.FromCustom(CompilerMessageProperty.Code), Format = PropertyFormat.String, Name = "Code", IsDefaultGroup = true},
+                new PropertyDefinition { Type = PropertyTypeUtil.FromCustom(CompilerMessageProperty.Code), Format = PropertyFormat.String, Name = "ID", IsDefaultGroup = true},
                 new PropertyDefinition { Type = PropertyType.Description, Format = PropertyFormat.String, Name = "Message", LongName = "Compiler Message"},
                 new PropertyDefinition { Type = PropertyType.Filename, Name = "Filename", LongName = "Filename and line number"},
                 new PropertyDefinition { Type = PropertyTypeUtil.FromCustom(CompilerMessageProperty.Assembly), Format = PropertyFormat.String, Name = "Assembly", LongName = "Managed Assembly name" },
@@ -157,6 +158,9 @@ namespace Unity.ProjectAuditor.Editor.Modules
 
         // Match a whole "word", starting with UDR and ending with exactly 4 digits, e.g. UDR1234
         static readonly Regex s_RegEx = new Regex(@"\bUAL\d{4}\b");
+
+        // Only IDs of this shape can be written to the globalconfig without corrupting it
+        static readonly Regex s_DiagnosticIdRegEx = new Regex(@"^[A-Za-z]+\d+\z");
 
         public override IReadOnlyCollection<IssueLayout> SupportedLayouts => new IssueLayout[]
         {
@@ -528,7 +532,11 @@ namespace Unity.ProjectAuditor.Editor.Modules
         static void WriteGlobalConfig()
         {
             var globalConfigPath = Path.Combine(ProjectAuditor.ProjectPath, "Library", "ScriptAnalysis.globalconfig");
+            File.WriteAllText(globalConfigPath, BuildGlobalConfig());
+        }
 
+        internal static string BuildGlobalConfig()
+        {
             var globalConfig = new StringBuilder();
             globalConfig.Append(
                 "is_global = true\n" +
@@ -543,12 +551,12 @@ namespace Unity.ProjectAuditor.Editor.Modules
                 "dotnet_diagnostic.UAL0013.severity = warning\n" +
                 "dotnet_diagnostic.UAL0014.severity = warning\n");
 
+            var suppressedDiagnostics = UserPreferences.BuildSuppressedDiagnosticsSet();
+
             // Enable all known code diagnostics, except those we have suppressed
             var diagnostics = RoslynDiagnosticsLibrary.Diagnostics;
             if (diagnostics != null)
             {
-                var suppressedDiagnostics = UserPreferences.BuildSuppressedDiagnosticsSet();
-
                 foreach (var diagnostic in diagnostics)
                 {
                     if (!suppressedDiagnostics.Contains(diagnostic.Id))
@@ -556,7 +564,14 @@ namespace Unity.ProjectAuditor.Editor.Modules
                 }
             }
 
-            File.WriteAllText(globalConfigPath, globalConfig.ToString());
+            // Some analyzer rules are enabled by default, so suppressed ones must be switched off explicitly
+            foreach (var id in suppressedDiagnostics)
+            {
+                if (s_DiagnosticIdRegEx.IsMatch(id))
+                    globalConfig.Append($"dotnet_diagnostic.{id.ToUpperInvariant()}.severity = none\n");
+            }
+
+            return globalConfig.ToString();
         }
 
         // Feeds every analyzer found by label into the Analysis build.

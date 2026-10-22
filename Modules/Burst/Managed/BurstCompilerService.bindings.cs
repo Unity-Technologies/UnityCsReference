@@ -121,14 +121,12 @@ namespace Unity.Burst.LowLevel
         [RequiredByNativeCode]
         static string InvokeExtractCompilerFlags(
             Delegate extractCompilerFlagsDelegate,
-            IntPtr jobTypeHandle,
+            Type jobTypeHandle,
             ref bool didGetFlags)
         {
             ExtractCompilerFlags typedDelegate = (ExtractCompilerFlags)extractCompilerFlagsDelegate;
 
-            var jobType = SystemReflectionMarshalling.UnmarshalSystemType(jobTypeHandle);
-
-            didGetFlags = typedDelegate.Invoke(jobType, out var compilerFlags);
+            didGetFlags = typedDelegate.Invoke(jobTypeHandle, out var compilerFlags);
             return compilerFlags;
         }
     }

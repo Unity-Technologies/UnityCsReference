@@ -1269,10 +1269,7 @@ namespace UnityEngine.UIElements
 
         protected internal override void PostDispatch(IPanel panel)
         {
-            for (var i = 0; i < PointerId.maxPointers; i++)
-            {
-                panel.ProcessPointerCapture(i);
-            }
+            panel.ProcessAllPointerCaptures();
 
             ((EventBase)compatibilityMouseEvent)?.PostDispatch(panel);
 

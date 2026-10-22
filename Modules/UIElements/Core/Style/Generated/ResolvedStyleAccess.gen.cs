@@ -47,6 +47,7 @@ namespace UnityEngine.UIElements
         public float borderTopRightRadius => ve.computedStyle.borderTopRightRadius.value;
         public float borderTopWidth => ve.layoutNode.LayoutBorderTop;
         public float bottom => ve.layoutNode.LayoutBottom;
+        public BoxShadow boxShadow => ve.computedStyle.boxShadow;
         public Color color => ve.computedStyle.color;
         public float columnGap => ve.ResolveGapValue(ve.computedStyle.columnGap, true);
         public DisplayStyle display => ve.computedStyle.display;
@@ -187,6 +188,8 @@ namespace UnityEngine.UIElements
         float IResolvedStyle.borderTopWidth => resolvedStyle.borderTopWidth;
 
         float IResolvedStyle.bottom => resolvedStyle.bottom;
+
+        BoxShadow IResolvedStyle.boxShadow => resolvedStyle.boxShadow;
 
         Color IResolvedStyle.color => resolvedStyle.color;
 

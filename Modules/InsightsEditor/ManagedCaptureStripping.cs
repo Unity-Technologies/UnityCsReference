@@ -31,7 +31,7 @@ namespace UnityEditorInternal
         // OTA) has nothing to inject, so the linker skips injection entirely either way.
         static string ProvideConfig()
         {
-            if (!UnityEditor.EngineDiagnostics.EngineDiagnosticsSettings.enabled)
+            if (!UnityEditor.EngineDiagnostics.EngineDiagnosticsSettings.IsEnabled())
                 return null;
             if (!UnityEditor.EngineDiagnostics.EngineDiagnosticsSettings.IsFeatureSupported(EditorUserBuildSettings.activeBuildTarget))
                 return null;

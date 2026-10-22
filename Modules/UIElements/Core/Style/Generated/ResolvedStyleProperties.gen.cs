@@ -45,6 +45,7 @@ namespace UnityEngine.UIElements
             internal static readonly BindingId borderTopRightRadiusProperty = "resolvedStyle." + nameof(IResolvedStyle.borderTopRightRadius);
             internal static readonly BindingId borderTopWidthProperty = "resolvedStyle." + nameof(IResolvedStyle.borderTopWidth);
             internal static readonly BindingId bottomProperty = "resolvedStyle." + nameof(IResolvedStyle.bottom);
+            internal static readonly BindingId boxShadowProperty = "resolvedStyle." + nameof(IResolvedStyle.boxShadow);
             internal static readonly BindingId colorProperty = "resolvedStyle." + nameof(IResolvedStyle.color);
             internal static readonly BindingId columnGapProperty = "resolvedStyle." + nameof(IResolvedStyle.columnGap);
             internal static readonly BindingId displayProperty = "resolvedStyle." + nameof(IResolvedStyle.display);

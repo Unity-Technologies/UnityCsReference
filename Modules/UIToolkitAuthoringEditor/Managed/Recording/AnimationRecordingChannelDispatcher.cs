@@ -344,6 +344,22 @@ namespace Unity.UIToolkit.Editor
                     }
                     return false;
 
+                case StylePropertyRecordingChannel.BoxShadow9:
+                    if (typeof(T) == typeof(StyleBoxShadow))
+                    {
+                        var sts = Unsafe.As<T, StyleBoxShadow>(ref v);
+                        if (sts.keyword != StyleKeyword.Undefined)
+                            return false;
+                        cs.ApplyPropertyAnimation(element, id, sts.value);
+                        return true;
+                    }
+                    if (typeof(T) == typeof(BoxShadow))
+                    {
+                        cs.ApplyPropertyAnimation(element, id, Unsafe.As<T, BoxShadow>(ref v));
+                        return true;
+                    }
+                    return false;
+
                 case StylePropertyRecordingChannel.Cursor3:
                     if (typeof(T) == typeof(StyleCursor))
                     {
@@ -695,6 +711,21 @@ namespace Unity.UIToolkit.Editor
                     {
                         var tmp = cs.ReadPropertyAnimationTextShadow(stylePropertyId);
                         previousValue = Unsafe.As<TextShadow, T>(ref tmp);
+                        return true;
+                    }
+                    return false;
+
+                case StylePropertyRecordingChannel.BoxShadow9:
+                    if (typeof(T) == typeof(StyleBoxShadow))
+                    {
+                        var tmp = new StyleBoxShadow(cs.ReadPropertyAnimationBoxShadow(stylePropertyId));
+                        previousValue = Unsafe.As<StyleBoxShadow, T>(ref tmp);
+                        return true;
+                    }
+                    if (typeof(T) == typeof(BoxShadow))
+                    {
+                        var tmp = cs.ReadPropertyAnimationBoxShadow(stylePropertyId);
+                        previousValue = Unsafe.As<BoxShadow, T>(ref tmp);
                         return true;
                     }
                     return false;
@@ -1132,6 +1163,33 @@ namespace Unity.UIToolkit.Editor
                         return false;
                     }
                     AnimationRecordingStyleBridge.AddTextShadowMods(list, target, elementPath, propName, prevTs, curTs);
+                    return true;
+                }
+
+                case StylePropertyRecordingChannel.BoxShadow9:
+                {
+                    // 9 channels via AddBoxShadowMods: .color.r/.g/.b/.a + .offset.x/.y + .blurRadius + .spreadRadius + .inset.
+                    BoxShadow prevBs;
+                    BoxShadow curBs;
+                    if (typeof(T) == typeof(StyleBoxShadow))
+                    {
+                        var sbsPrev = Unsafe.As<T, StyleBoxShadow>(ref p);
+                        var sbsCur = Unsafe.As<T, StyleBoxShadow>(ref c);
+                        if (sbsPrev.keyword != StyleKeyword.Undefined || sbsCur.keyword != StyleKeyword.Undefined)
+                            return false;
+                        prevBs = sbsPrev.value;
+                        curBs = sbsCur.value;
+                    }
+                    else if (typeof(T) == typeof(BoxShadow))
+                    {
+                        prevBs = Unsafe.As<T, BoxShadow>(ref p);
+                        curBs = Unsafe.As<T, BoxShadow>(ref c);
+                    }
+                    else
+                    {
+                        return false;
+                    }
+                    AnimationRecordingStyleBridge.AddBoxShadowMods(list, target, elementPath, propName, prevBs, curBs);
                     return true;
                 }
 

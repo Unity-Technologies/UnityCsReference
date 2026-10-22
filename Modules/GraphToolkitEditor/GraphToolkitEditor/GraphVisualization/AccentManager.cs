@@ -92,6 +92,9 @@ class AccentManager<TView> where TView : ChildView, IAccentAnimatableView
     {
         foreach (var req in m_Store.Requests)
         {
+            if (!HasView(req.Key))
+                continue;
+
             foreach (var requestPerGroup in req.Value)
             {
                 switch (requestPerGroup)
@@ -114,6 +117,9 @@ class AccentManager<TView> where TView : ChildView, IAccentAnimatableView
     {
         foreach (var req in m_Store.Requests)
         {
+            if (!HasView(req.Key))
+                continue;
+
             foreach (var requestPerGroup in req.Value)
             {
                 switch (requestPerGroup)
@@ -136,6 +142,8 @@ class AccentManager<TView> where TView : ChildView, IAccentAnimatableView
             throw new ArgumentException($"Invalid {typeof(TView).Name} id", nameof(id));
         return view;
     }
+
+    bool HasView(Hash128 id) => id.GetView<TView>(m_Session.GraphView) != null;
 
     /// <summary>
     /// Sets the fill amount on an element's accent bar.
@@ -219,8 +227,9 @@ class AccentManager<TView> where TView : ChildView, IAccentAnimatableView
         if (!Enabled)
             return;
 
-        if (m_Session.GraphView != null)
-            m_Session.GraphView.Animator.Pause(GetView(id));
+        var graphView = m_Session.GraphView;
+        if (graphView != null)
+            graphView.Animator.Pause(GetView(id));
     }
 
     /// <summary>

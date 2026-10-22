@@ -75,6 +75,16 @@ unsafe struct LayoutComputedData
     public Vector2 GetPosition()
         => new(Position[(int)LayoutLayoutEdge.Left], Position[(int)LayoutLayoutEdge.Top]);
 
+    [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
+    public void GetPadding(out float left, out float top, out float right, out float bottom)
+    {
+        var rtl = Direction == LayoutDirection.RTL;
+        left = Padding[rtl ? (int)LayoutLayoutEdge.End : (int)LayoutLayoutEdge.Start];
+        top = Padding[(int)LayoutLayoutEdge.Top];
+        right = Padding[rtl ? (int)LayoutLayoutEdge.Start : (int)LayoutLayoutEdge.End];
+        bottom = Padding[(int)LayoutLayoutEdge.Bottom];
+    }
+
     public float* MarginBuffer
     {
         [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]

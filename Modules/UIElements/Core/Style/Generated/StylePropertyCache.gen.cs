@@ -165,6 +165,10 @@ namespace UnityEngine.UIElements.StyleSheets
                 "<length-percentage> | auto"
             },
                         {
+                "box-shadow",
+                "none | [ inset? && <length>{2,4} && <color>? ]"
+            },
+                        {
                 "color",
                 "<color>"
             },

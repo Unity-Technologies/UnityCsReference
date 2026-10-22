@@ -1635,7 +1635,7 @@ Would you like to save these changes?
             UpdateGraphViewFocus();
         }
 
-        Hash128 GetRootGraphModelGuid()
+        internal Hash128 GetRootGraphModelGuid()
         {
             if (GraphTool?.ToolState?.SubgraphStack is { Count: > 0 })
             {
@@ -1684,7 +1684,7 @@ Would you like to save these changes?
 
             m_CurrentVisualizationContextId = session.VisualizationContextID;
             m_IsVisualizationContextAttached = true;
-            session.SessionIsAttached = true;
+            session.AttachViews();
         }
 
         void OnVisualizationContextWillUnregister(Hash128 visualizationContextId)

@@ -221,7 +221,7 @@ namespace Unity.U2D.Physics
 
         /// <undoc/>
         [RequiredByNativeCode]
-        static void SendDrawResults(bool isRenderingAllowed, bool alwaysDrawWorlds, PhysicsWorld physicsWorld, ref PhysicsWorld.DrawResults drawResults, PhysicsWorld.TransformPlane transformPlane, ref Matrix4x4 transformPlaneCustomMatrix, float thickness, float fillAlpha, bool disableDrawOverride)
+        static void SendDrawResults(bool isRenderingAllowed, bool alwaysDrawWorlds, PhysicsWorld physicsWorld, ref PhysicsWorld.DrawResults drawResults, PhysicsWorld.TransformPlane transformPlane, in Matrix4x4 transformPlaneCustomMatrix, float thickness, float fillAlpha, bool disableDrawOverride)
         {
             // The Editor can hide the view being rendered; a world that opts out of the draw override is never hidden.
             // The world draw results event below still fires either way.
@@ -250,7 +250,7 @@ namespace Unity.U2D.Physics
                         drawerGroup ??= s_DrawerGroups[worldIndex] = new DrawerGroup();
 
                         // Draw the drawer group.
-                        drawerGroup.Draw(rendererCommandBuffer: s_RendererCommandBuffer, drawResults: ref drawResults, thickness: thickness, fillAlpha: fillAlpha, transformPlane: transformPlane, transformPlaneCustomMatrix: ref transformPlaneCustomMatrix);
+                        drawerGroup.Draw(rendererCommandBuffer: s_RendererCommandBuffer, drawResults: ref drawResults, thickness: thickness, fillAlpha: fillAlpha, transformPlane: transformPlane, transformPlaneCustomMatrix: in transformPlaneCustomMatrix);
                     }
                 }
             }
@@ -290,11 +290,11 @@ namespace Unity.U2D.Physics
             }
 
             /// <undoc/>
-            public void Draw(CommandBuffer rendererCommandBuffer, ref PhysicsWorld.DrawResults drawResults, float thickness, float fillAlpha, PhysicsWorld.TransformPlane transformPlane, ref Matrix4x4 transformPlaneCustomMatrix)
+            public void Draw(CommandBuffer rendererCommandBuffer, ref PhysicsWorld.DrawResults drawResults, float thickness, float fillAlpha, PhysicsWorld.TransformPlane transformPlane, in Matrix4x4 transformPlaneCustomMatrix)
             {
                 // Draw all the drawers.
                 foreach (var drawer in m_Drawers)
-                    drawer.Draw(rendererCommandBuffer: rendererCommandBuffer, drawResults: ref drawResults, thickness: thickness, fillAlpha: fillAlpha, transformPlane: transformPlane, transformPlaneCustomMatrix: ref transformPlaneCustomMatrix);
+                    drawer.Draw(rendererCommandBuffer: rendererCommandBuffer, drawResults: ref drawResults, thickness: thickness, fillAlpha: fillAlpha, transformPlane: transformPlane, transformPlaneCustomMatrix: in transformPlaneCustomMatrix);
             }
 
             /// <undoc/>
@@ -351,7 +351,7 @@ namespace Unity.U2D.Physics
                 }
 
                 /// <undoc/>
-                public abstract void Draw(CommandBuffer rendererCommandBuffer, ref PhysicsWorld.DrawResults drawResults, float thickness, float fillAlpha, PhysicsWorld.TransformPlane transformPlane, ref Matrix4x4 transformPlaneCustomMatrix);
+                public abstract void Draw(CommandBuffer rendererCommandBuffer, ref PhysicsWorld.DrawResults drawResults, float thickness, float fillAlpha, PhysicsWorld.TransformPlane transformPlane, in Matrix4x4 transformPlaneCustomMatrix);
             }
 
             /// <summary>
@@ -367,7 +367,7 @@ namespace Unity.U2D.Physics
                 }
 
                 /// <undoc/>
-                public override void Draw(CommandBuffer rendererCommandBuffer, ref PhysicsWorld.DrawResults drawResults, float thickness, float fillAlpha, PhysicsWorld.TransformPlane transformPlane, ref Matrix4x4 transformPlaneCustomMatrix)
+                public override void Draw(CommandBuffer rendererCommandBuffer, ref PhysicsWorld.DrawResults drawResults, float thickness, float fillAlpha, PhysicsWorld.TransformPlane transformPlane, in Matrix4x4 transformPlaneCustomMatrix)
                 {
                     var polygonGeometryElements = drawResults.polygonGeometryArray;
                     var count = polygonGeometryElements.Length;
@@ -419,7 +419,7 @@ namespace Unity.U2D.Physics
                 }
 
                 /// <undoc/>
-                public override void Draw(CommandBuffer rendererCommandBuffer, ref PhysicsWorld.DrawResults drawResults, float thickness, float fillAlpha, PhysicsWorld.TransformPlane transformPlane, ref Matrix4x4 transformPlaneCustomMatrix)
+                public override void Draw(CommandBuffer rendererCommandBuffer, ref PhysicsWorld.DrawResults drawResults, float thickness, float fillAlpha, PhysicsWorld.TransformPlane transformPlane, in Matrix4x4 transformPlaneCustomMatrix)
                 {
                     var circleGeometryElements = drawResults.circleGeometryArray;
                     var count = circleGeometryElements.Length;
@@ -472,7 +472,7 @@ namespace Unity.U2D.Physics
                 }
 
                 /// <undoc/>
-                public override void Draw(CommandBuffer rendererCommandBuffer, ref PhysicsWorld.DrawResults drawResults, float thickness, float fillAlpha, PhysicsWorld.TransformPlane transformPlane, ref Matrix4x4 transformPlaneCustomMatrix)
+                public override void Draw(CommandBuffer rendererCommandBuffer, ref PhysicsWorld.DrawResults drawResults, float thickness, float fillAlpha, PhysicsWorld.TransformPlane transformPlane, in Matrix4x4 transformPlaneCustomMatrix)
                 {
                     var capsuleGeometryElements = drawResults.capsuleGeometryArray;
                     var count = capsuleGeometryElements.Length;
@@ -524,7 +524,7 @@ namespace Unity.U2D.Physics
                 }
 
                 /// <undoc/>
-                public override void Draw(CommandBuffer rendererCommandBuffer, ref PhysicsWorld.DrawResults drawResults, float thickness, float fillAlpha, PhysicsWorld.TransformPlane transformPlane, ref Matrix4x4 transformPlaneCustomMatrix)
+                public override void Draw(CommandBuffer rendererCommandBuffer, ref PhysicsWorld.DrawResults drawResults, float thickness, float fillAlpha, PhysicsWorld.TransformPlane transformPlane, in Matrix4x4 transformPlaneCustomMatrix)
                 {
                     var lineElements = drawResults.lineArray;
                     var count = lineElements.Length;
@@ -575,7 +575,7 @@ namespace Unity.U2D.Physics
                 }
 
                 /// <undoc/>
-                public override void Draw(CommandBuffer rendererCommandBuffer, ref PhysicsWorld.DrawResults drawResults, float thickness, float fillAlpha, PhysicsWorld.TransformPlane transformPlane, ref Matrix4x4 transformPlaneCustomMatrix)
+                public override void Draw(CommandBuffer rendererCommandBuffer, ref PhysicsWorld.DrawResults drawResults, float thickness, float fillAlpha, PhysicsWorld.TransformPlane transformPlane, in Matrix4x4 transformPlaneCustomMatrix)
                 {
                     var pointElements = drawResults.pointArray;
                     var count = pointElements.Length;

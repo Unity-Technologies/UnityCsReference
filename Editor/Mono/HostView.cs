@@ -145,7 +145,7 @@ namespace UnityEditor
 
             CreateDelegates();
 
-            name = GetViewName();
+            name = GetViewName(this);
             SetActualViewName(name);
             RegisterSelectedPane(sendEvents);
             actualViewChanged?.Invoke(this);

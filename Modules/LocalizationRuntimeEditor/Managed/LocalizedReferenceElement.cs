@@ -300,7 +300,11 @@ abstract class LocalizedReferenceElement : VisualElement
     internal void RebuildBody()
     {
         m_RebuildPending = false;
+        if (!SerializedDataAlive)
+            return;
         m_Object.Update();
+        if (!SerializedDataAlive)
+            return;
         var reference = TableRef();
         m_ShownTable = reference;
         m_ShownEntry = EntryRef();
@@ -382,6 +386,8 @@ abstract class LocalizedReferenceElement : VisualElement
     void SetReference(ResourceTableCollection collection, long keyId)
     {
         m_Object.Update();
+        if (!SerializedDataAlive)
+            return;
         m_TableRefProp.boxedValue = collection != null ? AssetProviderEditors.CreateReference(collection) : default(TableReference);
         m_TableEntryRefProp.boxedValue = collection != null ? (TableEntryReference)keyId : default(TableEntryReference);
         m_Object.ApplyModifiedProperties();

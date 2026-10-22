@@ -2,11 +2,13 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System.Collections.Generic;
+using Unity.Scripting.LifecycleManagement;
 using UnityEngine.Assertions;
 
 namespace UnityEngine.UIElements
 {
-    internal abstract class DragEventsProcessor
+    internal abstract partial class DragEventsProcessor
     {
         internal enum DragState
         {
@@ -15,8 +17,16 @@ namespace UnityEngine.UIElements
             Dragging
         }
 
+        // A drag-and-drop client is shared across the views of its context (one per editor/player),
+        // so only one drag operation can exist at a time per client: starting or cleaning up
+        // another would corrupt its payload. Owners are tracked per client so a drag in one
+        // context does not block drags in the other.
+        [AutoStaticsCleanupOnCodeReload]
+        static Dictionary<IDragAndDrop, DragEventsProcessor> s_CurrentDragOwners = new();
+
         bool m_IsRegistered;
         DragState m_DragState;
+        int m_ActivePointerId = PointerId.invalidPointerId;
         Vector3 m_Start;
         bool m_PendingPerformDrag;
 
@@ -25,11 +35,12 @@ namespace UnityEngine.UIElements
         // Used in tests
         internal bool isRegistered => m_IsRegistered;
         internal DragState dragState => m_DragState;
+        internal bool pendingPerformDrag => m_PendingPerformDrag;
 
         protected virtual bool supportsDragEvents => true;
         bool useDragEvents => isEditorContext && supportsDragEvents;
 
-        protected IDragAndDrop dragAndDrop => DragAndDropUtility.GetDragAndDrop(m_Target.panel);
+        protected internal virtual IDragAndDrop dragAndDrop => DragAndDropUtility.GetDragAndDrop(m_Target.panel);
 
         internal virtual bool isEditorContext
         {
@@ -88,6 +99,7 @@ namespace UnityEngine.UIElements
         internal void UnregisterCallbacksFromTarget(bool unregisterPanelEvents = false)
         {
             m_IsRegistered = false;
+            ReleaseDragOwnership();
 
             m_Target.UnregisterCallback<PointerDownEvent>(OnPointerDownEvent);
             m_Target.UnregisterCallback<PointerUpEvent>(OnPointerUpEvent, TrickleDown.TrickleDown);
@@ -119,18 +131,58 @@ namespace UnityEngine.UIElements
 
         protected abstract void ClearDragAndDropUI(bool dragCancelled);
 
+        // Only one drag gesture can be tracked at a time; while one is in progress, events from
+        // other pointers (e.g. a second finger on touch devices, UUM-117689) must not affect it.
+        bool IsForeignPointer(int pointerId)
+        {
+            return m_DragState != DragState.None && pointerId != m_ActivePointerId;
+        }
+
+        bool IsDragOwnedByAnother()
+        {
+            return s_CurrentDragOwners.TryGetValue(dragAndDrop, out var owner) && owner != this;
+        }
+
+        void ReleaseDragOwnership()
+        {
+            // Looked up by value: the client needs the panel, which may be gone by detach time.
+            foreach (var pair in s_CurrentDragOwners)
+            {
+                if (pair.Value == this)
+                {
+                    s_CurrentDragOwners.Remove(pair.Key);
+                    return;
+                }
+            }
+        }
+
         private void OnPointerDownEvent(PointerDownEvent evt)
         {
+            // Only an actual drag is protected from other pointers. A mere drag candidate can be
+            // taken over by any pointer going down, so a device that vanished mid-press (e.g.
+            // unplugged) can never block the next pointer from starting a drag.
+            if (m_DragState == DragState.Dragging && evt.pointerId != m_ActivePointerId)
+                return;
+
             if (evt.button != (int)MouseButton.LeftMouse || !ShouldHandlePointerDown(evt))
             {
                 m_DragState = DragState.None;
+                m_ActivePointerId = PointerId.invalidPointerId;
+                ReleaseDragOwnership();
                 return;
             }
+
+            // The dragging pointer is already pressed, so a left-button down from it is a spurious
+            // duplicate from the input backend; acting on it would restart the drag mid-flight.
+            if (m_DragState == DragState.Dragging)
+                return;
 
             if (CanStartDrag(evt.position, evt.modifiers))
             {
                 m_DragState = DragState.CanStartDrag;
+                m_ActivePointerId = evt.pointerId;
                 m_Start = evt.position;
+                m_PendingPerformDrag = false;
             }
         }
 
@@ -140,7 +192,7 @@ namespace UnityEngine.UIElements
             // For this special occasion, we want to set a flag that will allow the next move to bypass the threshold.
             // Note that on mobile devices, this event would only happen when dragging an item, which at that stage, the
             // dragging has already happened.
-            if (m_DragState == DragState.CanStartDrag)
+            if (m_DragState == DragState.CanStartDrag && evt.pointerId == m_ActivePointerId)
             {
                 if ((m_Start - evt.position).sqrMagnitude <= 0)
                     return;
@@ -152,6 +204,9 @@ namespace UnityEngine.UIElements
 
         internal void OnPointerUpEvent(PointerUpEvent evt)
         {
+            if (IsForeignPointer(evt.pointerId))
+                return;
+
             if (!useDragEvents && m_DragState == DragState.Dragging)
             {
                 var target = GetDropTarget(evt.position) ?? this;
@@ -163,23 +218,35 @@ namespace UnityEngine.UIElements
 
             m_Target.ReleasePointer(evt.pointerId);
             ClearDragAndDropUI(m_DragState == DragState.Dragging);
-            dragAndDrop.DragCleanup();
+            ReleaseDragOwnership();
+            if (!s_CurrentDragOwners.ContainsKey(dragAndDrop))
+                dragAndDrop.DragCleanup();
             m_DragState = DragState.None;
+            m_ActivePointerId = PointerId.invalidPointerId;
             m_PendingPerformDrag = false;
         }
 
         private void OnPointerLeaveEvent(PointerLeaveEvent evt)
         {
+            if (IsForeignPointer(evt.pointerId))
+                return;
+
             ClearDragAndDropUI(false);
         }
 
         void OnPointerCancelEvent(PointerCancelEvent evt)
         {
+            if (IsForeignPointer(evt.pointerId))
+                return;
+
             CancelDragAndDrop(evt.pointerId);
         }
 
         private void OnPointerCapturedOut(PointerCaptureOutEvent evt)
         {
+            if (IsForeignPointer(evt.pointerId))
+                return;
+
             CancelDragAndDrop();
         }
 
@@ -204,8 +271,11 @@ namespace UnityEngine.UIElements
             if (releaseCapturePointerId != -1)
                 m_Target.ReleasePointer(releaseCapturePointerId);
             ClearDragAndDropUI(m_DragState == DragState.Dragging);
-            dragAndDrop.DragCleanup();
+            ReleaseDragOwnership();
+            if (!s_CurrentDragOwners.ContainsKey(dragAndDrop))
+                dragAndDrop.DragCleanup();
             m_DragState = DragState.None;
+            m_ActivePointerId = PointerId.invalidPointerId;
             m_PendingPerformDrag = false;
         }
 
@@ -214,6 +284,16 @@ namespace UnityEngine.UIElements
             if (!useDragEvents)
                 return;
 
+            // The matching pointer up is consumed by the editor drag-and-drop operation, so this
+            // is where an exited drag ends. It ends as a cancel, undoing the drag's side effects
+            // (e.g. a tree's automatic expansions), and its state is cleared, or the next press
+            // would be read as part of it.
+            if (m_DragState == DragState.Dragging)
+                ClearDragAndDropUI(true);
+            m_DragState = DragState.None;
+            m_ActivePointerId = PointerId.invalidPointerId;
+            m_PendingPerformDrag = false;
+            ReleaseDragOwnership();
             var view = evt.target as BaseVerticalCollectionView;
             view?.dragger?.ClearDragAndDropUI(false);
 
@@ -232,6 +312,8 @@ namespace UnityEngine.UIElements
                 return;
 
             m_DragState = DragState.None;
+            m_ActivePointerId = PointerId.invalidPointerId;
+            ReleaseDragOwnership();
             var target = GetDropTarget(evt.mousePosition);
             target?.OnDrop(evt.mousePosition, evt.modifiers);
             target?.ClearDragAndDropUI(false);
@@ -262,6 +344,9 @@ namespace UnityEngine.UIElements
             if (evt.isHandledByDraggable)
                 return;
 
+            if (IsForeignPointer(evt.pointerId))
+                return;
+
             if (!useDragEvents && m_DragState == DragState.Dragging)
             {
                 var target = GetDropTarget(evt.position) ?? this;
@@ -278,6 +363,7 @@ namespace UnityEngine.UIElements
             if ((evt.pressedButtons & (1 << (int)MouseButton.LeftMouse)) == 0)
             {
                 m_DragState = DragState.None;
+                m_ActivePointerId = PointerId.invalidPointerId;
                 m_PendingPerformDrag = false;
                 return;
             }
@@ -285,11 +371,16 @@ namespace UnityEngine.UIElements
             var delta = m_Start - evt.position;
             if (delta.sqrMagnitude >= ScrollView.ScrollThresholdSquared || m_PendingPerformDrag)
             {
+                // A drag in another view already owns the shared drag-and-drop client.
+                if (IsDragOwnedByAnother())
+                    return;
+
                 var startDragArgs = StartDrag(m_Start, evt.modifiers);
 
                 if (startDragArgs.visualMode is DragVisualMode.Rejected)
                 {
                     m_DragState = DragState.None;
+                    m_ActivePointerId = PointerId.invalidPointerId;
                     return;
                 }
 
@@ -311,6 +402,7 @@ namespace UnityEngine.UIElements
                 }
 
                 m_DragState = DragState.Dragging;
+                s_CurrentDragOwners[dragAndDrop] = this;
                 m_Target.CapturePointer(evt.pointerId);
                 evt.isHandledByDraggable = true;
                 m_PendingPerformDrag = false;

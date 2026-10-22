@@ -756,7 +756,7 @@ namespace Unity.Entities
                 }
             }
 
-            [OnCodeUnloading]
+            [EntitiesCleanup]
             static void Shutdown()
             {
                 var memoryLabel = Memory.CreateLabel("Entities", "Chunks.Metadata", Allocator.Persistent);
@@ -2331,7 +2331,7 @@ namespace Unity.Entities
 
             dstArchetype->StableHash = CalculateStableHash(types, dstArchetype->TypeMemoryOrderIndexToIndexInArchetype, count);
 
-            EntitiesProfiler.ArchetypeAdded(dstArchetype);
+            EntitiesProfilerPackageCalls.ArchetypeAdded(dstArchetype);
 
             return dstArchetype;
         }

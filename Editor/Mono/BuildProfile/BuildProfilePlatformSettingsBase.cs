@@ -47,7 +47,7 @@ namespace UnityEditor.Build.Profile
         [SerializeField] Compression m_CompressionType = (Compression)k_InvalidCompressionIdx;
         [SerializeField] bool m_InstallInBuildFolder = false;
         [SerializeField] BuildProfileInsightsSettingsContainer m_InsightsSettingsContainer = new()
-            { buildProfileEngineDiagnosticsState = BuildProfileEngineDiagnosticsState.ProjectSettings };
+            { buildProfileEngineDiagnosticsState = BuildProfileEngineDiagnosticsState.Default };
         [SerializeField] bool m_AdaptivePerformanceEnabled = false;
 
         internal protected virtual bool development

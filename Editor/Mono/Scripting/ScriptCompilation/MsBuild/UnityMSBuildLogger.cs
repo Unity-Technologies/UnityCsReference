@@ -49,6 +49,17 @@ class UnityMSBuildLogger
             Console.WriteLine("[PBM]: " + message);
         }
     }
+
+    // stdout, so it reaches Editor.log without a Console entry on every compile.
+    public static void LogProjectCacheSummary(BuildResultMessage buildResultMessage)
+    {
+        foreach (var logMessage in buildResultMessage.GetLogMessages())
+        {
+            if (logMessage.MessageType == LogMessageType.Message && logMessage.Code == k_ProjectCacheSummaryLogCode)
+                Console.WriteLine(logMessage.Message);
+        }
+    }
+
     public static void LogCompilerMessages(BuildResultMessage buildResultMessage, bool buildingForEditor)
     {
         const int kLogIdentifierFor_EditorMessages = 1234;
@@ -73,18 +84,12 @@ class UnityMSBuildLogger
             }
         }
 
+        LogProjectCacheSummary(buildResultMessage);
+
         foreach (var logMessage in buildResultMessage.GetLogMessages())
         {
             if (logMessage.MessageType == LogMessageType.Message)
-            {
-                if (logMessage.Code == k_ProjectCacheSummaryLogCode)
-                {
-                    // stdout, so it reaches Editor.log without a Console entry on every compile.
-                    Console.WriteLine(logMessage.Message);
-                }
-
                 continue;
-            }
 
             var instanceId = LookupInstanceId(fileInstanceIdCache, logMessage.File);
             Debug.LogCompilerMessage(FormatLogMessageToString(logMessage), logMessage.File, logMessage.LineNumber, logMessage.ColumnNumber,

@@ -80,7 +80,12 @@ namespace UnityEngine
                 if (nameId >= 0)
                     return GetTexture(nameId);
                 else
-                    return GetTexture(k_MainTexId);
+                {
+                    if (HasProperty(k_MainTexId))
+                        return GetTexture(k_MainTexId);
+                    else
+                        return null;
+                }
             }
             set
             {

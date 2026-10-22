@@ -13,12 +13,12 @@ using UnityEngine;
 namespace UnityEditor
 {
     // Installs what the Entities module needs from the editor; module code can't reference UnityEditor.
-    static partial class EditorLightShimHooks
+    internal static partial class EditorLightShimHooks
     {
-        [OnCodeLoaded]
+        [BurstInitialize]
         static void Install() => EditorLightShim.InstallHooks(new Hooks());
 
-        sealed class Hooks : EditorLightShim.IHooks
+        internal sealed class Hooks : EditorLightShim.IHooks
         {
             public IEnumerable<Type> GetTypesDerivedFrom(Type type) => TypeCache.GetTypesDerivedFrom(type);
 

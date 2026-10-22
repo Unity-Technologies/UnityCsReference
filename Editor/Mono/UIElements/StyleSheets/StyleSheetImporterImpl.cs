@@ -934,30 +934,59 @@ namespace UnityEditor.UIElements.StyleSheets
                     break;
 
                 case StyleValueFunctionExtension.k_NoneFilter:
-                    m_Builder.AddValue(StyleValueFunction.NoneFilter);
-                    VisitCustomFilter(functionToken);
+                    VisitCustomFilter(functionToken, StyleValueFunction.NoneFilter);
                     break;
 
                 case StyleValueFunctionExtension.k_CustomFilter:
-                    m_Builder.AddValue(StyleValueFunction.CustomFilter);
-                    VisitCustomFilter(functionToken);
+                    VisitCustomFilter(functionToken, StyleValueFunction.CustomFilter);
                     break;
 
                 // env, var etc
                 default:
                     if (ValidateFunction(functionToken, out var func))
                     {
+                        var start = m_Builder.valueCount;
                         m_Builder.AddValue(func);
 #pragma warning disable UAC2001 // Avoid Linq
                         m_Builder.AddValue(functionToken.ArgumentTokens.Count(t => t.Type != TokenType.Whitespace));
 #pragma warning restore UAC2001
+
+                        bool anyArgumentDropped = false;
+                        Token firstArgumentToken = null;
                         foreach (var token in functionToken.ArgumentTokens)
                         {
-                            VisitToken(token);
+                            if (token.Type == TokenType.Whitespace)
+                                continue;
+
+                            if (firstArgumentToken == null)
+                                firstArgumentToken = token;
+
+                            if (!VisitTokenAddsValue(token))
+                                anyArgumentDropped = true;
+                        }
+
+                        if (anyArgumentDropped)
+                        {
+                            m_Builder.RemoveValuesFrom(start);
+
+                            // An invalid fallback leaves the variable itself usable.
+                            if (func == StyleValueFunction.Var)
+                            {
+                                m_Builder.AddValue(StyleValueFunction.Var);
+                                m_Builder.AddValue(1);
+                                VisitToken(firstArgumentToken);
+                            }
                         }
                     }
                     break;
             }
+        }
+
+        bool VisitTokenAddsValue(Token token)
+        {
+            var valueCount = m_Builder.valueCount;
+            VisitToken(token);
+            return m_Builder.valueCount != valueCount;
         }
 
         bool IsTokenString(TokenValue tokens)
@@ -989,8 +1018,11 @@ namespace UnityEditor.UIElements.StyleSheets
             return m_StringBuilder.ToString();
         }
 
-        void VisitCustomFilter(FunctionToken functionToken)
+        void VisitCustomFilter(FunctionToken functionToken, StyleValueFunction function)
         {
+            var start = m_Builder.valueCount;
+            m_Builder.AddValue(function);
+
             // Used typed ToList to prevent extenion method ToList from being used.
 #pragma warning disable UAC2001 // Avoid Linq
             var args = functionToken.ArgumentTokens.ToList<Token>();
@@ -1000,15 +1032,29 @@ namespace UnityEditor.UIElements.StyleSheets
             m_Builder.AddValue(args.Count(a => a.Type != TokenType.Whitespace));
 #pragma warning restore UAC2001
 
+            bool anyArgumentDropped = false;
+
             // First arg is a url
             if (args.Count > 0)
             {
+                var valueCount = m_Builder.valueCount;
                 VisitUrlFunction(args[0].Data);
+                if (m_Builder.valueCount == valueCount)
+                    anyArgumentDropped = true;
             }
 
             // Process remaining args
             for (int i = 1; i < args.Count; ++i)
-                VisitToken(args[i]);
+            {
+                if (args[i].Type == TokenType.Whitespace)
+                    continue;
+
+                if (!VisitTokenAddsValue(args[i]))
+                    anyArgumentDropped = true;
+            }
+
+            if (anyArgumentDropped)
+                m_Builder.RemoveValuesFrom(start);
         }
 
         bool TryCreateColorFromFunctionToken(FunctionToken functionToken, int expectedChannels, out Color color)

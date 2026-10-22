@@ -92,8 +92,10 @@ namespace UnityEngine.UIElements.UIR
                 if (setsMaterial)
                     mgc.entryRecorder.PushDefaultMaterial(mgc.parentEntry, matDef);
 
+                DrawVisualElementBoxShadow(mgc, inset: false);
                 DrawVisualElementBackdrop(mgc);
                 DrawVisualElementBackground(mgc);
+                DrawVisualElementBoxShadow(mgc, inset: true);
                 DrawVisualElementBorder(mgc);
                 PushVisualElementClipping(mgc);
                 mustPopClipping = true;
@@ -143,6 +145,9 @@ namespace UnityEngine.UIElements.UIR
 
         // Records mesh + GenerateBackdropFilterTexture command when allocated; resource lifecycle is owned by RenderEvents.SyncBackdropFilterState (pre-build sync).
         protected abstract void DrawVisualElementBackdrop(MeshGenerationContext mgc);
+
+        // Outer shadows are drawn below the background, inset shadows above it
+        protected abstract void DrawVisualElementBoxShadow(MeshGenerationContext mgc, bool inset);
 
         protected abstract void DrawVisualElementBackground(MeshGenerationContext mgc);
 
@@ -287,6 +292,48 @@ namespace UnityEngine.UIElements.UIR
             // Force-gamma reads premultiplied textures as toLinear(premultiplied gamma), which the linear backdrop chain does not produce.
             bool isPremultiplied = !m_RenderTreeManager.forceGammaRendering;
             mgc.entryRecorder.DrawMesh(mgc.parentEntry, vertices, indices, backdrop.backdropFilterTextureId, isPremultiplied);
+        }
+
+        protected override void DrawVisualElementBoxShadow(MeshGenerationContext mgc, bool inset)
+        {
+            var ve = mgc.visualElement;
+            var boxShadow = ve.computedStyle.boxShadow;
+            if (boxShadow.inset != inset || boxShadow.color.a <= UIRUtility.k_Epsilon)
+                return;
+
+            var veSize = ve.layoutSize;
+            if (veSize.x <= UIRUtility.k_Epsilon || veSize.y <= UIRUtility.k_Epsilon)
+                return;
+
+            var color = boxShadow.color;
+            if (ve.panel.contextType == ContextType.Editor)
+                color *= ve.playModeTintColor;
+
+            var shadowParams = new MeshBuilderNative.NativeBoxShadowParams
+            {
+                rect = new Rect(0, 0, veSize.x, veSize.y),
+                color = color,
+                offset = boxShadow.offset,
+                blurRadius = boxShadow.blurRadius,
+                spreadRadius = boxShadow.spreadRadius,
+                inset = inset ? 1 : 0
+            };
+
+            if (inset)
+            {
+                var style = ve.resolvedStyle;
+                shadowParams.leftWidth = style.borderLeftWidth;
+                shadowParams.topWidth = style.borderTopWidth;
+                shadowParams.rightWidth = style.borderRightWidth;
+                shadowParams.bottomWidth = style.borderBottomWidth;
+            }
+            MeshGenerator.GetVisualElementRadii(ve,
+                out shadowParams.topLeftRadius,
+                out shadowParams.bottomLeftRadius,
+                out shadowParams.topRightRadius,
+                out shadowParams.bottomRightRadius);
+
+            mgc.meshGenerator.DrawBoxShadow(shadowParams, m_RenderTreeManager.boxShadowProfile.texture, DrawPhase.Background);
         }
 
         protected override void DrawVisualElementBackground(MeshGenerationContext mgc)

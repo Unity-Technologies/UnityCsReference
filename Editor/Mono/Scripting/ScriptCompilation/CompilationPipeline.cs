@@ -668,7 +668,16 @@ namespace UnityEditor.Compilation
         {
             var assemblies = new Assembly[scriptAssemblies.Length];
 
-            var targetingPackFiles = TargetingPackExtractor.GetAssembliesFromFrameworkList(BCLExtensions.NetstandardTargetingPackDirectory());
+            // The BCL extensions targeting pack must match the one the compiler uses (see BeeScriptCompilation), so that
+            // Assembly.compiledAssemblyReferences reflects what was actually compiled. The api compatibility level is the
+            // same for every assembly in a compilation (set in EditorBuildRules), so resolve a single pack from it.
+#pragma warning disable CS0618
+            var useNet10 = scriptAssemblies.Length > 0 && scriptAssemblies[0].CompilerOptions.ApiCompatibilityLevel == ApiCompatibilityLevel.NET;
+#pragma warning restore CS0618
+            var targetingPackDirectory = useNet10
+                ? BCLExtensions.CoreCLRTargetingPackDirectory()
+                : BCLExtensions.NetstandardTargetingPackDirectory();
+            var targetingPackFiles = TargetingPackExtractor.GetAssembliesFromFrameworkList(targetingPackDirectory);
             var targetingPackReferences = Array.ConvertAll(targetingPackFiles.referenceAssemblies, p => p.MakeAbsolute().ToString());
             var targetingPackAnalyzers = Array.ConvertAll(targetingPackFiles.analyzers, p => p.MakeAbsolute().ToString());
 

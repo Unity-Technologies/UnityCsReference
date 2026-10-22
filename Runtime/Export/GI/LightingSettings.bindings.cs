@@ -163,6 +163,10 @@ namespace UnityEngine
         [NativeName("BakeResolution")]
         public extern float lightmapResolution { get; set; }
 
+        // Texels per world unit, multiplied by LightmapParameters.resolution. Sets how finely the lightmap UV aspect of non-square terrains is rounded.
+        [NativeName("RealtimeResolution")]
+        public extern float indirectResolution { get; set; }
+
         // Texel separation between shapes.
         [NativeName("Padding")]
         public extern int lightmapPadding { get; set; }
@@ -207,11 +211,6 @@ namespace UnityEngine
 
         [Obsolete("Training data export for baked lighting is deprecated.", false)]
         public extern string trainingDataDestination { get; set; }
-
-        // Realtime lightmap resolution in texels per world unit.
-        // Not obsolete like the other realtime GI settings: the Progressive lightmapper derives terrain heightmap sampling density from this.
-        [NativeName("RealtimeResolution")]
-        public extern float indirectResolution { get; set; }
 
         [NativeName("ForceWhiteAlbedo")]
         internal extern bool realtimeForceWhiteAlbedo { get; set; }

@@ -169,7 +169,7 @@ namespace Unity.Entities
             }
         }
 
-#pragma warning disable 0618 // Write groups are obsolete; will be removed in Entities 7.0
+#pragma warning disable 0618 // Write groups are obsolete. They will be removed in a future release.
         void IncludeDependentWriteGroups(ComponentType type, ref UnsafeList<ComponentType> explicitList)
         {
             if (type.AccessModeType != ComponentType.AccessMode.ReadOnly)
@@ -336,7 +336,7 @@ namespace Unity.Entities
                 // Validate the queryBuilder has components declared in a consistent way
                 EntityQueryBuilder.Validate(allTypes, anyTypes, noneTypes, disabledTypes, absentTypes, presentTypes);
 
-#pragma warning disable 0618 // Write groups are obsolete; will be removed in Entities 7.0
+#pragma warning disable 0618 // Write groups are obsolete. They will be removed in a future release.
                 var isFilterWriteGroup = (queryData[q].Options & EntityQueryOptions.FilterWriteGroup) != 0;
 #pragma warning restore 0618
                 if (isFilterWriteGroup)

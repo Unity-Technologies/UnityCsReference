@@ -55,6 +55,7 @@ namespace UnityEngine.UIElements
             1, // BorderTopWidth
             0, // BorderWidth
             2, // Bottom
+            9, // BoxShadow
             4, // Color
             2, // ColumnGap
             3, // Cursor
@@ -186,6 +187,7 @@ namespace UnityEngine.UIElements
             PropertyType.Float,
             PropertyType.Shorthand,
             PropertyType.Length,
+            PropertyType.BoxShadow,
             PropertyType.Color,
             PropertyType.Length,
             PropertyType.Cursor,
@@ -302,6 +304,7 @@ namespace UnityEngine.UIElements
             Rotate,
             Scale,
             Curvature,
+            BoxShadow,
             UIAnimationClip,
             MaterialDefinition,
             Ratio,
@@ -527,6 +530,18 @@ namespace UnityEngine.UIElements
                 ".z"
             }, // Scale
             System.Array.Empty<string>(), // Curvature
+            new string[]
+            {
+                ".color.r",
+                ".color.g",
+                ".color.b",
+                ".color.a",
+                ".offset.x",
+                ".offset.y",
+                ".blurRadius",
+                ".spreadRadius",
+                ".inset"
+            }, // BoxShadow
             System.Array.Empty<string>(), // UIAnimationClip
             new string[]
             {
@@ -752,6 +767,18 @@ namespace UnityEngine.UIElements
                 AnimationChannelKind.Float
             }, // Scale
             System.Array.Empty<AnimationChannelKind>(), // Curvature
+            new AnimationChannelKind[]
+            {
+                AnimationChannelKind.Float,
+                AnimationChannelKind.Float,
+                AnimationChannelKind.Float,
+                AnimationChannelKind.Float,
+                AnimationChannelKind.Float,
+                AnimationChannelKind.Float,
+                AnimationChannelKind.Float,
+                AnimationChannelKind.Float,
+                AnimationChannelKind.Int
+            }, // BoxShadow
             System.Array.Empty<AnimationChannelKind>(), // UIAnimationClip
             new AnimationChannelKind[]
             {

@@ -71,6 +71,15 @@ namespace UnityEditor
         [AutoStaticsCleanupOnCodeReload]
         static Dictionary<Type, string> s_AvailableWindowTypes;
 
+        [AutoStaticsCleanupOnCodeReload]
+        static Type[] s_LocalizedWindowTypes;
+
+        [AutoStaticsCleanupOnCodeReload]
+        static string[] s_LocalizedWindowTitles;
+
+        [AutoStaticsCleanupOnCodeReload]
+        static SystemLanguage s_LocalizedWindowTitlesLanguage;
+
         internal Vector2 viewPadding
         {
             get;
@@ -301,6 +310,30 @@ namespace UnityEditor
 
             s_AvailableWindowTypes = titles;
             return s_AvailableWindowTypes;
+        }
+
+        internal static void GetLocalizedAvailableWindowTypes(out Type[] types, out string[] titles)
+        {
+            var language = LocalizationDatabase.currentEditorLanguage;
+            if (s_LocalizedWindowTitles == null || s_LocalizedWindowTitlesLanguage != language)
+            {
+                var availableTypes = GetAvailableWindowTypes();
+                s_LocalizedWindowTypes = new Type[availableTypes.Count];
+                s_LocalizedWindowTitles = new string[availableTypes.Count];
+
+                var i = 0;
+                foreach (var type in availableTypes.Keys)
+                {
+                    s_LocalizedWindowTypes[i] = type;
+                    s_LocalizedWindowTitles[i] = GetLocalizedWindowTitle(type);
+                    i++;
+                }
+
+                s_LocalizedWindowTitlesLanguage = language;
+            }
+
+            types = s_LocalizedWindowTypes;
+            titles = s_LocalizedWindowTitles;
         }
 
         private void SetSerializedViews(Dictionary<string, string> serializedViews)

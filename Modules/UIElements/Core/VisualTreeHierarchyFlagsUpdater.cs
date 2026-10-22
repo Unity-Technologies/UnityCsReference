@@ -54,27 +54,26 @@ namespace UnityEngine.UIElements
             }
         }
 
-        protected static (VisualElementFlags, VisualElementTransformFlags) GetChildrenMustDirtyFlags(VisualElement ve, VersionChangeType versionChangeType)
+        protected static (VisualElementFlags flags, VisualElementTransformFlags transformFlags, bool clip) GetChildrenMustDirtyFlags(VisualElement ve, VersionChangeType versionChangeType)
         {
             VisualElementFlags mustDirty = 0;
             VisualElementTransformFlags mustDirtyTransform = 0;
 
             if ((versionChangeType & WorldTransformChanged) != 0)
                 mustDirtyTransform |= VisualElementTransformFlags.WorldTransformDirty | VisualElementTransformFlags.WorldBoundingBoxDirty;
-            if ((versionChangeType & WorldClipChanged) != 0)
-                mustDirty |= VisualElementFlags.WorldClipDirty;
             if ((versionChangeType & EventParentCategoriesChanged) != 0)
                 mustDirty |= VisualElementFlags.EventInterestParentCategoriesDirty;
 
-            return (mustDirty, mustDirtyTransform);
+            return (mustDirty, mustDirtyTransform, (versionChangeType & WorldClipChanged) != 0);
         }
 
-        protected static void DirtyChildrenHierarchy(VisualElement ve, (VisualElementFlags flags, VisualElementTransformFlags transformFlags) mustDirty)
+        protected static void DirtyChildrenHierarchy(VisualElement ve, (VisualElementFlags flags, VisualElementTransformFlags transformFlags, bool clip) mustDirty)
         {
             // Are these operations already done?
             var needDirtyFlags = mustDirty.flags & ~ve.flags;
             var needDirtyTransformFlags = mustDirty.transformFlags & ~ve.transformFlags;
-            if (needDirtyFlags == 0 && needDirtyTransformFlags == 0)
+            bool childrenNeedDirtyClip = mustDirty.clip && MarkClippingRectDirty(ve);
+            if (needDirtyFlags == 0 && needDirtyTransformFlags == 0 && !childrenNeedDirtyClip)
                 return;
 
             // We use VisualElementFlags to track changes across the hierarchy since all those values come from flags.
@@ -85,8 +84,23 @@ namespace UnityEngine.UIElements
             for (int i = 0; i < count; i++)
             {
                 var child = ve.hierarchy[i];
-                DirtyChildrenHierarchy(child, (needDirtyFlags, needDirtyTransformFlags));
+                DirtyChildrenHierarchy(child, (needDirtyFlags, needDirtyTransformFlags, childrenNeedDirtyClip));
             }
+        }
+
+        // A dirty RenderData has dirty children, so the walk stops where the children's RenderData parent is already
+        // dirty. They hang under nestedRenderData when there is one.
+        static bool MarkClippingRectDirty(VisualElement ve)
+        {
+            var renderData = ve.renderData;
+            if (renderData == null)
+                return false; // No RenderData below either, and a new one starts dirty
+
+            var nestedRenderData = ve.nestedRenderData;
+            bool childrenNeedIt = !(nestedRenderData ?? renderData).isClippingRectDirty;
+            renderData.MarkClippingRectDirty();
+            nestedRenderData?.MarkClippingRectDirty();
+            return childrenNeedIt;
         }
 
         private static void DirtyBoundingBoxHierarchy(VisualElement ve)
@@ -162,13 +176,13 @@ namespace UnityEngine.UIElements
         // its own (via GetParentMustDirtyFlags), so push it DOWN across the subtree from the curved element here.
         // Pushing it slightly past an explicit-0deg flat barrier is harmless — those elements have CountChain == 0
         // and fall back to the flat pick regardless — so the barrier is not special-cased.
-        private new static (VisualElementFlags, VisualElementTransformFlags) GetChildrenMustDirtyFlags(
+        private new static (VisualElementFlags flags, VisualElementTransformFlags transformFlags, bool clip) GetChildrenMustDirtyFlags(
             VisualElement ve, VersionChangeType versionChangeType)
         {
-            var (flags, transformFlags) = VisualTreeHierarchyFlagsUpdater.GetChildrenMustDirtyFlags(ve, versionChangeType);
+            var (flags, transformFlags, clip) = VisualTreeHierarchyFlagsUpdater.GetChildrenMustDirtyFlags(ve, versionChangeType);
             if (ve.hasCurvature)
                 transformFlags |= VisualElementTransformFlags.Needs3DBounds;
-            return (flags, transformFlags);
+            return (flags, transformFlags, clip);
         }
 
         private new const VisualElementTransformFlags BoundingBoxDirtyFlags =

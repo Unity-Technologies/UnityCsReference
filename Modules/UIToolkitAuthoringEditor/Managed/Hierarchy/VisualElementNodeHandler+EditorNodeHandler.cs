@@ -268,8 +268,10 @@ internal partial class VisualElementNodeHandler : IHierarchyEditorNodeTypeHandle
                 return false;
 
             var toPaste = toPasteList.ToArray();
+            var status = ReparentElementsCommand.Execute(CommandSources.Hierarchy, parentAsset, -1, toPaste);
+            if (status != CommandExecutionStatus.Success)
+                return false;
             RequestSelectionOnNextUpdate(toPaste);
-            ReparentElementsCommand.Execute(CommandSources.Hierarchy, parentAsset, -1, toPaste);
             ScopePendingSelectionRequestsTo(parentElement);
             Clipboard.GetClipboardForStage().Clear();
             return true;

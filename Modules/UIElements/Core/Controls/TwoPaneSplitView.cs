@@ -14,6 +14,7 @@ namespace UnityEngine.UIElements
     /// </summary>
     [Icon("UIToolkit/Icons/TwoPaneSplitView.png")]
     [UxmlElement]
+    [UxmlMaxChildCount(2)]
     public partial class TwoPaneSplitView : VisualElement
     {
         internal static readonly BindingId fixedPaneIndexProperty = nameof(fixedPaneIndex);
@@ -62,6 +63,7 @@ namespace UnityEngine.UIElements
 
         bool m_CollapseMode;
         bool m_PendingCollapseToExecute;
+        bool m_HasLoggedChildCountError;
         int m_CollapsedChildIndex = -1;
 
         VisualElement m_Content;
@@ -318,13 +320,9 @@ namespace UnityEngine.UIElements
 
         void OnPostDisplaySetup(GeometryChangedEvent evt)
         {
-            if (m_Content.childCount != 2)
-            {
-                Debug.LogError("TwoPaneSplitView needs exactly 2 children.");
-                return;
-            }
-
             PostDisplaySetup();
+            if (m_Content.childCount != 2)
+                return;
 
             UnregisterCallback<GeometryChangedEvent>(OnPostDisplaySetup);
 
@@ -381,9 +379,13 @@ namespace UnityEngine.UIElements
         {
             if (m_Content.childCount != 2)
             {
-                Debug.LogError("TwoPaneSplitView needs exactly 2 children.");
+                if (!m_HasLoggedChildCountError)
+                    Debug.LogError("TwoPaneSplitView needs exactly 2 children.");
+                m_HasLoggedChildCountError = true;
                 return;
             }
+
+            m_HasLoggedChildCountError = false;
 
             if (fixedPaneDimension < 0)
                 fixedPaneDimension = m_FixedPaneInitialDimension;

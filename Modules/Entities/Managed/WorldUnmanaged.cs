@@ -522,7 +522,7 @@ namespace Unity.Entities
 
             var systemHandle = CreateUnmanagedSystemInternal(self, UnsafeUtility.SizeOf<T>(), GetHashCode64<T>(), systemTypeIndex, out var systemPtr, callOnCreate);
 
-            EntitiesProfiler.OnSystemCreated(TypeManager.GetSystemTypeIndex<T>(), in systemHandle);
+            EntitiesProfilerPackageCalls.OnSystemCreated(TypeManager.GetSystemTypeIndex<T>(), in systemHandle);
 
             return systemHandle;
         }
@@ -540,7 +540,7 @@ namespace Unity.Entities
 
             var untypedHandle = CreateUnmanagedSystemInternal(m_EntityManager.World, TypeManager.GetSystemTypeSize(t), typeHash, t, out _, callOnCreate);
 
-            EntitiesProfiler.OnSystemCreated(t, in untypedHandle);
+            EntitiesProfilerPackageCalls.OnSystemCreated(t, in untypedHandle);
 
             return untypedHandle;
         }

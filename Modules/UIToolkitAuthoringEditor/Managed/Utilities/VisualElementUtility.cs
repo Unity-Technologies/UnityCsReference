@@ -2,8 +2,12 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System;
 using System.Collections.Generic;
+using System.Reflection;
+using Unity.Scripting.LifecycleManagement;
 using UnityEditor.SceneManagement;
+using UnityEditor.UIElements;
 using UnityEngine;
 using UnityEngine.Assertions;
 using UnityEngine.Pool;
@@ -11,7 +15,7 @@ using UnityEngine.UIElements;
 
 namespace Unity.UIToolkit.Editor.Utilities;
 
-static class VisualElementUtility
+static partial class VisualElementUtility
 {
     const string k_SelectionObjectPropertyKey = "unity-selection-object";
 
@@ -45,6 +49,51 @@ static class VisualElementUtility
     }
 
     public static bool CanReceiveChildren(VisualElement element) => element?.contentContainer != null;
+
+    public static bool CanAddChildren(VisualElement parent, int addedCount)
+    {
+        var maxChildCount = GetMaxChildCount(parent?.GetType());
+        return maxChildCount < 0 || parent.childCount + addedCount <= maxChildCount;
+    }
+
+    public static bool CanAddChildren(VisualElementAsset parent, int addedCount)
+    {
+        var elementType = parent == null
+            ? null
+            : UxmlSerializedDataRegistry.GetDescription(parent.fullTypeName)?.serializedDataType?.DeclaringType;
+        var maxChildCount = GetMaxChildCount(elementType);
+        if (maxChildCount < 0)
+            return true;
+
+        var childElementCount = 0;
+        for (var i = 0; i < parent.childCount; ++i)
+        {
+            if (parent[i] is VisualElementAsset)
+                ++childElementCount;
+        }
+
+        return childElementCount + addedCount <= maxChildCount;
+    }
+
+    [AutoStaticsCleanupOnCodeReload] // reset to null; repopulated with the new domain's types
+    [IgnoreForUAL0015("Lazily repopulated per type on next access after reload")]
+    static Dictionary<Type, int> s_MaxChildCounts;
+
+    // -1 for no limit
+    static int GetMaxChildCount(Type elementType)
+    {
+        if (elementType == null)
+            return -1;
+
+        s_MaxChildCounts ??= new Dictionary<Type, int>();
+        if (!s_MaxChildCounts.TryGetValue(elementType, out var maxChildCount))
+        {
+            maxChildCount = elementType.GetCustomAttribute<UxmlMaxChildCountAttribute>(true)?.maxChildCount ?? -1;
+            s_MaxChildCounts.Add(elementType, maxChildCount);
+        }
+
+        return maxChildCount;
+    }
 
     public static void UpdateInlineRuleOnAllClones(VisualElement element, StyleSheet inlineSheet, StyleRule rule)
     {

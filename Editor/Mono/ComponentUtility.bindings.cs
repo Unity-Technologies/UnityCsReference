@@ -16,6 +16,9 @@ namespace UnityEditorInternal
     [StaticAccessor("ComponentUtilityBindings", StaticAccessorType.DoubleColon)]
     public sealed partial class ComponentUtility
     {
+        [FreeFunction("RemoveDataComponentUndoable")]
+        internal static extern bool RemoveDataComponent(EntityId componentEntityId);
+
         public static bool MoveComponentUp(Component component)
         {
             return MoveComponentUp_Internal(new[] { component }, false, false);

@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Text;
+using System.Text.RegularExpressions;
 using Debug = UnityEngine.Debug;
 using Unity.Scripting.LifecycleManagement;
 
@@ -29,6 +30,7 @@ namespace Unity.Burst.Editor
         private readonly DictionaryGlobalLabel _globalLabels;
         private readonly List<TempLabelRef> _tempLabelRefs;
         private readonly Dictionary<int, StringSlice> _mapBlockIndexToGlobalLabel;
+        private readonly List<AsmFunction> _functions;
         private DictionaryLocalLabel _currentDictLocalLabel;
         public bool IsInitialized { get; private set; }
 
@@ -53,6 +55,27 @@ namespace Unity.Burst.Editor
 
         [NoAutoStaticsCleanup]
         private static readonly StringSlice CVLocDirective = new StringSlice(".cv_loc");
+        [NoAutoStaticsCleanup]
+        private static readonly StringSlice TypeDirective = new StringSlice(".type");
+        [NoAutoStaticsCleanup]
+        private static readonly StringSlice DefDirective = new StringSlice(".def");
+        [NoAutoStaticsCleanup]
+        private static readonly StringSlice EndefDirective = new StringSlice(".endef");
+        [NoAutoStaticsCleanup]
+        private static readonly StringSlice CoffFunctionType = new StringSlice("32");
+        [NoAutoStaticsCleanup]
+        private static readonly StringSlice IRDefineKeyword = new StringSlice("define");
+
+        // Burst symbol names look like "Ns.T, Asm, Version=..., Culture=..., PublicKeyToken=null.M(...) -> R_<hash> from Asm, ..."
+        [NoAutoStaticsCleanup]
+        private static readonly Regex AssemblyQualifierRegex = new Regex(@", [^,()<>\[\]]+, Version=[^,]+, Culture=[^,]+, PublicKeyToken=(?:null|[0-9a-fA-F]+)", RegexOptions.Compiled | RegexOptions.CultureInvariant);
+        [NoAutoStaticsCleanup]
+        private static readonly Regex HashSuffixRegex = new Regex(@"_[0-9a-fA-F]{16,32}( from .*)?$", RegexOptions.Compiled | RegexOptions.CultureInvariant);
+        [NoAutoStaticsCleanup]
+        private static readonly Regex HashOnlyNameRegex = new Regex(@"^[0-9a-fA-F]{16,32}$", RegexOptions.Compiled | RegexOptions.CultureInvariant);
+        // A whole System type name that has a C# keyword, not part of a longer name.
+        [NoAutoStaticsCleanup]
+        private static readonly Regex BuiltInTypeNameRegex = new Regex(@"(?<![\w.$])System\.(?:Boolean|Byte|SByte|Char|Int16|UInt16|Int32|UInt32|Int64|UInt64|Single|Double|Void)(?![\w$])", RegexOptions.Compiled | RegexOptions.CultureInvariant);
 
         // Colors used for the tokens
         // TODO: Make this configurable via some editor settings?
@@ -110,6 +133,7 @@ namespace Unity.Burst.Editor
             _tempLabelRefs = new List<TempLabelRef>(4096);
             _globalLabels = new DictionaryGlobalLabel(128);
             _mapBlockIndexToGlobalLabel = new Dictionary<int, StringSlice>(128);
+            _functions = new List<AsmFunction>();
             _output = new StringBuilder();
         }
 
@@ -134,6 +158,11 @@ namespace Unity.Burst.Editor
         /// Gets all the tokens
         /// </summary>
         public List<AsmToken> Tokens => _tokens;
+
+        /// <summary>
+        /// Gets the functions defined in the disassembly, in the order they appear.
+        /// </summary>
+        public List<AsmFunction> Functions => _functions;
 
         public int LineUsedReg(int lineIdx, string reg) => _registersUsedAtLine.RegisterMatch(lineIdx, reg);
         public bool LineUsesRegs(int lineIdx, out List<string> usedRegs) => _registersUsedAtLine.LineContainsRegs(lineIdx, out usedRegs);
@@ -335,6 +364,7 @@ namespace Unity.Burst.Editor
             _tempLabelRefs.Clear();
             _globalLabels.Clear();
             _mapBlockIndexToGlobalLabel.Clear();
+            _functions.Clear();
             _currentDictLocalLabel = null;
             IsInitialized = false;
         }
@@ -719,6 +749,7 @@ namespace Unity.Burst.Editor
             }
 
             ProcessLabelsAndCreateEdges();
+            CollectFunctions();
         }
 
         private void ProcessLabelDeclaration(in AsmLineRef lineRef, in AsmLine line)
@@ -872,6 +903,455 @@ namespace Unity.Burst.Editor
         private static bool IsLabelLocal(in StringSlice slice)
         {
             return slice.StartsWith(".L");
+        }
+
+        private void CollectFunctions()
+        {
+            var declaredFunctions = new HashSet<string>();
+            string pendingDefName = null;
+
+            for (var blockIdx = 0; blockIdx < _blocks.Count; blockIdx++)
+            {
+                var block = _blocks[blockIdx];
+                for (var lineInBlock = 0; lineInBlock < block.Length; lineInBlock++)
+                {
+                    var lineIdx = block.LineIndex + lineInBlock;
+                    var line = _lines[lineIdx];
+                    if (line.Length == 0)
+                    {
+                        continue;
+                    }
+
+                    if (_inputAsmKind == AsmKind.LLVMIR)
+                    {
+                        if (TryGetIRDefinedFunctionName(line, out var irName))
+                        {
+                            _functions.Add(new AsmFunction(irName, blockIdx, lineInBlock));
+                        }
+                        continue;
+                    }
+
+                    if (line.Kind == AsmLineKind.Directive)
+                    {
+                        CollectFunctionDeclarations(line, declaredFunctions, ref pendingDefName);
+                    }
+                    else if (line.Kind == AsmLineKind.LabelDeclaration)
+                    {
+                        var iterator = GetIterator(line);
+                        iterator.TryGetNext(out var labelToken);
+                        var label = labelToken.Slice(_input);
+                        if (IsLabelLocal(label))
+                        {
+                            continue;
+                        }
+
+                        var name = Unquote(label.ToString());
+                        if (declaredFunctions.Contains(name) || IsFollowedByFunctionBegin(lineIdx))
+                        {
+                            _functions.Add(new AsmFunction(name, blockIdx, lineInBlock));
+                        }
+                    }
+                }
+            }
+        }
+
+        /// <summary>
+        /// Records symbols declared as functions by ELF (<c>.type name,@function</c>) and
+        /// COFF (<c>.def name; .scl 2; .type 32; .endef</c>) directives.
+        /// </summary>
+        private void CollectFunctionDeclarations(in AsmLine line, HashSet<string> declaredFunctions, ref string pendingDefName)
+        {
+            var iterator = GetIterator(line);
+            while (iterator.TryGetNext(out var token))
+            {
+                var text = token.Slice(_input);
+                if (text == DefDirective)
+                {
+                    pendingDefName = iterator.TryGetNext(out var nameToken) ? Unquote(GetTokenAsText(nameToken)) : null;
+                }
+                else if (text == EndefDirective)
+                {
+                    pendingDefName = null;
+                }
+                else if (text == TypeDirective)
+                {
+                    if (!iterator.TryGetNext(out var operand))
+                    {
+                        return;
+                    }
+
+                    if (operand.Slice(_input) == CoffFunctionType)
+                    {
+                        if (pendingDefName != null)
+                        {
+                            declaredFunctions.Add(pendingDefName);
+                        }
+                    }
+                    else if (iterator.TryGetNext(out var typeToken) && GetTokenAsText(typeToken).EndsWith("function", StringComparison.Ordinal))
+                    {
+                        declaredFunctions.Add(Unquote(GetTokenAsText(operand)));
+                    }
+                }
+            }
+        }
+
+        private bool IsFollowedByFunctionBegin(int lineIdx)
+        {
+            for (var i = lineIdx + 1; i < _lines.Count; i++)
+            {
+                var kind = _lines[i].Kind;
+                if (kind == AsmLineKind.FunctionBegin)
+                {
+                    return true;
+                }
+
+                if (kind != AsmLineKind.Empty && kind != AsmLineKind.Comment)
+                {
+                    return false;
+                }
+            }
+            return false;
+        }
+
+        private bool TryGetIRDefinedFunctionName(in AsmLine line, out string name)
+        {
+            name = null;
+            var iterator = GetIterator(line);
+            if (!iterator.TryGetNext(out var token) || token.Slice(_input) != IRDefineKeyword)
+            {
+                return false;
+            }
+
+            while (iterator.TryGetNext(out token))
+            {
+                var text = token.Slice(_input);
+                if (text.Length == 0 || text[0] != '@')
+                {
+                    continue;
+                }
+
+                // Quoted names are tokenized as '@' followed by a string.
+                if (text.Length == 1)
+                {
+                    if (!iterator.TryGetNext(out token))
+                    {
+                        return false;
+                    }
+                    text = token.Slice(_input);
+                    name = Unquote(text.ToString());
+                }
+                else
+                {
+                    name = text.ToString().Substring(1);
+                }
+                return true;
+            }
+            return false;
+        }
+
+        private static string Unquote(string text)
+        {
+            return text.Length >= 2 && text[0] == '"' && text[text.Length - 1] == '"'
+                ? text.Substring(1, text.Length - 2)
+                : text;
+        }
+
+        /// <summary>
+        /// Shortens a Burst function symbol name for display, by removing assembly qualifiers and the hash suffix.
+        /// </summary>
+        internal static string GetFunctionDisplayName(string name)
+        {
+            if (HashOnlyNameRegex.IsMatch(name))
+            {
+                return $"{name} (entry point)";
+            }
+
+            var displayName = AssemblyQualifierRegex.Replace(name, string.Empty);
+            return HashSuffixRegex.Replace(displayName, string.Empty);
+        }
+
+        /// <summary>
+        /// Formats a function display name as its declaring type, method name and parameter types in C# form, without
+        /// namespaces, e.g. "NativeArray&lt;int&gt;.Dispose(NativeArray&lt;int&gt;*)".
+        /// </summary>
+        internal static string GetFunctionShortName(string name, string displayName)
+        {
+            if (HashOnlyNameRegex.IsMatch(name))
+            {
+                return "Entry point";
+            }
+
+            var open = IndexOfTopLevel(displayName, '(', 0);
+            var close = open < 0 ? -1 : IndexOfClosingParenthesis(displayName, open);
+            if (close < 0)
+            {
+                return displayName;
+            }
+
+            var parameters = SplitTopLevel(displayName.Substring(open + 1, close - open - 1), ',');
+            var builder = new StringBuilder(FormatTypeName(displayName.Substring(0, open), MethodNameSegments));
+            builder.Append('(');
+            var first = true;
+            foreach (var parameter in parameters)
+            {
+                var trimmed = parameter.Trim();
+                if (trimmed.Length == 0)
+                {
+                    continue;
+                }
+
+                if (!first)
+                {
+                    builder.Append(", ");
+                }
+                first = false;
+                builder.Append(FormatParameter(trimmed));
+            }
+            builder.Append(')');
+            return builder.ToString();
+        }
+
+        [NoAutoStaticsCleanup]
+        private static readonly string[] ParameterModifiers = { "ref ", "out ", "in ", "params " };
+
+        private static string FormatParameter(string parameter)
+        {
+            var modifier = string.Empty;
+            foreach (var candidate in ParameterModifiers)
+            {
+                if (parameter.StartsWith(candidate, StringComparison.Ordinal))
+                {
+                    modifier = candidate;
+                    parameter = parameter.Substring(candidate.Length);
+                    break;
+                }
+            }
+
+            // Drop the parameter name, which follows the type after a top-level space.
+            var nameStart = LastIndexOfTopLevel(parameter, ' ');
+            var type = nameStart < 0 ? parameter : parameter.Substring(0, nameStart);
+            return modifier + FormatTypeName(type.Trim(), 1);
+        }
+
+        // The declaring type and the method name.
+        private const int MethodNameSegments = 2;
+
+        /// <summary>
+        /// Formats a type or method name in C# form: keeps its last <paramref name="keepSegments"/> dotted parts, which
+        /// drops the namespace, uses C# keywords for built-in types, drops arity markers ("`1"), writes generic arguments
+        /// in both the C# form ("&lt;T&gt;") and the reflection form ("[[T]]" or "[T]") as "&lt;T&gt;", and writes nested
+        /// types ("Outer+Inner") with ".".
+        /// </summary>
+        private static string FormatTypeName(string type, int keepSegments)
+        {
+            type = BuiltInTypeNameRegex.Replace(type, match => BuiltInTypeNames[match.Value]);
+            var segments = SplitTopLevel(type, '.');
+            if (segments.Count > keepSegments)
+            {
+                type = string.Join(".", segments.GetRange(segments.Count - keepSegments, keepSegments));
+            }
+
+            var builder = new StringBuilder(type.Length);
+            var i = 0;
+            while (i < type.Length)
+            {
+                var c = type[i];
+                if (c == '`')
+                {
+                    i++;
+                    while (i < type.Length && char.IsDigit(type[i]))
+                    {
+                        i++;
+                    }
+                    continue;
+                }
+
+                if (c == '+')
+                {
+                    builder.Append('.');
+                    i++;
+                    continue;
+                }
+
+                if (c == '<' || c == '[')
+                {
+                    var close = IndexOfMatchingBracket(type, i);
+                    if (close < 0)
+                    {
+                        builder.Append(type, i, type.Length - i);
+                        break;
+                    }
+
+                    var inner = type.Substring(i + 1, close - i - 1);
+                    if (c == '[' && IsArrayRank(inner))
+                    {
+                        builder.Append(type, i, close - i + 1);
+                    }
+                    else
+                    {
+                        AppendGenericArguments(builder, inner);
+                    }
+                    i = close + 1;
+                    continue;
+                }
+
+                builder.Append(c);
+                i++;
+            }
+            return builder.ToString();
+        }
+
+        private static void AppendGenericArguments(StringBuilder builder, string arguments)
+        {
+            builder.Append('<');
+            var first = true;
+            foreach (var argument in SplitTopLevel(arguments, ','))
+            {
+                var trimmed = argument.Trim();
+
+                // Reflection names wrap each assembly-qualified argument in its own brackets.
+                if (trimmed.Length >= 2 && trimmed[0] == '[' && IndexOfMatchingBracket(trimmed, 0) == trimmed.Length - 1)
+                {
+                    trimmed = trimmed.Substring(1, trimmed.Length - 2).Trim();
+                }
+
+                if (!first)
+                {
+                    builder.Append(", ");
+                }
+                first = false;
+                builder.Append(FormatTypeName(trimmed, 1));
+            }
+            builder.Append('>');
+        }
+
+        // An array rank such as "[]" or "[,]", as opposed to a list of generic arguments.
+        private static bool IsArrayRank(string inner)
+        {
+            foreach (var c in inner)
+            {
+                if (c != ',' && c != ' ' && c != '*')
+                {
+                    return false;
+                }
+            }
+            return true;
+        }
+
+        [NoAutoStaticsCleanup]
+        private static readonly Dictionary<string, string> BuiltInTypeNames = new Dictionary<string, string>
+        {
+            { "System.Boolean", "bool" },
+            { "System.Byte", "byte" },
+            { "System.SByte", "sbyte" },
+            { "System.Char", "char" },
+            { "System.Int16", "short" },
+            { "System.UInt16", "ushort" },
+            { "System.Int32", "int" },
+            { "System.UInt32", "uint" },
+            { "System.Int64", "long" },
+            { "System.UInt64", "ulong" },
+            { "System.Single", "float" },
+            { "System.Double", "double" },
+            { "System.Void", "void" },
+        };
+
+        private static bool IsOpeningBracket(char c) => c == '<' || c == '(' || c == '[';
+
+        private static bool IsClosingBracket(char c) => c == '>' || c == ')' || c == ']';
+
+        private static int IndexOfTopLevel(string text, char value, int start)
+        {
+            var depth = 0;
+            for (var i = start; i < text.Length; i++)
+            {
+                var c = text[i];
+                if (c == value && depth == 0)
+                {
+                    return i;
+                }
+
+                if (IsOpeningBracket(c))
+                {
+                    depth++;
+                }
+                else if (IsClosingBracket(c) && depth > 0)
+                {
+                    depth--;
+                }
+            }
+            return -1;
+        }
+
+        private static int LastIndexOfTopLevel(string text, char value)
+        {
+            var result = -1;
+            var depth = 0;
+            for (var i = 0; i < text.Length; i++)
+            {
+                var c = text[i];
+                if (c == value && depth == 0)
+                {
+                    result = i;
+                }
+                else if (IsOpeningBracket(c))
+                {
+                    depth++;
+                }
+                else if (IsClosingBracket(c) && depth > 0)
+                {
+                    depth--;
+                }
+            }
+            return result;
+        }
+
+        private static int IndexOfMatchingBracket(string text, int open)
+        {
+            var depth = 0;
+            for (var i = open; i < text.Length; i++)
+            {
+                if (IsOpeningBracket(text[i]))
+                {
+                    depth++;
+                }
+                else if (IsClosingBracket(text[i]) && --depth == 0)
+                {
+                    return i;
+                }
+            }
+            return -1;
+        }
+
+        private static int IndexOfClosingParenthesis(string text, int open)
+        {
+            var depth = 0;
+            for (var i = open; i < text.Length; i++)
+            {
+                if (IsOpeningBracket(text[i]))
+                {
+                    depth++;
+                }
+                else if (IsClosingBracket(text[i]) && --depth == 0)
+                {
+                    return text[i] == ')' ? i : -1;
+                }
+            }
+            return -1;
+        }
+
+        private static List<string> SplitTopLevel(string text, char separator)
+        {
+            var parts = new List<string>();
+            var start = 0;
+            int index;
+            while ((index = IndexOfTopLevel(text, separator, start)) >= 0)
+            {
+                parts.Add(text.Substring(start, index - start));
+                start = index + 1;
+            }
+            parts.Add(text.Substring(start));
+            return parts;
         }
 
         private void ProcessLabelsAndCreateEdges()
@@ -1238,6 +1718,37 @@ namespace Unity.Burst.Editor
                     return x.LineRef.LineIndex.CompareTo(y.LineRef.LineIndex);
                 }
             }
+        }
+
+        /// <summary>
+        /// A function in the disassembly, located at the line declaring its label (or its <c>define</c> line for LLVM IR).
+        /// </summary>
+        [DebuggerDisplay("Function {DisplayName} BlockIndex = {BlockIndex} LineInBlock = {LineInBlock}")]
+        public readonly struct AsmFunction
+        {
+            public AsmFunction(string name, int blockIndex, int lineInBlock)
+            {
+                Name = name;
+                DisplayName = GetFunctionDisplayName(name);
+                ShortName = GetFunctionShortName(name, DisplayName);
+                BlockIndex = blockIndex;
+                LineInBlock = lineInBlock;
+            }
+
+            public readonly string Name;
+
+            public readonly string DisplayName;
+
+            public readonly string ShortName;
+
+            public readonly int BlockIndex;
+
+            public readonly int LineInBlock;
+
+            /// <summary>
+            /// Gets whether the function is generated by Burst rather than compiled from user code, such as <c>burst.initialize</c>.
+            /// </summary>
+            public bool IsBurstInternal => Name.StartsWith("burst.", StringComparison.Ordinal) || Name.StartsWith("burst_", StringComparison.Ordinal);
         }
 
         public enum AsmLineKind

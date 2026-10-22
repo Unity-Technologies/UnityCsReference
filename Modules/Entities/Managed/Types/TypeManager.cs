@@ -36,7 +36,7 @@ namespace Unity.Entities
     /// write lock on an entity, letting another system handle it.
     /// </summary>
     [AttributeUsage(AttributeTargets.Struct, AllowMultiple = true)]
-    [Obsolete("Write groups are deprecated and will be removed. (RemovedAfter Entities 6.7)")]
+    [Obsolete("Write groups are deprecated and will be removed in a future release. (RemovedAfter Entities 6.7)")]
     public class WriteGroupAttribute : Attribute
     {
         /// <summary>
@@ -988,7 +988,7 @@ namespace Unity.Entities
             }
 
             /// <summary>
-            /// Obsolete. Used internally to construct a TypeInfo. Write group information is no longer stored in
+            /// Deprecated. Used internally to construct a TypeInfo. Write group information is no longer stored in
             /// TypeInfo; the <paramref name="writeGroupCount"/> and <paramref name="writeGroupStartIndex"/> arguments are ignored.
             /// </summary>
             /// <param name="typeIndex">TypeIndex to use</param>
@@ -1014,7 +1014,7 @@ namespace Unity.Entities
             /// <param name="unityObjectRefOffsetStartIndex">Index into the Unity Object reference array where this component's Unity Object reference data begins</param>
             /// <param name="typeSize">Size of the component type</param>
             /// <param name="bloomFilterMask">The bloom filter mask for this component, used to accelerate "is type T in set of types S" checks. The default value of zero is safe, but ineffective.</param>
-            [Obsolete("Write groups are deprecated and will be removed. (RemovedAfter Entities 6.7)")]
+            [Obsolete("Write groups are deprecated and will be removed in a future release. (RemovedAfter Entities 6.7)")]
             public TypeInfo(int typeIndex, TypeCategory category, int entityOffsetCount, int entityOffsetStartIndex,
                             ulong memoryOrdering, ulong stableTypeHash, int bufferCapacity, int sizeInChunk, int elementSize,
                             int alignmentInBytes, int maximumChunkCapacity, int writeGroupCount, int writeGroupStartIndex,
@@ -1162,17 +1162,17 @@ namespace Unity.Entities
             public bool IsZeroSized => SizeInChunk == 0;
 
             /// <summary>
-            /// Obsolete. Number of components which specify this component as the target type in a <seealso cref="WriteGroupAttribute"/>.
+            /// Deprecated. Number of components which specify this component as the target type in a <seealso cref="WriteGroupAttribute"/>.
             /// </summary>
             /// <remarks>Write group data is not stored in the TypeInfo itself; it is looked up in the TypeManager's
             /// write group table by <see cref="TypeIndex"/>. Only valid after <see cref="TypeManager.Initialize"/> has completed.</remarks>
-            [Obsolete("Write groups are deprecated and will be removed. (RemovedAfter Entities 6.7)")]
+            [Obsolete("Write groups are deprecated and will be removed in a future release. (RemovedAfter Entities 6.7)")]
             public int WriteGroupCount => GetWriteGroupCount(TypeIndex);
 
             /// <summary>
-            /// Obsolete. Returns true if a component with a <seealso cref="WriteGroupAttribute"/> specifies this component as it's targetType
+            /// Deprecated. Returns true if a component with a <seealso cref="WriteGroupAttribute"/> specifies this component as its `TargetType`.
             /// </summary>
-            [Obsolete("Write groups are deprecated and will be removed. (RemovedAfter Entities 6.7)")]
+            [Obsolete("Write groups are deprecated and will be removed in a future release. (RemovedAfter Entities 6.7)")]
             public bool HasWriteGroups => WriteGroupCount > 0;
 
             /// <summary>
@@ -1329,12 +1329,12 @@ namespace Unity.Entities
         }
 
         /// <summary>
-        /// Obsolete. Retrieves a pointer to an array of WriteGroups for the provided TypeInfo.
+        /// Deprecated. Retrieves a pointer to an array of WriteGroups for the provided TypeInfo.
         /// </summary>
         /// <param name="typeInfo">TypeInfo for the component with a WriteGroup attribute</param>
         /// <returns>Returns a pointer to an array of WriteGroups for the provided TypeInfo.</returns>
         [GenerateTestsForBurstCompatibility]
-        [Obsolete("Write groups are deprecated and will be removed. (RemovedAfter Entities 6.7)")]
+        [Obsolete("Write groups are deprecated and will be removed in a future release. (RemovedAfter Entities 6.7)")]
         public  static TypeIndex* GetWriteGroups(in TypeInfo typeInfo)
         {
             var writeGroups = GetWriteGroups(typeInfo.TypeIndex, out var count);
@@ -1910,12 +1910,10 @@ namespace Unity.Entities
         /// Removes all ECS type information and any allocated memory. May only be called once globally, and must be
         /// called from the main thread.
         /// </summary>
-        [OnCodeUnloading]
+        [EntitiesCleanup]
         public static void Shutdown()
         {
             // TODO, with module loaded type info, we cannot shutdown
-            if (!EditorLightShim.Hooks.CurrentThreadIsMainThread())
-                throw new InvalidOperationException("Must be called from the main thread");
 
             if (!s_Initialized)
                 return;
@@ -2654,12 +2652,12 @@ namespace Unity.Entities
         }
 
         /// <summary>
-        /// Obsolete. Used by codegen. Returns list of all type indices for components who have a WriteGroup on the provided type
+        /// Deprecated. Used by codegen. Returns list of all type indices for components who have a WriteGroup on the provided type
         /// </summary>
         /// <param name="typeIndex">Component type index</param>
         /// <returns>List of type indices</returns>
         [GenerateTestsForBurstCompatibility(GenericTypeArguments = new Type[] { typeof(Entity) })]
-        [Obsolete("Write groups are deprecated and will be removed. (RemovedAfter Entities 6.7)")]
+        [Obsolete("Write groups are deprecated and will be removed in a future release. (RemovedAfter Entities 6.7)")]
         public static NativeArray<TypeIndex> GetWriteGroupTypes(TypeIndex typeIndex)
         {
             var writeGroups = GetWriteGroups(typeIndex, out var writeGroupCount);
@@ -3117,7 +3115,7 @@ namespace Unity.Entities
         /// </remarks>
         static void InitializeWriteGroups()
         {
-#pragma warning disable 0618 // Write groups are obsolete; will be removed in Entities 7.0
+#pragma warning disable 0618 // Write groups are obsolete. They will be removed in a future release.
             var attributeType = typeof(WriteGroupAttribute);
             var edges = new NativeList<WriteGroupEdge>(64, Allocator.Temp);
 

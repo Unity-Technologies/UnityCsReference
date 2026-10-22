@@ -79,8 +79,14 @@ namespace UnityEngine.UIElements
 
         public override void SetValueWithoutNotify(T newValue)
         {
-            m_Index = m_Choices?.IndexOf(newValue) ?? -1;
-            base.SetValueWithoutNotify(newValue);
+            if (!m_SkipValidation)
+                newValue = ValidatedValue(newValue);
+
+            using (IgnoreValidation())
+            {
+                m_Index = m_Choices?.IndexOf(newValue) ?? -1;
+                base.SetValueWithoutNotify(newValue);
+            }
         }
 
         internal const int kPopupFieldDefaultIndex = -1;

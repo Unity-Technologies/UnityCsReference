@@ -20,8 +20,6 @@ namespace UnityEditor
         public TerrainWizard() { }
         #pragma warning restore UAL0015
 
-        internal const int kMaxResolution = 4097;
-
         internal Terrain      terrain;
         internal TerrainData    terrainData
         {
@@ -190,10 +188,10 @@ namespace UnityEditor
                 errorString = "Terrain does not exist";
             }
 
-            if (m_Resolution > kMaxResolution)
+            if (m_Resolution > TerrainData.maxHeightmapResolution)
             {
                 isValid = false;
-                errorString = "Heightmaps above 4097x4097 in resolution are not supported";
+                errorString = $"Heightmaps above {TerrainData.maxHeightmapResolution}x{TerrainData.maxHeightmapResolution} in resolution are not supported";
                 Debug.LogError(errorString);
             }
 

@@ -181,8 +181,8 @@ namespace UnityEditor.Shaders
 
             if (isValid && !ParentShaderBuildSettingsUI.IsKeywordOverrideUsedInProject(DataIndex))
             {
-                m_WarnBox.text = "No match found for this keyword declaration in the project.";
-                m_WarnBox.tooltip = "Keyword declaration overrides must match a declaration in the project exactly (including the empty keyword '_') or the override has no effect.";
+                m_WarnBox.text = L10n.Tr("No match found for this keyword declaration in the project.", null);
+                m_WarnBox.tooltip = L10n.Tr("Keyword declaration overrides must match a declaration in the project exactly (including the empty keyword '_') or the override has no effect.", null);
                 m_WarnBox.style.display = DisplayStyle.Flex;
             }
             else
@@ -260,12 +260,12 @@ namespace UnityEditor.Shaders
 
         private void OnKeywordIncludedToggleChanged(ChangeEvent<bool> evt)
         {
-            var dataIitem = DataSource[DataIndex];
+            var dataItem = DataSource[DataIndex];
             var toggle = evt.target as Toggle;
             int kwIndex = (int)toggle.userData;
-            dataIitem.keywords[kwIndex].keepInBuild = evt.newValue;
+            dataItem.keywords[kwIndex].keepInBuild = evt.newValue;
 
-            SetKeywords(dataIitem.keywords);
+            SetKeywords(dataItem.keywords);
             ParentShaderBuildSettingsUI.RecordPendingState(ShaderBuildSettingsUI.k_ToggleKeywordInBuildUndoName);
         }
     }

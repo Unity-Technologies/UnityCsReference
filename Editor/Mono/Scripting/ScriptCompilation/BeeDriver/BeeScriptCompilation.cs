@@ -129,6 +129,17 @@ namespace UnityEditor.Scripting.ScriptCompilation
             searchPaths.CopyTo(sortedSearchPaths);
             Array.Sort(sortedSearchPaths);
 
+
+            static bool IsTargetingLatestDotnet(ScriptCompilerOptions options) =>
+#pragma warning disable CS0618
+                options?.ApiCompatibilityLevel == ApiCompatibilityLevel.NET;
+#pragma warning restore CS0618
+
+            // Extract ApiCompatibiltyLevel for our target pack from settings, or the first assembly.
+            var useNet10 = settings != null
+                ? IsTargetingLatestDotnet(settings.PredefinedAssembliesCompilerOptions)
+                : assemblies.Length > 0 && IsTargetingLatestDotnet(assemblies[0].CompilerOptions);
+
             return new ScriptCompilationData()
             {
                 OutputDirectory = outputDirectory,
@@ -148,11 +159,17 @@ namespace UnityEditor.Scripting.ScriptCompilation
                 EmitInfoForScriptUpdater = enableScriptUpdater,
                 TargetingPacks = new[]
                 {
-                    new TargetingPackData
-                    {
-                        Name = "Unity.BCLExtensions.Netstandard21",
-                        Path = BCLExtensions.NetstandardTargetingPackDirectory()
-                    }
+                    useNet10
+                        ? new TargetingPackData
+                        {
+                            Name = "Unity.BCLExtensions.Net10",
+                            Path = BCLExtensions.CoreCLRTargetingPackDirectory()
+                        }
+                        : new TargetingPackData
+                        {
+                            Name = "Unity.BCLExtensions.Netstandard21",
+                            Path = BCLExtensions.NetstandardTargetingPackDirectory()
+                        }
                 }
             };
         }

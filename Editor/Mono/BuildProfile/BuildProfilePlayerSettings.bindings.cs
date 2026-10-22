@@ -9,11 +9,28 @@ using UnityEngine.Scripting;
 
 namespace UnityEditor.Build.Profile;
 
+/// <summary>
+/// The player settings that a build profile stores in place of the global player settings.
+/// </summary>
+/// <remarks>
+/// A build profile has at most one <see cref="BuildProfilePlayerSettings"/> component. Use
+/// <see cref="BuildProfile.CreateComponent{T}"/> to add one that starts as a copy of the global player settings,
+/// <see cref="BuildProfile.GetComponent{T}"/> to check whether a profile has one, and
+/// <see cref="BuildProfile.RemoveComponent{T}()"/> to remove it. A build profile without this component uses the
+/// global player settings, which <see cref="BuildProfile.GetComponent{T}"/> returns when you request
+/// <see cref="PlayerSettings"/>.
+///
+/// To change the player settings of the active build profile, use the <see cref="PlayerSettings"/> API. To change the
+/// player settings of an inactive build profile, edit this component through a <see cref="SerializedObject"/>. The
+/// serialized property paths of this component aren't part of the public API and might change in future versions.
+/// </remarks>
 [NativeHeader("Runtime/Misc/PlayerSettings.h")]
 [NativeClass("BuildProfilePlayerSettings", PersistentTypeId = 0x43E334C1)]
 [UsedByNativeCode]
 [VisibleToOtherModules]
-internal class BuildProfilePlayerSettings : UnityEngine.Object
+[ExcludeFromObjectFactory]
+[ExcludeFromPreset]
+public sealed class BuildProfilePlayerSettings : UnityEngine.Object
 {
     internal BuildProfilePlayerSettings(global::UnityEngine.EntityId id) : base(id) {}
     private extern static EntityId Internal_Create();
@@ -21,7 +38,7 @@ internal class BuildProfilePlayerSettings : UnityEngine.Object
     internal SerializedObject GetSerializedObject() => new SerializedObject(this);
 
     [RequiredByNativeCode]
-    public BuildProfilePlayerSettings()
+    internal BuildProfilePlayerSettings()
     {
         SetEntityIdFromConstructor(Internal_Create());
     }

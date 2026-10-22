@@ -313,7 +313,7 @@ namespace UnityEditor.UIElements.Bindings
                     p.FindPropertyRelative("y").doubleValue = v.y;
                 if (!p.vector4Value.z.Equals(v.z))
                     p.FindPropertyRelative("z").doubleValue = v.z;
-                if (!p.vector4Value.z.Equals(v.w))
+                if (!p.vector4Value.w.Equals(v.w))
                     p.FindPropertyRelative("w").doubleValue = v.w;
             }
             else

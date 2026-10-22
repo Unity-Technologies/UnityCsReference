@@ -321,7 +321,7 @@ namespace UnityEngine.UIElements
 
                     using (k_UpdateSubTreeMarker.Auto())
                     {
-                        UpdateSubTree(visualTree, changeEventsList);
+                        UpdateSubTree(visualTree, visualTree.layoutNode.HasNewLayout, changeEventsList);
                     }
 
                     if (recordLayout)
@@ -408,7 +408,7 @@ namespace UnityEngine.UIElements
         /// <returns> has his state changed</returns>
         static private bool UpdateHierarchyDisplayed(VisualElement ve, List<(Rect, Rect, VisualElement)> changeEvents, bool inheritedDisplayed = true)
         {
-            var isDisplayed = inheritedDisplayed & ve.resolvedStyle.display != DisplayStyle.None;
+            var isDisplayed = inheritedDisplayed & ve.computedStyle.display != DisplayStyle.None;
 
             // If our parent is disabled, there is no need to disable the rendering on the child,
             // but if the child is disabled, there is no need to re-enable it.
@@ -449,7 +449,7 @@ namespace UnityEngine.UIElements
             return true;
         }
 
-        private void UpdateSubTree(VisualElement ve, List<(Rect, Rect, VisualElement)> changeEvents)
+        private void UpdateSubTree(VisualElement ve, bool hasNewLayout, List<(Rect, Rect, VisualElement)> changeEvents)
         {
             // Because the UpdateSubTree recursion always starts form the root, and does not process subtrees that are not displayed, inheritedDisplay is always true.
             bool isDisplayedJustChanged = UpdateHierarchyDisplayed(ve, changeEvents, true);
@@ -460,10 +460,12 @@ namespace UnityEngine.UIElements
             if (!ve.areAncestorsAndSelfDisplayed)
                 return;
 
-            Rect layoutRect = new Rect(ve.layoutNode.LayoutX, ve.layoutNode.LayoutY, ve.layoutNode.LayoutWidth, ve.layoutNode.LayoutHeight);
+            ref var computedLayout = ref ve.computedLayout;
+            Rect layoutRect = computedLayout.GetRect();
+            computedLayout.GetPadding(out float paddingLeft, out float paddingTop, out float paddingRight, out float paddingBottom);
 
             // we encode right/bottom into width/height
-            Rect rawPadding = new Rect(ve.layoutNode.LayoutPaddingLeft, ve.layoutNode.LayoutPaddingLeft, ve.layoutNode.LayoutPaddingRight, ve.layoutNode.LayoutPaddingBottom);
+            Rect rawPadding = new Rect(paddingLeft, paddingTop, paddingRight, paddingBottom);
 
             // This is not the "real" padding rect: it may differ in size and position because the borders are ignored.
             // Alone, it cannot be used to identify padding size changes, because the bottom and right values depend on the
@@ -507,8 +509,8 @@ namespace UnityEngine.UIElements
                 if (!ve.hasDefaultRotationAndScale)
                 {
                     // if the pivot is not at the top left, update the transform
-                    if (!Mathf.Approximately(ve.resolvedStyle.transformOrigin.x, 0.0f) ||
-                        !Mathf.Approximately(ve.resolvedStyle.transformOrigin.y, 0.0f))
+                    var origin = ve.ResolveTransformOrigin();
+                    if (!Mathf.Approximately(origin.x, 0.0f) || !Mathf.Approximately(origin.y, 0.0f))
                     {
                         changeType |= VersionChangeType.Transform;
                     }
@@ -528,7 +530,6 @@ namespace UnityEngine.UIElements
             ve.lastPseudoPadding = layoutPseudoPaddingRect;
 
             // ignore clean sub trees
-            bool hasNewLayout = ve.layoutNode.HasNewLayout;
             if (hasNewLayout)
             {
                 var childCount = ve.hierarchy.childCount;
@@ -537,7 +538,7 @@ namespace UnityEngine.UIElements
                     var child = ve.hierarchy[i];
 
                     if (child.layoutNode.HasNewLayout)
-                        UpdateSubTree(child, changeEvents);
+                        UpdateSubTree(child, true, changeEvents);
                 }
             }
 

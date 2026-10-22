@@ -134,6 +134,10 @@ namespace UnityEngine.UIElements
         /// <c>[OnComponentChanged]</c> handler. Managed-only — not consumed by the native renderer.
         /// </summary>
         Component = 1 << 23,
+        /// <summary>
+        /// The element's USS class list changed. Comes with <see cref="StyleSheet"/> only when a loaded style sheet uses one of the changed classes.
+        /// </summary>
+        ClassList = 1 << 24,
     }
 
     /// <summary>
@@ -814,6 +818,20 @@ namespace UnityEngine.UIElements
 
         // Authoring panels rely on this default; only the PanelSettings-owned game view panel overrides it.
         internal virtual bool animationPlaybackSuspended => false;
+
+        // On the panel because toggling clip playback replaces the animation system.
+        HashSet<VisualElement> m_PreviewingClipOwners;
+
+        internal void SetClipOwnerPreviewing(VisualElement owner, bool isPreviewing)
+        {
+            if (isPreviewing)
+                (m_PreviewingClipOwners ??= new HashSet<VisualElement>()).Add(owner);
+            else
+                m_PreviewingClipOwners?.Remove(owner);
+        }
+
+        internal bool IsClipOwnerPreviewing(VisualElement owner) =>
+            m_PreviewingClipOwners != null && m_PreviewingClipOwners.Contains(owner);
 
         public abstract ContextType contextType { get; }
 
@@ -1679,6 +1697,7 @@ namespace UnityEngine.UIElements
             {
                 DestroyAllElementBinders();
                 atlas = null;
+                ClearLastPick();
                 visualTree.Clear();
                 m_VisualTreeUpdater.Dispose();
                 if (textElementRegistry.IsValueCreated)
@@ -1744,19 +1763,41 @@ namespace UnityEngine.UIElements
 
         public override VisualElement Pick(Vector2 point, int pointerId)
         {
-            // The VisualTreeHierarchyFlagsUpdater updates the ElementUnderPointer after each validate layout.
             ValidateLayout();
-            var element = m_TopElementUnderPointers.GetTopElementUnderPointer(pointerId,
-                out Vector2 lastPosition, out bool isTemporary);
 
-            // Assume same pixel means same element, given nothing has changed in the layout
-            Vector2Int PixelOf(Vector2 p) => Vector2Int.FloorToInt(p);
-            if (!isTemporary && PixelOf(lastPosition) == PixelOf(point))
-            {
-                return element;
-            }
+            if ((uint)pointerId >= (uint)m_LastPicks.Length)
+                return PickAll(visualTree, point);
 
-            return PickAll(visualTree, point);
+            var pixel = Vector2Int.FloorToInt(point);
+            ref var memo = ref m_LastPicks[pointerId];
+            if (memo.valid && memo.pixel == pixel && memo.version == m_Version)
+                return memo.result;
+
+            var versionBeforePick = m_Version;
+            var result = PickAll(visualTree, point);
+            if (m_Version != versionBeforePick)   // a ContainsPoint override changed the tree mid-pick
+                return result;
+
+            memo.result = result;
+            memo.pixel = pixel;
+            memo.version = versionBeforePick;
+            memo.valid = true;
+            return result;
+        }
+
+        struct PickMemo
+        {
+            public bool valid;
+            public Vector2Int pixel;
+            public uint version;
+            public VisualElement result;
+        }
+
+        readonly PickMemo[] m_LastPicks = new PickMemo[PointerId.maxPointers];
+
+        void ClearLastPick()
+        {
+            Array.Clear(m_LastPicks, 0, m_LastPicks.Length);
         }
 
         private bool m_ValidatingLayout = false;
@@ -1996,7 +2037,10 @@ namespace UnityEngine.UIElements
                 }
 
             if ((versionChangeType & VersionChangeType.Hierarchy) == VersionChangeType.Hierarchy)
+            {
                 ++m_HierarchyVersion;
+                ClearLastPick();   // don't keep a removed subtree alive until the next pick
+            }
 
             if ((versionChangeType & VersionChangeType.Name) == VersionChangeType.Name)
                 ++m_NameVersion;

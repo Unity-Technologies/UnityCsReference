@@ -1281,34 +1281,9 @@ namespace UnityEditor.Build.Profile
         public static bool HandlePlayerSettingsChanged(
             BuildProfile currentBuildProfile, BuildProfile nextBuildProfile)
         {
-            PlayerSettings projectSettingsPlayerSettings = GetGlobalPlayerSettings();
-            PlayerSettings currentPlayerSettings = projectSettingsPlayerSettings;
-            PlayerSettings nextPlayerSettings = projectSettingsPlayerSettings;
-
-            var currentBuildTarget = EditorUserBuildSettings.activeBuildTarget;
-            var nextBuildTarget = EditorUserBuildSettings.activeBuildTarget;
-
-            if (currentBuildProfile != null)
-            {
-                // For build platform switch on the active multi-target profile, buildTarget
-                // is already mutated, so falling back to the pre-switch active buildTarget.
-                if (currentBuildProfile != nextBuildProfile)
-                    currentBuildTarget = currentBuildProfile.buildTarget;
-
-                if (currentBuildProfile.playerSettings != null)
-                {
-                    currentPlayerSettings = currentBuildProfile.playerSettings;
-                }
-            }
-
-            if (nextBuildProfile != null)
-            {
-                nextBuildTarget = nextBuildProfile.buildTarget;
-                if (nextBuildProfile.playerSettings != null)
-                {
-                    nextPlayerSettings = nextBuildProfile.playerSettings;
-                }
-            }
+            GetPlayerSettingsChange(currentBuildProfile, nextBuildProfile,
+                out var currentPlayerSettings, out var nextPlayerSettings,
+                out var currentBuildTarget, out var nextBuildTarget);
 
             var settingsRequiringRestart = PlayerSettings.GetSettingsRequiringRestart(currentPlayerSettings,
                 nextPlayerSettings, currentBuildTarget, nextBuildTarget);
@@ -1341,6 +1316,65 @@ namespace UnityEditor.Build.Profile
                 currentPlayerSettings, nextPlayerSettings,
                 currentBuildTarget, nextBuildTarget);
             return true;
+        }
+
+        /// <summary>
+        /// Same as <see cref="HandlePlayerSettingsChanged"/>, but logs a warning for settings that require an
+        /// editor restart instead of prompting the user.
+        /// </summary>
+        public static void HandlePlayerSettingsChangedWithoutPrompt(
+            BuildProfile currentBuildProfile, BuildProfile nextBuildProfile)
+        {
+            GetPlayerSettingsChange(currentBuildProfile, nextBuildProfile,
+                out var currentPlayerSettings, out var nextPlayerSettings,
+                out var currentBuildTarget, out var nextBuildTarget);
+
+            var settingsRequiringRestart = PlayerSettings.GetSettingsRequiringRestart(currentPlayerSettings,
+                nextPlayerSettings, currentBuildTarget, nextBuildTarget);
+            if (settingsRequiringRestart.Length > 0)
+            {
+                var playerSettingNames = GetPlayerSettingNamesToEditorRestartPromptText(settingsRequiringRestart);
+                Debug.LogWarning("[BuildProfile] The Unity editor must be restarted for the following settings to take effect:\n" + playerSettingNames);
+            }
+
+            PlayerSettingsEditor.HandlePlayerSettingsChanged(
+                currentPlayerSettings, nextPlayerSettings,
+                currentBuildTarget, nextBuildTarget);
+        }
+
+        static void GetPlayerSettingsChange(
+            BuildProfile currentBuildProfile, BuildProfile nextBuildProfile,
+            out PlayerSettings currentPlayerSettings, out PlayerSettings nextPlayerSettings,
+            out BuildTarget currentBuildTarget, out BuildTarget nextBuildTarget)
+        {
+            PlayerSettings projectSettingsPlayerSettings = GetGlobalPlayerSettings();
+            currentPlayerSettings = projectSettingsPlayerSettings;
+            nextPlayerSettings = projectSettingsPlayerSettings;
+
+            currentBuildTarget = EditorUserBuildSettings.activeBuildTarget;
+            nextBuildTarget = EditorUserBuildSettings.activeBuildTarget;
+
+            if (currentBuildProfile != null)
+            {
+                // For build platform switch on the active multi-target profile, buildTarget
+                // is already mutated, so falling back to the pre-switch active buildTarget.
+                if (currentBuildProfile != nextBuildProfile)
+                    currentBuildTarget = currentBuildProfile.buildTarget;
+
+                if (currentBuildProfile.playerSettings != null)
+                {
+                    currentPlayerSettings = currentBuildProfile.playerSettings;
+                }
+            }
+
+            if (nextBuildProfile != null)
+            {
+                nextBuildTarget = nextBuildProfile.buildTarget;
+                if (nextBuildProfile.playerSettings != null)
+                {
+                    nextPlayerSettings = nextBuildProfile.playerSettings;
+                }
+            }
         }
 
 

@@ -1053,6 +1053,57 @@ namespace Unity.Burst.Editor
             return fragNr;
         }
 
+        /// <summary>
+        /// Gets the functions of the enhanced view, or null if the text is not shown with the disassembler.
+        /// </summary>
+        internal List<BurstDisassembler.AsmFunction> Functions => _disassembler?.Functions;
+
+        /// <summary>
+        /// Gets the vertical position of a line in the enhanced view, unfolding its block if it is folded.
+        /// </summary>
+        internal float GetLinePositionY(int blockIdx, int lineInBlock)
+        {
+            if (_folded[blockIdx])
+            {
+                StopSelection();
+                ClearLinePress();
+                FoldUnfoldBlock(blockIdx);
+            }
+
+            var lineNr = lineInBlock;
+            for (var i = 0; i < blockIdx; i++)
+            {
+                lineNr += _folded[i] ? 1 : _disassembler.Blocks[i].Length;
+            }
+            return lineNr * fontHeight;
+        }
+
+        /// <summary>
+        /// Gets the index of the last function starting at or above a vertical position, or -1 if there is none.
+        /// </summary>
+        /// <remarks>Uses the block positions of the last layout.</remarks>
+        internal int GetFunctionIdxAtPositionY(float positionY)
+        {
+            var functions = Functions;
+            if (functions == null || blockLine == null || fontHeight <= 0f)
+            {
+                return -1;
+            }
+
+            var result = -1;
+            for (var i = 0; i < functions.Count; i++)
+            {
+                var function = functions[i];
+                var lineNr = blockLine[function.BlockIndex] + (_folded[function.BlockIndex] ? 0 : function.LineInBlock);
+                if (lineNr * fontHeight > positionY)
+                {
+                    break;
+                }
+                result = i;
+            }
+            return result;
+        }
+
         internal bool SearchText(SearchCriteria searchCriteria, Regex regx, ref Rect workingArea, bool stopFirstMatch = false, bool focusTop = false) =>
             _disassembler == null
                 ? SearchTextPlain(searchCriteria, regx, ref workingArea, stopFirstMatch, focusTop)

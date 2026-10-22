@@ -73,7 +73,6 @@ namespace UnityEditor
                 {
                     ++EditorGUI.indentLevel;
 
-                    EditorGUILayout.PropertyField(m_Resolution, Styles.resolutionContent);
                     EditorGUILayout.Slider(m_ClusterResolution, 0.1F, 1.0F, Styles.clusterResolutionContent);
                     EditorGUILayout.IntSlider(m_IrradianceBudget, 32, 2048, Styles.irradianceBudgetContent);
                     if (m_IrradianceQuality.hasMultipleDifferentValues)
@@ -107,6 +106,7 @@ namespace UnityEditor
                 var usingComputeLightBaker = UnityEditor.Rendering.EditorGraphicsSettings.defaultLightBaker == UnityEditor.Rendering.LightBaker.UnityComputeLightBaker;
                 if (!usingComputeLightBaker)
                 {
+                    EditorGUILayout.PropertyField(m_Resolution, Styles.resolutionContent);
                     if (m_AntiAliasingSamples.hasMultipleDifferentValues)
                     {
                         EditorGUI.BeginChangeCheck();
@@ -168,7 +168,7 @@ namespace UnityEditor
 
             public static readonly GUIContent generalGIContent = L10n.TextContent("General Parameters", "Settings used in both Precomputed Realtime Global Illumination and Baked Global Illumination.", null, null);
             public static readonly GUIContent precomputedRealtimeGIContent = L10n.TextContent("Realtime Global Illumination", "Settings used in Precomputed Realtime Global Illumination where it is precomputed how indirect light can bounce between static objects, but the final lighting is done at runtime. Lights, ambient lighting in addition to the materials and emission of static objects can still be changed at runtime. Only static objects can affect GI by blocking and bouncing light, but non-static objects can receive bounced light via light probes.", null, null);  // Reuse the label from the Lighting window
-            public static readonly GUIContent resolutionContent = L10n.TextContent("Resolution", "Realtime lightmap resolution in texels per world unit. This value is multiplied by the realtime resolution in the Lighting window to give the output lightmap resolution. This should generally be an order of magnitude less than what is common for baked lightmaps to keep the precompute time manageable and the performance at runtime acceptable. Note that if this is made more fine-grained, then the Irradiance Budget will often need to be increased too, to fully take advantage of this increased detail.", null, null);
+            public static readonly GUIContent resolutionContent = L10n.TextContent("Resolution", "Multiplier for the Indirect Resolution in the Lighting window. The result sets how finely the lightmapper rounds the lightmap UV aspect ratio of non-square Terrains. With Realtime Global Illumination enabled, the result is also the realtime lightmap resolution.", null, null);
             public static readonly GUIContent clusterResolutionContent = L10n.TextContent("Cluster Resolution", "The ratio between the resolution of the clusters with which light bounce is calculated and the resolution of the output lightmaps that sample from these.", null, null);
             public static readonly GUIContent irradianceBudgetContent = L10n.TextContent("Irradiance Budget", "The amount of data used by each texel in the output lightmap. Specifies how fine-grained a view of the scene an output texel has. Small values mean more averaged out lighting, since the light contributions from more clusters are treated as one. Affects runtime memory usage and to a lesser degree runtime CPU usage.", null, null);
             public static readonly GUIContent irradianceQualityContent = L10n.TextContent("Irradiance Quality", "The number of rays to cast to compute which clusters affect a given output lightmap texel - the granularity of how this is saved is defined by the Irradiance Budget. Affects the speed of the precomputation but has no influence on runtime performance.", null, null);

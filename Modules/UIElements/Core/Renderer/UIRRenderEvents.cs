@@ -125,9 +125,6 @@ namespace UnityEngine.UIElements.UIR
             renderData.owner = ve;
             ve.renderData = renderData;
 
-            // Unset the WorldClipDirty VisualElement flag. See VisualElements.flags for more details.
-            ve.flags &= ~VisualElementFlags.WorldClipDirty;
-
             if (ve.useRenderTexture)
                 renderData.flags |= RenderDataFlags.IsSubTreeQuad;
 
@@ -1023,8 +1020,6 @@ namespace UnityEngine.UIElements.UIR
                 return;
 
             stats.recursiveTransformUpdatesExpanded++;
-
-            renderData.flags |= RenderDataFlags.IsClippingRectDirty;
 
             transformChanged |= (renderData.dirtiedValues & RenderDataDirtyTypes.Transform) != 0;
             bool promotedToBone = false;

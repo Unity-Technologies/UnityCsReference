@@ -38,6 +38,7 @@ public static class Registry
     /// For subgraphs, using the root graph ID associates the context with the entire graph hierarchy.
     /// A unique identifier for the context is accessible through <see cref="Context.VisualizationContextID"/>.
     /// Dispose of the returned <see cref="Context"/> when it is no longer needed.
+    /// The returned <see cref="Context"/> doesn't survive a domain reload. Call this method again after a domain reload to restore the visualization.
     /// Throws an <see cref="ArgumentException"/> when the provided graph ID is not valid.
     /// </remarks>
     /// <example>

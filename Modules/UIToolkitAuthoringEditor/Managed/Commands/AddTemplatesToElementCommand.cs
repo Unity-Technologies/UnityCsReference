@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using Unity.UIToolkit.Editor.Utilities;
 using UnityEditor;
 using UnityEditor.UIElements;
 using UnityEngine.Pool;
@@ -23,10 +24,10 @@ internal sealed class AddTemplatesToElementCommand : Command<AddTemplatesToEleme
         return cmd;
     }
 
-    public static void Execute(object source, VisualElementAsset parentAsset, int index, VisualTreeAsset[] templates)
+    public static CommandExecutionStatus Execute(object source, VisualElementAsset parentAsset, int index, VisualTreeAsset[] templates)
     {
         using var command = GetPooled(source, parentAsset, index, templates);
-        UICommandQueue.Execute(command);
+        return UICommandQueue.Execute(command).Status;
     }
 
     public VisualElementAsset ParentAsset { get; private set; }
@@ -49,6 +50,8 @@ internal sealed class AddTemplatesToElementCommand : Command<AddTemplatesToEleme
         if (ParentAsset == null || ParentAsset.visualTreeAsset == null || Templates == null)
             return false;
         if (Index < -1 || Index > ParentAsset.childCount)
+            return false;
+        if (!VisualElementUtility.CanAddChildren(ParentAsset, Templates.Length))
             return false;
         foreach (var template in Templates)
         {

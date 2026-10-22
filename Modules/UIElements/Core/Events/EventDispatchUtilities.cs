@@ -242,6 +242,9 @@ namespace UnityEngine.UIElements
             if (DebuggerEventDispatchUtilities.InterceptEvent(compatibilityEvt, panel))
                 return;
 
+            var pointerState = panel.dispatcher?.pointerState;
+            var pointerEvt = (IPointerEvent)evt;
+
             using var path = PropagationPaths.Build(target, evt, eventCategories);
             try
             {
@@ -274,7 +277,7 @@ namespace UnityEngine.UIElements
                         if (evt.isImmediatePropagationStopped)
                             return;
 
-                        if (panel.ShouldSendCompatibilityMouseEvents((IPointerEvent)evt))
+                        if (pointerState?.ShouldSendCompatibilityMouseEvents(pointerEvt) ?? true)
                         {
                             HandleEvent_TrickleDownCallbacks(compatibilityEvt, panel, element);
 
@@ -291,7 +294,7 @@ namespace UnityEngine.UIElements
                         if (evt.isImmediatePropagationStopped)
                             return;
 
-                        if (panel.ShouldSendCompatibilityMouseEvents((IPointerEvent)evt))
+                        if (pointerState?.ShouldSendCompatibilityMouseEvents(pointerEvt) ?? true)
                         {
                             HandleEvent_TrickleDownHandleEvent(compatibilityEvt, panel, element, disabled);
 
@@ -322,7 +325,7 @@ namespace UnityEngine.UIElements
                         if (evt.isImmediatePropagationStopped)
                             return;
 
-                        if (panel.ShouldSendCompatibilityMouseEvents((IPointerEvent)evt))
+                        if (pointerState?.ShouldSendCompatibilityMouseEvents(pointerEvt) ?? true)
                         {
                             HandleEvent_BubbleUpAllDefaultActions(compatibilityEvt, panel, element, disabled, isCapturingTarget);
 
@@ -338,7 +341,7 @@ namespace UnityEngine.UIElements
                         if (evt.isImmediatePropagationStopped)
                             return;
 
-                        if (panel.ShouldSendCompatibilityMouseEvents((IPointerEvent)evt))
+                        if (pointerState?.ShouldSendCompatibilityMouseEvents(pointerEvt) ?? true)
                         {
                             HandleEvent_BubbleUpCallbacks(compatibilityEvt, panel, element);
 

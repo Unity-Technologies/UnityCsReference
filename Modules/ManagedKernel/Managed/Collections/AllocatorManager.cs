@@ -1383,10 +1383,12 @@ namespace Unity.Collections
             /// <summary>
             /// Global delegate table to hold TryFunction delegates for managed callers
             /// </summary>
-            [NoAutoStaticsCleanup] // must survive play mode transitions to avoid NRE; cleared on code reload via OnCodeLoaded
+            [NoAutoStaticsCleanup] // must survive play mode transitions to avoid NRE; cleared on code reload via ClearCacheBetweenCodeLoads
             internal static TryFunction[] TryFunctionDelegates = new TryFunction[MaxNumCustomAllocators];
 
-            [OnCodeLoaded]
+            // Not [OnCodeLoaded]: allocators registered earlier in the same load, e.g. by [EntitiesWorldInitialize]
+            // which runs before [OnCodeLoaded], would lose their delegates.
+            [ClearCacheBetweenCodeLoads]
             static void Initialize()
             {
                 TryFunctionDelegates = new TryFunction[MaxNumCustomAllocators];
