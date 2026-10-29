@@ -46,6 +46,34 @@ namespace UnityEngine.UIElements.UIR
             public RectInt drawSourceBounds;
             public Vector4 drawSourceTexOffsets;
 
+            public Vector2 pixelsPerPoint;
+
+            PostProcessingMargins m_ReadMargins;
+            PostProcessingMargins m_WriteMargins;
+            bool m_HasMargins;
+
+            // Visible area of a RenderTree op in its local points, margins of its passes included; null when unknown
+            public Rect? visibleRect;
+            public bool hasVisibleRect;
+
+            // Read + write margins of every pass above a RenderTree op, in points
+            public Vector4 chainMargins;
+            public int chainPassCount;
+            public bool hasChainMargins;
+
+            public PostProcessingMargins readMargins { get { EnsureMargins(); return m_ReadMargins; } }
+            public PostProcessingMargins writeMargins { get { EnsureMargins(); return m_WriteMargins; } }
+
+            // User margin callbacks run once per op and frame, whoever asks first
+            void EnsureMargins()
+            {
+                if (m_HasMargins)
+                    return;
+                m_ReadMargins = FilterHelper.GetReadMargins(m_FilterPass, m_Filter);
+                m_WriteMargins = FilterHelper.GetWriteMargins(m_FilterPass, m_Filter);
+                m_HasMargins = true;
+            }
+
             // Only assigned after the operation has been drawn. Only used by Effect draw operations.
             public RenderTreeAtlas.AtlasBlock dstAtlasBlock;
 
@@ -114,6 +142,13 @@ namespace UnityEngine.UIElements.UIR
                 bounds = default;
                 drawSourceBounds = default;
                 drawSourceTexOffsets = default;
+                pixelsPerPoint = default;
+                m_HasMargins = false;
+                visibleRect = null;
+                hasVisibleRect = false;
+                chainMargins = default;
+                chainPassCount = 0;
+                hasChainMargins = false;
                 dstAtlasBlock = default;
                 dstTextureId = TextureId.invalid;
             }
@@ -151,6 +186,10 @@ namespace UnityEngine.UIElements.UIR
         int m_MaxBlockHeight;
 
         float m_PixelsPerPoint;
+        Vector2 m_PanelPixelSize;
+        Rect m_PanelRect;
+        bool m_PanelIsFlat;
+        bool m_HasScreenClip;
 
         // Absorbs the float error of point/pixel round trips so snapping doesn't add a spurious pixel
         const float k_PixelSnapTolerance = 0.01f;
@@ -176,7 +215,12 @@ namespace UnityEngine.UIElements.UIR
 
             m_MaxBlockWidth = RenderTreeAtlas.maxBlockWidth;
             m_MaxBlockHeight = RenderTreeAtlas.maxBlockHeight;
-            m_PixelsPerPoint = rootRenderTree.rootRenderData.owner.scaledPixelsPerPoint;
+            var panelRoot = rootRenderTree.rootRenderData.owner;
+            m_PixelsPerPoint = panelRoot.scaledPixelsPerPoint;
+            m_PanelPixelSize = panelRoot.layout.size * m_PixelsPerPoint;
+            m_PanelRect = panelRoot.rect;
+            m_PanelIsFlat = m_RenderTreeManager.panel.isFlat;
+            m_HasScreenClip = m_PanelIsFlat && !m_RenderTreeManager.drawInCameras;
 
             BuildDrawOperationTree(rootRenderTree);
             UpdateDrawBounds_PostOrder(m_RootOperation);
@@ -253,7 +297,6 @@ namespace UnityEngine.UIElements.UIR
         void UpdateDrawBounds_PostOrder(DrawOperation op)
         {
             Rect? bounds = null;
-            float scale = m_PixelsPerPoint;
 
             switch (op.type)
             {
@@ -267,6 +310,7 @@ namespace UnityEngine.UIElements.UIR
                         Debug.Assert(child.nextSibling == null); // Effect with multiple children are not supported yet.
 
                         UpdateDrawBounds_PostOrder(child);
+                        op.pixelsPerPoint = child.pixelsPerPoint;
                         if (UIRUtility.RectHasArea(op.drawSourceBounds))
                         {
                             bounds = UIRUtility.CastToRect(op.drawSourceBounds);
@@ -284,7 +328,7 @@ namespace UnityEngine.UIElements.UIR
                         if (UIRUtility.RectHasArea(child.bounds))
                         {
                             UIRUtility.ComputeMatrixRelativeToRenderTree(child.visualElement.renderData, out Matrix4x4 childOpToParentOp);
-                            Rect childPointBounds = PixelsToPoints(child.bounds);
+                            Rect childPointBounds = PixelsToPoints(child.bounds, child.pixelsPerPoint);
                             Rect childBounds = VisualElement.CalculateConservativeRect(ref childOpToParentOp, childPointBounds);
                             bounds = bounds == null ? childBounds : UIRUtility.Encapsulate(bounds.Value, childBounds);
                         }
@@ -298,8 +342,16 @@ namespace UnityEngine.UIElements.UIR
                     else
                         Debug.Assert(bounds == null); // Children bounds should be zero
 
+                    bool clipped = false;
+                    if (bounds != null && op.parent != null && TryGetVisibleBounds(op, out Rect visible))
+                    {
+                        clipped = true;
+                        bounds = Intersect(bounds.Value, visible);
+                    }
+
+                    op.pixelsPerPoint = ComputePixelsPerPoint(op, bounds, clipped);
                     if (bounds != null)
-                        bounds = ScaleRect(bounds.Value, scale);
+                        bounds = ScaleRect(bounds.Value, op.pixelsPerPoint);
 
                     break;
                 }
@@ -326,9 +378,9 @@ namespace UnityEngine.UIElements.UIR
                 if (parentOp?.type == DrawOperationType.Effect)
                 {
                     // Inflate for the parent read and write margins
-                    var readMargins = FilterHelper.GetReadMargins(parentOp.FilterPass, parentOp.filter);
-                    var writeMargins = FilterHelper.GetWriteMargins(parentOp.FilterPass, parentOp.filter);
-                    var inflated = InflateByMargins(InflateByMargins(r, readMargins, scale), writeMargins, scale);
+                    var readMargins = parentOp.readMargins;
+                    var writeMargins = parentOp.writeMargins;
+                    var inflated = InflateByMargins(InflateByMargins(r, readMargins, op.pixelsPerPoint), writeMargins, op.pixelsPerPoint);
                     rectInt = SnapOutwardToPixels(inflated);
 
                     if (ExceedsAtlasLimits(rectInt))
@@ -340,7 +392,7 @@ namespace UnityEngine.UIElements.UIR
                         rectInt = SnapOutwardToPixels(r);
                     }
 
-                    RectInt sourceBounds = SnapOutwardToPixels(InflateByMargins(r, writeMargins, scale));
+                    RectInt sourceBounds = SnapOutwardToPixels(InflateByMargins(r, writeMargins, op.pixelsPerPoint));
                     op.parent.drawSourceBounds = sourceBounds;
 
                     // Whole texels, so the effect samples its source texel-centered
@@ -365,6 +417,9 @@ namespace UnityEngine.UIElements.UIR
                 int width = op.bounds.width;
                 int height = op.bounds.height;
 
+                if (op.type == DrawOperationType.RenderTree)
+                    op.renderTree.rasterPixelsPerPoint = Vector2.zero;
+
                 RenderTreeAtlas.AtlasBlock block;
                 if (RenderTreeAtlas.ReserveSize(width, height, out block))
                 {
@@ -382,34 +437,188 @@ namespace UnityEngine.UIElements.UIR
                     }
 
                     op.dstAtlasBlock = block;
+
+                    // The content op's block is the largest and the one a clamp squeezes
+                    if (op.type == DrawOperationType.RenderTree && width > 0 && height > 0)
+                        op.renderTree.rasterPixelsPerPoint = Vector2.Scale(op.pixelsPerPoint, new Vector2(block.width / (float)width, block.height / (float)height));
+
                     if (op.parent.type == DrawOperationType.RenderTree)
                     {
-                        op.renderTree.quadRect = PixelsToPoints(op.bounds);
+                        op.renderTree.quadRect = PixelsToPoints(op.bounds, op.pixelsPerPoint);
                         op.renderTree.quadUVRect = block.uvRect;
                     }
                 }
             }
         }
 
-        static Rect ScaleRect(Rect r, float scale)
+        void EnsureChainMargins(DrawOperation op)
         {
-            return new Rect(r.x * scale, r.y * scale, r.width * scale, r.height * scale);
+            if (op.hasChainMargins)
+                return;
+            var sum = Vector4.zero;
+            int passCount = 0;
+            for (var effectOp = op.parent; effectOp != null && effectOp.type == DrawOperationType.Effect; effectOp = effectOp.parent)
+            {
+                PostProcessingMargins read = effectOp.readMargins, write = effectOp.writeMargins;
+                sum += new Vector4(read.left + write.left, read.top + write.top, read.right + write.right, read.bottom + write.bottom);
+                passCount++;
+            }
+            op.chainMargins = sum;
+            op.chainPassCount = passCount;
+            op.hasChainMargins = true;
         }
 
-        Rect PixelsToPoints(RectInt r)
+        static Rect InflateBy(Rect r, Vector4 margins)
         {
-            if (m_PixelsPerPoint <= 0)
+            return Rect.MinMaxRect(r.xMin - margins.x, r.yMin - margins.y, r.xMax + margins.z, r.yMax + margins.w);
+        }
+
+        // In screen points, so the slack stays a fixed amount of screen whatever the element's scale
+        const float k_VisibleBoundsGrid = 32;
+
+        // Only the part of the subtree that can be seen is rendered, so a zoomed or oversized element costs at most a screenful
+        bool TryGetVisibleBounds(DrawOperation op, out Rect visible)
+        {
+            visible = default;
+            if (!m_HasScreenClip)
+                return false;
+
+            // A backdrop-filter captures from this tree's texture and blurs past the visible edge
+            if (op.renderTree.HasBackdropFiltersIncludingPending())
+                return false;
+
+            Rect? visibleRect = GetVisibleRect(op);
+            if (visibleRect == null)
+                return false;
+
+            Vector2 grid = new Vector2(k_VisibleBoundsGrid, k_VisibleBoundsGrid) / Vector2.Max(UIRUtility.GetAxisScale(in op.visualElement.worldTransformRef), Vector2.one);
+            Rect v = visibleRect.Value;
+            visible = Rect.MinMaxRect(
+                Mathf.Floor(v.xMin / grid.x) * grid.x,
+                Mathf.Floor(v.yMin / grid.y) * grid.y,
+                Mathf.Ceil(v.xMax / grid.x) * grid.x,
+                Mathf.Ceil(v.yMax / grid.y) * grid.y);
+            return true;
+        }
+
+        // Top-down from the root: a nested tree sees what its parent tree's texture covers
+        Rect? GetVisibleRect(DrawOperation treeOp)
+        {
+            if (treeOp.hasVisibleRect)
+                return treeOp.visibleRect;
+            treeOp.hasVisibleRect = true;
+
+            var parentTreeOp = treeOp.parent;
+            while (parentTreeOp != null && parentTreeOp.type == DrawOperationType.Effect)
+                parentTreeOp = parentTreeOp.parent;
+            var outer = treeOp.visualElement.renderData;
+            if (parentTreeOp == null || outer == null)
+                return null;
+
+            Rect clip;
+            if (parentTreeOp.parent == null)
+            {
+                // The inherited clip: the element's own overflow clip doesn't apply to its border and background
+                var clipParent = outer.GetInheritanceParent(outer.parent);
+                clip = clipParent != null ? clipParent.clippingRect : m_PanelRect;
+            }
+            else
+            {
+                // A backdrop-filter in the parent tree captures this tree's content past the visible edge
+                if (parentTreeOp.renderTree.HasBackdropFiltersIncludingPending())
+                    return null;
+
+                // Overflow clips inside a filtered tree are left out, which only renders more than needed
+                Rect? parentVisible = GetVisibleRect(parentTreeOp);
+                if (parentVisible == null)
+                    return null;
+                clip = parentVisible.Value;
+            }
+
+            UIRUtility.ComputeMatrixRelativeToRenderTree(outer, out Matrix4x4 localToParentTree);
+            if (!TryInvertFlat(localToParentTree, out Matrix4x4 parentTreeToLocal))
+                return null;
+
+            // Effects read and write past the visible edge (blur taps, shadow offsets)
+            EnsureChainMargins(treeOp);
+            treeOp.visibleRect = InflateBy(VisualElement.CalculateConservativeRect(ref parentTreeToLocal, clip), treeOp.chainMargins);
+            return treeOp.visibleRect;
+        }
+
+        // Trees render flat, dropping depth, so a point maps back through the xy part only; a full 3D inverse would leave the element's plane
+        static bool TryInvertFlat(in Matrix4x4 m, out Matrix4x4 inverse)
+        {
+            inverse = Matrix4x4.identity;
+            float det = m.m00 * m.m11 - m.m01 * m.m10;
+            if (Mathf.Abs(det) <= UIRUtility.k_Epsilon)
+                return false;
+            float invDet = 1 / det;
+            inverse.m00 = m.m11 * invDet;
+            inverse.m01 = -m.m01 * invDet;
+            inverse.m10 = -m.m10 * invDet;
+            inverse.m11 = m.m00 * invDet;
+            inverse.m03 = -(inverse.m00 * m.m03 + inverse.m01 * m.m13);
+            inverse.m13 = -(inverse.m10 * m.m03 + inverse.m11 * m.m13);
+            return true;
+        }
+
+        static Rect? Intersect(Rect a, Rect b)
+        {
+            float xMin = Mathf.Max(a.xMin, b.xMin);
+            float yMin = Mathf.Max(a.yMin, b.yMin);
+            float xMax = Mathf.Min(a.xMax, b.xMax);
+            float yMax = Mathf.Min(a.yMax, b.yMax);
+            if (xMax <= xMin || yMax <= yMin)
+                return null;
+            return Rect.MinMaxRect(xMin, yMin, xMax, yMax);
+        }
+
+        // Rasterize at the owner's displayed density so a scaled element isn't magnified from a low-res texture
+        Vector2 ComputePixelsPerPoint(DrawOperation op, Rect? pointBounds, bool clippedToVisible)
+        {
+            var panelDensity = new Vector2(m_PixelsPerPoint, m_PixelsPerPoint);
+
+            // World space: the displayed density depends on the camera, so keep the panel's
+            if (op.parent == null || !m_PanelIsFlat)
+                return panelDensity;
+
+            var ve = op.visualElement;
+            Vector2 density = RenderTreeDensity.Compute(UIRUtility.GetAxisScale(in ve.worldTransformRef), ve.computedStyle.filter, m_PixelsPerPoint);
+
+            if (pointBounds == null || m_MaxBlockWidth <= 0 || m_MaxBlockHeight <= 0)
+                return density;
+
+            // Without a visible clip, content wider than the panel would spend texels off-screen
+            Rect content = pointBounds.Value;
+            if (!clippedToVisible)
+                density = RenderTreeDensity.LowerToFit(density, panelDensity, content.size, Vector2.Max(m_PanelPixelSize, Vector2.one));
+
+            // Fit the atlas with every pass's margins; outward snapping can add 2 texels per pass
+            EnsureChainMargins(op);
+            Rect b = InflateBy(content, op.chainMargins);
+            var atlasLimit = new Vector2(m_MaxBlockWidth - 1 - 2 * op.chainPassCount, m_MaxBlockHeight - 1 - 2 * op.chainPassCount);
+            return RenderTreeDensity.LowerToFit(density, panelDensity, b.size, atlasLimit);
+        }
+
+        static Rect ScaleRect(Rect r, Vector2 scale)
+        {
+            return new Rect(r.x * scale.x, r.y * scale.y, r.width * scale.x, r.height * scale.y);
+        }
+
+        static Rect PixelsToPoints(RectInt r, Vector2 pixelsPerPoint)
+        {
+            if (pixelsPerPoint.x <= 0 || pixelsPerPoint.y <= 0)
                 return Rect.zero;
-            return ScaleRect(UIRUtility.CastToRect(r), 1 / m_PixelsPerPoint);
+            return ScaleRect(UIRUtility.CastToRect(r), new Vector2(1 / pixelsPerPoint.x, 1 / pixelsPerPoint.y));
         }
 
-        static Rect InflateByMargins(Rect r, PostProcessingMargins margins, float scale)
+        static Rect InflateByMargins(Rect r, PostProcessingMargins margins, Vector2 scale)
         {
             return new Rect(
-                r.xMin - margins.left * scale,
-                r.yMin - margins.top * scale,
-                r.width + (margins.left + margins.right) * scale,
-                r.height + (margins.top + margins.bottom) * scale);
+                r.xMin - margins.left * scale.x,
+                r.yMin - margins.top * scale.y,
+                r.width + (margins.left + margins.right) * scale.x,
+                r.height + (margins.top + margins.bottom) * scale.y);
         }
 
         internal static RectInt SnapOutwardToPixels(Rect r)
@@ -619,7 +828,8 @@ namespace UnityEngine.UIElements.UIR
                 }
                 case DrawOperationType.RenderTree:
                 {
-                    m_RenderTreeManager.RenderSingleTree(op.renderTree, op.dstAtlasBlock.texture, op.dstAtlasBlock.rect, PixelsToPoints(bounds));
+                    float treePixelsPerPoint = Mathf.Sqrt(op.pixelsPerPoint.x * op.pixelsPerPoint.y);
+                    m_RenderTreeManager.RenderSingleTree(op.renderTree, op.dstAtlasBlock.texture, op.dstAtlasBlock.rect, PixelsToPoints(bounds, op.pixelsPerPoint), treePixelsPerPoint);
                     break;
                 }
                 default:

@@ -29,6 +29,9 @@ namespace UnityEditor.UIElements
         // next request.
         [IgnoreForUAL0015("Lazy style sheet cache, reloaded on demand by GetCommonLightStyleSheet")]
         static StyleSheet s_DefaultCommonLightStyleSheet;
+        [AutoStaticsCleanupOnCodeReload]
+        [IgnoreForUAL0015("Lazy placeholder, recreated on demand by GetEditorWindowRootPlaceholderStyleSheet")]
+        static StyleSheet s_EditorWindowRootPlaceholderStyleSheet;
 
         [OnCodeLoaded]
         static void RegisterUndoHandler()
@@ -40,6 +43,18 @@ namespace UnityEditor.UIElements
         static void UnregisterUndoHandler()
         {
             Undo.undoRedoEvent -= ClearStyleCacheAfterUndoIfTracked;
+        }
+
+        // Packages released before the theme moved to the panel root read EditorWindow.rootVisualElement.styleSheets[0].
+        internal static StyleSheet GetEditorWindowRootPlaceholderStyleSheet()
+        {
+            if (s_EditorWindowRootPlaceholderStyleSheet == null)
+            {
+                s_EditorWindowRootPlaceholderStyleSheet = ScriptableObject.CreateInstance<StyleSheet>();
+                s_EditorWindowRootPlaceholderStyleSheet.name = "EditorWindowRootPlaceholder";
+                s_EditorWindowRootPlaceholderStyleSheet.hideFlags = HideFlags.HideInHierarchy | HideFlags.DontSaveInEditor | HideFlags.DontSaveInBuild;
+            }
+            return s_EditorWindowRootPlaceholderStyleSheet;
         }
 
         internal static string GetStyleSheetPathForFont(string sheetPath, string fontName)
@@ -162,16 +177,10 @@ namespace UnityEditor.UIElements
             {
                 var lightStyle = GetCommonLightStyleSheet();
                 var darkStyle = GetCommonDarkStyleSheet();
-                var e = ele;
-                while (e != null)
-                {
-                    if (e.styleSheets.Contains(lightStyle))
-                    {
-                        e.styleSheets.Swap(lightStyle, darkStyle);
-                        break;
-                    }
-                    e = e.parent;
-                }
+                if (ele.styleSheets.Contains(lightStyle))
+                    ele.styleSheets.Swap(lightStyle, darkStyle);
+                else if (!ele.styleSheets.Contains(darkStyle))
+                    ele.styleSheets.Add(darkStyle);
             }
         }
 

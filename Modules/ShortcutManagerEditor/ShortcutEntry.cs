@@ -20,6 +20,10 @@ namespace UnityEditor.ShortcutManagement
     {
         public object context;
         public ShortcutStage stage;
+
+        // The input event that triggered the shortcut; null when triggered programmatically (e.g. a clutch
+        // shortcut ended because its context was deactivated).
+        public Event sourceEvent;
     }
 
     [VisibleToOtherModules("UnityEditor.GraphToolkitModule")]

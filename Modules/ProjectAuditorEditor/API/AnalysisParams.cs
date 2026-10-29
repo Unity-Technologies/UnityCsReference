@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using Unity.ProjectAuditor.Editor.Core;
 using UnityEditor;
 using UnityEngine;
+using UnityEngine.Serialization;
 
 namespace Unity.ProjectAuditor.Editor
 {
@@ -60,16 +61,22 @@ namespace Unity.ProjectAuditor.Editor
         public SerializableEnum<CodeAnalysisFlags> CodeAnalysisFlags;
 
         /// <summary>
-        /// The Compilation flags to use during code analysis.
+        /// Whose code and assets to analyze.
         /// </summary>
         [SerializeField]
-        internal SerializableEnum<CodeOwnerFlags> CodeOwnerFlags;
+        [FormerlySerializedAs("CodeOwnerFlags")]
+        internal SerializableEnum<OwnerFlags> OwnerFlags;
 
 		/// <summary>
         /// The Render Pipeline Converter container to migrate to (eg "BuiltInToURP" or "BuiltInToURP2D").
 		/// </summary>
         [SerializeField]
         internal string MigrationTargetPipeline;
+
+        /// <summary>
+        /// True while the Editor is blocked until the analysis is complete, so modules can't wait for Editor updates.
+        /// </summary>
+        internal bool Blocking;
 
         /// <summary>
         /// Reports a batch of new issues. Note that this be called multiple times per analysis.
@@ -140,7 +147,7 @@ namespace Unity.ProjectAuditor.Editor
             Platform = BuildTarget.NoTarget;
             CodeOptimization = Editor.CodeOptimization.Release;
             CodeAnalysisFlags = CodeAnalysisFlagsExtensions.Default;
-            CodeOwnerFlags = Editor.CodeOwnerFlags.User;
+            OwnerFlags = Editor.OwnerFlags.User;
             SupportedBuildTarget = BuildPipeline.IsBuildTargetSupported;
         }
 
@@ -158,8 +165,9 @@ namespace Unity.ProjectAuditor.Editor
             AssemblyNames = original.AssemblyNames;
             CodeOptimization = original.CodeOptimization;
             CodeAnalysisFlags = original.CodeAnalysisFlags;
-            CodeOwnerFlags = original.CodeOwnerFlags;
+            OwnerFlags = original.OwnerFlags;
             MigrationTargetPipeline = original.MigrationTargetPipeline;
+            Blocking = original.Blocking;
 
             OnIncomingIssues = original.OnIncomingIssues;
             OnCompleted = original.OnCompleted;

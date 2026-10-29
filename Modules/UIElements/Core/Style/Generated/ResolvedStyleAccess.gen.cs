@@ -51,17 +51,21 @@ namespace UnityEngine.UIElements
         public float columnGap => ve.ResolveGapValue(ve.computedStyle.columnGap, true);
         public DisplayStyle display => ve.computedStyle.display;
         public IEnumerable<FilterFunction> filter => ve.computedStyle.rareData.Read().filter.ToManaged();
-        public StyleFloat flexBasis => new StyleFloat(ve.layoutNode.ComputedFlexBasis);
+        public StyleFloat flexBasis => new StyleFloat(ve.layoutNode.ResolvedFlexBasis);
         public FlexDirection flexDirection => ve.computedStyle.flexDirection;
         public float flexGrow => ve.computedStyle.flexGrow;
         public float flexShrink => ve.computedStyle.flexShrink;
         public Wrap flexWrap => ve.computedStyle.flexWrap;
         public float fontSize => ve.computedStyle.fontSize;
+        public IEnumerable<GridTrackSize> gridAutoColumns => ve.computedStyle.gridAutoColumns.ToArray();
         public GridAutoFlow gridAutoFlow => ve.computedStyle.gridAutoFlow;
+        public IEnumerable<GridTrackSize> gridAutoRows => ve.computedStyle.gridAutoRows.ToArray();
         public GridLine gridColumnEnd => ve.computedStyle.gridColumnEnd;
         public GridLine gridColumnStart => ve.computedStyle.gridColumnStart;
         public GridLine gridRowEnd => ve.computedStyle.gridRowEnd;
         public GridLine gridRowStart => ve.computedStyle.gridRowStart;
+        public IEnumerable<float> gridTemplateColumns => ve.layoutNode.GridResolvedColumnSizes.ToArray();
+        public IEnumerable<float> gridTemplateRows => ve.layoutNode.GridResolvedRowSizes.ToArray();
         public float height => ve.layoutNode.LayoutHeight;
         public Justify justifyContent => ve.computedStyle.justifyContent;
         public Align justifyItems => ve.computedStyle.justifyItems;
@@ -204,7 +208,11 @@ namespace UnityEngine.UIElements
 
         float IResolvedStyle.fontSize => resolvedStyle.fontSize;
 
+        IEnumerable<GridTrackSize> IResolvedStyle.gridAutoColumns => resolvedStyle.gridAutoColumns;
+
         GridAutoFlow IResolvedStyle.gridAutoFlow => resolvedStyle.gridAutoFlow;
+
+        IEnumerable<GridTrackSize> IResolvedStyle.gridAutoRows => resolvedStyle.gridAutoRows;
 
         GridLine IResolvedStyle.gridColumnEnd => resolvedStyle.gridColumnEnd;
 
@@ -213,6 +221,10 @@ namespace UnityEngine.UIElements
         GridLine IResolvedStyle.gridRowEnd => resolvedStyle.gridRowEnd;
 
         GridLine IResolvedStyle.gridRowStart => resolvedStyle.gridRowStart;
+
+        IEnumerable<float> IResolvedStyle.gridTemplateColumns => resolvedStyle.gridTemplateColumns;
+
+        IEnumerable<float> IResolvedStyle.gridTemplateRows => resolvedStyle.gridTemplateRows;
 
         float IResolvedStyle.height => resolvedStyle.height;
 

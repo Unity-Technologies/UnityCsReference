@@ -5,6 +5,7 @@
 using System.Collections.Generic;
 using UnityEditor.ShortcutManagement;
 using Unity.Scripting.LifecycleManagement;
+using UnityEngine;
 
 namespace UnityEditor.Toolbars
 {
@@ -12,18 +13,32 @@ namespace UnityEditor.Toolbars
     {
         const string k_ElementName = "Editor Controls/Selection History";
 
+        [AutoStaticsCleanupOnCodeReload]
+        static bool s_SubscribedToShortcutBindingChanged;
+
         [OnCodeLoaded]
         static void Initialize()
         {
             SelectionHistory.indexChanged += Refresh;
-            ShortcutManager.instance.shortcutBindingChanged += Refresh;
         }
 
         [OnCodeUnloading]
         static void Shutdown()
         {
             SelectionHistory.indexChanged -= Refresh;
-            ShortcutManager.instance.shortcutBindingChanged -= Refresh;
+
+            // Accessing ShortcutManager.instance creates the shortcut controller, so only do it if we subscribed.
+            if (s_SubscribedToShortcutBindingChanged)
+                ShortcutManager.instance.shortcutBindingChanged -= Refresh;
+        }
+
+        static void SubscribeToShortcutBindingChanged()
+        {
+            if (s_SubscribedToShortcutBindingChanged)
+                return;
+
+            ShortcutManager.instance.shortcutBindingChanged += Refresh;
+            s_SubscribedToShortcutBindingChanged = true;
         }
 
         static void Refresh(ShortcutBindingChangedEventArgs _) => Refresh();
@@ -33,6 +48,8 @@ namespace UnityEditor.Toolbars
         [UnityOnlyMainToolbarPreset]
         static IEnumerable<MainToolbarElement> CreateSelectionHistoryElement()
         {
+            SubscribeToShortcutBindingChanged();
+
             yield return new MainToolbarButton(new MainToolbarContent(EditorGUIUtility.LoadIcon("tab_prev"), GetTooltip("Previous Selection")), SelectionHistory.instance.GoBack)
             {
                 enabled = SelectionHistory.instance.GetIndex() < SelectionHistory.instance.GetHistory().Count - 1

@@ -31,6 +31,7 @@ namespace UnityEditor.UIElements.StyleSheets
         public readonly string invalidSelectorListDelimiter = L10n.Tr("Invalid selector list delimiter: '{0}'", null);
         public readonly string invalidComplexSelectorDelimiter = L10n.Tr("Invalid complex selector delimiter: '{0}'", null);
         public readonly string unsupportedSelectorFormat = L10n.Tr("Unsupported selector format: '{0}'", null);
+        public readonly string nestedStyleRulesNotSupported = L10n.Tr("Nested style rules are not supported", null);
         public readonly string selectorStartsWithDigitFormat = L10n.Tr("Unsupported selector format. Selector names can not start with a digit. '{0}'", null);
 
         // Warnings

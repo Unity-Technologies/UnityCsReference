@@ -668,6 +668,14 @@ namespace UnityEngine.UIElements
 
         internal LayoutConfig layoutConfig;
 
+        // Used by tests/tooling to drive scaling manually: when true, environment pushes
+        // (editor window backing scale, PanelSettings scale resolution) no longer overwrite it.
+        internal bool overrideScalingForTests { get; set; }
+
+        // Used by tests/tooling to drive the panel size manually: when true, environment pushes
+        // (editor window size, game view/display size) no longer overwrite it.
+        internal bool overrideSizeForTests { get; set; }
+
         private float m_PixelsPerPoint = 1;
         [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
         internal float pixelsPerPoint
@@ -920,9 +928,6 @@ namespace UnityEngine.UIElements
         }
 
         internal event Action isFlatChanged;
-
-        // Used only for testing. Can be disabled for setting a manual scale
-        internal bool UpdateScalingFromEditorWindow;
 
         public bool isFlat
         {

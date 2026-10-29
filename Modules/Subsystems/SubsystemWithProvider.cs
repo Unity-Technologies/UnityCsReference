@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System;
 using Unity.Profiling;
 
 namespace UnityEngine.SubsystemsImplementation
@@ -21,6 +22,9 @@ namespace UnityEngine.SubsystemsImplementation
         public void Start()
         {
             using var _ = k_StartMarker.Auto();
+            if (m_Destroyed)
+                throw new ArgumentNullException(null, $"Cannot start {GetType().Name} because it has been destroyed. Create a new instance from its descriptor instead.");
+
             if (running)
                 return;
 
@@ -59,7 +63,10 @@ namespace UnityEngine.SubsystemsImplementation
             using var _ = k_DestroyMarker.Auto();
             Stop();
             if (SubsystemManager.RemoveStandaloneSubsystem(this))
+            {
+                m_Destroyed = true;
                 OnDestroy();
+            }
         }
 
         ///<exclude />
@@ -70,6 +77,7 @@ namespace UnityEngine.SubsystemsImplementation
         ///This returns true after Start has been called on the subsystem, and false after Stop is called.</summary>
         public bool running { get; private set; }
         internal SubsystemProvider providerBase { get; set; }
+        bool m_Destroyed;
 
         internal abstract void Initialize(SubsystemDescriptorWithProvider descriptor, SubsystemProvider subsystemProvider);
         internal abstract SubsystemDescriptorWithProvider descriptor { get; }

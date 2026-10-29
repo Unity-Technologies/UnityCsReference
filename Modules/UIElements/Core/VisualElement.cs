@@ -2208,6 +2208,12 @@ namespace UnityEngine.UIElements
 
         internal void ReleaseResourcesNoChecks()
         {
+            if (HasSelfEventInterests(ReleasingResourcesEvent.EventCategory))
+            {
+                using var evt = ReleasingResourcesEvent.GetPooled();
+                EventDispatchUtilities.SendEventDirectlyToTarget(evt, elementPanel, this);
+            }
+
             flags |= VisualElementFlags.Released;
             LayoutManager.SharedManager.EnqueueNodeForRecycling(ref m_LayoutNode);
             ReleaseComponentStorage();

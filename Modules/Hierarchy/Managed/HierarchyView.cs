@@ -151,7 +151,7 @@ namespace Unity.Hierarchy
         /// Raised when a <see cref="HierarchyViewItem"/> is bound to a <see cref="HierarchyView"/>. Use this event to customize the view item.
         /// </summary>
         /// <example>
-        /// The following example draws visual connector lines in the Hierarchy window to show the parent and child relationships between GameObjects. It uses the instance-level `BindViewItem` event to register a per-view binding handler that adds the visual connector lines between each parent and child item in the Hierarchy window. 
+        /// The following example draws visual connector lines in the Hierarchy window to show the parent and child relationships between GameObjects. It uses the instance-level `BindViewItem` event to register a per-view binding handler that adds the visual connector lines between each parent and child item in the Hierarchy window.
         ///
         /// The example requires three USS files: `Connectors.uss` for the base styles, `Connectors_dark.uss` for the Dark theme, and `Connectors_light.uss` for the Light theme.
         ///
@@ -296,7 +296,7 @@ namespace Unity.Hierarchy
         /// Whether the <see cref="HierarchyView"/> is filtering nodes.
         /// </summary>
         /// <example>
-        /// The following example draws visual connector lines in the Hierarchy window to show the parent and child relationships between GameObjects. It uses `Filtering` to detect when the Hierarchy is in search mode, and sets the connector depth to 0 because filtering flattens the tree. 
+        /// The following example draws visual connector lines in the Hierarchy window to show the parent and child relationships between GameObjects. It uses `Filtering` to detect when the Hierarchy is in search mode, and sets the connector depth to 0 because filtering flattens the tree.
         ///
         /// The example requires three USS files: `Connectors.uss` for the base styles, `Connectors_dark.uss` for the Dark theme, and `Connectors_light.uss` for the Light theme.
         ///
@@ -1222,6 +1222,9 @@ namespace Unity.Hierarchy
         /// <summary>
         /// Updates the <see cref="HierarchyView"/> with a new <see cref="HierarchyViewState"/>.
         /// </summary>
+        /// <remarks>
+        /// Nodes that the view state can't restore get their default flags.
+        /// </remarks>
         /// <param name="viewState">The <see cref="HierarchyViewState"/> to apply.</param>
         public void SetState(HierarchyViewState viewState)
         {

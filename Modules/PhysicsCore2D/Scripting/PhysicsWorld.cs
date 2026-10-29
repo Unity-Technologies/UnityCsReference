@@ -1234,6 +1234,15 @@ namespace Unity.U2D.Physics
         public readonly bool paused { get => PhysicsWorld_GetPaused(this); set => PhysicsWorld_SetPaused(this, value); }
 
         /// <summary>
+        /// Controls whether this world ignores the Editor draw override and always draws with its own draw settings.
+        /// The Editor draw override lets a user replace the draw settings of every world from the Editor preferences, without changing any world or project setting.
+        /// Set this to true for a world whose drawing must never change that way, such as a world that exists only to draw editor tooling.
+        /// This is not part of the world definition, so writing a definition to the world leaves it unchanged.
+        /// It has no effect in a player, where there is no override.
+        /// </summary>
+        public readonly bool disableDrawOverride { get => PhysicsWorld_GetDisableDrawOverride(this); set => PhysicsWorld_SetDisableDrawOverride(this, value); }
+
+        /// <summary>
         /// Controls if bodies go to sleep when not moving and not interacting.
         /// Sleeping can provide a significant performance improvement when many Dynamic or Kinematic bodies are in the world.
         /// </summary>
@@ -4231,6 +4240,28 @@ namespace Unity.U2D.Physics
                 }
             }
         };
+
+        /// <undoc/>
+        [Serializable]
+        [StructLayout(LayoutKind.Sequential)]
+        internal struct DrawOverrides
+        {
+            // The Editor draw override values sent to native, matching the native DrawOverrides field for field.
+            // The override bits are held as an int so this module has no dependency on the editor type that names them.
+            [SerializeField] internal int m_OverrideOptions;
+            [SerializeField] internal DrawOptions m_DrawOptions;
+            [SerializeField] internal DrawFillOptions m_DrawFillOptions;
+            [SerializeField] internal DrawContactType m_DrawContactType;
+            [SerializeField] internal IgnoreFilter m_DrawFilter;
+            [SerializeField] internal DrawTarget m_DrawTarget;
+            [SerializeField] internal float m_DrawThickness;
+            [SerializeField] internal float m_DrawFillAlpha;
+            [SerializeField] internal float m_DrawPointScale;
+            [SerializeField] internal float m_DrawNormalScale;
+            [SerializeField] internal float m_DrawForceScale;
+            [SerializeField] internal bool m_DrawAtTransform;
+            [SerializeField] internal DrawColors m_DrawColors;
+        }
 
         /// <summary>
         /// Limits what gets drawn to a broad selection.

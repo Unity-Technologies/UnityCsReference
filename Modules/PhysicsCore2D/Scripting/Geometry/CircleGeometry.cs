@@ -173,7 +173,7 @@ namespace Unity.U2D.Physics
         /// <param name="transform">The transform used to specify where this geometry is positioned.</param>
         /// <param name="otherGeometry">The other geometry used to check intersection against.</param>
         /// <param name="otherTransform">The transform used to specify where the other geometry is positioned.</param>
-        /// <returns>The contact manifold fully detailing the intersection.</returns>
+        /// <returns>The contact manifold fully detailing the intersection. Its normal points from this geometry to the other, and its points are listed in the same order.</returns>
         public readonly PhysicsShape.ContactManifold Intersect(PhysicsTransform transform, CircleGeometry otherGeometry, PhysicsTransform otherTransform) => PhysicsQuery.CircleAndCircle(this, transform, otherGeometry, otherTransform);
 
         /// <summary>
@@ -182,8 +182,8 @@ namespace Unity.U2D.Physics
         /// <param name="transform">The transform used to specify where this geometry is positioned.</param>
         /// <param name="otherGeometry">The other geometry used to check intersection against.</param>
         /// <param name="otherTransform">The transform used to specify where the other geometry is positioned.</param>
-        /// <returns>The contact manifold fully detailing the intersection.</returns>
-        public readonly PhysicsShape.ContactManifold Intersect(PhysicsTransform transform, CapsuleGeometry otherGeometry, PhysicsTransform otherTransform) => PhysicsQuery.CapsuleAndCircle(otherGeometry, otherTransform, this, transform);
+        /// <returns>The contact manifold fully detailing the intersection. Its normal points from this geometry to the other, and its points are listed in the same order.</returns>
+        public readonly PhysicsShape.ContactManifold Intersect(PhysicsTransform transform, CapsuleGeometry otherGeometry, PhysicsTransform otherTransform) => PhysicsQuery.CircleAndCapsule(this, transform, otherGeometry, otherTransform);
 
         /// <summary>
         /// Check the intersection between this geometry and another.
@@ -191,8 +191,8 @@ namespace Unity.U2D.Physics
         /// <param name="transform">The transform used to specify where this geometry is positioned.</param>
         /// <param name="otherGeometry">The other geometry used to check intersection against.</param>
         /// <param name="otherTransform">The transform used to specify where the other geometry is positioned.</param>
-        /// <returns>The contact manifold fully detailing the intersection.</returns>
-        public readonly PhysicsShape.ContactManifold Intersect(PhysicsTransform transform, PolygonGeometry otherGeometry, PhysicsTransform otherTransform) => PhysicsQuery.PolygonAndCircle(otherGeometry, otherTransform, this, transform);
+        /// <returns>The contact manifold fully detailing the intersection. Its normal points from this geometry to the other, and its points are listed in the same order.</returns>
+        public readonly PhysicsShape.ContactManifold Intersect(PhysicsTransform transform, PolygonGeometry otherGeometry, PhysicsTransform otherTransform) => PhysicsQuery.CircleAndPolygon(this, transform, otherGeometry, otherTransform);
 
         /// <summary>
         /// Check the intersection between this geometry and another.
@@ -200,8 +200,8 @@ namespace Unity.U2D.Physics
         /// <param name="transform">The transform used to specify where this geometry is positioned.</param>
         /// <param name="otherGeometry">The other geometry used to check intersection against.</param>
         /// <param name="otherTransform">The transform used to specify where the other geometry is positioned.</param>
-        /// <returns>The contact manifold fully detailing the intersection.</returns>
-        public readonly PhysicsShape.ContactManifold Intersect(PhysicsTransform transform, SegmentGeometry otherGeometry, PhysicsTransform otherTransform) => PhysicsQuery.SegmentAndCircle(otherGeometry, otherTransform, this, transform);
+        /// <returns>The contact manifold fully detailing the intersection. Its normal points from this geometry to the other, and its points are listed in the same order.</returns>
+        public readonly PhysicsShape.ContactManifold Intersect(PhysicsTransform transform, SegmentGeometry otherGeometry, PhysicsTransform otherTransform) => PhysicsQuery.CircleAndSegment(this, transform, otherGeometry, otherTransform);
 
         /// <summary>
         /// Transform the geometry.

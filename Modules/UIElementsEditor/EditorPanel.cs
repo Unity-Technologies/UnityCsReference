@@ -37,7 +37,6 @@ namespace UnityEditor.UIElements
             contextualMenuManager = s_ContextualMenuManager;
             panelDebug = new PanelDebug(this);
             uiElementsBridge = new EditorUIElementsBridge();
-            UpdateScalingFromEditorWindow = true;
             CreateMenuFunctor = () => new GenericOSMenu();
         }
 
@@ -70,7 +69,7 @@ namespace UnityEditor.UIElements
         private void CheckPanelScaling()
         {
             // Can be disabled for setting a manual scale for testing
-            if (UpdateScalingFromEditorWindow && ownerObject != null)
+            if (!overrideScalingForTests && ownerObject != null)
             {
 
                 //check that the scaling is up to date

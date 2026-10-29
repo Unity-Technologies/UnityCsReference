@@ -427,6 +427,21 @@ namespace Unity.U2D.Physics
         public const int MaxWorlds = 128;
     }
 
+    public readonly partial record struct PhysicsMath
+    {
+        [ExcludeFromDocs]
+        [EditorBrowsable(EditorBrowsableState.Never)]
+        [Obsolete("PhysicsMath.GetRelativeMatrix2D with useScale is deprecated, useScale has no effect. Please use the overload without useScale, or PhysicsMath.GetRelativePose2D to build a matrix with the scale you need.", false)]
+        public static Matrix4x4 GetRelativeMatrix2D(in Matrix4x4 transformFrom, in Matrix4x4 transformTo, PhysicsWorld.TransformPlane transformPlane, in PhysicsWorld.TransformPlaneCustom transformPlaneCustom, bool useScale)
+            => GetRelativeMatrix2D(transformFrom, transformTo, transformPlane, transformPlaneCustom);
+
+        [ExcludeFromDocs]
+        [EditorBrowsable(EditorBrowsableState.Never)]
+        [Obsolete("PhysicsMath.GetRelativeMatrix2D with useScale is deprecated, useScale has no effect. Please use the overload without useScale, or PhysicsMath.GetRelativePose2D to build a matrix with the scale you need.", false)]
+        public static Matrix4x4 GetRelativeMatrix2D(in Matrix4x4 transformFrom, in Matrix4x4 transformTo, PhysicsWorld world, bool useScale)
+            => GetRelativeMatrix2D(transformFrom, transformTo, world);
+    }
+
     public sealed partial class PhysicsCoreSettings2D
     {
         [ExcludeFromDocs]

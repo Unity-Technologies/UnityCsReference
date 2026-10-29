@@ -28,9 +28,9 @@ namespace UnityEditor.EditorAnalyticsDebugger
 
         string m_Filter = "";
         bool m_GroupByEvent;
-        int m_DroppedEventCount;
         int m_EvictedEventCount;
         int m_VisibleEventCount;
+        long m_NewestSequence;
 
         public IList<TreeViewItemData<DisplayRow>> rootItems
         {
@@ -52,14 +52,14 @@ namespace UnityEditor.EditorAnalyticsDebugger
             get { return m_GroupByEvent ? m_RootItems.Count : 0; }
         }
 
-        public int droppedEventCount
-        {
-            get { return m_DroppedEventCount; }
-        }
-
         public int evictedEventCount
         {
             get { return m_EvictedEventCount; }
+        }
+
+        public long newestSequence
+        {
+            get { return m_NewestSequence; }
         }
 
         public bool groupByEvent
@@ -97,6 +97,12 @@ namespace UnityEditor.EditorAnalyticsDebugger
 
             m_Events.AddRange(entries);
 
+            for (int i = 0; i < entries.Count; i++)
+            {
+                if (entries[i].sequence > m_NewestSequence)
+                    m_NewestSequence = entries[i].sequence;
+            }
+
             if (m_Events.Count > k_MaxRetainedEvents)
             {
                 int excess = m_Events.Count - k_MaxRetainedEvents;
@@ -111,10 +117,10 @@ namespace UnityEditor.EditorAnalyticsDebugger
                 || m_GroupByEvent;
         }
 
-        public void NoteDropped(int count)
+        public void NoteDiscarded(int count)
         {
             if (count > 0)
-                m_DroppedEventCount += count;
+                m_EvictedEventCount += count;
         }
 
         public bool Contains(AnalyticsEventEntry entry)
@@ -128,9 +134,9 @@ namespace UnityEditor.EditorAnalyticsDebugger
             m_RootItems = new List<TreeViewItemData<DisplayRow>>();
             m_GroupIds.Clear();
             m_NextGroupId = -1;
-            m_DroppedEventCount = 0;
             m_EvictedEventCount = 0;
             m_VisibleEventCount = 0;
+            m_NewestSequence = 0;
         }
 
         public void GetVisibleEvents(List<AnalyticsEventEntry> results)
@@ -143,6 +149,28 @@ namespace UnityEditor.EditorAnalyticsDebugger
                 if (m_Events[i].Matches(m_Filter))
                     results.Add(m_Events[i]);
             }
+        }
+
+        public int FindRowId(long sequence)
+        {
+            for (int i = 0; i < m_RootItems.Count; i++)
+            {
+                TreeViewItemData<DisplayRow> item = m_RootItems[i];
+                if (item.data.groupKey == null)
+                {
+                    if (item.data.entry != null && item.data.entry.sequence == sequence)
+                        return item.id;
+                    continue;
+                }
+
+                foreach (TreeViewItemData<DisplayRow> child in item.children)
+                {
+                    if (child.data.entry != null && child.data.entry.sequence == sequence)
+                        return child.id;
+                }
+            }
+
+            return -1;
         }
 
         int GroupId(string key)

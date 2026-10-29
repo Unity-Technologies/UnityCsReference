@@ -23,6 +23,8 @@ namespace Unity.UI.Builder
         public float ZoomScale = BuilderConstants.ViewportInitialZoom;
         public Vector2 PanOffset = BuilderConstants.ViewportInitialContentOffset;
 
+        public bool ViewIsUnset;
+
         public float ColorModeBackgroundOpacity = 1.0f;
         public float ImageModeCanvasBackgroundOpacity = 1.0f;
         public float CameraModeCanvasBackgroundOpacity = 1.0f;
@@ -47,6 +49,7 @@ namespace Unity.UI.Builder
             if (diskDataFound)
                 return settings;
 
+            settings.ViewIsUnset = true;
             settings.UxmlGuid = AssetDatabase.AssetPathToGUID(uxmlPath);
             settings.UxmlPath = uxmlPath;
 

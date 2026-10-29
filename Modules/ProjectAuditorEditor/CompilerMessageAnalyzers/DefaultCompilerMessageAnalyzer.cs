@@ -11,7 +11,7 @@ namespace Unity.ProjectAuditor.Editor.CompilerMessageAnalyzers
 {
     class DefaultCompilerMessageAnalyzer : CodeModuleCompilerMessageAnalyzer
     {
-        static readonly Regex s_RegEx = new Regex(@"\b(?:UAL|PAR|UAC)\d{4}\b");
+        static readonly Regex s_RegEx = new Regex(@"\b(?:UAL|PAR|UAC|CA)\d{4}\b");
 
         public override IEnumerable<ReportItemBuilder> Analyze(CompilerMessageAnalysisContext context)
         {

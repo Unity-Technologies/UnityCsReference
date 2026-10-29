@@ -172,7 +172,6 @@ namespace UnityEditor
 
             overlayCanvas.rootVisualElement.AddToClassList(k_MainToolbarUSSClassName);
 
-            UIElementsEditorUtility.AddDefaultEditorStyleSheets(rootVisualElement);
             EditorToolbarUtility.LoadStyleSheets("MainToolbar", overlayCanvas.rootVisualElement);
 
             rootVisualElement.style.unityEditorTextRenderingMode = new StyleEnum<EditorTextRenderingMode>(EditorTextSettings.GetEditorTextRenderingMode());

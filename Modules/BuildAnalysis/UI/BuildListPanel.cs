@@ -17,10 +17,9 @@ namespace UnityEditor.Build.Analysis
         internal const string k_SelectedBuildKey = "BuildAnalysisWindow.SelectedBuildSessionGUID";
 
         internal const string k_FooterWarningClass = "build-list-footer--warning";
-        private const double k_FooterWarnThreshold = 0.8;
-        internal const string k_FooterDefaultTooltip = "To edit the build limit, go to Project Settings > Build Pipeline.";
-        private const string k_FooterWarningTooltip = "Build limit approaching. Older builds will be automatically deleted once the limit is hit. To edit the limit, go to Project Settings > Build Pipeline.";
-        private const string k_FooterExceededTooltip = "Build limit exceeded. Older builds will be automatically deleted on the next build. To edit the limit, go to Project Settings > Build Pipeline.";
+        private const double k_FooterWarnThreshold = 0.7;
+        internal const string k_FooterWarningTooltip = "Build limit approaching. Older builds will be automatically deleted once the limit is hit. To edit the limit, go to Project Settings > Build Pipeline.";
+        internal const string k_FooterExceededTooltip = "Build limit exceeded. Older builds will be automatically deleted on the next build. To edit the limit, go to Project Settings > Build Pipeline.";
 
         public event Action<BuildEntry> SelectionChanged;
 
@@ -31,9 +30,12 @@ namespace UnityEditor.Build.Analysis
         private readonly VisualElement m_EmptyState;
         private readonly Label m_EmptyStateDescription;
         private readonly VisualElement m_FooterRoot;
+        private readonly VisualElement m_FooterLimit;
         private readonly Label m_FooterLabel;
+        private readonly Label m_FooterSearchCount;
 
         private BuildEntry[] m_AllBuilds = Array.Empty<BuildEntry>();
+        private int m_BuildHistoryLimit;
         private string[] m_AllPlatformNames = Array.Empty<string>();
         private BuildEntry[] m_FilteredBuilds = Array.Empty<BuildEntry>();
         private string m_CurrentSearchText = string.Empty;
@@ -55,7 +57,9 @@ namespace UnityEditor.Build.Analysis
             m_EmptyState = this.Q<VisualElement>("empty-state");
             m_EmptyStateDescription = this.Q<Label>("empty-state-description");
             m_FooterRoot = this.Q<VisualElement>("build-list-footer");
+            m_FooterLimit = this.Q<VisualElement>("build-list-footer__limit");
             m_FooterLabel = this.Q<Label>("build-list-footer__label");
+            m_FooterSearchCount = this.Q<Label>("build-list-footer__search-count");
 
             SetupBuildListView();
             SetupSettingsMenu();
@@ -63,18 +67,18 @@ namespace UnityEditor.Build.Analysis
 
             // Initial empty state.
             UpdateEmptyState();
-            UpdateFooter(0, 0);
+            UpdateFooter();
         }
 
         public void SetBuilds(BuildEntry[] builds, int buildHistoryLimit)
         {
             m_AllBuilds = builds ?? Array.Empty<BuildEntry>();
+            m_BuildHistoryLimit = buildHistoryLimit;
             if (m_AllPlatformNames.Length < m_AllBuilds.Length)
                 m_AllPlatformNames = new string[m_AllBuilds.Length];
             for (var i = 0; i < m_AllBuilds.Length; i++)
                 m_AllPlatformNames[i] = m_AllBuilds[i].Platform.ToString();
             ApplyFilter(m_CurrentSearchText);
-            UpdateFooter(m_AllBuilds.Length, buildHistoryLimit);
 
             // After re-binding, try to restore a previously-persisted selection if
             // nothing is currently selected
@@ -247,6 +251,7 @@ namespace UnityEditor.Build.Analysis
             }
 
             UpdateEmptyState();
+            UpdateFooter();
         }
 
         private void ReapplySelectionAfterRebuild()
@@ -369,23 +374,27 @@ namespace UnityEditor.Build.Analysis
             }
         }
 
-        private void UpdateFooter(int count, int limit)
+        private void UpdateFooter()
         {
-            if (limit <= 0)
-            {
-                m_FooterLabel.text = $"{count} builds";
-                m_FooterRoot.RemoveFromClassList(k_FooterWarningClass);
-                m_FooterRoot.tooltip = k_FooterDefaultTooltip;
-                return;
-            }
+            var count = m_AllBuilds.Length;
+            var limit = m_BuildHistoryLimit;
+            var exceeded = limit > 0 && count > limit;
+            var approaching = limit > 0 && !exceeded && count >= (int)Math.Ceiling(limit * k_FooterWarnThreshold);
+            var showLimit = exceeded || approaching;
+            var searching = !string.IsNullOrEmpty(m_CurrentSearchText);
 
-            m_FooterLabel.text = $"{count} of {limit} builds";
-            var exceeded = count > limit;
-            var approaching = !exceeded && count >= (int)Math.Ceiling(limit * k_FooterWarnThreshold);
-            m_FooterRoot.EnableInClassList(k_FooterWarningClass, exceeded || approaching);
-            m_FooterRoot.tooltip = exceeded ? k_FooterExceededTooltip
-                                 : approaching ? k_FooterWarningTooltip
-                                 : k_FooterDefaultTooltip;
+            m_FooterRoot.EnableInClassList(k_FooterWarningClass, showLimit);
+            m_FooterLabel.text = showLimit ? $"{count} of {limit} limit" : string.Empty;
+            m_FooterLimit.tooltip = exceeded ? k_FooterExceededTooltip
+                                  : approaching ? k_FooterWarningTooltip
+                                  : string.Empty;
+
+            // Always filled, so the hidden count still gives the footer row its height.
+            m_FooterSearchCount.text = $"Showing {m_FilteredBuilds.Length}/{count}";
+            m_FooterSearchCount.style.visibility = searching ? Visibility.Visible : Visibility.Hidden;
+
+            // Hidden rather than removed, so the list does not resize when a search starts or clears.
+            m_FooterRoot.style.visibility = showLimit || searching ? Visibility.Visible : Visibility.Hidden;
         }
 
         internal void PopulateContextMenu(DropdownMenu menu, BuildEntry selection, bool isDeveloperMode)

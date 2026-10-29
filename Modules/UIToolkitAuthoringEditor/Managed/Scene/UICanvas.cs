@@ -4,6 +4,7 @@
 
 using System;
 using System.Collections.Generic;
+using Unity.Scripting.LifecycleManagement;
 using UnityEditor;
 using UnityEngine;
 using UnityEngine.UIElements;
@@ -27,14 +28,16 @@ partial class UICanvas : VisualElement, IVisualElementChangeProcessor
         readonly Vector2 m_Offset;
         readonly float m_ZoomScale;
 
-        internal CanvasManipulationScope(UICanvas canvas)
+        internal CanvasManipulationScope(UICanvas canvas, bool registerUndo = true)
         {
             m_Canvas = canvas;
+            var outermost = m_Canvas.m_ScopeLevel == 0;
             m_Canvas.m_ScopeLevel++;
             m_BaseSize = m_Canvas.BaseSize;
             m_Offset = m_Canvas.Offset;
             m_ZoomScale = m_Canvas.ZoomScale;
-            Undo.RegisterCompleteObjectUndo(m_Canvas.m_Settings, "Change Canvas Settings");
+            if (registerUndo && outermost)
+                Undo.RegisterCompleteObjectUndo(m_Canvas.m_Settings, "Change Canvas Settings");
         }
 
         public void Dispose()
@@ -122,6 +125,7 @@ partial class UICanvas : VisualElement, IVisualElementChangeProcessor
     CanvasSettings m_Settings;
     EntityId m_SettingsKey;
     bool m_PreviewMode;
+    bool m_PendingInitialFit;
     int m_ScopeLevel = 0;
     uint m_LastSeenSubPanelVersion = uint.MaxValue;
     readonly CanvasBackdropTexture m_BackdropTexture = new();
@@ -282,17 +286,25 @@ partial class UICanvas : VisualElement, IVisualElementChangeProcessor
             m_Settings = ScriptableObject.CreateInstance<CanvasSettings>();
             m_Settings.hideFlags = HideFlags.DontSave | HideFlags.DontUnloadUnusedAsset;
 
+            m_PendingInitialFit = string.IsNullOrEmpty(EditorUserSettings.GetConfigValue(m_StorageKey));
             m_Settings.LoadStorage(m_StorageKey);
 
             // Get the EntityId of the newly created settings and register it
             m_SettingsKey = m_Settings.GetEntityId();
             CanvasSettingsRegistry.instance.Register(m_SettingsKey, m_Settings);
         }
+        else
+        {
+            m_PendingInitialFit = false;
+        }
 
         m_Settings.CanvasSettingsChanged += OnCanvasChanged;
         m_Settings.CanvasBackgroundChanged += OnCanvasBackgroundTypeChanged;
 
         PanelElement = panelElement;
+
+        // The context can arrive after the surface is laid out, in which case no geometry change will follow.
+        TryPerformInitialFit(ViewSize);
     }
 
     public void ClearContext()
@@ -307,7 +319,8 @@ partial class UICanvas : VisualElement, IVisualElementChangeProcessor
 
         m_Settings.CanvasSettingsChanged -= OnCanvasChanged;
         m_Settings.CanvasBackgroundChanged -= OnCanvasBackgroundTypeChanged;
-        m_Settings.SerializeToStorage(m_StorageKey);
+        if (!m_PendingInitialFit)
+            m_Settings.SerializeToStorage(m_StorageKey);
         Undo.ClearUndo(m_Settings);
 
         // Keep the settings registered so they survive domain reload and playmode transitions
@@ -326,7 +339,8 @@ partial class UICanvas : VisualElement, IVisualElementChangeProcessor
         {
             m_Settings.CanvasSettingsChanged -= OnCanvasChanged;
             m_Settings.CanvasBackgroundChanged -= OnCanvasBackgroundTypeChanged;
-            m_Settings.SerializeToStorage(m_StorageKey);
+            if (!m_PendingInitialFit)
+                m_Settings.SerializeToStorage(m_StorageKey);
             Undo.ClearUndo(m_Settings);
             UnityEngine.Object.DestroyImmediate(m_Settings);
         }
@@ -480,12 +494,103 @@ partial class UICanvas : VisualElement, IVisualElementChangeProcessor
         m_DocumentRoot.style.width = viewportSize.x;
         m_DocumentRoot.style.height = viewportSize.y;
 
-        // First time opening this document.
-        if (viewportSize.x != 0.0f && viewportSize.y != 0.0f & string.IsNullOrEmpty(EditorUserSettings.GetConfigValue(m_StorageKey)))
-            Offset = (viewportSize - CanvasSettings.DefaultSize * CanvasSettings.DefaultZoomFactor) / 2.0f;
+        TryPerformInitialFit(viewportSize);
 
         m_DocumentRoot.MarkDirtyRepaint();
         CommitToPanelElement();
+    }
+
+    // First time this document is shown: match the Game View size if there is one, otherwise grow the canvas
+    // if its content needs more room, then center it and zoom it to fit the viewport.
+    void TryPerformInitialFit(Vector2 viewportSize)
+    {
+        if (!m_PendingInitialFit || m_Settings == null)
+            return;
+
+        if (float.IsNaN(viewportSize.x) || float.IsNaN(viewportSize.y) ||
+            viewportSize.x <= 0 || viewportSize.y <= 0)
+            return;
+
+        m_PendingInitialFit = false;
+
+        using var _ = new CanvasManipulationScope(this, registerUndo: false);
+
+        // Measured once against the default size so percentage-sized content cannot feed its own result back.
+        if (TryGetMainGameViewSize(out var gameViewSize))
+            BaseSize = gameViewSize;
+        else if (TryMeasureContentSize(out var contentSize))
+            BaseSize = Vector2.Max(BaseSize, contentSize);
+
+        if (TryComputeFitToViewport(viewportSize, out var zoomScale, out var offset))
+        {
+            ZoomScale = zoomScale;
+            Offset = offset;
+        }
+    }
+
+    static bool TryGetMainGameViewSize(out Vector2 size)
+    {
+        size = default;
+
+        var gameView = PlayModeView.GetMainPlayModeView();
+        if (gameView == null)
+            return false;
+
+        var viewSize = gameView.GetPlayModeViewSize();
+        if (float.IsNaN(viewSize.x) || float.IsNaN(viewSize.y) || viewSize.x < 1f || viewSize.y < 1f)
+            return false;
+
+        size = viewSize;
+        return true;
+    }
+
+    bool TryMeasureContentSize(out Vector2 contentSize)
+    {
+        contentSize = default;
+
+        var subRoot = m_PanelElement?.subRootVisualElement;
+        if (subRoot == null)
+            return false;
+
+        m_PanelElement.FrameUpdate();
+
+        var hasBounds = false;
+        var bounds = default(Rect);
+        VisualElementBoundsUtility.TryEncapsulateDescendants(subRoot, ref bounds, ref hasBounds);
+        if (!hasBounds)
+            return false;
+
+        var ppp = m_PanelElement.SubPanelPixelsPerPoint;
+        if (float.IsNaN(ppp) || ppp <= 0)
+            ppp = 1f;
+
+        var size = (bounds.max - subRoot.worldBound.position) / ppp;
+        if (float.IsNaN(size.x) || float.IsNaN(size.y) || (size.x < 1f && size.y < 1f))
+            return false;
+
+        contentSize = size;
+        return true;
+    }
+
+    internal bool TryComputeFitToViewport(Vector2 viewportSize, out float zoomScale, out Vector2 offset)
+    {
+        const float padding = 20f;
+
+        zoomScale = CanvasSettings.DefaultZoomFactor;
+        offset = CanvasSettings.DefaultOffset;
+
+        var baseSize = BaseSize;
+        if (float.IsNaN(viewportSize.x) || float.IsNaN(viewportSize.y) ||
+            viewportSize.x <= 0 || viewportSize.y <= 0 ||
+            baseSize.x <= 0 || baseSize.y <= 0)
+            return false;
+
+        var paddedWidth = Mathf.Max(viewportSize.x - padding * 2, 0.001f);
+        var paddedHeight = Mathf.Max(viewportSize.y - padding * 2, 0.001f);
+        zoomScale = Mathf.Clamp(Mathf.Min(paddedWidth / baseSize.x, paddedHeight / baseSize.y),
+            UICanvasZoomManipulator.MinZoomScale, UICanvasZoomManipulator.MaxZoomScale);
+        offset = (viewportSize - baseSize * zoomScale) / 2f;
+        return true;
     }
 
     void IVisualElementChangeProcessor.BeginProcessing(BaseVisualElementPanel panelElementPanel)

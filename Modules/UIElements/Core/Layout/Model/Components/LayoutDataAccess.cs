@@ -21,6 +21,8 @@ readonly unsafe struct LayoutDataAccess
 
     public bool IsValid => m_Nodes.IsValid && m_Configs.IsValid;
 
+    public int ManagerIndex => m_Manager;
+
     internal LayoutDataAccess(int manager, UnmanagedDataStore nodes, UnmanagedDataStore configs)
     {
         m_Manager = manager;

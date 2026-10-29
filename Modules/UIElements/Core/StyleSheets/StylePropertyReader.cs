@@ -559,6 +559,7 @@ namespace UnityEngine.UIElements.StyleSheets
         BackgroundGradient ParseLinearGradient(ref int cursor, int argsEnd)
         {
             float angle = Mathf.PI; // CSS default: "to bottom"
+            var angleUnit = AngleUnit.Degree;
 
             // Direction phase (optional) up to the first comma.
             while (cursor < argsEnd)
@@ -572,9 +573,10 @@ namespace UnityEngine.UIElements.StyleSheets
                     break;
                 }
 
-                if ((vt == StyleValueType.Dimension || vt == StyleValueType.Float) && TryReadAngle(value, out var dirAngle))
+                if ((vt == StyleValueType.Dimension || vt == StyleValueType.Float) && TryReadAngle(value, out var dirAngle, out var dirUnit))
                 {
                     angle = dirAngle;
+                    angleUnit = dirUnit;
                     cursor++;
                     continue;
                 }
@@ -619,6 +621,7 @@ namespace UnityEngine.UIElements.StyleSheets
             {
                 type = GradientType.Linear,
                 angle = angle,
+                angleUnit = angleUnit,
                 stops = stops,
                 position = new Vector2(0.5f, 0.5f),
                 shape = BackgroundGradientShape.Ellipse,
@@ -871,9 +874,10 @@ namespace UnityEngine.UIElements.StyleSheets
             return pos;
         }
 
-        static bool TryReadAngle(StylePropertyValue value, out float radians)
+        static bool TryReadAngle(StylePropertyValue value, out float radians, out AngleUnit unit)
         {
             radians = 0f;
+            unit = AngleUnit.Degree;
             // A unitless number (e.g. from `--angle: 45`) reads as degrees, matching `rotate`.
             if (value.handle.valueType == StyleValueType.Float)
             {
@@ -885,9 +889,9 @@ namespace UnityEngine.UIElements.StyleSheets
             switch (dim.unit)
             {
                 case Dimension.Unit.Degree:   radians = dim.value * Mathf.Deg2Rad; return true;
-                case Dimension.Unit.Gradian:  radians = dim.value * (Mathf.PI / 200f); return true;
-                case Dimension.Unit.Radian:   radians = dim.value; return true;
-                case Dimension.Unit.Turn:     radians = dim.value * (2f * Mathf.PI); return true;
+                case Dimension.Unit.Gradian:  radians = dim.value * (Mathf.PI / 200f); unit = AngleUnit.Gradian; return true;
+                case Dimension.Unit.Radian:   radians = dim.value; unit = AngleUnit.Radian; return true;
+                case Dimension.Unit.Turn:     radians = dim.value * (2f * Mathf.PI); unit = AngleUnit.Turn; return true;
                 default: return false;
             }
         }

@@ -350,7 +350,7 @@ namespace UnityEditor
         {
             if (reflectionProbeTarget.mode == ReflectionProbeMode.Realtime)
             {
-                EditorGUILayout.HelpBox("Baking of this reflection probe should be initiated from the scripting API because the type is 'Realtime'", MessageType.Info);
+                EditorGUILayout.HelpBox("Realtime reflection probes are not baked. They update at runtime according to their Refresh Mode.", MessageType.Info);
 
                 if (!QualitySettings.realtimeReflectionProbes)
                     EditorGUILayout.HelpBox("Realtime reflection probes are disabled in Quality Settings", MessageType.Warning);

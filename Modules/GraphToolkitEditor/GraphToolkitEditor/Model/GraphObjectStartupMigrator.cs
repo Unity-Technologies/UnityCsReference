@@ -16,11 +16,27 @@ namespace Unity.GraphToolkit.Editor
     [InitializeOnLoad]
     static class GraphObjectStartupMigrator
     {
+        const string k_RescanDoneKey = "GraphObjectStartupMigrator.RescanDone";
+
         static GraphObjectStartupMigrator()
         {
             var toReimport = CollectAndMigrateFiles();
-            if (toReimport.Count > 0)
-                EditorApplication.delayCall += () => Reimport(toReimport);
+
+            // With an empty Library the domain loads before package assets are imported, so the first load in a session scans again once the import has finished
+            bool rescan = !SessionState.GetBool(k_RescanDoneKey, false);
+            if (rescan || toReimport.Count > 0)
+            {
+                EditorApplication.delayCall += () =>
+                {
+                    if (rescan)
+                    {
+                        toReimport.UnionWith(CollectAndMigrateFiles());
+                        SessionState.SetBool(k_RescanDoneKey, true);
+                    }
+                    if (toReimport.Count > 0)
+                        Reimport(toReimport);
+                };
+            }
         }
 
         static HashSet<string> CollectAndMigrateFiles()

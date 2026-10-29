@@ -198,6 +198,7 @@ namespace UnityEditor.ShortcutManagement
     {
         const string k_MigratedProfileId = "UserProfile";
         const string k_ProfileMigratedEditorPrefKey = "ShortcutManager_ProfileMigrated";
+        internal const string k_MigrationFileErrorWarning = "Failed to migrate shortcut pref keys because of a shortcut file error: ";
 
         Directory m_Directory;
         IDiscovery m_Discovery;
@@ -231,7 +232,14 @@ namespace UnityEditor.ShortcutManagement
             trigger = new Trigger(m_Directory, conflictResolver);
 
             ActivateLastUsedProfile();
-            MigrateUserSpecifiedPrefKeys();
+            try
+            {
+                MigrateUserSpecifiedPrefKeys();
+            }
+            catch (Exception e) when (e is IOException || e is UnauthorizedAccessException)
+            {
+                Debug.LogWarning(k_MigrationFileErrorWarning + e.Message);
+            }
 
             #pragma warning disable UAL0015 // rebuilt/resubscribed wholesale on the next reload via this object's own lifecycle; a stale value in the interim is never observed
             ModeService.modeChanged += HandleModeChanged;
@@ -370,21 +378,15 @@ namespace UnityEditor.ShortcutManagement
             if (EditorPrefs.GetBool(k_ProfileMigratedEditorPrefKey, false))
                 return;
 
-            EditorPrefs.SetBool(k_ProfileMigratedEditorPrefKey, true);
-
             // Find shortcut entries that might need to be migrated
             var allShortcuts = new List<ShortcutEntry>();
             directory.GetAllShortcuts(allShortcuts);
 
-            // Find existing or create migrated profile and make it active so we can amend it
+            // Make the existing migrated profile active so we can amend it. Profile is only created once it's certain a pref key needs migrating.
             var originalActiveProfile = profileManager.activeProfile;
             var migratedProfile = profileManager.GetProfileById(k_MigratedProfileId);
             var migratedProfileAlreadyExisted = migratedProfile != null;
-            if (!migratedProfileAlreadyExisted)
-                migratedProfile = profileManager.CreateProfile(k_MigratedProfileId);
             profileManager.activeProfile = migratedProfile;
-
-            var migratedProfileModified = false;
 
             var tempKeyCombinations = new KeyCombination[1];
             var methodsWithFormerlyPrefKeyAs = EditorAssemblies.GetAllMethodsWithAttribute<FormerlyPrefKeyAsAttribute>();
@@ -437,18 +439,34 @@ namespace UnityEditor.ShortcutManagement
                     continue;
                 }
 
-                profileManager.ModifyShortcutEntry(entry.identifier, new List<KeyCombination> { prefKeyCurrentKeyCombination });
+                try
+                {
+                    if (migratedProfile == null)
+                    {
+                        migratedProfile = profileManager.CreateProfile(k_MigratedProfileId);
+                        profileManager.activeProfile = migratedProfile;
+                    }
 
-                migratedProfileModified = true;
+                    profileManager.ModifyShortcutEntry(entry.identifier, new List<KeyCombination> { prefKeyCurrentKeyCombination });
+                }
+                catch
+                {
+                    RestoreOriginalActiveProfile();
+                    Initialize();
+                    throw;
+                }
             }
 
-            // Delete migrated profile if it was created and not modified
-            if (!migratedProfileAlreadyExisted && !migratedProfileModified)
-                profileManager.DeleteProfile(migratedProfile);
+            EditorPrefs.SetBool(k_ProfileMigratedEditorPrefKey, true);
 
-            // Restore original active profile unless last loaded profile was null and the migrated profile was created
-            if (originalActiveProfile != null || migratedProfileAlreadyExisted)
-                profileManager.activeProfile = originalActiveProfile;
+            RestoreOriginalActiveProfile();
+
+            void RestoreOriginalActiveProfile()
+            {
+                // Restore original active profile unless last loaded profile was null and the migrated profile was created
+                if (originalActiveProfile != null || migratedProfileAlreadyExisted)
+                    profileManager.activeProfile = originalActiveProfile;
+            }
         }
     }
 }

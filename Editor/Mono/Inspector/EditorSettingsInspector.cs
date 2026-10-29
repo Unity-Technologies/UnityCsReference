@@ -97,15 +97,15 @@ namespace UnityEditor
             public static readonly GUIContent enterPlayModeOptions = L10n.TextContent("When entering Play Mode", "Reload options when entering Play Mode.", null, null);
             public static readonly GUIContent[] enterPlayModeOptionNames =
             {
-                L10n.TextContent("Reload Domain and Scene", null, null, null), // Default
-                L10n.TextContent("Reload Scene only", null, null, null),
+                L10n.TextContent("Reload Domain and Scene", null, null, null),
+                L10n.TextContent("Reload Scene only", null, null, null), // Default
                 L10n.TextContent("Reload Domain only", null, null, null),
                 L10n.TextContent("Do not reload Domain or Scene", null, null, null)
             };
             public static readonly int[] enterPlayModeOptionValues =
             {
-                (int)EnterPlayModeOptions.None, // Default
-                (int)EnterPlayModeOptions.DisableDomainReload,
+                (int)EnterPlayModeOptions.None,
+                (int)EnterPlayModeOptions.DisableDomainReload, // Default
                 (int)EnterPlayModeOptions.DisableSceneReload,
                 (int)(EnterPlayModeOptions.DisableDomainReload | EnterPlayModeOptions.DisableSceneReload)
             };

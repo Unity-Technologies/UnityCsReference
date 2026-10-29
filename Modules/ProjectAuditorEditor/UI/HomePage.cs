@@ -348,13 +348,13 @@ namespace Unity.ProjectAuditor.Editor.UI
         {
             var window = ProjectAuditorWindow.Instance;
 
-            // m_Report can be null here (e.g. after cancelling an analysis)
-            // In this case, there is nothing to save/discard.
-            if (window.m_Report == null)
+            // m_Report can be null (e.g. after cancelling an analysis) or an empty placeholder
+            // created by deserialization (e.g. after a domain reload). Nothing to save/discard then.
+            if (window.m_Report == null || window.m_AnalysisState != AnalysisState.Valid)
                 return true;
 
             DialogResult response;
-            if (window.m_Report.NeedsSaving && window.m_AnalysisState == AnalysisState.Valid)
+            if (window.m_Report.NeedsSaving)
                 response = EditorDialog.DisplayComplexDecisionDialog(Contents.Discard, Contents.DiscardQuestion, "Discard", "Save", "Cancel");
             else
                 response = EditorUtility.DisplayDialog(Contents.Discard, Contents.DiscardQuestion, "Discard", "Cancel") ? DialogResult.DefaultAction : DialogResult.Cancel;

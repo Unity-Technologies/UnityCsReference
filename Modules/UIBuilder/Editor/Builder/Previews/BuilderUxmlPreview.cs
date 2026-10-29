@@ -23,7 +23,10 @@ namespace Unity.UI.Builder
         {
             if (hasDocument)
             {
-                SetTargetAsset(document.visualTreeAsset, document.hasUnsavedChanges);
+                if (document.isStyleSheetEditingMode)
+                    SetTargetAsset(document.visualTreeAsset, false, BuilderAssetUtilities.GetStyleSheetEditingPreviewName(document.visualTreeAsset));
+                else
+                    SetTargetAsset(document.visualTreeAsset, document.hasUnsavedChanges);
             }
             else
             {

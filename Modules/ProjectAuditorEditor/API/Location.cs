@@ -121,10 +121,10 @@ namespace Unity.ProjectAuditor.Editor
         }
 
         // Cached string storage to reduce constant string manipulation in UI
-        string m_Extension;
-        string m_Filename;
-        string m_FormattedFilename;
-        string m_FormattedPath;
+        [NonSerialized] string m_Extension;
+        [NonSerialized] string m_Filename;
+        [NonSerialized] string m_FormattedFilename;
+        [NonSerialized] string m_FormattedPath;
 
         /// <summary>
         /// Constructor

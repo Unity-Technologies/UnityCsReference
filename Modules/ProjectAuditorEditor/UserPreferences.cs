@@ -42,7 +42,7 @@ namespace Unity.ProjectAuditor.Editor
             public static readonly GUIContent Analysis = L10n.TextContent("Analysis", null, null, null);
             public static readonly GUIContent PlatformSelection = L10n.TextContent("Platform", "Select the target platform.", null, null);
             public static readonly GUIContent CodeAnalysisFlagsSelection = L10n.TextContent("Code Analysis Areas", "Select which code Project Auditor analyzes.", null, null);
-            public static readonly GUIContent CodeOwnersSelection = L10n.TextContent("Code Owners", "Select whose code Project Auditor analyzes.", null, null);
+            public static readonly GUIContent OwnersSelection = L10n.TextContent("Owners", "Select whose code and assets Project Auditor analyzes.", null, null);
             public static readonly GUIContent LogTimingsInfo = L10n.TextContent("Log timing information", null, null, null);
             public static readonly GUIContent Build = L10n.TextContent("Build", null, null, null);
             public static readonly GUIContent AfterBuild = L10n.TextContent("Log number of issues after Build", "Enabling this option will mean that after running a build, Project Auditor will analyze the project and output the total number of issues found to the console.", null, null);
@@ -166,7 +166,7 @@ namespace Unity.ProjectAuditor.Editor
         static readonly ProjectAreaFlags k_ProjectAreasToAnalyzeDefault = ProjectAreaFlags.All;
         static readonly BuildTarget k_AnalysisTargetPlatformDefault = BuildTarget.NoTarget;
         static readonly CodeAnalysisFlags k_CodeAnalysisFlagsDefault = CodeAnalysisFlagsExtensions.Default;
-        static readonly CodeOwnerFlags k_CodeOwnerFlagsDefault = Editor.CodeOwnerFlags.User;
+        static readonly OwnerFlags k_OwnerFlagsDefault = Editor.OwnerFlags.User;
 
         // stephenm TODO: Not a big fan of the ProjectAreaFlags enum, which is an abstraction of the Tabs, which each
         // contain references to one or more Modules, which reference Analyzers, which report issues in IssueCategories...
@@ -183,7 +183,7 @@ namespace Unity.ProjectAuditor.Editor
         public static EnumPref<CodeAnalysisFlags> CodeAnalysisFlags = new EnumPref<CodeAnalysisFlags>(nameof(CodeAnalysisFlags), k_CodeAnalysisFlagsDefault);
 
         [NoAutoStaticsCleanup]
-        public static EnumPref<CodeOwnerFlags> CodeOwnerFlags = new EnumPref<CodeOwnerFlags>(nameof(CodeOwnerFlags), k_CodeOwnerFlagsDefault);
+        public static EnumPref<OwnerFlags> OwnerFlags = new EnumPref<OwnerFlags>("CodeOwnerFlags", k_OwnerFlagsDefault);
 
         [OnCodeLoaded]
         static void Initialize()
@@ -312,14 +312,19 @@ namespace Unity.ProjectAuditor.Editor
             {
                 CodeAnalysisGUI();
             }
+
+            OwnersGUI();
         }
 
         internal static void CodeAnalysisGUI()
         {
             CodeAnalysisFlags.Set((CodeAnalysisFlags)EditorGUILayout.EnumFlagsField(Styles.CodeAnalysisFlagsSelection, CodeAnalysisFlags, GUILayout.ExpandWidth(true)));
+        }
 
+        internal static void OwnersGUI()
+        {
             if (Unsupported.IsDeveloperMode())
-                CodeOwnerFlags.Set((CodeOwnerFlags)EditorGUILayout.EnumFlagsField(Styles.CodeOwnersSelection, CodeOwnerFlags, GUILayout.ExpandWidth(true)));
+                OwnerFlags.Set((OwnerFlags)EditorGUILayout.EnumFlagsField(Styles.OwnersSelection, OwnerFlags, GUILayout.ExpandWidth(true)));
         }
 
         /// <summary>
@@ -359,7 +364,7 @@ namespace Unity.ProjectAuditor.Editor
                 }
                 else
                 {
-                    sb.AppendLine($"{id} is not in the correct format (ABC1234)");
+                    sb.AppendLine($"{id} is not in the correct format (AB1234 or ABC1234)");
                 }
             }
 

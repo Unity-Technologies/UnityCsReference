@@ -360,10 +360,10 @@ namespace UnityEditor.Search
             }
         }
 
-        [CustomObjectIndexer(typeof(MeshRenderer), version = 2)]
-        internal static void IndexMeshRendererMaterials(CustomObjectIndexerTarget context, ObjectIndexer indexer)
+        [CustomObjectIndexer(typeof(Renderer), version = 3)]
+        internal static void IndexRendererMaterials(CustomObjectIndexerTarget context, ObjectIndexer indexer)
         {
-            var c = context.target as MeshRenderer;
+            var c = context.target as Renderer;
             if (!c || !indexer.settings.options.properties)
                 return;
 

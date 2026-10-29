@@ -55,11 +55,15 @@ namespace UnityEngine.UIElements
             internal static readonly BindingId flexShrinkProperty = "resolvedStyle." + nameof(IResolvedStyle.flexShrink);
             internal static readonly BindingId flexWrapProperty = "resolvedStyle." + nameof(IResolvedStyle.flexWrap);
             internal static readonly BindingId fontSizeProperty = "resolvedStyle." + nameof(IResolvedStyle.fontSize);
+            internal static readonly BindingId gridAutoColumnsProperty = "resolvedStyle." + nameof(IResolvedStyle.gridAutoColumns);
             internal static readonly BindingId gridAutoFlowProperty = "resolvedStyle." + nameof(IResolvedStyle.gridAutoFlow);
+            internal static readonly BindingId gridAutoRowsProperty = "resolvedStyle." + nameof(IResolvedStyle.gridAutoRows);
             internal static readonly BindingId gridColumnEndProperty = "resolvedStyle." + nameof(IResolvedStyle.gridColumnEnd);
             internal static readonly BindingId gridColumnStartProperty = "resolvedStyle." + nameof(IResolvedStyle.gridColumnStart);
             internal static readonly BindingId gridRowEndProperty = "resolvedStyle." + nameof(IResolvedStyle.gridRowEnd);
             internal static readonly BindingId gridRowStartProperty = "resolvedStyle." + nameof(IResolvedStyle.gridRowStart);
+            internal static readonly BindingId gridTemplateColumnsProperty = "resolvedStyle." + nameof(IResolvedStyle.gridTemplateColumns);
+            internal static readonly BindingId gridTemplateRowsProperty = "resolvedStyle." + nameof(IResolvedStyle.gridTemplateRows);
             internal static readonly BindingId heightProperty = "resolvedStyle." + nameof(IResolvedStyle.height);
             internal static readonly BindingId justifyContentProperty = "resolvedStyle." + nameof(IResolvedStyle.justifyContent);
             internal static readonly BindingId justifyItemsProperty = "resolvedStyle." + nameof(IResolvedStyle.justifyItems);

@@ -21,6 +21,7 @@ namespace Unity.ProjectAuditor.Editor.UI.Framework
         public Severity GroupSeverity;
         public bool GroupAreasMixed;
         public string GroupAreas;
+        public string GroupId;
 
         public virtual string DisplayName
         {

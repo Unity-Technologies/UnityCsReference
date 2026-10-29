@@ -187,6 +187,7 @@ namespace UnityEngine.UIElements
             private BaseRuntimePanel m_RuntimePanel;
 
             internal bool isInitialized => m_RuntimePanel != null;
+            internal BaseRuntimePanel panelIfInitialized => m_RuntimePanel;
             internal bool isTransient { get; set; }
 
             /// <summary>
@@ -300,12 +301,28 @@ namespace UnityEngine.UIElements
         [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
         internal void CacheDisplayRectAndScale()
         {
-            m_TargetRect = GetDisplayRect(); // Expensive to evaluate, so cache
+            // A panel driven manually (tests/tooling) keeps the values from SetResolvedTargetAndScale.
+            var panel = m_PanelAccess.panelIfInitialized;
 
-            if (renderMode == PanelRenderMode.WorldSpace)
-                m_ResolvedScale = 1.0f; // No panel scaling for world-space
-            else
-                m_ResolvedScale = PanelSettingsUtility.ResolveScale(this, m_TargetRect.size);
+            if (panel == null || !panel.overrideSizeForTests)
+                m_TargetRect = GetDisplayRect(); // Expensive to evaluate, so cache
+
+            if (panel == null || !panel.overrideScalingForTests)
+            {
+                if (renderMode == PanelRenderMode.WorldSpace)
+                    m_ResolvedScale = 1.0f; // No panel scaling for world-space
+                else
+                    m_ResolvedScale = PanelSettingsUtility.ResolveScale(this, m_TargetRect.size);
+            }
+        }
+
+        // Pins the resolved target rect and scale; only takes effect while the panel's
+        // overrideSizeForTests/overrideScalingForTests are true, otherwise the
+        // next update recomputes them.
+        internal void SetResolvedTargetAndScale(Vector2 size, float scale = 1f)
+        {
+            m_TargetRect = new Rect(Vector2.zero, size);
+            m_ResolvedScale = scale;
         }
 
         [SerializeField]
@@ -912,9 +929,10 @@ namespace UnityEngine.UIElements
         {
             // We assume users will want their UIDocument to look as closely as possible to what they look like in the UIBuilder.
             // This is no guarantee, but it's the best we can do at the moment.
-            // One-time authoring default from editor Screen.dpi (not game-view runtime DPI from CacheDisplayRectAndScale).
-            referenceDpi = Screen.dpi;
             scaleMode = PanelScaleMode.ConstantPhysicalSize;
+            // Seed from the same source ResolveScale divides by; a different quantity resolves to a
+            // fractional scale, which puts hairlines between device pixels.
+            referenceDpi = GetScreenDpiForScaleResolution();
             renderMode = PanelRenderMode.ScreenSpaceOverlay;
             colliderUpdateMode = ColliderUpdateMode.MatchBoundingBox;
             pixelsPerUnit = 100.0f;

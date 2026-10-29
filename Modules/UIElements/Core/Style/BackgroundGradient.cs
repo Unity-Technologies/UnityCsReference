@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using UnityEngine.Bindings;
 
 namespace UnityEngine.UIElements
 {
@@ -131,6 +132,17 @@ namespace UnityEngine.UIElements
         public float angle { get => m_Angle; set => m_Angle = value; }
 
         [SerializeField]
+        AngleUnit m_AngleUnit;
+        // The unit the angle was authored in, so the USS writer and the editors keep it.
+        internal AngleUnit angleUnit
+        {
+            [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
+            get => m_AngleUnit;
+            [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
+            set => m_AngleUnit = value;
+        }
+
+        [SerializeField]
         BackgroundGradientStop[] m_Stops;
         /// <summary>Ordered list of color stops along the gradient axis.</summary>
         public BackgroundGradientStop[] stops { get => m_Stops; set => m_Stops = value; }
@@ -193,6 +205,7 @@ namespace UnityEngine.UIElements
         {
             if (m_Type != other.m_Type) return false;
             if (!m_Angle.Equals(other.m_Angle)) return false;
+            if (m_AngleUnit != other.m_AngleUnit) return false;
             if (m_Shape != other.m_Shape) return false;
             if (m_Size != other.m_Size) return false;
             if (!m_Position.Equals(other.m_Position)) return false;
@@ -217,6 +230,7 @@ namespace UnityEngine.UIElements
         {
             var h = m_Type.GetHashCode();
             h = (h * -1521134295) + m_Angle.GetHashCode();
+            h = (h * -1521134295) + m_AngleUnit.GetHashCode();
             h = (h * -1521134295) + m_Shape.GetHashCode();
             h = (h * -1521134295) + m_Size.GetHashCode();
             h = (h * -1521134295) + m_Position.GetHashCode();

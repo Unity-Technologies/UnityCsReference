@@ -159,15 +159,12 @@ namespace UnityEngine.UIElements.UIR
 
                 renderData.parent = parentRenderData;
                 renderData.renderTree = renderData.parent.renderTree;
-                renderData.depthInRenderTree = renderData.parent.depthInRenderTree + 1;
 
                 if (parentRenderData.isGroupTransform)
                     renderData.groupTransformAncestor = parentRenderData;
                 else
                     renderData.groupTransformAncestor = parentRenderData.groupTransformAncestor;
             }
-
-            renderData.renderTree.dirtyTracker.EnsureFits(renderData.depthInRenderTree);
 
             if ((ve.renderHints & RenderHints.GroupTransform) != 0 && !renderData.isSubTreeQuad && !renderTreeManager.drawInCameras)
                 // TODO: For SubTreeQuads, we should convert this to a DynamicTransform
@@ -183,11 +180,6 @@ namespace UnityEngine.UIElements.UIR
                 nestedData.transformID = ShaderInfoAllocator.identityTransform; // This is defining a new coordinate space
 
                 nestedData.renderTree = renderTreeManager.GetPooledRenderTree(renderTreeManager, nestedData);
-                nestedData.renderTree.dirtyTracker.EnsureFits(nestedData.depthInRenderTree);
-
-                renderTreeManager.UIEOnClippingChanged(ve, true);
-                renderTreeManager.UIEOnOpacityChanged(ve);
-                renderTreeManager.UIEOnVisualsChanged(ve, true);
 
                 var parentTree = renderData.renderTree;
                 Debug.Assert(parentTree != null); // Because we're in the nested case
@@ -260,6 +252,13 @@ namespace UnityEngine.UIElements.UIR
             }
 
             renderData.zIndex = zIndex;
+
+            if (renderData.isSubTreeQuad)
+            {
+                renderTreeManager.UIEOnClippingChanged(ve, true);
+                renderTreeManager.UIEOnOpacityChanged(ve);
+                renderTreeManager.UIEOnVisualsChanged(ve, true);
+            }
 
             // TransformID
             // Non-identity rotation/scale or a Z-translation makes this a sticky bone, since the ElementInfo offset only carries X/Y.
@@ -491,6 +490,8 @@ namespace UnityEngine.UIElements.UIR
             }
             else
                 parent.lastChild = node;
+
+            parent.renderTree.OnRenderDataInserted(node);
         }
 
         static void DisconnectRenderTreeFromParent(RenderTree parentTree, RenderTree nestedTree)
@@ -515,7 +516,7 @@ namespace UnityEngine.UIElements.UIR
                 --renderTreeManager.zIndexElementCount;
 
             RenderTree renderTree = renderData.renderTree;
-            renderTree.ChildWillBeRemoved(renderData);
+            renderTree.OnRenderDataRemoved(renderData);
             CommandManipulator.ResetCommands(renderTreeManager, renderData);
 
             // Ahead of every teardown it depends on: the state lives in the extra data freed below, and a root
@@ -1361,6 +1362,9 @@ namespace UnityEngine.UIElements.UIR
             // Unsupported on world-space (camera-drawn) panels; and the parent owns the backdrop, so a nested-render-tree root must not (nothing behind it to capture).
             bool isEnabled = ve.hasBackdropFilter && !renderTreeManager.drawInCameras && !renderData.isNestedRenderTreeRoot;
 
+            if (isEnabled)
+                FilterHelper.WarnIfFilterParametersClamped(ve, ve.computedStyle.backdropFilter, "backdrop-filter");
+
             if (wasEnabled == isEnabled)
                 return;
 
@@ -1397,6 +1401,8 @@ namespace UnityEngine.UIElements.UIR
             // root to avoid invoking user callbacks twice per frame for the same element.
             if (renderData.isNestedRenderTreeRoot)
                 return;
+
+            FilterHelper.WarnIfFilterParametersClamped(renderData.owner, renderData.owner.computedStyle.filter, "filter");
 
             bool wasEnabled = renderData.isRegisteredForFilterCallbacks;
             bool isEnabled = renderData.owner.computedStyle.filter.Length > 0;

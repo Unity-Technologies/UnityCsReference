@@ -16,6 +16,7 @@ namespace Unity.ProjectAuditor.Editor.UI.Framework
         public string searchString = string.Empty;
 
         readonly int[] searchablePropertyIndices;
+        readonly bool searchId;
 
         public TextFilter(PropertyDefinition[] propertyDefinitions = null)
         {
@@ -24,6 +25,8 @@ namespace Unity.ProjectAuditor.Editor.UI.Framework
             {
                 foreach (var propertyDefinition in propertyDefinitions)
                 {
+                    if (propertyDefinition.Type == PropertyType.Id)
+                        searchId = true;
                     if (propertyDefinition.Format != PropertyFormat.String)
                         continue;
                     if (!PropertyTypeUtil.IsCustom(propertyDefinition.Type))
@@ -44,6 +47,9 @@ namespace Unity.ProjectAuditor.Editor.UI.Framework
                 return true;
 
             if (MatchesSearch(issue.Filename))
+                return true;
+
+            if (searchId && issue.Id.IsValid() && MatchesSearch(issue.Id.AsString()))
                 return true;
 
             foreach (var customPropertyIndex in searchablePropertyIndices)

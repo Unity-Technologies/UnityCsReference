@@ -233,9 +233,19 @@ namespace UnityEngine.UIElements
         float fontSize => default;
 
         /// <summary>
+        /// Sizes of implicitly-created CSS Grid columns. Only takes effect when display is set to grid.
+        /// </summary>
+        IEnumerable<GridTrackSize> gridAutoColumns => default;
+
+        /// <summary>
         /// Controls how the auto-placement algorithm flows items into a CSS Grid container. Only takes effect when display is set to grid.
         /// </summary>
         GridAutoFlow gridAutoFlow => default;
+
+        /// <summary>
+        /// Sizes of implicitly-created CSS Grid rows. Only takes effect when display is set to grid.
+        /// </summary>
+        IEnumerable<GridTrackSize> gridAutoRows => default;
 
         /// <summary>
         /// The 1-based column line a CSS Grid item ends on, spanning from grid-column (0 = span a single track). Only takes effect when the element is a grid item.
@@ -256,6 +266,24 @@ namespace UnityEngine.UIElements
         /// The 1-based row line a CSS Grid item starts on (0 = auto-placement). Only takes effect when the element is a grid item.
         /// </summary>
         GridLine gridRowStart => default;
+
+        /// <summary>
+        /// Defines the columns of a CSS Grid container as a list of track sizes. Only takes effect when display is set to grid.
+        /// </summary>
+        /// <remarks>
+        /// The used size in pixels of each track, from the last layout pass.
+        /// At most 65,535 grid containers can report their tracks at the same time. Past that limit, this property is empty for additional containers.
+        /// </remarks>
+        IEnumerable<float> gridTemplateColumns => default;
+
+        /// <summary>
+        /// Defines the rows of a CSS Grid container as a list of track sizes. Only takes effect when display is set to grid.
+        /// </summary>
+        /// <remarks>
+        /// The used size in pixels of each track, from the last layout pass.
+        /// At most 65,535 grid containers can report their tracks at the same time. Past that limit, this property is empty for additional containers.
+        /// </remarks>
+        IEnumerable<float> gridTemplateRows => default;
 
         /// <summary>
         /// Fixed height of an element for the layout.

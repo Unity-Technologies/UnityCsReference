@@ -18,6 +18,10 @@ namespace Unity.Collections
     [GenerateTestsForBurstCompatibility]
     public unsafe static partial class FixedStringMethods
     {
+        // NativeText and UnsafeText are unbounded, so a stackalloc scaled to their length overflows
+        // the stack. Conversion buffers above this size go on the heap instead.
+        internal const int k_MaxStackAllocBytes = 16 * 1024;
+
         [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS"), Conditional("UNITY_ENABLE_CHECKS")]
         internal static void CheckSubstringInRange(int strLength, int startIndex, int length)
         {
@@ -532,10 +536,36 @@ namespace Unity.Collections
         public static String ConvertToString<T>(ref this T fs)
             where T : unmanaged, INativeList<byte>, IUTF8Bytes
         {
-            var c = stackalloc char[fs.Length * 2];
-            int length = 0;
-            Unicode.Utf8ToUtf16(fs.GetUnsafePtr(), fs.Length, c, out length, fs.Length * 2);
+            if (fs.Length > k_MaxStackAllocBytes / sizeof(char))
+                return ConvertToStringOnHeap(ref fs);
+            return ConvertToStringOnStack(ref fs);
+        }
+
+        // Keep the stackalloc alone in here: sharing a method with the branch above stops Utf8ToUtf16
+        // inlining and doubles the conversion cost.
+        static String ConvertToStringOnStack<T>(ref T fs)
+            where T : unmanaged, INativeList<byte>, IUTF8Bytes
+        {
+            // Two chars are emitted only for four byte sequences, so Length is the exact worst case.
+            var c = stackalloc char[fs.Length];
+            Unicode.Utf8ToUtf16(fs.GetUnsafePtr(), fs.Length, c, out var length, fs.Length);
             return new String(c, 0, length);
+        }
+
+        static String ConvertToStringOnHeap<T>(ref T fs)
+            where T : unmanaged, INativeList<byte>, IUTF8Bytes
+        {
+            var capacity = fs.Length;
+            var c = (char*)Memory.Unmanaged.Allocate((long)capacity * sizeof(char), UnsafeUtility.AlignOf<char>(), Allocator.Persistent);
+            try
+            {
+                Unicode.Utf8ToUtf16(fs.GetUnsafePtr(), capacity, c, out var length, capacity);
+                return new String(c, 0, length);
+            }
+            finally
+            {
+                Memory.Unmanaged.Free(c, Allocator.Persistent);
+            }
         }
 
         /// <summary>

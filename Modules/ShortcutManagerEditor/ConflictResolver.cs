@@ -16,6 +16,7 @@ namespace UnityEditor.ShortcutManagement
         IConflictResolverView m_ConflictResolverView;
         List<ShortcutEntry> m_Entries = new List<ShortcutEntry>();
         List<object> m_Contexts = new List<object>();
+        Event m_SourceEvent;
         bool m_UnresolvedConflictPending;
 
 
@@ -26,7 +27,7 @@ namespace UnityEditor.ShortcutManagement
             m_ConflictResolverView = conflictResolverView;
         }
 
-        public void ResolveConflict(IEnumerable<KeyCombination> keyCombinationSequence, IEnumerable<ShortcutEntry> entries)
+        public void ResolveConflict(IEnumerable<KeyCombination> keyCombinationSequence, IEnumerable<ShortcutEntry> entries, Event sourceEvent)
         {
             // Ignore further conflicts while there is an unresolved conflict pending
             if (m_UnresolvedConflictPending)
@@ -35,6 +36,7 @@ namespace UnityEditor.ShortcutManagement
             m_UnresolvedConflictPending = true;
 
             m_Entries.AddRange(entries);
+            m_SourceEvent = sourceEvent != null ? new Event(sourceEvent) : null;
 
             foreach (var entry in entries)
             {
@@ -90,6 +92,7 @@ namespace UnityEditor.ShortcutManagement
             var args = new ShortcutArguments();
             args.context = m_Contexts[entryIndex];
             args.stage = ShortcutStage.End;
+            args.sourceEvent = m_SourceEvent;
             entry.action(args);
         }
 
@@ -97,6 +100,7 @@ namespace UnityEditor.ShortcutManagement
         {
             m_Entries.Clear();
             m_Contexts.Clear();
+            m_SourceEvent = null;
         }
     }
 }

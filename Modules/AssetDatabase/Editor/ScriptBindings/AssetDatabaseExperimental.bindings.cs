@@ -80,15 +80,33 @@ namespace UnityEditor.Experimental
     [NativeHeader("Modules/AssetDatabase/Editor/Public/AssetDatabaseExperimental.h")]
     public sealed partial class AssetDatabaseExperimental
     {
+        internal static ImporterID GetImporterID(Type importerType)
+        {
+            ThrowIfNotImporterType(importerType);
+            return GetImporterID_Internal(importerType);
+        }
+
+        [FreeFunction("AssetDatabaseExperimental::GetImporterID")]
         [PreventExecutionInState(AssetDatabasePreventExecution.kCodeReload, PreventExecutionSeverity.PreventExecution_ManagedException, AssetDatabase.kPreventExecutionDuringCodeReloadHowToFixMsg)]
-        internal static extern ImporterID GetImporterID(Type importerType);
+        static extern ImporterID GetImporterID_Internal(Type importerType);
+
+        // Native code reads the persistent type ID of the importer type, which only importers are guaranteed to have (UUM-157001)
+        internal static void ThrowIfNotImporterType(Type importerType)
+        {
+            if (importerType != null && !typeof(AssetImporter).IsAssignableFrom(importerType))
+                throw new ArgumentException($"'{importerType}' is not an importer type. Pass a type that derives from AssetImporter or ScriptedImporter, or null for the primary importer.", nameof(importerType));
+        }
 
         [PreventExecutionInState(AssetDatabasePreventExecution.kCodeReload, PreventExecutionSeverity.PreventExecution_ManagedException, AssetDatabase.kPreventExecutionDuringCodeReloadHowToFixMsg)]
         internal static extern Type ImporterIDToImporterType(ImporterID importerID);
 
         internal static ArtifactKey CreateArtifactKey(GUID guid) { return CreateImportAddress_Primary(guid); }
 
-        internal static ArtifactKey CreateArtifactKey(GUID guid, Type importerType) { return CreateImportAddress_Full(guid, importerType); }
+        internal static ArtifactKey CreateArtifactKey(GUID guid, Type importerType)
+        {
+            ThrowIfNotImporterType(importerType);
+            return CreateImportAddress_Full(guid, importerType);
+        }
 
         // Needed because bindings don't support overloads
         // https://internaldocs.unity.com/editor_and_runtime_development_guide/Runtime/Core/marshalling/faq/#do-overloaded-methods-work
@@ -179,8 +197,15 @@ namespace UnityEditor.Experimental
         [PreventExecutionInState(AssetDatabasePreventExecution.kCodeReload, PreventExecutionSeverity.PreventExecution_ManagedException, AssetDatabase.kPreventExecutionDuringCodeReloadHowToFixMsg)]
         public extern static ImportResultID ProduceArtifactAsync(ArtifactKey artifactKey);
 
+        public static ImportResultID[] ProduceArtifactsAsync(GUID[] artifactKey, [uei.DefaultValue("null")] Type importerType = null)
+        {
+            ThrowIfNotImporterType(importerType);
+            return ProduceArtifactsAsync_Guids(artifactKey, importerType);
+        }
+
+        [FreeFunction("AssetDatabaseExperimental::ProduceArtifactsAsync")]
         [PreventExecutionInState(AssetDatabasePreventExecution.kCodeReload, PreventExecutionSeverity.PreventExecution_ManagedException, AssetDatabase.kPreventExecutionDuringCodeReloadHowToFixMsg)]
-        public extern static ImportResultID[] ProduceArtifactsAsync(GUID[] artifactKey, [uei.DefaultValue("null")] Type importerType = null);
+        static extern ImportResultID[] ProduceArtifactsAsync_Guids(GUID[] artifactKey, Type importerType);
 
         [FreeFunction("AssetDatabaseExperimental::ProduceArtifactsAsync")]
         [PreventExecutionInState(AssetDatabasePreventExecution.kCodeReload, PreventExecutionSeverity.PreventExecution_ManagedException, AssetDatabase.kPreventExecutionDuringCodeReloadHowToFixMsg)]
@@ -196,6 +221,7 @@ namespace UnityEditor.Experimental
         {
             if (guids.Length != hashes.Length)
                 throw new ArgumentException("guids and hashes size mismatch!");
+            ThrowIfNotImporterType(importerType);
 
             LookupArtifacts((IntPtr)guids.GetUnsafePtr(), (IntPtr)hashes.GetUnsafePtr(), guids.Length, importerType);
         }
@@ -204,6 +230,7 @@ namespace UnityEditor.Experimental
         {
             if (guids.Length != hashes.Length)
                 throw new ArgumentException("guids and hashes size mismatch!");
+            ThrowIfNotImporterType(importerType);
 
             fixed (GUID* guidsPtr = guids)
             fixed (ImportResultID* hashesPtr = hashes)

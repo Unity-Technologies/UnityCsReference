@@ -40,7 +40,7 @@ namespace Unity.U2D.Physics
         public PhysicsTransform(Vector2 position, PhysicsRotate rotation) { this.position = position; this.rotation = rotation; }
 
         /// <summary>
-        /// Check if the PhysicsTransform is valid (position is not NaN and <see cref="PhysicsRotate.isValid"/>).
+        /// Check if the PhysicsTransform is valid (position is finite and <see cref="PhysicsRotate.isValid"/>).
         /// </summary>
         public readonly bool isValid => PhysicsTransform_IsValid(this);
 
@@ -75,7 +75,7 @@ namespace Unity.U2D.Physics
         /// <param name="position">The translation for the transformation.</param>
         /// <param name="rotation">The rotation for the transformation.</param>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public readonly void GetPositionAndRotation(out Vector2 position, out PhysicsRotate rotation) { position = this.position ; rotation = this.rotation; }
+        public readonly void GetPositionAndRotation(out Vector2 position, out PhysicsRotate rotation) { position = this.position; rotation = this.rotation; }
 
         /// <summary>
         /// Transform a point using the current transform translation and rotation.
@@ -119,7 +119,7 @@ namespace Unity.U2D.Physics
         /// <summary>
         /// Implicit conversion of a <see cref="PhysicsRotate"/> that represents a rotation transformation with no translation.
         /// </summary>
-        /// <param name="rotation">The translation for the transformation.</param>
+        /// <param name="rotation">The rotation for the transformation.</param>
         [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
         public static implicit operator PhysicsTransform(PhysicsRotate rotation) => new(position: Vector2.zero, rotation: rotation);
 

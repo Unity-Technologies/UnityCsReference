@@ -10,17 +10,22 @@ namespace UnityEditor.EditorAnalyticsDebugger
     {
         string m_Summary;
 
+        public long sequence { get; }
         public string eventName { get; }
         public string payloadJson { get; }
+        public string sessionHeaderJson { get; }
         public AnalyticsEventFate fate { get; }
         public DateTime timestampUtc { get; }
 
-        public AnalyticsEventEntry(string eventName, string payloadJson, AnalyticsEventFate fate, DateTime timestampUtc)
+        public AnalyticsEventEntry(long sequence, string eventName, string payloadJson, AnalyticsEventFate fate,
+            DateTime timestampUtc, string sessionHeaderJson = null)
         {
+            this.sequence = sequence;
             this.eventName = eventName;
             this.payloadJson = payloadJson;
             this.fate = fate;
             this.timestampUtc = timestampUtc;
+            this.sessionHeaderJson = sessionHeaderJson;
         }
 
         public string summary

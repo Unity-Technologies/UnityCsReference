@@ -4,15 +4,14 @@
 
 using UnityEngine.TextCore.Text;
 using UnityEditor.Build;
-using UnityEditor.Build.Reporting;
 
 namespace UnityEditor.TextCore.Text
 {
-    internal class TextCorePreBuildProcessor : IPreprocessBuildWithReport
+    internal class TextCorePreBuildProcessor : IPreprocessBuildWithContext
     {
         public int callbackOrder { get { return 0; } }
 
-        public void OnPreprocessBuild(BuildReport report)
+        public void OnPreprocessBuild(BuildCallbackContext ctx)
         {
             // Find all font assets in the project
             string searchPattern = "t:FontAsset";
@@ -28,11 +27,16 @@ namespace UnityEditor.TextCore.Text
 
                 FontAsset fontAsset = AssetDatabase.LoadAssetAtPath<FontAsset>(assetPath);
 
-                if (fontAsset != null && fontAsset.hasSessionOnlyDynamicData && fontAsset.atlasTexture != null && fontAsset.atlasTexture.width != 0)
+                if (fontAsset == null || !fontAsset.hasSessionOnlyDynamicData)
+                    continue;
+
+                if (fontAsset.atlasTexture != null && fontAsset.atlasTexture.width != 0)
                 {
+                    fontAsset.ClearFontFeaturesTables();
                     fontAsset.ClearCharacterAndGlyphTablesInternal();
-                    fontAsset.m_ClearedForBuild = true;
                 }
+
+                fontAsset.m_ClearedForBuild = true;
             }
         }
     }

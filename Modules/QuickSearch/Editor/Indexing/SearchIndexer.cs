@@ -259,7 +259,8 @@ namespace UnityEditor.Search
         // 2- Fix Search Areas for sub assets and sub objects
         // 3- Add metadata to document hash.
         // 4- Keywords per document.
-        internal const int version = 4;
+        // 5- Index material references of all Renderer types.
+        internal const int version = 5;
 
         /// <summary>
         /// Name of the index. Generally this name is given by a user from a <see cref="SearchDatabase.Settings"/>

@@ -201,11 +201,11 @@ partial class Popup : VisualElement
 
             if (m_AnchoredElement != null)
             {
-                root = m_AnchoredElement?.GetRootVisualContainer();
+                root = m_AnchoredElement?.GetRoot();
             }
             else
             {
-                root = GetRootVisualContainer();
+                root = GetRoot();
             }
 
             root?.Add(this);

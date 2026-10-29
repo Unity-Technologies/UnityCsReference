@@ -261,7 +261,6 @@ namespace UnityEditor.Scripting.ScriptCompilation
             "com.unity.mobile.android-logcat", // UAC0005
             "com.unity.searcher", // CS0618: obsolete API usage
             "com.unity.xr.legacyinputhelpers", // CS0618: obsolete FindObjectsOfType
-            "com.unity.inputsystem", // CS0109: unnecessary new keyword
             "com.unity.ads", // CS0168: unused variable
         };
 

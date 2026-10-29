@@ -110,6 +110,8 @@ namespace UnityEngine.UIElements
 
         protected abstract bool CanStartDrag(Vector3 pointerPosition, EventModifiers modifiers);
 
+        protected virtual bool ShouldHandlePointerDown(PointerDownEvent evt) => true;
+
         // Internal for tests.
         protected internal abstract StartDragArgs StartDrag(Vector3 pointerPosition, EventModifiers modifiers);
         protected internal abstract void UpdateDrag(Vector3 pointerPosition, EventModifiers modifiers);
@@ -119,7 +121,7 @@ namespace UnityEngine.UIElements
 
         private void OnPointerDownEvent(PointerDownEvent evt)
         {
-            if (evt.button != (int)MouseButton.LeftMouse)
+            if (evt.button != (int)MouseButton.LeftMouse || !ShouldHandlePointerDown(evt))
             {
                 m_DragState = DragState.None;
                 return;

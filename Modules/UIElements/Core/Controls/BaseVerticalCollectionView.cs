@@ -1081,6 +1081,7 @@ namespace UnityEngine.UIElements
             m_ScrollView.verticalScroller.valueChanged += v => OnScroll(new Vector2(0, v));
             // Grow only, so the horizontal range doesn't change during a drag
             m_ScrollView.horizontalScroller.valueChanged += x => UpdateHorizontalOffsetMinWidth(x, false);
+            m_ScrollView.contentContainer.RegisterCallback<GeometryChangedEvent>(_ => m_HorizontalOffsetIsStale = false);
 
             m_ScrollView.RegisterCallback<GeometryChangedEvent>(OnSizeChanged);
             RegisterCallback<CustomStyleResolvedEvent>(OnCustomStyleResolved);
@@ -1195,6 +1196,7 @@ namespace UnityEngine.UIElements
 
         void OnItemsSourceChanged()
         {
+            ResetHorizontalOffsetMinWidth();
             itemsSourceChanged?.Invoke();
             NotifyPropertyChanged(itemsSourceProperty);
         }
@@ -1272,7 +1274,7 @@ namespace UnityEngine.UIElements
                 RefreshSelection();
                 virtualizationController.Refresh(true);
                 PostRefresh();
-                UpdateHorizontalOffsetMinWidth(0f, true); // The old offset may be meaningless for the new items
+                ResetHorizontalOffsetMinWidth();
 
                 m_RebuildScheduled?.Pause();
             }
@@ -1427,8 +1429,16 @@ namespace UnityEngine.UIElements
         }
 
         float m_HorizontalOffsetMinWidth;
+        bool m_HorizontalOffsetIsStale;
 
         private protected virtual bool hasUniformItemWidth => false;
+
+        // The old offset may be meaningless for the new items, and it describes the old items until the next layout
+        void ResetHorizontalOffsetMinWidth()
+        {
+            m_HorizontalOffsetIsStale = m_ScrollView.scrollOffset.x > 0f;
+            UpdateHorizontalOffsetMinWidth(0f, true);
+        }
 
         // Reserves the width the horizontal offset needs, so binding narrower items doesn't clamp the offset
         void UpdateHorizontalOffsetMinWidth(float offsetX, bool canShrink)
@@ -1437,11 +1447,14 @@ namespace UnityEngine.UIElements
 
             var minWidth = 0f;
             var viewportWidth = m_ScrollView.contentViewport.layout.width;
-            if (horizontalScrollingEnabled && !hasUniformItemWidth && offsetX > 0f && !float.IsNaN(viewportWidth))
-                minWidth = offsetX + viewportWidth;
+            if (horizontalScrollingEnabled && !m_HorizontalOffsetIsStale && m_ViewController?.GetItemsCount() > 0) // Without items, there is no offset to preserve
+            {
+                if (!hasUniformItemWidth && offsetX > 0f && !float.IsNaN(viewportWidth))
+                    minWidth = offsetX + viewportWidth;
 
-            if (!canShrink)
-                minWidth = Mathf.Max(minWidth, m_HorizontalOffsetMinWidth);
+                if (!canShrink)
+                    minWidth = Mathf.Max(minWidth, m_HorizontalOffsetMinWidth);
+            }
 
             if (Mathf.Approximately(minWidth, m_HorizontalOffsetMinWidth))
                 return;
@@ -1618,10 +1631,19 @@ namespace UnityEngine.UIElements
             return false;
         }
 
+        // Pointer events bubbling up from a nested collection view belong to that view, not to the item hosting it.
+        // The target can already be detached here, for example when a nested view's selection change rebuilds this view,
+        // so this only looks for the nearest collection view instead of checking that the target is still a descendant.
+        internal bool IsFromNestedCollectionView(IEventHandler target)
+        {
+            var nearestCollectionView = (target as VisualElement)?.GetFirstOfType<BaseVerticalCollectionView>();
+            return nearestCollectionView != null && nearestCollectionView != this;
+        }
+
         private void OnPointerMove(PointerMoveEvent evt)
         {
             // Support cases where PointerMove corresponds to a MouseDown or MouseUp event with multiple buttons.
-            if (evt.button == (int)MouseButton.LeftMouse)
+            if (evt.button == (int)MouseButton.LeftMouse && !IsFromNestedCollectionView(evt.target))
             {
                 if ((evt.pressedButtons & (1 << (int)MouseButton.LeftMouse)) == 0)
                 {
@@ -1636,6 +1658,9 @@ namespace UnityEngine.UIElements
 
         private void OnPointerDown(PointerDownEvent evt)
         {
+            if (IsFromNestedCollectionView(evt.target))
+                return;
+
             ProcessPointerDown(evt);
         }
 
@@ -1644,7 +1669,7 @@ namespace UnityEngine.UIElements
             if (!HasValidDataAndBindings())
                 return;
 
-            if (!evt.isPrimary)
+            if (!evt.isPrimary || IsFromNestedCollectionView(evt.target))
                 return;
 
             ClearSelection();
@@ -1652,6 +1677,9 @@ namespace UnityEngine.UIElements
 
         private void OnPointerUp(PointerUpEvent evt)
         {
+            if (IsFromNestedCollectionView(evt.target))
+                return;
+
             ProcessPointerUp(evt);
         }
 

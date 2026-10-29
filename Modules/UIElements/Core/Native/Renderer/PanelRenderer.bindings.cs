@@ -563,7 +563,9 @@ namespace UnityEngine.UIElements
 
             SetAllDirty();
 
-            // Initialize previous state tracking
+            // Initialize previous state tracking. SetAllDirty already queues the insertion, and seeding previousEnabled
+            // keeps the next UpdateEnabledState from reinserting a root that PreparePanelRenderers just attached.
+            previousEnabled = enabled;
             previousSortingOrder = sortingOrder;
 
             // When instantiated from a prefab, the panel settings may already be set.
@@ -578,6 +580,14 @@ namespace UnityEngine.UIElements
                 // Skip when the root is still attached (e.g., entering playmode without domain
                 // reload), the immediate-fire branch of RegisterUIReloadCallback handles that.
                 m_UIReloadCallbackPending = true;
+            }
+
+            // ApplyModifiedProperties (Inspector, Undo) and animation also re-run AwakeFromLoad, possibly with a root
+            // that is still attached from before they disabled us.
+            if (!enabled && rootVisualElement?.parent != null)
+            {
+                // The previousEnabled seed above hides the change from UpdateEnabledState, so detach here instead.
+                RemoveFromHierarchy();
             }
         }
 

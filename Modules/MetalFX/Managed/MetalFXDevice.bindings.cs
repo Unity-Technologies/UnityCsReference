@@ -29,6 +29,7 @@ namespace UnityEngine.Rendering.MetalFX
         public IntPtr color;
         public IntPtr depth;
         public IntPtr motion;
+        public IntPtr reactiveMask; // optional; IntPtr.Zero when there is no reactive mask this frame
         public IntPtr destination;
         public float jitterX;
         public float jitterY;
@@ -67,14 +68,15 @@ namespace UnityEngine.Rendering.MetalFX
 
         public static bool IsSpatialSupported() => MetalFX_IsSpatialSupported();
         public static bool IsTemporalSupported() => MetalFX_IsTemporalSupported();
+        public static bool IsTemporalReactiveMaskSupported() => MetalFX_IsTemporalReactiveMaskSupported();
         public static float GetTemporalMaxScale() => MetalFX_GetTemporalMaxScale();
         public static float GetTemporalMinScale() => MetalFX_GetTemporalMinScale();
 
         public static IntPtr CreateSpatialContext(IntPtr source, IntPtr destination, int inputWidth, int inputHeight, int outputWidth, int outputHeight, bool hdr)
             => MetalFX_CreateSpatialContext(source, destination, inputWidth, inputHeight, outputWidth, outputHeight, hdr ? 1 : 0);
 
-        public static IntPtr CreateTemporalContext(IntPtr color, IntPtr depth, IntPtr motion, IntPtr output, bool dynamicResolution, int inputWidth, int inputHeight, int outputWidth, int outputHeight)
-            => MetalFX_CreateTemporalContext(color, depth, motion, output, dynamicResolution ? 1 : 0, inputWidth, inputHeight, outputWidth, outputHeight);
+        public static IntPtr CreateTemporalContext(IntPtr color, IntPtr depth, IntPtr motion, IntPtr reactiveMask, IntPtr output, bool dynamicResolution, int inputWidth, int inputHeight, int outputWidth, int outputHeight)
+            => MetalFX_CreateTemporalContext(color, depth, motion, reactiveMask, output, dynamicResolution ? 1 : 0, inputWidth, inputHeight, outputWidth, outputHeight);
 
         /// <summary>
         /// Schedules the release of a scaler context on the render thread. Routing it through <paramref name="cmd"/> orders it
@@ -123,12 +125,13 @@ namespace UnityEngine.Rendering.MetalFX
 
         [FreeFunction("MetalFX_IsSpatialSupported")] static extern bool MetalFX_IsSpatialSupported();
         [FreeFunction("MetalFX_IsTemporalSupported")] static extern bool MetalFX_IsTemporalSupported();
+        [FreeFunction("MetalFX_IsTemporalReactiveMaskSupported")] static extern bool MetalFX_IsTemporalReactiveMaskSupported();
         [FreeFunction("MetalFX_GetTemporalMaxScale")] static extern float MetalFX_GetTemporalMaxScale();
         [FreeFunction("MetalFX_GetTemporalMinScale")] static extern float MetalFX_GetTemporalMinScale();
         [FreeFunction("MetalFX_CreateSpatialContext")] static extern IntPtr MetalFX_CreateSpatialContext(IntPtr source, IntPtr destination, int inputWidth, int inputHeight, int outputWidth, int outputHeight, int hdr);
         [FreeFunction("MetalFX_PrepareSpatialDispatch")] static extern IntPtr MetalFX_PrepareSpatialDispatch(in MetalFXSpatialDispatchData src);
         [FreeFunction("MetalFX_PrepareTemporalDispatch")] static extern IntPtr MetalFX_PrepareTemporalDispatch(in MetalFXTemporalDispatchData src);
-        [FreeFunction("MetalFX_CreateTemporalContext")] static extern IntPtr MetalFX_CreateTemporalContext(IntPtr color, IntPtr depth, IntPtr motion, IntPtr output, int dynamicResolution, int inputWidth, int inputHeight, int outputWidth, int outputHeight);
+        [FreeFunction("MetalFX_CreateTemporalContext")] static extern IntPtr MetalFX_CreateTemporalContext(IntPtr color, IntPtr depth, IntPtr motion, IntPtr reactiveMask, IntPtr output, int dynamicResolution, int inputWidth, int inputHeight, int outputWidth, int outputHeight);
         [FreeFunction("MetalFX_GetBaseEventId")] static extern int MetalFX_GetBaseEventId();
         [FreeFunction("MetalFX_GetRenderEventFunc")] static extern IntPtr MetalFX_GetRenderEventFunc();
     }

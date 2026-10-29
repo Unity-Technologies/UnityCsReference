@@ -28,6 +28,10 @@ namespace UnityEngine
         static string s_IMGUICurrentText;
         NativeTextBuffer m_IMGUITextBuffer;
 
+        // Key this handle was generated for, to detect hash collisions in textHandles
+        NativeTextGenerationSettings m_KeySettings;
+        string m_KeyContent;
+
         internal NativeTextInfo nativeTextInfo;
 
         private static void GetMeshInfoNative(GUIStyle style, Color color, string content, Rect rect, ref MeshInfoBindings[] meshInfos, ref Vector2 dimensions, ref int generationId)
@@ -242,8 +246,17 @@ namespace UnityEngine
             }
 
             int hash = nativeSettings.GetHashCode();
-         
-            if (textHandles.TryGetValue(hash, out IMGUITextHandle textHandleCached))
+            var content = s_IMGUICurrentText ?? string.Empty;
+
+            if (textHandles.TryGetValue(hash, out IMGUITextHandle textHandleCached) &&
+                !textHandleCached.HasKey(nativeSettings, content))
+            {
+                // Hash collision: this handle and its native generator hold another text
+                EvictTextHandle(hash, textHandleCached);
+                textHandleCached = null;
+            }
+
+            if (textHandleCached != null)
             {
                 textHandleCached.tuple.Value.lastTimeUsed = currentTime;
                 textHandlesTuple.Remove(textHandleCached.tuple);
@@ -266,6 +279,10 @@ namespace UnityEngine
             handle.tuple = listNode;
             textHandles[hash] = handle;
             handle.hashCode = hash;
+            handle.m_KeySettings = nativeSettings;
+            handle.m_KeySettings.textBufferPtr = IntPtr.Zero;
+            handle.m_KeySettings.textBufferLength = 0;
+            handle.m_KeyContent = content;
             // we might not want to update if we know we will be adding it to the permanent cache right after.
             if (update)
                 handle.UpdateNative(ref isCached);
@@ -274,6 +291,21 @@ namespace UnityEngine
             handle.isCachedOnNative = isCalledFromNative;
             ++newHandlesSinceCleanup;
             return handle;
+        }
+
+        bool HasKey(in NativeTextGenerationSettings settings, string content)
+        {
+            return string.Equals(m_KeyContent, content) && m_KeySettings.EqualsIgnoringTextBuffer(settings);
+        }
+
+        static void EvictTextHandle(int hash, IMGUITextHandle handle)
+        {
+            GUIStyle.Internal_DestroyTextGenerator(hash);
+            handle.isCachedOnNative = false;
+            handle.RemoveFromPermanentCache();
+            textHandles.Remove(hash);
+            if (handle.tuple?.List != null)
+                textHandlesTuple.Remove(handle.tuple);
         }
 
         [NoAutoStaticsCleanup] // scratch buffer of per-mesh element indices; all entries are plain ints, no user types
@@ -453,6 +485,13 @@ namespace UnityEngine
 
                 tuple = registered.tuple;
                 registered.tuple = null;
+
+                // Hash collision: the native generator under our id holds the other text
+                if (!registered.HasKey(m_KeySettings, m_KeyContent))
+                {
+                    GUIStyle.Internal_DestroyTextGenerator(hashCode);
+                    isCachedOnNative = false;
+                }
             }
 
             if (tuple?.List != null)

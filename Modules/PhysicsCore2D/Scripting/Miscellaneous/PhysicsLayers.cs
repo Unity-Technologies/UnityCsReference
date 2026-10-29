@@ -25,9 +25,11 @@ namespace Unity.U2D.Physics
         /// <remarks>
         /// Use this method to build the category and contact masks for a <see cref="PhysicsShape.ContactFilter"/> so a shape only collides with the layers it needs to.
         /// Create the layers in a <see cref="PhysicsCoreSettings2D"/> asset first.
+        /// When physics layers are active and more than one layer has the same name, the mask includes every layer with that name.
         /// </remarks>
         /// <param name="layerNames">The layer names (case sensitive) to find a combined physics mask for.</param>
-        /// <returns>The combined physics mask associated with the specified layer names. If a layer name isn't found, Unity produces a console warning and returns <see cref="PhysicsMask.None"/>.</returns>
+        /// <returns>The combined physics mask for the layer names that were found. Unity produces a console warning for each layer name that isn't found and leaves it out of the mask, so if no names are found, <see cref="PhysicsMask.None"/> is returned.</returns>
+        /// <exception cref="System.ArgumentNullException">Thrown if <paramref name="layerNames"/> or any of the layer names is null.</exception>
         /// <exception cref="System.ArgumentException">Thrown if no layer names are provided.</exception>
         /// <example>
         /// <code lang="cs">
@@ -51,8 +53,18 @@ namespace Unity.U2D.Physics
         public static PhysicsMask GetLayerMask(params string[] layerNames)
         {
             // Throw if not layer names provided.
+            if (layerNames == null)
+                throw new ArgumentNullException(nameof(layerNames));
+
             if (layerNames.Length == 0)
                 throw new ArgumentException("No Layer Names provided.", nameof(layerNames));
+
+            // Throw if any layer name is null.
+            foreach (var name in layerNames)
+            {
+                if (name == null)
+                    throw new ArgumentNullException(nameof(layerNames), "A layer name cannot be null.");
+            }
 
             // 64-bit layers (if available and active).
             if (PhysicsWorld.usePhysicsLayers && PhysicsGlobal_GetPhysicsLayers() is LayerNames physicsLayerNames)
@@ -97,10 +109,17 @@ namespace Unity.U2D.Physics
         /// <summary>
         /// Get a layer ordinal (index) for the specified layer name. This is not a 32-bit mask but simply the layer ordinal (index) associated with the specified layer name.
         /// </summary>
+        /// <remarks>
+        /// When physics layers are active and more than one layer has the same name, only the lowest-numbered layer with that name is found, so the ordinal of any other layer with that name is never returned.
+        /// </remarks>
         /// <param name="layerName">The layer name (case sensitive) to find the layer ordinal for.</param>
         /// <returns>The layer ordinal associated with the specified layer name or, if not found, <see cref="PhysicsLayers.InvalidLayerOrdinal"/> will be returned in which case a console warning will also be produced.</returns>
+        /// <exception cref="System.ArgumentNullException">Thrown if <paramref name="layerName"/> is null.</exception>
         public static int GetLayerOrdinal(string layerName)
         {
+            if (layerName == null)
+                throw new ArgumentNullException(nameof(layerName));
+
             // 64-bit layers (if available and active).
             if (PhysicsWorld.usePhysicsLayers && PhysicsGlobal_GetPhysicsLayers() is LayerNames physicsLayerNames)
             {
@@ -139,7 +158,7 @@ namespace Unity.U2D.Physics
             if (PhysicsWorld.usePhysicsLayers && PhysicsGlobal_GetPhysicsLayers() is LayerNames physicsLayerNames)
             {
                 if (layerOrdinal < 0 || layerOrdinal > 63)
-                    throw new ArgumentOutOfRangeException($"The layer ordinal `{layerOrdinal}' is out of the valid range [0, 63].");
+                    throw new ArgumentOutOfRangeException(nameof(layerOrdinal), $"The layer ordinal '{layerOrdinal}' is out of the valid range [0, 63].");
 
                 return physicsLayerNames.GetLayerName(layerOrdinal);
             }
@@ -147,7 +166,7 @@ namespace Unity.U2D.Physics
             // 32-bit layers.
             {
                 if (layerOrdinal < 0 || layerOrdinal > 31)
-                    throw new ArgumentOutOfRangeException($"The layer ordinal `{layerOrdinal}' is out of the valid range [0, 31].");
+                    throw new ArgumentOutOfRangeException(nameof(layerOrdinal), $"The layer ordinal '{layerOrdinal}' is out of the valid range [0, 31].");
 
                 return LayerMask.LayerToName(layerOrdinal);
             }
@@ -224,6 +243,19 @@ namespace Unity.U2D.Physics
                 }
             }
 
+            // The combined mask of every layer with each name, as more than one layer can have the same name.
+            private Dictionary<string, PhysicsMask> m_MaskMap;
+            private Dictionary<string, PhysicsMask> MaskMap
+            {
+                get
+                {
+                    if (m_MaskMap == null)
+                        m_MaskMap = new Dictionary<string, PhysicsMask>(capacity: 64);
+
+                    return m_MaskMap;
+                }
+            }
+
             /// <undoc/>
             public void OnBeforeSerialize() { }
 
@@ -232,15 +264,21 @@ namespace Unity.U2D.Physics
             {
                 var names = Names;
                 var nameMap = NameMap;
+                var maskMap = MaskMap;
                 nameMap.Clear();
-            
+                maskMap.Clear();
+
                 for (var i = 0; i < 64; ++i)
                 {
                     var name = names[i];
                     if (string.IsNullOrEmpty(name))
                         continue;
 
+                    // The ordinal is the lowest-numbered layer with the name.
                     nameMap.TryAdd(name, i);
+
+                    maskMap.TryGetValue(name, out var layerMask);
+                    maskMap[name] = layerMask | ((UInt64)1 << i);
                 }
             }
 
@@ -252,9 +290,9 @@ namespace Unity.U2D.Physics
                     var layerNames = new LayerNames();
 
                     var names = layerNames.Names;
-                    var nameMap = layerNames.NameMap;
                     names[0] = "Default";
-                    nameMap.Add(names[0], 0);
+                    layerNames.NameMap.Add(names[0], 0);
+                    layerNames.MaskMap.Add(names[0], PhysicsMask.One);
 
                     return layerNames;
                 }
@@ -274,9 +312,8 @@ namespace Unity.U2D.Physics
             [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
             internal PhysicsMask GetLayerMask(string layerName)
             {
-                var layerOrdinal = GetLayerOrdinal(layerName);
-                if (layerOrdinal != InvalidLayerOrdinal)
-                    return new PhysicsMask(layerOrdinal);
+                if (MaskMap.TryGetValue(layerName, out var layerMask))
+                    return layerMask;
 
                 return default;
             }
@@ -286,9 +323,9 @@ namespace Unity.U2D.Physics
             internal string GetLayerName(int layerOrdinal)
             {
                 if (layerOrdinal < 0 || layerOrdinal > 63)
-                    throw new ArgumentOutOfRangeException($"The layer ordinal `{layerOrdinal}' is out of the valid range [0, 63].");
+                    throw new ArgumentOutOfRangeException(nameof(layerOrdinal), $"The layer ordinal '{layerOrdinal}' is out of the valid range [0, 63].");
 
-                return Names[layerOrdinal];
+                return Names[layerOrdinal] ?? string.Empty;
             }
         }
     }

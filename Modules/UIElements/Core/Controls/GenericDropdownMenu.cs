@@ -700,12 +700,12 @@ namespace UnityEngine.UIElements
                 }
                 else
                 {
-                    m_PanelRootVisualContainer = m_TargetElement.GetRootVisualContainer();
+                    m_PanelRootVisualContainer = m_TargetElement.GetRoot();
                 }
             }
             else
             {
-                m_PanelRootVisualContainer = m_TargetElement.GetRootVisualContainer();
+                m_PanelRootVisualContainer = m_TargetElement.GetRoot();
             }
 
             if (!isAttachedRegistered)

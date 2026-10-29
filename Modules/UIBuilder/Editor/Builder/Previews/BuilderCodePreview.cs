@@ -182,7 +182,7 @@ namespace Unity.UI.Builder
             evt.StopImmediatePropagation();
         }
 
-        protected void SetTargetAsset(ScriptableObject targetAsset, bool hasUnsavedChanges)
+        protected void SetTargetAsset(ScriptableObject targetAsset, bool hasUnsavedChanges, string displayName = null)
         {
             if (pane == null)
                 return;
@@ -193,7 +193,7 @@ namespace Unity.UI.Builder
             if (!hasUnsavedChanges)
                 this.hasUnsavedChanges = false;
 
-            pane.subTitle = BuilderAssetUtilities.GetAssetName(targetAsset, previewAssetExtension, this.hasUnsavedChanges);
+            pane.subTitle = displayName ?? BuilderAssetUtilities.GetAssetName(targetAsset, previewAssetExtension, this.hasUnsavedChanges);
             m_OpenTargetAssetSourceButton.style.display = isTargetAssetAvailableOnDisk ? DisplayStyle.Flex : DisplayStyle.None;
         }
 

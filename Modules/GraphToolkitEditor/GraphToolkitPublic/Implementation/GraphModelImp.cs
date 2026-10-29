@@ -297,7 +297,7 @@ namespace Unity.GraphToolkit.Editor.Implementation
                 m_UndoChainModels.AddRange(m_ScopePendingModels);
             }
 
-            var window = GraphViewEditorWindowImp.GetOpenedWindow((GraphObjectImp)GraphObject);
+            var window = GraphToolkitWindow.GetOpenedWindow((GraphObjectImp)GraphObject);
 
             if (window?.GraphTool?.UndoState != null && window.GraphView?.GraphModel == this)
             {
@@ -338,7 +338,7 @@ namespace Unity.GraphToolkit.Editor.Implementation
         {
             CheckModificationLock();
 
-            var window = GraphViewEditorWindowImp.GetOpenedWindow((GraphObjectImp)GraphObject);
+            var window = GraphToolkitWindow.GetOpenedWindow((GraphObjectImp)GraphObject);
 
             if (window != null && window.GraphView?.GraphModel == this)
             {

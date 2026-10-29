@@ -385,6 +385,9 @@ static class MenuUtility
         if (!TryCreateNewVisualTreeAsset(out var newVta))
             return false;
 
+        // Tracked before the caller adds to it, so the registry's clean baseline is the empty document.
+        UIAssetRegistry.instance.TrackCreatedAsset(newVta);
+
         var assetPath = AssetDatabase.GetAssetPath(newVta);
 
         var defaultPanelSettings = PlayModeMenuItems.GetPanelSettingsFromProjectOrCreate();

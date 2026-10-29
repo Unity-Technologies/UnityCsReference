@@ -2769,7 +2769,7 @@ namespace UnityEditor
         public sealed override Texture2D RenderStaticPreview(string assetPath, Object[] subAssets, int width, int height)
         {
             var mat = target as Material;
-            if (!SupportsRenderingPreview(mat))
+            if (!SupportsRenderingPreview(mat) || IsUIToolkitShader(mat))
                 return null;
 
             Init();
@@ -2926,7 +2926,24 @@ namespace UnityEditor
 
         public sealed override bool HasPreviewGUI()
         {
-            return true;
+            return !IsUIToolkitShader(target as Material);
+        }
+
+        // UI Toolkit shaders depend on vertex data and constant buffers that only the UI Toolkit renderer provides,
+        // so they cannot be previewed on a regular mesh.
+        static bool IsUIToolkitShader(Material material)
+        {
+            var shader = material != null ? material.shader : null;
+            if (shader == null)
+                return false;
+
+            var tag = new ShaderTagId("isCustomUITKShader");
+            for (int i = 0; i < shader.subshaderCount; i++)
+            {
+                if (shader.FindSubshaderTagValue(i, tag).name == "true")
+                    return true;
+            }
+            return false;
         }
 
         public override bool RequiresConstantRepaint()
@@ -3426,6 +3443,13 @@ namespace UnityEditor
 
         internal override void OnHeaderIconGUI(Rect iconRect)
         {
+            if (!HasPreviewGUI())
+            {
+                if (Event.current.type == EventType.Repaint)
+                    GUI.DrawTexture(iconRect, AssetPreview.GetMiniThumbnail(target), ScaleMode.ScaleToFit);
+                return;
+            }
+
             OnPreviewGUI(iconRect, "IN BigTitle inner");
         }
 

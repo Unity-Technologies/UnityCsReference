@@ -362,21 +362,56 @@ namespace Unity.Collections
         public unsafe static FormatError Append<T>(ref this T fs, string s)
             where T : unmanaged, INativeList<byte>, IUTF8Bytes
         {
-            // we don't know how big the expansion from UTF16 to UTF8 will be, so we account for worst case.
-            int worstCaseCapacity = s.Length * 4;
+            // We don't know how big the expansion from UTF16 to UTF8 will be, so we account for worst case:
+            // a UTF-16 code unit becomes at most three UTF-8 bytes, because four byte sequences consume a
+            // surrogate pair. Widen the multiply: an int one wraps negative around 2^29 chars and then picks
+            // the stackalloc path with an invalid size.
+            long worstCaseCapacity = (long)s.Length * 3;
+            // Length is an int on every IUTF8Bytes destination, so nothing can hold this many bytes.
+            if (worstCaseCapacity > int.MaxValue)
+                return FormatError.Overflow;
+            if (worstCaseCapacity > k_MaxStackAllocBytes)
+                return AppendOnHeap(ref fs, s, (int)worstCaseCapacity);
+            return AppendOnStack(ref fs, s, (int)worstCaseCapacity);
+        }
+
+        // Keep the stackalloc alone in here - see ConvertToStringOnStack for why.
+        static FormatError AppendOnStack<T>(ref T fs, string s, int worstCaseCapacity)
+            where T : unmanaged, INativeList<byte>, IUTF8Bytes
+        {
             byte* utf8Bytes = stackalloc byte[worstCaseCapacity];
+            return AppendUtf16(ref fs, s, utf8Bytes, worstCaseCapacity);
+        }
+
+        static FormatError AppendOnHeap<T>(ref T fs, string s, int worstCaseCapacity)
+            where T : unmanaged, INativeList<byte>, IUTF8Bytes
+        {
+            var utf8Bytes = (byte*)Memory.Unmanaged.Allocate(worstCaseCapacity, UnsafeUtility.AlignOf<byte>(), Allocator.Persistent);
+            try
+            {
+                return AppendUtf16(ref fs, s, utf8Bytes, worstCaseCapacity);
+            }
+            finally
+            {
+                Memory.Unmanaged.Free(utf8Bytes, Allocator.Persistent);
+            }
+        }
+
+        static FormatError AppendUtf16<T>(ref T fs, string s, byte* utf8Buffer, int utf8Capacity)
+            where T : unmanaged, INativeList<byte>, IUTF8Bytes
+        {
             int utf8Len;
 
             fixed (char* chars = s)
             {
-                var err = UTF8ArrayUnsafeUtility.Copy(utf8Bytes, out utf8Len, worstCaseCapacity, chars, s.Length);
+                var err = UTF8ArrayUnsafeUtility.Copy(utf8Buffer, out utf8Len, utf8Capacity, chars, s.Length);
                 if (err != CopyError.None)
                 {
                     return FormatError.Overflow;
                 }
             }
 
-            return fs.Append(utf8Bytes, utf8Len);
+            return fs.Append(utf8Buffer, utf8Len);
         }
 
         /// <summary>

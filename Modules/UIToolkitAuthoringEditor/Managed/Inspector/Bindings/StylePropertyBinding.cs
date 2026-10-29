@@ -344,7 +344,9 @@ sealed partial class StylePropertyBinding : CustomBinding, ITrackablePropertyPro
                         break;
                     if (!authoringContext.AnimationController.IsPropertyRecordable(binding.stylePropertyId))
                         break;
-                    AnimationRecordingStyleBridge.TryRecordStylePropertyChange(styleDiff.currentTarget, binding.stylePropertyId, false, in value, in value);
+                    // Some animated writes (colors, z-index) don't bump a style version the inspector listens to.
+                    if (AnimationRecordingStyleBridge.TryRecordStylePropertyChange(styleDiff.currentTarget, binding.stylePropertyId, false, in value, in value))
+                        authoringContext.Refresh(styleDiff.currentTarget);
                     break;
                 }
 

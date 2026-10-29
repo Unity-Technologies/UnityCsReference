@@ -9,7 +9,7 @@ using UnityEngine;
 namespace Unity.ProjectAuditor.Editor
 {
     /// <summary>
-    /// An unique identifier for an Issue Descriptor. IDs must have exactly 3 upper case characters, followed by 4 digits.
+    /// An unique identifier for an Issue Descriptor. IDs must have 2 or 3 upper case characters, followed by 4 digits.
     /// </summary>
     /// <remarks>
     /// <see cref="ReportItem"/>s representing Issues (as opposed to Insights: purely informational ProjectIssues) all contain a DescriptorId.
@@ -50,7 +50,7 @@ namespace Unity.ProjectAuditor.Editor
         /// <summary>
         /// Constructor
         /// </summary>
-        /// <param name="id">String representing a valid and unique Descriptor ID. IDs must have exactly 3 upper case characters, followed by 4 digits.</param>
+        /// <param name="id">String representing a valid and unique Descriptor ID. IDs must have 2 or 3 upper case characters, followed by 4 digits.</param>
         public DescriptorId(string id)
         {
             m_AsString = id;
@@ -62,7 +62,6 @@ namespace Unity.ProjectAuditor.Editor
                 return;
             }
 
-            // ID must be exactly 7 characters, beginning with exactly 3 uppercase letters, followed by exactly 4 digits
             if (!IsValidIdFormat(id))
             {
                 Debug.LogError("Invalid ID string supplied to DescriptorId: " + id);
@@ -73,13 +72,23 @@ namespace Unity.ProjectAuditor.Editor
             m_AsInt = HashDescriptorString(id);
         }
 
-        // ID must be exactly 7 characters, beginning with exactly 3 uppercase letters, followed by exactly 4 digits
+        // ID must begin with 2 or 3 uppercase letters (e.g. "CA1016" from Roslyn analyzers), followed by exactly 4 digits
         internal static bool IsValidIdFormat(string id)
         {
-            if (id.Length != 7 || id[0] < 'A' || id[0] > 'Z' || id[1] < 'A' || id[1] > 'Z' || id[2] < 'A' || id[2] > 'Z' ||
-                id[3] < '0' || id[3] > '9' || id[4] < '0' || id[4] > '9' || id[5] < '0' || id[5] > '9' || id[6] < '0' || id[6] > '9')
-            {
+            if (id.Length != 6 && id.Length != 7)
                 return false;
+
+            var letterCount = id.Length - 4;
+            for (var i = 0; i < letterCount; i++)
+            {
+                if (id[i] < 'A' || id[i] > 'Z')
+                    return false;
+            }
+
+            for (var i = letterCount; i < id.Length; i++)
+            {
+                if (id[i] < '0' || id[i] > '9')
+                    return false;
             }
 
             return true;
@@ -143,8 +152,12 @@ namespace Unity.ProjectAuditor.Editor
 
         private static int HashDescriptorString(string id)
         {
-            var characters = (short)((char)(id[0] - 'A') << 10 | (char)(id[1] - 'A') << 5 | (char)(id[2] - 'A'));
-            var numerical = (id[3] - '0') * 1000 + (id[4] - '0') * 100 + (id[5] - '0') * 10 + (id[6] - '0');
+            var letterCount = id.Length - 4;
+            // 2-letter IDs use 27 in the top 5-bit slot, which no letter (0-25) produces, so they can't collide with 3-letter IDs
+            var characters = letterCount == 3
+                ? (short)((char)(id[0] - 'A') << 10 | (char)(id[1] - 'A') << 5 | (char)(id[2] - 'A'))
+                : (short)(27 << 10 | (char)(id[0] - 'A') << 5 | (char)(id[1] - 'A'));
+            var numerical = (id[letterCount] - '0') * 1000 + (id[letterCount + 1] - '0') * 100 + (id[letterCount + 2] - '0') * 10 + (id[letterCount + 3] - '0');
             return characters << 16 | numerical;
         }
 

@@ -269,10 +269,8 @@ namespace Unity.ProjectAuditor.Editor.UI.Framework
 
                 foreach (var issue in allIssues)
                 {
-                    // allIssues spans every page that shares this category's view (e.g. Code is shown under
-                    // both Optimization and Upgrade), so exclude issues that don't belong on the current page.
-                    // Otherwise an issue ignored on one page could make an empty group appear on another.
-                    if (!m_View.MatchesPage(issue.ReportItem))
+                    // The ignored count must use the same filters as the item count, whether or not ignored issues are shown
+                    if (!m_View.MatchWithoutIgnoredState(issue.ReportItem))
                         continue;
 
                     string filteredItemName = issue.GroupName;
@@ -309,6 +307,7 @@ namespace Unity.ProjectAuditor.Editor.UI.Framework
                     group.NumVisibleChildren = childrenCount;
                     group.NumIgnoredChildren = ignoredChildrenCount;
                     group.DisplayName = groupName;
+                    group.GroupId = null;
 
                     if (childrenCount > 0)
                     {
@@ -344,6 +343,15 @@ namespace Unity.ProjectAuditor.Editor.UI.Framework
                                 group.GroupAreasMixed = true;
                                 break;
                             }
+                        }
+
+                        var firstId = children[0].ReportItem.Id;
+                        group.GroupId = firstId.IsValid() ? firstId.AsString() : null;
+                        for (int i = 1; i < childrenCount && group.GroupId != null; i++)
+                        {
+                            var childId = children[i].ReportItem.Id;
+                            if (!childId.IsValid() || childId.AsString() != group.GroupId)
+                                group.GroupId = null;
                         }
                     }
 
@@ -540,6 +548,10 @@ namespace Unity.ProjectAuditor.Editor.UI.Framework
                         content.tooltip = Styles.MixedArea.tooltip;
                         EditorGUI.LabelField(cellRect, content, labelStyle);
                     }
+                }
+                else if (property.Type == PropertyType.Id && item.NumVisibleChildren > 0 && !string.IsNullOrEmpty(item.GroupId))
+                {
+                    EditorGUI.LabelField(cellRect, item.GroupId, labelStyle);
                 }
             }
             else

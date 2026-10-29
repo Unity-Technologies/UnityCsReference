@@ -164,7 +164,7 @@ namespace Unity.ProjectAuditor.Editor.Modules
 
             // The converters report the status the scan finished with, which is how we know the results are complete
             string scanStatus = null;
-            var scanFilePath = ScanWithRenderPipelineConverter(convertersType, targetPipeline, status => scanStatus = status);
+            var scanFilePath = ScanWithRenderPipelineConverter(convertersType, targetPipeline, status => scanStatus = status, analysisParams.Blocking);
             var result = AnalysisResult.Failure;
 
             if (!string.IsNullOrEmpty(scanFilePath))
@@ -225,12 +225,12 @@ namespace Unity.ProjectAuditor.Editor.Modules
             }
         }
 
-        static string ScanWithRenderPipelineConverter(Type convertersType, string containerName, Action<string> onScanFinished)
+        static string ScanWithRenderPipelineConverter(Type convertersType, string containerName, Action<string> onScanFinished, bool synchronous)
         {
             var filterConvertersMethod = convertersType.GetMethod("FilterConverters", k_ConverterApiBindingFlags, null,
                 [typeof(string), typeof(List<string>), typeof(bool)], null);
             var scanToFileMethod = convertersType.GetMethod("ScanToFile", k_ConverterApiBindingFlags, null,
-                [typeof(List<Type>), typeof(string), typeof(Action<string>)], null);
+                [typeof(List<Type>), typeof(string), typeof(Action<string>), typeof(bool)], null);
 
             if (filterConvertersMethod == null || scanToFileMethod == null)
             {
@@ -248,7 +248,7 @@ namespace Unity.ProjectAuditor.Editor.Modules
                     return null;
                 }
 
-                return scanToFileMethod.Invoke(null, [converterTypes, k_ScanFileName, onScanFinished]) as string;
+                return scanToFileMethod.Invoke(null, [converterTypes, k_ScanFileName, onScanFinished, synchronous]) as string;
             }
             catch (Exception e)
             {
@@ -275,7 +275,6 @@ namespace Unity.ProjectAuditor.Editor.Modules
             if (scanResult == null)
                 return AnalysisResult.Failure;
 
-            // Individual converters can fail without invalidating the results of the others, they log their own errors
             if (scanResult.status != "Completed")
             {
                 Debug.LogError($"[{ProjectAuditor.DisplayName}] The Render Pipeline Converter scan ended with status '{scanResult.status}'.");
@@ -284,7 +283,8 @@ namespace Unity.ProjectAuditor.Editor.Modules
 
             analysisParams.OnIncomingIssues(CreateIssues(context, scanResult));
 
-            return AnalysisResult.Success;
+            // The other converters' results are still reported, but they are incomplete. The failed converters log their own errors.
+            return scanResult.convertersFailed > 0 ? AnalysisResult.Failure : AnalysisResult.Success;
         }
 
         static IEnumerable<ReportItem> CreateIssues(AnalysisContext context, ScanResult scanResult)

@@ -97,15 +97,6 @@ namespace UnityEngine.UIElements
             }
         }
 
-        public void SetTextForEnumValue(T enumValue, string text)
-        {
-            var index = Array.IndexOf(Enum.GetValues(typeof(T)), enumValue);
-            if (index >= 0)
-            {
-                m_ToggleButtonGroup.GetButton(index).text = text;
-            }
-        }
-
         public void SetTooltipForEnumValue(T enumValue, string tooltipValue)
         {
             var index = Array.IndexOf(Enum.GetValues(typeof(T)), enumValue);

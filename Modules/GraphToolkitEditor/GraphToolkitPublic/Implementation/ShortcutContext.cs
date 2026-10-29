@@ -10,11 +10,11 @@ namespace Unity.GraphToolkit.Editor.Implementation
 {
     class GraphToolkitShortcuts<T> : IShortcutContextHandler, IShortcutContext where T : IGraphInternal
     {
-        public bool active => EditorWindow.focusedWindow is GraphViewEditorWindowImp graphWindow && graphWindow.GraphTool.ToolState.GraphModel is GraphModelImp graphModel && graphModel.Graph is T;
+        public bool active => EditorWindow.focusedWindow is GraphToolkitWindow graphWindow && graphWindow.GraphTool.ToolState.GraphModel is GraphModelImp graphModel && graphModel.Graph is T;
 
         void IShortcutContextHandler.HandleShortcut(EventBase e)
         {
-            var window = EditorWindow.focusedWindow as GraphViewEditorWindowImp;
+            var window = EditorWindow.focusedWindow as GraphToolkitWindow;
             if (window == null)
             {
                 return;

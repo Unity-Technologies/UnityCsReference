@@ -250,6 +250,21 @@ namespace Unity.UI.Builder
 
         internal void ReopenStyleSheet(StyleSheet styleSheet) => activeOpenUXMLFile.ReopenStyleSheet(styleSheet);
 
+        // Reopens the given file as the only root, in place, so whoever holds this document keeps it.
+        internal void ReopenAsRoot(VisualTreeAsset asset, StyleSheet styleSheet)
+        {
+            foreach (var openUXMLFile in m_OpenUXMLFiles)
+                openUXMLFile.Clear();
+            m_OpenUXMLFiles.Clear();
+
+            if (asset != null)
+                ReopenAsset(asset);
+            else if (styleSheet != null)
+                ReopenStyleSheet(styleSheet);
+
+            SaveToDisk();
+        }
+
         // Called when the owning secondary window closes for good: release what the open files hold (registry
         // references, backups) and destroy the document. The default document is never destroyed; it lingers so
         // the next primary window can restore it.
@@ -651,13 +666,11 @@ namespace Unity.UI.Builder
 
         public void SaveToDisk()
         {
+            (primaryViewportWindow as Builder)?.RememberRootAssetForLayout(this);
+
             // There is a single on-disk state file; a secondary document persisting would clobber the default's.
-            // Its window remembers the open file through the editor layout's serialization instead.
             if (!m_IsDefaultDocument)
-            {
-                (primaryViewportWindow as Builder)?.RememberRootAssetForLayout();
                 return;
-            }
 
             var json = EditorJsonUtility.ToJson(this, true);
 
@@ -685,23 +698,15 @@ namespace Unity.UI.Builder
             switch (context.Command)
             {
                 case PreSaveCommand preSaveCommand:
-                    // Deactivate our own asset-postprocessor when a different tool is saving to avoid getting the
-                    // resolve conflict popup-up showing up.
-                    if (SharesAssetWithActiveDocument(preSaveCommand.Asset))
-                        activeOpenUXMLFile.IgnoreExternalChanges(true);
+                    HandlePreSaveOrDiscard(preSaveCommand.Asset, preSaveCommand.SingleAsset);
                     break;
 
                 case PreDiscardCommand preDiscardCommand:
-                    if (SharesAssetWithActiveDocument(preDiscardCommand.Asset))
-                        activeOpenUXMLFile.IgnoreExternalChanges(true);
+                    HandlePreSaveOrDiscard(preDiscardCommand.Asset, preDiscardCommand.SingleAsset);
                     break;
 
                 case PostSaveCommand postSaveCommand:
-                    activeOpenUXMLFile.IgnoreExternalChanges(false);
-
-                    // A save that failed to write leaves everything unsaved, so there is nothing to reconcile and
-                    // our discard backup still matches the last content on disk.
-                    if (!postSaveCommand.Succeeded)
+                    if (HandlePostSaveOrDiscard(postSaveCommand.Asset, postSaveCommand.Succeeded))
                         break;
 
                     // Assets were saved from a different tool, so our in-memory backup (what a Discard reverts to)
@@ -716,9 +721,7 @@ namespace Unity.UI.Builder
                     break;
 
                 case PostDiscardCommand postDiscardCommand:
-                    activeOpenUXMLFile.IgnoreExternalChanges(false);
-
-                    if (!postDiscardCommand.Succeeded)
+                    if (HandlePostSaveOrDiscard(postDiscardCommand.Asset, postDiscardCommand.Succeeded))
                         break;
 
                     // The registry reverted the shared document to disk and re-imported it. If it is the document
@@ -730,6 +733,69 @@ namespace Unity.UI.Builder
                         ReconcileUnsavedMarkersFromRegistry();
 
                     break;
+            }
+        }
+
+        void HandlePreSaveOrDiscard(UnityEngine.Object asset, bool singleAsset)
+        {
+            var shares = SharesAssetWithActiveDocument(asset);
+            activeOpenUXMLFile.SetSharedAssetResyncPending(shares && singleAsset && asset is StyleSheet);
+
+            // Deactivate our own asset-postprocessor when a different tool is saving to avoid getting the
+            // resolve conflict popup-up showing up.
+            if (shares)
+                activeOpenUXMLFile.IgnoreExternalChanges(true);
+        }
+
+        bool HandlePostSaveOrDiscard(UnityEngine.Object asset, bool succeeded)
+        {
+            activeOpenUXMLFile.IgnoreExternalChanges(false);
+
+            // A save that failed to write leaves everything unsaved, so there is nothing to reconcile and
+            // our discard backup still matches the last content on disk.
+            if (!succeeded)
+            {
+                activeOpenUXMLFile.SetSharedAssetResyncPending(false);
+                return true;
+            }
+
+            if (!activeOpenUXMLFile.ResyncAfterSharedAssetSettled(asset))
+                return false;
+
+            RecloneCanvasAfterSharedAssetSettled();
+            ReconcileUnsavedMarkersFromRegistry();
+            return true;
+        }
+
+        // Preset each pane from the registry, or the re-clone marks both from the document's single (still-dirty) flag.
+        void RecloneCanvasAfterSharedAssetSettled()
+        {
+            var selection = primaryViewportWindow?.selection;
+            if (selection == null || primaryViewportWindow is not BuilderPaneWindow paneWindow)
+                return;
+
+            if (paneWindow is Builder builder)
+            {
+                var vta = activeOpenUXMLFile?.visualTreeAsset;
+                var registry = UIAssetRegistry.instance;
+                builder.hierarchy.elementHierarchyView.hasUnsavedChanges = vta != null &&
+                    (registry.IsTracked(vta) ? registry.IsDirty(vta) : activeOpenUXMLFile.hasUnsavedChanges);
+                // Untracked is "unknown" (IsDirty answers false for it), not clean — fall back to the document's own flag.
+                builder.styleSheets.elementHierarchyView.hasUnsavedChanges =
+                    AreStyleSheetsDirtyInRegistry(out var allTracked) || (!allTracked && activeOpenUXMLFile.hasUnsavedChanges);
+                selection.suppressHierarchyPaneUnsavedMark = true;
+                selection.suppressStyleSheetsPaneUnsavedMark = true;
+            }
+
+            selection.ClearSelection(null, false);
+            selection.isApplyingExternalCommand = true;
+            try
+            {
+                paneWindow.OnEnableAfterAllSerialization();
+            }
+            finally
+            {
+                selection.isApplyingExternalCommand = false;
             }
         }
 
@@ -767,16 +833,27 @@ namespace Unity.UI.Builder
             if (vta == null)
                 return false;
 
-            var registry = UIAssetRegistry.instance;
-            if (registry.IsDirty(vta))
-                return true;
+            return UIAssetRegistry.instance.IsDirty(vta) || AreStyleSheetsDirtyInRegistry(out _);
+        }
 
+        bool AreStyleSheetsDirtyInRegistry(out bool allTracked)
+        {
+            allTracked = true;
+
+            var vta = activeOpenUXMLFile?.visualTreeAsset;
+            if (vta == null)
+                return false;
+
+            var registry = UIAssetRegistry.instance;
             using var _ = ListPool<StyleSheet>.Get(out var sheets);
             UIAssetRegistry.CollectDocumentStyleSheets(vta, sheets);
             foreach (var sheet in sheets)
             {
-                if (sheet != null && registry.IsDirty(sheet))
+                if (sheet == null)
+                    continue;
+                if (registry.IsDirty(sheet))
                     return true;
+                allTracked &= registry.IsTracked(sheet);
             }
 
             return false;

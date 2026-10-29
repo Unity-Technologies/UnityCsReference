@@ -500,6 +500,7 @@ namespace UnityEngine
 
         public static GraphicsFence CreateGraphicsFence(GraphicsFenceType fenceType, [uei.DefaultValue("SynchronisationStage.PixelProcessing")] SynchronisationStageFlags stage)
         {
+            GraphicsFence.ValidateFenceType(fenceType);
             GraphicsFence newFence = new GraphicsFence();
             newFence.m_FenceType = fenceType;
             newFence.m_Ptr = CreateGPUFenceImpl(fenceType, stage);
@@ -740,7 +741,7 @@ namespace UnityEngine
         public static void RenderSprite(in RenderParams renderParams, in SpriteParams spriteParams, int submeshIndex, Matrix4x4 objectToWorld)
         {
             if (spriteParams.sprite == null)
-                throw new ArgumentNullException("sprite");
+                throw new ArgumentNullException("Invalid Sprite");
             if (!SortingLayer.IsValid(renderParams.sortingLayerID))
                 throw new InvalidOperationException("SortingLayerID is invalid.");
             Internal_RenderSprite(renderParams, spriteParams, submeshIndex, objectToWorld);
@@ -748,6 +749,8 @@ namespace UnityEngine
 
         public unsafe static void RenderSpriteInstanced<T>(in RenderParams renderParams, in SpriteParams spriteParams, int submeshIndex, T[] instanceData) where T : unmanaged
         {
+            if (spriteParams.sprite == null)
+                throw new ArgumentNullException("Invalid Sprite");
             if (!SystemInfo.supportsInstancing)
                 throw new InvalidOperationException("Instancing is not supported.");
             else if (!renderParams.material.enableInstancing)
@@ -762,6 +765,8 @@ namespace UnityEngine
 
         public unsafe static void RenderSpriteInstanced<T>(in RenderParams renderParams, in SpriteParams spriteParams, int submeshIndex, List<T> instanceData) where T : unmanaged
         {
+            if (spriteParams.sprite == null)
+                throw new ArgumentNullException("Invalid Sprite");
             if (!SystemInfo.supportsInstancing)
                 throw new InvalidOperationException("Instancing is not supported.");
             else if (!renderParams.material.enableInstancing)
@@ -776,6 +781,8 @@ namespace UnityEngine
 
         public unsafe static void RenderSpriteInstanced<T>(in RenderParams renderParams, in SpriteParams spriteParams, int submeshIndex, NativeArray<T> instanceData) where T : unmanaged
         {
+            if (spriteParams.sprite == null)
+                throw new ArgumentNullException("Invalid Sprite");
             if (!SystemInfo.supportsInstancing)
                 throw new InvalidOperationException("Instancing is not supported.");
             else if (!renderParams.material.enableInstancing)
@@ -790,6 +797,8 @@ namespace UnityEngine
 
         public unsafe static void RenderSpriteInstanced<T>(in RenderParams renderParams, in SpriteParams spriteParams, int submeshIndex, ReadOnlySpan<T> instanceData) where T : unmanaged
         {
+            if (spriteParams.sprite == null)
+                throw new ArgumentNullException("Invalid Sprite");
             if (!SystemInfo.supportsInstancing)
                 throw new InvalidOperationException("Instancing is not supported.");
             else if (!renderParams.material.enableInstancing)

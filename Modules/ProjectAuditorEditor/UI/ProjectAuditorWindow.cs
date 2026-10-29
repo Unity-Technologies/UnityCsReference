@@ -76,8 +76,7 @@ namespace Unity.ProjectAuditor.Editor.UI
         // Serialized fields
         [SerializeField] string m_AreaSelectionSummary;
         [SerializeField] string[] m_AssemblyNames;
-        [SerializeField] bool[] m_AssemblyReadOnlyFlags;
-        [SerializeField] string m_AssemblySelectionSummary;
+        [SerializeField] internal string m_AssemblySelectionSummary;
         [SerializeField] internal Report m_Report;
         [SerializeField] internal AnalysisState m_AnalysisState = AnalysisState.Initializing;
         [SerializeField] ViewStates m_ViewStates = new ViewStates();
@@ -100,12 +99,12 @@ namespace Unity.ProjectAuditor.Editor.UI
 
         // True when the Home page (preferences / Start Analysis) is shown; otherwise the normal
         // analysis panels are shown. Defaults to Home on open.
-        [SerializeField] bool m_ShowHomePage = true;
+        [SerializeField] internal bool m_ShowHomePage = true;
         [SerializeField] HomePage m_HomePage = new HomePage();
 
         // The page currently shown, and the extra issue filter it applies to the active view. Both are
         // derived from the page tree (built in code), so they're not serialized.
-        Page m_CurrentPage;
+        internal Page m_CurrentPage;
         Func<ReportItem, bool> m_CurrentPageIssueFilter;
 
         Vector2 m_PreviousWindowSize;
@@ -445,14 +444,6 @@ namespace Unity.ProjectAuditor.Editor.UI
             wantsMouseMove = true;
         }
 
-        // The Migrate to URP pages report against a project that can still migrate, so HDRP and custom
-        // SRPs leave nothing that applies - including under a report analyzed before the switch.
-        // Checked on the page, not the view: the child pages share their views with Optimization.
-        internal static bool IsPageOutOfScope(Page topLevelPage)
-        {
-            return topLevelPage?.id == PageId.MigrationToURP && MigrationToURPUtilities.IsProjectUsingOtherSRP();
-        }
-
         void InitializeViews(SeverityRules rules, bool reload)
         {
             var initialize = m_ViewManager == null || !reload;
@@ -475,6 +466,8 @@ namespace Unity.ProjectAuditor.Editor.UI
                     }
                 }
 
+                // The new views load their settings from EditorPrefs, so save the current ones first. UUM-156587
+                m_ViewManager?.OnDisable();
                 m_ViewManager = new ViewManager(supportedCategories);
             }
 
@@ -786,14 +779,16 @@ namespace Unity.ProjectAuditor.Editor.UI
                     {
                         m_HomePage.OnGUI();
                     }
-                    else if (IsPageOutOfScope(GetTopLevelPage(m_CurrentPage)) ||
-                             m_ViewManager.GetActiveView().IsPageOutOfScope())
+                    // Ahead of the analyze prompt too: re-running analysis would not bring these
+                    // pages back, so offering it would be misleading.
+                    // The group's own view decides, not the active one: child pages share their views with other groups.
+                    else if (GetTopLevelPage(m_CurrentPage) is { } topLevelPage
+                             && m_ViewManager.GetView(topLevelPage.category) is { } groupView
+                             && groupView.IsPageOutOfScope())
                     {
-                        // Ahead of the analyze prompt too: re-running analysis would not bring this
-                        // page back, so offering it would be misleading.
                         using (new EditorGUILayout.VerticalScope())
                         {
-                            m_ViewManager.GetActiveView().DrawOutOfScopePage();
+                            groupView.DrawOutOfScopePage();
                         }
                     }
                     else
@@ -896,6 +891,7 @@ namespace Unity.ProjectAuditor.Editor.UI
                         {
                             GUILayout.Space(k_SpacingHeight);
                             UserPreferences.CodeAnalysisGUI();
+                            UserPreferences.OwnersGUI();
                             GUILayout.Space(k_SpacingHeight);
                         }
                         GUILayout.FlexibleSpace();
@@ -1368,7 +1364,7 @@ namespace Unity.ProjectAuditor.Editor.UI
                 Categories = GetSelectedCategories(areasToAnalyze).ToSerializableArray(),
                 Platform = GetSelectedAnalysisPlatform(),
                 CodeAnalysisFlags = codeAnalysisFlags,
-                CodeOwnerFlags = GetSelectedCodeOwnerFlags(),
+                OwnerFlags = GetSelectedOwnerFlags(),
                 MigrationTargetPipeline = migrationTargetPipeline,
 
                 OnIncomingIssues = issues =>
@@ -1410,9 +1406,16 @@ namespace Unity.ProjectAuditor.Editor.UI
 
             InitializeViews(analysisParams.Rules, false);
 
-            // Leave the Home page and show the specified summary page while analysis runs.
+            // Show the specified summary page while analysis runs, or stay on the Home page that started it.
             if (targetSummaryPage != PageId.None)
+            {
                 ShowPage(FindPage(targetSummaryPage));
+            }
+            else
+            {
+                m_ShowHomePage = true;
+                m_CurrentPage = FindPage(PageId.Home);
+            }
 
             m_Progress = new ProgressBar();
             m_ProjectAuditor.AuditAsync(analysisParams, m_Progress);
@@ -1420,6 +1423,9 @@ namespace Unity.ProjectAuditor.Editor.UI
 
         void Update()
         {
+            if (m_AnalysisState == AnalysisState.Completed)
+                RefreshWindow();
+
             if (m_ShouldRefresh)
                 Repaint();
             if (m_AnalysisState == AnalysisState.InProgress)
@@ -1454,7 +1460,7 @@ namespace Unity.ProjectAuditor.Editor.UI
                 Categories = actualCategories.ToSerializableArray(),
                 Platform = m_Report.SessionInfo.Platform,
                 CodeAnalysisFlags = (CodeAnalysisFlags)UserPreferences.CodeAnalysisFlags,
-                CodeOwnerFlags = GetSelectedCodeOwnerFlags(),
+                OwnerFlags = GetSelectedOwnerFlags(),
                 MigrationTargetPipeline = m_Report.SessionInfo.MigrationTargetPipeline,
                 ExistingReport = m_Report,
                 OnIncomingIssues = issues =>
@@ -1514,7 +1520,7 @@ namespace Unity.ProjectAuditor.Editor.UI
             ShadersModule.ClearBuildData();
         }
 
-        void RefreshWindow()
+        internal void RefreshWindow()
         {
             if (!IsAnalysisValid())
                 return;
@@ -1524,7 +1530,7 @@ namespace Unity.ProjectAuditor.Editor.UI
             if (m_AnalysisState == AnalysisState.Completed)
             {
                 UpdateAssemblyNames();
-                UpdateAssemblySelection();
+                UpdateAssemblySelection(forceRefresh: true);
 
                 m_AnalysisState = AnalysisState.Valid;
 
@@ -1538,7 +1544,7 @@ namespace Unity.ProjectAuditor.Editor.UI
             }
         }
 
-        string GetSelectedAssembliesSummary()
+        internal string GetSelectedAssembliesSummary()
         {
             if (m_AssemblyNames != null && m_AssemblyNames.Length > 0)
                 return Utility.GetTreeViewSelectedSummary(m_AssemblySelection, m_AssemblyNames);
@@ -1564,11 +1570,11 @@ namespace Unity.ProjectAuditor.Editor.UI
             return platform;
         }
 
-        CodeOwnerFlags GetSelectedCodeOwnerFlags()
+        OwnerFlags GetSelectedOwnerFlags()
         {
             if (Unsupported.IsDeveloperMode())
-                return UserPreferences.CodeOwnerFlags;
-            return CodeOwnerFlags.User;
+                return UserPreferences.OwnerFlags;
+            return OwnerFlags.User;
         }
 
         internal IssueCategory[] GetSelectedCategories(ProjectAreaFlags categories)
@@ -1784,15 +1790,15 @@ namespace Unity.ProjectAuditor.Editor.UI
         {
             bool validPreferences = true;
             var codeAnalysisFlags = UserPreferences.CodeAnalysisFlags;
-            var codeOwnerFlags = UserPreferences.CodeOwnerFlags;
+            var ownerFlags = UserPreferences.OwnerFlags;
 
-            if (codeOwnerFlags == CodeOwnerFlags.None)
+            if (ownerFlags == OwnerFlags.None)
             {
                 validPreferences = false;
-                if (EditorUtility.DisplayDialog(k_EnableCodeOwners, k_EnableCodeOwnersQuestion, "Ok", "Cancel"))
+                if (EditorUtility.DisplayDialog(k_EnableOwners, k_EnableOwnersQuestion, "Ok", "Cancel"))
                 {
-                    UserPreferences.CodeOwnerFlags.Set(CodeOwnerFlags.User);
-                    codeOwnerFlags.Set(CodeOwnerFlags.User);
+                    UserPreferences.OwnerFlags.Set(OwnerFlags.User);
+                    ownerFlags.Set(OwnerFlags.User);
                     validPreferences = true;
                 }
             }
@@ -1920,7 +1926,7 @@ namespace Unity.ProjectAuditor.Editor.UI
             {
                 DrawFilters();
 
-                if (m_ShouldRefresh || m_AnalysisState == AnalysisState.Completed)
+                if (m_ShouldRefresh)
                 {
                     RefreshWindow();
                     m_ShouldRefresh = false;
@@ -1981,32 +1987,30 @@ namespace Unity.ProjectAuditor.Editor.UI
             }
         }
 
-        void UpdateAssemblyNames()
+        internal void UpdateAssemblyNames()
         {
             if (m_Report == null || m_ViewManager.HasPendingCategory(IssueCategory.Assembly))
                 return;
 
 #pragma warning disable UAC2001, UAC2010 // Avoid Linq
-            var assemblyNames = m_Report.FindByCategory(IssueCategory.Assembly).Select(i => new System.Tuple<string, bool>(i.Description, i.GetCustomPropertyBool(AssemblyProperty.ReadOnly)));
-            var allAssemblies = assemblyNames.GroupBy(i => i.Item1).Select(g => g.First()).OrderBy(i => i.Item1).ToArray();
+            var allAssemblies = m_Report.FindByCategory(IssueCategory.Assembly).Select(i => i.Description).Distinct().OrderBy(name => name).ToArray();
 #pragma warning restore UAC2001, UAC2010
 
-            var codeOwnerFlags = m_Report.SessionInfo.CodeOwnerFlags;
+            var ownerFlags = m_Report.SessionInfo.OwnerFlags;
             bool allowPackages = (m_Report.SessionInfo.CodeAnalysisFlags & CodeAnalysisFlags.Packages) != 0;
-            bool allowUnityCode = (codeOwnerFlags & CodeOwnerFlags.Unity) != 0;
-            bool allowUserCode = (codeOwnerFlags & CodeOwnerFlags.User) != 0;
+            bool allowUnityCode = (ownerFlags & OwnerFlags.Unity) != 0;
+            bool allowUserCode = (ownerFlags & OwnerFlags.User) != 0;
 
 #pragma warning disable UAC2001 // Avoid Linq
             // update list of assembly names
             if (m_Report.IsForCurrentProject())
-                allAssemblies = allAssemblies.Where(a => !AssemblyInfoProvider.FilterAssembly(a.Item1, allowPackages, allowUnityCode, allowUserCode)).ToArray();
+                allAssemblies = allAssemblies.Where(a => !AssemblyInfoProvider.FilterAssembly(a, allowPackages, allowUnityCode, allowUserCode)).ToArray();
 #pragma warning restore UAC2001
 
-            m_AssemblyNames = Array.ConvertAll(allAssemblies, a => a.Item1);
-            m_AssemblyReadOnlyFlags = Array.ConvertAll(allAssemblies, a => a.Item2);
+            m_AssemblyNames = allAssemblies;
         }
 
-        void UpdateAssemblySelection(bool forceRefresh = false)
+        internal void UpdateAssemblySelection(bool forceRefresh = false)
         {
             if (m_AssemblyNames == null)
                 return;
@@ -2031,30 +2035,7 @@ namespace Unity.ProjectAuditor.Editor.UI
                 }
             }
 
-            if (m_Report != null && m_Report.IsForCurrentProject())
-            {
-                if (forceRefresh || m_AssemblySelection.selection.Count == 0)
-                {
-                    var codeOwnerFlags = m_Report.SessionInfo.CodeOwnerFlags;
-                    bool allowPackages = (m_Report.SessionInfo.CodeAnalysisFlags & CodeAnalysisFlags.Packages) != 0;
-                    bool allowUnityCode = (codeOwnerFlags & CodeOwnerFlags.Unity) != 0;
-                    bool allowUserCode = (codeOwnerFlags & CodeOwnerFlags.User) != 0;
-
-                    var compiledAssemblies = new List<string>(m_AssemblyNames.Length);
-                    for (int i = 0; i < m_AssemblyNames.Length; i++)
-                    {
-                        if (!m_AssemblyReadOnlyFlags[i])
-                            compiledAssemblies.Add(m_AssemblyNames[i]);
-                    }
-
-                    m_AssemblySelection.selection.AddRange(compiledAssemblies);
-
-                    if (m_AssemblySelection.selection.Count == 0)
-                        m_AssemblySelection.SetAll(m_AssemblyNames);
-                }
-            }
-
-            if (forceRefresh)
+            if (forceRefresh || (m_AssemblySelection.selection.Count == 0 && m_AssemblySelectionSummary != "None"))
                 m_AssemblySelection.SetAll(m_AssemblyNames);
 
             // update assembly selection summary
@@ -2319,8 +2300,8 @@ namespace Unity.ProjectAuditor.Editor.UI
         const string k_ReportMismatch = "Report is from another project";
         const string k_ReportMismatchDetail = "This report does not match the currently loaded project.  Some features may be unavailable.";
         const string k_SaveToFile = "Save report to projectauditor file";
-        const string k_EnableCodeOwners = "No Code Owners selected";
-        const string k_EnableCodeOwnersQuestion = "Enable user code analysis and continue?\n\nCode owners can be individually toggled in the Project Auditor section of Preferences.";
+        const string k_EnableOwners = "No Owners selected";
+        const string k_EnableOwnersQuestion = "Enable analysis of user code and assets and continue?\n\nOwners can be individually toggled in the Project Auditor section of Preferences.";
         const string k_NoCodeSelected = "Invalid Code Analysis Areas";
         const string k_NoCodeSelectedMessage = "Please select either Editor, Player or both.";
 

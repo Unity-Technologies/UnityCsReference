@@ -60,9 +60,23 @@ namespace UnityEditor.ShortcutManagement
         public const string defaultProfileId = "Default";
 
         [AutoStaticsCleanupOnCodeReload]
-        private static Lazy<IShortcutManager> s_instance = new(() => new ShortcutManagerImplementation(ShortcutIntegration.instance.profileManager));
+        [IgnoreForUAL0015("Lazy singleton rebuilt by the instance getter after cleanup nulls it")]
+        private static IShortcutManager s_instance;
+        [NoAutoStaticsCleanup]
+        static readonly object s_InstanceLock = new object();
 
-        public static IShortcutManager instance { get { return s_instance.Value; } }
+        public static IShortcutManager instance
+        {
+            get
+            {
+                lock (s_InstanceLock)
+                {
+                    if (s_instance == null)
+                        s_instance = new ShortcutManagerImplementation(ShortcutIntegration.instance.profileManager);
+                    return s_instance;
+                }
+            }
+        }
 
         public static void RegisterTag(string tag) => ShortcutIntegration.instance.contextManager.RegisterTag(tag);
 

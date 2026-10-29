@@ -397,7 +397,8 @@ namespace UnityEngine.UIElements
         Command,
         Tooltip,
         DragAndDrop,
-        IMGUI
+        IMGUI,
+        ReleaseResources,
     }
 
     // Event category aggregator and useful shorthands for internal use.
@@ -422,7 +423,8 @@ namespace UnityEngine.UIElements
             1 << EventCategory.Geometry |
             1 << EventCategory.Style |
             1 << EventCategory.Bind |
-            1 << EventCategory.ChangePanel
+            1 << EventCategory.ChangePanel |
+            1 << EventCategory.ReleaseResources
     }
 
     /// <summary>

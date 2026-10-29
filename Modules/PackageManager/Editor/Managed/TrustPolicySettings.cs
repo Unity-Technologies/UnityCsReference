@@ -11,5 +11,11 @@ namespace UnityEditor.PackageManager
             get { return (TrustPolicyLevel)TrustPolicySettingsUtils.GetPolicyLevel(); }
             set { TrustPolicySettingsUtils.SetPolicyLevel((int)value); }
         }
+
+        public static bool trustDisabled
+        {
+            get { return TrustPolicySettingsUtils.GetTrustDisabled(); }
+            set { TrustPolicySettingsUtils.SetTrustDisabled(value); }
+        }
     }
 }

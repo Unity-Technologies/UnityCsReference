@@ -762,9 +762,8 @@ namespace UnityEngine.UIElements
             {
                 if (!TryAddVar(0))
                 {
-                    // Explicit `deg` — writer→parser stable, no `to bottom` guesswork.
-                    float deg = RoundUnitConversion(value.angle * (180.0 / Math.PI));
-                    plan.Add(HandleWriteOp.Dimension(new Dimension(deg, Dimension.Unit.Degree)));
+                    // Explicit unit — writer→parser stable, no `to bottom` guesswork.
+                    plan.Add(HandleWriteOp.Dimension(GradientAngleToDimension(value.angle, value.angleUnit)));
                 }
                 hasPrefix = true;
             }
@@ -872,6 +871,18 @@ namespace UnityEngine.UIElements
         // Unit conversions amplify float noise (0.3f * 100f == 30.000002f); rounding in
         // double keeps authored values stable under CoreCLR's round-trippable ToString.
         static float RoundUnitConversion(double value) => (float)Math.Round(value, 4);
+
+        static Dimension GradientAngleToDimension(float radians, AngleUnit unit)
+        {
+            var (perRadian, dimensionUnit) = unit switch
+            {
+                AngleUnit.Gradian => (200.0 / Math.PI, Dimension.Unit.Gradian),
+                AngleUnit.Radian => (1.0, Dimension.Unit.Radian),
+                AngleUnit.Turn => (0.5 / Math.PI, Dimension.Unit.Turn),
+                _ => (180.0 / Math.PI, Dimension.Unit.Degree),
+            };
+            return new Dimension((float)Math.Round(radians * perRadian, Angle.GetPrecision(unit)), dimensionUnit);
+        }
 
         // True when stops match the parser's auto-distribute (percent 0..100 evenly).
         static bool AreStopsAutoDistributed(BackgroundGradientStop[] stops)

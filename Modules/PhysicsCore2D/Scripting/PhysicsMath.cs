@@ -15,7 +15,7 @@ namespace Unity.U2D.Physics
     /// These operations do not form a fully comprehensive mathematics library, they simply provide operations that are usually required when interacting with physics.
     /// </summary>
     [MovedFrom(autoUpdateAPI: ScriptUpdateConstants.AutoUpdateAPI, sourceNamespace: ScriptUpdateConstants.SourceNamespace, sourceAssembly: ScriptUpdateConstants.SourceAssembly)]
-    public readonly record struct PhysicsMath
+    public readonly partial record struct PhysicsMath
     {
         #region General Mathematics
 
@@ -257,109 +257,100 @@ namespace Unity.U2D.Physics
 
         /// <summary>
         /// Get the relative transformation matrix between the two specified transform matrix using the specified transform plane to transform into 2D space i.e. XY position and Z rotation.
-        /// Each transform is reduced to its position on the plane and its rotation about the plane normal, the same two values a physics body is built from, so the scale of the transform to transform from and any rotation off the plane do not affect the result.
+        /// The transform to transform from is reduced to its position on the plane and its rotation about the plane normal, the two values a physics body is built from, so its scale and any rotation off the plane do not affect the result.
+        /// The transform to transform to is placed as it is seen on the plane, so geometry placed with the result lands where a renderer on that transform draws it.
         /// </summary>
         /// <param name="transformFrom">The transform used as a reference to transform from.</param>
         /// <param name="transformTo">The transform used as a reference to transform to.</param>
         /// <param name="transformPlane">The transform plane to use.</param>
         /// <param name="transformPlaneCustom">The custom transform plane to use (if required).</param>
-        /// <param name="useScale">If the returned matrix should include scale. Scale is not relative and always uses the transformTo lossyScale.</param>
-        /// <returns>The calculated relative transformation matrix.</returns>
+        /// <returns>The calculated relative transformation matrix. Its in-plane axes are those of transformTo projected onto the plane, so its scale is not relative.</returns>
         /// <exception cref="InvalidOperationException">Thrown if the transform matrices are not a valid TRS matrix.</exception>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Matrix4x4 GetRelativeMatrix2D(in Matrix4x4 transformFrom, in Matrix4x4 transformTo, PhysicsWorld.TransformPlane transformPlane, in PhysicsWorld.TransformPlaneCustom transformPlaneCustom, bool useScale = true)
+        public static Matrix4x4 GetRelativeMatrix2D(in Matrix4x4 transformFrom, in Matrix4x4 transformTo, PhysicsWorld.TransformPlane transformPlane, in PhysicsWorld.TransformPlaneCustom transformPlaneCustom)
         {
-            GetRelativePose2D(transformFrom, transformTo, transformPlane, transformPlaneCustom, out var translation, out var rotation, out var scale);
+            PrepareRelative2D(transformFrom, transformTo, ref transformPlane, transformPlaneCustom, out var fromMatrix, out var toMatrix);
+            RelativeAxes2D(fromMatrix, toMatrix, transformPlane, out var translation, out var axisX, out var axisY);
 
-            // The matrix is 2D on every plane: an XY translation, a rotation about Z and an in-plane scale, with the transform plane applied once by whatever uses it.
-            // The out-of-plane scale is forced to one rather than carried into the matrix: it has no meaning in 2D, and left
-            // in it reaches anything that reads the largest scale component, such as scaling a shape radius.
-            return Matrix4x4.TRS(translation, ToRotationFast3D(rotation), new Vector3(scale.x, scale.y, 1f));
+            // The axes are written as they are, with no split into a rotation and a scale: a tilted "to", or one under a non-uniform parent scale, projects to axes no rotation and scale can describe.
+            // The matrix is 2D on every plane: an XY translation and two in-plane axes, with the transform plane applied once by whatever uses it.
+            // The out-of-plane axis is left at one: it has no meaning in 2D, and anything else would reach whatever reads the largest scale component, such as scaling a shape radius.
+            var relative = Matrix4x4.identity;
+            relative.m00 = axisX.x;
+            relative.m10 = axisX.y;
+            relative.m01 = axisY.x;
+            relative.m11 = axisY.y;
+            relative.m03 = translation.x;
+            relative.m13 = translation.y;
+
+            return relative;
         }
 
         /// <summary>
         /// Get the relative transformation pose (translation, rotation and scale) between the two specified transform matrix using the specified transform plane to transform into 2D space.
-        /// Each transform is reduced to its position on the plane and its rotation about the plane normal, the same two values a physics body is built from, so the scale of the transform to transform from and any rotation off the plane do not affect the result.
+        /// The transform to transform from is reduced to its position on the plane and its rotation about the plane normal, the two values a physics body is built from, so its scale and any rotation off the plane do not affect the result.
+        /// The transform to transform to is described as it is seen on the plane, the same way <see cref="GetRelativeMatrix2D(in Matrix4x4, in Matrix4x4, PhysicsWorld.TransformPlane, in PhysicsWorld.TransformPlaneCustom)"/> places it.
         /// </summary>
         /// <param name="transformFrom">The transform used as a reference to transform from.</param>
         /// <param name="transformTo">The transform used as a reference to transform to.</param>
         /// <param name="transformPlane">The transform plane to use.</param>
         /// <param name="transformPlaneCustom">The custom transform plane to use (if required).</param>
         /// <param name="translation">The 2D relative translation.</param>
-        /// <param name="rotation">The 2D relative rotation.</param>
-        /// <param name="scale">The 2D relative scale. Scale is not relative and always uses the transformTo lossyScale.</param>
+        /// <param name="rotation">The direction transformTo's X axis points on the plane, relative to transformFrom, in radians.</param>
+        /// <param name="scale">The lengths of transformTo's X and Y axes as seen on the plane, with a negative Y when it appears mirrored. Scale is not relative.</param>
         /// <exception cref="InvalidOperationException">Thrown if the transform matrices are not a valid TRS matrix.</exception>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void GetRelativePose2D(in Matrix4x4 transformFrom, in Matrix4x4 transformTo, PhysicsWorld.TransformPlane transformPlane, in PhysicsWorld.TransformPlaneCustom transformPlaneCustom, out Vector2 translation, out float rotation, out Vector2 scale)
+        {
+            PrepareRelative2D(transformFrom, transformTo, ref transformPlane, transformPlaneCustom, out var fromMatrix, out var toMatrix);
+            RelativeAxes2D(fromMatrix, toMatrix, transformPlane, out translation, out var axisX, out var axisY);
+
+            // The rotation and scale are read from the axes as seen, so they compose back to the same placement as the relative matrix.
+            // A mirror is placed on the Y scale, decided by whether the two axes appear the other way round.
+            var mirrored = (axisX.x * axisY.y) - (axisX.y * axisY.x) < 0f;
+            rotation = Atan2(axisX.y, axisX.x);
+            scale = new Vector2(axisX.magnitude, mirrored ? -axisY.magnitude : axisY.magnitude);
+        }
+
+        // The position of "to" and its two in-plane axes as seen on the plane, relative to the body built from "from".
+        // The body turns a local point through the "from" angle alone, so the "to" position and axes are projected and turned back by that angle.
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static void RelativeAxes2D(in Matrix4x4 fromMatrix, in Matrix4x4 toMatrix, PhysicsWorld.TransformPlane transformPlane, out Vector2 translation, out Vector2 axisX, out Vector2 axisY)
+        {
+            var fromRotation = PhysicsRotate.FromRadians(FromAngle2D(fromMatrix, transformPlane));
+            translation = fromRotation.InverseRotateVector(ToPosition2D(toMatrix.GetPosition(), transformPlane) - ToPosition2D(fromMatrix.GetPosition(), transformPlane));
+            axisX = fromRotation.InverseRotateVector(Swizzle(toMatrix.MultiplyVector(PlaneRightAxis(transformPlane)), transformPlane));
+            axisY = fromRotation.InverseRotateVector(Swizzle(toMatrix.MultiplyVector(PlaneUpAxis(transformPlane)), transformPlane));
+        }
+
+        // Validates both matrices and brings them into the plane's own space, reducing a custom plane to XY for the rest of the calculation.
+        // The custom plane is a change of world basis, so its inverse is applied on the left of each world matrix.
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static void PrepareRelative2D(in Matrix4x4 transformFrom, in Matrix4x4 transformTo, ref PhysicsWorld.TransformPlane transformPlane, in PhysicsWorld.TransformPlaneCustom transformPlaneCustom, out Matrix4x4 fromMatrix, out Matrix4x4 toMatrix)
         {
             // Validate.
             if (!transformFrom.ValidTRS() || !transformTo.ValidTRS())
                 throw new InvalidOperationException("Transform matrix are not valid TRS matrices. Ensure that scaling is non-zero.");
 
-            var useCustomPlane = transformPlane == PhysicsWorld.TransformPlane.Custom;
+            if (transformPlane != PhysicsWorld.TransformPlane.Custom)
+            {
+                fromMatrix = transformFrom;
+                toMatrix = transformTo;
+                return;
+            }
 
-            // Calculate from/to matrix.
-            // The custom plane is a change of world basis, so its inverse is applied on the left of each world matrix, bringing both into the plane's own space.
             var fromCustom = transformPlaneCustom.fromCustom;
-            var fromMatrix = useCustomPlane ? fromCustom * transformFrom : transformFrom;
-            var toMatrix = useCustomPlane ? fromCustom * transformTo : transformTo;
-
-            // If using a custom transform plane then filter as XY only.
-            if (useCustomPlane)
-                transformPlane = PhysicsWorld.TransformPlane.XY;
-
-            // Each matrix is reduced to the two values a body is built from: its position on the plane and its angle about the plane normal.
-            // A body places a local offset by turning it through its angle alone, so the offset between the two flattened positions is turned back by the "from" angle,
-            // and the relative angle is the difference of the two angles. Neither the scale of "from" nor a rotation off the plane on either side takes part.
-            var fromPosition = ToPosition2D(fromMatrix.GetPosition(), transformPlane);
-            var fromAngle = PlaneAngle2D(fromMatrix, transformPlane);
-            var toPosition = ToPosition2D(toMatrix.GetPosition(), transformPlane);
-            var toAngle = PlaneAngle2D(toMatrix, transformPlane);
-
-            translation = PhysicsRotate.FromRadians(fromAngle).InverseRotateVector(toPosition - fromPosition);
-            rotation = PhysicsRotate.UnwindAngle(toAngle - fromAngle);
-
-            // Magnitudes with any mirror on the plane's Y axis, pairing with the angle above.
-            scale = PlaneScale2D(toMatrix, transformPlane);
+            fromMatrix = fromCustom * transformFrom;
+            toMatrix = fromCustom * transformTo;
+            transformPlane = PhysicsWorld.TransformPlane.XY;
         }
 
-        // The angle of a transform matrix about the plane normal, in radians, read the way a body built from that transform reads it.
-        // A matrix with a rotation to extract uses the same quaternion twist as a body, which carries an out-of-plane tilt correctly.
-        // A mirrored matrix has no rotation to extract, so its angle is read from its own in-plane basis instead, which stays finite for any scale.
+        // The angle of the "from" transform about the plane normal, in radians, read the way a body built from it reads it: from its rotation whenever one can be extracted.
+        // Only a negative determinant has no rotation to extract, and that falls back to the in-plane basis.
+        // The in-plane mirror test is deliberately not used here: a half turn about an axis in the plane projects like a mirror, but it is a rotation, and the body reads its twist as one.
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static float PlaneAngle2D(in Matrix4x4 matrix, PhysicsWorld.TransformPlane transformPlane)
-            => NeedsPlaneBasis2D(matrix, transformPlane) ? ToRotation2D(matrix, transformPlane) : ToRotation2D(matrix.rotation, transformPlane);
-
-        // Whether the angle has to come from the in-plane basis rather than the extracted rotation.
-        // A negative full determinant means no rotation can be extracted at all, and a mirrored plane has no rotation to
-        // extract even when the full determinant is positive, as it is when the ignored axis is negative too.
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static bool NeedsPlaneBasis2D(in Matrix4x4 matrix, PhysicsWorld.TransformPlane transformPlane)
-            => matrix.determinant < 0f || IsPlaneMirrored2D(matrix, transformPlane);
-
-        // Whether the transform mirrors the plane, as opposed to rotating within it or being scaled negatively on the axis
-        // the plane ignores.
-        // For a transform standing upright on the plane, the in-plane parity answers this on its own. A transform tilted out
-        // of the plane cannot be judged that way: projecting it collapses the out-of-plane component, so a tilt past a
-        // quarter turn reverses the projected parity without mirroring anything. Those fall back to the full determinant,
-        // which is what the extracted rotation is judged on, so a tilt reads as the rotation it is.
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static bool IsPlaneMirrored2D(in Matrix4x4 matrix, PhysicsWorld.TransformPlane transformPlane)
-        {
-            var mirroredParity = PlaneParity2D(matrix, transformPlane) < 0f;
-
-            return IsUprightOnPlane2D(matrix, transformPlane) ? mirroredParity : mirroredParity && matrix.determinant < 0f;
-        }
-
-        // Whether the transform leaves the axis the plane ignores perpendicular to the plane, so the in-plane basis carries
-        // the whole of the transform and nothing is lost by projecting it.
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static bool IsUprightOnPlane2D(in Matrix4x4 matrix, PhysicsWorld.TransformPlane transformPlane)
-        {
-            var outOfPlane = Swizzle(matrix.MultiplyVector(PlaneNormalAxis(transformPlane)), transformPlane);
-
-            return Mathf.Abs(outOfPlane.x) < Epsilon && Mathf.Abs(outOfPlane.y) < Epsilon;
-        }
+        private static float FromAngle2D(in Matrix4x4 matrix, PhysicsWorld.TransformPlane transformPlane)
+            => matrix.determinant < 0f ? ToRotation2D(matrix, transformPlane) : ToRotation2D(matrix.rotation, transformPlane);
 
         // The world axis the specified transform plane ignores.
         // A custom plane is brought into XY space before this is reached, so it uses the same axis as XY.
@@ -374,24 +365,10 @@ namespace Unity.U2D.Physics
             };
         }
 
-        // The signed area spanned by the two in-plane basis vectors, negative when the transform mirrors the plane.
-        // The full determinant cannot answer this: a negative scale on the axis the plane ignores flips its sign without
-        // mirroring the plane, and two negative in-plane scales leave it positive while the plane is mirrored twice over.
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static float PlaneParity2D(in Matrix4x4 matrix, PhysicsWorld.TransformPlane transformPlane)
-        {
-            var planeRight = Swizzle(matrix.MultiplyVector(PlaneRightAxis(transformPlane)), transformPlane);
-            var planeUp = Swizzle(matrix.MultiplyVector(PlaneUpAxis(transformPlane)), transformPlane);
-
-            return planeRight.x * planeUp.y - planeRight.y * planeUp.x;
-        }
-
         // The in-plane angle of a transform matrix, in radians, read from the plane's own X axis.
         // Matrix4x4.rotation cannot be used for a mirrored transform: no rotation represents a reflection, so the
         // decomposition falls back to a nearest-rotation that differs between a matrix and its inverse and can leave the
         // result NaN.
-        // Read together with ReflectedScale2D, which puts the mirror on the plane's Y axis, this angle and that scale
-        // compose back to the same in-plane matrix on every plane.
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static float ToRotation2D(in Matrix4x4 matrix, PhysicsWorld.TransformPlane transformPlane)
         {
@@ -411,19 +388,6 @@ namespace Unity.U2D.Physics
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static Vector3 PlaneUpAxis(PhysicsWorld.TransformPlane transformPlane)
             => transformPlane == PhysicsWorld.TransformPlane.XZ ? Vector3.forward : Vector3.up;
-
-        // The in-plane scale of a transform matrix, as magnitudes with any mirror placed on the plane's Y axis.
-        // The sign cannot be taken from Matrix4x4.lossyScale: it negates world X whenever the full determinant is negative,
-        // so a negative scale on the axis the plane ignores puts a mirror on the in-plane X scale that is not there.
-        // Composed with the plane-X angle from ToRotation2D, this reproduces the in-plane matrix exactly, mirrored or not.
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static Vector3 PlaneScale2D(in Matrix4x4 matrix, PhysicsWorld.TransformPlane transformPlane)
-        {
-            var magnitudes = Swizzle(matrix.lossyScale, transformPlane);
-            var mirrored = IsPlaneMirrored2D(matrix, transformPlane);
-
-            return new Vector3(Mathf.Abs(magnitudes.x), mirrored ? -Mathf.Abs(magnitudes.y) : Mathf.Abs(magnitudes.y), 1f);
-        }
 
         /// <summary>
         /// Try to get the relative transformation matrix between the two specified transform matrix using the specified transform plane to transform into 2D space, the same as <see cref="GetRelativeMatrix2D"/> but never returning a NaN result.
@@ -452,8 +416,15 @@ namespace Unity.U2D.Physics
             if (!IsFinite(relativeTranslation) || !float.IsFinite(relativeRotation) || !IsFinite(relativeScale))
                 return false;
 
-            // Both matrices are valid, so calculate and return the actual relative matrix.
-            relative = GetRelativeMatrix2D(fromMatrix, toMatrix, transformPlane, transformPlaneCustom);
+            // Both matrices are valid, so calculate the actual relative matrix.
+            var candidate = GetRelativeMatrix2D(fromMatrix, toMatrix, transformPlane, transformPlaneCustom);
+
+            // Reject a "to" that covers no area on the plane, such as one turned edge-on to it: its projected axes are finite but span nothing, so there is nowhere to place geometry.
+            var area = (candidate.m00 * candidate.m11) - (candidate.m01 * candidate.m10);
+            if (Mathf.Abs(area) < Epsilon)
+                return false;
+
+            relative = candidate;
             return true;
         }
 
@@ -461,8 +432,8 @@ namespace Unity.U2D.Physics
         /// Try to get a matrix suitable for use with <see cref="GetRelativeMatrix2D"/> or <see cref="GetRelativePose2D"/> from the specified matrix, ignoring its scale on the transform plane's out-of-plane axis.
         /// </summary>
         /// <remarks>
-        /// A matrix whose out-of-plane scale is at or near zero, such as one built from flattened 2D data, is rebuilt with that axis treated as one; left as zero it makes the whole matrix singular, and inverting it later would produce a NaN result.
-        /// A negative out-of-plane scale is treated the same way, since its sign and magnitude have no meaning in 2D and left as-is it turns the extracted rotation into NaN instead.
+        /// A matrix whose out-of-plane axis is at or near zero length, such as one built from flattened 2D data, has that axis replaced by the plane normal; left as zero it makes the whole matrix singular, and inverting it later would produce a NaN result.
+        /// The in-plane axes are never touched, so a mirror or a scale on the plane is kept exactly as it is.
         /// </remarks>
         /// <param name="matrix">The matrix to build from.</param>
         /// <param name="transformPlane">The transform plane to use.</param>
@@ -473,22 +444,37 @@ namespace Unity.U2D.Physics
         {
             planeMatrix = default;
 
-            // Swizzle the scale onto the transform plane, then reject it if either in-plane axis is too small to build from.
-            var swizzled = Swizzle(matrix.lossyScale, transformPlane);
-            if (Mathf.Abs(swizzled.x) < Epsilon || Mathf.Abs(swizzled.y) < Epsilon)
+            // The axes are measured by their length rather than through lossyScale, which carries the sign of a mirror on whichever axis it chooses and so cannot tell which axis is actually mirrored or flattened.
+            var planeRightLength = matrix.MultiplyVector(PlaneRightAxis(transformPlane)).magnitude;
+            var planeUpLength = matrix.MultiplyVector(PlaneUpAxis(transformPlane)).magnitude;
+            if (planeRightLength < Epsilon || planeUpLength < Epsilon)
                 return false;
 
-            // A safely non-zero out-of-plane scale leaves the matrix invertible as-is, so it can be used directly.
-            if (swizzled.z >= Epsilon)
+            // A safely non-zero out-of-plane axis leaves the matrix invertible as-is, so it can be used directly.
+            var planeNormal = PlaneNormalAxis(transformPlane);
+            if (matrix.MultiplyVector(planeNormal).magnitude >= Epsilon)
             {
                 planeMatrix = matrix;
                 return planeMatrix.ValidTRS();
             }
 
-            // A near-zero or negative out-of-plane scale is rebuilt as one, keeping the real position and rotation.
-            var adjusted = Swizzle(new Vector3(swizzled.x, swizzled.y, 1f), transformPlane);
-            planeMatrix = Matrix4x4.TRS(matrix.GetPosition(), matrix.rotation, adjusted);
+            // A flattened out-of-plane axis is replaced by the plane normal, leaving the position and the in-plane axes exactly as they are.
+            planeMatrix = matrix;
+            planeMatrix.SetColumn(PlaneNormalColumn(transformPlane), planeNormal);
             return true;
+        }
+
+        // The column of a matrix that holds the axis the specified transform plane ignores.
+        // A custom plane is brought into XY space before this is reached, so it uses the same column as XY.
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static int PlaneNormalColumn(PhysicsWorld.TransformPlane transformPlane)
+        {
+            return transformPlane switch
+            {
+                PhysicsWorld.TransformPlane.XZ => 1,
+                PhysicsWorld.TransformPlane.ZY => 0,
+                _ => 2,
+            };
         }
 
         /// <summary>
@@ -569,10 +555,9 @@ namespace Unity.U2D.Physics
         /// </summary>
         /// <param name="position">The 3D position to transform.</param>
         /// <param name="transformPlane">The transform plane to use.</param>
-        /// <param name="transformPlaneCustom">The custom transform plane (if required).</param>
+        /// <param name="transformPlaneCustom">The custom transform plane, used when transformPlane is TransformPlane.Custom.</param>
         /// <returns>The transformed position.</returns>
         /// <exception cref="System.InvalidOperationException">Thrown if the TransformPlane is unknown.</exception>
-        /// <exception cref="System.NotSupportedException">Thrown if TransformPlane.Custom is used.</exception>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector2 ToPosition2D(Vector3 position, PhysicsWorld.TransformPlane transformPlane, in PhysicsWorld.TransformPlaneCustom transformPlaneCustom)
         {
@@ -589,10 +574,9 @@ namespace Unity.U2D.Physics
         /// </summary>
         /// <param name="rotation">The 3D rotation to transform.</param>
         /// <param name="transformPlane">The transform plane to use.</param>
-        /// <param name="transformPlaneCustom"></param>
+        /// <param name="transformPlaneCustom">The custom transform plane, used when transformPlane is TransformPlane.Custom.</param>
         /// <returns>The transformed rotation in radians.</returns>
         /// <exception cref="System.InvalidOperationException">Thrown if the TransformPlane is unknown.</exception>
-        /// <exception cref="System.NotSupportedException">Thrown if TransformPlane.Custom is used.</exception>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static float ToRotation2D(Quaternion rotation, PhysicsWorld.TransformPlane transformPlane, in PhysicsWorld.TransformPlaneCustom transformPlaneCustom)
         {
@@ -652,7 +636,6 @@ namespace Unity.U2D.Physics
 
         /// <summary>
         /// Transform a 3D position into a 2D position using the selected transform plane.
-        /// If TransformPlane.Custom is used then <see cref="PhysicsWorld.TransformPlane.XY"/> is used.
         /// </summary>
         /// <param name="position">The 3D position to transform.</param>
         /// <param name="transformPlane">The transform plane to use.</param>
@@ -696,7 +679,6 @@ namespace Unity.U2D.Physics
 
         /// <summary>
         /// Transform a 3D rotation into a 2D angle using the selected transform plane.
-        /// If TransformPlane.Custom is used then <see cref="PhysicsWorld.TransformPlane.XY"/> is used.
         /// </summary>
         /// <param name="quaternion">The 3D rotation to transform.</param>
         /// <param name="transformPlane">The transform plane to use.</param>
@@ -858,56 +840,34 @@ namespace Unity.U2D.Physics
             if (transformPlane == PhysicsWorld.TransformPlane.Custom)
                 throw new NotSupportedException("TransformPlane.Custom is not supported by this method.");
 
-            // Calculate the angular speed.
-            var angularSpeed = Mathf.Abs(angularVelocity);
-
-            // Use Identity if no appreciable angular velocity is present.
-            if (angularSpeed < 0.00001f)
-                return Quaternion.identity;
-
-            // Calculate rotation.
-            var rotate = PhysicsRotate.FromRadians(angularSpeed * deltaTime * 0.5f);
-
-            // Ensure the angular velocity is used in the correct plane.
-            var transformedAxis = Swizzle(new Vector3(0f, 0f, angularVelocity * (rotate.sin / angularSpeed)), transformPlane);
-
-            // Calculate the normalized, integrated quaternion.
-            return new Quaternion(transformedAxis.x, transformedAxis.y, transformedAxis.z, rotate.cos).normalized;
+            // The rotation over the time is a turn through the angle travelled, built the same way as every other 2D angle so it turns in the same direction on every plane.
+            return ToRotationFast3D(angularVelocity * deltaTime, transformPlane);
         }
 
         /// <summary>
         /// Get the relative transformation matrix between the two specified transforms using the specified transform plane.
         /// </summary>
         /// <remarks>
-        /// For a custom transform plane use <see cref="GetRelativeMatrix2D(in Matrix4x4, in Matrix4x4, PhysicsWorld, bool)"/> with each transform's local-to-world matrix instead.
+        /// For a custom transform plane use <see cref="GetRelativeMatrix2D(in Matrix4x4, in Matrix4x4, PhysicsWorld)"/> with each transform's local-to-world matrix instead.
         /// </remarks>
-        /// <param name="transformFrom">The transform used as a reference to transform from.</param>
+        /// <param name="transformFrom">The transform used as a reference to transform from. Only its position and rotation are used, the two values a physics body is built from, so its scale and any mirror above it do not affect the result.</param>
         /// <param name="transformTo">The transform used as a reference to transform to.</param>
         /// <param name="transformPlane">The transform plane to use.</param>
-        /// <param name="useScale">If the returned matrix should include scale.</param>
-        /// <returns>The calculated relative transformation matrix.</returns>
+        /// <param name="useScale">If the returned matrix should include the scale of transformTo itself. When false, only its own local scale is removed; scale from its parents is kept.</param>
+        /// <returns>The calculated relative transformation matrix, the same as <see cref="GetRelativeMatrix2D(in Matrix4x4, in Matrix4x4, PhysicsWorld.TransformPlane, in PhysicsWorld.TransformPlaneCustom)"/> gives for a matrix built from transformFrom's position and rotation and transformTo's local-to-world matrix.</returns>
         /// <exception cref="System.NotSupportedException">Thrown if TransformPlane.Custom is used.</exception>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Matrix4x4 GetRelativeMatrix(Transform transformFrom, Transform transformTo, PhysicsWorld.TransformPlane transformPlane = PhysicsWorld.TransformPlane.XY, bool useScale = true)
         {
-            // The same transforms use identity with scaling.
-            if (transformFrom == transformTo)
-            {
-                if (useScale)
-                    return Matrix4x4.TRS(Vector3.zero, Quaternion.identity, Swizzle(transformTo.lossyScale, transformPlane));
-                else
-                    return Matrix4x4.identity;
-            }
+            if (transformPlane == PhysicsWorld.TransformPlane.Custom)
+                throw new NotSupportedException("TransformPlane.Custom is not supported by this method.");
 
-            // Calculate the relative transform using the selected transform plane.            
-            var inverseRotation = Quaternion.Inverse(ToRotationFast3D(ToRotation2D(transformFrom.rotation, transformPlane), transformPlane));
-            var inversePosition = inverseRotation * -Swizzle(transformFrom.position, transformPlane);
-            var inverseMatrix = Matrix4x4.TRS(inversePosition, inverseRotation, Vector3.one);
+            // The body for transformFrom is built from its position and rotation alone, so that is what it is passed as.
+            // Its local-to-world matrix cannot be used: a mirror in it, from its own scale or a parent's, has no single rotation to read and turns the result a half turn.
+            var fromMatrix = Matrix4x4.TRS(transformFrom.position, transformFrom.rotation, Vector3.one);
+            var toMatrix = useScale ? transformTo.localToWorldMatrix : transformTo.localToWorldMatrix * Matrix4x4.Scale(transformTo.localScale).inverse;
 
-            if (useScale)
-                return inverseMatrix * Swizzle(transformTo.localToWorldMatrix, transformPlane);
-
-            return inverseMatrix * Swizzle(transformTo.localToWorldMatrix * Matrix4x4.Scale(transformTo.localScale).inverse, transformPlane);
+            return GetRelativeMatrix2D(fromMatrix, toMatrix, transformPlane, default);
         }
 
         #endregion
@@ -1057,11 +1017,10 @@ namespace Unity.U2D.Physics
         /// <param name="transformFrom">The transform used as a reference to transform from.</param>
         /// <param name="transformTo">The transform used as a reference to transform to.</param>
         /// <param name="world">The world whose transform plane is used.</param>
-        /// <param name="useScale">If the returned matrix should include scale. Scale is not relative and always uses the transformTo lossyScale.</param>
-        /// <returns>The calculated relative transformation matrix.</returns>
+        /// <returns>The calculated relative transformation matrix. Its scale is not relative and always uses the in-plane scale of transformTo.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Matrix4x4 GetRelativeMatrix2D(in Matrix4x4 transformFrom, in Matrix4x4 transformTo, PhysicsWorld world, bool useScale = true)
-            => GetRelativeMatrix2D(transformFrom, transformTo, world.transformPlane, world.transformPlaneCustom, useScale);
+        public static Matrix4x4 GetRelativeMatrix2D(in Matrix4x4 transformFrom, in Matrix4x4 transformTo, PhysicsWorld world)
+            => GetRelativeMatrix2D(transformFrom, transformTo, world.transformPlane, world.transformPlaneCustom);
 
         /// <summary>
         /// Get the relative transformation pose (translation, rotation and scale) between the two specified transform matrix using the specified world's transform plane to transform into 2D space.

@@ -551,10 +551,12 @@ namespace UnityEditor.UIElements.Debugger
             TextField m_isManual;
             TextField m_cache;
             Button m_ClearMeasurementCacheButton;
+            GridTracksView m_GridTracks;
 
             public LayoutDebuggerTab(DebuggerSelection debuggerSelection) : base("Layout", debuggerSelection, true)
             {
                 Add(m_layout = new TextField("Layout") { isReadOnly = true, multiline = true });
+                Add(m_GridTracks = new GridTracksView());
                 Add(m_isManual = new TextField("Is Manual") { isReadOnly = true });
                 Add(m_cache = new TextField("Cache") { isReadOnly = true, multiline = true });
                 Add(m_ClearMeasurementCacheButton = new Button(OnClearMeasurementCacheClicked) { text = "Clear Measurement Cache" });
@@ -579,6 +581,7 @@ namespace UnityEditor.UIElements.Debugger
                     m_layout.text = "No Element selected";
                     m_isManual.text = "";
                     m_cache.text = "";
+                    m_GridTracks.Update(null);
                 }
                 else
                 {
@@ -596,6 +599,7 @@ namespace UnityEditor.UIElements.Debugger
                     }
 
                     m_isManual.text = $"{selectedElement.isLayoutManual}";
+                    m_GridTracks.Update(selectedElement);
 
                 }
 

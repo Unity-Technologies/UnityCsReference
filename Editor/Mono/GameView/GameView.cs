@@ -225,9 +225,30 @@ namespace UnityEditor
             return new Rect(0, 0, pos.width, pos.height);
         }
 
+        // Device pixels the view rect converts to per editor point.
+        float viewPixelsPerPoint => lowResolutionForAspectRatios ? 1f : backingScale;
+
+        float renderTargetPixelsPerPoint
+        {
+            get
+            {
+                var size = currentGameViewSize;
+                var followsViewRect = size.isFreeAspectRatio || size.sizeType == GameViewSizeType.AspectRatio;
+                return followsViewRect ? viewPixelsPerPoint : backingScale;
+            }
+        }
+
         Rect GetViewPixelRect(Rect viewRectInWindow)
         {
-            return lowResolutionForAspectRatios? viewRectInWindow : EditorGUIUtility.PointsToPixels(viewRectInWindow);
+            var scale = viewPixelsPerPoint;
+            return new Rect(viewRectInWindow.x * scale, viewRectInWindow.y * scale,
+                viewRectInWindow.width * scale, viewRectInWindow.height * scale);
+        }
+
+        protected override float GetGameViewDpiForPhysicalSize()
+        {
+            // Low resolution allocates the target in points, so a render pixel covers backingScale device pixels.
+            return base.GetGameViewDpiForPhysicalSize() * renderTargetPixelsPerPoint / backingScale;
         }
 
         // The area of the window that the rendered game view is limited to

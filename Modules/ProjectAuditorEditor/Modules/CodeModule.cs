@@ -97,12 +97,13 @@ namespace Unity.ProjectAuditor.Editor.Modules
             }
         };
 
-        static readonly IssueLayout k_IssueLayout = new IssueLayout
+        internal static readonly IssueLayout k_IssueLayout = new IssueLayout
         {
             Category = IssueCategory.Code,
             Properties = new[]
             {
                 new PropertyDefinition { Type = PropertyType.Description, Name = "Issue", LongName = "Issue description", MaxAutoWidth = 800 },
+                new PropertyDefinition { Type = PropertyType.Id, Name = "ID", LongName = "Rule ID"},
                 new PropertyDefinition { Type = PropertyType.Severity, Format = PropertyFormat.String, Name = "Severity"},
                 new PropertyDefinition { Type = PropertyType.Areas, Name = "Areas", LongName = "The areas the issue might have an impact on"},
                 new PropertyDefinition { Type = PropertyTypeUtil.FromCustom(CodeProperty.CodeLocation), Format = PropertyFormat.String, Name = "Location", LongName = "Code Location" },
@@ -119,7 +120,7 @@ namespace Unity.ProjectAuditor.Editor.Modules
             Properties = new[]
             {
                 new PropertyDefinition { Type = PropertyType.LogLevel, Name = "Log Level"},
-                new PropertyDefinition { Type = PropertyTypeUtil.FromCustom(CompilerMessageProperty.Code), Format = PropertyFormat.String, Name = "Code", IsDefaultGroup = true},
+                new PropertyDefinition { Type = PropertyTypeUtil.FromCustom(CompilerMessageProperty.Code), Format = PropertyFormat.String, Name = "ID", IsDefaultGroup = true},
                 new PropertyDefinition { Type = PropertyType.Description, Format = PropertyFormat.String, Name = "Message", LongName = "Compiler Message"},
                 new PropertyDefinition { Type = PropertyType.Filename, Name = "Filename", LongName = "Filename and line number"},
                 new PropertyDefinition { Type = PropertyTypeUtil.FromCustom(CompilerMessageProperty.Assembly), Format = PropertyFormat.String, Name = "Assembly", LongName = "Managed Assembly name" },
@@ -157,6 +158,9 @@ namespace Unity.ProjectAuditor.Editor.Modules
 
         // Match a whole "word", starting with UDR and ending with exactly 4 digits, e.g. UDR1234
         static readonly Regex s_RegEx = new Regex(@"\bUAL\d{4}\b");
+
+        // Only IDs of this shape can be written to the globalconfig without corrupting it
+        static readonly Regex s_DiagnosticIdRegEx = new Regex(@"^[A-Za-z]+\d+\z");
 
         public override IReadOnlyCollection<IssueLayout> SupportedLayouts => new IssueLayout[]
         {
@@ -299,6 +303,11 @@ namespace Unity.ProjectAuditor.Editor.Modules
             foreach (var roslynAnalyzerDllGuid in roslynAnalyzerUniqueGuids)
             {
                 var roslynAnalyzerDllPath = AssetDatabase.GUIDToAssetPath(roslynAnalyzerDllGuid);
+
+                // UUM-156937: the Unity MSBuild SDK already adds the NET analyzers (EnableNETAnalyzers)
+                if (IsNetAnalyzer(roslynAnalyzerDllPath))
+                    continue;
+
                 roslynAnalyzerAssets.Add(roslynAnalyzerDllPath);
 
                 var targetFramework = ReadTargetFramework(FileUtil.GetPhysicalPath(roslynAnalyzerDllPath));
@@ -329,7 +338,7 @@ namespace Unity.ProjectAuditor.Editor.Modules
                 },
                 CodeOptimization = analysisParams.CodeOptimization,
                 CodeAnalysisFlags = analysisParams.CodeAnalysisFlags,
-                CodeOwnerFlags = analysisParams.CodeOwnerFlags,
+                OwnerFlags = analysisParams.OwnerFlags,
                 Platform = analysisParams.Platform,
                 // TODO: reminder to add list of analyzers to metadata
                 RoslynAnalyzers = roslynAnalyzerAssets.ToArray(),
@@ -523,10 +532,15 @@ namespace Unity.ProjectAuditor.Editor.Modules
         static void WriteGlobalConfig()
         {
             var globalConfigPath = Path.Combine(ProjectAuditor.ProjectPath, "Library", "ScriptAnalysis.globalconfig");
+            File.WriteAllText(globalConfigPath, BuildGlobalConfig());
+        }
 
+        internal static string BuildGlobalConfig()
+        {
             var globalConfig = new StringBuilder();
             globalConfig.Append(
                 "is_global = true\n" +
+                "global_level = -1\n" + // Rank below the project's own globalconfig files so user settings are preserved.
                 "build_property.UnityEnableAutoStaticsCleanupAnalysis = true\n" +
                 // Report the statics-cleanup diagnostics as warnings rather than the analyzer's
                 // default Error severity, so that referenced assemblies still compile and dependent
@@ -537,12 +551,12 @@ namespace Unity.ProjectAuditor.Editor.Modules
                 "dotnet_diagnostic.UAL0013.severity = warning\n" +
                 "dotnet_diagnostic.UAL0014.severity = warning\n");
 
+            var suppressedDiagnostics = UserPreferences.BuildSuppressedDiagnosticsSet();
+
             // Enable all known code diagnostics, except those we have suppressed
             var diagnostics = RoslynDiagnosticsLibrary.Diagnostics;
             if (diagnostics != null)
             {
-                var suppressedDiagnostics = UserPreferences.BuildSuppressedDiagnosticsSet();
-
                 foreach (var diagnostic in diagnostics)
                 {
                     if (!suppressedDiagnostics.Contains(diagnostic.Id))
@@ -550,7 +564,14 @@ namespace Unity.ProjectAuditor.Editor.Modules
                 }
             }
 
-            File.WriteAllText(globalConfigPath, globalConfig.ToString());
+            // Some analyzer rules are enabled by default, so suppressed ones must be switched off explicitly
+            foreach (var id in suppressedDiagnostics)
+            {
+                if (s_DiagnosticIdRegEx.IsMatch(id))
+                    globalConfig.Append($"dotnet_diagnostic.{id.ToUpperInvariant()}.severity = none\n");
+            }
+
+            return globalConfig.ToString();
         }
 
         // Feeds every analyzer found by label into the Analysis build.
@@ -579,6 +600,13 @@ namespace Unity.ProjectAuditor.Editor.Modules
                 writer.WriteEndElement();
                 writer.WriteEndElement();
             }
+        }
+
+        static bool IsNetAnalyzer(string assetPath)
+        {
+            var fileName = Path.GetFileNameWithoutExtension(assetPath);
+            return fileName.Equals("Microsoft.CodeAnalysis.NetAnalyzers", StringComparison.OrdinalIgnoreCase) ||
+                fileName.Equals("Microsoft.CodeAnalysis.CSharp.NetAnalyzers", StringComparison.OrdinalIgnoreCase);
         }
 
         // Removes before including, so an analyzer the converter already resolved isn't passed to csc twice.
@@ -660,14 +688,19 @@ namespace Unity.ProjectAuditor.Editor.Modules
                     continue;
                 }
 
+                var isAssemblyLevelMessage = IsAssemblyLevelCompilerMessage(logMessage.File);
+
                 // Package code is filtered by file rather than by assembly, because package types can be
                 // forwarded into the default assemblies during compilation.
-                if (!PathPackageFilter(logMessage.File, context.Params.CodeAnalysisFlags, context.Params.CodeOwnerFlags))
+                if (!isAssemblyLevelMessage && !PathPackageFilter(logMessage.File, context.Params.CodeAnalysisFlags, context.Params.OwnerFlags))
                     continue;
 
                 // Get/register assembly info
                 if (!assemblyInfos.TryGetValue(assemblyName, out var assemblyInfo))
                     assemblyInfo = ProcessAssembly(context, assemblyName, null, editorAssemblies, assemblyInfos, onAddIssue, includeTests);
+
+                if (isAssemblyLevelMessage && !PathPackageFilter(assemblyInfo.PackageResolvedPath ?? assemblyInfo.AsmDefPath ?? string.Empty, context.Params.CodeAnalysisFlags, context.Params.OwnerFlags))
+                    continue;
 
                 // Skip tests
                 if (!includeTests && assemblyInfo.IsTestAssembly)
@@ -689,7 +722,7 @@ namespace Unity.ProjectAuditor.Editor.Modules
                 };
 
                 bool handled = false;
-                var relativePath = AssemblyInfoProvider.ResolveAssetPath(assemblyInfo, message.File);
+                var relativePath = ResolveCompilerMessagePath(assemblyInfo, message.File);
 
                 foreach (var analyzer in m_CompilerMessageAnalyzers)
                 {
@@ -711,6 +744,20 @@ namespace Unity.ProjectAuditor.Editor.Modules
                         .WithLogLevel(CompilerMessageTypeToLogLevel(message.Type)));
                 }
             }
+        }
+
+        // MSBuild reports diagnostics that have no source location, such as assembly-level ones, against the compiler task name.
+        static bool IsAssemblyLevelCompilerMessage(string file) => string.Equals(file, "CSC", StringComparison.OrdinalIgnoreCase);
+
+        internal static string ResolveCompilerMessagePath(AssemblyInfo assemblyInfo, string file)
+        {
+            if (IsAssemblyLevelCompilerMessage(file))
+            {
+                var isDefaultAssembly = assemblyInfo.Name == AssemblyInfo.DefaultAssemblyName || assemblyInfo.Name == AssemblyInfo.DefaultEditorAssemblyName;
+                return isDefaultAssembly ? string.Empty : assemblyInfo.AsmDefPath ?? string.Empty;
+            }
+
+            return AssemblyInfoProvider.ResolveAssetPath(assemblyInfo, file);
         }
 
         static AssemblyInfo ProcessAssembly(AnalysisContext context, string assemblyName, List<string> referencedAssemblyNames, bool editorAssemblies, Dictionary<string, AssemblyInfo> assemblyInfos, Action<ReportItem> onAddIssue, bool includeTests)
@@ -750,12 +797,12 @@ namespace Unity.ProjectAuditor.Editor.Modules
             {
                 if ((analysisParams.CodeAnalysisFlags & CodeAnalysisFlags.Packages) != 0)
                 {
-                    if ((analysisParams.CodeOwnerFlags & CodeOwnerFlags.Unity) == 0)
+                    if ((analysisParams.OwnerFlags & OwnerFlags.Unity) == 0)
                     {
                         if (assemblyInfo.IsUnityOwned)
                             return false;
                     }
-                    if ((analysisParams.CodeOwnerFlags & CodeOwnerFlags.User) == 0)
+                    if ((analysisParams.OwnerFlags & OwnerFlags.User) == 0)
                     {
                         if (!assemblyInfo.IsUnityOwned)
                             return false;
@@ -772,19 +819,19 @@ namespace Unity.ProjectAuditor.Editor.Modules
 
         // Code compilation can forward types to other assemblies, effectively meaning package code can get "baked" into the Assembly-CSharp dlls.
         // So we need this extra check to detect and filter those types
-        internal static bool PathPackageFilter(string path, CodeAnalysisFlags codeAnalysisFlags, CodeOwnerFlags codeOwnerFlags)
+        internal static bool PathPackageFilter(string path, CodeAnalysisFlags codeAnalysisFlags, OwnerFlags ownerFlags)
         {
             if (PathUtils.ReplaceSeparators(path).Contains("Library/PackageCache/", StringComparison.OrdinalIgnoreCase))
             {
                 if ((codeAnalysisFlags & CodeAnalysisFlags.Packages) != 0)
                 {
                     bool isUnityOwned = path.Contains("com.unity.", StringComparison.Ordinal);
-                    if ((codeOwnerFlags & CodeOwnerFlags.Unity) == 0)
+                    if ((ownerFlags & OwnerFlags.Unity) == 0)
                     {
                         if (isUnityOwned)
                             return false;
                     }
-                    if ((codeOwnerFlags & CodeOwnerFlags.User) == 0)
+                    if ((ownerFlags & OwnerFlags.User) == 0)
                     {
                         if (!isUnityOwned)
                             return false;
@@ -894,7 +941,7 @@ namespace Unity.ProjectAuditor.Editor.Modules
                             // Unity forwards some package types to the default assemblies during compilation. Filter those separately from AssemblyPackageFilter.
                             if (isDefaultAssembly)
                             {
-                                if (!PathPackageFilter(path, analysisParams.CodeAnalysisFlags, analysisParams.CodeOwnerFlags))
+                                if (!PathPackageFilter(path, analysisParams.CodeAnalysisFlags, analysisParams.OwnerFlags))
                                     continue;
                             }
 
@@ -1059,7 +1106,7 @@ namespace Unity.ProjectAuditor.Editor.Modules
                 if ((mode & (LogMessageFlags.kScriptCompileError | LogMessageFlags.kScriptCompileWarning)) == 0)
                     continue;
 
-                if (!PathPackageFilter(entry.file, context.Params.CodeAnalysisFlags, context.Params.CodeOwnerFlags))
+                if (!PathPackageFilter(entry.file, context.Params.CodeAnalysisFlags, context.Params.OwnerFlags))
                     continue;
 
                 compilerEntries.Add(new UnityEditor.Compilation.CompilerMessage()

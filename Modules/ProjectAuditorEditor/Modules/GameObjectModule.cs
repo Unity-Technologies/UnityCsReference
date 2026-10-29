@@ -33,6 +33,7 @@ namespace Unity.ProjectAuditor.Editor.Core
             Properties =
             [
                 new PropertyDefinition { Type = PropertyType.Description, Name = "Issue", LongName = "Issue description", MaxAutoWidth = 800 },
+                new PropertyDefinition { Type = PropertyType.Id, Name = "ID", LongName = "Rule ID"},
                 new PropertyDefinition { Type = PropertyType.Severity, Format = PropertyFormat.String, Name = "Severity"},
                 new PropertyDefinition { Type = PropertyType.Areas, Format = PropertyFormat.String, Name = "Areas", LongName = "Impacted Areas" },
                 new PropertyDefinition { Type = PropertyType.Path, Name = "Path", MaxAutoWidth = 500 },

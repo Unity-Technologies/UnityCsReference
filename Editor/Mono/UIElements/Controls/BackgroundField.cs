@@ -43,7 +43,9 @@ namespace UnityEditor.UIElements
         readonly VisualElement m_GradientContainer;
         readonly EnumField m_GradientTypeField;
         readonly GradientField m_GradientColorsField;
-        readonly FloatField m_GradientAngleField;
+        readonly AngleField m_GradientAngleField;
+        float m_GradientAngle = Mathf.PI;
+        AngleUnit m_GradientAngleUnit;
         readonly VisualElement m_GradientRadialOnlyContainer;
         readonly EnumField m_GradientShapeField;
         readonly EnumField m_GradientSizeField;
@@ -59,6 +61,12 @@ namespace UnityEditor.UIElements
         {
             [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
             get => m_GradientColorsField;
+        }
+
+        internal AngleField gradientAngleField
+        {
+            [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
+            get => m_GradientAngleField;
         }
 
         public BackgroundField() : this(null) {}
@@ -107,8 +115,18 @@ namespace UnityEditor.UIElements
             m_GradientColorsField.RegisterValueChangedCallback(_ => OnGradientControlChanged());
             m_GradientContainer.Add(m_GradientColorsField);
 
-            m_GradientAngleField = new FloatField("Angle (deg)") { value = 180f };
-            m_GradientAngleField.RegisterValueChangedCallback(_ => OnGradientControlChanged());
+            m_GradientAngleField = CreateGradientAngleField(
+                (radians, unit) =>
+                {
+                    m_GradientAngle = radians;
+                    m_GradientAngleUnit = unit;
+                    OnGradientControlChanged();
+                },
+                unit =>
+                {
+                    m_GradientAngleUnit = unit;
+                    OnGradientControlChanged();
+                });
             m_GradientContainer.Add(m_GradientAngleField);
 
             m_GradientRadialOnlyContainer = new VisualElement();
@@ -161,7 +179,8 @@ namespace UnityEditor.UIElements
             var gradient = new BackgroundGradient
             {
                 type = (GradientType)m_GradientTypeField.value,
-                angle = m_GradientAngleField.value * Mathf.Deg2Rad,
+                angle = m_GradientAngle,
+                angleUnit = m_GradientAngleUnit,
                 shape = (BackgroundGradientShape)m_GradientShapeField.value,
                 size = (BackgroundGradientSize)m_GradientSizeField.value,
                 position = m_GradientPositionField.value,
@@ -186,7 +205,9 @@ namespace UnityEditor.UIElements
             try
             {
                 m_GradientTypeField.SetValueWithoutNotify(g.type);
-                m_GradientAngleField.SetValueWithoutNotify(g.angle * Mathf.Rad2Deg);
+                m_GradientAngle = g.angle;
+                m_GradientAngleUnit = g.angleUnit;
+                m_GradientAngleField.SetValueWithoutNotify(RadiansToAngle(g.angle, g.angleUnit));
                 m_GradientShapeField.SetValueWithoutNotify(g.shape);
                 m_GradientSizeField.SetValueWithoutNotify(g.size);
                 m_GradientPositionField.SetValueWithoutNotify(g.position);
@@ -196,6 +217,34 @@ namespace UnityEditor.UIElements
             {
                 m_SuppressGradientChange = false;
             }
+        }
+
+        // Rounds like the USS writer, so 1rad reads back as 1 rather than 1.0000004 and 0.00001turn is not shown as 0.
+        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
+        internal static Angle RadiansToAngle(float radians, AngleUnit unit)
+        {
+            var angle = Angle.Radians(radians);
+            if (unit is AngleUnit.Degree or AngleUnit.Gradian or AngleUnit.Turn)
+                angle.ConvertTo(unit);
+            return new Angle((float)Math.Round(angle.value, Angle.GetPrecision(angle.unit)), angle.unit);
+        }
+
+        // A unit switch reports only the unit, so callers keep their unrounded angle.
+        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
+        internal static AngleField CreateGradientAngleField(Action<float, AngleUnit> angleChanged, Action<AngleUnit> unitChanged)
+        {
+            var field = new AngleField("Angle") { value = Angle.Degrees(180f) };
+            field.RegisterValueChangedCallback(evt =>
+            {
+                var newAngle = evt.newValue;
+                if (newAngle.IsNone())
+                    field.SetValueWithoutNotify(evt.previousValue);
+                else if (newAngle.unit != evt.previousValue.unit && Mathf.Approximately(newAngle.ToRadians(), evt.previousValue.ToRadians()))
+                    unitChanged(newAngle.unit);
+                else
+                    angleChanged(newAngle.ToRadians(), newAngle.unit);
+            });
+            return field;
         }
 
         // Guards the color-key spam Laila flagged when dragging in the gradient picker.

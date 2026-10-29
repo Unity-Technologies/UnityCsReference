@@ -298,10 +298,42 @@ namespace UnityEditor.Modules
                     _ => throw new ArgumentException($"Unhandled {nameof(ManagedStrippingLevel)} value")
                 },
                 AdditionalArgs = additionalArgs.ToArray(),
-                ModulesAssetPath = $"{BuildPipeline.GetPlaybackEngineDirectory(args.target, 0)}/modules.asset",
+                ModulesAssetPath = GetModulesAssetPath(args.target),
                 AllowDebugging = GetAllowDebugging(args),
                 PerformEngineStripping = PlayerSettings.stripEngineCode,
             };
+        }
+
+        // Installed gated feature-set modules ship their entries as modules.<FeatureSet>.gated.asset fragments next to
+        // modules.asset. UnityLinker and class registration read a single file, so merge the fragments into a copy.
+        static string GetModulesAssetPath(BuildTarget target)
+        {
+            var platformDirectory = BuildPipeline.GetPlaybackEngineDirectory(target, 0);
+            var modulesAssetPath = $"{platformDirectory}/modules.asset";
+            var fragments = Directory.Exists(platformDirectory) ? Directory.GetFiles(platformDirectory, "modules.*.gated.asset") : Array.Empty<string>();
+            if (fragments.Length == 0)
+                return modulesAssetPath;
+
+            var merged = File.ReadAllText(modulesAssetPath);
+            if (!merged.EndsWith("\n"))
+                merged += "\n";
+            Array.Sort(fragments, StringComparer.Ordinal);
+            foreach (var fragment in fragments)
+            {
+                var lines = File.ReadAllLines(fragment);
+                var modulesLine = Array.FindIndex(lines, l => l.TrimEnd() == "  modules:");
+                for (var i = modulesLine + 1; i < lines.Length; i++)
+                    merged += lines[i] + "\n";
+            }
+
+            var mergedPath = Path.GetFullPath(DagDirectory.Combine("modules.merged.asset").ToString());
+            // Only rewrite when the content changed so the linker step isn't needlessly invalidated.
+            if (!File.Exists(mergedPath) || File.ReadAllText(mergedPath) != merged)
+            {
+                Directory.CreateDirectory(Path.GetDirectoryName(mergedPath));
+                File.WriteAllText(mergedPath, merged);
+            }
+            return mergedPath;
         }
 
         static bool IsBuildOptionSet(BuildOptions options, BuildOptions flag) => (options & flag) != 0;

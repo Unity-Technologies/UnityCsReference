@@ -962,7 +962,6 @@ namespace UnityEditor.EditorTools
                 requireMeasureFunction = false
             };
 
-            UIElementsEditorUtility.AddDefaultEditorStyleSheets(container);
             container.style.overflow = Overflow.Hidden;
             container.style.flexGrow = 1;
 

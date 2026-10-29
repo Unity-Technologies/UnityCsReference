@@ -84,7 +84,12 @@ namespace UnityEngine
             Internal_PushParentClip(objectTransform, objectTransform, clipRect);
         }
 
-        internal static extern void Internal_PushParentClip(Matrix4x4 renderTransform, Matrix4x4 inputTransform, Rect clipRect);
+        internal static void Internal_PushParentClip(Matrix4x4 renderTransform, Matrix4x4 inputTransform, Rect clipRect)
+        {
+            Internal_PushParentClip(renderTransform, inputTransform, clipRect, false);
+        }
+
+        internal static extern void Internal_PushParentClip(Matrix4x4 renderTransform, Matrix4x4 inputTransform, Rect clipRect, bool clipTestUsesInputTransform);
 
         internal static extern void Internal_PopParentClip();
     }

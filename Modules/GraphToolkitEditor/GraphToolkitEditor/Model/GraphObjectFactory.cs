@@ -265,6 +265,9 @@ namespace Unity.GraphToolkit.Editor
         // graph objects, which is exactly what it already does after a domain reload.
         [IgnoreForUAL0015("Loaded-graph-object table rebuilt by re-enumerating loaded assets when null")]
         static Dictionary<GUID, GraphObject> s_LoadedGraphObjects;
+        [AutoStaticsCleanupOnCodeReload]
+        [IgnoreForUAL0015("Scan cache keyed by file write time and length; an emptied cache only causes a rescan")]
+        static Dictionary<string, (DateTime lastWriteTime, long length, int danglingReferenceCount)> s_ScannedFiles = new();
 
         static string InstanceIdToFileExtension(EntityId entityId)
         {
@@ -310,6 +313,10 @@ namespace Unity.GraphToolkit.Editor
             if (graphObject != null)
                 return graphObject;
 
+            // Data whose entry is missing from the file deserializes as null, which loading would drop or replace with defaults, and the next save would make the loss permanent.
+            if (GetDanglingManagedReferenceCount(filePath) > 0)
+                return null;
+
             try
             {
                 graphObject = function(filePath);
@@ -349,6 +356,34 @@ namespace Unity.GraphToolkit.Editor
             }
 
             return graphObject;
+        }
+
+        // Like the AssetDatabase, a file is considered unchanged as long as its write time and length stay the same, so each version is scanned and reported only once.
+        static int GetDanglingManagedReferenceCount(string filePath)
+        {
+            var fileInfo = new FileInfo(filePath);
+            if (s_ScannedFiles.TryGetValue(filePath, out var scannedFile) && scannedFile.lastWriteTime == fileInfo.LastWriteTimeUtc && scannedFile.length == fileInfo.Length)
+                return scannedFile.danglingReferenceCount;
+
+            // An unreadable file is reported by the loader itself, and is not remembered.
+            int danglingReferenceCount;
+            try
+            {
+                danglingReferenceCount = YamlParsingHelper.CountDanglingManagedReferences(File.ReadAllText(filePath));
+            }
+            catch (Exception e) when (e is IOException or UnauthorizedAccessException)
+            {
+                return 0;
+            }
+
+            s_ScannedFiles[filePath] = (fileInfo.LastWriteTimeUtc, fileInfo.Length, danglingReferenceCount);
+            if (danglingReferenceCount > 0)
+            {
+                var entries = danglingReferenceCount == 1 ? "1 entry that is" : $"{danglingReferenceCount} entries that are";
+                Debug.LogError($"The graph at path: {filePath} was not loaded because it references {entries} missing from the file. The file might be corrupt, for example after an interrupted save or a bad merge.");
+            }
+
+            return danglingReferenceCount;
         }
 
         static GraphObject GetLoadedAsset(GUID assetGUID)

@@ -170,6 +170,7 @@ namespace UnityEngine
                     GUIStyle.Internal_DestroyTextGenerator(tuple.hashCode);
                     if (textHandles.TryGetValue(tuple.hashCode, out IMGUITextHandle textHandleCached))
                     {
+                        textHandleCached.isCachedOnNative = false;
                         textHandleCached.RemoveFromPermanentCache();
                     }
                     textHandles.Remove(tuple.hashCode);

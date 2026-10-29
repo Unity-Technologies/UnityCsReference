@@ -566,9 +566,16 @@ namespace UnityEngine.UIElements
             return false;
         }
 
+        // m_LastFocusedElement is not cleared when its element is removed from the panel, and removing is a
+        // precondition to releasing, so a released element is skipped to avoid errors/exceptions.
+        bool IsLastFocusedElementUsable() =>
+            m_LastFocusedElement != null &&
+            !(m_LastFocusedElement is IMGUIContainer) &&
+            !(m_LastFocusedElement is VisualElement { resourcesReleased: true });
+
         internal void SetFocusToLastFocusedElement()
         {
-            if (m_LastFocusedElement != null && !(m_LastFocusedElement is IMGUIContainer))
+            if (IsLastFocusedElementUsable())
                 m_LastFocusedElement.Focus();
         }
 
@@ -578,7 +585,7 @@ namespace UnityEngine.UIElements
             // Unselect selected TextElement when panel loses focus
             selectedTextElement = null;
 
-            if (m_LastFocusedElement != null && !(m_LastFocusedElement is IMGUIContainer))
+            if (IsLastFocusedElementUsable())
             {
                 // Blur will change the lastFocusedElement to null
                 var tmpLastFocusedElement = m_LastFocusedElement;

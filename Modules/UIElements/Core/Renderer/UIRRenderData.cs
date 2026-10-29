@@ -97,16 +97,15 @@ namespace UnityEngine.UIElements.UIR
     }
 
     // IMPORTANT: Initialize all fields in this struct in RenderTreeManager.InitRenderData()
-    class RenderData
+    sealed class RenderData
     {
         public VisualElement owner;
         public RenderTree renderTree;
         public RenderData parent, prevSibling, nextSibling;
         public RenderData firstChild, lastChild;
         public RenderData groupTransformAncestor, boneTransformAncestor;
-        public RenderData prevDirty, nextDirty; // Embedded doubly-linked list for dirty updates
         public RenderDataFlags flags;
-        public int depthInRenderTree;
+        public long preOrderLabel; // Increases in draw order within the render tree, with gaps for insertions (see RenderTree)
         public RenderDataDirtyTypes dirtiedValues;
         public uint dirtyID;
         public RenderChainCommand firstHeadCommand, lastHeadCommand; // Sequential for the same owner
@@ -159,10 +158,8 @@ namespace UnityEngine.UIElements.UIR
             lastChild = null;
             groupTransformAncestor = null;
             boneTransformAncestor = null;
-            prevDirty = null;
-            nextDirty = null;
             flags = RenderDataFlags.IsClippingRectDirty;
-            depthInRenderTree = 0;
+            preOrderLabel = 0;
             dirtiedValues = RenderDataDirtyTypes.None;
             dirtyID = 0;
             firstHeadCommand = null;
@@ -211,8 +208,6 @@ namespace UnityEngine.UIElements.UIR
             lastChild = null;
             groupTransformAncestor = null;
             boneTransformAncestor = null;
-            prevDirty = null;
-            nextDirty = null;
             firstHeadCommand = null;
             lastHeadCommand = null;
             firstTailCommand = null;

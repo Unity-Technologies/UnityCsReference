@@ -37,14 +37,30 @@ unsafe struct LayoutComputedData
     public fixed float Margin[6];
     public fixed float Border[6];
     public fixed float Padding[6];
-    public LayoutDirection Direction;
     public uint ComputedFlexBasisGeneration;
     public float ComputedFlexBasis;
-    public bool HadOverflow;
     public uint GenerationCount;
-    public LayoutDirection LastParentDirection;
     public float LastPointScaleFactor;
     public fixed float MeasuredDimensions[2];
+
+    // Narrow fields grouped last so they pack into the struct's final 8 bytes; native LayoutLayoutData mirrors this order.
+    byte m_Direction;
+    sbyte m_LastParentDirection;
+    public bool HadOverflow;
+    public LayoutItemKind ItemLayoutKind;
+    public ushort GridTracks;
+
+    public LayoutDirection Direction
+    {
+        readonly get => (LayoutDirection)m_Direction;
+        set => m_Direction = (byte)value;
+    }
+
+    public LayoutDirection LastParentDirection
+    {
+        readonly get => (LayoutDirection)m_LastParentDirection;
+        set => m_LastParentDirection = (sbyte)value;
+    }
 
     public float* MarginBuffer
     {

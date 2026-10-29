@@ -82,6 +82,8 @@ namespace Unity.ProjectAuditor.Editor
                     return issue.Id.GetDescriptor().GetPlatformsSummary();
                 case PropertyType.IsIgnored:
                     return issue.IsIgnored.ToString();
+                case PropertyType.Id:
+                    return issue.Id.IsValid() ? issue.Id.AsString() : k_NotAvailable;
                 default:
                     var propertyIndex = propertyType - PropertyType.Num;
                     return issue.GetCustomProperty(propertyIndex);

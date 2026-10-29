@@ -5248,11 +5248,11 @@
     <Compile Include="..\..\Modules\BuildAnalysis\UI\BuildAnalysisTabHost.cs">
       <Link>Modules\BuildAnalysis\UI\BuildAnalysisTabHost.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\BuildAnalysis\UI\BuildAnalysisUtility.cs">
+      <Link>Modules\BuildAnalysis\UI\BuildAnalysisUtility.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\BuildAnalysis\UI\BuildAnalysisWindow.cs">
       <Link>Modules\BuildAnalysis\UI\BuildAnalysisWindow.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\BuildAnalysis\UI\BuildAnalysisWindowLauncher.cs">
-      <Link>Modules\BuildAnalysis\UI\BuildAnalysisWindowLauncher.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\BuildAnalysis\UI\BuildListPanel.cs">
       <Link>Modules\BuildAnalysis\UI\BuildListPanel.cs</Link>
@@ -8194,8 +8194,8 @@
     <Compile Include="..\..\Modules\GraphToolkitEditor\GraphToolkitPublic\Implementation\GraphToolImp.cs">
       <Link>Modules\GraphToolkitEditor\GraphToolkitPublic\Implementation\GraphToolImp.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\GraphToolkitEditor\GraphToolkitPublic\Implementation\GraphViewEditorWindowImp.cs">
-      <Link>Modules\GraphToolkitEditor\GraphToolkitPublic\Implementation\GraphViewEditorWindowImp.cs</Link>
+    <Compile Include="..\..\Modules\GraphToolkitEditor\GraphToolkitPublic\Implementation\GraphToolkitWindow.cs">
+      <Link>Modules\GraphToolkitEditor\GraphToolkitPublic\Implementation\GraphToolkitWindow.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\GraphToolkitEditor\GraphToolkitPublic\Implementation\GraphViewImp.cs">
       <Link>Modules\GraphToolkitEditor\GraphToolkitPublic\Implementation\GraphViewImp.cs</Link>
@@ -12079,6 +12079,9 @@
     <Compile Include="..\..\Modules\PhysicsCore2DEditor\Settings\PhysicsCoreSettings2DEditor.cs">
       <Link>Modules\PhysicsCore2DEditor\Settings\PhysicsCoreSettings2DEditor.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\PhysicsCore2DEditor\Settings\PhysicsDrawOverride.cs">
+      <Link>Modules\PhysicsCore2DEditor\Settings\PhysicsDrawOverride.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\PhysicsEditor\ArticulationBodyEditor.cs">
       <Link>Modules\PhysicsEditor\ArticulationBodyEditor.cs</Link>
     </Compile>
@@ -13003,9 +13006,6 @@
     <Compile Include="..\..\Modules\ProjectAuditorEditor\API\Enums\CodeOptimization.cs">
       <Link>Modules\ProjectAuditorEditor\API\Enums\CodeOptimization.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\ProjectAuditorEditor\API\Enums\CodeOwnerFlags.cs">
-      <Link>Modules\ProjectAuditorEditor\API\Enums\CodeOwnerFlags.cs</Link>
-    </Compile>
     <Compile Include="..\..\Modules\ProjectAuditorEditor\API\Enums\CompilationMode.cs">
       <Link>Modules\ProjectAuditorEditor\API\Enums\CompilationMode.cs</Link>
     </Compile>
@@ -13014,6 +13014,9 @@
     </Compile>
     <Compile Include="..\..\Modules\ProjectAuditorEditor\API\Enums\LogLevel.cs">
       <Link>Modules\ProjectAuditorEditor\API\Enums\LogLevel.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\ProjectAuditorEditor\API\Enums\OwnerFlags.cs">
+      <Link>Modules\ProjectAuditorEditor\API\Enums\OwnerFlags.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\ProjectAuditorEditor\API\Enums\Severity.cs">
       <Link>Modules\ProjectAuditorEditor\API\Enums\Severity.cs</Link>
@@ -13098,9 +13101,6 @@
     </Compile>
     <Compile Include="..\..\Modules\ProjectAuditorEditor\CodeAnalysis\RoslynDiagnosticsLibrary.cs">
       <Link>Modules\ProjectAuditorEditor\CodeAnalysis\RoslynDiagnosticsLibrary.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\ProjectAuditorEditor\CompilerMessageAnalyzers\CodeQualityAnalyzer.cs">
-      <Link>Modules\ProjectAuditorEditor\CompilerMessageAnalyzers\CodeQualityAnalyzer.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\ProjectAuditorEditor\CompilerMessageAnalyzers\DefaultCompilerMessageAnalyzer.cs">
       <Link>Modules\ProjectAuditorEditor\CompilerMessageAnalyzers\DefaultCompilerMessageAnalyzer.cs</Link>
@@ -13263,6 +13263,9 @@
     </Compile>
     <Compile Include="..\..\Modules\ProjectAuditorEditor\Modules\AssetsModule.cs">
       <Link>Modules\ProjectAuditorEditor\Modules\AssetsModule.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\ProjectAuditorEditor\Modules\AssetsModuleLightmapperAnalyzer.cs">
+      <Link>Modules\ProjectAuditorEditor\Modules\AssetsModuleLightmapperAnalyzer.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\ProjectAuditorEditor\Modules\AudioClipModule.cs">
       <Link>Modules\ProjectAuditorEditor\Modules\AudioClipModule.cs</Link>
@@ -16033,6 +16036,9 @@
     <Compile Include="..\..\Modules\UIElementsEditor\Debugger\Events\UIElementsEventDebugger.cs">
       <Link>Modules\UIElementsEditor\Debugger\Events\UIElementsEventDebugger.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\UIElementsEditor\Debugger\GridTracksView.cs">
+      <Link>Modules\UIElementsEditor\Debugger\GridTracksView.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\UIElementsEditor\Debugger\LayoutDebugger\LayoutPanelDebuggerImpl.cs">
       <Link>Modules\UIElementsEditor\Debugger\LayoutDebugger\LayoutPanelDebuggerImpl.cs</Link>
     </Compile>
@@ -17755,6 +17761,9 @@
     <Compile Include="..\..\Modules\UIToolkitAuthoringEditor\Managed\Utilities\UIAnimationClipFactory.cs">
       <Link>Modules\UIToolkitAuthoringEditor\Managed\Utilities\UIAnimationClipFactory.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\UIToolkitAuthoringEditor\Managed\Utilities\VisualElementBoundsUtility.cs">
+      <Link>Modules\UIToolkitAuthoringEditor\Managed\Utilities\VisualElementBoundsUtility.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\UIToolkitAuthoringEditor\Managed\Utilities\VisualElementUtility.cs">
       <Link>Modules\UIToolkitAuthoringEditor\Managed\Utilities\VisualElementUtility.cs</Link>
     </Compile>
@@ -18038,9 +18047,9 @@
       <Link>artifacts\MonolithicEditorDlls\InternalsVisibleTo.cs</Link>
     </Compile>
     <Reference Include="..\..\artifacts\Stevedore\unity-compiler-win-x64_17b7\Unity.CompilationPipeline.Common\Unity.CompilationPipeline.Common.dll" />
-    <Reference Include="..\..\artifacts\Stevedore\msbu-tools_1e1b\buildTools\UnityEditor.MSBuild.dll" />
-    <Reference Include="..\..\artifacts\Stevedore\msbu-tools_1e1b\buildTools\Unity.BuildService.dll" />
-    <Reference Include="..\..\artifacts\Stevedore\msbu-tools_1e1b\asmDefToCSProj\AsmDefToCSProjLib.dll" />
+    <Reference Include="..\..\artifacts\Stevedore\msbu-tools_d346\buildTools\UnityEditor.MSBuild.dll" />
+    <Reference Include="..\..\artifacts\Stevedore\msbu-tools_d346\buildTools\Unity.BuildService.dll" />
+    <Reference Include="..\..\artifacts\Stevedore\msbu-tools_d346\asmDefToCSProj\AsmDefToCSProjLib.dll" />
     <Reference Include="..\..\External\Unity.Cecil\builds\lib\net40\Unity.Cecil.dll" />
     <Reference Include="..\..\External\ExCSS\builds\builds\lib\netstandard2.0\ExCSS.Unity.dll" />
     <Reference Include="..\..\Tools\Bee\build\Distribution\BeeDriver2\Bee.BeeDriver2.dll" />
@@ -18073,7 +18082,7 @@
     </PropertyGroup>
   </Target>
   <ItemGroup>
-    <Analyzer Include="/tmp/uitoolkit_gen_7b1dq6ik/Unity.UIToolkit.SourceGenerator.dll" />
+    <Analyzer Include="/tmp/uitoolkit_gen_zua5apap/Unity.UIToolkit.SourceGenerator.dll" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="10.0.8" />

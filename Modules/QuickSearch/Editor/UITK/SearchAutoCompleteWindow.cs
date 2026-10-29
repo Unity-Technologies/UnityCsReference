@@ -314,7 +314,7 @@ namespace UnityEditor.Search
             m_ToolbarSearchField.RegisterCallback<BlurEvent>(HandleSearchFieldBlurEvent, TrickleDown.TrickleDown);
             RegisterCallback<FocusInEvent>(HandleFocusInEvent);
 
-            m_AttachedRoot = GetRootVisualContainer();
+            m_AttachedRoot = GetRoot();
         }
 
         void HandleFocusInEvent(FocusInEvent evt)

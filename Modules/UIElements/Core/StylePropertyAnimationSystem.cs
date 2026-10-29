@@ -1798,6 +1798,7 @@ namespace UnityEngine.UIElements
                     shape = discrete.shape,
                     size = discrete.size,
                     angle = Mathf.Lerp(ga.angle, gb.angle, t),
+                    angleUnit = discrete.angleUnit,
                     position = Vector2.Lerp(ga.position, gb.position, t),
                     stops = stops,
                 });
