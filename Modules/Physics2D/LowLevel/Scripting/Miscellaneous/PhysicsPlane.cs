@@ -17,7 +17,7 @@ namespace UnityEngine.LowLevelPhysics2D
     public struct PhysicsPlane
     {
         /// <summary>
-        /// The plane normal. This must be normalized for the plane be valid.
+        /// The plane normal. This must be normalized for the plane to be valid.
         /// </summary>
         /// <remarks>
         /// This is exposed directly as a field rather than a property as it is extremely unlikely to ever change and causes usability issues as a property.
@@ -25,7 +25,8 @@ namespace UnityEngine.LowLevelPhysics2D
         public Vector2 normal;
 
         /// <summary>
-        ///  The plane offset.
+        /// The signed distance from the world origin to the plane, measured along <see cref="LowLevelPhysics2D.PhysicsPlane.normal"/>.
+        /// A point lies on the plane when its dot product with the normal equals this offset.
         /// </summary>
         /// <remarks>
         /// This is exposed directly as a field rather than a property as it is extremely unlikely to ever change and causes usability issues as a property.
@@ -41,13 +42,10 @@ namespace UnityEngine.LowLevelPhysics2D
         /// Get the signed separation of a point from a plane.
         /// </summary>
         /// <param name="point">The point to check the separation from the plane.</param>
-        /// <returns>The signed separation of the point from the plan.</returns>
+        /// <returns>The signed separation of the point from the plane.</returns>
         public readonly float GetSeparation(Vector2 point) => PhysicsPlane_GetSeparation(this, point);
 
         /// <undoc/>
         public override readonly string ToString() => $"normal={normal}, offset={offset}";
-
-        #region Internal
-        #endregion
     }
 }

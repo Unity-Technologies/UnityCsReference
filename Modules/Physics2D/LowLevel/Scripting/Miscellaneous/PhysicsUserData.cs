@@ -45,7 +45,7 @@ namespace UnityEngine.LowLevelPhysics2D
         public int intValue { readonly get => m_Int; set => m_Int = value; }
 
         /// <summary>
-        /// A custom 64-bit <see cref="System.Int64"/>.
+        /// A custom 64-bit <see cref="System.UInt64"/>.
         /// </summary>
         public UInt64 int64Value { readonly get => m_Int64; set => m_Int64 = value; }
 

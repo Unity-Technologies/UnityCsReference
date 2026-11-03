@@ -203,41 +203,37 @@ namespace UnityEngine.UIElements
             EnsureTextGenerationInfoIsValid();
             var pos = pme.localPosition - new Vector3(m_TextElement.contentRect.min.x, m_TextElement.contentRect.min.y);
             // Convert UITK pos to ATG pos
-            var (type, link) = m_TextElement.uitkTextHandle.ATGFindIntersectingLink(pos);
+            var (type, link) = m_TextElement.uitkTextHandle.ATGFindIntersectingLink(pos, out var linkID);
+            var hoveredLinkID = link != null && type == TextCore.RichTextTagParser.TagType.Link ? linkID : -1;
 
-            if (link != null && type == TextCore.RichTextTagParser.TagType.Link)
-            {
-                // PointerOver
-                if (currentLinkIDHash == -1)
-                {
-                    currentLinkIDHash = 0; // Placeholder for link.hashCode
-                    using (var e = Experimental.PointerOverLinkTagEvent.GetPooled(pme, link, "test" /* TODO we have no way of gettting the hilighted text*/ ))
-                    {
-                        e.elementTarget = m_TextElement;
-                        m_TextElement.SendEvent(e);
-                    }
-
-                    return;
-                }
-
-                // PointerMove
-                if (currentLinkIDHash == 0) // Placeholder for link.hashCode
-                {
-                    using (var e = Experimental.PointerMoveLinkTagEvent.GetPooled(pme, link, "test" /* TODO we have no way of gettting the hilighted text*/ ))
-                    {
-                        e.elementTarget = m_TextElement;
-                        m_TextElement.SendEvent(e);
-                    }
-
-                    return;
-                }
-            }
-
-            // PointerOut
-            if (currentLinkIDHash != -1)
+            // PointerOut, also sent when moving directly from one link onto an adjacent one.
+            if (currentLinkIDHash != -1 && currentLinkIDHash != hoveredLinkID)
             {
                 currentLinkIDHash = -1;
                 using (var e = Experimental.PointerOutLinkTagEvent.GetPooled(pme, string.Empty))
+                {
+                    e.elementTarget = m_TextElement;
+                    m_TextElement.SendEvent(e);
+                }
+            }
+
+            if (hoveredLinkID == -1)
+                return;
+
+            // PointerOver
+            if (currentLinkIDHash == -1)
+            {
+                currentLinkIDHash = hoveredLinkID;
+                using (var e = Experimental.PointerOverLinkTagEvent.GetPooled(pme, link, "test" /* TODO we have no way of gettting the hilighted text*/ ))
+                {
+                    e.elementTarget = m_TextElement;
+                    m_TextElement.SendEvent(e);
+                }
+            }
+            // PointerMove
+            else
+            {
+                using (var e = Experimental.PointerMoveLinkTagEvent.GetPooled(pme, link, "test" /* TODO we have no way of gettting the hilighted text*/ ))
                 {
                     e.elementTarget = m_TextElement;
                     m_TextElement.SendEvent(e);

@@ -61,6 +61,7 @@ namespace UnityEngine
         Action _continuation;
         CancellationTokenRegistration? _cancelTokenRegistration;
         DoubleBufferedAwaitableList _managedCompletionQueue;
+        int _poolGeneration;
         private Awaitable() { }
 
         internal static Awaitable NewManagedAwaitable()
@@ -225,6 +226,7 @@ namespace UnityEngine
                 _exceptionToRethrow = null;
                 _managedCompletionQueue = null;
                 _continuation = null;
+                _poolGeneration++;
                 if (!ptr.IsManaged && !ptr.IsNull)
                 {
                     ReleaseNativeAwaitable(ptr);

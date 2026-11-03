@@ -712,6 +712,7 @@ namespace UnityEditor
                 new PlatformInfo
                 {
                     displayName = "Unity Render Service for Android™",
+                    downloadLinkName = "Android",
                     buildTarget = BuildTarget.Android,
                     iconName = "BuildSettings.Android",
                     internalPackages = new PlatformPackageList

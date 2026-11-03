@@ -18,6 +18,10 @@ namespace UnityEngine.UIElements.UIR
         const int k_RightMargin = 5;
         const int k_BottomMargin = 5;
 
+        // Largest block content size whose texture (content + internal margins) stays within the GPU limit.
+        static public int maxBlockWidth => SystemInfo.maxRenderTextureSize - k_LeftMargin - k_RightMargin;
+        static public int maxBlockHeight => SystemInfo.maxRenderTextureSize - k_TopMargin - k_BottomMargin;
+
         public struct AtlasBlock
         {
             public int width;

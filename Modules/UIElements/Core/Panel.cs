@@ -924,6 +924,8 @@ namespace UnityEngine.UIElements
         private uint m_HierarchyVersion = 0;
         private uint m_LastTickedHierarchyVersion = 0;
 
+        internal bool isRepainting { get; private set; }
+
         ProfilerMarker m_MarkerPrepareRepaint;
         ProfilerMarker m_MarkerRender;
         ProfilerMarker m_MarkerValidateLayout;
@@ -1525,7 +1527,15 @@ namespace UnityEngine.UIElements
 
             using (m_MarkerPrepareRepaint.Auto())
             {
-                UpdateForRepaint();
+                isRepainting = true;
+                try
+                {
+                    UpdateForRepaint();
+                }
+                finally
+                {
+                    isRepainting = false;
+                }
             }
 
             panelDebug?.Refresh();

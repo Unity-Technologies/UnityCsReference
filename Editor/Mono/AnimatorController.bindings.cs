@@ -83,7 +83,7 @@ namespace UnityEditor.Animations
         extern internal static StateMachineBehaviourContext[] Internal_FindStateMachineBehaviourContext(ScriptableObject behaviour);
 
         [FreeFunction("AnimatorControllerBindings::Internal_CreateNewStateMachineBehaviour")]
-        extern public static EntityId CreateNewStateMachineBehaviour(MonoScript script);
+        extern public static EntityId CreateNewStateMachineBehaviour([NotNull] MonoScript script);
 
         [Obsolete("CreateStateMachineBehaviour is deprecated. Use CreateNewStateMachineBehaviour instead.", false)]
         public static int CreateStateMachineBehaviour(MonoScript script) => (int)CreateNewStateMachineBehaviour(script);

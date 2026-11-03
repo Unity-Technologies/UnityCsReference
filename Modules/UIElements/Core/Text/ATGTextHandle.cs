@@ -145,9 +145,21 @@ namespace UnityEngine.UIElements
 
         internal (TagType, string) ATGFindIntersectingLink(Vector2 point)
         {
+            return ATGFindIntersectingLink(point, out _);
+        }
 
+        /// <summary>
+        /// Same as <see cref="ATGFindIntersectingLink(Vector2)"/>, but also reports the LinkID of the
+        /// intersected link, or -1 when no link is intersected. Links with distinct attributes get
+        /// distinct LinkIDs, so callers can tell that the pointer moved from one link to another.
+        /// </summary>
+        internal (TagType, string) ATGFindIntersectingLink(Vector2 point, out int linkID)
+        {
             //This should probably be public, but it would require exposing TagType
             Debug.Assert(useAdvancedText);
+
+            linkID = -1;
+
             if (textGenerationInfo == IntPtr.Zero)
             {
                 Debug.LogError("TextGenerationInfo pointer is null.");
@@ -159,6 +171,7 @@ namespace UnityEngine.UIElements
             if (id == -1)
                 return (TagType.Unknown, null);
 
+            linkID = m_Links[id].Item1;
             return (m_Links[id].Item2,   m_Links[id].Item3);
         }
 

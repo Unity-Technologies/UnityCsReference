@@ -3054,6 +3054,9 @@
     <Compile Include="..\..\Modules\UIElements\Core\Renderer\UIRRenderTreeCompositor.cs">
       <Link>Modules\UIElements\Core\Renderer\UIRRenderTreeCompositor.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Renderer\UIRRenderTreeDensity.cs">
+      <Link>Modules\UIElements\Core\Renderer\UIRRenderTreeDensity.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\UIElements\Core\Renderer\UIRRenderTreeManager.cs">
       <Link>Modules\UIElements\Core\Renderer\UIRRenderTreeManager.cs</Link>
     </Compile>

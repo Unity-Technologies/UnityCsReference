@@ -994,7 +994,10 @@ namespace UnityEditor.Search.Providers
             var info = GetInfo(singleItem);
             if (info.gid.identifierType != (int)IdentifierType.kImportedAsset)
                 return false;
-            return info.path.EndsWith(".unity", StringComparison.OrdinalIgnoreCase);
+            if (!info.path.EndsWith(".unity", StringComparison.OrdinalIgnoreCase))
+                return false;
+            // Scenes in read-only packages cannot be opened.
+            return !Utils.IsAssetReadOnly(info.path);
         }
 
         [Shortcut("Help/Search/Assets")]
