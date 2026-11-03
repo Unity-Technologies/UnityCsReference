@@ -125,10 +125,6 @@ namespace UnityEngine.UIElements
                 transform.m22 = 1.0f; // Scaling in z means nothing for 2d ui, and break masking
         }
 
-        // On a flat panel Z is a two-valued masking channel, not geometry: UIREntryProcessor pins it to
-        // k_MeshPosZ or k_MaskPosZ and UIRRenderTreeManager projects it with only 0.001 of slack past each.
-        // A GPU-applied transform must decouple from it both ways - the row displaces geometry out of that
-        // range, the column shifts the mask off the shape it clips - leaving the 2D affine part.
         public static void NeutralizeZ(ref Matrix4x4 transform)
         {
             transform.m02 = 0.0f;
@@ -137,14 +133,6 @@ namespace UnityEngine.UIElements
             transform.m21 = 0.0f;
             transform.m22 = 1.0f;
             transform.m23 = 0.0f;
-        }
-
-        // The matrix installed as GL.modelview, by PushView or by Immediate; both must decouple from Z.
-        public static void GetViewMatrix(RenderData renderData, out Matrix4x4 transform)
-        {
-            ComputeMatrixRelativeToRenderTree(renderData, out transform);
-            if (renderData.owner.elementPanel is { isFlat: true })
-                NeutralizeZ(ref transform);
         }
 
         // Fallback for ComputeMatrixRelativeToAncestor when the ancestor's world matrix is singular

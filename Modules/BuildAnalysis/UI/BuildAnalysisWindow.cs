@@ -177,6 +177,8 @@ namespace UnityEditor.Build.Analysis
             var splitterPos = EditorPrefs.GetFloat(k_SplitterKey, 100);
             m_SplitView.fixedPaneInitialDimension = splitterPos;
 
+            // BuildHistoryWatcher only runs while the window is open, so builds added while it was closed are not cached yet.
+            m_Service.Refresh();
             RefreshBuildList();
             ApplyPendingSelection();
         }
@@ -197,7 +199,7 @@ namespace UnityEditor.Build.Analysis
             m_InspectorToggle.AddToClassList("inspector-toggle");
             tabViewport.Add(m_InspectorToggle);
 
-            m_InspectorToggle.SetValueWithoutNotify(EditorPrefs.GetBool(k_InspectorOpenKey, false));
+            m_InspectorToggle.SetValueWithoutNotify(EditorPrefs.GetBool(k_InspectorOpenKey, true));
             m_InspectorToggle.RegisterValueChangedCallback(evt =>
             {
                 EditorPrefs.SetBool(k_InspectorOpenKey, evt.newValue);
@@ -227,9 +229,7 @@ namespace UnityEditor.Build.Analysis
             m_TabHost = new BuildAnalysisTabHost(m_TabView);
             m_TabHost.Register(m_OverviewTab, new OverviewTabView());
 
-            var assetsTabView = new AssetsTabView();
-            assetsTabView.InspectorOpenRequested += () => m_InspectorToggle.value = true;
-            m_TabHost.Register(m_AssetsTab, assetsTabView);
+            m_TabHost.Register(m_AssetsTab, new AssetsTabView());
 
             // Only the Assets tab has an inspector; disable the toggle on tabs that don't.
             m_TabView.activeTabChanged += (_, activeTab) => UpdateInspectorToggleEnabled(activeTab);

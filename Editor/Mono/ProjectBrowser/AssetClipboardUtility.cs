@@ -8,6 +8,7 @@ using System.IO;
 using System.Linq;
 using System.Text.RegularExpressions;
 using UnityEditor.Build.Content;
+using UnityEditor.Utils;
 using UnityEngine;
 using UnityEngine.Internal;
 using Object = UnityEngine.Object;
@@ -146,15 +147,13 @@ namespace UnityEditor
                     if (invalidName)
                         Debug.LogWarning($"Duplicated object '{asset.name}' does not have a valid name for an asset. The new asset will be called '{newAssetName}'.");
 
-                    var newPath = AssetDatabase.GenerateUniqueAssetPath(
-                        string.Format("{0}{1}{2}.{3}",
-                            Path.GetDirectoryName(assetPath),
-                            Path.DirectorySeparatorChar,
-                            newAssetName,
-                            extension)
-                    );
+                    var newPath = string.Format("{0}{1}{2}.{3}",
+                        Path.GetDirectoryName(assetPath),
+                        Path.DirectorySeparatorChar,
+                        newAssetName,
+                        extension).ConvertSeparatorsToUnity();
 
-                    assetPath = GetValidPath(newPath, destination);
+                    assetPath = AssetDatabase.GenerateUniqueAssetPath(GetValidPath(newPath, destination));
                     AssetDatabase.CreateAsset(Object.Instantiate(asset), assetPath);
                     pastedObjects.Add(assetPath);
                 }

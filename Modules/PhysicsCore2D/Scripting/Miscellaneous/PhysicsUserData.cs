@@ -27,7 +27,7 @@ namespace Unity.U2D.Physics
 
         /// <summary>
         /// The EntityId of a Unity object.
-        /// This is the object referred to with <see cref="PhysicsUserData.objectValue"/>
+        /// This is the object referred to with <see cref="PhysicsUserData.objectValue"/>.
         /// </summary>
         public readonly EntityId objectValueId => m_EntityId;
 
@@ -47,7 +47,7 @@ namespace Unity.U2D.Physics
         public int intValue { readonly get => m_Int; set => m_Int = value; }
 
         /// <summary>
-        /// A custom 64-bit <see cref="System.Int64"/>.
+        /// A custom 64-bit <see cref="System.UInt64"/>.
         /// </summary>
         public UInt64 int64Value { readonly get => m_Int64; set => m_Int64 = value; }
 

@@ -936,6 +936,11 @@ namespace UnityEditor.UIElements
                 vta.FindElementsByNameInTemplate(templateAsset, elementNameAttr.Value, resolvedVisualElementAssetsInTemplate);
             }
 
+            // Spaces separate the names path, unless the whole value is the name of an element in the template
+            var namesPath = resolvedVisualElementAssetsInTemplate.Count > 0
+                ? new[] { elementNameAttr.Value }
+                : elementNameAttr.Value.Split();
+
             UxmlSerializedDataDescription uxmlSerializedDataDescription = null;
 
             foreach (var attribute in attributeOverridesElt.Attributes())
@@ -976,7 +981,7 @@ namespace UnityEditor.UIElements
                 {
                     m_ElementName = elementNameAttr.Value,
                     m_AttributeName = attribute.Name.LocalName,
-                    m_NamesPath = elementNameAttr.Value.Split(),
+                    m_NamesPath = namesPath,
                     m_Value = attribute.Value
                 };
 

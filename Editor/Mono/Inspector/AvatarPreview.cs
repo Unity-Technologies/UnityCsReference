@@ -45,7 +45,7 @@ namespace UnityEditor
             {
                 if (m_Selector)
                 {
-                    m_Selector.Show(null, typeof(GameObject), null, false);
+                    m_Selector.Show(m_Owner.customPreviewModel, typeof(GameObject), null, false);
                     m_Selector.objectSelectorReceiver = this;
                 }
             }
@@ -328,6 +328,19 @@ namespace UnityEditor
         static GameObject GetHumanoidFallback()
         {
             return (GameObject)EditorGUIUtility.Load("Avatar/DefaultAvatar.fbx");
+        }
+
+        // The selected preview model, or none when it is one of the built-in fallbacks rather than a user choice.
+        GameObject customPreviewModel
+        {
+            get
+            {
+                GameObject selected = AvatarPreviewSelection.GetPreview(animationClipType);
+                if (selected == GetHumanoidFallback() || selected == GetGenericAnimationFallback())
+                    return null;
+
+                return selected;
+            }
         }
 
         public void ResetPreviewInstance()
@@ -897,7 +910,7 @@ namespace UnityEditor
             );
         }
 
-        enum PreviewPopupOptions : int
+        internal enum PreviewPopupOptions : int
         {
             Auto = 0,
             DefaultModel = 1,
@@ -1143,26 +1156,27 @@ namespace UnityEditor
             set => EditorPrefs.SetInt(kDefaultAvatarPreviewOption, (int)value);
         }
 
-        void SetPreviewAvatarOption(object obj)
+        internal void SetPreviewAvatarOption(object obj)
         {
             var newSelectedOption = (PreviewPopupOptions)obj;
 
-            if (option != newSelectedOption)
-            {
-                option = newSelectedOption;
+            // Other... is an action rather than a state: re-picking it must re-open the object picker.
+            if (option == newSelectedOption && newSelectedOption != PreviewPopupOptions.Other)
+                return;
 
-                switch (option)
-                {
-                    case PreviewPopupOptions.Auto:
-                        SetPreview(null);
-                        break;
-                    case PreviewPopupOptions.DefaultModel:
-                        SetPreview(GetHumanoidFallback());
-                        break;
-                    case PreviewPopupOptions.Other:
-                        ObjectSelectorOperation.Start(this);
-                        break;
-                }
+            option = newSelectedOption;
+
+            switch (option)
+            {
+                case PreviewPopupOptions.Auto:
+                    SetPreview(null);
+                    break;
+                case PreviewPopupOptions.DefaultModel:
+                    SetPreview(GetHumanoidFallback());
+                    break;
+                case PreviewPopupOptions.Other:
+                    ObjectSelectorOperation.Start(this);
+                    break;
             }
         }
 

@@ -75,10 +75,7 @@ namespace UnityEngine.UIElements.UIR
             else
                 UIRUtility.ComputeMatrixRelativeToRenderTree(renderData, out transform);
 
-            if (renderData.owner.elementPanel is { isFlat: true })
-                UIRUtility.NeutralizeZ(ref transform);
-            else
-                transform.m22 = 1.0f;
+            transform.m22 = 1.0f;
         }
 
         static Vector4 GetClipRectIDClipInfo(RenderData renderData)
@@ -1157,6 +1154,9 @@ namespace UnityEngine.UIElements.UIR
             // Unsupported on world-space (camera-drawn) panels; and the parent owns the backdrop, so a nested-render-tree root must not (nothing behind it to capture).
             bool isEnabled = ve.hasBackdropFilter && !renderTreeManager.drawInCameras && !renderData.isNestedRenderTreeRoot;
 
+            if (isEnabled)
+                FilterHelper.WarnIfFilterParametersClamped(ve, ve.computedStyle.backdropFilter, "backdrop-filter");
+
             if (wasEnabled == isEnabled)
                 return;
 
@@ -1192,6 +1192,8 @@ namespace UnityEngine.UIElements.UIR
             // root to avoid invoking user callbacks twice per frame for the same element.
             if (renderData.isNestedRenderTreeRoot)
                 return;
+
+            FilterHelper.WarnIfFilterParametersClamped(renderData.owner, renderData.owner.computedStyle.filter, "filter");
 
             bool wasEnabled = renderData.isRegisteredForFilterCallbacks;
             bool isEnabled = renderData.owner.computedStyle.filter.Length > 0;

@@ -2,12 +2,17 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System;
+
 namespace UnityEngine.SubsystemsImplementation
 {
     public abstract class SubsystemWithProvider : ISubsystem
     {
         public void Start()
         {
+            if (m_Destroyed)
+                throw new ArgumentNullException(null, $"Cannot start {GetType().Name} because it has been destroyed. Create a new instance from its descriptor instead.");
+
             if (running)
                 return;
 
@@ -34,13 +39,17 @@ namespace UnityEngine.SubsystemsImplementation
         {
             Stop();
             if (SubsystemManager.RemoveStandaloneSubsystem(this))
+            {
+                m_Destroyed = true;
                 OnDestroy();
+            }
         }
 
         protected abstract void OnDestroy();
 
         public bool running { get; private set; }
         internal SubsystemProvider providerBase { get; set; }
+        bool m_Destroyed;
 
         internal abstract void Initialize(SubsystemDescriptorWithProvider descriptor, SubsystemProvider subsystemProvider);
         internal abstract SubsystemDescriptorWithProvider descriptor { get; }

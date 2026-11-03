@@ -30,6 +30,12 @@ namespace Unity.UI.Builder
 
         protected override VariablesListItem CreateListItem() => new BuilderInspectorVariablesListItem();
 
+        protected override void ResetAssetFieldType(BaseField<UnityEngine.Object> assetField)
+        {
+            if (assetField is MultiTypeField multiTypeField)
+                multiTypeField.SetTypePopupValueWithoutNotify(typeof(UnityEngine.Texture2D));
+        }
+
         protected override void OnStyleSheetModified()
         {
             // Force immediate style resolution to update the element's variableContext

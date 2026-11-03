@@ -868,20 +868,22 @@ namespace UnityEditor.UIElements
             if (value == null)
                 throw new ArgumentOutOfRangeException(nameof(value), "Cannot parse a null string to an AnimationCurve.");
 
-            var animationItems = value.Split('+');
-            if (animationItems.Length < 2)
+            var wrapModesSeparator = value.LastIndexOf("+(", StringComparison.Ordinal);
+            if (wrapModesSeparator < 0)
                 throw new ArgumentOutOfRangeException(nameof(value), "AnimationCurve does not have the correct format.");
 
-            var keyFrameItems = animationItems[0].Split(';');
-            if (keyFrameItems.Length <= 0)
-                throw new ArgumentOutOfRangeException(nameof(value), "AnimationCurve does not have the correct format.");
+            var keyFramesGroup = value[..wrapModesSeparator].Trim();
+            var keyFrameItems = keyFramesGroup.Length == 0 ? Array.Empty<string>() : keyFramesGroup.Split(';');
 
             using var pool = ListPool<Keyframe>.Get(out var keyFrames);
-            foreach (var item in keyFrameItems)
+            foreach (var untrimmedItem in keyFrameItems)
             {
-                var valueList = item.Trim().Substring(1, item.Length - 2); // Remove brackets
-                var keyItems = valueList.Split(',');
-                if (keyItems.Length < 8)
+                var item = untrimmedItem.Trim();
+                if (item.Length < 2 || item[0] != '{' || item[^1] != '}')
+                    throw new ArgumentOutOfRangeException(nameof(value), "AnimationCurve's KeyFrame does not have the correct format.");
+
+                var keyItems = item[1..^1].Split(',');
+                if (keyItems.Length < 10)
                     throw new ArgumentOutOfRangeException(nameof(value), "AnimationCurve's KeyFrame does not have enough values.");
 
                 var success = float.TryParse(keyItems[0], out var keyTime);
@@ -905,11 +907,13 @@ namespace UnityEditor.UIElements
                 keyFrames.Add(keyFrame);
             }
 
-            var wrapModesGroup = animationItems[1];
-            var wrapModeArray = wrapModesGroup.Substring(1, wrapModesGroup.Length - 2); // Remove parenthesis
-            var wrapModes = wrapModeArray.Split(',');
-            var parsed = Enum.TryParse<WrapMode>(wrapModes[0], out var preWrapMode);
-            parsed &= Enum.TryParse<WrapMode>(wrapModes[1], out var postWrapMode);
+            var wrapModesGroup = value[(wrapModesSeparator + 1)..].Trim();
+            var wrapModes = wrapModesGroup.EndsWith(')') ? wrapModesGroup[1..^1].Split(',') : Array.Empty<string>();
+            var preWrapMode = default(WrapMode);
+            var postWrapMode = default(WrapMode);
+            var parsed = wrapModes.Length == 2 &&
+                Enum.TryParse(wrapModes[0], out preWrapMode) &&
+                Enum.TryParse(wrapModes[1], out postWrapMode);
 
             if (!parsed)
                 throw new ArgumentOutOfRangeException(nameof(value), "AnimationCurve's wrap modes do not have the correct format.");

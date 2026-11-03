@@ -128,7 +128,7 @@ namespace Unity.U2D.Physics
 
         /// <summary>
         /// Checks if the physics handle is from the physics handle pool or not.
-        /// This will return false unless  the<see cref="PhysicsHandle"/> was explicitly created with <see cref="PhysicsHandle.Create"/> or <see cref="PhysicsHandle.CreateBatch(int, Allocator)"/>.
+        /// This will return false unless the <see cref="PhysicsHandle"/> was explicitly created with <see cref="PhysicsHandle.Create"/> or <see cref="PhysicsHandle.CreateBatch(int, Allocator)"/>.
         /// </summary>
         public readonly bool isPoolHandle => m_World0 == UInt16.MaxValue;
 
@@ -149,6 +149,13 @@ namespace Unity.U2D.Physics
         /// </summary>
         /// <param name="world">The world the returned handle should refer to.</param>
         /// <returns>A handle referring to the same slot and generation in the specified world.</returns>
-        public readonly PhysicsHandle AsWorld(PhysicsWorld world) => new(m_Index1, (UInt16)(world.index - 1), m_Generation);
+        /// <exception cref="System.ArgumentException">Thrown if <paramref name="world"/> is not valid.</exception>
+        public readonly PhysicsHandle AsWorld(PhysicsWorld world)
+        {
+            if (!world.isValid)
+                throw new ArgumentException("The world is not valid.", nameof(world));
+
+            return new(m_Index1, (UInt16)(world.index - 1), m_Generation);
+        }
     }
 }

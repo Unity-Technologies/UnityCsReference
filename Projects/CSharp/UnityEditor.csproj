@@ -12257,6 +12257,9 @@
     <Compile Include="..\..\Modules\ProjectAuditorEditor\Modules\AssetsModule.cs">
       <Link>Modules\ProjectAuditorEditor\Modules\AssetsModule.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\ProjectAuditorEditor\Modules\AssetsModuleLightmapperAnalyzer.cs">
+      <Link>Modules\ProjectAuditorEditor\Modules\AssetsModuleLightmapperAnalyzer.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\ProjectAuditorEditor\Modules\AssetsModuleResourcesAnalyzer.cs">
       <Link>Modules\ProjectAuditorEditor\Modules\AssetsModuleResourcesAnalyzer.cs</Link>
     </Compile>
@@ -17170,7 +17173,7 @@
     </PropertyGroup>
   </Target>
   <ItemGroup>
-    <Analyzer Include="/tmp/uitoolkit_gen_explvcbt/Unity.UIToolkit.SourceGenerator.dll" />
+    <Analyzer Include="/tmp/uitoolkit_gen_n89s1t9e/Unity.UIToolkit.SourceGenerator.dll" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="8.0.2" />
