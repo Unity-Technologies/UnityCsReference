@@ -29,6 +29,7 @@ namespace UnityEditor.Presets
             public static readonly GUIContent removeFromDefault = L10n.TextContent("Remove from {0} default", "All entry using this Preset will be removed from the default list.", null, null);
             public static readonly GUIContent enableProperty = L10n.TextContent("Include Property", null, null, null);
             public static readonly GUIContent disableProperty = L10n.TextContent("Exclude Property", null, null, null);
+            public static readonly GUIContent excludedByType = L10n.TextContent("Always Excluded from Presets", "The type marks this field [ExcludeFromPreset], so no Preset of this type carries it.", null, null);
 
             public const string presetEditorStyles = "StyleSheets/Preset/PresetEditor.uss";
             public static readonly string excludedUssClassName = "unity-binding--preset-ignore";
@@ -56,6 +57,7 @@ namespace UnityEditor.Presets
         string m_HeaderTitle;
 
         string[] m_ExcludedProperties;
+        string[] m_TypeExcludedProperties = Array.Empty<string>();
 
         string m_NotSupportedEditorName = null;
         Texture2D m_UnsupportedIcon = null;
@@ -284,6 +286,7 @@ namespace UnityEditor.Presets
             }
 
             m_ExcludedProperties = first.excludedProperties;
+            m_TypeExcludedProperties = first.GetTypeExcludedProperties();
 
             //TODO: Bind VisualElement root of the second editor to a callback, see last TODO inside CreateInspectorGUI
             BindingsStyleHelpers.updateBindingStateStyle += UpdatePropertyStyle;
@@ -457,8 +460,48 @@ namespace UnityEditor.Presets
             Both = Included | Excluded
         }
 
+        // "items.Array.data[0].secret" -> "items.Array.data.secret", to match the index-free TypeTree
+        // paths from GetTypeExcludedProperties. Preset.cpp compares them the same way.
+        static string WithoutArrayIndices(string propertyPath)
+        {
+            if (propertyPath.IndexOf('[') < 0)
+                return propertyPath;
+
+            var stripped = new System.Text.StringBuilder(propertyPath.Length);
+            var insideIndex = false;
+            foreach (var c in propertyPath)
+            {
+                if (c == '[')
+                    insideIndex = true;
+                else if (c == ']')
+                    insideIndex = false;
+                else if (!insideIndex)
+                    stripped.Append(c);
+            }
+            return stripped.ToString();
+        }
+
+        // Reading the first target is enough: OnEnable only builds the inner editor when all targets share a type.
+        bool IsExcludedByType(string propertyPath)
+        {
+            var path = WithoutArrayIndices(propertyPath);
+            return Array.Exists(m_TypeExcludedProperties, p => p == path || path.StartsWith(p + ".", StringComparison.Ordinal));
+        }
+
+        bool HasChildExcludedByType(string propertyPath)
+        {
+            var prefix = WithoutArrayIndices(propertyPath) + ".";
+            return Array.Exists(m_TypeExcludedProperties, p => p.StartsWith(prefix, StringComparison.Ordinal));
+        }
+
         PropertyState GetPropertyState(string propertyPath, bool checkChildren = false)
         {
+            // Type-level exclusion wins over each Preset's excludedProperties.
+            if (IsExcludedByType(propertyPath))
+                return PropertyState.Excluded;
+            if (checkChildren && HasChildExcludedByType(propertyPath))
+                return PropertyState.Both;
+
             PropertyState state = PropertyState.None;
             // we can have an early exit when state reach PropertyState.Both
             for (var index = 0; index < targets.Length && state != PropertyState.Both; index++)
@@ -744,6 +787,14 @@ namespace UnityEditor.Presets
                 return;
 
             var propertyPath = property.propertyPath;
+
+            // "Include" would show the field as included while the type still keeps it out of the Preset.
+            if (IsExcludedByType(propertyPath))
+            {
+                menu.AddDisabledItem(Style.excludedByType);
+                return;
+            }
+
             var state = GetPropertyState(propertyPath, true);
             if ((state & PropertyState.Included) == PropertyState.Included)
             {

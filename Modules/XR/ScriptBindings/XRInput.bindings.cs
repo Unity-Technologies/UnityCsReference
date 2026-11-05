@@ -260,6 +260,7 @@ namespace UnityEngine.XR
         }
 
         ///<summary>Returns the generic version of this type for retrieving a feature value from a device.</summary>
+        ///<returns>The generic version of this usage, for retrieving a feature value of type `T`.</returns>
         public InputFeatureUsage<T> As<T>()
         {
             if (type != typeof(T))
@@ -311,6 +312,7 @@ namespace UnityEngine.XR
         private Type usageType { get { return typeof(T); } }
         ///<summary>Converts a generic InputFeatureUsage&lt;T&gt; into an InputFeatureUsage.</summary>
         ///<param name="self">The generic <see cref="InputFeatureUsage{T}" /> to convert into an <see cref="InputFeatureUsage" />.</param>
+        ///<returns>The non-generic equivalent of the given InputFeatureUsage&lt;T&gt;.</returns>
         public static explicit operator InputFeatureUsage(InputFeatureUsage<T> self)
         {
             InputFeatureType featureType = InputFeatureType.kUnityXRInputFeatureTypeInvalid;
@@ -794,6 +796,11 @@ namespace UnityEngine.XR
             return false;
         }
 
+        ///<summary>Obtains the value of a custom input feature as raw bytes.</summary>
+        ///<remarks>Use this overload to read an input feature that a provider exposes as custom data. To find these features, call <see cref="InputDevice.TryGetFeatureUsages" /> and look for usages whose `type` property is `byte[]`. The method copies the feature data into the array that you pass in, so allocate the array before you call the method. Size the array to fit the feature data, which the provider defines. Not every device supports every feature. If the array is too small, the method copies only the bytes that fit and still returns `true`.</remarks>
+        ///<param name="usage">The usage that identifies the input feature to read.</param>
+        ///<param name="value">The byte array that the method fills with the feature data.</param>
+        ///<returns>True if the method retrieves the feature data. Otherwise, false.</returns>
         public bool TryGetFeatureValue(InputFeatureUsage<byte[]> usage, byte[] value)
         {
             if (IsValidId())
@@ -1098,6 +1105,7 @@ namespace UnityEngine.XR
         internal UInt32 featureIndex { get { return m_FeatureIndex; } }
 
         ///<summary>Gets the Vector3 that describes the position of the left eye.</summary>
+        ///<param name="position">A Vector3 struct that is filled in with the left eye position.</param>
         ///<returns>true if eyes can be queried for the left eye position; otherwise false.</returns>
         public bool TryGetLeftEyePosition(out Vector3 position)
         {
@@ -1105,6 +1113,7 @@ namespace UnityEngine.XR
         }
 
         ///<summary>Gets the Vector3 that describes the position of the right eye.</summary>
+        ///<param name="position">A Vector3 struct that is filled in with the right eye position.</param>
         ///<returns>true if eyes can be queried for the right eye position; otherwise false.</returns>
         public bool TryGetRightEyePosition(out Vector3 position)
         {
@@ -1112,6 +1121,7 @@ namespace UnityEngine.XR
         }
 
         ///<summary>Gets the Quaternion that describes the rotation of the left eye.</summary>
+        ///<param name="rotation">A Quaternion struct that is filled in with the left eye rotation.</param>
         ///<returns>true if eyes can be queried for the left eye rotation; otherwise false.</returns>
         public bool TryGetLeftEyeRotation(out Quaternion rotation)
         {
@@ -1119,6 +1129,7 @@ namespace UnityEngine.XR
         }
 
         ///<summary>Gets the Quaternion that describes the rotation of the right eye.</summary>
+        ///<param name="rotation">A Quaternion struct that is filled in with the right eye rotation.</param>
         ///<returns>true if eyes can be queried for the right eye rotation; otherwise false.</returns>
         public bool TryGetRightEyeRotation(out Quaternion rotation)
         {
@@ -1139,6 +1150,7 @@ namespace UnityEngine.XR
         private static extern bool Eyes_TryGetFixationPoint(Eyes eyes, out Vector3 fixationPoint);
 
         ///<summary>Gets a value that represents the how far the left eye is open.</summary>
+        ///<param name="openAmount">A value that is filled in with the amount that the left eye is open.</param>
         ///<returns>true if eyes can be queried for the amount that the left eye is open; otherwise false.</returns>
         public bool TryGetLeftEyeOpenAmount(out float openAmount)
         {
@@ -1146,6 +1158,7 @@ namespace UnityEngine.XR
         }
 
         ///<summary>Gets a value that represents the how far the right eye is open.</summary>
+        ///<param name="openAmount">A value that is filled in with the amount that the right eye is open.</param>
         ///<returns>true if eyes can be queried for the amount that the right eye is open; otherwise false.</returns>
         public bool TryGetRightEyeOpenAmount(out float openAmount)
         {

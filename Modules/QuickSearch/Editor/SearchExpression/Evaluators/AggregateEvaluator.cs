@@ -58,6 +58,12 @@ namespace UnityEditor.Search
             var itemScore = 0;
             foreach (var item in initialSet)
             {
+                if (item == null)
+                {
+                    yield return null;
+                    continue;
+                }
+
                 if (yieldedItems.Add(item) && keep)
                 {
                     if (setField)
@@ -80,6 +86,12 @@ namespace UnityEditor.Search
                     {
                         foreach (var itemInBatch in templateQuery.Execute(c))
                         {
+                            if (itemInBatch == null)
+                            {
+                                yield return null;
+                                continue;
+                            }
+
                             if (!yieldedItems.Add(itemInBatch))
                                 continue;
                             currentBatchOfItems.Add(itemInBatch);

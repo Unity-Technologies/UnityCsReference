@@ -72,9 +72,11 @@ namespace UnityEditor.PackageManager.UI.Internal
             private readonly IPackageDatabase m_PackageDatabase;
             private readonly IPage m_Page;
             private readonly PageFilters m_Filters;
-            public Content(IResourceLoader resourceLoader, IPackageDatabase packageDatabase, IPage page)
+            private readonly IDateTimeProxy m_DateTimeProxy;
+            public Content(IResourceLoader resourceLoader, IPackageDatabase packageDatabase, IPage page, IDateTimeProxy dateTimeProxy)
             {
                 m_PackageDatabase = packageDatabase;
+                m_DateTimeProxy = dateTimeProxy;
 
                 name = "mainContainer";
                 m_Page = page;
@@ -204,7 +206,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
                 // We added a delay before we actually trigger the filter change event so we don't repeatedly send too many events
                 // when the user quickly changes multiple filter properties in the dropdown
-                m_FilterChangedEventTriggerTimestamp = DateTime.Now.Ticks + k_DelayTicks;
+                m_FilterChangedEventTriggerTimestamp = m_DateTimeProxy.utcNow.Ticks + k_DelayTicks;
                 EditorApplication.update += DelayedUpdatePageFilters;
             }
 
@@ -249,7 +251,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
             private void DelayedUpdatePageFilters()
             {
-                if (DateTime.Now.Ticks <= m_FilterChangedEventTriggerTimestamp)
+                if (m_DateTimeProxy.utcNow.Ticks <= m_FilterChangedEventTriggerTimestamp)
                     return;
                 EditorApplication.update -= DelayedUpdatePageFilters;
                 onFiltersChanged?.Invoke(m_Filters);
@@ -306,7 +308,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                 m_Content.onSizeChanged -= HandleContentSizeChange;
                 m_Content.OnDisable();
             }
-            s_LastClosedTime = DateTime.Now.Ticks / TimeSpan.TicksPerMillisecond;
+            s_LastClosedTime = ServicesContainer.instance.Resolve<IDateTimeProxy>().utcNow.Ticks / TimeSpan.TicksPerMillisecond;
             s_Window = null;
         }
 
@@ -338,7 +340,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             if (s_Window is not null || content == null)
                 return false;
 
-            var nowMilliSeconds = DateTime.Now.Ticks / TimeSpan.TicksPerMillisecond;
+            var nowMilliSeconds = ServicesContainer.instance.Resolve<IDateTimeProxy>().utcNow.Ticks / TimeSpan.TicksPerMillisecond;
             var justClosed = nowMilliSeconds < s_LastClosedTime + 150;
 
             if (!justClosed)

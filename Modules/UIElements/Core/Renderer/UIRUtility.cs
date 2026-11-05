@@ -156,6 +156,14 @@ namespace UnityEngine.UIElements
             transform.m23 = 0.0f;
         }
 
+        // Immediate callbacks draw with their own shaders, so on a flat panel Z is removed here before the panel's thin depth range clips it.
+        public static void GetImmediateViewMatrix(RenderData renderData, out Matrix4x4 transform)
+        {
+            ComputeMatrixRelativeToRenderTree(renderData, out transform);
+            if (renderData.owner.elementPanel is { isFlat: true })
+                NeutralizeZ(ref transform);
+        }
+
         // Fallback for ComputeMatrixRelativeToAncestor when the ancestor's world matrix is singular
         // (VisualElement.isWorldTransformSingular): composes local matrices instead of multiplying by an inverse. UUM-4171.
         internal static void ComputeTransformMatrix(RenderData renderData, RenderData ancestor, out Matrix4x4 result)

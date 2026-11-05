@@ -107,7 +107,7 @@ sealed partial class VisualElementAttributesInspectorElement : VisualElement
 
         m_AttributesView = new UxmlAttributesView();
         m_AttributesView.Context = new UxmlAttributesEditingContext(new UxmlAttributesEditingController());
-        m_AttributesView.Context.editingController.UnregisterCommandHandlers();
+        m_AttributesView.Context.editingController.StopListening();
         m_AttributesView.ContextChanged += OnContextChanged;
         Add(m_AttributesView);
     }
@@ -131,7 +131,7 @@ sealed partial class VisualElementAttributesInspectorElement : VisualElement
     // Handlers only while shown, so an undisposed dropped inspector is not kept alive by the static command queue
     void OnAttachToPanel()
     {
-        m_AttributesView.Context.editingController.RegisterCommandHandlers();
+        m_AttributesView.Context.editingController.StartListening();
         m_AttributesView.Context.editingController.ClearContextIfElementRemoved();
         BindingsStyleHelpers.HandleRightClickMenu += HandleRightClickMenu;
 
@@ -145,7 +145,7 @@ sealed partial class VisualElementAttributesInspectorElement : VisualElement
 
     void OnDetachFromPanel()
     {
-        m_AttributesView.Context.editingController.UnregisterCommandHandlers();
+        m_AttributesView.Context.editingController.StopListening();
         BindingsStyleHelpers.HandleRightClickMenu -= HandleRightClickMenu;
 
         if (m_NotEditableLabel == null)

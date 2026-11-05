@@ -30,6 +30,7 @@ namespace UnityEditor.Search
         // deterministic owner, so we dispose them in ResetEditors (main thread) instead of
         // leaking them to a finalizer that can never run (their native peer keeps them alive).
         private readonly List<SearchServiceItem> m_OwnedServiceItems = new List<SearchServiceItem>();
+        private readonly List<GameObject> m_InspectedGameObjects = new List<GameObject>();
         private Action m_RefreshOff;
         private IVisualElementScheduledItem m_PreviewImageRefreshCallback;
         private IVisualElementScheduledItem m_ActionsRefreshCallback;
@@ -100,6 +101,7 @@ namespace UnityEditor.Search
             On(SearchEvent.RefreshContent, OnRefreshed);
             On(SearchEvent.SelectionHasChanged, OnSelectionChanged);
             RegisterCallback<GeometryChangedEvent>(OnPreviewSizeChanged);
+            ObjectChangeEvents.changesPublished += OnObjectChangesPublished;
 
             Refresh();
         }
@@ -107,6 +109,7 @@ namespace UnityEditor.Search
         protected override void OnDetachFromPanel(DetachFromPanelEvent evt)
         {
             UnregisterCallback<GeometryChangedEvent>(OnPreviewSizeChanged);
+            ObjectChangeEvents.changesPublished -= OnObjectChangesPublished;
 
             Off(SearchEvent.RefreshContent, OnRefreshed);
             Off(SearchEvent.SelectionHasChanged, OnSelectionChanged);
@@ -511,7 +514,7 @@ namespace UnityEditor.Search
             foreach (var s in selection)
                 selectionHash ^= s.id.GetHashCode();
 
-            if (selectionHash == m_EditorsHash)
+            if (selectionHash == m_EditorsHash && AreEditorsValid())
                 return false;
 
             ResetEditors();
@@ -557,6 +560,95 @@ namespace UnityEditor.Search
             return true;
         }
 
+        private bool AreEditorsValid()
+        {
+            if (m_Editors == null)
+                return true;
+
+            foreach (var e in m_Editors)
+            {
+                if (!e)
+                    return false;
+
+                foreach (var t in e.targets)
+                {
+                    if (!t)
+                        return false;
+                }
+            }
+
+            return true;
+        }
+
+        private void OnObjectChangesPublished(ref ObjectChangeEventStream stream)
+        {
+            if (m_Editors == null || m_InspectedGameObjects.Count == 0)
+                return;
+
+            var inspectedComponentsChanged = false;
+            for (int i = 0; i < stream.length && !inspectedComponentsChanged; ++i)
+            {
+                switch (stream.GetEventType(i))
+                {
+                    case ObjectChangeKind.ChangeGameObjectStructureHierarchy:
+                    {
+                        stream.GetChangeGameObjectStructureHierarchyEvent(i, out var e);
+                        inspectedComponentsChanged = IsInspectingComponentsOf(e.entityId, includeChildren: true);
+                        break;
+                    }
+
+                    case ObjectChangeKind.ChangeGameObjectStructure:
+                    {
+                        stream.GetChangeGameObjectStructureEvent(i, out var e);
+                        inspectedComponentsChanged = IsInspectingComponentsOf(e.entityId, includeChildren: false);
+                        break;
+                    }
+
+                    case ObjectChangeKind.ChangeGameObjectOrComponentProperties:
+                    {
+                        stream.GetChangeGameObjectOrComponentPropertiesEvent(i, out var e);
+                        inspectedComponentsChanged = IsInspectingComponentsOf(e.entityId, includeChildren: false);
+                        break;
+                    }
+
+                    case ObjectChangeKind.UpdatePrefabInstances:
+                    {
+                        stream.GetUpdatePrefabInstancesEvent(i, out var e);
+                        for (int idIndex = 0; idIndex < e.entityIds.Length && !inspectedComponentsChanged; ++idIndex)
+                            inspectedComponentsChanged = IsInspectingComponentsOf(e.entityIds[idIndex], includeChildren: true);
+                        break;
+                    }
+                }
+            }
+
+            if (!inspectedComponentsChanged)
+                return;
+
+            ResetEditors();
+            Refresh();
+        }
+
+        private bool IsInspectingComponentsOf(EntityId gameObjectId, bool includeChildren)
+        {
+            var changedGameObject = UnityEngine.Object.FindObjectFromInstanceID(gameObjectId) as GameObject;
+            if (!changedGameObject)
+                return false;
+
+            var changedTransform = changedGameObject.transform;
+            // Match against the selected GameObjects rather than the editors' targets, because grouping by component type can leave a selected object with no shown editor.
+            foreach (var inspectedGameObject in m_InspectedGameObjects)
+            {
+                if (!inspectedGameObject)
+                    continue;
+
+                var inspectedTransform = inspectedGameObject.transform;
+                if (includeChildren ? inspectedTransform.IsChildOf(changedTransform) : inspectedTransform == changedTransform)
+                    return true;
+            }
+
+            return false;
+        }
+
         private void ResetEditors()
         {
             if (m_Editors != null)
@@ -566,6 +658,7 @@ namespace UnityEditor.Search
             }
             m_Editors = null;
             m_EditorsHash = 0;
+            m_InspectedGameObjects.Clear();
 
             // Dispose the SearchServiceItems we materialized as targets (after the editors
             // that referenced them are gone). Disposal destroys them on the main thread and
@@ -588,6 +681,7 @@ namespace UnityEditor.Search
 
             if (itemObject is GameObject go)
             {
+                m_InspectedGameObjects.Add(go);
                 var components = go.GetComponents<Component>();
                 foreach (var c in components)
                 {

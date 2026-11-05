@@ -89,8 +89,8 @@ namespace UnityEditor
         static readonly string k_SDKPlatformVariantUnsupportedGuidError = L10n.Tr("SDK platform '{0}' has a preconfigured settings variant '{1}' with platform GUID '{2}' which is not one of the platform's supported platform guids.", null);
         static readonly string k_SDKPlatformInvalidPlatformTypeError = L10n.Tr("SDK platform '{0}' has an invalid platform type.", null);
         static readonly string k_SDKPlatformMissingDisplayNameWarning = L10n.Tr("SDK platform '{0}' is missing a display name.", null);
-        static readonly string k_SDKPlatformMissingPlatformGroupWarning = L10n.Tr("SDK platform '{0}' does not reference any platform group. The platform was registered but will not appear in any group.", null);
-        static readonly string k_SDKPlatformUnknownPlatformGroupWarning = L10n.Tr("SDK platform '{0}' references unknown platform group '{1}'. The platform was registered but will not appear in any group.", null);
+        static readonly string k_SDKPlatformMissingPlatformGroupWarning = L10n.Tr("SDK platform '{0}' does not reference any valid platform group. The platform was registered but will not appear in any group.", null);
+        static readonly string k_SDKPlatformUnknownPlatformGroupWarning = L10n.Tr("SDK platform '{0}' references unknown platform groups: {1}. The platform was registered but will not appear in those groups.", null);
         internal static readonly string k_SDKProviderMissingPlatformInfoError = L10n.Tr("The SDK platform provider '{0}' does not reference a valid platform.", null);
         static readonly string k_CreateIPlatformProviderFailedError = L10n.Tr("Failed to create IPlatformProvider instance for type '{0}'.", null);
         static readonly string k_PlatformDeprecatedDefaultWithDisplayName = L10n.Tr("The {0} platform is deprecated.", null);
@@ -1256,28 +1256,30 @@ namespace UnityEditor
                 };
                 allPlatforms.Add(sdkPlatformGuid, platformInfo);
 
-                var targetGroupName = sdkPlatformInfo.platformGroupName;
-                if (string.IsNullOrEmpty(targetGroupName))
+                var targetGroupNames = new List<string>(sdkPlatformInfo.platformGroupNames ?? Array.Empty<string>());
+                targetGroupNames.Add(sdkPlatformInfo.platformGroupName);
+
+                var visitedGroupNames = new HashSet<string>();
+                var unknownGroupNames = new List<string>();
+                foreach (var targetGroupName in targetGroupNames)
                 {
+                    if (string.IsNullOrEmpty(targetGroupName) || !visitedGroupNames.Add(targetGroupName))
+                        continue;
+
+                    // SDK platform JSON typically stores the English group identifier (e.g. "Web") while
+                    // allPlatformGroups use localized titles.
+                    var localizedGroupName = L10n.Tr(targetGroupName, null);
+                    var groupIndex = Array.FindIndex(allPlatformGroups, g => g.groupName == targetGroupName || g.groupName == localizedGroupName);
+                    if (groupIndex < 0)
+                        unknownGroupNames.Add($"'{targetGroupName}'");
+                    else if (Array.IndexOf(allPlatformGroups[groupIndex].platforms, sdkPlatformGuid) < 0)
+                        ArrayUtility.Add(ref allPlatformGroups[groupIndex].platforms, sdkPlatformGuid);
+                }
+
+                if (unknownGroupNames.Count > 0)
+                    Debug.LogWarning(string.Format(k_SDKPlatformUnknownPlatformGroupWarning, sdkPlatformGuid, string.Join(", ", unknownGroupNames)));
+                if (unknownGroupNames.Count == visitedGroupNames.Count)
                     Debug.LogWarning(string.Format(k_SDKPlatformMissingPlatformGroupWarning, sdkPlatformGuid));
-                    continue;
-                }
-
-                var groupIndex = Array.FindIndex(allPlatformGroups, g => g.groupName == targetGroupName);
-                // SDK platform JSON typically stores the English group identifier (e.g. "Web") while
-                // allPlatformGroups use localized titles. Without this fallback the
-                // platform is registered in allPlatforms but never added to a browser group.
-                if (groupIndex < 0)
-                    groupIndex = Array.FindIndex(allPlatformGroups, g => g.groupName == L10n.Tr(targetGroupName, null));
-                if (groupIndex < 0)
-                {
-                    Debug.LogWarning(string.Format(k_SDKPlatformUnknownPlatformGroupWarning, sdkPlatformGuid, targetGroupName));
-                    continue;
-                }
-
-                var platformsList = new List<GUID>(allPlatformGroups[groupIndex].platforms);
-                platformsList.Add(sdkPlatformGuid);
-                allPlatformGroups[groupIndex].platforms = platformsList.ToArray();
             }
         }
 

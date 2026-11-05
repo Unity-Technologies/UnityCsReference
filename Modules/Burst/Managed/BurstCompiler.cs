@@ -515,6 +515,14 @@ namespace Unity.Burst
         [VisibleToOtherModules("UnityEditor.BurstModule")]
         internal static void SetDefaultOptions()
         {
+            var usePrecompiledLibraries = Options.EnableBurstSafetyChecks && !Options.ForceEnableBurstSafetyChecks && Options.JitFloatMode == FloatMode.Default;
+            Unity.Burst.LowLevel.BurstCompilerService.UsePrecompiledLibraries = usePrecompiledLibraries;
+            if (!usePrecompiledLibraries)
+            {
+                // Make sure these modules are JIT'ed instead.
+                foreach (var moduleName in Unity.Burst.LowLevel.BurstCompilerService.PrecompiledModuleNames)
+                    NotifyAssemblyCompilationNotRequired(moduleName);
+            }
             SendCommandToCompiler(BurstCompilerOptions.CompilerCommandSetDefaultOptions, Options.GetCompilerClientDefaultOptions());
         }
 

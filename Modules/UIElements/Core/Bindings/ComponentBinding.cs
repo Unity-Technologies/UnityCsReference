@@ -152,7 +152,7 @@ namespace UnityEngine.UIElements
         {
             // ref into the live component data in the type's per-type store.
             ref var component = ref element.GetComponent<T>();
-            var didSet = group.TrySetValue(ref component, subPath, value, out returnCode);
+            var didSet = ConverterGroup.TrySetValue(group, ref component, subPath, value, out returnCode);
 
             // A binding writes the field directly (bypassing the generated notifying setters), so flag the
             // change ourselves: this lets [OnComponentChanged] fire for binding-driven updates, the same way

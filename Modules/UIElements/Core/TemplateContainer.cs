@@ -30,7 +30,7 @@ namespace UnityEngine.UIElements
 
         [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
         [Serializable]
-        internal class TemplateUXML
+        internal struct TemplateUXML
         {
             public VisualTreeAsset templateAsset;
             public string templateId;

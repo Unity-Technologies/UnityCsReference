@@ -213,6 +213,7 @@ namespace UnityEditor.StyleSheets
             {
                 case ImagePosition.ImageAbove: return "image-above";
                 case ImagePosition.ImageLeft: return "image-left";
+                case ImagePosition.ImageUpperLeft: return "image-upper-left";
                 case ImagePosition.ImageOnly: return "image-only";
                 case ImagePosition.TextOnly: return "text-only";
             }
@@ -225,6 +226,7 @@ namespace UnityEditor.StyleSheets
             {
                 case "image-above": return ImagePosition.ImageAbove;
                 case "image-left": return ImagePosition.ImageLeft;
+                case "image-upper-left": return ImagePosition.ImageUpperLeft;
                 case "image-only": return ImagePosition.ImageOnly;
                 case "text-only": return ImagePosition.TextOnly;
             }

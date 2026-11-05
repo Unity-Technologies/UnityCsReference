@@ -105,12 +105,18 @@ namespace UnityEngine.UIElements
                         var indexOfValue = 0;
                         if (userChoicesMasks != null)
                         {
-                            foreach (int itemMask in userChoicesMasks)
+                            // A choice for this exact bit wins over an earlier combined mask that contains it.
+                            indexOfValue = userChoicesMasks.IndexOf(itemIndex);
+                            if (indexOfValue < 0)
                             {
-                                if (itemMask != ~0 && ((itemMask & itemIndex) == itemIndex))
+                                indexOfValue = 0;
+                                foreach (int itemMask in userChoicesMasks)
                                 {
-                                    indexOfValue = userChoicesMasks.IndexOf(itemMask);
-                                    break;
+                                    if (itemMask != ~0 && ((itemMask & itemIndex) == itemIndex))
+                                    {
+                                        indexOfValue = userChoicesMasks.IndexOf(itemMask);
+                                        break;
+                                    }
                                 }
                             }
                         }
@@ -139,7 +145,10 @@ namespace UnityEngine.UIElements
                                 if (itemMask == itemIndex)
                                 {
                                     var index = i + totalIndex;
-                                    newValueToShowUser = choices[index];
+                                    if (index < choices.Count)
+                                    {
+                                        newValueToShowUser = choices[index];
+                                    }
                                     break;
                                 }
                             }

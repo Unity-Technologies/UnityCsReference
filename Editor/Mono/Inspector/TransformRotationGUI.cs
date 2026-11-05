@@ -102,6 +102,9 @@ namespace UnityEditor
                 EditorGUI.indentLevel = 0;
                 SerializedProperty rotation = m_Rotation.Copy();
 
+                var previousCompositeStyling = EditorGUI.useCompositeStyling;
+                EditorGUI.useCompositeStyling = true;
+
                 for (int i = 0; i < m_EulerFloats.Length; i++)
                 {
                     rotation.Next(true);
@@ -133,6 +136,7 @@ namespace UnityEditor
 
                     EditorGUI.EndProperty();
                 }
+                EditorGUI.useCompositeStyling = previousCompositeStyling;
                 EditorGUIUtility.labelWidth = prevWidth;
                 EditorGUI.indentLevel = prevIndent;
             }

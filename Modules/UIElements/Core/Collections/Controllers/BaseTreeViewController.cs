@@ -98,7 +98,7 @@ namespace UnityEngine.UIElements
         /// <summary>
         /// Destructor for a BaseTreeViewController
         /// </summary>
-#pragma warning disable UA5000 // The Avoid Finalizer Analyzer produces compile errors for any new finalizers. This pre-existing finalizer declaration has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA5000 // Frees the native Hierarchy; views can be dropped without replacing the controller, so the finalizer is the safety net.
         ~BaseTreeViewController()
         {
             DisposeHierarchy();

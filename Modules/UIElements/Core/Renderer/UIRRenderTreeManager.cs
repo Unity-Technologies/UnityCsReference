@@ -427,6 +427,9 @@ namespace UnityEngine.UIElements.UIR
         RenderStatsSnapshot m_StatsSnapshot;
         internal RenderStatsSnapshot statsSnapshot => m_StatsSnapshot;
 
+        // Latched from panel.skipRendering at the start of each update so that the update and the render of a frame agree.
+        internal bool isRenderingSkipped { get; private set; }
+
         RenderTree m_RootRenderTree;
         internal RenderTree rootRenderTree
         {
@@ -454,6 +457,7 @@ namespace UnityEngine.UIElements.UIR
         {
             using (k_MarkerProcess.Auto())
             {
+                isRenderingSkipped = panel.skipRendering;
 
                 m_Stats = new ChainBuilderStats();
 
@@ -510,7 +514,10 @@ namespace UnityEngine.UIElements.UIR
                 // flushes to memory, and for compatibility with render passes. For now, we render them as part of the
                 // update. In the future though, we should render them just before any rendering to the target of the root
                 // render tree starts. This would allow to keep GPU memory usage to a minimum.
-                RenderNestedTrees();
+                if (!isRenderingSkipped)
+                    RenderNestedTrees();
+                else
+                    m_Compositor.CallNestedImmediateModeElements();
 
                 if (drawInCameras)
                     SerializeRootTreeCommands();
@@ -569,26 +576,42 @@ namespace UnityEngine.UIElements.UIR
         {
             Debug.Assert(!drawInCameras);
 
-            m_ShaderInfoUpdateGuard.OnRender();
-
-            PanelClearSettings clearSettings = panel.clearSettings;
-            if (clearSettings.clearColor || clearSettings.clearDepthStencil)
+            if (isRenderingSkipped)
             {
-                // Case 1277149: Clear color must be pre-multiplied like when we render.
-                Color clearColor = clearSettings.color;
-                clearColor = clearColor.RGBMultiplied(clearColor.a);
-
-                GL.Clear(clearSettings.clearDepthStencil, // Clearing may impact MVP
-                    clearSettings.clearColor, clearColor, UIRUtility.k_ClearZ);
+                CallImmediateModeElements();
             }
+            else
+            {
+                m_ShaderInfoUpdateGuard.OnRender();
 
-            RenderSingleTree(m_RootRenderTree, null, RectInt.zero, Rect.zero);
+                PanelClearSettings clearSettings = panel.clearSettings;
+                if (clearSettings.clearColor || clearSettings.clearDepthStencil)
+                {
+                    // Case 1277149: Clear color must be pre-multiplied like when we render.
+                    Color clearColor = clearSettings.color;
+                    clearColor = clearColor.RGBMultiplied(clearColor.a);
+
+                    GL.Clear(clearSettings.clearDepthStencil, // Clearing may impact MVP
+                        clearSettings.clearColor, clearColor, UIRUtility.k_ClearZ);
+                }
+
+                RenderSingleTree(m_RootRenderTree, null, RectInt.zero, Rect.zero);
+            }
 
             // m_Stats is still intact here (it is only reset by the next ProcessChanges), and the
             // draw stats were just filled: the captured pair describes this exact frame.
             // panelDebug itself exists on every editor panel; only attached debuggers matter.
             if (panel.panelDebug?.hasAttachedDebuggers == true)
                 (m_StatsSnapshot ??= new RenderStatsSnapshot()).Capture(in m_Stats, device);
+        }
+
+        // Calls the root tree's immediate callbacks without rendering; nested trees are handled by the update, as when rendering.
+        void CallImmediateModeElements()
+        {
+            if (m_RootRenderTree == null)
+                return;
+
+            UIRenderDevice.CallImmediateCommands(m_RootRenderTree.firstCommand, panel.visualTree.layout);
         }
 
         void RenderNestedTrees()
@@ -752,6 +775,7 @@ namespace UnityEngine.UIElements.UIR
             if (m_BlockDirtyRegistration)
                 throw new InvalidOperationException("VisualElements cannot be removed from an active visual tree during generateVisualContent callback execution nor during visual tree rendering");
 
+            MarkRenderedBoundsDirty(ve);
             m_StatsElementsRemoved += RenderEvents.DepthFirstOnElementRemoving(this, ve);
 
 
@@ -804,8 +828,17 @@ namespace UnityEngine.UIElements.UIR
             }
         }
 
+        // See RenderTree.m_RenderedBounds
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        static void MarkRenderedBoundsDirty(VisualElement ve)
+        {
+            ve.renderData?.renderTree.MarkRenderedBoundsDirty();
+            ve.nestedRenderData?.renderTree.MarkRenderedBoundsDirty();
+        }
+
         public void UIEOnClippingChanged(VisualElement ve, bool hierarchical)
         {
+            MarkRenderedBoundsDirty(ve);
             RegisterDirty(ve, RenderDataDirtyTypes.Clipping | (hierarchical ? RenderDataDirtyTypes.ClippingHierarchy : 0), RenderDataDirtyTypeClasses.Clipping);
         }
 
@@ -824,11 +857,13 @@ namespace UnityEngine.UIElements.UIR
             RenderDataDirtyTypes flags =
                 (transformChanged ? RenderDataDirtyTypes.Transform : RenderDataDirtyTypes.None) |
                 (clipRectSizeChanged ? RenderDataDirtyTypes.ClipRectSize : RenderDataDirtyTypes.None);
+            MarkRenderedBoundsDirty(ve);
             RegisterDirty(ve, flags, RenderDataDirtyTypeClasses.TransformSize);
         }
 
         public void UIEOnVisualsChanged(VisualElement ve, bool hierarchical)
         {
+            MarkRenderedBoundsDirty(ve);
             RegisterDirty(ve, RenderDataDirtyTypes.Visuals | (hierarchical ? RenderDataDirtyTypes.VisualsHierarchy : 0), RenderDataDirtyTypeClasses.Visuals);
         }
 
@@ -876,7 +911,57 @@ namespace UnityEngine.UIElements.UIR
                 if (m_BlockDirtyRegistration)
                     throw new InvalidOperationException("VisualElements cannot change their display style during generateVisualContent callback execution nor during visual tree rendering");
 
+                MarkRenderedBoundsDirty(ve);
                 CommandManipulator.DisableElementRendering(this , ve, ve.disableRendering);
+            }
+        }
+
+        // Promoted z-index descendants draw outside the element's command range, so its Begin/EndDisable does not cover them.
+        public void UIEOnPromotedDescendantsDisableRenderingChanged(VisualElement ve)
+        {
+            if (!hasZIndex || !MayHavePromotedDescendants(ve))
+                return;
+
+            if (m_BlockDirtyRegistration)
+                throw new InvalidOperationException("VisualElements cannot change their display style during generateVisualContent callback execution nor during visual tree rendering");
+
+            SyncPromotedDescendantsDisableRendering(ve, IsDisplayedFromStyles(ve));
+        }
+
+        // Called while display state propagates, so areAncestorsAndSelfDisplayed may still be stale.
+        static bool IsDisplayedFromStyles(VisualElement ve)
+        {
+            for (var current = ve; current != null; current = current.hierarchy.parent)
+            {
+                if (current.computedStyle.display == DisplayStyle.None)
+                    return false;
+            }
+
+            return true;
+        }
+
+        // A z-index or nested render tree element is a stacking context root, so its descendants stay in its command range.
+        static bool MayHavePromotedDescendants(VisualElement ve)
+        {
+            return ve.renderData != null && ve.renderData.zIndex == int.MinValue && ve.nestedRenderData == null;
+        }
+
+        void SyncPromotedDescendantsDisableRendering(VisualElement ve, bool isDisplayed)
+        {
+            int childCount = ve.hierarchy.childCount;
+            for (int i = 0; i < childCount; i++)
+            {
+                var child = ve.hierarchy[i];
+                if (child.renderData == null)
+                    continue;
+
+                bool isChildDisplayed = isDisplayed && child.computedStyle.display != DisplayStyle.None;
+
+                if ((child.transformFlags & VisualElementTransformFlags.ZIndexPromotedOutOfParent) != 0)
+                    CommandManipulator.DisableElementRendering(this, child, child.disableRendering || !isChildDisplayed);
+
+                if (MayHavePromotedDescendants(child))
+                    SyncPromotedDescendantsDisableRendering(child, isChildDisplayed);
             }
         }
 

@@ -793,11 +793,10 @@ internal partial class SerializedObjectBindingContext
             return removed;
         }
 
-        public bool Remove(int propertyPathHash, object cookie, Action<object, SerializedProperty> callback, out bool wasLastCallback)
+        public bool Remove(int propertyPathHash, object cookie, Action<object, SerializedProperty> callback)
         {
             bool removed = false;
 
-            wasLastCallback = false;
             if (m_TrackedValues.TryGetValue(propertyPathHash, out var values))
             {
                 for (int i = values.Count - 1; i >= 0; i--)
@@ -812,8 +811,7 @@ internal partial class SerializedObjectBindingContext
                     }
                 }
 
-                wasLastCallback = values.Count == 0;
-                if (wasLastCallback)
+                if (values.Count == 0)
                 {
                     m_TrackedValues.Remove(propertyPathHash);
                 }
@@ -874,11 +872,8 @@ internal partial class SerializedObjectBindingContext
 
     public void UnregisterSerializedPropertyChangeCallback(object cookie, int propertyPathHash, Action<object, SerializedProperty> callback)
     {
-        m_ValueTracker.Remove(propertyPathHash, cookie, callback, out var wasLastCallback);
-        if (wasLastCallback)
-        {
+        if (m_ValueTracker.Remove(propertyPathHash, cookie, callback))
             changeTracker.RemovePropertyTracking(propertyPathHash);
-        }
     }
 
     public SerializedObjectBindingContextUpdater AddBindingUpdater(VisualElement element)

@@ -20,6 +20,8 @@ namespace UnityEngine.UIElements
         HashSet<VisualElement> m_DirtyElements = new HashSet<VisualElement>();
         HashSet<VisualElement> m_Processing = new HashSet<VisualElement>();
 
+        internal override VersionChangeType versionChangeInterest => VersionChangeType.Component;
+
         public override void OnVersionChanged(VisualElement ve, VersionChangeType versionChangeType)
         {
             if ((versionChangeType & VersionChangeType.Component) == VersionChangeType.Component)

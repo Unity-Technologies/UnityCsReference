@@ -566,21 +566,22 @@ public class Parser
     {
         m_Index.NamedFormatterOptionsStart = m_Index.Current;
 
-        var nextChar = m_InputFormat[m_Index.SafeAdd(m_Index.Current, 1)];
+        if (IsLastChar()) return;
+
+        var nextChar = m_InputFormat[m_Index.Current + 1];
         // Handle empty options()
         if (m_FormatOptionsTerminatorChars.Contains(nextChar)) return;
 
-        while (++m_Index.Current < m_Index.ObjectLength)
+        while (++m_Index.Current < m_Index.ObjectLength - 1)
         {
-            nextChar = m_InputFormat[m_Index.SafeAdd(m_Index.Current, 1)];
+            nextChar = m_InputFormat[m_Index.Current + 1];
             // Skip escaped terminating characters
             if (m_InputFormat[m_Index.Current] == m_ParserSettings.CharLiteralEscapeChar &&
                 (m_FormatOptionsTerminatorChars.Contains(nextChar) ||
                  EscapedLiteral.TryGetChar(nextChar, out _, true, false)))
             {
-                m_Index.Current = m_Index.SafeAdd(m_Index.Current, 1);
-                if (m_FormatOptionsTerminatorChars.Contains(
-                    m_InputFormat[m_Index.SafeAdd(m_Index.Current, 1)]))
+                m_Index.Current++;
+                if (IsLastChar() || m_FormatOptionsTerminatorChars.Contains(m_InputFormat[m_Index.Current + 1]))
                 {
                     return;
                 }
@@ -590,12 +591,14 @@ public class Parser
 
             // End of parsing options, when the NEXT character is terminating,
             // because this character will be handled in the Parser.ParseFormat main loop.
-            if (m_FormatOptionsTerminatorChars.Contains(m_InputFormat[m_Index.Current + 1]))
+            if (m_FormatOptionsTerminatorChars.Contains(nextChar))
             {
                 return;
             }
         }
     }
+
+    bool IsLastChar() => m_Index.Current + 1 >= m_Index.ObjectLength;
 
     // 'style' and 'script' tags may contain curly or square braces, which SmartFormat uses to identify Placeholders.
     // Also, comments may contain any characters, which could mix up the parser.

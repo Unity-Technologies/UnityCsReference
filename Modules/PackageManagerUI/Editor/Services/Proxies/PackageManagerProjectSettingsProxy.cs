@@ -17,10 +17,14 @@ namespace UnityEditor.PackageManager.UI.Internal
         event Action<long> onLoadAssetsChanged;
         event Action onInitializationFinished;
         event Action<TrustPolicyLevel> onTrustPolicyLevelChanged;
+        event Action<bool> onClosedNetworkEnabledChanged;
 
         TrustPolicyLevel trustPolicyLevel { get; set; }
         TrustPolicyLevel trustPolicyLevelDraft { get; set; }
-        bool trustDisabled { get; }
+        bool closedNetworkEnabled { get; set; }
+        bool closedNetworkEnabledDraft { get; set; }
+        bool hasBypassPackageTrustEntitlement { get; }
+        bool isSignatureValidationDisabled { get; }
         bool dismissPreviewPackagesInUse { get; set; }
         bool enablePreReleasePackages { get; set; }
         bool advancedSettingsExpanded { get; set; }
@@ -36,6 +40,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         RegistryInfoDraft registryInfoDraft { get; }
 
         void ClearTrustPolicyLevelDraft();
+        void ClearClosedNetworkEnabledDraft();
         void SetRegistries(RegistryInfo[] registries);
         bool AddRegistry(RegistryInfo registry);
         bool UpdateRegistry(string oldName, RegistryInfo newRegistry);
@@ -55,6 +60,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         public event Action<long> onLoadAssetsChanged = delegate {};
         public event Action onInitializationFinished = delegate {};
         public event Action<TrustPolicyLevel> onTrustPolicyLevelChanged = delegate {};
+        public event Action<bool> onClosedNetworkEnabledChanged = delegate {};
 
         public TrustPolicyLevel trustPolicyLevel
         {
@@ -76,7 +82,29 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         public void ClearTrustPolicyLevelDraft() => PackageManagerProjectSettings.instance.ClearTrustPolicyLevelDraft();
 
-        public bool trustDisabled => TrustPolicySettings.trustDisabled;
+        public bool closedNetworkEnabled
+        {
+            get => TrustPolicySettings.trustDisabled;
+            set
+            {
+                if (value == TrustPolicySettings.trustDisabled)
+                    return;
+                TrustPolicySettings.trustDisabled = value;
+                onClosedNetworkEnabledChanged?.Invoke(value);
+            }
+        }
+
+        public bool closedNetworkEnabledDraft
+        {
+            get => PackageManagerProjectSettings.instance.closedNetworkEnabledDraft;
+            set => PackageManagerProjectSettings.instance.closedNetworkEnabledDraft = value;
+        }
+
+        public void ClearClosedNetworkEnabledDraft() => PackageManagerProjectSettings.instance.ClearClosedNetworkEnabledDraft();
+
+        public bool hasBypassPackageTrustEntitlement => PackageTrustLevel.HasBypassPackageTrustEntitlement();
+
+        public bool isSignatureValidationDisabled => closedNetworkEnabled && hasBypassPackageTrustEntitlement;
 
         public bool dismissPreviewPackagesInUse
         {

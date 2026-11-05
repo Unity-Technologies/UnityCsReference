@@ -36,8 +36,8 @@ public sealed class Context : IDisposable
     PortPreviewManager m_PortPreview;
     WireVisualManager m_WireVisualManager;
     TransitionVisualManager m_TransitionVisualManager;
-    AccentManager<CollapsibleInOutNodeView> m_NodeAccentManager;
-    AccentManager<StateView> m_StateAccentManager;
+    AccentManager<CollapsibleInOutNodeView, NodeModel> m_NodeAccentManager;
+    AccentManager<StateView, StateModel> m_StateAccentManager;
     ConditionVisualManager m_ConditionVisualManager;
 
     internal Session Session { get; }
@@ -121,12 +121,12 @@ public sealed class Context : IDisposable
         set => NodeAccent.Enabled = value;
     }
 
-    internal AccentManager<CollapsibleInOutNodeView> NodeAccent
+    internal AccentManager<CollapsibleInOutNodeView, NodeModel> NodeAccent
     {
         get
         {
             ThrowIfDisposed();
-            return m_NodeAccentManager ??= new AccentManager<CollapsibleInOutNodeView>(Session, Session.Store.NodeAccentStore);
+            return m_NodeAccentManager ??= new AccentManager<CollapsibleInOutNodeView, NodeModel>(Session, Session.Store.NodeAccentStore);
         }
     }
 
@@ -332,12 +332,12 @@ public sealed class Context : IDisposable
         set => StateAccent.Enabled = value;
     }
 
-    internal AccentManager<StateView> StateAccent
+    internal AccentManager<StateView, StateModel> StateAccent
     {
         get
         {
             ThrowIfDisposed();
-            return m_StateAccentManager ??= new AccentManager<StateView>(Session, Session.Store.StateAccentStore);
+            return m_StateAccentManager ??= new AccentManager<StateView, StateModel>(Session, Session.Store.StateAccentStore);
         }
     }
 

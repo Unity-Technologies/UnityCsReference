@@ -13,11 +13,8 @@ namespace UnityEditor.Inspector
     [UxmlElement]
     internal partial class ClippingPlanes : BaseCompositeField<Vector2, FloatField, float>
     {
-        const string k_CompositeInputStyle = "unity-composite-field__input";
-        const string k_CompositeFieldStyle = "unity-composite-field__field";
         const string k_NearClipStyle = "unity-near-clip-input";
         const string k_FarClipStyle = "unity-far-clip-input";
-        const float k_NearFarLabelsWidth = EditorGUI.kNearFarLabelsWidth;
 
         bool m_DirtyX;
         bool m_DirtyY;
@@ -65,17 +62,23 @@ namespace UnityEditor.Inspector
 
             RegisterCallback<AttachToPanelEvent>(e =>
             {
-                e.elementTarget.Q(className: k_CompositeInputStyle)?.RemoveFromClassList(k_CompositeInputStyle);
+                var inputUssClass = BaseCompositeField<Vector2, FloatField, float>.inputUssClassName;
+                e.elementTarget.Q(className: inputUssClass)?.RemoveFromClassList(inputUssClass);
 
                 foreach (var field in fields)
                 {
-                    field.RemoveFromClassList(k_CompositeFieldStyle);
                     field.RemoveFromClassList(BaseField<bool>.alignedFieldUssClassName);
-                    field.style.marginLeft = field.style.marginRight = 0;
+                    field.style.marginLeft = 0;
+                    if (field.name.Equals(k_NearClipStyle))
+                        field.AddToClassList(k_NearClipStyle);
+                    else
+                    {
+                        field.style.marginRight = 0;
+                    }
+
                     field.isDelayed = true;
 
                     var label = field.Q<Label>();
-                    label.style.flexBasis = label.style.minWidth = new StyleLength(k_NearFarLabelsWidth);
                     label.style.marginLeft = label.style.marginRight = 0;
                 }
             });

@@ -608,6 +608,8 @@ namespace Unity.Entities.Serialization
         {
             if (archetype->EntityCount <= 0 || archetype->HasSystemInstanceComponents)
                 return false;
+            if (archetype->HasGameObjectEntities)
+                return false;
             return true;
         }
 

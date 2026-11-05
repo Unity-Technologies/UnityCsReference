@@ -314,7 +314,7 @@ namespace Unity.GraphToolkit.Editor
         /// <remarks>
         /// Override this method to perform setup tasks, such as allocating resources, initializing internal state, or
         /// preparing data for editing. This method is invoked each time the graph becomes active in the editor,
-        /// including after domain reload or when reopening the asset.
+        /// including after code reload or when reopening the asset.
         /// </remarks>
         public virtual void OnEnable() { }
 
@@ -570,5 +570,33 @@ namespace Unity.GraphToolkit.Editor
             CheckImplementation();
             return m_Implementation.Disconnect(fromState, toState);
         }
+
+        /// <summary>
+        /// Called to define the <see cref="IStateOption"/>s available on subgraph states that reference this type of state machine.
+        /// Similar in function to <see cref="State.OnDefineOptions"/>.
+        /// </summary>
+        /// <param name="context">Provides methods for defining state options.</param>
+        /// <remarks>
+        /// Override this method to add options to all <see cref="ISubgraphState"/>s that point to this type of state machine using the provided <see cref="State.IOptionDefinitionContext"/>.
+        /// This method is only applicable when the state machine is referenced by a subgraph state, in a state machine that supports subgraphs through <see cref="StateMachineOptions.SupportsSubgraphs"/>.
+        /// Like the options of a <see cref="State"/>, the options of a subgraph state only appear in the graph inspector when the subgraph state is selected.
+        /// </remarks>
+        /// <example>
+        /// <code lang="cs">
+        /// <![CDATA[
+        /// protected override void OnDefineSubgraphStateOptions(State.IOptionDefinitionContext context)
+        /// {
+        ///     context.AddOption<int>("ID")
+        ///         .WithTooltip("The ID of the subgraph.")
+        ///         .Delayed();
+        ///
+        ///     context.AddOption<string>("Description")
+        ///         .WithDefaultValue("What is the purpose of this subgraph?")
+        ///         .Delayed();
+        /// }
+        /// ]]>
+        /// </code>
+        /// </example>
+        protected virtual void OnDefineSubgraphStateOptions(State.IOptionDefinitionContext context) { }
     }
 }

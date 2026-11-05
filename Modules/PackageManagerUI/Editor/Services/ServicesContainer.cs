@@ -144,7 +144,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             var assetStoreRestAPI = Register(new AssetStoreRestAPI(unityConnectProxy, jsonParser, httpClientFactory));
             var localInfoHandler = Register(new LocalInfoHandler(assetStoreUtils, ioProxy));
             var assetStoreCache = Register(new AssetStoreCache(applicationProxy, httpClientFactory, ioProxy));
-            var operationFactory = Register(new OperationFactory(unityConnectProxy, assetStoreRestAPI, assetStoreCache));
+            var operationFactory = Register(new OperationFactory(unityConnectProxy, assetStoreRestAPI, assetStoreCache, dateTimeProxy));
             var assetStoreClient = Register(new AssetStoreClientV2(assetStoreCache, assetStoreRestAPI, fetchStatusTracker, assetDatabaseProxy, operationFactory, localInfoHandler));
             var assetStorePackageInstaller = Register(new AssetStorePackageInstaller(ioProxy, assetStoreCache, assetDatabaseProxy, assetSelectionHandler, applicationProxy));
             var assetStoreDownloadManager = Register(new AssetStoreDownloadManager(applicationProxy, unityConnectProxy, ioProxy, assetStoreCache, assetStoreUtils, assetStoreRestAPI, assetStoreCachePathProxy, localInfoHandler));
@@ -152,7 +152,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
             var upmCache = Register(new UpmCache(settingsProxy));
             var upmClient = Register(new UpmClient(upmCache, fetchStatusTracker, ioProxy, clientProxy, applicationProxy, dateTimeProxy, settingsProxy));
-            var upmRegistryClient = Register(new UpmRegistryClient(settingsProxy, clientProxy, upmCache, applicationProxy));
+            var upmRegistryClient = Register(new UpmRegistryClient(settingsProxy, clientProxy, upmCache, applicationProxy, dateTimeProxy));
 
             Register(new SampleImporter(ioProxy, assetDatabaseProxy));
             var sampleCache = Register(new SampleCache(ioProxy, assetDatabaseProxy, upmCache));
@@ -160,10 +160,10 @@ namespace UnityEditor.PackageManager.UI.Internal
             var packageDatabase = Register(new PackageDatabase());
             var pageFactory = Register(new PageFactory(unityConnectProxy, packageManagerPrefs, assetStoreClient, assetStoreRestAPI, packageDatabase, upmCache));
             var pageManager = Register(new PageManager(settingsProxy, upmRegistryClient, pageFactory));
-            var pageRefreshHandler = Register(new PageRefreshHandler(pageManager, applicationProxy, unityConnectProxy, assetDatabaseProxy, packageManagerPrefs, upmClient, upmRegistryClient, assetStoreClient, sampleCache));
+            var pageRefreshHandler = Register(new PageRefreshHandler(pageManager, applicationProxy, unityConnectProxy, assetDatabaseProxy, packageManagerPrefs, upmClient, upmRegistryClient, assetStoreClient, sampleCache, dateTimeProxy));
             var backgroundFetchHandler = Register(new BackgroundFetchHandler(applicationProxy, unityConnectProxy, upmCache, upmClient, assetStoreClient, assetStoreCache, fetchStatusTracker, pageManager, pageRefreshHandler));
             var packageProgressTracker = Register(new PackageProgressTracker(upmClient, assetStoreDownloadManager, fetchStatusTracker));
-            var upmCacheRootClient = Register(new UpmCacheRootClient(clientProxy, applicationProxy));
+            var upmCacheRootClient = Register(new UpmCacheRootClient(clientProxy, applicationProxy, dateTimeProxy));
             var delayedSelectionHandler = Register(new DelayedSelectionHandler(packageDatabase, pageManager, pageRefreshHandler, upmCache, settingsProxy));
             var packageCreator = Register(new PackageCreator(upmClient, upmCache, unityConnectProxy, ioProxy, dateTimeProxy));
             var inProjectPackagesMonitor = Register(new InProjectPackagesMonitor(applicationProxy, settingsProxy, upmCache, upmRegistryClient, packageDatabase, pageRefreshHandler, upmClient));

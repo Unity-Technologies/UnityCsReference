@@ -129,6 +129,19 @@ namespace UnityEditor.Build.Reporting
         [NativeName("contentSourceBuildSessionGUID")]
         public GUID contentSourceBuildSessionGuid { get; }
 
+        ///<summary>The <see cref="PlayerSettings.productGUID"/> of the project that made the build.</summary>
+        ///<remarks>Use this value to tell whether a build was made in the current project, for example when its
+        /// build history entry was copied from another project. Copies and clones of a project share its GUID, and
+        /// Unity generates a new one if the project settings are reset. It is a default-valued <see cref="GUID"/> for
+        /// builds reported before Unity recorded it.</remarks>
+        [NativeName("projectGUID")]
+        public GUID projectGuid { get; }
+
+        ///<summary>The <see cref="PlayerSettings.productName"/> of the project that made the build.</summary>
+        ///<remarks>A readable label for the project identified by <see cref="projectGuid"/>. It is an empty string
+        /// for builds reported before Unity recorded it.</remarks>
+        public string projectName { get; }
+
         private T ParseSubtarget<T, S>() where T : Enum where S : Enum
         {
             if (typeof(T) != typeof(S))

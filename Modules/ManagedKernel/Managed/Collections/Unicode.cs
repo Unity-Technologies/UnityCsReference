@@ -446,7 +446,7 @@ namespace Unity.Collections
         /// </summary>
         /// <param name="c">The char.</param>
         /// <returns>True if the char is a Unicode leading surrogate.</returns>
-        static bool IsLeadingSurrogate(char c)
+        internal static bool IsLeadingSurrogate(char c)
         {
             return c >= 0xD800 && c <= 0xDBFF;
         }
@@ -456,7 +456,7 @@ namespace Unity.Collections
         /// </summary>
         /// <param name="c">The char.</param>
         /// <returns>True if the char is a Unicode trailing surrogate.</returns>
-        static bool IsTrailingSurrogate(char c)
+        internal static bool IsTrailingSurrogate(char c)
         {
             return c >= 0xDC00 && c <= 0xDFFF;
         }

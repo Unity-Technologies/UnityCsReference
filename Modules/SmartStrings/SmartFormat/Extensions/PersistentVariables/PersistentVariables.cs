@@ -5,6 +5,7 @@
 using UnityEngine;
 using UnityEngine.UIElements;
 using System;
+using System.Collections.Generic;
 using Unity.SmartStrings.Core.Extensions;
 
 namespace Unity.SmartStrings.PersistentVariables;
@@ -37,10 +38,11 @@ public partial class Variable<T> : IVariableValueChanged, ISerializationCallback
         get => m_Value;
         set
         {
-            if (m_Value != null && m_Value.Equals(value))
+            if (EqualityComparer<T>.Default.Equals(m_Value, value))
                 return;
 
             m_Value = value;
+            m_OldValue = value;
             SendValueChangedEvent();
         }
     }
@@ -58,19 +60,19 @@ public partial class Variable<T> : IVariableValueChanged, ISerializationCallback
 
     T m_OldValue;
 
-    void ISerializationCallbackReceiver.OnBeforeSerialize()
-    {
-        m_OldValue = m_Value;
-    }
+    void ISerializationCallbackReceiver.OnBeforeSerialize() {}
 
     void ISerializationCallbackReceiver.OnAfterDeserialize()
     {
         // This lets us send value changed events when the user makes changes through the inspector.
         // If an Undo event occurs we will lose the ValueChanged reference though.
-        if (m_OldValue != null && !m_OldValue.Equals(m_Value))
-        {
-            m_OldValue = m_Value;
-        }
+        if (EqualityComparer<T>.Default.Equals(m_OldValue, m_Value))
+            return;
+
+        m_OldValue = m_Value;
+        // Handlers may call Unity APIs that are not allowed during deserialization, and this can run off the main thread.
+        if (ValueChanged != null)
+            VariableEditorHooks.Enqueue(SendValueChangedEvent);
     }
 }
 

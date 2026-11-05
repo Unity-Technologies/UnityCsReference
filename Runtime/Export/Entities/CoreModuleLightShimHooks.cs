@@ -10,13 +10,13 @@ using Unity.IO.LowLevel.Unsafe;
 using Unity.Scripting.LifecycleManagement;
 using UnityEngine;
 using UnityEngine.Assemblies;
+using UnityEngine.Bindings;
 using UnityEngine.LowLevel;
 
 namespace Unity.Entities
 {
     /// <summary>
-    /// Installs what Entities needs from this module into Entities, which sits below it, and registers Entities'
-    /// callbacks with the parts of this module that call back into it.
+    /// Installs what Entities needs from this module into Entities, which sits below it.
     /// </summary>
     internal static partial class CoreModuleLightShimHooks
     {
@@ -25,7 +25,11 @@ namespace Unity.Entities
         {
             EntitiesCoreCallbacksBindings.Install();
             CoreModuleLightShim.InstallHooks(new Hooks());
-            ResourcesAPIInternal.EntitiesAssetGC.RegisterAdditionalRootsHandler(UnityObjectRefUtility.RootsHandlerDelegate);
+
+            // We could have done this as part of EntitiesCoreCallbacksBindings.Install() and only paid for one
+            // managed-to-native transition, but it would be an unrelated side effect of that method. This makes it
+            // more clear, and it's only done once at startup.
+            Unity.Transforms.GlobalChangeMaskCache.Initialize(EntitiesCoreCallbacksBindings.GetChangeMaskCache());
         }
 
         sealed class Hooks : CoreModuleLightShim.IHooks
@@ -35,8 +39,6 @@ namespace Unity.Entities
             public Type UnityObjectRefGenericType => typeof(UnityObjectRef<>);
             public Type ExecuteInEditModeType => typeof(ExecuteInEditMode);
             public Type ExecuteAlwaysType => typeof(ExecuteAlways);
-
-            public float FixedDeltaTime => Time.fixedDeltaTime;
 
             public bool IsPlaying => Application.isPlaying;
 
@@ -76,10 +78,18 @@ namespace Unity.Entities
 
             public EntityId GetEntityId(object unityObject) => ((UnityEngine.Object)unityObject).GetEntityId();
 
-            public void MarkInstanceIDsAsRoot(IntPtr instanceIDs, int count, IntPtr state) =>
-                ResourcesAPIInternal.EntitiesAssetGC.MarkInstanceIDsAsRoot(instanceIDs, count, state);
+            public void MarkEntityIdsAsRoot(IntPtr entityIds, int count, IntPtr state) =>
+                ResourcesAPIInternal.EntitiesAssetGC.MarkEntityIdsAsRoot(entityIds, count, state);
+
+            public void AssignTransformHierarchyToGameObjectEntity(EntityId gameObjectId) =>
+                TransformHierarchy.AssignTransformHierarchyToGameObjectEntity(gameObjectId);
 
             public int GetComponentTypeId(Type type) => TypeManagerV2.GetComponentTypeId(type.TypeHandle);
+
+            public unsafe int CopyEntityComponentTypeHandles(IntPtr* handles, int capacity) =>
+                TypeManagerV2.CopyEntityComponentTypeHandles((IntPtr)handles, capacity);
+
+            public Type GetTypeFromHandle(IntPtr handle) => SystemReflectionMarshalling.UnmarshalSystemType(handle);
 
             public void ClearCompanionComponentTypes() => CompanionComponentTypeIndices.Clear();
 

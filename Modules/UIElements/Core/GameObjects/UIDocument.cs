@@ -105,7 +105,16 @@ namespace UnityEngine.UIElements
     [DefaultExecutionOrder(-100)] // UIDocument's OnEnable should run before user's OnEnable
     public sealed partial class UIDocument : MonoBehaviour, IPanelComponent
     {
-        internal static readonly UniqueStyleString rootStyleClassNameUnique = new("unity-ui-document__root");
+        // UIDocument's static initializer can run on the loading thread, which must not intern strings.
+        static class RootStyleClassName
+        {
+            internal static readonly UniqueStyleString k_Unique = new("unity-ui-document__root");
+
+            // Prevents beforefieldinit, so the string is interned on first use only.
+            static RootStyleClassName() {}
+        }
+
+        internal static UniqueStyleString rootStyleClassNameUnique => RootStyleClassName.k_Unique;
 
         internal const string k_VisualElementNameSuffix = "-container";
 

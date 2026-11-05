@@ -22,6 +22,7 @@ internal class UIToolkitAuthoringSettingsProvider : IUIToolkitSettingsProviderEx
     private const string k_AutoOpenUIViewportWindowText = "UI Viewport";
     private const string k_AutoOpenStyleSheetsWindowText = "Style Sheets";
     private const string k_RectangleSelectionModeText = "Rectangle Selection Mode";
+    private const string k_SelectPickingModeIgnoreText = "Select Elements with Picking Mode Ignore";
 
     private const string k_VisualTreeAsset = "UIToolkitAuthoring/Settings/UIToolkitAuthoringSettings.uxml";
 
@@ -45,6 +46,8 @@ internal class UIToolkitAuthoringSettingsProvider : IUIToolkitSettingsProviderEx
         if (k_NewVisualTreeAssetLocationText.IndexOf(searchContext, System.StringComparison.OrdinalIgnoreCase) != -1)
             return true;
         if (k_RectangleSelectionModeText.IndexOf(searchContext, System.StringComparison.OrdinalIgnoreCase) != -1)
+            return true;
+        if (k_SelectPickingModeIgnoreText.IndexOf(searchContext, System.StringComparison.OrdinalIgnoreCase) != -1)
             return true;
         if (k_AutoOpenWindowsText.IndexOf(searchContext, System.StringComparison.OrdinalIgnoreCase) != -1)
             return true;
@@ -123,6 +126,13 @@ internal class UIToolkitAuthoringSettingsProvider : IUIToolkitSettingsProviderEx
         rectangleSelectionMode.RegisterValueChangedCallback(evt =>
         {
             UIToolkitAuthoringSettings.RectangleSelectionMode = (RectangleSelectionMode)evt.newValue;
+        });
+
+        var selectPickingModeIgnore = rootElement.Q<Toggle>("uitoolkit-authoring-settings__select-picking-mode-ignore");
+        selectPickingModeIgnore.value = UIToolkitAuthoringSettings.SelectPickingModeIgnore;
+        selectPickingModeIgnore.RegisterValueChangedCallback(evt =>
+        {
+            UIToolkitAuthoringSettings.SelectPickingModeIgnore = evt.newValue;
         });
 
         void UpdateNewHierarchyHelpBox()

@@ -86,6 +86,36 @@ namespace Unity.Entities
             return m_EntityDataAccess;
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal EntityDataAccess* GetCheckedEntityDataAccess(Entity entity)
+        {
+            var access = GetCheckedEntityDataAccess();
+            access->EntityComponentStore->AssertEntityBelongsToThisWorld(entity);
+            return access;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        bool HasComponentInThisWorld(Entity entity, TypeIndex typeIndex)
+        {
+            var ecs = GetCheckedEntityDataAccess()->EntityComponentStore;
+            var archetype = ecs->GetArchetypeInThisWorldOrNull(entity, out _);
+            return archetype != null && ChunkDataUtility.GetIndexInTypeArray(archetype, typeIndex) != -1;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal EntityDataAccess* GetCheckedEntityDataAccess(Entity* entities, int count)
+        {
+            var access = GetCheckedEntityDataAccess();
+            access->EntityComponentStore->AssertEntitiesBelongToThisWorld(entities, count);
+            return access;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal EntityDataAccess* GetCheckedEntityDataAccess(NativeArray<Entity> entities)
+        {
+            return GetCheckedEntityDataAccess((Entity*)entities.GetUnsafeReadOnlyPtr(), entities.Length);
+        }
+
         internal EntityDataAccess* GetCheckedEntityDataAccessExclusive()
         {
             if (!CanBeginExclusiveEntityTransaction())
@@ -95,13 +125,10 @@ namespace Unity.Entities
             return m_EntityDataAccess;
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal EntityDataAccess* GetCheckedEntityDataAccess(SystemHandle system)
         {
-            AtomicSafetyHandle.CheckWriteAndThrow(m_Safety);
-            AssertIsExclusiveTransaction();
-            if (system.m_WorldSeqNo != m_EntityDataAccess->m_WorldUnmanaged.SequenceNumber)
-                throw new InvalidOperationException("System is from a different world.");
-            return m_EntityDataAccess;
+            return GetCheckedEntityDataAccess(system.m_Entity);
         }
 
         internal EntityDataAccess* GetCheckedEntityDataAccessExclusive(SystemHandle system)
@@ -110,8 +137,7 @@ namespace Unity.Entities
                 EndExclusiveEntityTransaction();
 
             AtomicSafetyHandle.CheckWriteAndThrow(m_Safety);
-            if (system.m_WorldSeqNo != m_EntityDataAccess->m_WorldUnmanaged.SequenceNumber)
-                throw new InvalidOperationException("System is from a different world.");
+            m_EntityDataAccess->EntityComponentStore->AssertEntityBelongsToThisWorld(system.m_Entity);
             return m_EntityDataAccess;
         }
 
@@ -388,7 +414,7 @@ namespace Unity.Entities
         [GenerateTestsForBurstCompatibility(GenericTypeArguments = new[] { typeof(BurstCompatibleComponentData) })]
         public T GetComponentData<T>(Entity entity) where T : unmanaged, IComponentData
         {
-            var access = GetCheckedEntityDataAccess();
+            var access = GetCheckedEntityDataAccess(entity);
             return access->GetComponentData<T>(entity);
         }
 
@@ -435,7 +461,7 @@ namespace Unity.Entities
         [GenerateTestsForBurstCompatibility(GenericTypeArguments = new[] { typeof(BurstCompatibleComponentData) })]
         public RefRW<T> GetComponentDataRW<T>(Entity entity) where T : unmanaged, IComponentData
         {
-            var access = GetCheckedEntityDataAccess();
+            var access = GetCheckedEntityDataAccess(entity);
             var typeIndex = TypeManager.GetTypeIndex<T>();
             var data = access->GetComponentDataRW_AsBytePointer(entity, typeIndex);
             return new RefRW<T>(data, access->DependencyManager->Safety.GetSafetyHandle(typeIndex, false));
@@ -457,7 +483,7 @@ namespace Unity.Entities
         [GenerateTestsForBurstCompatibility(GenericTypeArguments = new[] { typeof(BurstCompatibleComponentData) })]
         public void SetComponentData<T>(Entity entity, T componentData) where T : unmanaged, IComponentData
         {
-            var access = GetCheckedEntityDataAccess();
+            var access = GetCheckedEntityDataAccess(entity);
             access->SetComponentData(entity, componentData);
         }
 
@@ -519,7 +545,7 @@ namespace Unity.Entities
         [GenerateTestsForBurstCompatibility(GenericTypeArguments = new[] { typeof(BurstCompatibleComponentData) })]
         public T GetChunkComponentData<T>(Entity entity) where T : unmanaged, IComponentData
         {
-            var access = GetCheckedEntityDataAccess();
+            var access = GetCheckedEntityDataAccess(entity);
             var store = access->EntityComponentStore;
             store->AssertEntitiesExist(&entity, 1);
             var chunk = store->GetChunk(entity);
@@ -604,7 +630,7 @@ namespace Unity.Entities
         [GenerateTestsForBurstCompatibility(GenericTypeArguments = new[] { typeof(BurstCompatibleSharedComponentData) })]
         public T GetSharedComponent<T>(Entity entity) where T : unmanaged, ISharedComponentData
         {
-            var access = GetCheckedEntityDataAccess();
+            var access = GetCheckedEntityDataAccess(entity);
             return access->GetSharedComponentData_Unmanaged<T>(entity);
         }
 
@@ -627,7 +653,7 @@ namespace Unity.Entities
         [GenerateTestsForBurstCompatibility(GenericTypeArguments = new[] { typeof(BurstCompatibleSharedComponentData) })]
         public int GetSharedComponentIndex<T>(Entity entity) where T : unmanaged, ISharedComponentData
         {
-            var ecs = GetCheckedEntityDataAccess()->EntityComponentStore;
+            var ecs = GetCheckedEntityDataAccess(entity)->EntityComponentStore;
             var typeIndex = TypeManager.GetTypeIndex<T>();
             ecs->AssertEntityHasComponent(entity, typeIndex);
             return ecs->GetSharedComponentDataIndex(entity, typeIndex);
@@ -718,7 +744,7 @@ namespace Unity.Entities
         [GenerateTestsForBurstCompatibility(GenericTypeArguments = new[] { typeof(BurstCompatibleSharedComponentData) })]
         public void SetSharedComponent<T>(Entity entity, T componentData) where T : unmanaged, ISharedComponentData
         {
-            var access = GetCheckedEntityDataAccess();
+            var access = GetCheckedEntityDataAccess(entity);
             var changes = access->BeginStructuralChanges();
             var ti = TypeManager.GetTypeIndex<T>();
             var defaultValue = default(T);
@@ -746,7 +772,7 @@ namespace Unity.Entities
         [GenerateTestsForBurstCompatibility(GenericTypeArguments = new[] { typeof(BurstCompatibleSharedComponentData) })]
         public void SetSharedComponent<T>(NativeArray<Entity> entities, T componentData) where T : unmanaged, ISharedComponentData
         {
-            var access = GetCheckedEntityDataAccess();
+            var access = GetCheckedEntityDataAccess(entities);
             var changes = access->BeginStructuralChanges();
             var ti = TypeManager.GetTypeIndex<T>();
             var defaultValue = default(T);
@@ -758,7 +784,7 @@ namespace Unity.Entities
         [GenerateTestsForBurstCompatibility(GenericTypeArguments = new[] { typeof(BurstCompatibleSharedComponentData) })]
         internal void SetSharedComponentNonDefault(Entity entity, void* componentDataAddr, TypeIndex typeIndex)
         {
-            var access = GetCheckedEntityDataAccess();
+            var access = GetCheckedEntityDataAccess(entity);
             var changes = access->BeginStructuralChanges();
             access->SetSharedComponentData_Unmanaged(entity, typeIndex, componentDataAddr, null);
             access->EndStructuralChanges(ref changes);
@@ -897,7 +923,7 @@ namespace Unity.Entities
         [GenerateTestsForBurstCompatibility(GenericTypeArguments = new[] { typeof(BurstCompatibleSharedComponentData) })]
         public bool AddSharedComponent<T>(Entity entity, T componentData) where T : unmanaged, ISharedComponentData
         {
-            var access = GetCheckedEntityDataAccess();
+            var access = GetCheckedEntityDataAccess(entity);
             var changes = access->BeginStructuralChanges();
             var defData = default(T);
             var result = access->AddSharedComponentDataDuringStructuralChange_Unmanaged(entity,
@@ -931,7 +957,7 @@ namespace Unity.Entities
         [GenerateTestsForBurstCompatibility(GenericTypeArguments = new[] { typeof(BurstCompatibleSharedComponentData) })]
         public void AddSharedComponent<T>(NativeArray<Entity> entities, T componentData) where T : unmanaged, ISharedComponentData
         {
-            var access = GetCheckedEntityDataAccess();
+            var access = GetCheckedEntityDataAccess(entities);
             var changes = access->BeginStructuralChanges();
             var defData = default(T);
             access->AddSharedComponentDataDuringStructuralChange_Unmanaged(entities,
@@ -968,7 +994,7 @@ namespace Unity.Entities
 
         #endregion
 
-        DynamicBuffer<T> GetBufferInternal<T>(EntityDataAccess* access, Entity entity, bool isReadOnly = false) where T : unmanaged, IBufferElementData
+        internal static DynamicBuffer<T> GetBufferInternal<T>(EntityDataAccess* access, Entity entity, bool isReadOnly = false) where T : unmanaged, IBufferElementData
         {
             var typeIndex = TypeManager.GetTypeIndex<T>();
 
@@ -993,7 +1019,7 @@ namespace Unity.Entities
         [GenerateTestsForBurstCompatibility(GenericTypeArguments = new[] { typeof(BurstCompatibleBufferElement) })]
         public DynamicBuffer<T> GetBuffer<T>(Entity entity, bool isReadOnly = false) where T : unmanaged, IBufferElementData
         {
-            var access = GetCheckedEntityDataAccess();
+            var access = GetCheckedEntityDataAccess(entity);
             return GetBufferInternal<T>(access, entity, isReadOnly);
         }
 
@@ -1022,8 +1048,24 @@ namespace Unity.Entities
         [GenerateTestsForBurstCompatibility]
         public TransformRef GetTransformRef(Entity entity, bool isReadOnly = false)
         {
-            var access = GetCheckedEntityDataAccess();
-            return access->GetTransformRef(entity, isReadOnly);
+            var access = GetCheckedEntityDataAccess(entity);
+            var executingSystem = GetExecutingSystemState(access);
+            if (executingSystem != null)
+                executingSystem->AddTransformReaderWriter(isReadOnly, excludeGameObjects: true);
+            var transformRef = access->GetTransformRef(entity, isReadOnly);
+            if (executingSystem != null && access->EntityComponentStore->GetArchetype(entity)->HasGameObjectEntities)
+                executingSystem->AddTransformReaderWriter(isReadOnly, excludeGameObjects: false);
+            return transformRef;
+        }
+
+        // The system that is creating or updating in this World, if any. Its jobs may use the transform access that the
+        // EntityManager hands out, so that access is registered with it like the SystemState getters do.
+        static SystemState* GetExecutingSystemState(EntityDataAccess* access)
+        {
+            var world = access->m_WorldUnmanaged;
+            if (!world.IsCreated || world.ExecutingSystem == default)
+                return null;
+            return world.ResolveSystemState(world.ExecutingSystem);
         }
 
         /// <summary>
@@ -1033,7 +1075,7 @@ namespace Unity.Entities
         /// <returns>Information about the storage of the target entity.</returns>
         public EntityStorageInfo GetStorageInfo(Entity entity)
         {
-            var access = GetCheckedEntityDataAccess();
+            var access = GetCheckedEntityDataAccess(entity);
             return access->GetStorageInfo(entity);
         }
 
@@ -1070,7 +1112,7 @@ namespace Unity.Entities
         /// <returns>The chunk containing the entity.</returns>
         public ArchetypeChunk GetChunk(Entity entity)
         {
-            var ecs = GetCheckedEntityDataAccess()->EntityComponentStore;
+            var ecs = GetCheckedEntityDataAccess(entity)->EntityComponentStore;
             var chunk = ecs->GetChunk(entity);
             return new ArchetypeChunk(chunk, ecs);
         }
@@ -1082,7 +1124,7 @@ namespace Unity.Entities
         /// <returns>The number of components.</returns>
         public int GetComponentCount(Entity entity)
         {
-            var ecs = GetCheckedEntityDataAccess()->EntityComponentStore;
+            var ecs = GetCheckedEntityDataAccess(entity)->EntityComponentStore;
             ecs->AssertEntitiesExist(&entity, 1);
             var archetype = ecs->GetArchetype(entity);
             return archetype->TypesCount - 1;
@@ -1115,7 +1157,7 @@ namespace Unity.Entities
         [StructuralChangeMethod]
         public bool AddComponent(Entity entity, ComponentType componentType)
         {
-            var access = GetCheckedEntityDataAccess();
+            var access = GetCheckedEntityDataAccess(entity);
             var changes = access->BeginStructuralChanges();
             var result = access->AddComponentDuringStructuralChange(entity, componentType);
             access->EndStructuralChanges(ref changes);
@@ -1479,7 +1521,7 @@ namespace Unity.Entities
             if (componentType.IsChunkComponent)
                 throw new ArgumentException($"Cannot add ChunkComponent {componentType} on NativeArray of entities.");
 
-            var access = GetCheckedEntityDataAccess();
+            var access = GetCheckedEntityDataAccess(entities);
             var ecs = access->EntityComponentStore;
             ecs->AssertEntitiesExist((Entity*)entities.GetUnsafeReadOnlyPtr(), entities.Length);
 
@@ -1533,7 +1575,7 @@ namespace Unity.Entities
         [StructuralChangeMethod]
         public void AddComponent(NativeArray<Entity> entities, in ComponentTypeSet componentTypeSet)
         {
-            var access = GetCheckedEntityDataAccess();
+            var access = GetCheckedEntityDataAccess(entities);
             var changes = access->BeginStructuralChanges();
             access->AddMultipleComponentsDuringStructuralChange(entities, componentTypeSet);
             access->EndStructuralChanges(ref changes);
@@ -1561,7 +1603,7 @@ namespace Unity.Entities
         [StructuralChangeMethod]
         public void RemoveComponent(NativeArray<Entity> entities, in ComponentTypeSet componentTypeSet)
         {
-            var access = GetCheckedEntityDataAccess();
+            var access = GetCheckedEntityDataAccess(entities);
             var changes = access->BeginStructuralChanges();
             access->RemoveMultipleComponentsDuringStructuralChange(entities, componentTypeSet);
             access->EndStructuralChanges(ref changes);
@@ -1591,7 +1633,7 @@ namespace Unity.Entities
             if (entities.Length == 0)
                 return;
 
-            var access = GetCheckedEntityDataAccess();
+            var access = GetCheckedEntityDataAccess(entities);
             var changes = access->BeginStructuralChanges();
             access->RemoveComponentDuringStructuralChange(entities, componentType);
             access->EndStructuralChanges(ref changes);
@@ -1679,7 +1721,7 @@ namespace Unity.Entities
         [StructuralChangeMethod]
         public void AddComponent(Entity entity, in ComponentTypeSet componentTypeSet)
         {
-            var access = GetCheckedEntityDataAccess();
+            var access = GetCheckedEntityDataAccess(entity);
             var changes = access->BeginStructuralChanges();
             access->AddMultipleComponentsDuringStructuralChange(entity, componentTypeSet);
             access->EndStructuralChanges(ref changes);
@@ -1721,7 +1763,7 @@ namespace Unity.Entities
         [StructuralChangeMethod]
         public bool RemoveComponent(Entity entity, ComponentType componentType)
         {
-            var access = GetCheckedEntityDataAccess();
+            var access = GetCheckedEntityDataAccess(entity);
             var changes = access->BeginStructuralChanges();
             var result = access->RemoveComponentDuringStructuralChange(entity, componentType);
             access->EndStructuralChanges(ref changes);
@@ -1751,7 +1793,7 @@ namespace Unity.Entities
         [StructuralChangeMethod]
         public bool RemoveComponent(SystemHandle system, ComponentType componentType)
         {
-            var access = GetCheckedEntityDataAccess();
+            var access = GetCheckedEntityDataAccess(system);
             var changes = access->BeginStructuralChanges();
             var result = access->RemoveComponentDuringStructuralChange(system.m_Entity, componentType);
             access->EndStructuralChanges(ref changes);
@@ -1781,7 +1823,7 @@ namespace Unity.Entities
         [StructuralChangeMethod]
         public void RemoveComponent(Entity entity, in ComponentTypeSet componentTypeSet)
         {
-            var access = GetCheckedEntityDataAccess();
+            var access = GetCheckedEntityDataAccess(entity);
             var changes = access->BeginStructuralChanges();
             access->RemoveComponentDuringStructuralChange(entity, componentTypeSet);
             access->EndStructuralChanges(ref changes);
@@ -1984,7 +2026,7 @@ namespace Unity.Entities
                 return AddComponent(entity, type);
 
             // Add and assign atomically so OnAdded callbacks see the real value.
-            var access = GetCheckedEntityDataAccess();
+            var access = GetCheckedEntityDataAccess(entity);
             var changes = access->BeginStructuralChanges();
             var added = access->AddComponentDuringStructuralChange(entity, type,
                 UnsafeUtility.AddressOf(ref componentData), UnsafeUtility.SizeOf<T>());
@@ -2288,7 +2330,7 @@ namespace Unity.Entities
         {
             archetype.CheckValidEntityArchetype();
 
-            var access = GetCheckedEntityDataAccess();
+            var access = GetCheckedEntityDataAccess(entity);
             var ecs = access->EntityComponentStore;
 
             EntityComponentStore.AssertValidArchetype(ecs, archetype);
@@ -2339,7 +2381,7 @@ namespace Unity.Entities
 
             archetype.CheckValidEntityArchetype();
 
-            var access = GetCheckedEntityDataAccess();
+            var access = GetCheckedEntityDataAccess(entities);
             var ecs = access->EntityComponentStore;
 
             EntityComponentStore.AssertValidArchetype(ecs, archetype);
@@ -2389,7 +2431,7 @@ namespace Unity.Entities
         [StructuralChangeMethod]
         public void SetEnabled(Entity entity, bool enabled)
         {
-            var access = GetCheckedEntityDataAccess();
+            var access = GetCheckedEntityDataAccess(entity);
             var changes = access->BeginStructuralChanges();
             access->SetEnabled(entity, enabled);
             access->EndStructuralChanges(ref changes);
@@ -2408,7 +2450,7 @@ namespace Unity.Entities
         /// <seealso cref="SetEnabled(Entity,bool)"/>
         public bool IsEnabled(Entity entity)
         {
-            return GetCheckedEntityDataAccess()->IsEnabled(entity);
+            return GetCheckedEntityDataAccess(entity)->IsEnabled(entity);
         }
         /// <summary> Obsolete. Use <see cref="IsEnabled(Entity)"/> instead.</summary>
         /// <param name="entity">The entity to check</param>
@@ -2435,7 +2477,7 @@ namespace Unity.Entities
         public bool IsComponentEnabled<T>(Entity entity) where T : unmanaged, IEnableableComponent
         {
             var typeIndex = TypeManager.GetTypeIndex<T>();
-            var access = GetCheckedEntityDataAccess();
+            var access = GetCheckedEntityDataAccess(entity);
             if (!access->IsInExclusiveTransaction)
                 access->DependencyManager->CompleteWriteDependency(typeIndex);
             return access->IsComponentEnabled(entity, typeIndex);
@@ -2487,7 +2529,7 @@ namespace Unity.Entities
         /// <seealso cref="ComponentLookup{T}.IsComponentEnabled(Entity)"/>
         public bool IsComponentEnabled(Entity entity, ComponentType componentType)
         {
-            var access = GetCheckedEntityDataAccess();
+            var access = GetCheckedEntityDataAccess(entity);
             if (!access->IsInExclusiveTransaction)
                 access->DependencyManager->CompleteWriteDependency(componentType.TypeIndex);
             return access->IsComponentEnabled(entity, componentType.TypeIndex);
@@ -2516,7 +2558,7 @@ namespace Unity.Entities
         public void SetComponentEnabled<T>(Entity entity, bool value) where T : unmanaged, IEnableableComponent
         {
             var typeIndex = TypeManager.GetTypeIndex<T>();
-            var access = GetCheckedEntityDataAccess();
+            var access = GetCheckedEntityDataAccess(entity);
             if (!access->IsInExclusiveTransaction)
                 access->DependencyManager->CompleteReadAndWriteDependency(typeIndex);
             access->SetComponentEnabled(entity, typeIndex, value);
@@ -2598,7 +2640,7 @@ namespace Unity.Entities
         /// <seealso cref="ComponentLookup{T}.SetComponentEnabled(Entity,bool)"/>
         public void SetComponentEnabled(Entity entity, ComponentType componentType, bool value)
         {
-            var access = GetCheckedEntityDataAccess();
+            var access = GetCheckedEntityDataAccess(entity);
             if (!access->IsInExclusiveTransaction)
                 access->DependencyManager->CompleteReadAndWriteDependency(componentType.TypeIndex);
             access->SetComponentEnabled(entity, componentType.TypeIndex, value);
@@ -2864,7 +2906,7 @@ namespace Unity.Entities
         public Entity Instantiate(Entity srcEntity)
         {
             Entity entity;
-            var access = GetCheckedEntityDataAccess();
+            var access = GetCheckedEntityDataAccess(srcEntity);
             var archetype = access->EntityComponentStore->GetArchetype(srcEntity);
             access->PrepareForAdditiveStructuralChanges(archetype->InstantiateArchetype);
             var changes = access->BeginAdditiveStructuralChanges();
@@ -2893,7 +2935,7 @@ namespace Unity.Entities
         [StructuralChangeMethod]
         public void Instantiate(Entity srcEntity, NativeArray<Entity> outputEntities)
         {
-            var access = GetCheckedEntityDataAccess();
+            var access = GetCheckedEntityDataAccess(srcEntity);
             var archetype = access->EntityComponentStore->GetArchetype(srcEntity);
             access->PrepareForAdditiveStructuralChanges(archetype->InstantiateArchetype);
             var changes = access->BeginAdditiveStructuralChanges();
@@ -2922,7 +2964,7 @@ namespace Unity.Entities
         [StructuralChangeMethod]
         public NativeArray<Entity> Instantiate(Entity srcEntity, int instanceCount, AllocatorManager.AllocatorHandle allocator)
         {
-            var access = GetCheckedEntityDataAccess();
+            var access = GetCheckedEntityDataAccess(srcEntity);
 
             NativeArray<Entity> entities;
             entities = CollectionHelper.CreateNativeArray<Entity>(instanceCount, allocator);
@@ -2956,7 +2998,7 @@ namespace Unity.Entities
                   "If you wish to clone the full hierarchy of every entity in a given array, simply loop through the array to and invoke `EntityManager.Instantiate(Entity entity)` on each entity.")]
         public void Instantiate(NativeArray<Entity> srcEntities, NativeArray<Entity> outputEntities)
         {
-            var access = GetCheckedEntityDataAccess();
+            var access = GetCheckedEntityDataAccess(srcEntities);
             access->PrepareForInstantiateAdditiveStructuralChanges(srcEntities);
             var changes = access->BeginAdditiveStructuralChanges();
             access->InstantiateInternalDuringStructuralChange((Entity*)srcEntities.GetUnsafeReadOnlyPtr(), (Entity*)outputEntities.GetUnsafePtr(), srcEntities.Length, outputEntities.Length, true);
@@ -2988,7 +3030,7 @@ namespace Unity.Entities
         }
         internal void CopyEntitiesInternal(NativeArray<Entity> srcEntities, NativeArray<Entity> outputEntities)
         {
-            var access = GetCheckedEntityDataAccess();
+            var access = GetCheckedEntityDataAccess(srcEntities);
             access->PrepareForCopyAdditiveStructuralChanges(srcEntities);
             var changes = access->BeginAdditiveStructuralChanges();
             access->InstantiateInternalDuringStructuralChange((Entity*)srcEntities.GetUnsafeReadOnlyPtr(), (Entity*)outputEntities.GetUnsafePtr(), srcEntities.Length, outputEntities.Length, false);
@@ -3122,11 +3164,10 @@ namespace Unity.Entities
             return result;
         }
 
-        struct IsolateCopiedEntities : IComponentData {}
-
         /// <summary>
         /// Instantiates / Copies all entities from srcEntityManager and copies them into this EntityManager.
         /// Entity references on components that are being cloned to entities inside the srcEntities set are remapped to the instantiated entities.
+        /// References to entities outside the srcEntities set become <see cref="Entity.Null"/>.
         /// </summary>
         /// <param name="srcEntityManager">The EntityManager to copy from</param>
         /// <param name="srcEntities">Entities in the srcEntityManager that have component with Entity references</param>
@@ -3136,34 +3177,22 @@ namespace Unity.Entities
         {
             if (outputEntities.IsCreated && outputEntities.Length != srcEntities.Length)
                 throw  new ArgumentException("outputEntities.Length must match srcEntities.Length");
+            if (srcEntityManager.m_EntityDataAccess == m_EntityDataAccess)
+                throw new ArgumentException("srcEntityManager must not be the same as this EntityManager.");
 
-            using (var srcManagerInstances = new NativeArray<Entity>(srcEntities.Length, Allocator.Temp))
-            {
-                srcEntityManager.CopyEntitiesInternal(srcEntities, srcManagerInstances);
-                srcEntityManager.AddComponent(srcManagerInstances, ComponentType.ReadWrite<IsolateCopiedEntities>());
+            var srcAccess = srcEntityManager.GetCheckedEntityDataAccess(srcEntities);
+            srcAccess->EntityComponentStore->AssertEntitiesExist((Entity*)srcEntities.GetUnsafeReadOnlyPtr(), srcEntities.Length);
+            srcAccess->CompleteAllTrackedJobs();
 
-                var queryBuilder = new EntityQueryBuilder(Allocator.Temp)
-                    .WithAll<IsolateCopiedEntities>()
-                    .WithOptions(EntityQueryOptions.IncludeDisabledEntities | EntityQueryOptions.IncludePrefab);
+            var output = outputEntities.IsCreated ? outputEntities : new NativeArray<Entity>(srcEntities.Length, Allocator.Temp);
+            var access = GetCheckedEntityDataAccess();
+            var changes = access->BeginStructuralChanges();
+            access->InstantiateInternalDuringStructuralChange((Entity*)srcEntities.GetUnsafeReadOnlyPtr(),
+                (Entity*)output.GetUnsafePtr(), srcEntities.Length, output.Length, false);
+            access->EndStructuralChanges(ref changes);
 
-                var instantiatedInSrcWorld = queryBuilder.Build(srcEntityManager);
-                var instantiatedInDstWorld = queryBuilder.Build(this);
-
-                using (var entityRemapping = srcEntityManager.CreateEntityRemapArray(Allocator.TempJob))
-                {
-                    MoveEntitiesFromInternalQuery(srcEntityManager, instantiatedInSrcWorld, entityRemapping);
-
-                    if (outputEntities.IsCreated)
-                    {
-                        for (int ei = 0, ec = srcManagerInstances.Length; ei != ec; ei++)
-                        {
-                            outputEntities[ei] = entityRemapping[srcManagerInstances[ei].Index].Target;
-                        }
-                    }
-
-                    RemoveComponent(instantiatedInDstWorld, ComponentType.ReadWrite<IsolateCopiedEntities>());
-                }
-            }
+            if (!outputEntities.IsCreated)
+                output.Dispose();
         }
 
         /// <summary>
@@ -3566,14 +3595,31 @@ namespace Unity.Entities
         }
 
         /// <summary>
-        /// Gets a type handle for accessing entity transforms in a chunk.
+        /// Gets a type handle for accessing entity transforms in a chunk, including the chunks of GameObject entities.
         /// </summary>
         /// <param name="isReadOnly">Whether the handle is only used to read transforms.</param>
         /// <returns>The transform type handle.</returns>
         [GenerateTestsForBurstCompatibility]
         public TransformTypeHandle GetTransformTypeHandle(bool isReadOnly)
         {
-            return GetCheckedEntityDataAccess()->GetTransformTypeHandle(isReadOnly);
+            return GetTransformTypeHandle(isReadOnly, excludeGameObjects: false);
+        }
+
+        /// <summary>
+        /// Gets a type handle for accessing entity transforms in a chunk, optionally excluding the chunks of GameObject entities.
+        /// </summary>
+        /// <param name="isReadOnly">Whether the handle is only used to read transforms.</param>
+        /// <param name="excludeGameObjects">Whether the handle cannot access the chunks of GameObject entities. Jobs using
+        /// an excluding handle do not wait for, and are not waited for by, native code that accesses GameObject transforms.</param>
+        /// <returns>The transform type handle.</returns>
+        [GenerateTestsForBurstCompatibility]
+        public TransformTypeHandle GetTransformTypeHandle(bool isReadOnly, bool excludeGameObjects)
+        {
+            var access = GetCheckedEntityDataAccess();
+            var executingSystem = GetExecutingSystemState(access);
+            if (executingSystem != null)
+                executingSystem->AddTransformReaderWriter(isReadOnly, excludeGameObjects);
+            return access->GetTransformTypeHandle(isReadOnly, excludeGameObjects);
         }
 
         /// <summary>
@@ -3658,7 +3704,7 @@ namespace Unity.Entities
         /// <returns>An array of ComponentType containing all the types of components associated with the entity.</returns>
         public NativeArray<ComponentType> GetComponentTypes(Entity entity, AllocatorManager.AllocatorHandle allocator)
         {
-            var access = GetCheckedEntityDataAccess();
+            var access = GetCheckedEntityDataAccess(entity);
             var ecs = access->EntityComponentStore;
 
             ecs->AssertEntitiesExist(&entity, 1);
@@ -3687,7 +3733,7 @@ namespace Unity.Entities
         /// <returns>An array of ComponentType containing all the types of components associated with the entity.</returns>
         public NativeArray<ComponentType> GetComponentTypes(SystemHandle system, AllocatorManager.AllocatorHandle allocator)
         {
-            var access = GetCheckedEntityDataAccess();
+            var access = GetCheckedEntityDataAccess(system);
             var ecs = access->EntityComponentStore;
 
             ecs->AssertEntitiesExist(&system.m_Entity, 1);
@@ -3921,7 +3967,7 @@ namespace Unity.Entities
         /// <see cref="Entity.Index"/> in the entities array.</returns>
         public bool Exists(Entity entity)
         {
-            return GetCheckedEntityDataAccess()->Exists(entity);
+            return GetCheckedEntityDataAccess()->EntityComponentStore->ExistsInThisWorld(entity);
         }
 
         /// <summary>
@@ -3934,7 +3980,7 @@ namespace Unity.Entities
         [GenerateTestsForBurstCompatibility(GenericTypeArguments = new[] { typeof(BurstCompatibleComponentData) })]
         public bool HasComponent<T>(Entity entity)
         {
-            return GetCheckedEntityDataAccess()->HasComponent(entity, ComponentType.ReadWrite<T>());
+            return HasComponentInThisWorld(entity, TypeManager.GetTypeIndex<T>());
         }
 
         /// <summary>
@@ -3947,7 +3993,7 @@ namespace Unity.Entities
         [GenerateTestsForBurstCompatibility(GenericTypeArguments = new[] { typeof(BurstCompatibleComponentData) })]
         public bool HasComponent<T>(SystemHandle system)
         {
-            return GetCheckedEntityDataAccess()->HasComponent(system.m_Entity, ComponentType.ReadWrite<T>());
+            return HasComponentInThisWorld(system.m_Entity, TypeManager.GetTypeIndex<T>());
         }
 
         /// <summary>
@@ -3960,7 +4006,7 @@ namespace Unity.Entities
         [GenerateTestsForBurstCompatibility(GenericTypeArguments = new[] { typeof(BurstCompatibleBufferElement) })]
         public bool HasBuffer<T>(Entity entity) where T : struct, IBufferElementData
         {
-            return GetCheckedEntityDataAccess()->HasComponent(entity, ComponentType.ReadWrite<T>());
+            return HasComponentInThisWorld(entity, TypeManager.GetTypeIndex<T>());
         }
 
         /// <summary>
@@ -3972,7 +4018,7 @@ namespace Unity.Entities
         /// <returns>True, if the specified entity has the component.</returns>
         public bool HasComponent(Entity entity, ComponentType type)
         {
-            return GetCheckedEntityDataAccess()->HasComponent(entity, type);
+            return HasComponentInThisWorld(entity, type.TypeIndex);
         }
 
         /// <summary>
@@ -3985,7 +4031,7 @@ namespace Unity.Entities
         [GenerateTestsForBurstCompatibility(GenericTypeArguments = new[] { typeof(BurstCompatibleComponentData) })]
         public bool HasComponent(SystemHandle system, ComponentType type)
         {
-            return GetCheckedEntityDataAccess()->HasComponent(system.m_Entity, type);
+            return HasComponentInThisWorld(system.m_Entity, type.TypeIndex);
         }
 
         /// <summary>
@@ -3998,7 +4044,7 @@ namespace Unity.Entities
         [GenerateTestsForBurstCompatibility(GenericTypeArguments = new[] { typeof(BurstCompatibleComponentData) })]
         public bool HasChunkComponent<T>(Entity entity)
         {
-            return GetCheckedEntityDataAccess()->HasComponent(entity, ComponentType.ChunkComponent<T>());
+            return HasComponentInThisWorld(entity, ComponentType.ChunkComponent<T>().TypeIndex);
         }
 
         /// <summary>
@@ -4075,14 +4121,17 @@ namespace Unity.Entities
             return new EntityStorageInfoLookup(access, safetyHandles->GetSafetyHandleForEntityTypeHandle());
         }
 
-        internal TransformLookup GetTransformLookup(bool isReadOnly = false)
+        internal TransformLookup GetTransformLookup(bool isReadOnly = false, bool excludeGameObjects = false)
         {
             var access = GetCheckedEntityDataAccess();
+            var executingSystem = GetExecutingSystemState(access);
+            if (executingSystem != null)
+                executingSystem->AddTransformReaderWriter(isReadOnly, excludeGameObjects);
 
             var safetyHandles = &access->DependencyManager->Safety;
 
             var transformTypeIndex = TypeManager.GetTypeIndex<TransformRef>();
-            return new TransformLookup(access, isReadOnly,
+            return new TransformLookup(access, isReadOnly, excludeGameObjects,
                 safetyHandles->GetSafetyHandleForComponentLookup(transformTypeIndex, isReadOnly),
                 // TODO DOTS-10269: this should be a per-hierarchy handle, but for how we'll just
                 // use the secondary per-type handle as used by DynamicBuffer types.
@@ -4091,7 +4140,7 @@ namespace Unity.Entities
 
         internal void SetComponentDataRaw(Entity entity, TypeIndex typeIndex, void* data, int size)
         {
-            var access = GetCheckedEntityDataAccess();
+            var access = GetCheckedEntityDataAccess(entity);
             var ecs = access->EntityComponentStore;
             var deps = access->DependencyManager;
 
@@ -4101,7 +4150,7 @@ namespace Unity.Entities
 
         internal void* GetComponentDataRawRW(Entity entity, TypeIndex typeIndex)
         {
-            var access = GetCheckedEntityDataAccess();
+            var access = GetCheckedEntityDataAccess(entity);
             var ecs = access->EntityComponentStore;
             var deps = access->DependencyManager;
             ecs->AssertEntityHasComponent(entity, typeIndex);
@@ -4112,7 +4161,7 @@ namespace Unity.Entities
 
         internal void* GetComponentDataRawRO(Entity entity, TypeIndex typeIndex)
         {
-            var access = GetCheckedEntityDataAccess();
+            var access = GetCheckedEntityDataAccess(entity);
             var ecs = access->EntityComponentStore;
             var deps = access->DependencyManager;
             ecs->AssertEntityHasComponent(entity, typeIndex);
@@ -4129,7 +4178,7 @@ namespace Unity.Entities
 
         internal void SetEnableableComponent(Entity entity, TypeIndex typeIndex, bool value)
         {
-            var access = GetCheckedEntityDataAccess();
+            var access = GetCheckedEntityDataAccess(entity);
             var ecs = access->EntityComponentStore;
             var deps = access->DependencyManager;
             ecs->AssertEntityHasComponent(entity, typeIndex);
@@ -4141,7 +4190,7 @@ namespace Unity.Entities
         [ExcludeFromBurstCompatTesting("Returns managed object")]
         internal object GetSharedComponentData(Entity entity, TypeIndex typeIndex)
         {
-            var access = GetCheckedEntityDataAccess();
+            var access = GetCheckedEntityDataAccess(entity);
             var ecs = access->EntityComponentStore;
 
             ecs->AssertEntityHasComponent(entity, typeIndex);
@@ -4152,7 +4201,7 @@ namespace Unity.Entities
 
         internal void* GetBufferRawRW(Entity entity, TypeIndex typeIndex)
         {
-            var access = GetCheckedEntityDataAccess();
+            var access = GetCheckedEntityDataAccess(entity);
             var ecs = access->EntityComponentStore;
 
             ecs->AssertEntityHasComponent(entity, typeIndex);
@@ -4166,7 +4215,7 @@ namespace Unity.Entities
 
         internal void* GetBufferRawRO(Entity entity, TypeIndex typeIndex)
         {
-            var access = GetCheckedEntityDataAccess();
+            var access = GetCheckedEntityDataAccess(entity);
             var ecs = access->EntityComponentStore;
 
             ecs->AssertEntityHasComponent(entity, typeIndex);
@@ -4180,7 +4229,7 @@ namespace Unity.Entities
 
         internal int GetBufferLength(Entity entity, TypeIndex typeIndex)
         {
-            var access = GetCheckedEntityDataAccess();
+            var access = GetCheckedEntityDataAccess(entity);
             var ecs = access->EntityComponentStore;
 
             ecs->AssertEntityHasComponent(entity, typeIndex);
@@ -4198,7 +4247,7 @@ namespace Unity.Entities
 
         internal void DestroyEntityInternal(Entity* entities, int count)
         {
-            var access = GetCheckedEntityDataAccess();
+            var access = GetCheckedEntityDataAccess(entities, count);
             var changes = access->BeginStructuralChanges();
             access->DestroyEntityInternalDuringStructuralChange(entities, count);
             access->EndStructuralChanges(ref changes);
@@ -4269,7 +4318,7 @@ namespace Unity.Entities
         }
 
         [BurstCompile]
-        static void RemapChunksForFilteredMove(ref NativeArray<ArchetypeChunk> chunks,
+        internal static void RemapChunksForFilteredMove(ref NativeArray<ArchetypeChunk> chunks,
             ref NativeArray<RemapChunk> remapChunks,
             ref NativeArray<EntityRemapUtility.EntityRemapInfo> entityRemapping,
             EntityComponentStore* dstEntityComponentStore, EntityComponentStore* srcEntityComponentStore)
@@ -4833,7 +4882,7 @@ namespace Unity.Entities
             var access = GetCheckedEntityDataAccess();
             var ecs = access->EntityComponentStore;
 
-            if (!ecs->Exists(entity))
+            if (!ecs->ExistsInThisWorld(entity))
                 return 0;
 
             var chunk = ecs->GetChunk(entity);
@@ -4858,7 +4907,7 @@ namespace Unity.Entities
 
         internal TypeIndex GetComponentTypeIndex(Entity entity, int index)
         {
-            var access = GetCheckedEntityDataAccess();
+            var access = GetCheckedEntityDataAccess(entity);
             var ecs = access->EntityComponentStore;
 
             ecs->AssertEntitiesExist(&entity, 1);
@@ -4887,9 +4936,7 @@ namespace Unity.Entities
 
         internal bool HasComponentRaw(Entity entity, TypeIndex typeIndex)
         {
-            var access = GetCheckedEntityDataAccess();
-            var ecs = access->EntityComponentStore;
-            return ecs->HasComponent(entity, typeIndex, out _);
+            return HasComponentInThisWorld(entity, typeIndex);
         }
 
         #endregion

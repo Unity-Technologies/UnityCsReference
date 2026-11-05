@@ -340,7 +340,7 @@ namespace UnityEngine
             {
                 ATGMeshInfo meshInfo = nativeTextInfo.meshInfos[i];
                 FontAsset fa = null;
-                var textAsset = Object.FindObjectFromInstanceIDThreadSafe(meshInfo.textAssetId) as TextCore.Text.TextAsset;
+                var textAsset = Object.FindObjectFromEntityIdThreadSafe(meshInfo.textAssetId) as TextCore.Text.TextAsset;
                 if (textAsset == null)
                     continue;
                 if (textAsset is SpriteAsset)
@@ -439,7 +439,7 @@ namespace UnityEngine
             List<uint> missingGlyphs = new();
             foreach (var entry in missingGlyphsPerFontAsset)
             {
-                var textAsset = Object.FindObjectFromInstanceIDThreadSafe(entry.Key) as TextCore.Text.TextAsset;
+                var textAsset = Object.FindObjectFromEntityIdThreadSafe(entry.Key) as TextCore.Text.TextAsset;
                 if (textAsset == null || textAsset is not FontAsset fa || entry.Value.Count == 0)
                     continue;
 

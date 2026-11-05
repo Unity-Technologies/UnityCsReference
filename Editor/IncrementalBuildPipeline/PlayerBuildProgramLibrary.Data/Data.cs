@@ -54,6 +54,7 @@ namespace PlayerBuildProgramLibrary.Data
         public bool GenerateIdeProject;
         public bool Development;
         public bool UseNewInputSystem;
+        public bool LinkUGK;
         // True when the Managed Stack Trace Information player setting asks for file names and line numbers (MethodFileLineNumber).
         public bool ManagedStackTracesIncludeFileAndLineNumbers;
         public bool EnableCodeCoverage;

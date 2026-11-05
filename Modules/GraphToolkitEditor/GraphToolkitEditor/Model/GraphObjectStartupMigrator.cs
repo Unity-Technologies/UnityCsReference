@@ -16,30 +16,42 @@ namespace Unity.GraphToolkit.Editor
     [InitializeOnLoad]
     static class GraphObjectStartupMigrator
     {
+        internal const string k_MigratedSessionKey = "GraphToolkit.GraphObjectStartupMigrator.Migrated";
+
         static GraphObjectStartupMigrator()
         {
-            var toReimport = CollectAndMigrateFiles();
+            var toReimport = MigrateOncePerSession();
             if (toReimport.Count > 0)
                 EditorApplication.delayCall += () => Reimport(toReimport);
         }
 
+        internal static HashSet<string> MigrateOncePerSession()
+        {
+            // The runtime cannot change without restarting the editor, which clears SessionState.
+            if (SessionState.GetBool(k_MigratedSessionKey, false))
+                return new HashSet<string>();
+
+            var toReimport = CollectAndMigrateFiles();
+            SessionState.SetBool(k_MigratedSessionKey, true);
+            return toReimport;
+        }
+
         static HashSet<string> CollectAndMigrateFiles()
         {
-            var toReimport = new HashSet<string>();
+            var paths = new HashSet<string>();
 
             foreach (var extension in GraphObjectFactory.GetExtensions())
             {
                 foreach (var guid in AssetDatabase.FindAssets($"glob:\"*.{extension}\""))
-                {
-                    var path = AssetDatabase.GUIDToAssetPath(guid);
-                    if (GraphObject.MigrateTypeHandles(path))
-                        toReimport.Add(path);
-                }
+                    paths.Add(AssetDatabase.GUIDToAssetPath(guid));
             }
 
             foreach (var guid in AssetDatabase.FindAssets($"t:{nameof(GraphObject)}"))
+                paths.Add(AssetDatabase.GUIDToAssetPath(guid));
+
+            var toReimport = new HashSet<string>();
+            foreach (var path in paths)
             {
-                var path = AssetDatabase.GUIDToAssetPath(guid);
                 if (GraphObject.MigrateTypeHandles(path))
                     toReimport.Add(path);
             }

@@ -44,14 +44,14 @@ namespace Unity.Burst.LowLevel
 
         public static extern bool IsInitialized { get; }
 
-        public static extern bool DequeuePendingBurstLoad();
-        public static extern bool WasScriptDebugInfoEnabledAtDomainReload { get; }
-
         [NativeMethod(IsThreadSafe = true)]
         public static extern void SetCurrentExecutionMode(uint environment);
 
         [NativeMethod(IsThreadSafe = true)]
         public static extern uint GetCurrentExecutionMode();
+
+        public static extern bool UsePrecompiledLibraries { get; set; }
+        public static extern string[] PrecompiledModuleNames { get; }
 
         [FreeFunction("DefaultBurstLogCallback", isThreadSafe: true)]
         public static extern unsafe void Log(void* userData, BurstLogType logType, byte* message, byte* filename, int lineNumber);

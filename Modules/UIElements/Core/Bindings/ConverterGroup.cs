@@ -39,7 +39,9 @@ namespace UnityEngine.UIElements
 
         ConversionRegistry m_Registry;
         internal ConversionRegistry registry => m_Registry;
-        internal ref ConversionRegistry registerRef => ref m_Registry;
+
+        // Incremented when converters are added or removed through the group, to invalidate cached converter lookups.
+        internal int version { get; private set; }
 
         /// <summary>
         /// Creates a ConverterGroup.
@@ -63,13 +65,26 @@ namespace UnityEngine.UIElements
         /// <typeparam name="TDestination">The destination type to convert to.</typeparam>
         public void AddConverter<TSource, TDestination>(TypeConverter<TSource, TDestination> converter)
         {
-            m_Registry.Register(typeof(TSource), typeof(TDestination), converter);
+            Register(typeof(TSource), typeof(TDestination), converter);
+        }
+
+        internal void Register(Type source, Type destination, Delegate converter)
+        {
+            m_Registry.Register(source, destination, converter);
+            ++version;
+        }
+
+        internal void LazyRegister(Type source, Type destination, Func<Delegate> converter)
+        {
+            m_Registry.LazyRegister(source, destination, converter);
+            ++version;
         }
 
         // Invoked by the code-reload cleanup of the static groups in ConverterGroups.
         internal void Clear()
         {
             m_Registry.Clear();
+            ++version;
         }
 
         /// <summary>
@@ -110,6 +125,23 @@ namespace UnityEngine.UIElements
         public bool TrySetValue<TContainer, TValue>(ref TContainer container,
             in PropertyPath path, TValue value, out VisitReturnCode returnCode)
         {
+            return TrySetValue(this, ref container, path, value, out returnCode);
+        }
+
+        // A null group only uses the global converters.
+        internal static bool TrySetValue<TContainer, TValue>(ConverterGroup group, ref TContainer container,
+            in PropertyPath path, TValue value, out VisitReturnCode returnCode)
+        {
+            return TrySetValue(group, ref container, path, value, out returnCode, false, out _);
+        }
+
+        // When requested, also returns a writer that can set the same property of containers of the same type
+        // without visitation. Only paths made of a single property name are supported.
+        internal static bool TrySetValue<TContainer, TValue>(ConverterGroup group, ref TContainer container,
+            in PropertyPath path, TValue value, out VisitReturnCode returnCode,
+            bool createTargetWriter, out CachedTargetWriter<TValue> targetWriter)
+        {
+            targetWriter = null;
             if (path.IsEmpty)
             {
                 returnCode = VisitReturnCode.InvalidPath;
@@ -117,15 +149,17 @@ namespace UnityEngine.UIElements
             }
 
             var visitor = SetValueVisitor<TValue>.Pool.Get();
-            visitor.group = this;
+            visitor.group = group;
             visitor.Path = path;
             visitor.Value = value;
+            visitor.createTargetWriter = createTargetWriter && path.Length == 1 && path[0].IsName;
             try
             {
                 if (!PropertyContainer.TryAccept(visitor, ref container, out returnCode))
                     return false;
 
                 returnCode = visitor.ReturnCode;
+                targetWriter = visitor.targetWriter;
             }
             finally
             {

@@ -61,7 +61,15 @@ namespace Unity.Scripting.LifecycleManagement
             {
                 if (TryGetInitializationMethod(assembly, out var initializationMethod))
                 {
-                    initializationMethod.Invoke(null, null);
+                    try
+                    {
+                        initializationMethod.Invoke(null, null);
+                    }
+                    catch (Exception ex)
+                    {
+                        // A failing assembly init (e.g. missing dependency in Safe Mode) must not take down the Editor.
+                        DebugLifecycle.ReportError($"Initialization of assembly '{assembly.FullName}' failed: {ex}");
+                    }
                 }
             }
         }

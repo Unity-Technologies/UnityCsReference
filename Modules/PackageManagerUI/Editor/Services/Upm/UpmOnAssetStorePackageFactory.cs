@@ -73,7 +73,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
                 var tagsToExclude = m_SettingsProxy.seeAllPackageVersions ? PackageTag.None :
                     m_SettingsProxy.enablePreReleasePackages ? PackageTag.Experimental : PackageTag.Experimental | PackageTag.PreRelease;
-                var versionList = new UpmVersionList(packageData, tagsToExclude, m_IOProxy, m_ApplicationProxy, changedSource != PackagesChangedSource.AddAndRemove, m_SettingsProxy.trustPolicyLevel);
+                var versionList = new UpmVersionList(packageData, tagsToExclude, m_IOProxy, m_ApplicationProxy, changedSource != PackagesChangedSource.AddAndRemove, m_SettingsProxy.trustPolicyLevel, m_SettingsProxy.isSignatureValidationDisabled);
                 package = CreatePackage(packageName, versionList, new Product(productId, purchaseInfo, productInfo), isDeprecated: packageData.isDeprecated, deprecationMessage: packageData.deprecationMessage);
                 if (productInfoFetchStatus.error != null)
                     AddError(package, productInfoFetchStatus.error);

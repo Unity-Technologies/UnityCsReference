@@ -282,6 +282,7 @@ namespace UnityEditor
         [FreeFunction]
         public static extern void ClearSkinCache();
 
+        [Obsolete("Unsupported.useScriptableRenderPipeline is deprecated because the Built-In Render Pipeline is deprecated. It will be removed in a future version.", false)]
         [StaticAccessor("GetRenderManager()", StaticAccessorType.Dot)]
         public static extern bool useScriptableRenderPipeline { get; set; }
 

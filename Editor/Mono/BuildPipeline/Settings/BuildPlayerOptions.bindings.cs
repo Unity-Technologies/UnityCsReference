@@ -66,7 +66,7 @@ namespace UnityEditor
         ///<summary>The <see cref="BuildTarget" /> to build.</summary>
         ///<remarks>For best results, leave this property unset so that the build uses the target defined in the active <see cref="BuildProfile" />. If you do set it, set it to match the active build target.
         ///
-        ///Building a target that doesn't match the active build target is unreliable. Changing the active build target requires recompiling Editor scripts for the new platform and a domain reload, which can't happen while a build script is running. As a result, build callbacks and platform-dependent code might compile for the wrong platform, and some platforms fail to build at all.
+        ///Building a target that doesn't match the active build target is unreliable. Changing the active build target requires recompiling Editor scripts for the new platform and a code reload, which can't happen while a build script is running. As a result, build callbacks and platform-dependent code might compile for the wrong platform, and some platforms fail to build at all.
         ///
         ///To select the target, set the active build profile first: use the Build Profiles window in the Editor, or the <c>-activeBuildProfile</c> or <c>-buildTarget</c> argument on the [command line](xref:um-build-command-line). For more information, refer to [Create a custom build script](xref:um-build-script-build).</remarks>
         ///<seealso cref="EditorUserBuildSettings.activeBuildTarget" />

@@ -349,6 +349,16 @@ namespace Unity.U2D.Physics
         public readonly float angle { get => HingeJoint_GetAngle(this); }
 
         /// <summary>
+        /// The speed body B is currently turning relative to body A around the hinge, in degrees per second.
+        /// A positive value turns body B counter-clockwise relative to body A and a negative value turns it clockwise.
+        /// It is measured from the bodies themselves, so it includes motion from every source rather than only the motor.
+        /// </summary>
+        /// <remarks>
+        /// See <see cref="angle"/> and <see cref="motorSpeed"/>.
+        /// </remarks>
+        public readonly float currentSpeed { get => HingeJoint_GetCurrentSpeed(this); }
+
+        /// <summary>
         /// Enable/Disable the joint motor.
         /// </summary>
         public readonly bool enableMotor { get => HingeJoint_GetEnableMotor(this); set => HingeJoint_SetEnableMotor(this, value); }

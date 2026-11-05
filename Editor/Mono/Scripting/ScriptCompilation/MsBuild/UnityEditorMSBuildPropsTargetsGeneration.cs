@@ -199,6 +199,7 @@ class UnityEditorMSBuildPropsTargetsGeneration
             cache.EditorPluginPaths,
             cache.PlayerPluginPaths,
             cache.AllPlugins,
+            GetTestOnlyPlugins(cache.PlayerPluginPaths),
             searchPaths,
             globalAnalyzers,
             buildTarget.ToString(),
@@ -377,7 +378,20 @@ class UnityEditorMSBuildPropsTargetsGeneration
             allPlugins.Add(Path.GetFullPath(FileUtil.GetPhysicalPath(plugin)));
         }
 
-        PropsGenerator.Instance.UpdatePluginsProps(editorBuildReferences, playerBuildReferences, allPlugins);
+        PropsGenerator.Instance.UpdatePluginsProps(editorBuildReferences, playerBuildReferences, allPlugins, GetTestOnlyPlugins(playerBuildReferences));
+    }
+
+    private static HashSet<string> GetTestOnlyPlugins(List<string> playerPluginPaths)
+    {
+        var testOnlyPlugins = new HashSet<string>();
+        foreach (var plugin in playerPluginPaths)
+        {
+            if (string.Equals(Path.GetFileName(plugin), TestRunnerHelpers.NunitAssemblyName, StringComparison.OrdinalIgnoreCase))
+            {
+                testOnlyPlugins.Add(plugin);
+            }
+        }
+        return testOnlyPlugins;
     }
 
     private static void UpdateSystemSearchPaths(BuildTarget buildTarget)

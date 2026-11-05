@@ -5,9 +5,11 @@
 using System;
 using Unity.Collections;
 using Unity.Collections.LowLevel.Unsafe;
+using UnityEngine.Bindings;
 
 namespace Unity.Scripting.Reflection
 {
+    [VisibleToOtherModules("UnityEngine.EntitiesModule")]
     internal unsafe struct AttributeHandleCollection : IDisposable, IEquatable<AttributeHandleCollection>
     {
         internal const int k_StackCapacity = 8;

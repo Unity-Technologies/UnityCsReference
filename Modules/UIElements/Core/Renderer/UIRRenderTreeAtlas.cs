@@ -73,7 +73,7 @@ namespace UnityEngine.UIElements.UIR
             return true;
         }
 
-        static public bool CreateTextureForAtlasBlock(ref AtlasBlock block, bool forceGammaRendering, out bool allocatedNewTexture)
+        static public bool CreateTextureForAtlasBlock(ref AtlasBlock block, bool forceGammaRendering, bool needsDepthStencil)
         {
             // Fills the entry.texture with a newly allocated RenderTexture
             Debug.Assert(block.texture == null, "Entry already has a texture assigned.");
@@ -87,12 +87,10 @@ namespace UnityEngine.UIElements.UIR
                 colorspace = ColorSpace.Gamma;
 
             var graphicsFormat = (colorspace == ColorSpace.Linear) ? GraphicsFormat.R8G8B8A8_SRGB : GraphicsFormat.R8G8B8A8_UNorm;
-            var descriptor = new RenderTextureDescriptor(texWidth, texHeight, graphicsFormat, GraphicsFormat.D24_UNorm_S8_UInt);
+            var descriptor = new RenderTextureDescriptor(texWidth, texHeight, graphicsFormat, needsDepthStencil ? GraphicsFormat.D24_UNorm_S8_UInt : GraphicsFormat.None);
             descriptor.useMipMap = false;
 
             block.texture = RenderTexture.GetTemporary(descriptor);
-
-            allocatedNewTexture = false;
 
             if (block.texture == null)
                 return false;
@@ -105,12 +103,10 @@ namespace UnityEngine.UIElements.UIR
                 return false;
             }
 
-            allocatedNewTexture = true; // Eventually, we may reuse previously allocated textures
-
             var old = RenderTexture.active;
             RenderTexture.active = block.texture;
 
-            GL.Clear(true, true, Color.clear, UIRUtility.k_ClearZ);
+            GL.Clear(needsDepthStencil, true, Color.clear, UIRUtility.k_ClearZ);
 
             // To remind custom filter creators to use the atlas UVs, we draw a colored margin around the texture.
             // Leave a 2 pixels gab to avoid filtering issues.

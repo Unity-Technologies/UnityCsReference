@@ -109,6 +109,12 @@ namespace Unity.Entities
             return m_TypeHashToIndex.TryGetValue(typeHash, out index);
         }
 
+        internal int AddDelegates(UnmanagedComponentSystemDelegates delegates)
+        {
+            m_Delegates.Add(delegates);
+            return m_Delegates.Length - 1;
+        }
+
         internal ref readonly UnmanagedComponentSystemDelegates GetSystemDelegates(int index)
         {
             return ref m_Delegates.Ptr[index];
@@ -128,6 +134,8 @@ namespace Unity.Entities
             public static List<Type> s_StructTypes = null;
             [NoAutoStaticsCleanup]
             public static List<RegistrationEntry> s_PendingRegistrations;
+            [NoAutoStaticsCleanup]
+            public static int s_ManagedSystemFunctionIndex = -1;
         }
 
         struct Dummy
@@ -144,6 +152,7 @@ namespace Unity.Entities
             s_Data.Data.Dispose();
             Managed.s_PendingRegistrations = null;
             Managed.s_StructTypes = null;
+            Managed.s_ManagedSystemFunctionIndex = -1;
         }
 
         /// <summary>
@@ -190,11 +199,7 @@ namespace Unity.Entities
             if (Managed.s_PendingRegistrations == null)
             {
                 Managed.s_PendingRegistrations = new List<RegistrationEntry>();
-                Managed.s_StructTypes = new List<Type>();
-
-                ref var data = ref s_Data.Data;
-                if (!data.Constructed)
-                    data.Construct();
+                EnsureConstructed();
             }
 
             // The order/number here must match UnmanagedSystemFunctionType
@@ -210,6 +215,42 @@ namespace Unity.Entities
                 m_DebugName = debugName,
                 m_BurstCompileBits = burstCompileBits
             });
+        }
+
+        static void EnsureConstructed()
+        {
+            Managed.s_StructTypes ??= new List<Type>();
+
+            ref var data = ref s_Data.Data;
+            if (!data.Constructed)
+                data.Construct();
+        }
+
+        internal static int ManagedSystemFunctionIndex => Managed.s_ManagedSystemFunctionIndex;
+
+        [MonoPInvokeCallback(typeof(ForwardingFunc))]
+        static unsafe void ForwardManagedSystemOnUpdate(IntPtr systemPtr, IntPtr state)
+        {
+            ((SystemState*)state)->ManagedSystem.Update();
+        }
+
+        [ExcludeFromBurstCompatTesting("Uses managed delegates")]
+        static unsafe void RegisterManagedSystemFunctions()
+        {
+            if (Managed.s_ManagedSystemFunctionIndex >= 0)
+                return;
+
+            EnsureConstructed();
+
+            ForwardingFunc onUpdate = ForwardManagedSystemOnUpdate;
+            var delegates = default(UnmanagedComponentSystemDelegates);
+            var updateIndex = (int)UnmanagedSystemFunctionType.OnUpdate;
+            SelectManagedFn(out delegates.ManagedFunctions[updateIndex], ref delegates.BurstFunctions[updateIndex], onUpdate);
+            SelectBurstFn(out delegates.BurstFunctions[updateIndex], out delegates.GCDefeat1[updateIndex], 0, onUpdate);
+            delegates.PresentFunctionBits = (ushort)(1 << updateIndex);
+
+            Managed.s_StructTypes.Add(typeof(ComponentSystemBase));
+            Managed.s_ManagedSystemFunctionIndex = s_Data.Data.AddDelegates(delegates);
         }
 
         [ExcludeFromBurstCompatTesting("Uses managed delegate")]
@@ -266,6 +307,8 @@ namespace Unity.Entities
         [ExcludeFromBurstCompatTesting("Uses managed delegates")]
         public unsafe static void InitializePendingTypes()
         {
+            RegisterManagedSystemFunctions();
+
             if (Managed.s_PendingRegistrations == null)
                 return;
 
@@ -313,7 +356,7 @@ namespace Unity.Entities
         [Burst.CompilerServices.IgnoreWarning(1371)]
         static unsafe void CallForwardingFunction(SystemState* systemState, UnmanagedSystemFunctionType functionType)
         {
-            var metaIndex = systemState->UnmanagedMetaIndex;
+            var metaIndex = systemState->m_FunctionTableIndex;
             var systemPointer = systemState->m_SystemPtr;
             var delegates = s_Data.Data.GetSystemDelegates(metaIndex);
             bool isBurst = true;
@@ -340,7 +383,7 @@ namespace Unity.Entities
 
         internal static unsafe ref readonly UnmanagedComponentSystemDelegates GetDelegates(SystemState* systemState)
         {
-            var metaIndex = systemState->UnmanagedMetaIndex;
+            var metaIndex = systemState->m_FunctionTableIndex;
             return ref s_Data.Data.GetSystemDelegates(metaIndex);
         }
 

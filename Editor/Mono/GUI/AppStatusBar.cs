@@ -268,7 +268,7 @@ namespace UnityEditor
             var globalProgress = Progress.globalProgress;
             var progressBarStyle = GetProgressBarStyle(globalProgress);
             var progressBarContent = GetProgressBarContent(m_ProgressStatus);
-            var progressRect = EditorGUILayout.GetControlRect(false, position.height, Styles.progressBarBack, Styles.progressBarWidth);
+            var progressRect = EditorGUILayout.GetControlRect(false, Styles.progressBarBack.fixedHeight, Styles.progressBarBack, Styles.progressBarWidth);
             if (EditorGUI.ProgressBar(progressRect, globalProgress, progressBarContent, true,
                 Styles.progressBarBack,  Styles.progressBarBorder, progressBarStyle, Styles.progressBarText))
                 Progress.ShowDetails(false);

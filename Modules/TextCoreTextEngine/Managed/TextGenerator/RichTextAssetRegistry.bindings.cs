@@ -94,7 +94,7 @@ namespace UnityEngine.TextCore
             SpriteAsset asset;
             if (assetNameHash == k_EmptyNameHash)
             {
-                var textSettings = UnityEngine.Object.FindObjectFromInstanceIDThreadSafe(textSettingsId) as TextSettings;
+                var textSettings = UnityEngine.Object.FindObjectFromEntityIdThreadSafe(textSettingsId) as TextSettings;
                 if (textSettings == null)
                     return -1;
 
@@ -161,7 +161,7 @@ namespace UnityEngine.TextCore
 
         static TextStyle ResolveStyle(EntityId textSettingsId, int styleHash)
         {
-            var ts = UnityEngine.Object.FindObjectFromInstanceIDThreadSafe(textSettingsId) as TextSettings;
+            var ts = UnityEngine.Object.FindObjectFromEntityIdThreadSafe(textSettingsId) as TextSettings;
             if (ts == null) return null;
             var sheet = ts.defaultStyleSheet;
             if (ReferenceEquals(sheet, null)) return null;
@@ -199,7 +199,7 @@ namespace UnityEngine.TextCore
             uint hash = HashName(name);
             if (s_FontAssetCache.ContainsKey(hash)) return;
 
-            var textSettings = UnityEngine.Object.FindObjectFromInstanceIDThreadSafe(textSettingsId) as TextSettings;
+            var textSettings = UnityEngine.Object.FindObjectFromEntityIdThreadSafe(textSettingsId) as TextSettings;
             if (textSettings == null) return;
 
             string nameStr = name.ToString();
@@ -223,7 +223,7 @@ namespace UnityEngine.TextCore
             uint hash = HashName(name);
             if (s_SpriteAssetCache.ContainsKey(hash)) return;
 
-            var textSettings = UnityEngine.Object.FindObjectFromInstanceIDThreadSafe(textSettingsId) as TextSettings;
+            var textSettings = UnityEngine.Object.FindObjectFromEntityIdThreadSafe(textSettingsId) as TextSettings;
             if (textSettings == null) return;
 
             string nameStr = name.ToString();
@@ -248,7 +248,7 @@ namespace UnityEngine.TextCore
             uint hash = HashName(name);
             if (s_GradientAssetCache.ContainsKey(hash)) return;
 
-            var textSettings = UnityEngine.Object.FindObjectFromInstanceIDThreadSafe(textSettingsId) as TextSettings;
+            var textSettings = UnityEngine.Object.FindObjectFromEntityIdThreadSafe(textSettingsId) as TextSettings;
             if (textSettings == null) return;
 
             string nameStr = name.ToString();

@@ -9,6 +9,7 @@ using Unity.GraphToolkit.InternalBridge;
 using Unity.GraphToolsAuthoringFramework.InternalEditorBridge;
 using UnityEditor;
 using UnityEngine;
+using UnityEngine.Pool;
 using UnityEngine.UIElements;
 
 namespace Unity.GraphToolkit.Editor
@@ -48,6 +49,7 @@ namespace Unity.GraphToolkit.Editor
             target.RegisterCallback<MouseUpEvent>(OnMouseUp);
             target.RegisterCallback<KeyDownEvent>(OnKeyDown);
             target.RegisterCallback<ContextualMenuPopulateEvent>(OnContextualMenuPopulate, TrickleDown.TrickleDown);
+            target.RegisterCallback<MouseCaptureOutEvent>(OnCaptureOut);
         }
 
         /// <inheritdoc />
@@ -58,6 +60,7 @@ namespace Unity.GraphToolkit.Editor
             target.UnregisterCallback<MouseUpEvent>(OnMouseUp);
             target.UnregisterCallback<KeyDownEvent>(OnKeyDown);
             target.UnregisterCallback<ContextualMenuPopulateEvent>(OnContextualMenuPopulate);
+            target.UnregisterCallback<MouseCaptureOutEvent>(OnCaptureOut);
         }
 
         void Reset()
@@ -191,7 +194,7 @@ namespace Unity.GraphToolkit.Editor
                     {
                         foreach (var wireDrag in m_AdditionalWireDragHelpers)
                         {
-                            wireDrag.HandleMouseDown(m_LastMouseDownEvent, compatiblePort => FilterCompatiblePort(compatiblePort));
+                            wireDrag.HandleMouseDown(m_LastMouseDownEvent, compatiblePort => FilterCompatiblePort(compatiblePort), false);
                         }
                     }
 
@@ -227,28 +230,48 @@ namespace Unity.GraphToolkit.Editor
         {
             if (CanStopManipulation(evt))
             {
-                target.ReleaseMouse();
-                if (m_Active)
+                try
                 {
-                    if (m_AdditionalWireDragHelpers != null)
+                    if (m_Active)
                     {
-                        #pragma warning disable UAC2001 // Avoid Linq
-                        m_ConnectedWireDragHelper.HandleMouseUp(evt, true, m_AdditionalWireDragHelpers.Select(t => t.OriginalWire), m_AdditionalWireDragHelpers.Select(t => t.DraggedPort));
-#pragma warning restore UAC2001
-                        foreach (var dragHelper in m_AdditionalWireDragHelpers)
-                            dragHelper.HandleMouseUp(evt, false, Array.Empty<WireView>(), Array.Empty<PortModel>());
-                    }
-                    else
-                    {
-                        m_ConnectedWireDragHelper.HandleMouseUp(evt, true, Array.Empty<WireView>(), Array.Empty<PortModel>());
-                    }
+                        if (m_AdditionalWireDragHelpers != null)
+                        {
+                            using var disposeWires = ListPool<AbstractWire>.Get(out var otherWires);
+                            using var disposePorts = ListPool<PortModel>.Get(out var otherPorts);
+                            foreach (var dragHelper in m_AdditionalWireDragHelpers)
+                            {
+                                otherWires.Add(dragHelper.OriginalWire);
+                                otherPorts.Add(dragHelper.DraggedPort);
+                            }
 
-                    evt.StopPropagation();
+                            m_ConnectedWireDragHelper.HandleMouseUp(evt, true, otherWires, otherPorts);
+                            foreach (var dragHelper in m_AdditionalWireDragHelpers)
+                                dragHelper.HandleMouseUp(evt, false, Array.Empty<WireView>(), Array.Empty<PortModel>());
+                        }
+                        else
+                        {
+                            m_ConnectedWireDragHelper.HandleMouseUp(evt, true, Array.Empty<WireView>(), Array.Empty<PortModel>());
+                        }
+
+                        evt.StopPropagation();
+                    }
                 }
-                Reset();
+                finally
+                {
+                    Reset();
+
+                    // Released after the drop so that the capture out event does not abort it.
+                    target.ReleaseMouse();
+                }
             }
 
             StopMergingCommands();
+        }
+
+        void OnCaptureOut(MouseCaptureOutEvent evt)
+        {
+            if (m_Active)
+                StopDragging();
         }
 
         protected void OnKeyDown(KeyDownEvent evt)

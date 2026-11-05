@@ -84,6 +84,7 @@ namespace Unity.Entities
         internal SystemHandle           m_Handle;
 
         int                                    m_UnmanagedMetaIndex;
+        internal int                           m_FunctionTableIndex;
         internal GCHandle                      m_World;
         // used by managed systems to store a reference to the actual system
         internal GCHandle                      m_ManagedSystem;
@@ -257,6 +258,7 @@ namespace Unity.Entities
         internal void InitManaged(World world, SystemHandle handle, Type managedType, ComponentSystemBase system)
         {
             m_UnmanagedMetaIndex = -1;
+            m_FunctionTableIndex = SystemBaseRegistry.ManagedSystemFunctionIndex;
             m_ManagedSystem = GCHandle.Alloc(system, GCHandleType.Normal);
             var systemTypeIndex = TypeManager.GetSystemTypeIndex(managedType);
 
@@ -305,6 +307,7 @@ namespace Unity.Entities
         {
             Enabled = true;
             m_UnmanagedMetaIndex = unmanagedMetaIndex;
+            m_FunctionTableIndex = unmanagedMetaIndex;
             m_SystemPtr = systemptr;
             m_Self = This;
             var typeIndex = TypeManager.GetSystemTypeIndex(SystemBaseRegistry.GetStructType(unmanagedMetaIndex));
@@ -666,6 +669,7 @@ namespace Unity.Entities
             if (CalculateReaderWriterDependency.Add(componentType, ref m_JobDependencyForReadingSystems, ref m_JobDependencyForWritingSystems))
             {
                 CompleteDependencyInternal();
+                ExposeJobHandleToNativeTransformsIfUpdating();
             }
         }
 
@@ -674,7 +678,52 @@ namespace Unity.Entities
             if (query.AddReaderWritersToLists(ref m_JobDependencyForReadingSystems, ref m_JobDependencyForWritingSystems))
             {
                 CompleteDependencyInternal();
+                ExposeJobHandleToNativeTransformsIfUpdating();
             }
+        }
+
+        internal bool CanReachTransforms()
+        {
+            // Every way of accessing transforms registers TransformRef, including the GameObject transform dependency types.
+            var transformRef = TypeManager.GetTypeIndex<TransformRef>();
+            return m_JobDependencyForWritingSystems.Contains(transformRef) || m_JobDependencyForReadingSystems.Contains(transformRef);
+        }
+
+        // Native transform code waits for the updating system's jobs only once the system can reach transforms, which can
+        // first happen during its update.
+        void ExposeJobHandleToNativeTransformsIfUpdating()
+        {
+            if (m_WorldUnmanaged.ExecutingSystem == m_Handle && CanReachTransforms())
+                m_DependencyManager->SetRunningTransformSystemJobHandle((JobHandle*)UnsafeUtility.AddressOf(ref m_JobHandle));
+        }
+
+        // Entities jobs that can reach GameObject transforms register under EntityJobsOnGameObjectTransforms and also wait for
+        // native transform jobs, which register under NativeJobsOnGameObjectTransforms.
+        void AddGameObjectTransformKeys(bool isReadOnly)
+        {
+            var entityJobsOnGameObjectTransforms = TypeManager.GetTypeIndex<EntityJobsOnGameObjectTransforms>();
+            var nativeJobsOnGameObjectTransforms = TypeManager.GetTypeIndex<NativeJobsOnGameObjectTransforms>();
+            bool added;
+            if (isReadOnly)
+            {
+                added = CalculateReaderWriterDependency.AddReaderTypeIndex(entityJobsOnGameObjectTransforms, ref m_JobDependencyForReadingSystems, ref m_JobDependencyForWritingSystems);
+                added |= CalculateReaderWriterDependency.AddReaderTypeIndex(nativeJobsOnGameObjectTransforms, ref m_JobDependencyForReadingSystems, ref m_JobDependencyForWritingSystems);
+            }
+            else
+            {
+                added = CalculateReaderWriterDependency.AddWriterTypeIndex(entityJobsOnGameObjectTransforms, ref m_JobDependencyForReadingSystems, ref m_JobDependencyForWritingSystems);
+                added |= CalculateReaderWriterDependency.AddWriterTypeIndex(nativeJobsOnGameObjectTransforms, ref m_JobDependencyForReadingSystems, ref m_JobDependencyForWritingSystems);
+            }
+            if (added)
+                CompleteDependencyInternal();
+        }
+
+        // Registers the system's access to TransformRef, and to the transforms of GameObject entities unless excludeGameObjects.
+        internal void AddTransformReaderWriter(bool isReadOnly, bool excludeGameObjects)
+        {
+            AddReaderWriter(isReadOnly ? ComponentType.ReadOnly<TransformRef>() : ComponentType.ReadWrite<TransformRef>());
+            if (!excludeGameObjects)
+                AddGameObjectTransformKeys(isReadOnly);
         }
 
         private void AfterQueryCreated(EntityQuery query)
@@ -863,6 +912,8 @@ namespace Unity.Entities
             // CheckOnUpdate_Handle();
 
             AddReaderWriter(componentType);
+            if (componentType.TypeIndex == TypeManager.GetTypeIndex<TransformRef>())
+                AddGameObjectTransformKeys(componentType.AccessModeType == ComponentType.AccessMode.ReadOnly);
             return EntityManager.GetDynamicComponentTypeHandle(componentType);
         }
 
@@ -900,8 +951,23 @@ namespace Unity.Entities
         [GenerateTestsForBurstCompatibility]
         public TransformTypeHandle GetTransformTypeHandle(bool isReadOnly = false)
         {
-            AddReaderWriter(isReadOnly ? ComponentType.ReadOnly<TransformRef>() : ComponentType.ReadWrite<TransformRef>());
-            return EntityManager.GetTransformTypeHandle(isReadOnly);
+            return GetTransformTypeHandle(isReadOnly, excludeGameObjects: false);
+        }
+
+        /// <summary>
+        /// Manually gets the run-time type information required to access transforms in a chunk, optionally excluding
+        /// the transforms of GameObject entities.
+        /// </summary>
+        /// <remarks>Remember to call <see cref="TransformTypeHandle.Update(ref SystemState)"/>.</remarks>
+        /// <param name="isReadOnly">True for read-only access, or false for read/write access.</param>
+        /// <param name="excludeGameObjects">Whether the type handle cannot access the chunks of GameObject entities.</param>
+        /// <returns>An object representing the type information required to safely access transforms stored in a
+        /// chunk.</returns>
+        [GenerateTestsForBurstCompatibility]
+        public TransformTypeHandle GetTransformTypeHandle(bool isReadOnly, bool excludeGameObjects)
+        {
+            AddTransformReaderWriter(isReadOnly, excludeGameObjects);
+            return EntityManager.GetTransformTypeHandle(isReadOnly, excludeGameObjects);
         }
 
         /// <summary>
@@ -911,14 +977,19 @@ namespace Unity.Entities
         /// <param name="isReadOnly">True for read-only access, or false for read/write access.</param>
         /// <remarks>
         /// Using this method registers a read-only or read/write dependency for the system on TransformRef,
-        /// based on the value passed to <paramref name="isReadOnly"/>.
+        /// based on the value passed to <paramref name="isReadOnly"/>. For a GameObject entity, the system's jobs
+        /// also wait for, and are waited for by, native code that accesses GameObject transforms.
         /// </remarks>
         /// <returns>The TransformRef to the entity.</returns>
         [GenerateTestsForBurstCompatibility]
         public TransformRef GetTransformRef(Entity entity, bool isReadOnly)
         {
             AddReaderWriter(isReadOnly ? ComponentType.ReadOnly<TransformRef>() : ComponentType.ReadWrite<TransformRef>());
-            return EntityManager.GetTransformRef(entity, isReadOnly);
+            var transformRef = EntityManager.GetTransformRef(entity, isReadOnly);
+
+            if (m_EntityComponentStore->GetArchetype(entity)->HasGameObjectEntities)
+                AddGameObjectTransformKeys(isReadOnly);
+            return transformRef;
         }
 
         /// <summary>
@@ -1053,15 +1124,29 @@ namespace Unity.Entities
         /// </summary>
         /// <remarks>Remember to call <see cref="TransformLookup.Update(ref SystemState)"/>. </remarks>
         /// <remarks>Assign the returned object to a field of your Job struct so that you can access the
-        /// contents of the transform in a Job.</remarks>
+        /// contents of the transform in a Job. The lookup can access GameObject entities.</remarks>
         /// <param name="isReadOnly">Whether the transform data is only read or is also written. Access data in
         /// a read-only fashion whenever possible.</param>
         /// <returns>An array-like object that provides access to transform data, indexed by <see cref="Entity"/>.</returns>
         /// <seealso cref="ComponentLookup{T}"/>
         public TransformLookup GetTransformLookup(bool isReadOnly = false)
         {
-            AddReaderWriter(isReadOnly ? ComponentType.ReadOnly<TransformRef>() : ComponentType.ReadWrite<TransformRef>());
-            return EntityManager.GetTransformLookup(isReadOnly);
+            return GetTransformLookup(isReadOnly, excludeGameObjects: false);
+        }
+
+        /// <summary>
+        /// Manually gets a <see cref="TransformLookup"/> object that can access a <see cref="TransformRef"/>,
+        /// optionally excluding the transforms of GameObject entities.
+        /// </summary>
+        /// <remarks>Remember to call <see cref="TransformLookup.Update(ref SystemState)"/>. </remarks>
+        /// <param name="isReadOnly">Whether the transform data is only read or is also written.</param>
+        /// <param name="excludeGameObjects">Whether the lookup cannot access GameObject entities. Jobs using an excluding lookup
+        /// do not wait for, and are not waited for by, native code that accesses GameObject transforms.</param>
+        /// <returns>An array-like object that provides access to transform data, indexed by <see cref="Entity"/>.</returns>
+        public TransformLookup GetTransformLookup(bool isReadOnly, bool excludeGameObjects)
+        {
+            AddTransformReaderWriter(isReadOnly, excludeGameObjects);
+            return EntityManager.GetTransformLookup(isReadOnly, excludeGameObjects);
         }
 
         ///<summary> Obsolete. Use <see cref="GetEntityStorageInfoLookup"/> instead.</summary>

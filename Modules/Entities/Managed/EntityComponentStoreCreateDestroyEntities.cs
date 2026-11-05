@@ -309,6 +309,9 @@ namespace Unity.Entities
             }
         }
 
+        // Exposes DestroyBatch so GameObjectComponentStoreBridge can scavenge chunk entries whose
+        // GameObject died during a structural change.
+        internal void DestroyStaleGameObjectEntityBatch(in EntityBatchInChunk batch) => DestroyBatch(in batch);
 
         void DestroyBatch(in EntityBatchInChunk batch)
         {
@@ -376,8 +379,12 @@ namespace Unity.Entities
         {
             var src = GetEntityInChunk(srcEntity);
             var srcArchetype = GetArchetype(src.Chunk);
+            var srcComponentStore = srcArchetype->EntityComponentStore;
+            var isFromOtherWorld = srcComponentStore != (EntityComponentStore*)UnsafeUtility.AddressOf(ref this);
 
             var dstArchetype = removePrefab ? srcArchetype->InstantiateArchetype : srcArchetype->CopyArchetype;
+            if (isFromOtherWorld)
+                dstArchetype = GetOrCreateArchetype(dstArchetype->Types, dstArchetype->TypesCount);
 
             var archetypeChunkFilter = new ArchetypeChunkFilter();
             archetypeChunkFilter.Archetype = dstArchetype;
@@ -392,6 +399,9 @@ namespace Unity.Entities
                 // Always copy shared component indices since GetChunkWithEmptySlots might reallocate the storage of SharedComponentValues
                 srcSharedComponentValues.CopyTo(archetypeChunkFilter.SharedComponentValues, 0, dstArchetype->NumSharedComponents);
             }
+
+            if (isFromOtherWorld)
+                CloneSharedComponentValues(srcComponentStore, archetypeChunkFilter.SharedComponentValues, dstArchetype->NumSharedComponents);
 
             int instanceBeginIndex = 0;
             while (instanceBeginIndex != instanceCount)
@@ -417,7 +427,29 @@ namespace Unity.Entities
                 instanceBeginIndex += allocateCount;
             }
 
+            // The chunks hold their own references, drop the one the clone took
+            if (isFromOtherWorld)
+                ReleaseSharedComponentValues(archetypeChunkFilter.SharedComponentValues, dstArchetype->NumSharedComponents);
+
             return remapChunksCount;
+        }
+
+        void CloneSharedComponentValues(EntityComponentStore* srcComponentStore, int* sharedComponentValues, int count)
+        {
+            for (int i = 0; i < count; i++)
+            {
+                if (sharedComponentValues[i] != 0)
+                    sharedComponentValues[i] = CloneSharedComponentNonDefault(srcComponentStore, sharedComponentValues[i]);
+            }
+        }
+
+        void ReleaseSharedComponentValues(int* sharedComponentValues, int count)
+        {
+            for (int i = 0; i < count; i++)
+            {
+                if (sharedComponentValues[i] != 0)
+                    RemoveSharedComponentReference_Unmanaged(sharedComponentValues[i]);
+            }
         }
 
         int InstantiateExistingEntitiesOne(Entity srcEntity, Entity* existingEntities, int instanceCount, InstantiateRemapChunk* remapChunks, int remapChunksCount, bool removePrefab)
@@ -494,6 +526,10 @@ namespace Unity.Entities
 
             var remapChunksCount = 0;
 
+            // A reference outside the group would point into the source world, so it only survives within one world
+            var keepExternalReferences = srcEntityCount == 0 ||
+                GetArchetype(GetChunk(srcEntities[0]))->EntityComponentStore == (EntityComponentStore*)UnsafeUtility.AddressOf(ref this);
+
             for (int i = 0; i != srcEntityCount; i++)
             {
                 var srcEntity = srcEntities[i];
@@ -534,7 +570,7 @@ namespace Unity.Entities
 
                 EntityRemapUtility.PatchEntitiesForPrefab(dstArchetype->ScalarEntityPatches + 1, dstArchetype->ScalarEntityPatchCount - 1,
                     dstArchetype->BufferEntityPatches, dstArchetype->BufferEntityPatchCount,
-                    chunk.Buffer, indexInChunk, allocatedCount, srcEntities, localRemap, srcEntityCount);
+                    chunk.Buffer, indexInChunk, allocatedCount, srcEntities, localRemap, srcEntityCount, keepExternalReferences);
             }
 
             if (tempAllocSize > kMaxStackAllocSize)
@@ -654,7 +690,7 @@ namespace Unity.Entities
         }
 
         [BurstCompile]
-        static void GetCreatedAndDestroyedEntities(EntityComponentStore* store, ref NativeList<int> state, ref NativeList<Entity> createdEntities, ref NativeList<Entity> destroyedEntities, ref JobHandle jobHandle, bool async)
+        internal static void GetCreatedAndDestroyedEntities(EntityComponentStore* store, ref NativeList<int> state, ref NativeList<Entity> createdEntities, ref NativeList<Entity> destroyedEntities, ref JobHandle jobHandle, bool async)
         {
             var newState = new NativeList<int>(async ? Allocator.TempJob : Allocator.Temp);
 

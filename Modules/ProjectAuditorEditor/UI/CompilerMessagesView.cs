@@ -40,7 +40,10 @@ To view Roslyn Analyzer diagnostics, make sure Roslyn Analyzer DLLs use the <b>R
             }
             else if (selectedDescriptors.Length == 1)
             {
-                selectedText = $"{selectedIssues[0].Description}\n\n{selectedIssues[0].GetProperty(Core.PropertyType.Path)}";
+                var issue = selectedIssues[0];
+                selectedText = string.IsNullOrEmpty(issue.RelativePath)
+                    ? issue.Description
+                    : $"{issue.Description}\n\n{issue.GetProperty(Core.PropertyType.Path)}";
             }
 
             DrawDetailsHeader(SharedContents.Details,

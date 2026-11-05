@@ -29,7 +29,7 @@ namespace UnityEngine.UIElements
     }
 
     /// <summary>
-    /// The live <see cref="ManagedComponentBox{T}"/> instances of one component type, held weakly.
+    /// The live <see cref="TrackedManagedComponentBox{T}"/> instances of one component type, held weakly.
     /// </summary>
     /// <remarks>
     /// Only the code-unload sweep reads this: it is the one service the removed process-wide managed store
@@ -51,11 +51,11 @@ namespace UnityEngine.UIElements
         readonly List<GCHandle> m_Entries = new();
 
         // Non-null only between PinLiveBoxes and Dispose, i.e. for the duration of a teardown.
-        ManagedComponentBox<T>[] m_Pinned;
+        TrackedManagedComponentBox<T>[] m_Pinned;
 
         public int Count => m_Entries.Count;
 
-        public void Add(ManagedComponentBox<T> box)
+        public void Add(TrackedManagedComponentBox<T> box)
         {
             // A type with no [ReleaseComponentResources] method has nothing for the sweep to run, so it
             // needs no entries at all — the same condition ReleaseLiveBoxes early-outs on. Reading the
@@ -70,7 +70,7 @@ namespace UnityEngine.UIElements
             box.registryIndex = m_Entries.Count - 1;
         }
 
-        public void Remove(ManagedComponentBox<T> box)
+        public void Remove(TrackedManagedComponentBox<T> box)
         {
             // registryIndex is -1 on a box Add skipped or already removed, which the unsigned compare rejects.
             var index = box.registryIndex;
@@ -87,7 +87,7 @@ namespace UnityEngine.UIElements
                 m_Entries[index] = m_Entries[last];
 
                 // Alive to read: a registered box is held by its element or by the pending free-queue.
-                if (m_Entries[index].Target is ManagedComponentBox<T> moved)
+                if (m_Entries[index].Target is TrackedManagedComponentBox<T> moved)
                     moved.registryIndex = index;
             }
 
@@ -99,10 +99,10 @@ namespace UnityEngine.UIElements
             if (m_Disposed || m_Pinned != null || ComponentManager<T>.ReleaseResourcesHandler == null)
                 return;
 
-            var pinned = new ManagedComponentBox<T>[m_Entries.Count];
+            var pinned = new TrackedManagedComponentBox<T>[m_Entries.Count];
             for (var i = 0; i < pinned.Length; i++)
             {
-                pinned[i] = m_Entries[i].Target as ManagedComponentBox<T>;
+                pinned[i] = m_Entries[i].Target as TrackedManagedComponentBox<T>;
             }
 
             m_Pinned = pinned;

@@ -96,6 +96,7 @@ namespace UnityEditor.Build.Analysis
                 TotalSizeBytes = summary.TotalSizeBytes,
                 TotalTimeMs = summary.TotalTimeMs,
                 FolderPath = folderPath,
+                ProjectGUID = summary.ProjectGUID,
             };
         }
 

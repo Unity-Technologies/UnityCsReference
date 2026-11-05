@@ -195,7 +195,7 @@ namespace UnityEngine.TextCore.Generation
             {
                 var meshInfo = nativeTextInfo.meshInfos[i];
 
-                var textAsset = UnityEngine.Object.FindObjectFromInstanceIDThreadSafe(meshInfo.textAssetId) as UnityEngine.TextCore.Text.TextAsset;
+                var textAsset = UnityEngine.Object.FindObjectFromEntityIdThreadSafe(meshInfo.textAssetId) as UnityEngine.TextCore.Text.TextAsset;
 
                 if (textAsset == null)
                     continue;
@@ -322,7 +322,7 @@ namespace UnityEngine.TextCore.Generation
             var missingGlyphs = new List<uint>();
             foreach (var entry in missingGlyphsPerFontAsset)
             {
-                if (UnityEngine.Object.FindObjectFromInstanceIDThreadSafe(entry.Key) is not FontAsset fontAsset || entry.Value.Count == 0)
+                if (UnityEngine.Object.FindObjectFromEntityIdThreadSafe(entry.Key) is not FontAsset fontAsset || entry.Value.Count == 0)
                     continue;
 
                 missingGlyphs.Clear();

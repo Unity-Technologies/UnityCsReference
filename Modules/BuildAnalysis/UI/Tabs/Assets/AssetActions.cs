@@ -19,6 +19,14 @@ namespace UnityEditor.Build.Analysis
         internal const string k_MissingAssetMessage =
             "Asset not found. It may have been renamed, moved, or deleted since this build was analyzed.";
 
+        // User-facing message when asset selection is blocked because the build is from another project.
+        internal const string k_ImportedBuildMessage =
+            "Unavailable for builds from another project.";
+
+        // Set by the window while it shows a build from another project, whose asset paths don't belong to this one.
+        [NoAutoStaticsCleanup] // owned by BuildAnalysisWindow, which sets it on every build it shows and clears it in OnDisable
+        internal static bool SelectionBlocked;
+
         [NoAutoStaticsCleanup] // defaults to a same-assembly method and is invoked without a null-check; resetting to null would NRE. Tests swap it but restore the default in TearDown.
         internal static Action<string> ShowInProjectImpl = DefaultShowInProject;
         [NoAutoStaticsCleanup] // defaults to a same-assembly method and is invoked without a null-check; resetting to null would NRE. Tests swap it but restore the default in TearDown.
@@ -28,11 +36,17 @@ namespace UnityEditor.Build.Analysis
         [NoAutoStaticsCleanup] // defaults to a same-assembly method and is invoked without a null-check; resetting to null would NRE. Tests swap it but restore the default in TearDown.
         internal static Action<string> NotifyMissingImpl = DefaultNotifyMissing;
 
-        public static void ShowInProject(string assetPath) => ShowInProjectImpl(assetPath);
+        public static void ShowInProject(string assetPath)
+        {
+            if (SelectionBlocked)
+                return;
+            ShowInProjectImpl(assetPath);
+        }
+
         public static void CopyPath(string assetPath) => CopyPathImpl(assetPath);
 
-        // Whether "Show in Project" can resolve the asset; used to disable the menu item up front.
-        public static bool CanShowInProject(string assetPath) => CanShowInProjectImpl(assetPath);
+        // Whether "Show in Project" is available: selection isn't blocked for an imported build and the asset resolves. Used to disable the menu item up front.
+        public static bool CanShowInProject(string assetPath) => !SelectionBlocked && CanShowInProjectImpl(assetPath);
 
         private static bool DefaultCanShowInProject(string assetPath)
             => !string.IsNullOrEmpty(assetPath) && AssetDatabase.LoadMainAssetAtPath(assetPath) != null;

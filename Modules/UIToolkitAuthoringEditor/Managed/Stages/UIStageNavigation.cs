@@ -6,6 +6,7 @@ using System;
 using System.Collections.Generic;
 using Unity.Scripting.LifecycleManagement;
 using UnityEditor;
+using UnityEditor.EditorTools;
 using UnityEditor.IMGUI.Controls;
 using UnityEditor.SceneManagement;
 using UnityEngine.Pool;
@@ -50,6 +51,7 @@ static partial class UIStageNavigation
         s_Manager = StageNavigationManager.instance;
         s_Manager.afterSuccessfullySwitchedToStage += OnSwitchedToStage;
         s_Manager.stageChanging += OnStageChanging;
+        ToolManager.RegisterStageToolContextOverride(typeof(VisualElementEditingStage), typeof(VisualElementToolContext), Array.Empty<Type>());
     }
 
     [OnCodeDeinitializing]

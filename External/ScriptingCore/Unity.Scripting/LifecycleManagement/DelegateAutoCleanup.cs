@@ -87,5 +87,14 @@ namespace UnityEngine
         {
             return new DelegateAutoCleanup(cleanup, typeof(PlayModeScope), cleanOn, ownerDescription);
         }
+
+        /// <summary>
+        /// Creates a DelegateAutoCleanup registered against the CodeLoadedScope with <see cref="ScopeTransitionType.Both"/>.
+        /// Avoids exposing the internal CodeLoadedScope type in generated user code.
+        /// </summary>
+        public static DelegateAutoCleanup CreateForCodeLoad(Action cleanup, string ownerDescription = "")
+        {
+            return new DelegateAutoCleanup(cleanup, typeof(CodeLoadedScope), ownerDescription);
+        }
     }
 }

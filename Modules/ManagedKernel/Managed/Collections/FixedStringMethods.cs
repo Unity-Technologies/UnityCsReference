@@ -41,6 +41,32 @@ namespace Unity.Collections
             }
         }
 
+        static int SkipRunes(byte* ptr, int byteLength, int byteIndex, int runeCount, out int skipped)
+        {
+            skipped = 0;
+            if (runeCount <= 0)
+                return byteIndex;
+
+            for (; byteIndex < byteLength; ++byteIndex)
+            {
+                if ((ptr[byteIndex] & 0xC0) == 0x80)
+                    continue;
+
+                if (skipped == runeCount)
+                    break;
+
+                ++skipped;
+            }
+            return byteIndex;
+        }
+
+        static void GetSubstringByteRange(byte* ptr, int byteLength, int startIndex, int length, out int byteStart, out int byteCount)
+        {
+            byteStart = SkipRunes(ptr, byteLength, 0, startIndex, out var skipped);
+            CheckSubstringInRange(skipped, startIndex, length);
+            byteCount = SkipRunes(ptr, byteLength, byteStart, length, out _) - byteStart;
+        }
+
         /// <summary>
         /// Retrieves a substring of this string. The substring starts from a specific character index, and has a specified length.
         /// </summary>
@@ -54,11 +80,11 @@ namespace Unity.Collections
         public static T Substring<T>(ref this T str, int startIndex, int length)
             where T : unmanaged, INativeList<byte>, IUTF8Bytes
         {
-            CheckSubstringInRange(str.Length, startIndex, length);
-            length = math.min(length, str.Length - startIndex);
+            var ptr = str.GetUnsafePtr();
+            GetSubstringByteRange(ptr, str.Length, startIndex, length, out var byteStart, out var byteCount);
 
             var substr = new T();
-            substr.Append(str.GetUnsafePtr() + startIndex, length);
+            substr.Append(ptr + byteStart, byteCount);
             return substr;
         }
 
@@ -87,11 +113,11 @@ namespace Unity.Collections
         /// <exception cref="ArgumentOutOfRangeException">Thrown if startIndex or length parameter is negative, or if startIndex is larger than string length.</exception>
         public static NativeText Substring(ref this NativeText str, int startIndex, int length, AllocatorManager.AllocatorHandle allocator)
         {
-            CheckSubstringInRange(str.Length, startIndex, length);
-            length = math.min(length, str.Length - startIndex);
+            var ptr = str.GetUnsafePtr();
+            GetSubstringByteRange(ptr, str.Length, startIndex, length, out var byteStart, out var byteCount);
 
-            var substr = new NativeText(length, allocator);
-            substr.Append(str.GetUnsafePtr() + startIndex, length);
+            var substr = new NativeText(byteCount, allocator);
+            substr.Append(ptr + byteStart, byteCount);
             return substr;
         }
 

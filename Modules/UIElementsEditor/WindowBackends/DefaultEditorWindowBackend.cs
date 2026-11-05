@@ -341,8 +341,8 @@ namespace UnityEditor.UIElements
             }
         }
 
-        private static readonly string k_InitializedWindowPropertyName = "Initialized";
-        void SendInitializeIfNecessary(bool duringOnCreate = false)
+        internal static readonly string k_InitializedWindowPropertyName = "Initialized";
+        internal void SendInitializeIfNecessary(bool duringOnCreate = false)
         {
             if (editorWindowModel == null)
                 return;
@@ -353,7 +353,8 @@ namespace UnityEditor.UIElements
             {
                 var rootElement = window.rootVisualElement;
 
-                if (EditorApplication.isUpdating || duringOnCreate)
+                // CreateGUI can pump the message loop, which would start rendering another view inside this repaint
+                if (EditorApplication.isUpdating || duringOnCreate || m_Panel.isRepainting)
                 {
                     rootElement.schedule.Execute(() => { SendInitializeIfNecessary(false); });
                     return;

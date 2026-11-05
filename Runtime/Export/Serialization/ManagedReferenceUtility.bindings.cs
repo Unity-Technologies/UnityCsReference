@@ -13,7 +13,7 @@ namespace UnityEngine.Serialization
     [NativeHeader("Runtime/Serialize/ManagedReferenceUtility.h")]
     public sealed class ManagedReferenceUtility
     {
-        // Must match the same declarations in "Runtime/Serialize/ReferenceId.h"
+        // Must match the same declarations in "Serialization/ReferenceId.h"
         public const RefId RefIdUnknown = -1;
         public const RefId RefIdNull = -2;
 

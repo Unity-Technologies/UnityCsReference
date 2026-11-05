@@ -4,8 +4,10 @@
 
 using System;
 using System.Runtime.InteropServices;
+using Unity.Scripting.LifecycleManagement;
 
 using UnityEngine;
+using UnityEngine.Bindings;
 using UnityEngine.Rendering;
 using UnityEditor.Build;
 
@@ -44,6 +46,15 @@ namespace UnityEditor.Rendering
         KeepIfEntitiesGraphics = 0,
         StripAll,
         KeepAll
+    }
+
+    // Whether the project still relies on BiRP. Moves to NotInUse once and never back.
+    [VisibleToOtherModules("UnityEditor.ProjectAuditorModule")]
+    internal enum BuiltInRenderPipelineUsage
+    {
+        Unknown,
+        InUse,
+        NotInUse,
     }
 
     internal enum InstancingStrippingMode
@@ -87,6 +98,38 @@ namespace UnityEditor.Rendering
         }
 
         public static void SetTierSettings(NamedBuildTarget target, GraphicsTier tier, TierSettings settings) => SetTierSettings(target.ToBuildTargetGroup(), tier, settings);
+
+        // Opens the Built-In Render Pipeline migration workflow. Registered by Project Auditor.
+        [AutoStaticsCleanupOnCodeReload]
+        [VisibleToOtherModules("UnityEditor.ProjectAuditorModule")]
+        internal static Action startBuiltInRenderPipelineMigration;
+
+        internal static bool UsesBuiltInRenderPipeline()
+        {
+            return builtInRenderPipelineUsage == BuiltInRenderPipelineUsage.InUse;
+        }
+
+        [VisibleToOtherModules("UnityEditor.ProjectAuditorModule")]
+        internal static bool ShouldDisplayBuiltInRenderPipelineMigrationDialog()
+        {
+            if (Application.isBatchMode || Environment.CommandLine.Contains("-testResults"))
+                return false;
+
+            if (GraphicsSettings.GetBuiltInRenderPipelineFallbackEnabled())
+                return false;
+
+            return UsesBuiltInRenderPipeline();
+        }
+
+        internal static bool IsAnyRenderPipelineAssetTypeAvailable()
+        {
+            foreach (var type in TypeCache.GetTypesDerivedFrom<RenderPipelineAsset>())
+            {
+                if (!type.IsAbstract)
+                    return true;
+            }
+            return false;
+        }
     }
 
 

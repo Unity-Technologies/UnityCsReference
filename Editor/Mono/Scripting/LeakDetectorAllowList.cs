@@ -15,14 +15,17 @@ namespace UnityEditor.Scripting.CodeReload
 
         internal LeakIdentity(string assemblyName, string typeName)
         {
-            m_AssemblyName = assemblyName ?? string.Empty;
             m_TypeName = typeName ?? string.Empty;
+            // Arrays are reported with no assembly on some platforms and with the element's on others
+            m_AssemblyName = IsArrayTypeName(m_TypeName) ? string.Empty : assemblyName ?? string.Empty;
         }
 
         internal string AssemblyName => m_AssemblyName;
         internal string TypeName => m_TypeName;
 
-        internal bool IsValid => m_AssemblyName.Length > 0 && m_TypeName.Length > 0;
+        internal bool IsValid => m_TypeName.Length > 0 && (m_AssemblyName.Length > 0 || IsArrayTypeName(m_TypeName));
+
+        static bool IsArrayTypeName(string typeName) => typeName.EndsWith(']');
 
         public bool Equals(LeakIdentity other)
         {

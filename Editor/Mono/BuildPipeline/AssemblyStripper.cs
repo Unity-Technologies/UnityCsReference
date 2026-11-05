@@ -289,7 +289,7 @@ namespace UnityEditorInternal
             if (string.IsNullOrEmpty(config))
                 return null;
 
-            var path = linkerInputDirectory.Combine("ManagedCapture.dat");
+            var path = linkerInputDirectory.Combine("ManagedCapture.config");
             File.WriteAllText(path.ToString(), Convert.ToBase64String(Encoding.UTF8.GetBytes(config)));
             return path.MakeAbsolute().ToString();
         }

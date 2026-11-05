@@ -1820,6 +1820,6 @@ namespace UnityEngine
 
         ///<summary>The <see cref="T:UnityEngine.Collider" /> or <see cref="T:UnityEngine.Collider2D" /> for the GameObject struck by the particles.</summary>
         ///<remarks>Cast the return value and test for null, if you expect both Collider and Collider2D components to be returned.</remarks>
-        public Component colliderComponent { get { return InstanceIDToColliderComponent(m_ColliderEntityId); } }
+        public Component colliderComponent { get { return EntityIdToColliderComponent(m_ColliderEntityId); } }
     }
 }

@@ -100,7 +100,7 @@ namespace UnityEngine.UIElements
         // This is the way the computed style encodes the 4 borderWidth values at this moment.
         // Returns 0 for Auto or None, and assumes pixels even if the value is percents.
         // This might seem a bit weird but changing that could cause regressions.
-        internal float pixelValue => m_Unit >= LayoutUnit.Auto ? 0f : m_Value;
+        internal float pixelValue => IsAutoOrNone() ? 0f : m_Value;
 
         /// <summary>
         /// The internal layout unit of the value property.
@@ -118,6 +118,8 @@ namespace UnityEngine.UIElements
         /// </summary>
         /// <returns>true if Length is None, false otherwise</returns>
         public bool IsNone() => m_Unit == LayoutUnit.Undefined;
+
+        private bool IsAutoOrNone() => m_Unit == LayoutUnit.Auto || m_Unit == LayoutUnit.Undefined;
 
         /// <summary>
         /// Creates from a float and an optional <see cref="LengthUnit"/>.
@@ -160,13 +162,13 @@ namespace UnityEngine.UIElements
         /// <undoc/>
         internal static bool Approximately(Length lhs, Length rhs)
         {
-            return lhs.m_Unit == rhs.m_Unit && (lhs.m_Unit >= LayoutUnit.Auto || Mathf.Approximately(lhs.m_Value, rhs.m_Value));
+            return lhs.m_Unit == rhs.m_Unit && (lhs.IsAutoOrNone() || Mathf.Approximately(lhs.m_Value, rhs.m_Value));
         }
 
         /// <undoc/>
         public static bool operator ==(Length lhs, Length rhs)
         {
-            return lhs.m_Unit == rhs.m_Unit && (lhs.m_Unit >= LayoutUnit.Auto || lhs.m_Value == rhs.m_Value);
+            return lhs.m_Unit == rhs.m_Unit && (lhs.IsAutoOrNone() || lhs.m_Value == rhs.m_Value);
         }
 
         /// <undoc/>
@@ -189,6 +191,9 @@ namespace UnityEngine.UIElements
 
         public override int GetHashCode()
         {
+            if (IsAutoOrNone())
+                return (int)m_Unit;
+
             unchecked
             {
                 return (m_Value.GetHashCode() * 397) ^ (int)m_Unit;

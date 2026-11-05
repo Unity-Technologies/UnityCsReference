@@ -161,12 +161,12 @@ namespace Unity.UIToolkit.Editor
             return new Bounds(worldCenter, worldSize);
         }
 
-        static void OnSelectionChanged()
+        internal static void OnSelectionChanged()
         {
             s_SelectedElements.Clear();
-            foreach (var obj in Selection.objects)
+            foreach (var sel in Selection.GetLoadedObjects<VisualElementSelection>())
             {
-                if (obj is VisualElementSelection sel && sel.Element != null)
+                if (sel.Element != null)
                     s_SelectedElements.Add(sel.Element);
             }
         }

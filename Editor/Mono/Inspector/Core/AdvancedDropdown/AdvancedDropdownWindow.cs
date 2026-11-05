@@ -124,11 +124,15 @@ namespace UnityEditor.IMGUI.Controls
                 }
                 else
                 {
-                    // searchString set to empty before any search was ever active — default to root.
+                    // searchString set to empty before any search was ever active — default to root,
+                    // dropping any levels Init() descended into so the header shows no back arrow.
                     m_CurrentlyRenderedTree = m_DataSource.mainTree;
+                    m_ViewsStack.Clear();
                 }
             }
         }
+
+        internal bool hasParentLevel => m_ViewsStack.Count > 0;
 
         internal bool showHeader { get; set; } = true;
         internal bool searchable { get; set; } = true;
@@ -142,6 +146,7 @@ namespace UnityEditor.IMGUI.Controls
 
         protected virtual bool isSearchFieldDisabled { get; set; }
         protected virtual bool setInitialSelectionPosition { get; } = true;
+        protected virtual bool restoreNavigationOnOpen { get; } = true;
 
         protected internal AdvancedDropdownState state
         {
@@ -206,10 +211,9 @@ namespace UnityEditor.IMGUI.Controls
             // Has to be done before calling Show / ShowWithMode
             buttonRect = GUIUtility.GUIToScreenRect(buttonRect);
             OnDirtyList();
-            m_CurrentlyRenderedTree = hasSearch ? m_DataSource.searchTree : m_DataSource.mainTree;
 
             // Apply saved state before calculating size, so if it points to a child level, calculate size for it
-            SetSelectionFromState();
+            SetInitialNavigation();
 
             // Force the GUI to initialise its header/search rects so CalculateDefaultExtraHeight()
             // returns the real size on the very first call.
@@ -250,6 +254,13 @@ namespace UnityEditor.IMGUI.Controls
                 m_InitialSelectionPosition = m_Gui.GetSelectionHeight(m_DataSource, buttonRect);
             }
             wantsMouseMove = true;
+        }
+
+        internal void SetInitialNavigation()
+        {
+            m_CurrentlyRenderedTree = hasSearch ? m_DataSource.searchTree : m_DataSource.mainTree;
+            if (restoreNavigationOnOpen)
+                SetSelectionFromState();
         }
 
         void SetSelectionFromState()
@@ -516,7 +527,7 @@ namespace UnityEditor.IMGUI.Controls
             GUILayout.BeginArea(m_Gui.GetAnimRect(areaPosition, anim));
             // Header
             if (showHeader)
-                m_Gui.DrawHeader(group, GoToParent, m_ViewsStack.Count > 0);
+                m_Gui.DrawHeader(group, GoToParent, hasParentLevel);
 
             DrawList(group);
             GUILayout.EndArea();

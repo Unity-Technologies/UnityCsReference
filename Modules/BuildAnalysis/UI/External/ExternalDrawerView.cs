@@ -3,6 +3,8 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using System.Threading;
+using System.Threading.Tasks;
 using UnityEngine;
 using UnityEngine.UIElements;
 
@@ -45,8 +47,8 @@ namespace UnityEditor.Build.Analysis
 
         internal bool IsBroken => m_Broken;
 
-        /// <summary>Shows a build the drawer claimed, creating the content if this is the first time.</summary>
-        public void SetSelection(BuildReportSummary summary)
+        /// <summary>Takes a claimed build, creating the content the first time.</summary>
+        public void Claim()
         {
             if (m_Broken)
                 return;
@@ -54,15 +56,30 @@ namespace UnityEditor.Build.Analysis
             if (m_Content == null && !TryCreateContent())
                 return;
 
+            m_Selected = true;
+        }
+
+        /// <summary>Starts loading a claimed build. A synchronous throw becomes a faulted task.</summary>
+        public Task<object> LoadAsync(BuildReportSummary summary, CancellationToken token)
+        {
+            if (m_Broken)
+                return Task.FromResult<object>(null);
+
             try
             {
-                m_Selected = true;
-                m_Drawer.OnBuildSelected(summary);
+                return m_Drawer.LoadBuildAsync(summary, token) ?? Task.FromResult<object>(null);
             }
             catch (Exception e)
             {
-                DrawErrorHelpBox($"{nameof(ExternalBuildDrawer.OnBuildSelected)} failed: {e.Message}");
+                return Task.FromException<object>(e);
             }
+        }
+
+        /// <summary>Shows a loaded build.</summary>
+        /// <returns>False if the drawer showed no report. A broken drawer has nothing to retry.</returns>
+        public bool Apply(BuildReportSummary summary, object loaded)
+        {
+            return m_Broken || m_Drawer.ApplyBuild(summary, loaded);
         }
 
         /// <summary>Tells the drawer the selection moved to a build it does not claim.</summary>
@@ -80,6 +97,22 @@ namespace UnityEditor.Build.Analysis
             catch (Exception e)
             {
                 DrawErrorHelpBox($"{nameof(ExternalBuildDrawer.OnBuildDeselected)} failed: {e.Message}");
+            }
+        }
+
+        /// <summary>Tells the drawer the build history changed.</summary>
+        public void RefreshSelection()
+        {
+            if (!m_Selected || m_Broken)
+                return;
+
+            try
+            {
+                m_Drawer.OnBuildListRefreshed();
+            }
+            catch (Exception e)
+            {
+                DrawErrorHelpBox($"{nameof(ExternalBuildDrawer.OnBuildListRefreshed)} failed: {e.Message}");
             }
         }
 

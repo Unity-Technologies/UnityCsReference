@@ -130,9 +130,9 @@ namespace UnityEditor
             }
 
             float newVisualStart = Mathf.Min(visualStart, value);
-            float newVisualEnd   = Mathf.Max(visualEnd  , value + size);
+            float newVisualEnd = Mathf.Max(visualEnd, value + size);
 
-            MinMaxSlider(sliderRect, ref value, ref size, newVisualStart, newVisualEnd, newVisualStart, newVisualEnd, slider, thumb, horiz);
+            MinMaxSlider(sliderRect, ref value, ref size, newVisualStart, newVisualEnd, newVisualStart, newVisualEnd, slider, thumb, null, null, horiz);
 
             if (ScrollerRepeatButton(id, minRect, leftButton))
                 value -= scrollStepSize * (visualStart < visualEnd ? 1f : -1f);
@@ -185,6 +185,8 @@ namespace UnityEditor
         [NoAutoStaticsCleanup] // transient per-frame selection snapshot; null after reload is correct
         static List<bool> s_LastFrameSelections = null;
         internal static readonly int s_MinMaxSliderHash = "MinMaxSlider".GetHashCode();
+        internal static readonly int s_MinMaxSliderThumbMinHash = "MinMaxSliderThumbMin".GetHashCode();
+        internal static readonly int s_MinMaxSliderThumbMaxHash = "MinMaxSliderThumbMax".GetHashCode();
         /// Make a double-draggable slider that will let you specify a range of values.
         /// @param position where to draw it
         /// @param value the current start position
@@ -193,19 +195,36 @@ namespace UnityEditor
         /// @param visualEnd what is displayed as the end of the range. The user can drag beyond this, but the displays shows this as the limit. Set this to be the end of the relevant data.
         /// @param startLimit what is the lowest possible value? The user can never slide beyond this in the minimum direction. If you don't want a limit, set it to -Mathf.Infinity
         /// @param endLimit what is the highes possible value? The user can never slide beyond this in the maximum direction. If you don't want a limit, set it to Mathf.Infinity
-        public static void MinMaxSlider(Rect position, ref float value, ref float size, float visualStart, float visualEnd, float startLimit, float endLimit, GUIStyle slider, GUIStyle thumb, bool horiz)
+        public static void MinMaxSlider(Rect position, ref float value, ref float size, float visualStart, float visualEnd, float startLimit, float endLimit, GUIStyle slider, GUIStyle thumb, GUIStyle thumbMin, GUIStyle thumbMax, bool horiz)
         {
-            DoMinMaxSlider(position, GUIUtility.GetControlID(s_MinMaxSliderHash, FocusType.Passive), ref value, ref size, visualStart, visualEnd, startLimit, endLimit, slider, thumb, horiz);
+            DoMinMaxSlider(position, GUIUtility.GetControlID(s_MinMaxSliderHash, FocusType.Passive), GUIUtility.GetControlID(s_MinMaxSliderThumbMinHash, FocusType.Passive),
+                GUIUtility.GetControlID(s_MinMaxSliderThumbMaxHash, FocusType.Passive), ref value, ref size, visualStart, visualEnd, startLimit, endLimit, slider, thumb, thumbMin, thumbMax, horiz);
         }
 
-        private static float ThumbSize(bool horiz, GUIStyle thumb)
+        private static float ThumbSize(bool horiz, GUIStyle thumb, GUIStyle thumbMin, GUIStyle thumbMax)
         {
             if (horiz)
-                return thumb.fixedWidth != 0 ? thumb.fixedWidth : thumb.padding.horizontal;
-            return thumb.fixedHeight != 0 ? thumb.fixedHeight : thumb.padding.vertical;
+            {
+                if (thumb.fixedWidth != 0)
+                    return thumb.fixedWidth;
+                else if (thumbMin != null && thumbMin.fixedWidth != 0 && thumbMax != null && thumbMax.fixedWidth != 0)
+                    return thumbMin.fixedWidth + thumbMax.fixedWidth;
+                else
+                    return thumb.padding.horizontal;
+            }
+            else
+            {
+                if (thumb.fixedHeight != 0)
+                    return thumb.fixedHeight;
+                else if (thumbMin != null && thumbMin.fixedHeight != 0 && thumbMax != null && thumbMax.fixedHeight != 0)
+                    return thumbMin.fixedHeight + thumbMax.fixedHeight;
+                else
+                    return thumb.padding.vertical;
+            }
         }
 
-        internal static void DoMinMaxSlider(Rect position, int id, ref float value, ref float size, float visualStart, float visualEnd, float startLimit, float endLimit, GUIStyle slider, GUIStyle thumb, bool horiz)
+        internal static void DoMinMaxSlider(Rect position, int id, int minId, int maxId, ref float value, ref float size, float visualStart, float visualEnd, float startLimit, float endLimit, GUIStyle slider, GUIStyle thumb,
+            GUIStyle thumbMin, GUIStyle thumbMax, bool horiz)
         {
             Event evt = Event.current;
             bool usePageScrollbars = size == 0;
@@ -240,13 +259,14 @@ namespace UnityEditor
             float pixelsPerValue;
             float mousePosition;
             Rect thumbRect;
+            Rect thumbSection = Rect.zero; // Section of the slider from the min to the max handles of the slider thumb
             Rect thumbMinRect, thumbMaxRect;
             Rect contentRect = thumb.margin.Remove(slider.padding.Remove(position));
-            float thumbSize = ThumbSize(horiz, thumb);
+            float thumbSize = ThumbSize(horiz, thumb, thumbMin, thumbMax);
 
             if (horiz)
             {
-                float thumbHeight = (thumb.fixedHeight != 0 ? thumb.fixedHeight : contentRect.height);
+                float thumbHeight = thumb.fixedHeight != 0 ? thumb.fixedHeight : contentRect.height;
 
                 pixelsPerValue = (position.width - slider.padding.horizontal - thumbSize) / (maxVisual - minVisual);
                 thumbRect = new Rect(
@@ -254,13 +274,35 @@ namespace UnityEditor
                     contentRect.y,
                     displaySize * pixelsPerValue + thumbSize,
                     thumbHeight);
-                thumbMinRect = new Rect(thumbRect.x, thumbRect.y, thumb.padding.left, thumbRect.height);
-                thumbMaxRect = new Rect(thumbRect.xMax - thumb.padding.right, thumbRect.y, thumb.padding.right, thumbRect.height);
+                thumbSection = new Rect(thumbRect.x, position.y, thumbRect.width, position.height);
+
+                // Min handle
+                var thumbMinX = thumbRect.x;
+                var thumbMinY = thumbMin != null ? thumbRect.y + (thumbRect.height - thumbMin.fixedHeight) / 2 : thumbRect.y; // center align the min handle with the thumb.
+                var thumbMinWidth = thumbMin != null ? thumbMin.fixedWidth : thumb.padding.left;
+                var thumbMinHeight = thumbMin != null ? thumbMin.fixedHeight : thumbRect.height;
+                // Max handle
+                var thumbMaxWidth = thumbMax != null ? thumbMax.fixedWidth : thumb.padding.right;
+                var thumbMaxHeight = thumbMax != null ? thumbMax.fixedHeight : thumbRect.height;
+                var thumbMaxX = thumbRect.xMax - thumbMaxWidth;
+                var thumbMaxY = thumbMax != null ? thumbRect.y + (thumbRect.height - thumbMax.fixedHeight) / 2 : thumbRect.y; // center align the max handle with the thumb.
+
+                thumbMinRect = new Rect(thumbMinX, thumbMinY, thumbMinWidth, thumbMinHeight);
+                thumbMaxRect = new Rect(thumbMaxX, thumbMaxY, thumbMaxWidth, thumbMaxHeight);
                 mousePosition = evt.mousePosition.x - position.x;
             }
             else
             {
-                float thumbWidth = (thumb.fixedWidth != 0 ? thumb.fixedWidth : contentRect.width);
+                float thumbWidth = 0;
+
+                if (thumb.fixedWidth != 0)
+                {
+                    thumbWidth = thumb.fixedWidth;
+                }
+                else
+                {
+                    thumbWidth = contentRect.width;
+                }
 
                 pixelsPerValue = (position.height - slider.padding.vertical - thumbSize) / (maxVisual - minVisual);
                 thumbRect = new Rect(
@@ -268,14 +310,28 @@ namespace UnityEditor
                     (displayValue - minVisual) * pixelsPerValue + contentRect.y,
                     thumbWidth,
                     displaySize * pixelsPerValue + thumbSize);
-                thumbMinRect = new Rect(thumbRect.x, thumbRect.y, thumbRect.width, thumb.padding.top);
-                thumbMaxRect = new Rect(thumbRect.x, thumbRect.yMax - thumb.padding.bottom, thumbRect.width, thumb.padding.bottom);
+                thumbSection = new Rect(position.x, thumbRect.y, position.width, thumbRect.height);
+
+                // Min handle
+                var thumbMinX = thumbMin != null ? thumbRect.x + (thumbRect.width - thumbMin.fixedWidth) / 2 : thumbRect.x; // center align the min handle with the thumb.
+                var thumbMinY = thumbRect.y;
+                var thumbMinWidth = thumbMin != null ? thumbMin.fixedWidth : thumbRect.width;
+                var thumbMinHeight = thumbMin != null ? thumbMin.fixedHeight : thumb.padding.top;
+                // Max handle
+                var thumbMaxHeight = thumbMax != null ? thumbMax.fixedHeight : thumb.padding.bottom;
+                var thumbMaxWidth = thumbMax != null ? thumbMax.fixedWidth : thumbRect.width;
+                var thumbMaxX = thumbMax != null ? thumbRect.x + (thumbRect.width - thumbMax.fixedWidth) / 2 : thumbRect.x; // center align the max handle with the thumb.
+                var thumbMaxY = thumbRect.yMax - thumbMaxHeight;
+
+                thumbMinRect = new Rect(thumbMinX, thumbMinY, thumbMinWidth, thumbMinHeight);
+                thumbMaxRect = new Rect(thumbMaxX, thumbMaxY, thumbMaxWidth, thumbMaxHeight);
                 mousePosition = evt.mousePosition.y - position.y;
             }
 
             float mousePos;
             float thumbPos;
-            switch (evt.GetTypeForControl(id))
+            int activeId = GUIUtility.hotControl == minId ? minId : GUIUtility.hotControl == maxId ? maxId : id;
+            switch (evt.GetTypeForControl(activeId))
             {
                 case EventType.MouseDown:
                     // if the click is outside this control, just bail out...
@@ -288,24 +344,35 @@ namespace UnityEditor
                     state.dragStartLimit = startLimit;
                     state.dragEndLimit = endLimit;
 
-                    if (thumbRect.Contains(evt.mousePosition))
+                    if (thumbSection.Contains(evt.mousePosition))
                     {
-                        // We have a mousedown on the thumb
-                        // Record where we're draging from, so the user can get back.
+                        var thumbPartId = id;
+                        // Always record drag-start when entering thumbSection so any subsequent drag has valid baseline values.
                         state.dragStartPos = mousePosition;
                         state.dragStartValue = value;
                         state.dragStartSize = size;
                         state.dragStartValuesPerPixel = pixelsPerValue;
-                        if (thumbMinRect.Contains(evt.mousePosition))
-                            state.whereWeDrag = 1;
-                        else if (thumbMaxRect.Contains(evt.mousePosition))
-                            state.whereWeDrag = 2;
-                        else
-                            state.whereWeDrag = 0;
+                        state.whereWeDrag = 0;
+                        if (thumbRect.Contains(evt.mousePosition) || thumbMinRect.Contains(evt.mousePosition) ||
+                            thumbMaxRect.Contains(evt.mousePosition))
+                        {
+                            // We have a mousedown on the thumb
+                            if (thumbMinRect.Contains(evt.mousePosition))
+                            {
+                                state.whereWeDrag = 1;
+                                thumbPartId = minId;
+                            }
+                            else if (thumbMaxRect.Contains(evt.mousePosition))
+                            {
+                                state.whereWeDrag = 2;
+                                thumbPartId = maxId;
+                            }
+                        }
 
-                        GUIUtility.hotControl = id;
+                        GUIUtility.hotControl = thumbPartId;
                         evt.Use();
                         return;
+
                     }
                     else
                     {
@@ -360,7 +427,7 @@ namespace UnityEditor
                         return;
                     }
                 case EventType.MouseDrag:
-                    if (GUIUtility.hotControl != id)
+                    if (!(GUIUtility.hotControl == id || GUIUtility.hotControl == minId || GUIUtility.hotControl == maxId))
                         return;
 
                     // Recalculate the value from the mouse position. this has the side effect that values are relative to the
@@ -398,21 +465,47 @@ namespace UnityEditor
                     evt.Use();
                     break;
                 case EventType.MouseUp:
-                    if (GUIUtility.hotControl == id)
+                    if (GUIUtility.hotControl == id || GUIUtility.hotControl == minId || GUIUtility.hotControl == maxId)
                     {
                         evt.Use();
                         GUIUtility.hotControl = 0;
                     }
                     break;
                 case EventType.Repaint:
-                    slider.Draw(position, GUIContent.none, id);
-                    thumb.Draw(thumbRect, GUIContent.none, id);
+
+                    var sliderHovered = GUIUtility.HitTest(position, evt);
+
+                    slider.Draw(position, GUIContent.none, id, false, sliderHovered);
+
+                    var sliderTrack = SliderHandler.GetTrackStyle(slider);
+
+                    if (sliderTrack != null)
+                        sliderTrack.Draw(position, GUIContent.none, id, false, sliderHovered);
+
+                    var thumbHovered = false;
+                    var thumbMinHovered = false;
+                    var thumbMaxHovered = false;
+
+                    if (sliderHovered)
+                    {
+                        thumbMinHovered = thumbMinRect.Contains(evt.mousePosition);
+                        thumbMaxHovered = thumbMaxRect.Contains(evt.mousePosition);
+                        thumbHovered = thumbRect.Contains(evt.mousePosition) && !thumbMinHovered && !thumbMaxHovered;
+                    }
+
+                    thumb.Draw(thumbRect, GUIContent.none, id, false, thumbHovered);
+
+                    if (thumbMin != null)
+                        thumbMin.Draw(thumbMinRect, GUIContent.none, minId, false, thumbMinHovered);
+
+                    if (thumbMax != null)
+                        thumbMax.Draw(thumbMaxRect, GUIContent.none, maxId, false, thumbMaxHovered);
 
                     EditorGUIUtility.AddCursorRect(thumbMinRect, horiz ? MouseCursor.ResizeHorizontal : MouseCursor.ResizeVertical, state != null && state.whereWeDrag == 1 ? id : -1);
                     EditorGUIUtility.AddCursorRect(thumbMaxRect, horiz ? MouseCursor.ResizeHorizontal : MouseCursor.ResizeVertical, state != null && state.whereWeDrag == 2 ? id : -1);
 
                     // if the mouse is outside this control, just bail out...
-                    if (GUIUtility.hotControl != id ||
+                    if (!(GUIUtility.hotControl == id || GUIUtility.hotControl == minId || GUIUtility.hotControl == maxId) ||
                         !position.Contains(evt.mousePosition) || minVisual - maxVisual == 0)
                     {
                         return;

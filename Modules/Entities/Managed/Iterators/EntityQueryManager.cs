@@ -825,8 +825,11 @@ namespace Unity.Entities
                 queryData->EnableableComponentTypeIndices = (TypeIndex*)ChunkAllocate<TypeIndex>(allEnableableTypeIndices.Length, allEnableableTypeIndices.GetUnsafeReadOnlyPtr());
                 queryData->HasEnableableComponents = (allEnableableTypeIndices.Length > 0 && !queryIgnoresEnabledBits) ? (byte)1 : (byte)0;
 
+                bool canMatchGameObjects = false;
+                for (var i = 0; i < archetypeQueryCount; ++i)
+                    canMatchGameObjects |= CanMatchGameObjects(archetypeQueries[i]);
                 InitializeReaderWriter(queryData, requiredComponents, requiredComponentCount,
-                    enableableTypesInAny.GetUnsafeReadOnlyPtr<ComponentType>(), enableableTypesInAny.Length);
+                    enableableTypesInAny.GetUnsafeReadOnlyPtr<ComponentType>(), enableableTypesInAny.Length, canMatchGameObjects);
                 queryData->ArchetypeQueryCount = archetypeQueryCount;
                 queryData->ArchetypeQueries = (ArchetypeQuery*)ChunkAllocate<ArchetypeQuery>(archetypeQueryCount, archetypeQueries);
                 for (var i = 0; i < archetypeQueryCount; ++i)
@@ -866,8 +869,24 @@ namespace Unity.Entities
             return EntityQuery.Construct(queryData, access);
         }
 
+        internal static bool CanMatchGameObjects(in ArchetypeQuery archetypeQuery)
+        {
+            var isGameObjectTypeIndex = TypeManager.GetTypeIndex<GameObjectComponentStoreBridge.IsGameObject>();
+            for (var i = 0; i < archetypeQuery.NoneCount; ++i)
+            {
+                if (archetypeQuery.None[i] == isGameObjectTypeIndex)
+                    return false;
+            }
+            for (var i = 0; i < archetypeQuery.AbsentCount; ++i)
+            {
+                if (archetypeQuery.Absent[i] == isGameObjectTypeIndex)
+                    return false;
+            }
+            return true;
+        }
+
         void InitializeReaderWriter(EntityQueryData* queryData, ComponentType* requiredTypes, int requiredCount,
-            ComponentType* implicitReadTypes, int implicitReadCount)
+            ComponentType* implicitReadTypes, int implicitReadCount, bool canMatchGameObjects)
         {
             Assert.IsTrue(requiredCount > 0);
             Assert.IsTrue(requiredTypes[0] == ComponentType.ReadWrite<Entity>());
@@ -875,8 +894,16 @@ namespace Unity.Entities
             queryData->ReaderTypesCount = 0;
             queryData->WriterTypesCount = 0;
 
+            // A query that accesses TransformRef and can match GameObject entities can reach GameObject transforms. It also depends 
+            // on EntityJobsOnGameObjectTransforms and NativeJobsOnGameObjectTransforms
+            var gameObjectTransformAccess = ComponentType.AccessMode.Exclude;
+            var transformRefTypeIndex = TypeManager.GetTypeIndex<TransformRef>();
+
             for (var i = 1; i != requiredCount; i++)
             {
+                if (canMatchGameObjects && requiredTypes[i].TypeIndex == transformRefTypeIndex)
+                    gameObjectTransformAccess = requiredTypes[i].AccessModeType;
+
                 if (requiredTypes[i].IsZeroSized && !requiredTypes[i].IsEnableable)
                     continue;
 
@@ -892,6 +919,10 @@ namespace Unity.Entities
                 }
             }
             queryData->ReaderTypesCount += implicitReadCount;
+            if (gameObjectTransformAccess == ComponentType.AccessMode.ReadOnly)
+                queryData->ReaderTypesCount += 2;
+            else if (gameObjectTransformAccess == ComponentType.AccessMode.ReadWrite)
+                queryData->WriterTypesCount += 2;
 
             queryData->ReaderTypes = (TypeIndex*)m_EntityQueryDataChunkAllocator.Allocate(sizeof(TypeIndex) * queryData->ReaderTypesCount, 4);
             queryData->WriterTypes = (TypeIndex*)m_EntityQueryDataChunkAllocator.Allocate(sizeof(TypeIndex) * queryData->WriterTypesCount, 4);
@@ -917,6 +948,16 @@ namespace Unity.Entities
             for (var i = 0; i < implicitReadCount; i++)
             {
                 queryData->ReaderTypes[curReader++] = implicitReadTypes[i].TypeIndex;
+            }
+            if (gameObjectTransformAccess == ComponentType.AccessMode.ReadOnly)
+            {
+                queryData->ReaderTypes[curReader++] = TypeManager.GetTypeIndex<EntityJobsOnGameObjectTransforms>();
+                queryData->ReaderTypes[curReader++] = TypeManager.GetTypeIndex<NativeJobsOnGameObjectTransforms>();
+            }
+            else if (gameObjectTransformAccess == ComponentType.AccessMode.ReadWrite)
+            {
+                queryData->WriterTypes[curWriter++] = TypeManager.GetTypeIndex<EntityJobsOnGameObjectTransforms>();
+                queryData->WriterTypes[curWriter++] = TypeManager.GetTypeIndex<NativeJobsOnGameObjectTransforms>();
             }
         }
 
@@ -1084,7 +1125,6 @@ namespace Unity.Entities
                 return false;
             if (archetype->HasChunkHeader && !includeChunkHeader)
                 return false;
-
 
             var archetypeTypes = archetype->Types;
             var archetypeTypesCount = archetype->TypesCount;

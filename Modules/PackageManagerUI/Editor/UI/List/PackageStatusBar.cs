@@ -200,7 +200,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         {
             var page = m_PageManager.activePage;
             var timestamp = m_PageRefreshHandler.GetRefreshTimestamp(page);
-            var dt = new DateTime(timestamp);
+            var dt = new DateTime(timestamp, DateTimeKind.Utc).ToLocalTime();
             var dateAndTime = dt.ToString("MMM d, HH:mm", CultureInfo.CreateSpecificCulture("en-US"));
             var label = timestamp == 0 ? string.Empty : string.Format(L10n.Tr("Last refresh {0}", null), dateAndTime);
             SetStatusMessage(StatusType.Normal, label);

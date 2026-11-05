@@ -189,6 +189,8 @@ namespace UnityEngine.UIElements
             }
         }
 
+        internal override VersionChangeType versionChangeInterest => VersionChangeType.Hierarchy | VersionChangeType.Bindings;
+
         public override void OnVersionChanged(VisualElement ve, VersionChangeType versionChangeType)
         {
             base.OnVersionChanged(ve, versionChangeType);

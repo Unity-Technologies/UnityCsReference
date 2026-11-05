@@ -154,7 +154,7 @@ namespace Unity.Entities
             }
         }
 
-        private unsafe static TypeInfo CreateDelegateTypeInfo(Type t)
+        internal unsafe static TypeInfo CreateDelegateTypeInfo(Type t)
         {
             // Type must override GetHashCode()
             var ghcMethod = t.GetMethod(nameof(GetHashCode), BindingFlags.Instance | BindingFlags.Public | BindingFlags.DeclaredOnly, null, Array.Empty<Type>(), null);
@@ -303,7 +303,7 @@ namespace Unity.Entities
         }
 
         [BurstCompile]
-        private static unsafe int GetHashCodeBlittable(void* dataPtr, in TypeInfo typeInfo)
+        internal static unsafe int GetHashCodeBlittable(void* dataPtr, in TypeInfo typeInfo)
         {
             int hash = 0;
             var layoutInfo = typeInfo.LayoutInfo;
@@ -361,7 +361,7 @@ namespace Unity.Entities
         }
 
         [BurstCompile]
-        private static unsafe bool EqualsBlittable(void* lhsPtr, void* rhsPtr, in TypeInfo typeInfo)
+        internal static unsafe bool EqualsBlittable(void* lhsPtr, void* rhsPtr, in TypeInfo typeInfo)
         {
             int result = 0;
             var layoutInfo = typeInfo.LayoutInfo;

@@ -919,13 +919,15 @@ namespace UnityEngine.UIElements
                     ref var style = ref running.style[i];
                     var from = style.startValue;
                     var to = style.endValue;
-                    if (running.properties[i] == StylePropertyId.ZIndex)
+                    if (running.properties[i] == StylePropertyId.ZIndex && (from == int.MinValue || to == int.MinValue))
                     {
-                        // z-index: auto is stored as int.MinValue; interpolate it as 0 for a numeric sweep, but leave the stored endValue untouched so completion settles back on the auto sentinel.
-                        if (from == int.MinValue) from = 0;
-                        if (to == int.MinValue) to = 0;
+                        // z-index: auto (stored as int.MinValue) is not interpolable; per CSS, discrete values flip at 50% of the eased progress.
+                        style.currentValue = timing.easedProgress < 0.5f ? from : to;
                     }
-                    style.currentValue = Lerp(from, to, timing.easedProgress);
+                    else
+                    {
+                        style.currentValue = Lerp(from, to, timing.easedProgress);
+                    }
                 }
             }
 
@@ -1912,44 +1914,48 @@ namespace UnityEngine.UIElements
             float durationOverride, float delay, float iterationCount, AnimationDirection direction)
         {
             if (iterationCount <= 0f)
-                return DirectedSampleTime(0, 0f, clipLength, direction);
+                return DirectedSampleTime(false, 0f, clipLength, direction);
 
             float iterationDuration = durationOverride > 0f ? durationOverride : clipLength;
 
             float elapsed = elapsedSinceStart - delay;
             if (elapsed <= 0f || iterationDuration <= 0f)
-                return DirectedSampleTime(0, 0f, clipLength, direction);
+                return DirectedSampleTime(false, 0f, clipLength, direction);
 
-            float totalIterations = elapsed / iterationDuration;
+            // A near-zero duration overflows float here, which would give a non-finite sample time.
+            double totalIterations = (double)elapsed / iterationDuration;
 
-            int iterationIndex;
+            bool oddIteration;
             float phase;
 
             bool finished = !float.IsPositiveInfinity(iterationCount) && totalIterations >= iterationCount;
             if (finished)
             {
-                float fraction = iterationCount - Mathf.Floor(iterationCount);
+                double wholeIterations = Math.Floor((double)iterationCount);
+                bool wholeIterationsOdd = wholeIterations % 2.0 == 1.0;
+                float fraction = (float)(iterationCount - wholeIterations);
                 if (fraction == 0f)
                 {
-                    iterationIndex = Mathf.Max(0, (int)iterationCount - 1);
+                    oddIteration = !wholeIterationsOdd;   // parity of wholeIterations - 1, which rounds back to wholeIterations above 2^53
                     phase = 1f;
                 }
                 else
                 {
-                    iterationIndex = (int)Mathf.Floor(iterationCount);
+                    oddIteration = wholeIterationsOdd;
                     phase = fraction;
                 }
             }
             else
             {
-                iterationIndex = (int)totalIterations;
-                phase = totalIterations - iterationIndex;
+                double iterationIndex = Math.Floor(totalIterations);
+                oddIteration = iterationIndex % 2.0 == 1.0;
+                phase = (float)(totalIterations - iterationIndex);
             }
 
-            return DirectedSampleTime(iterationIndex, phase, clipLength, direction);
+            return DirectedSampleTime(oddIteration, phase, clipLength, direction);
         }
 
-        static float DirectedSampleTime(int iterationIndex, float phase, float clipLength, AnimationDirection direction)
+        static float DirectedSampleTime(bool oddIteration, float phase, float clipLength, AnimationDirection direction)
         {
             bool reversed;
             switch (direction)
@@ -1958,10 +1964,10 @@ namespace UnityEngine.UIElements
                     reversed = true;
                     break;
                 case AnimationDirection.Alternate:
-                    reversed = (iterationIndex & 1) == 1;
+                    reversed = oddIteration;
                     break;
                 case AnimationDirection.AlternateReverse:
-                    reversed = (iterationIndex & 1) == 0;
+                    reversed = !oddIteration;
                     break;
                 default:
                     reversed = false;

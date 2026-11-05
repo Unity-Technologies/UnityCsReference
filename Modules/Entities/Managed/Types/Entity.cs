@@ -166,6 +166,15 @@ namespace Unity.Entities
             return UnsafeUtility.As<Entity, EntityId>(ref entity);
         }
 
+        /// <summary>
+        /// Converts an <see cref="EntityId"/> to the entity with the same index and version.
+        /// </summary>
+        /// <param name="entityId">The EntityId to convert.</param>
+        /// <returns>The corresponding entity.</returns>
+        public static implicit operator Entity(EntityId entityId)
+        {
+            return UnsafeUtility.As<EntityId, Entity>(ref entityId);
+        }
 
         /// <summary>
         /// Provides a debugging string.

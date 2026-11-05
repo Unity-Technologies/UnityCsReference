@@ -10,6 +10,8 @@ namespace UnityEditor.Toolbars
 {
     public class EditorToolbarDropdown : EditorToolbarButton
     {
+        internal new static readonly string ussClassName = "unity-editor-toolbar-dropdown";
+        internal new static readonly UniqueStyleString ussClassNameUnique = new(ussClassName);
         internal const string arrowClassName = "unity-icon-arrow";
 
         public EditorToolbarDropdown() : this(string.Empty, null, null)
@@ -30,6 +32,7 @@ namespace UnityEditor.Toolbars
 
         public EditorToolbarDropdown(string text, Texture2D icon, Action clickEvent) : base(text, icon, clickEvent)
         {
+            AddToClassList(ussClassNameUnique);
             var arrow = new VisualElement();
             arrow.AddToClassList(arrowClassName);
             Add(arrow);

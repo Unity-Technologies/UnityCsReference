@@ -225,6 +225,10 @@ namespace UnityEditor
 
             if (InternalEditorUtility.IsUnityAssembly(obj.GetType()))
             {
+                var editorUrl = GetHelpURLFromCustomEditor(obj);
+                if (!string.IsNullOrEmpty(editorUrl))
+                    return editorUrl;
+
                 var topicForObject = HelpFileNameForObject(obj);
                 if (HasNamedHelp(topicForObject))
                 {
@@ -241,6 +245,23 @@ namespace UnityEditor
             }
 
             return "";
+        }
+
+        static string GetHelpURLFromCustomEditor(Object obj)
+        {
+            var editorType = CustomEditorAttributes.FindCustomEditorType(obj, false);
+            if (editorType == null)
+                return null;
+
+            var attrs = editorType.GetCustomAttributes(typeof(HelpURLAttribute), true);
+            if (attrs.Length == 0)
+                return null;
+
+            var url = ((HelpURLAttribute)attrs[0]).URL;
+            if (string.IsNullOrEmpty(url))
+                return null;
+
+            return IsURL(url) ? url : FindHelpNamed(url);
         }
 
         internal static void ClearCache()

@@ -120,6 +120,7 @@ namespace UnityEditor
             public static readonly GUIContent renderdocContent;
             public static readonly GUIStyle gameViewBackgroundStyle;
             public static readonly GUIStyle zoomSliderContainerStyle;
+            public static readonly GUIStyle zoomSliderStyle;
 
             // The ordering here must correspond with ordering in UnityEngine.XR.GameViewRenderMode
             public static readonly GUIContent[] xrRenderingModes = { EditorGUIUtility.TextContent("Left Eye|Left eye is displayed in play mode."), EditorGUIUtility.TextContent("Right Eye|Right eye is displayed in play mode."), EditorGUIUtility.TextContent("Both Eyes|Both eyes are displayed in play mode."), EditorGUIUtility.TextContent("Occlusion Mesh|Both eyes are displayed in play mode along with the occlusion mesh.") };
@@ -128,6 +129,7 @@ namespace UnityEditor
             {
                 gameViewBackgroundStyle = "GameViewBackground";
                 zoomSliderContainerStyle = "GameViewZoomSliderContainer";
+                zoomSliderStyle = "GameViewZoomSlider";
                 renderdocContent = L10n.IconContent("FrameCapture", RenderDocUtil.openInRenderDocTooltip, null);
             }
         }
@@ -601,6 +603,7 @@ namespace UnityEditor
                 var logMin = Mathf.Log10(minScale);
                 var logMax = Mathf.Log10(maxScale);
                 logScale = GUILayout.HorizontalSlider(logScale, logMin, logMax,
+                    Styles.zoomSliderStyle, GUI.skin.horizontalSliderThumb,
                     GUILayout.MaxWidth(kScaleSliderMaxWidth), GUILayout.MinWidth(kScaleSliderMinWidth));
                 if (EditorGUI.EndChangeCheck())
                 {

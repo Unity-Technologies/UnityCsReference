@@ -101,33 +101,31 @@ namespace UnityEngine
         }
 
         [FreeFunction(Name = "GameObjectBindings::GetComponentsInternal", HasExplicitThis = true, ThrowsException = true)]
-        private extern System.Array GetComponentsInternal(Type type, bool useSearchTypeAsArrayReturnType, bool recursive, bool includeInactive, bool reverse, [Out] List<Component> resultList);
+        private extern System.Array GetComponentsInternal(Type type, bool useSearchTypeAsArrayReturnType, bool recursive, bool includeInactive, bool reverse);
 
-        private System.Array GetComponentsInternal<T>(bool useSearchTypeAsArrayReturnType, bool recursive, bool includeInactive, bool reverse, [Out] List<T> resultList)
-        {
-            // Use UnsafeUtility.As to cast the list to the appropriate type
-            // This could be a problem if native code provides us a type that does not match
-            return GetComponentsInternal(typeof(T), useSearchTypeAsArrayReturnType, recursive, includeInactive, reverse, UnsafeUtility.As<List<Component>>(resultList));
-        }
+        // T may be an interface; native code fills the list as a List<Component>.
+        [FreeFunction(Name = "GameObjectBindings::GetComponentsForListInternal", HasExplicitThis = true, ThrowsException = true)]
+        private extern void GetComponentsForListInternal<T>(Type type, bool recursive, bool includeInactive, bool reverse,
+            [Out][UnityMarshalAs(NativeType.MarshalAsType, MarshalAsType = typeof(List<Component>))] List<T> resultList);
 
         public Component[] GetComponents(Type type)
         {
-            return (Component[])GetComponentsInternal(type, false, false, true, false, null);
+            return (Component[])GetComponentsInternal(type, false, false, true, false);
         }
 
         public T[] GetComponents<T>()
         {
-            return (T[])GetComponentsInternal<T>(true, false, true, false, null);
+            return (T[])GetComponentsInternal(typeof(T), true, false, true, false);
         }
 
         public void GetComponents(Type type, List<Component> results)
         {
-            GetComponentsInternal(type, false, false, true, false, results);
+            GetComponentsForListInternal<Component>(type, false, true, false, results);
         }
 
         public void GetComponents<T>(List<T> results)
         {
-            GetComponentsInternal<T>(true, false, true, false, results);
+            GetComponentsForListInternal(typeof(T), false, true, false, results);
         }
 
         [uei.ExcludeFromDocs]
@@ -139,17 +137,17 @@ namespace UnityEngine
 
         public Component[] GetComponentsInChildren(Type type, [uei.DefaultValue("false")] bool includeInactive)
         {
-            return (Component[])GetComponentsInternal(type, false, true, includeInactive, false, null);
+            return (Component[])GetComponentsInternal(type, false, true, includeInactive, false);
         }
 
         public T[] GetComponentsInChildren<T>(bool includeInactive)
         {
-            return (T[])GetComponentsInternal<T>(true, true, includeInactive, false, null);
+            return (T[])GetComponentsInternal(typeof(T), true, true, includeInactive, false);
         }
 
         public void GetComponentsInChildren<T>(bool includeInactive, List<T> results)
         {
-            GetComponentsInternal<T>(true, true, includeInactive, false, results);
+            GetComponentsForListInternal(typeof(T), true, includeInactive, false, results);
         }
 
         public T[] GetComponentsInChildren<T>()
@@ -171,17 +169,17 @@ namespace UnityEngine
 
         public Component[] GetComponentsInParent(Type type, [uei.DefaultValue("false")] bool includeInactive)
         {
-            return (Component[])GetComponentsInternal(type, false, true, includeInactive, true, null);
+            return (Component[])GetComponentsInternal(type, false, true, includeInactive, true);
         }
 
         public void GetComponentsInParent<T>(bool includeInactive, List<T> results)
         {
-            GetComponentsInternal<T>(true, true, includeInactive, true, results);
+            GetComponentsForListInternal(typeof(T), true, includeInactive, true, results);
         }
 
         public T[] GetComponentsInParent<T>(bool includeInactive)
         {
-            return (T[])GetComponentsInternal<T>(true, true, includeInactive, true, null);
+            return (T[])GetComponentsInternal(typeof(T), true, true, includeInactive, true);
         }
 
         public T[] GetComponentsInParent<T>()
@@ -429,8 +427,8 @@ namespace UnityEngine
         [FreeFunction(Name = "GameObjectBindings::Find")]
         public static extern GameObject Find(string name);
 
-        [FreeFunction(Name = "GameObjectBindings::SetGameObjectsActiveByInstanceID")]
-        extern private static void SetGameObjectsActive(IntPtr instanceIds, int instanceCount, bool active);
+        [FreeFunction(Name = "GameObjectBindings::SetGameObjectsActiveByEntityId")]
+        extern private static void SetGameObjectsActive(IntPtr entityIds, int instanceCount, bool active);
 
         [Obsolete("Obsolete. Please use GameObject.SetGameObjectsActive(NativeArray<EntityId>, bool) instead.", true)]
         public static unsafe void SetGameObjectsActive(NativeArray<int> instanceIDs, bool active)
@@ -455,14 +453,14 @@ namespace UnityEngine
             if (entityIds.Length == 0)
                 return;
 
-            fixed (EntityId* instanceIDsPtr = entityIds)
+            fixed (EntityId* entityIdsPtr = entityIds)
             {
-                SetGameObjectsActive((IntPtr)instanceIDsPtr, entityIds.Length, active);
+                SetGameObjectsActive((IntPtr)entityIdsPtr, entityIds.Length, active);
             }
         }
 
-        [FreeFunction("GameObjectBindings::InstantiateGameObjectsByInstanceID")]
-        extern private static void InstantiateGameObjects(EntityId sourceInstanceID, IntPtr newInstanceIDs, IntPtr newTransformInstanceIDs, int count, Scene destinationScene);
+        [FreeFunction("GameObjectBindings::InstantiateGameObjectsByEntityId")]
+        extern private static void InstantiateGameObjects(EntityId sourceEntityId, IntPtr newEntityIds, IntPtr newTransformEntityIds, int count, Scene destinationScene);
 
         [Obsolete("Obsolete. Please use GameObject.InstantiateGameObjects(EntityId, int, NativeArray<EntityId>, NativeArray<EntityId>, Scene) instead.", true)]
         public static unsafe void InstantiateGameObjects(int sourceInstanceID, int count, NativeArray<int> newInstanceIDs, NativeArray<int> newTransformInstanceIDs, Scene destinationScene = default)

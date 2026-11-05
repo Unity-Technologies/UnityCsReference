@@ -34,12 +34,16 @@ namespace UnityEditor
             public readonly HelpBoxMessageType messageType;
             public readonly string buttonText;
             public readonly Type replacementType;
+            public readonly bool isNotSupported;
+            public readonly string learnMoreUrl;
 
             public ObsoleteMessageContainer(string message, HelpBoxMessageType messageType, Type replacementType,
-                string displayName)
+                string displayName, bool isNotSupported, string learnMoreUrl)
             {
                 this.message = message;
                 this.messageType = messageType;
+                this.isNotSupported = isNotSupported;
+                this.learnMoreUrl = learnMoreUrl;
 
                 if (replacementType == null)
                     return;
@@ -114,16 +118,22 @@ namespace UnityEditor
 
                 Type replacementType = null;
                 string displayName = null;
+                string learnMoreUrl = null;
                 var replacementAttr = type.GetCustomAttribute<ReplacementComponentAttribute>();
+                var isNotSupported = replacementAttr is { ComponentDisabled: true };
+                if (isNotSupported)
+                    messageType = HelpBoxMessageType.Error;
+
                 if (replacementAttr != null)
                 {
                     replacementType = ResolveReplacementType(replacementAttr.TypeName);
                     displayName = replacementAttr.DisplayName;
+                    learnMoreUrl = replacementAttr.LearnMoreUrl;
                     message = replacementType != null && string.IsNullOrEmpty(replacementAttr.AlternativeMessage)
                         ? message : StripVersionTags(replacementAttr.AlternativeMessage);
                 }
 
-                s_ObsoleteTypeMessages[type] = new ObsoleteMessageContainer(message, messageType, replacementType, displayName);
+                s_ObsoleteTypeMessages[type] = new ObsoleteMessageContainer(message, messageType, replacementType, displayName, isNotSupported, learnMoreUrl);
             }
 
             return s_ObsoleteTypeMessages.TryGetValue(targetType, out obsoleteMessageContainer);

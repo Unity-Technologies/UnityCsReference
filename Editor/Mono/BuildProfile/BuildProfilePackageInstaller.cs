@@ -23,7 +23,7 @@ namespace UnityEditor.Build.Profile
             public PackageManager.Requests.AddAndRemoveRequest packageAddRequest;
             public string[] packageQualifiedNames;
             public Action<ProgressEntry> onPackageAddProgress;
-            public Action onPackageAddComplete;
+            public Action<bool> onPackageAddComplete;
 
             public void HandlePackageAddProgress(PackageManager.ProgressUpdateEventArgs progress)
             {
@@ -93,7 +93,8 @@ namespace UnityEditor.Build.Profile
 
         /// <summary>
         /// Begins installing <paramref name="packagesToAdd"/>, or joins the request already
-        /// installing them. Both callbacks are invoked for every joiner.
+        /// installing them. Both callbacks are invoked for every joiner, and the completion
+        /// callback is told whether the request succeeded.
         /// </summary>
         /// <returns>
         /// The key identifying the request.
@@ -101,7 +102,7 @@ namespace UnityEditor.Build.Profile
         public static string RequestPackageInstallation(
             BuildTargetDiscovery.PlatformPackageIdentifier[] packagesToAdd,
             Action<ProgressEntry> onPackageAddProgress,
-            Action onPackageAddComplete)
+            Action<bool> onPackageAddComplete)
         {
             var key = GetPackageRequestKey(packagesToAdd);
             if (s_InFlightPackageRequests.TryGetValue(key, out var inFlight))
@@ -136,7 +137,7 @@ namespace UnityEditor.Build.Profile
         public static void RemovePackageAddCallbacks(
             string key,
             Action<ProgressEntry> onPackageAddProgress,
-            Action onPackageAddComplete)
+            Action<bool> onPackageAddComplete)
         {
             if (key == null || !s_InFlightPackageRequests.TryGetValue(key, out var inFlight))
                 return;
@@ -173,10 +174,11 @@ namespace UnityEditor.Build.Profile
                 s_InFlightPackageRequests.Remove(key);
                 packageAdd.packageAddRequest.progressUpdated -= packageAdd.HandlePackageAddProgress;
 
-                if (packageAdd.packageAddRequest.Status >= PackageManager.StatusCode.Failure)
+                var succeeded = packageAdd.packageAddRequest.Status < PackageManager.StatusCode.Failure;
+                if (!succeeded)
                     Debug.LogError(packageAdd.packageAddRequest.Error.message);
 
-                packageAdd.onPackageAddComplete?.Invoke();
+                packageAdd.onPackageAddComplete?.Invoke(succeeded);
             }
 
             if (s_InFlightPackageRequests.Count == 0)

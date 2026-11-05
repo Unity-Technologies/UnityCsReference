@@ -9,6 +9,7 @@ using System.IO;
 using System.Reflection;
 using Unity.ProjectAuditor.Editor.Core;
 using UnityEditor;
+using UnityEditor.Search;
 using UnityEngine;
 using Module = Unity.ProjectAuditor.Editor.Core.Module;
 
@@ -37,7 +38,7 @@ namespace Unity.ProjectAuditor.Editor.Modules
             )
         {
             MessageFormat = "{0}: '{1}' requires conversion to URP",
-            FixerLabel = "Migrate to URP",
+            FixerLabel = "Review in Converter",
             Fixer = MigrationToURPUtilities.OpenRenderPipelineConverter,
             DocumentationUrl = MigrationToURPUtilities.DocumentationUrl
         };
@@ -146,6 +147,14 @@ namespace Unity.ProjectAuditor.Editor.Modules
             if (convertersType == null || !MigrationToURPUtilities.IsUrpPackageInstalled())
             {
                 analysisParams.OnModuleCompleted?.Invoke(Name, AnalysisResult.Success, 0);
+                yield break;
+            }
+
+            // The converters search with deep indexing and without packages, and a blocking scan can't switch to that
+            if (analysisParams.Blocking &&
+                (!SearchIndexingService.IsDeepIndexingEnabled() || SearchIndexingService.IsPackageIndexingEnabled()))
+            {
+                analysisParams.OnModuleCompleted?.Invoke(Name, AnalysisResult.Skipped, 0);
                 yield break;
             }
 

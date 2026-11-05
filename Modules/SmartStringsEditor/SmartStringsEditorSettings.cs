@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using Unity.SmartStrings.PersistentVariables;
 using UnityEditor;
 
 namespace Unity.SmartStrings.Editor;
@@ -17,6 +18,8 @@ static class SmartStringsEditorSettings
         var settings = ActiveSettings;
         if (settings != null)
             SmartStringsSettings.Instance = settings;
+
+        EditorApplication.update += VariableEditorHooks.SendPending;
 
         EditorApplication.playModeStateChanged += OnPlayModeStateChanged;
     }

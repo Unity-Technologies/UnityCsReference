@@ -712,17 +712,32 @@ namespace UnityEditor
             return false;
         }
 
+        [AutoStaticsCleanupOnCodeReload]
+        static Event s_GlobalHandlerEvent;
+        [AutoStaticsCleanupOnCodeReload]
+        static bool s_GlobalHandlerEventInUse;
+
         [RequiredByNativeCode]
-        static void Internal_CallGlobalEventHandler()
+        static bool Internal_CallGlobalEventHandler(IntPtr nativeEventPtr)
         {
-            var evt = Event.current;
-            globalEventHandler?.Invoke(evt);
-            shortcutHelperBarEventHandler?.Invoke(evt);
+            bool reentrant = s_GlobalHandlerEventInUse;
+            Event evt = reentrant ? new Event() : (s_GlobalHandlerEvent ??= new Event());
+            s_GlobalHandlerEventInUse = true;
 
-            // Ensure this is called last in order to make sure no null current events are passed to other handlers
-            WindowLayout.MaximizeGestureHandler(evt);
+            try
+            {
+                evt.CopyFromPtr(nativeEventPtr);
 
-            Event.current = null;
+                globalEventHandler?.Invoke(evt);
+                shortcutHelperBarEventHandler?.Invoke(evt);
+                WindowLayout.MaximizeGestureHandler(evt);
+
+                return evt.type == EventType.Used;
+            }
+            finally
+            {
+                s_GlobalHandlerEventInUse = reentrant;
+            }
         }
 
         [RequiredByNativeCode]

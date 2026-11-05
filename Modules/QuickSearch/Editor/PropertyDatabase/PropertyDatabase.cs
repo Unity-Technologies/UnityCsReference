@@ -119,7 +119,7 @@ namespace UnityEditor.Search
             GC.SuppressFinalize(this);
         }
 
-#pragma warning disable UA5000 // The Avoid Finalizer Analyzer produces compile errors for any new finalizers. This pre-existing finalizer declaration has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA5000 // Releases the static s_DatabaseFiles refcount under lock; removing it would leak entries when Dispose is missed.
         ~PropertyDatabaseLock()
         {
             Dispose(false);
@@ -154,7 +154,7 @@ namespace UnityEditor.Search
         PropertyStringTable m_StringTable;
         PropertyDatabaseLock m_PropertyDatabaseLock;
 
-        internal static readonly int version = ((0x50 << 24) | (0x44 << 16) | 0x0007) ^ PropertyStringTable.version ^ ((GetUnityVersionMajorMinor().major & 0xffff) << 16 | GetUnityVersionMajorMinor().minor);
+        internal static readonly int version = ((0x50 << 24) | (0x44 << 16) | 0x0008) ^ PropertyStringTable.version ^ ((GetUnityVersionMajorMinor().major & 0xffff) << 16 | GetUnityVersionMajorMinor().minor);
 
         // This is used from the "version" field initializer above, which can run on a background thread the first
         // time PropertyDatabase is touched off the main thread (see TriggerBackgroundUpdate). Unlike
@@ -641,7 +641,7 @@ namespace UnityEditor.Search
             }
         }
 
-#pragma warning disable UA5000 // The Avoid Finalizer Analyzer produces compile errors for any new finalizers. This pre-existing finalizer declaration has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA5000 // Disposes the debounce delayer and the database lock (static refcount); safety net when Dispose is missed.
         ~PropertyDatabase()
         {
             Dispose(false);

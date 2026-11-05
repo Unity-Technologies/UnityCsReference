@@ -16,10 +16,10 @@ namespace UnityEditor.Build.Profile.Elements
         readonly Image m_Icon;
         protected virtual string k_Uxml => "BuildProfile/UXML/BuildProfilePlatformElement.uxml";
         protected readonly Label m_Text;
-        private readonly Action<BuildProfileCard> m_OnClicked;
+        private readonly Action<BuildProfilePlatformElement> m_OnClicked;
         protected BuildProfileCard m_BuildProfileCard;
 
-        internal BuildProfilePlatformElement(BuildProfileCard card, Action<BuildProfileCard> onSelected)
+        internal BuildProfilePlatformElement(BuildProfileCard card, Action<BuildProfilePlatformElement> onSelected)
         {
             var uxml = EditorGUIUtility.LoadRequired(k_Uxml) as VisualTreeAsset;
             var stylesheet = EditorGUIUtility.LoadRequired(Util.k_StyleSheet) as StyleSheet;
@@ -45,11 +45,16 @@ namespace UnityEditor.Build.Profile.Elements
             return m_BuildProfileCard;
         }
 
+        internal void SetSelected(bool selected)
+        {
+            this.Q<VisualElement>("platform-icon").EnableInClassList("build-profile-label-selected", selected);
+        }
+
         void OnClickEvent(ClickEvent evt)
         {
             if (evt.currentTarget is BuildProfilePlatformElement element)
             {
-                m_OnClicked?.Invoke(m_BuildProfileCard);
+                m_OnClicked?.Invoke(this);
             }
         }
 
@@ -57,7 +62,7 @@ namespace UnityEditor.Build.Profile.Elements
         {
             if (evt.currentTarget is BuildProfilePlatformElement element)
             {
-                m_OnClicked?.Invoke(m_BuildProfileCard);
+                m_OnClicked?.Invoke(this);
             }
         }
 

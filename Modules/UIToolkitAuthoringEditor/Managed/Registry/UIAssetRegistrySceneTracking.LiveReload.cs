@@ -373,14 +373,14 @@ static partial class UIAssetRegistrySceneTracking
 
     // The scene components holding the current selection: what the inspector edits, and therefore the only
     // documents the authoring handlers dual-write to.
-    static void CollectSelectedPanelComponents(List<IPanelComponent> components)
+    internal static void CollectSelectedPanelComponents(List<IPanelComponent> components)
     {
-        foreach (var selected in Selection.objects)
+        foreach (var selected in Selection.GetLoadedObjects<VisualElementSelection>())
         {
-            if (selected is not VisualElementSelection { Element: { } element })
+            if (selected.Element == null)
                 continue;
 
-            var component = element.GetFirstOfType<IPanelComponentRootElement>()?.panelComponent;
+            var component = selected.Element.GetFirstOfType<IPanelComponentRootElement>()?.panelComponent;
             if (component != null && !components.Contains(component))
                 components.Add(component);
         }

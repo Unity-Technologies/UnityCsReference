@@ -187,6 +187,7 @@ namespace UnityEngine.Android
 
         IntPtr m_NativeHandle;
 
+        [RequiredMember]
         internal AndroidWindowInsets()
         {
         }

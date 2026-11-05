@@ -272,6 +272,11 @@ namespace UnityEditor
             get { return L10n.TextContentWithIcon("Move Tool", "Move Tool", "MoveTool", null); }
         }
 
+        internal override GUIContent toolbarIconOn
+        {
+            get { return L10n.TextContentWithIcon("Move Tool", "Move Tool", "MoveTool On", null); }
+        }
+
         public override bool gridSnapEnabled
         {
             get
@@ -351,7 +356,12 @@ namespace UnityEditor
         {
             get { return L10n.TextContentWithIcon("Rotate Tool", "Rotate Tool", "RotateTool", null); }
         }
-        
+
+        internal override GUIContent toolbarIconOn
+        {
+            get { return L10n.TextContentWithIcon("Rotate Tool", "Rotate Tool", "RotateTool On", null); }
+        }
+
         protected override bool ShouldToolGUIBeDisabled(out GUIContent disabledLabel)
         {
             if (IsDisabledByPrefabPropertyPatching("m_LocalRotation", out disabledLabel))
@@ -400,6 +410,11 @@ namespace UnityEditor
         public override GUIContent toolbarIcon
         {
             get { return L10n.TextContentWithIcon("Scale Tool", "Scale Tool", "ScaleTool", null); }
+        }
+
+        internal override GUIContent toolbarIconOn
+        {
+            get { return L10n.TextContentWithIcon("Scale Tool", "Scale Tool", "ScaleTool On", null); }
         }
 
         [NoAutoStaticsCleanup] // Transient per-drag scale accumulator, reset to one on MouseDown; safe to persist.
@@ -458,6 +473,11 @@ namespace UnityEditor
         public override GUIContent toolbarIcon
         {
             get { return L10n.TextContentWithIcon("Rect Tool", "Rect Tool", "RectTool", null); }
+        }
+
+        internal override GUIContent toolbarIconOn
+        {
+            get { return L10n.TextContentWithIcon("Rect Tool", "Rect Tool", "RectTool On", null); }
         }
 
         public static Vector2 GetLocalRectPoint(Rect rect, int index)

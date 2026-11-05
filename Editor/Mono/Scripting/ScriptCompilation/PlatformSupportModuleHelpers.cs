@@ -17,7 +17,6 @@ namespace UnityEditor.Scripting.ScriptCompilation
                 return;
             }
 
-            scriptAssembly.Defines = AddAdditionalToArray(scriptAssembly.Defines, compilationExtension.GetAdditionalDefines());
 #pragma warning disable UAC2001 // Avoid Linq
             scriptAssembly.References = AddAdditionalToArray(scriptAssembly.References, compilationExtension.GetAdditionalAssemblyReferences()
 #pragma warning restore UAC2001

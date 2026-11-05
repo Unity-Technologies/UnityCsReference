@@ -177,6 +177,12 @@ namespace UnityEngine.UIElements
         internal static readonly UniqueStyleString sliderUssClassNameUnique = new(sliderUssClassName);
 
         /// <summary>
+        /// USS class name of slider elements in elements of this type.
+        /// </summary>
+        public static readonly string activeSliderUssClassName = ussClassName + "--active";
+        internal static readonly UniqueStyleString activeSliderUssClassNameUnique = new(activeSliderUssClassName);
+
+        /// <summary>
         /// USS class name of low buttons in elements of this type.
         /// </summary>
         public static readonly string lowButtonUssClassName = ussClassName + "__low-button";
@@ -205,6 +211,9 @@ namespace UnityEngine.UIElements
             slider = new ScrollerSlider(lowValue, highValue, direction, kDefaultPageSize) {name = "unity-slider", viewDataKey = "Slider"};
             slider.AddToClassList(sliderUssClassNameUnique);
             Callbacks.OnSliderValueChanged.Register(slider);
+            // Add class to keep the scrollbars visible when the user is interacting with them.
+            ((IEditableElement)slider).editingStarted += () => AddToClassList(activeSliderUssClassNameUnique);
+            ((IEditableElement)slider).editingEnded += () => RemoveFromClassList(activeSliderUssClassNameUnique);
 
             lowButton = new RepeatButton(ScrollPageUp, ScrollWaitDefinitions.firstWait, ScrollWaitDefinitions.regularWait) { name = "unity-low-button" };
             lowButton.AddToClassList(lowButtonUssClassNameUnique);

@@ -68,32 +68,26 @@ namespace UnityEngine
         [FreeFunction("Scripting::UnloadAssetFromScripting")]
         public extern static void UnloadAsset(Object assetToUnload);
 
-        // Used by Entities to register InstanceIDs as roots during AssetGC
+        // Used by Entities to register EntityIds as roots during AssetGC
         internal static partial class EntitiesAssetGC
         {
-            [FreeFunction("Resources_Bindings::MarkInstanceIDsAsRoot")]
-            internal extern static void MarkInstanceIDsAsRoot(IntPtr instanceIDs, int count, IntPtr state);
-
-            [FreeFunction("Resources_Bindings::EnableEntitiesAssetGCCallback")]
-            internal extern static void EnableEntitiesAssetGCCallback();
+            [FreeFunction("Resources_Bindings::MarkEntityIdsAsRoot")]
+            internal extern static void MarkEntityIdsAsRoot(IntPtr entityIds, int count, IntPtr state);
 
             internal delegate void AdditionalRootsHandlerDelegate(IntPtr state);
             [AutoStaticsCleanupOnCodeReload]
             internal static AdditionalRootsHandlerDelegate AdditionalRootsHandler;
 
-            // The Entities hooks register one as code loads, so others add to it rather than replace it.
             internal static void RegisterAdditionalRootsHandler(AdditionalRootsHandlerDelegate newAdditionalRootsHandler)
             {
-                if (AdditionalRootsHandler == null)
-                    EnableEntitiesAssetGCCallback();
                 AdditionalRootsHandler += newAdditionalRootsHandler;
             }
 
             [RequiredByNativeCode]
             private static void GetAdditionalRoots(IntPtr state)
             {
-                if(AdditionalRootsHandler != null)
-                    AdditionalRootsHandler(state);
+                Unity.Entities.UnityObjectRefUtility.MarkAssetGarbageCollectionRoots(state);
+                AdditionalRootsHandler?.Invoke(state);
             }
         }
     }
@@ -220,7 +214,7 @@ namespace UnityEngine
         [FreeFunction("Resources_Bindings::UnloadUnusedAssets")]
         extern public static AsyncOperation UnloadUnusedAssets();
 
-        [FreeFunction("Resources_Bindings::InstanceIDToObject")]
+        [FreeFunction("Resources_Bindings::EntityIdToObject")]
         public extern static Object EntityIdToObject(EntityId entityId);
 
         [Obsolete("InstanceIDToObject is obsolete. Use EntityIdToObject instead.", true)]
@@ -237,25 +231,25 @@ namespace UnityEngine
             return IsObjectLoaded(entityId);
         }
 
-        [FreeFunction("Resources_Bindings::InstanceIDToObjectArray", IsThreadSafe = true)]
-        extern private static void InstanceIDToObjectArray(IntPtr instanceIDs, int instanceCount, [Out, NotNull] Object[] objects);
+        [FreeFunction("Resources_Bindings::EntityIdToObjectArray", IsThreadSafe = true)]
+        extern private static void EntityIdToObjectArray(IntPtr entityIds, int instanceCount, [Out, NotNull] Object[] objects);
 
-        internal static unsafe void InstanceIDToObjectArray(NativeArray<EntityId> instanceIDs, Object[] objects)
+        internal static unsafe void EntityIdToObjectArray(NativeArray<EntityId> entityIds, Object[] objects)
         {
-            if (!instanceIDs.IsCreated)
-                throw new ArgumentException("NativeArray is uninitialized", nameof(instanceIDs));
+            if (!entityIds.IsCreated)
+                throw new ArgumentException("NativeArray is uninitialized", nameof(entityIds));
             if (objects == null)
                 throw new ArgumentNullException(nameof(objects));
-            if (objects.Length < instanceIDs.Length)
+            if (objects.Length < entityIds.Length)
                 throw new ArgumentException("Output array is too small.", nameof(objects));
 
-            if (instanceIDs.Length == 0)
+            if (entityIds.Length == 0)
                 return;
 
-            InstanceIDToObjectArray((IntPtr)instanceIDs.GetUnsafeReadOnlyPtr(), instanceIDs.Length, objects);
+            EntityIdToObjectArray((IntPtr)entityIds.GetUnsafeReadOnlyPtr(), entityIds.Length, objects);
         }
 
-        [FreeFunction("Resources_Bindings::InstanceIDToObjectList", IsThreadSafe = true)]
+        [FreeFunction("Resources_Bindings::EntityIdToObjectList", IsThreadSafe = true)]
         extern private static void EntityIdsToObjectList(IntPtr entityIds, int instanceCount, [Out,NotNull] List<Object> objects);
 
         public static unsafe void EntityIdsToObjectList(NativeArray<EntityId> entityIds, List<Object> objects)
@@ -275,10 +269,10 @@ namespace UnityEngine
         [Obsolete("InstanceIDToObjectList is obsolete. Use EntityIdsToObjectList instead.", true)]
         public static unsafe void InstanceIDToObjectList(NativeArray<int> instanceIDs, List<Object> objects) => throw new NotImplementedException("InstanceIDToObjectList is deprecated. Use InstanceIDToObjectList instead.");
 
-        [FreeFunction("Resources_Bindings::InstanceIDsToValidArray", IsThreadSafe = true)]
-        private static extern unsafe void InstanceIDsToValidArray_Internal(IntPtr instanceIDs, int instanceCount, IntPtr validArray, int validArrayCount);
+        [FreeFunction("Resources_Bindings::EntityIdsToValidArray", IsThreadSafe = true)]
+        private static extern unsafe void EntityIdsToValidArray_Internal(IntPtr entityIds, int instanceCount, IntPtr validArray, int validArrayCount);
 
-        [FreeFunction("Resources_Bindings::DoesObjectWithInstanceIDExist", IsThreadSafe = true)]
+        [FreeFunction("Resources_Bindings::DoesObjectWithEntityIdExist", IsThreadSafe = true)]
         public static extern bool EntityIdIsValid(EntityId entityId);
 
         [Obsolete("InstanceIDIsValid is obsolete. Use EntityIdIsValid instead.", true)]
@@ -300,7 +294,7 @@ namespace UnityEngine
             if(entityIDs.Length == 0)
                 return;
 
-            InstanceIDsToValidArray_Internal((IntPtr)entityIDs.GetUnsafeReadOnlyPtr(), entityIDs.Length, (IntPtr)validArray.GetUnsafePtr(), validArray.Length);
+            EntityIdsToValidArray_Internal((IntPtr)entityIDs.GetUnsafeReadOnlyPtr(), entityIDs.Length, (IntPtr)validArray.GetUnsafePtr(), validArray.Length);
         }
 
         [Obsolete("InstanceIDsToValidArray is obsolete. Use EntityIdsToValidArray instead.", true)]
@@ -317,7 +311,7 @@ namespace UnityEngine
             fixed(EntityId* entityIdsPtr = entityIds)
             fixed(bool* validArrayPtr = validArray)
             {
-                InstanceIDsToValidArray_Internal((IntPtr)entityIdsPtr, entityIds.Length, (IntPtr)validArrayPtr, validArray.Length);
+                EntityIdsToValidArray_Internal((IntPtr)entityIdsPtr, entityIds.Length, (IntPtr)validArrayPtr, validArray.Length);
             }
         }
     }

@@ -291,6 +291,34 @@ namespace UnityEngine.TextCore.Text
             UpdateRenderMode(nativeFontAsset, renderMode);
         }
 
+        // Tab stops are faceInfo.tabWidth * tabMultiple apart; 0 keeps the layout default (a width of spaces).
+        internal static void UpdateNativeTabMultiple(IntPtr nativeFontAsset, byte tabMultiple)
+        {
+            UpdateTabMultiple(nativeFontAsset, tabMultiple);
+        }
+
+        // Extra advance of every glyph, in hundredths of an em (Fixed Point).
+        internal static void UpdateNativeNormalSpacingOffset(IntPtr nativeFontAsset, int normalSpacingOffset)
+        {
+            UpdateNormalSpacingOffset(nativeFontAsset, normalSpacingOffset);
+        }
+
+        internal static void UpdateNativeItalicAngle(IntPtr nativeFontAsset, byte italicAngle)
+        {
+            UpdateItalicAngle(nativeFontAsset, italicAngle);
+        }
+
+        internal static void UpdateNativeBoldWeight(IntPtr nativeFontAsset, float boldWeight)
+        {
+            UpdateBoldWeight(nativeFontAsset, boldWeight);
+        }
+
+        // Bold spacing in hundredths of an em (Fixed Point).
+        internal static void UpdateNativeBoldSpacing(IntPtr nativeFontAsset, int boldSpacing)
+        {
+            UpdateBoldSpacing(nativeFontAsset, boldSpacing);
+        }
+
         static extern void UpdateFontEditorRef(IntPtr ptr, Font sourceFont_EditorRef);
 
         static extern void UpdateSourceFontFile(IntPtr ptr, Font sourceFontFile);
@@ -304,6 +332,8 @@ namespace UnityEngine.TextCore.Text
         static extern void UpdateItalicAngle(IntPtr ptr, byte italicAngle);
         static extern void UpdateBoldWeight(IntPtr ptr, float boldWeight);
         static extern void UpdateBoldSpacing(IntPtr ptr, int boldSpacing);
+        static extern void UpdateTabMultiple(IntPtr ptr, byte tabMultiple);
+        static extern void UpdateNormalSpacingOffset(IntPtr ptr, int normalSpacingOffset);
 
         static extern bool TryGetGlyphIndex(IntPtr ptr, uint unicode, out uint glyphIndex);
         static extern bool TryGetGlyphMetrics(IntPtr ptr, uint glyphIndex, out GlyphMetrics metrics);

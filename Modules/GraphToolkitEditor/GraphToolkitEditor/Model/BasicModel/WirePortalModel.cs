@@ -107,6 +107,9 @@ namespace Unity.GraphToolkit.Editor
         /// <inheritdoc />
         public override string Title => m_DeclarationModel == null ? "" : m_DeclarationModel.Title;
 
+        /// <inheritdoc />
+        public override bool HasAccentBar => false;
+
         /// <summary>
         /// The evaluation order for the portal when multiple portals are linked together.
         /// </summary>

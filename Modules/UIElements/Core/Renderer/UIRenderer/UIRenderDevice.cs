@@ -1044,6 +1044,24 @@ namespace UnityEngine.UIElements.UIR
             ResetScreenSpaceMaterials();
         }
 
+        // Counterpart of EvaluateChain for panels that skip rendering: calls the immediate commands it would execute, without rendering.
+        // viewport is in the space of the bounds the chain would be rendered with, as used for culling.
+        public static void CallImmediateCommands(RenderChainCommand head, Rect viewport)
+        {
+            int disableCounter = 0;
+            for (; head != null; head = head.next)
+            {
+                if ((head.type & CommandType.AnyDisable) != 0)
+                {
+                    disableCounter += (head.type & CommandType.EndDisable) != 0 ? -1 : 1;
+                    continue;
+                }
+
+                if (disableCounter == 0 && (head.type == CommandType.Immediate || head.type == CommandType.ImmediateCull))
+                    head.CallImmediateWithoutRendering(viewport);
+            }
+        }
+
         bool IsComponentDisabledForCommandListOwner(VisualElement owner)
         {
             var uiRenderer = (owner as UIDocumentRootElement)?.uiRenderer;

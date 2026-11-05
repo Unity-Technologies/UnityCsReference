@@ -33,6 +33,8 @@ namespace UnityEngine.UIElements
         protected const VisualElementTransformFlags BoundingBoxDirtyFlags =
             VisualElementTransformFlags.BoundingBoxDirty | VisualElementTransformFlags.WorldBoundingBoxDirty | VisualElementTransformFlags.BoundingBoxDirtiedSinceLastLayoutPass;
 
+        internal override VersionChangeType versionChangeInterest => AnythingChanged;
+
         public override void OnVersionChanged(VisualElement ve, VersionChangeType versionChangeType)
         {
             if ((versionChangeType & AnythingChanged) == 0)
@@ -45,7 +47,7 @@ namespace UnityEngine.UIElements
 
             if ((versionChangeType & BoundingBoxChanged) != 0)
             {
-                DirtyBoundingBoxHierarchy(ve);
+                DirtyBoundingBoxHierarchy(ve, versionChangeType);
             }
 
             if ((versionChangeType & VersionChanged) != 0)
@@ -103,12 +105,16 @@ namespace UnityEngine.UIElements
             return childrenNeedIt;
         }
 
-        private static void DirtyBoundingBoxHierarchy(VisualElement ve)
+        private static void DirtyBoundingBoxHierarchy(VisualElement ve, VersionChangeType versionChangeType)
         {
+            // The local bounding box (own rect and children, in local space) doesn't depend on the element's own transform.
+            ve.transformFlags |= (versionChangeType & BoundingBoxChanged) == VersionChangeType.Transform
+                ? BoundingBoxDirtyFlags & ~VisualElementTransformFlags.BoundingBoxDirty
+                : BoundingBoxDirtyFlags;
+
             // Even if all the local bounding box flags are dirty already, we need to check the first parent too.
             // This is because other factors can impact the parent boundingBox besides our own boundingBox changing
             // (for instance, if our ShouldClip() method or resolvedStyle.display return a different value).
-            ve.transformFlags |= BoundingBoxDirtyFlags;
             DirtyParentHierarchy(ve.hierarchy.parent, BoundingBoxDirtyFlags);
         }
 
@@ -156,7 +162,7 @@ namespace UnityEngine.UIElements
 
             // Sticky panel-level curvature gate: -unity-curvature versions with Transform, so every element
             // becoming curved passes through here. Elements moving in with curvature already applied are caught
-            // by the Needs3DBounds check in SetPanelBatched.
+            // by the hasCurvature check in SetPanelBatched.
             if ((versionChangeType & BoundingBoxChanged) != 0 && ve.hasCurvature)
                 panel.mayHaveCurvedElements = true;
 
@@ -167,21 +173,22 @@ namespace UnityEngine.UIElements
 
             if ((versionChangeType & BoundingBoxChanged) != 0)
             {
-                DirtyBoundingBoxHierarchy(ve);
+                DirtyBoundingBoxHierarchy(ve, versionChangeType);
             }
         }
 
         // Curved UI: a curved element conforms its WHOLE subtree onto its surface, so every descendant
-        // is bent and must use the 3D (curved) pick path + 3D picking bounds. Needs3DBounds only propagates UP on
-        // its own (via GetParentMustDirtyFlags), so push it DOWN across the subtree from the curved element here.
+        // is bent and must use the 3D (curved) pick path + 3D picking bounds. That is InCurvedSubtree, pushed DOWN
+        // here, and kept apart from Needs3DBounds, which also propagates UP: the downward walk stops at the first
+        // node that already has the flag, which is only sound when the flag is never set on a node alone.
         // Pushing it slightly past an explicit-0deg flat barrier is harmless — those elements have CountChain == 0
         // and fall back to the flat pick regardless — so the barrier is not special-cased.
         private new static (VisualElementFlags flags, VisualElementTransformFlags transformFlags, bool clip) GetChildrenMustDirtyFlags(
             VisualElement ve, VersionChangeType versionChangeType)
         {
             var (flags, transformFlags, clip) = VisualTreeHierarchyFlagsUpdater.GetChildrenMustDirtyFlags(ve, versionChangeType);
-            if (ve.hasCurvature)
-                transformFlags |= VisualElementTransformFlags.Needs3DBounds;
+            if (ve.hasCurvature || ve.hierarchy.parent is { inCurvedSubtree: true })
+                transformFlags |= VisualElementTransformFlags.InCurvedSubtree;
             return (flags, transformFlags, clip);
         }
 
@@ -204,10 +211,16 @@ namespace UnityEngine.UIElements
             return mustDirty;
         }
 
-        private static void DirtyBoundingBoxHierarchy(VisualElement ve)
+        // The 3D local bounds stay dirty: a curved element's sag bounds depend on its own transform.
+        private const VisualElementTransformFlags LocalBoundingBox2DFlags =
+            VisualElementTransformFlags.BoundingBoxDirty | VisualElementTransformFlags.BoundingBoxWithoutNestedDirty;
+
+        private static void DirtyBoundingBoxHierarchy(VisualElement ve, VersionChangeType versionChangeType)
         {
             var flags = GetParentMustDirtyFlags(ve);
-            ve.transformFlags |= flags;
+            ve.transformFlags |= (versionChangeType & BoundingBoxChanged) == VersionChangeType.Transform
+                ? flags & ~LocalBoundingBox2DFlags
+                : flags;
 
             if (ve is IPanelComponentRootElement)
                 // We crossed a panel component boundary, don't dirty the "without nested" flags anymore

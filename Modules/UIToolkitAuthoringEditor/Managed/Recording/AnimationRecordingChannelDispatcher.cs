@@ -400,6 +400,21 @@ namespace Unity.UIToolkit.Editor
                     }
                     return false;
 
+                case StylePropertyRecordingChannel.GridLine:
+                    if (typeof(T) == typeof(StyleGridLine))
+                    {
+                        if (!TryGetRawGridLine(Unsafe.As<T, StyleGridLine>(ref v), out var raw))
+                            return false;
+                        cs.ApplyPropertyAnimation(element, id, raw);
+                        return true;
+                    }
+                    if (typeof(T) == typeof(GridLine))
+                    {
+                        cs.ApplyPropertyAnimation(element, id, ToRawGridLine(Unsafe.As<T, GridLine>(ref v)));
+                        return true;
+                    }
+                    return false;
+
                 default:
                     return false;
             }
@@ -758,6 +773,21 @@ namespace Unity.UIToolkit.Editor
                     {
                         var tmp = UIAnimationBinder.ReadBackgroundSnapshot(element);
                         previousValue = Unsafe.As<Background, T>(ref tmp);
+                        return true;
+                    }
+                    return false;
+
+                case StylePropertyRecordingChannel.GridLine:
+                    if (typeof(T) == typeof(StyleGridLine))
+                    {
+                        var tmp = new StyleGridLine(FromRawGridLine(cs.ReadPropertyAnimationInt(stylePropertyId)));
+                        previousValue = Unsafe.As<StyleGridLine, T>(ref tmp);
+                        return true;
+                    }
+                    if (typeof(T) == typeof(GridLine))
+                    {
+                        var tmp = FromRawGridLine(cs.ReadPropertyAnimationInt(stylePropertyId));
+                        previousValue = Unsafe.As<GridLine, T>(ref tmp);
                         return true;
                     }
                     return false;
@@ -1276,9 +1306,49 @@ namespace Unity.UIToolkit.Editor
                     return true;
                 }
 
+                case StylePropertyRecordingChannel.GridLine:
+                {
+                    int prevRaw;
+                    int curRaw;
+                    if (typeof(T) == typeof(StyleGridLine))
+                    {
+                        if (!TryGetRawGridLine(Unsafe.As<T, StyleGridLine>(ref p), out prevRaw)
+                            || !TryGetRawGridLine(Unsafe.As<T, StyleGridLine>(ref c), out curRaw))
+                            return false;
+                    }
+                    else if (typeof(T) == typeof(GridLine))
+                    {
+                        prevRaw = ToRawGridLine(Unsafe.As<T, GridLine>(ref p));
+                        curRaw = ToRawGridLine(Unsafe.As<T, GridLine>(ref c));
+                    }
+                    else
+                    {
+                        return false;
+                    }
+                    AnimationRecordingStyleBridge.AddModification(list, target, elementPath, propName, null, prevRaw, curRaw);
+                    return true;
+                }
+
                 default:
                     return false;
             }
+        }
+
+        static bool TryGetRawGridLine(StyleGridLine value, out int raw)
+        {
+            raw = value.keyword == StyleKeyword.Undefined ? ToRawGridLine(value.value) : 0;
+            return value.keyword == StyleKeyword.Undefined || value.keyword == StyleKeyword.Auto;
+        }
+
+        static int ToRawGridLine(GridLine value) => value.isSpan ? -value.span : value.line;
+
+        static GridLine FromRawGridLine(int raw)
+        {
+            if (raw > 0)
+                return GridLine.AtLine(raw);
+            if (raw < 0)
+                return GridLine.Span(raw == int.MinValue ? int.MaxValue : -raw);
+            return GridLine.Auto;
         }
     }
 }

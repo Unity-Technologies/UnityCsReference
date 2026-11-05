@@ -2913,14 +2913,14 @@ namespace UnityEngine
         internal static extern void DisconnectPhysicsSDKVisualDebugger();
 
         [StaticAccessor("PhysicsManager", StaticAccessorType.DoubleColon)]
-        extern internal static Collider GetColliderByInstanceID(EntityId entityId);
+        extern internal static Collider GetColliderByEntityId(EntityId entityId);
 
         [StaticAccessor("PhysicsManager", StaticAccessorType.DoubleColon)]
-        internal static extern Component GetBodyByInstanceID(EntityId entityId);
+        internal static extern Component GetBodyByEntityId(EntityId entityId);
 
         [NativeMethod(IsThreadSafe = true)]
         [StaticAccessor("PhysicsManager", StaticAccessorType.DoubleColon)]
-        internal static extern uint TranslateTriangleIndexFromID(EntityId instanceID, uint faceIndex);
+        internal static extern uint TranslateTriangleIndexFromID(EntityId entityId, uint faceIndex);
 
         [StaticAccessor("PhysicsManager", StaticAccessorType.DoubleColon)]
         private static extern void SendOnCollisionEnter(Component component, Collision collision);

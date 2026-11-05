@@ -104,6 +104,12 @@ namespace UnityEngine.UIElements
         // a slot is actually freed.
         internal int LiveCount { get; private set; }
 
+        // Used in tests
+        internal long BytesReserved => m_Store.BytesReserved;
+
+        // Used in tests
+        internal long BytesUsed => LiveCount * (long)m_Store.BytesPerSlot;
+
         unsafe TextBufferStore()
         {
             var componentTypes = new[] { UnmanagedComponentType.Create<TextBufferData>() };

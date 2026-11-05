@@ -53,6 +53,8 @@ namespace UnityEditor.PackageManager.UI.Internal
             applyButton.clickable.clicked += OnApplyClicked;
             learnMoreButton.clickable.clicked += OnLearnMoreClicked;
 
+            securitySettingsContainer.Add(new ClosedNetworkSettings(resourceLoader, settingsProxy));
+
             RegisterCallback<AttachToPanelEvent>(OnAttachToPanel);
             RegisterCallback<DetachFromPanelEvent>(OnDetachFromPanel);
         }
@@ -60,17 +62,24 @@ namespace UnityEditor.PackageManager.UI.Internal
         private void OnAttachToPanel(AttachToPanelEvent evt)
         {
             m_SettingsProxy.onTrustPolicyLevelChanged += OnTrustPolicyLevelChanged;
+            m_SettingsProxy.onClosedNetworkEnabledChanged += OnClosedNetworkEnabledChanged;
             Refresh();
         }
 
         private void OnDetachFromPanel(DetachFromPanelEvent evt)
         {
             m_SettingsProxy.onTrustPolicyLevelChanged -= OnTrustPolicyLevelChanged;
+            m_SettingsProxy.onClosedNetworkEnabledChanged -= OnClosedNetworkEnabledChanged;
         }
 
         private void OnTrustPolicyLevelChanged(TrustPolicyLevel trustPolicyLevel)
         {
             ResetDraft();
+        }
+
+        private void OnClosedNetworkEnabledChanged(bool closedNetworkEnabled)
+        {
+            Refresh();
         }
 
         private void OnAdvancedToggleChanged(ChangeEvent<bool> changeEvent)
@@ -91,8 +100,10 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         private void OnCancelClicked()
         {
+            var previousTrustPolicyLevel = m_SettingsProxy.trustPolicyLevel;
+            var cancelledTrustPolicyLevel = m_SettingsProxy.trustPolicyLevelDraft;
             ResetDraft();
-            PackageManagerSecuritySettingsAnalytics.SendEvent("cancelTrustPolicy", m_SettingsProxy.trustPolicyLevel, m_SettingsProxy.trustPolicyLevelDraft);
+            PackageManagerSecuritySettingsAnalytics.SendEvent("cancelTrustPolicy", previousTrustPolicyLevel, cancelledTrustPolicyLevel);
         }
 
         private void OnApplyClicked()
@@ -147,10 +158,16 @@ namespace UnityEditor.PackageManager.UI.Internal
 
             applyButton.SetEnabled(hasUnsavedChanges);
             cancelButton.SetEnabled(hasUnsavedChanges);
+
+            defaultContainer.SetEnabled(!m_SettingsProxy.isSignatureValidationDisabled);
+            advancedContainer.SetEnabled(!m_SettingsProxy.isSignatureValidationDisabled);
         }
 
         private VisualElementCache cache { get; }
 
+        private VisualElement securitySettingsContainer => cache.Get<VisualElement>("securitySettingsContainer");
+        private VisualElement defaultContainer => cache.Get<VisualElement>("defaultContainer");
+        private VisualElement advancedContainer => cache.Get<VisualElement>("advancedContainer");
         private Toggle advancedToggle => cache.Get<Toggle>("advancedToggle");
         private VisualElement advancedOptionsContainer => cache.Get<VisualElement>("advancedOptionsContainer");
         private GroupBox signatureOptions => cache.Get<GroupBox>("signatureOptions");

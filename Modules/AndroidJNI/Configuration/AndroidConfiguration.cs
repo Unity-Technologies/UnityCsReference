@@ -154,6 +154,7 @@ namespace UnityEngine.Android
 
         ///<summary>Mirrors the Android method <c>Configuration()</c>.</summary>
         ///<remarks>For information about this method, refer to the Android developer documentation on &lt;a href="https://developer.android.com/reference/android/content/res/Configuration#Configuration()"&gt;Configuration()&lt;/a&gt;.</remarks>
+        [RequiredMember]
         public AndroidConfiguration()
         {
         }

@@ -18,23 +18,37 @@ namespace Unity.ProjectAuditor.Editor.UI.Framework
             public float Value;
             public Color Color;
             public GUIContent IconContent;
+            public string InfoText;
+            public GUIContent ButtonContent;
+            public Action ButtonAction;
+            public string ValueText;
 
-            public Element(string label, string tooltip, float value, Color color, GUIContent iconConent = null)
+            public Element(string label, string tooltip, float value, Color color, GUIContent iconConent = null,
+                string infoText = null, GUIContent buttonContent = null, Action buttonAction = null,
+                string valueText = null)
             {
+                ValueText = valueText;
                 Label = label;
                 Tooltip = tooltip;
                 Value = value;
                 Color = color;
                 IconContent = iconConent;
+                InfoText = infoText;
+                ButtonContent = buttonContent;
+                ButtonAction = buttonAction;
             }
         }
 
         // Neutral, translucent track drawn behind an all-zero bar.
         static readonly Color k_EmptyBarColor = new Color(0.5f, 0.5f, 0.5f, 0.2f);
 
-        const int k_NumberLabelWidth = 60;
-        const int k_RowSize = 22;
-        const int k_LabelWidth = 80;
+        const int k_NumberLabelWidth = 90;
+        const int k_RowSize = 26;
+        const int k_BarLegendSpacing = 4;
+        const int k_LabelWidth = 150;
+        const int k_ValueTextWidth = 165;
+        const int k_InfoWidth = 195;
+        const int k_ButtonWidth = 60;
 
         static readonly GUIStyle s_Row = new GUIStyle(GUIStyle.none)
         {
@@ -57,6 +71,20 @@ namespace Unity.ProjectAuditor.Editor.UI.Framework
             float totalValue = 0;
             for (int i = 0; i < inValues.Count; ++i)
                 totalValue += inValues[i].Value;
+
+            // Optional columns are reserved for every row so the items line up
+            bool hasInfo = false;
+            bool hasButton = false;
+            bool hasValueText = false;
+            for (int i = 0; i < inValues.Count; ++i)
+            {
+                hasInfo |= !string.IsNullOrEmpty(inValues[i].InfoText);
+                hasButton |= inValues[i].ButtonContent != null;
+                hasValueText |= !string.IsNullOrEmpty(inValues[i].ValueText);
+            }
+
+            int extraWidth = (hasInfo ? k_InfoWidth : 0) + (hasButton ? k_ButtonWidth : 0)
+                + (hasValueText ? k_ValueTextWidth - k_NumberLabelWidth : 0);
 
             var rect = EditorGUILayout.GetControlRect(false, barHeight, GUILayout.ExpandWidth(true));
             int x = 0;
@@ -82,18 +110,20 @@ namespace Unity.ProjectAuditor.Editor.UI.Framework
                 draw2D.DrawEnd();
             }
 
+            GUILayout.Space(k_BarLegendSpacing);
+
             if (oneColumnLayout)
             {
                 using (new EditorGUILayout.HorizontalScope(GUILayout.ExpandWidth(true)))
                 {
-                    using (new EditorGUILayout.VerticalScope(GUILayout.Width(200)))
+                    using (new EditorGUILayout.VerticalScope(GUILayout.Width(280 + extraWidth)))
                     {
                         for (int i = 0; i < inValues.Count; ++i)
                         {
                             if (skipZeroValues && inValues[i].Value == 0)
                                 continue;
 
-                            DrawLegendItem(draw2D, inValues[i], labelFormat, numberFormat, false);
+                            DrawLegendItem(draw2D, inValues[i], labelFormat, numberFormat, hasInfo, hasButton, hasValueText, false);
                         }
                     }
 
@@ -136,7 +166,7 @@ namespace Unity.ProjectAuditor.Editor.UI.Framework
                 using (new EditorGUILayout.VerticalScope())
                 {
                     for (int i = 0; i < firstColumnNum; ++i)
-                        DrawLegendItem(draw2D, inValues[i], labelFormat, numberFormat);
+                        DrawLegendItem(draw2D, inValues[i], labelFormat, numberFormat, hasInfo, hasButton, hasValueText);
 
                     DrawLine(draw2D);
                 }
@@ -146,7 +176,7 @@ namespace Unity.ProjectAuditor.Editor.UI.Framework
                 using (new EditorGUILayout.VerticalScope())
                 {
                     for (int i = firstColumnNum; i < inValues.Count; ++i)
-                        DrawLegendItem(draw2D, inValues[i], labelFormat, numberFormat);
+                        DrawLegendItem(draw2D, inValues[i], labelFormat, numberFormat, hasInfo, hasButton, hasValueText);
 
                     DrawLine(draw2D);
                 }
@@ -168,15 +198,43 @@ namespace Unity.ProjectAuditor.Editor.UI.Framework
             EditorGUILayout.EndVertical();
         }
 
-        static void DrawLegendItem(Draw2D draw2D, in Element element, string labelFormat, string numberFormat, bool drawLines = true)
+        static void DrawLegendItem(Draw2D draw2D, in Element element, string labelFormat, string numberFormat,
+            bool hasInfo, bool hasButton, bool hasValueText, bool drawLines = true)
         {
             if (drawLines)
                 DrawLine(draw2D);
 
             EditorGUILayout.BeginHorizontal(s_Row, GUILayout.Height(10), GUILayout.Width(120));
-            EditorGUILayout.LabelField(element.IconContent, GUILayout.Width(28), GUILayout.Height(20));
+
+            if (element.IconContent != null)
+            {
+                EditorGUILayout.LabelField(element.IconContent, GUILayout.Width(28), GUILayout.Height(20));
+            }
+            else
+            {
+                var rect = EditorGUILayout.GetControlRect(GUILayout.Width(12), GUILayout.Height(20));
+                if (draw2D.DrawStart(rect))
+                {
+                    draw2D.DrawFilledBox(1, 5, 10, 10, element.Color);
+                    draw2D.DrawEnd();
+                }
+            }
+
             EditorGUILayout.LabelField(new GUIContent(element.Label, element.Tooltip), SharedStyles.Label, GUILayout.Width(k_LabelWidth));
-            EditorGUILayout.LabelField(new GUIContent(string.Format(labelFormat, element.Value.ToString(numberFormat)), element.Tooltip), SharedStyles.BoldLabel, GUILayout.Width(k_NumberLabelWidth));
+            var valueText = element.ValueText ?? string.Format(labelFormat, element.Value.ToString(numberFormat));
+            EditorGUILayout.LabelField(new GUIContent(valueText, element.Tooltip), SharedStyles.BoldLabel,
+                GUILayout.Width(hasValueText ? k_ValueTextWidth : k_NumberLabelWidth));
+
+            if (hasInfo)
+                EditorGUILayout.LabelField(element.InfoText, SharedStyles.LabelRichTextGrey, GUILayout.Width(k_InfoWidth));
+
+            if (hasButton)
+            {
+                if (element.ButtonContent == null)
+                    GUILayout.Space(k_ButtonWidth);
+                else if (GUILayout.Button(element.ButtonContent, EditorStyles.miniButton, GUILayout.Width(k_ButtonWidth)))
+                    element.ButtonAction?.Invoke();
+            }
 
             EditorGUILayout.EndHorizontal();
         }

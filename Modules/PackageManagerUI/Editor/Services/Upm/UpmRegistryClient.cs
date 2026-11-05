@@ -52,15 +52,18 @@ namespace UnityEditor.PackageManager.UI.Internal
         private readonly IClientProxy m_ClientProxy;
         private readonly IUpmCache m_UpmCache;
         private readonly IApplicationProxy m_ApplicationProxy;
+        private readonly IDateTimeProxy m_DateTimeProxy;
         public UpmRegistryClient(IProjectSettingsProxy settingsProxy,
             IClientProxy clientProxy,
             IUpmCache upmCache,
-            IApplicationProxy applicationProxy)
+            IApplicationProxy applicationProxy,
+            IDateTimeProxy dateTimeProxy)
         {
             m_SettingsProxy = RegisterDependency(settingsProxy);
             m_ClientProxy = RegisterDependency(clientProxy);
             m_UpmCache = RegisterDependency(upmCache);
             m_ApplicationProxy = RegisterDependency(applicationProxy);
+            m_DateTimeProxy = RegisterDependency(dateTimeProxy);
         }
 
         public override void OnEnable()
@@ -122,7 +125,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         public void AddRegistryDryRun(string name, string url, string[] scopes, Action<RegistryInfo> successCallback = null, Action<UIError> errorCallback = null)
         {
             var operation = new UpmAddRegistryOperation();
-            operation.ResolveDependencies(m_ClientProxy, m_ApplicationProxy);
+            operation.ResolveDependencies(m_ClientProxy, m_ApplicationProxy, m_DateTimeProxy);
             operation.Add(name, url, scopes, true);
             if (successCallback != null)
                 operation.onProcessResult += request => successCallback.Invoke(request.Result);
@@ -133,7 +136,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         public void UpdateRegistryDryRun(string oldName, string newName, string url, string[] scopes, Action<RegistryInfo> successCallback = null, Action<UIError> errorCallback = null)
         {
             var operation = new UpmUpdateRegistryOperation();
-            operation.ResolveDependencies(m_ClientProxy, m_ApplicationProxy);
+            operation.ResolveDependencies(m_ClientProxy, m_ApplicationProxy, m_DateTimeProxy);
             operation.Update(oldName, newName, url, scopes, true);
             if (successCallback != null)
                 operation.onProcessResult += request => successCallback.Invoke(request.Result);
@@ -177,6 +180,8 @@ namespace UnityEditor.PackageManager.UI.Internal
 
             var scopedRegistriesUpdated = !newScopedRegistries.IsEquivalentTo(m_SettingsProxy.scopedRegistries);
             var mainRegistryUpdated = !mainRegistry.IsEquivalentTo(m_SettingsProxy.mainRegistry);
+            // A new project's settings have no main registry yet, so storing the first one is not a modification
+            var mainRegistryKnown = !string.IsNullOrEmpty(m_SettingsProxy.mainRegistry?.url);
 
             if (scopedRegistriesUpdated || mainRegistryUpdated)
             {
@@ -185,7 +190,8 @@ namespace UnityEditor.PackageManager.UI.Internal
                 if (!string.IsNullOrEmpty(addedOrUpdatedRegistry?.name))
                     m_SettingsProxy.SelectRegistry(addedOrUpdatedRegistry.name);
                 m_SettingsProxy.Save();
-                onRegistriesModified?.Invoke();
+                if (scopedRegistriesUpdated || mainRegistryKnown)
+                    onRegistriesModified?.Invoke();
             }
         }
 
@@ -195,7 +201,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                 return operation;
 
             operation = new T();
-            operation.ResolveDependencies(m_ClientProxy, m_ApplicationProxy);
+            operation.ResolveDependencies(m_ClientProxy, m_ApplicationProxy, m_DateTimeProxy);
             return operation;
         }
 
@@ -205,10 +211,10 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         public void OnAfterDeserialize()
         {
-            m_GetRegistriesOperation?.ResolveDependencies(m_ClientProxy, m_ApplicationProxy);
-            m_AddRegistryOperation?.ResolveDependencies(m_ClientProxy, m_ApplicationProxy);
-            m_UpdateRegistryOperation?.ResolveDependencies(m_ClientProxy, m_ApplicationProxy);
-            m_RemoveRegistryOperation?.ResolveDependencies(m_ClientProxy, m_ApplicationProxy);
+            m_GetRegistriesOperation?.ResolveDependencies(m_ClientProxy, m_ApplicationProxy, m_DateTimeProxy);
+            m_AddRegistryOperation?.ResolveDependencies(m_ClientProxy, m_ApplicationProxy, m_DateTimeProxy);
+            m_UpdateRegistryOperation?.ResolveDependencies(m_ClientProxy, m_ApplicationProxy, m_DateTimeProxy);
+            m_RemoveRegistryOperation?.ResolveDependencies(m_ClientProxy, m_ApplicationProxy, m_DateTimeProxy);
         }
     }
 }

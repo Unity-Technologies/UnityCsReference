@@ -125,7 +125,7 @@ namespace UnityEngine.Windows.Speech
         {
         }
 
-#pragma warning disable UA5000 // The Avoid Finalizer Analyzer produces compile errors for any new finalizers. This pre-existing finalizer declaration has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA5000 // Frees the native recognizer; DestroyThreaded is thread-safe, so it is the safety net when Dispose is missed.
         ~PhraseRecognizer()
         {
             if (m_Recognizer != IntPtr.Zero)
@@ -324,7 +324,7 @@ namespace UnityEngine.Windows.Speech
             m_Recognizer = Create(this, minimumConfidence, topic);
         }
 
-#pragma warning disable UA5000 // The Avoid Finalizer Analyzer produces compile errors for any new finalizers. This pre-existing finalizer declaration has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA5000 // Frees the native recognizer; DestroyThreaded is thread-safe, so it is the safety net when Dispose is missed.
         ~DictationRecognizer()
         {
             if (m_Recognizer != IntPtr.Zero)

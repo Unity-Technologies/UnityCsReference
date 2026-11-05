@@ -193,7 +193,8 @@ namespace Unity.ProjectAuditor.Editor.Core
             {
                 Params = analysisParams,
                 GameObject = gameObject,
-                Source = source
+                Source = source,
+                RegisterOverride = (location, id) => analysisParams.IssueOverrides?.Add(location, id, Name)
             };
 
             // Analyze

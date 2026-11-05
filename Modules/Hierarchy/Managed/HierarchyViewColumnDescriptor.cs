@@ -87,7 +87,7 @@ namespace Unity.Hierarchy
         public Action<VisualElement, HierarchyView> BindHeader;
 
         /// <summary>
-        /// Callback triggered when the header is about to be destroyed or after domain reload.
+        /// Callback triggered when the header is about to be destroyed or after code reload.
         /// </summary>
         public Action<VisualElement, HierarchyView> UnbindHeader;
 

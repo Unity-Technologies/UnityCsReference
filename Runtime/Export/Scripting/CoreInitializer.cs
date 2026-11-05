@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 #nullable enable
+using System;
 using Unity.Scripting.LifecycleManagement;
 using UnityEngine.Scripting;
 
@@ -21,7 +22,7 @@ namespace UnityEngine
 
         [OnAssemblyLoaded]
         [RequiredByNativeCode]
-        internal static void Initialize()
+        internal static unsafe void Initialize()
         {
             bool runOnceOnly = !s_Initialized;
             s_Initialized = true;
@@ -42,7 +43,10 @@ namespace UnityEngine
 
             // 2. TypeManagerV2: fetches the native RTTI layout used by CreateProxyObject's base-chain walk.
             if (runOnceOnly)
-                TypeManagerV2.Initialize();
+                TypeManagerV2.Initialize((IntPtr)(delegate*<EntityId, object>)&CreateBareObjectProxy);
         }
+
+        // No factory registered anywhere in the type's chain: a bare Object is the correct proxy object.
+        static object CreateBareObjectProxy(EntityId id) => new UnityEngine.Object(id);
     }
 }

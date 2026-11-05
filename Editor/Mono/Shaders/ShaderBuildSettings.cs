@@ -512,6 +512,27 @@ namespace UnityEditor.Shaders
             return sections.Length > 0 && sections[0] == identifier;
         }
 
+        internal static bool IsConstantDefineDuplicate(string[] defines, uint numInternalDefines, string identifier, int index, out string msg)
+        {
+            msg = "";
+            if (index <= 0 || index >= defines.Length || string.IsNullOrEmpty(identifier))
+                return false;
+
+            for (int i = 0; i < index; ++i)
+            {
+                if (DefineHasIdentifier(defines[i], identifier))
+                {
+                    if (index >= numInternalDefines && i >= numInternalDefines)
+                        msg = "Duplicate definitions of '" + identifier + "'.";
+                    else
+                        msg = "Cannot redefine a built-in define '" + identifier + "'.";
+
+                    return true;
+                }
+            }
+            return false;
+        }
+
         internal static bool SplitAndValidateDefine(string define, out string identifier, out string value, out string msg)
         {
             identifier = "";
@@ -598,20 +619,8 @@ namespace UnityEditor.Shaders
                     return false;
                 }
 
-                // Duplication checks
-                string nameWithSpace = identifier + " ";
-                for (int j = 0; j < i; ++j)
-                {
-                    if (defines[j].TrimStart().StartsWith(nameWithSpace))
-                    {
-                        if (i >= numInternalDefines && j >= numInternalDefines)
-                            msg = "Duplicate definitions of '" + identifier + "'.";
-                        else
-                            msg = "Cannot redefine a built-in define '" + identifier + "'.";
-
-                        return false;
-                    }
-                }
+                if (IsConstantDefineDuplicate(defines, numInternalDefines, identifier, i, out msg))
+                    return false;
             }
 
             msg = string.Empty;

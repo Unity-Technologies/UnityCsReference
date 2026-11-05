@@ -171,6 +171,7 @@ namespace Unity.U2D.Physics
         [NativeMethod(Name = "PhysicsHingeJoint::SetSpringTargetAngle", IsThreadSafe = true)] extern internal static void HingeJoint_SetSpringTargetAngle(PhysicsHingeJoint joint, float targetAngle);
         [NativeMethod(Name = "PhysicsHingeJoint::GetSpringTargetAngle", IsThreadSafe = true)] extern internal static float HingeJoint_GetSpringTargetAngle(PhysicsHingeJoint joint);
         [NativeMethod(Name = "PhysicsHingeJoint::GetAngle", IsThreadSafe = true)] extern internal static float HingeJoint_GetAngle(PhysicsHingeJoint joint);
+        [NativeMethod(Name = "PhysicsHingeJoint::GetCurrentSpeed", IsThreadSafe = true)] extern internal static float HingeJoint_GetCurrentSpeed(PhysicsHingeJoint joint);
         [NativeMethod(Name = "PhysicsHingeJoint::SetEnableMotor", IsThreadSafe = true)] extern internal static void HingeJoint_SetEnableMotor(PhysicsHingeJoint joint, bool enableMotor);
         [NativeMethod(Name = "PhysicsHingeJoint::GetEnableMotor", IsThreadSafe = true)] extern internal static bool HingeJoint_GetEnableMotor(PhysicsHingeJoint joint);
         [NativeMethod(Name = "PhysicsHingeJoint::SetMotorSpeed", IsThreadSafe = true)] extern internal static void HingeJoint_SetMotorSpeed(PhysicsHingeJoint joint, float motorSpeed);

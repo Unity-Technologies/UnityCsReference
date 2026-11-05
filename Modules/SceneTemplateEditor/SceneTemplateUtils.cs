@@ -48,47 +48,9 @@ namespace UnityEditor.SceneTemplate
             thumbnailPath = $"{Styles.k_IconsFolderFolder}scene-template-empty-scene.png",
             description = L10n.Tr("Just an empty scene - no Game Objects.", null),
             onCreateCallback = additive => CreateBuiltinScene(BuiltinTemplateType.Empty, additive),
-            isDeprecated = false,
-        };
-        [NoAutoStaticsCleanup] // fixed built-in template catalog entry; callback targets editor code only, no user references, safe to persist
-        internal static SceneTemplateInfo default2DSceneTemplateInfo = new SceneTemplateInfo
-        {
-            name = "Basic 2D (Built-in / Deprecated)",
-            isPinned = true,
-            thumbnailPath = $"{Styles.k_IconsFolderFolder}scene-template-2d-scene.png",
-            badgePath = $"{Styles.k_IconsFolderFolder}2d-badge-scene-template.png",
-            description = L10n.Tr("Contains an orthographic camera setup for 2D games. Works with built-in renderer.", null),
-            onCreateCallback = additive => CreateBuiltinScene(BuiltinTemplateType.Default2D, additive),
-            isDeprecated = true,
-        };
-        [NoAutoStaticsCleanup] // fixed built-in template catalog entry; callback targets editor code only, no user references, safe to persist
-        internal static SceneTemplateInfo default2DMode3DSceneTemplateInfo = new SceneTemplateInfo
-        {
-            name = "Basic 3D (Built-in / Deprecated)",
-            isPinned = true,
-            thumbnailPath = $"{Styles.k_IconsFolderFolder}scene-template-3d-scene.png",
-            badgePath = $"{Styles.k_IconsFolderFolder}3d-badge-scene-template.png",
-            description = L10n.Tr("Contains a camera and directional light. Works with built-in renderer.", null),
-            onCreateCallback = additive => CreateBuiltinScene(BuiltinTemplateType.Default2DMode3DCamera, additive),
-            isDeprecated = true,
-        };
-        [NoAutoStaticsCleanup] // fixed built-in template catalog entry; callback targets editor code only, no user references, safe to persist
-        internal static SceneTemplateInfo default3DSceneTemplateInfo = new SceneTemplateInfo
-        {
-            name = "Basic (Built-in / Deprecated)",
-            isPinned = true,
-            thumbnailPath = $"{Styles.k_IconsFolderFolder}scene-template-3d-scene.png",
-            badgePath = $"{Styles.k_IconsFolderFolder}3d-badge-scene-template.png",
-            description = L10n.Tr("Contains a camera and directional light, works with built-in renderer.", null),
-            onCreateCallback = additive => CreateBuiltinScene(BuiltinTemplateType.Default3D, additive),
-            isDeprecated = true,
         };
         [NoAutoStaticsCleanup] // fixed array over the built-in template catalog entries; no user references, safe to persist
-        internal static SceneTemplateInfo[] builtinTemplateInfos = new[] { emptySceneTemplateInfo, default2DSceneTemplateInfo, default2DMode3DSceneTemplateInfo, default3DSceneTemplateInfo };
-        [NoAutoStaticsCleanup] // fixed array over the built-in template catalog entries; no user references, safe to persist
-        internal static SceneTemplateInfo[] builtin2DTemplateInfos = new[] { emptySceneTemplateInfo, default2DSceneTemplateInfo, default2DMode3DSceneTemplateInfo };
-        [NoAutoStaticsCleanup] // fixed array over the built-in template catalog entries; no user references, safe to persist
-        internal static SceneTemplateInfo[] builtin3DTemplateInfos = new[] { emptySceneTemplateInfo, default3DSceneTemplateInfo };
+        internal static SceneTemplateInfo[] builtinTemplateInfos = new[] { emptySceneTemplateInfo };
 
         internal static IEnumerable<string> GetSceneTemplatePaths()
         {
@@ -197,15 +159,10 @@ namespace UnityEditor.SceneTemplate
             Help.BrowseURL(Help.FindHelpNamed("scene-templates"));
         }
 
-        internal static void OpenDeprecationDocumentationUrl()
-        {
-            Help.BrowseURL(Help.FindHelpNamed("render-pipelines-feature-comparison"));
-        }
-
         internal static List<SceneTemplateInfo> GetSceneTemplateInfos()
         {
             var sceneTemplateList = new List<SceneTemplateInfo>();
-            // Add the special Empty and Basic template
+            // Add the special Empty template
 
             foreach (var builtinTemplateInfo in builtinTemplateInfos)
             {
@@ -258,14 +215,7 @@ namespace UnityEditor.SceneTemplate
             sceneTemplateAssetInfos.Sort();
             sceneTemplateList.AddRange(sceneTemplateAssetInfos);
 
-            if (EditorSettings.defaultBehaviorMode == EditorBehaviorMode.Mode2D)
-            {
-                sceneTemplateList.AddRange(builtin2DTemplateInfos);
-            }
-            else
-            {
-                sceneTemplateList.AddRange(builtin3DTemplateInfos);
-            }
+            sceneTemplateList.AddRange(builtinTemplateInfos);
 
             return sceneTemplateList;
         }

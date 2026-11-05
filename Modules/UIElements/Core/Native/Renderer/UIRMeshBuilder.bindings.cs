@@ -129,7 +129,7 @@ namespace UnityEngine.UIElements
         [NativeMethod(IsThreadSafe = true)] public static extern MeshWriteDataInterface MakeSolidRect(ref NativeRectParams rectParams);
         [NativeMethod(IsThreadSafe = true)] public static extern MeshWriteDataInterface MakeTexturedRect(ref NativeRectParams rectParams);
         [NativeMethod(IsThreadSafe = true)] public static extern MeshWriteDataInterface MakeBoxShadow(ref NativeBoxShadowParams boxShadowParams);
-        [NativeMethod(IsThreadSafe = true)] public static extern MeshWriteDataInterface MakeVectorGraphicsStretchBackground(Vertex[] svgVertices, UInt16[] svgIndices, float svgWidth, float svgHeight, Rect targetRect, Rect sourceUV, ScaleMode scaleMode, Color tint, NativeColorId colorId);
-        [NativeMethod(IsThreadSafe = true)] public static extern MeshWriteDataInterface MakeVectorGraphics9SliceBackground(Vertex[] svgVertices, UInt16[] svgIndices, float svgWidth, float svgHeight, Rect targetRect, Vector4 sliceLTRB, Color tint, NativeColorId colorId);
+        [NativeMethod(IsThreadSafe = true)] public static extern MeshWriteDataInterface MakeVectorGraphicsStretchBackground(ReadOnlySpan<Vertex> svgVertices, ReadOnlySpan<UInt16> svgIndices, float svgWidth, float svgHeight, Rect targetRect, Rect sourceUV, ScaleMode scaleMode, Color tint, NativeColorId colorId);
+        [NativeMethod(IsThreadSafe = true)] public static extern MeshWriteDataInterface MakeVectorGraphics9SliceBackground(ReadOnlySpan<Vertex> svgVertices, ReadOnlySpan<UInt16> svgIndices, float svgWidth, float svgHeight, Rect targetRect, Vector4 sliceLTRB, Color tint, NativeColorId colorId);
     }
 }

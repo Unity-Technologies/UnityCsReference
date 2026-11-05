@@ -336,7 +336,7 @@ namespace Unity.Collections.LowLevel.Unsafe
         ///        Allocate(10, Allocator.Persistent, out CustomNativeArray<int> array);
         ///
         ///        // NOTE: Not freeing the buffer in this example; this is intentional for demonstration.
-        ///        // During a Domain reload, such as entering/exiting Play Mode, a warning will appear
+        ///        // During a code reload, such as entering/exiting Play Mode, a warning will appear
         ///        // if memory is not properly freed, aiding in identifying leaks.
         ///    }
         ///
@@ -522,7 +522,10 @@ namespace Unity.Collections.LowLevel.Unsafe
             return Malloc(size, alignment, label.allocator, label.pointer);
         }
 
+        // Burst marks Malloc as returning a pointer that aliases nothing, which only holds while the call is not inlined.
+        // Burst prevents inlining itself only on .NET class library builds; TODO: remove once it does so on every build.
         [NativeMethod(IsThreadSafe = true, ThrowsException = true)]
+        [MethodImpl(MethodImplOptions.NoInlining)]
         unsafe static extern void* Malloc(long size, int alignment, Allocator allocator, IntPtr label);
 
         [VisibleToOtherModules("UnityEngine.UIElementsModule")]
@@ -567,7 +570,9 @@ namespace Unity.Collections.LowLevel.Unsafe
         ///}]]></code>
         ///</example>
         ///<seealso cref="Unity.Collections.LowLevel.Unsafe.UnsafeUtility.Malloc" />
+        // Not inlined, so Burst's attributes on Free's pointer argument apply; see Malloc.
         [NativeMethod(IsThreadSafe = true, ThrowsException = true)]
+        [MethodImpl(MethodImplOptions.NoInlining)]
         unsafe public static extern void Free(void* memory, Allocator allocator);
 
         ///<summary>Frees a block of memory that was previously allocated, using the specified memory label.</summary>

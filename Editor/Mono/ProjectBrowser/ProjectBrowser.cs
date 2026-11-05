@@ -826,7 +826,7 @@ namespace UnityEditor
             m_AssetTree.Init(m_TreeViewRect,
                 data,
                 new AssetsTreeViewGUI(m_AssetTree),
-                new AssetsTreeViewDragging(m_AssetTree)
+                new AssetsTreeViewDragging(m_AssetTree, GetEntityId())
             );
             m_AssetTree.ReloadData();
         }

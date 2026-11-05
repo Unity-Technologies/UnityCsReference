@@ -38,7 +38,7 @@ internal struct CollectionRequirement
 /// </summary>
 /// <remarks>
 /// Apply this attribute to an assembly that belongs to a package to declare that the package
-/// requires Insights data collection. The Editor discovers the declarations on every domain
+/// requires Insights data collection. The Editor discovers the declarations on every code
 /// reload and player build, and identifies the declaring package by the name and version of the
 /// installed package that owns the attributed assembly. A declared requirement keeps the
 /// Insights module in player builds and enables data collection for the declaring package, even

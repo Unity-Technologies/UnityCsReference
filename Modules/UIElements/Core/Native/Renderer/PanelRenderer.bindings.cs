@@ -47,17 +47,7 @@ namespace UnityEngine.UIElements
         /// </remarks>
         public PanelSettings panelSettings
         {
-            get
-            {
-                if (parentUI == null)
-                    return nativePanelSettings as PanelSettings;
-
-                var p = parentUI;
-                while (p.parentUI != null)
-                    p = p.parentUI;
-
-                return p.panelSettings;
-            }
+            get { return ResolvePanelSettings(parentUI); }
             set
             {
                 if (nativePanelSettings != value)
@@ -517,6 +507,19 @@ namespace UnityEngine.UIElements
 
         IPanelComponent IPanelComponent.parentUI => parentUI;
 
+        PanelSettings ResolvePanelSettings(PanelRenderer parent)
+        {
+            var top = parent;
+            if (top == null)
+                return ownPanelSettings;
+
+            PanelRenderer next;
+            while ((next = top.parentUI) != null)
+                top = next;
+
+            return top.ownPanelSettings;
+        }
+
         /// <summary>
         /// Finds the PanelRenderer whose UI hierarchy contains the given element.
         /// </summary>
@@ -720,6 +723,8 @@ namespace UnityEngine.UIElements
 
         void InitRootVisualElement(bool visualTreeAssetChanged = false)
         {
+            InvalidateUpdateCaches();
+
             // UUM-148452: a parent rebuild may have released this root out from under us; it can't be reused.
             bool rootReleased = rootVisualElement is { resourcesReleased: true };
 
@@ -782,6 +787,7 @@ namespace UnityEngine.UIElements
                 previousParentUI.RemoveChild(this);
 
             parentUI = FindParentPanelRenderer();
+            InvalidateUpdateCaches();
 
             // Losing and gaining a parent both move our root, so only a renderer that stays unparented keeps its place.
             if (previousParentUI != null || parentUI != null)
@@ -890,6 +896,8 @@ namespace UnityEngine.UIElements
 
         void ReleaseRootVisualElement()
         {
+            InvalidateUpdateCaches();
+
             if (rootVisualElement.resourcesReleased)
                 return;
 
@@ -982,9 +990,23 @@ namespace UnityEngine.UIElements
 
         GameObject IPanelComponent.gameObject => this.gameObject;
 
-        private bool isWorldSpace => (panelSettings != null && panelSettings.renderMode == PanelRenderMode.WorldSpace);
+        private bool isWorldSpace => PanelComponentUtils.IsWorldSpace(panelSettings);
 
         bool m_RootHasWorldTransform;
+
+        bool m_TransformCacheValid;
+        Vector2 m_CachedPivotOffset;
+        Vector2 m_CachedParentPivotOffset;
+        float m_CachedPixelsPerUnit;
+        Matrix4x4 m_CachedRelativeMatrix;
+        Translate m_CachedTranslate;
+        Rotate m_CachedRotate;
+        Scale m_CachedScale;
+
+        bool m_LocalBoundsCacheValid;
+        Bounds m_LastSourceBounds;
+        Vector2 m_LastBoundsPivotOffset;
+        float m_LastBoundsPixelsPerUnit;
 
         void IPanelComponent.PerformValidation(bool forced)
         {
@@ -998,7 +1020,9 @@ namespace UnityEngine.UIElements
             if (rootVisualElement == null)
                 return;
 
-            bool worldSpace = isWorldSpace;
+            var parent = parentUI;
+            var settings = ResolvePanelSettings(parent);
+            bool worldSpace = PanelComponentUtils.IsWorldSpace(settings);
 
             // renderMode can change at runtime without triggering a refresh of the root layout styles.
             if (m_RootLayoutIsWorldSpace != worldSpace)
@@ -1012,26 +1036,30 @@ namespace UnityEngine.UIElements
                 if (m_RootHasTrackedPosition)
                     ClearTrackedScreenSpacePosition();
 
+                var pivotOffset = PivotOffset();
+                float ppu = pixelsPerUnit;
+
                 // UUM-119563: while hidden, PivotOffset()'s 3D bounds collapse to zero; recomputing would cache a
                 // stale zero transform that snaps the panel in one frame after it reappears. Skip until visible.
                 if (rootVisualElement.areAncestorsAndSelfDisplayed)
                 {
-                    if (PanelComponentUtils.IsTransformControlledByGameObject(this))
-                        SetTransform();
+                    if (PanelComponentUtils.IsTransformControlledByGameObject(worldSpace, parent != null, position))
+                        SetTransform(parent, pivotOffset, ppu);
                     else
                         ClearTransform();
                 }
 
-                UpdateLocalBounds();
+                UpdateLocalBounds(pivotOffset, ppu);
 
-                if (panelSettings.colliderUpdateMode != ColliderUpdateMode.Keep
+                var colliderUpdateMode = settings.colliderUpdateMode;
+                if (colliderUpdateMode != ColliderUpdateMode.Keep
                     && Application.isPlaying
                     // UUM-108898: don't add components that get saved while in edit prefab mode and
                     // play mode at the same time, otherwise it won't get removed correctly when leaving play mode.
                     && IsEditingPrefab?.Invoke() != true
     )
                 {
-                    UpdateWorldSpaceCollider(panelSettings.colliderUpdateMode);
+                    UpdateWorldSpaceCollider(colliderUpdateMode, parent, settings);
                 }
             }
             else
@@ -1042,27 +1070,62 @@ namespace UnityEngine.UIElements
                 UpdateTrackedScreenSpacePosition();
             }
 
-            UpdateIsWorldSpaceRootFlag();
+            UpdateIsWorldSpaceRootFlag(settings, parent);
         }
 
-        void SetTransform()
+        void SetTransform(PanelRenderer parent, Vector2 pivotOffset, float ppu)
         {
-            float ppu = pixelsPerUnit;
-            Matrix4x4 matrix;
-            if (parentUI == null)
-                PanelComponentUtils.ComputeParentTransform(PivotOffset(), ppu, out matrix);
-            else
-                PanelComponentUtils.ComputeNestedTransform(transform, parentUI.transform, PivotOffset(), parentUI.PivotOffset(), ppu, out matrix);
+            var parentPivotOffset = Vector2.zero;
+            var relativeMatrix = Matrix4x4.identity;
+            if (parent != null)
+            {
+                parentPivotOffset = parent.PivotOffset();
+                relativeMatrix = parent.transform.worldToLocalMatrix * transform.localToWorldMatrix;
+            }
+
+            if (!m_TransformCacheValid ||
+                !m_CachedPivotOffset.Equals(pivotOffset) ||
+                !m_CachedParentPivotOffset.Equals(parentPivotOffset) ||
+                !m_CachedPixelsPerUnit.Equals(ppu) ||
+                !m_CachedRelativeMatrix.Equals(relativeMatrix))
+            {
+                Matrix4x4 matrix;
+                if (parent == null)
+                    PanelComponentUtils.ComputeParentTransform(pivotOffset, ppu, out matrix);
+                else
+                    PanelComponentUtils.ComputeNestedTransform(relativeMatrix, pivotOffset, parentPivotOffset, ppu, out matrix);
+
+                CacheTransform(matrix, pivotOffset, parentPivotOffset, ppu, relativeMatrix);
+            }
 
             rootVisualElement.style.transformOrigin = new TransformOrigin(Vector3.zero);
-            rootVisualElement.style.translate = new Translate(matrix.GetPosition());
-            rootVisualElement.style.rotate = new Rotate(matrix.rotation);
-            rootVisualElement.style.scale = new Scale(matrix.lossyScale);
+            rootVisualElement.style.translate = m_CachedTranslate;
+            rootVisualElement.style.rotate = m_CachedRotate;
+            rootVisualElement.style.scale = m_CachedScale;
             m_RootHasWorldTransform = true;
+        }
+
+        void CacheTransform(Matrix4x4 matrix, Vector2 pivotOffset, Vector2 parentPivotOffset, float ppu, Matrix4x4 relativeMatrix)
+        {
+            m_CachedTranslate = new Translate(matrix.GetPosition());
+            m_CachedRotate = new Rotate(matrix.rotation);
+            m_CachedScale = new Scale(matrix.lossyScale);
+            m_CachedPivotOffset = pivotOffset;
+            m_CachedParentPivotOffset = parentPivotOffset;
+            m_CachedPixelsPerUnit = ppu;
+            m_CachedRelativeMatrix = relativeMatrix;
+            m_TransformCacheValid = true;
+        }
+
+        void InvalidateUpdateCaches()
+        {
+            m_TransformCacheValid = false;
+            m_LocalBoundsCacheValid = false;
         }
 
         void ClearTransform()
         {
+            m_TransformCacheValid = false;
             rootVisualElement.style.transformOrigin = StyleKeyword.Null;
             rootVisualElement.style.translate = StyleKeyword.Null;
             rootVisualElement.style.rotate = StyleKeyword.Null;
@@ -1137,28 +1200,36 @@ namespace UnityEngine.UIElements
             return (-(Vector2)localBounds.min) + new Vector2(-localBounds.size.x * pivotPercent.x, -localBounds.size.y * pivotPercent.y);
         }
 
-        void UpdateLocalBounds()
+        void UpdateLocalBounds(Vector2 pivotOffset, float ppu)
         {
             rootVisualElement.panelRenderer = this;
 
             // Don't render embedded documents which will be rendered as part of their parents
             // Don't render documents with invalid PPU
-            float ppu = pixelsPerUnit;
-
             BaseRuntimePanel rtp = (BaseRuntimePanel)rootVisualElement.panel;
             if (rtp == null)
                 return;
 
             var bb = PanelComponentUtils.SanitizeRendererBounds(rootVisualElement.localBounds3D);
-            var toGameObject = PanelComponentUtils.TransformToGameObjectMatrix(PivotOffset(), ppu);
-            VisualElement.TransformAlignedBounds(ref toGameObject, ref bb);
+            if (m_LocalBoundsCacheValid &&
+                m_LastSourceBounds.Equals(bb) &&
+                m_LastBoundsPivotOffset.Equals(pivotOffset) &&
+                m_LastBoundsPixelsPerUnit.Equals(ppu))
+                return;
 
+            m_LastSourceBounds = bb;
+            m_LastBoundsPivotOffset = pivotOffset;
+            m_LastBoundsPixelsPerUnit = ppu;
+            m_LocalBoundsCacheValid = true;
+
+            var toGameObject = PanelComponentUtils.TransformToGameObjectMatrix(pivotOffset, ppu);
+            VisualElement.TransformAlignedBounds(ref toGameObject, ref bb);
             localBounds = bb;
         }
 
-        internal void UpdateWorldSpaceCollider(ColliderUpdateMode mode)
+        internal void UpdateWorldSpaceCollider(ColliderUpdateMode mode, PanelRenderer parent, PanelSettings settings)
         {
-            if (parentUI != null)
+            if (parent != null)
             {
                 // The parent UIDoc is responsible to create a global collider that encompasses nested UIDocuments
                 return;
@@ -1191,7 +1262,7 @@ namespace UnityEngine.UIElements
             if (newlyCreated)
             {
                 m_WorldSpaceCollider = gameObject.AddComponent<BoxCollider>();
-                m_WorldSpaceCollider.isTrigger = panelSettings.colliderIsTrigger;
+                m_WorldSpaceCollider.isTrigger = settings.colliderIsTrigger;
                 // Keep the generated collider out of saved scenes and prefabs.
                 m_WorldSpaceCollider.hideFlags = HideFlags.DontSave;
             }
@@ -1215,16 +1286,16 @@ namespace UnityEngine.UIElements
             m_WorldSpaceCollider = null;
         }
 
-        void UpdateIsWorldSpaceRootFlag()
+        void UpdateIsWorldSpaceRootFlag(PanelSettings settings, PanelRenderer parent)
         {
-            bool isWorldSpacePanel = !(panelSettings?.panel?.isFlat ?? true);
+            bool isWorldSpacePanel = !(settings?.panel?.isFlat ?? true);
             bool isWorldSpaceRootUIDocument;
 
             if (isWorldSpacePanel)
             {
                 // World-space panel should cut the render chain unless they are nested in another PanelRenderer,
                 // in which case they are rendered through their parent.
-                isWorldSpaceRootUIDocument = (parentUI == null);
+                isWorldSpaceRootUIDocument = (parent == null);
             }
             else
             {

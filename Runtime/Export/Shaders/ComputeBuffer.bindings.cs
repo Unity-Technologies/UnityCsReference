@@ -129,11 +129,11 @@ namespace UnityEngine
             if (data == null)
                 throw new ArgumentNullException("data");
 
-            if (!UnsafeUtility.IsArrayBlittable(data))
+            if (!UnsafeUtility.IsArrayUnmanaged(data))
             {
                 throw new ArgumentException(
-                    string.Format("Array passed to ComputeBuffer.SetData(array) must be blittable.\n{0}",
-                        UnsafeUtility.GetReasonForArrayNonBlittable(data)));
+                    string.Format("Array passed to ComputeBuffer.SetData(array) must be unmanaged.\n{0}",
+                        UnsafeUtility.GetReasonForArrayNonUnmanaged(data)));
             }
 
             var elemSize = UnsafeUtility.SizeOf(data.GetType().GetElementType());
@@ -148,11 +148,11 @@ namespace UnityEngine
             if (data == null)
                 throw new ArgumentNullException("data");
 
-            if (!UnsafeUtility.IsGenericListBlittable<T>())
+            if (!UnsafeUtility.IsGenericListUnmanaged<T>())
             {
                 throw new ArgumentException(
-                    string.Format("List<{0}> passed to ComputeBuffer.SetData(List<>) must be blittable.\n{1}",
-                        typeof(T), UnsafeUtility.GetReasonForGenericListNonBlittable<T>()));
+                    string.Format("List<{0}> passed to ComputeBuffer.SetData(List<>) must be unmanaged.\n{1}",
+                        typeof(T), UnsafeUtility.GetReasonForGenericListNonUnmanaged<T>()));
             }
 
             InternalSetData(UnsafeUtility.GetByteSpanFromList(data), 0, 0, NoAllocHelpers.SafeLength(data), UnsafeUtility.SizeOf<T>());
@@ -172,11 +172,11 @@ namespace UnityEngine
             if (data == null)
                 throw new ArgumentNullException("data");
 
-            if (!UnsafeUtility.IsArrayBlittable(data))
+            if (!UnsafeUtility.IsArrayUnmanaged(data))
             {
                 throw new ArgumentException(
-                    string.Format("Array passed to ComputeBuffer.SetData(array) must be blittable.\n{0}",
-                        UnsafeUtility.GetReasonForArrayNonBlittable(data)));
+                    string.Format("Array passed to ComputeBuffer.SetData(array) must be unmanaged.\n{0}",
+                        UnsafeUtility.GetReasonForArrayNonUnmanaged(data)));
             }
 
             if (managedBufferStartIndex < 0 || computeBufferStartIndex < 0 || count < 0 || managedBufferStartIndex + count > data.Length)
@@ -194,11 +194,11 @@ namespace UnityEngine
             if (data == null)
                 throw new ArgumentNullException("data");
 
-            if (!UnsafeUtility.IsGenericListBlittable<T>())
+            if (!UnsafeUtility.IsGenericListUnmanaged<T>())
             {
                 throw new ArgumentException(
-                    string.Format("List<{0}> passed to ComputeBuffer.SetData(List<>) must be blittable.\n{1}",
-                        typeof(T), UnsafeUtility.GetReasonForGenericListNonBlittable<T>()));
+                    string.Format("List<{0}> passed to ComputeBuffer.SetData(List<>) must be unmanaged.\n{1}",
+                        typeof(T), UnsafeUtility.GetReasonForGenericListNonUnmanaged<T>()));
             }
 
             if (managedBufferStartIndex < 0 || computeBufferStartIndex < 0 || count < 0 || managedBufferStartIndex + count > data.Count)
@@ -230,11 +230,11 @@ namespace UnityEngine
             if (data == null)
                 throw new ArgumentNullException("data");
 
-            if (!UnsafeUtility.IsArrayBlittable(data))
+            if (!UnsafeUtility.IsArrayUnmanaged(data))
             {
                 throw new ArgumentException(
-                    string.Format("Array passed to ComputeBuffer.GetData(array) must be blittable.\n{0}",
-                        UnsafeUtility.GetReasonForArrayNonBlittable(data)));
+                    string.Format("Array passed to ComputeBuffer.GetData(array) must be unmanaged.\n{0}",
+                        UnsafeUtility.GetReasonForArrayNonUnmanaged(data)));
             }
 
             var elemSize = UnsafeUtility.SizeOf(data.GetType().GetElementType());
@@ -249,11 +249,11 @@ namespace UnityEngine
             if (data == null)
                 throw new ArgumentNullException("data");
 
-            if (!UnsafeUtility.IsArrayBlittable(data))
+            if (!UnsafeUtility.IsArrayUnmanaged(data))
             {
                 throw new ArgumentException(
-                    string.Format("Array passed to ComputeBuffer.GetData(array) must be blittable.\n{0}",
-                        UnsafeUtility.GetReasonForArrayNonBlittable(data)));
+                    string.Format("Array passed to ComputeBuffer.GetData(array) must be unmanaged.\n{0}",
+                        UnsafeUtility.GetReasonForArrayNonUnmanaged(data)));
             }
 
             if (managedBufferStartIndex < 0 || computeBufferStartIndex < 0 || count < 0 || managedBufferStartIndex + count > data.Length)

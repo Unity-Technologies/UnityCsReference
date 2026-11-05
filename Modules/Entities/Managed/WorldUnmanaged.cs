@@ -15,6 +15,7 @@ using Unity.Collections;
 using Unity.Collections.LowLevel.Unsafe;
 using Unity.Core;
 using Unity.Mathematics;
+using Unity.Jobs;
 using Unity.Jobs.LowLevel.Unsafe;
 
 namespace Unity.Entities
@@ -369,12 +370,29 @@ namespace Unity.Entities
 
         private SystemHandle GetExistingUnmanagedSystem(long typeHash)
         {
-            if (_unmanagedSlotByTypeHash.TryGetFirstValue(typeHash, out ushort handle, out _))
+            if (!_unmanagedSlotByTypeHash.TryGetFirstValue(typeHash, out ushort candidate, out var iterator))
+                return SystemHandle.Null;
+
+            // the multi hash map doesn't keep insertion order, so the newest is the highest system id
+            ushort handle = candidate;
+            var handleIsExact = false;
+            var handleSystemId = int.MinValue;
+            do
             {
-                var block = _stateMemory.GetBlock(handle, out var subIndex);
-                return new SystemHandle(block->States[subIndex].SystemHandle.m_Entity, handle, block->Version[subIndex], (uint)SequenceNumber);
+                var block = _stateMemory.GetBlock(candidate, out var subIndex);
+                var isExact = _stateMemory.GetTypeHashNoCheck(candidate) == typeHash;
+                var systemId = block->States[subIndex].m_SystemID;
+                if ((isExact && !handleIsExact) || (isExact == handleIsExact && systemId > handleSystemId))
+                {
+                    handle = candidate;
+                    handleIsExact = isExact;
+                    handleSystemId = systemId;
+                }
             }
-            return SystemHandle.Null;
+            while (_unmanagedSlotByTypeHash.TryGetNextValue(out candidate, ref iterator));
+
+            var handleBlock = _stateMemory.GetBlock(handle, out var handleSubIndex);
+            return new SystemHandle(handleBlock->States[handleSubIndex].SystemHandle.m_Entity, handle, handleBlock->Version[handleSubIndex], (uint)SequenceNumber);
         }
 
         [GenerateTestsForBurstCompatibility(GenericTypeArguments = new[] { typeof(BurstCompatibleSystem) })]
@@ -434,8 +452,15 @@ namespace Unity.Entities
             InvalidateSlot(sysHandle.m_Handle);
         }
 
+        internal void RemoveManagedSystemLookup(SystemState* state)
+        {
+            for (var type = state->ManagedSystem.GetType(); type != typeof(ComponentSystemBase); type = type.BaseType)
+                _unmanagedSlotByTypeHash.Remove(GetHashCode64(type), state->m_Handle.m_Handle);
+        }
+
         internal void DestroyManagedSystem(SystemState* state)
         {
+            RemoveManagedSystemLookup(state);
             InvalidateSystemHandle(state->m_Handle);
             FreeSlot(state->m_Handle.m_Handle, state);
         }
@@ -504,7 +529,8 @@ namespace Unity.Entities
 
             var safeHandle = new SystemHandle(systemEntity, handle, version, (uint) SequenceNumber);
             statePtr->InitManaged(self, safeHandle, type, system);
-            _unmanagedSlotByTypeHash.Add(typeHash, handle);
+            for (var baseType = type; baseType != typeof(ComponentSystemBase); baseType = baseType.BaseType)
+                _unmanagedSlotByTypeHash.Add(GetHashCode64(baseType), handle);
             m_SystemStatePtrMap.Add(statePtr->m_SystemID, (IntPtr) statePtr);
             ++Version;
 
@@ -534,7 +560,7 @@ namespace Unity.Entities
             var systemType = TypeManager.GetSystemType(t);
             if (TypeManager.IsSystemManaged(systemType))
             {
-                throw new ArgumentException($"The system {t} cannot contain managed fields. If you need have to store managed fields in your system, please use SystemBase instead. Reason: {UnsafeUtility.GetReasonForTypeNonBlittable(systemType)}");
+                throw new ArgumentException($"The system {t} cannot contain managed fields. If you need have to store managed fields in your system, please use SystemBase instead. Reason: {UnsafeUtility.GetReasonForTypeNonUnmanaged(systemType)}");
             }
 
 
@@ -762,12 +788,16 @@ namespace Unity.Entities
         internal struct PreviousSystemGlobalState
         {
             public SystemHandle OldExecutingSystem;
+            public JobHandle*   OldRunningTransformSystemJobHandle;
             public int                 OldIsInForEachDisallowStructuralChange;
             public int                 OldPreviousSystemID;
             public PreviousSystemGlobalState(ref WorldUnmanagedImpl world, SystemState* state)
             {
                 OldExecutingSystem = world.ExecutingSystem;
                 world.ExecutingSystem = state->m_Handle;
+            
+                // KERNEL-1215: A system that only reaches entity transforms still makes GameObject transform access wait for all of its jobs.
+                OldRunningTransformSystemJobHandle = state->m_DependencyManager->SetRunningTransformSystemJobHandle(state->CanReachTransforms() ? &state->m_JobHandle : null);
                 OldIsInForEachDisallowStructuralChange = state->m_DependencyManager->ForEachStructuralChange.Depth;
                 OldPreviousSystemID = SystemState.SetCurrentSystemIdForJobDebugger(state->m_SystemID);
             }
@@ -775,6 +805,7 @@ namespace Unity.Entities
             public void Restore(ref WorldUnmanagedImpl world, SystemState* state)
             {
                 world.ExecutingSystem = OldExecutingSystem;
+                state->m_DependencyManager->SetRunningTransformSystemJobHandle(OldRunningTransformSystemJobHandle);
                 state->m_DependencyManager->ForEachStructuralChange.SetIsInForEachDisallowStructuralChangeCounter(OldIsInForEachDisallowStructuralChange);
                 SystemState.SetCurrentSystemIdForJobDebugger(OldPreviousSystemID);
                 state->DisableIsExecutingOnUpdate();
@@ -838,7 +869,7 @@ namespace Unity.Entities
 
             if (sys->m_ManagedSystem.IsAllocated)
             {
-                sys->ManagedSystem.Update();
+                SystemBaseRegistry.CallOnUpdate(sys);
                 return;
             }
 
@@ -880,6 +911,12 @@ namespace Unity.Entities
         private AtomicSafetyHandle m_Safety;
         internal static readonly SharedStatic<int> s_staticSafetyId = SharedStatic<int>.GetOrCreate<WorldUnmanaged>();
         private WorldUnmanagedImpl* m_Impl;
+
+        internal static int GetImplOffset()
+        {
+            var world = default(WorldUnmanaged);
+            return (int)((byte*)&world.m_Impl - (byte*)&world);
+        }
 
         /// <summary>
         /// An interface to manipulate the World's entity data from the main thread

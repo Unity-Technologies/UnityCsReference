@@ -44,6 +44,9 @@ unsafe struct UnmanagedDataStore : IDisposable
         [NativeDisableUnsafePtrRestriction] public int* Versions;
         [NativeDisableUnsafePtrRestriction] public int* FreeIndices;
         [NativeDisableUnsafePtrRestriction] public ComponentDataStore* Components;
+
+        // Capacity the first Allocate reserves when the store was created deferred. Not mirrored natively.
+        public int DeferredCapacity;
     }
 
     readonly MemoryLabel m_MemoryLabel;
@@ -53,7 +56,34 @@ unsafe struct UnmanagedDataStore : IDisposable
 
     public int Capacity => m_Data->Capacity;
 
-    public UnmanagedDataStore(UnmanagedComponentType[] components, ReadOnlySpan<MemoryLabel> labels, byte** initialData, int initialCapacity, Allocator allocator, string ownerName)
+    // Test and diagnostics only
+    public int BytesPerSlot
+    {
+        get
+        {
+            var bytes = 2 * sizeof(int); // Versions and FreeIndices
+            for (var i = 0; i < m_Data->ComponentCount; i++)
+                bytes += m_Data->Components[i].Size;
+            return bytes;
+        }
+    }
+
+    // Test and diagnostics only
+    public long BytesReserved
+    {
+        get
+        {
+            var bytes = 2L * sizeof(int) * m_Data->Capacity; // Versions and FreeIndices
+            for (var i = 0; i < m_Data->ComponentCount; i++)
+            {
+                ref var component = ref m_Data->Components[i];
+                bytes += (long)component.ChunkCount * component.ComponentCountPerChunk * component.Size;
+            }
+            return bytes;
+        }
+    }
+
+    public UnmanagedDataStore(UnmanagedComponentType[] components, ReadOnlySpan<MemoryLabel> labels, byte** initialData, int initialCapacity, Allocator allocator, string ownerName, bool deferAllocation = false)
     {
         Assert.IsTrue(components.Length > 0, $"{nameof(UnmanagedDataStore)} requires at least one component size.");
         Assert.IsTrue(components[0].Size >= sizeof(int), $"{nameof(UnmanagedDataStore)} requires a minimum element size of {sizeof(int)} to alias");
@@ -72,7 +102,10 @@ unsafe struct UnmanagedDataStore : IDisposable
             m_Data->Components[i] = new ComponentDataStore(components[i].Size, components[i].Align, labels[i], initialData[i]);
         }
 
-        ResizeCapacity(initialCapacity);
+        if (deferAllocation)
+            m_Data->DeferredCapacity = Math.Max(initialCapacity, 1);
+        else
+            ResizeCapacity(initialCapacity);
 
         m_Data->NextFreeIndex = 0;
     }
@@ -82,8 +115,10 @@ unsafe struct UnmanagedDataStore : IDisposable
         for (var i = 0; i < m_Data->ComponentCount; i++)
             m_Data->Components[i].Dispose();
 
-        UnsafeUtility.Free(m_Data->Versions, m_MemoryLabel);
-        UnsafeUtility.Free(m_Data->FreeIndices, m_MemoryLabel);
+        if (m_Data->Versions != null)
+            UnsafeUtility.Free(m_Data->Versions, m_MemoryLabel);
+        if (m_Data->FreeIndices != null)
+            UnsafeUtility.Free(m_Data->FreeIndices, m_MemoryLabel);
         UnsafeUtility.Free(m_Data->Components, m_MemoryLabel);
         UnsafeUtility.Free(m_Data, m_MemoryLabel);
 
@@ -113,6 +148,9 @@ unsafe struct UnmanagedDataStore : IDisposable
 
     public UnmanagedDataHandle Allocate()
     {
+        if (m_Data->Capacity == 0)
+            ResizeCapacity(m_Data->DeferredCapacity);
+
         // Fetch the next available index. This is the element we are about to initialize.
         var index = m_Data->NextFreeIndex;
 
@@ -148,10 +186,11 @@ unsafe struct UnmanagedDataStore : IDisposable
         SetNextFreeIndex(index, m_Data->NextFreeIndex);
         m_Data->NextFreeIndex = index;
 
+        // Managed copy: for components this small, a native MemCpy call costs more than the copy itself.
         for (var i = 0; i < m_Data->ComponentCount; i++)
         {
-            var ptr = m_Data->Components[i].GetComponentDataPtr(index);
-            UnsafeUtility.MemCpy(ptr, m_Data->Components[i].InitialData, m_Data->Components[i].Size);
+            ref var component = ref m_Data->Components[i];
+            Buffer.MemoryCopy(component.InitialData, component.GetComponentDataPtr(index), component.Size, component.Size);
         }
     }
 
@@ -332,7 +371,7 @@ internal unsafe struct ComponentDataStore : IDisposable
 
     public void ResizeCapacity(int capacity)
     {
-        var newChunkCount = (capacity >> ComponentCountPerChunkLog2) + 1;
+        var newChunkCount = (capacity + ComponentCountPerChunk - 1) >> ComponentCountPerChunkLog2;
 
         if (newChunkCount > ChunkCount)
         {
@@ -360,7 +399,15 @@ internal unsafe struct ComponentDataStore : IDisposable
             }
 
             // Shrink down the chunk ptr array.
-            m_Chunks = (Chunk*)UnsafeUtility.Realloc(m_Chunks, newChunkCount * UnsafeUtility.SizeOf<Chunk>(), UnsafeUtility.AlignOf<Chunk>(), MemoryLabel);
+            if (newChunkCount == 0)
+            {
+                UnsafeUtility.Free(m_Chunks, MemoryLabel);
+                m_Chunks = null;
+            }
+            else
+            {
+                m_Chunks = (Chunk*)UnsafeUtility.Realloc(m_Chunks, newChunkCount * UnsafeUtility.SizeOf<Chunk>(), UnsafeUtility.AlignOf<Chunk>(), MemoryLabel);
+            }
         }
 
         ChunkCount = newChunkCount;

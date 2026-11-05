@@ -57,6 +57,10 @@ namespace UnityEditor
         }
 
         extern public static string[] GetAmbisonicDecoderPluginNames();
+
+        [StaticAccessor("GetAudioManager()", StaticAccessorType.Dot)]
+        [NativeName("SupportsPlatformAudio")]
+        extern public static bool SupportsEnhancedAudioFoundation(BuildTarget target);
         extern public static bool HasPreview(AudioClip clip);
         extern public static AudioImporter GetImporterFromClip(AudioClip clip);
         extern public static float[] GetMinMaxData(AudioImporter importer);

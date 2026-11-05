@@ -107,7 +107,8 @@ namespace Unity.Entities
         {
             AtomicSafetyHandle.CheckReadAndThrow(m_Safety0);
             var ecs = m_Access->EntityComponentStore;
-            entityExists = ecs->Exists(entity);
+            var archetype = ecs->GetArchetypeInThisWorldOrNull(entity, out var entityInChunk);
+            entityExists = archetype != null;
             if (Hint.Unlikely(!entityExists))
             {
                 bufferData = default;
@@ -115,8 +116,8 @@ namespace Unity.Entities
             }
 
             var header = (m_IsReadOnly != 0)?
-                (BufferHeader*)ecs->GetOptionalComponentDataWithTypeRO(entity, m_TypeIndex, ref m_Cache) :
-                (BufferHeader*)ecs->GetOptionalComponentDataWithTypeRW(entity, m_TypeIndex, m_GlobalSystemVersion, ref m_Cache);
+                (BufferHeader*)ChunkDataUtility.GetOptionalComponentDataWithTypeRO(entityInChunk.Chunk, archetype, entityInChunk.IndexInChunk, m_TypeIndex, ref m_Cache) :
+                (BufferHeader*)ChunkDataUtility.GetOptionalComponentDataWithTypeRW(entityInChunk.Chunk, archetype, entityInChunk.IndexInChunk, m_TypeIndex, m_GlobalSystemVersion, ref m_Cache);
 
             if (header != null)
             {
@@ -141,7 +142,7 @@ namespace Unity.Entities
         {
             AtomicSafetyHandle.CheckReadAndThrow(m_Safety0);
             var ecs = m_Access->EntityComponentStore;
-            return ecs->Exists(entity);
+            return ecs->ExistsInThisWorld(entity);
         }
 
         /// <summary>
@@ -166,7 +167,9 @@ namespace Unity.Entities
         {
             AtomicSafetyHandle.CheckReadAndThrow(m_Safety0);
             var ecs = m_Access->EntityComponentStore;
-            return ecs->HasComponent(entity, m_TypeIndex, ref m_Cache, out entityExists);
+            var archetype = ecs->GetArchetypeInThisWorldOrNull(entity, out _);
+            entityExists = archetype != null;
+            return entityExists && EntityComponentStore.HasComponent(archetype, m_TypeIndex, ref m_Cache);
         }
 
         /// <summary> Obsolete. Use <see cref="HasBuffer(Unity.Entities.Entity)"/> instead.</summary>
@@ -231,6 +234,7 @@ namespace Unity.Entities
                 // Note that this check is only for the lookup table into the entity manager
                 // The native array performs the actual read only / write only checks
                 AtomicSafetyHandle.CheckReadAndThrow(m_Safety0);
+                ecs->AssertEntityBelongsToThisWorld(entity);
                 ecs->AssertEntityHasComponent(entity, m_TypeIndex, ref m_Cache);
 
                 var header = (m_IsReadOnly != 0)?
@@ -255,6 +259,7 @@ namespace Unity.Entities
             // Note that this check is only for the lookup table into the entity manager
             // The native array performs the actual read only / write only checks
             AtomicSafetyHandle.CheckReadAndThrow(m_Safety0);
+            m_Access->EntityComponentStore->AssertEntityBelongsToThisWorld(entity);
             return m_Access->IsComponentEnabled(entity, m_TypeIndex, ref m_Cache);
         }
 
@@ -301,6 +306,7 @@ namespace Unity.Entities
             // Note that this check is only for the lookup table into the entity manager
             // The native array performs the actual read only / write only checks
             AtomicSafetyHandle.CheckWriteAndThrow(m_Safety0);
+            m_Access->EntityComponentStore->AssertEntityBelongsToThisWorld(entity);
             m_Access->SetComponentEnabled(entity, m_TypeIndex, value, ref m_Cache);
         }
 
@@ -346,6 +352,7 @@ namespace Unity.Entities
         {
             AtomicSafetyHandle.CheckWriteAndThrow(m_Safety0);
             var ecs = m_Access->EntityComponentStore;
+            ecs->AssertEntityBelongsToThisWorld(entity);
             ecs->AssertEntityHasComponent(entity, m_TypeIndex, ref m_Cache);
 
             int indexInBitField;
@@ -371,6 +378,7 @@ namespace Unity.Entities
                 return new EnabledRefRW<T2>(default, default);
 
             var ecs = m_Access->EntityComponentStore;
+            ecs->AssertEntityBelongsToThisWorld(entity);
             ecs->AssertEntityHasComponent(entity, m_TypeIndex, ref m_Cache);
 
             var ptr = ecs->GetEnabledRawRW(entity, m_TypeIndex, ref m_Cache, m_GlobalSystemVersion,
@@ -401,6 +409,7 @@ namespace Unity.Entities
         {
             AtomicSafetyHandle.CheckReadAndThrow(m_Safety0);
             var ecs = m_Access->EntityComponentStore;
+            ecs->AssertEntityBelongsToThisWorld(entity);
             ecs->AssertEntityHasComponent(entity, m_TypeIndex, ref m_Cache);
             int indexInBitField;
             var ptr = ecs->GetEnabledRawRO(entity, m_TypeIndex, ref m_Cache, out indexInBitField, out _);
@@ -422,6 +431,7 @@ namespace Unity.Entities
                 return new EnabledRefRO<T2>(default);
 
             var ecs = m_Access->EntityComponentStore;
+            ecs->AssertEntityBelongsToThisWorld(entity);
             ecs->AssertEntityHasComponent(entity, m_TypeIndex, ref m_Cache);
             int indexInBitField;
             var ptr = ecs->GetEnabledRawRO(entity, m_TypeIndex, ref m_Cache, out indexInBitField, out _);

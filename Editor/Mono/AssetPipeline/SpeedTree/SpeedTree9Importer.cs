@@ -22,13 +22,58 @@ using static UnityEditor.SpeedTree.Importer.SpeedTree9Reader;
 
 namespace UnityEditor.SpeedTree.Importer
 {
-    // [2024-09-27] version: 3
-    // Fixed code that would lead to m_LODCount vs m_PerLODSettings.arraySize mismatching in GUI
-    [ScriptedImporter(version: 3, ext: "st9", AllowCaching = true)]
+    // [2026-10-13] version: 4
+    // Declare the textures referenced by the source file as import dependencies
+    [ScriptedImporter(version: 4, ext: "st9", AllowCaching = true)]
     public class SpeedTree9Importer : ScriptedImporter
     {
         const int SPEEDTREE_9_WIND_VERSION = 1;
         const int SPEEDTREE_9_MATERIAL_VERSION = 1;
+
+        [NoAutoStaticsCleanup]
+        static readonly Dictionary<(string assetPath, string mapPath), string> s_MovedTexturePaths = new Dictionary<(string assetPath, string mapPath), string>();
+
+        internal static string[] GatherDependenciesFromSourceFile(string assetPath)
+        {
+            var dependencies = new List<string>();
+            ClearGatheredMovedTexturePaths(assetPath);
+
+            try
+            {
+                var tree = new SpeedTree9Reader();
+                if (tree.Initialize(assetPath) != FileStatus.Valid)
+                    return dependencies.ToArray();
+
+                tree.ReadContent();
+
+                string directoryPath = Path.GetDirectoryName(assetPath) + "/";
+                foreach (STMaterial stMaterial in tree.Materials)
+                {
+                    foreach (MaterialMap map in stMaterial.Maps)
+                    {
+                        if (!map.Used || string.IsNullOrEmpty(map.Path))
+                            continue;
+
+                        string texturePath = directoryPath + map.Path;
+                        if (string.IsNullOrEmpty(AssetDatabase.AssetPathToGUID(texturePath, AssetPathToGUIDOptions.OnlyExistingAssets)))
+                        {
+                            texturePath = FindMovedTexturePath(map.Path);
+                            if (!string.IsNullOrEmpty(texturePath))
+                                s_MovedTexturePaths[(assetPath, map.Path)] = texturePath;
+                        }
+
+                        if (!string.IsNullOrEmpty(texturePath))
+                            dependencies.Add(texturePath);
+                    }
+                }
+            }
+            catch (Exception e)
+            {
+                Debug.LogWarning($"Could not gather texture dependencies for '{assetPath}': {e.Message}");
+            }
+
+            return dependencies.ToArray();
+        }
 
         internal static class ImporterSettings
         {
@@ -199,6 +244,7 @@ namespace UnityEditor.SpeedTree.Importer
             CalculateBillboardAndPerLODSettings();
 
             CreateMeshAndMaterials();
+            ClearGatheredMovedTexturePaths(ctx.assetPath);
 
             CreateAssetIdentifiersAndAddMaterialsToContext();
 
@@ -897,13 +943,10 @@ namespace UnityEditor.SpeedTree.Importer
                 return texture;
 
             // Textures are not located near the asset, let's check if they were moved somewhere else.
-            string mapPathWithoutExtension = Path.GetFileNameWithoutExtension(mapPath);
-            string[] textureAssets = AssetDatabase.FindAssets(mapPathWithoutExtension);
+            string assetPathFromGUID = GetGatheredMovedTexturePath(mapPath) ?? FindMovedTexturePath(mapPath);
 
-            if (textureAssets != null && textureAssets.Length > 0)
+            if (assetPathFromGUID != null)
             {
-                string assetPathFromGUID = AssetDatabase.GUIDToAssetPath(textureAssets[0]);
-
                 texture = (m_Context != null)
                     ? m_Context.GetReferenceToAssetMainObject(assetPathFromGUID) as Texture2D
                     : AssetDatabase.LoadAssetAtPath(assetPathFromGUID, typeof(Texture2D)) as Texture2D;
@@ -912,6 +955,35 @@ namespace UnityEditor.SpeedTree.Importer
             }
 
             return null;
+        }
+
+        string GetGatheredMovedTexturePath(string mapPath)
+        {
+            if (!s_MovedTexturePaths.TryGetValue((assetPath, mapPath), out string texturePath))
+                return null;
+
+            return string.IsNullOrEmpty(AssetDatabase.AssetPathToGUID(texturePath, AssetPathToGUIDOptions.OnlyExistingAssets)) ? null : texturePath;
+        }
+
+        static void ClearGatheredMovedTexturePaths(string assetPath)
+        {
+            var keys = new List<(string assetPath, string mapPath)>();
+            foreach (var key in s_MovedTexturePaths.Keys)
+            {
+                if (key.assetPath == assetPath)
+                    keys.Add(key);
+            }
+
+            foreach (var key in keys)
+            {
+                s_MovedTexturePaths.Remove(key);
+            }
+        }
+
+        static string FindMovedTexturePath(string mapPath)
+        {
+            string[] textureAssets = AssetDatabase.FindAssets(Path.GetFileNameWithoutExtension(mapPath));
+            return textureAssets != null && textureAssets.Length > 0 ? AssetDatabase.GUIDToAssetPath(textureAssets[0]) : null;
         }
 
         private bool TryGetInstanceIDFromMaterialProperty(Material material, int propertyName, out EntityId id)

@@ -6,6 +6,7 @@ using System;
 using System.Collections.Generic;
 using Unity.Profiling;
 using Unity.Properties;
+using Unity.Scripting.LifecycleManagement;
 using UnityEngine.Assertions;
 
 namespace UnityEngine.UIElements
@@ -18,18 +19,6 @@ namespace UnityEngine.UIElements
 
     class VisualTreeDataBindingsUpdater : BaseVisualTreeUpdater
     {
-        readonly struct VersionInfo
-        {
-            public readonly object source;
-            public readonly long version;
-
-            public VersionInfo(object source, long version)
-            {
-                this.source = source;
-                this.version = version;
-            }
-        }
-
         static readonly ProfilerMarker s_UpdateProfilerMarker = new ProfilerMarker(ProfilerCategory.UIToolkit, "UIElements.UpdateRuntimeBindings");
         static readonly ProfilerMarker s_ProcessBindingRequestsProfilerMarker = new ProfilerMarker(ProfilerCategory.UIToolkit, "Process Binding Requests");
         static readonly ProfilerMarker s_ProcessDataSourcesProfilerMarker = new ProfilerMarker(ProfilerCategory.UIToolkit, "Process Data Sources");
@@ -57,16 +46,25 @@ namespace UnityEngine.UIElements
             if (bindingManager.GetBoundElementsCount() == 0 && bindingManager.GetTrackedDataSourcesCount() == 0)
                 return;
 
+            // The order of the bound elements only needs to be recomputed when bound elements move. Elements attached
+            // to or detached from the panel already dirty the order when their bindings are registered or unregistered.
+            var affectsBindingOrder = false;
             switch (type)
             {
                 case HierarchyChangeType.RemovedFromParent:
                     m_DataSourceChangedRequests.Remove(ve);
                     m_RemovedElements.Add(ve);
+                    affectsBindingOrder = bindingManager.IsTrackingAnyElementInHierarchy(ve, true);
                     break;
                 case HierarchyChangeType.AddedToParent:
+                    m_RemovedElements.Remove(ve);
+                    m_DataSourceChangedRequests.Add(ve);
+                    affectsBindingOrder = bindingManager.IsTrackingAnyElementInHierarchy(ve, true);
+                    break;
                 case HierarchyChangeType.ChildrenReordered:
                     m_RemovedElements.Remove(ve);
                     m_DataSourceChangedRequests.Add(ve);
+                    affectsBindingOrder = bindingManager.IsTrackingAnyElementInHierarchy(ve, false);
                     break;
                 case HierarchyChangeType.AttachedToPanel:
                     for (var i = 0; i < additionalContext.Count; ++i)
@@ -75,6 +73,7 @@ namespace UnityEngine.UIElements
                         m_RemovedElements.Remove(added);
                         m_DataSourceChangedRequests.Add(ve);
                     }
+                    affectsBindingOrder = bindingManager.IsTrackingAnyElement(additionalContext);
                     break;
                 case HierarchyChangeType.DetachedFromPanel:
                     for (var i = 0; i < additionalContext.Count; ++i)
@@ -83,11 +82,15 @@ namespace UnityEngine.UIElements
                         m_DataSourceChangedRequests.Remove(ve);
                         m_RemovedElements.Add(removed);
                     }
+                    affectsBindingOrder = bindingManager.IsTrackingAnyElement(additionalContext);
                     break;
             }
 
-            bindingManager.DirtyBindingOrder();
+            if (affectsBindingOrder)
+                bindingManager.DirtyBindingOrder();
         }
+
+        internal override VersionChangeType versionChangeInterest => VersionChangeType.BindingRegistration | VersionChangeType.DataSource;
 
         public override void OnVersionChanged(VisualElement ve, VersionChangeType versionChangeType)
         {
@@ -139,58 +142,78 @@ namespace UnityEngine.UIElements
             Debug.LogWarning($"{result.message} ({panelName})");
         }
 
+        // Identifies a single binding update across all panels, so per update state can be stored on the bindings and
+        // on the sources instead of in sets that must be cleared after every update.
+        [NoAutoStaticsCleanup]
+        static int s_UpdateStamp;
+
         private readonly List<VisualElement> m_BoundsElement = new();
-        private readonly List<VersionInfo> m_VersionChanges = new();
-        private readonly HashSet<object> m_TrackedObjects = new();
-        private readonly HashSet<Binding> m_RanUpdate = new();
-        private readonly HashSet<object> m_KnownSources = new();
-        private readonly HashSet<Binding> m_DirtyBindings = new();
+        private readonly List<DataBindingManager.BindingDataCollection> m_BoundCollections = new();
+        private readonly List<DataBindingManager.SourceInfo> m_VersionedSources = new();
+        private readonly List<DataBindingManager.SourceInfo> m_ChangedSources = new();
         private BaseVisualElementPanel m_AttachedPanel;
 
         public override void Update()
         {
+            var stamp = ++s_UpdateStamp;
+            var manager = bindingManager;
+
             ProcessAllBindingRequests();
             ProcessDataSourceChangedRequests();
 
-            ProcessPropertyChangedEvents(m_RanUpdate);
+            ProcessPropertyChangedEvents(stamp);
 
-            m_BoundsElement.AddRange(bindingManager.GetBoundElements());
-            foreach (var element in m_BoundsElement)
+            m_BoundsElement.AddRange(manager.GetBoundElements());
+            m_BoundCollections.AddRange(manager.GetOrderedBindingCollections());
+            for (var elementIndex = 0; elementIndex < m_BoundsElement.Count; ++elementIndex)
             {
-                var bindings = bindingManager.GetBindingData(element);
+                var element = m_BoundsElement[elementIndex];
+                var bindings = manager.GetBindingData(element, m_BoundCollections[elementIndex]);
                 for (var i = 0; i < bindings.Count; ++i)
                 {
+                    // An earlier binding in this pass may have changed an ancestor's dataSource
+                    ProcessDataSourceChangedRequests();
+
                     var bindingData = bindings[i];
                     PropertyPath resolvedDataSourcePath;
                     object source;
                     using (s_ShouldUpdateBindingProfilerMarker.Auto())
                     {
-                        var resolvedContext = bindingManager.GetResolvedDataSourceContext(element, bindingData);
+                        ref readonly var resolvedContext = ref manager.GetResolvedDataSourceContextRef(element, bindingData);
                         source = resolvedContext.dataSource;
                         resolvedDataSourcePath = resolvedContext.dataSourcePath;
 
-                        var (changed, version) = GetDataSourceVersion(source);
+                        var sourceInfo = manager.GetSourceInfo(source, bindingData);
+                        var (changed, version) = GetDataSourceVersion(source, sourceInfo);
 
                         // Getting the version can trigger an update, for example by refreshing the SerializedObject
                         // in that case the element with the binding might disappear (a managed reference changed type for example)
-                        if (bindingData.binding == null) continue;
+                        var binding = bindingData.binding;
+                        if (binding == null) continue;
 
                         // We want to track the earliest version of the source, in case one of the bindings changes it
-                        if (null != source && m_TrackedObjects.Add(source))
-                            m_VersionChanges.Add(new VersionInfo(source, version));
+                        if (null != sourceInfo && sourceInfo.versionStamp != stamp)
+                        {
+                            sourceInfo.versionStamp = stamp;
+                            sourceInfo.versionAtUpdateStart = version;
+                            m_VersionedSources.Add(sourceInfo);
+                        }
 
-                        if (bindingData.binding.isDirty)
-                             m_DirtyBindings.Add(bindingData.binding);
+                        if (binding.isDirty)
+                            binding.dirtyUpdateStamp = stamp;
 
-                        if (!m_Updater.ShouldProcessBindingAtStage(bindingData.binding, BindingUpdateStage.UpdateUI, changed, m_DirtyBindings.Contains(bindingData.binding)))
+                        if (!m_Updater.ShouldProcessBindingAtStage(binding, BindingUpdateStage.UpdateUI, changed, binding.dirtyUpdateStamp == stamp))
                             continue;
 
-                        if (null != source && changed)
-                            m_KnownSources.Add(source);
-
-                        if (bindingData.binding.updateTrigger == BindingUpdateTrigger.OnSourceChanged && source is INotifyBindablePropertyChanged && !bindingData.binding.isDirty)
+                        if (null != sourceInfo && changed && sourceInfo.changesStamp != stamp)
                         {
-                            var changedPaths = bindingManager.GetChangedDetectedFromSource(source);
+                            sourceInfo.changesStamp = stamp;
+                            m_ChangedSources.Add(sourceInfo);
+                        }
+
+                        if (binding.updateTrigger == BindingUpdateTrigger.OnSourceChanged && source is INotifyBindablePropertyChanged && !binding.isDirty)
+                        {
+                            var changedPaths = sourceInfo?.detectedChangesNoAlloc;
                             if (null == changedPaths || changedPaths.Count == 0)
                                 continue;
 
@@ -226,7 +249,7 @@ namespace UnityEngine.UIElements
                     var bindingVersion = bindingData.version;
                     using (s_UpdateBindingProfilerMarker.Auto())
                     {
-                        result = m_Updater.UpdateUI(in context, bindingData.binding);
+                        result = m_Updater.UpdateUI(in context, bindingData);
                     }
 
                     CacheAndLogBindingResult(true, bindingData, result);
@@ -237,7 +260,7 @@ namespace UnityEngine.UIElements
                         switch (result.status)
                         {
                             case BindingStatus.Success:
-                                m_RanUpdate.Add(bindingData.binding);
+                                bindingData.binding.uiUpdateStamp = stamp;
                                 break;
                             case BindingStatus.Pending when wasDirty:
                                 bindingData.binding.MarkDirty();
@@ -250,35 +273,35 @@ namespace UnityEngine.UIElements
                 }
             }
 
-            foreach (var versionInfo in m_VersionChanges)
+            foreach (var sourceInfo in m_VersionedSources)
             {
-                bindingManager.UpdateVersion(versionInfo.source, versionInfo.version);
+                sourceInfo.lastVersion = sourceInfo.versionAtUpdateStart;
             }
 
-            ProcessPropertyChangedEvents(m_RanUpdate);
+            ProcessPropertyChangedEvents(stamp);
 
-            foreach (var touchedSource in m_KnownSources)
+            foreach (var sourceInfo in m_ChangedSources)
             {
-                bindingManager.ClearChangesFromSource(touchedSource);
+                sourceInfo.detectedChangesNoAlloc?.Clear();
             }
 
             m_BoundsElement.Clear();
-            m_VersionChanges.Clear();
-            m_TrackedObjects.Clear();
-            m_RanUpdate.Clear();
-            m_KnownSources.Clear();
-            m_DirtyBindings.Clear();
+            m_BoundCollections.Clear();
+            m_VersionedSources.Clear();
+            m_ChangedSources.Clear();
 
-            bindingManager.ClearSourceCache();
+            manager.ClearSourceCache();
         }
 
-        private (bool changed, long version) GetDataSourceVersion(object source)
+        private static (bool changed, long version) GetDataSourceVersion(object source, DataBindingManager.SourceInfo sourceInfo)
         {
-            if (bindingManager.TryGetLastVersion(source, out var version))
+            if (null != sourceInfo)
             {
+                var version = sourceInfo.lastVersion;
+
                 // If the data source is not versioned, we touch the version every update to keep it "fresh"
                 if (source is not IDataSourceViewHashProvider versioned)
-                    return (null != source, version + 1);
+                    return (true, version + 1);
 
                 var currentVersion = versioned.GetViewHashCode();
 
@@ -330,9 +353,10 @@ namespace UnityEngine.UIElements
 
         void ProcessDataSourceChangedRequests()
         {
-            using var marker = s_ProcessDataSourcesProfilerMarker.Auto();
             if (m_DataSourceChangedRequests.Count == 0 && m_RemovedElements.Count == 0)
                 return;
+
+            using var marker = s_ProcessDataSourcesProfilerMarker.Auto();
 
             // skip elements that don't belong here. This can happen when a binding request happen while
             // an element is inside a panel, but then removed before this updater can run.
@@ -388,7 +412,7 @@ namespace UnityEngine.UIElements
             bindingManager.ProcessBindingRequests(element);
         }
 
-        void ProcessPropertyChangedEvents(HashSet<Binding> ranUpdate)
+        void ProcessPropertyChangedEvents(int updateStamp)
         {
             var data = bindingManager.GetChangedDetectedFromUI();
 
@@ -406,9 +430,11 @@ namespace UnityEngine.UIElements
                 if (!m_Updater.ShouldProcessBindingAtStage(binding, BindingUpdateStage.UpdateSource, true, false))
                     continue;
 
-                if (ranUpdate.Contains(binding))
+                // Skip bindings that already updated the UI during this update.
+                if (binding.uiUpdateStamp == updateStamp)
                     continue;
 
+                ProcessDataSourceChangedRequests();
                 var resolvedContext = bindingManager.GetResolvedDataSourceContext(bindingData.target.element, bindingData);
                 var source = resolvedContext.dataSource;
                 var resolvedSourcePath = resolvedContext.dataSourcePath;
@@ -448,7 +474,7 @@ namespace UnityEngine.UIElements
 
                     using (bindingManager.IgnoreChangesScope(element, context.bindingId, binding))
                     {
-                        result = m_Updater.UpdateUI(in context, binding);
+                        result = m_Updater.UpdateUI(in context, bindingData);
                         CacheAndLogBindingResult(true, bindingData, result);
                     }
 

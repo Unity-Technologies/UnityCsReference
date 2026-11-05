@@ -101,6 +101,11 @@ namespace Unity.Entities
         /// Otherwise, returns the <paramref name="source"/> Entity.</returns>
         public static Entity RemapEntityForPrefab(Entity* remapSrc, Entity* remapDst, int remappingCount, Entity source)
         {
+            return RemapEntityForPrefab(remapSrc, remapDst, remappingCount, source, true);
+        }
+
+        static Entity RemapEntityForPrefab(Entity* remapSrc, Entity* remapDst, int remappingCount, Entity source, bool keepExternalReferences)
+        {
             // When instantiating prefabs,
             // internal references are remapped.
             for (int i = 0; i != remappingCount; i++)
@@ -108,8 +113,7 @@ namespace Unity.Entities
                 if (source == remapSrc[i])
                     return remapDst[i];
             }
-            // And external references are kept.
-            return source;
+            return keepExternalReferences ? source : Entity.Null;
         }
 
         /// <summary>
@@ -493,6 +497,15 @@ namespace Unity.Entities
             BufferEntityPatchInfo* bufferPatches, int bufferPatchCount,
             byte* chunkBuffer, int indexInChunk, int entityCount, Entity* remapSrc, Entity* remapDst, int remappingCount)
         {
+            PatchEntitiesForPrefab(scalarPatches, scalarPatchCount, bufferPatches, bufferPatchCount,
+                chunkBuffer, indexInChunk, entityCount, remapSrc, remapDst, remappingCount, true);
+        }
+
+        internal static void PatchEntitiesForPrefab(EntityPatchInfo* scalarPatches, int scalarPatchCount,
+            BufferEntityPatchInfo* bufferPatches, int bufferPatchCount,
+            byte* chunkBuffer, int indexInChunk, int entityCount, Entity* remapSrc, Entity* remapDst, int remappingCount,
+            bool keepExternalReferences)
+        {
             // Patch scalars (single components) with entity references.
             for (int p = 0; p < scalarPatchCount; p++)
             {
@@ -500,7 +513,7 @@ namespace Unity.Entities
                 for (int e = 0; e != entityCount; e++)
                 {
                     Entity* entity = (Entity*)(entityData + scalarPatches[p].Stride * (e + indexInChunk));
-                    *entity = RemapEntityForPrefab(remapSrc, remapDst + e * remappingCount, remappingCount, *entity);
+                    *entity = RemapEntityForPrefab(remapSrc, remapDst + e * remappingCount, remappingCount, *entity, keepExternalReferences);
                 }
             }
 
@@ -519,7 +532,7 @@ namespace Unity.Entities
                     for (int k = 0; k != elemCount; ++k)
                     {
                         Entity* entityPtr = (Entity*)elemsBase;
-                        *entityPtr = RemapEntityForPrefab(remapSrc, remapDst + e * remappingCount, remappingCount, *entityPtr);
+                        *entityPtr = RemapEntityForPrefab(remapSrc, remapDst + e * remappingCount, remappingCount, *entityPtr, keepExternalReferences);
                         elemsBase += bufferPatches[p].ElementStride;
                     }
                 }

@@ -188,7 +188,7 @@ namespace UnityEngine.Jobs
         private static extern void QueueTransformDispatch(ref UnsafeTransformAccess access);
 
         [NativeMethod(Name = "TransformHierarchyBindings::BatchQueueTransformDispatch", IsThreadSafe = false, IsFreeFunction = true, ThrowsException = true)]
-        public static extern void BatchQueueTransformDispatch(IntPtr hierarchyPtrs, int count);
+        public static extern void BatchQueueTransformDispatch(ulong ecsOwner, IntPtr hierarchyPtrs, int count);
 
         public bool isValid => hierarchy != IntPtr.Zero;
 
@@ -604,7 +604,7 @@ namespace UnityEngine.Jobs
         {
             AtomicSafetyHandle.CheckWriteAndThrow(m_Safety);
 
-            AddInstanceId(m_TransformArray, instanceId);
+            AddEntityId(m_TransformArray, instanceId);
         }
 
         public void Add(TransformHandle transformHandle)
@@ -617,7 +617,7 @@ namespace UnityEngine.Jobs
         {
             AtomicSafetyHandle.CheckWriteAndThrow(m_Safety);
 
-            AddInstanceId(m_TransformArray, entityId);
+            AddEntityId(m_TransformArray, entityId);
         }
 
         public void RemoveAtSwapBack(int index)
@@ -659,8 +659,8 @@ namespace UnityEngine.Jobs
         [NativeMethod(Name = "TransformAccessArrayBindings::AddTransformHandle", IsFreeFunction = true)]
         private static extern void AddTransformHandle(IntPtr transformArrayIntPtr, TransformHandle transformHandle);
 
-        [NativeMethod(Name = "TransformAccessArrayBindings::AddTransformInstanceId", IsFreeFunction = true)]
-        private static extern void AddInstanceId(IntPtr transformArrayIntPtr, EntityId instanceId);
+        [NativeMethod(Name = "TransformAccessArrayBindings::AddTransformEntityId", IsFreeFunction = true)]
+        private static extern void AddEntityId(IntPtr transformArrayIntPtr, EntityId entityId);
 
         [NativeMethod(Name = "TransformAccessArrayBindings::RemoveAtSwapBack", IsFreeFunction = true, ThrowsException = true)]
         private static extern void RemoveAtSwapBack(IntPtr transformArrayIntPtr, int index);

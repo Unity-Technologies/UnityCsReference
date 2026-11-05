@@ -6,6 +6,7 @@ using System;
 using System.Collections.Generic;
 using UnityEditor.Overlays;
 using UnityEditor.Rendering;
+using UnityEditor.SceneManagement;
 using UnityEditor.ShortcutManagement;
 using UnityEditor.Toolbars;
 using UnityEditor.UIElements;
@@ -492,6 +493,7 @@ namespace UnityEditor
 
         List<IViewpoint> m_AvailableViewpoints = new List<IViewpoint>();
         IViewpoint m_SelectedViewpoint;
+        Dictionary<StageHandle, UnityEngine.Object> m_SelectedTargetPerStage = new Dictionary<StageHandle, UnityEngine.Object>();
 
         VisualElement m_Root;
         internal VisualElement root => m_Root;
@@ -505,6 +507,9 @@ namespace UnityEditor
                     return;
 
                 m_SelectedViewpoint = value;
+                if (value != null)
+                    m_SelectedTargetPerStage[StageUtility.GetCurrentStageHandle()] = value.TargetObject;
+
                 onViewpointSelected?.Invoke(m_SelectedViewpoint);
             }
         }
@@ -553,6 +558,8 @@ namespace UnityEditor
         public override void OnCreated()
         {
             EditorApplication.update += Update;
+            StageNavigationManager.instance.afterSuccessfullySwitchedToStage += OnStageSwitched;
+            StageNavigationManager.instance.recoveredFromStageChangeError += OnRecoveredFromStageChangeError;
 
             (containerWindow as SceneView).viewpoint.cameraLookThroughStateChanged += CameraViewStateChanged;
 
@@ -562,6 +569,8 @@ namespace UnityEditor
         public override void OnWillBeDestroyed()
         {
             EditorApplication.update -= Update;
+            StageNavigationManager.instance.afterSuccessfullySwitchedToStage -= OnStageSwitched;
+            StageNavigationManager.instance.recoveredFromStageChangeError -= OnRecoveredFromStageChangeError;
 
             if (m_UserData != null)
                 m_UserData.UnregisterCallback<GeometryChangedEvent>(UpdateSizeBasedOnUserData);
@@ -641,35 +650,113 @@ namespace UnityEditor
         {
             m_AvailableViewpoints.Clear();
 
-            var caches = ViewpointProxyTypeCache.caches;
-
+            var stage = StageUtility.GetCurrentStage();
             foreach (var componentType in ViewpointProxyTypeCache.GetSupportedCameraComponents())
-            {
-                foreach (var cam in GameObject.FindObjectsByType(componentType.viewpointType, FindObjectsInactive.Include))
-                {
-                    Type proxyType = ViewpointProxyTypeCache.GetTranslatorTypeForType(cam.GetType());
-                    var proxyTypeCtor = proxyType.GetConstructor(new[] { cam.GetType() });
-                    IViewpoint instance = proxyTypeCtor.Invoke(new object[] { cam }) as IViewpoint;
-
-                    m_AvailableViewpoints.Add(instance);
-                }
-            }
+                AddViewpointsFromStage(stage, componentType.viewpointType);
 
             m_AvailableViewpoints.Sort(new ViewpointNameComparer());
+        }
+
+        void AddViewpointsFromStage(Stage stage, Type viewpointType)
+        {
+            if (!(stage is PreviewSceneStage previewSceneStage))
+            {
+                AddViewpoints(GameObject.FindObjectsByType(viewpointType, FindObjectsInactive.Include));
+                return;
+            }
+
+            var prefabStage = stage as PrefabStage;
+
+            // Prefab Stage scenes also contain the editing environment, which is not part of the Prefab.
+            if (prefabStage != null)
+            {
+                if (prefabStage.isValid)
+                    AddViewpoints(prefabStage.prefabContentsRoot.GetComponentsInChildren(viewpointType, true));
+            }
+            else
+            {
+                foreach (var root in previewSceneStage.scene.GetRootGameObjects())
+                    AddViewpoints(root.GetComponentsInChildren(viewpointType, true));
+            }
+
+            var contextStage = prefabStage != null && prefabStage.mode == PrefabStage.Mode.InContext ? prefabStage.GetContextStage() : null;
+
+            if (contextStage != null && contextStage != stage)
+                AddViewpointsFromStage(contextStage, viewpointType);
+            else
+                AddViewpoints(GameObject.FindObjectsByType(viewpointType, FindObjectsInactive.Include));
+        }
+
+        void AddViewpoints(UnityEngine.Object[] cameras)
+        {
+            foreach (var cam in cameras)
+            {
+                // Prefab instances edited in context are hidden and replaced by the Prefab Stage contents.
+                if (StageUtility.IsPrefabInstanceHiddenForInContextEditing((cam as Component).gameObject))
+                    continue;
+
+                Type proxyType = ViewpointProxyTypeCache.GetTranslatorTypeForType(cam.GetType());
+                var proxyTypeCtor = proxyType.GetConstructor(new[] { cam.GetType() });
+                IViewpoint instance = proxyTypeCtor.Invoke(new object[] { cam }) as IViewpoint;
+
+                m_AvailableViewpoints.Add(instance);
+            }
+        }
+
+        // Raised after the previous stages are destroyed, so Prefab instances they hid are visible again.
+        void OnStageSwitched(Stage stage) => SelectPreferredViewpoint();
+
+        // Recovery returns to the main stage without raising afterSuccessfullySwitchedToStage.
+        void OnRecoveredFromStageChangeError(Stage previousStage, Stage newStage) => SelectPreferredViewpoint();
+
+        void SelectPreferredViewpoint()
+        {
+            UpdateViewpointInternalList();
+
+            RemoveSelectionsOfClosedStages();
+
+            var stageHandle = StageUtility.GetCurrentStageHandle();
+            m_SelectedTargetPerStage.TryGetValue(stageHandle, out var stageTarget);
+            var previousTarget = viewpoint != null && viewpoint.TargetObject ? viewpoint.TargetObject : null;
+
+            // Restore this stage's last selection, otherwise keep the current camera if it belongs to this stage.
+            var preferred = FindViewpoint(stageTarget);
+            if (preferred == null && previousTarget is Component previousComponent && stageHandle.Contains(previousComponent.gameObject))
+                preferred = FindViewpoint(previousTarget);
+
+            // Otherwise prefer a camera of this stage, then keep the current camera, then take the first one.
+            if (preferred == null)
+                preferred = m_AvailableViewpoints.Find(vp => stageHandle.Contains((vp.TargetObject as Component).gameObject));
+            if (preferred == null)
+                preferred = FindViewpoint(previousTarget);
+            if (preferred == null && m_AvailableViewpoints.Count > 0)
+                preferred = m_AvailableViewpoints[0];
+
+            viewpoint = preferred;
+        }
+
+        IViewpoint FindViewpoint(UnityEngine.Object target)
+        {
+            return target ? m_AvailableViewpoints.Find(vp => vp.TargetObject == target) : null;
+        }
+
+        void RemoveSelectionsOfClosedStages()
+        {
+            var closedStages = new List<StageHandle>();
+            foreach (var stageHandle in m_SelectedTargetPerStage.Keys)
+            {
+                if (!stageHandle.IsValid())
+                    closedStages.Add(stageHandle);
+            }
+
+            foreach (var stageHandle in closedStages)
+                m_SelectedTargetPerStage.Remove(stageHandle);
         }
 
         void Update()
         {
             if (viewpoint == null)
-            {
-                UpdateViewpointInternalList();
-
-                if (m_SelectedViewpoint == null && m_AvailableViewpoints.Count > 0)
-                    m_SelectedViewpoint = m_AvailableViewpoints[0];
-
-                if (m_SelectedViewpoint != null)
-                    onViewpointSelected?.Invoke(m_SelectedViewpoint);
-            }
+                SelectPreferredViewpoint();
             else if (!viewpoint.TargetObject)
             {
                 m_SelectedViewpoint = null;

@@ -15,6 +15,9 @@ namespace Unity.Hierarchy.Editor
     /// </summary>
     static partial class GameObjectIconUtility
     {
+        [NoAutoStaticsCleanup] // pre-allocated marshal buffer; cleared after each use so it does not retain user components
+        static readonly List<Component> s_ComponentBuffer = new List<Component>(16);
+
         // Maps legacy sv_icon names to their Hv2 resource paths.
         // Dots 0–7 are circle variants; dots 8–15 are diamond variants.
         [NoAutoStaticsCleanup] // constant compile-time icon name mapping table
@@ -107,13 +110,16 @@ namespace Unity.Hierarchy.Editor
 
                 if (ShouldShowComponentIcons)
                 {
+                    gameObject.GetComponents(s_ComponentBuffer);
+
                     // Use topmost component, if none use transform
-                    var targetComponent = gameObject.GetComponentAtIndex(gameObject.GetComponentCount() > 1 ? 1 : 0);
+                    var targetComponent = s_ComponentBuffer.Count > 1 ? s_ComponentBuffer[1] : s_ComponentBuffer[0];
+                    s_ComponentBuffer.Clear();
 
                     // Missing Component
                     if (targetComponent == null)
                     {
-                        isMissingComponentReference = true;   
+                        isMissingComponentReference = true;
                     }
                     else
                     {

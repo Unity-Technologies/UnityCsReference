@@ -22,6 +22,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         private readonly IAssetStoreDownloadManager m_AssetStoreDownloadManager;
         private readonly IProjectSettingsProxy m_SettingsProxy;
         private readonly IDropdownHandler m_DropdownHandler;
+        private readonly IDateTimeProxy m_DateTimeProxy;
 
         #pragma warning disable UAL0015 // this side effect does not outlive the current call (global trigger / lazily-loaded asset re-fetched on next access); a stale reference is harmlessly replaced
         public PackageManagerToolbar() : this(
@@ -35,7 +36,8 @@ namespace UnityEditor.PackageManager.UI.Internal
             ServicesContainer.instance.Resolve<IUpmClient>(),
             ServicesContainer.instance.Resolve<IAssetStoreDownloadManager>(),
             ServicesContainer.instance.Resolve<IProjectSettingsProxy>(),
-            ServicesContainer.instance.Resolve<IDropdownHandler>())
+            ServicesContainer.instance.Resolve<IDropdownHandler>(),
+            ServicesContainer.instance.Resolve<IDateTimeProxy>())
         {
         }
 
@@ -49,7 +51,8 @@ namespace UnityEditor.PackageManager.UI.Internal
             IUpmClient upmClient,
             IAssetStoreDownloadManager assetStoreDownloadManager,
             IProjectSettingsProxy settingsProxy,
-            IDropdownHandler dropdownHandler)
+            IDropdownHandler dropdownHandler,
+            IDateTimeProxy dateTimeProxy)
         {
             m_ResourceLoader = resourceLoader;
             m_Application = application;
@@ -61,6 +64,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_AssetStoreDownloadManager = assetStoreDownloadManager;
             m_SettingsProxy = settingsProxy;
             m_DropdownHandler = dropdownHandler;
+            m_DateTimeProxy = dateTimeProxy;
 
             var root = m_ResourceLoader.GetTemplate("PackageManagerToolbar.uxml");
             Add(root);
@@ -410,7 +414,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                 if (page == null)
                     return;
 
-                var content = new PageFiltersWindow.Content(m_ResourceLoader, m_PackageDatabase, page);
+                var content = new PageFiltersWindow.Content(m_ResourceLoader, m_PackageDatabase, page, m_DateTimeProxy);
                 var position = EditorMenuExtensions.GUIToScreenRect(filtersMenu, filtersMenu.worldBound);
                 if (!PageFiltersWindow.ShowAtPosition(position, content))
                     return;

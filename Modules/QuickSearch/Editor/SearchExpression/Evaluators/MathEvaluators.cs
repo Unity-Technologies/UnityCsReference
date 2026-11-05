@@ -15,10 +15,10 @@ namespace UnityEditor.Search
         [SearchExpressionEvaluator(SearchExpressionType.Iterable | SearchExpressionType.Variadic)]
         public static IEnumerable<SearchItem> Count(SearchExpressionContext c)
         {
-            foreach (var arg in c.args)
-                #pragma warning disable UAC2005 // Avoid Linq
-                yield return SearchExpression.CreateItem(arg.Execute(c).Count(), c.ResolveAlias(arg, "Count"));
-#pragma warning restore UAC2005
+            SearchExpression countedArgument = null;
+            return c.ForEachArgument((context, e) => countedArgument = e).AggregateResults(0,
+                (context, item, count) => count + 1,
+                (context, count) => SearchExpression.CreateItem(count, c.ResolveAlias(countedArgument, "Count")));
         }
 
         [Description("Find the minimal value for each expression."), Category("Math")]

@@ -354,7 +354,10 @@ sealed partial class VisualElementComponentsInspectorElement : VisualElement
             m_AttributesView = new UxmlAttributesView();
             m_AttributesView.Context = new ComponentUxmlAttributesEditingContext(
                 new UxmlAttributesEditingController(), description);
+            m_AttributesView.Context.editingController.StopListening();
             m_AttributesView.ContextChanged += OnContextChanged;
+            RegisterCallback<AttachToPanelEvent>(OnAttachToPanel);
+            RegisterCallback<DetachFromPanelEvent>(OnDetachFromPanel);
             foldout.Add(m_AttributesView);
 
             m_AttributesView.Context.Set(target, isReadOnly);
@@ -412,6 +415,18 @@ sealed partial class VisualElementComponentsInspectorElement : VisualElement
                 return;
 
             dataFoldout.AddToClassList(k_DataFoldoutUssClassName);   // header hide + content margin live in USS
+        }
+
+        // The command queue outlives the inspector, so the controller listens only while the entry is shown.
+        void OnAttachToPanel(AttachToPanelEvent evt)
+        {
+            m_AttributesView.Context.editingController.StartListening();
+            m_AttributesView.Context.editingController.ClearContextIfElementRemoved();
+        }
+
+        void OnDetachFromPanel(DetachFromPanelEvent evt)
+        {
+            m_AttributesView.Context.editingController.StopListening();
         }
 
         public void DisposeContext()

@@ -44,7 +44,8 @@ namespace Unity.Entities
         /// <see cref="Unity.Transforms.LocalTransform"/> component.</exception>
         public void SetParent(Entity child, Entity newParent, bool preserveWorldTransform = true)
         {
-            var access = GetCheckedEntityDataAccess();
+            var access = GetCheckedEntityDataAccess(child);
+            access->EntityComponentStore->AssertEntityBelongsToThisWorld(newParent);
             access->AssertMainThread();
             var changes = access->BeginStructuralChanges();
             SetParentTransformRefInternal(access, child, newParent, preserveWorldTransform);
@@ -69,7 +70,8 @@ namespace Unity.Entities
         // TODO DOTS-10284 Keeping this around for speed-of-light testing without all the migration overhead (LocalTransform, Parent, Child updates)
         internal void SetParentTransformRef(Entity childEntity, Entity parentEntity, bool preserveWorldTransform = true)
         {
-            var access = GetCheckedEntityDataAccess();
+            var access = GetCheckedEntityDataAccess(childEntity);
+            access->EntityComponentStore->AssertEntityBelongsToThisWorld(parentEntity);
             access->AssertMainThread();
             SetParentTransformRefInternal(access, childEntity, parentEntity, preserveWorldTransform);
         }
@@ -100,7 +102,7 @@ namespace Unity.Entities
         /// <see cref="Unity.Transforms.LocalTransform"/> component.</exception>
         public void DetachChildren(Entity parent, bool preserveWorldTransform = true)
         {
-            var access = GetCheckedEntityDataAccess();
+            var access = GetCheckedEntityDataAccess(parent);
             access->AssertMainThread();
             var changes = access->BeginStructuralChanges();
             access->EntityComponentStore->AssertEntitiesExist(&parent, 1);

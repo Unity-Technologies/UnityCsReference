@@ -51,8 +51,8 @@ namespace Unity.GraphToolkit.Editor
             public float X;
             public float StartY;
             public float EndY;
-            // False when the parent port is not displayed, as there is no expand toggle to act on.
-            public bool IsInteractive;
+            // False when an ancestor of the parent port is collapsed and only a wired sub port is displayed.
+            public bool IsParentPortDisplayed;
         }
 
         VisualElement m_ContentContainer;
@@ -119,6 +119,8 @@ namespace Unity.GraphToolkit.Editor
             ComputeLineSegments(segments);
 
             var hoveredLinePort = m_HoveredLine?.ParentPort;
+            // A collapsed node hides every port that is not connected, so expanding a port from its line has no visible effect.
+            var linePickingMode = IsNodeCollapsed() ? PickingMode.Ignore : PickingMode.Position;
 
             while (m_LinesElement.childCount > segments.Count)
             {
@@ -134,8 +136,9 @@ namespace Unity.GraphToolkit.Editor
                 var segment = segments[i];
                 var line = (HierarchyLine)m_LinesElement[i];
                 line.ParentPort = segment.ParentPort;
+                line.IsParentPortDisplayed = segment.IsParentPortDisplayed;
                 line.StrokeX = segment.X;
-                line.pickingMode = segment.IsInteractive ? PickingMode.Position : PickingMode.Ignore;
+                line.pickingMode = linePickingMode;
                 line.style.left = segment.X - k_LineHitWidth * 0.5f;
                 line.style.top = segment.StartY;
                 line.style.height = Mathf.Max(0, segment.EndY - segment.StartY);
@@ -150,8 +153,26 @@ namespace Unity.GraphToolkit.Editor
             }
         }
 
+        bool IsNodeCollapsed()
+        {
+            for (var i = 0; i < m_ContentContainer.childCount; i++)
+            {
+                if (m_ContentContainer[i] is Port port)
+                    return port.PortModel.NodeModel is ICollapsible { Collapsed: true };
+            }
+            return false;
+        }
+
         void OnPointerOver(PointerOverEvent evt)
         {
+            // Lines and expand toggles give no hover feedback while a wire is dragged.
+            if (m_RootView is GraphView { IsWireDragging: true })
+            {
+                m_HoveredLine = null;
+                SetHighlightedPort(null);
+                return;
+            }
+
             m_HoveredLine = evt.target as HierarchyLine;
             SetHighlightedPort(m_HoveredLine != null ? m_HoveredLine.ParentPort : GetExpandTogglePort(evt.target as VisualElement));
         }
@@ -213,26 +234,52 @@ namespace Unity.GraphToolkit.Editor
 
             // Node selection and dragging start from MouseDownEvent, so it is stopped for a toggle click.
             // PointerDownEvent is left alone so that pan gestures (middle, right or Alt drag) still reach the graph view.
+            // An Alt+click is not stopped either, as stopping it would also stop the Alt drag pan.
             line.RegisterCallback<MouseDownEvent>(evt =>
             {
-                if (IsToggleClick(evt.button, evt.altKey))
+                if (evt.button == (int)MouseButton.LeftMouse && !evt.altKey)
                     evt.StopPropagation();
             });
+            // Alt+click expands or collapses the port and all its sub ports, like the expand toggle.
             line.RegisterCallback<ClickEvent>(evt =>
             {
-                if (!IsToggleClick(evt.button, evt.altKey))
+                if (evt.button != (int)MouseButton.LeftMouse)
                     return;
 
                 var portModel = line.ParentPort;
-                if (portModel != null && m_RootView != null && portModel.GraphModel.CanExpandPort(portModel))
-                    m_RootView.Dispatch(new ExpandPortCommand(!portModel.IsExpandedSelf, new[] { portModel }));
+                if (portModel != null && m_RootView != null)
+                {
+                    if (line.IsParentPortDisplayed)
+                    {
+                        if (portModel.GraphModel.CanExpandPort(portModel))
+                            m_RootView.Dispatch(new ExpandPortCommand(!portModel.IsExpandedSelf, new[] { portModel }, evt.altKey));
+                    }
+                    else
+                    {
+                        RevealPort(portModel);
+                    }
+                }
+
                 evt.StopPropagation();
             });
             return line;
         }
 
-        static bool IsToggleClick(int button, bool altKey) => button == (int)MouseButton.LeftMouse && !altKey;
+        // Toggling a hidden port has no visible effect while one of its ancestors is collapsed,
+        // so the port and all its collapsed ancestors are expanded instead.
+        void RevealPort(PortModel portModel)
+        {
+            var portsToExpand = new List<PortModel>();
+            for (var port = portModel; port != null; port = port.ParentPort)
+            {
+                if (!port.IsExpandedSelf && port.GraphModel.CanExpandPort(port))
+                    portsToExpand.Add(port);
+            }
 
+            if (portsToExpand.Count > 0)
+                m_RootView.Dispatch(new ExpandPortCommand(true, portsToExpand));
+        }
+        
         internal class TestAccess
         {
             readonly PortHierarchyContainer m_Container;
@@ -262,6 +309,8 @@ namespace Unity.GraphToolkit.Editor
             float m_StrokeX;
 
             public PortModel ParentPort { get; set; }
+
+            public bool IsParentPortDisplayed { get; set; }
 
             // Kept apart from layout.x, which is snapped to whole pixels and would offset the stroke from the arrow center.
             public float StrokeX
@@ -403,7 +452,7 @@ namespace Unity.GraphToolkit.Editor
                             X = x,
                             StartY = startY,
                             EndY = lastDescendantRect.yMax - 4,
-                            IsInteractive = parentPortUI != null,
+                            IsParentPortDisplayed = parentPortUI != null,
                         });
 
                         parentPortModel = parentPortModel.ParentPort;

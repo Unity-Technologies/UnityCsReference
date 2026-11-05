@@ -126,7 +126,13 @@ namespace UnityEditor
                 title = NicifyVariableName(GetObjectTypeName(obj, multiObjectEditing));
 
             if (Attribute.IsDefined(obj.GetType(), typeof(ObsoleteAttribute)))
-                title += L10n.Tr(" (Deprecated)", null);
+            {
+                var replacementAttr = Attribute.GetCustomAttribute(obj.GetType(), typeof(ReplacementComponentAttribute)) as ReplacementComponentAttribute;
+                if (replacementAttr is { ComponentDisabled: true })
+                    title += L10n.Tr(" (Not supported)", null);
+                else
+                    title += L10n.Tr(" (Deprecated)", null);
+            }
 
             return title;
         }

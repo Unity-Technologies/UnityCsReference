@@ -81,6 +81,9 @@ namespace UnityEngine.UIElements
         private ConverterGroup m_SourceToUiConverters;
         private ConverterGroup m_UiToSourceConverters;
 
+        // The CachedTargetWriter used by the last update of the UI.
+        private object m_TargetWriter;
+
         /// <summary>
         /// Object that serves as a local source for the binding, and is particularly useful when the data source is not
         /// part of the UI hierarchy, such as a static localization table. If this object is null, the binding resolves
@@ -283,21 +286,60 @@ namespace UnityEngine.UIElements
             // A "${component:TypeName}.field" path targets a component's data on the element, not the element
             // itself; redirect the write there (converters and TValue preserved). Every other binding
             // falls through to the normal element path below.
-            if (ComponentBinding.TryResolve(target, context.bindingId, out var componentHandle, out var componentSubPath))
+            PropertyPath targetPath = context.bindingId;
+            if (ComponentBinding.TryResolve(target, targetPath, out var componentHandle, out var componentSubPath))
             {
-                if (ComponentBinding.SetUI(sourceToUiConverters, target, componentHandle, componentSubPath, value, out var componentReturnCode))
+                if (ComponentBinding.SetUI(m_SourceToUiConverters, target, componentHandle, componentSubPath, value, out var componentReturnCode))
                     return default;
 
                 var componentMessage = GetSetValueErrorString(componentReturnCode, context.dataSource, context.dataSourcePath, target, context.bindingId, value);
                 return new BindingResult(BindingStatus.Failure, componentMessage);
             }
 
-            var succeeded = sourceToUiConverters.TrySetValue(ref target, context.bindingId, value, out var returnCode);
+            bool succeeded;
+            VisitReturnCode returnCode;
+            if (m_TargetWriter is CachedTargetWriter<TValue> writer &&
+                writer.containerType == target.GetType() &&
+                targetPath.Length == 1 &&
+                targetPath[0] is { IsName: true } targetPart &&
+                writer.propertyName == targetPart.Name &&
+                writer.TrySetValue(m_SourceToUiConverters, target, value, out returnCode))
+            {
+                succeeded = returnCode == VisitReturnCode.Ok;
+            }
+            else if (TrySetValueWithSharedWriter(target, targetPath, value, out returnCode))
+            {
+                succeeded = returnCode == VisitReturnCode.Ok;
+            }
+            else
+            {
+                succeeded = ConverterGroup.TrySetValue(m_SourceToUiConverters, ref target, targetPath, value, out returnCode, true, out var createdWriter);
+                if (null != createdWriter)
+                    m_TargetWriter = createdWriter;
+            }
+
             if (succeeded)
                 return default;
 
             var message = GetSetValueErrorString(returnCode, context.dataSource, context.dataSourcePath, target, context.bindingId, value);
             return new BindingResult(BindingStatus.Failure, message);
+        }
+
+        // Used when the writer of the previous update can't set the value, for example for a new binding. Returns false
+        // when the value must be set through visitation.
+        bool TrySetValueWithSharedWriter<TValue>(VisualElement target, in PropertyPath targetPath, TValue value, out VisitReturnCode returnCode)
+        {
+            returnCode = default;
+            if (targetPath.Length != 1 || targetPath[0] is not { IsName: true } targetPart)
+                return false;
+
+            var writer = CachedTargetWriter<TValue>.GetShared(target.GetType(), targetPart.Name);
+            if (null == writer || ReferenceEquals(writer, m_TargetWriter) ||
+                !writer.TrySetValue(m_SourceToUiConverters, target, value, out returnCode))
+                return false;
+
+            m_TargetWriter = writer;
+            return true;
         }
 
         /// <summary>
@@ -310,7 +352,7 @@ namespace UnityEngine.UIElements
         protected internal virtual BindingResult UpdateSource<TValue>(in BindingContext context, ref TValue value)
         {
             var target = context.dataSource;
-            var succeeded = uiToSourceConverters.TrySetValue(ref target, context.dataSourcePath, value, out var returnCode);
+            var succeeded = ConverterGroup.TrySetValue(m_UiToSourceConverters, ref target, context.dataSourcePath, value, out var returnCode);
             if (succeeded)
                 return default;
 

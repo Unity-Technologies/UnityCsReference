@@ -49,12 +49,13 @@ namespace Unity.Entities
 
         uint m_GlobalSystemVersion;
         private readonly byte  m_IsReadOnly;
+        private readonly byte  m_ExcludeGameObjects;
         private TypeIndex m_TransformTypeIndex;
 
         internal uint GlobalSystemVersion => m_GlobalSystemVersion;
 
 
-        internal TransformLookup(EntityDataAccess* access, bool isReadOnly,
+        internal TransformLookup(EntityDataAccess* access, bool isReadOnly, bool excludeGameObjects,
                                   AtomicSafetyHandle safety, AtomicSafetyHandle hierarchySafety)
         {
             m_Safety0 = safety;
@@ -63,6 +64,7 @@ namespace Unity.Entities
             m_SafetyReadWriteCount = isReadOnly ? 0 : 2;
             m_Access = access;
             m_IsReadOnly = isReadOnly ? (byte)1 : (byte)0;
+            m_ExcludeGameObjects = excludeGameObjects ? (byte)1 : (byte)0;
             m_Cache = default;
             m_GlobalSystemVersion = access->EntityComponentStore->GlobalSystemVersion;
             m_TransformTypeIndex = TypeManager.GetTypeIndex<TransformRef>();
@@ -112,12 +114,14 @@ namespace Unity.Entities
         {
             AtomicSafetyHandle.CheckReadAndThrow(m_Safety0);
             var ecs = m_Access->EntityComponentStore;
-            entityExists = Hint.Likely(ecs->Exists(entity));
+            var archetype = ecs->GetArchetypeInThisWorldOrNull(entity, out var entityInChunk);
+            entityExists = Hint.Likely(archetype != null);
             if (entityExists)
             {
+                CheckGameObjectAccess(ecs, entity);
                 var transformUnion = (m_IsReadOnly != 0)?
-                    (TransformUnion*)ecs->GetOptionalComponentDataWithTypeRO(entity, m_TransformTypeIndex, ref m_Cache) :
-                    (TransformUnion*)ecs->GetOptionalComponentDataWithTypeRW(entity, m_TransformTypeIndex, m_GlobalSystemVersion, ref m_Cache);
+                    (TransformUnion*)ChunkDataUtility.GetOptionalComponentDataWithTypeRO(entityInChunk.Chunk, archetype, entityInChunk.IndexInChunk, m_TransformTypeIndex, ref m_Cache) :
+                    (TransformUnion*)ChunkDataUtility.GetOptionalComponentDataWithTypeRW(entityInChunk.Chunk, archetype, entityInChunk.IndexInChunk, m_TransformTypeIndex, m_GlobalSystemVersion, ref m_Cache);
 
                 if (transformUnion != null)
                 {
@@ -142,7 +146,7 @@ namespace Unity.Entities
         {
             AtomicSafetyHandle.CheckReadAndThrow(m_Safety0);
             var ecs = m_Access->EntityComponentStore;
-            return ecs->Exists(entity);
+            return ecs->ExistsInThisWorld(entity);
         }
 
         /// <summary>
@@ -167,7 +171,9 @@ namespace Unity.Entities
         {
             AtomicSafetyHandle.CheckReadAndThrow(m_Safety0);
             var ecs = m_Access->EntityComponentStore;
-            return ecs->HasComponent(entity, m_TransformTypeIndex, ref m_Cache, out entityExists);
+            var archetype = ecs->GetArchetypeInThisWorldOrNull(entity, out _);
+            entityExists = archetype != null;
+            return entityExists && EntityComponentStore.HasComponent(archetype, m_TransformTypeIndex, ref m_Cache);
         }
 
         /// <summary>
@@ -223,13 +229,23 @@ namespace Unity.Entities
                 // Note that this check is only for the lookup table into the entity manager
                 // The native array performs the actual read only / write only checks
                 AtomicSafetyHandle.CheckReadAndThrow(m_Safety0);
+                ecs->AssertEntityBelongsToThisWorld(entity);
                 ecs->AssertEntityHasComponent(entity, m_TransformTypeIndex, ref m_Cache);
+                CheckGameObjectAccess(ecs, entity);
                 var transformUnion = (m_IsReadOnly != 0)?
                     (TransformUnion*)ecs->GetOptionalComponentDataWithTypeRO(entity, m_TransformTypeIndex, ref m_Cache) :
                     (TransformUnion*)ecs->GetOptionalComponentDataWithTypeRW(entity, m_TransformTypeIndex, m_GlobalSystemVersion, ref m_Cache);
 
                 return new TransformRef(transformUnion, m_IsReadOnly != 0, m_Safety0, m_HierarchySafety);
             }
+        }
+
+        // Lookups created with excludeGameObjects do not register the job dependency that covers GameObject transforms.
+        [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS"), Conditional("UNITY_DOTS_DEBUG")]
+        void CheckGameObjectAccess(EntityComponentStore* ecs, Entity entity)
+        {
+            if (m_ExcludeGameObjects != 0 && ecs->GetArchetype(entity)->HasGameObjectEntities)
+                throw new InvalidOperationException("TransformLookup cannot access the TransformRef of a GameObject entity. Create it without excludeGameObjects.");
         }
     }
 }

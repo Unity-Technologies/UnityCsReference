@@ -137,6 +137,9 @@ namespace UnityEditor
             return BuildProfileContext.activeProfile.scenes;
         }
 
+        [FreeFunction("GetEditorBuildSettings")]
+        internal static extern EditorBuildSettings GetEditorBuildSettings();
+
         static extern EditorBuildSettingsScene[] GetEditorBuildSettingsScenes();
         static extern void SetEditorBuildSettingsScenes(EditorBuildSettingsScene[] scenes);
 

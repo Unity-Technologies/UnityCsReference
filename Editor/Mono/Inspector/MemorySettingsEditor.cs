@@ -90,8 +90,7 @@ namespace UnityEditor
         class Styles
         {
             public static readonly GUIStyle lockButton = "IN LockButton";
-            public static readonly GUIStyle titleGroupHeader = new GUIStyle(EditorStyles.toolbar) { margin = new RectOffset() };
-            public static readonly GUIStyle settingsFramebox = new GUIStyle(EditorStyles.frameBox) { padding = new RectOffset(1, 1, 1, 0) };
+            public static readonly GUIStyle settingsFramebox = new GUIStyle(EditorStyles.frameBox) { padding = new RectOffset(4, 4, 1, 0) };
 
             public static readonly string warningDialogTitle = L10n.Tr("Edit memory settings", null);
             public static readonly string warningDialogText = L10n.Tr("Changing default memory setting can have severe negative impact on performance. Are you sure you want to continue?", null);
@@ -192,12 +191,11 @@ namespace UnityEditor
 
             var indentLevel = EditorGUI.indentLevel;
             EditorGUILayout.BeginVertical(GUILayout.Height(20));
-
-            EditorGUILayout.BeginHorizontal((indentLevel == 0) ? Styles.titleGroupHeader : GUIStyle.none);
-            Rect r = GUILayoutUtility.GetRect(title, EditorStyles.inspectorTitlebarText);
+            EditorGUILayout.BeginHorizontal();
+            Rect r = GUILayoutUtility.GetRect(title, EditorStyles.foldout, GUILayout.Height(EditorGUI.kSingleLineHeight));
             r = EditorGUI.IndentedRect(r);
             EditorGUI.indentLevel = 0;
-            m_ShowSettingsUI[index] = EditorGUI.FoldoutTitlebar(r, title, m_ShowSettingsUI[index], true, EditorStyles.inspectorTitlebarFlat, EditorStyles.inspectorTitlebarText);
+            m_ShowSettingsUI[index] = EditorGUI.Foldout(r, m_ShowSettingsUI[index], title, true);
             EditorGUI.indentLevel = indentLevel;
             EditorGUILayout.EndHorizontal();
 

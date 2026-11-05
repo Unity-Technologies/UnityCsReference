@@ -95,6 +95,7 @@ namespace UnityEditor.Rendering
         XboxOneD3D12    = 20, // Xbox One D3D12
         GameCoreXboxOne = 21, // Game Core Xbox One
         GameCoreXboxSeries= 22, // Game Core Scarlett
+        [System.Obsolete(@"PS5 Legacy Graphics API is no longer supported, please use PS5 NGGC (UnityUpgradable) -> PS5NGGC ", true)]
         PS5             = 23, // PS5
         PS5NGGC         = 24,  // PS5 NGGC
         [System.Obsolete(@"GameCore  is deprecated, please use GameCoreXboxOne (UnityUpgradable) -> GameCoreXboxOne ", true)]

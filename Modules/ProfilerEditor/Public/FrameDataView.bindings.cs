@@ -408,7 +408,7 @@ namespace UnityEditor.Profiling
         {
             [NativeName("name")]
             readonly string m_Name;
-            [NativeName("relatedGameObjectInstanceId")]
+            [NativeName("relatedGameObjectEntityId")]
             readonly EntityId m_RelatedGameObjectEntityId;
             [NativeName("nativeTypeIndex")]
             readonly int m_NativeTypeIndex;
@@ -454,7 +454,7 @@ namespace UnityEditor.Profiling
         {
             [NativeName("rootId")]
             readonly ulong m_RootId;
-            [NativeName("instanceId")]
+            [NativeName("entityId")]
             readonly EntityId m_EntityId;
 
             public ulong relatedAllocationRootId => m_RootId;

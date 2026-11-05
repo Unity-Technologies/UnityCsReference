@@ -460,11 +460,11 @@ namespace UnityEditor
 
         [StaticAccessor("PrefabUtilityBindings", StaticAccessorType.DoubleColon)]
         [NativeMethod(ThrowsException = true)]
-        extern private static bool ApplyPropertyOverride([NotNull] Object componentOrGameObject, string propertyPath, string assetPath);
+        extern private static bool ApplyPropertyOverride([NotNull] Object componentOrGameObject, string propertyPath, string managedReferenceFieldPath, long[] managedReferenceIds, string assetPath);
 
         [StaticAccessor("PrefabUtilityBindings", StaticAccessorType.DoubleColon)]
         [NativeMethod(ThrowsException = true)]
-        extern private static bool ApplyPropertyOverrideWithoutUndo([NotNull] Object componentOrGameObject, string propertyPath, string assetPath);
+        extern private static bool ApplyPropertyOverrideWithoutUndo([NotNull] Object componentOrGameObject, string propertyPath, string managedReferenceFieldPath, long[] managedReferenceIds, string assetPath);
 
     }
 }

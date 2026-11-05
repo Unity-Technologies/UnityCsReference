@@ -606,7 +606,7 @@ namespace Unity.GraphToolkit.Editor
         /// </summary>
         /// <remarks>
         /// Override this method to perform setup tasks, such as allocating resources, initializing internal state, or preparing data for editing. This method is invoked each time
-        /// the graph becomes active in the editor, including after domain reload or when reopening the asset. This method complements
+        /// the graph becomes active in the editor, including after code reload or when reopening the asset. This method complements
         /// <see cref="OnDisable"/> and is useful for maintaining consistency across editor sessions.
         /// </remarks>
         public virtual void OnEnable() { }

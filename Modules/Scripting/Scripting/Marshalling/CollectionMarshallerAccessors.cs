@@ -31,9 +31,9 @@ namespace UnityEngine.Bindings
             this.array = Unsafe.As<TMarshalledElementType[]>(array);
         }
 
-        public bool IsNull => array == null;
-        public int Length => array.Length;
-        public int Capacity => array.Length;
+        public bool IsNull { [MethodImpl(MethodImplOptions.AggressiveInlining)] get => array == null; }
+        public int Length { [MethodImpl(MethodImplOptions.AggressiveInlining)] get => array.Length; }
+        public int Capacity { [MethodImpl(MethodImplOptions.AggressiveInlining)] get => array.Length; }
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public Span<TMarshalledElementType> AsSpan() => array ?? default;
         public TMarshalledElementType this[int i] { get => array[i]; set => array[i] = value; }
@@ -104,9 +104,9 @@ namespace UnityEngine.Bindings
             this.array = Unsafe.As<TMarshalledElementType[]>(array);
         }
 
-        public bool IsNull => array == null;
-        public int Length => array.Length;
-        public int Capacity => array.Length;
+        public bool IsNull { [MethodImpl(MethodImplOptions.AggressiveInlining)] get => array == null; }
+        public int Length { [MethodImpl(MethodImplOptions.AggressiveInlining)] get => array.Length; }
+        public int Capacity { [MethodImpl(MethodImplOptions.AggressiveInlining)] get => array.Length; }
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public Span<TMarshalledElementType> AsSpan() => array ?? default;
         public TMarshalledElementType this[int i] { get => array[i]; set => array[i] = value; }
@@ -146,9 +146,9 @@ namespace UnityEngine.Bindings
             this.array = Unsafe.As<TMarshalledElementType[]>(NoAllocHelpers.ExtractArrayFromList(list)) ?? Array.Empty<TMarshalledElementType>();
         }
 
-        public bool IsNull => list == null;
-        public int Length => list.Count;
-        public int Capacity => list.Capacity;
+        public bool IsNull { [MethodImpl(MethodImplOptions.AggressiveInlining)] get => list == null; }
+        public int Length { [MethodImpl(MethodImplOptions.AggressiveInlining)] get => list.Count; }
+        public int Capacity { [MethodImpl(MethodImplOptions.AggressiveInlining)] get => list.Capacity; }
         public TMarshalledElementType this[int i] { get => array[i]; set => array[i] = value; }
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public ref TMarshalledElementType GetRef(int i) => ref array[i];

@@ -61,9 +61,13 @@ namespace UnityEditor
         [SerializeField] private OrganizationInfo[] m_OrganizationInfos = Array.Empty<OrganizationInfo>();
         [NonSerialized] private PackageExportTreeView m_Tree;
         [NonSerialized] private bool m_DidScheduleUpdate = false;
+        [SerializeField] private bool m_OrganizationInfosParsed;
+        [NonSerialized] private bool m_IsParsingOrganizationInfos;
 
         [NonSerialized] private readonly IUtilityAdapter m_UtilityAdapter;
         [NonSerialized] private readonly IEditorUtilityAdapter m_EditorUtilityAdapter;
+        [NonSerialized] private readonly IPackageManagerAdapter m_PackageManagerAdapter;
+        [NonSerialized] private readonly IUnityConnectAdapter m_UnityConnectAdapter;
 
         [NoAutoStaticsCleanup]
         public static readonly DependencyContainer dependencyContainer = new();
@@ -71,6 +75,11 @@ namespace UnityEditor
         public ExportPackageItem[] items => m_ExportPackageItems;
 
         public bool isOrgSelected => m_SelectedOrgIndex > -1;
+
+        // The internal modifier is used (instead of private) to give our test project access to these properties/methods
+        internal bool isParsingOrganizationInfos => m_IsParsingOrganizationInfos;
+        private bool isTrustDisabled => m_PackageManagerAdapter.IsTrustDisabled;
+        private bool isSigningSkipped => isTrustDisabled || (!m_IsParsingOrganizationInfos && m_OrganizationInfos.Length == 0);
 
         internal static class Styles
         {
@@ -84,6 +93,9 @@ namespace UnityEditor
             public static readonly GUIContent includeDependenciesText = L10n.TextContent("Include dependencies", "Include all dependencies required for the selected items in the export list.", null, null);
             public static readonly GUIContent includeScriptsText = L10n.TextContent("Include all scripts", "Include all project scripts in the export list to avoid potential compilation errors.", null, null);
             public static readonly GUIContent header = L10n.TextContent("Items to Export", null, null, null);
+            public static readonly string loadingOrganizations = L10n.Tr("Loading organizations...", null);
+            public static readonly string unsignedNoOrganizationInfo = L10n.Tr("This package won't be signed because no organizations were loaded.", null);
+            public static readonly string unsignedClosedNetworkInfo = L10n.Tr("This package won't be signed because Closed network environment is enabled in Project Settings.", null);
         }
 
         public PackageExport()
@@ -96,35 +108,35 @@ namespace UnityEditor
 
             m_UtilityAdapter = dependencyContainer.Resolve<IUtilityAdapter>();
             m_EditorUtilityAdapter = dependencyContainer.Resolve<IEditorUtilityAdapter>();
+            m_PackageManagerAdapter = dependencyContainer.Resolve<IPackageManagerAdapter>();
+            m_UnityConnectAdapter = dependencyContainer.Resolve<IUnityConnectAdapter>();
         }
 
+        // The internal modifier is used (instead of private) to give our test project access to these properties/methods
+        internal void ClearOrganizationInfos()
+        {
+            m_OrganizationInfos = Array.Empty<OrganizationInfo>();
+            m_SelectedOrgIndex = -1;
+            m_OrganizationInfosParsed = false;
+            m_IsParsingOrganizationInfos = false;
+        }
+
+        // The internal modifier is used (instead of private) to give our test project access to these properties/methods
         internal void SetOrganizationInfos(OrganizationInfo[] organizationInfos)
         {
             m_OrganizationInfos = organizationInfos;
-            if (m_OrganizationInfos.Length == 1)
-                m_SelectedOrgIndex = 0;
-            else
-                m_SelectedOrgIndex = -1;
-        }
-
-        static internal void ShowExportPackageWindow(OrganizationInfo[] organizationInfos)
-        {
-            var packageExportWindow = dependencyContainer.Resolve<IEditorWindowAdapter>().GetPackageExportWindow();
-            packageExportWindow.SetOrganizationInfos(organizationInfos);
-            packageExportWindow.RefreshAssetList();
+            m_SelectedOrgIndex = m_OrganizationInfos.Length == 1 ? 0 : -1;
+            m_OrganizationInfosParsed = true;
         }
 
         // Called from menu
         [RequiredByNativeCode]
         static internal void ShowExportPackage()
         {
-            var packageManagerAdapter = dependencyContainer.Resolve<IPackageManagerAdapter>();
-            var unityConnectAdapter = dependencyContainer.Resolve<IUnityConnectAdapter>();
-
-            if (packageManagerAdapter.HasBypassPackageTrustEntitlement || !unityConnectAdapter.isUserLoggedIn)
-                ShowExportPackageWindow(Array.Empty<OrganizationInfo>());
-            else
-                unityConnectAdapter.ParseOrganizationInfos(ShowExportPackageWindow);
+            var packageExportWindow = dependencyContainer.Resolve<IEditorWindowAdapter>().GetPackageExportWindow();
+            packageExportWindow.ClearOrganizationInfos();
+            packageExportWindow.RefreshAssetList();
+            packageExportWindow.ParseOrganizationInfosIfNeeded();
         }
 
         internal static IEnumerable<ExportPackageItem> GetAssetItemsForExport(ICollection<string> guids, bool includeDependencies, bool includeScripts)
@@ -162,7 +174,7 @@ namespace UnityEditor
         {
             return m_ExportPackageItems != null;
         }
-        
+
         bool HasEmptyAssetList()
         {
             return m_ExportPackageItems != null && m_ExportPackageItems.Length == 0;
@@ -173,8 +185,35 @@ namespace UnityEditor
             UnscheduleBuildAssetList();
         }
 
+        // The internal modifier is used (instead of private) to give our test project access to these properties/methods
+        internal void ParseOrganizationInfosIfNeeded()
+        {
+            if (m_OrganizationInfosParsed || m_IsParsingOrganizationInfos || isTrustDisabled || !m_UnityConnectAdapter.isUserLoggedIn)
+                return;
+
+            m_IsParsingOrganizationInfos = true;
+            m_UnityConnectAdapter.ParseOrganizationInfos(organizationInfos =>
+            {
+                // This is to prevent error when user close the export window before organizations are parsed
+                if (!this)
+                    return;
+                m_IsParsingOrganizationInfos = false;
+                SetOrganizationInfos(organizationInfos);
+                Repaint();
+            });
+        }
+
+        // This is needed to animate the spinner while organizations load
+        public void OnInspectorUpdate()
+        {
+            if (m_IsParsingOrganizationInfos)
+                Repaint();
+        }
+
         public void OnGUI()
         {
+            ParseOrganizationInfosIfNeeded();
+
             if (!HasValidAssetList())
             {
                 ScheduleBuildAssetList();
@@ -184,6 +223,8 @@ namespace UnityEditor
                 RenderEmptyAssetList();
                 return;
             }
+
+            RenderUnsignedInfoBox();
 
             using (new EditorGUI.DisabledScope(!HasValidAssetList()))
             {
@@ -216,6 +257,23 @@ namespace UnityEditor
             GUILayout.EndVertical();
         }
 
+        private void RenderUnsignedInfoBox()
+        {
+            string message;
+            if (isTrustDisabled)
+                message = Styles.unsignedClosedNetworkInfo;
+            else if (!m_IsParsingOrganizationInfos && m_OrganizationInfos.Length == 0)
+                message = Styles.unsignedNoOrganizationInfo;
+            else
+                return;
+
+            GUILayout.BeginHorizontal();
+            GUILayout.Space(5f);
+            EditorGUILayout.HelpBox(message, MessageType.Info);
+            GUILayout.Space(5f);
+            GUILayout.EndHorizontal();
+        }
+
         private void RenderTopArea()
         {
             var totalTopHeight = 53f;
@@ -228,13 +286,13 @@ namespace UnityEditor
             var headerRect = new Rect(topRect.x + 5f, topRect.y + 5f, topRect.width, 20f);
             GUI.Label(headerRect, Styles.header, Styles.title);
 
-            // Organization name label + dropdown
-            if (m_OrganizationInfos.Length > 0)
-                RenderDropdownArea(topRect, headerRect);
+            RenderOrganizationDropdown(topRect, headerRect);
         }
 
-        private void RenderDropdownArea(Rect topRect, Rect headerRect)
+        private void RenderOrganizationDropdown(Rect topRect, Rect headerRect)
         {
+            using var disabledScope = new EditorGUI.DisabledScope(isTrustDisabled || m_IsParsingOrganizationInfos || m_OrganizationInfos.Length == 0);
+
             // Dropdown label
             var labelSize = EditorStyles.label.CalcSize(Styles.authoringOrg);
             var yPosition = headerRect.yMax + 4f;
@@ -253,9 +311,13 @@ namespace UnityEditor
                 topRect.x + topRect.width - 5f - dropdownX
             );
 
-            var displayText = isOrgSelected
-                ? m_OrganizationInfos[m_SelectedOrgIndex].name
-                : L10n.Tr("Choose organization", null);
+            GUIContent displayContent;
+            if (m_IsParsingOrganizationInfos && !isTrustDisabled)
+                displayContent = new GUIContent(Styles.loadingOrganizations, UnityEditorInternal.InternalEditorUtility.animatedProgressImage.image);
+            else if (isOrgSelected && !isTrustDisabled)
+                displayContent = new GUIContent(m_OrganizationInfos[m_SelectedOrgIndex].name);
+            else
+                displayContent = new GUIContent(L10n.Tr("Choose organization", null));
 
             var dropdownRect = new Rect(
                 dropdownX,
@@ -270,7 +332,7 @@ namespace UnityEditor
                 fixedHeight = EditorGUIUtility.singleLineHeight
             };
 
-            if (EditorGUI.DropdownButton(dropdownRect, new GUIContent(displayText), FocusType.Passive, popupStyle))
+            if (EditorGUI.DropdownButton(dropdownRect, displayContent, FocusType.Passive, popupStyle))
             {
                 var menu = new GenericMenu();
                 for (int i = 0; i < m_OrganizationInfos.Length; i++)
@@ -352,8 +414,7 @@ namespace UnityEditor
 
             GUILayout.FlexibleSpace();
 
-            var isOrgIdChosen = isOrgSelected || m_OrganizationInfos.Length == 0;
-            GUI.enabled = m_Tree?.isAnyItemEnabled == true && isOrgIdChosen;
+            GUI.enabled = m_Tree?.isAnyItemEnabled == true && (isSigningSkipped || isOrgSelected);
             if (GUILayout.Button(L10n.TextContent("Export...", null, null, null)))
             {
                 string invalidChars = m_EditorUtilityAdapter.GetInvalidFilenameChars();
@@ -427,13 +488,13 @@ namespace UnityEditor
 
         internal bool ExportPackage (string[] guids, string fileName)
         {
-            if (m_OrganizationInfos.Length == 0)
+            if (isSigningSkipped)
                 m_UtilityAdapter.ExportPackageWithGUIDs(guids, fileName, null);
             else
             {
                 if (!isOrgSelected)
                 {
-                    Debug.Log(L10n.Tr("Package export failed because of an incorrect organization name. Please try again.", null));
+                    Debug.Log(L10n.Tr("Package export failed because no authoring organization is available. Please try again.", null));
                     return false;
                 }
                 m_UtilityAdapter.ExportPackageWithGUIDs(guids, fileName, m_OrganizationInfos[m_SelectedOrgIndex].foreignKey);
@@ -488,7 +549,8 @@ namespace UnityEditor
                 if (i.enabledStatus > 0)
                     numSelectedAssets++;
             }
-            AssetExportWindowAnalytics.SendEvent(action, numSelectedAssets, numTotalAssets, m_IncludeDependencies, m_IncludeScripts, m_SelectedOrgIndex > -1 ? m_OrganizationInfos[m_SelectedOrgIndex].foreignKey : string.Empty);
+            var organizationId = isOrgSelected && !isTrustDisabled ? m_OrganizationInfos[m_SelectedOrgIndex].foreignKey : string.Empty;
+            AssetExportWindowAnalytics.SendEvent(action, numSelectedAssets, numTotalAssets, m_IncludeDependencies, m_IncludeScripts, organizationId);
         }
 
         [AnalyticInfo(eventName: k_EventName, vendorKey: k_VendorKey, version: 2)]

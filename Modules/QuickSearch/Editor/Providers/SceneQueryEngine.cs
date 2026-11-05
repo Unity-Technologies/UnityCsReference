@@ -85,6 +85,9 @@ namespace UnityEditor.Search.Providers
         public SceneQueryEngine(IEnumerable<GameObject> gameObjects)
             : base(gameObjects)
         {
+            // Unknown and incomplete filters such as "door:main" or "t:" can also be names
+            m_QueryEngine.treatUnknownFiltersAsText = true;
+            m_QueryEngine.treatIncompleteFiltersAsText = true;
             m_QueryEngine.AddFilter("active", IsActive);
             m_QueryEngine.AddFilter("size", GetSize);
             m_QueryEngine.AddFilter("components", GetComponentCount);

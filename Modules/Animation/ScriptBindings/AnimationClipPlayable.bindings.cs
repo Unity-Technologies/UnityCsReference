@@ -3,12 +3,22 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using System.Runtime.InteropServices;
 using UnityEngine.Bindings;
 using UnityEngine.Scripting;
 using UnityEngine.Playables;
 
 namespace UnityEngine.Animations
 {
+    [StructLayout(LayoutKind.Sequential)]
+    internal struct AnimationClipControllerStateSettings
+    {
+        public float cycleOffset;
+        public float speed;
+        public bool mirror;
+        public bool writeDefaultValues;
+    }
+
     ///<summary>A <see cref="T:UnityEngine.Playables.Playable" /> that controls an <see cref="AnimationClip" />.</summary>
     ///<remarks>NOTE: You can use <see cref="PlayableExtensions" /> methods with AnimationClipPlayable objects.</remarks>
     [NativeHeader("Modules/Animation/ScriptBindings/AnimationClipPlayable.bindings.h")]
@@ -145,6 +155,16 @@ namespace UnityEngine.Animations
             SetSampleRateInternal(ref m_Handle, value);
         }
 
+        internal AnimationClipControllerStateSettings GetControllerStateSettings()
+        {
+            return GetControllerStateSettingsInternal(ref m_Handle);
+        }
+
+        internal void SetControllerStateSettings(AnimationClipControllerStateSettings value)
+        {
+            SetControllerStateSettingsInternal(ref m_Handle, value);
+        }
+
         [NativeMethod(ThrowsException = true)]
         extern private static bool CreateHandleInternal(PlayableGraph graph, AnimationClip clip, ref PlayableHandle handle);
 
@@ -186,5 +206,11 @@ namespace UnityEngine.Animations
 
         [NativeMethod(ThrowsException = true)]
         extern private static void SetSampleRateInternal(ref PlayableHandle handle, float value);
+
+        [NativeMethod(ThrowsException = true)]
+        extern private static AnimationClipControllerStateSettings GetControllerStateSettingsInternal(ref PlayableHandle handle);
+
+        [NativeMethod(ThrowsException = true)]
+        extern private static void SetControllerStateSettingsInternal(ref PlayableHandle handle, AnimationClipControllerStateSettings value);
     }
 }

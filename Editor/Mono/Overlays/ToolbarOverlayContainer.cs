@@ -19,7 +19,8 @@ namespace UnityEditor.Overlays
             AddToClassList(k_ClassName);
             SetupScroller(horizontalScroller);
             SetupScroller(verticalScroller);
-            contentViewport.RegisterCallback<GeometryChangedEvent>(ViewportGeometryChanged);
+            contentViewport.RegisterCallback<GeometryChangedEvent>(OnGeometryChanged);
+            contentContainer.RegisterCallback<GeometryChangedEvent>(OnGeometryChanged);
         }
 
         void SetupScroller(Scroller scroller)
@@ -30,7 +31,7 @@ namespace UnityEditor.Overlays
             UpdateButtons(scroller);
         }
 
-        void ViewportGeometryChanged(GeometryChangedEvent evt)
+        void OnGeometryChanged(GeometryChangedEvent evt)
         {
             UpdateButtons(horizontalScroller);
             UpdateButtons(verticalScroller);

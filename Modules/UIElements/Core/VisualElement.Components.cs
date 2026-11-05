@@ -158,7 +158,7 @@ namespace UnityEngine.UIElements
             // arrays; InvokeComponentChangedAt resolves each dirty bit against this snapshot.
             var set = m_ComponentTypeSet;
             var slots = m_ComponentSlots;
-            var count = slots?.Length ?? 0;
+            var count = set.Count;
 
             // Precise slots 0-30: invoke only the ones whose bit is set.
             var precise = count < 31 ? count : 31;
@@ -177,22 +177,21 @@ namespace UnityEngine.UIElements
         }
 
         // Dispatches for the component at `index` in the flush snapshot. When the live fields differ,
-        // positions have shifted: re-resolve the captured type against live storage; removed ones skip.
+        // positions have shifted: dispatch only if the captured type is still attached; removed ones skip.
         void InvokeComponentChangedAt(ComponentTypeSet capturedSet, ComponentSlot[] capturedSlots, int index)
         {
+            var onChanged = capturedSet.records[index].onChanged;
+            if (onChanged == null)
+                return;
+
             if (ReferenceEquals(capturedSet, m_ComponentTypeSet) && ReferenceEquals(capturedSlots, m_ComponentSlots))
             {
-                InvokeComponentChangedHandler(capturedSlots[index].onChanged);
+                InvokeComponentChangedHandler(onChanged);
                 return;
             }
 
-            var types = capturedSet.types;
-            if (index >= types.Length)
-                return;
-
-            var current = FindComponentIndex(types[index]);
-            if (current >= 0)
-                InvokeComponentChangedHandler(m_ComponentSlots[current].onChanged);
+            if (FindComponentIndex(capturedSet.types[index]) >= 0)
+                InvokeComponentChangedHandler(onChanged);
         }
 
         // A throwing handler is reported and the flush moves on to the next dirty slot; the mask was
@@ -299,7 +298,7 @@ namespace UnityEngine.UIElements
             if (!record.isValid)   // shut down between the code unload and the statics cleanup
                 ThrowComponentStoreTornDown(typeHandle);
 
-            var slot = new ComponentSlot { record = record };
+            var slot = new ComponentSlot();
 
             // Free one pending slot per slot allocated — the backstop that keeps Collect()'s per-call cap
             // from letting the queue grow under churn.
@@ -313,15 +312,12 @@ namespace UnityEngine.UIElements
             }
             else
             {
-                var box = ManagedComponentBoxPool<T>.Pool.Get();
-                box.Value = value;
-                ComponentManager<T>.Registry.Add(box);
-                slot.managedBox = box;
+                slot.managedBox = ComponentManager<T>.RentBox(in value);
             }
 
             record.liveCount++;
 
-            insertIndex = InsertComponentSlot(typeHandle, slot);
+            insertIndex = InsertComponentSlot(typeHandle, record, slot);
 
             value.__RegisterComponentCallbacks(this);
 
@@ -353,9 +349,9 @@ namespace UnityEngine.UIElements
         {
             ref var slot = ref m_ComponentSlots[index];
             if (ComponentManager<T>.IsUnmanaged)
-                return ref UnsafeUtility.AsRef<T>(slot.record.store.GetComponentDataPtr(slot.handle.Index, 0));
+                return ref UnsafeUtility.AsRef<T>(m_ComponentTypeSet.records[index].store.GetComponentDataPtr(slot.handle.Index, 0));
 
-            return ref ((ManagedComponentBox<T>)slot.managedBox).Value;
+            return ref ((StrongBox<T>)slot.managedBox).Value;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -447,7 +443,7 @@ namespace UnityEngine.UIElements
             // The hook forwards to shared per-type registrations and ignores instance state, so default(T) is a valid receiver.
             default(T).__UnregisterComponentCallbacks(this);
 
-            FreeComponentSlot(ref m_ComponentSlots[index]);
+            FreeComponentSlot(index);
             RemoveComponentSlotAt(index);
             return true;
         }
@@ -493,14 +489,14 @@ namespace UnityEngine.UIElements
 
             if (ComponentManager.TryGetSharedManager(out var manager))
             {
-                var count = m_ComponentTypeSet.Count;
-                for (var i = 0; i < count; i++)
+                var records = m_ComponentTypeSet.records;
+                for (var i = 0; i < records.Length; i++)
                 {
                     ref var slot = ref slots[i];
                     if (slot.managedBox != null)
-                        manager.EnqueueFree(slot.record, slot.managedBox);
+                        manager.EnqueueFree(records[i], slot.managedBox);
                     else
-                        manager.EnqueueFree(slot.record, slot.handle);
+                        manager.EnqueueFree(records[i], slot.handle);
                 }
             }
 
@@ -518,7 +514,7 @@ namespace UnityEngine.UIElements
         internal ComponentBindingDispatcher GetComponentBindingDispatcher(RuntimeTypeHandle typeHandle)
         {
             var index = FindComponentIndex(typeHandle);
-            return index >= 0 ? m_ComponentSlots[index].bindingDispatcher : null;
+            return index >= 0 ? m_ComponentTypeSet.records[index].bindingDispatcher : null;
         }
 
         // The non-throwing reads answer "absent" on a released element. ReleaseResourcesNoChecks sets the
@@ -620,7 +616,7 @@ namespace UnityEngine.UIElements
             try
             {
                 UnsafeUtility.MemCpy((void*)handle.AddrOfPinnedObject(),
-                    slot.record.store.GetComponentDataPtr(slot.handle.Index, 0), UnsafeUtility.SizeOf(type));
+                    m_ComponentTypeSet.records[index].store.GetComponentDataPtr(slot.handle.Index, 0), UnsafeUtility.SizeOf(type));
             }
             finally
             {
@@ -647,7 +643,7 @@ namespace UnityEngine.UIElements
                 var handle = GCHandle.Alloc(value, GCHandleType.Pinned);
                 try
                 {
-                    UnsafeUtility.MemCpy(slot.record.store.GetComponentDataPtr(slot.handle.Index, 0),
+                    UnsafeUtility.MemCpy(m_ComponentTypeSet.records[index].store.GetComponentDataPtr(slot.handle.Index, 0),
                         (void*)handle.AddrOfPinnedObject(), UnsafeUtility.SizeOf(type));
                 }
                 finally
@@ -663,10 +659,10 @@ namespace UnityEngine.UIElements
         }
 
         // Transitions the record and inserts the slot at the type's canonical index; returns that index.
-        int InsertComponentSlot(RuntimeTypeHandle typeHandle, ComponentSlot slot)
+        int InsertComponentSlot(RuntimeTypeHandle typeHandle, PerTypeStore record, ComponentSlot slot)
         {
             var set = m_ComponentTypeSet;
-            var successor = ComponentTypeSet.GetWithAdded(set, typeHandle, out var index);
+            var successor = ComponentTypeSet.GetWithAdded(set, typeHandle, record, out var index);
 
             var count = set.Count;
             var capacity = m_ComponentSlots?.Length ?? 0;
@@ -688,14 +684,15 @@ namespace UnityEngine.UIElements
             return index;
         }
 
-        void FreeComponentSlot(ref ComponentSlot slot)
+        void FreeComponentSlot(int index)
         {
+            ref var slot = ref m_ComponentSlots[index];
+            var record = m_ComponentTypeSet.records[index];
             if (slot.managedBox != null)
-                ComponentManager.SharedManager.EnqueueFree(slot.record, slot.managedBox);
+                ComponentManager.SharedManager.EnqueueFree(record, slot.managedBox);
             else
-                ComponentManager.SharedManager.EnqueueFree(slot.record, slot.handle);
+                ComponentManager.SharedManager.EnqueueFree(record, slot.handle);
 
-            slot.record = null;
             slot.handle = UnmanagedDataHandle.Undefined;
             slot.managedBox = null;
         }

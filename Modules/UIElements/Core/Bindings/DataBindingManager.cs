@@ -86,41 +86,56 @@ namespace UnityEngine.UIElements
             }
         }
 
-        struct BindingDataCollection : IDisposable
+        // The bindings of a single element. Elements rarely have more than a few bindings, so they are searched linearly
+        // and the lookup dictionary is only created for elements with many bindings.
+        internal sealed class BindingDataCollection
         {
-            Dictionary<BindingId, BindingData> m_BindingPerId;
-            List<BindingData> m_Bindings;
+            const int k_DictionaryThreshold = 8;
 
-            public static BindingDataCollection Create()
-            {
-                var collection = new BindingDataCollection();
-                collection.m_BindingPerId = DictionaryPool<BindingId, BindingData>.Get();
-                collection.m_Bindings = ListPool<BindingData>.Get();
-                return collection;
-            }
+            readonly List<BindingData> m_Bindings = new List<BindingData>();
+            Dictionary<BindingId, BindingData> m_BindingPerId;
+
+            // The element using this collection, null while the collection is pooled.
+            public VisualElement owner { get; set; }
 
             public void AddBindingData(BindingData bindingData)
             {
-                if (m_BindingPerId.TryGetValue(bindingData.target.bindingId, out var toRemove))
-                {
-                    m_Bindings.Remove(toRemove);
-                }
+                var bindingId = bindingData.target.bindingId;
+                var index = IndexOf(bindingId);
+                if (index >= 0)
+                    m_Bindings.RemoveAt(index);
 
-                m_BindingPerId[bindingData.target.bindingId] = bindingData;
                 m_Bindings.Add(bindingData);
+
+                if (null != m_BindingPerId)
+                    m_BindingPerId[bindingId] = bindingData;
+                else if (m_Bindings.Count > k_DictionaryThreshold)
+                {
+                    m_BindingPerId = new Dictionary<BindingId, BindingData>(m_Bindings.Count);
+                    foreach (var data in m_Bindings)
+                        m_BindingPerId[data.target.bindingId] = data;
+                }
             }
 
             public bool TryGetBindingData(in BindingId bindingId, out BindingData data)
             {
-                return m_BindingPerId.TryGetValue(bindingId, out data);
+                if (null != m_BindingPerId)
+                    return m_BindingPerId.TryGetValue(bindingId, out data);
+
+                var index = IndexOf(bindingId);
+                data = index >= 0 ? m_Bindings[index] : null;
+                return index >= 0;
             }
 
             public bool RemoveBindingData(BindingData bindingData)
             {
-                if (!m_BindingPerId.TryGetValue(bindingData.target.bindingId, out var toRemove))
+                var index = IndexOf(bindingData.target.bindingId);
+                if (index < 0)
                     return false;
 
-                return m_Bindings.Remove(toRemove) && m_BindingPerId.Remove(toRemove.target.bindingId);
+                m_BindingPerId?.Remove(m_Bindings[index].target.bindingId);
+                m_Bindings.RemoveAt(index);
+                return true;
             }
 
             public List<BindingData> GetBindings()
@@ -133,14 +148,22 @@ namespace UnityEngine.UIElements
                 return m_Bindings.Count;
             }
 
-            public void Dispose()
+            public void Clear()
             {
-                if (m_BindingPerId != null)
-                    DictionaryPool<BindingId, BindingData>.Release(m_BindingPerId);
+                m_Bindings.Clear();
                 m_BindingPerId = null;
-                if (m_Bindings != null)
-                    ListPool<BindingData>.Release(m_Bindings);
-                m_Bindings = null;
+                owner = null;
+            }
+
+            int IndexOf(in BindingId bindingId)
+            {
+                for (var i = 0; i < m_Bindings.Count; ++i)
+                {
+                    if (m_Bindings[i].target.bindingId == bindingId)
+                        return i;
+                }
+
+                return -1;
             }
         }
 
@@ -154,7 +177,7 @@ namespace UnityEngine.UIElements
             private DataSourceContext m_LastContext;
 
             public object localDataSource { get; set; }
-            public PropertyPath localDataSourcePath { get; set; }
+            public PropertyPath localDataSourcePath;
             public bool hasHierarchicalContext { get; private set; }
             public bool isContextResolved { get; set; }
             public DataSourceContext hierarchicalContext { get; private set; }
@@ -171,6 +194,9 @@ namespace UnityEngine.UIElements
                 InvalidateHierarchicalContext();
                 m_SourceToUILastUpdate = null;
                 m_UIToSourceLastUpdate = null;
+                sourceReader = null;
+                sourceInfo = null;
+                lastFailureMessage = null;
             }
 
             public void SetHierarchicalContext(in DataSourceContext hierarchical)
@@ -192,6 +218,8 @@ namespace UnityEngine.UIElements
                 isContextResolved = false;
             }
 
+            public ref readonly DataSourceContext contextRef => ref m_LastContext;
+
             public DataSourceContext context
             {
                 get => m_LastContext;
@@ -209,6 +237,11 @@ namespace UnityEngine.UIElements
 
             public BindingResult? m_SourceToUILastUpdate;
             public BindingResult? m_UIToSourceLastUpdate;
+            public BindingUpdater.SourceReadStep<object> sourceReader;
+            public BindingUpdater.FailureMessage lastFailureMessage;
+
+            // The info of the source used by the last update, only valid while its source is the resolved source.
+            public SourceInfo sourceInfo;
         }
 
         internal readonly struct ChangesFromUI
@@ -227,6 +260,23 @@ namespace UnityEngine.UIElements
             public bool IsValid => version == bindingData.version && binding == bindingData.binding;
         }
 
+        internal class SourceInfo
+        {
+            private HashSet<PropertyPath> m_DetectedChanges;
+
+            // The tracked source, null while the info is pooled.
+            public object source { get; set; }
+            public long lastVersion { get; set; }
+            public int refCount { get; set; }
+            public HashSet<PropertyPath> detectedChanges => m_DetectedChanges ??= new HashSet<PropertyPath>();
+            public HashSet<PropertyPath> detectedChangesNoAlloc => m_DetectedChanges;
+
+            // Per binding update state, only valid when the stamp matches the stamp of the current update.
+            public int versionStamp { get; set; }
+            public long versionAtUpdateStart { get; set; }
+            public int changesStamp { get; set; }
+        }
+
         [NoAutoStaticsCleanup]
         static readonly List<BindingData> s_Empty = new List<BindingData>();
 
@@ -242,7 +292,8 @@ namespace UnityEngine.UIElements
                     if (boundElements.Count == results.Count)
                         return;
 
-                    if (boundElements.Contains(element))
+                    // Elements of the panel are flagged exactly while their bindings are tracked by its manager.
+                    if ((element.flags & VisualElementFlags.HasTrackedBindings) != 0)
                         results.Add(element);
 
                     Recurse(element, depth);
@@ -252,8 +303,10 @@ namespace UnityEngine.UIElements
             readonly BaseVisualElementPanel m_Panel;
             readonly HierarchicalBindingsSorter m_BindingSorter;
             readonly Dictionary<VisualElement, BindingDataCollection> m_BindingDataPerElement;
+            readonly Stack<BindingDataCollection> m_CollectionPool = new Stack<BindingDataCollection>();
             readonly HashSet<VisualElement> m_BoundElements;
             readonly List<VisualElement> m_OrderedBindings;
+            readonly List<BindingDataCollection> m_OrderedCollections = new List<BindingDataCollection>();
             bool m_IsDirty;
 
             public int GetTrackedElementsCount()
@@ -266,6 +319,14 @@ namespace UnityEngine.UIElements
                 if (m_IsDirty)
                     OrderBindings(m_Panel.visualTree);
                 return m_OrderedBindings;
+            }
+
+            // Parallel to GetBoundElements, avoids looking up the collection of each element during the update.
+            public List<BindingDataCollection> GetOrderedBindingCollections()
+            {
+                if (m_IsDirty)
+                    OrderBindings(m_Panel.visualTree);
+                return m_OrderedCollections;
             }
 
             public HashSet<VisualElement> GetUnorderedBoundElements()
@@ -281,7 +342,6 @@ namespace UnityEngine.UIElements
                 m_BoundElements = new HashSet<VisualElement>();
                 m_OrderedBindings = new List<VisualElement>();
                 m_IsDirty = true;
-                m_OnPropertyChanged = OnPropertyChanged;
             }
 
             public void SetDirty()
@@ -299,14 +359,47 @@ namespace UnityEngine.UIElements
                 return m_BoundElements.Contains(element);
             }
 
+            public bool IsTrackingAnyElementInHierarchy(VisualElement element, bool includeSelf)
+            {
+                if (m_BoundElements.Count == 0)
+                    return false;
+
+                if (includeSelf && (element.flags & VisualElementFlags.HasTrackedBindings) != 0)
+                    return true;
+
+                var count = element.hierarchy.childCount;
+                for (var i = 0; i < count; ++i)
+                {
+                    if (IsTrackingAnyElementInHierarchy(element.hierarchy[i], true))
+                        return true;
+                }
+
+                return false;
+            }
+
+            public bool IsTrackingAnyElement(IReadOnlyList<VisualElement> elements)
+            {
+                if (m_BoundElements.Count == 0)
+                    return false;
+
+                for (var i = 0; i < elements.Count; ++i)
+                {
+                    if ((elements[i].flags & VisualElementFlags.HasTrackedBindings) != 0)
+                        return true;
+                }
+
+                return false;
+            }
+
             public void StartTrackingBinding(VisualElement element, BindingData binding)
             {
                 BindingDataCollection collection;
                 if (m_BoundElements.Add(element))
                 {
-                    collection = BindingDataCollection.Create();
+                    collection = m_CollectionPool.Count > 0 ? m_CollectionPool.Pop() : new BindingDataCollection();
+                    collection.owner = element;
                     m_BindingDataPerElement.Add(element, collection);
-                    element.RegisterCallback(m_OnPropertyChanged, m_BindingDataPerElement);
+                    element.flags |= VisualElementFlags.HasTrackedBindings;
                 }
                 else if (!m_BindingDataPerElement.TryGetValue(element, out collection))
                 {
@@ -315,27 +408,25 @@ namespace UnityEngine.UIElements
 
                 binding.binding.MarkDirty();
                 collection.AddBindingData(binding);
-                m_BindingDataPerElement[element] = collection;
                 SetDirty();
             }
 
-            private EventCallback<PropertyChangedEvent, Dictionary<VisualElement, BindingDataCollection>> m_OnPropertyChanged;
-
-            private void OnPropertyChanged(PropertyChangedEvent evt, Dictionary<VisualElement, BindingDataCollection> bindingCollection)
+            // Called by VisualElement.NotifyPropertyChanged for elements flagged with HasTrackedBindings.
+            public void OnPropertyChanged(VisualElement target, in BindingId property)
             {
-                if (evt.target is not VisualElement target)
-                    throw new InvalidOperationException($"Trying to track property changes on a non '{nameof(VisualElement)}'. This is an internal bug. Please report using `Help > Report a Bug...`");
-
-                if (!bindingCollection.TryGetValue(target, out var collection))
+                if (!m_BindingDataPerElement.TryGetValue(target, out var collection))
                     throw new InvalidOperationException($"Trying to track property changes on a '{nameof(VisualElement)}' that is not being tracked. This is an internal bug. Please report using `Help > Report a Bug...`");
 
-                if (collection.TryGetBindingData(evt.property, out var bindingData) &&
-                    target.TryGetBinding(evt.property, out var current) &&
-                    bindingData.binding == current)
-                {
-                    if (!m_Panel.dataBindingManager.m_IgnoreUIChangesData.ShouldIgnoreChange(target, current, evt.property))
-                        m_Panel.dataBindingManager.m_DetectedChangesFromUI.Add(new ChangesFromUI(bindingData));
-                }
+                if (!collection.TryGetBindingData(property, out var bindingData))
+                    return;
+
+                // A pending request for the same property replaces or removes the registered binding.
+                var current = bindingData.binding;
+                if (TryGetBindingRequest(target, property, out var requested) && requested != current)
+                    return;
+
+                if (!m_Panel.dataBindingManager.m_IgnoreUIChangesData.ShouldIgnoreChange(target, current, property))
+                    m_Panel.dataBindingManager.m_DetectedChangesFromUI.Add(new ChangesFromUI(bindingData));
             }
 
             public void StopTrackingBinding(VisualElement element, BindingData binding)
@@ -344,14 +435,7 @@ namespace UnityEngine.UIElements
                 {
                     collection.RemoveBindingData(binding);
                     if (collection.GetBindingCount() == 0)
-                    {
                         StopTrackingElement(element);
-                        element.UnregisterCallback(m_OnPropertyChanged);
-                    }
-                    else
-                    {
-                        m_BindingDataPerElement[element] = collection;
-                    }
                 }
                 else
                 {
@@ -363,26 +447,27 @@ namespace UnityEngine.UIElements
 
             public void StopTrackingElement(VisualElement element)
             {
-                if (m_BindingDataPerElement.TryGetValue(element, out var collection))
+                if (m_BindingDataPerElement.Remove(element, out var collection))
                 {
-                    collection.Dispose();
+                    collection.Clear();
+                    m_CollectionPool.Push(collection);
                 }
 
-                m_BindingDataPerElement.Remove(element);
+                element.flags &= ~VisualElementFlags.HasTrackedBindings;
                 m_BoundElements.Remove(element);
                 SetDirty();
             }
 
             public void Dispose()
             {
-                foreach (var kvp in m_BindingDataPerElement)
-                {
-                    kvp.Value.Dispose();
-                }
+                foreach (var element in m_BoundElements)
+                    element.flags &= ~VisualElementFlags.HasTrackedBindings;
 
                 m_BindingDataPerElement.Clear();
+                m_CollectionPool.Clear();
                 m_BoundElements.Clear();
                 m_OrderedBindings.Clear();
+                m_OrderedCollections.Clear();
             }
 
             void OrderBindings(VisualElement root)
@@ -391,6 +476,11 @@ namespace UnityEngine.UIElements
                 m_BindingSorter.boundElements = m_BoundElements;
                 m_BindingSorter.results = m_OrderedBindings;
                 m_BindingSorter.Traverse(root);
+
+                m_OrderedCollections.Clear();
+                foreach (var element in m_OrderedBindings)
+                    m_OrderedCollections.Add(m_BindingDataPerElement[element]);
+
                 m_IsDirty = false;
             }
         }
@@ -416,20 +506,11 @@ namespace UnityEngine.UIElements
 
             private void ReleasePooledSourceInfo(SourceInfo info)
             {
+                info.source = null;
                 info.lastVersion = long.MinValue;
                 info.refCount = 0;
                 info.detectedChangesNoAlloc?.Clear();
                 m_SourceInfosPool.Add(info);
-            }
-
-            class SourceInfo
-            {
-                private HashSet<PropertyPath> m_DetectedChanges;
-
-                public long lastVersion { get; set; }
-                public int refCount { get; set; }
-                public HashSet<PropertyPath> detectedChanges => m_DetectedChanges ??= new HashSet<PropertyPath>();
-                public HashSet<PropertyPath> detectedChangesNoAlloc => m_DetectedChanges;
             }
 
             class InvalidateDataSourcesTraversal : HierarchyTraversal
@@ -483,7 +564,6 @@ namespace UnityEngine.UIElements
 
             private readonly Dictionary<VisualElement, DataSourceContext> m_ResolvedHierarchicalDataSourceContext;
 
-            readonly Dictionary<Binding, int> m_BindingRefCount;
             readonly Dictionary<object, SourceInfo> m_SourceInfos;
             private readonly HashSet<object> m_SourcesToRemove;
 
@@ -508,7 +588,6 @@ namespace UnityEngine.UIElements
             {
                 m_DataBindingManager = manager;
                 m_ResolvedHierarchicalDataSourceContext = new Dictionary<VisualElement, DataSourceContext>();
-                m_BindingRefCount = new Dictionary<Binding, int>();
                 var dataSourceComparer = new ObjectComparer();
                 m_SourceInfos = new Dictionary<object, SourceInfo>(dataSourceComparer);
                 m_SourcesToRemove = new HashSet<object>(dataSourceComparer);
@@ -520,14 +599,8 @@ namespace UnityEngine.UIElements
 
             internal void IncreaseBindingRefCount(ref BindingData bindingData)
             {
-                var binding = bindingData.binding;
-                if (null == binding)
+                if (null == bindingData.binding)
                     return;
-
-                if (!m_BindingRefCount.TryGetValue(binding, out var refCount))
-                {
-                    refCount = 0;
-                }
 
                 var dataSourceProvider = bindingData.dataSourceProvider;
                 if (null != dataSourceProvider)
@@ -535,29 +608,12 @@ namespace UnityEngine.UIElements
                     IncreaseRefCount(dataSourceProvider.dataSource);
                     bindingData.localDataSource = dataSourceProvider.dataSource;
                 }
-
-                m_BindingRefCount[binding] = refCount + 1;
             }
 
             internal void DecreaseBindingRefCount(ref BindingData bindingData)
             {
-                var binding = bindingData.binding;
-                if (null == binding)
+                if (null == bindingData.binding)
                     return;
-
-                if (!m_BindingRefCount.TryGetValue(binding, out var refCount))
-                {
-                    throw new InvalidOperationException("Trying to release a binding that isn't tracked. This is an internal bug. Please report using `Help > Report a Bug...`");
-                }
-
-                if (refCount == 1)
-                {
-                    m_BindingRefCount.Remove(binding);
-                }
-                else
-                {
-                    m_BindingRefCount[binding] = refCount - 1;
-                }
 
                 if (null != bindingData.dataSourceProvider)
                     DecreaseRefCount(bindingData.dataSourceProvider.dataSource);
@@ -575,6 +631,7 @@ namespace UnityEngine.UIElements
                 if (!m_SourceInfos.TryGetValue(dataSource, out var info))
                 {
                     m_SourceInfos[dataSource] = info = GetPooledSourceInfo();
+                    info.source = dataSource;
                     shouldRegisterChangeTracking = true;
                 }
 
@@ -641,14 +698,6 @@ namespace UnityEngine.UIElements
                 return m_SourceInfos.TryGetValue(dataSource, out var info) ? info.detectedChangesNoAlloc : null;
             }
 
-            public void ClearChangesFromSource(object dataSource)
-            {
-                if (!m_SourceInfos.TryGetValue(dataSource, out var info))
-                    return;
-
-                info.detectedChangesNoAlloc?.Clear();
-            }
-
             public void InvalidateCachedDataSource(HashSet<VisualElement> elements, HashSet<VisualElement> removedElements)
             {
                 var toInvalidate = ListPool<VisualElement>.Get();
@@ -687,6 +736,28 @@ namespace UnityEngine.UIElements
                     return bindingData.context;
 
                 return ResolveDataSourceContext(element, bindingData, localDataSource, localDataSourcePath);
+            }
+
+            // Same as GetResolvedDataSourceContext, without copying the context. When the context needs to be
+            // resolved, the returned reference reflects the binding data after the data source changed callbacks.
+            public ref readonly DataSourceContext GetResolvedDataSourceContextRef(VisualElement element, BindingData bindingData)
+            {
+                object localDataSource = null;
+                PropertyPath localDataSourcePath = default;
+
+                var dataSourceProvider = bindingData.dataSourceProvider;
+                if (null != dataSourceProvider)
+                {
+                    localDataSource = dataSourceProvider.dataSource;
+                    localDataSourcePath = dataSourceProvider.dataSourcePath;
+                }
+
+                if (!bindingData.isContextResolved ||
+                    localDataSource != bindingData.localDataSource ||
+                    !PropertyPathEquality.Equals(localDataSourcePath, bindingData.localDataSourcePath))
+                    ResolveDataSourceContext(element, bindingData, localDataSource, localDataSourcePath);
+
+                return ref bindingData.contextRef;
             }
 
             DataSourceContext ResolveDataSourceContext(VisualElement element, BindingData bindingData, object localDataSource, in PropertyPath localDataSourcePath)
@@ -777,23 +848,9 @@ namespace UnityEngine.UIElements
                 list.Add(propertyPath);
             }
 
-            public bool TryGetLastVersion(object source, out long version)
+            public SourceInfo GetSourceInfo(object source)
             {
-                if (null != source && m_SourceInfos.TryGetValue(source, out var sourceInfo))
-                {
-                    version = sourceInfo.lastVersion;
-                    return true;
-                }
-
-                version = -1;
-                return false;
-            }
-
-            public void UpdateVersion(object source, long version)
-            {
-                var info = m_SourceInfos[source];
-                info.lastVersion = version;
-                m_SourceInfos[source] = info;
+                return null != source && m_SourceInfos.TryGetValue(source, out var info) ? info : null;
             }
 
             internal object GetHierarchyDataSource(VisualElement element)
@@ -834,9 +891,10 @@ namespace UnityEngine.UIElements
             public void Dispose()
             {
                 m_ResolvedHierarchicalDataSourceContext.Clear();
-                m_BindingRefCount.Clear();
                 m_SourcesToRemove.Clear();
                 m_SourceInfosPool.Clear();
+                foreach (var info in m_SourceInfos.Values)
+                    info.source = null;
                 m_SourceInfos.Clear();
             }
 
@@ -890,14 +948,34 @@ namespace UnityEngine.UIElements
             return m_DataSourceTracker.IsTrackingDataSource(element);
         }
 
-        internal bool TryGetLastVersion(object source, out long version)
+        // Returns null when the source is null or not tracked.
+        internal SourceInfo GetSourceInfo(object source)
         {
-            return m_DataSourceTracker.TryGetLastVersion(source, out version);
+            return m_DataSourceTracker.GetSourceInfo(source);
         }
 
-        internal void UpdateVersion(object source, long version)
+        // Same as GetSourceInfo, reusing the info cached on the binding data when it still belongs to the source.
+        internal SourceInfo GetSourceInfo(object source, BindingData bindingData)
         {
-            m_DataSourceTracker.UpdateVersion(source, version);
+            var info = bindingData.sourceInfo;
+            if (null != info && null != source && ReferenceEquals(info.source, source))
+                return info;
+
+            info = m_DataSourceTracker.GetSourceInfo(source);
+            bindingData.sourceInfo = info;
+            return info;
+        }
+
+        [NoAutoStaticsCleanup]
+        static readonly DataSourceContext s_NoContext = default;
+
+        // Same as GetResolvedDataSourceContext, without copying the context.
+        internal ref readonly DataSourceContext GetResolvedDataSourceContextRef(VisualElement element, BindingData bindingData)
+        {
+            if (element.panel != m_Panel)
+                return ref s_NoContext;
+
+            return ref m_DataSourceTracker.GetResolvedDataSourceContextRef(element, bindingData);
         }
 
         internal void CacheUIBindingResult(BindingData bindingData, BindingResult result)
@@ -978,6 +1056,24 @@ namespace UnityEngine.UIElements
             return m_BindingsTracker.GetBoundElements();
         }
 
+        internal void OnPropertyChanged(VisualElement element, in BindingId property)
+        {
+            m_BindingsTracker.OnPropertyChanged(element, property);
+        }
+
+        internal List<BindingDataCollection> GetOrderedBindingCollections()
+        {
+            return m_BindingsTracker.GetOrderedBindingCollections();
+        }
+
+        // Uses the collection taken from GetOrderedBindingCollections when it still belongs to the element.
+        internal List<BindingData> GetBindingData(VisualElement element, BindingDataCollection collection)
+        {
+            return collection.owner == element && element.panel == m_Panel
+                ? collection.GetBindings()
+                : GetBindingData(element);
+        }
+
         internal IEnumerable<VisualElement> GetUnorderedBoundElements()
         {
             return m_BindingsTracker.GetUnorderedBoundElements();
@@ -1039,11 +1135,6 @@ namespace UnityEngine.UIElements
             return m_DataSourceTracker.GetChangesFromSource(dataSource);
         }
 
-        internal void ClearChangesFromSource(object dataSource)
-        {
-            m_DataSourceTracker.ClearChangesFromSource(dataSource);
-        }
-
         internal List<BindingData> GetBindingData(VisualElement element)
         {
             return element.panel == m_Panel
@@ -1068,7 +1159,10 @@ namespace UnityEngine.UIElements
         internal void RegisterBinding(VisualElement element, in BindingId bindingId, Binding binding)
         {
             Assert.IsFalse(null == binding);
-            Assert.IsFalse(((PropertyPath) bindingId).IsEmpty, $"[UI Toolkit] Could not register binding on element of type '{element.GetType().Name}': target property path is empty.");
+            // The message is only built when the assertion fails.
+            var isBindingIdEmpty = ((PropertyPath) bindingId).IsEmpty;
+            if (isBindingIdEmpty)
+                Assert.IsFalse(isBindingIdEmpty, $"[UI Toolkit] Could not register binding on element of type '{element.GetType().Name}': target property path is empty.");
 
             if (m_BindingsTracker.TryGetBindingCollection(element, out var collection) &&
                 collection.TryGetBindingData(bindingId, out var bindingData))
@@ -1297,6 +1391,16 @@ namespace UnityEngine.UIElements
         public void DirtyBindingOrder()
         {
             m_BindingsTracker.SetDirty();
+        }
+
+        internal bool IsTrackingAnyElementInHierarchy(VisualElement element, bool includeSelf)
+        {
+            return m_BindingsTracker.IsTrackingAnyElementInHierarchy(element, includeSelf);
+        }
+
+        internal bool IsTrackingAnyElement(IReadOnlyList<VisualElement> elements)
+        {
+            return m_BindingsTracker.IsTrackingAnyElement(elements);
         }
 
         public void TrackDataSource(object previous, object current)

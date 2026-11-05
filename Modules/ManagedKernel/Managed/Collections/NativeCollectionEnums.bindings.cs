@@ -39,11 +39,11 @@ namespace Unity.Collections
         Persistent = 4,
         ///<summary>Use an allocation associated with a DSPGraph audio kernel.</summary>
         AudioKernel = 5,
-        ///<summary>Use an allocation associated with the lifetime of a domain.</summary>
-        ///<remarks>The domain is the scripting domain that holds the managed state of your scripts. Unity unloads and recreates it during a
-        ///[[wiki:domain-reloading|domain reload]], for example when scripts recompile or when you enter Play mode with domain reload enabled.
+        ///<summary>Use an allocation that lasts until the next code reload.</summary>
+        ///<remarks>Unity unloads and reloads your project's code, including the managed state of your scripts, during a
+        ///[[wiki:domain-reloading|code reload]], for example when scripts recompile or when you enter Play mode with code reload enabled.
         ///
-        ///You don't need to free this memory, because Unity frees it automatically at domain unload. However, to conserve memory, 
+        ///You don't need to free this memory, because Unity frees it automatically when it unloads your project's code. However, to conserve memory, 
         ///you can free it at any time. Freeing a large number of such allocations in one frame, such that the array of freed pointers is larger than L2 cache, 
         ///might exhibit a measurable loss of performance.
         ///

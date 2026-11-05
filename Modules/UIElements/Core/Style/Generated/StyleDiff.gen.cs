@@ -489,7 +489,7 @@ namespace UnityEngine.UIElements
                 if (m_All == value)
                     return;
                 m_All = value;
-                Notify();
+                Notify(StylePropertyId.All);
             }
         }
 
@@ -502,7 +502,7 @@ namespace UnityEngine.UIElements
                 if (m_Animation == value)
                     return;
                 m_Animation = value;
-                Notify();
+                Notify(StylePropertyId.Animation);
             }
         }
 
@@ -515,7 +515,7 @@ namespace UnityEngine.UIElements
                 if (m_BackgroundPosition == value)
                     return;
                 m_BackgroundPosition = value;
-                Notify();
+                Notify(StylePropertyId.BackgroundPosition);
             }
         }
 
@@ -528,7 +528,7 @@ namespace UnityEngine.UIElements
                 if (m_BorderColor == value)
                     return;
                 m_BorderColor = value;
-                Notify();
+                Notify(StylePropertyId.BorderColor);
             }
         }
 
@@ -541,7 +541,7 @@ namespace UnityEngine.UIElements
                 if (m_BorderRadius == value)
                     return;
                 m_BorderRadius = value;
-                Notify();
+                Notify(StylePropertyId.BorderRadius);
             }
         }
 
@@ -554,7 +554,7 @@ namespace UnityEngine.UIElements
                 if (m_BorderWidth == value)
                     return;
                 m_BorderWidth = value;
-                Notify();
+                Notify(StylePropertyId.BorderWidth);
             }
         }
 
@@ -567,7 +567,7 @@ namespace UnityEngine.UIElements
                 if (m_Flex == value)
                     return;
                 m_Flex = value;
-                Notify();
+                Notify(StylePropertyId.Flex);
             }
         }
 
@@ -580,7 +580,7 @@ namespace UnityEngine.UIElements
                 if (m_Gap == value)
                     return;
                 m_Gap = value;
-                Notify();
+                Notify(StylePropertyId.Gap);
             }
         }
 
@@ -593,7 +593,7 @@ namespace UnityEngine.UIElements
                 if (m_GridColumn == value)
                     return;
                 m_GridColumn = value;
-                Notify();
+                Notify(StylePropertyId.GridColumn);
             }
         }
 
@@ -606,7 +606,7 @@ namespace UnityEngine.UIElements
                 if (m_GridRow == value)
                     return;
                 m_GridRow = value;
-                Notify();
+                Notify(StylePropertyId.GridRow);
             }
         }
 
@@ -619,7 +619,7 @@ namespace UnityEngine.UIElements
                 if (m_Margin == value)
                     return;
                 m_Margin = value;
-                Notify();
+                Notify(StylePropertyId.Margin);
             }
         }
 
@@ -632,7 +632,7 @@ namespace UnityEngine.UIElements
                 if (m_Padding == value)
                     return;
                 m_Padding = value;
-                Notify();
+                Notify(StylePropertyId.Padding);
             }
         }
 
@@ -645,7 +645,7 @@ namespace UnityEngine.UIElements
                 if (m_Transition == value)
                     return;
                 m_Transition = value;
-                Notify();
+                Notify(StylePropertyId.Transition);
             }
         }
 
@@ -658,7 +658,7 @@ namespace UnityEngine.UIElements
                 if (m_UnityAnimationClip == value)
                     return;
                 m_UnityAnimationClip = value;
-                Notify();
+                Notify(StylePropertyId.UnityAnimationClip);
             }
         }
 
@@ -671,7 +671,7 @@ namespace UnityEngine.UIElements
                 if (m_UnityBackgroundScaleMode == value)
                     return;
                 m_UnityBackgroundScaleMode = value;
-                Notify();
+                Notify(StylePropertyId.UnityBackgroundScaleMode);
             }
         }
 
@@ -684,806 +684,1286 @@ namespace UnityEngine.UIElements
                 if (m_UnityTextOutline == value)
                     return;
                 m_UnityTextOutline = value;
-                Notify();
+                Notify(StylePropertyId.UnityTextOutline);
             }
         }
 
+        [Unity.Scripting.LifecycleManagement.NoAutoStaticsCleanup]
+        static readonly BindingId[] k_PropertyBindingIds = CreatePropertyBindingIds();
+        static BindingId[] CreatePropertyBindingIds()
+        {
+            var ids = new BindingId[128];
+            ids[(int)StylePropertyId.AlignContent] = nameof(alignContent);
+            ids[(int)StylePropertyId.AlignItems] = nameof(alignItems);
+            ids[(int)StylePropertyId.AlignSelf] = nameof(alignSelf);
+            ids[(int)StylePropertyId.All] = nameof(all);
+            ids[(int)StylePropertyId.Animation] = nameof(animation);
+            ids[(int)StylePropertyId.AnimationDelay] = nameof(animationDelay);
+            ids[(int)StylePropertyId.AnimationDirection] = nameof(animationDirection);
+            ids[(int)StylePropertyId.AnimationDuration] = nameof(animationDuration);
+            ids[(int)StylePropertyId.AnimationIterationCount] = nameof(animationIterationCount);
+            ids[(int)StylePropertyId.AnimationNames] = nameof(animationNames);
+            ids[(int)StylePropertyId.AnimationPlayStates] = nameof(animationPlayStates);
+            ids[(int)StylePropertyId.AspectRatio] = nameof(aspectRatio);
+            ids[(int)StylePropertyId.BackdropFilter] = nameof(backdropFilter);
+            ids[(int)StylePropertyId.BackgroundColor] = nameof(backgroundColor);
+            ids[(int)StylePropertyId.BackgroundImage] = nameof(backgroundImage);
+            ids[(int)StylePropertyId.BackgroundPosition] = nameof(backgroundPosition);
+            ids[(int)StylePropertyId.BackgroundPositionX] = nameof(backgroundPositionX);
+            ids[(int)StylePropertyId.BackgroundPositionY] = nameof(backgroundPositionY);
+            ids[(int)StylePropertyId.BackgroundRepeat] = nameof(backgroundRepeat);
+            ids[(int)StylePropertyId.BackgroundSize] = nameof(backgroundSize);
+            ids[(int)StylePropertyId.BorderBottomColor] = nameof(borderBottomColor);
+            ids[(int)StylePropertyId.BorderBottomLeftRadius] = nameof(borderBottomLeftRadius);
+            ids[(int)StylePropertyId.BorderBottomRightRadius] = nameof(borderBottomRightRadius);
+            ids[(int)StylePropertyId.BorderBottomWidth] = nameof(borderBottomWidth);
+            ids[(int)StylePropertyId.BorderColor] = nameof(borderColor);
+            ids[(int)StylePropertyId.BorderLeftColor] = nameof(borderLeftColor);
+            ids[(int)StylePropertyId.BorderLeftWidth] = nameof(borderLeftWidth);
+            ids[(int)StylePropertyId.BorderRadius] = nameof(borderRadius);
+            ids[(int)StylePropertyId.BorderRightColor] = nameof(borderRightColor);
+            ids[(int)StylePropertyId.BorderRightWidth] = nameof(borderRightWidth);
+            ids[(int)StylePropertyId.BorderTopColor] = nameof(borderTopColor);
+            ids[(int)StylePropertyId.BorderTopLeftRadius] = nameof(borderTopLeftRadius);
+            ids[(int)StylePropertyId.BorderTopRightRadius] = nameof(borderTopRightRadius);
+            ids[(int)StylePropertyId.BorderTopWidth] = nameof(borderTopWidth);
+            ids[(int)StylePropertyId.BorderWidth] = nameof(borderWidth);
+            ids[(int)StylePropertyId.Bottom] = nameof(bottom);
+            ids[(int)StylePropertyId.BoxShadow] = nameof(boxShadow);
+            ids[(int)StylePropertyId.Color] = nameof(color);
+            ids[(int)StylePropertyId.ColumnGap] = nameof(columnGap);
+            ids[(int)StylePropertyId.Cursor] = nameof(cursor);
+            ids[(int)StylePropertyId.Display] = nameof(display);
+            ids[(int)StylePropertyId.Filter] = nameof(filter);
+            ids[(int)StylePropertyId.Flex] = nameof(flex);
+            ids[(int)StylePropertyId.FlexBasis] = nameof(flexBasis);
+            ids[(int)StylePropertyId.FlexDirection] = nameof(flexDirection);
+            ids[(int)StylePropertyId.FlexGrow] = nameof(flexGrow);
+            ids[(int)StylePropertyId.FlexShrink] = nameof(flexShrink);
+            ids[(int)StylePropertyId.FlexWrap] = nameof(flexWrap);
+            ids[(int)StylePropertyId.FontSize] = nameof(fontSize);
+            ids[(int)StylePropertyId.Gap] = nameof(gap);
+            ids[(int)StylePropertyId.GridAutoColumns] = nameof(gridAutoColumns);
+            ids[(int)StylePropertyId.GridAutoFlow] = nameof(gridAutoFlow);
+            ids[(int)StylePropertyId.GridAutoRows] = nameof(gridAutoRows);
+            ids[(int)StylePropertyId.GridColumn] = nameof(gridColumn);
+            ids[(int)StylePropertyId.GridColumnEnd] = nameof(gridColumnEnd);
+            ids[(int)StylePropertyId.GridColumnStart] = nameof(gridColumnStart);
+            ids[(int)StylePropertyId.GridRow] = nameof(gridRow);
+            ids[(int)StylePropertyId.GridRowEnd] = nameof(gridRowEnd);
+            ids[(int)StylePropertyId.GridRowStart] = nameof(gridRowStart);
+            ids[(int)StylePropertyId.GridTemplateColumns] = nameof(gridTemplateColumns);
+            ids[(int)StylePropertyId.GridTemplateRows] = nameof(gridTemplateRows);
+            ids[(int)StylePropertyId.Height] = nameof(height);
+            ids[(int)StylePropertyId.JustifyContent] = nameof(justifyContent);
+            ids[(int)StylePropertyId.JustifyItems] = nameof(justifyItems);
+            ids[(int)StylePropertyId.JustifySelf] = nameof(justifySelf);
+            ids[(int)StylePropertyId.Left] = nameof(left);
+            ids[(int)StylePropertyId.LetterSpacing] = nameof(letterSpacing);
+            ids[(int)StylePropertyId.Margin] = nameof(margin);
+            ids[(int)StylePropertyId.MarginBottom] = nameof(marginBottom);
+            ids[(int)StylePropertyId.MarginLeft] = nameof(marginLeft);
+            ids[(int)StylePropertyId.MarginRight] = nameof(marginRight);
+            ids[(int)StylePropertyId.MarginTop] = nameof(marginTop);
+            ids[(int)StylePropertyId.MaxHeight] = nameof(maxHeight);
+            ids[(int)StylePropertyId.MaxWidth] = nameof(maxWidth);
+            ids[(int)StylePropertyId.MinHeight] = nameof(minHeight);
+            ids[(int)StylePropertyId.MinWidth] = nameof(minWidth);
+            ids[(int)StylePropertyId.Opacity] = nameof(opacity);
+            ids[(int)StylePropertyId.Overflow] = nameof(overflow);
+            ids[(int)StylePropertyId.Padding] = nameof(padding);
+            ids[(int)StylePropertyId.PaddingBottom] = nameof(paddingBottom);
+            ids[(int)StylePropertyId.PaddingLeft] = nameof(paddingLeft);
+            ids[(int)StylePropertyId.PaddingRight] = nameof(paddingRight);
+            ids[(int)StylePropertyId.PaddingTop] = nameof(paddingTop);
+            ids[(int)StylePropertyId.Position] = nameof(position);
+            ids[(int)StylePropertyId.Right] = nameof(right);
+            ids[(int)StylePropertyId.Rotate] = nameof(rotate);
+            ids[(int)StylePropertyId.RowGap] = nameof(rowGap);
+            ids[(int)StylePropertyId.Scale] = nameof(scale);
+            ids[(int)StylePropertyId.TextOverflow] = nameof(textOverflow);
+            ids[(int)StylePropertyId.TextShadow] = nameof(textShadow);
+            ids[(int)StylePropertyId.Top] = nameof(top);
+            ids[(int)StylePropertyId.TransformOrigin] = nameof(transformOrigin);
+            ids[(int)StylePropertyId.Transition] = nameof(transition);
+            ids[(int)StylePropertyId.TransitionDelay] = nameof(transitionDelay);
+            ids[(int)StylePropertyId.TransitionDuration] = nameof(transitionDuration);
+            ids[(int)StylePropertyId.TransitionProperty] = nameof(transitionProperty);
+            ids[(int)StylePropertyId.TransitionTimingFunction] = nameof(transitionTimingFunction);
+            ids[(int)StylePropertyId.Translate] = nameof(translate);
+            ids[(int)StylePropertyId.UnityAnimationClip] = nameof(unityAnimationClip);
+            ids[(int)StylePropertyId.UnityBackgroundImageTintColor] = nameof(unityBackgroundImageTintColor);
+            ids[(int)StylePropertyId.UnityBackgroundScaleMode] = nameof(unityBackgroundScaleMode);
+            ids[(int)StylePropertyId.UnityCurvature] = nameof(unityCurvature);
+            ids[(int)StylePropertyId.UnityEditorTextRenderingMode] = nameof(unityEditorTextRenderingMode);
+            ids[(int)StylePropertyId.UnityFont] = nameof(unityFont);
+            ids[(int)StylePropertyId.UnityFontDefinition] = nameof(unityFontDefinition);
+            ids[(int)StylePropertyId.UnityFontStyleAndWeight] = nameof(unityFontStyleAndWeight);
+            ids[(int)StylePropertyId.UnityMaterial] = nameof(unityMaterial);
+            ids[(int)StylePropertyId.UnityOverflowClipBox] = nameof(unityOverflowClipBox);
+            ids[(int)StylePropertyId.UnityParagraphSpacing] = nameof(unityParagraphSpacing);
+            ids[(int)StylePropertyId.UnitySliceBottom] = nameof(unitySliceBottom);
+            ids[(int)StylePropertyId.UnitySliceLeft] = nameof(unitySliceLeft);
+            ids[(int)StylePropertyId.UnitySliceRight] = nameof(unitySliceRight);
+            ids[(int)StylePropertyId.UnitySliceScale] = nameof(unitySliceScale);
+            ids[(int)StylePropertyId.UnitySliceTop] = nameof(unitySliceTop);
+            ids[(int)StylePropertyId.UnitySliceType] = nameof(unitySliceType);
+            ids[(int)StylePropertyId.UnityTextAlign] = nameof(unityTextAlign);
+            ids[(int)StylePropertyId.UnityTextAutoSize] = nameof(unityTextAutoSize);
+            ids[(int)StylePropertyId.UnityTextGenerator] = nameof(unityTextGenerator);
+            ids[(int)StylePropertyId.UnityTextOutline] = nameof(unityTextOutline);
+            ids[(int)StylePropertyId.UnityTextOutlineColor] = nameof(unityTextOutlineColor);
+            ids[(int)StylePropertyId.UnityTextOutlineWidth] = nameof(unityTextOutlineWidth);
+            ids[(int)StylePropertyId.UnityTextOverflowPosition] = nameof(unityTextOverflowPosition);
+            ids[(int)StylePropertyId.Visibility] = nameof(visibility);
+            ids[(int)StylePropertyId.WhiteSpace] = nameof(whiteSpace);
+            ids[(int)StylePropertyId.Width] = nameof(width);
+            ids[(int)StylePropertyId.WordSpacing] = nameof(wordSpacing);
+            ids[(int)StylePropertyId.ZIndex] = nameof(zIndex);
+            return ids;
+        }
+
+        private LayoutData m_LayoutDataSnapshot;
+        private VisualData m_VisualDataSnapshot;
+        private RareData m_RareDataSnapshot;
+        private InheritedData m_InheritedDataSnapshot;
+        private GridData m_GridDataSnapshot;
+        private TransformData m_TransformDataSnapshot;
         private void Refresh(VisualElement element, in ResolutionContext context)
         {
             bool notify;
-            notify = false;
-            notify |= SetInlineValue(ref m_AlignContent, element.style.alignContent);
-            notify |= SetComputedValue(ref m_AlignContent, element.computedStyle.alignContent);
-            notify |= ApplyContext(ref m_AlignContent, in context);
-            if (notify)
-                Notify(nameof(alignContent));
+            var inlineStyle = GetInlineStyle(element, context.propertiesMatchPreviousRefresh, out var refreshInlineValues);
+
+            var layoutDataUnchanged = UpdateComputedStyleSnapshot(ref m_LayoutDataSnapshot, in element.computedStyle.layoutData.Read()) && context.propertiesMatchPreviousRefresh;
+            var visualDataUnchanged = UpdateComputedStyleSnapshot(ref m_VisualDataSnapshot, in element.computedStyle.visualData.Read()) && context.propertiesMatchPreviousRefresh;
+            var rareDataUnchanged = UpdateComputedStyleSnapshot(ref m_RareDataSnapshot, in element.computedStyle.rareData.Read()) && context.propertiesMatchPreviousRefresh;
+            var inheritedDataUnchanged = UpdateComputedStyleSnapshot(ref m_InheritedDataSnapshot, in element.computedStyle.inheritedData.Read()) && context.propertiesMatchPreviousRefresh;
+            var gridDataUnchanged = UpdateComputedStyleSnapshot(ref m_GridDataSnapshot, in element.computedStyle.gridData.Read()) && context.propertiesMatchPreviousRefresh;
+            var transformDataUnchanged = UpdateComputedStyleSnapshot(ref m_TransformDataSnapshot, in element.computedStyle.transformData.Read()) && context.propertiesMatchPreviousRefresh;
 
             notify = false;
-            notify |= SetInlineValue(ref m_AlignItems, element.style.alignItems);
-            notify |= SetComputedValue(ref m_AlignItems, element.computedStyle.alignItems);
-            notify |= ApplyContext(ref m_AlignItems, in context);
+            if (refreshInlineValues)
+                notify |= SetInlineValue(ref m_AlignContent, inlineStyle.alignContent);
+            if (!layoutDataUnchanged)
+                notify |= SetComputedValue(ref m_AlignContent, element.computedStyle.alignContent);
+            if (context.uxmlDataChanged[(int)StylePropertyId.AlignContent])
+                notify |= ApplyContext(ref m_AlignContent, in context);
             if (notify)
-                Notify(nameof(alignItems));
+                Notify(StylePropertyId.AlignContent);
 
             notify = false;
-            notify |= SetInlineValue(ref m_AlignSelf, element.style.alignSelf);
-            notify |= SetComputedValue(ref m_AlignSelf, element.computedStyle.alignSelf);
-            notify |= ApplyContext(ref m_AlignSelf, in context);
+            if (refreshInlineValues)
+                notify |= SetInlineValue(ref m_AlignItems, inlineStyle.alignItems);
+            if (!layoutDataUnchanged)
+                notify |= SetComputedValue(ref m_AlignItems, element.computedStyle.alignItems);
+            if (context.uxmlDataChanged[(int)StylePropertyId.AlignItems])
+                notify |= ApplyContext(ref m_AlignItems, in context);
             if (notify)
-                Notify(nameof(alignSelf));
+                Notify(StylePropertyId.AlignItems);
 
             notify = false;
-            notify |= SetInlineValue(ref m_AnimationDelay, element.style.animationDelay);
+            if (refreshInlineValues)
+                notify |= SetInlineValue(ref m_AlignSelf, inlineStyle.alignSelf);
+            if (!layoutDataUnchanged)
+                notify |= SetComputedValue(ref m_AlignSelf, element.computedStyle.alignSelf);
+            if (context.uxmlDataChanged[(int)StylePropertyId.AlignSelf])
+                notify |= ApplyContext(ref m_AlignSelf, in context);
+            if (notify)
+                Notify(StylePropertyId.AlignSelf);
+
+            notify = false;
+            if (refreshInlineValues)
+                notify |= SetInlineValue(ref m_AnimationDelay, inlineStyle.animationDelay);
             notify |= SetComputedValue(ref m_AnimationDelay, element.computedStyle.animationDelay);
-            notify |= ApplyContext(ref m_AnimationDelay, in context);
+            if (context.uxmlDataChanged[(int)StylePropertyId.AnimationDelay])
+                notify |= ApplyContext(ref m_AnimationDelay, in context);
             if (notify)
-                Notify(nameof(animationDelay));
+                Notify(StylePropertyId.AnimationDelay);
 
             notify = false;
-            notify |= SetInlineValue(ref m_AnimationDirection, element.style.animationDirection);
+            if (refreshInlineValues)
+                notify |= SetInlineValue(ref m_AnimationDirection, inlineStyle.animationDirection);
             notify |= SetComputedValue(ref m_AnimationDirection, element.computedStyle.animationDirection);
-            notify |= ApplyContext(ref m_AnimationDirection, in context);
+            if (context.uxmlDataChanged[(int)StylePropertyId.AnimationDirection])
+                notify |= ApplyContext(ref m_AnimationDirection, in context);
             if (notify)
-                Notify(nameof(animationDirection));
+                Notify(StylePropertyId.AnimationDirection);
 
             notify = false;
-            notify |= SetInlineValue(ref m_AnimationDuration, element.style.animationDuration);
+            if (refreshInlineValues)
+                notify |= SetInlineValue(ref m_AnimationDuration, inlineStyle.animationDuration);
             notify |= SetComputedValue(ref m_AnimationDuration, element.computedStyle.animationDuration);
-            notify |= ApplyContext(ref m_AnimationDuration, in context);
+            if (context.uxmlDataChanged[(int)StylePropertyId.AnimationDuration])
+                notify |= ApplyContext(ref m_AnimationDuration, in context);
             if (notify)
-                Notify(nameof(animationDuration));
+                Notify(StylePropertyId.AnimationDuration);
 
             notify = false;
-            notify |= SetInlineValue(ref m_AnimationIterationCount, element.style.animationIterationCount);
+            if (refreshInlineValues)
+                notify |= SetInlineValue(ref m_AnimationIterationCount, inlineStyle.animationIterationCount);
             notify |= SetComputedValue(ref m_AnimationIterationCount, element.computedStyle.animationIterationCount);
-            notify |= ApplyContext(ref m_AnimationIterationCount, in context);
+            if (context.uxmlDataChanged[(int)StylePropertyId.AnimationIterationCount])
+                notify |= ApplyContext(ref m_AnimationIterationCount, in context);
             if (notify)
-                Notify(nameof(animationIterationCount));
+                Notify(StylePropertyId.AnimationIterationCount);
 
             notify = false;
-            notify |= SetInlineValue(ref m_AnimationNames, element.style.animationNames);
+            if (refreshInlineValues)
+                notify |= SetInlineValue(ref m_AnimationNames, inlineStyle.animationNames);
             notify |= SetComputedValue(ref m_AnimationNames, element.computedStyle.animationNames);
-            notify |= ApplyContext(ref m_AnimationNames, in context);
+            if (context.uxmlDataChanged[(int)StylePropertyId.AnimationNames])
+                notify |= ApplyContext(ref m_AnimationNames, in context);
             if (notify)
-                Notify(nameof(animationNames));
+                Notify(StylePropertyId.AnimationNames);
 
             notify = false;
-            notify |= SetInlineValue(ref m_AnimationPlayStates, element.style.animationPlayStates);
+            if (refreshInlineValues)
+                notify |= SetInlineValue(ref m_AnimationPlayStates, inlineStyle.animationPlayStates);
             notify |= SetComputedValue(ref m_AnimationPlayStates, element.computedStyle.animationPlayStates);
-            notify |= ApplyContext(ref m_AnimationPlayStates, in context);
+            if (context.uxmlDataChanged[(int)StylePropertyId.AnimationPlayStates])
+                notify |= ApplyContext(ref m_AnimationPlayStates, in context);
             if (notify)
-                Notify(nameof(animationPlayStates));
+                Notify(StylePropertyId.AnimationPlayStates);
 
             notify = false;
-            notify |= SetInlineValue(ref m_AspectRatio, element.style.aspectRatio);
-            notify |= SetComputedValue(ref m_AspectRatio, element.computedStyle.aspectRatio);
-            notify |= ApplyContext(ref m_AspectRatio, in context);
+            if (refreshInlineValues)
+                notify |= SetInlineValue(ref m_AspectRatio, inlineStyle.aspectRatio);
+            if (!layoutDataUnchanged)
+                notify |= SetComputedValue(ref m_AspectRatio, element.computedStyle.aspectRatio);
+            if (context.uxmlDataChanged[(int)StylePropertyId.AspectRatio])
+                notify |= ApplyContext(ref m_AspectRatio, in context);
             if (notify)
-                Notify(nameof(aspectRatio));
+                Notify(StylePropertyId.AspectRatio);
 
             notify = false;
-            notify |= SetInlineValue(ref m_BackdropFilter, element.style.backdropFilter);
+            if (refreshInlineValues)
+                notify |= SetInlineValue(ref m_BackdropFilter, inlineStyle.backdropFilter);
             notify |= SetComputedValue(ref m_BackdropFilter, element.computedStyle.backdropFilter);
-            notify |= ApplyContext(ref m_BackdropFilter, in context);
+            if (context.uxmlDataChanged[(int)StylePropertyId.BackdropFilter])
+                notify |= ApplyContext(ref m_BackdropFilter, in context);
             if (notify)
-                Notify(nameof(backdropFilter));
+                Notify(StylePropertyId.BackdropFilter);
 
             notify = false;
-            notify |= SetInlineValue(ref m_BackgroundColor, element.style.backgroundColor);
-            notify |= SetComputedValue(ref m_BackgroundColor, element.computedStyle.backgroundColor);
-            notify |= ApplyContext(ref m_BackgroundColor, in context);
+            if (refreshInlineValues)
+                notify |= SetInlineValue(ref m_BackgroundColor, inlineStyle.backgroundColor);
+            if (!visualDataUnchanged)
+                notify |= SetComputedValue(ref m_BackgroundColor, element.computedStyle.backgroundColor);
+            if (context.uxmlDataChanged[(int)StylePropertyId.BackgroundColor])
+                notify |= ApplyContext(ref m_BackgroundColor, in context);
             if (notify)
-                Notify(nameof(backgroundColor));
+                Notify(StylePropertyId.BackgroundColor);
 
             notify = false;
-            notify |= SetInlineValue(ref m_BackgroundImage, element.style.backgroundImage);
-            notify |= SetComputedValue(ref m_BackgroundImage, Background.From(element.computedStyle.backgroundImage));
-            notify |= ApplyContext(ref m_BackgroundImage, in context);
+            if (refreshInlineValues)
+                notify |= SetInlineValue(ref m_BackgroundImage, inlineStyle.backgroundImage);
+            notify |= SetComputedValue(ref m_BackgroundImage, element.computedStyle.backgroundImage);
+            if (context.uxmlDataChanged[(int)StylePropertyId.BackgroundImage])
+                notify |= ApplyContext(ref m_BackgroundImage, in context);
             if (notify)
-                Notify(nameof(backgroundImage));
+                Notify(StylePropertyId.BackgroundImage);
 
             notify = false;
-            notify |= SetInlineValue(ref m_BackgroundPositionX, element.style.backgroundPositionX);
-            notify |= SetComputedValue(ref m_BackgroundPositionX, element.computedStyle.backgroundPositionX);
-            notify |= ApplyContext(ref m_BackgroundPositionX, in context);
+            if (refreshInlineValues)
+                notify |= SetInlineValue(ref m_BackgroundPositionX, inlineStyle.backgroundPositionX);
+            if (!visualDataUnchanged)
+                notify |= SetComputedValue(ref m_BackgroundPositionX, element.computedStyle.backgroundPositionX);
+            if (context.uxmlDataChanged[(int)StylePropertyId.BackgroundPositionX])
+                notify |= ApplyContext(ref m_BackgroundPositionX, in context);
             if (notify)
-                Notify(nameof(backgroundPositionX));
+                Notify(StylePropertyId.BackgroundPositionX);
 
             notify = false;
-            notify |= SetInlineValue(ref m_BackgroundPositionY, element.style.backgroundPositionY);
-            notify |= SetComputedValue(ref m_BackgroundPositionY, element.computedStyle.backgroundPositionY);
-            notify |= ApplyContext(ref m_BackgroundPositionY, in context);
+            if (refreshInlineValues)
+                notify |= SetInlineValue(ref m_BackgroundPositionY, inlineStyle.backgroundPositionY);
+            if (!visualDataUnchanged)
+                notify |= SetComputedValue(ref m_BackgroundPositionY, element.computedStyle.backgroundPositionY);
+            if (context.uxmlDataChanged[(int)StylePropertyId.BackgroundPositionY])
+                notify |= ApplyContext(ref m_BackgroundPositionY, in context);
             if (notify)
-                Notify(nameof(backgroundPositionY));
+                Notify(StylePropertyId.BackgroundPositionY);
 
             notify = false;
-            notify |= SetInlineValue(ref m_BackgroundRepeat, element.style.backgroundRepeat);
-            notify |= SetComputedValue(ref m_BackgroundRepeat, element.computedStyle.backgroundRepeat);
-            notify |= ApplyContext(ref m_BackgroundRepeat, in context);
+            if (refreshInlineValues)
+                notify |= SetInlineValue(ref m_BackgroundRepeat, inlineStyle.backgroundRepeat);
+            if (!visualDataUnchanged)
+                notify |= SetComputedValue(ref m_BackgroundRepeat, element.computedStyle.backgroundRepeat);
+            if (context.uxmlDataChanged[(int)StylePropertyId.BackgroundRepeat])
+                notify |= ApplyContext(ref m_BackgroundRepeat, in context);
             if (notify)
-                Notify(nameof(backgroundRepeat));
+                Notify(StylePropertyId.BackgroundRepeat);
 
             notify = false;
-            notify |= SetInlineValue(ref m_BackgroundSize, element.style.backgroundSize);
-            notify |= SetComputedValue(ref m_BackgroundSize, element.computedStyle.backgroundSize);
-            notify |= ApplyContext(ref m_BackgroundSize, in context);
+            if (refreshInlineValues)
+                notify |= SetInlineValue(ref m_BackgroundSize, inlineStyle.backgroundSize);
+            if (!visualDataUnchanged)
+                notify |= SetComputedValue(ref m_BackgroundSize, element.computedStyle.backgroundSize);
+            if (context.uxmlDataChanged[(int)StylePropertyId.BackgroundSize])
+                notify |= ApplyContext(ref m_BackgroundSize, in context);
             if (notify)
-                Notify(nameof(backgroundSize));
+                Notify(StylePropertyId.BackgroundSize);
 
             notify = false;
-            notify |= SetInlineValue(ref m_BorderBottomColor, element.style.borderBottomColor);
-            notify |= SetComputedValue(ref m_BorderBottomColor, element.computedStyle.borderBottomColor);
-            notify |= ApplyContext(ref m_BorderBottomColor, in context);
+            if (refreshInlineValues)
+                notify |= SetInlineValue(ref m_BorderBottomColor, inlineStyle.borderBottomColor);
+            if (!visualDataUnchanged)
+                notify |= SetComputedValue(ref m_BorderBottomColor, element.computedStyle.borderBottomColor);
+            if (context.uxmlDataChanged[(int)StylePropertyId.BorderBottomColor])
+                notify |= ApplyContext(ref m_BorderBottomColor, in context);
             if (notify)
-                Notify(nameof(borderBottomColor));
+                Notify(StylePropertyId.BorderBottomColor);
 
             notify = false;
-            notify |= SetInlineValue(ref m_BorderBottomLeftRadius, element.style.borderBottomLeftRadius);
-            notify |= SetComputedValue(ref m_BorderBottomLeftRadius, element.computedStyle.borderBottomLeftRadius);
-            notify |= ApplyContext(ref m_BorderBottomLeftRadius, in context);
+            if (refreshInlineValues)
+                notify |= SetInlineValue(ref m_BorderBottomLeftRadius, inlineStyle.borderBottomLeftRadius);
+            if (!visualDataUnchanged)
+                notify |= SetComputedValue(ref m_BorderBottomLeftRadius, element.computedStyle.borderBottomLeftRadius);
+            if (context.uxmlDataChanged[(int)StylePropertyId.BorderBottomLeftRadius])
+                notify |= ApplyContext(ref m_BorderBottomLeftRadius, in context);
             if (notify)
-                Notify(nameof(borderBottomLeftRadius));
+                Notify(StylePropertyId.BorderBottomLeftRadius);
 
             notify = false;
-            notify |= SetInlineValue(ref m_BorderBottomRightRadius, element.style.borderBottomRightRadius);
-            notify |= SetComputedValue(ref m_BorderBottomRightRadius, element.computedStyle.borderBottomRightRadius);
-            notify |= ApplyContext(ref m_BorderBottomRightRadius, in context);
+            if (refreshInlineValues)
+                notify |= SetInlineValue(ref m_BorderBottomRightRadius, inlineStyle.borderBottomRightRadius);
+            if (!visualDataUnchanged)
+                notify |= SetComputedValue(ref m_BorderBottomRightRadius, element.computedStyle.borderBottomRightRadius);
+            if (context.uxmlDataChanged[(int)StylePropertyId.BorderBottomRightRadius])
+                notify |= ApplyContext(ref m_BorderBottomRightRadius, in context);
             if (notify)
-                Notify(nameof(borderBottomRightRadius));
+                Notify(StylePropertyId.BorderBottomRightRadius);
 
             notify = false;
-            notify |= SetInlineValue(ref m_BorderBottomWidth, element.style.borderBottomWidth);
-            notify |= SetComputedValue(ref m_BorderBottomWidth, element.computedStyle.borderBottomWidth);
-            notify |= ApplyContext(ref m_BorderBottomWidth, in context);
+            if (refreshInlineValues)
+                notify |= SetInlineValue(ref m_BorderBottomWidth, inlineStyle.borderBottomWidth);
+            if (!layoutDataUnchanged)
+                notify |= SetComputedValue(ref m_BorderBottomWidth, element.computedStyle.borderBottomWidth);
+            if (context.uxmlDataChanged[(int)StylePropertyId.BorderBottomWidth])
+                notify |= ApplyContext(ref m_BorderBottomWidth, in context);
             if (notify)
-                Notify(nameof(borderBottomWidth));
+                Notify(StylePropertyId.BorderBottomWidth);
 
             notify = false;
-            notify |= SetInlineValue(ref m_BorderLeftColor, element.style.borderLeftColor);
-            notify |= SetComputedValue(ref m_BorderLeftColor, element.computedStyle.borderLeftColor);
-            notify |= ApplyContext(ref m_BorderLeftColor, in context);
+            if (refreshInlineValues)
+                notify |= SetInlineValue(ref m_BorderLeftColor, inlineStyle.borderLeftColor);
+            if (!visualDataUnchanged)
+                notify |= SetComputedValue(ref m_BorderLeftColor, element.computedStyle.borderLeftColor);
+            if (context.uxmlDataChanged[(int)StylePropertyId.BorderLeftColor])
+                notify |= ApplyContext(ref m_BorderLeftColor, in context);
             if (notify)
-                Notify(nameof(borderLeftColor));
+                Notify(StylePropertyId.BorderLeftColor);
 
             notify = false;
-            notify |= SetInlineValue(ref m_BorderLeftWidth, element.style.borderLeftWidth);
-            notify |= SetComputedValue(ref m_BorderLeftWidth, element.computedStyle.borderLeftWidth);
-            notify |= ApplyContext(ref m_BorderLeftWidth, in context);
+            if (refreshInlineValues)
+                notify |= SetInlineValue(ref m_BorderLeftWidth, inlineStyle.borderLeftWidth);
+            if (!layoutDataUnchanged)
+                notify |= SetComputedValue(ref m_BorderLeftWidth, element.computedStyle.borderLeftWidth);
+            if (context.uxmlDataChanged[(int)StylePropertyId.BorderLeftWidth])
+                notify |= ApplyContext(ref m_BorderLeftWidth, in context);
             if (notify)
-                Notify(nameof(borderLeftWidth));
+                Notify(StylePropertyId.BorderLeftWidth);
 
             notify = false;
-            notify |= SetInlineValue(ref m_BorderRightColor, element.style.borderRightColor);
-            notify |= SetComputedValue(ref m_BorderRightColor, element.computedStyle.borderRightColor);
-            notify |= ApplyContext(ref m_BorderRightColor, in context);
+            if (refreshInlineValues)
+                notify |= SetInlineValue(ref m_BorderRightColor, inlineStyle.borderRightColor);
+            if (!visualDataUnchanged)
+                notify |= SetComputedValue(ref m_BorderRightColor, element.computedStyle.borderRightColor);
+            if (context.uxmlDataChanged[(int)StylePropertyId.BorderRightColor])
+                notify |= ApplyContext(ref m_BorderRightColor, in context);
             if (notify)
-                Notify(nameof(borderRightColor));
+                Notify(StylePropertyId.BorderRightColor);
 
             notify = false;
-            notify |= SetInlineValue(ref m_BorderRightWidth, element.style.borderRightWidth);
-            notify |= SetComputedValue(ref m_BorderRightWidth, element.computedStyle.borderRightWidth);
-            notify |= ApplyContext(ref m_BorderRightWidth, in context);
+            if (refreshInlineValues)
+                notify |= SetInlineValue(ref m_BorderRightWidth, inlineStyle.borderRightWidth);
+            if (!layoutDataUnchanged)
+                notify |= SetComputedValue(ref m_BorderRightWidth, element.computedStyle.borderRightWidth);
+            if (context.uxmlDataChanged[(int)StylePropertyId.BorderRightWidth])
+                notify |= ApplyContext(ref m_BorderRightWidth, in context);
             if (notify)
-                Notify(nameof(borderRightWidth));
+                Notify(StylePropertyId.BorderRightWidth);
 
             notify = false;
-            notify |= SetInlineValue(ref m_BorderTopColor, element.style.borderTopColor);
-            notify |= SetComputedValue(ref m_BorderTopColor, element.computedStyle.borderTopColor);
-            notify |= ApplyContext(ref m_BorderTopColor, in context);
+            if (refreshInlineValues)
+                notify |= SetInlineValue(ref m_BorderTopColor, inlineStyle.borderTopColor);
+            if (!visualDataUnchanged)
+                notify |= SetComputedValue(ref m_BorderTopColor, element.computedStyle.borderTopColor);
+            if (context.uxmlDataChanged[(int)StylePropertyId.BorderTopColor])
+                notify |= ApplyContext(ref m_BorderTopColor, in context);
             if (notify)
-                Notify(nameof(borderTopColor));
+                Notify(StylePropertyId.BorderTopColor);
 
             notify = false;
-            notify |= SetInlineValue(ref m_BorderTopLeftRadius, element.style.borderTopLeftRadius);
-            notify |= SetComputedValue(ref m_BorderTopLeftRadius, element.computedStyle.borderTopLeftRadius);
-            notify |= ApplyContext(ref m_BorderTopLeftRadius, in context);
+            if (refreshInlineValues)
+                notify |= SetInlineValue(ref m_BorderTopLeftRadius, inlineStyle.borderTopLeftRadius);
+            if (!visualDataUnchanged)
+                notify |= SetComputedValue(ref m_BorderTopLeftRadius, element.computedStyle.borderTopLeftRadius);
+            if (context.uxmlDataChanged[(int)StylePropertyId.BorderTopLeftRadius])
+                notify |= ApplyContext(ref m_BorderTopLeftRadius, in context);
             if (notify)
-                Notify(nameof(borderTopLeftRadius));
+                Notify(StylePropertyId.BorderTopLeftRadius);
 
             notify = false;
-            notify |= SetInlineValue(ref m_BorderTopRightRadius, element.style.borderTopRightRadius);
-            notify |= SetComputedValue(ref m_BorderTopRightRadius, element.computedStyle.borderTopRightRadius);
-            notify |= ApplyContext(ref m_BorderTopRightRadius, in context);
+            if (refreshInlineValues)
+                notify |= SetInlineValue(ref m_BorderTopRightRadius, inlineStyle.borderTopRightRadius);
+            if (!visualDataUnchanged)
+                notify |= SetComputedValue(ref m_BorderTopRightRadius, element.computedStyle.borderTopRightRadius);
+            if (context.uxmlDataChanged[(int)StylePropertyId.BorderTopRightRadius])
+                notify |= ApplyContext(ref m_BorderTopRightRadius, in context);
             if (notify)
-                Notify(nameof(borderTopRightRadius));
+                Notify(StylePropertyId.BorderTopRightRadius);
 
             notify = false;
-            notify |= SetInlineValue(ref m_BorderTopWidth, element.style.borderTopWidth);
-            notify |= SetComputedValue(ref m_BorderTopWidth, element.computedStyle.borderTopWidth);
-            notify |= ApplyContext(ref m_BorderTopWidth, in context);
+            if (refreshInlineValues)
+                notify |= SetInlineValue(ref m_BorderTopWidth, inlineStyle.borderTopWidth);
+            if (!layoutDataUnchanged)
+                notify |= SetComputedValue(ref m_BorderTopWidth, element.computedStyle.borderTopWidth);
+            if (context.uxmlDataChanged[(int)StylePropertyId.BorderTopWidth])
+                notify |= ApplyContext(ref m_BorderTopWidth, in context);
             if (notify)
-                Notify(nameof(borderTopWidth));
+                Notify(StylePropertyId.BorderTopWidth);
 
             notify = false;
-            notify |= SetInlineValue(ref m_Bottom, element.style.bottom);
-            notify |= SetComputedValue(ref m_Bottom, element.computedStyle.bottom);
-            notify |= ApplyContext(ref m_Bottom, in context);
+            if (refreshInlineValues)
+                notify |= SetInlineValue(ref m_Bottom, inlineStyle.bottom);
+            if (!layoutDataUnchanged)
+                notify |= SetComputedValue(ref m_Bottom, element.computedStyle.bottom);
+            if (context.uxmlDataChanged[(int)StylePropertyId.Bottom])
+                notify |= ApplyContext(ref m_Bottom, in context);
             if (notify)
-                Notify(nameof(bottom));
+                Notify(StylePropertyId.Bottom);
 
             notify = false;
-            notify |= SetInlineValue(ref m_BoxShadow, element.style.boxShadow);
-            notify |= SetComputedValue(ref m_BoxShadow, element.computedStyle.boxShadow);
-            notify |= ApplyContext(ref m_BoxShadow, in context);
+            if (refreshInlineValues)
+                notify |= SetInlineValue(ref m_BoxShadow, inlineStyle.boxShadow);
+            if (!rareDataUnchanged)
+                notify |= SetComputedValue(ref m_BoxShadow, element.computedStyle.boxShadow);
+            if (context.uxmlDataChanged[(int)StylePropertyId.BoxShadow])
+                notify |= ApplyContext(ref m_BoxShadow, in context);
             if (notify)
-                Notify(nameof(boxShadow));
+                Notify(StylePropertyId.BoxShadow);
 
             notify = false;
-            notify |= SetInlineValue(ref m_Color, element.style.color);
-            notify |= SetComputedValue(ref m_Color, element.computedStyle.color);
-            notify |= ApplyContext(ref m_Color, in context);
+            if (refreshInlineValues)
+                notify |= SetInlineValue(ref m_Color, inlineStyle.color);
+            if (!inheritedDataUnchanged)
+                notify |= SetComputedValue(ref m_Color, element.computedStyle.color);
+            if (context.uxmlDataChanged[(int)StylePropertyId.Color])
+                notify |= ApplyContext(ref m_Color, in context);
             if (notify)
-                Notify(nameof(color));
+                Notify(StylePropertyId.Color);
 
             notify = false;
-            notify |= SetInlineValue(ref m_ColumnGap, element.style.columnGap);
-            notify |= SetComputedValue(ref m_ColumnGap, element.computedStyle.columnGap);
-            notify |= ApplyContext(ref m_ColumnGap, in context);
+            if (refreshInlineValues)
+                notify |= SetInlineValue(ref m_ColumnGap, inlineStyle.columnGap);
+            if (!layoutDataUnchanged)
+                notify |= SetComputedValue(ref m_ColumnGap, element.computedStyle.columnGap);
+            if (context.uxmlDataChanged[(int)StylePropertyId.ColumnGap])
+                notify |= ApplyContext(ref m_ColumnGap, in context);
             if (notify)
-                Notify(nameof(columnGap));
+                Notify(StylePropertyId.ColumnGap);
 
             notify = false;
-            notify |= SetInlineValue(ref m_Cursor, element.style.cursor);
-            notify |= SetComputedValue(ref m_Cursor, element.computedStyle.cursor);
-            notify |= ApplyContext(ref m_Cursor, in context);
+            if (refreshInlineValues)
+                notify |= SetInlineValue(ref m_Cursor, inlineStyle.cursor);
+            if (!rareDataUnchanged)
+                notify |= SetComputedValue(ref m_Cursor, element.computedStyle.cursor);
+            if (context.uxmlDataChanged[(int)StylePropertyId.Cursor])
+                notify |= ApplyContext(ref m_Cursor, in context);
             if (notify)
-                Notify(nameof(cursor));
+                Notify(StylePropertyId.Cursor);
 
             notify = false;
-            notify |= SetInlineValue(ref m_Display, element.style.display);
-            notify |= SetComputedValue(ref m_Display, element.computedStyle.display);
-            notify |= ApplyContext(ref m_Display, in context);
+            if (refreshInlineValues)
+                notify |= SetInlineValue(ref m_Display, inlineStyle.display);
+            if (!layoutDataUnchanged)
+                notify |= SetComputedValue(ref m_Display, element.computedStyle.display);
+            if (context.uxmlDataChanged[(int)StylePropertyId.Display])
+                notify |= ApplyContext(ref m_Display, in context);
             if (notify)
-                Notify(nameof(display));
+                Notify(StylePropertyId.Display);
 
             notify = false;
-            notify |= SetInlineValue(ref m_Filter, element.style.filter);
+            if (refreshInlineValues)
+                notify |= SetInlineValue(ref m_Filter, inlineStyle.filter);
             notify |= SetComputedValue(ref m_Filter, element.computedStyle.filter);
-            notify |= ApplyContext(ref m_Filter, in context);
+            if (context.uxmlDataChanged[(int)StylePropertyId.Filter])
+                notify |= ApplyContext(ref m_Filter, in context);
             if (notify)
-                Notify(nameof(filter));
+                Notify(StylePropertyId.Filter);
 
             notify = false;
-            notify |= SetInlineValue(ref m_FlexBasis, element.style.flexBasis);
-            notify |= SetComputedValue(ref m_FlexBasis, element.computedStyle.flexBasis);
-            notify |= ApplyContext(ref m_FlexBasis, in context);
+            if (refreshInlineValues)
+                notify |= SetInlineValue(ref m_FlexBasis, inlineStyle.flexBasis);
+            if (!layoutDataUnchanged)
+                notify |= SetComputedValue(ref m_FlexBasis, element.computedStyle.flexBasis);
+            if (context.uxmlDataChanged[(int)StylePropertyId.FlexBasis])
+                notify |= ApplyContext(ref m_FlexBasis, in context);
             if (notify)
-                Notify(nameof(flexBasis));
+                Notify(StylePropertyId.FlexBasis);
 
             notify = false;
-            notify |= SetInlineValue(ref m_FlexDirection, element.style.flexDirection);
-            notify |= SetComputedValue(ref m_FlexDirection, element.computedStyle.flexDirection);
-            notify |= ApplyContext(ref m_FlexDirection, in context);
+            if (refreshInlineValues)
+                notify |= SetInlineValue(ref m_FlexDirection, inlineStyle.flexDirection);
+            if (!layoutDataUnchanged)
+                notify |= SetComputedValue(ref m_FlexDirection, element.computedStyle.flexDirection);
+            if (context.uxmlDataChanged[(int)StylePropertyId.FlexDirection])
+                notify |= ApplyContext(ref m_FlexDirection, in context);
             if (notify)
-                Notify(nameof(flexDirection));
+                Notify(StylePropertyId.FlexDirection);
 
             notify = false;
-            notify |= SetInlineValue(ref m_FlexGrow, element.style.flexGrow);
-            notify |= SetComputedValue(ref m_FlexGrow, element.computedStyle.flexGrow);
-            notify |= ApplyContext(ref m_FlexGrow, in context);
+            if (refreshInlineValues)
+                notify |= SetInlineValue(ref m_FlexGrow, inlineStyle.flexGrow);
+            if (!layoutDataUnchanged)
+                notify |= SetComputedValue(ref m_FlexGrow, element.computedStyle.flexGrow);
+            if (context.uxmlDataChanged[(int)StylePropertyId.FlexGrow])
+                notify |= ApplyContext(ref m_FlexGrow, in context);
             if (notify)
-                Notify(nameof(flexGrow));
+                Notify(StylePropertyId.FlexGrow);
 
             notify = false;
-            notify |= SetInlineValue(ref m_FlexShrink, element.style.flexShrink);
-            notify |= SetComputedValue(ref m_FlexShrink, element.computedStyle.flexShrink);
-            notify |= ApplyContext(ref m_FlexShrink, in context);
+            if (refreshInlineValues)
+                notify |= SetInlineValue(ref m_FlexShrink, inlineStyle.flexShrink);
+            if (!layoutDataUnchanged)
+                notify |= SetComputedValue(ref m_FlexShrink, element.computedStyle.flexShrink);
+            if (context.uxmlDataChanged[(int)StylePropertyId.FlexShrink])
+                notify |= ApplyContext(ref m_FlexShrink, in context);
             if (notify)
-                Notify(nameof(flexShrink));
+                Notify(StylePropertyId.FlexShrink);
 
             notify = false;
-            notify |= SetInlineValue(ref m_FlexWrap, element.style.flexWrap);
-            notify |= SetComputedValue(ref m_FlexWrap, element.computedStyle.flexWrap);
-            notify |= ApplyContext(ref m_FlexWrap, in context);
+            if (refreshInlineValues)
+                notify |= SetInlineValue(ref m_FlexWrap, inlineStyle.flexWrap);
+            if (!layoutDataUnchanged)
+                notify |= SetComputedValue(ref m_FlexWrap, element.computedStyle.flexWrap);
+            if (context.uxmlDataChanged[(int)StylePropertyId.FlexWrap])
+                notify |= ApplyContext(ref m_FlexWrap, in context);
             if (notify)
-                Notify(nameof(flexWrap));
+                Notify(StylePropertyId.FlexWrap);
 
             notify = false;
-            notify |= SetInlineValue(ref m_FontSize, element.style.fontSize);
-            notify |= SetComputedValue(ref m_FontSize, element.computedStyle.fontSize);
-            notify |= ApplyContext(ref m_FontSize, in context);
+            if (refreshInlineValues)
+                notify |= SetInlineValue(ref m_FontSize, inlineStyle.fontSize);
+            if (!inheritedDataUnchanged)
+                notify |= SetComputedValue(ref m_FontSize, element.computedStyle.fontSize);
+            if (context.uxmlDataChanged[(int)StylePropertyId.FontSize])
+                notify |= ApplyContext(ref m_FontSize, in context);
             if (notify)
-                Notify(nameof(fontSize));
+                Notify(StylePropertyId.FontSize);
 
             notify = false;
-            notify |= SetInlineValue(ref m_GridAutoColumns, element.style.gridAutoColumns);
+            if (refreshInlineValues)
+                notify |= SetInlineValue(ref m_GridAutoColumns, inlineStyle.gridAutoColumns);
             notify |= SetComputedValue(ref m_GridAutoColumns, element.computedStyle.gridAutoColumns);
-            notify |= ApplyContext(ref m_GridAutoColumns, in context);
+            if (context.uxmlDataChanged[(int)StylePropertyId.GridAutoColumns])
+                notify |= ApplyContext(ref m_GridAutoColumns, in context);
             if (notify)
-                Notify(nameof(gridAutoColumns));
+                Notify(StylePropertyId.GridAutoColumns);
 
             notify = false;
-            notify |= SetInlineValue(ref m_GridAutoFlow, element.style.gridAutoFlow);
-            notify |= SetComputedValue(ref m_GridAutoFlow, element.computedStyle.gridAutoFlow);
-            notify |= ApplyContext(ref m_GridAutoFlow, in context);
+            if (refreshInlineValues)
+                notify |= SetInlineValue(ref m_GridAutoFlow, inlineStyle.gridAutoFlow);
+            if (!gridDataUnchanged)
+                notify |= SetComputedValue(ref m_GridAutoFlow, element.computedStyle.gridAutoFlow);
+            if (context.uxmlDataChanged[(int)StylePropertyId.GridAutoFlow])
+                notify |= ApplyContext(ref m_GridAutoFlow, in context);
             if (notify)
-                Notify(nameof(gridAutoFlow));
+                Notify(StylePropertyId.GridAutoFlow);
 
             notify = false;
-            notify |= SetInlineValue(ref m_GridAutoRows, element.style.gridAutoRows);
+            if (refreshInlineValues)
+                notify |= SetInlineValue(ref m_GridAutoRows, inlineStyle.gridAutoRows);
             notify |= SetComputedValue(ref m_GridAutoRows, element.computedStyle.gridAutoRows);
-            notify |= ApplyContext(ref m_GridAutoRows, in context);
+            if (context.uxmlDataChanged[(int)StylePropertyId.GridAutoRows])
+                notify |= ApplyContext(ref m_GridAutoRows, in context);
             if (notify)
-                Notify(nameof(gridAutoRows));
+                Notify(StylePropertyId.GridAutoRows);
 
             notify = false;
-            notify |= SetInlineValue(ref m_GridColumnEnd, element.style.gridColumnEnd);
-            notify |= SetComputedValue(ref m_GridColumnEnd, element.computedStyle.gridColumnEnd);
-            notify |= ApplyContext(ref m_GridColumnEnd, in context);
+            if (refreshInlineValues)
+                notify |= SetInlineValue(ref m_GridColumnEnd, inlineStyle.gridColumnEnd);
+            if (!gridDataUnchanged)
+                notify |= SetComputedValue(ref m_GridColumnEnd, element.computedStyle.gridColumnEnd);
+            if (context.uxmlDataChanged[(int)StylePropertyId.GridColumnEnd])
+                notify |= ApplyContext(ref m_GridColumnEnd, in context);
             if (notify)
-                Notify(nameof(gridColumnEnd));
+                Notify(StylePropertyId.GridColumnEnd);
 
             notify = false;
-            notify |= SetInlineValue(ref m_GridColumnStart, element.style.gridColumnStart);
-            notify |= SetComputedValue(ref m_GridColumnStart, element.computedStyle.gridColumnStart);
-            notify |= ApplyContext(ref m_GridColumnStart, in context);
+            if (refreshInlineValues)
+                notify |= SetInlineValue(ref m_GridColumnStart, inlineStyle.gridColumnStart);
+            if (!gridDataUnchanged)
+                notify |= SetComputedValue(ref m_GridColumnStart, element.computedStyle.gridColumnStart);
+            if (context.uxmlDataChanged[(int)StylePropertyId.GridColumnStart])
+                notify |= ApplyContext(ref m_GridColumnStart, in context);
             if (notify)
-                Notify(nameof(gridColumnStart));
+                Notify(StylePropertyId.GridColumnStart);
 
             notify = false;
-            notify |= SetInlineValue(ref m_GridRowEnd, element.style.gridRowEnd);
-            notify |= SetComputedValue(ref m_GridRowEnd, element.computedStyle.gridRowEnd);
-            notify |= ApplyContext(ref m_GridRowEnd, in context);
+            if (refreshInlineValues)
+                notify |= SetInlineValue(ref m_GridRowEnd, inlineStyle.gridRowEnd);
+            if (!gridDataUnchanged)
+                notify |= SetComputedValue(ref m_GridRowEnd, element.computedStyle.gridRowEnd);
+            if (context.uxmlDataChanged[(int)StylePropertyId.GridRowEnd])
+                notify |= ApplyContext(ref m_GridRowEnd, in context);
             if (notify)
-                Notify(nameof(gridRowEnd));
+                Notify(StylePropertyId.GridRowEnd);
 
             notify = false;
-            notify |= SetInlineValue(ref m_GridRowStart, element.style.gridRowStart);
-            notify |= SetComputedValue(ref m_GridRowStart, element.computedStyle.gridRowStart);
-            notify |= ApplyContext(ref m_GridRowStart, in context);
+            if (refreshInlineValues)
+                notify |= SetInlineValue(ref m_GridRowStart, inlineStyle.gridRowStart);
+            if (!gridDataUnchanged)
+                notify |= SetComputedValue(ref m_GridRowStart, element.computedStyle.gridRowStart);
+            if (context.uxmlDataChanged[(int)StylePropertyId.GridRowStart])
+                notify |= ApplyContext(ref m_GridRowStart, in context);
             if (notify)
-                Notify(nameof(gridRowStart));
+                Notify(StylePropertyId.GridRowStart);
 
             notify = false;
-            notify |= SetInlineValue(ref m_GridTemplateColumns, element.style.gridTemplateColumns);
+            if (refreshInlineValues)
+                notify |= SetInlineValue(ref m_GridTemplateColumns, inlineStyle.gridTemplateColumns);
             notify |= SetComputedValue(ref m_GridTemplateColumns, element.computedStyle.gridTemplateColumns);
-            notify |= ApplyContext(ref m_GridTemplateColumns, in context);
+            if (context.uxmlDataChanged[(int)StylePropertyId.GridTemplateColumns])
+                notify |= ApplyContext(ref m_GridTemplateColumns, in context);
             if (notify)
-                Notify(nameof(gridTemplateColumns));
+                Notify(StylePropertyId.GridTemplateColumns);
 
             notify = false;
-            notify |= SetInlineValue(ref m_GridTemplateRows, element.style.gridTemplateRows);
+            if (refreshInlineValues)
+                notify |= SetInlineValue(ref m_GridTemplateRows, inlineStyle.gridTemplateRows);
             notify |= SetComputedValue(ref m_GridTemplateRows, element.computedStyle.gridTemplateRows);
-            notify |= ApplyContext(ref m_GridTemplateRows, in context);
+            if (context.uxmlDataChanged[(int)StylePropertyId.GridTemplateRows])
+                notify |= ApplyContext(ref m_GridTemplateRows, in context);
             if (notify)
-                Notify(nameof(gridTemplateRows));
+                Notify(StylePropertyId.GridTemplateRows);
 
             notify = false;
-            notify |= SetInlineValue(ref m_Height, element.style.height);
-            notify |= SetComputedValue(ref m_Height, element.computedStyle.height);
-            notify |= ApplyContext(ref m_Height, in context);
+            if (refreshInlineValues)
+                notify |= SetInlineValue(ref m_Height, inlineStyle.height);
+            if (!layoutDataUnchanged)
+                notify |= SetComputedValue(ref m_Height, element.computedStyle.height);
+            if (context.uxmlDataChanged[(int)StylePropertyId.Height])
+                notify |= ApplyContext(ref m_Height, in context);
             if (notify)
-                Notify(nameof(height));
+                Notify(StylePropertyId.Height);
 
             notify = false;
-            notify |= SetInlineValue(ref m_JustifyContent, element.style.justifyContent);
-            notify |= SetComputedValue(ref m_JustifyContent, element.computedStyle.justifyContent);
-            notify |= ApplyContext(ref m_JustifyContent, in context);
+            if (refreshInlineValues)
+                notify |= SetInlineValue(ref m_JustifyContent, inlineStyle.justifyContent);
+            if (!layoutDataUnchanged)
+                notify |= SetComputedValue(ref m_JustifyContent, element.computedStyle.justifyContent);
+            if (context.uxmlDataChanged[(int)StylePropertyId.JustifyContent])
+                notify |= ApplyContext(ref m_JustifyContent, in context);
             if (notify)
-                Notify(nameof(justifyContent));
+                Notify(StylePropertyId.JustifyContent);
 
             notify = false;
-            notify |= SetInlineValue(ref m_JustifyItems, element.style.justifyItems);
-            notify |= SetComputedValue(ref m_JustifyItems, element.computedStyle.justifyItems);
-            notify |= ApplyContext(ref m_JustifyItems, in context);
+            if (refreshInlineValues)
+                notify |= SetInlineValue(ref m_JustifyItems, inlineStyle.justifyItems);
+            if (!gridDataUnchanged)
+                notify |= SetComputedValue(ref m_JustifyItems, element.computedStyle.justifyItems);
+            if (context.uxmlDataChanged[(int)StylePropertyId.JustifyItems])
+                notify |= ApplyContext(ref m_JustifyItems, in context);
             if (notify)
-                Notify(nameof(justifyItems));
+                Notify(StylePropertyId.JustifyItems);
 
             notify = false;
-            notify |= SetInlineValue(ref m_JustifySelf, element.style.justifySelf);
-            notify |= SetComputedValue(ref m_JustifySelf, element.computedStyle.justifySelf);
-            notify |= ApplyContext(ref m_JustifySelf, in context);
+            if (refreshInlineValues)
+                notify |= SetInlineValue(ref m_JustifySelf, inlineStyle.justifySelf);
+            if (!gridDataUnchanged)
+                notify |= SetComputedValue(ref m_JustifySelf, element.computedStyle.justifySelf);
+            if (context.uxmlDataChanged[(int)StylePropertyId.JustifySelf])
+                notify |= ApplyContext(ref m_JustifySelf, in context);
             if (notify)
-                Notify(nameof(justifySelf));
+                Notify(StylePropertyId.JustifySelf);
 
             notify = false;
-            notify |= SetInlineValue(ref m_Left, element.style.left);
-            notify |= SetComputedValue(ref m_Left, element.computedStyle.left);
-            notify |= ApplyContext(ref m_Left, in context);
+            if (refreshInlineValues)
+                notify |= SetInlineValue(ref m_Left, inlineStyle.left);
+            if (!layoutDataUnchanged)
+                notify |= SetComputedValue(ref m_Left, element.computedStyle.left);
+            if (context.uxmlDataChanged[(int)StylePropertyId.Left])
+                notify |= ApplyContext(ref m_Left, in context);
             if (notify)
-                Notify(nameof(left));
+                Notify(StylePropertyId.Left);
 
             notify = false;
-            notify |= SetInlineValue(ref m_LetterSpacing, element.style.letterSpacing);
-            notify |= SetComputedValue(ref m_LetterSpacing, element.computedStyle.letterSpacing);
-            notify |= ApplyContext(ref m_LetterSpacing, in context);
+            if (refreshInlineValues)
+                notify |= SetInlineValue(ref m_LetterSpacing, inlineStyle.letterSpacing);
+            if (!inheritedDataUnchanged)
+                notify |= SetComputedValue(ref m_LetterSpacing, element.computedStyle.letterSpacing);
+            if (context.uxmlDataChanged[(int)StylePropertyId.LetterSpacing])
+                notify |= ApplyContext(ref m_LetterSpacing, in context);
             if (notify)
-                Notify(nameof(letterSpacing));
+                Notify(StylePropertyId.LetterSpacing);
 
             notify = false;
-            notify |= SetInlineValue(ref m_MarginBottom, element.style.marginBottom);
-            notify |= SetComputedValue(ref m_MarginBottom, element.computedStyle.marginBottom);
-            notify |= ApplyContext(ref m_MarginBottom, in context);
+            if (refreshInlineValues)
+                notify |= SetInlineValue(ref m_MarginBottom, inlineStyle.marginBottom);
+            if (!layoutDataUnchanged)
+                notify |= SetComputedValue(ref m_MarginBottom, element.computedStyle.marginBottom);
+            if (context.uxmlDataChanged[(int)StylePropertyId.MarginBottom])
+                notify |= ApplyContext(ref m_MarginBottom, in context);
             if (notify)
-                Notify(nameof(marginBottom));
+                Notify(StylePropertyId.MarginBottom);
 
             notify = false;
-            notify |= SetInlineValue(ref m_MarginLeft, element.style.marginLeft);
-            notify |= SetComputedValue(ref m_MarginLeft, element.computedStyle.marginLeft);
-            notify |= ApplyContext(ref m_MarginLeft, in context);
+            if (refreshInlineValues)
+                notify |= SetInlineValue(ref m_MarginLeft, inlineStyle.marginLeft);
+            if (!layoutDataUnchanged)
+                notify |= SetComputedValue(ref m_MarginLeft, element.computedStyle.marginLeft);
+            if (context.uxmlDataChanged[(int)StylePropertyId.MarginLeft])
+                notify |= ApplyContext(ref m_MarginLeft, in context);
             if (notify)
-                Notify(nameof(marginLeft));
+                Notify(StylePropertyId.MarginLeft);
 
             notify = false;
-            notify |= SetInlineValue(ref m_MarginRight, element.style.marginRight);
-            notify |= SetComputedValue(ref m_MarginRight, element.computedStyle.marginRight);
-            notify |= ApplyContext(ref m_MarginRight, in context);
+            if (refreshInlineValues)
+                notify |= SetInlineValue(ref m_MarginRight, inlineStyle.marginRight);
+            if (!layoutDataUnchanged)
+                notify |= SetComputedValue(ref m_MarginRight, element.computedStyle.marginRight);
+            if (context.uxmlDataChanged[(int)StylePropertyId.MarginRight])
+                notify |= ApplyContext(ref m_MarginRight, in context);
             if (notify)
-                Notify(nameof(marginRight));
+                Notify(StylePropertyId.MarginRight);
 
             notify = false;
-            notify |= SetInlineValue(ref m_MarginTop, element.style.marginTop);
-            notify |= SetComputedValue(ref m_MarginTop, element.computedStyle.marginTop);
-            notify |= ApplyContext(ref m_MarginTop, in context);
+            if (refreshInlineValues)
+                notify |= SetInlineValue(ref m_MarginTop, inlineStyle.marginTop);
+            if (!layoutDataUnchanged)
+                notify |= SetComputedValue(ref m_MarginTop, element.computedStyle.marginTop);
+            if (context.uxmlDataChanged[(int)StylePropertyId.MarginTop])
+                notify |= ApplyContext(ref m_MarginTop, in context);
             if (notify)
-                Notify(nameof(marginTop));
+                Notify(StylePropertyId.MarginTop);
 
             notify = false;
-            notify |= SetInlineValue(ref m_MaxHeight, element.style.maxHeight);
-            notify |= SetComputedValue(ref m_MaxHeight, element.computedStyle.maxHeight);
-            notify |= ApplyContext(ref m_MaxHeight, in context);
+            if (refreshInlineValues)
+                notify |= SetInlineValue(ref m_MaxHeight, inlineStyle.maxHeight);
+            if (!layoutDataUnchanged)
+                notify |= SetComputedValue(ref m_MaxHeight, element.computedStyle.maxHeight);
+            if (context.uxmlDataChanged[(int)StylePropertyId.MaxHeight])
+                notify |= ApplyContext(ref m_MaxHeight, in context);
             if (notify)
-                Notify(nameof(maxHeight));
+                Notify(StylePropertyId.MaxHeight);
 
             notify = false;
-            notify |= SetInlineValue(ref m_MaxWidth, element.style.maxWidth);
-            notify |= SetComputedValue(ref m_MaxWidth, element.computedStyle.maxWidth);
-            notify |= ApplyContext(ref m_MaxWidth, in context);
+            if (refreshInlineValues)
+                notify |= SetInlineValue(ref m_MaxWidth, inlineStyle.maxWidth);
+            if (!layoutDataUnchanged)
+                notify |= SetComputedValue(ref m_MaxWidth, element.computedStyle.maxWidth);
+            if (context.uxmlDataChanged[(int)StylePropertyId.MaxWidth])
+                notify |= ApplyContext(ref m_MaxWidth, in context);
             if (notify)
-                Notify(nameof(maxWidth));
+                Notify(StylePropertyId.MaxWidth);
 
             notify = false;
-            notify |= SetInlineValue(ref m_MinHeight, element.style.minHeight);
-            notify |= SetComputedValue(ref m_MinHeight, element.computedStyle.minHeight);
-            notify |= ApplyContext(ref m_MinHeight, in context);
+            if (refreshInlineValues)
+                notify |= SetInlineValue(ref m_MinHeight, inlineStyle.minHeight);
+            if (!layoutDataUnchanged)
+                notify |= SetComputedValue(ref m_MinHeight, element.computedStyle.minHeight);
+            if (context.uxmlDataChanged[(int)StylePropertyId.MinHeight])
+                notify |= ApplyContext(ref m_MinHeight, in context);
             if (notify)
-                Notify(nameof(minHeight));
+                Notify(StylePropertyId.MinHeight);
 
             notify = false;
-            notify |= SetInlineValue(ref m_MinWidth, element.style.minWidth);
-            notify |= SetComputedValue(ref m_MinWidth, element.computedStyle.minWidth);
-            notify |= ApplyContext(ref m_MinWidth, in context);
+            if (refreshInlineValues)
+                notify |= SetInlineValue(ref m_MinWidth, inlineStyle.minWidth);
+            if (!layoutDataUnchanged)
+                notify |= SetComputedValue(ref m_MinWidth, element.computedStyle.minWidth);
+            if (context.uxmlDataChanged[(int)StylePropertyId.MinWidth])
+                notify |= ApplyContext(ref m_MinWidth, in context);
             if (notify)
-                Notify(nameof(minWidth));
+                Notify(StylePropertyId.MinWidth);
 
             notify = false;
-            notify |= SetInlineValue(ref m_Opacity, element.style.opacity);
-            notify |= SetComputedValue(ref m_Opacity, element.computedStyle.opacity);
-            notify |= ApplyContext(ref m_Opacity, in context);
+            if (refreshInlineValues)
+                notify |= SetInlineValue(ref m_Opacity, inlineStyle.opacity);
+            if (!visualDataUnchanged)
+                notify |= SetComputedValue(ref m_Opacity, element.computedStyle.opacity);
+            if (context.uxmlDataChanged[(int)StylePropertyId.Opacity])
+                notify |= ApplyContext(ref m_Opacity, in context);
             if (notify)
-                Notify(nameof(opacity));
+                Notify(StylePropertyId.Opacity);
 
             notify = false;
-            notify |= SetInlineValue(ref m_Overflow, element.style.overflow);
-            notify |= SetComputedValue(ref m_Overflow, element.computedStyle.overflow);
-            notify |= ApplyContext(ref m_Overflow, in context);
+            if (refreshInlineValues)
+                notify |= SetInlineValue(ref m_Overflow, inlineStyle.overflow);
+            if (!layoutDataUnchanged)
+                notify |= SetComputedValue(ref m_Overflow, element.computedStyle.overflow);
+            if (context.uxmlDataChanged[(int)StylePropertyId.Overflow])
+                notify |= ApplyContext(ref m_Overflow, in context);
             if (notify)
-                Notify(nameof(overflow));
+                Notify(StylePropertyId.Overflow);
 
             notify = false;
-            notify |= SetInlineValue(ref m_PaddingBottom, element.style.paddingBottom);
-            notify |= SetComputedValue(ref m_PaddingBottom, element.computedStyle.paddingBottom);
-            notify |= ApplyContext(ref m_PaddingBottom, in context);
+            if (refreshInlineValues)
+                notify |= SetInlineValue(ref m_PaddingBottom, inlineStyle.paddingBottom);
+            if (!layoutDataUnchanged)
+                notify |= SetComputedValue(ref m_PaddingBottom, element.computedStyle.paddingBottom);
+            if (context.uxmlDataChanged[(int)StylePropertyId.PaddingBottom])
+                notify |= ApplyContext(ref m_PaddingBottom, in context);
             if (notify)
-                Notify(nameof(paddingBottom));
+                Notify(StylePropertyId.PaddingBottom);
 
             notify = false;
-            notify |= SetInlineValue(ref m_PaddingLeft, element.style.paddingLeft);
-            notify |= SetComputedValue(ref m_PaddingLeft, element.computedStyle.paddingLeft);
-            notify |= ApplyContext(ref m_PaddingLeft, in context);
+            if (refreshInlineValues)
+                notify |= SetInlineValue(ref m_PaddingLeft, inlineStyle.paddingLeft);
+            if (!layoutDataUnchanged)
+                notify |= SetComputedValue(ref m_PaddingLeft, element.computedStyle.paddingLeft);
+            if (context.uxmlDataChanged[(int)StylePropertyId.PaddingLeft])
+                notify |= ApplyContext(ref m_PaddingLeft, in context);
             if (notify)
-                Notify(nameof(paddingLeft));
+                Notify(StylePropertyId.PaddingLeft);
 
             notify = false;
-            notify |= SetInlineValue(ref m_PaddingRight, element.style.paddingRight);
-            notify |= SetComputedValue(ref m_PaddingRight, element.computedStyle.paddingRight);
-            notify |= ApplyContext(ref m_PaddingRight, in context);
+            if (refreshInlineValues)
+                notify |= SetInlineValue(ref m_PaddingRight, inlineStyle.paddingRight);
+            if (!layoutDataUnchanged)
+                notify |= SetComputedValue(ref m_PaddingRight, element.computedStyle.paddingRight);
+            if (context.uxmlDataChanged[(int)StylePropertyId.PaddingRight])
+                notify |= ApplyContext(ref m_PaddingRight, in context);
             if (notify)
-                Notify(nameof(paddingRight));
+                Notify(StylePropertyId.PaddingRight);
 
             notify = false;
-            notify |= SetInlineValue(ref m_PaddingTop, element.style.paddingTop);
-            notify |= SetComputedValue(ref m_PaddingTop, element.computedStyle.paddingTop);
-            notify |= ApplyContext(ref m_PaddingTop, in context);
+            if (refreshInlineValues)
+                notify |= SetInlineValue(ref m_PaddingTop, inlineStyle.paddingTop);
+            if (!layoutDataUnchanged)
+                notify |= SetComputedValue(ref m_PaddingTop, element.computedStyle.paddingTop);
+            if (context.uxmlDataChanged[(int)StylePropertyId.PaddingTop])
+                notify |= ApplyContext(ref m_PaddingTop, in context);
             if (notify)
-                Notify(nameof(paddingTop));
+                Notify(StylePropertyId.PaddingTop);
 
             notify = false;
-            notify |= SetInlineValue(ref m_Position, element.style.position);
-            notify |= SetComputedValue(ref m_Position, element.computedStyle.position);
-            notify |= ApplyContext(ref m_Position, in context);
+            if (refreshInlineValues)
+                notify |= SetInlineValue(ref m_Position, inlineStyle.position);
+            if (!layoutDataUnchanged)
+                notify |= SetComputedValue(ref m_Position, element.computedStyle.position);
+            if (context.uxmlDataChanged[(int)StylePropertyId.Position])
+                notify |= ApplyContext(ref m_Position, in context);
             if (notify)
-                Notify(nameof(position));
+                Notify(StylePropertyId.Position);
 
             notify = false;
-            notify |= SetInlineValue(ref m_Right, element.style.right);
-            notify |= SetComputedValue(ref m_Right, element.computedStyle.right);
-            notify |= ApplyContext(ref m_Right, in context);
+            if (refreshInlineValues)
+                notify |= SetInlineValue(ref m_Right, inlineStyle.right);
+            if (!layoutDataUnchanged)
+                notify |= SetComputedValue(ref m_Right, element.computedStyle.right);
+            if (context.uxmlDataChanged[(int)StylePropertyId.Right])
+                notify |= ApplyContext(ref m_Right, in context);
             if (notify)
-                Notify(nameof(right));
+                Notify(StylePropertyId.Right);
 
             notify = false;
-            notify |= SetInlineValue(ref m_Rotate, element.style.rotate);
-            notify |= SetComputedValue(ref m_Rotate, element.computedStyle.rotate);
-            notify |= ApplyContext(ref m_Rotate, in context);
+            if (refreshInlineValues)
+                notify |= SetInlineValue(ref m_Rotate, inlineStyle.rotate);
+            if (!transformDataUnchanged)
+                notify |= SetComputedValue(ref m_Rotate, element.computedStyle.rotate);
+            if (context.uxmlDataChanged[(int)StylePropertyId.Rotate])
+                notify |= ApplyContext(ref m_Rotate, in context);
             if (notify)
-                Notify(nameof(rotate));
+                Notify(StylePropertyId.Rotate);
 
             notify = false;
-            notify |= SetInlineValue(ref m_RowGap, element.style.rowGap);
-            notify |= SetComputedValue(ref m_RowGap, element.computedStyle.rowGap);
-            notify |= ApplyContext(ref m_RowGap, in context);
+            if (refreshInlineValues)
+                notify |= SetInlineValue(ref m_RowGap, inlineStyle.rowGap);
+            if (!layoutDataUnchanged)
+                notify |= SetComputedValue(ref m_RowGap, element.computedStyle.rowGap);
+            if (context.uxmlDataChanged[(int)StylePropertyId.RowGap])
+                notify |= ApplyContext(ref m_RowGap, in context);
             if (notify)
-                Notify(nameof(rowGap));
+                Notify(StylePropertyId.RowGap);
 
             notify = false;
-            notify |= SetInlineValue(ref m_Scale, element.style.scale);
-            notify |= SetComputedValue(ref m_Scale, element.computedStyle.scale);
-            notify |= ApplyContext(ref m_Scale, in context);
+            if (refreshInlineValues)
+                notify |= SetInlineValue(ref m_Scale, inlineStyle.scale);
+            if (!transformDataUnchanged)
+                notify |= SetComputedValue(ref m_Scale, element.computedStyle.scale);
+            if (context.uxmlDataChanged[(int)StylePropertyId.Scale])
+                notify |= ApplyContext(ref m_Scale, in context);
             if (notify)
-                Notify(nameof(scale));
+                Notify(StylePropertyId.Scale);
 
             notify = false;
-            notify |= SetInlineValue(ref m_TextOverflow, element.style.textOverflow);
-            notify |= SetComputedValue(ref m_TextOverflow, element.computedStyle.textOverflow);
-            notify |= ApplyContext(ref m_TextOverflow, in context);
+            if (refreshInlineValues)
+                notify |= SetInlineValue(ref m_TextOverflow, inlineStyle.textOverflow);
+            if (!rareDataUnchanged)
+                notify |= SetComputedValue(ref m_TextOverflow, element.computedStyle.textOverflow);
+            if (context.uxmlDataChanged[(int)StylePropertyId.TextOverflow])
+                notify |= ApplyContext(ref m_TextOverflow, in context);
             if (notify)
-                Notify(nameof(textOverflow));
+                Notify(StylePropertyId.TextOverflow);
 
             notify = false;
-            notify |= SetInlineValue(ref m_TextShadow, element.style.textShadow);
-            notify |= SetComputedValue(ref m_TextShadow, element.computedStyle.textShadow);
-            notify |= ApplyContext(ref m_TextShadow, in context);
+            if (refreshInlineValues)
+                notify |= SetInlineValue(ref m_TextShadow, inlineStyle.textShadow);
+            if (!inheritedDataUnchanged)
+                notify |= SetComputedValue(ref m_TextShadow, element.computedStyle.textShadow);
+            if (context.uxmlDataChanged[(int)StylePropertyId.TextShadow])
+                notify |= ApplyContext(ref m_TextShadow, in context);
             if (notify)
-                Notify(nameof(textShadow));
+                Notify(StylePropertyId.TextShadow);
 
             notify = false;
-            notify |= SetInlineValue(ref m_Top, element.style.top);
-            notify |= SetComputedValue(ref m_Top, element.computedStyle.top);
-            notify |= ApplyContext(ref m_Top, in context);
+            if (refreshInlineValues)
+                notify |= SetInlineValue(ref m_Top, inlineStyle.top);
+            if (!layoutDataUnchanged)
+                notify |= SetComputedValue(ref m_Top, element.computedStyle.top);
+            if (context.uxmlDataChanged[(int)StylePropertyId.Top])
+                notify |= ApplyContext(ref m_Top, in context);
             if (notify)
-                Notify(nameof(top));
+                Notify(StylePropertyId.Top);
 
             notify = false;
-            notify |= SetInlineValue(ref m_TransformOrigin, element.style.transformOrigin);
-            notify |= SetComputedValue(ref m_TransformOrigin, element.computedStyle.transformOrigin);
-            notify |= ApplyContext(ref m_TransformOrigin, in context);
+            if (refreshInlineValues)
+                notify |= SetInlineValue(ref m_TransformOrigin, inlineStyle.transformOrigin);
+            if (!transformDataUnchanged)
+                notify |= SetComputedValue(ref m_TransformOrigin, element.computedStyle.transformOrigin);
+            if (context.uxmlDataChanged[(int)StylePropertyId.TransformOrigin])
+                notify |= ApplyContext(ref m_TransformOrigin, in context);
             if (notify)
-                Notify(nameof(transformOrigin));
+                Notify(StylePropertyId.TransformOrigin);
 
             notify = false;
-            notify |= SetInlineValue(ref m_TransitionDelay, element.style.transitionDelay);
+            if (refreshInlineValues)
+                notify |= SetInlineValue(ref m_TransitionDelay, inlineStyle.transitionDelay);
             notify |= SetComputedValue(ref m_TransitionDelay, element.computedStyle.transitionDelay);
-            notify |= ApplyContext(ref m_TransitionDelay, in context);
+            if (context.uxmlDataChanged[(int)StylePropertyId.TransitionDelay])
+                notify |= ApplyContext(ref m_TransitionDelay, in context);
             if (notify)
-                Notify(nameof(transitionDelay));
+                Notify(StylePropertyId.TransitionDelay);
 
             notify = false;
-            notify |= SetInlineValue(ref m_TransitionDuration, element.style.transitionDuration);
+            if (refreshInlineValues)
+                notify |= SetInlineValue(ref m_TransitionDuration, inlineStyle.transitionDuration);
             notify |= SetComputedValue(ref m_TransitionDuration, element.computedStyle.transitionDuration);
-            notify |= ApplyContext(ref m_TransitionDuration, in context);
+            if (context.uxmlDataChanged[(int)StylePropertyId.TransitionDuration])
+                notify |= ApplyContext(ref m_TransitionDuration, in context);
             if (notify)
-                Notify(nameof(transitionDuration));
+                Notify(StylePropertyId.TransitionDuration);
 
             notify = false;
-            notify |= SetInlineValue(ref m_TransitionProperty, element.style.transitionProperty);
+            if (refreshInlineValues)
+                notify |= SetInlineValue(ref m_TransitionProperty, inlineStyle.transitionProperty);
             notify |= SetComputedValue(ref m_TransitionProperty, element.computedStyle.transitionProperty);
-            notify |= ApplyContext(ref m_TransitionProperty, in context);
+            if (context.uxmlDataChanged[(int)StylePropertyId.TransitionProperty])
+                notify |= ApplyContext(ref m_TransitionProperty, in context);
             if (notify)
-                Notify(nameof(transitionProperty));
+                Notify(StylePropertyId.TransitionProperty);
 
             notify = false;
-            notify |= SetInlineValue(ref m_TransitionTimingFunction, element.style.transitionTimingFunction);
+            if (refreshInlineValues)
+                notify |= SetInlineValue(ref m_TransitionTimingFunction, inlineStyle.transitionTimingFunction);
             notify |= SetComputedValue(ref m_TransitionTimingFunction, element.computedStyle.transitionTimingFunction);
-            notify |= ApplyContext(ref m_TransitionTimingFunction, in context);
+            if (context.uxmlDataChanged[(int)StylePropertyId.TransitionTimingFunction])
+                notify |= ApplyContext(ref m_TransitionTimingFunction, in context);
             if (notify)
-                Notify(nameof(transitionTimingFunction));
+                Notify(StylePropertyId.TransitionTimingFunction);
 
             notify = false;
-            notify |= SetInlineValue(ref m_Translate, element.style.translate);
-            notify |= SetComputedValue(ref m_Translate, element.computedStyle.translate);
-            notify |= ApplyContext(ref m_Translate, in context);
+            if (refreshInlineValues)
+                notify |= SetInlineValue(ref m_Translate, inlineStyle.translate);
+            if (!transformDataUnchanged)
+                notify |= SetComputedValue(ref m_Translate, element.computedStyle.translate);
+            if (context.uxmlDataChanged[(int)StylePropertyId.Translate])
+                notify |= ApplyContext(ref m_Translate, in context);
             if (notify)
-                Notify(nameof(translate));
+                Notify(StylePropertyId.Translate);
 
             notify = false;
-            notify |= SetInlineValue(ref m_UnityBackgroundImageTintColor, element.style.unityBackgroundImageTintColor);
-            notify |= SetComputedValue(ref m_UnityBackgroundImageTintColor, element.computedStyle.unityBackgroundImageTintColor);
-            notify |= ApplyContext(ref m_UnityBackgroundImageTintColor, in context);
+            if (refreshInlineValues)
+                notify |= SetInlineValue(ref m_UnityBackgroundImageTintColor, inlineStyle.unityBackgroundImageTintColor);
+            if (!rareDataUnchanged)
+                notify |= SetComputedValue(ref m_UnityBackgroundImageTintColor, element.computedStyle.unityBackgroundImageTintColor);
+            if (context.uxmlDataChanged[(int)StylePropertyId.UnityBackgroundImageTintColor])
+                notify |= ApplyContext(ref m_UnityBackgroundImageTintColor, in context);
             if (notify)
-                Notify(nameof(unityBackgroundImageTintColor));
+                Notify(StylePropertyId.UnityBackgroundImageTintColor);
 
             notify = false;
-            notify |= SetInlineValue(ref m_UnityCurvature, element.style.unityCurvature);
-            notify |= SetComputedValue(ref m_UnityCurvature, element.computedStyle.unityCurvature);
-            notify |= ApplyContext(ref m_UnityCurvature, in context);
+            if (refreshInlineValues)
+                notify |= SetInlineValue(ref m_UnityCurvature, inlineStyle.unityCurvature);
+            if (!rareDataUnchanged)
+                notify |= SetComputedValue(ref m_UnityCurvature, element.computedStyle.unityCurvature);
+            if (context.uxmlDataChanged[(int)StylePropertyId.UnityCurvature])
+                notify |= ApplyContext(ref m_UnityCurvature, in context);
             if (notify)
-                Notify(nameof(unityCurvature));
+                Notify(StylePropertyId.UnityCurvature);
 
             notify = false;
-            notify |= SetInlineValue(ref m_UnityEditorTextRenderingMode, element.style.unityEditorTextRenderingMode);
-            notify |= SetComputedValue(ref m_UnityEditorTextRenderingMode, element.computedStyle.unityEditorTextRenderingMode);
-            notify |= ApplyContext(ref m_UnityEditorTextRenderingMode, in context);
+            if (refreshInlineValues)
+                notify |= SetInlineValue(ref m_UnityEditorTextRenderingMode, inlineStyle.unityEditorTextRenderingMode);
+            if (!inheritedDataUnchanged)
+                notify |= SetComputedValue(ref m_UnityEditorTextRenderingMode, element.computedStyle.unityEditorTextRenderingMode);
+            if (context.uxmlDataChanged[(int)StylePropertyId.UnityEditorTextRenderingMode])
+                notify |= ApplyContext(ref m_UnityEditorTextRenderingMode, in context);
             if (notify)
-                Notify(nameof(unityEditorTextRenderingMode));
+                Notify(StylePropertyId.UnityEditorTextRenderingMode);
 
             notify = false;
-            notify |= SetInlineValue(ref m_UnityFont, element.style.unityFont);
-            notify |= SetComputedValue(ref m_UnityFont, element.computedStyle.unityFont);
-            notify |= ApplyContext(ref m_UnityFont, in context);
+            if (refreshInlineValues)
+                notify |= SetInlineValue(ref m_UnityFont, inlineStyle.unityFont);
+            if (!inheritedDataUnchanged)
+                notify |= SetComputedValue(ref m_UnityFont, element.computedStyle.unityFont);
+            if (context.uxmlDataChanged[(int)StylePropertyId.UnityFont])
+                notify |= ApplyContext(ref m_UnityFont, in context);
             if (notify)
-                Notify(nameof(unityFont));
+                Notify(StylePropertyId.UnityFont);
 
             notify = false;
-            notify |= SetInlineValue(ref m_UnityFontDefinition, element.style.unityFontDefinition);
+            if (refreshInlineValues)
+                notify |= SetInlineValue(ref m_UnityFontDefinition, inlineStyle.unityFontDefinition);
             notify |= SetComputedValue(ref m_UnityFontDefinition, element.computedStyle.unityFontDefinition);
-            notify |= ApplyContext(ref m_UnityFontDefinition, in context);
+            if (context.uxmlDataChanged[(int)StylePropertyId.UnityFontDefinition])
+                notify |= ApplyContext(ref m_UnityFontDefinition, in context);
             if (notify)
-                Notify(nameof(unityFontDefinition));
+                Notify(StylePropertyId.UnityFontDefinition);
 
             notify = false;
-            notify |= SetInlineValue(ref m_UnityFontStyleAndWeight, element.style.unityFontStyleAndWeight);
-            notify |= SetComputedValue(ref m_UnityFontStyleAndWeight, element.computedStyle.unityFontStyleAndWeight);
-            notify |= ApplyContext(ref m_UnityFontStyleAndWeight, in context);
+            if (refreshInlineValues)
+                notify |= SetInlineValue(ref m_UnityFontStyleAndWeight, inlineStyle.unityFontStyleAndWeight);
+            if (!inheritedDataUnchanged)
+                notify |= SetComputedValue(ref m_UnityFontStyleAndWeight, element.computedStyle.unityFontStyleAndWeight);
+            if (context.uxmlDataChanged[(int)StylePropertyId.UnityFontStyleAndWeight])
+                notify |= ApplyContext(ref m_UnityFontStyleAndWeight, in context);
             if (notify)
-                Notify(nameof(unityFontStyleAndWeight));
+                Notify(StylePropertyId.UnityFontStyleAndWeight);
 
             notify = false;
-            notify |= SetInlineValue(ref m_UnityMaterial, element.style.unityMaterial);
+            if (refreshInlineValues)
+                notify |= SetInlineValue(ref m_UnityMaterial, inlineStyle.unityMaterial);
             notify |= SetComputedValue(ref m_UnityMaterial, element.computedStyle.unityMaterial);
-            notify |= ApplyContext(ref m_UnityMaterial, in context);
+            if (context.uxmlDataChanged[(int)StylePropertyId.UnityMaterial])
+                notify |= ApplyContext(ref m_UnityMaterial, in context);
             if (notify)
-                Notify(nameof(unityMaterial));
+                Notify(StylePropertyId.UnityMaterial);
 
             notify = false;
-            notify |= SetInlineValue(ref m_UnityOverflowClipBox, element.style.unityOverflowClipBox);
-            notify |= SetComputedValue(ref m_UnityOverflowClipBox, element.computedStyle.unityOverflowClipBox);
-            notify |= ApplyContext(ref m_UnityOverflowClipBox, in context);
+            if (refreshInlineValues)
+                notify |= SetInlineValue(ref m_UnityOverflowClipBox, inlineStyle.unityOverflowClipBox);
+            if (!rareDataUnchanged)
+                notify |= SetComputedValue(ref m_UnityOverflowClipBox, element.computedStyle.unityOverflowClipBox);
+            if (context.uxmlDataChanged[(int)StylePropertyId.UnityOverflowClipBox])
+                notify |= ApplyContext(ref m_UnityOverflowClipBox, in context);
             if (notify)
-                Notify(nameof(unityOverflowClipBox));
+                Notify(StylePropertyId.UnityOverflowClipBox);
 
             notify = false;
-            notify |= SetInlineValue(ref m_UnityParagraphSpacing, element.style.unityParagraphSpacing);
-            notify |= SetComputedValue(ref m_UnityParagraphSpacing, element.computedStyle.unityParagraphSpacing);
-            notify |= ApplyContext(ref m_UnityParagraphSpacing, in context);
+            if (refreshInlineValues)
+                notify |= SetInlineValue(ref m_UnityParagraphSpacing, inlineStyle.unityParagraphSpacing);
+            if (!inheritedDataUnchanged)
+                notify |= SetComputedValue(ref m_UnityParagraphSpacing, element.computedStyle.unityParagraphSpacing);
+            if (context.uxmlDataChanged[(int)StylePropertyId.UnityParagraphSpacing])
+                notify |= ApplyContext(ref m_UnityParagraphSpacing, in context);
             if (notify)
-                Notify(nameof(unityParagraphSpacing));
+                Notify(StylePropertyId.UnityParagraphSpacing);
 
             notify = false;
-            notify |= SetInlineValue(ref m_UnitySliceBottom, element.style.unitySliceBottom);
-            notify |= SetComputedValue(ref m_UnitySliceBottom, element.computedStyle.unitySliceBottom);
-            notify |= ApplyContext(ref m_UnitySliceBottom, in context);
+            if (refreshInlineValues)
+                notify |= SetInlineValue(ref m_UnitySliceBottom, inlineStyle.unitySliceBottom);
+            if (!rareDataUnchanged)
+                notify |= SetComputedValue(ref m_UnitySliceBottom, element.computedStyle.unitySliceBottom);
+            if (context.uxmlDataChanged[(int)StylePropertyId.UnitySliceBottom])
+                notify |= ApplyContext(ref m_UnitySliceBottom, in context);
             if (notify)
-                Notify(nameof(unitySliceBottom));
+                Notify(StylePropertyId.UnitySliceBottom);
 
             notify = false;
-            notify |= SetInlineValue(ref m_UnitySliceLeft, element.style.unitySliceLeft);
-            notify |= SetComputedValue(ref m_UnitySliceLeft, element.computedStyle.unitySliceLeft);
-            notify |= ApplyContext(ref m_UnitySliceLeft, in context);
+            if (refreshInlineValues)
+                notify |= SetInlineValue(ref m_UnitySliceLeft, inlineStyle.unitySliceLeft);
+            if (!rareDataUnchanged)
+                notify |= SetComputedValue(ref m_UnitySliceLeft, element.computedStyle.unitySliceLeft);
+            if (context.uxmlDataChanged[(int)StylePropertyId.UnitySliceLeft])
+                notify |= ApplyContext(ref m_UnitySliceLeft, in context);
             if (notify)
-                Notify(nameof(unitySliceLeft));
+                Notify(StylePropertyId.UnitySliceLeft);
 
             notify = false;
-            notify |= SetInlineValue(ref m_UnitySliceRight, element.style.unitySliceRight);
-            notify |= SetComputedValue(ref m_UnitySliceRight, element.computedStyle.unitySliceRight);
-            notify |= ApplyContext(ref m_UnitySliceRight, in context);
+            if (refreshInlineValues)
+                notify |= SetInlineValue(ref m_UnitySliceRight, inlineStyle.unitySliceRight);
+            if (!rareDataUnchanged)
+                notify |= SetComputedValue(ref m_UnitySliceRight, element.computedStyle.unitySliceRight);
+            if (context.uxmlDataChanged[(int)StylePropertyId.UnitySliceRight])
+                notify |= ApplyContext(ref m_UnitySliceRight, in context);
             if (notify)
-                Notify(nameof(unitySliceRight));
+                Notify(StylePropertyId.UnitySliceRight);
 
             notify = false;
-            notify |= SetInlineValue(ref m_UnitySliceScale, element.style.unitySliceScale);
-            notify |= SetComputedValue(ref m_UnitySliceScale, element.computedStyle.unitySliceScale);
-            notify |= ApplyContext(ref m_UnitySliceScale, in context);
+            if (refreshInlineValues)
+                notify |= SetInlineValue(ref m_UnitySliceScale, inlineStyle.unitySliceScale);
+            if (!rareDataUnchanged)
+                notify |= SetComputedValue(ref m_UnitySliceScale, element.computedStyle.unitySliceScale);
+            if (context.uxmlDataChanged[(int)StylePropertyId.UnitySliceScale])
+                notify |= ApplyContext(ref m_UnitySliceScale, in context);
             if (notify)
-                Notify(nameof(unitySliceScale));
+                Notify(StylePropertyId.UnitySliceScale);
 
             notify = false;
-            notify |= SetInlineValue(ref m_UnitySliceTop, element.style.unitySliceTop);
-            notify |= SetComputedValue(ref m_UnitySliceTop, element.computedStyle.unitySliceTop);
-            notify |= ApplyContext(ref m_UnitySliceTop, in context);
+            if (refreshInlineValues)
+                notify |= SetInlineValue(ref m_UnitySliceTop, inlineStyle.unitySliceTop);
+            if (!rareDataUnchanged)
+                notify |= SetComputedValue(ref m_UnitySliceTop, element.computedStyle.unitySliceTop);
+            if (context.uxmlDataChanged[(int)StylePropertyId.UnitySliceTop])
+                notify |= ApplyContext(ref m_UnitySliceTop, in context);
             if (notify)
-                Notify(nameof(unitySliceTop));
+                Notify(StylePropertyId.UnitySliceTop);
 
             notify = false;
-            notify |= SetInlineValue(ref m_UnitySliceType, element.style.unitySliceType);
-            notify |= SetComputedValue(ref m_UnitySliceType, element.computedStyle.unitySliceType);
-            notify |= ApplyContext(ref m_UnitySliceType, in context);
+            if (refreshInlineValues)
+                notify |= SetInlineValue(ref m_UnitySliceType, inlineStyle.unitySliceType);
+            if (!rareDataUnchanged)
+                notify |= SetComputedValue(ref m_UnitySliceType, element.computedStyle.unitySliceType);
+            if (context.uxmlDataChanged[(int)StylePropertyId.UnitySliceType])
+                notify |= ApplyContext(ref m_UnitySliceType, in context);
             if (notify)
-                Notify(nameof(unitySliceType));
+                Notify(StylePropertyId.UnitySliceType);
 
             notify = false;
-            notify |= SetInlineValue(ref m_UnityTextAlign, element.style.unityTextAlign);
-            notify |= SetComputedValue(ref m_UnityTextAlign, element.computedStyle.unityTextAlign);
-            notify |= ApplyContext(ref m_UnityTextAlign, in context);
+            if (refreshInlineValues)
+                notify |= SetInlineValue(ref m_UnityTextAlign, inlineStyle.unityTextAlign);
+            if (!inheritedDataUnchanged)
+                notify |= SetComputedValue(ref m_UnityTextAlign, element.computedStyle.unityTextAlign);
+            if (context.uxmlDataChanged[(int)StylePropertyId.UnityTextAlign])
+                notify |= ApplyContext(ref m_UnityTextAlign, in context);
             if (notify)
-                Notify(nameof(unityTextAlign));
+                Notify(StylePropertyId.UnityTextAlign);
 
             notify = false;
-            notify |= SetInlineValue(ref m_UnityTextAutoSize, element.style.unityTextAutoSize);
-            notify |= SetComputedValue(ref m_UnityTextAutoSize, element.computedStyle.unityTextAutoSize);
-            notify |= ApplyContext(ref m_UnityTextAutoSize, in context);
+            if (refreshInlineValues)
+                notify |= SetInlineValue(ref m_UnityTextAutoSize, inlineStyle.unityTextAutoSize);
+            if (!inheritedDataUnchanged)
+                notify |= SetComputedValue(ref m_UnityTextAutoSize, element.computedStyle.unityTextAutoSize);
+            if (context.uxmlDataChanged[(int)StylePropertyId.UnityTextAutoSize])
+                notify |= ApplyContext(ref m_UnityTextAutoSize, in context);
             if (notify)
-                Notify(nameof(unityTextAutoSize));
+                Notify(StylePropertyId.UnityTextAutoSize);
 
             notify = false;
-            notify |= SetInlineValue(ref m_UnityTextGenerator, element.style.unityTextGenerator);
-            notify |= SetComputedValue(ref m_UnityTextGenerator, element.computedStyle.unityTextGenerator);
-            notify |= ApplyContext(ref m_UnityTextGenerator, in context);
+            if (refreshInlineValues)
+                notify |= SetInlineValue(ref m_UnityTextGenerator, inlineStyle.unityTextGenerator);
+            if (!inheritedDataUnchanged)
+                notify |= SetComputedValue(ref m_UnityTextGenerator, element.computedStyle.unityTextGenerator);
+            if (context.uxmlDataChanged[(int)StylePropertyId.UnityTextGenerator])
+                notify |= ApplyContext(ref m_UnityTextGenerator, in context);
             if (notify)
-                Notify(nameof(unityTextGenerator));
+                Notify(StylePropertyId.UnityTextGenerator);
 
             notify = false;
-            notify |= SetInlineValue(ref m_UnityTextOutlineColor, element.style.unityTextOutlineColor);
-            notify |= SetComputedValue(ref m_UnityTextOutlineColor, element.computedStyle.unityTextOutlineColor);
-            notify |= ApplyContext(ref m_UnityTextOutlineColor, in context);
+            if (refreshInlineValues)
+                notify |= SetInlineValue(ref m_UnityTextOutlineColor, inlineStyle.unityTextOutlineColor);
+            if (!inheritedDataUnchanged)
+                notify |= SetComputedValue(ref m_UnityTextOutlineColor, element.computedStyle.unityTextOutlineColor);
+            if (context.uxmlDataChanged[(int)StylePropertyId.UnityTextOutlineColor])
+                notify |= ApplyContext(ref m_UnityTextOutlineColor, in context);
             if (notify)
-                Notify(nameof(unityTextOutlineColor));
+                Notify(StylePropertyId.UnityTextOutlineColor);
 
             notify = false;
-            notify |= SetInlineValue(ref m_UnityTextOutlineWidth, element.style.unityTextOutlineWidth);
-            notify |= SetComputedValue(ref m_UnityTextOutlineWidth, element.computedStyle.unityTextOutlineWidth);
-            notify |= ApplyContext(ref m_UnityTextOutlineWidth, in context);
+            if (refreshInlineValues)
+                notify |= SetInlineValue(ref m_UnityTextOutlineWidth, inlineStyle.unityTextOutlineWidth);
+            if (!inheritedDataUnchanged)
+                notify |= SetComputedValue(ref m_UnityTextOutlineWidth, element.computedStyle.unityTextOutlineWidth);
+            if (context.uxmlDataChanged[(int)StylePropertyId.UnityTextOutlineWidth])
+                notify |= ApplyContext(ref m_UnityTextOutlineWidth, in context);
             if (notify)
-                Notify(nameof(unityTextOutlineWidth));
+                Notify(StylePropertyId.UnityTextOutlineWidth);
 
             notify = false;
-            notify |= SetInlineValue(ref m_UnityTextOverflowPosition, element.style.unityTextOverflowPosition);
-            notify |= SetComputedValue(ref m_UnityTextOverflowPosition, element.computedStyle.unityTextOverflowPosition);
-            notify |= ApplyContext(ref m_UnityTextOverflowPosition, in context);
+            if (refreshInlineValues)
+                notify |= SetInlineValue(ref m_UnityTextOverflowPosition, inlineStyle.unityTextOverflowPosition);
+            if (!rareDataUnchanged)
+                notify |= SetComputedValue(ref m_UnityTextOverflowPosition, element.computedStyle.unityTextOverflowPosition);
+            if (context.uxmlDataChanged[(int)StylePropertyId.UnityTextOverflowPosition])
+                notify |= ApplyContext(ref m_UnityTextOverflowPosition, in context);
             if (notify)
-                Notify(nameof(unityTextOverflowPosition));
+                Notify(StylePropertyId.UnityTextOverflowPosition);
 
             notify = false;
-            notify |= SetInlineValue(ref m_Visibility, element.style.visibility);
-            notify |= SetComputedValue(ref m_Visibility, element.computedStyle.visibility);
-            notify |= ApplyContext(ref m_Visibility, in context);
+            if (refreshInlineValues)
+                notify |= SetInlineValue(ref m_Visibility, inlineStyle.visibility);
+            if (!inheritedDataUnchanged)
+                notify |= SetComputedValue(ref m_Visibility, element.computedStyle.visibility);
+            if (context.uxmlDataChanged[(int)StylePropertyId.Visibility])
+                notify |= ApplyContext(ref m_Visibility, in context);
             if (notify)
-                Notify(nameof(visibility));
+                Notify(StylePropertyId.Visibility);
 
             notify = false;
-            notify |= SetInlineValue(ref m_WhiteSpace, element.style.whiteSpace);
-            notify |= SetComputedValue(ref m_WhiteSpace, element.computedStyle.whiteSpace);
-            notify |= ApplyContext(ref m_WhiteSpace, in context);
+            if (refreshInlineValues)
+                notify |= SetInlineValue(ref m_WhiteSpace, inlineStyle.whiteSpace);
+            if (!inheritedDataUnchanged)
+                notify |= SetComputedValue(ref m_WhiteSpace, element.computedStyle.whiteSpace);
+            if (context.uxmlDataChanged[(int)StylePropertyId.WhiteSpace])
+                notify |= ApplyContext(ref m_WhiteSpace, in context);
             if (notify)
-                Notify(nameof(whiteSpace));
+                Notify(StylePropertyId.WhiteSpace);
 
             notify = false;
-            notify |= SetInlineValue(ref m_Width, element.style.width);
-            notify |= SetComputedValue(ref m_Width, element.computedStyle.width);
-            notify |= ApplyContext(ref m_Width, in context);
+            if (refreshInlineValues)
+                notify |= SetInlineValue(ref m_Width, inlineStyle.width);
+            if (!layoutDataUnchanged)
+                notify |= SetComputedValue(ref m_Width, element.computedStyle.width);
+            if (context.uxmlDataChanged[(int)StylePropertyId.Width])
+                notify |= ApplyContext(ref m_Width, in context);
             if (notify)
-                Notify(nameof(width));
+                Notify(StylePropertyId.Width);
 
             notify = false;
-            notify |= SetInlineValue(ref m_WordSpacing, element.style.wordSpacing);
-            notify |= SetComputedValue(ref m_WordSpacing, element.computedStyle.wordSpacing);
-            notify |= ApplyContext(ref m_WordSpacing, in context);
+            if (refreshInlineValues)
+                notify |= SetInlineValue(ref m_WordSpacing, inlineStyle.wordSpacing);
+            if (!inheritedDataUnchanged)
+                notify |= SetComputedValue(ref m_WordSpacing, element.computedStyle.wordSpacing);
+            if (context.uxmlDataChanged[(int)StylePropertyId.WordSpacing])
+                notify |= ApplyContext(ref m_WordSpacing, in context);
             if (notify)
-                Notify(nameof(wordSpacing));
+                Notify(StylePropertyId.WordSpacing);
 
             notify = false;
-            notify |= SetInlineValue(ref m_ZIndex, element.style.zIndex);
-            notify |= SetComputedValue(ref m_ZIndex, element.computedStyle.zIndex);
-            notify |= ApplyContext(ref m_ZIndex, in context);
+            if (refreshInlineValues)
+                notify |= SetInlineValue(ref m_ZIndex, inlineStyle.zIndex);
+            if (!rareDataUnchanged)
+                notify |= SetComputedValue(ref m_ZIndex, element.computedStyle.zIndex);
+            if (context.uxmlDataChanged[(int)StylePropertyId.ZIndex])
+                notify |= ApplyContext(ref m_ZIndex, in context);
             if (notify)
-                Notify(nameof(zIndex));
+                Notify(StylePropertyId.ZIndex);
 
-            all = ComputeStyleProperty(StylePropertyId.All, nameof(all), in context);
-            animation = ComputeStyleProperty(StylePropertyId.Animation, nameof(animation), in context);
-            backgroundPosition = ComputeStyleProperty(StylePropertyId.BackgroundPosition, nameof(backgroundPosition), in context);
-            borderColor = ComputeStyleProperty(StylePropertyId.BorderColor, nameof(borderColor), in context);
-            borderRadius = ComputeStyleProperty(StylePropertyId.BorderRadius, nameof(borderRadius), in context);
-            borderWidth = ComputeStyleProperty(StylePropertyId.BorderWidth, nameof(borderWidth), in context);
-            flex = ComputeStyleProperty(StylePropertyId.Flex, nameof(flex), in context);
-            gap = ComputeStyleProperty(StylePropertyId.Gap, nameof(gap), in context);
-            gridColumn = ComputeStyleProperty(StylePropertyId.GridColumn, nameof(gridColumn), in context);
-            gridRow = ComputeStyleProperty(StylePropertyId.GridRow, nameof(gridRow), in context);
-            margin = ComputeStyleProperty(StylePropertyId.Margin, nameof(margin), in context);
-            padding = ComputeStyleProperty(StylePropertyId.Padding, nameof(padding), in context);
-            transition = ComputeStyleProperty(StylePropertyId.Transition, nameof(transition), in context);
-            unityAnimationClip = ComputeStyleProperty(StylePropertyId.UnityAnimationClip, nameof(unityAnimationClip), in context);
-            unityBackgroundScaleMode = ComputeStyleProperty(StylePropertyId.UnityBackgroundScaleMode, nameof(unityBackgroundScaleMode), in context);
-            unityTextOutline = ComputeStyleProperty(StylePropertyId.UnityTextOutline, nameof(unityTextOutline), in context);
+            if (context.uxmlDataChanged[(int)StylePropertyId.All])
+                all = ComputeStyleProperty(StylePropertyId.All, nameof(all), in context);
+            if (context.uxmlDataChanged[(int)StylePropertyId.Animation])
+                animation = ComputeStyleProperty(StylePropertyId.Animation, nameof(animation), in context);
+            if (context.uxmlDataChanged[(int)StylePropertyId.BackgroundPosition])
+                backgroundPosition = ComputeStyleProperty(StylePropertyId.BackgroundPosition, nameof(backgroundPosition), in context);
+            if (context.uxmlDataChanged[(int)StylePropertyId.BorderColor])
+                borderColor = ComputeStyleProperty(StylePropertyId.BorderColor, nameof(borderColor), in context);
+            if (context.uxmlDataChanged[(int)StylePropertyId.BorderRadius])
+                borderRadius = ComputeStyleProperty(StylePropertyId.BorderRadius, nameof(borderRadius), in context);
+            if (context.uxmlDataChanged[(int)StylePropertyId.BorderWidth])
+                borderWidth = ComputeStyleProperty(StylePropertyId.BorderWidth, nameof(borderWidth), in context);
+            if (context.uxmlDataChanged[(int)StylePropertyId.Flex])
+                flex = ComputeStyleProperty(StylePropertyId.Flex, nameof(flex), in context);
+            if (context.uxmlDataChanged[(int)StylePropertyId.Gap])
+                gap = ComputeStyleProperty(StylePropertyId.Gap, nameof(gap), in context);
+            if (context.uxmlDataChanged[(int)StylePropertyId.GridColumn])
+                gridColumn = ComputeStyleProperty(StylePropertyId.GridColumn, nameof(gridColumn), in context);
+            if (context.uxmlDataChanged[(int)StylePropertyId.GridRow])
+                gridRow = ComputeStyleProperty(StylePropertyId.GridRow, nameof(gridRow), in context);
+            if (context.uxmlDataChanged[(int)StylePropertyId.Margin])
+                margin = ComputeStyleProperty(StylePropertyId.Margin, nameof(margin), in context);
+            if (context.uxmlDataChanged[(int)StylePropertyId.Padding])
+                padding = ComputeStyleProperty(StylePropertyId.Padding, nameof(padding), in context);
+            if (context.uxmlDataChanged[(int)StylePropertyId.Transition])
+                transition = ComputeStyleProperty(StylePropertyId.Transition, nameof(transition), in context);
+            if (context.uxmlDataChanged[(int)StylePropertyId.UnityAnimationClip])
+                unityAnimationClip = ComputeStyleProperty(StylePropertyId.UnityAnimationClip, nameof(unityAnimationClip), in context);
+            if (context.uxmlDataChanged[(int)StylePropertyId.UnityBackgroundScaleMode])
+                unityBackgroundScaleMode = ComputeStyleProperty(StylePropertyId.UnityBackgroundScaleMode, nameof(unityBackgroundScaleMode), in context);
+            if (context.uxmlDataChanged[(int)StylePropertyId.UnityTextOutline])
+                unityTextOutline = ComputeStyleProperty(StylePropertyId.UnityTextOutline, nameof(unityTextOutline), in context);
         }
     }
 }

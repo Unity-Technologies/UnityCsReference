@@ -120,8 +120,8 @@ internal static class UIViewportContextMenuUtility
         return true;
     }
 
-    // Appends the complete viewport context menu: edit actions, optional in-place editor entry,
-    // open actions, template operations, and generate selector.
+    // Appends the complete viewport context menu: edit actions, hierarchy editing actions, optional in-place
+    // editor entry, open actions, template operations, and generate selector.
     // Paste behavior is caller-supplied. inPlaceEditor is only consulted when source == Viewport.
     public static void PopulateMenu(
         DropdownMenu menu,
@@ -139,6 +139,13 @@ internal static class UIViewportContextMenuUtility
         var allAssets = liveElementsAssets.ToArray();
 
         PopulateEditActions(menu, selection, allAssets, CanPaste(scopePanel), () => DoPaste(source, scopePanel));
+
+        // The Scene View also builds this menu, but the hierarchy editing shortcuts are not bound there.
+        if (source == CommandSources.Viewport)
+        {
+            menu.AppendSeparator();
+            KeyboardAuthoringShortcuts.AppendMenuActions(menu);
+        }
 
         if (source == CommandSources.Viewport && inPlaceEditor != null)
         {

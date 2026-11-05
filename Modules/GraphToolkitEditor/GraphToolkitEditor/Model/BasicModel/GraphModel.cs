@@ -1136,6 +1136,37 @@ namespace Unity.GraphToolkit.Editor
         }
 
         /// <summary>
+        /// Retrieves a graph element model from its unique identifier (GUID), optionally searching the local subgraphs.
+        /// </summary>
+        /// <param name="guid">The guid of the model to retrieve.</param>
+        /// <param name="model">The model matching the identifier, or null if no model were found.</param>
+        /// <param name="recursive">Whether to also search the local subgraphs of this graph, recursively.</param>
+        /// <returns><c>true</c> if the model was found.</returns>
+        /// <remarks>
+        /// A graph element belongs to a single graph: an element of a local subgraph is never found in its parent graph,
+        /// and an element of the parent graph is never found in one of its local subgraphs.
+        /// Set <paramref name="recursive"/> to <c>true</c> to search a whole graph hierarchy at once.
+        /// Use <see cref="GraphElementModel.GraphModel"/> on the returned model to know which graph owns it.
+        /// </remarks>
+        public bool TryGetModelFromGuid(Hash128 guid, out GraphElementModel model, bool recursive)
+        {
+            if (TryGetModelFromGuid(guid, out model))
+                return true;
+
+            if (recursive && m_LocalSubgraphs != null)
+            {
+                foreach (var localSubgraph in m_LocalSubgraphs)
+                {
+                    if (localSubgraph.TryGetModelFromGuid(guid, out model, true))
+                        return true;
+                }
+            }
+
+            model = null;
+            return false;
+        }
+
+        /// <summary>
         /// Retrieves a graph element model of type <typeparamref name="T"/> from its GUID.
         /// </summary>
         /// <param name="guid">The guid of the model to retrieve.</param>
@@ -2078,7 +2109,7 @@ namespace Unity.GraphToolkit.Editor
 
                 if (reuseExistingWire)
                 {
-                    var existing = GetAnyWireConnectedToPorts(inputPortModel, outputPortModel);
+                    var existing = FindReusableWire(sourceWire, inputPortModel, outputPortModel);
                     if (existing != null)
                         return existing;
                 }
@@ -2091,6 +2122,24 @@ namespace Unity.GraphToolkit.Editor
                 ApplyReorderToGraph(outputPortModel);
 
                 return newWire;
+            }
+
+            return null;
+        }
+
+        WireModel FindReusableWire(WireModel sourceWire, PortModel toPort, PortModel fromPort)
+        {
+            // Self transitions of different types on a state share the same ports.
+            var sourceTransitionSupportType = (sourceWire as TransitionSupportModel)?.TransitionSupportType;
+            foreach (var wire in GetWiresForPort(toPort))
+            {
+                if (wire.ToPort != toPort || wire.FromPort != fromPort)
+                    continue;
+
+                if (sourceTransitionSupportType == null ||
+                    (wire is TransitionSupportModel transitionSupport &&
+                        transitionSupport.TransitionSupportType == sourceTransitionSupportType))
+                    return wire;
             }
 
             return null;
@@ -3038,6 +3087,16 @@ namespace Unity.GraphToolkit.Editor
         {
             return destination.CanConnectPort(source);
         }
+
+        /// <summary>
+        /// Whether <see cref="CanAssignTo"/> only depends on the two ports it is given.
+        /// </summary>
+        /// <remarks>When false, a change anywhere in the graph can change whether a connection is allowed.</remarks>
+        internal virtual bool HasLocalConnectionRules =>
+            m_HasLocalConnectionRules ??= GetType().GetMethod(nameof(CanAssignTo), new[] { typeof(PortModel), typeof(PortModel) })?.DeclaringType == typeof(GraphModel);
+
+        [NonSerialized]
+        bool? m_HasLocalConnectionRules;
 
         /// <summary>
         /// Instantiates a group model.

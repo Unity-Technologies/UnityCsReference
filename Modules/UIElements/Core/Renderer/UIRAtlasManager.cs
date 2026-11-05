@@ -13,7 +13,7 @@ namespace UnityEngine.UIElements
 {
     // This class is a raw dynamic atlas implementation with very few checks and validation. Its user must be careful
     // and ensure proper usage.
-    internal class DynamicAtlasCore : IDisposable
+    internal partial class DynamicAtlasCore : IDisposable
     {
         private int m_InitialSize;
         private UIRAtlasAllocator m_Allocator;
@@ -30,7 +30,7 @@ namespace UnityEngine.UIElements
         public int maxImageSize { get; }
         public RenderTextureFormat format { get; }
 
-        [NoAutoStaticsCleanup] // monotonic counter for unique texture names; safe to persist
+        [AutoStaticsCleanupOnCodeReload]
         static int s_TextureCounter;
 
         /// <summary>

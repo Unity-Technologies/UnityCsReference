@@ -7,15 +7,30 @@ using System;
 namespace UnityEngineInternal.Input
 {
     /// <summary>
+    /// How a virtual device's state reaches the input module, fixed for its lifetime.
+    /// </summary>
+    internal enum VirtualDeviceDelivery : uint
+    {
+        /// <summary>SetState publishes at once.</summary>
+        EventDriven = 0,
+
+        /// <summary>
+        /// The polling thread samples the device, and SetState only stores. It samples at the module-wide
+        /// <see cref="NativeInputSystem.SetPollingFrequency"/>, since there is currently no per-device rate.
+        /// </summary>
+        PollingThread = 1,
+
+        /// <summary>Every state publish is held until <see cref="VirtualDeviceBackend.ReleaseDeferred"/>.</summary>
+        Deferred = 2,
+    }
+
+    /// <summary>
     /// Behaviour a virtual device is created with, fixed for its lifetime.
     /// </summary>
     [Flags]
     internal enum VirtualDeviceFlags : uint
     {
         None = 0,
-
-        /// <summary>The polling thread samples the device, rather than SetState publishing directly.</summary>
-        Polled = 1 << 0,
 
         /// <summary>The answer the device gives to the run-in-background query.</summary>
         RunInBackground = 1 << 1,
@@ -34,6 +49,15 @@ namespace UnityEngineInternal.Input
 
         /// <summary>Answer <see cref="InputCommandResult.notSupported"/> to the run-in-background query.</summary>
         RefuseRunInBackground = 1 << 6,
+
+        /// <summary>Publish through the input pipeline's producer surface instead of the legacy calls.</summary>
+        PublishThroughPipeline = 1 << 7,
+
+        /// <summary>Refuse a publish that finds a deferred device's hold full, rather than merging it.</summary>
+        RefuseWhenFull = 1 << 8,
+
+        /// <summary>Refuse, rather than replace, where a full hold's merge rule refuses the new state.</summary>
+        RefuseLostTransition = 1 << 9,
     }
 
     /// <summary>
@@ -46,6 +70,7 @@ namespace UnityEngineInternal.Input
     {
         public uint stateFourCC;
         public VirtualDeviceFlags flags;
+        public VirtualDeviceDelivery delivery;
         public uint descriptorOffset;
         public uint descriptorSize;
         public uint stateOffset;
@@ -102,6 +127,12 @@ namespace UnityEngineInternal.Input
         public ulong explicitPollCount;
         public ulong setCount;
         public ulong deviceIoctlCount;
+
+        /// <summary>State events a full hold merged into the state it already held.</summary>
+        public ulong eventsCoalesced;
+
+        /// <summary>Publishes refused because a queue was full, which the caller may retry.</summary>
+        public ulong eventsRefused;
     }
 
     /// <summary>
@@ -115,6 +146,7 @@ namespace UnityEngineInternal.Input
         public int liveDeviceId;
         public uint stateFourCC;
         public VirtualDeviceFlags flags;
+        public VirtualDeviceDelivery delivery;
 
         /// <summary>The descriptor's product name, null-terminated.</summary>
         public fixed byte displayName[64];
@@ -147,5 +179,6 @@ namespace UnityEngineInternal.Input
         public const int pollNow = ('V' << 24) | ('D' << 16) | ('P' << 8) | 'N';
         public const int queryTelemetry = ('V' << 24) | ('D' << 16) | ('T' << 8) | 'M';
         public const int enumerate = ('V' << 24) | ('D' << 16) | ('E' << 8) | 'N';
+        public const int releaseDeferred = ('V' << 24) | ('D' << 16) | ('R' << 8) | 'D';
     }
 }

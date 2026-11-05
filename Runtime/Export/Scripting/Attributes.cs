@@ -138,7 +138,7 @@ namespace UnityEngine
     {
     }
 
-    [AttributeUsage(AttributeTargets.Class, Inherited = false)]
+    [AttributeUsage(AttributeTargets.Class | AttributeTargets.Field, Inherited = false)]
     [UsedByNativeCode]
     public class ExcludeFromPresetAttribute : Attribute {}
 }

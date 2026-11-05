@@ -115,6 +115,7 @@ using System.Runtime.CompilerServices;
 [assembly: InternalsVisibleTo("UnityEngine.ParticleSystemModule")]
 [assembly: InternalsVisibleTo("UnityEngine.EntitiesModule")]
 [assembly: InternalsVisibleTo("UnityEngine.EntitiesPropertiesModule")]
+[assembly: InternalsVisibleTo("UnityEngine.TypeRegistryModule")]
 [assembly: InternalsVisibleTo("Unity.Modules.Scripting.Scripting.Tests.Playmode")]
 [assembly: InternalsVisibleTo("Unity.Modules.Scripting.Scripting.Tests.Editor")]
 [assembly: InternalsVisibleTo("UnityEditor.GraphToolkitModule")]

@@ -4,6 +4,8 @@
 
 using System;
 using UnityEngine.Bindings;
+using DynamicallyAccessedMembersAttribute = System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute;
+using DynamicallyAccessedMemberTypes = System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes;
 
 namespace UnityEngine
 {
@@ -62,15 +64,15 @@ namespace UnityEngine
     [NativeHeader("Modules/JSONSerialize/Public/JsonUtility.bindings.h")]
     public static class JsonUtility
     {
+        // Native code creates FromJson objects, so the linker must keep a constructor to see the type as instantiated
+        const DynamicallyAccessedMemberTypes k_InstantiatedMembers =
+            DynamicallyAccessedMemberTypes.PublicConstructors | DynamicallyAccessedMemberTypes.NonPublicConstructors;
+
         [FreeFunction("ToJsonInternal", IsThreadSafe = true)]
         private static extern string ToJsonInternal([NotNull] object obj, bool prettyPrint);
 
         [FreeFunction("FromJsonInternal", true, ThrowsException = true, IsThreadSafe = true)]
         private static extern object FromJsonInternal(string json, object objectToOverwrite, Type type);
-
-        // False means the walker diverged or never engaged; test link.xml keeps this in stripped players
-        [FreeFunction("CheckJsonFromBinaryByteIdenticalInternal")]
-        internal static extern bool CheckJsonFromBinaryByteIdentical([NotNull] object obj, bool prettyPrint);
 
         ///<summary>Generate a JSON representation of the public fields of an object.</summary>
         ///<remarks>Internally, this method uses the Unity serializer. The object you pass in and all its fields must meet the requirements for serialization by the Unity serializer. For the full list of these requirements, refer to [Serialization rules](xref:script-serialization-rules) in the manual.
@@ -262,7 +264,7 @@ namespace UnityEngine
         ///}
         ///]]></code>
         ///</example>
-        public static T FromJson<T>(string json) { return (T)FromJson(json, typeof(T)); }
+        public static T FromJson<[DynamicallyAccessedMembers(k_InstantiatedMembers)] T>(string json) { return (T)FromJson(json, typeof(T)); }
 
         ///<summary>Create an object from its JSON representation.</summary>
         ///<remarks>Internally, this method uses the Unity serializer. The object you're creating and all its fields must meet the requirements for serialization by the Unity serializer. For the full list of these requirements, refer to [Serialization rules](xref:script-serialization-rules) in the manual.
@@ -277,7 +279,7 @@ namespace UnityEngine
         ///<param name="json">The JSON representation of the object.</param>
         ///<param name="type">The type of object represented by the Json.</param>
         ///<returns>An instance of the object.</returns>
-        public static object FromJson(string json, Type type)
+        public static object FromJson(string json, [DynamicallyAccessedMembers(k_InstantiatedMembers)] Type type)
         {
             if (string.IsNullOrEmpty(json))
                 return null;

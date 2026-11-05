@@ -76,10 +76,13 @@ namespace UnityEditor.PackageManager.UI.Internal
         protected IClientProxy m_ClientProxy;
         [NonSerialized]
         protected IApplicationProxy m_Application;
-        public void ResolveDependencies(IClientProxy clientProxy, IApplicationProxy applicationProxy)
+        [NonSerialized]
+        protected IDateTimeProxy m_DateTimeProxy;
+        public void ResolveDependencies(IClientProxy clientProxy, IApplicationProxy applicationProxy, IDateTimeProxy dateTimeProxy)
         {
             m_ClientProxy = clientProxy;
             m_Application = applicationProxy;
+            m_DateTimeProxy = dateTimeProxy;
         }
     }
 
@@ -109,7 +112,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                 return;
             }
 
-            m_Timestamp = DateTime.Now.Ticks;
+            m_Timestamp = m_DateTimeProxy.utcNow.Ticks;
             if (!m_Application.isUpmRunning)
             {
                 EditorApplication.delayCall += () =>

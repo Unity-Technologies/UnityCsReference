@@ -37,7 +37,7 @@ namespace UnityEngine
             m_jobject = (jobject == IntPtr.Zero) ? IntPtr.Zero : AndroidJNI.NewGlobalRef(jobject);
         }
 
-#pragma warning disable UA5000 // The Avoid Finalizer Analyzer produces compile errors for any new finalizers. This pre-existing finalizer declaration has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA5000 // Releases the JNI global ref through a deferred queue made for the finalizer thread; the finalizer is the safety net.
         ~GlobalJavaObjectRef()
         {
             Dispose();
@@ -142,7 +142,7 @@ namespace UnityEngine
             this.javaInterface = javaInterface;
         }
 
-#pragma warning disable UA5000 // The Avoid Finalizer Analyzer produces compile errors for any new finalizers. This pre-existing finalizer declaration has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA5000 // Releases the JNI weak global ref; the public type has no Dispose, so the finalizer is the only release.
         ~AndroidJavaProxy()
         {
             AndroidJNISafe.DeleteWeakGlobalRef(proxyObject);
@@ -867,7 +867,7 @@ namespace UnityEngine
         {
         }
 
-#pragma warning disable UA5000 // The Avoid Finalizer Analyzer produces compile errors for any new finalizers. This pre-existing finalizer declaration has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA5000 // Public protected virtual Dispose(bool) is API; the finalizer routes JNI ref release through Dispose(false).
         ~AndroidJavaObject()
         {
             Dispose(false);

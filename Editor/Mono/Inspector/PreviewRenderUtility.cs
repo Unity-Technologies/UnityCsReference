@@ -95,6 +95,7 @@ namespace UnityEditor
         private bool m_PixelPerfect;
         private Material m_InvisibleMaterial;
         private bool m_previewOpened;
+        private bool m_StaticPreviewOpened;
         private bool m_IsRendering;
         private bool m_CleanupPending;
         private bool m_CleanedUp;
@@ -155,7 +156,7 @@ namespace UnityEditor
             m_previewOpened = false;
         }
 
-#pragma warning disable UA5000 // The Avoid Finalizer Analyzer produces compile errors for any new finalizers. This pre-existing finalizer declaration has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA5000 // Intentional leak warning: logs an error when the preview scene was not cleaned up.
         ~PreviewRenderUtility()
         {
             if (m_Type != null)
@@ -245,6 +246,14 @@ namespace UnityEditor
                 EndPreview();
             }
 
+            if (m_StaticPreviewOpened)
+            {
+                Debug.LogError("Missing EndStaticPreview() before cleanup of PreviewRenderUtility");
+                m_SavedState.Restore();
+                FinishFrame();
+                m_StaticPreviewOpened = false;
+            }
+
             if (m_RenderTexture)
             {
                 Object.DestroyImmediate(m_RenderTexture);
@@ -301,6 +310,7 @@ namespace UnityEditor
         public void BeginStaticPreview(Rect r)
         {
             InitPreview(r);
+            m_StaticPreviewOpened = true;
             var color = new Color(82 / 255f, 82 / 255f, 82 / 255f, 1.0f);
             var darkGreyBackground = new Texture2D(1, 1, TextureFormat.RGBA32, true);
             darkGreyBackground.SetPixel(0, 0, color);
@@ -451,6 +461,7 @@ namespace UnityEditor
             RenderTexture.ReleaseTemporary(tmp);
             m_SavedState.Restore();
             FinishFrame();
+            m_StaticPreviewOpened = false;
             return copy;
         }
 
@@ -562,6 +573,7 @@ namespace UnityEditor
             return lightGO;
         }
 
+#pragma warning disable CS0618 // Type or member is obsolete
         public void Render(bool allowScriptableRenderPipeline = false, bool updatefov = true)
         {
             var oldAllowPipes = Unsupported.useScriptableRenderPipeline;
@@ -602,6 +614,7 @@ namespace UnityEditor
                 Unsupported.useScriptableRenderPipeline = oldAllowPipes;
             }
         }
+#pragma warning restore CS0618
 
         // Guards Cleanup() against tearing down the camera/render texture while this call is on the stack.
         internal void RenderCamera()

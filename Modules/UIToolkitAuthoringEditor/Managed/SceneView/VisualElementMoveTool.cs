@@ -94,7 +94,8 @@ namespace Unity.UIToolkit.Editor
             if (wantVeContext && !activeIsVeContext && ToolManager.CanSetActiveContext<VisualElementToolContext>())
                 ToolManager.SetActiveContext<VisualElementToolContext>();
             else if (!wantVeContext && activeIsVeContext)
-                ToolManager.SetActiveContext<GameObjectToolContext>();
+                // A null context makes SetActiveContext resolve the Scene view's default context.
+                ToolManager.SetActiveContext(null);
         }
 
         // VE context only activates where the document is editable, with a VE selected, and on a panel

@@ -45,11 +45,15 @@ namespace UnityEditor.Build.Profile.Elements
                 m_SceneList = new BuildProfileSceneList(profile);
 
                 var root = this.Q<VisualElement>("scene-list-foldout-root");
+                var addSceneListButton = this.Q<Button>("scene-list-foldout-add-button");
                 var addOpenSceneListButton = this.Q<Button>("scene-list-foldout-add-open-button");
 
 #pragma warning disable UAL0015 // chains into BuildPlayerSceneTreeView's ctor, whose subscription is unsubscribed by UnsubscribeListChange before this view can outlive the current CodeLoaded scope
                 root.Add(m_SceneList.GetSceneListGUI());
 #pragma warning restore UAL0015
+
+                addSceneListButton.text = TrText.addScenes;
+                addSceneListButton.clicked += () => m_SceneList.AddScenes(addSceneListButton);
 
                 addOpenSceneListButton.text = TrText.addOpenScenes;
                 addOpenSceneListButton.clicked += () => m_SceneList.AddOpenScenes();

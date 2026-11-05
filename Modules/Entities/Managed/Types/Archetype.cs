@@ -26,6 +26,7 @@ namespace Unity.Entities
         HasUnityObjectRefs  = 1 << 12,
         HasOnAddedCallbacks = 1 << 13,
         HasOnRemovedCallbacks = 1 << 14,
+        HasGameObjectEntities = 1 << 15,
     }
 
     [StructLayout(LayoutKind.Sequential)]
@@ -70,6 +71,12 @@ namespace Unity.Entities
         // These arrays each have TypeCount elements, ordered by IndexInArchetype (the same order as the Types array)
         public int*    Offsets; // Byte offset of each component type's data within this archetype's chunk buffer.
         public ushort* SizeOfs; // Size in bytes of each component type
+
+        // The store of the world that owns this archetype. An archetype never changes world, so this is how an
+        // entity finds its world: entity -> chunk -> archetype -> store. Kept beside Offsets and SizeOfs, which
+        // every per-entity component access already reads.
+        public EntityComponentStore* EntityComponentStore;
+        public EntityDataAccess* EntityDataAccess => Entities.EntityDataAccess.FromEntityComponentStore(EntityComponentStore);
         public int*    BufferCapacities; // For IBufferElementData components, the buffer capacity of each component. Not meaningful for non-buffer components.
 
         // Order of components in the types array is always:
@@ -89,10 +96,6 @@ namespace Unity.Entities
         public EntityRemapUtility.EntityPatchInfo* ScalarEntityPatches;
         public EntityRemapUtility.BufferEntityPatchInfo* BufferEntityPatches;
 
-        // @macton Temporarily store back reference to EntityComponentStore.
-        // - In order to remove this we need to sever the connection to CompanionChangesTracker
-        //   when structural changes occur.
-        public EntityComponentStore* EntityComponentStore;
 
         public fixed byte QueryMaskArray[128];
 
@@ -109,6 +112,7 @@ namespace Unity.Entities
         public bool HasSystemInstanceComponents => (Flags & ArchetypeFlags.HasSystemInstanceComponents) != 0;
         public bool HasOnAddedCallbacks => (Flags & ArchetypeFlags.HasOnAddedCallbacks) != 0;
         public bool HasOnRemovedCallbacks => (Flags & ArchetypeFlags.HasOnRemovedCallbacks) != 0;
+        public bool HasGameObjectEntities => (Flags & ArchetypeFlags.HasGameObjectEntities) != 0;
 
         public int NumNativeComponentData => FirstBufferComponent - 1;
         public int NumBufferComponents => FirstTagComponent - FirstBufferComponent;

@@ -768,6 +768,11 @@ namespace UnityEngine
             get { return SupportsMultiview(); }
         }
 
+        public static bool supportsDepthClamp
+        {
+            get { return SupportsDepthClamp(); }
+        }
+
         public static bool supportsStoreAndResolveAction
         {
             get { return SupportsStoreAndResolveAction(); }
@@ -1176,6 +1181,9 @@ namespace UnityEngine
 
         [FreeFunction("ScriptingGraphicsCaps::SupportsMultiview")]
         static extern bool SupportsMultiview();
+
+        [FreeFunction("ScriptingGraphicsCaps::SupportsDepthClamp")]
+        static extern bool SupportsDepthClamp();
 
         [FreeFunction("ScriptingGraphicsCaps::SupportsStoreAndResolveAction")]
         static extern bool SupportsStoreAndResolveAction();

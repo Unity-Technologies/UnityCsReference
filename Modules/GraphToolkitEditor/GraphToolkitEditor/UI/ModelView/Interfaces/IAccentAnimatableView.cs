@@ -5,7 +5,7 @@
 namespace Unity.GraphToolkit.Editor
 {
     /// <summary>
-    /// An <see cref="IAnimatableView"/> that can also display a static fill amount, used by <see cref="GraphVisualization.AccentManager{TView}"/>.
+    /// An <see cref="IAnimatableView"/> that can also display a static fill amount, used by <see cref="GraphVisualization.AccentManager{TView, TModel}"/>.
     /// </summary>
     interface IAccentAnimatableView : IAnimatableView
     {

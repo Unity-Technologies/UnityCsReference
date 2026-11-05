@@ -17,6 +17,8 @@ namespace Unity.ProjectAuditor.Editor.Modules
         internal const string PAA6001 = nameof(PAA6001);
         internal const string PAA6002 = nameof(PAA6002);
 
+        internal static readonly string[] k_ReadWriteEnabledDescriptorIds = { "PAA1000", "PAA1002" };
+
         internal static readonly Descriptor k_TextureNotReadWriteDescriptor = new Descriptor
             (
             PAA6000,
@@ -83,6 +85,8 @@ namespace Unity.ProjectAuditor.Editor.Modules
 
         readonly HashSet<EntityId> m_VisitedAssets = new HashSet<EntityId>(512);
 
+        readonly HashSet<EntityId> m_OverriddenMeshes = new HashSet<EntityId>(512);
+
         public override void Initialize(Action<Descriptor> registerDescriptor)
         {
             registerDescriptor(k_TextureNotReadWriteDescriptor);
@@ -93,6 +97,7 @@ namespace Unity.ProjectAuditor.Editor.Modules
         public override void OnAnalysisStarted()
         {
             m_VisitedAssets.Clear();
+            m_OverriddenMeshes.Clear();
         }
 
         public override IEnumerable<ReportItemBuilder> Analyze(GameObjectAnalysisContext context)
@@ -108,22 +113,22 @@ namespace Unity.ProjectAuditor.Editor.Modules
                     yield return CreateTextureIssue(shape.texture, context);
 
                 // Shape Meshes
-                if ((shape.mesh != null) && (shape.mesh.isReadable == false) && m_VisitedAssets.Add(shape.mesh.GetEntityId()))
-                    yield return CreateMeshIssue(shape.mesh, context);
+                if (AnalyzeMeshRequiringReadWrite(shape.mesh, context, out var shapeMeshIssue))
+                    yield return shapeMeshIssue;
 
                 if (shape.meshRenderer != null)
                 {
                     var psMeshFilter = shape.meshRenderer.GetComponent<MeshFilter>();
                     var psMesh = (psMeshFilter != null) ? psMeshFilter.sharedMesh : null;
-                    if ((psMesh != null) && (psMesh.isReadable == false) && m_VisitedAssets.Add(psMesh.GetEntityId()))
-                        yield return CreateMeshIssue(psMeshFilter.sharedMesh, context);
+                    if (AnalyzeMeshRequiringReadWrite(psMesh, context, out var psMeshIssue))
+                        yield return psMeshIssue;
                 }
 
                 if (shape.skinnedMeshRenderer != null)
                 {
                     var skinnedMesh = shape.skinnedMeshRenderer.sharedMesh;
-                    if ((skinnedMesh != null) && (skinnedMesh.isReadable == false) && m_VisitedAssets.Add(skinnedMesh.GetEntityId()))
-                        yield return CreateMeshIssue(skinnedMesh, context);
+                    if (AnalyzeMeshRequiringReadWrite(skinnedMesh, context, out var skinnedMeshIssue))
+                        yield return skinnedMeshIssue;
                 }
             }
 
@@ -135,8 +140,8 @@ namespace Unity.ProjectAuditor.Editor.Modules
                 int meshCount = psr.GetMeshes(meshes);
                 for (int i = 0; i < meshCount; i++)
                 {
-                    if ((meshes[i] != null) && (meshes[i].isReadable == false) && m_VisitedAssets.Add(meshes[i].GetEntityId()))
-                        yield return CreateMeshIssue(meshes[i], context);
+                    if (AnalyzeMeshRequiringReadWrite(meshes[i], context, out var psrMeshIssue))
+                        yield return psrMeshIssue;
                 }
             }
 
@@ -151,8 +156,9 @@ namespace Unity.ProjectAuditor.Editor.Modules
                         if (prototype.usePrototypeMesh)
                         {
                             var terrainMeshFilter = prototype.prototype.GetComponent<MeshFilter>();
-                            if ((terrainMeshFilter != null) && (terrainMeshFilter.sharedMesh != null) && (terrainMeshFilter.sharedMesh.isReadable == false) && m_VisitedAssets.Add(terrainMeshFilter.sharedMesh.GetEntityId()))
-                                yield return CreateMeshIssue(terrainMeshFilter.sharedMesh, context);
+                            var terrainMesh = (terrainMeshFilter != null) ? terrainMeshFilter.sharedMesh : null;
+                            if (AnalyzeMeshRequiringReadWrite(terrainMesh, context, out var terrainMeshIssue))
+                                yield return terrainMeshIssue;
 
                             if (prototype.prototype.TryGetComponent<MeshRenderer>(out var renderer) && renderer.sharedMaterial != null)
                             {
@@ -220,6 +226,27 @@ namespace Unity.ProjectAuditor.Editor.Modules
             .WithSeverity(Severity.Major)
             .WithLocation(AssetDatabase.GetAssetPath(texture))
             .WithUpgradeProperties("6000.5", null, null);
+        }
+
+        bool AnalyzeMeshRequiringReadWrite(Mesh mesh, GameObjectAnalysisContext context, out ReportItemBuilder issue)
+        {
+            issue = null;
+            if (mesh == null)
+                return false;
+
+            if (mesh.isReadable)
+            {
+                if (m_OverriddenMeshes.Add(mesh.GetEntityId()))
+                    context.CreateOverride(AssetDatabase.GetAssetPath(mesh), k_ReadWriteEnabledDescriptorIds);
+                return false;
+            }
+
+            if (!m_VisitedAssets.Add(mesh.GetEntityId()))
+                return false;
+
+            issue = CreateMeshIssue(mesh, context);
+            context.CreateOverride(issue, k_ReadWriteEnabledDescriptorIds);
+            return true;
         }
 
         ReportItemBuilder CreateMeshIssue(Mesh mesh, GameObjectAnalysisContext context)

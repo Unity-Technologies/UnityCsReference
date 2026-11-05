@@ -53,7 +53,10 @@ namespace UnityEditor.Experimental.GraphView
                 if (!IsWordSearchable(entry.Key))
                     continue;
                 foreach (var value in entry.Value)
+                {
+                    indexer.IndexWord(context.documentIndex, value);
                     indexer.IndexWordComponents(context.documentIndex, value);
+                }
             }
         }
 

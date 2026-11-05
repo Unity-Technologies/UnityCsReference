@@ -17,7 +17,7 @@ namespace UnityEngine.UIElements
     /// <see cref="UnmanagedDataStore"/> when the type carries no managed reference, a
     /// <see cref="ManagedComponentRegistry{T}"/> otherwise. Owned canonically by
     /// <see cref="ComponentManager"/> (for disposal and enumeration) and cached on
-    /// <see cref="ComponentManager{T}"/> and on each <see cref="ComponentSlot"/> so the per-element
+    /// <see cref="ComponentManager{T}"/> and on each <see cref="ComponentTypeSet"/> so the per-element
     /// teardown path can free a slot without a dictionary lookup (which matters on the GC finalizer thread).
     /// </summary>
     class PerTypeStore
@@ -109,21 +109,17 @@ namespace UnityEngine.UIElements
     }
 
     /// <summary>
-    /// Per-element slot: the per-type store the component lives in, and the handle indexing it.
+    /// Per-element slot: the per-instance state only. The per-type store the handle indexes is the record at
+    /// the same position in the element's <see cref="ComponentTypeSet.records"/>.
     /// </summary>
     struct ComponentSlot
     {
         public UnmanagedDataHandle handle;
-        public PerTypeStore record;
 
         // Storage for a component that carries a managed reference; null for an unmanaged one, whose
         // data lives in the per-type store addressed by handle. Element-held on purpose: see
         // ManagedComponentBox.
         public IManagedComponentBox managedBox;
-
-        // Null-tolerant: a slot past the live range is cleared, and the dirty-mask tail can still reach it.
-        public Action<VisualElement> onChanged => record?.onChanged;
-        public ComponentBindingDispatcher bindingDispatcher => record?.bindingDispatcher;
     }
 
     /// <summary>
@@ -291,7 +287,8 @@ namespace UnityEngine.UIElements
             var name = $"Components.{componentType.Name}";
             var labels = new[] { new MemoryLabel("UIElements", name, Allocator.Persistent) };
 
-            return new UnmanagedDataStore(components, labels, initialData, initialCapacity, Allocator.Persistent, name);
+            // Deferred: a type that is registered but never added costs no chunk.
+            return new UnmanagedDataStore(components, labels, initialData, initialCapacity, Allocator.Persistent, name, deferAllocation: true);
         }
 
         /// <summary>
@@ -444,6 +441,40 @@ namespace UnityEngine.UIElements
             return ComponentManager<T>.Record?.liveCount ?? 0;
         }
 
+        /// <summary>
+        /// Test-only: bytes allocated by the unmanaged component stores, including free slots.
+        /// </summary>
+        internal long GetUnmanagedBytesReserved()
+        {
+            var bytes = 0L;
+            lock (m_StoresByComponentType)
+            {
+                foreach (var record in m_StoresByComponentType.Values)
+                {
+                    if (record.managedRegistry == null && record.store.IsValid)
+                        bytes += record.store.BytesReserved;
+                }
+            }
+            return bytes;
+        }
+
+        /// <summary>
+        /// Test-only: bytes of the live slots in the unmanaged component stores.
+        /// </summary>
+        internal long GetUnmanagedBytesUsed()
+        {
+            var bytes = 0L;
+            lock (m_StoresByComponentType)
+            {
+                foreach (var record in m_StoresByComponentType.Values)
+                {
+                    if (record.managedRegistry == null && record.store.IsValid)
+                        bytes += (long)record.liveCount * record.store.BytesPerSlot;
+                }
+            }
+            return bytes;
+        }
+
         void DisposeAll()
         {
             // Don't unsubscribe (the dispatcher clears subscribers) and don't null s_SharedManager: this hook
@@ -540,6 +571,9 @@ namespace UnityEngine.UIElements
         [NoAutoStaticsCleanup]
         public static readonly ComponentResourceReleaseHandler<T> ReleaseResourcesHandler;
 
+        // A managed type with a release method needs its boxes registered for the code-unload sweep.
+        public static readonly bool UsesTrackedBox;
+
         static ComponentManager()
         {
             TypeHandle = typeof(T).TypeHandle;
@@ -550,6 +584,7 @@ namespace UnityEngine.UIElements
             // The hooks ignore instance state, so default(T) is a valid receiver; no boxing.
             CreateInstanceFactory = default(T).__GetComponentCreateInstanceFactory() as Func<T>;
             ReleaseResourcesHandler = default(T).__GetComponentResourceReleaseHandler() as ComponentResourceReleaseHandler<T>;
+            UsesTrackedBox = !IsUnmanaged && ReleaseResourcesHandler != null;
 
             AcquireRecord();
 #pragma warning restore UAL0015
@@ -581,6 +616,21 @@ namespace UnityEngine.UIElements
 
             if (IsUnmanaged && ReleaseResourcesHandler != null)
                 unsafe { s_Record.releaseResources = &ReleaseResourcesAt; }
+        }
+
+        public static IManagedComponentBox RentBox(in T value)
+        {
+            if (UsesTrackedBox)
+            {
+                var tracked = TrackedManagedComponentBoxPool<T>.Pool.Get();
+                tracked.Value = value;
+                Registry.Add(tracked);
+                return tracked;
+            }
+
+            var box = ManagedComponentBoxPool<T>.Pool.Get();
+            box.Value = value;
+            return box;
         }
 
         static unsafe void ReleaseResourcesAt(void* data) => ReleaseResourcesHandler(ref UnsafeUtility.AsRef<T>(data));

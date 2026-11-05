@@ -188,6 +188,42 @@ namespace UnityEngine.UIElements
         }
     }
 
+    internal readonly struct VariableDeclaringRule
+    {
+        public readonly StyleSheet sheet;
+        public readonly int contentHash;
+        public readonly StyleRule rule;
+        public readonly StyleSheetPriority tier;
+
+        public VariableDeclaringRule(StyleSheet sheet, StyleRule rule, StyleSheetPriority tier)
+        {
+            this.sheet = sheet;
+            contentHash = sheet.contentHash;
+            this.rule = rule;
+            this.tier = tier;
+        }
+
+        public bool Matches(StyleSheet sheet, StyleRule rule, StyleSheetPriority tier)
+        {
+            return ReferenceEquals(this.sheet, sheet) && contentHash == sheet.contentHash && ReferenceEquals(this.rule, rule) && this.tier == tier;
+        }
+    }
+
+    // The variable context an element gets from its parent's context and its variable-declaring rules, in match order.
+    internal sealed class DerivedVariableContext
+    {
+        public readonly StyleVariableContext parent;
+        public readonly VariableDeclaringRule[] rules;
+        public readonly StyleVariableContext context;
+
+        public DerivedVariableContext(StyleVariableContext parent, VariableDeclaringRule[] rules, StyleVariableContext context)
+        {
+            this.parent = parent;
+            this.rules = rules;
+            this.context = context;
+        }
+    }
+
     internal partial class StyleVariableResolver
     {
         private enum Result

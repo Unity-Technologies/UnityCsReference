@@ -37,22 +37,22 @@ namespace UnityEditorInternal
 
         public static bool CopyComponent(Component component)
         {
-            return CopyComponent(new UnityObject[] { component }, false);
+            return CopyComponent(new[] { component != null ? component.GetEntityId() : EntityId.None }, false);
         }
 
-        [FreeFunction]
-        static extern bool CopyComponent(UnityObject[] context, bool validateOnly);
+        internal static extern bool CopyComponent(EntityId[] componentEntityIds, bool validateOnly);
 
         public static bool PasteComponentValues(Component component)
         {
-            return PasteComponentValues(new UnityObject[] { component }, false);
+            return PasteComponentValues(new[] { component != null ? component.GetEntityId() : EntityId.None }, false);
         }
 
-        [FreeFunction]
-        static extern bool PasteComponentValues(UnityObject[] context, bool validateOnly);
+        internal static extern bool PasteComponentValues(EntityId[] componentEntityIds, bool validateOnly);
 
         //Append new Components to the GameObject
         public static extern bool PasteComponentAsNew([NotNull] GameObject go);
+
+        internal static extern bool PasteComponentAsNew_Internal(EntityId[] componentEntityIds, bool validateOnly);
 
         internal static extern bool CollectConnectedComponents([NotNull] GameObject targetGameObject, Component[] components, bool copy, [NotNull][Out] List<Component> outCollectedComponents, out string outErrorMessage);
 

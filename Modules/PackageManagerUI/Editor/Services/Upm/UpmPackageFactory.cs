@@ -14,6 +14,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_SettingsProxy.onEnablePreReleasePackagesChanged += OnShowPreReleasePackagesOrSeeAllVersionsChanged;
             m_SettingsProxy.onSeeAllVersionsChanged += OnShowPreReleasePackagesOrSeeAllVersionsChanged;
             m_SettingsProxy.onTrustPolicyLevelChanged += OnTrustPolicyLevelChanged;
+            m_SettingsProxy.onClosedNetworkEnabledChanged += OnClosedNetworkEnabledChanged;
 
             m_UpmCache.onPackageInfosUpdated += OnPackageInfosUpdated;
             m_UpmCache.onExtraPackageInfoFetched += OnExtraPackageInfoFetched;
@@ -32,6 +33,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_SettingsProxy.onEnablePreReleasePackagesChanged -= OnShowPreReleasePackagesOrSeeAllVersionsChanged;
             m_SettingsProxy.onSeeAllVersionsChanged -= OnShowPreReleasePackagesOrSeeAllVersionsChanged;
             m_SettingsProxy.onTrustPolicyLevelChanged -= OnTrustPolicyLevelChanged;
+            m_SettingsProxy.onClosedNetworkEnabledChanged -= OnClosedNetworkEnabledChanged;
 
             m_UpmCache.onPackageInfosUpdated -= OnPackageInfosUpdated;
             m_UpmCache.onExtraPackageInfoFetched -= OnExtraPackageInfoFetched;
@@ -142,6 +144,11 @@ namespace UnityEditor.PackageManager.UI.Internal
             RegenerateAllUpmPackages();
         }
 
+        private void OnClosedNetworkEnabledChanged(bool _)
+        {
+            RegenerateAllUpmPackages();
+        }
+
         private void RegenerateAllUpmPackages()
         {
             var allPackageNames = m_UpmCache.installedPackageInfos.Join(m_UpmCache.discoverableSearchPackageInfos).Join(m_UpmCache.nonDiscoverableSearchPackageInfos).SelectToNewHashSet(p => p.name);
@@ -152,7 +159,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         {
             var tagsToExclude = m_SettingsProxy.seeAllPackageVersions ? PackageTag.None :
                 m_SettingsProxy.enablePreReleasePackages ? PackageTag.Experimental : PackageTag.Experimental | PackageTag.PreRelease;
-            var versionList = new UpmVersionList(packageData, tagsToExclude, m_IOProxy, m_ApplicationProxy, changedSource != PackagesChangedSource.AddAndRemove, m_SettingsProxy.trustPolicyLevel);
+            var versionList = new UpmVersionList(packageData, tagsToExclude, m_IOProxy, m_ApplicationProxy, changedSource != PackagesChangedSource.AddAndRemove, m_SettingsProxy.trustPolicyLevel, m_SettingsProxy.isSignatureValidationDisabled);
             var primaryVersion = versionList.primary;
             if (primaryVersion == null)
                 return null;

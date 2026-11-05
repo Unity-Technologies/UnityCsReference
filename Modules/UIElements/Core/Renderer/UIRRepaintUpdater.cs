@@ -26,6 +26,8 @@ namespace UnityEngine.UIElements
         uint vertexBudget { get; set; }
         TextureSlotCount textureSlotCount { get; set; }
         ExtraVertexChannels extraVertexChannels { get; set; }
+        // Whether the frame being repainted skips rendering, latched from the panel's skipRendering.
+        bool isRenderingSkipped { get; }
         void Reset();
         void Render();
     }
@@ -34,6 +36,8 @@ namespace UnityEngine.UIElements
     {
         BaseVisualElementPanel attachedPanel;
         internal RenderTreeManager renderTreeManager; // May be recreated any time.
+
+        public bool isRenderingSkipped => renderTreeManager?.isRenderingSkipped ?? false;
 
         public UIRRepaintUpdater()
         {
@@ -139,15 +143,18 @@ namespace UnityEngine.UIElements
             bool renderTextureChanged = false;
             bool stackingContextChanged = false;
             bool renderChainCutChanged = false;
+            bool clipBoundaryChanged = false;
             if (ve.renderData != null)
             {
                 renderTextureChanged = ve.useRenderTexture == ((ve.renderData.flags & RenderDataFlags.IsSubTreeQuad) == 0);
                 stackingContextChanged = (ve.renderData.zIndex == int.MinValue) != (zIndex == int.MinValue);
                 // A stale cut sends promoted descendants to another component's command list, so the subtree must be rebuilt.
                 renderChainCutChanged = ve.renderData.cutsRenderChain != ve.isWorldSpaceRootPanelComponent;
+                clipBoundaryChanged = (overflowChanged || borderRadiusChanged || renderHintsChanged) && ve.nestedRenderData == null
+                    && RenderEvents.HasStaleClipBoundaryPromotion(renderTreeManager, ve.renderData);
             }
 
-            if (renderTextureChanged || stackingContextChanged || renderChainCutChanged)
+            if (renderTextureChanged || stackingContextChanged || renderChainCutChanged || clipBoundaryChanged)
                 renderTreeManager.UIEOnRenderTreeStructureChanged(ve);
             else if (renderHintsChanged)
                 renderTreeManager.UIEOnRenderHintsChanged(ve);
@@ -173,6 +180,9 @@ namespace UnityEngine.UIElements
 
             if (disableRenderingChanged && !repaintChanged) // The disable rendering will be taken care of by the repaint (it clear all commands)
                 renderTreeManager.UIEOnDisableRenderingChanged(ve);
+
+            if (disableRenderingChanged)
+                renderTreeManager.UIEOnPromotedDescendantsDisableRenderingChanged(ve);
         }
 
         public override void Update()

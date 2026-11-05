@@ -33,6 +33,16 @@ namespace UnityEngine
         [NativeProperty("GetGUIState().m_TargetPixelSize", true, TargetType.Field)]
         internal static extern Vector2 rootTargetPixelSize { get; set; }
 
+        [NativeProperty("GetGUIState().m_SkipRendering", true, TargetType.Field)]
+        internal static extern bool skipRendering
+        {
+            [VisibleToOtherModules("UnityEngine.UIElementsModule")]
+            get;
+
+            [VisibleToOtherModules("UnityEngine.UIElementsModule")]
+            set;
+        }
+
         [NativeProperty("GetGUIState().m_OnGUIDepth", true, TargetType.Field)]
         internal static extern int guiDepth
         {

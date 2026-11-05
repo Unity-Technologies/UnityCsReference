@@ -31,6 +31,7 @@ namespace UnityEditor.Build.Analysis
             public float PercentOfTotal;
             public int WarningCount;
             public int ErrorCount;
+            public string Tooltip;
         }
 
         private sealed class StepNode
@@ -53,6 +54,9 @@ namespace UnityEditor.Build.Analysis
             get => m_EmptyLabel.text;
             set => m_EmptyLabel.text = value;
         }
+
+        // Tooltip for a step's name cell, or null for none. Read on the next Bind.
+        public Func<BuildAnalysisStep, string> stepTooltip { get; set; }
 
         public BuildStepsElement() : base("Build Steps", padContent: false)
         {
@@ -78,6 +82,8 @@ namespace UnityEditor.Build.Analysis
                     var label = new Label();
                     label.AddToClassList("build-step-name");
                     label.RegisterCallback<ClickEvent>(OnNameCellClicked);
+                    // Not label.tooltip, because an elided label overwrites that with its own text.
+                    label.RegisterCallback<TooltipEvent>(OnNameCellTooltip);
                     return label;
                 },
                 bindCell = BindNameCell,
@@ -183,7 +189,7 @@ namespace UnityEditor.Build.Analysis
 
             var badges = ComputeStepBadges(steps, messages);
             m_StepPathById.Clear();
-            var items = BuildTreeViewItems(steps, totalMs, badges, m_StepPathById);
+            var items = BuildTreeViewItems(steps, totalMs, badges, stepTooltip, m_StepPathById);
             if (items.Count == 0)
             {
                 SetEmpty();
@@ -250,6 +256,21 @@ namespace UnityEditor.Build.Analysis
                 m_TreeView.CollapseItem(id);
             else
                 m_TreeView.ExpandItem(id);
+        }
+
+        // Registered in makeCell, so this runs before the handler that elision adds.
+        private void OnNameCellTooltip(TooltipEvent evt)
+        {
+            if (evt.currentTarget is not Label label || label.userData is not int id)
+                return;
+
+            var text = m_TreeView.GetItemDataForId<StepItemData>(id).Tooltip;
+            if (string.IsNullOrEmpty(text))
+                return;
+
+            evt.tooltip = label.isElided ? label.text + "\n\n" + text : text;
+            evt.rect = label.worldBound;
+            evt.StopImmediatePropagation();
         }
 
         private void BindBadgeCell(VisualElement element, int index)
@@ -351,7 +372,7 @@ namespace UnityEditor.Build.Analysis
 
         private static List<TreeViewItemData<StepItemData>> BuildTreeViewItems(
             BuildAnalysisStep[] steps, long totalMs, Dictionary<int, (int Warnings, int Errors)> badges,
-            Dictionary<int, string> pathById)
+            Func<BuildAnalysisStep, string> tooltip, Dictionary<int, string> pathById)
         {
             var roots = BuildStepTree(steps);
             var result = new List<TreeViewItemData<StepItemData>>();
@@ -365,11 +386,11 @@ namespace UnityEditor.Build.Analysis
                 if (root.Step.Depth == 0)
                 {
                     for (var j = 0; j < root.Children.Count; j++)
-                        result.Add(ConvertNode(root.Children[j], totalMs, badges, string.Empty, pathById, pathOccurrences));
+                        result.Add(ConvertNode(root.Children[j], totalMs, badges, tooltip, string.Empty, pathById, pathOccurrences));
                 }
                 else
                 {
-                    result.Add(ConvertNode(root, totalMs, badges, string.Empty, pathById, pathOccurrences));
+                    result.Add(ConvertNode(root, totalMs, badges, tooltip, string.Empty, pathById, pathOccurrences));
                 }
             }
 
@@ -378,7 +399,8 @@ namespace UnityEditor.Build.Analysis
 
         private static TreeViewItemData<StepItemData> ConvertNode(
             StepNode node, long totalMs, Dictionary<int, (int Warnings, int Errors)> badges,
-            string parentPath, Dictionary<int, string> pathById, Dictionary<string, int> pathOccurrences)
+            Func<BuildAnalysisStep, string> tooltip, string parentPath, Dictionary<int, string> pathById,
+            Dictionary<string, int> pathOccurrences)
         {
             var percent = (float)node.Step.DurationMs * 100f / totalMs;
             badges.TryGetValue(node.Step.Id, out var counts);
@@ -399,6 +421,7 @@ namespace UnityEditor.Build.Analysis
                 PercentOfTotal = percent,
                 WarningCount = counts.Warnings,
                 ErrorCount = counts.Errors,
+                Tooltip = tooltip?.Invoke(node.Step),
             };
 
             if (node.Children.Count == 0)
@@ -406,7 +429,7 @@ namespace UnityEditor.Build.Analysis
 
             var children = new List<TreeViewItemData<StepItemData>>(node.Children.Count);
             for (var i = 0; i < node.Children.Count; i++)
-                children.Add(ConvertNode(node.Children[i], totalMs, badges, path, pathById, pathOccurrences));
+                children.Add(ConvertNode(node.Children[i], totalMs, badges, tooltip, path, pathById, pathOccurrences));
 
             return new TreeViewItemData<StepItemData>(node.Step.Id, data, children);
         }

@@ -14,9 +14,7 @@ namespace UnityEditor.Search
         [SearchExpressionEvaluator(SearchExpressionType.Iterable | SearchExpressionType.Literal | SearchExpressionType.Variadic)]
         public static IEnumerable<SearchItem> ToNumber(SearchExpressionContext c)
         {
-            #pragma warning disable UAC2001 // Avoid Linq
-            return c.args.SelectMany(e => e.Execute(c)).Select(item =>
-#pragma warning restore UAC2001
+            return c.ForEachArgument().ForEachResult((context, item) =>
             {
                 SearchExpression.TryConvertToDouble(item, out var value);
                 return SearchExpression.CreateItem(value);
@@ -42,9 +40,7 @@ namespace UnityEditor.Search
         [SearchExpressionEvaluator(SearchExpressionType.Iterable | SearchExpressionType.Literal | SearchExpressionType.Variadic)]
         public static IEnumerable<SearchItem> ToBoolean(SearchExpressionContext c)
         {
-            #pragma warning disable UAC2001 // Avoid Linq
-            return c.args.SelectMany(e => e.Execute(c)).Select(item => SearchExpression.CreateItem(SearchExpression.IsTrue(item)));
-#pragma warning restore UAC2001
+            return c.ForEachArgument().ForEachResult((context, item) => SearchExpression.CreateItem(SearchExpression.IsTrue(item)));
         }
     }
 }

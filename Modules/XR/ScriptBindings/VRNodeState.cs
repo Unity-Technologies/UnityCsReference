@@ -150,6 +150,7 @@ namespace UnityEngine.XR
 
         // Getters
         ///<summary>Attempt to retrieve a vector representing the current position of the tracked node.</summary>
+        ///<param name="position">A Vector3 that the method sets to the current position of the tracked node, or to <see cref="Vector3.zero" /> if the position isn't available.</param>
         ///<returns>True if the position was set in the output parameter. False if the position is not available due to limitations of the underlying platform or if the node is not presently tracked.</returns>
         public bool TryGetPosition(out Vector3 position)
         {
@@ -157,6 +158,7 @@ namespace UnityEngine.XR
         }
 
         ///<summary>Attempt to retrieve a quaternion representing the current rotation of the tracked node.</summary>
+        ///<param name="rotation">A Quaternion that the method sets to the current rotation of the tracked node, or to <see cref="Quaternion.identity" /> if the rotation isn't available.</param>
         ///<returns>True if the rotation was set in the output parameter. False if the rotation is not available due to limitations of the underlying platform or if the node is not presently tracked.</returns>
         public bool TryGetRotation(out Quaternion rotation)
         {
@@ -164,6 +166,7 @@ namespace UnityEngine.XR
         }
 
         ///<summary>Attempt to retrieve a vector representing the current velocity of the tracked node.</summary>
+        ///<param name="velocity">A Vector3 that the method sets to the current velocity of the tracked node, or to <see cref="Vector3.zero" /> if the velocity isn't available.</param>
         ///<returns>True if the velocity was set in the output parameter. False if the velocity is not available due to limitations of the underlying platform or if the node is not presently tracked.</returns>
         public bool TryGetVelocity(out Vector3 velocity)
         {
@@ -171,6 +174,7 @@ namespace UnityEngine.XR
         }
 
         ///<summary>Attempt to retrieve a Vector3 representing the current angular velocity of the tracked node.</summary>
+        ///<param name="angularVelocity">A Vector3 that the method sets to the current angular velocity of the tracked node, or to <see cref="Vector3.zero" /> if the angular velocity isn't available.</param>
         ///<returns>True if the angular velocity was set in the output parameter. False if the angular velocity is not available due to limitations of the underlying platform or if the node is not presently tracked.</returns>
         public bool TryGetAngularVelocity(out Vector3 angularVelocity)
         {
@@ -178,6 +182,7 @@ namespace UnityEngine.XR
         }
 
         ///<summary>Attempt to retrieve a vector representing the current acceleration of the tracked node.</summary>
+        ///<param name="acceleration">A Vector3 that the method sets to the current acceleration of the tracked node, or to <see cref="Vector3.zero" /> if the acceleration isn't available.</param>
         ///<returns>True if the acceleration was set in the output parameter. False if the acceleration is not available due to limitations of the underlying platform or if the node is not presently tracked.</returns>
         public bool TryGetAcceleration(out Vector3 acceleration)
         {
@@ -185,6 +190,7 @@ namespace UnityEngine.XR
         }
 
         ///<summary>Attempt to retrieve a Vector3 representing the current angular acceleration of the tracked node.</summary>
+        ///<param name="angularAcceleration">A Vector3 that the method sets to the current angular acceleration of the tracked node, or to <see cref="Vector3.zero" /> if the angular acceleration isn't available.</param>
         ///<returns>True if the angular acceleration was set in the output parameter. False if the angular acceleration is not available due to limitations of the underlying platform or if the node is not presently tracked.</returns>
         public bool TryGetAngularAcceleration(out Vector3 angularAcceleration)
         {

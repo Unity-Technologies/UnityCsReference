@@ -259,6 +259,7 @@ namespace UnityEditor.DeviceSimulation
                 "supportsGraphicsFence",
                 "supportsAsyncGPUReadback",
                 "supportsParallelPSOCreation",
+                "supportsDepthClamp",
                 "supportsRayTracing",
                 "supportsRayTracingShaders",
                 "supportsInlineRayTracing",

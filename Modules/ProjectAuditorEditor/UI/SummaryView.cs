@@ -3,12 +3,14 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using System.CodeDom;
 using System.Collections.Generic;
 using System.Linq;
 using Unity.Collections;
 using Unity.ProjectAuditor.Editor.UI.Framework;
 using Unity.ProjectAuditor.Editor.Utils;
 using UnityEditor;
+using UnityEditor.IMGUI.Controls;
 using UnityEngine;
 
 namespace Unity.ProjectAuditor.Editor.UI
@@ -38,8 +40,40 @@ namespace Unity.ProjectAuditor.Editor.UI
             public int NumAssetIssues;
             public int NumGameObjectIssues;
             public int NumSettingIssues;
+            public int NumIgnoredAreaIssues;
+            public int NumFixedAreaIssues;
 
             public StatSeverities[] SeveritiesByCategory;
+
+            public int Total
+            {
+                get
+                {
+                    int total = 0;
+                    Array.ForEach(SeveritiesByCategory, (s) => total += s.Total);
+                    return total;
+                }
+            }
+
+            public int TotalExcludingIgnoredAndFixed
+            {
+                get
+                {
+                    int total = 0;
+                    Array.ForEach(SeveritiesByCategory, (s) => total += s.TotalExcludingIgnoredAndFixed);
+                    return total;
+                }
+            }
+
+            public int MajorAndCritical
+            {
+                get
+                {
+                    int total = 0;
+                    Array.ForEach(SeveritiesByCategory, (s) => total += s.MajorAndCritical);
+                    return total;
+                }
+            }
         }
 
         protected static Stats NewStats()
@@ -96,21 +130,6 @@ namespace Unity.ProjectAuditor.Editor.UI
         // Whether an issue should be counted in this summary's Issue Breakdown.
         protected abstract bool MatchesSummaryFilter(ReportItem issue);
 
-        // True if the issue is flagged with the specific areas.
-        internal static bool HasAnyAreas(ReportItem issue, Areas areas)
-        {
-            if (!issue.Id.IsValid())
-                return false;
-
-            return IssueHasAnyAreas(issue, areas);
-        }
-
-        // True if the issue is flagged with the specific areas.
-        internal static bool IssueHasAnyAreas(ReportItem issue, Areas areas)
-        {
-            return (issue.Id.GetDescriptor().Areas & areas) != 0;
-        }
-
         protected override void DrawInfo()
         {
         }
@@ -158,27 +177,39 @@ namespace Unity.ProjectAuditor.Editor.UI
 
         protected void AccumulateStat(ReportItem issue, ref Stats stats)
         {
+            var countsTowardArea = !IsIgnoredOrHidden(issue);
+
             switch (issue.Category)
             {
                 case IssueCategory.Code:
-                    stats.NumCodeIssues++;
-                    AddSeverityStats(issue, ref stats.SeveritiesByCategory[(int)issue.Category]);
+                    if (countsTowardArea)
+                        stats.NumCodeIssues++;
                     break;
                 case IssueCategory.ProjectSetting:
-                    stats.NumSettingIssues++;
-                    AddSeverityStats(issue, ref stats.SeveritiesByCategory[(int)issue.Category]);
+                    if (countsTowardArea)
+                        stats.NumSettingIssues++;
                     break;
                 case IssueCategory.AssetIssue:
-                    stats.NumAssetIssues++;
-                    AddSeverityStats(issue, ref stats.SeveritiesByCategory[(int)issue.Category]);
+                    if (countsTowardArea)
+                        stats.NumAssetIssues++;
                     break;
                 case IssueCategory.GameObject:
-                    stats.NumGameObjectIssues++;
-                    AddSeverityStats(issue, ref stats.SeveritiesByCategory[(int)issue.Category]);
+                    if (countsTowardArea)
+                        stats.NumGameObjectIssues++;
                     break;
                 default:
-                    break;
+                    return;
             }
+
+            if (!countsTowardArea)
+            {
+                if (issue.WasFixed)
+                    stats.NumFixedAreaIssues++;
+                else
+                    stats.NumIgnoredAreaIssues++;
+            }
+
+            AddSeverityStats(issue, ref stats.SeveritiesByCategory[(int)issue.Category]);
         }
 
         protected void AddSeverityStats(ReportItem newIssue, ref StatSeverities severities)
@@ -197,49 +228,138 @@ namespace Unity.ProjectAuditor.Editor.UI
                 severities.Minor++;
         }
 
-        protected void DrawSeverityBar(StatSeverities severities, float horizontalPadding, string extraTotalInfo = null)
+        protected static string BuildIgnoredFixedInfo(int ignoredCount, int fixedCount)
+        {
+            if (ignoredCount == 0 && fixedCount == 0)
+                return null;
+
+            if (ignoredCount == 0)
+                return $"({fixedCount} fixed)";
+
+            if (fixedCount == 0)
+                return $"({ignoredCount} ignored)";
+
+            return $"({ignoredCount} ignored, {fixedCount} fixed)";
+        }
+
+        protected void DrawTopTenLabel(string noIssuesText, string noMajorIssuesText, string severeCountFormat, string severeCountPluralFormat, int totalIssuesExcludingIgnoredAndFixed, int totalMajorAndCriticalIssues)
         {
             using (new EditorGUILayout.HorizontalScope())
             {
-                GUILayout.Space(horizontalPadding);
+                GUILayout.Space(12);
 
-                // Drawing through the window's Draw2D lets the bar geometry be clipped (via
-                // Draw2D.SetClipRect) to stay inside the scroll view the PA window handles.
-                ChartUtil.DrawHorizontalStackedBar(m_Window.Draw2D, 14, null, BuildSeverityChartElements(severities),
-                    "{0}", "N0", true, false, true, extraTotalInfo);
-
-                GUILayout.Space(horizontalPadding);
+                if (totalIssuesExcludingIgnoredAndFixed == 0)
+                    GUILayout.Label(noIssuesText, SharedStyles.Label);
+                else if (totalMajorAndCriticalIssues == 0)
+                    EditorGUILayout.LabelField(noMajorIssuesText, SharedStyles.Label);
+                else
+                    EditorGUILayout.LabelField(string.Format(totalMajorAndCriticalIssues == 1 ? severeCountFormat : severeCountPluralFormat, totalMajorAndCriticalIssues), SharedStyles.Label);
             }
         }
 
+        protected void DrawChartBar(Func<List<ChartUtil.Element>> getter, string extraTotalInfo = null)
+        {
+            GUILayout.Space(6);
+
+            using (new EditorGUILayout.HorizontalScope())
+            {
+                const int kHorizontalPadding = 2;
+                GUILayout.Space(kHorizontalPadding);
+
+                // Drawing through the window's Draw2D lets the bar geometry be clipped (via
+                // Draw2D.SetClipRect) to stay inside the scroll view the PA window handles.
+                ChartUtil.DrawHorizontalStackedBar(m_Window.Draw2D, 14, null, getter(),
+                    "{0}", "N0", true, false, true, extraTotalInfo);
+
+                GUILayout.Space(kHorizontalPadding);
+            }
+        }
+
+        // Display analysis time in sensible units
+        protected static string FormatAnalysisTime(long analysisTimeMs)
+        {
+            var timeSpan = TimeSpan.FromMilliseconds(analysisTimeMs);
+            if (timeSpan.TotalSeconds >= 1)
+                timeSpan = TimeSpan.FromSeconds(Math.Round(timeSpan.TotalSeconds, MidpointRounding.AwayFromZero));
+
+            if (timeSpan.TotalHours >= 1)
+                return $"{(int)timeSpan.TotalHours}h {timeSpan.Minutes}m";
+            if (timeSpan.TotalMinutes >= 1)
+                return $"{timeSpan.Minutes}m {timeSpan.Seconds}s";
+            if (timeSpan.TotalSeconds >= 1)
+                return $"{timeSpan.Seconds}s";
+
+            return $"{timeSpan.TotalMilliseconds:F0}ms";
+        }
+
         // Empty buckets are left out of the legend.
-        static List<ChartUtil.Element> BuildSeverityChartElements(StatSeverities severities)
+        static void AddChartElement(List<ChartUtil.Element> elements, string label, int count, Color color, Utility.IconType icon)
+        {
+            if (count != 0)
+                elements.Add(new ChartUtil.Element(label, $"{label} issues", count, color, Utility.GetIcon(icon)));
+        }
+
+        protected static List<ChartUtil.Element> BuildSeverityChartElements(StatSeverities severities)
         {
             var colors = Utility.GetSeverityColors();
+            var elements = new List<ChartUtil.Element>(6);
 
-            var elements = new List<ChartUtil.Element>();
-            if (severities.Error != 0)
-                elements.Add(new ChartUtil.Element("Error", "Errors", severities.Error, colors[0], Utility.GetIcon(Utility.IconType.Error)));
-            if (severities.Critical != 0)
-                elements.Add(new ChartUtil.Element("Critical", "Critical issues", severities.Critical, colors[0], Utility.GetIcon(Utility.IconType.Critical)));
-            if (severities.Major != 0)
-                elements.Add(new ChartUtil.Element("Major", "Major issues", severities.Major, colors[1], Utility.GetIcon(Utility.IconType.Major)));
-            if (severities.Moderate != 0)
-                elements.Add(new ChartUtil.Element("Moderate", "Moderate issues", severities.Moderate, colors[2], Utility.GetIcon(Utility.IconType.Moderate)));
-            if (severities.Minor != 0)
-                elements.Add(new ChartUtil.Element("Minor", "Minor issues", severities.Minor, colors[3], Utility.GetIcon(Utility.IconType.Minor)));
-            if (severities.IgnoredOrFixed != 0)
-                elements.Add(new ChartUtil.Element("Ignored/Fixed", "Ignored/fixed issues", severities.IgnoredOrFixed, colors[4], Utility.GetIcon(Utility.IconType.Ignored)));
+            AddChartElement(elements, "Error", severities.Error, colors[0], Utility.IconType.Error);
+            AddChartElement(elements, "Critical", severities.Critical, colors[0], Utility.IconType.Critical);
+            AddChartElement(elements, "Major", severities.Major, colors[1], Utility.IconType.Major);
+            AddChartElement(elements, "Moderate", severities.Moderate, colors[2], Utility.IconType.Moderate);
+            AddChartElement(elements, "Minor", severities.Minor, colors[3], Utility.IconType.Minor);
+            AddChartElement(elements, "Ignored/Fixed", severities.IgnoredOrFixed, colors[4], Utility.IconType.Ignored);
 
             return elements;
         }
 
-        // "<title> analysis is still running" plus the animated status wheel.
-        protected static void DrawAnalysisInProgressLabel(string title)
+        protected List<ChartUtil.Element> BuildCategoryChartElements(Stats stats)
         {
-            var text = string.Format(Contents.AnalysisInProgressText, title);
-            GUILayout.Label(L10n.TextContent($"{text}|{Utility.GetStatusWheelFrame()}",
-                text, string.Empty, Utility.GetIcon(Utility.IconType.StatusWheel).image, null));
+            var colors = Utility.GetCategoryColors();
+            var elements = new List<ChartUtil.Element>(4);
+
+            AddCategoryChartElement(elements, "Code", stats.NumCodeIssues, colors[0], m_Timings.CodeAnalysisTime, IssueCategory.Code);
+            AddCategoryChartElement(elements, "Assets", stats.NumAssetIssues, colors[1], m_Timings.AssetsAnalysisTime, IssueCategory.AssetIssue);
+            AddCategoryChartElement(elements, "Game Objects", stats.NumGameObjectIssues, colors[2], m_Timings.GameObjectAnalysisTime, IssueCategory.GameObject);
+            AddCategoryChartElement(elements, "Settings", stats.NumSettingIssues, colors[3], m_Timings.SettingsAnalysisTime, IssueCategory.ProjectSetting);
+
+            return elements;
+        }
+
+        void AddCategoryChartElement(List<ChartUtil.Element> elements, string label, int count, Color color, long analysisTimeMs, IssueCategory category)
+        {
+            var pending = m_ViewManager.HasPendingCategory(category);
+            var analyzed = m_ViewManager.Report.HasCategory(category);
+            var info = !pending && analyzed ? $"found in {FormatAnalysisTime(analysisTimeMs)}" : null;
+            var button = pending ? null : !analyzed ? SharedContents.Analyze : (m_ViewManager.HasView(category) && count > 0) ? Contents.Review : null;
+
+            // The count of a pending category is partial, so it stays out of the bar and total
+            string valueText;
+            if (pending)
+            {
+                valueText = "Analyzing...";
+                count = 0;
+            }
+            else if (!analyzed)
+            {
+                valueText = "Not Analyzed";
+            }
+            else if (count == 0)
+            {
+                valueText = "No issues found";
+            }
+            else
+            {
+                valueText = count == 1 ? "1 issue" : $"{count} issues";
+            }
+
+            elements.Add(new ChartUtil.Element(label, $"{label} issues", count, color, Utility.GetIcon(Utility.IconType.Square),
+                info, button, () =>
+                {
+                    m_Window.GotoCategory(category);
+                    GUIUtility.ExitGUI();
+                }, valueText));
         }
 
         protected bool IsIgnored(ReportItem issue)
@@ -275,10 +395,8 @@ namespace Unity.ProjectAuditor.Editor.UI
                 {
 #pragma warning disable UAC2001, UAC2005, UAC2010 // Avoid Linq
                     topTen.Issues = m_ViewManager.Report.GetAllIssues()
-                        .Where(i =>
-                            !m_ViewManager.HasPendingCategory(i.Category)
-                            && !filter.Invoke(i)
-                        ).GroupBy(i => i.DescriptorIdAsString)
+                        .Where(i => !filter.Invoke(i))
+                        .GroupBy(i => i.DescriptorIdAsString)
                         .OrderBy(GetHighestGroupSeverity)
                         .ThenByDescending(group => group.Count())
                         .ThenBy(group => GetTopTenAreasOrder(group.First().Id.GetDescriptor().Areas))
@@ -596,8 +714,7 @@ namespace Unity.ProjectAuditor.Editor.UI
         {
             public static readonly GUIContent SessionInformationContent = L10n.TextContent("Session Information", null, null, null);
             public static readonly GUIContent MoreDetails = L10n.TextContent("More Details", null, null, null);
-
-            public static readonly string AnalysisInProgressText = L10n.Tr("{0} analysis is still running in the background (see more in Window > General > Progress)", null);
+            public static readonly GUIContent Review = L10n.TextContent("Review", null, null, null);
         }
     }
 }

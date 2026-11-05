@@ -1477,6 +1477,9 @@ namespace UnityEngine
 
         // The length of the audio clip in samples (read-only)
         ///<summary>The length of the audio clip in samples. (RO)</summary>
+        ///<remarks>Until the audio data is loaded (see <see cref="AudioClip.loadState" />), this reports the length of the imported clip.
+        ///
+        ///**WebGL:** The browser decodes audio data asynchronously. Once the clip is loaded, this reports the length of the decoded audio, which can differ slightly from the imported length, for example because of encoder padding or because the browser resamples the audio to the sample rate of its audio output.</remarks>
         [NativeProperty("SampleCount")]
         extern public int samples { get; }
 
@@ -1485,6 +1488,9 @@ namespace UnityEngine
         extern public int channels { get; }
 
         ///<summary>The sample frequency of the clip in Hertz. (RO)</summary>
+        ///<remarks>Until the audio data is loaded (see <see cref="AudioClip.loadState" />), this reports the frequency of the imported clip.
+        ///
+        ///**WebGL:** The browser decodes audio data asynchronously. Once the clip is loaded, this reports the frequency of the decoded audio. Browsers resample decoded audio to the sample rate of their audio output, so this can differ from the imported frequency.</remarks>
         extern public int frequency { get; }
 
         ///<summary>The load type of the clip (read-only).</summary>
@@ -1500,7 +1506,7 @@ namespace UnityEngine
         ///
         ///* If you call it on an audio clip that is already loaded, it does nothing and returns <c>true</c>.
         ///* It doesn't reload clips that have <see cref="AudioClip.preloadAudioData" /> set to <c>true</c>.
-        ///* It loads the <see cref="AudioClip" /> synchronously, unless <see cref="AudioClip.loadInBackground" /> is set to <c>true</c>.
+        ///* It loads the <see cref="AudioClip" /> synchronously, unless <see cref="AudioClip.loadInBackground" /> is set to <c>true</c>. On WebGL, the browser always decodes the audio data asynchronously.
         ///* If you play a clip that is loading in the background, the audio source will delay playback until the clip is ready to play. 
         ///* You can use <see cref="AudioClip.loadState" /> to monitor the current load state of the audio data.</remarks>
         ///<returns>Returns true if the clip is loaded into memory.</returns>
@@ -1695,7 +1701,7 @@ namespace UnityEngine
         ///If <c>GetData</c> can't read the audio clip, the <c>data</c> parameter will contain zeroes for all sample values, the console will log an error, and <c>GetData</c> will return false.
         ///
         ///For the best performance, use the Span version because you don't need to allocate managed memory.</para>
-        ///  <para>**WebGL:** The sample data of audio clips is loaded asynchronously in the WebGL platform. This makes it necessary to check the loadState of an AudioClip before reading the sample data.</para>
+        ///  <para><c>GetData</c> can only read sample data once the clip is loaded. Clips that have <see cref="AudioClip.loadInBackground" /> enabled can still be loading after <see cref="AudioClip.LoadAudioData" /> returns, and on WebGL the browser always decodes audio data asynchronously. While <see cref="AudioClip.loadState" /> is <see cref="AudioDataLoadState.Loading" />, <c>GetData</c> returns false, so check <c>loadState</c> before reading the sample data.</para>
         ///</remarks>
         ///<param name="data">The array you want to fill with raw data from the audio clip.</param>
         ///<param name="offsetSamples">The index of where to start data extraction from the array of raw data. <c>offsetSamples</c> doesn't take audio channels into account, and uses frames instead. Don't multiply the audio channel count into the index.</param>
@@ -1790,7 +1796,7 @@ namespace UnityEngine
         ///If <c>GetData</c> can't read the audio clip, the <c>data</c> parameter will contain zeroes for all sample values, the console will log an error, and <c>GetData</c> will return false.
         ///
         ///For the best performance, use the Span version because you don't need to allocate managed memory.</para>
-        ///  <para>**WebGL:** The sample data of audio clips is loaded asynchronously in the WebGL platform. This makes it necessary to check the loadState of an AudioClip before reading the sample data.</para>
+        ///  <para><c>GetData</c> can only read sample data once the clip is loaded. Clips that have <see cref="AudioClip.loadInBackground" /> enabled can still be loading after <see cref="AudioClip.LoadAudioData" /> returns, and on WebGL the browser always decodes audio data asynchronously. While <see cref="AudioClip.loadState" /> is <see cref="AudioDataLoadState.Loading" />, <c>GetData</c> returns false, so check <c>loadState</c> before reading the sample data.</para>
         ///</remarks>
         ///<param name="data">The array you want to fill with raw data from the audio clip.</param>
         ///<param name="offsetSamples">The index of where to start data extraction from the array of raw data. <c>offsetSamples</c> doesn't take audio channels into account, and uses frames instead. Don't multiply the audio channel count into the index.</param>

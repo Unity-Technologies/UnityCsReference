@@ -124,11 +124,11 @@ namespace Unity.Entities
         /// Computes the matrix that transforms from this transform's local space to world space.
         /// </summary>
         /// <returns>The local-to-world matrix.</returns>
-        public float4x4 ComputeLocalToWorld()
+        public float4x4 CalculateLocalToWorld()
         {
             CheckReadAccess();
             // TODO DOTS-10269: CheckHierarchyReadAccess();
-            return m_TransformUnion->ComputeLocalToWorld();
+            return m_TransformUnion->CalculateLocalToWorld();
         }
 
         /// <summary>
@@ -222,10 +222,10 @@ namespace Unity.Entities
         /// <seealso cref="GetLocalPositionAndRotation(float3, quaternion)"/>
         /// <param name="position">The world-space position will be stored here</param>
         /// <param name="rotation">The world-space rotation will be stored here</param>
-        public void GetWorldPositionAndRotation(out float3 position, out quaternion rotation)
+        public void CalculateWorldPositionAndRotation(out float3 position, out quaternion rotation)
         {
             CheckReadAccess();
-            m_TransformUnion->GetWorldPositionAndRotation(out position, out rotation);
+            m_TransformUnion->CalculateWorldPositionAndRotation(out position, out rotation);
         }
 
         /// <summary>

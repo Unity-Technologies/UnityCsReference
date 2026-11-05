@@ -79,7 +79,7 @@ namespace UnityEngine.UIElements
 
         public override void SetValueWithoutNotify(T newValue)
         {
-            if (!m_SkipValidation)
+            if (!isValidationIgnored)
                 newValue = ValidatedValue(newValue);
 
             using (IgnoreValidation())

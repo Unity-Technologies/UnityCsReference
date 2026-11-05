@@ -24,6 +24,19 @@ namespace UnityEditor
         public static GUIStyle label { get { return s_Current.m_Label; } }
         internal GUIStyle m_Label;
 
+        // Styles used for composite fields. The field label is inside the input field
+        internal static GUIStyle compositeLabel { get { return s_Current.m_CompositeLabel; } }
+        private GUIStyle m_CompositeLabel;
+
+        internal static GUIStyle compositeContainer { get { return s_Current.m_CompositeContainer; } }
+        private GUIStyle m_CompositeContainer;
+
+        internal static GUIStyle compositeContainerHovered { get { return s_Current.m_CompositeContainerHovered; } }
+        private GUIStyle m_CompositeContainerHovered;
+
+        internal static GUIStyle compositeContainerFocused { get { return s_Current.m_CompositeContainerFocused; } }
+        private GUIStyle m_CompositeContainerFocused;
+
         // Style for label with small font.
         public static GUIStyle miniLabel { get { return s_Current.m_MiniLabel; } }
         private GUIStyle m_MiniLabel;
@@ -114,6 +127,10 @@ namespace UnityEditor
         // Style used for field editors for numbers
         public static GUIStyle numberField { get { return s_Current.m_NumberField; }  }
         private GUIStyle m_NumberField;
+
+        // Style used for number fields in composite fields
+        internal static GUIStyle compositeNumberField { get { return s_Current.m_CompositeNumberField; }  }
+        private GUIStyle m_CompositeNumberField;
 
         // Style used for EditorGUI::ref::Popup, EditorGUI::ref::EnumPopup,
         public static GUIStyle popup  { get { return s_Current.m_Popup; }  }
@@ -413,6 +430,11 @@ namespace UnityEditor
 
         internal static GUIStyle minMaxHorizontalSliderThumb { get { return s_Current.m_MinMaxHorizontalSliderThumb; } }
         private GUIStyle m_MinMaxHorizontalSliderThumb;
+        internal static GUIStyle minMaxHorizontalSliderThumbMin { get { return s_Current.m_MinMaxHorizontalSliderThumbMin; } }
+        private GUIStyle m_MinMaxHorizontalSliderThumbMin;
+
+        internal static GUIStyle minMaxHorizontalSliderThumbMax { get { return s_Current.m_MinMaxHorizontalSliderThumbMax; } }
+        private GUIStyle m_MinMaxHorizontalSliderThumbMax;
 
         internal static GUIStyle dropDownList { get { return s_Current.m_DropDownList; } }
         private GUIStyle m_DropDownList;
@@ -577,6 +599,11 @@ namespace UnityEditor
             m_SearchFieldCancelButton = GetStyle("SearchCancelButton");
             m_SearchFieldCancelButtonEmpty = GetStyle("SearchCancelButtonEmpty");
             m_HelpBox = GetStyle("HelpBox");
+            m_CompositeLabel = GetStyle("CompositeLabel");
+            m_CompositeContainer = GetStyle("CompositeContainer");
+            m_CompositeContainerHovered = GetStyle("CompositeContainerHovered");
+            m_CompositeContainerFocused = GetStyle("CompositeContainerFocused");
+            m_CompositeNumberField = GetStyle("CompositeNumberField");
             m_FrameBox = GetStyle("FrameBox");
             m_AssetLabel = GetStyle("AssetLabel");
             m_AssetLabelPartial = GetStyle("AssetLabel Partial");
@@ -584,6 +611,8 @@ namespace UnityEditor
             m_SelectionRect = GetStyle("selectionRect");
             m_ToolbarSlider = GetStyle("ToolbarSlider");
             m_MinMaxHorizontalSliderThumb = GetStyle("MinMaxHorizontalSliderThumb");
+            m_MinMaxHorizontalSliderThumbMin = GetStyle("MinMaxHorizontalSliderThumbMin");
+            m_MinMaxHorizontalSliderThumbMax = GetStyle("MinMaxHorizontalSliderThumbMax");
             m_DropDownList = GetStyle("DropDownButton");
             m_DropDownToggle = GetStyle("DropDownToggle");
             m_DropDownToggleLabelButton = GetStyle("DropDownToggleLabelButton");

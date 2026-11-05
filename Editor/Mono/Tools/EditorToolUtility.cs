@@ -47,7 +47,7 @@ namespace UnityEditor.EditorTools
         // On-demand icon memo: GetIcon rebuilds the GUIContent from the tool type on a miss and re-adds it,
         // so the cache cleared on reload refills itself.
         [IgnoreForUAL0015("On-demand toolbar icon memo, rebuilt by GetIcon on a miss")]
-        static Dictionary<Type, GUIContent> s_ToolbarIcons = new();
+        static Dictionary<(Type, bool), GUIContent> s_ToolbarIcons = new();
         [AutoStaticsCleanupOnCodeReload]
         // InitializeToolOwnerDefinitions rebuilds this from TypeCache whenever it is null or empty, and
         // every accessor checks for that first, so an emptied map is refilled on the next use.
@@ -111,6 +111,28 @@ namespace UnityEditor.EditorTools
                 return false;
 
             return s_ToolOwnerDefinitions.TryGetValue(toolOwner, out toolOwnerDefinition);
+        }
+
+        internal static Type GetDefaultContextType(Type toolOwnerType)
+        {
+            if (toolOwnerType == typeof(SceneView) && ToolManager.TryGetCurrentStageToolContextOverride(out var stageOverride))
+                return stageOverride.defaultContext;
+
+            if (toolOwnerType != null && GetToolOwnerDefinition(toolOwnerType, out var ownerDef))
+                return ownerDef.defaultContext;
+
+            return typeof(GameObjectToolContext);
+        }
+
+        internal static bool IsContextSupported(Type contextType, Type toolOwnerType)
+        {
+            if (toolOwnerType != typeof(SceneView) || !ToolManager.TryGetCurrentStageToolContextOverride(out var stageOverride))
+                return true;
+
+            if (stageOverride.supportedContexts == null || contextType == stageOverride.defaultContext)
+                return true;
+
+            return Array.IndexOf(stageOverride.supportedContexts, contextType) >= 0;
         }
 
         internal static bool IsRegisteredToolOwner(Type type)
@@ -467,6 +489,12 @@ namespace UnityEditor.EditorTools
 
                 globalContexts.Sort(sortComp);
 
+                for (int i = globalContexts.Count - 1; i >= 0; --i)
+                {
+                    if (!IsContextSupported(globalContexts[i].editor, m_EditorToolState.stateToolOwnerType))
+                        globalContexts.RemoveAt(i);
+                }
+
                 // Move GO context to front of globals
                 for (int i = globalContexts.Count - 1; i >= 0; --i)
                 {
@@ -482,10 +510,19 @@ namespace UnityEditor.EditorTools
 
                 // Collect all registered component contexts
                 var allRegisteredCompContexts = new List<EditorTypeAssociation>();
+                var defaultContextType = m_EditorToolState.defaultToolContextType;
                 foreach (var assoc in GetRegisteredToolContexts(m_EditorToolState.stateToolOwnerType))
                 {
                     if (assoc.targetBehaviour != typeof(NullTargetKey))
-                        allRegisteredCompContexts.Add(assoc);
+                    {
+                        if (assoc.editor == defaultContextType)
+                        {
+                            if (globalContexts.Count == 0 || globalContexts[0].editor != defaultContextType)
+                                globalContexts.Insert(0, assoc);
+                        }
+                        else if (IsContextSupported(assoc.editor, m_EditorToolState.stateToolOwnerType))
+                            allRegisteredCompContexts.Add(assoc);
+                    }
                 }
 
                 // Split into available and unavailable component contexts
@@ -535,11 +572,11 @@ namespace UnityEditor.EditorTools
             return GetNameFromToolPath(path);
         }
 
-        internal static string GetContextName(Type context, bool forTooltip)
+        internal static string GetContextName(Type context, Type toolOwnerType, bool forTooltip)
         {
             var contextName = GetToolName(context);
             if (forTooltip)
-                contextName += (context == typeof(GameObjectToolContext) ? " (Default)" : "");
+                contextName += (context == GetDefaultContextType(toolOwnerType) ? " (Default)" : "");
 
             return contextName;
         }
@@ -813,34 +850,50 @@ namespace UnityEditor.EditorTools
             return false;
         }
 
-        internal static GUIContent GetToolbarIcon<T>(T obj) where T : IEditor
+        internal static GUIContent GetToolbarIcon<T>(T obj, bool iconState = false) where T : IEditor
         {
             if (obj == null)
-                return GetIcon(typeof(T));
-            if (obj is EditorTool tool && tool.toolbarIcon != null)
+                return GetIcon(typeof(T), iconState);
+            var tool = obj as EditorTool;
+
+            if (iconState && tool != null && tool.toolbarIconOn != null && tool.toolbarIconOn.image != null)
+                return tool.toolbarIconOn;
+
+            // Check this in either state as we use the off icon for on if no on is defined
+            if (tool != null && tool.toolbarIcon != null && (tool.toolbarIcon.image != null || !string.IsNullOrEmpty(tool.toolbarIcon.text)))
                 return tool.toolbarIcon;
-            return GetIcon(obj.GetType());
+
+            return GetIcon(obj.GetType(), iconState);
         }
 
-        internal static GUIContent GetIcon(Type editorToolType, bool forceReload = false)
+        internal static GUIContent GetIcon(Type editorToolType, bool state = false, bool forceReload = false)
         {
             GUIContent res;
 
+            var key = (editorToolType, state);
             if (forceReload)
-                s_ToolbarIcons.Remove(editorToolType);
+                s_ToolbarIcons.Remove(key);
 
-            if (s_ToolbarIcons.TryGetValue(editorToolType, out res))
+            if (s_ToolbarIcons.TryGetValue(key, out res))
                 return res;
 
             res = new GUIContent() { tooltip = GetToolName(editorToolType) };
 
+            // If the state is on (true), we check for that version first and fallback to the off state (false) otherwise
+            if (state)
+            {
+                var onIconPath = EditorGUIUtility.GetIconPathFromAttributeWithState(editorToolType, true);
+                if (!string.IsNullOrEmpty(onIconPath) && (res.image = EditorGUIUtility.IconContent(onIconPath, false).image))
+                    goto ReturnToolbarIcon;
+            }
+
             // First check if the tool as an icon attribute
-            var iconPath = EditorGUIUtility.GetIconPathFromAttribute(editorToolType);
-            if(!string.IsNullOrEmpty(iconPath) && (res.image = EditorGUIUtility.IconContent(iconPath, false).image))
+            var iconPath = EditorGUIUtility.GetIconPathFromAttributeWithState(editorToolType, false);
+            if (!string.IsNullOrEmpty(iconPath) && (res.image = EditorGUIUtility.IconContent(iconPath, false).image))
                 goto ReturnToolbarIcon;
 
             // Second check for the tool type itself
-            if(( res.image = EditorGUIUtility.FindTexture(editorToolType) ) != null)
+            if (( res.image = EditorGUIUtility.FindTexture(editorToolType) ) != null)
                 goto ReturnToolbarIcon;
 
             // And finally fall back to the significant letters of the tool's typename
@@ -850,7 +903,7 @@ namespace UnityEditor.EditorTools
             if (string.IsNullOrEmpty(res.tooltip))
                 res.tooltip = ObjectNames.NicifyVariableName(editorToolType.Name);
 
-            s_ToolbarIcons.Add(editorToolType, res);
+            s_ToolbarIcons.Add(key, res);
 
             return res;
         }
@@ -859,7 +912,7 @@ namespace UnityEditor.EditorTools
         {
             GUIContent icon;
             isFallbackIcon = false;
-            icon = GetIcon(editorToolContextType, true);
+            icon = GetIcon(editorToolContextType, false, true);
             if (icon.image == null)
             {
                 icon.image = EditorGUIUtility.IconContent("ToolContext").image;

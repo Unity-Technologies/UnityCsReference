@@ -3,9 +3,11 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using UnityEngine.Bindings;
 
 namespace Unity.Scripting.Reflection
 {
+    [VisibleToOtherModules("UnityEngine.EntitiesModule")]
     internal unsafe partial struct AttributeHandle : IEquatable<AttributeHandle>
     {
         IntPtr m_ArgInfo;

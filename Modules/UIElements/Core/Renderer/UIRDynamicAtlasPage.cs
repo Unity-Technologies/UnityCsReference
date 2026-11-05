@@ -8,7 +8,7 @@ using UnityEngine.UIElements.UIR;
 
 namespace UnityEngine.UIElements
 {
-    class DynamicAtlasPage : IDisposable
+    partial class DynamicAtlasPage : IDisposable
     {
         public TextureId textureId { get; private set; }
         public RenderTexture atlas { get; private set; }
@@ -25,7 +25,7 @@ namespace UnityEngine.UIElements
         TextureBlitter m_Blitter;
         Vector2Int m_CurrentSize;
 
-        [NoAutoStaticsCleanup] // monotonic counter for unique texture names; safe to persist
+        [AutoStaticsCleanupOnCodeReload]
         static int s_TextureCounter;
 
         public DynamicAtlasPage(RenderTextureFormat format, FilterMode filterMode, Vector2Int minSize, Vector2Int maxSize)

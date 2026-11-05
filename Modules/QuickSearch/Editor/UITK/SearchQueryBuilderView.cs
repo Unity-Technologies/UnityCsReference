@@ -74,7 +74,9 @@ namespace UnityEditor.Search
             m_TextField = m_SearchField.textInputField;
             m_TextField.RemoveFromHierarchy();
 
-            RefreshBuilder();
+            // Nothing in the window holds focus yet, so do not let this rebuild claim it - see
+            // RefreshBuilder.
+            RefreshBuilder(restoreFocus: false);
 
             m_SearchField.value = m_QueryBuilder.wordText;
 
@@ -188,8 +190,31 @@ namespace UnityEditor.Search
             DeferRefreshBuilder();
         }
 
-        private void RefreshBuilder()
+        private void RefreshBuilder() => RefreshBuilder(restoreFocus: true);
+
+        private void RefreshBuilder(bool restoreFocus)
         {
+            // UUM-153991: two things cost the search field its keyboard focus when a query block is
+            // added from the "Add new query block" picker with the cursor keys.
+            //
+            // First, Clear() below destroys every block element and the text field's place in the
+            // hierarchy, so focus does not survive a rebuild even when it was ours.
+            //
+            // Second, when the block came from the picker there is no focus left to preserve at all:
+            // the picker is a separate AdvancedDropdownWindow, and once it closes this panel has no
+            // focused element (the host window is focused again, but nothing in it holds focus), so
+            // typing goes nowhere. Restoring focus in that orphaned state is safe precisely because
+            // nothing else wants it - we are not taking focus off another control.
+            //
+            // Note the builder cannot do this itself on the way in: the QueryBuilder that services the
+            // picker can belong to a view that has since been detached, whose m_TextField is null.
+            //
+            // restoreFocus is false for the rebuild done while attaching to the panel: nothing holds
+            // focus at that point either, and claiming it would put the caret in the search field
+            // every time the window is opened or a layout is loaded.
+            var focusedElement = panel?.focusController?.focusedElement as VisualElement;
+            var hadFocus = focusedElement != null && (focusedElement == this || Contains(focusedElement));
+
             Clear();
 
             if (m_QueryBuilder != null)
@@ -212,11 +237,21 @@ namespace UnityEditor.Search
             m_TextField?.SetValueWithoutNotify(m_QueryBuilder.wordText);
 
             Emit(SearchEvent.BuilderRefreshed);
+
+            // Evaluated after the rebuild: before it, m_TextField is detached and the blocks have not
+            // been recreated yet, so neither focus nor the host window can be resolved from them.
+            var focusedAfter = panel?.focusController?.focusedElement as VisualElement;
+            var focusOrphaned = restoreFocus && focusedAfter == null && this.HostWindowHasFocus();
+
+            if (hadFocus || focusOrphaned)
+                m_TextField?.Focus();
         }
 
         void ISearchField.Focus()
         {
-            m_TextField.Focus();
+            // m_TextField is null once this view has been detached from its panel, and callers can
+            // hold on to a detached view - a NullReferenceException here is not a useful way to say so.
+            m_TextField?.Focus();
         }
 
         VisualElement ISearchField.GetTextElement()

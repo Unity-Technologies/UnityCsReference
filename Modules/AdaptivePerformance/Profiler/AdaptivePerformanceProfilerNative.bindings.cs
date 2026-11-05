@@ -24,8 +24,8 @@ namespace UnityEngine.AdaptivePerformance
                 throw new ArgumentNullException("data");
 
             var elementType = typeof(T);
-            if (!UnsafeUtility.IsBlittable(typeof(T)))
-                throw new ArgumentException(string.Format("{0} type must be blittable", elementType));
+            if (!UnsafeUtility.IsUnmanaged(typeof(T)))
+                throw new ArgumentException(string.Format("{0} type must be unmanaged", elementType));
 
             EmitGlobalMetaData_Span(&id, 16, tag, UnsafeUtility.GetByteSpanFromList(data), data.Count, UnsafeUtility.SizeOf(elementType), true);
         }

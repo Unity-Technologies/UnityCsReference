@@ -73,11 +73,11 @@ namespace UnityEngine.UIElements
             0, // GridAutoFlow
             0, // GridAutoRows
             0, // GridColumn
-            0, // GridColumnEnd
-            0, // GridColumnStart
+            1, // GridColumnEnd
+            1, // GridColumnStart
             0, // GridRow
-            0, // GridRowEnd
-            0, // GridRowStart
+            1, // GridRowEnd
+            1, // GridRowStart
             0, // GridTemplateColumns
             0, // GridTemplateRows
             2, // Height
@@ -128,11 +128,11 @@ namespace UnityEngine.UIElements
             1, // UnityMaterial
             1, // UnityOverflowClipBox
             2, // UnityParagraphSpacing
-            0, // UnitySliceBottom
-            0, // UnitySliceLeft
-            0, // UnitySliceRight
+            1, // UnitySliceBottom
+            1, // UnitySliceLeft
+            1, // UnitySliceRight
             1, // UnitySliceScale
-            0, // UnitySliceTop
+            1, // UnitySliceTop
             1, // UnitySliceType
             1, // UnityTextAlign
             0, // UnityTextAutoSize

@@ -71,7 +71,6 @@ namespace UnityEditor
             public static readonly GUIContent scriptingDefault = L10n.TextContent("Default", null, null, null);
             public static readonly GUIContent strippingDisabled = L10n.TextContent("Disabled", null, null, null);
             public static readonly GUIContent strippingMinimal = L10n.TextContent("Minimal", null, null, null);
-            public static readonly GUIContent strippingLow = L10n.TextContent("Low", null, null, null);
             public static readonly GUIContent strippingMedium = L10n.TextContent("Medium", null, null, null);
             public static readonly GUIContent strippingHigh = L10n.TextContent("High", null, null, null);
             public static readonly GUIContent activeInputHandlingBoth = L10n.TextContent("Both", null, null, null);
@@ -4733,8 +4732,8 @@ namespace UnityEditor
             EditorGUILayout.Space();
         }
 
-        static readonly ManagedStrippingLevel[] mono_levels = new ManagedStrippingLevel[] { ManagedStrippingLevel.Disabled, ManagedStrippingLevel.Minimal, ManagedStrippingLevel.Low, ManagedStrippingLevel.Medium, ManagedStrippingLevel.High };
-        static readonly ManagedStrippingLevel[] il2cpp_levels = new ManagedStrippingLevel[] { ManagedStrippingLevel.Minimal, ManagedStrippingLevel.Low, ManagedStrippingLevel.Medium, ManagedStrippingLevel.High };
+        static readonly ManagedStrippingLevel[] mono_levels = new ManagedStrippingLevel[] { ManagedStrippingLevel.Disabled, ManagedStrippingLevel.Minimal, ManagedStrippingLevel.Medium, ManagedStrippingLevel.High };
+        static readonly ManagedStrippingLevel[] il2cpp_levels = new ManagedStrippingLevel[] { ManagedStrippingLevel.Minimal, ManagedStrippingLevel.Medium, ManagedStrippingLevel.High };
         // stripping levels vary based on scripting backend
         private ManagedStrippingLevel[] GetAvailableManagedStrippingLevels(ScriptingImplementation backend)
         {
@@ -4950,7 +4949,6 @@ namespace UnityEditor
                 {
                     { ManagedStrippingLevel.Disabled, SettingsContentNonSearchable.strippingDisabled },
                     { ManagedStrippingLevel.Minimal, SettingsContentNonSearchable.strippingMinimal },
-                    { ManagedStrippingLevel.Low, SettingsContentNonSearchable.strippingLow },
                     { ManagedStrippingLevel.Medium, SettingsContentNonSearchable.strippingMedium },
                     { ManagedStrippingLevel.High, SettingsContentNonSearchable.strippingHigh },
                 };

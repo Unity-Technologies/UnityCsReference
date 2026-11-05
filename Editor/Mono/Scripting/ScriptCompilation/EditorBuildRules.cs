@@ -379,16 +379,10 @@ namespace UnityEditor.Scripting.ScriptCompilation
                     CompilationPipelineCommonHelper.UpdateScriptAssemblyReference(ref scriptAssembly);
                 }
 
+                // Compilation extension defines are already part of the target assembly defines.
                 if (!buildingForEditor)
                 {
                     PlatformSupportModuleHelpers.AddAdditionalPlatformSupportData(settings.CompilationExtension, ref scriptAssembly);
-                }
-                else
-                {
-                    if (settings.CompilationExtension != null)
-#pragma warning disable UAC2001 // Avoid Linq
-                        scriptAssembly.Defines = scriptAssembly.Defines.Concat(settings.CompilationExtension.GetAdditionalEditorDefines()).ToArray();
-#pragma warning restore UAC2001
                 }
             }
 

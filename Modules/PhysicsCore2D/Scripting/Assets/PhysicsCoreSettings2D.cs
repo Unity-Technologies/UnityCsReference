@@ -139,12 +139,20 @@ namespace Unity.U2D.Physics
         /// The mode used for the <see cref="PhysicsShape.ContactFilter"/> when determining if two <see cref="PhysicsShape"/> can contact.
         /// See <see cref="PhysicsShape.ContactFilterMode"/>.
         /// </summary>
+        /// <remarks>
+        /// This is the project-wide mode, used by every world whose <see cref="PhysicsWorld.contactFilterModeOverride"/> is <see cref="PhysicsShape.ContactFilterModeOverride.Global"/>.
+        /// When the mode changes, each of those worlds checks every existing contact against the new mode, which can be expensive in large worlds.
+        /// </remarks>
         public PhysicsShape.ContactFilterMode contactFilterMode { get => m_ContactFilterMode; set => m_ContactFilterMode = value; }
 
         /// <summary>
         /// The mode used for the <see cref="PhysicsShape.ContactFilter"/> when determining if two <see cref="PhysicsShape"/> can contact.
         /// See <see cref="PhysicsShape.ContactFilterGroupMode"/>.
         /// </summary>
+        /// <remarks>
+        /// This is the project-wide mode, used by every world whose <see cref="PhysicsWorld.contactFilterGroupModeOverride"/> is <see cref="PhysicsShape.ContactFilterGroupModeOverride.Global"/>.
+        /// When the mode changes, each of those worlds checks every existing contact against the new mode, which can be expensive in large worlds.
+        /// </remarks>
         public PhysicsShape.ContactFilterGroupMode contactFilterGroupMode { get => m_ContactFilterGroupMode; set => m_ContactFilterGroupMode = value; }
 
         /// <summary>
@@ -244,10 +252,6 @@ namespace Unity.U2D.Physics
         #endregion
 
         #region Native Accessors
-
-        /// <undoc/>
-        [RequiredByNativeCode]
-        void GetPhysicsLayerNames(out PhysicsLayers.LayerNames layerNames) => layerNames = m_PhysicsLayerNames;
 
         /// <undoc/>
         [RequiredByNativeCode]

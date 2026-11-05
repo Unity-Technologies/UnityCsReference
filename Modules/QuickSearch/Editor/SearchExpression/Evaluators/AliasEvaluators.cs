@@ -33,8 +33,9 @@ namespace UnityEditor.Search
                     }
                     else if (aliasSelector.types.HasAny(SearchExpressionType.Selector))
                     {
-                        r.label = SelectorManager.SelectValue(r, c.search, aliasSelector.innerText.ToString()).ToString();
-                        yield return r;
+                        var selectedValue = SelectorManager.SelectValue(r, c.search, aliasSelector.innerText.ToString());
+                        if (selectedValue != null)
+                            r.label = selectedValue.ToString();
                     }
                     else if (aliasSelector.types.HasAny(SearchExpressionType.Iterable))
                     {

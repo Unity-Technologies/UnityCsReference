@@ -179,7 +179,7 @@ public static partial class PluralRules
             // Latvian
             { "lv", Latvian },
             // Macedonian
-            { "mb", Macedonian },
+            { "mk", Macedonian },
             // Moldavian
             { "mo", Moldavian },
             // Maltese
@@ -224,13 +224,16 @@ public static partial class PluralRules
             IsoLangToDelegate.Add(rule.Key, rule.Value);
     }
 
+    static PluralRuleDelegate Unsigned(PluralRuleDelegate rule) =>
+        (value, pluralWordsCount) => rule(Math.Abs(value), pluralWordsCount);
+
     static PluralRuleDelegate Singular => (value, pluralWordsCount) => 0;
 
     static PluralRuleDelegate DualOneOther => (value, pluralWordsCount) =>
     {
         return pluralWordsCount switch {
-            2 => value == 1 ? 0 : 1,
-            3 => value switch {
+            2 => Math.Abs(value) == 1 ? 0 : 1,
+            3 => Math.Abs(value) switch {
                 0 => 0,
                 1 => 1,
                 _ => 2
@@ -241,13 +244,13 @@ public static partial class PluralRules
     }; // Dual: one (n == 1), other
 
     static PluralRuleDelegate DualWithZero =>
-        (value, pluralWordsCount) => value == 0 || value == 1 ? 0 : 1; // DualWithZero: one (n == 0..1), other
+        Unsigned((value, pluralWordsCount) => value == 0 || value == 1 ? 0 : 1); // DualWithZero: one (n == 0..1), other
 
     static PluralRuleDelegate DualFromZeroToTwo => (value, pluralWordsCount) =>
     {
-        if (pluralWordsCount == 2) return value < 2 ? 0 : 1;
+        if (pluralWordsCount == 2) return Math.Abs(value) < 2 ? 0 : 1;
 
-        if (pluralWordsCount == 3) return GetWordsCount3Value(value);
+        if (pluralWordsCount == 3) return GetWordsCount3Value(Math.Abs(value));
 
         if (pluralWordsCount == 4) return GetWordsCount4Value(value);
 
@@ -273,19 +276,19 @@ public static partial class PluralRules
         };
     }
     
-    static PluralRuleDelegate TripleOneTwoOther => (value, pluralWordsCount) => value == 1 ? 0 : value == 2 ? 1 : 2; // Triple: one (n == 1), two (n == 2), other
-    static PluralRuleDelegate RussianSerboCroatian => (value, pluralWordsCount) =>
+    static PluralRuleDelegate TripleOneTwoOther => Unsigned((value, pluralWordsCount) => value == 1 ? 0 : value == 2 ? 1 : 2); // Triple: one (n == 1), two (n == 2), other
+    static PluralRuleDelegate RussianSerboCroatian => Unsigned((value, pluralWordsCount) =>
         value % 10 == 1 && value % 100 != 11 ? 0 : // one
         (value % 10).Between(2, 4) && !(value % 100).Between(12, 14) ? 1 : // few
-        2; // Russian & Serbo-Croatian
-    static PluralRuleDelegate Arabic => (value, pluralWordsCount) =>
+        2); // Russian & Serbo-Croatian
+    static PluralRuleDelegate Arabic => Unsigned((value, pluralWordsCount) =>
         value == 0 ? 0 : // zero
         value == 1 ? 1 : // one
         value == 2 ? 2 : // two
         (value % 100).Between(3, 10) ? 3 : // few
         (value % 100).Between(11, 99) ? 4 : // many
-        5; // other
-    static PluralRuleDelegate Breton => (value, pluralWordsCount) =>
+        5); // other
+    static PluralRuleDelegate Breton => Unsigned((value, pluralWordsCount) =>
         value switch
         {
             0 => 0, // zero
@@ -294,12 +297,12 @@ public static partial class PluralRules
             3 => 3, // few
             6 => 4, // many
             _ => 5  // other
-        }; 
-    static PluralRuleDelegate Czech => (value, pluralWordsCount) =>
+        }); 
+    static PluralRuleDelegate Czech => Unsigned((value, pluralWordsCount) =>
         value == 1 ? 0 : // one
         value.Between(2, 4) ? 1 : // few
-        2;
-    static PluralRuleDelegate Welsh => (value, pluralWordsCount) =>
+        2);
+    static PluralRuleDelegate Welsh => Unsigned((value, pluralWordsCount) =>
         value switch
         {
             0 => 0, // zero
@@ -308,65 +311,65 @@ public static partial class PluralRules
             3 => 3, // few
             6 => 4, // many
             _ => 5  // other
-        };
-    static PluralRuleDelegate Manx => (value, pluralWordsCount) =>
+        });
+    static PluralRuleDelegate Manx => Unsigned((value, pluralWordsCount) =>
         (value % 10).Between(1, 2) || value % 20 == 0
             ? 0
             : // one
-            1;
-    static PluralRuleDelegate Langi => (value, pluralWordsCount) =>
+            1);
+    static PluralRuleDelegate Langi => Unsigned((value, pluralWordsCount) =>
         value == 0 ? 0 : // zero
         value is > 0 and < 2 ? 1 : // one
-        2;
-    static PluralRuleDelegate Lithuanian => (value, pluralWordsCount) =>
+        2);
+    static PluralRuleDelegate Lithuanian => Unsigned((value, pluralWordsCount) =>
         value % 10 == 1 && !(value % 100).Between(11, 19) ? 0 : // one
         (value % 10).Between(2, 9) && !(value % 100).Between(11, 19) ? 1 : // few
-        2;
-    static PluralRuleDelegate Latvian => (value, pluralWordsCount) =>
+        2);
+    static PluralRuleDelegate Latvian => Unsigned((value, pluralWordsCount) =>
         value == 0 ? 0 : // zero
         value % 10 == 1 && value % 100 != 11 ? 1 :
-        2;
-    static PluralRuleDelegate Macedonian => (value, pluralWordsCount) =>
-        value % 10 == 1 && value != 11
+        2);
+    static PluralRuleDelegate Macedonian => Unsigned((value, pluralWordsCount) =>
+        value % 10 == 1 && value % 100 != 11
             ? 0
             : // one
-            1;
-    static PluralRuleDelegate Moldavian => (value, pluralWordsCount) =>
+            1);
+    static PluralRuleDelegate Moldavian => Unsigned((value, pluralWordsCount) =>
         value == 1 ? 0 : // one
         value == 0 || value != 1 && (value % 100).Between(1, 19) ? 1 : // few
-        2;
-    static PluralRuleDelegate Maltese => (value, pluralWordsCount) =>
+        2);
+    static PluralRuleDelegate Maltese => Unsigned((value, pluralWordsCount) =>
         value == 1 ? 0 : // one
         value == 0 || (value % 100).Between(2, 10) ? 1 : // few
         (value % 100).Between(11, 19) ? 2 : // many
-        3;
-    static PluralRuleDelegate Polish => (value, pluralWordsCount) =>
+        3);
+    static PluralRuleDelegate Polish => Unsigned((value, pluralWordsCount) =>
         value == 1 ? 0 : // one
         (value % 10).Between(2, 4) && !(value % 100).Between(12, 14) ? 1 : // few
         (value % 10).Between(0, 1) || (value % 10).Between(5, 9) || (value % 100).Between(12, 14) ? 2 : // many
-        3;
-    static PluralRuleDelegate Romanian => (value, pluralWordsCount) =>
+        3);
+    static PluralRuleDelegate Romanian => Unsigned((value, pluralWordsCount) =>
         value == 1 ? 0 : // one
         value == 0 || (value % 100).Between(1, 19) ? 1 : // few
-        2;
-    static PluralRuleDelegate Tachelhit => (value, pluralWordsCount) =>
+        2);
+    static PluralRuleDelegate Tachelhit => Unsigned((value, pluralWordsCount) =>
         value >= 0 && value <= 1 ? 0 : // one
         value.Between(2, 10) ? 1 : // few
-        2;
-    static PluralRuleDelegate Slovak => (value, pluralWordsCount) =>
+        2);
+    static PluralRuleDelegate Slovak => Unsigned((value, pluralWordsCount) =>
         value == 1 ? 0 : // one
         value.Between(2, 4) ? 1 : // few
-        2;
-    static PluralRuleDelegate Slovenian => (value, pluralWordsCount) =>
+        2);
+    static PluralRuleDelegate Slovenian => Unsigned((value, pluralWordsCount) =>
         value % 100 == 1 ? 0 : // one
         value % 100 == 2 ? 1 : // two
         (value % 100).Between(3, 4) ? 2 : // few
-        3;
-    static PluralRuleDelegate CentralMoroccoTamazight => (value, pluralWordsCount) =>
+        3);
+    static PluralRuleDelegate CentralMoroccoTamazight => Unsigned((value, pluralWordsCount) =>
         value.Between(0, 1) || value.Between(11, 99)
             ? 0
             : // one
-            1;
+            1);
 
     /// <summary>
     /// Determines which singular or plural word to use for a given quantity.

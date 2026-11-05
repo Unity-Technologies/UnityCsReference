@@ -8,11 +8,19 @@ using UnityEngine.Bindings;
 
 namespace UnityEditor.ShaderApiReflection
 {
+    ///<summary>Identifies a specific part of a source code file.</summary>
+    ///<remarks>When used with a <see cref="LogMessage" />, represents the location in the source code the message refers to.</remarks>
+    ///<example nocheck="true">
+    ///  <code><![CDATA[{code Modules/ShaderApiReflectionEditor/Tests/UTFTests/FunctionalTests/Editor/Documentation/LogMessageExample.cs}]]></code>
+    ///</example>
+    ///<seealso cref="LogMessage.Location" />
     public struct SourceLocation
     {
         // Public API
 
+        ///<summary>The project-relative path to a source code file.</summary>
         public string FilePath { get; private set; }
+        ///<summary>The line number within a source code file.</summary>
         public UInt32 Line { get; private set; }
 
         // Private API
@@ -32,20 +40,38 @@ namespace UnityEditor.ShaderApiReflection
         }
     }
 
+    ///<summary>Information about a problem that arose while reflecting shader code.</summary>
+    ///<remarks>Use this struct to retrieve a data representation of any console messages logged while importing a shader include.</remarks>
+    ///<example nocheck="true">
+    ///  <code><![CDATA[{code Modules/ShaderApiReflectionEditor/Tests/UTFTests/FunctionalTests/Editor/Documentation/LogMessageExample.cs}]]></code>
+    ///</example>
+    ///<seealso cref="ShaderIncludeReflection.LogMessages" />
     public struct LogMessage
     {
         // Public API
 
         // NOTE: This enum must remain synchronized with its native counterpart.
+        ///<summary>The degree of failure associated with a log message.</summary>
+        ///<remarks>Indicates whether a log message is an error or warning.</remarks>
+        ///<example nocheck="true">
+        ///  <code><![CDATA[{code Modules/ShaderApiReflectionEditor/Tests/UTFTests/FunctionalTests/Editor/Documentation/LogMessageExample.cs}]]></code>
+        ///</example>
+        ///<seealso cref="LogMessage" />
         public enum Severity
         {
+            ///<summary>Indicates the message is a warning.</summary>
             Warning,
+            ///<summary>Indicates the message is an error.</summary>
             Error,
         }
 
+        ///<summary>The message's severity.</summary>
         public Severity MessageSeverity { get; private set; }
+        ///<summary>The message's error code.</summary>
         public ErrorCode ErrorCode { get; private set; }
+        ///<summary>The message's location.</summary>
         public SourceLocation Location { get; private set; }
+        ///<summary>The message's details.</summary>
         public string Text { get; private set; }
 
         // Private API

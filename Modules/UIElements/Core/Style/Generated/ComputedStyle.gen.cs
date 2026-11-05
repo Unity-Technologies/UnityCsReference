@@ -1083,7 +1083,7 @@ namespace UnityEngine.UIElements
                     visualData.Write().backgroundColor = other.visualData.Read().backgroundColor;
                     break;
                 case StylePropertyId.BackgroundImage:
-                    visualData.Write().backgroundImage = other.visualData.Read().backgroundImage;
+                    visualData.Write().backgroundImage.CopyFrom(other.visualData.Read().backgroundImage);
                     break;
                 case StylePropertyId.BackgroundPositionX:
                     visualData.Write().backgroundPositionX = other.visualData.Read().backgroundPositionX;
@@ -4361,7 +4361,7 @@ namespace UnityEngine.UIElements
                     visualData.Write().backgroundColor = InitialStyle.Get().visualData.Read().backgroundColor;
                     break;
                 case StylePropertyId.BackgroundImage:
-                    visualData.Write().backgroundImage = InitialStyle.Get().visualData.Read().backgroundImage;
+                    visualData.Write().backgroundImage.CopyFrom(InitialStyle.Get().visualData.Read().backgroundImage);
                     break;
                 case StylePropertyId.BackgroundPosition:
                     visualData.Write().backgroundPositionX = InitialStyle.Get().visualData.Read().backgroundPositionX;

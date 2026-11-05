@@ -63,6 +63,9 @@ namespace UnityEditor
             public static readonly GUIContent kTextureMipmapLimitGroupsAddButton = L10n.IconContent("Toolbar Plus", "Create a new mipmap limit group. Note that this adds a group to all quality levels, not only the active one!", null);
             public static readonly GUIContent kTextureMipmapLimitGroupsRemoveButton = L10n.IconContent("Toolbar Minus", "Remove mipmap limit group. Note that this removes the group from all quality levels, not only the active one!", null);
 
+            public static readonly string kRenderPipelineAssetMissing = L10n.Tr("No Render Pipeline Asset is assigned to this Quality Level, and no default is set. This Quality Level will not render.", null);
+            public static readonly string kRenderPipelineAssetRemovalWithoutDefault = L10n.Tr("No Default Render Pipeline Asset is assigned in Graphics settings. Without a Render Pipeline Asset in this Quality Level, nothing will be rendered.", null);
+            public static readonly string kRenderPipelineAssetFromGraphics = L10n.Tr("No Render Pipeline Asset is assigned. This Quality Level uses the Default Render Pipeline Asset from Graphics settings.", null);
             public static readonly string kTextureMipmapLimitGroupsDialogTitleOnUpdate = L10n.Tr("Mipmap Limit Groups: Update textures?", null);
             public static readonly string kTextureMipmapLimitGroupsDialogMessageOnRemove = L10n.Tr("Textures in your project may still be using '{0}'.\n\nSelect 'No' to remove the group without modifying its associated textures. Relevant textures stay bound to the group and fall back automatically to the global mipmap limit.\n\nSelect 'Yes' to remove the group and reset the group property of associated textures to 'None'. This triggers a re-import and may take some time. An undo cannot revert the importer changes.", null);
             public static readonly string kTextureMipmapLimitGroupsDialogMessageOnRename = L10n.Tr("Textures in your project may still be using '{0}'.\n\nSelect 'No' to rename the group without modifying its associated textures. Relevant textures stay bound to the group and fall back automatically to the global mipmap limit.\n\nSelect 'Yes' to rename the group and update the group property of associated textures to '{1}'. This triggers a re-import and may take some time. An undo cannot revert the importer changes.", null);
@@ -78,7 +81,7 @@ namespace UnityEditor
             public static readonly GUIContent kStreamingMipmapsMaxLevelReduction = L10n.TextContent("Max Level Reduction", "The maximum number of mipmap levels a texture can drop.", null, null);
             public static readonly GUIContent kStreamingMipmapsMaxFileIORequests = L10n.TextContent("Max IO Requests", "The maximum number of texture file requests from the Mipmap Streaming system that can be active at the same time.", null, null);
 
-            public static readonly GUIContent kIconTrash = L10n.IconContent("TreeEditor.Trash", "Delete Level", null);
+            public static readonly GUIContent kIconTrash = new ScalableGUIContent(null, "Delete Level", "Toolbar Minus");
             public static readonly GUIContent kBillboardsFaceCameraPos = L10n.TextContent("Billboards Face Camera Position", "When enabled, terrain billboards face towards the camera position. Otherwise, they face towards the camera plane. This makes billboards look nicer when the camera rotates but it is more resource intensive to process.", null, null);
             public static readonly GUIContent kUseLegacyDistribution = L10n.TextContent("Use Legacy Details Distribution", "When enabled, terrain details will be scattered using the old scattering algorithm that often resulted in overlapping details. Included for backwards compatibility with terrain authored in Unity 2022.1 and earlier.", null, null);
             public static readonly GUIContent kVSyncCountLabel = L10n.TextContent("VSync Count", "Specifies how Unity synchronizes rendering with the refresh rate of the display device.", null, null);
@@ -119,8 +122,7 @@ namespace UnityEditor
 
         internal class Styles
         {
-            public static readonly GUIStyle kToggle = "OL Toggle";
-            public static readonly GUIStyle kDefaultToggle = "OL ToggleWhite";
+            public static readonly GUIStyle kToggle = new GUIStyle(EditorStyles.toggle) { fixedHeight = 20, margin = new RectOffset() };
 
             public static readonly GUIStyle kListEvenBg = "ObjectPickerResultsOdd";
             public static readonly GUIStyle kListOddBg = "ObjectPickerResultsEven";
@@ -1454,18 +1456,6 @@ namespace UnityEditor
             m_SRPStatusMessage = m_LevelDetailsRoot.Q<HelpBox>("SRPStatusMessage");
             m_BirpStatusMessage = m_LevelDetailsRoot.Q<HelpBox>("BirpStatusMessage");
 
-            // Set up BiRP deprecation documentation link (set once, used for all BiRP messages)
-            if (m_BirpStatusMessage != null)
-            {
-                // Workaround, as there is a bug in the documentation forwarder that causes links containing a \ to be broken:
-                m_BirpStatusMessage.linkHref = $"https://docs.unity3d.com/{Application.unityVersionVer}.{Application.unityVersionMaj}/Documentation/Manual/urp/upgrading-from-birp.html";
-
-                // Use this once the documentation forwarder has been fixed
-                // Slack thread: https://unity.slack.com/archives/CTD5B2N7J/p1765805896918059
-                // Ticket: https://jira.unity3d.com/browse/WEBDOCS-2894
-                // m_BirpStatusMessage.linkHref = System.IO.Path.Combine(Help.baseDocumentationUrl, "urp", "upgrading-from-birp");
-            }
-
             // Set up ObjectFieldWithPrompt callback to only show dialog when types differ AND editing current quality level AND editing actual QualitySettings (not preset)
             if (m_RenderPipelineAssetField != null)
             {
@@ -1480,6 +1470,10 @@ namespace UnityEditor
 
                     return isDifferentType && isCurrentQualityLevel && m_IsEditingQualitySettings;
                 });
+
+                // Removing the asset only stops rendering when there is no default to fall back to
+                m_RenderPipelineAssetField.SetRemovalMessageProvider(() =>
+                    GraphicsSettings.defaultRenderPipeline == null ? Content.kRenderPipelineAssetRemovalWithoutDefault : null);
 
                 // Bind to the property when the panel attaches
                 m_LevelDetailsRoot.RegisterCallback<AttachToPanelEvent>(evt =>
@@ -1946,28 +1940,9 @@ namespace UnityEditor
 
             if (usingSRP)
             {
-                // SRP is in use - build message and show without Learn More link
-                if (GraphicsSettings.defaultRenderPipeline != null)
-                {
-                    if (m_CustomRenderPipelineProperty.objectReferenceValue == null)
-                    {
-                        // Default RP from Graphics, no quality-level override
-                        s_MessageBuilder.Append("A Scriptable Render Pipeline is in use");
-                        s_MessageBuilder.AppendLine(" because a Default Render Pipeline Asset is set in Graphics.");
-                        s_MessageBuilder.Append("You can assign a Render Pipeline Asset in this quality level to override the one used in Graphics");
-                        s_MessageBuilder.Append(". Some settings will not be used and are hidden.");
-                    }
-                    else
-                    {
-                        s_MessageBuilder.Append("A Scriptable Render Pipeline is in use. Some settings will not be used and are hidden.");
-                    }
-                }
-                else
-                {
-                    // Quality-level RP without default RP in Graphics
-                    s_MessageBuilder.Append("A Scriptable Render Pipeline is in use. But a Default Render Pipeline Asset in Graphics is missing.");
-                    s_MessageBuilder.Append(" Some settings will not be used and are hidden.");
-                }
+                // Default RP from Graphics, no quality-level override
+                if (m_CustomRenderPipelineProperty.objectReferenceValue == null)
+                    s_MessageBuilder.Append(Content.kRenderPipelineAssetFromGraphics);
 
                 if (s_MessageBuilder.Length > 0)
                 {
@@ -1979,29 +1954,11 @@ namespace UnityEditor
                     }
                 }
             }
-            else
+            else if (!Rendering.EditorGraphicsSettings.UsesBuiltInRenderPipeline() &&
+                Rendering.EditorGraphicsSettings.IsAnyRenderPipelineAssetTypeAvailable())
             {
-                // BiRP deprecation - build message and show with Learn More link
-                bool installedSRP = false;
-                foreach (var type in TypeCache.GetTypesDerivedFrom<RenderPipelineAsset>())
-                {
-                    if (!type.IsAbstract)
-                    {
-                        installedSRP = true;
-                        break;
-                    }
-                }
-
-                if (installedSRP)
-                {
-                    s_MessageBuilder.Append("If you don't use a render pipeline asset, Unity uses the Built-In Render Pipeline which is deprecated. Migrate your project to the Universal Render Pipeline instead.");
-                    messageType = MessageType.Warning;
-                }
-                else
-                {
-                    s_MessageBuilder.Append("The Built-In Render Pipeline is deprecated. Migrate your project to the Universal Render Pipeline instead.");
-                    messageType = MessageType.Info;
-                }
+                messageType = MessageType.Error;
+                s_MessageBuilder.Append(Content.kRenderPipelineAssetMissing);
 
                 birpHelpboxVisibilty = DisplayStyle.Flex;
                 if (m_BirpStatusMessage != null)

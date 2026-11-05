@@ -512,6 +512,7 @@ namespace Unity.Entities
             {
                 var archetype = m_Archetypes.Ptr[i];
 
+                var isGameObject = archetype->HasGameObjectEntities;
 
                 for (int c = 0; c != archetype->Chunks.Count; c++)
                 {
@@ -521,7 +522,20 @@ namespace Unity.Entities
 
                     var entityCount = chunk.Count;
 
-                    s_entityStore.Data.DeallocateEntities((Entity*)chunk.Buffer, entityCount);
+                    if (!isGameObject)
+                        s_entityStore.Data.DeallocateEntities((Entity*)chunk.Buffer, entityCount);
+                    else
+                    {
+                        // GameObject entity ids are engine-owned and must survive World disposal currently.
+                        // Detach instead of deallocating. Skip stale entries (id already recycled
+                        // by the engine) so we never write an old version onto a reused slot.
+                        for (int entityIndex = 0; entityIndex < entityCount; entityIndex++)
+                        {
+                            var entity = ((Entity*)chunk.Buffer)[entityIndex];
+                            if (s_entityStore.Data.Exists(entity))
+                                s_entityStore.Data.SetEntityInChunk(entity, EntityInChunk.Null);
+                        }
+                    }
 
                     s_chunkStore.Data.FreeContiguousChunks(archetype->Chunks[c], 1);
                 }
@@ -720,6 +734,23 @@ namespace Unity.Entities
             return s_entityStore.Data.GetEntityInChunk(entity).Chunk;
         }
 
+        /// <summary>
+        /// The EntityDataAccess of the world that owns the entity, or null when the entity doesn't exist.
+        /// An entity that doesn't exist resolves to the null chunk, whose archetype is null.
+        /// </summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static EntityDataAccess* GetEntityDataAccess(Entity entity)
+        {
+            var archetype = GetArchetypeOrNull(entity);
+            return archetype != null ? archetype->EntityDataAccess : null;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static Archetype* GetArchetypeOrNull(Entity entity)
+        {
+            return PerChunkArray.ChunkData[s_entityStore.Data.GetEntityInChunk(entity).Chunk].Archetype;
+        }
+
         [BurstCompile]
         internal partial struct PerChunkArray
         {
@@ -811,17 +842,37 @@ namespace Unity.Entities
             if(!s_entityStore.Data.Exists(entity))
                 return false;
 
-            var chunk = GetChunk(entity);
             // A null chunk means the entity was pre-allocated by an EntityCommandBuffer but not
             // yet played back. In the old per-world entity store this never showed as "alive";
-            // with the global EntityIdStore it can. Return false (entity not yet in this world).
-            if (chunk == ChunkIndex.Null)
-                return false;
+            // with the global EntityIdStore it can. Return false (entity not yet in any world).
+            return GetChunk(entity) != ChunkIndex.Null;
+        }
 
-            var archetype = GetArchetype(chunk);
-            var ecs = archetype->EntityComponentStore;
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public bool ExistsInThisWorld(Entity entity)
+        {
+            return GetArchetypeInThisWorldOrNull(entity, out _) != null;
+        }
 
-            return ecs->WorldSequenceNumber == WorldSequenceNumber;
+        // Null if the entity doesn't exist or belongs to another world
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public Archetype* GetArchetypeInThisWorldOrNull(Entity entity, out EntityInChunk entityInChunk)
+        {
+            ValidateEntity(entity);
+            entityInChunk = s_entityStore.Data.GetEntityInChunk(entity);
+            if (entityInChunk.Chunk == ChunkIndex.Null)
+                return null;
+
+            var archetype = GetArchetype(entityInChunk.Chunk);
+            return archetype->EntityComponentStore == (EntityComponentStore*)UnsafeUtility.AddressOf(ref this) ? archetype : null;
+        }
+
+        // Null if the entity doesn't exist, in whichever world owns it
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static Archetype* GetArchetypeOrNull(Entity entity, out EntityInChunk entityInChunk)
+        {
+            entityInChunk = s_entityStore.Data.GetEntityInChunk(entity);
+            return entityInChunk.Chunk == ChunkIndex.Null ? null : PerChunkArray.ChunkData[entityInChunk.Chunk].Archetype;
         }
 
         public static bool Debugger_Exists(EntityComponentStore* store, Entity entity)
@@ -851,7 +902,11 @@ namespace Unity.Entities
             if (Hint.Unlikely(!entityExists))
                 return false;
 
-            var archetype = GetArchetype(entity);
+            return HasComponent(GetArchetype(entity), type, ref cache);
+        }
+
+        internal static bool HasComponent(Archetype* archetype, TypeIndex type, ref LookupCache cache)
+        {
             if (Hint.Unlikely(archetype != cache.Archetype))
                 cache.Update(archetype, type);
             return cache.IndexInArchetype != -1;
@@ -1605,7 +1660,7 @@ namespace Unity.Entities
         }
 
         [BurstCompile]
-        private static void EntityBatchFromEntityChunkDataShared(EntityComponentStore* ecs, in EntityInChunk* chunkData,
+        internal static void EntityBatchFromEntityChunkDataShared(EntityComponentStore* ecs, in EntityInChunk* chunkData,
             int chunkCount,
             EntityBatchInChunk* entityBatchList, int* currentbatchIndex,
             int nSharedComponentsToAdd, int* foundError)
@@ -1695,13 +1750,13 @@ namespace Unity.Entities
         }
 
         [BurstCompile]
-        private static void SortEntityInChunk(EntityInChunk* entityInChunks, int count)
+        internal static void SortEntityInChunk(EntityInChunk* entityInChunks, int count)
         {
             NativeSortExtension.Sort(entityInChunks,count);
         }
 
         [BurstCompile]
-        private static void GatherEntityInChunkForEntities(Entity* Entities,
+        internal static void GatherEntityInChunkForEntities(Entity* Entities,
             EntityInChunk* EntityChunkData, int numEntities)
         {
             for (int index = 0; index < numEntities; ++index)
@@ -2323,6 +2378,15 @@ namespace Unity.Entities
                 dstArchetype->Flags |= ArchetypeFlags.CleanupComplete;
             if (ArchetypeCleanupNeeded(dstArchetype))
                 dstArchetype->Flags |= ArchetypeFlags.CleanupNeeded;
+            var isGameObjectTagType = TypeManager.GetTypeIndex<GameObjectComponentStoreBridge.IsGameObject>();
+            for (int typeI = 1; typeI < dstArchetype->TypesCount; typeI++)
+            {
+                if (dstArchetype->Types[typeI].TypeIndex == isGameObjectTagType)
+                {
+                    dstArchetype->Flags |= ArchetypeFlags.HasGameObjectEntities;
+                    break;
+                }
+            }
 
             fixed(EntityComponentStore* entityComponentStore = &this)
             {

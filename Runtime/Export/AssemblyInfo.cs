@@ -60,6 +60,7 @@ using System.Runtime.CompilerServices;
 [assembly: InternalsVisibleTo("UnityEditor.InteractiveTutorialsFramework")]
 [assembly: InternalsVisibleTo("Unity.2D.Tilemap.Editor")]
 [assembly: InternalsVisibleTo("Unity.2D.Tilemap.EditorTests")]
+[assembly: InternalsVisibleTo("Unity.2D.SpriteShape.Tests.EditorTests")]
 [assembly: InternalsVisibleTo("Unity.DeviceSimulator.Editor")]
 [assembly: InternalsVisibleTo("Unity.UIElements")]
 [assembly: InternalsVisibleTo("Unity.UIElements.Editor")]
@@ -114,6 +115,11 @@ using System.Runtime.CompilerServices;
 
 // PlayMode test assembly that runs on players too, so its IVT must be outside the editor-only block above.
 [assembly: InternalsVisibleTo("Unity.Modules.Core.AsyncReadManager.Tests.Playmode")]
+
+// com.unity.2d.graphics authors UnifiedRenderData, which is internal.
+[assembly: InternalsVisibleTo("Unity.2D.Graphics.Runtime")]
+[assembly: InternalsVisibleTo("Unity.2D.SpriteShape.Runtime")]
+
 [assembly: InternalsVisibleTo("UnityEngine.Networking")]
 [assembly: InternalsVisibleTo("UnityEngine.Cloud")]
 [assembly: InternalsVisibleTo("UnityEngine.Cloud.Service")]
@@ -187,6 +193,7 @@ using System.Runtime.CompilerServices;
 [assembly: InternalsVisibleTo("UnityEngine.SpriteShapeModule")]
 [assembly: InternalsVisibleTo("Unity.RenderPipelines.Core.Runtime")]
 [assembly: InternalsVisibleTo("Unity.RenderPipelines.Core.Editor")]
+[assembly: InternalsVisibleTo("Unity.RenderPipelines.Core.ShadowCache.Runtime")]
 [assembly: InternalsVisibleTo("Unity.RenderPipelines.Universal.2D.Runtime")]
 [assembly: InternalsVisibleTo("Unity.RenderPipelines.Universal.2D.Editor.Overrides")]
 [assembly: InternalsVisibleTo("Unity.RenderPipelines.Universal.Editor")]
@@ -274,7 +281,6 @@ using System.Runtime.CompilerServices;
 
 [assembly: InternalsVisibleTo("Unity.Subsystem.Registration")]
 // Note: Don't add InternalsVisibleTo for UnityEngine.UI, because it's editable by users and it shouldn't access internal UnityEngine methods
-
 
 // Test Assemblies
 [assembly: InternalsVisibleTo("Unity.Core.Scripting.AssemblyVersion.Tests.Editor")]

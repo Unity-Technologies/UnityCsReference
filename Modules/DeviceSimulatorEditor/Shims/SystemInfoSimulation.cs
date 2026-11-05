@@ -138,6 +138,7 @@ namespace UnityEditor.DeviceSimulation
         public override bool supportsGraphicsFence  =>  m_GraphicsSystemInfoFields.Contains("supportsGraphicsFence") ? m_GraphicsSystemInfo.supportsGraphicsFence : base.supportsGraphicsFence;
         public override bool supportsAsyncGPUReadback  =>  m_GraphicsSystemInfoFields.Contains("supportsAsyncGPUReadback") ? m_GraphicsSystemInfo.supportsAsyncGPUReadback : base.supportsAsyncGPUReadback;
         public override bool supportsParallelPSOCreation  =>  m_GraphicsSystemInfoFields.Contains("supportsParallelPSOCreation") ? m_GraphicsSystemInfo.supportsParallelPSOCreation : base.supportsParallelPSOCreation;
+        public override bool supportsDepthClamp  =>  m_GraphicsSystemInfoFields.Contains("supportsDepthClamp") ? m_GraphicsSystemInfo.supportsDepthClamp : base.supportsDepthClamp;
         public override bool supportsRayTracing => m_GraphicsSystemInfoFields.Contains("supportsRayTracing") ? m_GraphicsSystemInfo.supportsRayTracing : base.supportsRayTracing;
         public override bool supportsRayTracingShaders => m_GraphicsSystemInfoFields.Contains("supportsRayTracingShaders") ? m_GraphicsSystemInfo.supportsRayTracingShaders : base.supportsRayTracingShaders;
         public override bool supportsInlineRayTracing => m_GraphicsSystemInfoFields.Contains("supportsInlineRayTracing") ? m_GraphicsSystemInfo.supportsInlineRayTracing : base.supportsInlineRayTracing;

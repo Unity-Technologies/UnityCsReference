@@ -53,16 +53,18 @@ namespace UnityEngineInternal.Input
         /// </summary>
         /// <param name="descriptor">JSON device description. Cannot be empty.</param>
         /// <param name="stateFourCC">Format of the state events the device publishes.</param>
+        /// <param name="delivery">How the device's state reaches the input module, fixed for its lifetime.</param>
         /// <param name="flags">Behaviour, fixed for the device's lifetime.</param>
         /// <param name="initialState">Starting state, whose length fixes <see cref="stateSize"/>.</param>
         /// <exception cref="InvalidOperationException">The device couldn't be created. The message names the reason.</exception>
         public static VirtualDevice Create(
             string descriptor,
             uint stateFourCC,
+            VirtualDeviceDelivery delivery,
             VirtualDeviceFlags flags,
             ReadOnlySpan<byte> initialState)
         {
-            var result = TryCreate(descriptor, stateFourCC, flags, initialState, out var device);
+            var result = TryCreate(descriptor, stateFourCC, delivery, flags, initialState, out var device);
             if (device == null)
                 throw new InvalidOperationException("Could not create virtual device: " + InputCommandResult.ToName(result));
 
@@ -75,20 +77,23 @@ namespace UnityEngineInternal.Input
         /// <param name="device">The new device, or <c>null</c> on failure.</param>
         /// <returns>
         /// <see cref="InputCommandResult.success"/>, or on failure:
-        /// <see cref="InputCommandResult.invalidPayload"/> when the descriptor is null or empty, or the initial
-        /// state is empty or larger than the maximum state size;
+        /// <see cref="InputCommandResult.invalidPayload"/> when the descriptor is null or empty, the initial
+        /// state is empty or larger than the maximum state size, the delivery or flags hold a value this build
+        /// doesn't define, or <see cref="VirtualDeviceFlags.PublishThroughPipeline"/> is set with
+        /// <see cref="VirtualDeviceDelivery.Deferred"/> or a reserved state FourCC;
         /// <see cref="InputCommandResult.invalidSize"/> when the descriptor and state don't fit one payload;
         /// <see cref="InputCommandResult.failure"/> when no device ids are left;
-        /// <see cref="InputCommandResult.notSupported"/> when this build has no virtual devices.
+        /// <see cref="InputCommandResult.notSupported"/> when this build has no virtual devices, or no input pipeline for <see cref="VirtualDeviceFlags.PublishThroughPipeline"/>.
         /// </returns>
         public static long TryCreate(
             string descriptor,
             uint stateFourCC,
+            VirtualDeviceDelivery delivery,
             VirtualDeviceFlags flags,
             ReadOnlySpan<byte> initialState,
             out VirtualDevice device)
         {
-            var result = TryCreateHandle(descriptor, stateFourCC, flags, initialState, out var handle);
+            var result = TryCreateHandle(descriptor, stateFourCC, delivery, flags, initialState, out var handle);
             device = result >= 0 ? new VirtualDevice(handle, initialState.Length) : null;
             return result;
         }
@@ -96,6 +101,7 @@ namespace UnityEngineInternal.Input
         private protected static long TryCreateHandle(
             string descriptor,
             uint stateFourCC,
+            VirtualDeviceDelivery delivery,
             VirtualDeviceFlags flags,
             ReadOnlySpan<byte> initialState,
             out int handle)
@@ -123,6 +129,7 @@ namespace UnityEngineInternal.Input
                 {
                     stateFourCC = stateFourCC,
                     flags = flags,
+                    delivery = delivery,
                     descriptorOffset = (uint)headerSize,
                     descriptorSize = (uint)descriptorSize,
                     stateOffset = (uint)(headerSize + descriptorSize),
@@ -294,10 +301,11 @@ namespace UnityEngineInternal.Input
         public static VirtualDevice<TState> Create(
             string descriptor,
             uint stateFourCC,
+            VirtualDeviceDelivery delivery,
             VirtualDeviceFlags flags,
             TState initialState)
         {
-            var result = TryCreate(descriptor, stateFourCC, flags, initialState, out var device);
+            var result = TryCreate(descriptor, stateFourCC, delivery, flags, initialState, out var device);
             if (device == null)
                 throw new InvalidOperationException("Could not create virtual device: " + InputCommandResult.ToName(result));
 
@@ -310,21 +318,24 @@ namespace UnityEngineInternal.Input
         /// <param name="device">The new device, or <c>null</c> on failure.</param>
         /// <returns>
         /// <see cref="InputCommandResult.success"/>, or on failure:
-        /// <see cref="InputCommandResult.invalidPayload"/> when the descriptor is null or empty, or the initial
-        /// state is empty or larger than the maximum state size;
+        /// <see cref="InputCommandResult.invalidPayload"/> when the descriptor is null or empty, the initial
+        /// state is empty or larger than the maximum state size, the delivery or flags hold a value this build
+        /// doesn't define, or <see cref="VirtualDeviceFlags.PublishThroughPipeline"/> is set with
+        /// <see cref="VirtualDeviceDelivery.Deferred"/> or a reserved state FourCC;
         /// <see cref="InputCommandResult.invalidSize"/> when the descriptor and state don't fit one payload;
         /// <see cref="InputCommandResult.failure"/> when no device ids are left;
-        /// <see cref="InputCommandResult.notSupported"/> when this build has no virtual devices.
+        /// <see cref="InputCommandResult.notSupported"/> when this build has no virtual devices, or no input pipeline for <see cref="VirtualDeviceFlags.PublishThroughPipeline"/>.
         /// </returns>
         public static long TryCreate(
             string descriptor,
             uint stateFourCC,
+            VirtualDeviceDelivery delivery,
             VirtualDeviceFlags flags,
             TState initialState,
             out VirtualDevice<TState> device)
         {
             var initialBytes = new ReadOnlySpan<byte>(&initialState, sizeof(TState));
-            var result = TryCreateHandle(descriptor, stateFourCC, flags, initialBytes, out var handle);
+            var result = TryCreateHandle(descriptor, stateFourCC, delivery, flags, initialBytes, out var handle);
             device = result >= 0 ? new VirtualDevice<TState>(handle) : null;
             return result;
         }

@@ -177,7 +177,7 @@ namespace UnityEditorInternal
             Vector2 labelSize = GUI.skin.label.CalcSize(labelContent);
 
             Rect labelRect = new Rect(
-                isMarginAlignedLabel ? rect.xMin - 1 : buttonRect.xMax + k_SpaceBetweenLabelAndButton,
+                isMarginAlignedLabel ? rect.xMin - 1 + EditorGUI.indent : buttonRect.xMax + k_SpaceBetweenLabelAndButton,
                 isMarginAlignedLabel ? rect.yMin     : rect.yMin + (rect.height - labelSize.y) * .5f,
                 labelSize.x,
                 rect.height);

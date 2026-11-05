@@ -564,7 +564,7 @@ namespace Unity.Entities
         }
 
         [BurstCompile]
-        private static void CopyComponentArrayToChunksWithFilter(byte* componentData, TypeIndex typeIndex,
+        internal static void CopyComponentArrayToChunksWithFilter(byte* componentData, TypeIndex typeIndex,
             ref UnsafeMatchingArchetypePtrList matchingArchetypePtrList, ref EntityQueryFilter filter, in UnsafeCachedChunkList cache,
             uint globalSystemVersion)
         {

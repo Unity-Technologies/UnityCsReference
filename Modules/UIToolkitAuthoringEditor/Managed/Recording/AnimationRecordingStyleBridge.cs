@@ -1299,22 +1299,29 @@ namespace Unity.UIToolkit.Editor
 
         internal static void AddModification(List<UndoPropertyModification> list, UnityEngine.Object target, string elementPath, string propName, string channelSuffix, float previousValue, float currentValue)
         {
-            var propertyName = UIAnimationPath.BuildPropertyName(elementPath, propName, channelSuffix);
+            AddModification(list, target, elementPath, propName, channelSuffix, previousValue.ToString(CultureInfo.InvariantCulture), currentValue.ToString(CultureInfo.InvariantCulture));
+        }
 
-            var prevStr = previousValue.ToString(CultureInfo.InvariantCulture);
-            var curStr = currentValue.ToString(CultureInfo.InvariantCulture);
+        internal static void AddModification(List<UndoPropertyModification> list, UnityEngine.Object target, string elementPath, string propName, string channelSuffix, int previousValue, int currentValue)
+        {
+            AddModification(list, target, elementPath, propName, channelSuffix, previousValue.ToString(CultureInfo.InvariantCulture), currentValue.ToString(CultureInfo.InvariantCulture));
+        }
+
+        static void AddModification(List<UndoPropertyModification> list, UnityEngine.Object target, string elementPath, string propName, string channelSuffix, string previousValue, string currentValue)
+        {
+            var propertyName = UIAnimationPath.BuildPropertyName(elementPath, propName, channelSuffix);
 
             var prevMod = new PropertyModification
             {
                 target = target,
                 propertyPath = propertyName,
-                value = prevStr
+                value = previousValue
             };
             var curMod = new PropertyModification
             {
                 target = target,
                 propertyPath = propertyName,
-                value = curStr
+                value = currentValue
             };
 
             list.Add(new UndoPropertyModification

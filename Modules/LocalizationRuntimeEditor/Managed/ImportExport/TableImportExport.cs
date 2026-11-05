@@ -126,15 +126,15 @@ static class TableFileIO
 
 static partial class TableFormatRegistry
 {
-    [AutoStaticsCleanup] // holds instances discovered by reflection
+    [AutoStaticsCleanupOnCodeReload] // holds instances discovered by reflection
     static List<ITableCollectionExporter> s_Exporters;
-    [AutoStaticsCleanup] // holds instances discovered by reflection
+    [AutoStaticsCleanupOnCodeReload] // holds instances discovered by reflection
     static List<ITableCollectionImporter> s_Importers;
-    [AutoStaticsCleanup] // holds instances discovered by reflection
+    [AutoStaticsCleanupOnCodeReload] // holds instances discovered by reflection
     static List<ITableCollectionService> s_Services;
-    [AutoStaticsCleanup] // holds instances discovered by reflection
+    [AutoStaticsCleanupOnCodeReload] // holds instances discovered by reflection
     static List<ITableCollectionWindowFormat> s_Windows;
-    [AutoStaticsCleanup] // holds instances discovered by reflection
+    [AutoStaticsCleanupOnCodeReload] // holds instances discovered by reflection
     static List<object> s_Instances;
 
     public static IReadOnlyList<ITableCollectionExporter> Exporters => s_Exporters ??= Build<ITableCollectionExporter>();

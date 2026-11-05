@@ -318,10 +318,10 @@ namespace UnityEngine
         ///}
         ///]]></code>
         ///</example>
-        public Component body => Physics.GetBodyByInstanceID(m_BodyID) as Component;
+        public Component body => Physics.GetBodyByEntityId(m_BodyID) as Component;
         ///<summary>The second <see cref="Rigidbody" /> or <see cref="ArticulationBody" /> in the pair.</summary>
         ///<remarks>Use with the <c>as</c> keyword to determine the actual type of the component.</remarks>
-        public Component otherBody => Physics.GetBodyByInstanceID(m_OtherBodyID) as Component;
+        public Component otherBody => Physics.GetBodyByEntityId(m_OtherBodyID) as Component;
 
         ///<summary>Linear velocity of the first <see cref="Rigidbody" /> or the <see cref="ArticulationBody" /> in the pair at the moment of collision.</summary>
         ///<remarks>Returns <see cref="Vector3.zero" /> if no <see cref="Rigidbody" /> or <see cref="ArticulationBody" /> is attached to the first shape in the pair.</remarks>
@@ -392,10 +392,10 @@ namespace UnityEngine
 
         ///<summary>The first <see cref="Collider" /> component of the <see cref="ContactPair" />.</summary>
         ///<remarks>This property is only accessible from the main thread.</remarks>
-        public Collider collider => m_ColliderID == EntityId.None ? null : Physics.GetColliderByInstanceID(m_ColliderID) as Collider;
+        public Collider collider => m_ColliderID == EntityId.None ? null : Physics.GetColliderByEntityId(m_ColliderID) as Collider;
         ///<summary>The second <see cref="Collider" /> component of the <see cref="ContactPair" />.</summary>
         ///<remarks>This property is only accessible from the main thread.</remarks>
-        public Collider otherCollider => m_OtherColliderID == EntityId.None ? null : Physics.GetColliderByInstanceID(m_OtherColliderID) as Collider;
+        public Collider otherCollider => m_OtherColliderID == EntityId.None ? null : Physics.GetColliderByEntityId(m_OtherColliderID) as Collider;
 
         ///<summary>The number of <see cref="ContactPairPoint" />s that this pair contains.</summary>
         public int contactCount => (int)m_NbPoints;

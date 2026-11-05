@@ -152,6 +152,11 @@ namespace UnityEditor.UIElements
         VisualElement m_InspectorElement;
 
         /// <summary>
+        /// The inspector element disabled because its target is not supported. Tracked so only this element is re-enabled when reused.
+        /// </summary>
+        VisualElement m_NotSupportedDisabledElement;
+
+        /// <summary>
         /// The header element returned by <see cref="Editor.CreateInspectorHeaderGUI"/>.
         /// Placed either inline (non-sticky) or in the PropertyEditor header container (sticky).
         /// </summary>
@@ -539,6 +544,21 @@ namespace UnityEditor.UIElements
                     m_ObsoleteElement = CreateObsoleteElement();
                 }
 
+                // The header stays interactive so the component can still be disabled or removed.
+                // IMGUI containers are reused across rebinds, so re-enable one we previously disabled.
+                // Elements we did not disable are left alone to respect custom inspectors' own enabled state.
+                if (m_InspectorElement != null && InspectorWindowUtils.IsNotSupported(m_Editor))
+                {
+                    m_InspectorElement.SetEnabled(false);
+                    m_NotSupportedDisabledElement = m_InspectorElement;
+                }
+                else if (m_NotSupportedDisabledElement != null)
+                {
+                    if (m_NotSupportedDisabledElement == m_InspectorElement)
+                        m_InspectorElement.SetEnabled(true);
+                    m_NotSupportedDisabledElement = null;
+                }
+
                 if (m_InspectorHeaderElement != null && m_InspectorHeaderElement.parent == null)
                 {
                     if (m_Editor.isHeaderSticky)
@@ -895,7 +915,7 @@ namespace UnityEditor.UIElements
                 EditorGUIUtility.ResetGUIState();
                 GUI.color = playModeTintColor;
 
-                using (new EditorGUI.DisabledScope(!targetEditor.IsEnabled() || !enabledInHierarchy))
+                using (new EditorGUI.DisabledScope(!targetEditor.IsEnabled() || !inspector.enabledInHierarchy))
                 {
                     //set the current PropertyHandlerCache to the current editor
                     ScriptAttributeUtility.propertyHandlerCache = targetEditor.propertyHandlerCache;

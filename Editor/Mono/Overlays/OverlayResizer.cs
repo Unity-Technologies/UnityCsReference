@@ -296,15 +296,20 @@ namespace UnityEditor.Overlays
             if (!m_Overlay.IsResizeCompatible() || !m_Overlay.sizeOverridden)
                 return;
 
+            var horizontalMargin = m_Overlay.resizeTarget.resolvedStyle.marginLeft + m_Overlay.resizeTarget.resolvedStyle.marginRight;
+            var verticalMargin = m_Overlay.resizeTarget.resolvedStyle.marginTop + m_Overlay.resizeTarget.resolvedStyle.marginBottom;
+
             var container = m_Overlay.rootVisualElement.GetFirstAncestorOfType<OverlayContainer>() ?? m_Overlay.container;
             if (container == null || m_Overlay.rootVisualElement.parent == null)
                 return;
 
             var cornerDocked = container is not FloatingOverlayContainer && container is not ToolbarOverlayContainer;
-            var largerThanContainer = (m_Overlay.size.x > container.rect.width || m_Overlay.size.y > container.rect.height);
+            var largerThanContainer = (m_Overlay.size.x + horizontalMargin > container.contentRect.width || m_Overlay.size.y + verticalMargin > container.contentRect.height);
 
             if (cornerDocked && largerThanContainer)
-                m_Overlay.size = new Vector2(Mathf.Min(m_Overlay.size.x, container.rect.width), Mathf.Min(m_Overlay.size.y, container.rect.height));
+            {
+                m_Overlay.size = new Vector2(Mathf.Min(m_Overlay.size.x, container.contentRect.width - horizontalMargin), Mathf.Min(m_Overlay.size.y, container.contentRect.height - verticalMargin));
+            }
         }
 
         bool ContainerCanShowResizer(OverlayResizer resizer)
@@ -321,6 +326,15 @@ namespace UnityEditor.Overlays
 
             var alignment = container.resolvedStyle.alignItems;
             bool hide = false;
+
+            // The anchored edge along the stacking axis cannot follow the mouse, so hide the resizer on that side
+            if (container is AnchoredOverlayContainer && container.GetOverlayIndex(m_Overlay, out OverlayContainerSection section, out _))
+            {
+                if (section == OverlayContainerSection.BeforeSpacer)
+                    hide |= resizer.HasDirection(container.isHorizontal ? Direction.Left : Direction.Top);
+                else if (section == OverlayContainerSection.AfterSpacer)
+                    hide |= resizer.HasDirection(container.isHorizontal ? Direction.Right : Direction.Bottom);
+            }
 
             // Check the opposite direction. If the content is align to one side, hide resizer on that side
             switch (alignment)

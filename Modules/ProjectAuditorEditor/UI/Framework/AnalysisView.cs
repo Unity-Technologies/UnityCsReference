@@ -72,10 +72,6 @@ namespace Unity.ProjectAuditor.Editor.UI.Framework
         public virtual bool OnlyPerfCriticalIssues() { return false; }
         public virtual bool OnlyFixableIssues() { return false; }
 
-        #pragma warning disable UAC2001 // Avoid Linq
-        public string DocumentationUrl => Documentation.GetPageUrl(new string(m_Desc.DisplayName.Where(char.IsLetterOrDigit).ToArray()));
-#pragma warning restore UAC2001
-
         public int NumIssues => m_Issues.Count;
 
         public int NumFilteredIssues => m_Table.GetNumMatchingIssues();
@@ -1133,7 +1129,7 @@ namespace Unity.ProjectAuditor.Editor.UI.Framework
             m_ViewManager.OnSelectedIssuesQuickFixRequested?.Invoke(issues);
         }
 
-        protected static class SharedContents
+        protected internal static class SharedContents
         {
             public static readonly GUIContent Details = new GUIContent("Details", "Issue Details");
             public static readonly GUIContent Recommendation = new GUIContent("Recommendation", "Recommendation on how to solve the issue");
@@ -1144,7 +1140,10 @@ namespace Unity.ProjectAuditor.Editor.UI.Framework
             public static readonly GUIContent DocumentationExternal = new GUIContent("Learn More", "Open external documentation");
             public static readonly GUIContent Show = new GUIContent("Show:");
             public static readonly GUIContent ShowIgnoredIssues = new GUIContent("Show Ignored Issues");
-            public static readonly GUIContent Summary = L10n.TextContent("Summary", null, null, null);
+            public static readonly GUIContent IssuesByArea = L10n.TextContent("Issues by Area", null, null, null);
+            public static readonly GUIContent Analyze = L10n.TextContent("Analyze", null, null, null);
+
+            public static readonly string AnalysisInProgressText = L10n.Tr("Analysis is still running in the background (see more in Window > General > Progress)", null);
         }
     }
 }

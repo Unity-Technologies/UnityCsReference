@@ -21,7 +21,7 @@ namespace UnityEngine.Animations
     public readonly struct BoundProperty : IEquatable<BoundProperty>, IComparable<BoundProperty>
     {
         ///<summary>The index of this BoundProperty to the internal list of bound properties.</summary>
-        ///<remarks>The bound property index is recycled when a domain reload occurs or when either the GameObject or Component associated with a BoundProperty is destroyed. When the index is recycled, the system increments the version identifier.
+        ///<remarks>The bound property index is recycled when a code reload occurs or when either the GameObject or Component associated with a BoundProperty is destroyed. When the index is recycled, the system increments the version identifier.
         ///                    
         ///To represent the same BoundProperty, the Index and the Version must match. If the Index and Version differ, then the Index has been recycled.</remarks>
         ///<value>The index into the internal list of bound properties.</value>

@@ -18,14 +18,11 @@ namespace Unity.ProjectAuditor.Editor.UI
     // the Upgrade and migration pages instead).
     class OptimizationSummaryView : SummaryView
     {
-        bool m_ShowIssueBreakdown = true;
         bool m_ShowTopTenIssues = true;
         bool m_ShowAdditionalInsights = true;
 
         Stats m_Stats;
         TopTen m_TopTen = NewTopTen();
-
-        readonly Dictionary<string, bool> m_FoldoutStates = new Dictionary<string, bool>();
 
         bool m_RefreshAdditionalInsights;
 
@@ -42,7 +39,7 @@ namespace Unity.ProjectAuditor.Editor.UI
         }
 
         // The Optimization breakdown excludes Upgrade and migration issues.
-        protected override bool MatchesSummaryFilter(ReportItem issue) => !issue.IsIssue() || IssueHasAnyAreas(issue, ~AreasExtensions.AllUpgradeAreas);
+        protected override bool MatchesSummaryFilter(ReportItem issue) => !issue.IsIssue() || issue.Id.GetDescriptor().HasAnyAreas(~AreasExtensions.AllUpgradeAreas);
 
         protected override void OnSummaryRefreshed()
         {
@@ -102,7 +99,7 @@ namespace Unity.ProjectAuditor.Editor.UI
             DrawIssueBreakdownSection();
 
             // Top Ten Issues section, only drawn if any issue would appear in it
-            if (m_AnyTopTenIssues)
+            if (m_AnyTopTenIssues && !m_ViewManager.HasPendingCategories())
             {
                 EditorGUILayout.Space();
 
@@ -110,6 +107,10 @@ namespace Unity.ProjectAuditor.Editor.UI
                 m_ShowTopTenIssues = Utility.BoldFoldout(m_ShowTopTenIssues, Contents.TopTenIssuesContent);
                 if (m_ShowTopTenIssues)
                 {
+                    DrawTopTenLabel(
+                        Contents.NoIssuesText, Contents.NoMajorIssuesText, Contents.SevereCountFormat, Contents.SevereCountPluralFormat,
+                        m_Stats.TotalExcludingIgnoredAndFixed, m_Stats.MajorAndCritical);
+
                     DrawTopTenIssues(m_TopTen, IsIssueIgnoredOrFiltered);
                     EditorGUILayout.Space(10);
                 }
@@ -165,139 +166,13 @@ namespace Unity.ProjectAuditor.Editor.UI
         void DrawIssueBreakdownSection()
         {
             EditorGUILayout.BeginVertical(GUI.skin.box);
-            m_ShowIssueBreakdown = Utility.BoldFoldout(m_ShowIssueBreakdown, Contents.IssueBreakdownContent);
-            if (m_ShowIssueBreakdown)
-            {
-                GUILayout.Space(8);
 
-                using (new EditorGUILayout.VerticalScope())
-                {
-                    using (new EditorGUILayout.HorizontalScope())
-                    {
-                        GUILayout.Space(18);
+            EditorGUILayout.LabelField(SharedContents.IssuesByArea, SharedStyles.BoldLabel);
 
-                        using (new GUILayout.VerticalScope())
-                        {
-                            DrawSummaryItem("Code", m_Stats.NumCodeIssues, m_Timings.CodeAnalysisTime, IssueCategory.Code);
-                            GUILayout.Space(8);
-                            DrawSummaryItem("Assets", m_Stats.NumAssetIssues, m_Timings.AssetsAnalysisTime, IssueCategory.AssetIssue);
-                            GUILayout.Space(8);
-                            DrawSummaryItem("Game Objects", m_Stats.NumGameObjectIssues, m_Timings.GameObjectAnalysisTime, IssueCategory.GameObject);
-                            GUILayout.Space(8);
-                            DrawSummaryItem("Project Settings", m_Stats.NumSettingIssues, m_Timings.SettingsAnalysisTime, IssueCategory.ProjectSetting);
-                            GUILayout.Space(8);
-                        }
-                    }
-                }
-            }
+            var ignoredAndFixedInfo = BuildIgnoredFixedInfo(m_Stats.NumIgnoredAreaIssues, m_Stats.NumFixedAreaIssues);
+            DrawChartBar(() => BuildCategoryChartElements(m_Stats), ignoredAndFixedInfo);
+
             EditorGUILayout.EndVertical();
-        }
-
-        void DrawSummaryItem(string title, int value, long analysisTimeMs, IssueCategory category, GUIContent icon = null)
-        {
-            if (!m_ViewManager.HasView(category))
-                return;
-
-            if (!m_FoldoutStates.TryGetValue(title, out var foldoutState))
-            {
-                foldoutState = true;
-                m_FoldoutStates.Add(title, foldoutState);
-            }
-
-            // Display analysis time in sensible units
-            var timeSpan = TimeSpan.FromMilliseconds(analysisTimeMs);
-            if (timeSpan.TotalSeconds >= 1)
-                timeSpan = TimeSpan.FromSeconds(Math.Round(timeSpan.TotalSeconds, MidpointRounding.AwayFromZero));
-
-            string time;
-            if (timeSpan.TotalHours >= 1)
-                time = $"{(int)timeSpan.TotalHours}h {timeSpan.Minutes}m";
-            else if (timeSpan.TotalMinutes >= 1)
-                time = $"{timeSpan.Minutes}m {timeSpan.Seconds}s";
-            else if (timeSpan.TotalSeconds >= 2)
-                time = $"{timeSpan.Seconds} seconds";
-            else if (timeSpan.TotalSeconds >= 1)
-                time = "1 second";
-            else
-                time = $"{timeSpan.TotalMilliseconds:F0}ms";
-            time = $"found in {time}";
-
-            bool newFoldoutState = true;
-            using (new EditorGUILayout.HorizontalScope())
-            {
-                newFoldoutState = Utility.BoldFoldout(foldoutState, L10n.TempContent($"{title} ({value} issues)", null));
-                GUILayout.FlexibleSpace();
-            }
-
-            if (newFoldoutState != foldoutState)
-            {
-                m_FoldoutStates[title] = newFoldoutState;
-            }
-
-            if (newFoldoutState)
-            {
-                if (value == 0 || m_ViewManager.HasPendingCategory(category))
-                {
-                    using (new EditorGUILayout.HorizontalScope())
-                    {
-                        GUILayout.Space(20);
-
-                        if (m_ViewManager.HasPendingCategory(category))
-                        {
-                            DrawAnalysisInProgressLabel(title);
-                        }
-                        else if (m_ViewManager.Report.HasCategory(category))
-                        {
-                            GUILayout.Label($"No {title} issues {time}.");
-                        }
-                        else
-                        {
-                            GUILayout.Label($"{title} analysis is not yet included in this report.");
-                        }
-                    }
-
-                    using (new EditorGUILayout.HorizontalScope())
-                    {
-                        GUILayout.Space(20);
-
-                        using (new EditorGUI.DisabledScope(m_ViewManager.HasPendingCategory(category)))
-                        {
-                            if (GUILayout.Button($"Go to {title}", GUILayout.Width(k_NavigationButtonWidth)))
-                            {
-                                m_Window.GotoCategory(category);
-                                GUIUtility.ExitGUI();
-                            }
-                        }
-
-                        GUILayout.FlexibleSpace();
-                    }
-
-                    return;
-                }
-
-                GUILayout.Space(4);
-
-                EditorGUILayout.BeginHorizontal();
-
-                if (icon != null)
-                    EditorGUILayout.LabelField(icon, SharedStyles.Label);
-
-                EditorGUILayout.EndHorizontal();
-
-                DrawSeverityBar(m_Stats.SeveritiesByCategory[(int)category], horizontalPadding: 20, time);
-
-                EditorGUILayout.BeginHorizontal();
-
-                GUILayout.Space(20);
-
-                if (GUILayout.Button($"Go to {title}", GUILayout.Width(k_NavigationButtonWidth)))
-                {
-                    m_Window.GotoCategory(category);
-                    GUIUtility.ExitGUI();
-                }
-
-                EditorGUILayout.EndHorizontal();
-            }
         }
 
         private void DrawAdditionalInsights()
@@ -344,9 +219,13 @@ namespace Unity.ProjectAuditor.Editor.UI
 
         static class Contents
         {
-            public static readonly GUIContent IssueBreakdownContent = L10n.TextContent("Issue Breakdown", null, null, null);
             public static readonly GUIContent TopTenIssuesContent = L10n.TextContent("Top Ten Issues", null, null, null);
             public static readonly GUIContent AdditionalInsightsContent = L10n.TextContent("Additional Insights", null, null, null);
+
+            public static readonly string SevereCountFormat = L10n.Tr("{0} major optimization issue found.", null);
+            public static readonly string SevereCountPluralFormat = L10n.Tr("{0} major optimization issues found.", null);
+            public static readonly string NoIssuesText = L10n.Tr("No optimization issues found.", null);
+            public static readonly string NoMajorIssuesText = L10n.Tr("No major optimization issues found.", null);
         }
     }
 }

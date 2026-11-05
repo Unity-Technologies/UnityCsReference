@@ -79,6 +79,11 @@ namespace UnityEditor.EditorTools
             get { return null; }
         }
 
+        internal virtual GUIContent toolbarIconOn
+        {
+            get { return null; }
+        }
+
         public virtual bool gridSnapEnabled
         {
             get { return false; }

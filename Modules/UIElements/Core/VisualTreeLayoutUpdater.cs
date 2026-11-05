@@ -233,6 +233,8 @@ namespace UnityEngine.UIElements
         }
 
 
+        internal override VersionChangeType versionChangeInterest => VersionChangeType.Layout | VersionChangeType.Hierarchy;
+
         public override void OnVersionChanged(VisualElement ve, VersionChangeType versionChangeType)
         {
             if ((versionChangeType & (VersionChangeType.Layout | VersionChangeType.Hierarchy)) == 0)
@@ -495,6 +497,9 @@ namespace UnityEngine.UIElements
             bool paddingPositionChanged = layoutPseudoPaddingRect.position != lastPseudoPaddingRect.position;
             if (layoutPositionChanged || paddingPositionChanged || isDisplayedJustChanged)
                 changeType |= VersionChangeType.Transform;
+
+            if (paddingPositionChanged)
+                changeType |= VersionChangeType.Repaint;   // content-rect visuals, e.g. a rounded clip's stencil mask
 
             if (isDisplayedJustChanged)
                 changeType |= VersionChangeType.Size;

@@ -80,6 +80,12 @@ namespace Unity.GraphToolkit.Editor
         public static readonly string expandableUssClassName = ussClassName.WithUssModifier("expandable");
 
         /// <summary>
+        /// The USS class name added to expandable ports that are not compatible with the wire being dragged.
+        /// </summary>
+        /// <remarks>Only the connector of these ports is greyed out, so that their sub ports can still be discovered.</remarks>
+        internal static readonly string incompatibleExpandableUssClassName = ussClassName.WithUssModifier("incompatible-expandable");
+
+        /// <summary>
         /// The USS class name added to indicate when dropping a wire on a port is forbidden.
         /// </summary>
         public static readonly string dropHighlightDeniedClass = dropHighlightAcceptedClass.WithUssModifier("denied");
@@ -344,6 +350,9 @@ namespace Unity.GraphToolkit.Editor
             var action = m_OnNextAttachAction;
             m_OnNextAttachAction = null;
             action?.Invoke();
+
+            // Ports that appear during a wire drag, for example sub ports of an auto-expanded port, must not be drawn before being greyed out.
+            GraphView?.ActiveWireDragHelper?.DoHighlightCompatiblePortOrSubport(this);
         }
 
         internal void OnNextAttach(Action action)

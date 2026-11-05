@@ -169,6 +169,37 @@ namespace UnityEngine.UIElements.UIR
             panelComponentId = EntityId.None;
         }
 
+        bool isImmediateTransparent => owner.compositeOpacity < 0.001f;
+
+        // Immediate case of ExecuteNonDrawMesh for panels that skip rendering: same culling, opacity and state isolation, no GL setup.
+        public void CallImmediateWithoutRendering(Rect viewport)
+        {
+            if (type == CommandType.ImmediateCull && !owner.owner.worldBound.Overlaps(viewport))
+                return;
+
+            if (isImmediateTransparent)
+                return;
+
+            Camera oldCamera = Camera.current;
+            RenderTexture oldRT = RenderTexture.active;
+            Matrix4x4 oldProjection = Utility.GetUnityProjectionMatrix();
+            Matrix4x4 oldModelView = GL.modelview;
+
+            // Exceptions propagate unwrapped so that IMGUI's ExitGUIException reaches its handler as is.
+            try
+            {
+                callback();
+            }
+            finally
+            {
+                Camera.SetupCurrent(oldCamera);
+                RenderTexture.active = oldRT;
+                GL.modelview = oldModelView;
+                GL.LoadProjectionMatrix(oldProjection);
+                GL.invertCulling = false;
+            }
+        }
+
         public void ExecuteNonDrawMesh(DrawParams drawParams, ref Exception immediateException)
         {
             switch (type)
@@ -193,14 +224,14 @@ namespace UnityEngine.UIElements.UIR
                     RenderTexture oldRT;
                     using (s_ImmediateOverheadMarker.Auto())
                     {
-                        if (owner.compositeOpacity < 0.001f)
+                        if (isImmediateTransparent)
                             break;
 
                         oldProjection = Utility.GetUnityProjectionMatrix();
                         oldCamera = Camera.current;
                         oldRT = RenderTexture.active;
 
-                        UIRUtility.ComputeMatrixRelativeToRenderTree(owner, out var matrix);
+                        UIRUtility.GetImmediateViewMatrix(owner, out var matrix);
                         GL.modelview = matrix;
 
                         PushScissor(drawParams, owner.clippingRect);

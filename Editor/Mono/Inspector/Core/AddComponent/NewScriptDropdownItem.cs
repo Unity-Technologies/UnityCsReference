@@ -3,11 +3,12 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using System.Collections.Generic;
+using System.Globalization;
 using System.IO;
 using Unity.Scripting.LifecycleManagement;
 using UnityEngine;
 using UnityEditorInternal;
-using Microsoft.CSharp;
 using UnityEngine.Assemblies;
 using Unity.Collections;
 
@@ -19,8 +20,21 @@ namespace UnityEditor.AddComponent
 
         private readonly char[] kInvalidPathChars = new char[] {'<', '>', ':', '"', '|', '?', '*', (char)0};
         private readonly char[] kPathSepChars = new char[] {'/', '\\'};
-        [NoAutoStaticsCleanup] // lazy provider, safe to persist; re-created on first use if null
-        private static System.CodeDom.Compiler.CodeDomProvider s_CSharpDOMProvider;
+        [NoAutoStaticsCleanup] // static config set, allocated once, contains only string literals
+        private static readonly HashSet<string> s_CSharpKeywords = new(new[]
+        {
+            "abstract", "as", "base", "bool", "break", "byte", "case", "catch", "char", "checked",
+            "class", "const", "continue", "decimal", "default", "delegate", "do", "double", "else", "enum",
+            "event", "explicit", "extern", "false", "finally", "fixed", "float", "for", "foreach", "goto",
+            "if", "implicit", "in", "int", "interface", "internal", "is", "lock", "long", "namespace",
+            "new", "null", "object", "operator", "out", "override", "params", "private", "protected", "public",
+            "readonly", "ref", "return", "sbyte", "sealed", "short", "sizeof", "stackalloc", "static", "string",
+            "struct", "switch", "this", "throw", "true", "try", "typeof", "uint", "ulong", "unchecked",
+            "unsafe", "ushort", "using", "virtual", "void", "volatile", "while",
+            "__arglist", "__makeref", "__reftype", "__refvalue",
+            // Contextual keywords, rejected as class names (matches the previous CodeDom behavior).
+            "partial", "where", "yield",
+        }, StringComparer.Ordinal);
 
         private string m_Directory = string.Empty;
 
@@ -37,7 +51,6 @@ namespace UnityEditor.AddComponent
         internal bool CanCreate() =>
             m_ClassName.Length > 0 &&
             !ClassNameIsInvalidIdentifier() &&
-            !ClassNameIsInvalid() &&
             !File.Exists(TargetPath()) &&
             !ClassAlreadyExists() &&
             !InvalidTargetPath();
@@ -48,7 +61,7 @@ namespace UnityEditor.AddComponent
             var blockReason = string.Empty;
             if (m_ClassName != string.Empty)
             {
-                if (ClassNameIsInvalid() || m_ClassName.Contains('.'))
+                if (m_ClassName.Contains('.'))
                     blockReason = "The script name may only consist of a-z, A-Z, 0-9, _ characters.";
                 else if (ClassNameIsInvalidIdentifier())
                     blockReason = $"The script name is invalid in C#: {m_ClassName}.";
@@ -99,16 +112,63 @@ namespace UnityEditor.AddComponent
             EditorPrefs.SetString(NewScriptDirectoryPref, newDir);
         }
 
-        private bool ClassNameIsInvalid() => !System.CodeDom.Compiler.CodeGenerator.IsValidLanguageIndependentIdentifier(m_ClassName);
-
         private bool ClassNameIsInvalidIdentifier() => !IsValidIdentifier(m_ClassName);
 
-        internal static bool IsValidIdentifier(string className)
-        {
-            if (s_CSharpDOMProvider == null)
-                s_CSharpDOMProvider = new CSharpCodeProvider();
+        // Validates a C# class name usable as both class name and file name: no '@' verbatim prefix, no reserved keywords.
+        internal static bool IsValidIdentifier(string className) =>
+            HasValidIdentifierCharacters(className) && !s_CSharpKeywords.Contains(className);
 
-            return s_CSharpDOMProvider.IsValidIdentifier(className);
+        // Character rules only, without the keyword check. For names that are not C# identifiers themselves,
+        // such as USS and UXML file names, where a keyword like "base" is a perfectly good name.
+        internal static bool HasValidIdentifierCharacters(string name)
+        {
+            if (string.IsNullOrEmpty(name) || !IsIdentifierStartChar(name[0]))
+                return false;
+
+            for (var i = 1; i < name.Length; i++)
+            {
+                if (!IsIdentifierPartChar(name[i]))
+                    return false;
+            }
+
+            return true;
+        }
+
+        private static bool IsIdentifierStartChar(char c)
+        {
+            if (c == '_')
+                return true;
+
+            switch (char.GetUnicodeCategory(c))
+            {
+                case UnicodeCategory.UppercaseLetter:
+                case UnicodeCategory.LowercaseLetter:
+                case UnicodeCategory.TitlecaseLetter:
+                case UnicodeCategory.ModifierLetter:
+                case UnicodeCategory.OtherLetter:
+                case UnicodeCategory.LetterNumber:
+                    return true;
+                default:
+                    return false;
+            }
+        }
+
+        private static bool IsIdentifierPartChar(char c)
+        {
+            if (IsIdentifierStartChar(c))
+                return true;
+
+            switch (char.GetUnicodeCategory(c))
+            {
+                case UnicodeCategory.DecimalDigitNumber:
+                case UnicodeCategory.ConnectorPunctuation:
+                case UnicodeCategory.NonSpacingMark:
+                case UnicodeCategory.SpacingCombiningMark:
+                case UnicodeCategory.Format:
+                    return true;
+                default:
+                    return false;
+            }
         }
 
         private bool ClassExists(string className) => CurrentAssemblies.GetLoadedAssemblies().Exists(a => a.GetType(className, false) != null);

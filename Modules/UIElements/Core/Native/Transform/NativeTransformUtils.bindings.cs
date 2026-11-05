@@ -40,8 +40,9 @@ internal static class NativeTransformUtils
     public static extern void UpdateBoundingBox(UnmanagedDataHandle handle);
 
     // IMPORTANT: this is the world-space version of PerformPick, which uses a localPoint argument.
+    // rootCollectsPromoted: also pick z-index descendants promoted past the root, ordered as if the root were their stacking context.
     public static extern unsafe UnmanagedDataHandle PerformPick(UnmanagedDataHandle root, Vector3 localPoint,
-        bool includeIgnoredElement, UnmanagedHandleBuffer* results);
+        bool includeIgnoredElement, bool rootCollectsPromoted, UnmanagedHandleBuffer* results);
 
     // Ideally this struct would replace NativeTransformUtils and be bound properly
     // between native and managed, but it's currently not doable because of the

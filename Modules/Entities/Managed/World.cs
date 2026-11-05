@@ -259,6 +259,10 @@ namespace Unity.Entities
             }
 
             s_ActiveWorldsStack.Data.Add(world.m_Unmanaged);
+
+            var storage = (byte*)s_ActiveWorldsStack.UnsafeDataPointer;
+            var elements = (byte*)UnsafeUtility.AddressOf(ref s_ActiveWorldsStack.Data.ElementAt(0));
+            SetActiveWorldsStackStorage(storage, (int)(elements - storage), sizeof(WorldUnmanaged), WorldUnmanaged.GetImplOffset());
         }
 
         /// <summary>
@@ -304,8 +308,6 @@ namespace Unity.Entities
                 PopWorldStack(m_World);
             }
         }
-
-        internal Dictionary<Type, ComponentSystemBase> m_SystemLookup = new Dictionary<Type, ComponentSystemBase>();
 
         /// <summary>
         /// List of all Worlds that currently exist in the application
@@ -472,7 +474,6 @@ namespace Unity.Entities
             m_Unmanaged.AllowGetSystem = true;
 
             DestroyAllSystemsAndLogException(out bool errorsWhileDestroyingSystems);
-            m_SystemLookup = null;
             m_Systems = null;
 
             m_Unmanaged.AllowGetSystem = false;
@@ -614,31 +615,8 @@ namespace Unity.Entities
 
         ComponentSystemBase GetExistingSystemInternal(SystemTypeIndex type)
         {
-            if (m_SystemLookup.TryGetValue(TypeManager.GetSystemType(type), out var system))
-                return system;
-
-            return null;
-        }
-
-        internal void AddTypeLookupInternal(Type type, ComponentSystemBase system)
-        {
-            while (type != typeof(ComponentSystemBase))
-            {
-                // Due to the order of registration, a derived type instance may already be registered to this base type key.
-                // If the existing system's actual type doesn't match 'type', overwrite it with the correct instance.
-                if (m_SystemLookup.TryGetValue(type, out var existingSystem))
-                {
-                    var existingSystemType = existingSystem.GetType();
-                    if (existingSystemType != type && existingSystemType != system.GetType())
-                        m_SystemLookup[type] = system;
-                }
-                else
-                {
-                    m_SystemLookup.Add(type, system);
-                }
-
-                type = type.BaseType;
-            }
+            var state = m_Unmanaged.ResolveSystemState(m_Unmanaged.GetExistingUnmanagedSystem(type));
+            return state == null ? null : state->ManagedSystem;
         }
 
         void AddSystem_Add_Internal(ComponentSystemBase system)
@@ -647,8 +625,6 @@ namespace Unity.Entities
             var systemType = system.GetType();
 
             system.m_StatePtr = m_Unmanaged.AllocateSystemStateForManagedSystem(this, system);
-
-            AddTypeLookupInternal(systemType, system);
 
             UnityEngine.Assertions.AssertCore.AreEqual(system,
                 (ComponentSystemBase)
@@ -702,29 +678,6 @@ namespace Unity.Entities
                 throw new ArgumentException($"System does not exist in the world");
 
             m_Unmanaged.BumpVersion();
-
-            var type = system.GetType();
-            while (type != typeof(ComponentSystemBase))
-            {
-                var haskey = m_SystemLookup.TryGetValue(type, out var lookedUpSystem);
-                if (haskey && lookedUpSystem == system)
-                {
-                    m_SystemLookup.Remove(type);
-
-                    foreach (var otherSystem in m_Systems)
-                    {
-                        var otherSystemType = otherSystem.GetType();
-
-                        if (type != otherSystemType && type.IsAssignableFrom(otherSystemType))
-                        {
-                            AddTypeLookupInternal(otherSystemType, otherSystem);
-                            break;
-                        }
-                    }
-                }
-
-                type = type.BaseType;
-            }
         }
 
         [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS"), Conditional("UNITY_DOTS_DEBUG")]
@@ -1250,6 +1203,7 @@ namespace Unity.Entities
 
             SystemDestroyed?.Invoke(this, system);
             RemoveSystemInternal(system);
+            m_Unmanaged.GetImpl().RemoveManagedSystemLookup(system.m_StatePtr);
             system.DestroyInstance();
         }
 
@@ -1370,7 +1324,6 @@ namespace Unity.Entities
             }
             m_Systems.Clear();
             Unmanaged.GetImpl().sysHandlesInCreationOrder.Clear();
-            m_SystemLookup.Clear();
         }
 
         /// <summary>
@@ -1465,19 +1418,18 @@ namespace Unity.Entities
                     var type = actuallyAddedTypesList[i-startIndex];
                     if (type == SystemTypeIndex.Null) continue;
 
+                    // a nested OnCreate can create another instance of this type, so go through the handle allocated above
+                    var systemState = m_Unmanaged.ResolveSystemState(sysHandlesToReturn[i - startIndex]);
                     if (!type.IsManaged)
                     {
-                        var handle = m_Unmanaged.GetExistingUnmanagedSystem(type);
-                        var systemState = m_Unmanaged.ResolveSystemState(handle);
                         if (systemState != null)
                             m_Unmanaged.GetImplPtr()->CallSystemOnCreateWithCleanup(systemState);
                     }
                     else
                     {
                         CheckGetOrCreateSystem();
-                        m_SystemLookup.TryGetValue(TypeManager.GetSystemType(type), out var system);
-
-                        AddSystem_OnCreate_Internal(system);
+                        if (systemState != null)
+                            AddSystem_OnCreate_Internal(systemState->ManagedSystem);
                     }
                 }
                 catch (Exception exc)

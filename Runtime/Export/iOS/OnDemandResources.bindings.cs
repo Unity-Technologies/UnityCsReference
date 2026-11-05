@@ -33,7 +33,7 @@ namespace UnityEngine.iOS
         }
 
         private OnDemandResourcesRequest(IntPtr ptr) : base(ptr) {}
-#pragma warning disable UA5000 // The Avoid Finalizer Analyzer produces compile errors for any new finalizers. This pre-existing finalizer declaration has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA5000 // Frees the native request; DestroyFromScript is thread-safe and the base AsyncOperation also has a finalizer.
         ~OnDemandResourcesRequest()         { Dispose(); }
 #pragma warning restore UA5000
 

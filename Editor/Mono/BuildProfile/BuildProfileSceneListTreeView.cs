@@ -20,6 +20,8 @@ namespace UnityEditor.Build.Profile
     [VisibleToOtherModules("UnityEditor.BuildProfileModule")]
     internal class BuildProfileSceneTreeView : BuildPlayerSceneTreeView
     {
+        const string k_SceneListUndoName = "Scene list";
+
         readonly bool m_IsEditorBuildSettingsSceneList;
         readonly BuildProfile m_Target;
 
@@ -69,6 +71,43 @@ namespace UnityEditor.Build.Profile
             GUIUtility.ExitGUI();
         }
 
+        /// <summary>
+        /// Appends the given scenes to the end of the list, skipping the ones already in it.
+        /// </summary>
+        public void AddScenes(IList<GUID> guids)
+        {
+            List<EditorBuildSettingsScene> list = new List<EditorBuildSettingsScene>(GetScenes());
+
+            bool isSceneAdded = false;
+            foreach (var guid in guids)
+            {
+                if (list.Exists(s => s.guid == guid))
+                    continue;
+
+                list.Add(new EditorBuildSettingsScene(guid, true));
+                isSceneAdded = true;
+            }
+
+            if (!isSceneAdded)
+                return;
+
+            SetScenes(list.ToArray());
+            Reload();
+            Repaint();
+        }
+
+        /// <summary>
+        /// GUIDs of the scenes currently in the list.
+        /// </summary>
+        public HashSet<GUID> GetSceneGuids()
+        {
+            var guids = new HashSet<GUID>();
+            foreach (var scene in GetScenes())
+                guids.Add(scene.guid);
+
+            return guids;
+        }
+
         protected override EditorBuildSettingsScene[] GetScenes() => (m_IsEditorBuildSettingsSceneList)
             ? EditorBuildSettings.GetEditorBuildSettingsSceneIgnoreProfile()
             : m_Target.scenes;
@@ -77,7 +116,7 @@ namespace UnityEditor.Build.Profile
         {
             if (!m_IsEditorBuildSettingsSceneList)
             {
-                Undo.RecordObject(m_Target, "Scene list");
+                Undo.RecordObject(m_Target, k_SceneListUndoName);
                 m_Target.scenes = scenes;
                 EditorUtility.SetDirty(m_Target);
                 return;
@@ -85,6 +124,7 @@ namespace UnityEditor.Build.Profile
 
             // Classic platforms scene list can only be changed through this component
             // and write data directly to EditorBuildSettings.
+            Undo.RecordObject(EditorBuildSettings.GetEditorBuildSettings(), k_SceneListUndoName);
             EditorBuildSettings.SetEditorBuildSettingsSceneIgnoreProfile(scenes);
             if (BuildProfileContext.activeProfile is null || !BuildProfileContext.activeProfile.overrideGlobalScenes)
                 EditorBuildSettings.SceneListChanged();

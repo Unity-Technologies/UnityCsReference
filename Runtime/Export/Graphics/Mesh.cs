@@ -703,9 +703,9 @@ namespace UnityEngine
         {
             if (!canAccess)
                 throw new InvalidOperationException($"Not allowed to access vertex data on mesh '{name}' (isReadable is false; Read/Write must be enabled in import settings)");
-            if (!UnsafeUtility.IsArrayBlittable(data))
+            if (!UnsafeUtility.IsArrayUnmanaged(data))
             {
-                throw new ArgumentException($"Array passed to {nameof(SetVertexBufferData)} must be blittable.\n{UnsafeUtility.GetReasonForArrayNonBlittable(data)}");
+                throw new ArgumentException($"Array passed to {nameof(SetVertexBufferData)} must be unmanaged.\n{UnsafeUtility.GetReasonForArrayNonUnmanaged(data)}");
             }
             if (dataStart < 0 || meshBufferStart < 0 || count < 0 || dataStart + count > data.Length)
                 throw new ArgumentOutOfRangeException($"Bad start/count arguments (dataStart:{dataStart} meshBufferStart:{meshBufferStart} count:{count})");
@@ -716,9 +716,9 @@ namespace UnityEngine
         {
             if (!canAccess)
                 throw new InvalidOperationException($"Not allowed to access vertex data on mesh '{name}' (isReadable is false; Read/Write must be enabled in import settings)");
-            if (!UnsafeUtility.IsGenericListBlittable<T>())
+            if (!UnsafeUtility.IsGenericListUnmanaged<T>())
             {
-                throw new ArgumentException($"List<{typeof(T)}> passed to {nameof(SetVertexBufferData)} must be blittable.\n{UnsafeUtility.GetReasonForGenericListNonBlittable<T>()}");
+                throw new ArgumentException($"List<{typeof(T)}> passed to {nameof(SetVertexBufferData)} must be unmanaged.\n{UnsafeUtility.GetReasonForGenericListNonUnmanaged<T>()}");
             }
             if (dataStart < 0 || meshBufferStart < 0 || count < 0 || dataStart + count > data.Count)
                 throw new ArgumentOutOfRangeException($"Bad start/count arguments (dataStart:{dataStart} meshBufferStart:{meshBufferStart} count:{count})");
@@ -1073,9 +1073,9 @@ namespace UnityEngine
                 PrintErrorCantAccessIndices();
                 return;
             }
-            if (!UnsafeUtility.IsArrayBlittable(data))
+            if (!UnsafeUtility.IsArrayUnmanaged(data))
             {
-                throw new ArgumentException($"Array passed to {nameof(SetIndexBufferData)} must be blittable.\n{UnsafeUtility.GetReasonForArrayNonBlittable(data)}");
+                throw new ArgumentException($"Array passed to {nameof(SetIndexBufferData)} must be unmanaged.\n{UnsafeUtility.GetReasonForArrayNonUnmanaged(data)}");
             }
             if (dataStart < 0 || meshBufferStart < 0 || count < 0 || dataStart + count > data.Length)
                 throw new ArgumentOutOfRangeException($"Bad start/count arguments (dataStart:{dataStart} meshBufferStart:{meshBufferStart} count:{count})");
@@ -1089,9 +1089,9 @@ namespace UnityEngine
                 PrintErrorCantAccessIndices();
                 return;
             }
-            if (!UnsafeUtility.IsGenericListBlittable<T>())
+            if (!UnsafeUtility.IsGenericListUnmanaged<T>())
             {
-                throw new ArgumentException($"List<{typeof(T)}> passed to {nameof(SetIndexBufferData)} must be blittable.\n{UnsafeUtility.GetReasonForGenericListNonBlittable<T>()}");
+                throw new ArgumentException($"List<{typeof(T)}> passed to {nameof(SetIndexBufferData)} must be unmanaged.\n{UnsafeUtility.GetReasonForGenericListNonUnmanaged<T>()}");
             }
             if (dataStart < 0 || meshBufferStart < 0 || count < 0 || dataStart + count > data.Count)
                 throw new ArgumentOutOfRangeException($"Bad start/count arguments (dataStart:{dataStart} meshBufferStart:{meshBufferStart} count:{count})");
@@ -1934,7 +1934,7 @@ namespace UnityEngine
         private Vector4 m_LightmapScaleOffset;
         private Vector4 m_RealtimeLightmapScaleOffset;
 
-        public Mesh mesh { get { return Mesh.FromInstanceID(m_MeshEntityId); } set { m_MeshEntityId = value != null ? value.GetEntityId() : EntityId.None; } }
+        public Mesh mesh { get { return Mesh.FromEntityId(m_MeshEntityId); } set { m_MeshEntityId = value != null ? value.GetEntityId() : EntityId.None; } }
         public int subMeshIndex { get { return m_SubMeshIndex; } set { m_SubMeshIndex = value; } }
         public Matrix4x4 transform { get { return m_Transform; } set { m_Transform = value; } }
         public Vector4 lightmapScaleOffset { get { return m_LightmapScaleOffset; } set { m_LightmapScaleOffset = value; } }

@@ -181,19 +181,19 @@ namespace UnityEngine
             return gameObject.GetComponents(type);
         }
 
+        // T may be an interface; native code fills the list as a List<Component>.
         [FreeFunction(HasExplicitThis = true, ThrowsException = true)]
-        private extern void GetComponentsForListInternal(Type searchType, [Out] List<Component> resultList);
+        private extern void GetComponentsForListInternal<T>(Type searchType,
+            [Out][UnityMarshalAs(NativeType.MarshalAsType, MarshalAsType = typeof(List<Component>))] List<T> resultList);
 
         public void GetComponents(Type type, List<Component> results)
         {
-            GetComponentsForListInternal(type, results);
+            GetComponentsForListInternal<Component>(type, results);
         }
 
         public void GetComponents<T>(List<T> results)
         {
-            // Use UnsafeUtility.As to cast the list to the appropriate type
-            // This could be a problem if native code provides us a type that does not match
-            GetComponentsForListInternal(typeof(T), UnsafeUtility.As<List<Component>>(results));
+            GetComponentsForListInternal(typeof(T), results);
         }
 
         public string tag

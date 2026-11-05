@@ -29,7 +29,7 @@ static partial class AddressablesReferenceMode
     [AutoStaticsCleanup] // an in flight package request cannot outlive the code that started it
     static AddRequest s_AddRequest;
 
-    [AutoStaticsCleanup] // holds subscriber delegates
+    [AutoStaticsCleanupOnCodeReload] // holds subscriber delegates
     internal static event Action installStateChanged;
 
     internal static bool IsInstalling => SessionState.GetBool(k_PendingKey, false);

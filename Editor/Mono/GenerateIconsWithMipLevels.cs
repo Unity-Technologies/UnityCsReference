@@ -19,7 +19,7 @@ using UnityEngine.Experimental.Rendering;
  *          gNamedTextures (ObjectImages::Texture2DNamed): string to Texture2D
  *
  *      InstanceID to Image
- *          gCachedThumbnails (AssetImporter::GetThumbnailForInstanceID) : where image is retrieved from Texture from gNamedTextures
+ *          gCachedThumbnails (AssetImporter::GetThumbnailForEntityId) : where image is retrieved from Texture from gNamedTextures
  *          Used for setting icon for hierarchyProperty
  *
  *      InstanceID to Texture2D

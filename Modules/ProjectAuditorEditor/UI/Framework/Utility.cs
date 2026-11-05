@@ -47,7 +47,9 @@ namespace Unity.ProjectAuditor.Editor.UI.Framework
             GreenCheckMark,
             AdditionalAnalysis,
             FoldoutExpanded,
-            FoldoutFolded
+            FoldoutFolded,
+
+            Square
         }
 
         // Log level
@@ -125,7 +127,7 @@ namespace Unity.ProjectAuditor.Editor.UI.Framework
             public object UserData;
         }
 
-        public static bool BoldFoldout(bool toggle, GUIContent content)
+        public static bool BoldFoldout(bool toggle, GUIContent content, string greySuffix = null)
         {
             var style = SharedStyles.Foldout;
             Vector2 textSize = style.CalcSize(content);
@@ -135,7 +137,16 @@ namespace Unity.ProjectAuditor.Editor.UI.Framework
             Rect fullRect = GUILayoutUtility.GetRect(content, style, GUILayout.ExpandWidth(true));
             Rect hitRect = new Rect(fullRect.x, fullRect.y, textSize.x, fullRect.height);
 
-            return EditorGUI.Foldout(hitRect, toggle, content, true, style);
+            var result = EditorGUI.Foldout(hitRect, toggle, content, true, style);
+
+            if (!string.IsNullOrEmpty(greySuffix))
+            {
+                var greyStyle = SharedStyles.LabelGreyWithDynamicSize;
+                var suffixRect = new Rect(hitRect.xMax + 4, hitRect.y, greyStyle.CalcSize(TempContent(greySuffix)).x, hitRect.height);
+                EditorGUI.LabelField(suffixRect, greySuffix, greyStyle);
+            }
+
+            return result;
         }
 
         public static void ToolbarDropdownList(DropdownItem[] items, int selectionIndex,
@@ -175,14 +186,6 @@ namespace Unity.ProjectAuditor.Editor.UI.Framework
             }
 
             return GUI.Button(rect, content, EditorStyles.toolbarDropDown);
-        }
-
-        public static void DrawHelpButton(GUIContent content, string url)
-        {
-            if (GUILayout.Button(content, EditorStyles.toolbarButton, GUILayout.MaxWidth(25)))
-            {
-                Application.OpenURL(url);
-            }
         }
 
         public static void DrawHelpBoxWithButton(string text, GUIContent buttonText, MessageType messageType, Action onClicked, params GUILayoutOption[] layoutOptions)
@@ -410,6 +413,7 @@ namespace Unity.ProjectAuditor.Editor.UI.Framework
         {
             return SharedStyles.IsDarkMode ? k_DarkSkinSeverityColors : k_LightSkinSeverityColors;
         }
+
         public static GUIContent GetSeverityIcon(Severity severity)
         {
             switch (severity)
@@ -454,6 +458,27 @@ namespace Unity.ProjectAuditor.Editor.UI.Framework
                 default:
                     return L10n.TextContentWithIcon("Unknown", MessageType.None, null);
             }
+        }
+
+        static readonly Color[] k_DarkSkinCategoryColors =
+        [
+            new Color(0.847f, 0.451f, 0.706f),  // Code
+            new Color(0.863f, 0.910f, 0.498f),  // Assets
+            new Color(0.647f, 0.545f, 0.941f),  // Game Objects
+            new Color(0.247f, 0.729f, 0.557f)   // Settings
+        ];
+
+        static readonly Color[] k_LightSkinCategoryColors =
+        [
+            new Color(0.549f, 0.176f, 0.431f),  // Code
+            new Color(0.349f, 0.392f, 0.000f),  // Assets
+            new Color(0.416f, 0.247f, 0.769f),  // Game Objects
+            new Color(0.000f, 0.420f, 0.322f)   // Settings
+        ];
+
+        public static Color[] GetCategoryColors()
+        {
+            return SharedStyles.IsDarkMode ? k_DarkSkinCategoryColors : k_LightSkinCategoryColors;
         }
 
         public static int GetStatusWheelFrame()
@@ -700,6 +725,16 @@ namespace Unity.ProjectAuditor.Editor.UI.Framework
             var searchContext = SearchService.CreateContext(provider, searchText);
             var viewState = new SearchViewState(searchContext, SearchViewFlags.TableView) { title = title };
             return SearchService.ShowWindow(viewState);
+        }
+
+        public static string ManualUrl
+        {
+            get
+            {
+                var versionParts = Application.unityVersion.Split('.');
+                return "https://docs.unity.com/en-us/engine/" + versionParts[0] + "." + versionParts[1] +
+                    "/manual/analysis/project-auditor";
+            }
         }
     }
 }

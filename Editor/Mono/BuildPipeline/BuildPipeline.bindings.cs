@@ -194,9 +194,9 @@ namespace UnityEditor
         ///
         ///Scripts can run at strategic points during the build by implementing one of the supported callback interfaces, for example <see cref="BuildPlayerProcessor" />, <see cref="IPreprocessBuildWithContext" /> and <see cref="IPostprocessBuildWithContext" />, or by overriding <see cref="AssetPostprocessor.OnProcessScene" />.
         ///
-        ///Note: Be aware that changes to [scripting symbols](xref:um-platform-dependent-compilation) only take effect at the next domain reload, when scripts are recompiled.
+        ///Note: Be aware that changes to [scripting symbols](xref:um-platform-dependent-compilation) only take effect at the next code reload, when scripts are recompiled.
         ///
-        ///This means if you make changes to the defined scripting symbols via code using <see cref="PlayerSettings.SetDefineSymbolsForGroup" /> without a domain reload before calling this function, those changes won't take effect.
+        ///This means if you make changes to the defined scripting symbols via code using <see cref="PlayerSettings.SetDefineSymbolsForGroup" /> without a code reload before calling this function, those changes won't take effect.
         ///
         ///It also means that the built-in scripting symbols defined for the current active target platform (such as UNITY_STANDALONE_WIN, or UNITY_ANDROID) remain in place even if you try to build for a different target platform, which can result in the wrong code being compiled into your build.</remarks>
         ///<param name="buildPlayerOptions">Provide various options to control the behavior of <see cref="BuildPipeline.BuildPlayer" />.</param>

@@ -122,7 +122,7 @@ namespace UnityEditor.Search
                 context.asyncItemReceived += OnAsyncItemsReceived;
         }
 
-#pragma warning disable UA5000 // The Avoid Finalizer Analyzer produces compile errors for any new finalizers. This pre-existing finalizer declaration has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA5000 // Unsubscribes the context and disposes an owned context; lists returned to callers may be dropped without Dispose.
         ~BaseSearchList()
         {
             Dispose(false);

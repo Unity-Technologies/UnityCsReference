@@ -41,6 +41,8 @@ namespace Unity.ProjectAuditor.Editor
 
         internal const string DisplayName = "Project Auditor";
 
+        const string k_PendingPostBuildAuditKey = "ProjectAuditor.PendingPostBuildAudit";
+
         const string k_PreferencesRoot = "Edit > Preferences";
         internal const string k_PreferencesPath = k_PreferencesRoot + " > Analysis > " + DisplayName;
 
@@ -127,7 +129,7 @@ namespace Unity.ProjectAuditor.Editor
         public void AuditAsync(AnalysisParams analysisParams, IProgress progress = null)
         {
             if (!ProjectAuditorRulesPackage.IsInstalled)
-                throw new InvalidOperationException("Install the Project Auditor Rules package before using Project Auditor");
+                throw new InvalidOperationException(ProjectAuditorRulesPackage.NotInstalledMessage);
 
             var summaryIndex = analysisParams.Categories == null ? -1 : Array.FindIndex(analysisParams.Categories, c => c.Value.IsSummary());
             if (summaryIndex >= 0)
@@ -200,6 +202,14 @@ namespace Unity.ProjectAuditor.Editor
             }
 
             analysisParams.DependencyCrawler = new DependencyCrawler();
+
+            var analyzedModuleNames = new HashSet<string>(supportedModules.Length);
+            foreach (var module in supportedModules)
+            {
+                analyzedModuleNames.Add(module.Name);
+            }
+
+            analysisParams.IssueOverrides = new IssueOverrides(report.IssueOverrides, analyzedModuleNames);
 
             Action<Report> onCompletedInternal = null;
             onCompletedInternal = (report) =>
@@ -307,6 +317,14 @@ namespace Unity.ProjectAuditor.Editor
                                 Debug.Log($"[{DisplayName}] Analysis took: " + stopwatch.ElapsedMilliseconds / 1000.0f +
                                     " seconds.");
 
+                            if (!isCancelled)
+                            {
+                                report.SetIssueOverrides(analysisParams.IssueOverrides.ToList());
+                                var removedIssues = report.RemoveOverriddenIssues(analysisParams.IssueOverrides);
+                                if (removedIssues.Count > 0)
+                                    analysisParams.OnIssuesRemoved?.Invoke(report, removedIssues);
+                            }
+
                             // finally, call the user's OnCompleted callback
                             analysisParams.OnCompleted?.Invoke(report);
 
@@ -353,14 +371,31 @@ namespace Unity.ProjectAuditor.Editor
             if (UserPreferences.AnalyzeAfterBuild)
             {
                 // Library/LastBuild.buildreport is only created AFTER OnPostprocessBuild so we need to defer analysis until the file is copied.
+                SessionState.SetBool(k_PendingPostBuildAuditKey, true);
                 EditorApplication.update += DelayedPostBuildAudit;
             }
         }
 
+        // A build that changes scripting defines ends in a domain reload, which drops the update subscription.
+        [InitializeOnLoadMethod]
+        static void ResumePendingPostBuildAudit()
+        {
+            if (SessionState.GetBool(k_PendingPostBuildAuditKey, false))
+                EditorApplication.delayCall += () => EditorApplication.update += new ProjectAuditor().DelayedPostBuildAudit;
+        }
+
         internal void DelayedPostBuildAudit()
         {
+            // The synchronous audit blocks the main thread, which assembly compilation needs to finish.
+            if (EditorApplication.isCompiling)
+                return;
+
             // Unsubscribe before auditing in case an exception is thrown.
             EditorApplication.update -= DelayedPostBuildAudit;
+
+            if (!SessionState.GetBool(k_PendingPostBuildAuditKey, false))
+                return;
+            SessionState.EraseBool(k_PendingPostBuildAuditKey);
 
             if (!ProjectAuditorRulesPackage.IsInstalled)
                 return;
@@ -424,7 +459,7 @@ namespace Unity.ProjectAuditor.Editor
             return "Unknown";
         }
 
-        internal void InitModules()
+        void InitModules()
         {
             if (ProjectAuditorRulesPackage.IsInstalled == false)
                 return;

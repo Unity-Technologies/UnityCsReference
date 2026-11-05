@@ -1799,7 +1799,7 @@ namespace Unity.Entities
                 InitializeSharedStatics();
 
                 EntityNameStorage.Initialize();
-                TransformUnionCallbacks.Initialize();
+                TransformDependencyBridge.Initialize();
             }
             catch
             {
@@ -1936,7 +1936,6 @@ namespace Unity.Entities
 
             ShutdownSharedStatics();
             EntityNameStorage.Shutdown();
-            TransformUnionCallbacks.Shutdown();
 
             FastEquality.Shutdown();
         }
@@ -2832,99 +2831,92 @@ namespace Unity.Entities
 
             typeSet.Add(type);
         }
+        const int k_InitialRegisteredTypeHandleCapacity = 1024;
+
         [NoAutoStaticsCleanup]
         static readonly EntitiesProfilerMarker k_InitializeAllComponentTypesMarker = new EntitiesProfilerMarker(nameof(InitializeAllComponentTypes));
+
+        // The component types InitializeAllComponentTypes registers. UnityEngineObjectType must be set first.
+        internal static HashSet<Type> CollectComponentTypes()
+        {
+            var combinedComponentTypeSet = new HashSet<Type>();
+
+            AddComponentTypeToListIfSupported(combinedComponentTypeSet, typeof(TransformRef));
+
+            // The serialization source generator registers the component types natively at compile time.
+            var registeredTypeHandles = new NativeList<IntPtr>(k_InitialRegisteredTypeHandleCapacity, Allocator.Temp);
+            int registeredTypeCount;
+            while ((registeredTypeCount = CoreModuleLightShim.Hooks.CopyEntityComponentTypeHandles(
+                registeredTypeHandles.GetUnsafePtr(),
+                registeredTypeHandles.Capacity)) > registeredTypeHandles.Capacity)
+            {
+                registeredTypeHandles.Capacity = registeredTypeCount;
+            }
+
+            registeredTypeHandles.ResizeUninitialized(registeredTypeCount);
+            for (int i = 0; i < registeredTypeCount; ++i)
+            {
+                var type = CoreModuleLightShim.Hooks.GetTypeFromHandle(registeredTypeHandles[i]);
+                if (type == null)
+                    continue;
+
+                // The generator does not know this Entities-specific opt-out.
+                if (type.Assembly.IsDefined(typeof(DisableAutoTypeRegistrationAttribute)))
+                    continue;
+
+                if (IsSupportedComponentType(type))
+                    AddComponentTypeToListIfSupported(combinedComponentTypeSet, type);
+                else
+                    AddUnityEngineObjectTypeToListIfSupported(combinedComponentTypeSet, type);
+            }
+
+            registeredTypeHandles.Dispose();
+
+            // The generator only runs on assemblies that reference CoreModule, which this module cannot.
+#pragma warning disable RS0030 // Assembly.GetTypes: this module's own component types never reach the native list.
+            foreach (var type in typeof(IComponentData).Assembly.GetTypes())
+#pragma warning restore RS0030
+            {
+                if (IsSupportedComponentType(type))
+                    AddComponentTypeToListIfSupported(combinedComponentTypeSet, type);
+            }
+
+            // Generators can't see each other's output, so Netcode-emitted types never reach the native list.
+            foreach (var assembly in CoreModuleLightShim.Hooks.GetLoadedAssemblies())
+            {
+                if (!IsAssemblyReferencingNetCode(assembly) || assembly.IsDefined(typeof(DisableAutoTypeRegistrationAttribute)))
+                    continue;
+
+                foreach (var attribute in assembly.GetCustomAttributes<RegisterGenericComponentTypeAttribute>())
+                {
+                    if (IsSupportedComponentType(attribute.ConcreteType))
+                        AddComponentTypeToListIfSupported(combinedComponentTypeSet, attribute.ConcreteType);
+                }
+
+                foreach (var type in GetLoadableTypes(assembly))
+                {
+                    if (IsSupportedComponentType(type))
+                        AddComponentTypeToListIfSupported(combinedComponentTypeSet, type);
+                }
+            }
+
+            return combinedComponentTypeSet;
+        }
 
         static void InitializeAllComponentTypes()
         {
             try
             {
                 k_InitializeAllComponentTypesMarker.Begin();
-                var combinedComponentTypeSet = new HashSet<Type>();
-                var assemblies = CoreModuleLightShim.Hooks.GetLoadedAssemblies();
-
-                AddComponentTypeToListIfSupported(combinedComponentTypeSet, typeof(TransformRef));
-
                 UnityEngineObjectType = CoreModuleLightShim.Hooks.UnityObjectType;
-
-
-                foreach (var assembly in assemblies)
-                {
-                    IsAssemblyReferencingEntitiesOrUnityEngine(assembly, out var isAssemblyReferencingEntities,
-                        out var isAssemblyReferencingUnityEngine);
-
-                    if (!isAssemblyReferencingEntities)
-                        continue;
-
-                    if (assembly.IsDefined(typeof(DisableAutoTypeRegistrationAttribute)))
-                        continue;
-
-                    Type[] assemblyTypes;
-                    try
-                    {
-#pragma warning disable RS0030 // Assembly.GetTypes: Entities discovers component and system types by scanning assemblies.
-                        assemblyTypes = assembly.GetTypes();
-#pragma warning restore RS0030
-                    }
-                    catch (ReflectionTypeLoadException e)
-                    {
-                        assemblyTypes = Array.FindAll(e.Types, t => t != null);
-                        Scripting.LowLevel.Debug.LogWarning($"TypeManager failed loading assembly: {(assembly.IsDynamic ? assembly.ToString() : CoreModuleLightShim.Hooks.GetLoadedAssemblyPath(assembly))}");
-                    }
-
-                    if (isAssemblyReferencingUnityEngine)
-                    {
-                        foreach (var type in assemblyTypes)
-                        {
-                            AddUnityEngineObjectTypeToListIfSupported(combinedComponentTypeSet, type);
-                        }
-                    }
-
-                    // Register ComponentData types
-                    if (isAssemblyReferencingEntities)
-                    {
-                        foreach (var type in assemblyTypes)
-                        {
-                            if (IsSupportedComponentType(type))
-                                AddComponentTypeToListIfSupported(combinedComponentTypeSet, type);
-                        }
-                    }
-
-                    // Register ComponentData concrete generics
-                    foreach (var registerGenericComponentTypeAttribute in assembly.GetCustomAttributes<RegisterGenericComponentTypeAttribute>())
-                    {
-                        var type = registerGenericComponentTypeAttribute.ConcreteType;
-
-                        if (IsSupportedComponentType(type))
-                            combinedComponentTypeSet.Add(type);
-                    }
-
-                    // Register UnityEngine components
-                    foreach (var unityEngineType in assembly.GetCustomAttributes<RegisterUnityEngineComponentTypeAttribute>())
-                    {
-                        var type = unityEngineType.ConcreteType;
-
-                        if (IsSupportedComponentType(type) || IsSupportedUnityEngineObjectType(type))
-                            combinedComponentTypeSet.Add(type);
-                    }
-            }
-
-
-                var componentTypeCount = combinedComponentTypeSet.Count;
-
-                //Types to process by reflection include types
-                //that have variable size based on bitness and so will have wrong
-                //info on 32 bit platforms.
+                var combinedComponentTypeSet = CollectComponentTypes();
 
 
                 var typesToProcessByReflection = new List<Type>(combinedComponentTypeSet);
 
                 var descendantCountByType = new Dictionary<Type, int>();
 
-
-                var typesToReprocess = Array.Empty<Type>();
                 var combinedComponentTypes = new List<Type>(combinedComponentTypeSet);
-                typesToProcessByReflection.AddRange(typesToReprocess);
 
 
                 //at this point, componentTypes needs to be the combined set, and same with componentTypeSet
@@ -3217,6 +3209,42 @@ namespace Unity.Entities
                 if (!referencesUnityEngine && referencedAssemblyName.Contains(kUnityEngineAssemblyName))
                     referencesUnityEngine = true;
             }
+        }
+
+        static IEnumerable<Type> GetLoadableTypes(Assembly assembly)
+        {
+            Type[] types;
+#pragma warning disable RS0030 // Assembly.GetTypes: no generated list covers these assemblies.
+            try
+            {
+                types = assembly.GetTypes();
+            }
+            catch (ReflectionTypeLoadException e)
+            {
+                types = e.Types;
+            }
+#pragma warning restore RS0030
+
+            foreach (var type in types)
+            {
+                if (type != null)
+                    yield return type;
+            }
+        }
+
+        static bool IsAssemblyReferencingNetCode(Assembly assembly)
+        {
+            const string kNetCodeAssemblyName = "Unity.NetCode";
+            if (assembly.GetName().Name == kNetCodeAssemblyName)
+                return true;
+
+            foreach (var referencedAssembly in assembly.GetReferencedAssemblies())
+            {
+                if (referencedAssembly.Name == kNetCodeAssemblyName)
+                    return true;
+            }
+
+            return false;
         }
 
         internal static void CheckIsAllowedAsComponentData(Type type, string baseTypeDesc, HashSet<Type> allowedComponentCache = null)

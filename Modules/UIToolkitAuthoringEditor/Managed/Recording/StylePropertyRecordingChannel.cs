@@ -44,5 +44,7 @@ namespace Unity.UIToolkit.Editor
         // AnimationBindingHelper.SubChannelKind.GradientStop in
         // Tools/UIElementsGenerator/UIElementsGenerator/Definitions/StylePropertyDefinitions.cs.
         Gradient,
+        // Single discrete int channel holding GridLine's raw value (0 auto, >0 line n, <0 span n).
+        GridLine,
     }
 }

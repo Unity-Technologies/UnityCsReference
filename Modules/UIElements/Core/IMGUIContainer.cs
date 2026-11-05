@@ -582,12 +582,25 @@ namespace UnityEngine.UIElements
                 // any side-effects given that IMGUI already has a mechanism to clip its content (using the GUIClip.ParentClip feature).
                 UIR.Utility.DisableScissor();
 
-                using (new GUIClip.ParentClipScope(GetIMGUIRenderTransform(worldTransform), worldTransform, worldClip))
-                {
-                    m_CachedClippingRect = worldClip;
-                    m_CachedTransform = worldTransform;
+                bool skipRendering = elementPanel?.panelRenderer?.isRenderingSkipped ?? false;
+                bool wasSkippingRendering = GUIUtility.skipRendering;
+                if (skipRendering != wasSkippingRendering)
+                    GUIUtility.skipRendering = skipRendering;
 
-                    HandleIMGUIEvent(Event.current, m_CachedTransform, m_CachedClippingRect, onGUIHandler, true);
+                try
+                {
+                    using (new GUIClip.ParentClipScope(GetIMGUIRenderTransform(worldTransform), worldTransform, worldClip))
+                    {
+                        m_CachedClippingRect = worldClip;
+                        m_CachedTransform = worldTransform;
+
+                        HandleIMGUIEvent(Event.current, m_CachedTransform, m_CachedClippingRect, onGUIHandler, true);
+                    }
+                }
+                finally
+                {
+                    if (skipRendering != wasSkippingRendering)
+                        GUIUtility.skipRendering = wasSkippingRendering;
                 }
             }
         }

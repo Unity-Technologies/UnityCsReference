@@ -21,9 +21,28 @@ namespace UnityEditor
         public readonly RefId referenceId { get { return m_ReferenceId; } }
         public readonly String serializedData { get { return m_SerializedData; } }
 
+        internal ManagedReferenceMissingType(RefId referenceId, string assemblyName, string className, string namespaceName, string serializedData)
+        {
+            m_ReferenceId = referenceId;
+            m_AssemblyName = assemblyName;
+            m_ClassName = className;
+            m_NamespaceName = namespaceName;
+            m_SerializedData = serializedData;
+        }
+
         public bool Equals(ManagedReferenceMissingType other)
         {
             return referenceId == other.referenceId;
+        }
+
+        public override bool Equals(object obj)
+        {
+            return obj is ManagedReferenceMissingType other && Equals(other);
+        }
+
+        public override int GetHashCode()
+        {
+            return referenceId.GetHashCode();
         }
 
         public int CompareTo(ManagedReferenceMissingType other)
@@ -52,7 +71,7 @@ namespace UnityEditor
     [NativeHeader("Editor/Src/Utility/EditorSerializationUtility.h")]
     public sealed class SerializationUtility
     {
-        // Must match the same declarations in "Runtime/Serialize/ReferenceId.h"
+        // Must match the same declarations in "Serialization/ReferenceId.h"
         [System.Obsolete("Use Serialization.ManagedReferenceUtility.RefIdUnknown instead. (UnityUpgradable) -> [UnityEngine] UnityEngine.Serialization.ManagedReferenceUtility.RefIdUnknown", false)]
         public const RefId RefIdUnknown = -1;
         [System.Obsolete("Use Serialization.ManagedReferenceUtility.RefIdNull instead. (UnityUpgradable) -> [UnityEngine] UnityEngine.Serialization.ManagedReferenceUtility.RefIdNull", false)]

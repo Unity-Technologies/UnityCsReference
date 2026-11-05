@@ -17,6 +17,7 @@ using UnityEngine.Rendering;
 using UnityEngine.Bindings;
 using Unity.Collections;
 using Unity.Scripting.LifecycleManagement;
+using UnityEditor.Android;
 
 namespace UnityEditor.Build
 {
@@ -1469,6 +1470,70 @@ namespace UnityEditor.Build
                             return;
                     }
                 }
+            }
+        }
+
+        internal static List<string> GetAssemblyPathsDeclaringBuildCallbacks()
+        {
+            var assembliesDeclaringCallbacks = new HashSet<Assembly>();
+            AddAssembliesDeclaringCallbacks(processors.buildPlayerProcessors, assembliesDeclaringCallbacks);
+            AddAssembliesDeclaringCallbacks(processors.buildPreprocessors, assembliesDeclaringCallbacks);
+            AddAssembliesDeclaringCallbacks(processors.buildPreprocessorsWithReport, assembliesDeclaringCallbacks);
+            AddAssembliesDeclaringCallbacks(processors.buildPreprocessorsWithContext, assembliesDeclaringCallbacks);
+            AddAssembliesDeclaringCallbacks(processors.buildPostprocessors, assembliesDeclaringCallbacks);
+            AddAssembliesDeclaringCallbacks(processors.buildPostprocessorsWithReport, assembliesDeclaringCallbacks);
+            AddAssembliesDeclaringCallbacks(processors.buildPostprocessorsWithContext, assembliesDeclaringCallbacks);
+            AddAssembliesDeclaringCallbacks(processors.sceneProcessors, assembliesDeclaringCallbacks);
+            AddAssembliesDeclaringCallbacks(processors.sceneProcessorsWithReport, assembliesDeclaringCallbacks);
+            AddAssembliesDeclaringCallbacks(processors.filterBuildAssembliesProcessor, assembliesDeclaringCallbacks);
+            AddAssembliesDeclaringCallbacks(processors.shaderProcessors, assembliesDeclaringCallbacks);
+            AddAssembliesDeclaringCallbacks(processors.computeShaderProcessors, assembliesDeclaringCallbacks);
+            AddAssembliesDeclaringCallbacks(processors.buildPlayerScriptDLLProcessors, assembliesDeclaringCallbacks);
+            AddAssembliesDeclaringCallbacks(processors.unityLinkerProcessors, assembliesDeclaringCallbacks);
+            AddAssembliesDeclaringCallbacks(processors.generateNativePluginsForAssembliesProcessors, assembliesDeclaringCallbacks);
+            AddAssembliesDeclaringAssetPostprocessorsProcessingScenes(assembliesDeclaringCallbacks);
+            if (EditorUserBuildSettings.activeBuildTarget == BuildTarget.Android)
+                AddAssembliesDeclaringGradleProjectProcessors(assembliesDeclaringCallbacks);
+
+            var assemblyPaths = new List<string>();
+            foreach (var assembly in assembliesDeclaringCallbacks)
+            {
+                var assemblyPath = assembly.GetLoadedAssemblyPath();
+                if (!string.IsNullOrEmpty(assemblyPath))
+                    assemblyPaths.Add(assemblyPath);
+            }
+            return assemblyPaths;
+        }
+
+        static void AddAssembliesDeclaringCallbacks<T>(List<T> callbacks, HashSet<Assembly> assemblies)
+        {
+            if (callbacks == null)
+                return;
+
+            foreach (var callback in callbacks)
+            {
+                var callbackType = callback is AttributeCallbackWrapper attributeCallback ? attributeCallback.m_method.DeclaringType : callback.GetType();
+                assemblies.Add(callbackType.Assembly);
+            }
+        }
+
+        // Called by player builds through AssetPostprocessingInternal.SinglePassBuildProcessScene, not through processors
+        static void AddAssembliesDeclaringAssetPostprocessorsProcessingScenes(HashSet<Assembly> assemblies)
+        {
+            foreach (var assetPostprocessorType in TypeCache.GetTypesDerivedFrom<AssetPostprocessor>())
+            {
+                if (assetPostprocessorType.GetMethod("OnProcessScene", BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance) != null)
+                    assemblies.Add(assetPostprocessorType.Assembly);
+            }
+        }
+
+        // Called by the Android build itself, not through processors
+        static void AddAssembliesDeclaringGradleProjectProcessors(HashSet<Assembly> assemblies)
+        {
+            foreach (var gradleProjectProcessorType in TypeCache.GetTypesDerivedFrom<IPostGenerateGradleAndroidProject>())
+            {
+                if (!gradleProjectProcessorType.IsAbstract && !gradleProjectProcessorType.IsInterface)
+                    assemblies.Add(gradleProjectProcessorType.Assembly);
             }
         }
 

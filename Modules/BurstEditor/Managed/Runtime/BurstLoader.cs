@@ -56,6 +56,7 @@ namespace Unity.Burst.Editor
 
         private const string msbuildReadySessionKey = "BURST_MSBUILD_READY";
         private const string packagesChangedSessionKey = "BURST_PACKAGES_CHANGED";
+        private const string assembliesDroppedSessionKey = "BURST_ASSEMBLIES_DROPPED";
 
         [AutoStaticsCleanupOnCodeReload]
         private static CompilationTaskReason _currentBuildKind;
@@ -174,37 +175,23 @@ namespace Unity.Burst.Editor
             // Notify the JitCompilerService about a domain reload
             BurstCompiler.SetDefaultOptions();
 
-            // We need to send the list of assemblies if
-            // (a) we have never done that before in this Editor instance, or
-            // (b) we have done it before, but now the scripting code optimization mode has changed
-            //     from Debug to Release or vice-versa.
-            // This is because these are the two cases in which CompilerClient will be
-            // destroyed and recreated.
+            // Burst learns about assemblies from the compilation events. OnAssemblyCompilationFinished ignores
+            // every assembly of a build that had a C# compile error though, because ScriptAssembly.HasCompileErrors
+            // is set for the whole build. The assemblies that did get built are still loaded by this domain, so in
+            // that case we have to tell Burst about them here, or all of their entry points are rejected as unknown.
 #pragma warning disable UAC2001 // The Banned API Analyzer produces compile errors for any new Linq code.
             var assemblyNamesAndDefines = (IEnumerable<(string, string[])>)Array.Empty<(string, string[])>();
-#pragma warning restore UAC2001
 
-            if (BurstCompilerService.DequeuePendingBurstLoad())
+            if (SessionState.GetBool(assembliesDroppedSessionKey, false))
             {
-                const string sessionKey = "BURST_INITIALIZED";
-                var isInitialedEditorSetup = SessionState.GetBool(sessionKey, false);
+                SessionState.SetBool(assembliesDroppedSessionKey, false);
 
-                // Avoid getting the assemblies on the very first code reload
-                if (!isInitialedEditorSetup)
-                {
-                    SessionState.SetBool(sessionKey, true);
-                }
-                else
-                {
-#pragma warning disable UAC2001 // The Banned API Analyzer produces compile errors for any new Linq code.
-                    // Gather list of assemblies to compile (only actually used at Editor startup)
-                    assemblyNamesAndDefines = UnityEditor.Compilation.CompilationPipeline
-                        .GetAssemblies(UnityEditor.Compilation.AssembliesType.Editor)
-                        .Where(x => File.Exists(x.outputPath)) // If C# compilation fails, it won't exist on disk
-                        .Select(x => (x.name, x.defines));
-#pragma warning restore UAC2001
-                }
+                assemblyNamesAndDefines = UnityEditor.Compilation.CompilationPipeline
+                    .GetAssemblies(UnityEditor.Compilation.AssembliesType.Editor)
+                    .Where(x => File.Exists(x.outputPath)) // If C# compilation fails, it won't exist on disk
+                    .Select(x => (x.name, x.defines));
             }
+#pragma warning restore UAC2001
 
             var packagesChanged = SessionState.GetBool(packagesChangedSessionKey, false);
             BurstCompiler.DomainReload(assemblyNamesAndDefines, packagesChanged);
@@ -439,7 +426,6 @@ namespace Unity.Burst.Editor
         {
             IsForEditor,                // Compilation should proceed as its for an editor build
             IsForPlayer,                // Skip this compilation
-            IsForPreviousScriptingMode, // We are about to enter a domain reload, don't start any new compilations
             IsForAssemblyBuilder,       // Request is coming from an 'AssemblyBuilder' and should be skipped as not supported
         }
 
@@ -447,14 +433,6 @@ namespace Unity.Burst.Editor
         {
             try
             {
-                if (BurstCompilerService.WasScriptDebugInfoEnabledAtDomainReload != UnityEditor.Compilation.CompilationPipeline.IsScriptDebugInfoEnabled())
-                {
-                    // If the scripting compilation mode has changed since we last had our domain reloaded, then we ignore all requests, and act as if
-                    //loading for the first time. This is to avoid having compilations kick off right before a Shutdown triggered by domain reload, that
-                    //would cause the a significant stall as we had to wait for those compilations to finish, thus blocking the main thread.
-                    return CompilationTaskReason.IsForPreviousScriptingMode;
-                }
-
                 var inst = EditorCompilationInterface.Instance;
 
                 var editorCompilationType = inst.GetType();
@@ -609,6 +587,7 @@ namespace Unity.Burst.Editor
                     UnityEngine.Debug.Log($"{DateTime.UtcNow} Burst - ignoring '{assembly.Filename}' because it failed C# compilation");
                 }
 
+                SessionState.SetBool(assembliesDroppedSessionKey, true);
                 return;
             }
 

@@ -408,7 +408,7 @@ partial class MsBuildCompilation
         }
     }
 
-    internal async Task<CompilationMessages> RequestAnalysisCompilationAsync(string configuration, CancellationToken cancellationToken)
+    internal async Task<CompilationMessages> RequestAnalysisCompilationAsync(string configuration, int parentProgressId, CancellationToken cancellationToken)
     {
         // Reject if a build is already active or pending; conversely, once this build owns
         // _currentBuildState the tick loop won't start a normal compile until it finishes (see
@@ -433,7 +433,7 @@ partial class MsBuildCompilation
             };
         }
 
-        _currentBuildState = new MSBuildCompilationBuildState(CompilerClient);
+        _currentBuildState = new MSBuildCompilationBuildState(CompilerClient, parentProgressId);
         using var _ = cancellationToken.Register(() => _currentBuildState.CancellationTokenSource.Cancel());
         try
         {

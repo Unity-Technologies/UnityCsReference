@@ -11,7 +11,7 @@ using UnityEngine.SceneManagement;
 using UnityEditor.SceneManagement;
 using UnityObject = UnityEngine.Object;
 using UnityEditor.Experimental;
-using System.IO;
+
 using UnityEngine.Pool;
 using Unity.Scripting.LifecycleManagement;
 
@@ -48,17 +48,15 @@ namespace UnityEditor
             public static readonly GUIContent typelessIcon = EditorGUIUtility.IconContent("Prefab Icon");
             public static readonly GUIContent overridesContent = L10n.TextContent("Overrides", null, null, null);
             public static readonly GUIContent staticContent = L10n.TextContent("Static", "Enable the checkbox to mark this GameObject as static for all systems.\n\nDisable the checkbox to mark this GameObject as not static for all systems.\n\nUse the drop-down menu to mark as this GameObject as static or not static for individual systems.", null, null);
-            public static readonly GUIContent layerContent = L10n.TextContent("Layer", "The layer that this GameObject is in.\n\nChoose Add Layer... to edit the list of available layers.", null, null);
-            public static readonly GUIContent tagContent = L10n.TextContent("Tag", "The tag that this GameObject has.\n\nChoose Untagged to remove the current tag.\n\nChoose Add Tag... to edit the list of available tags.", null, null);
+            public static readonly GUIContent layerContent = EditorGUIUtility.TrIconContent("SceneLayersToggle", "The layer that this GameObject is in.\n\nChoose Add Layer... to edit the list of available layers.", null);
+            public static readonly GUIContent tagContent = EditorGUIUtility.TrIconContent("FilterByLabel", "The tag that this GameObject has.\n\nChoose Untagged to remove the current tag.\n\nChoose Add Tag... to edit the list of available tags.", null);
             public static readonly GUIContent staticPreviewContent = L10n.TextContent("Static Preview", "This asset is greater than 8MB so, by default, the Asset Preview displays a static preview.\nTo view the asset interactively, click the Asset Preview.", null, null);
 
+            public const float maxOverrideDropdownWidth = 150f;
             public static readonly float tagFieldWidth = EditorGUI.CalcPrefixLabelWidth(Styles.tagContent, EditorStyles.boldLabel);
             public static readonly float layerFieldWidth = EditorGUI.CalcPrefixLabelWidth(Styles.layerContent, EditorStyles.boldLabel);
 
-            public static readonly GUIStyle staticDropdown = "StaticDropdown";
-            public static readonly GUIStyle tagPopup = new GUIStyle(EditorStyles.popup);
-            public static readonly GUIStyle layerPopup = new GUIStyle(EditorStyles.popup);
-            public static readonly GUIStyle overridesDropdown = new GUIStyle("MiniPullDown");
+            public static readonly GUIStyle toolbarDropdown = new GUIStyle(EditorStyles.toolbarDropDown);
             public static readonly GUIStyle prefabButtonsHorizontalLayout = new GUIStyle { fixedHeight = 17, margin = new RectOffset { top = 1, bottom = 1 } };
 
             public static readonly GUIContent goTypeLabelMultiple = L10n.TextContent("Multiple", null, null, null);
@@ -70,10 +68,10 @@ namespace UnityEditor
             private static readonly GUIContent disconnectedVariantPrefab = L10n.TextContent("Prefab", "You have broken the prefab connection. Changes to the prefab will not be applied to this object before you Apply or Revert.", null, null);
             private static readonly GUIContent missingPrefabAsset = L10n.TextContent("Prefab", "The source Prefab or Model has been deleted.", null, null);
             public static readonly GUIContent openModel = L10n.TextContent("Open", "Open Model in external tool.", null, null);
-            public static readonly GUIContent openPrefab = L10n.TextContent("Open", "Open Prefab Asset '{0}'\nPress modifier key [Alt] to open in isolation.", null, null);
+            public static readonly GUIContent openPrefab = EditorGUIUtility.TrTextContentWithIcon("Open", "Open Prefab Asset '{0}'\nPress modifier key [Alt] to open in isolation.", "Folder");
             public static readonly GUIContent tooltipForObjectFieldForRootInPrefabContents = L10n.TextContent("", "Replacing the root Prefab instance in a Variant is not supported since it will break all overrides for existing instances of this Variant, including their positions and rotations.", null, null);
             public static readonly GUIContent tooltipForObjectFieldForNestedPrefabs = L10n.TextContent("", "You can only replace outermost Prefab instances. Open Prefab Mode to replace a nested Prefab instance.", null, null);
-            public static readonly string selectString = L10n.Tr("Select", null);
+            public static readonly GUIContent selectPrefab = EditorGUIUtility.TrTextContentWithIcon("Select", "Select Prefab Asset in Project", "Grid.Default");
 
             public static readonly float kIconSize = 24;
             public static readonly float column1Width = kIconSize + Styles.tagFieldWidth + 10;
@@ -99,8 +97,7 @@ namespace UnityEditor
             static Styles()
             {
                 // Seems to be a bug in the way controls with margin internal to layout groups with padding calculate position. We'll work around it here.
-                layerPopup.margin.right = 0;
-                overridesDropdown.margin.right = 0;
+                toolbarDropdown.margin.right = 0;
             }
         }
 
@@ -498,19 +495,24 @@ namespace UnityEditor
                     if (originalSourceOrVariant != null)
                         m_OpenPrefabContent = new GUIContent(
                             Styles.openPrefab.text,
+                            Styles.openPrefab.image,
                             string.Format(Styles.openPrefab.tooltip, originalSourceOrVariant.name));
                 }
                 if (m_OpenPrefabContent == null)
-                    m_OpenPrefabContent = new GUIContent(Styles.openPrefab.text);
+                    m_OpenPrefabContent = new GUIContent(Styles.openPrefab.text, Styles.openPrefab.image);
             }
 
             EditorGUILayout.BeginHorizontal();
-            Vector2 dropDownSize = EditorGUI.GetObjectIconDropDownSize(Styles.kIconSize, Styles.kIconSize);
-            var iconRect = GUILayoutUtility.GetRect(1, 1, GUILayout.ExpandWidth(false));
-            iconRect.width = dropDownSize.x;
-            iconRect.height = dropDownSize.y;
-            EditorGUI.ObjectIconDropDown(iconRect, targets, true, icon, m_Icon);
-            DrawPostIconContent(iconRect);
+            {
+                EditorGUILayout.BeginHorizontal(GUILayout.Width(Styles.column1Width));
+                Vector2 dropDownSize = EditorGUI.GetObjectIconDropDownSize(Styles.kIconSize, Styles.kIconSize);
+                var iconRect = GUILayoutUtility.GetRect(1, 1, GUILayout.ExpandWidth(false));
+                iconRect.width = dropDownSize.x;
+                iconRect.height = dropDownSize.y;
+                EditorGUI.ObjectIconDropDown(iconRect, targets, true, icon, m_Icon);
+                DrawPostIconContent(iconRect);
+                EditorGUILayout.EndHorizontal();
+            }
 
             using (new EditorGUI.DisabledScope(m_ImmutableSelf))
             {
@@ -518,16 +520,10 @@ namespace UnityEditor
                 {
                     EditorGUILayout.BeginHorizontal();
                     {
-                        EditorGUILayout.BeginHorizontal(GUILayout.Width(Styles.column1Width));
-                        {
-                            GUILayout.FlexibleSpace();
-
-                            // IsActive
-                            EditorGUI.PropertyField(
-                                GUILayoutUtility.GetRect(EditorStyles.toggle.padding.left, EditorGUIUtility.singleLineHeight, EditorStyles.toggle,
-                                    GUILayout.ExpandWidth(false)), m_IsActive, GUIContent.none);
-                        }
-                        EditorGUILayout.EndHorizontal();
+                        // IsActive
+                        EditorGUI.PropertyField(
+                            GUILayoutUtility.GetRect(EditorStyles.toggle.padding.left, EditorGUIUtility.singleLineHeight, EditorStyles.toggle,
+                                GUILayout.ExpandWidth(false)), m_IsActive, GUIContent.none);
 
                         // Disable the name field of root GO in prefab asset
                         using (new EditorGUI.DisabledScope(m_IsAsset && m_IsAssetRoot))
@@ -550,12 +546,6 @@ namespace UnityEditor
                             var maxW = GUI.skin.label.CalcSize(m_SelectedObjectCountContent).x;
                             GUILayout.Label(m_SelectedObjectCountContent, GUILayout.MaxWidth(maxW));
                         }
-
-                        // Static flags toggle
-                        DoStaticToggleField(go);
-
-                        // Static flags dropdown
-                        DoStaticFlagsDropDown(go);
                     }
                     EditorGUILayout.EndHorizontal();
 
@@ -563,14 +553,24 @@ namespace UnityEditor
 
                     EditorGUILayout.BeginHorizontal();
                     {
-                        // Tag
-                        GUILayout.Space(Styles.column1Width - Styles.tagFieldWidth);
-                        DoTagsField(go);
+                        // Static flags toggle
+                        DoStaticToggleField(go);
+                        // Static flags dropdown
+                        DoStaticFlagsDropDown(go);
 
-                        EditorGUILayout.Space(EditorGUI.kDefaultSpacing, false);
+                        GUILayout.FlexibleSpace();
+                        // Tag Rect
+                        var tagRect = GetTagRect(go);
+                        GUILayout.FlexibleSpace();
+                        // Layer Rect
+                        var layerRect = GetLayerRect(go);
 
-                        // Layer
-                        DoLayerField(go);
+                        AdjustFields(ref tagRect, ref layerRect);
+
+                        // Do actual Tag field
+                        DoTagsField(go, tagRect);
+                        // Do actual Layer field
+                        DoLayerField(go, layerRect);
                     }
                     EditorGUILayout.EndHorizontal();
                 }
@@ -759,10 +759,11 @@ namespace UnityEditor
                     IndentToColumn1();
 
                     // Overrides Popup. Reserve space regardless of whether the button is there or not to avoid jumps in button sizes.
-                    Rect rect = GUILayoutUtility.GetRect(Styles.overridesContent, Styles.overridesDropdown);
+                    Rect rect = GUILayoutUtility.GetRect(Styles.overridesContent, Styles.toolbarDropdown);
                     if (m_ButtonStates.HasFlag(ButtonStates.CanShowOverrides) && m_IsPrefabInstanceOutermostRoot)
                     {
-                        if (EditorGUI.DropdownButton(rect, Styles.overridesContent, FocusType.Passive))
+                        EditorGUILayout.BeginHorizontal(GUILayout.MaxWidth(Styles.maxOverrideDropdownWidth));
+                        if (EditorGUI.DropdownButton(rect, Styles.overridesContent, FocusType.Passive, Styles.toolbarDropdown))
                         {
                             if (targets.Length > 1)
                                 PopupWindow.Show(rect, new PrefabOverridesWindow(Array.ConvertAll(targets, e => (GameObject)e)));
@@ -770,13 +771,19 @@ namespace UnityEditor
                                 PopupWindow.Show(rect, new PrefabOverridesWindow((GameObject)target));
                             GUIUtility.ExitGUI();
                         }
+                        EditorGUILayout.EndHorizontal();
                     }
 
                     // Spacing between buttons
-                    GUILayoutUtility.GetRect(20, 6, GUILayout.MaxWidth(30), GUILayout.MinWidth(5));
+                    GUILayout.FlexibleSpace();
 
                     // Select prefab
-                    if (GUILayout.Button(Styles.selectString, EditorStyles.miniButton))
+                    var firstButton = GUILayoutUtility.GetRect(Styles.selectPrefab, EditorStyles.toolbarButton);
+                    var style = singlePrefabType == PrefabAssetType.Model ? Styles.openModel : m_OpenPrefabContent;
+                    var secondButton = GUILayoutUtility.GetRect(style, EditorStyles.toolbarButton);
+
+                    EditorGUILayout.BeginHorizontal(GUILayout.Width(firstButton.width + secondButton.width));
+                    if (GUI.Button(firstButton, Styles.selectPrefab, EditorStyles.toolbarButton))
                     {
                         HashSet<UnityObject> selectedAssets = new HashSet<UnityObject>();
                         for (int i = 0; i < targets.Length; i++)
@@ -815,7 +822,7 @@ namespace UnityEditor
                         if (singlePrefabType == PrefabAssetType.Model)
                         {
                             // Open Model Prefab
-                            if (GUILayout.Button(Styles.openModel, EditorStyles.miniButton))
+                            if (GUI.Button(secondButton, Styles.openModel, EditorStyles.toolbarButton))
                             {
                                 GameObject asset = PrefabUtility.GetOriginalSourceOrVariantRoot(target);
                                 AssetDatabase.OpenAsset(asset);
@@ -825,7 +832,7 @@ namespace UnityEditor
                         else
                         {
                             // Open non-Model Prefab
-                            if (GUILayout.Button(m_OpenPrefabContent, EditorStyles.miniButton))
+                            if (GUI.Button(secondButton, m_OpenPrefabContent, EditorStyles.toolbarButton))
                             {
                                 var prefabStageMode = PrefabStageUtility.GetPrefabStageModeFromModifierKeys();
                                 UnityObject asset = null;
@@ -838,19 +845,55 @@ namespace UnityEditor
                             }
                         }
                     }
+                    EditorGUILayout.EndHorizontal();
 
                     EditorGUILayout.EndHorizontal();
                 }
             }
         }
 
-        private void DoLayerField(GameObject go)
+        private void AdjustFields(ref Rect tagRect, ref Rect layerRect)
+        {
+            if (GUIView.current != null && layerRect.xMax > GUIView.current.position.width)
+            {
+                var diff = layerRect.xMax - EditorGUIUtility.currentViewWidth;
+                var currentWidth = tagRect.width + layerRect.width - diff;
+                var halfWidth = currentWidth / 2f;
+
+                if (tagRect.width >= halfWidth)
+                {
+                    var leftOver = diff - (tagRect.width - halfWidth);
+                    if (leftOver >= 0)
+                    {
+                        tagRect.width = halfWidth;
+                        layerRect.x = tagRect.x + halfWidth;
+                        layerRect.width = halfWidth;
+                    }
+                    else
+                    {
+                        tagRect.width = currentWidth - layerRect.width;
+                        layerRect.x = tagRect.x + currentWidth - layerRect.width;
+                    }
+                }
+                else
+                    layerRect.width = layerRect.width - diff;
+            }
+        }
+
+        private Rect GetLayerRect(GameObject go)
+        {
+            var layerContent = EditorGUI.GetLayerContent(go.layer);
+            layerContent.image = Styles.layerContent.image;
+            layerContent.text += "  ";
+            return GUILayoutUtility.GetRect(layerContent, Styles.toolbarDropdown);
+        }
+
+        private void DoLayerField(GameObject go, Rect rect)
         {
             EditorGUIUtility.labelWidth = Styles.layerFieldWidth;
-            Rect layerRect = GUILayoutUtility.GetRect(GUIContent.none, Styles.layerPopup);
-            EditorGUI.BeginProperty(layerRect, GUIContent.none, m_Layer);
+            EditorGUI.BeginProperty(rect, GUIContent.none, m_Layer);
             EditorGUI.BeginChangeCheck();
-            int layer = EditorGUI.LayerField(layerRect, Styles.layerContent, go.layer, Styles.layerPopup);
+            int layer = EditorGUI.LayerField(rect, Styles.layerContent, go.layer, Styles.toolbarDropdown);
             if (EditorGUI.EndChangeCheck())
             {
                 // filter out non gameobject targets
@@ -870,14 +913,18 @@ namespace UnityEditor
             EditorGUI.EndProperty();
         }
 
-        private void DoTagsField(GameObject go)
+        private Rect GetTagRect(GameObject go)
         {
-            string tagName = go.tag;
             EditorGUIUtility.labelWidth = Styles.tagFieldWidth;
-            Rect tagRect = GUILayoutUtility.GetRect(GUIContent.none, Styles.tagPopup);
-            EditorGUI.BeginProperty(tagRect, GUIContent.none, m_Tag);
+            var tagContent = new GUIContent(EditorGUI.GetTagContent(go.tag).text + "  ", Styles.tagContent.image);
+            return GUILayoutUtility.GetRect(tagContent, Styles.toolbarDropdown);
+        }
+
+        private void DoTagsField(GameObject go, Rect rect)
+        {
+            EditorGUI.BeginProperty(rect, GUIContent.none, m_Tag);
             EditorGUI.BeginChangeCheck();
-            string tag = EditorGUI.TagField(tagRect, Styles.tagContent, tagName);
+            string tag = EditorGUI.TagField(rect, Styles.tagContent, go.tag, Styles.toolbarDropdown);
             if (EditorGUI.EndChangeCheck())
             {
                 m_Tag.stringValue = tag;
@@ -890,14 +937,10 @@ namespace UnityEditor
 
         private void DoStaticFlagsDropDown(GameObject go)
         {
-            var rect = GUILayoutUtility.GetRect(GUIContent.none, Styles.staticDropdown, GUILayout.ExpandWidth(false));
-
-            rect.height = Math.Max(EditorGUIUtility.singleLineHeight, rect.height);
-
-            bool toggled = EditorGUILayout.DropdownButton(GUIContent.none, FocusType.Keyboard, Styles.staticDropdown);
+            bool toggled = EditorGUILayout.DropdownButton(GUIContent.none, FocusType.Keyboard, Styles.toolbarDropdown, GUILayout.MaxWidth(20f));
             if (toggled)
             {
-                rect = GUILayoutUtility.topLevel.GetLast();
+                var rect = GUILayoutUtility.topLevel.GetLast();
                 // We do not pass the serializedProperty directly, as its parent serializedObject
                 // can get destroyed when references to parent windows are lost, thus we use
                 // the target object & the path to reconstruct the property inside the window itself

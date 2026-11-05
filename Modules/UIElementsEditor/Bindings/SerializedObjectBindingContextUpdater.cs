@@ -134,7 +134,6 @@ internal sealed class SerializedObjectBindingContextUpdater : SerializedObjectBi
 
                 if (isActivated && bindingContext != null)
                 {
-                    // Unregister the specific callback, and stop native tracking if this was the last callback
                     bindingContext.UnregisterSerializedPropertyChangeCallback(owner, propertyPathHash, callback);
                 }
 

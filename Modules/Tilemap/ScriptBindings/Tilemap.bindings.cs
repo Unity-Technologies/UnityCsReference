@@ -307,22 +307,20 @@ namespace UnityEngine.Tilemaps
         [NativeMethod(Name = "GetTileAssetEntityId", IsThreadSafe = true)]
         public extern EntityId GetTileEntityId(Vector3Int position);
 
-        internal extern IntPtr GetTilemapHandle();
-
         [NativeMethod(Name = "GetTileEntityIdFromHandle", IsThreadSafe = true)]
-        internal static extern EntityId GetTileEntityIdFromHandle(IntPtr tilemapHandle, Vector3Int position);
+        internal static extern EntityId GetTileEntityIdFromHandle(EntityId tilemapEntityId, Vector3Int position);
 
         [NativeMethod(Name = "GetTileEntityIdsFromOffsets", IsThreadSafe = true)]
         private extern void GetTileEntityIdsFromOffsets(Vector3Int position, IntPtr offsetsIntrPtr, IntPtr tilesIntPtr, int count);
 
         [NativeMethod(Name = "GetTileEntityIdsFromOffsetsAndHandle", IsThreadSafe = true)]
-        private static extern void GetTileEntityIdsFromOffsetsAndHandle(IntPtr tilemapHandle, Vector3Int position, IntPtr offsetsIntrPtr, IntPtr tilesIntPtr, int count);
+        private static extern void GetTileEntityIdsFromOffsetsAndHandle(EntityId tilemapEntityId, Vector3Int position, IntPtr offsetsIntrPtr, IntPtr tilesIntPtr, int count);
 
         [NativeMethod(Name = "GetTileEntityIdsFromBlockOffset", IsThreadSafe = true)]
         private extern void GetTileEntityIdsFromBlockOffset(Vector3Int position, BoundsInt blockOffset, IntPtr tilesIntPtr, int count);
 
         [NativeMethod(Name = "GetTileEntityIdsFromBlockOffsetAndHandle", IsThreadSafe = true)]
-        private static extern void GetTileEntityIdsFromBlockOffsetAndHandle(IntPtr tilemapHandle, Vector3Int position, BoundsInt blockOffset, IntPtr tilesIntPtr, int count);
+        private static extern void GetTileEntityIdsFromBlockOffsetAndHandle(EntityId tilemapEntityId, Vector3Int position, BoundsInt blockOffset, IntPtr tilesIntPtr, int count);
 
         internal extern Object[] GetTileAssetsBlock(Vector3Int position, Vector3Int blockDimensions);
 
@@ -827,6 +825,10 @@ namespace UnityEngine.Tilemaps
         [FreeFunction(Name = "TilemapBindings::RefreshTileAssetsNative", HasExplicitThis = true)]
         internal extern unsafe void RefreshTilesNative(void* positions, int count, bool needSortRemoveDup);
 
+        // Animates the Tiles within these cell bounds on the next Update, as a TilemapRenderer does for each Camera which sees it.
+        [FreeFunction(Name = "TilemapBindings::QueueCameraView", HasExplicitThis = true)]
+        internal extern void QueueCameraView(Vector2Int min, Vector2Int max);
+
         [FreeFunction(Name = "TilemapBindings::SetHasAnySyncTileCallback")]
         internal static extern void SetHasAnySyncTileCallback(bool hasAnySyncTileCallback);
 
@@ -1151,19 +1153,19 @@ namespace UnityEngine.Tilemaps
         internal extern EntityId GetAnyTileEntityId(Vector3Int position);
 
         [NativeMethod(Name = "GetAnyTileEntityIdFromHandle", IsThreadSafe = true)]
-        internal static extern EntityId GetAnyTileEntityIdFromHandle(IntPtr tilemapHandle, Vector3Int position);
+        internal static extern EntityId GetAnyTileEntityIdFromHandle(EntityId tilemapEntityId, Vector3Int position);
 
         [NativeMethod(Name = "GetAnyTileEntityIdsFromOffsets", IsThreadSafe = true)]
         private extern void GetAnyTileEntityIdsFromOffsets(Vector3Int position, IntPtr offsetsIntrPtr, IntPtr tilesIntPtr, int count);
 
         [NativeMethod(Name = "GetAnyTileEntityIdsFromOffsetsAndHandle", IsThreadSafe = true)]
-        private static extern void GetAnyTileEntityIdsFromOffsetsAndHandle(IntPtr tilemapHandle, Vector3Int position, IntPtr offsetsIntrPtr, IntPtr tilesIntPtr, int count);
+        private static extern void GetAnyTileEntityIdsFromOffsetsAndHandle(EntityId tilemapEntityId, Vector3Int position, IntPtr offsetsIntrPtr, IntPtr tilesIntPtr, int count);
 
         [NativeMethod(Name = "GetAnyTileEntityIdsFromBlockOffset", IsThreadSafe = true)]
         private extern void GetAnyTileEntityIdsFromBlockOffset(Vector3Int position, BoundsInt blockOffset, IntPtr tilesIntPtr, int count);
 
         [NativeMethod(Name = "GetAnyTileEntityIdsFromBlockOffsetAndHandle", IsThreadSafe = true)]
-        private static extern void GetAnyTileEntityIdsFromBlockOffsetAndHandle(IntPtr tilemapHandle, Vector3Int position, BoundsInt blockOffset, IntPtr tilesIntPtr, int count);
+        private static extern void GetAnyTileEntityIdsFromBlockOffsetAndHandle(EntityId tilemapEntityId, Vector3Int position, BoundsInt blockOffset, IntPtr tilesIntPtr, int count);
 
         internal extern Object GetEditorPreviewTileAsset(Vector3Int position);
         ///<summary>Gets the editor preview <see cref="Tile" /> at the given XYZ coordinates of a cell in the <see cref="Tilemap" />.</summary>
@@ -1357,6 +1359,15 @@ namespace UnityEngine.Tilemaps
         {
             HandlePositionsChangedCallback(count, positionsIntPtr);
         }
+
+        [RequiredByNativeCode]
+        private void DoRenderPositionsChangedCallback(int count, IntPtr positionsIntPtr)
+        {
+            HandleRenderPositionsChangedCallback(count, positionsIntPtr);
+        }
+
+        [FreeFunction(Name = "TilemapBindings::SetHasRenderPositionsChangedListener")]
+        static extern void SetHasRenderPositionsChangedListener(bool hasListener);
 
         // The engine reports both kinds of reason in one word, so each conversion keeps only what its own enum names.
         private const int k_NativeTilemapReasonMask = 0x00000007;
@@ -2348,7 +2359,7 @@ namespace UnityEngine.Tilemaps
     {
         ///<summary>
         ///  <see cref="Sprite" /> to be rendered at the <see cref="Tile" />.</summary>
-        public Sprite sprite { get { return Object.ForceLoadFromInstanceID(m_Sprite) as Sprite; } set { m_Sprite = value != null ? value.GetEntityId() : EntityId.None; } }
+        public Sprite sprite { get { return Object.ForceLoadFromEntityId(m_Sprite) as Sprite; } set { m_Sprite = value != null ? value.GetEntityId() : EntityId.None; } }
         ///<summary>EntityId of the <see cref="Sprite" /> to be rendered at the <see cref="Tile" />.</summary>
         public EntityId spriteEntityId { get => m_Sprite; set => m_Sprite = value; }
         ///<summary>
@@ -2359,7 +2370,7 @@ namespace UnityEngine.Tilemaps
         public Matrix4x4 transform { get { return m_Transform; } set { m_Transform = value; } }
         ///<summary>
         ///  <see cref="GameObject" /> of the <see cref="Tile" />.</summary>
-        public GameObject gameObject { get { return Object.ForceLoadFromInstanceID(m_GameObject) as GameObject; } set { m_GameObject = value != null ? value.GetEntityId() : EntityId.None; } }
+        public GameObject gameObject { get { return Object.ForceLoadFromEntityId(m_GameObject) as GameObject; } set { m_GameObject = value != null ? value.GetEntityId() : EntityId.None; } }
         ///<summary>EntityId of the <see cref="GameObject" /> of the <see cref="Tile" />.</summary>
         public EntityId gameObjectEntityId { get => m_GameObject; set => m_GameObject = value; }
         ///<summary>

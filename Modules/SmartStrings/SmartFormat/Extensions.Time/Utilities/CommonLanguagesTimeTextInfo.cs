@@ -76,7 +76,7 @@ static partial class CommonLanguagesTimeTextInfo
         #pragma warning restore UAL0018
         Ptxt_week = new[] { "{0} semana", "{0} semanas" },
         Ptxt_day = new[] { "{0} día", "{0} días" },
-        Ptxt_hour = new[] { "{0} hore", "{0} horas" },
+        Ptxt_hour = new[] { "{0} hora", "{0} horas" },
         Ptxt_minute = new[] { "{0} minuto", "{0} minutos" },
         Ptxt_second = new[] { "{0} segundo", "{0} segundos" },
         Ptxt_millisecond = new[] { "{0} milisegundo", "{0} milisegundos" },

@@ -16,7 +16,7 @@ using UnityEngine;
 
 // ADD_NEW_PLATFORM_HERE
 [assembly: InternalsVisibleTo("Unity.LiveNotes")]
-[assembly: InternalsVisibleTo("Unity.Audio.Tests")]
+[assembly: InternalsVisibleTo("Unity.Modules.Audio.Tests.Playmode")]
 [assembly: InternalsVisibleTo("Unity.Burst")]
 [assembly: InternalsVisibleTo("Unity.Burst.Editor")]
 [assembly: InternalsVisibleTo("UnityEditor.BurstModule")]
@@ -124,6 +124,7 @@ using UnityEngine;
 [assembly: InternalsVisibleTo("Unity.RuntimeTests.Framework")]
 [assembly: InternalsVisibleTo("Assembly-CSharp-Editor-firstpass-testable")]
 [assembly: InternalsVisibleTo("Assembly-CSharp-Editor-testable")]
+[assembly: InternalsVisibleTo("Unity.Modules.Audio.Tests.Editor")]
 [assembly: InternalsVisibleTo("Unity.UIElements.EditorResources.Authoring")]
 [assembly: InternalsVisibleTo("Unity.UIElements.EditorResources.EditorTests")]
 [assembly: InternalsVisibleTo("Unity.Modules.Tilemap.Tests.Editor")]
@@ -273,6 +274,7 @@ using UnityEngine;
 [assembly: InternalsVisibleTo("Unity.Modules.UI.Tests.Editor")]
 [assembly: InternalsVisibleTo("Unity.Modules.Multiplayer.Server.Tests.Editor")]
 [assembly: InternalsVisibleTo("Unity.Modules.Multiplayer.PlayMode.Tests.Editor")]
+[assembly: InternalsVisibleTo("Unity.Modules.Multiplayer.MultiplayerRoles.Tests.Editor")]
 [assembly: InternalsVisibleTo("Unity.Modules.AssetDatabase.AssetPostProcessor.Tests.Editor")]
 [assembly: InternalsVisibleTo("Unity.Modules.AssetPackage.Tests.Editor")]
 // This should move with the AnimationWindow to a module at some point
@@ -290,6 +292,7 @@ using UnityEngine;
 [assembly: InternalsVisibleTo("Unity.Modules.GI.BakedGI.ColorSpace.Tests.Editor")]
 [assembly: InternalsVisibleTo("Unity.Modules.GI.LightingInspectorMeshRenderer.Tests.Editor")]
 [assembly: InternalsVisibleTo("Unity.Modules.GI.TextureEncoding.Tests.Editor")]
+[assembly: InternalsVisibleTo("Unity.Modules.GI.LightingDataAsset.Tests.Editor")]
 [assembly: InternalsVisibleTo("Unity.Modules.Physics2D.Tests.Editor")]
 [assembly: InternalsVisibleTo("Unity.Modules.U2D.NineSlice.Tests.Editor")]
 [assembly: InternalsVisibleTo("Unity.Modules.GI.Prefabs.Tests.Editor")]

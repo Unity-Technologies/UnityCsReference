@@ -916,7 +916,6 @@ namespace Unity.Entities
                 systemElements[i] = new ComponentSystemSorter.SystemElement
                 {
                     SystemTypeIndex = indices[i],
-                    Index = new UpdateIndex(i, false),
                     OrderingBucket = 0,
                     updateBefore = new NativeList<int>(16, Allocator.Temp),
                     nAfter = 0,

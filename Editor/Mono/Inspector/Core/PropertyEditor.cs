@@ -638,6 +638,8 @@ namespace UnityEditor
             container.AddToClassList(s_MainContainerClassName);
             rootVisualElement.hierarchy.Add(container);
             m_ScrollView = container.Q<ScrollView>();
+            var viewport = container.Q<VisualElement>("unity-content-viewport");
+            viewport.AddToClassList("unity-inspector-viewport");
 
             m_DebugInfoPanel = container.Q<VisualElement>(className: s_DebugInfoClassName);
             m_DebugInfoLabel = m_DebugInfoPanel.Q<Label>();

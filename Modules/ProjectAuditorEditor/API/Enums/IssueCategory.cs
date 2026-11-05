@@ -148,7 +148,7 @@ namespace Unity.ProjectAuditor.Editor
         AvatarMask,
 
         /// <summary>
-        /// Issues that could result in undesired behavior if domain reloading is disabled
+        /// Issues that could result in undesired behavior if code reloading is disabled
         /// </summary>
         [Obsolete("Domain Reload issues are now reported in the Code category. Use Code instead (UnityUpgradable) -> Code", true)]
         DomainReload,

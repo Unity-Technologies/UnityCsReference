@@ -56,12 +56,13 @@ namespace UnityEditor.Build.Analysis
         /// Gives the content area to the drawer declaring the build's producer package, and returns whether one
         /// did. False leaves any showing drawer in place, so the caller releases before drawing its own content.
         /// </summary>
-        public bool TryClaim(BuildReportSummary summary)
+        public bool TryClaim(BuildReportSummary summary, out ExternalDrawerView claimed)
         {
+            claimed = null;
             if (string.IsNullOrEmpty(summary.ProducerPackage))
                 return false;
 
-            if (!m_Views.TryGetValue(summary.ProducerPackage, out var claimed))
+            if (!m_Views.TryGetValue(summary.ProducerPackage, out claimed))
                 return false;
 
             RemoveMissingDrawerPane();
@@ -76,7 +77,7 @@ namespace UnityEditor.Build.Analysis
                 m_Claimed = claimed;
             }
 
-            claimed.SetSelection(summary);
+            claimed.Claim();
             return true;
         }
 
@@ -106,6 +107,12 @@ namespace UnityEditor.Build.Analysis
             }
 
             m_BuiltInContent.style.display = StyleKeyword.Null;
+        }
+
+        /// <summary>Tells the claimed drawer the build history changed.</summary>
+        public void OnBuildListRefreshed()
+        {
+            m_Claimed?.RefreshSelection();
         }
 
         private void RemoveMissingDrawerPane()

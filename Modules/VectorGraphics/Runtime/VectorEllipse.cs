@@ -22,7 +22,7 @@ namespace Unity.VectorGraphics
             ComputeEllipseParameters(p0, p1, rotation, rx, ry, largeArc, sweep, out c, out theta1, out sweepTheta, out adjustedRx, out adjustedRy);
 
             BezierPathSegment[] path;
-            if (Mathf.Abs(sweepTheta) <= Mathf.Epsilon)
+            if (Mathf.Abs(sweepTheta) <= VectorUtils.Epsilon)
             {
                 // Use a straight line if the sweep angle is tiny
                 path = VectorUtils.BezierSegmentToPath(VectorUtils.MakeLine(p0, p1));

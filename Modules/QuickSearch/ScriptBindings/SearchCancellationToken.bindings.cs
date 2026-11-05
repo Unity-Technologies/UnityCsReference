@@ -81,11 +81,13 @@ namespace UnityEditor.Search
             if (!IsCreated)
                 return;
 
+            // Unregister outside m_Lock: disposing the registration waits for a running Cancel callback, which needs m_Lock.
+            m_CancellationTokenRegistration?.Dispose();
+            m_CancellationTokenRegistration = null;
+
             m_Lock.EnterWriteLock();
             try
             {
-                m_CancellationTokenRegistration?.Dispose();
-                m_CancellationTokenRegistration = null;
                 if (IsCreated)
                 {
                     Destroy(m_Ptr);

@@ -4,6 +4,7 @@
 
 using System;
 using System.Collections.Generic;
+using UnityEditorInternal;
 using UnityEngine;
 using UnityEngine.Bindings;
 using UnityEngine.Events;
@@ -64,6 +65,13 @@ namespace UnityEditor.Build.Profile
             /// there is nothing to claim.
             /// </summary>
             ClaimingEntitlements,
+
+            /// <summary>
+            /// The install request is done, and the editor is still registering, importing and
+            /// compiling the packages. Extensions may read package assets on creation, so this waits
+            /// until the packages are registered and the editor is idle again.
+            /// </summary>
+            AwaitingPackageRegistration,
         }
 
         /// <summary>
@@ -117,6 +125,9 @@ namespace UnityEditor.Build.Profile
         /// </summary>
         [NonSerialized]
         bool m_EnteredAwaitingExtensionThisSession;
+
+        [NonSerialized]
+        EditorApplication.CallbackFunction m_OnEditorUpdate;
 
         /// <summary>
         /// Factory method to create a <see cref="BuildProfileInitialization"/> instance.
@@ -253,7 +264,9 @@ namespace UnityEditor.Build.Profile
                     if (packageAddInfo != null)
                     {
                         AddPackageInstallationCallbacks(profile);
-                        if (packageAddInfo.IsPackageRequestDone())
+                        if (packageAddInfo.isRegistrationPending)
+                            NextState(State.AwaitingPackageRegistration, profile);
+                        else if (packageAddInfo.IsPackageRequestDone())
                         {
                             // Expect no packages left to install on profile enable.
                             // This ensures that any package compilation has finished.
@@ -267,6 +280,16 @@ namespace UnityEditor.Build.Profile
                     {
                         NextState(State.InstallingError, profile);
                     }
+                    break;
+                case State.AwaitingPackageRegistration:
+                    if (IsPackageRegistrationDone(IsEditorBusy()))
+                    {
+                        RemovePackageRegistrationCallbacks();
+                        profile.OnPackageAddComplete?.Invoke();
+                        NextState(!AreRequiredExtensionsAvailable(profile) ? State.AwaitingExtension : State.Ready, profile);
+                    }
+                    else
+                        AddPackageRegistrationCallbacks(profile);
                     break;
                 case State.InstallingError:
                     Debug.LogError(JsonUtility.ToJson(this.packageAddInfo?.GetPackageAddProgressInfo()));
@@ -394,6 +417,43 @@ namespace UnityEditor.Build.Profile
         }
 
         /// <summary>
+        /// Re-checks the package registration on editor updates, which resume once the editor has finished
+        /// the refresh that registers, imports and compiles the packages, also after an editor restart.
+        /// On domain reload these callbacks should be re-attached to ensure proper notification.
+        /// </summary>
+        void AddPackageRegistrationCallbacks(BuildProfile profile)
+        {
+            if (m_OnEditorUpdate != null)
+                return;
+
+            m_OnEditorUpdate = () =>
+            {
+                // The profile asset was deleted while waiting.
+                if (profile == null)
+                    RemovePackageRegistrationCallbacks();
+                else if (IsPackageRegistrationDone(IsEditorBusy()))
+                    BuildProfileContext.instance.UpdateBuildProfileInitialization(profile);
+            };
+            EditorApplication.update += m_OnEditorUpdate;
+        }
+
+        /// <summary>
+        /// Packages count as registered as soon as the editor resolves them, before it imports and
+        /// compiles them, so the registration is only done once the editor is idle again.
+        /// </summary>
+        public bool IsPackageRegistrationDone(bool isEditorBusy) =>
+            !isEditorBusy && (packageAddInfo == null || packageAddInfo.IsPackageRequestDone());
+
+        static bool IsEditorBusy() =>
+            EditorApplication.isCompiling || EditorApplication.isUpdating || InternalEditorUtility.IsScriptReloadRequested();
+
+        void RemovePackageRegistrationCallbacks()
+        {
+            EditorApplication.update -= m_OnEditorUpdate;
+            m_OnEditorUpdate = null;
+        }
+
+        /// <summary>
         /// Sets up the entitlement claim completion callback. Re-attached on domain reload.
         /// </summary>
         void AddEntitlementClaimCallbacks(BuildProfile profile)
@@ -414,6 +474,8 @@ namespace UnityEditor.Build.Profile
 
             entitlementClaimInfo?.Cleanup();
             entitlementClaimInfo = null;
+
+            RemovePackageRegistrationCallbacks();
         }
 
         bool IsCallbackPersistable(UnityAction callback) => callback.Method.IsStatic || callback.Target is UnityEngine.Object;

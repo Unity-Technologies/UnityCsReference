@@ -83,7 +83,7 @@ namespace Unity.UI.Builder
             if (libraryItem.sourceAsset != null)
             {
                 evt.menu.AppendAction(
-                    "Open In UIBuilder",
+                    "Open in UI Builder",
                     action => { m_PaneWindow.LoadDocument(libraryItem.sourceAsset); },
                     action =>
                     {

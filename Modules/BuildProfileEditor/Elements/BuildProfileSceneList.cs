@@ -45,6 +45,11 @@ namespace UnityEditor.Build.Profile.Elements
             m_SceneTreeView.AddOpenScenes();
         }
 
+        public void AddScenes(VisualElement anchor)
+        {
+            AddScenesWindow.ShowWindow(anchor, m_SceneTreeView.GetSceneGuids(), m_SceneTreeView.AddScenes);
+        }
+
         public void OnUndoRedo(in UndoRedoInfo info)
         {
             m_SceneTreeView.Reload();

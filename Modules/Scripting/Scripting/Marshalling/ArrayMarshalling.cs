@@ -168,6 +168,7 @@ namespace UnityEngine.Bindings
             }
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static MarshalledArray CreateFromPinnedAccessor<T, TAccessor>(in TAccessor accessor, void* data) where TAccessor:ICollectionMarshallingAccessor<T>
         {
             if (accessor.IsNull)

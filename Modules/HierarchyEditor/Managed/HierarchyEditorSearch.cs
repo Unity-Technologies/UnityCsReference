@@ -42,6 +42,7 @@ namespace Unity.Hierarchy.Editor
             m_QueryTokenizer = new QueryEngine<GameObject>();
             m_QueryTokenizer.AddFilter(SerializedPropertyRx, OnDummyPropertyWithHash);
             m_QueryTokenizer.validateFilters = false;
+            m_QueryTokenizer.treatIncompleteFiltersAsText = true;
         }
 
         private string OnDummyPropertyWithHash(GameObject obj, string propertyName)

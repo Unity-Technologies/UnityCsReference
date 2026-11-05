@@ -445,6 +445,24 @@ namespace UnityEngine.Animations
             return parameter;
         }
 
+        internal int GetParameterLayout(Span<int> hashes, Span<AnimatorControllerParameterType> types)
+        {
+            return GetParameterLayoutInternal(ref m_Handle, hashes, MemoryMarshal.Cast<AnimatorControllerParameterType, int>(types));
+        }
+
+        internal int GetParameterValues(Span<AnimatorParameterValue> values)
+        {
+            return GetParameterValuesInternal(ref m_Handle, MemoryMarshal.Cast<AnimatorParameterValue, int>(values));
+        }
+
+        /// <remarks>When the layout contains duplicate hashes, the order of <paramref name="hashes"/> determines which entry is written. Hashes in layout order address every entry.</remarks>
+        internal void SetParameterValues(ReadOnlySpan<int> hashes, ReadOnlySpan<AnimatorParameterValue> values)
+        {
+            if (hashes.Length != values.Length)
+                throw new ArgumentException("hashes and values must have the same length.");
+            SetParameterValuesInternal(ref m_Handle, hashes, MemoryMarshal.Cast<AnimatorParameterValue, int>(values));
+        }
+
         public void CrossFadeInFixedTime(string stateName, float transitionDuration)
         {
             CrossFadeInFixedTimeInternal(ref m_Handle, StringToHash(stateName), transitionDuration, -1, 0.0f);
@@ -691,6 +709,15 @@ namespace UnityEngine.Animations
 
         [NativeMethod(ThrowsException = true)]
         extern private static int GetParameterCountInternal(ref PlayableHandle handle);
+
+        [NativeMethod(ThrowsException = true)]
+        extern private static int GetParameterLayoutInternal(ref PlayableHandle handle, Span<int> hashes, Span<int> types);
+
+        [NativeMethod(ThrowsException = true)]
+        extern private static int GetParameterValuesInternal(ref PlayableHandle handle, Span<int> values);
+
+        [NativeMethod(ThrowsException = true)]
+        extern private static void SetParameterValuesInternal(ref PlayableHandle handle, ReadOnlySpan<int> hashes, ReadOnlySpan<int> values);
 
         [NativeMethod(IsThreadSafe = true)]
         extern private static int StringToHash(string name);

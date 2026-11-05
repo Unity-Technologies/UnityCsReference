@@ -20,6 +20,8 @@ namespace UnityEngine.UIElements
         private static readonly ProfilerMarker s_ProfilerMarker = new ProfilerMarker(ProfilerCategory.UIToolkit, s_Description);
         public override ProfilerMarker profilerMarker => s_ProfilerMarker;
 
+        internal override VersionChangeType versionChangeInterest => VersionChangeType.ViewData;
+
         // Only Editor panels actually do something with the ViewData of VisualElements
         // Skip the execution of the updater completely for Runtime UI (including when developing in the Editor)
         public bool enabled => panel.contextType == ContextType.Editor;

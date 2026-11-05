@@ -22,7 +22,7 @@ namespace UnityEngine.UIElements
         {
             public static void LazyRegisterGlobal(Type source, Type destination, Func<Delegate> converterDelegate)
             {
-                s_GlobalConverters.registry.LazyRegister(source, destination, converterDelegate);
+                s_GlobalConverters.LazyRegister(source, destination, converterDelegate);
                 TypeConversion.Unsafe.LazyRegister(source, destination, converterDelegate);
             }
         }
@@ -47,7 +47,7 @@ namespace UnityEngine.UIElements
         /// <typeparam name="TDestination">The type of the output data.</typeparam>
         public static void RegisterGlobalConverter<TSource, TDestination>(TypeConverter<TSource, TDestination> converter)
         {
-            s_GlobalConverters.registry.Register(typeof(TSource), typeof(TDestination), converter);
+            s_GlobalConverters.Register(typeof(TSource), typeof(TDestination), converter);
         }
 
         /// <summary>
@@ -59,7 +59,7 @@ namespace UnityEngine.UIElements
         /// <typeparam name="TDestination">The type of the output data.</typeparam>
         internal static void RegisterGlobal<TSource, TDestination>(TypeConverter<TSource, TDestination> converter)
         {
-            s_GlobalConverters.registry.Register(typeof(TSource), typeof(TDestination), converter);
+            s_GlobalConverters.Register(typeof(TSource), typeof(TDestination), converter);
             TypeConversion.Register(converter);
         }
 
@@ -139,7 +139,54 @@ namespace UnityEngine.UIElements
         /// <typeparam name="TDestination">The destination type to convert to.</typeparam>
         /// <returns><see langword="true"/> if the conversion succeeded, and <see langword="false"/> otherwise.</returns>
         public static bool TryConvert<TSource, TDestination>(ref TSource source, out TDestination destination)
-            => TypeConversion.TryConvert(in s_GlobalConverters.registerRef, ref source, out destination);
+        {
+            var converter = GlobalConverterCache<TSource, TDestination>.GetConverter();
+            if (null != converter)
+            {
+                destination = converter(ref source);
+                return true;
+            }
+
+            return TypeConversion.TryConvertWithoutRegistry(ref source, out destination);
+        }
+
+        // Caches the global converter registered for a pair of types, if any, to avoid looking it up in the registry on
+        // every conversion. The cached result is discarded when converters are registered or the group is cleared.
+        static partial class GlobalConverterCache<TSource, TDestination>
+        {
+            sealed class Entry
+            {
+                public readonly ConverterGroup group;
+                public readonly int version;
+                public readonly TypeConverter<TSource, TDestination> converter;
+
+                public Entry(ConverterGroup group, int version, TypeConverter<TSource, TDestination> converter)
+                {
+                    this.group = group;
+                    this.version = version;
+                    this.converter = converter;
+                }
+            }
+
+            // A single reference so a conversion on another thread never reads a partially updated cache.
+            [AutoStaticsCleanupOnCodeReload]
+            static Entry s_Entry;
+
+            public static TypeConverter<TSource, TDestination> GetConverter()
+            {
+                var group = s_GlobalConverters;
+                var entry = s_Entry;
+                if (null != entry && ReferenceEquals(entry.group, group) && entry.version == group.version)
+                    return entry.converter;
+
+                var version = group.version;
+                var converter = group.registry.TryGetConverter(typeof(TSource), typeof(TDestination), out var untyped)
+                    ? (TypeConverter<TSource, TDestination>)untyped
+                    : null;
+                s_Entry = new Entry(group, version, converter);
+                return converter;
+            }
+        }
 
         /// <summary>
         /// Sets the value of a property at the given path to the given value, using the global converters.
@@ -157,28 +204,7 @@ namespace UnityEngine.UIElements
         public static bool TrySetValueGlobal<TContainer, TValue>(ref TContainer container,
             in PropertyPath path, TValue value, out VisitReturnCode returnCode)
         {
-            if (path.IsEmpty)
-            {
-                returnCode = VisitReturnCode.InvalidPath;
-                return false;
-            }
-
-            var visitor = SetValueVisitor<TValue>.Pool.Get();
-            visitor.Path = path;
-            visitor.Value = value;
-            try
-            {
-                if (!PropertyContainer.TryAccept(visitor, ref container, out returnCode))
-                    return false;
-
-                returnCode = visitor.ReturnCode;
-            }
-            finally
-            {
-                SetValueVisitor<TValue>.Pool.Release(visitor);
-            }
-
-            return returnCode == VisitReturnCode.Ok;
+            return ConverterGroup.TrySetValue(null, ref container, path, value, out returnCode);
         }
     }
 }

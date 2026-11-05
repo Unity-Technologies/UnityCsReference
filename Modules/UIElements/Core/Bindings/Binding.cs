@@ -145,6 +145,10 @@ namespace UnityEngine.UIElements
             m_Dirty = false;
         }
 
+        // Stamps of the last binding update in which this binding was seen dirty, and in which it updated the UI.
+        internal int dirtyUpdateStamp { get; set; }
+        internal int uiUpdateStamp { get; set; }
+
         /// <summary>
         /// Called when the binding becomes active for a specific <see cref="VisualElement"/>.
         /// </summary>

@@ -60,7 +60,7 @@ namespace UnityEditor
         protected UnityObject[] m_Targets;
         protected int m_ReferenceTargetIndex;
 
-#pragma warning disable UA5000 // The Avoid Finalizer Analyzer produces compile errors for any new finalizers. This pre-existing finalizer declaration has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA5000 // Intentional leak warning: logs an error when the ObjectPreview was not cleaned up.
         ~ObjectPreview()
         {
             // Watch out for Editor classes implementing OnDisableINTERNAL and not calling cleanup (GenericInspector).
@@ -705,7 +705,7 @@ namespace UnityEditor
             }
         }
 
-        private void OnDisableINTERNAL()
+        internal virtual void OnDisableINTERNAL()
         {
             CleanupPropertyEditor();
             propertyHandlerCache.Dispose();

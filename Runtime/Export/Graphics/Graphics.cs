@@ -5,12 +5,13 @@
 using System;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
-using UnityEngine.Bindings;
-using UnityEngine.Rendering;
-using UnityEngine.Scripting;
 using Unity.Collections;
 using Unity.Collections.LowLevel.Unsafe;
 using Unity.Scripting.LifecycleManagement;
+using UnityEngine.Bindings;
+using UnityEngine.Rendering;
+using UnityEngine.Scripting;
+using UnityEngine.U2D;
 using uei = UnityEngine.Internal;
 
 namespace UnityEngine
@@ -236,11 +237,12 @@ namespace UnityEngine
         public uint rendererShaderUserValue { get; set; }
     }
 
-    public readonly struct SpriteParams
+    public struct SpriteParams
     {
         public SpriteParams(Sprite s)
         {
             sprite = s;
+            unifiedRenderData = null;
             color = Color.white;
             maskInteraction = SpriteMaskInteraction.None;
         }
@@ -248,13 +250,77 @@ namespace UnityEngine
         public SpriteParams(Sprite s, Color spriteColor, SpriteMaskInteraction mask = SpriteMaskInteraction.None)
         {
             sprite = s;
+            unifiedRenderData = null;
             color = spriteColor;
             maskInteraction = mask;
         }
 
+        internal SpriteParams(UnifiedRenderData data)
+        {
+            sprite = null;
+            unifiedRenderData = data;
+            color = Color.white;
+            maskInteraction = SpriteMaskInteraction.None;
+        }
+
+        // sprite and unifiedRenderData are mutually exclusive, so the constructor picks one.
+        // Declaration order is the native layout (Runtime/Graphics/SpriteParams.h); keep it.
         public Sprite sprite { get; }
-        public Color color { get; }
-        public SpriteMaskInteraction maskInteraction { get; }
+        internal UnifiedRenderData unifiedRenderData { get; }
+        public Color color { get; set; }
+        public SpriteMaskInteraction maskInteraction { get; set; }
+    }
+
+    internal struct UnifiedRenderDataInstancedDraw
+    {
+        public UnifiedRenderDataInstancedDraw(UnifiedRenderData renderData, Bounds worldBounds)
+            : this(renderData, worldBounds, -1)
+        {
+        }
+
+        public UnifiedRenderDataInstancedDraw(UnifiedRenderData renderData, Bounds worldBounds, int rangeIndex)
+        {
+            if (renderData == null)
+                throw new ArgumentNullException(nameof(renderData));
+            if (!renderData.isValid)
+                throw new InvalidOperationException("The UnifiedRenderData has been disposed.");
+            ValidateRangeIndex(rangeIndex);
+
+            m_RenderData = UnifiedRenderData.BindingsMarshaller.ConvertToNative(renderData);
+            m_WorldBounds = worldBounds;
+            m_RangeIndexPlusOne = rangeIndex + 1;
+        }
+
+        internal bool isCreated => m_RenderData != IntPtr.Zero;
+
+        public Bounds worldBounds
+        {
+            get { return m_WorldBounds; }
+            set { m_WorldBounds = value; }
+        }
+
+        // -1 draws every range of the render data. Stored biased by one so that a zero-initialised
+        // entry means that rather than silently selecting range 0.
+        public int rangeIndex
+        {
+            get { return m_RangeIndexPlusOne - 1; }
+            set
+            {
+                ValidateRangeIndex(value);
+                m_RangeIndexPlusOne = value + 1;
+            }
+        }
+
+        static void ValidateRangeIndex(int rangeIndex)
+        {
+            if (rangeIndex < -1)
+                throw new ArgumentOutOfRangeException(nameof(rangeIndex), rangeIndex, "rangeIndex must be -1 (all ranges) or a draw range index.");
+        }
+
+        // Native: ScriptingUnifiedRenderDataInstancedDraw
+        IntPtr m_RenderData;
+        Bounds m_WorldBounds;
+        int m_RangeIndexPlusOne;
     }
 
     internal readonly struct RenderInstancedDataLayout
@@ -743,7 +809,12 @@ namespace UnityEngine
         public static void RenderSprite(in RenderParams renderParams, in SpriteParams spriteParams, int submeshIndex, Matrix4x4 objectToWorld)
         {
             if (spriteParams.sprite == null)
-                throw new ArgumentNullException("sprite");
+                throw new ArgumentNullException(nameof(spriteParams.sprite));
+            if (renderParams.material == null)
+                throw new ArgumentNullException(nameof(renderParams.material));
+            if (submeshIndex < 0)
+                throw new ArgumentOutOfRangeException(nameof(submeshIndex), submeshIndex, "submeshIndex must not be negative.");
+            ValidateSpriteMaskInteraction(spriteParams.maskInteraction);
             if (!SortingLayer.IsValid(renderParams.sortingLayerID))
                 throw new InvalidOperationException("SortingLayerID is invalid.");
             Internal_RenderSprite(renderParams, spriteParams, submeshIndex, objectToWorld);
@@ -751,12 +822,21 @@ namespace UnityEngine
 
         public unsafe static void RenderSpriteInstanced<T>(in RenderParams renderParams, in SpriteParams spriteParams, int submeshIndex, T[] instanceData) where T : unmanaged
         {
+            if (spriteParams.sprite == null)
+                throw new ArgumentNullException(nameof(spriteParams.sprite));
+            if (renderParams.material == null)
+                throw new ArgumentNullException(nameof(renderParams.material));
+            if (submeshIndex < 0)
+                throw new ArgumentOutOfRangeException(nameof(submeshIndex), submeshIndex, "submeshIndex must not be negative.");
+            ValidateSpriteMaskInteraction(spriteParams.maskInteraction);
             if (!SystemInfo.supportsInstancing)
                 throw new InvalidOperationException("Instancing is not supported.");
             else if (!renderParams.material.enableInstancing)
                 throw new InvalidOperationException("Material needs to enable instancing for use with RenderSpriteInstanced.");
             else if (instanceData == null)
-                throw new ArgumentNullException("instanceData");
+                throw new ArgumentNullException(nameof(instanceData));
+            if (instanceData.Length > kMaxDrawMeshInstanceCount)
+                throw new ArgumentOutOfRangeException(nameof(instanceData), instanceData.Length, $"instanceData has {instanceData.Length} instances; the maximum is {kMaxDrawMeshInstanceCount}.");
             if (!SortingLayer.IsValid(renderParams.sortingLayerID))
                 throw new InvalidOperationException("SortingLayerID is invalid.");
             RenderSpriteInstancedDataLayout layout = GetCachedRenderSpriteInstancedDataLayout(typeof(T));
@@ -765,12 +845,21 @@ namespace UnityEngine
 
         public unsafe static void RenderSpriteInstanced<T>(in RenderParams renderParams, in SpriteParams spriteParams, int submeshIndex, List<T> instanceData) where T : unmanaged
         {
+            if (spriteParams.sprite == null)
+                throw new ArgumentNullException(nameof(spriteParams.sprite));
+            if (renderParams.material == null)
+                throw new ArgumentNullException(nameof(renderParams.material));
+            if (submeshIndex < 0)
+                throw new ArgumentOutOfRangeException(nameof(submeshIndex), submeshIndex, "submeshIndex must not be negative.");
+            ValidateSpriteMaskInteraction(spriteParams.maskInteraction);
             if (!SystemInfo.supportsInstancing)
                 throw new InvalidOperationException("Instancing is not supported.");
             else if (!renderParams.material.enableInstancing)
                 throw new InvalidOperationException("Material needs to enable instancing for use with RenderSpriteInstanced.");
             else if (instanceData == null)
-                throw new ArgumentNullException("instanceData");
+                throw new ArgumentNullException(nameof(instanceData));
+            if (instanceData.Count > kMaxDrawMeshInstanceCount)
+                throw new ArgumentOutOfRangeException(nameof(instanceData), instanceData.Count, $"instanceData has {instanceData.Count} instances; the maximum is {kMaxDrawMeshInstanceCount}.");
             if (!SortingLayer.IsValid(renderParams.sortingLayerID))
                 throw new InvalidOperationException("SortingLayerID is invalid.");
             RenderSpriteInstancedDataLayout layout = GetCachedRenderSpriteInstancedDataLayout(typeof(T));
@@ -779,12 +868,21 @@ namespace UnityEngine
 
         public unsafe static void RenderSpriteInstanced<T>(in RenderParams renderParams, in SpriteParams spriteParams, int submeshIndex, NativeArray<T> instanceData) where T : unmanaged
         {
+            if (spriteParams.sprite == null)
+                throw new ArgumentNullException(nameof(spriteParams.sprite));
+            if (renderParams.material == null)
+                throw new ArgumentNullException(nameof(renderParams.material));
+            if (submeshIndex < 0)
+                throw new ArgumentOutOfRangeException(nameof(submeshIndex), submeshIndex, "submeshIndex must not be negative.");
+            ValidateSpriteMaskInteraction(spriteParams.maskInteraction);
             if (!SystemInfo.supportsInstancing)
                 throw new InvalidOperationException("Instancing is not supported.");
             else if (!renderParams.material.enableInstancing)
                 throw new InvalidOperationException("Material needs to enable instancing for use with RenderSpriteInstanced.");
-            else if (instanceData == null)
-                throw new ArgumentNullException("instanceData");
+            else if (!instanceData.IsCreated)
+                throw new ArgumentException("The instanceData array has not been created.", nameof(instanceData));
+            if (instanceData.Length > kMaxDrawMeshInstanceCount)
+                throw new ArgumentOutOfRangeException(nameof(instanceData), instanceData.Length, $"instanceData has {instanceData.Length} instances; the maximum is {kMaxDrawMeshInstanceCount}.");
             if (!SortingLayer.IsValid(renderParams.sortingLayerID))
                 throw new InvalidOperationException("SortingLayerID is invalid.");
             RenderSpriteInstancedDataLayout layout = GetCachedRenderSpriteInstancedDataLayout(typeof(T));
@@ -793,16 +891,114 @@ namespace UnityEngine
 
         public unsafe static void RenderSpriteInstanced<T>(in RenderParams renderParams, in SpriteParams spriteParams, int submeshIndex, ReadOnlySpan<T> instanceData) where T : unmanaged
         {
+            if (spriteParams.sprite == null)
+                throw new ArgumentNullException(nameof(spriteParams.sprite));
+            if (renderParams.material == null)
+                throw new ArgumentNullException(nameof(renderParams.material));
+            if (submeshIndex < 0)
+                throw new ArgumentOutOfRangeException(nameof(submeshIndex), submeshIndex, "submeshIndex must not be negative.");
+            ValidateSpriteMaskInteraction(spriteParams.maskInteraction);
             if (!SystemInfo.supportsInstancing)
                 throw new InvalidOperationException("Instancing is not supported.");
             else if (!renderParams.material.enableInstancing)
                 throw new InvalidOperationException("Material needs to enable instancing for use with RenderSpriteInstanced.");
             else if (instanceData == null)
-                throw new ArgumentNullException("instanceData");
+                throw new ArgumentNullException(nameof(instanceData));
+            if (instanceData.Length > kMaxDrawMeshInstanceCount)
+                throw new ArgumentOutOfRangeException(nameof(instanceData), instanceData.Length, $"instanceData has {instanceData.Length} instances; the maximum is {kMaxDrawMeshInstanceCount}.");
             if (!SortingLayer.IsValid(renderParams.sortingLayerID))
                 throw new InvalidOperationException("SortingLayerID is invalid.");
             RenderSpriteInstancedDataLayout layout = GetCachedRenderSpriteInstancedDataLayout(typeof(T));
             fixed (T* data = instanceData) { Internal_RenderSpriteInstanced(renderParams, spriteParams, submeshIndex, (IntPtr)(data), layout, (uint)instanceData.Length); }
+        }
+
+        internal static void RenderUnifiedRenderData(in RenderParams renderParams, in SpriteParams spriteParams, Matrix4x4 objectToWorld)
+        {
+            ValidateUnifiedRenderData(spriteParams.unifiedRenderData, renderParams.material);
+            ValidateSpriteMaskInteraction(spriteParams.maskInteraction);
+
+            if (!SortingLayer.IsValid(renderParams.sortingLayerID))
+                throw new InvalidOperationException("SortingLayerID is invalid.");
+
+            Internal_RenderUnifiedData(renderParams, spriteParams, objectToWorld);
+        }
+
+        // Instanced RenderUnifiedRenderData: replays the draw ranges per transform; objectToWorld is copied every draw, so prefer SetEntityTransforms() and the no-array overload.
+        // instanceColors (gamma) must match the transform count if created; rangeIndex -1 draws all. Ranges are separate render nodes, so draw order is not preserved.
+        internal unsafe static void RenderUnifiedRenderDataInstanced(in RenderParams renderParams, in SpriteParams spriteParams, NativeArray<Matrix4x4> objectToWorld, [uei.DefaultValue("default")] NativeArray<Color> instanceColors = default, [uei.DefaultValue("-1")] int rangeIndex = -1)
+        {
+            ValidateUnifiedRenderData(spriteParams.unifiedRenderData, renderParams.material);
+            ValidateSpriteMaskInteraction(spriteParams.maskInteraction);
+
+            if (!objectToWorld.IsCreated)
+                throw new ArgumentException("The objectToWorld array has not been created.", nameof(objectToWorld));
+            if (objectToWorld.Length == 0)
+                throw new ArgumentException("The objectToWorld array is empty; an instanced draw needs at least one transform.", nameof(objectToWorld));
+            if (objectToWorld.Length > kMaxDrawMeshInstanceCount)
+                throw new ArgumentOutOfRangeException(nameof(objectToWorld), objectToWorld.Length, $"The objectToWorld array has {objectToWorld.Length} transforms; the maximum is {kMaxDrawMeshInstanceCount}.");
+            if (instanceColors.IsCreated && instanceColors.Length != objectToWorld.Length)
+                throw new ArgumentException($"The instanceColors array has {instanceColors.Length} elements but there are {objectToWorld.Length} transforms; it must have one colour per instance.", nameof(instanceColors));
+            if (rangeIndex < -1)
+                throw new ArgumentOutOfRangeException(nameof(rangeIndex), rangeIndex, "rangeIndex must be -1 (all ranges) or a valid draw range index.");
+            if (rangeIndex >= spriteParams.unifiedRenderData.drawRangeCount)
+                throw new ArgumentOutOfRangeException(nameof(rangeIndex), rangeIndex, $"There are only {spriteParams.unifiedRenderData.drawRangeCount} draw ranges.");
+            if (!SystemInfo.supportsInstancing)
+                throw new InvalidOperationException("Instancing is not supported.");
+            else if (!renderParams.material.enableInstancing)
+                throw new InvalidOperationException("Material needs to enable instancing for use with RenderUnifiedRenderDataInstanced.");
+            if (!SortingLayer.IsValid(renderParams.sortingLayerID))
+                throw new InvalidOperationException("SortingLayerID is invalid.");
+
+            // An uncreated array has no pointer to take; null is how native reads "no per-instance
+            // colours", so the two states line up without a separate flag.
+            void* colors = instanceColors.IsCreated ? instanceColors.GetUnsafeReadOnlyPtr() : null;
+            Internal_RenderUnifiedDataInstanced(renderParams, spriteParams, objectToWorld.GetUnsafeReadOnlyPtr(), colors, objectToWorld.Length, rangeIndex);
+        }
+
+        // Draws the per-instance data stored on the render data, avoiding a per-draw copy; each range uses its entry's instance count, none without transforms.
+        // rangeIndex -1 draws all ranges; ordering between ranges is not preserved, as in the overload above.
+        internal unsafe static int RenderUnifiedRenderDataInstanced(in RenderParams renderParams, in SpriteParams spriteParams, NativeArray<UnifiedRenderDataInstancedDraw> draws)
+        {
+            if (!draws.IsCreated)
+                throw new ArgumentException("The draws array has not been created.", nameof(draws));
+            for (int i = 0; i < draws.Length; ++i)
+            {
+                if (!draws[i].isCreated)
+                    throw new ArgumentException($"The draws array entry {i} has no UnifiedRenderData; build entries with the UnifiedRenderDataInstancedDraw constructor.", nameof(draws));
+            }
+            if (renderParams.material == null)
+                throw new ArgumentNullException(nameof(renderParams.material));
+            ValidateSpriteMaskInteraction(spriteParams.maskInteraction);
+            if (!SystemInfo.supportsInstancing)
+                throw new InvalidOperationException("Instancing is not supported.");
+            else if (!renderParams.material.enableInstancing)
+                throw new InvalidOperationException("Material needs to enable instancing for use with RenderUnifiedRenderDataInstanced.");
+            if (!SortingLayer.IsValid(renderParams.sortingLayerID))
+                throw new InvalidOperationException("SortingLayerID is invalid.");
+
+            if (draws.Length == 0)
+                return 0;
+
+            return Internal_RenderUnifiedDataInstancedBatch(renderParams, spriteParams, draws.GetUnsafeReadOnlyPtr(), draws.Length);
+        }
+
+        // Shared by the single-render-data entry points. There are no managed arrays left to
+        // bounds-check -- the handle IS the native geometry -- so this only rejects what managed code
+        // can get wrong before the call.
+        internal static void ValidateUnifiedRenderData(UnifiedRenderData data, Material material)
+        {
+            if (data == null)
+                throw new ArgumentNullException(nameof(data));
+            if (material == null)
+                throw new ArgumentNullException(nameof(material));
+            if (!data.isValid)
+                throw new InvalidOperationException("The UnifiedRenderData has been disposed.");
+        }
+
+        static void ValidateSpriteMaskInteraction(SpriteMaskInteraction maskInteraction)
+        {
+            if (maskInteraction < SpriteMaskInteraction.None || maskInteraction > SpriteMaskInteraction.VisibleOutsideMask)
+                throw new ArgumentOutOfRangeException(nameof(SpriteParams.maskInteraction), maskInteraction, "maskInteraction is not a defined SpriteMaskInteraction value.");
         }
 
         public static void DrawMeshNow(Mesh mesh, Vector3 position, Quaternion rotation, int materialIndex)

@@ -43,8 +43,6 @@ namespace Unity.Entities
 
         internal static class Managed
         {
-            public static bool _initialized = false;
-
             public delegate void _dlg_ResetFilter(IntPtr self);
             public static object _gcDefeat_ResetFilter;
             public delegate void _dlg_FreeCachedState(IntPtr self);
@@ -59,9 +57,8 @@ namespace Unity.Entities
         [ExcludeFromBurstCompatTesting("Uses managed delegates")]
         internal static void Initialize()
         {
-            if (Managed._initialized)
+            if (_bfp_ResetFilter.Data != IntPtr.Zero)
                 return;
-            Managed._initialized = true;
         {
             Managed._dlg_ResetFilter delegateObject = _wrapper_ResetFilter;
             Managed._gcDefeat_ResetFilter = delegateObject;

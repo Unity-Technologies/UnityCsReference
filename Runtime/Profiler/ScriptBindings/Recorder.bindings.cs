@@ -16,6 +16,7 @@ using Unity.Scripting.LifecycleManagement;
 namespace UnityEngine.Profiling
 {
     [UsedByNativeCode]
+    [Obsolete("Use Unity.Profiling.ProfilerRecorder instead.", false)]
     public sealed class Recorder
     {
         const ProfilerRecorderOptions s_RecorderDefaultOptions =

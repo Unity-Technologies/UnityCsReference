@@ -485,7 +485,7 @@ namespace UnityEditor.Search
         /// <summary>
         /// Search context finalizer.
         /// </summary>
-#pragma warning disable UA5000 // The Avoid Finalizer Analyzer produces compile errors for any new finalizers. This pre-existing finalizer declaration has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA5000 // Dispose(false) only sets a flag, but this public unsealed class has a protected virtual Dispose(bool) that external code may override.
         ~SearchContext()
         {
             Dispose(false);
@@ -660,7 +660,11 @@ namespace UnityEditor.Search
             {
                 // EndSession() does main-thread-only managed work; never run it on the finalizer thread.
                 if (disposing)
+                {
+                    // A session requested from another thread is started later on the main thread, so it must not start once disposed
+                    session.Close();
                     EndSession();
+                }
                 m_Disposed = true;
             }
         }

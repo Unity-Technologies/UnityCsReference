@@ -135,6 +135,7 @@ namespace UnityEditor.UIElements
             }
 
             Init(editors);
+            AddToClassList("editor-element-inspector");
         }
 
         void InitCulled(Editor[] editors)
@@ -168,13 +169,6 @@ namespace UnityEditor.UIElements
 
             Add(m_Header);
             Add(m_Footer);
-
-            // For GameObjects we want to ensure the first component's title bar is flush with the header,
-            // so we apply a small offset to the margin. (UUM-16138)
-            if (m_EditorTarget is GameObject)
-            {
-                AddToClassList("game-object-inspector");
-            }
 
             if (InspectorElement.disabledThrottling)
                 CreateInspectorElement();

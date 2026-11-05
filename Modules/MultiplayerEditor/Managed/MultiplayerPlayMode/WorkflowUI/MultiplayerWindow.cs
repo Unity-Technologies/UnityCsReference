@@ -197,6 +197,10 @@ namespace Unity.Multiplayer.PlayMode.Editor
                 }
                 IsVirtualProjectWorkflowInitialized = true;
                 EnsureRuntimeHooksRegistered();
+                // PlayerTags is recreated on every initialization (MultiplayerPlaymode.Reinitialize), including
+                // when MPPM is re-enabled from Preferences, so subscribe to the current instance each time.
+                MultiplayerPlaymode.PlayerTags.OnUpdated -= OnPlayerTagsUpdated;
+                MultiplayerPlaymode.PlayerTags.OnUpdated += OnPlayerTagsUpdated;
                 RefreshAllWindows();
             };
             VirtualProjectWorkflow.OnDisabled += isMainEditor =>
@@ -207,14 +211,23 @@ namespace Unity.Multiplayer.PlayMode.Editor
                     return;
                 }
                 IsVirtualProjectWorkflowInitialized = false;
+                if (MultiplayerPlaymode.PlayerTags != null)
+                {
+                    MultiplayerPlaymode.PlayerTags.OnUpdated -= OnPlayerTagsUpdated;
+                }
                 s_MultiplayerWindow = null;
                 APIModelToViewMapping.Clear();
                 RefreshAllWindows();
             };
         }
 
-        // Registered lazily rather than in the static ctor: some of these (e.g. MultiplayerPlaymode.PlayerTags)
-        // are only valid once the workflow is initialized.
+        static void OnPlayerTagsUpdated()
+        {
+            ShouldUpdateUI = true;
+        }
+
+        // Registered lazily rather than in the static ctor, once per code load. Hooks on objects recreated
+        // per initialization (e.g. MultiplayerPlaymode.PlayerTags) are subscribed in InitializeOnLoad instead.
         static void EnsureRuntimeHooksRegistered()
         {
             if (s_RuntimeHooksRegistered)
@@ -225,7 +238,6 @@ namespace Unity.Multiplayer.PlayMode.Editor
             EditorSceneManager.activeSceneChangedInEditMode += OnSceneChanged;
             UnityEditor.Compilation.CompilationPipeline.assemblyCompilationFinished += (_, _) => { ShouldUpdateUI = true; };
             EditorApplication.playModeStateChanged += _ => { ShouldUpdateUI = true; };
-            MultiplayerPlaymode.PlayerTags.OnUpdated += () => { ShouldUpdateUI = true; };
             EditorMultiplayerManager.activeMultiplayerRoleChanged += () => { ShouldUpdateUI = true; };
             EditorMultiplayerManager.enableMultiplayerRolesChanged += () => { ShouldUpdateUI = true; };
 

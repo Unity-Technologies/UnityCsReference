@@ -162,7 +162,7 @@ namespace UnityEngine.Profiling
 
         // Begin profiling a piece of code with a custom label.
         // TODO: make obsolete
-        //OBSOLETE warning Profiler.BeginSample method is deprecated. Please use faster CustomSampler.Begin method instead.
+        //OBSOLETE warning Profiler.BeginSample method is deprecated. Please use faster ProfilerMarker.Begin method instead.
         [MethodImpl(256)]
         [Conditional("ENABLE_PROFILER")]
         public static void BeginSample(string name)
@@ -173,7 +173,7 @@ namespace UnityEngine.Profiling
 
         // Begin profiling a piece of code with a custom label.
         // TODO: make obsolete
-        //OBSOLETE warning Profiler.BeginSample method is deprecated. Please use faster CustomSampler.Begin method instead.
+        //OBSOLETE warning Profiler.BeginSample method is deprecated. Please use faster ProfilerMarker.Begin method instead.
         [MethodImpl(256)]
         [Conditional("ENABLE_PROFILER")]
         public static void BeginSample(string name, Object targetObject)
@@ -196,7 +196,7 @@ namespace UnityEngine.Profiling
 
         // End profiling a piece of code with a custom label.
         // TODO: make obsolete
-        //OBSOLETE warning Profiler.EndSample method is deprecated. Please use faster CustomSampler.End method instead.
+        //OBSOLETE warning Profiler.EndSample method is deprecated. Please use faster ProfilerMarker.End method instead.
         [Conditional("ENABLE_PROFILER")]
         [NativeMethod(Name = "ProfilerBindings::EndSample", IsFreeFunction = true, IsThreadSafe = true)]
         public extern static void EndSample();
@@ -324,11 +324,11 @@ namespace UnityEngine.Profiling
                 throw new ArgumentNullException("data");
 
             var elementType = data.GetType().GetElementType();
-            if (!UnsafeUtility.IsBlittable(elementType))
-                throw new ArgumentException(string.Format("{0} type must be blittable", elementType));
+            if (!UnsafeUtility.IsUnmanaged(elementType))
+                throw new ArgumentException(string.Format("{0} type must be unmanaged", elementType));
 
             var elemSize = UnsafeUtility.SizeOf(elementType);
-            int dataLen = data.Length; 
+            int dataLen = data.Length;
             Internal_EmitGlobalMetaData_Span(&id, 16, tag, UnsafeUtility.GetByteSpanFromArray(data, dataLen, elemSize), dataLen, elemSize, true);
         }
 
@@ -339,8 +339,8 @@ namespace UnityEngine.Profiling
                 throw new ArgumentNullException("data");
 
             var elementType = typeof(T);
-            if (!UnsafeUtility.IsBlittable(typeof(T)))
-                throw new ArgumentException(string.Format("{0} type must be blittable", elementType));
+            if (!UnsafeUtility.IsUnmanaged(typeof(T)))
+                throw new ArgumentException(string.Format("{0} type must be unmanaged", elementType));
 
             Internal_EmitGlobalMetaData_Span(&id, 16, tag, UnsafeUtility.GetByteSpanFromList(data), data.Count, UnsafeUtility.SizeOf(elementType), true);
         }
@@ -368,8 +368,8 @@ namespace UnityEngine.Profiling
                 throw new ArgumentNullException("data");
 
             var elementType = data.GetType().GetElementType();
-            if (!UnsafeUtility.IsBlittable(elementType))
-                throw new ArgumentException(string.Format("{0} type must be blittable", elementType));
+            if (!UnsafeUtility.IsUnmanaged(elementType))
+                throw new ArgumentException(string.Format("{0} type must be unmanaged", elementType));
 
             var elemSize = UnsafeUtility.SizeOf(elementType);
             int dataLen = data.Length;
@@ -383,8 +383,8 @@ namespace UnityEngine.Profiling
                 throw new ArgumentNullException("data");
 
             var elementType = typeof(T);
-            if (!UnsafeUtility.IsBlittable(typeof(T)))
-                throw new ArgumentException(string.Format("{0} type must be blittable", elementType));
+            if (!UnsafeUtility.IsUnmanaged(typeof(T)))
+                throw new ArgumentException(string.Format("{0} type must be unmanaged", elementType));
 
             Internal_EmitGlobalMetaData_Span(&id, 16, tag, UnsafeUtility.GetByteSpanFromList(data), data.Count, UnsafeUtility.SizeOf(elementType), false);
         }

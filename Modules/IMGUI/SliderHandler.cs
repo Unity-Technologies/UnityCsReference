@@ -37,7 +37,7 @@ namespace UnityEngine
         [AutoStaticsCleanupOnCodeReload]
         private static Dictionary<string, GUIStyle> s_SliderTrackStyleCache = new();
 
-        static GUIStyle GetTrackStyle(GUIStyle style)
+        public static GUIStyle GetTrackStyle(GUIStyle style)
         {
             if (style == null)
                 return null;

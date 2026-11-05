@@ -536,7 +536,7 @@ namespace UnityEngine.UIElements
 
         protected BaseVisualElementPanel()
         {
-            OnCursorPositonChanged = SetCompositionCursorPos;
+            OnCaretRectChanged = SetCompositionCaretRect;
             layoutConfig = LayoutManager.SharedManager.CreateConfig();
             layoutConfig.Measure = VisualElement.Measure;
             PanelsByHandle[layoutConfig.Handle] = this;
@@ -980,13 +980,18 @@ namespace UnityEngine.UIElements
 
         // Elements attached under the previous flatness were never versioned for it. Roots get a version bump
         // (repaint + Needs3DBounds propagation); descendants get their 3D bounds flags set directly, because the
-        // downward pass drops a flag at the first node already carrying it. Barriers are over-dirtied on purpose.
+        // downward pass drops a flag at the first node already carrying it: InCurvedSubtree when going curved,
+        // Needs3DBounds when going flat. Barriers are over-dirtied on purpose.
         void RefreshCurvedElements(bool markPanelCurved)
         {
-            const VisualElementTransformFlags k_Subtree3DBoundsFlags =
-                VisualElementTransformFlags.Needs3DBounds |
+            const VisualElementTransformFlags k_Bounds3DDirtyFlags =
                 VisualElementTransformFlags.LocalBounds3DDirty |
                 VisualElementTransformFlags.LocalBoundsWithoutNested3DDirty;
+
+            // Nothing bends on a flat panel, and removal there keeps the flags, so InCurvedSubtree must not survive.
+            var subtreeFlags = k_Bounds3DDirtyFlags | (markPanelCurved
+                ? VisualElementTransformFlags.InCurvedSubtree
+                : VisualElementTransformFlags.Needs3DBounds);
 
             var root = visualTree;
             if (root == null)
@@ -1014,8 +1019,10 @@ namespace UnityEngine.UIElements
                         underCurvedRoot = true;
                     }
 
+                    if (!markPanelCurved)
+                        ve.transformFlags &= ~VisualElementTransformFlags.InCurvedSubtree;
                     if (underCurvedRoot)
-                        ve.transformFlags |= k_Subtree3DBoundsFlags;
+                        ve.transformFlags |= subtreeFlags;
 
                     var hierarchy = ve.hierarchy;
                     for (int i = 0, count = hierarchy.childCount; i < count; ++i)
@@ -1035,6 +1042,10 @@ namespace UnityEngine.UIElements
             [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
             get => m_DrawsInCameras;
         }
+
+        // The panel still updates and runs its IMGUIContainers on repaint, but submits nothing to the GPU.
+        // Takes effect at the next repaint so that the update and the render of a frame agree.
+        internal bool skipRendering { get; set; }
 
         internal void SetSpecializedHierarchyFlagsUpdater()
         {
@@ -1176,27 +1187,27 @@ namespace UnityEngine.UIElements
             Input.imeCompositionMode = isEnteringText ? IMECompositionMode.On : IMECompositionMode.Auto;
         };
 
-        internal void OnCursorPositonChanged_internal(Vector2 CursorPostion)
+        internal void OnCaretRectChanged_internal(Rect caretRect)
         {
-            OnCursorPositonChanged.Invoke(CursorPostion);
+            OnCaretRectChanged.Invoke(caretRect);
         }
 
         /// <summary>
-        /// Caret position of the focused text input, in panel coordinates. Refreshed on every caret repaint so the OS
-        /// can place IME candidate windows and the character palette before any composition starts.
+        /// Caret rect of the focused text input, in panel coordinates, with the line height. Refreshed on every caret
+        /// repaint so the OS can place IME candidate windows and the character palette before any composition starts.
         /// </summary>
-        internal Action<Vector2> OnCursorPositonChanged;
+        internal Action<Rect> OnCaretRectChanged;
 
-        void SetCompositionCursorPos(Vector2 panelPosition)
+        void SetCompositionCaretRect(Rect panelCaretRect)
         {
-            if (TryGetCompositionCursorPos(panelPosition, out var screenPosition))
-                Input.compositionCursorPos = screenPosition;
+            if (TryGetCompositionCaretRect(panelCaretRect, out var screenCaretRect))
+                Input.compositionCursorPos = new Vector2(screenCaretRect.xMin, screenCaretRect.yMax);
         }
 
         // Editor panels live in a view whose points are the panel coordinates.
-        internal virtual bool TryGetCompositionCursorPos(Vector2 panelPosition, out Vector2 screenPosition)
+        internal virtual bool TryGetCompositionCaretRect(Rect panelCaretRect, out Rect screenCaretRect)
         {
-            screenPosition = panelPosition;
+            screenCaretRect = panelCaretRect;
             return true;
         }
 
@@ -1256,6 +1267,8 @@ namespace UnityEngine.UIElements
         // across multiple swaps within a frame and are flushed by EmitProfilerPanelUpdateMetrics in Render.
         private uint m_PendingHierarchyVersionChanges = 0;
         private uint m_PendingRepaintVersionChanges = 0;
+
+        internal bool isRepainting { get; private set; }
 
         ProfilerMarker m_MarkerPrepareRepaint;
         ProfilerMarker m_MarkerRender;
@@ -1714,7 +1727,9 @@ namespace UnityEngine.UIElements
             return PickAll(root, point);
         }
 
-        // For tests only.
+        // For tests, and for the UI Viewport and the Scene view's UI Preview overlay, which pick elements that ignore picking
+        // too, as UI Builder does (UUM-157821).
+        [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
         internal static VisualElement PickAll(VisualElement root, Vector2 point, List<VisualElement> picked = null, bool includeIgnoredElement = false)
         {
             using var _ = s_MarkerPickAll.Auto(((BaseVisualElementPanel)root.panel)?.ownerObject);
@@ -1733,7 +1748,7 @@ namespace UnityEngine.UIElements
             // See for instance VisualContainerTests.ElementUnderPointWithScrolledElementUnderReturnsTrue
             var localPoint = root.WorldToLocal3D(point);
 
-            var handle = NativeTransformUtils.PerformPick(root.layoutNode.Handle, localPoint, includeIgnoredElement, &buffer);
+            var handle = NativeTransformUtils.PerformPick(root.layoutNode.Handle, localPoint, includeIgnoredElement, true, &buffer);
             if (handle.IsUndefined)
                 return null;
 
@@ -1982,11 +1997,23 @@ namespace UnityEngine.UIElements
 
             using (m_MarkerPrepareRepaint.Auto())
             {
-                UpdateForRepaint();
+                isRepainting = true;
+                try
+                {
+                    UpdateForRepaint();
+                }
+                finally
+                {
+                    isRepainting = false;
+                }
             }
 
             panelDebug?.Refresh();
-            (panelDebug?.debuggerOverlayPanel as Panel)?.Repaint();
+            if (panelDebug?.debuggerOverlayPanel is Panel overlayPanel)
+            {
+                overlayPanel.skipRendering = skipRendering;
+                overlayPanel.Repaint();
+            }
             afterRepaint?.Invoke(this);
         }
 
@@ -2154,9 +2181,9 @@ namespace UnityEngine.UIElements
         internal int targetDisplay { get; set;}
 
         // Top-left screen pixels, the same convention uGUI writes. Texture, world-space and custom-mapped panels have no inverse.
-        internal override bool TryGetCompositionCursorPos(Vector2 panelPosition, out Vector2 screenPosition)
+        internal override bool TryGetCompositionCaretRect(Rect panelCaretRect, out Rect screenCaretRect)
         {
-            screenPosition = panelPosition * scale;
+            screenCaretRect = new Rect(panelCaretRect.position * scale, panelCaretRect.size * scale);
             return targetTexture == null && !drawsInCameras && screenToPanelSpace == DefaultScreenToPanelSpace;
         }
 

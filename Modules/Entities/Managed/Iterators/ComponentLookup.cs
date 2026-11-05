@@ -111,7 +111,7 @@ namespace Unity.Entities
         {
             AtomicSafetyHandle.CheckReadAndThrow(m_Safety);
             var ecs = m_Access->EntityComponentStore;
-            return ecs->Exists(entity);
+            return ecs->ExistsInThisWorld(entity);
         }
 
         /// <summary>
@@ -136,7 +136,9 @@ namespace Unity.Entities
         {
             AtomicSafetyHandle.CheckReadAndThrow(m_Safety);
             var ecs = m_Access->EntityComponentStore;
-            return ecs->HasComponent(entity, m_TypeIndex, ref m_Cache, out entityExists);
+            var archetype = ecs->GetArchetypeInThisWorldOrNull(entity, out _);
+            entityExists = archetype != null;
+            return entityExists && EntityComponentStore.HasComponent(archetype, m_TypeIndex, ref m_Cache);
         }
 
         /// <summary>
@@ -149,8 +151,9 @@ namespace Unity.Entities
         public bool HasComponent(SystemHandle system)
         {
             AtomicSafetyHandle.CheckReadAndThrow(m_Safety);
-            var ecs = m_Access->EntityComponentStore;
-            return ecs->HasComponent(system.m_Entity, m_TypeIndex, ref m_Cache, out _);
+            m_Access->EntityComponentStore->ValidateEntity(system.m_Entity);
+            var archetype = EntityComponentStore.GetArchetypeOrNull(system.m_Entity, out _);
+            return archetype != null && EntityComponentStore.HasComponent(archetype, m_TypeIndex, ref m_Cache);
         }
 
         /// <summary>
@@ -166,20 +169,20 @@ namespace Unity.Entities
         {
             AtomicSafetyHandle.CheckReadAndThrow(m_Safety);
             var ecs = m_Access->EntityComponentStore;
-
+            var archetype = ecs->GetArchetypeInThisWorldOrNull(entity, out var entityInChunk);
+            entityExists = archetype != null;
             if (m_IsZeroSized != 0)
             {
                 componentData = default;
-                return ecs->HasComponent(entity, m_TypeIndex, ref m_Cache, out entityExists);
+                return entityExists && EntityComponentStore.HasComponent(archetype, m_TypeIndex, ref m_Cache);
             }
 
-            entityExists = ecs->Exists(entity);
             if (Hint.Unlikely(!entityExists))
             {
                 componentData = default;
                 return false;
             }
-            void* ptr = ecs->GetOptionalComponentDataWithTypeRO(entity, m_TypeIndex, ref m_Cache);
+            void* ptr = ChunkDataUtility.GetOptionalComponentDataWithTypeRO(entityInChunk.Chunk, archetype, entityInChunk.IndexInChunk, m_TypeIndex, ref m_Cache);
             if (ptr == null)
             {
                 componentData = default;
@@ -246,6 +249,7 @@ namespace Unity.Entities
             {
                 AtomicSafetyHandle.CheckReadAndThrow(m_Safety);
                 var ecs = m_Access->EntityComponentStore;
+                ecs->AssertEntityBelongsToThisWorld(entity);
                 ecs->AssertEntityHasComponent(entity, m_TypeIndex, ref m_Cache);
 
                 if (m_IsZeroSized != 0)
@@ -260,6 +264,7 @@ namespace Unity.Entities
             {
                 AtomicSafetyHandle.CheckWriteAndThrow(m_Safety);
                 var ecs = m_Access->EntityComponentStore;
+                ecs->AssertEntityBelongsToThisWorld(entity);
                 ecs->AssertEntityHasComponent(entity, m_TypeIndex, ref m_Cache);
 
                 if (m_IsZeroSized != 0)
@@ -303,6 +308,7 @@ namespace Unity.Entities
         public bool IsComponentEnabled(Entity entity)
         {
             AtomicSafetyHandle.CheckReadAndThrow(m_Safety);
+            m_Access->EntityComponentStore->AssertEntityBelongsToThisWorld(entity);
             return m_Access->IsComponentEnabled(entity, m_TypeIndex, ref m_Cache);
         }
 
@@ -350,6 +356,7 @@ namespace Unity.Entities
         public void SetComponentEnabled(Entity entity, bool value)
         {
             AtomicSafetyHandle.CheckWriteAndThrow(m_Safety);
+            m_Access->EntityComponentStore->AssertEntityBelongsToThisWorld(entity);
             m_Access->SetComponentEnabled(entity, m_TypeIndex, value, ref m_Cache);
         }
 
@@ -383,6 +390,7 @@ namespace Unity.Entities
         {
             AtomicSafetyHandle.CheckWriteAndThrow(m_Safety);
             var ecs = m_Access->EntityComponentStore;
+            ecs->AssertEntityBelongsToThisWorld(entity);
             ecs->AssertEntityHasComponent(entity, m_TypeIndex, ref m_Cache);
 
             if (m_IsZeroSized != 0)
@@ -403,6 +411,7 @@ namespace Unity.Entities
         {
             AtomicSafetyHandle.CheckReadAndThrow(m_Safety);
             var ecs = m_Access->EntityComponentStore;
+            ecs->AssertEntityBelongsToThisWorld(entity);
             ecs->AssertEntityHasComponent(entity, m_TypeIndex, ref m_Cache);
 
             if (m_IsZeroSized != 0)
@@ -427,12 +436,13 @@ namespace Unity.Entities
         {
             AtomicSafetyHandle.CheckReadAndThrow(m_Safety);
             var ecs = m_Access->EntityComponentStore;
-            if (Hint.Unlikely(!ecs->Exists(entity)))
+            var archetype = ecs->GetArchetypeInThisWorldOrNull(entity, out var entityInChunk);
+            if (Hint.Unlikely(archetype == null))
             {
                 outRef = default;
                 return false;
             }
-            void *ptr = ecs->GetOptionalComponentDataWithTypeRO(entity, m_TypeIndex, ref m_Cache);
+            void *ptr = ChunkDataUtility.GetOptionalComponentDataWithTypeRO(entityInChunk.Chunk, archetype, entityInChunk.IndexInChunk, m_TypeIndex, ref m_Cache);
             if (ptr == null)
             {
                 outRef = default;
@@ -465,12 +475,13 @@ namespace Unity.Entities
         {
             AtomicSafetyHandle.CheckReadAndThrow(m_Safety);
             var ecs = m_Access->EntityComponentStore;
-            if (Hint.Unlikely(!ecs->Exists(entity)))
+            var archetype = ecs->GetArchetypeInThisWorldOrNull(entity, out var entityInChunk);
+            if (Hint.Unlikely(archetype == null))
             {
                 outRef = default;
                 return false;
             }
-            void *ptr = ecs->GetOptionalComponentDataWithTypeRW(entity, m_TypeIndex, m_GlobalSystemVersion, ref m_Cache);
+            void *ptr = ChunkDataUtility.GetOptionalComponentDataWithTypeRW(entityInChunk.Chunk, archetype, entityInChunk.IndexInChunk, m_TypeIndex, m_GlobalSystemVersion, ref m_Cache);
             if (ptr == null)
             {
                 outRef = default;
@@ -528,6 +539,7 @@ namespace Unity.Entities
         {
             AtomicSafetyHandle.CheckWriteAndThrow(m_Safety);
             var ecs = m_Access->EntityComponentStore;
+            ecs->AssertEntityBelongsToThisWorld(entity);
             ecs->AssertEntityHasComponent(entity, m_TypeIndex, ref m_Cache);
 
             int indexInBitField;
@@ -553,6 +565,7 @@ namespace Unity.Entities
                 return new EnabledRefRW<T2>(default, default);
 
             var ecs = m_Access->EntityComponentStore;
+            ecs->AssertEntityBelongsToThisWorld(entity);
             ecs->AssertEntityHasComponent(entity, m_TypeIndex, ref m_Cache);
 
             var ptr = ecs->GetEnabledRawRW(entity, m_TypeIndex, ref m_Cache, m_GlobalSystemVersion,
@@ -583,6 +596,7 @@ namespace Unity.Entities
         {
             AtomicSafetyHandle.CheckReadAndThrow(m_Safety);
             var ecs = m_Access->EntityComponentStore;
+            ecs->AssertEntityBelongsToThisWorld(entity);
             ecs->AssertEntityHasComponent(entity, m_TypeIndex, ref m_Cache);
             int indexInBitField;
             var ptr = ecs->GetEnabledRawRO(entity, m_TypeIndex, ref m_Cache, out indexInBitField, out _);
@@ -604,6 +618,7 @@ namespace Unity.Entities
                 return new EnabledRefRO<T2>(default);
 
             var ecs = m_Access->EntityComponentStore;
+            ecs->AssertEntityBelongsToThisWorld(entity);
             ecs->AssertEntityHasComponent(entity, m_TypeIndex, ref m_Cache);
             int indexInBitField;
             var ptr = ecs->GetEnabledRawRO(entity, m_TypeIndex, ref m_Cache, out indexInBitField, out _);

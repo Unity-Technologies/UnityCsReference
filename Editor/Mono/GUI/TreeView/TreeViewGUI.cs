@@ -79,6 +79,8 @@ namespace UnityEditor.IMGUI.Controls
             public static GUIStyle selectionStyle = "TV Selection";
             [NoAutoStaticsCleanup] // GUIContent icon by fixed name; reassigned in derived DoIconAndName so cannot be readonly. public, safe to persist
             public static GUIContent content = new GUIContent(EditorGUIUtility.FindTexture(EditorResources.folderIconName));
+            [NoAutoStaticsCleanup] // GUIStyle from named skin style; survives reload
+            public static readonly GUIStyle border = "TreeView Border";
         }
 
         private GUIStyle m_FoldoutStyle;

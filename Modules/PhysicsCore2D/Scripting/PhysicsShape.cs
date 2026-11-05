@@ -5,11 +5,13 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
 using Unity.Collections;
 using UnityEngine;
+using UnityEngine.Internal;
 using UnityEngine.Scripting.APIUpdating;
 using UnityEngine.Serialization;
 using static Unity.U2D.Physics.Scripting2D;
@@ -633,6 +635,9 @@ namespace Unity.U2D.Physics
         /// The mode used for the <see cref="PhysicsShape.ContactFilter"/> when determining if two <see cref="PhysicsShape"/> can contact.
         /// See <see cref="PhysicsCoreSettings2D.contactFilterMode"/>.
         /// </summary>
+        /// <remarks>
+        /// This is the project-wide mode. A world can use its own mode instead, set with <see cref="PhysicsWorldDefinition.contactFilterModeOverride"/> or <see cref="PhysicsWorld.contactFilterModeOverride"/>.
+        /// </remarks>
         public enum ContactFilterMode
         {
             /// <summary>
@@ -653,6 +658,10 @@ namespace Unity.U2D.Physics
         /// <summary>
         /// The mode used to determine how <see cref="PhysicsShape.ContactFilter.groupIndex"/> is used.
         /// </summary>
+        /// <remarks>
+        /// This is the project-wide mode, set with <see cref="PhysicsCoreSettings2D.contactFilterGroupMode"/>.
+        /// A world can use its own mode instead, set with <see cref="PhysicsWorldDefinition.contactFilterGroupModeOverride"/> or <see cref="PhysicsWorld.contactFilterGroupModeOverride"/>.
+        /// </remarks>
         public enum ContactFilterGroupMode
         {
             /// <summary>
@@ -667,18 +676,144 @@ namespace Unity.U2D.Physics
             ///- If both shapes have an identical and positive group then they will always produce a contact.
             ///- If both shapes have an identical and negative group then they will never produce a contact.
             /// </summary>
-            Group,
+            Group = 0,
 
             /// <summary>
-            /// In this mode, the <see cref="PhysicsShape.ContactFilter.groupIndex"/> is used to filter if contacts are allowed to be created by the <see cref="PhysicsShape.ContactFilter.categories"/> and <see cref="PhysicsShape.ContactFilter.contacts"/> masks.
-            /// 
+            /// In this mode, the <see cref="PhysicsShape.ContactFilter.groupIndex"/> isolates shapes into separate groups, and only shapes in the same group can make contact, as decided by the <see cref="PhysicsShape.ContactFilter.categories"/> and <see cref="PhysicsShape.ContactFilter.contacts"/> masks.
+            ///
             /// The rules for two shapes coming into contact are:
             ///
             ///- If both shapes have an identical group then the <see cref="PhysicsShape.ContactFilter.categories"/> and <see cref="PhysicsShape.ContactFilter.contacts"/> masks are used.
             ///- If both shapes have a different group then they will never produce a contact irrelevant of the <see cref="PhysicsShape.ContactFilter.categories"/> and <see cref="PhysicsShape.ContactFilter.contacts"/> mask configuration.
             ///- A group of zero is used like any other group but is also the default therefore if unchanged, the <see cref="PhysicsShape.ContactFilter.categories"/> and <see cref="PhysicsShape.ContactFilter.contacts"/> masks are used by default.
             /// </summary>
-            Filtering
+            Isolate = 1,
+
+            [ExcludeFromDocs]
+            [EditorBrowsable(EditorBrowsableState.Never)]
+            [Obsolete("PhysicsShape.ContactFilterGroupMode.Filtering is deprecated, please use PhysicsShape.ContactFilterGroupMode.Isolate instead. (UnityUpgradable) -> Isolate", false)]
+            Filtering = Isolate
+        }
+
+        /// <summary>
+        /// Options for whether one world uses the project-wide contact filter mode or its own.
+        /// The contact filter mode decides whether two shapes need both of their contact filters to accept each other before they make contact, or only one.
+        /// Each world can use its own mode, so worlds with different filtering rules can run side by side.
+        /// </summary>
+        /// <remarks>
+        /// Set this with <see cref="PhysicsWorldDefinition.contactFilterModeOverride"/> when you create a world, or later with <see cref="PhysicsWorld.contactFilterModeOverride"/>.
+        /// The project-wide mode is <see cref="PhysicsCoreSettings2D.contactFilterMode"/>, and <see cref="PhysicsWorld.contactFilterMode"/> reports it.
+        /// The <see cref="ContactFilterModeOverride.Both"/> and <see cref="ContactFilterModeOverride.Either"/> values behave the same as <see cref="ContactFilterMode.Both"/> and <see cref="ContactFilterMode.Either"/>, but the two enums have different underlying values, so convert between them by name and never by casting.
+        /// Changing the mode of a world that already has contacts makes the world check every existing contact against the new mode, which can be expensive in a large world.
+        /// Set the mode before the world has contacts, typically in the world definition, rather than changing it during gameplay.
+        /// </remarks>
+        /// <example>
+        /// <code lang="cs">
+        /// <![CDATA[
+        /// // Create a world where two shapes make contact only when both of their contact filters accept each other,
+        /// // whatever contact filter mode the project settings use.
+        /// using UnityEngine;
+        /// using Unity.U2D.Physics;
+        ///
+        /// public class ContactFilterModeOverrideExample : MonoBehaviour
+        /// {
+        ///     void Start()
+        ///     {
+        ///         PhysicsWorldDefinition worldDefinition = new PhysicsWorldDefinition();
+        ///         worldDefinition.contactFilterModeOverride = PhysicsShape.ContactFilterModeOverride.Both;
+        ///         PhysicsWorld world = PhysicsWorld.Create(worldDefinition);
+        ///     }
+        /// }
+        /// ]]>
+        /// </code>
+        /// </example>
+        public enum ContactFilterModeOverride
+        {
+            /// <summary>
+            /// Uses the contact filter mode from the project settings.
+            /// </summary>
+            /// <remarks>
+            /// If the project setting changes, the world follows it and checks its existing contacts against the new mode.
+            /// See <see cref="PhysicsCoreSettings2D.contactFilterMode"/>.
+            /// </remarks>
+            Global,
+
+            /// <summary>
+            /// Makes contact between two shapes only when both of their contact filters accept each other.
+            /// </summary>
+            /// <remarks>
+            /// See <see cref="ContactFilterMode.Both"/>.
+            /// </remarks>
+            Both,
+
+            /// <summary>
+            /// Makes contact between two shapes when either of their contact filters accepts the other.
+            /// </summary>
+            /// <remarks>
+            /// See <see cref="ContactFilterMode.Either"/>.
+            /// </remarks>
+            Either
+        }
+
+        /// <summary>
+        /// Options for whether one world uses the project-wide contact filter group mode or its own.
+        /// The contact filter group mode decides how the group index of each shape's contact filter affects whether two shapes make contact.
+        /// Each world can use its own mode, so worlds with different grouping rules can run side by side.
+        /// </summary>
+        /// <remarks>
+        /// Set this with <see cref="PhysicsWorldDefinition.contactFilterGroupModeOverride"/> when you create a world, or later with <see cref="PhysicsWorld.contactFilterGroupModeOverride"/>.
+        /// The project-wide mode is <see cref="PhysicsCoreSettings2D.contactFilterGroupMode"/>, and <see cref="PhysicsWorld.contactFilterGroupMode"/> reports it.
+        /// The <see cref="ContactFilterGroupModeOverride.Group"/> and <see cref="ContactFilterGroupModeOverride.Isolate"/> values behave the same as <see cref="ContactFilterGroupMode.Group"/> and <see cref="ContactFilterGroupMode.Isolate"/>, but the two enums have different underlying values, so convert between them by name and never by casting.
+        /// Changing the mode of a world that already has contacts makes the world check every existing contact against the new mode, which can be expensive in a large world.
+        /// Set the mode before the world has contacts, typically in the world definition, rather than changing it during gameplay.
+        /// The group index has no effect on queries, so this mode does not change query results.
+        /// </remarks>
+        /// <example>
+        /// <code lang="cs">
+        /// <![CDATA[
+        /// // Create a world where shapes only make contact with shapes that share their group index,
+        /// // whatever contact filter group mode the project settings use.
+        /// using UnityEngine;
+        /// using Unity.U2D.Physics;
+        ///
+        /// public class ContactFilterGroupModeOverrideExample : MonoBehaviour
+        /// {
+        ///     void Start()
+        ///     {
+        ///         PhysicsWorldDefinition worldDefinition = new PhysicsWorldDefinition();
+        ///         worldDefinition.contactFilterGroupModeOverride = PhysicsShape.ContactFilterGroupModeOverride.Isolate;
+        ///         PhysicsWorld world = PhysicsWorld.Create(worldDefinition);
+        ///     }
+        /// }
+        /// ]]>
+        /// </code>
+        /// </example>
+        public enum ContactFilterGroupModeOverride
+        {
+            /// <summary>
+            /// Uses the contact filter group mode from the project settings.
+            /// </summary>
+            /// <remarks>
+            /// If the project setting changes, the world follows it and checks its existing contacts against the new mode.
+            /// See <see cref="PhysicsCoreSettings2D.contactFilterGroupMode"/>.
+            /// </remarks>
+            Global,
+
+            /// <summary>
+            /// Uses a shared non-zero group index to always allow contact (positive) or never allow it (negative), regardless of the contact filter masks.
+            /// </summary>
+            /// <remarks>
+            /// See <see cref="ContactFilterGroupMode.Group"/> for the full rules.
+            /// </remarks>
+            Group,
+
+            /// <summary>
+            /// Allows contact only between shapes with the same group index, and then only if their contact filter masks also allow it.
+            /// </summary>
+            /// <remarks>
+            /// See <see cref="ContactFilterGroupMode.Isolate"/> for the full rules.
+            /// </remarks>
+            Isolate
         }
 
         /// <summary>
@@ -808,6 +943,10 @@ namespace Unity.U2D.Physics
             /// </summary>
             /// <param name="filter">The other contact filter to compare against.</param>
             /// <returns>Whether a contact would be produced by both contact filters or not.</returns>
+            /// <remarks>
+            /// The result uses the project-wide <see cref="PhysicsWorld.contactFilterMode"/> and <see cref="PhysicsWorld.contactFilterGroupMode"/>.
+            /// A world that sets <see cref="PhysicsWorld.contactFilterModeOverride"/> or <see cref="PhysicsWorld.contactFilterGroupModeOverride"/> can make a different decision for the same two filters.
+            /// </remarks>
             public readonly bool CanContact(ContactFilter filter) => PhysicsShape_ContactFilter_CanContact(this, filter);
 
             #region Internal
@@ -1728,12 +1867,12 @@ namespace Unity.U2D.Physics
         public readonly PhysicsBody body => PhysicsShape_GetBody(this);
 
         /// <summary>
-        /// Get/Set if the shape is a trigger.
-        /// Changing the state here is relatively expensive and should be avoided.
-        /// See <see cref="PhysicsShapeDefinition.isTrigger"/>.
+        /// Whether the shape is a trigger.
         /// </summary>
         /// <remarks>
         /// A trigger shape doesn't collide with other shapes. Other shapes pass through it instead, and Unity reports the overlap to an <see cref="PhysicsCallbacks.ITriggerCallback"/> when <see cref="PhysicsShape.triggerEvents"/> is `true`.
+        /// Changing the state here is relatively expensive and should be avoided.
+        /// See <see cref="PhysicsShapeDefinition.isTrigger"/>.
         /// </remarks>
         public readonly bool isTrigger { get => PhysicsShape_GetIsTrigger(this); set => PhysicsShape_SetIsTrigger(this, value); }
 
@@ -1848,10 +1987,13 @@ namespace Unity.U2D.Physics
         public readonly MoverData moverData { get => PhysicsShape_GetMoverData(this); set => PhysicsShape_SetMoverData(this, value); }
 
         /// <summary>
-        /// Controls whether this shape produces triggers events which can be retrieved after the simulation has completed.
-        /// A trigger event is only produced if both shapes involved have their triggerEvents enabled.
-        /// A trigger event will produce a <see cref="PhysicsCallbacks.ITriggerCallback"/> to the <see cref="PhysicsShape.callbackTarget"/> for both shapes involved.
+        /// Controls whether this shape produces trigger events which can be retrieved after the simulation has completed.
         /// </summary>
+        /// <remarks>
+        /// A trigger event is only produced if both shapes involved have their triggerEvents enabled.
+        /// Turning this off on a shape that is not a trigger hides it from every trigger.
+        /// A trigger event will produce a <see cref="PhysicsCallbacks.ITriggerCallback"/> to the <see cref="PhysicsShape.callbackTarget"/> for both shapes involved.
+        /// </remarks>
         public readonly bool triggerEvents { get => PhysicsShape_GetTriggerEvents(this); set => PhysicsShape_SetTriggerEvents(this, value); }
 
         /// <summary>

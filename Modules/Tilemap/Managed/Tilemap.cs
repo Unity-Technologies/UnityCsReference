@@ -172,6 +172,25 @@ namespace UnityEngine.Tilemaps
         [NoAutoStaticsCleanup] // see stripping note above
         public static event Action<Tilemap, NativeArray<Vector3Int>> loopEndedForTileAnimation;
 
+        [NoAutoStaticsCleanup] // see stripping note above
+        static Action<Tilemap, NativeArray<Vector3Int>> s_RenderPositionsChanged;
+
+        // Cells whose rendered Sprite changed without a Tile edit: animation frames and editor preview Tiles.
+        // tilemapPositionsChanged is not raised for these. The Tilemap only collects them while this has a listener.
+        internal static event Action<Tilemap, NativeArray<Vector3Int>> tilemapRenderPositionsChanged
+        {
+            add
+            {
+                s_RenderPositionsChanged += value;
+                SetHasRenderPositionsChangedListener(s_RenderPositionsChanged != null);
+            }
+            remove
+            {
+                s_RenderPositionsChanged -= value;
+                SetHasRenderPositionsChangedListener(s_RenderPositionsChanged != null);
+            }
+        }
+
         private bool m_BufferSyncTile;
         internal bool bufferSyncTile
         {
@@ -311,6 +330,31 @@ namespace UnityEngine.Tilemaps
                 // Case 1215834: Log user exception/s and ensure engine code continues to run
                 Debug.LogException(e, this);
             }
+        }
+
+        private unsafe void HandleRenderPositionsChangedCallback(int count, IntPtr positionsIntPtr)
+        {
+            var handlers = s_RenderPositionsChanged;
+            if (handlers == null)
+                return;
+
+            void* positionsPtr = positionsIntPtr.ToPointer();
+            var positions = NativeArrayUnsafeUtility.ConvertExistingDataToNativeArray<Vector3Int>(positionsPtr, count, Allocator.Invalid);
+            var safety = AtomicSafetyHandle.Create();
+            NativeArrayUnsafeUtility.SetAtomicSafetyHandle(ref positions, safety);
+
+            try
+            {
+                handlers(this, positions);
+            }
+            catch (Exception e)
+            {
+                // Case 1215834: Log user exception/s and ensure engine code continues to run
+                Debug.LogException(e, this);
+            }
+
+            AtomicSafetyHandle.CheckDeallocateAndThrow(safety);
+            AtomicSafetyHandle.Release(safety);
         }
 
         private void SendTilemapTileChangedCallback(SyncTile[] syncTiles)

@@ -29,7 +29,7 @@ namespace Unity.Entities
         [ExcludeFromBurstCompatTesting("Returns managed string")]
         public string GetName(Entity entity)
         {
-            return GetCheckedEntityDataAccess()->GetName(entity);
+            return GetCheckedEntityDataAccess(entity)->GetName(entity);
         }
 
         /// <summary>
@@ -41,7 +41,7 @@ namespace Unity.Entities
         [GenerateTestsForBurstCompatibility]
         public void GetName(Entity entity, out FixedString64Bytes name)
         {
-            GetCheckedEntityDataAccess()->GetName(entity, out name);
+            GetCheckedEntityDataAccess(entity)->GetName(entity, out name);
         }
 
         /// <summary>
@@ -59,7 +59,7 @@ namespace Unity.Entities
         [GenerateTestsForBurstCompatibility]
         public void SetName(Entity entity, FixedString64Bytes name)
         {
-            GetCheckedEntityDataAccess()->SetName(entity, in name);
+            GetCheckedEntityDataAccess(entity)->SetName(entity, in name);
         }
 
         /// <summary>
@@ -297,7 +297,7 @@ namespace Unity.Entities
             }
 
             /// <summary>
-            /// Returns true if we are inside of a Entities.ForEach or IJobChunk.Run and thus can not allow structural changes at the same time.
+            /// Returns true if we are inside of an IJobChunk.Run or a SystemAPI.Query loop and thus can not allow structural changes at the same time.
             /// </summary>
             internal bool IsInForEachDisallowStructuralChange =>
                 m_Manager.GetCheckedEntityDataAccess()->DependencyManager->ForEachStructuralChange.Depth != 0;
@@ -352,7 +352,7 @@ namespace Unity.Entities
             /// <returns>The string with the entity's information</returns>
             public string GetEntityInfo(Entity entity)
             {
-                var entityComponentStore = m_Manager.GetCheckedEntityDataAccess()->EntityComponentStore;
+                var entityComponentStore = m_Manager.GetCheckedEntityDataAccess(entity)->EntityComponentStore;
 
                 // Entity.Index is now a 28-bit masked property — it can never be negative.
                 // Use Debugger_Exists (which calls EntityStore.Exists safely) to detect non-existent entities.
@@ -389,7 +389,7 @@ namespace Unity.Entities
 
             internal void GetEntityInfo(Entity entity, bool includeComponentValues, System.Text.StringBuilder str)
             {
-                var entityComponentStore = m_Manager.GetCheckedEntityDataAccess()->EntityComponentStore;
+                var entityComponentStore = m_Manager.GetCheckedEntityDataAccess(entity)->EntityComponentStore;
                 var archetype = entityComponentStore->GetArchetype(entity);
                 str.Append(entity.ToString());
                 {
@@ -430,7 +430,7 @@ namespace Unity.Entities
             /// <exception cref="ArgumentException">Throws if the type does not exist on the entity</exception>
             public object GetComponentBoxed(Entity entity, ComponentType type)
             {
-                var access = m_Manager.GetCheckedEntityDataAccess();
+                var access = m_Manager.GetCheckedEntityDataAccess(entity);
 
                 access->EntityComponentStore->AssertEntitiesExist(&entity, 1);
 
@@ -449,7 +449,7 @@ namespace Unity.Entities
             /// <exception cref="ArgumentException">Throws if the type does not exist on the entity</exception>
             public object GetComponentBoxed(Entity entity, Type type)
             {
-                var access = m_Manager.GetCheckedEntityDataAccess();
+                var access = m_Manager.GetCheckedEntityDataAccess(entity);
 
                 access->EntityComponentStore->AssertEntitiesExist(&entity, 1);
 

@@ -36,8 +36,14 @@ namespace Unity.GraphToolkit.Editor
         internal void CallOnDefineSubgraphNodeOptions(IOptionsDefinition context)
         {
             s_OptionDefinitionContext.OptionsDefinition = context;
-            OnDefineSubgraphNodeOptions(s_OptionDefinitionContext);
-            s_OptionDefinitionContext.Finish();
+            try
+            {
+                OnDefineSubgraphNodeOptions(s_OptionDefinitionContext);
+            }
+            finally
+            {
+                s_OptionDefinitionContext.Finish();
+            }
         }
 
         IEnumerable<Type> IGraphInternal.InvokeBuildAvailableVariableTypes(IReadOnlyCollection<Type> baseSupportedTypes)

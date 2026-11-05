@@ -53,7 +53,7 @@ namespace UnityEditor.Search
 
         public override string ToString()
         {
-            return $"{expression}[{args.Length}]({flags})";
+            return $"{expression}[{args?.Length ?? 0}]({flags})";
         }
 
         public void ThrowError(string message)
@@ -65,8 +65,9 @@ namespace UnityEditor.Search
         {
             if (!errorPosition.IsNullOrEmpty())
                 throw new SearchExpressionEvaluatorException(message, errorPosition, this);
-            else
-                throw new SearchExpressionEvaluatorException(message, expression.outerText, this);
+
+            // The root context has no expression, so the error then covers the whole search text
+            throw new SearchExpressionEvaluatorException(message, expression?.outerText ?? StringView.nil, this);
         }
 
         internal ArgumentEnumerable ForEachArgument(OnArgument onArgumentCallback, int argumentSkipCount = 0)
@@ -103,6 +104,13 @@ namespace UnityEditor.Search
         {
             state.ResetIterationControl();
         }
+
+        internal void Tick()
+        {
+            state.Tick();
+        }
+
+        internal TimeSpan timeSinceLastTick => state.timeSinceLastTick;
 
         internal bool HasFlag(SearchExpressionExecutionFlags checkFlag)
         {

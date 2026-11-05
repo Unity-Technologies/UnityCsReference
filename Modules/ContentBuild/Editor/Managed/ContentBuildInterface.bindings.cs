@@ -398,7 +398,7 @@ namespace UnityEditor.Build.Content
         ///<param name="type">The type of the object.</param>
         ///<param name="typeDB">The user script TypeDB for the player.</param>
         ///<returns>The unique hash for a type's serialized layout.</returns>
-        public static extern UnityEngine.Hash128 CalculatePlayerSerializationHashForType(Type type, TypeDB typeDB);
+        public static extern UnityEngine.Hash128 CalculatePlayerSerializationHashForType([NotNull] Type type, TypeDB typeDB);
 
         extern internal static int BeginTraceProfileBlock(string name);
         extern internal static void EndTraceProfileBlock(int index);

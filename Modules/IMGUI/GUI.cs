@@ -789,7 +789,7 @@ namespace UnityEngine
         internal static void DrawTexture(Rect position, Texture image, ScaleMode scaleMode, bool alphaBlend, float imageAspect, Color leftColor, Color topColor, Color rightColor, Color bottomColor, Vector4 borderWidths, Vector4 borderRadiuses, bool drawSmoothCorners)
         {
             GUIUtility.CheckOnGUI();
-            if (Event.current.type == EventType.Repaint)
+            if (Event.current.type == EventType.Repaint && !GUIUtility.skipRendering)
             {
                 if (image == null)
                 {
@@ -989,7 +989,7 @@ namespace UnityEngine
         {
             GUIUtility.CheckOnGUI();
 
-            if (Event.current.type == EventType.Repaint)
+            if (Event.current.type == EventType.Repaint && !GUIUtility.skipRendering)
             {
                 Material mat = alphaBlend ? blendMaterial : blitMaterial;
 
@@ -6426,7 +6426,7 @@ namespace UnityEngine
                 m_Disposed = true;
             }
 
-#pragma warning disable UA5000 // The Avoid Finalizer Analyzer produces compile errors for any new finalizers. This pre-existing finalizer declaration has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA5000 // Intentional leak warning: logs when a GUI scope was not disposed. Public base of many scope types.
             ~Scope()
             {
                 if (!m_Disposed && !GUIUtility.guiIsExiting)

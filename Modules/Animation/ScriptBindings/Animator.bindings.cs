@@ -106,6 +106,15 @@ namespace UnityEngine
         public const int InvalidType = 0;
     }
 
+    [StructLayout(LayoutKind.Explicit, Size = 4)]
+    internal struct AnimatorParameterValue
+    {
+        [FieldOffset(0)] public float floatValue;
+        [FieldOffset(0)] public int intValue;
+
+        public bool boolValue => intValue != 0;
+    }
+
     internal enum TransitionType
     {
         Normal = 1 << 0,
@@ -2182,6 +2191,33 @@ namespace UnityEngine
             if ((int)parameter.m_Type == AnimatorControllerParameterTypeConstants.InvalidType)
                 throw new IndexOutOfRangeException("Index must be between 0 and " + parameterCount);
             return parameter;
+        }
+
+        [NativeMethod("GetParameterLayout")]
+        extern int Internal_GetParameterLayout(Span<int> hashes, Span<int> types);
+
+        [NativeMethod("GetParameterValues")]
+        extern int Internal_GetParameterValues(Span<int> values);
+
+        [NativeMethod("SetParameterValues")]
+        extern void Internal_SetParameterValues(ReadOnlySpan<int> hashes, ReadOnlySpan<int> values);
+
+        internal int GetParameterLayout(Span<int> hashes, Span<AnimatorControllerParameterType> types)
+        {
+            return Internal_GetParameterLayout(hashes, MemoryMarshal.Cast<AnimatorControllerParameterType, int>(types));
+        }
+
+        internal int GetParameterValues(Span<AnimatorParameterValue> values)
+        {
+            return Internal_GetParameterValues(MemoryMarshal.Cast<AnimatorParameterValue, int>(values));
+        }
+
+        /// <remarks>When the layout contains duplicate hashes, the order of <paramref name="hashes"/> determines which entry is written. Hashes in layout order address every entry.</remarks>
+        internal void SetParameterValues(ReadOnlySpan<int> hashes, ReadOnlySpan<AnimatorParameterValue> values)
+        {
+            if (hashes.Length != values.Length)
+                throw new ArgumentException("hashes and values must have the same length.");
+            Internal_SetParameterValues(hashes, MemoryMarshal.Cast<AnimatorParameterValue, int>(values));
         }
 
         // Blends pivot point between body center of mass and feet pivot. At 0%, the blending point is body center of mass. At 100%, the blending point is feet pivot

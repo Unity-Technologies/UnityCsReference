@@ -162,9 +162,13 @@ namespace UnityEditor
         static readonly Dictionary<Type, (string overlayPath, UnityEngine.Object instance)> s_States =
             new Dictionary<Type, (string, UnityEngine.Object)>();
 
+        [AutoStaticsCleanupOnCodeReload]
+        static readonly HashSet<Type> s_WarnedMissingMonoScript = new HashSet<Type>();
+
         internal static void Register(Type stateType, string overlayPath, UnityEngine.Object instance)
         {
             s_States[stateType] = (overlayPath, instance);
+            s_WarnedMissingMonoScript.Remove(stateType);
         }
 
         /// <summary>
@@ -176,13 +180,20 @@ namespace UnityEditor
         {
             Debug.Assert(!AssetDatabase.IsAssetImportWorkerProcess(), "CaptureImporterGlobalSettings should only be called in the main Editor (not on workers)");
 
+            DestroyInstancesWithNewScriptAssets();
+
             var paths = new List<string>(s_States.Count);
             var instances = new List<EntityId>(s_States.Count);
 
-            foreach (var state in s_States.Values)
+            foreach (var kvp in s_States)
             {
+                var state = kvp.Value;
                 if (state.instance == null)
                     continue;
+
+                // Workers can only rebuild the managed instance from the overlay through its MonoScript.
+                if (MonoScript.FromScriptedObject(state.instance) == null && s_WarnedMissingMonoScript.Add(kvp.Key))
+                    Debug.LogWarning($"No script asset for {kvp.Key.FullName}. Check that the definition is in a file of the same name. Its values cannot be synchronized with asset import workers without a script asset.");
 
                 paths.Add(state.overlayPath);
                 instances.Add(state.instance.GetEntityId());
@@ -190,6 +201,30 @@ namespace UnityEditor
 
             overlayPaths = paths.ToArray();
             return instances.ToArray();
+        }
+
+        // A ScriptableObject must be declared in a script with the same name or its monoscript will be null.
+        // Even after a user fix this issue, the cached instance will still be null,
+        // so we fix the issue by dropping the instance. The next instance access will recreate it with the monoscript asset.
+        static void DestroyInstancesWithNewScriptAssets()
+        {
+            List<Type> staleTypes = null;
+            foreach (var kvp in s_States)
+            {
+                var instance = kvp.Value.instance;
+                if (instance != null && MonoScript.FromScriptedObject(instance) == null && MonoScript.FromType(kvp.Key) != null)
+                    (staleTypes ??= new List<Type>()).Add(kvp.Key);
+            }
+
+            if (staleTypes == null)
+                return;
+
+            foreach (var staleType in staleTypes)
+            {
+                var instance = s_States[staleType].instance;
+                s_States.Remove(staleType);
+                UnityEngine.Object.DestroyImmediate(instance);
+            }
         }
 
         /// <summary>

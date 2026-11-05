@@ -123,9 +123,11 @@ namespace UnityEditor.IMGUI.Controls
             }
             else if (content.image == null)
             {
-                lineStyle.Draw(rect, GUIContent.none, false, false, selected, selected);
-                rect.x += iconSize.x + 1;
-                rect.width -= iconSize.x + 1;
+                var iconRect = new Rect(rect);
+                iconRect.width = iconSize.x;
+                lineStyle.Draw(iconRect, GUIContent.none, false, false, selected, selected);
+                rect.x += iconSize.x;
+                rect.width -= iconSize.x;
             }
 
             EditorGUI.BeginDisabled(!enabled);

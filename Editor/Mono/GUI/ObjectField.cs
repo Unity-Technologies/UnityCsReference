@@ -501,7 +501,7 @@ namespace UnityEditor
                         GUI.DrawTexture(thumbRect, EditorGUI.transparentCheckerTexture, ScaleMode.StretchToFill, false);
 
                     // Draw asset preview (scaled to fit inside the frame)
-                    // GUIStyle.none.Draw is used to allow the asset preview to be caught by AutomatedWindow
+                    // GUIStyle.none.Draw is used to allow the asset preview to be caught by the GUI debugger
                     Vector2 defaultSize = Vector2.one * EditorGUI.kObjectFieldThumbnailHeight;
                     GUIUtility.ScaleAroundPivot(thumbRect.size / defaultSize, thumbRect.position);
                     thumbRect.size = defaultSize; // GUIStyle.none.Draw does not scale, the matrix does. Omitting this reports an incorrect Rect size.

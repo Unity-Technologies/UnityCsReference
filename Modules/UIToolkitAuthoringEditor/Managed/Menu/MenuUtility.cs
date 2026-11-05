@@ -47,7 +47,20 @@ static class MenuUtility
     public static void AddTemplateAsLastChild(VisualTreeAsset template)
         => AddElement(AddRequest.ForTemplate(template), addAsSibling: false, parentNewGameObjectUnderSelection: true);
 
-    static void AddElement(AddRequest request, bool addAsSibling, bool parentNewGameObjectUnderSelection)
+    /// <summary>
+    /// Inserts an element right after the current selection.
+    /// </summary>
+    public static void InsertElementNextToSelection(Type elementType, string variantName, SiblingPlacement placement)
+        => AddElement(AddRequest.ForType(elementType, variantName), addAsSibling: true, parentNewGameObjectUnderSelection: false, placement);
+
+    /// <summary>
+    /// Inserts a UXML document as a template instance right after the current selection.
+    /// </summary>
+    public static void InsertTemplateNextToSelection(VisualTreeAsset template, SiblingPlacement placement)
+        => AddElement(AddRequest.ForTemplate(template), addAsSibling: true, parentNewGameObjectUnderSelection: false, placement);
+
+    static void AddElement(AddRequest request, bool addAsSibling, bool parentNewGameObjectUnderSelection,
+        SiblingPlacement placement = SiblingPlacement.Last)
     {
         if (!LegacyHierarchyGuard.EnsureNewHierarchy())
             return;
@@ -55,21 +68,30 @@ static class MenuUtility
         if (StageUtility.GetCurrentStage() is VisualElementEditingStage activeStage)
         {
             if (!TryResolveStageParent(activeStage, Selection.activeObject as VisualElementSelection, addAsSibling,
-                    out var parentVea, out var parentElement))
+                    placement, out var parentVea, out var parentElement, out var index))
                 return;
-            ExecuteAdd(activeStage, request, parentVea, parentElement);
+            ExecuteAdd(activeStage, request, parentVea, parentElement, index);
             return;
         }
 
         // Main Stage authoring edits the scene documents where they are, so the element is added in place.
-        AddInMainStage(request, addAsSibling, parentNewGameObjectUnderSelection);
+        AddInMainStage(request, addAsSibling, parentNewGameObjectUnderSelection, placement);
+    }
+
+    static int ResolveSiblingIndex(VisualElementAsset sibling, SiblingPlacement placement)
+    {
+        if (placement == SiblingPlacement.Last || sibling?.parentAsset == null)
+            return -1;
+
+        return sibling.parentAsset.IndexOf(sibling) + 1;
     }
 
     /// <summary>
     /// Adds without leaving the Main Stage, where the scene documents are authored in place: the element goes
     /// straight into the document the selection points at.
     /// </summary>
-    static void AddInMainStage(AddRequest request, bool addAsSibling, bool parentNewGameObjectUnderSelection)
+    static void AddInMainStage(AddRequest request, bool addAsSibling, bool parentNewGameObjectUnderSelection,
+        SiblingPlacement placement)
     {
         switch (Selection.activeObject)
         {
@@ -89,7 +111,7 @@ static class MenuUtility
 
                 // A selection naming an element we cannot author into — one that cannot take children, or one
                 // belonging to no scene document at all — is not a reason to go and add somewhere else.
-                if (TryResolveMainStageTarget(ves.Element, addAsSibling, out var target))
+                if (TryResolveMainStageTarget(ves.Element, addAsSibling, placement, out var target))
                     ExecuteMainStageAdd(in target, request);
                 return;
             }
@@ -131,7 +153,8 @@ static class MenuUtility
     /// ends up changed is the one owning the resolved asset, which for content cloned from a template is the
     /// template's own document rather than the scene document instantiating it.
     /// </remarks>
-    static bool TryResolveMainStageTarget(VisualElement element, bool addAsSibling, out MainStageAddTarget target)
+    static bool TryResolveMainStageTarget(VisualElement element, bool addAsSibling, SiblingPlacement placement,
+        out MainStageAddTarget target)
     {
         target = default;
 
@@ -163,7 +186,8 @@ static class MenuUtility
                 return false;
 
             // A sibling is a child of the selection's own parent, which is the element the result hangs from.
-            target = new MainStageAddTarget(parentAsset, authored.parent ?? authored);
+            target = new MainStageAddTarget(parentAsset, authored.parent ?? authored,
+                ResolveSiblingIndex(authored.visualElementAsset, placement));
             return true;
         }
 
@@ -187,11 +211,11 @@ static class MenuUtility
                 return;
             }
 
-            status = AddTemplatesToElementCommand.Execute(CommandSources.Menus, target.ParentAsset, -1, new[] { request.Template });
+            status = AddTemplatesToElementCommand.Execute(CommandSources.Menus, target.ParentAsset, target.Index, new[] { request.Template });
         }
         else
         {
-            status = AddElementCommand.Execute(CommandSources.Menus, request.ElementType, document, target.ParentAsset, -1, request.VariantName);
+            status = AddElementCommand.Execute(CommandSources.Menus, request.ElementType, document, target.ParentAsset, target.Index, request.VariantName);
         }
 
         if (status != CommandExecutionStatus.Success)
@@ -299,10 +323,12 @@ static class MenuUtility
     /// </param>
     /// <returns><see langword="false"/> when the selection resolves to an element that cannot take children.</returns>
     static bool TryResolveStageParent(VisualElementEditingStage stage, VisualElementSelection selection,
-        bool addAsSibling, out VisualElementAsset parentVea, out VisualElement parentElement)
+        bool addAsSibling, SiblingPlacement placement, out VisualElementAsset parentVea, out VisualElement parentElement,
+        out int index)
     {
         parentVea = null;
         parentElement = null;
+        index = -1;
 
         var element = selection?.Element;
         if (element == null)
@@ -322,6 +348,7 @@ static class MenuUtility
             {
                 parentVea = (VisualElementAsset)suitable?.visualElementAsset?.parentAsset;
                 parentElement = suitable?.parent;
+                index = ResolveSiblingIndex(suitable?.visualElementAsset, placement);
                 return true;
             }
 
@@ -337,6 +364,7 @@ static class MenuUtility
         {
             parentVea = (VisualElementAsset)element.visualElementAsset?.parentAsset;
             parentElement = element.parent;
+            index = ResolveSiblingIndex(element.visualElementAsset, placement);
             return true;
         }
 
@@ -432,7 +460,7 @@ static class MenuUtility
     }
 
     static void ExecuteAdd(VisualElementEditingStage stage, AddRequest request, VisualElementAsset parentVea,
-        VisualElement parentElement)
+        VisualElement parentElement, int index)
     {
         CommandExecutionStatus status;
         if (request.IsTemplate)
@@ -444,11 +472,11 @@ static class MenuUtility
             }
 
             var parentAsset = parentVea ?? stage.EditedVisualTreeAsset.visualTree;
-            status = AddTemplatesToElementCommand.Execute(CommandSources.Menus, parentAsset, -1, new[] { request.Template });
+            status = AddTemplatesToElementCommand.Execute(CommandSources.Menus, parentAsset, index, new[] { request.Template });
         }
         else
         {
-            status = AddElementCommand.Execute(CommandSources.Menus, request.ElementType, stage.EditedVisualTreeAsset, parentVea, -1, request.VariantName);
+            status = AddElementCommand.Execute(CommandSources.Menus, request.ElementType, stage.EditedVisualTreeAsset, parentVea, index, request.VariantName);
         }
 
         if (status != CommandExecutionStatus.Success)
@@ -472,11 +500,13 @@ static class MenuUtility
     {
         public readonly VisualElementAsset ParentAsset;
         public readonly VisualElement ParentElement;
+        public readonly int Index;
 
-        public MainStageAddTarget(VisualElementAsset parentAsset, VisualElement parentElement)
+        public MainStageAddTarget(VisualElementAsset parentAsset, VisualElement parentElement, int index = -1)
         {
             ParentAsset = parentAsset;
             ParentElement = parentElement;
+            Index = index;
         }
     }
 
@@ -498,4 +528,10 @@ static class MenuUtility
         public static AddRequest ForType(Type elementType, string variantName) => new(elementType, variantName, null);
         public static AddRequest ForTemplate(VisualTreeAsset template) => new(null, null, template);
     }
+}
+
+internal enum SiblingPlacement
+{
+    Last,
+    After
 }

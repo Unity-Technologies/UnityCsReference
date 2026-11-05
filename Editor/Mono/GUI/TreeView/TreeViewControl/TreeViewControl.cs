@@ -238,7 +238,7 @@ namespace UnityEditor.IMGUI.Controls
 
         public float totalHeight
         {
-            get { return m_GUI.totalHeight + (showBorder ? m_GUI.borderWidth * 2 : 0f); }
+            get { return m_GUI.totalHeight + (showBorder ? m_GUI.borderPaddingVertical : 0f); }
         }
 
         protected float rowHeight

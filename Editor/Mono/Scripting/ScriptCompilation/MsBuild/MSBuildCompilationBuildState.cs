@@ -21,10 +21,12 @@ class BuildProgressEvent
 class MSBuildCompilationBuildState
 {
     private readonly ICompilerClient _compilerClient;
+    private readonly int _parentProgressId;
 
-    public MSBuildCompilationBuildState(ICompilerClient compilerClient)
+    public MSBuildCompilationBuildState(ICompilerClient compilerClient, int parentProgressId = -1)
     {
         _compilerClient = compilerClient;
+        _parentProgressId = parentProgressId;
     }
 
     public CancellationTokenSource CancellationTokenSource { get; } = new();
@@ -46,7 +48,7 @@ class MSBuildCompilationBuildState
         if (_compilerClient == null)
             throw new InvalidOperationException("Compiler client is not initialized");
 
-        ProgressId = Progress.Start("Compiling Scripts", "Starting Build", Progress.Options.None);
+        ProgressId = Progress.Start("Compiling Scripts", "Starting Build", Progress.Options.None, _parentProgressId);
         System.Console.WriteLine($@"Building with configuration: {configuration}
                                         Generating Binlogs: {generateBinLog}");
 

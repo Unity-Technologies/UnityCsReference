@@ -82,6 +82,7 @@ namespace Unity.GraphToolkit.Editor
             }
 
             SetCapability(Editor.Capabilities.Renamable, referenceIsValid);
+            DefineNode();
             GraphModel?.CurrentGraphChangeDescription?.AddChangedModel(this, ChangeHint.Data);
         }
 

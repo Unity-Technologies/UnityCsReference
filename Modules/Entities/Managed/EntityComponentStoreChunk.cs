@@ -190,6 +190,17 @@ namespace Unity.Entities
 
             var entities = (Entity*)chunk.Buffer + indexInChunk;
 
+            // A GameObject entity's id is owned by the engine (released when the GameObject is
+            // destroyed), so destroying the entity only detaches it from its chunk.
+            if (archetype->HasGameObjectEntities)
+            {
+                for (int i = 0; i < batchCount; i++)
+                {
+                    if (s_entityStore.Data.Exists(entities[i]))
+                        SetEntityInChunk(entities[i], EntityInChunk.Null);
+                }
+            }
+            else
             {
                 s_entityStore.Data.DeallocateEntities(entities, batchCount);
             }

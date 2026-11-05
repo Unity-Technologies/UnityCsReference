@@ -416,7 +416,6 @@ namespace Unity.Entities
         /// You can use the change version to filter out entities that have not changed since the last time a system ran.
         /// Implement change filtering using one of the following:
         ///
-        /// - [Entities.ForEach.WithChangeFilter(ComponentType)](xref:Unity.Entities.SystemBase.Entities)
         /// - <see cref="EntityQuery.AddChangedVersionFilter(ComponentType)"/>
         /// - <see cref="ArchetypeChunk.DidChange{T}(ref ComponentTypeHandle{T}, uint)"/> in an <see cref="IJobChunk"/> job.
         ///
@@ -473,7 +472,6 @@ namespace Unity.Entities
         /// You can use the change version to filter out entities that have not changed since the last time a system ran.
         /// Implement change filtering using one of the following:
         ///
-        /// - [Entities.ForEach.WithChangeFilter(ComponentType)](xref:Unity.Entities.SystemBase.Entities)
         /// - <see cref="EntityQuery.AddChangedVersionFilter(ComponentType)"/>
         /// - <see cref="ArchetypeChunk.DidChange{T}(ref ComponentTypeHandle{T}, uint)"/> in an <see cref="IJobChunk"/> job.
         ///
@@ -522,7 +520,6 @@ namespace Unity.Entities
         /// You can use the change version to filter out entities that have not changed since the last time a system ran.
         /// Implement change filtering using one of the following:
         ///
-        /// - [Entities.ForEach.WithChangeFilter(ComponentType)](xref:Unity.Entities.SystemBase.Entities)
         /// - <see cref="EntityQuery.AddChangedVersionFilter(ComponentType)"/>
         /// - <see cref="ArchetypeChunk.DidChange{T}(ref ComponentTypeHandle{T}, uint)"/> in an <see cref="IJobChunk"/> job.
         ///
@@ -2238,6 +2235,7 @@ namespace Unity.Entities
             TypeIndex typeIndex = TypeManager.GetTypeIndex<TransformRef>();
             if (Hint.Unlikely(transformTypeHandle.m_LookupCache.Archetype != archetype))
             {
+                CheckGameObjectAccess(transformTypeHandle, archetype);
                 transformTypeHandle.m_LookupCache.Update(m_EntityComponentStore->GetArchetype(m_Chunk), typeIndex);
             }
             bool isReadOnly = transformTypeHandle.IsReadOnly;
@@ -2253,6 +2251,14 @@ namespace Unity.Entities
             }
 
             return new TransformAccessor(ptr, Count, isReadOnly, transformTypeHandle.Safety, transformTypeHandle.HierarchySafety);
+        }
+
+        // Type handles created with excludeGameObjects do not register the job dependency that covers GameObject transforms.
+        [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS"), Conditional("UNITY_DOTS_DEBUG")]
+        static void CheckGameObjectAccess(in TransformTypeHandle transformTypeHandle, Archetype* archetype)
+        {
+            if (transformTypeHandle.m_ExcludeGameObjects != 0 && archetype->HasGameObjectEntities)
+                throw new InvalidOperationException("TransformTypeHandle cannot access the TransformRef of GameObject entities. Create it without excludeGameObjects.");
         }
     }
 
@@ -2978,6 +2984,7 @@ namespace Unity.Entities
 
         internal uint m_GlobalSystemVersion;
         internal readonly byte m_IsReadOnly;
+        internal readonly byte m_ExcludeGameObjects;
 
 #pragma warning disable 0414
         private readonly int m_Length;
@@ -3003,7 +3010,7 @@ namespace Unity.Entities
         public bool IsReadOnly => m_IsReadOnly == 1;
 
 
-        internal TransformTypeHandle(AtomicSafetyHandle safety, AtomicSafetyHandle hierarchySafety, bool isReadOnly, uint globalSystemVersion)
+        internal TransformTypeHandle(AtomicSafetyHandle safety, AtomicSafetyHandle hierarchySafety, bool isReadOnly, bool excludeGameObjects, uint globalSystemVersion)
         {
             m_LookupCache = new LookupCache();
             TypeIndex typeIndex = TypeManager.GetTypeIndex<TransformRef>();
@@ -3012,6 +3019,7 @@ namespace Unity.Entities
             m_SizeInChunk = typeInfo.SizeInChunk;
             m_GlobalSystemVersion = globalSystemVersion;
             m_IsReadOnly = (byte)(isReadOnly ? 1 : 0);
+            m_ExcludeGameObjects = (byte)(excludeGameObjects ? 1 : 0);
             m_Length = 1;
             m_MinIndex = 0;
             m_MaxIndex = 0;

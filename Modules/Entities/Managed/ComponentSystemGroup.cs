@@ -14,25 +14,6 @@ using Debug = Unity.Scripting.LowLevel.Debug;
 
 namespace Unity.Entities
 {
-    internal struct UpdateIndex
-    {
-        private ushort Data;
-
-        public bool IsManaged => (Data & 0x8000) != 0;
-        public int Index => Data & 0x7fff;
-
-        public UpdateIndex(int index, bool managed)
-        {
-            Data = (ushort) index;
-            Data |= (ushort)((managed ? 1 : 0) << 15);
-        }
-
-        override public string ToString()
-        {
-            return IsManaged ? "Managed: Index " + Index : "UnManaged: Index " + Index;
-        }
-    }
-
     /// <summary>
     /// A special-case system that encapsulates an ordered list of other systems. When the group is updated, the group's
     /// member systems are updated in order.
@@ -92,7 +73,7 @@ namespace Unity.Entities
         internal List<ComponentSystemBase> m_managedSystemsToUpdate = new List<ComponentSystemBase>();
         internal List<ComponentSystemBase> m_managedSystemsToRemove = new List<ComponentSystemBase>();
 
-        internal UnsafeList<UpdateIndex> m_MasterUpdateList;
+        internal UnsafeList<SystemHandle> m_UpdateList;
         internal UnsafeList<SystemHandle> m_UnmanagedSystemsToUpdate;
         internal UnsafeList<SystemHandle> m_UnmanagedSystemsToRemove;
 
@@ -128,12 +109,8 @@ namespace Unity.Entities
         /// <returns>A NativeList of systems</returns>
         public NativeList<SystemHandle> GetAllSystems(Allocator allocator = Allocator.Temp)
         {
-            var ret = new NativeList<SystemHandle>(16, allocator);
-            for (int i = 0; i < m_MasterUpdateList.Length; i++)
-            {
-                var entry = m_MasterUpdateList[i];
-                ret.Add(entry.IsManaged ? m_managedSystemsToUpdate[entry.Index].SystemHandle : m_UnmanagedSystemsToUpdate[entry.Index]);
-            }
+            var ret = new NativeList<SystemHandle>(m_UpdateList.Length, allocator);
+            ret.CopyFrom(m_UpdateList);
             return ret;
         }
 
@@ -148,7 +125,7 @@ namespace Unity.Entities
             base.OnCreate();
             m_UnmanagedSystemsToUpdate = new UnsafeList<SystemHandle>(0, Allocator.Persistent);
             m_UnmanagedSystemsToRemove = new UnsafeList<SystemHandle>(0, Allocator.Persistent);
-            m_MasterUpdateList = new UnsafeList<UpdateIndex>(0, Allocator.Persistent);
+            m_UpdateList = new UnsafeList<SystemHandle>(0, Allocator.Persistent);
             Created = true;
         }
 
@@ -159,7 +136,7 @@ namespace Unity.Entities
             {
                 DestroyRateGroupAllocators();
             }
-            m_MasterUpdateList.Dispose();
+            m_UpdateList.Dispose();
             m_UnmanagedSystemsToRemove.Dispose();
             m_UnmanagedSystemsToUpdate.Dispose();
             base.OnDestroy();
@@ -200,7 +177,7 @@ namespace Unity.Entities
                     return;
                 }
 
-                m_MasterUpdateList.Add(new UpdateIndex(m_managedSystemsToUpdate.Count, true));
+                m_UpdateList.Add(sys.SystemHandle);
                 m_managedSystemsToUpdate.Add(sys);
                 m_systemSortDirty = true;
             }
@@ -249,7 +226,7 @@ namespace Unity.Entities
                     return;
                 }
 
-                m_MasterUpdateList.Add(new UpdateIndex(m_UnmanagedSystemsToUpdate.Length, false));
+                m_UpdateList.Add(sysHandle);
                 m_UnmanagedSystemsToUpdate.Add(sysHandle);
             }
 
@@ -313,96 +290,36 @@ namespace Unity.Entities
             if (m_managedSystemsToRemove.Count <= 0 && m_UnmanagedSystemsToRemove.Length <= 0)
                 return;
 
-            var world = World.Unmanaged;
-            int largestID = 0;
-
-            //determine the size of the lookup table used for looking up system information; whether a system is due to be removed
-            //and/or the new update index of the system
-            foreach (var managedSystem in m_managedSystemsToUpdate)
-            {
-                largestID = math.max(largestID, managedSystem.CheckedState()->m_SystemID);
-            }
-            foreach (var unmanagedSystem in m_UnmanagedSystemsToUpdate)
-            {
-                largestID = math.max(largestID, world.ResolveSystemState(unmanagedSystem)->m_SystemID);
-            }
-
-            var newListIndices = new NativeArray<int>(largestID + 1, Allocator.Temp);
-            var systemIsRemoved = new NativeArray<byte>(largestID + 1, Allocator.Temp,NativeArrayOptions.ClearMemory);
-
-            //update removed system lookup table
+            var removedManaged = new HashSet<ComponentSystemBase>(m_managedSystemsToRemove);
+            var removedHandles = new NativeHashSet<SystemHandle>(m_managedSystemsToRemove.Count + m_UnmanagedSystemsToRemove.Length, Allocator.Temp);
             foreach (var managedSystem in m_managedSystemsToRemove)
             {
-                systemIsRemoved[managedSystem.CheckedState()->m_SystemID] = 1;
+                removedHandles.Add(managedSystem.CheckedState()->SystemHandle);
             }
-
             foreach (var unmanagedSystem in m_UnmanagedSystemsToRemove)
             {
-                systemIsRemoved[world.ResolveSystemState(unmanagedSystem)->m_SystemID] = 1;
+                removedHandles.Add(unmanagedSystem);
             }
 
-            var newManagedUpdateList = new List<ComponentSystemBase>(m_managedSystemsToUpdate.Count);
-            var newUnmanagedUpdateList = new UnsafeList<SystemHandle>(m_UnmanagedSystemsToUpdate.Length,Allocator.Persistent);
-
-            //use removed lookup table to determine which systems will be in the new update
-            foreach (var managedSystem in m_managedSystemsToUpdate)
-            {
-                var systemID = managedSystem.CheckedState()->m_SystemID;
-                if (systemIsRemoved[systemID] == 0)
-                {
-                    //the new update index will be based on the position in the systems list
-                    newListIndices[systemID] = newManagedUpdateList.Count;
-                    newManagedUpdateList.Add(managedSystem);
-                }
-            }
-
-            foreach (var unmanagedSystem in m_UnmanagedSystemsToUpdate)
-            {
-                var systemID = world.ResolveSystemState(unmanagedSystem)->m_SystemID;
-                if (systemIsRemoved[systemID] == 0)
-                {
-                    newListIndices[systemID] = newUnmanagedUpdateList.Length;
-                    newUnmanagedUpdateList.Add(unmanagedSystem);
-                }
-            }
-
-            var newMasterUpdateList = new UnsafeList<UpdateIndex>(newManagedUpdateList.Count + newUnmanagedUpdateList.Length,Allocator.Persistent);
-
-            foreach (var updateIndex in m_MasterUpdateList)
-            {
-                if (updateIndex.IsManaged)
-                {
-                    var system = m_managedSystemsToUpdate[updateIndex.Index];
-                    var systemID = system.CheckedState()->m_SystemID;
-                    //use the two lookup tables to determine if and where the new master update list entries go
-                    if (systemIsRemoved[systemID] == 0)
-                    {
-                        newMasterUpdateList.Add(new UpdateIndex(newListIndices[systemID], true));
-                    }
-                }
-                else
-                {
-                    var system = m_UnmanagedSystemsToUpdate[updateIndex.Index];
-                    var systemID = world.ResolveSystemState(system)->m_SystemID;
-                    if (systemIsRemoved[systemID] == 0)
-                    {
-                        newMasterUpdateList.Add(new UpdateIndex(newListIndices[systemID], false));
-                    }
-                }
-            }
-
-            newListIndices.Dispose();
-            systemIsRemoved.Dispose();
-
-            m_managedSystemsToUpdate = newManagedUpdateList;
+            m_managedSystemsToUpdate.RemoveAll(managedSystem => removedManaged.Contains(managedSystem));
             m_managedSystemsToRemove.Clear();
 
-            m_UnmanagedSystemsToUpdate.Dispose();
-            m_UnmanagedSystemsToUpdate = newUnmanagedUpdateList;
+            RemoveHandles(ref m_UnmanagedSystemsToUpdate, removedHandles);
             m_UnmanagedSystemsToRemove.Clear();
 
-            m_MasterUpdateList.Dispose();
-            m_MasterUpdateList = newMasterUpdateList;
+            RemoveHandles(ref m_UpdateList, removedHandles);
+            removedHandles.Dispose();
+        }
+
+        static void RemoveHandles(ref UnsafeList<SystemHandle> list, NativeHashSet<SystemHandle> removedHandles)
+        {
+            int kept = 0;
+            for (int i = 0; i < list.Length; ++i)
+            {
+                if (!removedHandles.Contains(list[i]))
+                    list[kept++] = list[i];
+            }
+            list.Length = kept;
         }
 
         private void RecurseUpdate()
@@ -448,7 +365,7 @@ namespace Unity.Entities
                 allElems[i] = new ComponentSystemSorter.SystemElement
                 {
                     SystemTypeIndex = sysTypeIndex,
-                    Index = new UpdateIndex(i, true),
+                    Handle = system.m_StatePtr->SystemHandle,
                     OrderingBucket = orderingBucket,
                     updateBefore = new NativeList<int>(16, Allocator.Temp),
                     nAfter = 0,
@@ -457,12 +374,13 @@ namespace Unity.Entities
             }
             for (int i = 0; i < m_UnmanagedSystemsToUpdate.Length; ++i)
             {
-                var sysTypeIndex = World.Unmanaged.ResolveSystemState(m_UnmanagedSystemsToUpdate[i])->m_SystemTypeIndex;
+                var handle = m_UnmanagedSystemsToUpdate[i];
+                var sysTypeIndex = World.Unmanaged.ResolveSystemState(handle)->m_SystemTypeIndex;
                 int orderingBucket = ComputeSystemOrdering(sysTypeIndex, groupTypeIndex);
                 allElems[m_managedSystemsToUpdate.Count + i] = new ComponentSystemSorter.SystemElement
                 {
                     SystemTypeIndex = sysTypeIndex,
-                    Index = new UpdateIndex(i, false),
+                    Handle = handle,
                     OrderingBucket = orderingBucket,
                     updateBefore = new NativeList<int>(16, Allocator.Temp),
                     nAfter = 0,
@@ -530,41 +448,31 @@ namespace Unity.Entities
             }
 
             // Because people can freely look at the list of managed systems, we need to put that part of list in order.
-            var oldSystems = m_managedSystemsToUpdate;
-            m_managedSystemsToUpdate = new List<ComponentSystemBase>(oldSystems.Count);
+            var oldCount = m_managedSystemsToUpdate.Count;
+            m_managedSystemsToUpdate = new List<ComponentSystemBase>(oldCount);
+            m_UpdateList.Clear();
+            m_UpdateList.SetCapacity(allElems.Length);
             for (int i = 0; i < 3; ++i)
             {
                 foreach (var e in elemBuckets[i])
                 {
-                    var index = e.Index;
-                    if (index.IsManaged)
-                    {
-                        m_managedSystemsToUpdate.Add(oldSystems[index.Index]);
-                    }
+                    m_UpdateList.Add(e.Handle);
+                    var state = WorldOf(e.Handle).ResolveSystemState(e.Handle);
+                    if (state->m_ManagedSystem.IsAllocated)
+                        m_managedSystemsToUpdate.Add((ComponentSystemBase)state->m_ManagedSystem.Target);
                 }
             }
+        }
 
-            // Commit results to master update list
-            m_MasterUpdateList.Clear();
-            m_MasterUpdateList.SetCapacity(allElems.Length);
+        // A managed system from another world can be added through AddSystemToUpdateList(ComponentSystemBase)
+        WorldUnmanaged WorldOf(SystemHandle handle)
+        {
+            var world = World.Unmanaged;
+            if (handle.m_WorldSeqNo == (uint)world.SequenceNumber)
+                return world;
 
-            // Append buckets in order, but replace managed indices with incrementing indices
-            // into the newly sorted m_systemsToUpdate list
-            int managedIndex = 0;
-            for (int i = 0; i < 3; ++i)
-            {
-                foreach (var e in elemBuckets[i])
-                {
-                    if (e.Index.IsManaged)
-                    {
-                        m_MasterUpdateList.Add(new UpdateIndex(managedIndex++, true));
-                    }
-                    else
-                    {
-                        m_MasterUpdateList.Add(e.Index);
-                    }
-                }
-            }
+            var access = EntityComponentStore.GetEntityDataAccess(handle.m_Entity);
+            return access != null ? access->m_WorldUnmanaged : world;
         }
 
         internal static int ComputeSystemOrdering(SystemTypeIndex sysType, SystemTypeIndex ourTypeIndex)
@@ -706,40 +614,19 @@ namespace Unity.Entities
             if (m_systemSortDirty)
                 SortSystems();
 
-            // Update all unmanaged and managed systems together, in the correct sort order.
-            // The master update list contains indices for both managed and unmanaged systems.
-            // Negative values indicate an index in the unmanaged system list.
-            // Positive values indicate an index in the managed system list.
-            var world = World.Unmanaged;
-            ref var worldImpl = ref world.GetImpl();
-
             // Cache the update list length before updating; any new systems added mid-loop will change the length and
             // should not be processed until the subsequent group update, to give SortSystems() a chance to run.
-            int updateListLength = m_MasterUpdateList.Length;
+            int updateListLength = m_UpdateList.Length;
             for (int i = 0; i < updateListLength; ++i)
             {
                 try
                 {
-                    var index = m_MasterUpdateList[i];
-
-                    if (!index.IsManaged)
-                    {
-                        // Update unmanaged (burstable) code.
-                        var handle = m_UnmanagedSystemsToUpdate[index.Index];
-                        var state = (OnUpdateBefore.IsCreated || OnUpdateAfter.IsCreated) ? world.ResolveSystemState(handle) : null;
-                        if (OnUpdateBefore.IsCreated && state != null) OnUpdateBefore.Invoke(state->m_SystemTypeIndex, ref *state);
-                        worldImpl.UpdateSystem(handle);
-                        if (OnUpdateAfter.IsCreated && state != null) OnUpdateAfter.Invoke(state->m_SystemTypeIndex, ref *state);
-                    }
-                    else
-                    {
-                        // Update managed code.
-                        var sys = m_managedSystemsToUpdate[index.Index];
-                        var state = sys.m_StatePtr;
-                        if (OnUpdateBefore.IsCreated && state != null) OnUpdateBefore.Invoke(state->m_SystemTypeIndex, ref *state);
-                        sys.Update();
-                        if (OnUpdateAfter.IsCreated && state != null) OnUpdateAfter.Invoke(state->m_SystemTypeIndex, ref *state);
-                    }
+                    var handle = m_UpdateList[i];
+                    var world = WorldOf(handle);
+                    var state = (OnUpdateBefore.IsCreated || OnUpdateAfter.IsCreated) ? world.ResolveSystemState(handle) : null;
+                    if (OnUpdateBefore.IsCreated && state != null) OnUpdateBefore.Invoke(state->m_SystemTypeIndex, ref *state);
+                    world.GetImpl().UpdateSystem(handle);
+                    if (OnUpdateAfter.IsCreated && state != null) OnUpdateAfter.Invoke(state->m_SystemTypeIndex, ref *state);
                 }
                 catch (Exception e)
                 {

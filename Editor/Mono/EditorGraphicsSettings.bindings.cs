@@ -51,6 +51,9 @@ namespace UnityEditor.Rendering
         extern public static BatchRendererGroupStrippingMode batchRendererGroupShaderStrippingMode { get; }
         extern internal static bool activeProfileHasGraphicsSettings { get; set; }
 
+        [VisibleToOtherModules("UnityEditor.ProjectAuditorModule")]
+        extern internal static BuiltInRenderPipelineUsage builtInRenderPipelineUsage { get; set; }
+
         [NativeName("RegisterRenderPipelineSettings")] static extern bool Internal_TryRegisterRenderPipeline(string renderpipelineName, Object settings);
         [NativeName("UnregisterRenderPipelineSettings")] static extern bool Internal_TryUnregisterRenderPipeline(string renderpipelineName);
         [NativeName("GetSettingsForRenderPipeline")] static extern Object Internal_GetSettingsForRenderPipeline(string renderpipelineName);
@@ -234,6 +237,8 @@ namespace UnityEditor.Rendering
         }
 
         extern public static ShaderBuildSettings GetShaderBuildSettings();
+
+        extern internal static ShaderBuildSettings GetProjectShaderBuildSettings();
 
         [NativeName("SetShaderBuildSettings")] extern internal static void SetShaderBuildSettingsImpl(ShaderBuildSettings settings);
 

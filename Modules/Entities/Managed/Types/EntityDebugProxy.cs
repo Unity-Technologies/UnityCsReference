@@ -37,37 +37,13 @@ namespace Unity.Entities
         {
             unsafe
             {
-                if (!EntityComponentStore.s_entityStore.Data.Exists(entity))
-                {
+                // Chunk metadata is created with the first world.
+                if (EntityComponentStore.PerChunkArray.ChunkData == null)
                     return null;
-                }
 
-                var entityInChunk = EntityComponentStore.s_entityStore.Data.GetEntityInChunk(entity);
-                var chunkData = EntityComponentStore.PerChunkArray.ChunkData[entityInChunk.Chunk];
-
-                var archetype = chunkData.Archetype;
-                if (archetype == null)
-                {
-                    return null;
-                }
-
-                var store = archetype->EntityComponentStore;
-                if (store == null)
-                {
-                    return null;
-                }
-
-                var sequenceNumber = store->WorldSequenceNumber;
-
-                foreach (var world in World.All)
-                {
-                    if (sequenceNumber == world.SequenceNumber)
-                    {
-                        return world;
-                    }
-                }
+                var access = EntityComponentStore.GetEntityDataAccess(entity);
+                return access != null ? access->ManagedEntityDataAccess.World : null;
             }
-            return null;
         }
 
         public EntityArchetype Archetype => new DebuggerDataAccess(_World).GetArchetype(_Entity);

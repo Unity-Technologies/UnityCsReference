@@ -258,7 +258,7 @@ namespace UnityEngine.UIElements
             UpdateValueFromText();
         }
 
-        [EventInterest(typeof(BlurEvent), typeof(FocusEvent))]
+        [EventInterest(typeof(BlurEvent), typeof(FocusEvent), typeof(FocusOutEvent))]
         protected override void HandleEventBubbleUp(EventBase evt)
         {
             base.HandleEventBubbleUp(evt);
@@ -291,6 +291,13 @@ namespace UnityEngine.UIElements
                 if (showMixedValue && textInputBase.textElement.hasFocus)
                 {
                     textInputBase.text = "";
+                }
+            }
+            else if (evt.eventTypeId == FocusOutEvent.TypeId())
+            {
+                if (evt.target == textInputBase.textElement && showMixedValue && isDelayed && !string.IsNullOrEmpty(text))
+                {
+                    textInputBase.UpdateValueFromText();
                 }
             }
         }

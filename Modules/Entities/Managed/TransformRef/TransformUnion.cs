@@ -9,58 +9,55 @@ using Unity.Burst;
 using Unity.Collections.LowLevel.Unsafe;
 using Unity.Jobs;
 using Unity.Mathematics;
-using Unity.Scripting.LifecycleManagement;
+using Unity.Transforms;
+using UnityEngine.Scripting;
 
+
+using Assert = UnityEngine.Assertions.AssertCore;
 
 namespace Unity.Entities
 {
     /// <summary>
-    /// Provides callback registration for native code to update TransformUnion components.
+    /// Called by the Core module's transform code to point TransformUnion components at their native TransformHierarchy.
     /// </summary>
     [BurstCompile]
-    internal static unsafe class TransformUnionCallbacks
+    internal static unsafe class TransformUnionHierarchyAssignment
     {
-        [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
-        private delegate void UpdateTransformUnionsDelegate(IntPtr entityComponentStore, IntPtr entityIds, IntPtr hierarchy, IntPtr indices, int count);
-        [NoAutoStaticsCleanup] // TypeManager.Shutdown calls Shutdown.
-        private static bool s_Initialized;
-
-        internal static void Initialize()
+        // Returns the owner value of the entities' World (see TransformDependencyBridge), or 0 if none has chunk storage.
+        [RequiredByNativeCode]
+        static ulong AssignTransformHierarchy(IntPtr entityIds, IntPtr hierarchy, IntPtr indicesInHierarchy, int count)
         {
-            if (s_Initialized)
-                return;
+            if (!TypeManager.IsInitialized)
+                return 0;
 
-            var updateFnPtr = BurstCompiler.CompileFunctionPointer<UpdateTransformUnionsDelegate>(UpdateTransformUnionsCallback);
-            HierarchyTransformAccess.SetUpdateTransformUnionsCallback(updateFnPtr.Value);
-            s_Initialized = true;
-        }
-
-        internal static void Shutdown()
-        {
-            HierarchyTransformAccess.SetUpdateTransformUnionsCallback(default);
-            s_Initialized = false;
+            return AssignTransformHierarchyBurst((ulong*)entityIds, (void*)hierarchy, (int*)indicesInHierarchy, count);
         }
 
         [BurstCompile]
-        [AOT.MonoPInvokeCallback(typeof(UpdateTransformUnionsDelegate))]
-        private static void UpdateTransformUnionsCallback(IntPtr entityComponentStorePtr,
-            IntPtr entityIdsPtr, IntPtr hierarchyPtr, IntPtr indicesPtr, int count)
+        internal static ulong AssignTransformHierarchyBurst(ulong* entityIds, void* hierarchy, int* indicesInHierarchy, int count)
         {
-            Entity* entityIds = (Entity*)entityIdsPtr;
-            int* indices = (int*)indicesPtr;
-
-            EntityComponentStore* pComponentStore = (EntityComponentStore*)entityComponentStorePtr;
             TypeIndex typeIndex = TypeManager.GetTypeIndex<TransformRef>();
+            ulong owner = 0;
+            var lookupCache = default(LookupCache);
             for (int i = 0; i < count; i++)
             {
-                Entity entity = entityIds[i];
-                var union = (TransformUnion*)pComponentStore->GetComponentDataWithTypeRW(entity, typeIndex,
-                    pComponentStore->GlobalSystemVersion);
-                union->_UnsafeTransformHierarchyPointer = (void*)hierarchyPtr;
-                union->_IndexInHierarchy = indices[i];
+                Entity entity = UnsafeUtility.As<ulong, Entity>(ref entityIds[i]);
+                var archetype = EntityComponentStore.GetArchetypeOrNull(entity, out var entityInChunk);
+                if (archetype == null)
+                    continue;
+                var componentStore = archetype->EntityComponentStore;
+                if (owner == 0)
+                    owner = TransformDependencyBridge.GetOwner(componentStore);
+                var union = (TransformUnion*)ChunkDataUtility.GetOptionalComponentDataWithTypeRW(entityInChunk.Chunk,
+                    archetype, entityInChunk.IndexInChunk, typeIndex, componentStore->GlobalSystemVersion, ref lookupCache);
+                if (union == null)
+                    continue;
+                union->_UnsafeTransformHierarchyPointer = (TransformHierarchy*)hierarchy;
+                union->_IndexInHierarchy = indicesInHierarchy[i];
+                union->_HasHierarchy = hierarchy != null ? (byte)1 : (byte)0;
             }
+            return owner;
         }
-
     }
 
     /// <summary>
@@ -76,7 +73,7 @@ namespace Unity.Entities
         // union of
 
         // Transform belongs in hierarchy
-        [FieldOffset(0)] public void* _UnsafeTransformHierarchyPointer;                 // 08 bytes
+        [FieldOffset(0)] public TransformHierarchy* _UnsafeTransformHierarchyPointer;   // 08 bytes
         [FieldOffset(8)] public int _IndexInHierarchy;                                  // 04 bytes
         [FieldOffset(12)] public byte _IsDirty;                                         // 01 byte
         // ------------------------------
@@ -107,8 +104,7 @@ namespace Unity.Entities
             {
                 if (_HasHierarchy != 0)
                 {
-                    var uta = GetTransformAccess();
-                    return uta.localPosition;
+                    return _UnsafeTransformHierarchyPointer->localTransforms[_IndexInHierarchy].t;
                 }
                 else
                 {
@@ -119,8 +115,7 @@ namespace Unity.Entities
             {
                 if (_HasHierarchy != 0)
                 {
-                    var uta = GetTransformAccess();
-                    uta.localPosition = value;
+                    TransformInternal.SetLocalTNoCompare(_UnsafeTransformHierarchyPointer, _IndexInHierarchy, value);
                     _IsDirty = 1;
                 }
                 else
@@ -135,8 +130,7 @@ namespace Unity.Entities
             {
                 if (_HasHierarchy != 0)
                 {
-                    var uta = GetTransformAccess();
-                    return uta.localRotation;
+                    return _UnsafeTransformHierarchyPointer->localTransforms[_IndexInHierarchy].q;
                 }
                 else
                 {
@@ -147,8 +141,8 @@ namespace Unity.Entities
             {
                 if (_HasHierarchy != 0)
                 {
-                    var uta = GetTransformAccess();
-                    uta.localRotation = value;
+                    // Stored verbatim, not normalized, matching the loose-transform path below.
+                    TransformInternal.SetLocalRNoCompare(_UnsafeTransformHierarchyPointer, _IndexInHierarchy, value);
                     _IsDirty = 1;
                 }
                 else
@@ -164,8 +158,7 @@ namespace Unity.Entities
             {
                 if (_HasHierarchy != 0)
                 {
-                    var uta = GetTransformAccess();
-                    return uta.localScale;
+                    return _UnsafeTransformHierarchyPointer->localTransforms[_IndexInHierarchy].s;
                 }
                 else
                 {
@@ -176,8 +169,7 @@ namespace Unity.Entities
             {
                 if (_HasHierarchy != 0)
                 {
-                    var uta = GetTransformAccess();
-                    uta.localScale = value;
+                    TransformInternal.SetLocalSNoCompare(_UnsafeTransformHierarchyPointer, _IndexInHierarchy, value);
                     _IsDirty = 1;
                 }
                 else
@@ -187,16 +179,40 @@ namespace Unity.Entities
             }
         }
 
-        public float4x4 ComputeLocalToWorld()
+        // Exposed solely for testing. Used internally to handle different types of scaling.
+        internal byte LocalTransformType
+        {
+            get
+            {
+                if (_HasHierarchy == 0)
+                    throw new NotImplementedException(
+                        "LocalTransformType is not supported for entities that have neither parent nor children.");
+
+                return _UnsafeTransformHierarchyPointer->localTransformTypes[_IndexInHierarchy];
+            }
+        }
+
+        public float4x4 CalculateLocalToWorld()
         {
             if (_HasHierarchy != 0)
             {
-                var uta = GetTransformAccess();
-                return uta.localToWorldMatrix;
+                return TransformInternal.CalculateGlobalMatrix(_UnsafeTransformHierarchyPointer, _IndexInHierarchy);
             }
             else
             {
                 return float4x4.TRS(Position, Rotation, Scale);
+            }
+        }
+
+        public float4x4 CalculateWorldToLocal()
+        {
+            if (_HasHierarchy != 0)
+            {
+                return TransformInternal.CalculateGlobalMatrixInverse(_UnsafeTransformHierarchyPointer, _IndexInHierarchy);
+            }
+            else
+            {
+                return math.inverse(float4x4.TRS(Position, Rotation, Scale));
             }
         }
 
@@ -241,9 +257,7 @@ namespace Unity.Entities
         {
             if (_HasHierarchy != 0)
             {
-                var uta = GetTransformAccess();
-                uta.SetLocalPositionAndRotation(position, rotation);
-                uta.localScale = scale;
+                TransformInternal.SetLocalTRSNoCompare(_UnsafeTransformHierarchyPointer, _IndexInHierarchy, position, rotation, scale);
                 _IsDirty = 1;
             }
             else
@@ -270,8 +284,9 @@ namespace Unity.Entities
         {
             if (_HasHierarchy != 0)
             {
-                var uta = GetTransformAccess();
-                uta.GetLocalPositionAndRotation(out position, out rotation);
+                ref trsX trs = ref _UnsafeTransformHierarchyPointer->localTransforms[_IndexInHierarchy];
+                position = trs.t;
+                rotation = trs.q;
             }
             else
             {
@@ -296,8 +311,7 @@ namespace Unity.Entities
         {
             if (_HasHierarchy != 0)
             {
-                var uta = GetTransformAccess();
-                uta.SetLocalPositionAndRotation(position, rotation);
+                TransformInternal.SetLocalTRNoCompare(_UnsafeTransformHierarchyPointer, _IndexInHierarchy, position, rotation);
                 _IsDirty = 1;
             }
             else
@@ -321,12 +335,12 @@ namespace Unity.Entities
         /// <seealso cref="GetLocalPositionAndRotation(float3, quaternion)"/>
         /// <param name="position">The world-space position will be stored here</param>
         /// <param name="rotation">The world-space rotation will be stored here</param>
-        public void GetWorldPositionAndRotation(out float3 position, out quaternion rotation)
+        public void CalculateWorldPositionAndRotation(out float3 position, out quaternion rotation)
         {
             if (_HasHierarchy != 0)
             {
-                var uta = GetTransformAccess();
-                uta.GetWorldPositionAndRotation(out position, out rotation);
+                TransformInternal.CalculateGlobalPositionAndRotation(_UnsafeTransformHierarchyPointer, _IndexInHierarchy,
+                    out position, out rotation);
             }
             else
             {
@@ -350,8 +364,7 @@ namespace Unity.Entities
         {
             if (_HasHierarchy != 0)
             {
-                var uta = GetTransformAccess();
-                uta.SetWorldPositionAndRotation(position, rotation);
+                TransformInternal.SetGlobalTRNoCompare(_UnsafeTransformHierarchyPointer, _IndexInHierarchy, position, rotation);
                 _IsDirty = 1;
             }
             else
@@ -373,9 +386,9 @@ namespace Unity.Entities
                     // TODO DOTS-10288: get a better initial capacity from number of initial deep child count.
                     parentAccess = HierarchyTransformAccess.CreateHierarchy((IntPtr)componentStore,
                         parent->Position, parent->Rotation, parent->Scale, Unsafe.As<Entity, ulong>(ref parentEntity),
-                        capacity:4);
+                        capacity: 4, ecsOwner: TransformDependencyBridge.GetOwner(componentStore));
                     parent->_HasHierarchy = 1;
-                    parent->_UnsafeTransformHierarchyPointer = (void*)parentAccess.Hierarchy;
+                    parent->_UnsafeTransformHierarchyPointer = (TransformHierarchy*)parentAccess.Hierarchy;
                     parent->_IndexInHierarchy = parentAccess.Index;
                 }
                 else
@@ -397,7 +410,7 @@ namespace Unity.Entities
                 {
                     // TODO DOTS-10289: find the most numerically stable way to do this.
                     var ltw = float4x4.TRS(Position, Rotation, Scale);
-                    float4x4 parentWtl = parentAccess.worldToLocalMatrix;
+                    float4x4 parentWtl = parent->CalculateWorldToLocal();
                     float4x4 newLocal = math.mul(parentWtl, ltw);
 
                     position = newLocal.c3.xyz;
@@ -406,10 +419,11 @@ namespace Unity.Entities
                 }
 
                 var childAccess = HierarchyTransformAccess.SetParent((IntPtr)componentStore,
-                    parentAccess, position, rotation, scale, Unsafe.As<Entity, ulong>(ref childEntity));
+                    parentAccess, position, rotation, scale, Unsafe.As<Entity, ulong>(ref childEntity),
+                    TransformDependencyBridge.GetOwner(componentStore));
                 _HasHierarchy = 1;
                 _IsDirty = 1;
-                _UnsafeTransformHierarchyPointer = (void*)childAccess.Hierarchy;
+                _UnsafeTransformHierarchyPointer = (TransformHierarchy*)childAccess.Hierarchy;
                 _IndexInHierarchy = childAccess.Index;
             }
             else
@@ -417,17 +431,20 @@ namespace Unity.Entities
                 var childAccess = GetTransformAccess();
                 if (preserveWorldTransform)
                 {
-                    var ltw = ComputeLocalToWorld();
+                    var ltw = CalculateLocalToWorld();
                     float4x4 newLocal = ltw;
                     if (parent != null)
                     {
-                        float4x4 parentWtl = parentAccess.worldToLocalMatrix;
+                        float4x4 parentWtl = parent->CalculateWorldToLocal();
                         newLocal = math.mul(parentWtl, ltw);
                     }
 
-                    childAccess.localPosition = newLocal.c3.xyz;
-                    childAccess.localRotation = new quaternion(math.orthonormalize(new float3x3(newLocal)));
-                    childAccess.localScale = new float3(math.length(newLocal.c0.xyz), math.length(newLocal.c1.xyz), math.length(newLocal.c2.xyz));
+                    // One combined write rather than three separate ones, so the change dispatch walks
+                    // the subtree once instead of three times.
+                    SetLocalTransform(
+                        newLocal.c3.xyz,
+                        new quaternion(math.orthonormalize(new float3x3(newLocal))),
+                        new float3(math.length(newLocal.c0.xyz), math.length(newLocal.c1.xyz), math.length(newLocal.c2.xyz)));
                 }
 
                 // TODO DOTS-10361: If parent == null and deepChildCount == 1 then destroy
@@ -435,7 +452,7 @@ namespace Unity.Entities
 
                 var newAccess = HierarchyTransformAccess.SetParent((IntPtr)componentStore,
                     parentAccess, childAccess);
-                _UnsafeTransformHierarchyPointer = (void*)newAccess.Hierarchy;
+                _UnsafeTransformHierarchyPointer = (TransformHierarchy*)newAccess.Hierarchy;
                 _IndexInHierarchy = newAccess.Index;
                 _IsDirty = 1;
             }
@@ -454,15 +471,16 @@ namespace Unity.Entities
                 Entity entity = entityIds[i];
                 var union = (TransformUnion*)pComponentStore->GetComponentDataWithTypeRW(entity, typeIndex,
                     pComponentStore->GlobalSystemVersion);
-                union->_UnsafeTransformHierarchyPointer = (void*)hierarchyPtr;
+                union->_UnsafeTransformHierarchyPointer = (TransformHierarchy*)hierarchyPtr;
                 union->_IndexInHierarchy = indices[i];
             }
         }
 
         internal JobHandle GetHierarchyDependency()
         {
-            var uta = GetTransformAccess();
-            return uta.GetHierarchyDependency();
+            Assert.IsTrue(_HasHierarchy != 0);
+            // Replaces TransformAccessBindings::GetHierarchyDependency native binding
+            return _UnsafeTransformHierarchyPointer->fence;
         }
 
         internal void QueueTransformDispatch()

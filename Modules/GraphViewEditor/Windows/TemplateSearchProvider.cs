@@ -4,6 +4,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Text;
 
 using UnityEngine;
@@ -108,6 +109,7 @@ namespace UnityEditor.Experimental.GraphView
 
                     var labels = AssetDatabase.GetLabels(new GUID(meta.guid));
                     var document = GraphViewIndexerExtension.BuildSearchDocument(descriptor, labels);
+                    document[TemplateQueryMatcher.k_FileNameKey] = new List<string> { Path.GetFileNameWithoutExtension(path).ToLowerInvariant() };
                     if (hiddenMatcher.Matches(document) && userMatcher.Matches(document))
                         yield return item;
                 }

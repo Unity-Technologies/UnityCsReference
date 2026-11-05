@@ -16,20 +16,16 @@ namespace Unity.Collections.LowLevel.Unsafe
 {
     public static partial class UnsafeUtility
     {
-        private static bool IsBlittableValueType(Type t) { return t.IsValueType && IsBlittable(t); }
-
-        private static string GetReasonForTypeNonBlittableImpl(Type t, string name)
+        private static string GetReasonForTypeNonUnmanagedImpl(Type t, string name)
         {
             if (!t.IsValueType)
-                return String.Format("{0} is not blittable because it is not of value type ({1})\n", name, t);
-            if (t.IsPrimitive)
-                return String.Format("{0} is not blittable ({1})\n", name, t);
+                return String.Format("{0} is not unmanaged because it is not of value type ({1})\n", name, t);
 
             string ret = "";
             foreach (FieldInfo f in t.GetFields(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic))
             {
-                if (!IsBlittableValueType(f.FieldType))
-                    ret += GetReasonForTypeNonBlittableImpl(f.FieldType, String.Format("{0}.{1}", name, f.Name));
+                if (!IsUnmanaged(f.FieldType))
+                    ret += GetReasonForTypeNonUnmanagedImpl(f.FieldType, String.Format("{0}.{1}", name, f.Name));
             }
             return ret;
         }
@@ -43,42 +39,36 @@ namespace Unity.Collections.LowLevel.Unsafe
         // thats why we provide the means to implement this pattern on your code (but not function itself)
 
         [VisibleToOtherModules("UnityEngine.CoreModule")]
-        internal static bool IsArrayBlittable(Array arr)
+        internal static bool IsArrayUnmanaged(Array arr)
         {
-            return IsBlittableValueType(arr.GetType().GetElementType());
+            Type elementType = arr.GetType().GetElementType();
+            return elementType.IsValueType && IsUnmanaged(elementType);
         }
 
         [VisibleToOtherModules("UnityEngine.CoreModule")]
-        internal static bool IsGenericListBlittable<T>() where T : struct
+        internal static bool IsGenericListUnmanaged<T>() where T : struct
         {
-            return IsBlittable<T>();
+            return IsUnmanaged(typeof(T));
         }
 
         [VisibleToOtherModules("UnityEngine.CoreModule")]
-        internal static string GetReasonForArrayNonBlittable(Array arr)
+        internal static string GetReasonForArrayNonUnmanaged(Array arr)
         {
             Type t = arr.GetType().GetElementType();
-            return GetReasonForTypeNonBlittableImpl(t, t.Name);
+            return GetReasonForTypeNonUnmanagedImpl(t, t.Name);
         }
 
         [VisibleToOtherModules("UnityEngine.CoreModule")]
-        internal static string GetReasonForGenericListNonBlittable<T>() where T : struct
+        internal static string GetReasonForGenericListNonUnmanaged<T>() where T : struct
         {
             Type t = typeof(T);
-            return GetReasonForTypeNonBlittableImpl(t, t.Name);
+            return GetReasonForTypeNonUnmanagedImpl(t, t.Name);
         }
 
         [VisibleToOtherModules("UnityEngine.CoreModule", "UnityEngine.EntitiesModule")]
-        internal static string GetReasonForTypeNonBlittable(Type t)
+        internal static string GetReasonForTypeNonUnmanaged(Type t)
         {
-            return GetReasonForTypeNonBlittableImpl(t, t.Name);
-        }
-
-        [VisibleToOtherModules("UnityEngine.CoreModule")]
-        internal static string GetReasonForValueTypeNonBlittable<T>() where T : struct
-        {
-            Type t = typeof(T);
-            return GetReasonForTypeNonBlittableImpl(t, t.Name);
+            return GetReasonForTypeNonUnmanagedImpl(t, t.Name);
         }
 
         // Since burst would fail to compile managed types anyway, we can default to unmanaged and

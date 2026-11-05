@@ -80,6 +80,7 @@ namespace Unity.GraphToolkit.Editor
             registrar.RegisterDefaultCommandHandler<DeleteWireCommand>();
 
             registrar.RegisterDefaultCommandHandler<ExpandPortCommand>();
+            registrar.RegisterDefaultCommandHandler<TemporarilyExpandPortCommand>();
 
             registrar.RegisterDefaultCommandHandler<BuildAllEditorCommand>();
 

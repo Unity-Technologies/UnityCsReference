@@ -196,14 +196,28 @@ namespace Unity.GraphToolkit.Editor
                 });
                 m_ExpandToggle.RegisterCallback<KeyDownEvent>(evt =>
                 {
-                    if (evt.keyCode == KeyCode.LeftArrow)
+                    if (evt.keyCode != KeyCode.LeftArrow && evt.keyCode != KeyCode.RightArrow)
+                        return;
+
+                    var expand = evt.keyCode == KeyCode.RightArrow;
+                    if (evt.altKey)
                     {
-                        m_ExpandToggle.value = false;
+                        m_OwnerElement.RootView.Dispatch(new ExpandPortCommand(expand, new[] { portModel }, true));
+                        evt.StopPropagation();
                     }
-                    else if (evt.keyCode == KeyCode.RightArrow)
-                    {
-                        m_ExpandToggle.value = true;
-                    }
+                    else
+                        m_ExpandToggle.value = expand;
+                });
+
+                // Alt+click expands or collapses the port and all its sub ports, like hierarchies elsewhere in the Editor.
+                // The toggle ignores Alt+click, so the pointer down is left alone and an Alt drag still pans the graph.
+                m_ExpandToggle.RegisterCallback<ClickEvent>(evt =>
+                {
+                    if (evt.button != (int)MouseButton.LeftMouse || !evt.altKey)
+                        return;
+
+                    m_OwnerElement.RootView.Dispatch(new ExpandPortCommand(!m_ExpandToggle.value, new[] { portModel }, true));
+                    evt.StopPropagation();
                 });
 
                 // The arrow is drawn instead of using the theme image, so that its color can be set from USS.
@@ -362,7 +376,7 @@ namespace Unity.GraphToolkit.Editor
         {
             if (m_Model is PortModel portModel)
             {
-                m_ExpandToggle.SetValueWithoutNotify(portModel.IsExpandedSelf);
+                m_ExpandToggle.SetValueWithoutNotify(portModel.IsShownExpanded);
                 m_ExpandArrow?.MarkDirtyRepaint();
 
                 int rank = 0;

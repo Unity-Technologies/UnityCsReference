@@ -304,20 +304,21 @@ namespace UnityEditor.Search
             {
                 var skipNull = c.HasFlag(SearchExpressionExecutionFlags.ThreadedEvaluation) && !c.HasFlag(SearchExpressionExecutionFlags.PassNull);
                 var executeContext = c.runtime.current;
-                var timeoutWatch = new System.Diagnostics.Stopwatch();
-                timeoutWatch.Start();
+                executeContext.Tick();
                 foreach (var r in evaluator.execute(executeContext))
                 {
                     if (r != null)
                     {
-                        timeoutWatch.Restart();
+                        executeContext.Tick();
                         yield return r;
                     }
                     else if (!skipNull)
                     {
-                        if (timeoutWatch.Elapsed.TotalSeconds > k_ExpressionEvaluationTimeOutInSeconds)
+                        // Times out only when no frame of the evaluation made progress, so that evaluators
+                        // that aggregate their results do not time out while their arguments yield results
+                        if (executeContext.timeSinceLastTick.TotalSeconds > k_ExpressionEvaluationTimeOutInSeconds)
                         {
-                            c.ThrowError("Timeout");
+                            executeContext.ThrowError("Timeout");
                         }
                         yield return null;
                     }
@@ -419,6 +420,10 @@ namespace UnityEditor.Search
             {
                 foreach (var item in selectedItems)
                 {
+                    // Null items only signal that results were pending when the items were collected
+                    if (item == null)
+                        continue;
+
                     var selectedValue = processHandler(item);
                     if (selectedValue == null)
                         continue;

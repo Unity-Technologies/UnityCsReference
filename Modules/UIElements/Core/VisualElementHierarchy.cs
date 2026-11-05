@@ -13,8 +13,8 @@ namespace UnityEngine.UIElements
 {
     public partial class VisualElement
     {
-        private const string k_VisualElementAssetPropertyName = "--unity-visual-element-asset-property";
-        private const string k_LinkedTemplateAssetOwnerPropertyName = "--unity-linked-template-asset-owner";
+        static readonly PropertyName k_VisualElementAssetPropertyName = "--unity-visual-element-asset-property";
+        static readonly PropertyName k_LinkedTemplateAssetOwnerPropertyName = "--unity-linked-template-asset-owner";
 
         internal const string k_RootVisualContainerName = "rootVisualContainer";
 
@@ -689,7 +689,7 @@ namespace UnityEngine.UIElements
                 {
                     // This list will be released if the element is cleared of its children
                     // Which we now recommend doing in contexts where many VisualElements are created/finalized
-                    m_Owner.m_Children = VisualElementListPool.Get();
+                    m_Owner.m_Children = VisualElementChildListPool.Get();
                 }
 
                 if (m_Owner.layoutNode.UsesMeasure)
@@ -1162,7 +1162,7 @@ namespace UnityEngine.UIElements
                 {
                     var children = m_Owner.m_Children;
                     m_Owner.m_Children = s_EmptyList;
-                    VisualElementListPool.Release(children);
+                    VisualElementChildListPool.Release(children);
                 }
             }
 

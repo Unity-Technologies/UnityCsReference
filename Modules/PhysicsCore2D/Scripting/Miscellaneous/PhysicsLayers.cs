@@ -67,7 +67,7 @@ namespace Unity.U2D.Physics
             }
 
             // 64-bit layers (if available and active).
-            if (PhysicsWorld.usePhysicsLayers && PhysicsGlobal_GetPhysicsLayers() is LayerNames physicsLayerNames)
+            if (PhysicsWorld.usePhysicsLayers && activeLayerNames is LayerNames physicsLayerNames)
             {
                 PhysicsMask physicsMask = PhysicsMask.None;
                 foreach (var name in layerNames)
@@ -122,7 +122,7 @@ namespace Unity.U2D.Physics
                 throw new ArgumentNullException(nameof(layerName));
 
             // 64-bit layers (if available and active).
-            if (PhysicsWorld.usePhysicsLayers && PhysicsGlobal_GetPhysicsLayers() is LayerNames physicsLayerNames)
+            if (PhysicsWorld.usePhysicsLayers && activeLayerNames is LayerNames physicsLayerNames)
             {
                 var layerOrdinal = physicsLayerNames.GetLayerOrdinal(layerName);
                 if (layerOrdinal != InvalidLayerOrdinal)
@@ -157,7 +157,7 @@ namespace Unity.U2D.Physics
         public static string GetLayerName(int layerOrdinal)
         {
             // 64-bit layers (if available and active).
-            if (PhysicsWorld.usePhysicsLayers && PhysicsGlobal_GetPhysicsLayers() is LayerNames physicsLayerNames)
+            if (PhysicsWorld.usePhysicsLayers && activeLayerNames is LayerNames physicsLayerNames)
             {
                 if (layerOrdinal < 0 || layerOrdinal > 63)
                     throw new ArgumentOutOfRangeException(nameof(layerOrdinal), $"The layer ordinal '{layerOrdinal}' is out of the valid range [0, 63].");
@@ -185,7 +185,7 @@ namespace Unity.U2D.Physics
             layerNames.Clear();
             layerMasks.Clear();
 
-            if (PhysicsGlobal_GetPhysicsLayers() is LayerNames physicsLayerNames)
+            if (activeLayerNames is LayerNames physicsLayerNames)
             {
                 var names = physicsLayerNames.m_Names;
                 if (names.Length == 64)
@@ -215,6 +215,9 @@ namespace Unity.U2D.Physics
                 layerMasks.Add((UInt64)1 << i);
             }
         }
+
+        // The layer names on the active PhysicsCoreSettings2D asset, or null when no asset is assigned.
+        private static LayerNames activeLayerNames => PhysicsGlobal_GetPhysicsCoreSettings() is PhysicsCoreSettings2D settings ? settings.physicsLayerNames : null;
 
         /// <undoc/>
         [Serializable]

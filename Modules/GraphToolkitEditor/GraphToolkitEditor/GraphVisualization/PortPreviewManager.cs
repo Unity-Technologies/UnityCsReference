@@ -51,8 +51,7 @@ class PortPreviewManager
             return;
         }
 
-        // If the port no longer exists in the graph, prune any stale store entry and bail out.
-        if (m_Session.GraphView != null && !TryGetPortView(portGuid, out _))
+        if (!m_Session.IsElementValid<PortModel>(portGuid))
         {
             PortPreviewStore.Clear(portGuid);
             return;
@@ -76,8 +75,7 @@ class PortPreviewManager
     {
         PortPreviewStore.Clear(portGuid);
 
-        // If the port no longer exists in the graph, nothing to remove from the view.
-        if (m_Session.GraphView != null && !TryGetPortView(portGuid, out _))
+        if (!m_Session.IsElementValid<PortModel>(portGuid))
             return;
 
         ClearPortPreview(portGuid);
@@ -106,27 +104,25 @@ class PortPreviewManager
 
     internal void ShowAll(bool show)
     {
-        if (m_Session.GraphView == null)
+        var graphView = m_Session.GraphView;
+        if (graphView == null)
             return;
 
         foreach (var (portGuid, _) in PortPreviewStore.AllPortPreviewData)
         {
-            if (TryGetPortView(portGuid, out var portView))
-                portView.PortPreview?.Show(show);
+            portGuid.GetView<Port>(graphView)?.PortPreview?.Show(show);
         }
     }
 
     bool TryGetPortView(Hash128 portGuid, out Port portView)
     {
-        portView = portGuid.GetView<Port>(m_Session.GraphView);
+        var graphView = m_Session.GraphView;
+        portView = graphView == null ? null : portGuid.GetView<Port>(graphView);
         return portView != null;
     }
 
     void ClearPortPreview(Hash128 portGuid)
     {
-        if (m_Session.GraphView == null)
-            return;
-
         if (!TryGetPortView(portGuid, out var portView))
             return;
 
@@ -141,9 +137,6 @@ class PortPreviewManager
 
     void SetPortPreview(Hash128 portGuid, string displayValue)
     {
-        if (m_Session.GraphView == null)
-            return;
-
         if (!TryGetPortView(portGuid, out var portView))
             return;
 

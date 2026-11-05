@@ -194,8 +194,8 @@ namespace UnityEngine.UIElements
                     e.computedStyle.ApplyPropertyAnimation(e, id, new Ratio(value));
                     break;
 
-                case PropertyType.Int or PropertyType.Enum:
-                    e.computedStyle.ApplyPropertyAnimation(e, id, BitConverter.SingleToInt32Bits(value));
+                case PropertyType.Int or PropertyType.Enum or PropertyType.GridLine:
+                    e.computedStyle.ApplyPropertyAnimation(e, id, DecodeIntChannel(id, channel, value));
                     break;
 
                 case PropertyType.Length:
@@ -367,8 +367,7 @@ namespace UnityEngine.UIElements
                 PropertyType.Length => AnimationLengthChannel.ReadFloat(
                     element.computedStyle.ReadPropertyAnimationLength(id), channel),
                 PropertyType.Float => element.computedStyle.ReadPropertyAnimationFloat(id),
-                PropertyType.Int => BitConverter.Int32BitsToSingle(element.computedStyle.ReadPropertyAnimationInt(id)),
-                PropertyType.Enum => BitConverter.Int32BitsToSingle(element.computedStyle.ReadPropertyAnimationInt(id)),
+                PropertyType.Int or PropertyType.Enum or PropertyType.GridLine => EncodeIntChannel(id, channel, element.computedStyle.ReadPropertyAnimationInt(id)),
                 PropertyType.Color => element.computedStyle.ReadPropertyAnimationColor(id)[channel],
                 PropertyType.Translate => channel <= 1
                     ? AnimationLengthChannel.ReadFloat(element.computedStyle.ReadPropertyAnimationTranslate(id).x, channel)
@@ -449,6 +448,24 @@ namespace UnityEngine.UIElements
 
 
         }
+
+        private static int RoundToAnimatedInt(float value)
+        {
+            if (float.IsNaN(value))
+                return 0;
+
+            // Clamp in double: (float)int.MaxValue rounds up to 2^31, and int.MinValue is the z-index auto sentinel.
+            return (int)Math.Clamp(Math.Round(value), int.MinValue + 1, int.MaxValue);
+        }
+
+        private static float AnimatedIntToFloat(int value) => value == int.MinValue ? 0f : value;
+
+        // Discrete curves reach the binder as the int's bit pattern in the float slot (native AnimationDiscreteIntToFloat).
+        private static int DecodeIntChannel(StylePropertyId id, int channel, float value) =>
+            GetChannelKind(id, channel) == AnimationChannelKind.Int ? BitConverter.SingleToInt32Bits(value) : RoundToAnimatedInt(value);
+
+        private static float EncodeIntChannel(StylePropertyId id, int channel, int value) =>
+            GetChannelKind(id, channel) == AnimationChannelKind.Int ? BitConverter.Int32BitsToSingle(value) : AnimatedIntToFloat(value);
 
         [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
         internal void SetObjectValue(int elementIndex, int propertyId, int channel, EntityId value)

@@ -11,23 +11,48 @@ using UnityEngine.Bindings;
 
 namespace UnityEditor.ShaderApiReflection
 {
-    public struct ReflectedParameter
+    ///<summary>Information about a shader function parameter.</summary>
+    ///<remarks>This struct represents a function parameter as reflected from shader source code. On top of information extracted directly from the syntax, such as <see cref="DirectionFlags" />, <see cref="TypeName" />, and <see cref="Name" />, it also contains <see cref="Hints" />: metadata extracted from structured comments decorating the function.</remarks>
+    ///<example nocheck="true">
+    /// In the following example, <c>PrintFunction</c> fetches <see cref="ReflectedParameter"/>s from a
+    /// <see cref="ReflectedFunction"/> and prints each one's name and type to the console.
+    ///<code source="../../Tests/UTFTests/FunctionalTests/Editor/Documentation/ReflectedFunctionExample.cs"/>
+    ///</example>
+    ///<seealso cref="ReflectedFunction.Parameters" />
+    public struct ReflectedParameter : IHasHints
     {
         // Public API
 
         // NOTE: This enum must remain synchronized with its native counterpart.
+        ///<summary>The read- and writability flags for a function parameter.</summary>
+        ///<remarks>Indicates whether a <see cref="ReflectedParameter" /> may be read from, written to, or both from within a function.</remarks>
+        ///<example nocheck="true">
+        /// In the following example, <c>PrintFunction</c> prints the direction of each parameter
+        /// of each <see cref="ReflectedFunction"/> to the console.
+        ///<code source="../../Tests/UTFTests/FunctionalTests/Editor/Documentation/ReflectedFunctionExample.cs"/>
+        ///</example>
+        ///<seealso cref="ReflectedParameter.DirectionFlags" />
         public enum Direction
         {
+            ///<summary>Indicates the parameter is an input to a function.</summary>
             In,
+            ///<summary>Indicates the parameter is an output from a function.</summary>
             Out,
+            ///<summary>Indicates the parameter is an input and output to a function.</summary>
             InOut,
         };
 
+        ///<summary>The parameter's read- and writability.</summary>
         public Direction DirectionFlags { get; internal set; }
+        ///<summary>The name of the parameter's type.</summary>
         public string TypeName { get; internal set; }
+        ///<summary>The parameter's name.</summary>
         public string Name { get; internal set; }
+        ///<inheritdoc/>
         public ReadOnlyDictionary<string, string> Hints => new ReadOnlyDictionary<string, string>(m_Hints);
 
+        ///<summary>Gets the parameter's declaration, as would be written in the shader function's declaration.</summary>
+        ///<returns>The parameter's declaration.</returns>
         public override string ToString()
         {
             string directionString = string.Empty;

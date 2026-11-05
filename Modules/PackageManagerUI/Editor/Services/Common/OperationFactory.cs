@@ -17,22 +17,24 @@ internal class OperationFactory : BaseService<IOperationFactory>, IOperationFact
     private readonly IUnityConnectProxy m_UnityConnect;
     private readonly IAssetStoreRestAPI m_AssetStoreRestAPI;
     private readonly IAssetStoreCache m_AssetStoreCache;
+    private readonly IDateTimeProxy m_DateTimeProxy;
 
-    public OperationFactory(IUnityConnectProxy unityConnect, IAssetStoreRestAPI assetStoreRestAPI, IAssetStoreCache assetStoreCache)
+    public OperationFactory(IUnityConnectProxy unityConnect, IAssetStoreRestAPI assetStoreRestAPI, IAssetStoreCache assetStoreCache, IDateTimeProxy dateTimeProxy)
     {
         m_UnityConnect = RegisterDependency(unityConnect);
         m_AssetStoreRestAPI = RegisterDependency(assetStoreRestAPI);
         m_AssetStoreCache = RegisterDependency(assetStoreCache);
+        m_DateTimeProxy = RegisterDependency(dateTimeProxy);
     }
 
     [ExcludeFromCodeCoverage]
     public void ResolveDependenciesForOperation(AssetStoreListOperation operation)
     {
-        operation?.ResolveDependencies(m_UnityConnect, m_AssetStoreRestAPI, m_AssetStoreCache);
+        operation?.ResolveDependencies(m_UnityConnect, m_AssetStoreRestAPI, m_AssetStoreCache, m_DateTimeProxy);
     }
 
     public AssetStoreListOperation CreateAssetStoreListOperation()
     {
-        return new AssetStoreListOperation(m_UnityConnect, m_AssetStoreRestAPI, m_AssetStoreCache);
+        return new AssetStoreListOperation(m_UnityConnect, m_AssetStoreRestAPI, m_AssetStoreCache, m_DateTimeProxy);
     }
 }

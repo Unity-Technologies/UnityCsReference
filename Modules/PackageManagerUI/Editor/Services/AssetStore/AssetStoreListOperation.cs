@@ -59,27 +59,30 @@ namespace UnityEditor.PackageManager.UI.Internal
         private IAssetStoreRestAPI m_AssetStoreRestAPI;
         [NonSerialized]
         private IAssetStoreCache m_AssetStoreCache;
-        public void ResolveDependencies(IUnityConnectProxy unityConnect, IAssetStoreRestAPI assetStoreRestAPI, IAssetStoreCache assetStoreCache)
+        [NonSerialized]
+        private IDateTimeProxy m_DateTimeProxy;
+        public void ResolveDependencies(IUnityConnectProxy unityConnect, IAssetStoreRestAPI assetStoreRestAPI, IAssetStoreCache assetStoreCache, IDateTimeProxy dateTimeProxy)
         {
             m_UnityConnect = unityConnect;
             m_AssetStoreRestAPI = assetStoreRestAPI;
             m_AssetStoreCache = assetStoreCache;
+            m_DateTimeProxy = dateTimeProxy;
         }
 
         private AssetStoreListOperation()
         {
         }
 
-        public AssetStoreListOperation(IUnityConnectProxy unityConnect, IAssetStoreRestAPI assetStoreRestAPI, IAssetStoreCache assetStoreCache)
+        public AssetStoreListOperation(IUnityConnectProxy unityConnect, IAssetStoreRestAPI assetStoreRestAPI, IAssetStoreCache assetStoreCache, IDateTimeProxy dateTimeProxy)
         {
-            ResolveDependencies(unityConnect, assetStoreRestAPI, assetStoreCache);
+            ResolveDependencies(unityConnect, assetStoreRestAPI, assetStoreCache, dateTimeProxy);
         }
 
         public virtual void Start(PurchasesQueryArgs queryArgs)
         {
             SetQueryArgs(queryArgs);
             m_IsInProgress = true;
-            m_Timestamp = DateTime.Now.Ticks;
+            m_Timestamp = m_DateTimeProxy.utcNow.Ticks;
 
             if (!m_UnityConnect.isUserLoggedIn)
             {
@@ -103,7 +106,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         public virtual void Stop()
         {
-            m_Timestamp = DateTime.Now.Ticks;
+            m_Timestamp = m_DateTimeProxy.utcNow.Ticks;
             m_AssetStoreRestAPI.AbortGetPurchases(m_AdjustedQueryArgs);
             FinalizedOperation();
         }

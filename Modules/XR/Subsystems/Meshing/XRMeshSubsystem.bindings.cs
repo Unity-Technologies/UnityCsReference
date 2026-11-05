@@ -487,6 +487,9 @@ namespace UnityEngine.XR
         ///The bounding volume is an Axis Aligned Bounding Box (AABB) centered at the <c>origin</c> and extends in each dimension as defined in <c>extents</c>.
         ///
         ///The units of measurement depend on the provider.</summary>
+        ///<param name="origin">The center of the bounding volume.</param>
+        ///<param name="extents">The extents of the bounding volume in each dimension.</param>
+        ///<returns>True if the bounding volume was set. Otherwise, false.</returns>
         public extern bool SetBoundingVolume(Vector3 origin, Vector3 extents);
 
         [NativeConditional("ENABLE_XR")]

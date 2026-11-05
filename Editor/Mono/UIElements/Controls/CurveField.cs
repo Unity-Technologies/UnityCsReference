@@ -60,6 +60,7 @@ namespace UnityEditor.UIElements
         }
 
         private bool m_ValueNull;
+        private AnimationCurve m_ValueBeforeChange;
         // The CurveEditor will change the values in the arrays directly and will send commands to keep everything
         // in sync. Here, we're using this flag to force the value to be set when it is technically the same.
         private bool m_ForceSendEvent = false;
@@ -645,6 +646,16 @@ namespace UnityEditor.UIElements
 
                 Graphics.DrawMeshNow(m_Mesh, Matrix4x4.identity);
             }
+        }
+
+        internal override AnimationCurve GetValueBeforeChange()
+        {
+            if (m_ValueNull)
+                return null;
+
+            m_ValueBeforeChange ??= new AnimationCurve();
+            m_ValueBeforeChange.CopyFrom(rawValue);
+            return m_ValueBeforeChange;
         }
 
         internal override bool EqualsCurrentValue(AnimationCurve v)

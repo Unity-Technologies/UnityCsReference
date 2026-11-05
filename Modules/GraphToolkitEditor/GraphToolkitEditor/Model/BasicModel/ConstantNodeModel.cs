@@ -41,6 +41,9 @@ namespace Unity.GraphToolkit.Editor
         public override string Title => string.Empty;
 
         /// <inheritdoc />
+        public override bool HasAccentBar => m_Value != null && m_Value.Type.IsListOrArray();
+
+        /// <inheritdoc />
         #pragma warning disable UAC2011 // Avoid Linq
         public PortModel OutputPort => OutputsById.Values.FirstOrDefault();
 #pragma warning restore UAC2011

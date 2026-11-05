@@ -37,6 +37,7 @@ internal class SDKPlatformInfo
     public string[] supportedPlatformGuids;
     public string basePlatformGuid;
     public string platformGroupName;
+    public string[] platformGroupNames;
     public string displayName;
     public string description;
     public string instructions;

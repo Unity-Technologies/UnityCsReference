@@ -4,6 +4,7 @@
 
 using System;
 using Unity.Collections;
+using UnityEngine.Bindings;
 
 // Native code fills FieldHandle, so the C# side never assigns its fields.
 #pragma warning disable 649
@@ -11,6 +12,7 @@ using Unity.Collections;
 namespace Unity.Scripting.Reflection
 {
     // CoreCLR needs the declaring class to resolve a field declared on a generic type
+    [VisibleToOtherModules("UnityEngine.EntitiesModule")]
     internal unsafe partial struct FieldHandle : IEquatable<FieldHandle>
     {
         IntPtr m_Ptr;

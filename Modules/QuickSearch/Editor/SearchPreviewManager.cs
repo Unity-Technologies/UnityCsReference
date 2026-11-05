@@ -238,6 +238,7 @@ namespace UnityEditor.Search
             foreach (var kvp in asyncFetchOffs)
             {
                 kvp.Value.asyncCallbackOff();
+                kvp.Value.readyCallbacks.Clear();
             }
         }
 

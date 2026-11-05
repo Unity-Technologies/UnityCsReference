@@ -16,6 +16,10 @@ namespace UnityEngine.UIElements
     {
         internal readonly RuntimeTypeHandle[] types;   // exact-sized, sorted by handle value
 
+        // Parallel to types. Part of the set's identity: a record replaced by a code reload owns none of the
+        // handles of slots created before it, so sets that differ only by record must stay distinct.
+        internal readonly PerTypeStore[] records;
+
         readonly int m_Hash;                  // XOR of the entries' hashes, so add/remove re-XOR in O(1)
         ComponentTypeSet m_NextWithSameHash;
         int m_RefCount;                       // elements currently pointing at this record
@@ -39,16 +43,17 @@ namespace UnityEngine.UIElements
 
         internal int refCount => m_RefCount;  // test and diagnostics only
 
-        ComponentTypeSet(RuntimeTypeHandle[] sortedTypes, int hash)
+        ComponentTypeSet(RuntimeTypeHandle[] sortedTypes, PerTypeStore[] parallelRecords, int hash)
         {
             types = sortedTypes;
+            records = parallelRecords;
             m_Hash = hash;
             m_SuccessorGeneration = s_Generation;
         }
 
         // Never in the registry table and stable across resets, so element handles to it cannot go stale.
         [NoAutoStaticsCleanup]
-        static readonly ComponentTypeSet s_Empty = new(Array.Empty<RuntimeTypeHandle>(), 0);
+        static readonly ComponentTypeSet s_Empty = new(Array.Empty<RuntimeTypeHandle>(), Array.Empty<PerTypeStore>(), 0);
 
         // ResetRegistry, subscribed to UnloadingUtility, is the teardown for the registry statics.
         [NoAutoStaticsCleanup]
@@ -142,11 +147,12 @@ namespace UnityEngine.UIElements
             return false;
         }
 
-        internal static ComponentTypeSet GetWithAdded(ComponentTypeSet current, RuntimeTypeHandle added, out int insertIndex)
+        internal static ComponentTypeSet GetWithAdded(ComponentTypeSet current, RuntimeTypeHandle added, PerTypeStore addedRecord, out int insertIndex)
         {
             current.EnsureSuccessorsCurrent();
 
             var successors = current.m_AddSuccessors;
+            var staleProbe = -1;
             if (successors != null)
             {
                 var mask = successors.Length - 1;
@@ -158,8 +164,14 @@ namespace UnityEngine.UIElements
 
                     if (entry.type.Equals(added))
                     {
-                        insertIndex = entry.insertIndex;
-                        return entry.set;
+                        if (ReferenceEquals(entry.set.records[entry.insertIndex], addedRecord))
+                        {
+                            insertIndex = entry.insertIndex;
+                            return entry.set;
+                        }
+
+                        staleProbe = probe;   // memoized against a record a code reload has since replaced
+                        break;
                     }
                 }
             }
@@ -168,9 +180,12 @@ namespace UnityEngine.UIElements
             // Callers reject duplicates before requirements resolution; a hit here means that broke.
             Debug.Assert(!duplicate, "Adding a component type that is already in the element's type set.");
             var successor = FindOrCreateRecord(current.m_Hash ^ added.GetHashCode(),
-                new SingleTypeChange(current, added, insertIndex, isAdd: true));
+                new SingleTypeChange(current, added, addedRecord, insertIndex, isAdd: true));
 
-            current.StoreAddSuccessor(added, successor, insertIndex);
+            if (staleProbe >= 0)
+                successors[staleProbe].set = successor;
+            else
+                current.StoreAddSuccessor(added, successor, insertIndex);
             return successor;
         }
 
@@ -188,7 +203,7 @@ namespace UnityEngine.UIElements
                 return memoized;
 
             var successor = FindOrCreateRecord(current.m_Hash ^ current.types[removeIndex].GetHashCode(),
-                new SingleTypeChange(current, default, removeIndex, isAdd: false));
+                new SingleTypeChange(current, default, null, removeIndex, isAdd: false));
 
             successors[removeIndex] = successor;
             return successor;
@@ -254,25 +269,27 @@ namespace UnityEngine.UIElements
         {
             readonly ComponentTypeSet m_Current;
             readonly RuntimeTypeHandle m_Added;
+            readonly PerTypeStore m_AddedRecord;
             readonly int m_Index;
             readonly bool m_IsAdd;
 
-            internal SingleTypeChange(ComponentTypeSet current, RuntimeTypeHandle added, int index, bool isAdd)
+            internal SingleTypeChange(ComponentTypeSet current, RuntimeTypeHandle added, PerTypeStore addedRecord, int index, bool isAdd)
             {
                 m_Current = current;
                 m_Added = added;
+                m_AddedRecord = addedRecord;
                 m_Index = index;
                 m_IsAdd = isAdd;
             }
 
             internal bool Matches(ComponentTypeSet candidate)
                 => m_IsAdd
-                    ? candidate.MatchesWithAdded(m_Current, m_Added, m_Index)
+                    ? candidate.MatchesWithAdded(m_Current, m_Added, m_AddedRecord, m_Index)
                     : candidate.MatchesWithRemoved(m_Current, m_Index);
 
             internal ComponentTypeSet CreateRecord(int hash)
                 => m_IsAdd
-                    ? MakeWithAdded(m_Current, m_Added, m_Index, hash)
+                    ? MakeWithAdded(m_Current, m_Added, m_AddedRecord, m_Index, hash)
                     : MakeWithRemoved(m_Current, m_Index, hash);
         }
 
@@ -301,44 +318,55 @@ namespace UnityEngine.UIElements
             return chained;
         }
 
-        static ComponentTypeSet MakeWithAdded(ComponentTypeSet current, RuntimeTypeHandle added, int insertIndex, int hash)
+        static ComponentTypeSet MakeWithAdded(ComponentTypeSet current, RuntimeTypeHandle added, PerTypeStore addedRecord, int insertIndex, int hash)
         {
-            var source = current.types;
-            var merged = new RuntimeTypeHandle[source.Length + 1];
-            for (var i = 0; i < insertIndex; i++)
-                merged[i] = source[i];
-            merged[insertIndex] = added;
-            for (var i = insertIndex; i < source.Length; i++)
-                merged[i + 1] = source[i];
-
             s_RecordCount++;
-            return new ComponentTypeSet(merged, hash);
+            return new ComponentTypeSet(
+                InsertAt(current.types, insertIndex, added),
+                InsertAt(current.records, insertIndex, addedRecord),
+                hash);
         }
 
         static ComponentTypeSet MakeWithRemoved(ComponentTypeSet current, int removeIndex, int hash)
         {
-            var source = current.types;
-            var reduced = new RuntimeTypeHandle[source.Length - 1];
-            for (var i = 0; i < removeIndex; i++)
-                reduced[i] = source[i];
-            for (var i = removeIndex + 1; i < source.Length; i++)
-                reduced[i - 1] = source[i];
-
             s_RecordCount++;
-            return new ComponentTypeSet(reduced, hash);
+            return new ComponentTypeSet(
+                RemoveAt(current.types, removeIndex),
+                RemoveAt(current.records, removeIndex),
+                hash);
+        }
+
+        static TItem[] InsertAt<TItem>(TItem[] source, int index, TItem item)
+        {
+            var merged = new TItem[source.Length + 1];
+            Array.Copy(source, 0, merged, 0, index);
+            merged[index] = item;
+            Array.Copy(source, index, merged, index + 1, source.Length - index);
+            return merged;
+        }
+
+        static TItem[] RemoveAt<TItem>(TItem[] source, int index)
+        {
+            var reduced = new TItem[source.Length - 1];
+            Array.Copy(source, 0, reduced, 0, index);
+            Array.Copy(source, index + 1, reduced, index, source.Length - index - 1);
+            return reduced;
         }
 
         // The Matches* probes compare against "current + change" without building the successor: no allocation.
 
-        bool MatchesWithAdded(ComponentTypeSet current, RuntimeTypeHandle added, int insertIndex)
+        bool MatchesWithAdded(ComponentTypeSet current, RuntimeTypeHandle added, PerTypeStore addedRecord, int insertIndex)
             => types.Length == current.types.Length + 1
                 && types[insertIndex].Equals(added)
-                && SameExceptAt(types, current.types, insertIndex);
+                && ReferenceEquals(records[insertIndex], addedRecord)
+                && SameExceptAt(types, current.types, insertIndex)
+                && SameRecordsExceptAt(records, current.records, insertIndex);
 
         // current is this record plus its own entry at removeIndex, so that entry needs no separate check.
         bool MatchesWithRemoved(ComponentTypeSet current, int removeIndex)
             => types.Length == current.types.Length - 1
-                && SameExceptAt(current.types, types, removeIndex);
+                && SameExceptAt(current.types, types, removeIndex)
+                && SameRecordsExceptAt(current.records, records, removeIndex);
 
         // longer, minus its entry at index, equals shorter. Hash collisions make the full compare
         // necessary, not just the changed entry.
@@ -353,6 +381,23 @@ namespace UnityEngine.UIElements
             for (var i = index; i < shorter.Length; i++)
             {
                 if (!longer[i + 1].Equals(shorter[i]))
+                    return false;
+            }
+
+            return true;
+        }
+
+        static bool SameRecordsExceptAt(PerTypeStore[] longer, PerTypeStore[] shorter, int index)
+        {
+            for (var i = 0; i < index; i++)
+            {
+                if (!ReferenceEquals(longer[i], shorter[i]))
+                    return false;
+            }
+
+            for (var i = index; i < shorter.Length; i++)
+            {
+                if (!ReferenceEquals(longer[i + 1], shorter[i]))
                     return false;
             }
 

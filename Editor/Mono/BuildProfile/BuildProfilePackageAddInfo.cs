@@ -37,6 +37,13 @@ namespace UnityEditor.Build.Profile
         public BuildTargetDiscovery.PlatformPackageIdentifier[] packagesToAdd { get; set; }
             = Array.Empty<BuildTargetDiscovery.PlatformPackageIdentifier>();
 
+        /// <summary>
+        /// True when the installed packages were not registered yet as the request completed.
+        /// <see cref="packagesToAdd"/> is then kept to tell when they are.
+        /// </summary>
+        [SerializeField]
+        public bool isRegistrationPending;
+
         public Action OnPackageAddProgress;
         public Action OnPackageAddComplete;
 
@@ -92,9 +99,12 @@ namespace UnityEditor.Build.Profile
             OnPackageAddProgress?.Invoke();
         }
 
-        void HandlePackageAddComplete()
+        void HandlePackageAddComplete(bool succeeded)
         {
-            packagesToAdd = Array.Empty<BuildTargetDiscovery.PlatformPackageIdentifier>();
+            // The request reports done before the editor resolves and registers the packages.
+            isRegistrationPending = succeeded && !IsPackageRequestDone();
+            if (!isRegistrationPending)
+                packagesToAdd = Array.Empty<BuildTargetDiscovery.PlatformPackageIdentifier>();
             OnPackageAddComplete?.Invoke();
         }
     }

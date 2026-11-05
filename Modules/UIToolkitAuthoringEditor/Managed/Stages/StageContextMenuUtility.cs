@@ -116,6 +116,8 @@ internal static class StageContextMenuUtility
     {
         PopulateEditOperations(view, in node, menu, handler);
         menu.AppendSeparator();
+        KeyboardAuthoringShortcuts.AppendMenuActions(menu);
+        menu.AppendSeparator();
         PopulateFrameOperations(element, menu);
         menu.AppendSeparator();
         PopulateSelectionOperations(view, menu);
@@ -154,6 +156,9 @@ internal static class StageContextMenuUtility
         DropdownMenu menu, IHierarchyEditorNodeTypeHandler handler)
     {
         PopulateEditOperations(view, in node, menu, handler);
+        menu.AppendSeparator();
+
+        KeyboardAuthoringShortcuts.AppendMenuActions(menu);
         menu.AppendSeparator();
 
         PopulateFrameOperations(element, menu);

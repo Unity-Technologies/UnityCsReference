@@ -49,6 +49,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         private readonly IPackageManagerPrefs m_PackageManagerPrefs;
         private readonly IAssetStoreClient m_AssetStoreClient;
         private readonly ISampleCache m_SampleCache;
+        private readonly IDateTimeProxy m_DateTimeProxy;
 
         public PageRefreshHandler(IPageManager pageManager,
             IApplicationProxy application,
@@ -58,7 +59,8 @@ namespace UnityEditor.PackageManager.UI.Internal
             IUpmClient upmClient,
             IUpmRegistryClient upmRegistryClient,
             IAssetStoreClient assetStoreClient,
-            ISampleCache sampleCache)
+            ISampleCache sampleCache,
+            IDateTimeProxy dateTimeProxy)
         {
             m_PageManager = RegisterDependency(pageManager);
             m_Application = RegisterDependency(application);
@@ -69,6 +71,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_PackageManagerPrefs = RegisterDependency(packageManagerPrefs);
             m_AssetStoreClient = RegisterDependency(assetStoreClient);
             m_SampleCache = RegisterDependency(sampleCache);
+            m_DateTimeProxy = RegisterDependency(dateTimeProxy);
         }
 
         private void OnActivePageChanged(IPage page)
@@ -127,13 +130,13 @@ namespace UnityEditor.PackageManager.UI.Internal
             // We also always update the timestamp even when the data has not changed to reflect the last time we do the Refresh operation
             if (!FullScanImportedAssetsIfNeeded())
             {
-                SetRefreshTimestampSingleFlag(RefreshOptions.ImportedAssets, DateTime.Now.Ticks);
+                SetRefreshTimestampSingleFlag(RefreshOptions.ImportedAssets, m_DateTimeProxy.utcNow.Ticks);
                 m_AssetStoreClient.UpdateImportedAssetsOnAssetsChanged(importedAssets, deletedAssets, movedAssets, movedFromAssetPaths);
             }
 
             if (!FullScanImportedSamplesIfNeeded())
             {
-                SetRefreshTimestampSingleFlag(RefreshOptions.ImportedSamples, DateTime.Now.Ticks);
+                SetRefreshTimestampSingleFlag(RefreshOptions.ImportedSamples, m_DateTimeProxy.utcNow.Ticks);
                 m_SampleCache.UpdateImportedSamplesOnAssetChanged(importedAssets, deletedAssets, movedAssets, movedFromAssetPaths);
             }
         }
@@ -145,7 +148,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             // We set the timestamp before the actual operation because the results are retrieved synchronously, if we set the timestamp after
             // we will encounter an issue where the results are back but the UI still thinks the refresh is in progress
             // We also always update the timestamp even when the data has not changed to reflect the last time we do the Refresh operation
-            SetRefreshTimestampSingleFlag(RefreshOptions.ImportedAssets, DateTime.Now.Ticks);
+            SetRefreshTimestampSingleFlag(RefreshOptions.ImportedAssets, m_DateTimeProxy.utcNow.Ticks);
 
             if (needFullScan)
                 m_AssetStoreClient.FullScanImportedAssets();
@@ -159,7 +162,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             // We set the timestamp before the actual operation because the results are retrieved synchronously, if we set the timestamp after
             // we will encounter an issue where the results are back but the UI still thinks the refresh is in progress
             // We also always update the timestamp even when the data has not changed to reflect the last time we do the Refresh operation
-            SetRefreshTimestampSingleFlag(RefreshOptions.ImportedSamples, DateTime.Now.Ticks);
+            SetRefreshTimestampSingleFlag(RefreshOptions.ImportedSamples, m_DateTimeProxy.utcNow.Ticks);
 
             if (needFullScan)
                 m_SampleCache.FullScanImportedSamples();
@@ -172,7 +175,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             // We set the timestamp before the actual operation because the results are retrieved synchronously, if we set the timestamp after
             // we will encounter an issue where the results are back but the UI still thinks the refresh is in progress
             // We also always update the timestamp even when the data has not changed to reflect the last time we do the Refresh operation
-            SetRefreshTimestampSingleFlag(RefreshOptions.LocalInfo, DateTime.Now.Ticks);
+            SetRefreshTimestampSingleFlag(RefreshOptions.LocalInfo, m_DateTimeProxy.utcNow.Ticks);
             if (needFullScan)
                 m_AssetStoreClient.FullScanLocalInfos();
         }

@@ -24,6 +24,8 @@ namespace UnityEngine.UIElements
         private static Dictionary<Int64, ComputedStyle> s_ComputedStyleCache = new Dictionary<Int64, ComputedStyle>();
         [NoAutoStaticsCleanup] // cleaned by ClearStyleCache on unloading
         private static Dictionary<int, StyleVariableContext> s_StyleVariableContextCache = new Dictionary<int, StyleVariableContext>();
+        [NoAutoStaticsCleanup] // cleaned by ClearStyleCache on unloading
+        private static Dictionary<Int64, DerivedVariableContext> s_DerivedVariableContextCache = new Dictionary<Int64, DerivedVariableContext>();
 
         // Cached values for TransitionData converted into a ComputedTransitionProperty array for easier access
         [NoAutoStaticsCleanup] // cleaned by ClearStyleCache on unloading
@@ -100,6 +102,16 @@ namespace UnityEngine.UIElements
             s_StyleVariableContextCache[hash] = data;
         }
 
+        public static bool TryGetDerivedVariableContext(Int64 key, out DerivedVariableContext data)
+        {
+            return s_DerivedVariableContextCache.TryGetValue(key, out data);
+        }
+
+        public static void SetDerivedVariableContext(Int64 key, DerivedVariableContext data)
+        {
+            s_DerivedVariableContextCache[key] = data;
+        }
+
         public static bool TryGetValue(int hash, out ComputedTransitionProperty[] data)
         {
             return s_ComputedTransitionsCache.TryGetValue(hash, out data);
@@ -118,6 +130,7 @@ namespace UnityEngine.UIElements
             s_ComputedStyleCache.Clear();
             s_ValidatedThisPass.Clear();
             s_StyleVariableContextCache.Clear();
+            s_DerivedVariableContextCache.Clear();
             s_ComputedTransitionsCache.Clear();
         }
     }
@@ -158,6 +171,8 @@ namespace UnityEngine.UIElements
             visualTree.IncrementVersion(VersionChangeType.StyleSheet); // dirty all styles
         }
 
+
+        internal override VersionChangeType versionChangeInterest => VersionChangeType.StyleSheet | VersionChangeType.TransitionProperty;
 
         public override void OnVersionChanged(VisualElement ve, VersionChangeType versionChangeType)
         {
@@ -336,6 +351,8 @@ namespace UnityEngine.UIElements
         private List<StyleSelectorMatch> m_TempMatchResults = new List<StyleSelectorMatch>();
 
         private List<VisualElement> m_CustomStyleResolvedElements;
+
+        internal int variableContextCopyCount { get; private set; }
 
         private float currentPixelsPerPoint { get; set; } = 1.0f;
         // Re-entrancy protection: set to true during style traversal, false before event dispatch
@@ -624,6 +641,7 @@ namespace UnityEngine.UIElements
 
         StyleVariableContext GetInlineVariableContext(StyleVariableContext parentContext, StyleRule rule)
         {
+            variableContextCopyCount++;
             m_InlineVarContext.AddInitialRange(parentContext);
             foreach (var property in rule.properties)
             {
@@ -649,7 +667,7 @@ namespace UnityEngine.UIElements
         {
             // SpanSort over the backing array uses RefComparison, skipping the per-comparison
             // struct copy that List<T>.Sort(Comparison<T>) does on this ~24B readonly struct.
-            // The span is created once and reused by the three loops below (sort is in-place
+            // The span is created once and reused by the loops below (sort is in-place
             // and no later step here resizes the list).
             var matches = NoAllocHelpers.CreateSpan(matchingSelectors);
             SpanSort.Sort(matches, StyleSelectorMatch.RefComparison);
@@ -658,19 +676,10 @@ namespace UnityEngine.UIElements
             // Let current DPI contribute to the hash so cache is invalidated when this changes
             matchingRulesHash = (matchingRulesHash * 397) ^ currentPixelsPerPoint.GetHashCode();
 
-            int oldVariablesHash = m_StyleMatchingContext.variableContext.GetVariableHash();
+            var parentVariableContext = m_StyleMatchingContext.variableContext;
+            int oldVariablesHash = parentVariableContext.GetVariableHash();
             int customPropertiesCount = 0;
-            for (int i = 0; i < matches.Length; i++)
-            {
-                customPropertiesCount += matches[i].complexSelector.rule.customPropertiesCount;
-            }
-
-            if (customPropertiesCount > 0)
-            {
-                // Element defines new variables, add the parents variables at the beginning of the processing context
-                m_ProcessVarContext.AddInitialRange(m_StyleMatchingContext.variableContext);
-            }
-
+            Int64 derivedContextKey = oldVariablesHash;
             for (int i = 0; i < matches.Length; i++)
             {
                 // UUM-87950 Don't use rule.GetHashCode() as it isn't defined on the class and
@@ -689,7 +698,11 @@ namespace UnityEngine.UIElements
                 var rule = match.complexSelector.rule;
                 if (rule.customPropertiesCount > 0)
                 {
-                    ProcessMatchedVariables(sheet, rule, match.tier);
+                    customPropertiesCount += rule.customPropertiesCount;
+                    derivedContextKey = (derivedContextKey * 397) ^ sheet.GetHashCode();
+                    derivedContextKey = (derivedContextKey * 397) ^ sheet.contentHash;
+                    derivedContextKey = (derivedContextKey * 397) ^ ruleIndex;
+                    derivedContextKey = (derivedContextKey * 397) ^ (int)match.tier;
                 }
             }
 
@@ -697,26 +710,11 @@ namespace UnityEngine.UIElements
             int inheritedStyleHash = parent?.inheritedStylesHash ?? 0;
             matchingRulesHash = (matchingRulesHash * 397) ^ inheritedStyleHash;
 
-            int variablesHash = oldVariablesHash;
             if (customPropertiesCount > 0)
-            {
-                variablesHash = m_ProcessVarContext.GetVariableHash();
-            }
-            matchingRulesHash = (matchingRulesHash * 397) ^ variablesHash;
+                m_StyleMatchingContext.variableContext = GetDerivedVariableContext(parentVariableContext, matches, derivedContextKey);
 
-            if (oldVariablesHash != variablesHash)
-            {
-                StyleVariableContext ctx;
-                if (!StyleCache.TryGetValue(variablesHash, out ctx))
-                {
-                    ctx = new StyleVariableContext(m_ProcessVarContext);
-                    StyleCache.SetValue(variablesHash, ctx);
-                }
-
-                m_StyleMatchingContext.variableContext = ctx;
-            }
             element.variableContext = m_StyleMatchingContext.variableContext;
-            m_ProcessVarContext.Clear();
+            matchingRulesHash = (matchingRulesHash * 397) ^ m_StyleMatchingContext.variableContext.GetVariableHash();
 
             // Re-resolve when a cached style's baked-in asset EntityIds were destroyed (e.g. an Addressables
             // bundle unloaded) so the reloaded asset replaces the stale, now-invalid reference.
@@ -738,6 +736,70 @@ namespace UnityEngine.UIElements
             }
 
             return resolvedStyles;
+        }
+
+        StyleVariableContext GetDerivedVariableContext(StyleVariableContext parentContext, Span<StyleSelectorMatch> matches, Int64 key)
+        {
+            if (StyleCache.TryGetDerivedVariableContext(key, out var derived) && IsDerivedFrom(derived, parentContext, matches))
+                return derived.context;
+
+            variableContextCopyCount++;
+            m_ProcessVarContext.AddInitialRange(parentContext);
+            int declaringRuleCount = 0;
+            for (int i = 0; i < matches.Length; i++)
+            {
+                ref readonly var match = ref matches[i];
+                var rule = match.complexSelector.rule;
+                if (rule.customPropertiesCount > 0)
+                {
+                    ProcessMatchedVariables(match.sheet, rule, match.tier);
+                    declaringRuleCount++;
+                }
+            }
+
+            var context = parentContext;
+            var variablesHash = m_ProcessVarContext.GetVariableHash();
+            if (variablesHash != parentContext.GetVariableHash())
+            {
+                if (!StyleCache.TryGetValue(variablesHash, out context))
+                {
+                    context = new StyleVariableContext(m_ProcessVarContext);
+                    StyleCache.SetValue(variablesHash, context);
+                }
+            }
+            m_ProcessVarContext.Clear();
+
+            var rules = new VariableDeclaringRule[declaringRuleCount];
+            for (int i = 0, r = 0; i < matches.Length; i++)
+            {
+                ref readonly var match = ref matches[i];
+                var rule = match.complexSelector.rule;
+                if (rule.customPropertiesCount > 0)
+                    rules[r++] = new VariableDeclaringRule(match.sheet, rule, match.tier);
+            }
+            StyleCache.SetDerivedVariableContext(key, new DerivedVariableContext(parentContext, rules, context));
+
+            return context;
+        }
+
+        static bool IsDerivedFrom(DerivedVariableContext derived, StyleVariableContext parentContext, Span<StyleSelectorMatch> matches)
+        {
+            if (!ReferenceEquals(derived.parent, parentContext))
+                return false;
+
+            var rules = derived.rules;
+            int r = 0;
+            for (int i = 0; i < matches.Length; i++)
+            {
+                ref readonly var match = ref matches[i];
+                var rule = match.complexSelector.rule;
+                if (rule.customPropertiesCount == 0)
+                    continue;
+                if (r == rules.Length || !rules[r].Matches(match.sheet, rule, match.tier))
+                    return false;
+                r++;
+            }
+            return r == rules.Length;
         }
 
         private void ProcessMatchedVariables(StyleSheet sheet, StyleRule rule, StyleSheetPriority tier)

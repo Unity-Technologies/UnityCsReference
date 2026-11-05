@@ -72,12 +72,20 @@ internal unsafe struct CustomPropertyList : IDisposable
 
     [NativeName("Acquire")]
     private readonly extern void _Acquire();
+    // Most styles have no custom properties: skip the native calls, which do nothing on an uncreated list.
     public readonly CustomPropertyList Acquire()
     {
-        _Acquire();
+        if (m_Data != IntPtr.Zero)
+            _Acquire();
         return this;
     }
-    public extern void Release();
+    [NativeName("Release")]
+    private extern void _Release();
+    public void Release()
+    {
+        if (m_Data != IntPtr.Zero)
+            _Release();
+    }
     public void SafeRelease() => Release();
 
     public void CopyFrom(CustomPropertyList other)

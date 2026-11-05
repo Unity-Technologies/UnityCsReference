@@ -9,6 +9,7 @@ using Unity.Collections;
 using Unity.Collections.LowLevel.Unsafe;
 using Unity.Profiling;
 using Unity.Properties;
+using Unity.Scripting.LifecycleManagement;
 using UnityEngine.Bindings;
 using UnityEngine.Pool;
 using UnityEngine.UIElements.StyleSheets;
@@ -135,33 +136,14 @@ namespace UnityEngine.UIElements
         public StylePropertyData(StylePropertyId id) { this.id = id; }
     }
 
-    internal readonly struct UxmlData
+    internal struct UxmlData
     {
-        public readonly StyleProperty inlineProperty;
-        public readonly BindingInfo bindingInfo;
-        public readonly SelectorMatchRecord selector;
+        public StyleProperty inlineProperty;
+        public Binding binding;
+        public SelectorMatchRecord selector;
 
-        public UxmlData(StyleProperty p, BindingInfo b, SelectorMatchRecord s)
-        {
-            inlineProperty = p;
-            bindingInfo = b;
-            selector = s;
-        }
-
-        public static UxmlData WithProperty(in UxmlData data, StyleProperty property)
-        {
-            return new UxmlData(property, data.bindingInfo, data.selector);
-        }
-
-        public static UxmlData WithBindingInfo(in UxmlData data, BindingInfo bindingInfo)
-        {
-            return new UxmlData(data.inlineProperty, bindingInfo, data.selector);
-        }
-
-        public static UxmlData WithSelector(in UxmlData data, SelectorMatchRecord selector)
-        {
-            return new UxmlData(data.inlineProperty, data.bindingInfo, selector);
-        }
+        // Whether the entry is listed in the ids of the written entries.
+        public bool written;
     }
 
     [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
@@ -220,8 +202,12 @@ namespace UnityEngine.UIElements
         }
 
         private bool SetComputedValue(ref StylePropertyData<StyleBackground, Background> property,
-            EntityId unmanagedValue)
+            in UnmanagedBackground unmanagedValue)
         {
+            // Comparing the unmanaged value first avoids resolving the image and allocating the gradient stops.
+            if (ValueEquals(unmanagedValue, property.computedValue))
+                return false;
+
             var computedValue = Background.From(unmanagedValue);
             if (!property.computedValue.Equals(computedValue))
             {
@@ -259,6 +245,9 @@ namespace UnityEngine.UIElements
 
         private bool SetComputedValue(ref StylePropertyData<StyleFont, Font> property, EntityId unmanagedValue)
         {
+            if (GetEntityId(property.computedValue) == unmanagedValue)
+                return false;
+
             var computedValue = (Font)Resources.EntityIdToObject(unmanagedValue);
             if (property.computedValue != computedValue)
             {
@@ -331,10 +320,8 @@ namespace UnityEngine.UIElements
 
         private bool ApplyContext<TInline, TComputed>(ref StylePropertyData<TInline, TComputed> property, in ResolutionContext context)
         {
-            UxmlStyleProperty uxmlValue =
-                context.uxmlData.TryGetValue(property.id, out var uxmlData) && null != uxmlData.inlineProperty
-                    ? new UxmlStyleProperty(uxmlData.inlineProperty)
-                    : new UxmlStyleProperty(null);
+            ref readonly var uxmlData = ref context.uxmlData[(int)property.id];
+            var uxmlValue = new UxmlStyleProperty(uxmlData.inlineProperty);
 
             var notify = false;
             if (!property.uxmlValue.Equals(uxmlValue))
@@ -342,9 +329,9 @@ namespace UnityEngine.UIElements
                 property.uxmlValue = uxmlValue;
                 notify = true;
             }
-            if (property.binding != uxmlData.bindingInfo.binding)
+            if (property.binding != uxmlData.binding)
             {
-                property.binding = uxmlData.bindingInfo.binding;
+                property.binding = uxmlData.binding;
                 notify = true;
             }
             if (!property.selector.Equals(uxmlData.selector))
@@ -382,6 +369,105 @@ namespace UnityEngine.UIElements
             return true;
         }
 
+        // Entries that are the same as at the previous refresh are already applied to the properties, unless their
+        // inline property was modified since.
+        private void FindChangedUxmlData(bool propertiesMatchPreviousRefresh)
+        {
+            if (!propertiesMatchPreviousRefresh)
+            {
+                Array.Fill(m_UxmlDataChanged, true);
+                return;
+            }
+
+            Array.Clear(m_UxmlDataChanged, 0, m_UxmlDataChanged.Length);
+
+            // Entries that were only written at the previous refresh differ from the default current ones.
+            for (var i = 0; i < m_PreviousUxmlDataIds.Count; ++i)
+            {
+                var id = m_PreviousUxmlDataIds[i];
+                m_UxmlDataChanged[id] = !m_UxmlData[id].written;
+            }
+
+            for (var i = 0; i < m_UxmlDataIds.Count; ++i)
+            {
+                var id = m_UxmlDataIds[i];
+                ref readonly var current = ref m_UxmlData[id];
+                ref readonly var previous = ref m_PreviousUxmlData[id];
+                m_UxmlDataChanged[id] =
+                    current.inlineProperty != null ||
+                    previous.inlineProperty != null ||
+                    current.binding != previous.binding ||
+                    !current.selector.Equals(previous.selector);
+            }
+        }
+
+        private ref UxmlData WriteUxmlData(int id)
+        {
+            ref var data = ref m_UxmlData[id];
+            if (!data.written)
+            {
+                data.written = true;
+                m_UxmlDataIds.Add(id);
+            }
+            return ref data;
+        }
+
+        // Stores the computed style group in the snapshot, and returns whether the snapshot already held the same bytes.
+        private static unsafe bool UpdateComputedStyleSnapshot<T>(ref T snapshot, in T current) where T : unmanaged
+        {
+            bool unchanged;
+            fixed (T* snapshotPtr = &snapshot)
+                unchanged = UnsafeUtility.MemCmp(snapshotPtr, Unsafe.AsPointer(ref Unsafe.AsRef(in current)), sizeof(T)) == 0;
+
+            if (!unchanged)
+                snapshot = current;
+            return unchanged;
+        }
+
+        // Destroyed objects keep their id, and compare equal to the null that their id resolves to.
+        private static EntityId GetEntityId(UnityEngine.Object obj)
+        {
+            return ReferenceEquals(obj, null) ? EntityId.None : obj.GetEntityId();
+        }
+
+        // Same result as comparing Background.From(a) with b.
+        private static bool ValueEquals(in UnmanagedBackground a, in Background b)
+        {
+            UnityEngine.Object image = b.texture;
+            if (ReferenceEquals(image, null))
+                image = b.sprite;
+            if (ReferenceEquals(image, null))
+                image = b.renderTexture;
+            if (ReferenceEquals(image, null))
+                image = b.vectorImage;
+            if (a.imageEntityId != GetEntityId(image))
+                return false;
+
+            var gradient = a.GetGradient();
+            if (gradient.stopCount <= 0)
+                return b.gradient.Equals(default);
+
+            var stops = b.gradient.stops;
+            if (stops == null || stops.Length != gradient.stopCount)
+                return false;
+            if (gradient.type != b.gradient.type ||
+                gradient.shape != b.gradient.shape ||
+                gradient.size != b.gradient.size ||
+                !gradient.angle.Equals(b.gradient.angle) ||
+                gradient.angleUnit != b.gradient.angleUnit ||
+                !gradient.position.Equals(b.gradient.position))
+            {
+                return false;
+            }
+
+            for (var i = 0; i < stops.Length; ++i)
+            {
+                if (!gradient.stops[i].Equals((UnmanagedBackgroundGradientStop)stops[i]))
+                    return false;
+            }
+            return true;
+        }
+
         private static bool ValueEquals(UnmanagedMaterialDefinition a, MaterialDefinition b)
         {
             return a.material == (b.material != null ? b.material.GetEntityId() : EntityId.None) &&
@@ -403,16 +489,26 @@ namespace UnityEngine.UIElements
         {
             public readonly StyleDiff diff;
             public readonly StyleSheet styleSheet;
-            public readonly Dictionary<StylePropertyId, UxmlData> uxmlData;
+            public readonly UxmlData[] uxmlData;
+
+            // Whether the entry of each property can differ from the one applied at the previous refresh.
+            public readonly bool[] uxmlDataChanged;
+
+            // Whether the properties hold the values of the previous refresh, so that unchanged values can be skipped.
+            public readonly bool propertiesMatchPreviousRefresh;
 
             public ResolutionContext(
                 StyleDiff diff,
                 StyleSheet inline,
-                Dictionary<StylePropertyId, UxmlData> uxmlData)
+                UxmlData[] uxmlData,
+                bool[] uxmlDataChanged,
+                bool propertiesMatchPreviousRefresh)
             {
                 this.diff = diff;
                 styleSheet = inline;
                 this.uxmlData = uxmlData;
+                this.uxmlDataChanged = uxmlDataChanged;
+                this.propertiesMatchPreviousRefresh = propertiesMatchPreviousRefresh;
             }
         }
 
@@ -420,18 +516,47 @@ namespace UnityEngine.UIElements
 
         public event EventHandler<BindablePropertyChangedEventArgs> propertyChanged;
 
-        private MatchedRulesExtractor m_MatchedRules;
+        private StyleMatchingContext m_MatchingContext;
+        private readonly List<StyleSelectorMatch> m_SelectorMatches = new();
+        private readonly List<SelectorMatchRecord> m_MatchRecords = new();
+
+        static readonly int k_StylePropertyIdCount = GetStylePropertyIdCount();
+        static readonly StylePropertyId[][] k_LonghandPropertyIds = CreateLonghandPropertyIds();
+
+        private UxmlData[] m_UxmlData = new UxmlData[k_StylePropertyIdCount];
+        private UxmlData[] m_PreviousUxmlData = new UxmlData[k_StylePropertyIdCount];
+        private readonly bool[] m_UxmlDataChanged = new bool[k_StylePropertyIdCount];
+
+        // Ids of the entries written in m_UxmlData and m_PreviousUxmlData, the others are all default.
+        private List<int> m_UxmlDataIds = new();
+        private List<int> m_PreviousUxmlDataIds = new();
+        // False until a refresh completes, so that an interrupted refresh doesn't skip the values it didn't apply.
+        private bool m_PropertiesMatchPreviousRefresh;
+
+        // Most specific selector of each property, in the order in which the properties were first matched.
+        private readonly SelectorMatchRecord[] m_PropertySelectors = new SelectorMatchRecord[k_StylePropertyIdCount];
+        private readonly bool[] m_HasPropertySelector = new bool[k_StylePropertyIdCount];
+        private readonly List<StylePropertyId> m_SelectorPropertyIds = new();
+
+        // USS and C# style property names, as used in "style.<name>" binding ids.
+        [NoAutoStaticsCleanup]
+        static readonly Dictionary<string, StylePropertyId> k_StyleBindingNameToPropertyId = CreateStyleBindingNameToPropertyId();
+        private readonly List<string> m_StyleBindingNames = new();
+
+        // Read-only stand-in for elements without inline styles, so that the diff doesn't create one for them.
+        [NoAutoStaticsCleanup]
+        static readonly InlineStyleAccess k_EmptyInlineStyle = new(null);
+        private bool m_InlineValuesUnset;
 
         public ContextType currentContextType { get; private set; }
         public VisualElement currentTarget { get; private set; }
         public StyleSheet currentStyleSheet { get; private set; }
         public StyleRule currentRule { get; private set; }
 
-        public List<SelectorMatchRecord> matchRecords => m_MatchedRules?.matchRecords;
+        public List<SelectorMatchRecord> matchRecords => m_MatchRecords;
 
         public StyleDiff()
         {
-            m_MatchedRules = new MatchedRulesExtractor(null);
             currentContextType = ContextType.None;
         }
 
@@ -469,99 +594,181 @@ namespace UnityEngine.UIElements
             currentStyleSheet = styleSheet;
             currentRule = styleRule;
 
-            m_MatchedRules.Clear();
+            m_MatchRecords.Clear();
 
 
             using var marker = s_StyleDiffRefreshProfilerMarker.Auto();
-            using var uxmlDataHandle = DictionaryPool<StylePropertyId, UxmlData>.Get(out var uxmlData);
+            (m_UxmlData, m_PreviousUxmlData) = (m_PreviousUxmlData, m_UxmlData);
+            (m_UxmlDataIds, m_PreviousUxmlDataIds) = (m_PreviousUxmlDataIds, m_UxmlDataIds);
+            var uxmlData = m_UxmlData;
+            for (var i = 0; i < m_UxmlDataIds.Count; ++i)
+                uxmlData[m_UxmlDataIds[i]] = default;
+            m_UxmlDataIds.Clear();
 
             if ((flags & StyleDiffAdditionalDataFlags.UxmlInlineProperties) == StyleDiffAdditionalDataFlags.UxmlInlineProperties && null != styleRule)
             {
-                foreach (var property in styleRule.properties)
+                var properties = styleRule.properties;
+                for (var i = 0; i < properties.Length; ++i)
                 {
+                    var property = properties[i];
                     if (property.id == StylePropertyId.Custom)
                     {
                         // [TODO] Support variables in the style diff
                         continue;
                     }
-                    var d = uxmlData.GetValueOrDefault(property.id);
-                    uxmlData[property.id] = UxmlData.WithProperty(d, property);
+                    WriteUxmlData((int)property.id).inlineProperty = property;
 
-                    if (StyleDebug.IsShorthandProperty(property.id))
-                    {
-                        using var listHandle = ListPool<StylePropertyId>.Get(out var longHandPropertyIds);
-                        StyleDebug.PopulateLonghandPropertyIds(property.id, longHandPropertyIds);
-                        foreach (var longHandId in longHandPropertyIds)
-                        {
-                            var longHandData = uxmlData.GetValueOrDefault(longHandId);
-                            uxmlData[longHandId] = UxmlData.WithProperty(longHandData, property);
-                        }
-                    }
+                    var longhandIds = k_LonghandPropertyIds[(int)property.id];
+                    for (var j = 0; j < longhandIds.Length; ++j)
+                        WriteUxmlData((int)longhandIds[j]).inlineProperty = property;
                 }
             }
 
             if ((flags & StyleDiffAdditionalDataFlags.Bindings) == StyleDiffAdditionalDataFlags.Bindings)
             {
-                using var listHandle = ListPool<BindingInfo>.Get(out var bindingInfos);
-                element.GetBindingInfos(bindingInfos);
-
-                foreach (var info in bindingInfos)
+                // Same bindings as VisualElement.GetBindingInfos, without building a BindingInfo for each of them.
+                using var listHandle = ListPool<(Binding binding, BindingId bindingId)>.Get(out var bindingRequests);
+                DataBindingManager.GetBindingRequests(element, bindingRequests);
+                for (var i = 0; i < bindingRequests.Count; ++i)
                 {
-                    PropertyPath path = info.bindingId;
-                    if (path.Length == 2 && path[0].IsName && string.CompareOrdinal(path[0].Name, "style") == 0 && path[1].IsName)
+                    var request = bindingRequests[i];
+                    ApplyStyleBinding(request.binding, request.bindingId);
+                }
+
+                var bindingData = element.elementPanel?.dataBindingManager.GetBindingData(element);
+                if (bindingData != null)
+                {
+                    for (var i = 0; i < bindingData.Count; ++i)
                     {
-                        var styleNamePart = path[1].Name;
-                        if (StylePropertyUtil.propertyNameToStylePropertyId.TryGetValue(styleNamePart, out var id) ||
-                            (StylePropertyUtil.cSharpNameToUssName.TryGetValue(styleNamePart, out var propertyName) &&
-                            StylePropertyUtil.propertyNameToStylePropertyId.TryGetValue(propertyName, out id)))
-                        {
-                            var d = uxmlData.GetValueOrDefault(id);
-                            uxmlData[id] = UxmlData.WithBindingInfo(d, info);
-                        }
+                        var data = bindingData[i];
+                        ApplyStyleBinding(data.binding, data.target.bindingId);
                     }
                 }
+                m_StyleBindingNames.Clear();
             }
 
             if ((flags & StyleDiffAdditionalDataFlags.Selectors) == StyleDiffAdditionalDataFlags.Selectors)
             {
-                using var handle = DictionaryPool<StylePropertyId, SelectorMatchRecord>.Get(out var propertyToMatchRecord);
-                FindMatchingRules(currentTarget, propertyToMatchRecord);
+                FindMatchingRules(currentTarget);
 
-                foreach (var record in propertyToMatchRecord)
+                for (var i = 0; i < m_SelectorPropertyIds.Count; ++i)
                 {
-                    var propertyId = record.Key;
-                    var d = uxmlData.GetValueOrDefault(propertyId);
-                    uxmlData[propertyId] = UxmlData.WithSelector(d, record.Value);
-                    if (StyleDebug.IsShorthandProperty(propertyId))
-                    {
-                        using var listHandle = ListPool<StylePropertyId>.Get(out var longHandPropertyIds);
-                        StyleDebug.PopulateLonghandPropertyIds(propertyId, longHandPropertyIds);
-                        foreach (var longHandId in longHandPropertyIds)
-                        {
-                            var longHandData = uxmlData.GetValueOrDefault(longHandId);
-                            uxmlData[longHandId] = UxmlData.WithSelector(longHandData, record.Value);
-                        }
-                    }
+                    var propertyId = (int)m_SelectorPropertyIds[i];
+                    var record = m_PropertySelectors[propertyId];
+                    m_HasPropertySelector[propertyId] = false;
+                    m_PropertySelectors[propertyId] = default;
+
+                    WriteUxmlData(propertyId).selector = record;
+                    var longhandIds = k_LonghandPropertyIds[propertyId];
+                    for (var j = 0; j < longhandIds.Length; ++j)
+                        WriteUxmlData((int)longhandIds[j]).selector = record;
                 }
+                m_SelectorPropertyIds.Clear();
             }
 
-            var context = new ResolutionContext(this, styleSheet, uxmlData);
+            var propertiesMatchPreviousRefresh = m_PropertiesMatchPreviousRefresh;
+            FindChangedUxmlData(propertiesMatchPreviousRefresh);
+            var context = new ResolutionContext(this, styleSheet, uxmlData, m_UxmlDataChanged, propertiesMatchPreviousRefresh);
+
+            m_PropertiesMatchPreviousRefresh = false;
             Refresh(currentTarget, in context);
+            m_PropertiesMatchPreviousRefresh = true;
         }
 
-        private void FindMatchingRules(VisualElement element, Dictionary<StylePropertyId, SelectorMatchRecord> propertyToMatchRecord)
+        // The first binding of each binding id wins, like in VisualElement.GetBindingInfos.
+        private void ApplyStyleBinding(Binding binding, in BindingId bindingId)
         {
-            m_MatchedRules.FindMatchingRules(element);
-            for (var i = 0; i < m_MatchedRules.matchRecords.Count; ++i)
+            PropertyPath path = bindingId;
+            if (path.Length != 2 || !path[0].IsName || !path[1].IsName || string.CompareOrdinal(path[0].Name, "style") != 0)
+                return;
+
+            var styleName = path[1].Name;
+            if (!k_StyleBindingNameToPropertyId.TryGetValue(styleName, out var id))
+                return;
+
+            for (var i = 0; i < m_StyleBindingNames.Count; ++i)
             {
-                var record = m_MatchedRules.matchRecords[i];
+                if (string.Equals(m_StyleBindingNames[i], styleName, StringComparison.Ordinal))
+                    return;
+            }
+            m_StyleBindingNames.Add(styleName);
+
+            if (binding != null)
+                WriteUxmlData((int)id).binding = binding;
+        }
+
+        private static Dictionary<string, StylePropertyId> CreateStyleBindingNameToPropertyId()
+        {
+            var nameToId = new Dictionary<string, StylePropertyId>(StylePropertyUtil.propertyNameToStylePropertyId);
+            foreach (var pair in StylePropertyUtil.cSharpNameToUssName)
+            {
+                if (StylePropertyUtil.propertyNameToStylePropertyId.TryGetValue(pair.Value, out var id))
+                    nameToId.TryAdd(pair.Key, id);
+            }
+            return nameToId;
+        }
+
+        private void FindMatchingRules(VisualElement element)
+        {
+            m_MatchingContext ??= new StyleMatchingContext(applyPseudoMasks: false);
+            m_MatchingContext.currentElement = element;
+            var pushedElementCount = PushStyleSheetsAndAncestors(element, m_MatchingContext);
+            try
+            {
+                StyleSelectorHelper.FindMatches(m_MatchingContext, m_SelectorMatches);
+                m_SelectorMatches.Sort(StyleSelectorMatch.Comparison);
+                for (var i = 0; i < m_SelectorMatches.Count; ++i)
+                {
+                    var match = m_SelectorMatches[i];
+                    m_MatchRecords.Add(new SelectorMatchRecord(in match));
+                }
+            }
+            finally
+            {
+                m_SelectorMatches.Clear();
+
+                // Popping only touches the slots that were pushed, so the reset doesn't need to clear the whole filter.
+                for (var i = 0; i < pushedElementCount; ++i)
+                    m_MatchingContext.ancestorFilter.PopElement();
+                m_MatchingContext.Reset();
+            }
+
+            for (var i = 0; i < m_MatchRecords.Count; ++i)
+            {
+                var record = m_MatchRecords[i];
                 var properties = record.complexSelector.rule.properties;
                 for (var j = 0; j < properties.Length; ++j)
                 {
-                    var property = properties[j];
-                    propertyToMatchRecord[property.id] = record;
+                    var propertyId = properties[j].id;
+                    if (propertyId == StylePropertyId.Custom)
+                        continue;
+
+                    if (!m_HasPropertySelector[(int)propertyId])
+                    {
+                        m_HasPropertySelector[(int)propertyId] = true;
+                        m_SelectorPropertyIds.Add(propertyId);
+                    }
+                    m_PropertySelectors[(int)propertyId] = record;
                 }
             }
+        }
+
+        private static int PushStyleSheetsAndAncestors(VisualElement element, StyleMatchingContext matchingContext)
+        {
+            var parent = element.hierarchy.parent;
+            var pushedElementCount = parent != null ? PushStyleSheetsAndAncestors(parent, matchingContext) : 0;
+
+            // The ancestor filter is populated for the Bloom filter detection to work.
+            matchingContext.ancestorFilter.PushElement(element);
+
+            var sheets = element.styleSheetList;
+            if (sheets != null)
+            {
+                for (var i = 0; i < sheets.Count; ++i)
+                    matchingContext.AddStyleSheet(sheets[i]);
+            }
+
+            return pushedElementCount + 1;
         }
 
         static ShortHandStylePropertyData ComputeStyleProperty(
@@ -569,32 +776,63 @@ namespace UnityEngine.UIElements
             string propertyName,
             in ResolutionContext context)
         {
-            var property = new ShortHandStylePropertyData
+            ref readonly var uxmlData = ref context.uxmlData[(int)id];
+            return new ShortHandStylePropertyData
             {
                 id = id,
+                uxmlValue = new UxmlStyleProperty(uxmlData.inlineProperty),
+                binding = uxmlData.binding,
+                selector = uxmlData.selector,
             };
+        }
 
-            if (!context.uxmlData.TryGetValue(id, out var uxmlData))
-                return property;
+        // The inline values only need to be compared when the element or the previous one has some.
+        private IStyle GetInlineStyle(VisualElement element, bool propertiesMatchPreviousRefresh, out bool refreshInlineValues)
+        {
+            var inlineStyle = element.inlineStyleAccess;
+            var hasInlineValues = inlineStyle != null && inlineStyle.hasInlineValues;
+            refreshInlineValues = hasInlineValues || !m_InlineValuesUnset || !propertiesMatchPreviousRefresh;
+            m_InlineValuesUnset = !hasInlineValues;
+            return inlineStyle ?? k_EmptyInlineStyle;
+        }
 
-            var inlined = null != uxmlData.inlineProperty;
-            property.uxmlValue = inlined
-                ? new UxmlStyleProperty(uxmlData.inlineProperty)
-                : new UxmlStyleProperty(null);
+        private static int GetStylePropertyIdCount()
+        {
+            var maxId = 0;
+            foreach (StylePropertyId id in Enum.GetValues(typeof(StylePropertyId)))
+                maxId = Math.Max(maxId, (int)id);
+            return maxId + 1;
+        }
 
-            property.binding = uxmlData.bindingInfo.binding;
-            property.selector = uxmlData.selector;
+        private static StylePropertyId[][] CreateLonghandPropertyIds()
+        {
+            var longhandPropertyIds = new StylePropertyId[k_StylePropertyIdCount][];
+            var longhandIds = new List<StylePropertyId>();
+            for (var i = 0; i < longhandPropertyIds.Length; ++i)
+            {
+                var id = (StylePropertyId)i;
+                if (!StyleDebug.IsShorthandProperty(id))
+                {
+                    longhandPropertyIds[i] = Array.Empty<StylePropertyId>();
+                    continue;
+                }
 
-            return property;
+                longhandIds.Clear();
+                StyleDebug.PopulateLonghandPropertyIds(id, longhandIds);
+                longhandPropertyIds[i] = longhandIds.ToArray();
+            }
+            return longhandPropertyIds;
         }
 
         [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
-        internal void MarkAllPropertiesDirty() => Notify(null);
+        internal void MarkAllPropertiesDirty() => Notify(new BindingId((string)null));
 
-        void Notify([CallerMemberName] string name = null)
+        void Notify(StylePropertyId id) => Notify(in k_PropertyBindingIds[(int)id]);
+
+        void Notify(in BindingId propertyName)
         {
             m_Version += 1;
-            propertyChanged?.Invoke(this, new BindablePropertyChangedEventArgs(name));
+            propertyChanged?.Invoke(this, new BindablePropertyChangedEventArgs(in propertyName));
         }
 
         public long GetViewHashCode()
@@ -613,7 +851,12 @@ namespace UnityEngine.UIElements
             currentTarget = null;
             currentStyleSheet = null;
             currentRule = null;
-            m_MatchedRules.Clear();
+            m_MatchRecords.Clear();
+            Array.Clear(m_UxmlData, 0, m_UxmlData.Length);
+            Array.Clear(m_PreviousUxmlData, 0, m_PreviousUxmlData.Length);
+            m_UxmlDataIds.Clear();
+            m_PreviousUxmlDataIds.Clear();
+            m_PropertiesMatchPreviousRefresh = false;
         }
     }
 }

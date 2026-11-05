@@ -62,12 +62,6 @@ namespace UnityEditor
             [NoAutoStaticsCleanup] // lazy shared GUIStyle, safe to persist
             public static GUIStyle ErrorStyle;
             [NoAutoStaticsCleanup] // lazy shared GUIStyle, safe to persist
-            public static GUIStyle IconLogStyle;
-            [NoAutoStaticsCleanup] // lazy shared GUIStyle, safe to persist
-            public static GUIStyle IconWarningStyle;
-            [NoAutoStaticsCleanup] // lazy shared GUIStyle, safe to persist
-            public static GUIStyle IconErrorStyle;
-            [NoAutoStaticsCleanup] // lazy shared GUIStyle, safe to persist
             public static GUIStyle EvenBackground;
             [NoAutoStaticsCleanup] // lazy shared GUIStyle, safe to persist
             public static GUIStyle OddBackground;
@@ -83,12 +77,6 @@ namespace UnityEditor
             public static GUIStyle Toolbar;
             [NoAutoStaticsCleanup] // lazy shared GUIStyle, safe to persist
             public static GUIStyle CountBadge;
-            [NoAutoStaticsCleanup] // lazy shared GUIStyle, safe to persist
-            public static GUIStyle LogSmallStyle;
-            [NoAutoStaticsCleanup] // lazy shared GUIStyle, safe to persist
-            public static GUIStyle WarningSmallStyle;
-            [NoAutoStaticsCleanup] // lazy shared GUIStyle, safe to persist
-            public static GUIStyle ErrorSmallStyle;
             [NoAutoStaticsCleanup] // lazy shared GUIStyle, safe to persist
             public static GUIStyle IconLogSmallStyle;
             [NoAutoStaticsCleanup] // lazy shared GUIStyle, safe to persist
@@ -135,16 +123,10 @@ namespace UnityEditor
                 MiniButtonRight = "ToolbarButtonRight";
                 Toolbar = "Toolbar";
                 LogStyle = "CN EntryInfo";
-                LogSmallStyle = "CN EntryInfoSmall";
                 WarningStyle = "CN EntryWarn";
-                WarningSmallStyle = "CN EntryWarnSmall";
                 ErrorStyle = "CN EntryError";
-                ErrorSmallStyle = "CN EntryErrorSmall";
-                IconLogStyle = "CN EntryInfoIcon";
                 IconLogSmallStyle = "CN EntryInfoIconSmall";
-                IconWarningStyle = "CN EntryWarnIcon";
                 IconWarningSmallStyle = "CN EntryWarnIconSmall";
-                IconErrorStyle = "CN EntryErrorIcon";
                 IconErrorSmallStyle = "CN EntryErrorIconSmall";
                 EvenBackground = "CN EntryBackEven";
                 OddBackground = "CN EntryBackodd";
@@ -206,7 +188,7 @@ namespace UnityEditor
         bool m_RestoreLatestSelection;
 
         //Make sure the minimum height of the panels can accomodate the cpmplete scroll bar icons
-        SplitterState spl = SplitterState.FromRelative(new float[] {70, 30}, new float[] {60, 60}, null);
+        SplitterState spl = SplitterState.FromRelative(new float[] { 70, 30 }, new float[] { 60, 60 }, null);
 
         [NoAutoStaticsCleanup] // icons loaded by fixed name survive reload; gate safe to persist
         static bool ms_LoadedIcons = false;
@@ -399,6 +381,7 @@ namespace UnityEditor
         internal static bool HasFlag(ConsoleFlags flags) { return (LogEntries.consoleFlags & (int)flags) != 0; }
         private static void SetFlag(ConsoleFlags flags, bool val) { LogEntries.SetConsoleFlag((int)flags, val); }
 
+        // Used in AppStatusBar.cs.
         static internal Texture2D GetIconForErrorMode(int mode, bool large)
         {
             // Errors
@@ -418,61 +401,44 @@ namespace UnityEditor
             return null;
         }
 
-        static internal GUIStyle GetStyleForErrorMode(int mode, bool isIcon, bool isSmall)
+        static bool IsError(int mode)
         {
-            // Errors
-            if (HasMode(mode, Mode.Fatal | Mode.Assert |
+            return HasMode(mode, Mode.Fatal | Mode.Assert |
                 Mode.Error | Mode.ScriptingError |
                 Mode.AssetImportError | Mode.ScriptCompileError |
-                Mode.GraphCompileError | Mode.ScriptingAssertion | Mode.ScriptingException))
-            {
-                if (isIcon)
-                {
-                    if (isSmall)
-                    {
-                        return Constants.IconErrorSmallStyle;
-                    }
-                    return Constants.IconErrorStyle;
-                }
+                Mode.GraphCompileError | Mode.ScriptingAssertion | Mode.ScriptingException);
+        }
 
-                if (isSmall)
-                {
-                    return Constants.ErrorSmallStyle;
-                }
-                return Constants.ErrorStyle;
-            }
+        static bool IsWarning(int mode)
+        {
+            return HasMode(mode, Mode.ScriptCompileWarning | Mode.ScriptingWarning | Mode.AssetImportWarning);
+        }
+
+        static GUIStyle GetIconStyleForErrorMode(int mode)
+        {
+            // Errors
+            if (IsError(mode))
+                return Constants.IconErrorSmallStyle;
+
             // Warnings
-            if (HasMode(mode, Mode.ScriptCompileWarning | Mode.ScriptingWarning | Mode.AssetImportWarning))
-            {
-                if (isIcon)
-                {
-                    if (isSmall)
-                    {
-                        return Constants.IconWarningSmallStyle;
-                    }
-                    return Constants.IconWarningStyle;
-                }
+            if (IsWarning(mode))
+                return Constants.IconWarningSmallStyle;
 
-                if (isSmall)
-                {
-                    return Constants.WarningSmallStyle;
-                }
-                return Constants.WarningStyle;
-            }
             // Logs
-            if (isIcon)
-            {
-                if (isSmall)
-                {
-                    return Constants.IconLogSmallStyle;
-                }
-                return Constants.IconLogStyle;
-            }
+            return Constants.IconLogSmallStyle;
+        }
 
-            if (isSmall)
-            {
-                return Constants.LogSmallStyle;
-            }
+        static GUIStyle GetTextStyleForErrorMode(int mode)
+        {
+            // Errors
+            if (IsError(mode))
+                return Constants.ErrorStyle;
+
+            // Warnings
+            if (IsWarning(mode))
+                return Constants.WarningStyle;
+
+            // Logs
             return Constants.LogStyle;
         }
 
@@ -625,7 +591,7 @@ namespace UnityEditor
             if (HasSpaceForExtraButtons())
             {
                 SetFlag(ConsoleFlags.ErrorPause, GUILayout.Toggle(HasFlag(ConsoleFlags.ErrorPause), Constants.ErrorPause, Constants.MiniButton));
-                PlayerConnectionGUILayout.ConnectionTargetSelectionDropdown(m_ConsoleAttachToPlayerState, EditorStyles.toolbarDropDown, (int)(position.width - k_HasSpaceForExtraButtonsCutoff) + 80 );
+                PlayerConnectionGUILayout.ConnectionTargetSelectionDropdown(m_ConsoleAttachToPlayerState, EditorStyles.toolbarDropDown, (int)(position.width - k_HasSpaceForExtraButtonsCutoff) + 80);
             }
 
             if (HasSpaceForExtraButtons())
@@ -740,24 +706,22 @@ namespace UnityEditor
                                 m_ListView.selectedItems[el.row];
 
                             // offset value in x for icon and text
-                            var offset = Constants.LogStyleLineCount == 1 ? 4 : 8;
+                            var offset = 8;
 
                             // Draw the background
                             GUIStyle s = el.row % 2 == 0 ? Constants.OddBackground : Constants.EvenBackground;
                             s.Draw(el.position, false, false, entryIsSelected, false);
 
                             // Draw the icon
-                            GUIStyle iconStyle = GetStyleForErrorMode(mode, true, Constants.LogStyleLineCount == 1);
+                            GUIStyle iconStyle = GetIconStyleForErrorMode(mode);
                             Rect iconRect = el.position;
                             iconRect.x += offset;
-                            iconRect.y += 2;
 
                             iconStyle.Draw(iconRect, false, false, entryIsSelected, false);
 
                             // Draw the text
                             tempContent.text = text;
-                            GUIStyle errorModeStyle =
-                                GetStyleForErrorMode(mode, false, Constants.LogStyleLineCount == 1);
+                            GUIStyle errorModeStyle = GetTextStyleForErrorMode(mode);
                             var textRect = el.position;
                             textRect.x += offset;
 
@@ -767,17 +731,15 @@ namespace UnityEditor
                             {
                                 //the whole text contains the searchtext, we have to know where it is
                                 int startIndex = text.IndexOf(m_SearchText, StringComparison.OrdinalIgnoreCase);
-                                if (startIndex == -1
-                                ) // the searchtext is not in the visible text, we don't show the selection
+
+                                if (startIndex == -1) // the searchtext is not in the visible text, we don't show the selection
                                     errorModeStyle.Draw(textRect, tempContent, id, entryIsSelected);
                                 else // the searchtext is visible, we show the selection
                                 {
                                     int endIndex = startIndex + m_SearchText.Length;
 
                                     const bool isActive = false;
-                                    const bool
-                                        hasKeyboardFocus =
-                                        true;     // This ensure we draw the selection text over the label.
+                                    const bool hasKeyboardFocus = true; // This ensure we draw the selection text over the label.
                                     const bool drawAsComposition = false;
                                     Color selectionColor = GUI.skin.settings.selectionColor;
 
@@ -981,12 +943,14 @@ namespace UnityEditor
             if (shouldStripCallstack)
                 lines = StripCallstack(mode, s_GenericMethodSignatureRegex, s_MethodsToHideInCallstack, lines);
 
+            string hyperlinkColor = EditorGUIUtility.GetHyperlinkColorForSkin();
+
             for (int i = 0; i < lines.Length; ++i)
             {
-                if (TryAppendMonoHyperlink(lines[i], textWithHyperlinks))
+                if (TryAppendMonoHyperlink(lines[i], textWithHyperlinks, hyperlinkColor))
                     continue;
 
-                if (TryAppendDotNetHyperlink(lines[i], textWithHyperlinks))
+                if (TryAppendDotNetHyperlink(lines[i], textWithHyperlinks, hyperlinkColor))
                     continue;
 
                 // default case if no hyperlink : we just write the line
@@ -1002,7 +966,7 @@ namespace UnityEditor
         // Mono/IL2CPP frames render the source location as "... (at <path>:<line>)".
         // Runs in the OnGUI repaint path, so append index ranges directly to the builder (no per-line
         // temp-string/interpolation allocations).
-        private static bool TryAppendMonoHyperlink(string line, StringBuilder builder)
+        private static bool TryAppendMonoHyperlink(string line, StringBuilder builder, string hyperlinkColor)
         {
             const string k_FileMarker = " (at ";
             int filePathIndex = line.IndexOf(k_FileMarker, StringComparison.Ordinal);
@@ -1028,7 +992,7 @@ namespace UnityEditor
 
             builder.Append(line, 0, filePathIndex);
             builder.Append("<color=");
-            builder.Append(EditorGUIUtility.GetHyperlinkColorForSkin());
+            builder.Append(hyperlinkColor);
             builder.Append("><link=\"href='");
             builder.Append(line, filePathIndex, pathLength);
             builder.Append("' line='");
@@ -1044,7 +1008,7 @@ namespace UnityEditor
         // CoreCLR renders the native .NET location form "... in <path>:line <N>".
         // Runs in the OnGUI repaint path, so append index ranges directly to the builder (no per-line
         // temp-string/interpolation allocations).
-        private static bool TryAppendDotNetHyperlink(string line, StringBuilder builder)
+        private static bool TryAppendDotNetHyperlink(string line, StringBuilder builder, string hyperlinkColor)
         {
             const string k_InMarker = " in ";
             const string k_LineMarker = ":line ";
@@ -1069,7 +1033,7 @@ namespace UnityEditor
 
             builder.Append(line, 0, netPathStart);
             builder.Append("<color=");
-            builder.Append(EditorGUIUtility.GetHyperlinkColorForSkin());
+            builder.Append(hyperlinkColor);
             builder.Append("><link=\"href='");
             builder.Append(line, netPathStart, pathLength);
             builder.Append("' line='");
@@ -1290,11 +1254,8 @@ namespace UnityEditor
             var styles = new[]
             {
                 Constants.LogStyle,
-                Constants.LogSmallStyle,
                 Constants.WarningStyle,
-                Constants.WarningSmallStyle,
                 Constants.ErrorStyle,
-                Constants.ErrorSmallStyle,
                 Constants.MessageStyle,
             };
 
@@ -1525,7 +1486,7 @@ namespace UnityEditor
         [UsedImplicitly] // This method is used by the Visual Scripting project. Please do not delete. Contact @husseink for more information.
         internal void AddMessageWithDoubleClickCallback(string message, string file, int mode, EntityId entityId)
         {
-            var outputEntry = new LogEntry {message = message, file = file, mode = mode, entityId = entityId};
+            var outputEntry = new LogEntry { message = message, file = file, mode = mode, entityId = entityId };
             LogEntries.AddMessageWithDoubleClickCallback(outputEntry);
         }
 

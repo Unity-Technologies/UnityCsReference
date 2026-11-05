@@ -163,6 +163,9 @@ namespace UnityEditorInternal
         [StaticAccessor("profiling::GetProfilerSessionPtr()->GetProfilerHistory()", StaticAccessorType.Arrow)]
         static internal extern void SetAutomaticMemoryManagement(bool value);
 
+        [FreeFunction("profiling::IsAddressSanitizerBuild")]
+        static internal extern bool IsAddressSanitizerBuild();
+
         [StaticAccessor("profiling::GetProfilerSessionPtr()->GetProfilerHistory()", StaticAccessorType.Arrow)]
         [NativeMethod("GetFramesWithScreenshots", IsThreadSafe = true)]
         static internal extern int[] GetFramesWithScreenshots(int firstFrameIndex, int lastFrameIndex);

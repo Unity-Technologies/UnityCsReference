@@ -51,23 +51,33 @@ namespace UnityEngine.UIElements
         class UpdaterArray
         {
             private IVisualTreeUpdater[] m_VisualTreeUpdaters;
+            private VersionChangeType[] m_Interests;
 
             public UpdaterArray()
             {
                 m_VisualTreeUpdaters = new IVisualTreeUpdater[(int)VisualTreeUpdatePhase.Count];
+                m_Interests = new VersionChangeType[(int)VisualTreeUpdatePhase.Count];
             }
 
             public IVisualTreeUpdater this[VisualTreeUpdatePhase phase]
             {
-                set { m_VisualTreeUpdaters[(int)phase] = value; }
+                set { this[(int)phase] = value; }
                 get { return m_VisualTreeUpdaters[(int)phase]; }
             }
 
             public IVisualTreeUpdater this[int index]
             {
-                set { m_VisualTreeUpdaters[index] = value; }
+                set
+                {
+                    m_VisualTreeUpdaters[index] = value;
+                    m_Interests[index] = value == null
+                        ? 0
+                        : (value as BaseVisualTreeUpdater)?.versionChangeInterest ?? BaseVisualTreeUpdater.k_AllVersionChanges;
+                }
                 get { return m_VisualTreeUpdaters[index]; }
             }
+
+            public VersionChangeType GetInterest(int index) => m_Interests[index];
 
             // For UI Test Framework. An unregistered phase reports -1 so frame comparisons can
             // tell "never runs on this panel" apart from "has not ticked yet".
@@ -151,10 +161,11 @@ namespace UnityEngine.UIElements
         {
             visualTreeEditorUpdater.OnVersionChanged(ve, versionChangeType);
 
+            var dispatchMask = versionChangeType == 0 ? BaseVisualTreeUpdater.k_AllVersionChanges : versionChangeType;   // a zero change still reaches every updater
             for (int i = 0; i < (int)VisualTreeUpdatePhase.Count; i++)
             {
-                var updater = m_UpdaterArray[i];
-                updater?.OnVersionChanged(ve, versionChangeType);
+                if ((m_UpdaterArray.GetInterest(i) & dispatchMask) != 0)
+                    m_UpdaterArray[i].OnVersionChanged(ve, versionChangeType);
             }
         }
 
@@ -249,6 +260,11 @@ namespace UnityEngine.UIElements
         public VisualElement visualTree { get { return panel.visualTree; } }
 
         public abstract ProfilerMarker profilerMarker { get; }
+
+        internal const VersionChangeType k_AllVersionChanges = (VersionChangeType)~0;
+
+        // Must cover every change OnVersionChanged reacts to; read once when the updater is installed.
+        internal virtual VersionChangeType versionChangeInterest => k_AllVersionChanges;
 
         public void Dispose()
         {

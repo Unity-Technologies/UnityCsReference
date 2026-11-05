@@ -282,10 +282,10 @@ namespace Unity.ProjectAuditor.Editor.UI
             ];
 
             // Apply page filters.
-            ApplyGroupFilter(pages, PageId.Optimization, issue => !issue.IsIssue() || SummaryView.IssueHasAnyAreas(issue, ~AreasExtensions.AllUpgradeAreas));
-            ApplyGroupFilter(pages, PageId.Upgrade, issue => SummaryView.HasAnyAreas(issue, Areas.Upgrade));
-            ApplyGroupFilter(pages, PageId.MigrationToURP, issue => SummaryView.HasAnyAreas(issue, Areas.MigrationToURP));
-            ApplyGroupFilter(pages, PageId.MigrationToCoreCLR, issue => SummaryView.HasAnyAreas(issue, Areas.MigrationToCoreCLR));
+            ApplyGroupFilter(pages, PageId.Optimization, issue => !issue.IsIssue() || issue.Id.GetDescriptor().HasAnyAreas(~AreasExtensions.AllUpgradeAreas));
+            ApplyGroupFilter(pages, PageId.Upgrade, issue => issue.HasAnyAreas(Areas.Upgrade));
+            ApplyGroupFilter(pages, PageId.MigrationToURP, issue => issue.HasAnyAreas(Areas.MigrationToURP));
+            ApplyGroupFilter(pages, PageId.MigrationToCoreCLR, issue => issue.HasAnyAreas(Areas.MigrationToCoreCLR));
 
             // Upgrade pages additionally offer a target-version selector in the Filters panel.
             ApplyGroupDrawFilters(pages, PageId.Upgrade, DiagnosticView.DrawUpgradeTargetVersionFilter);
@@ -378,6 +378,8 @@ namespace Unity.ProjectAuditor.Editor.UI
         {
             ProjectAuditorSettings.instance.DiagnosticParams.RegisterParameters();
             ProjectAuditorSettings.instance.Save();
+
+            SubscribeToNavigator();
 
             if (m_ProjectAuditor == null)
                 m_ProjectAuditor = new ProjectAuditor();
@@ -604,6 +606,27 @@ namespace Unity.ProjectAuditor.Editor.UI
             }
         }
 
+        void RefreshViewsAfterIssuesRemoved(Report report, IReadOnlyList<ReportItem> removedIssues)
+        {
+            var categories = new HashSet<IssueCategory>(removedIssues.Count);
+            foreach (var issue in removedIssues)
+            {
+                categories.Add(issue.Category);
+            }
+
+            foreach (var category in categories)
+            {
+                var view = m_ViewManager.GetView(category);
+                if (view == null)
+                    continue;
+
+                view.Clear();
+                view.AddIssues(report.FindByCategory(category));
+            }
+
+            m_ViewManager.MarkViewsAsDirty();
+        }
+
         // Invoked whenever a module finishes during analysis. Updates the set of pending
         // modules/categories and refreshes the summary views. Crucially, if the user is currently
         // looking at a page whose data has just arrived (its module finished mid-analysis), it
@@ -740,6 +763,8 @@ namespace Unity.ProjectAuditor.Editor.UI
 
         void OnDisable()
         {
+            ProjectAuditorNavigator.OnNavigationRequested -= OnNavigationRequested;
+
             CancelAnalysis();
             AutosaveReport(m_Report);
 
@@ -891,7 +916,7 @@ namespace Unity.ProjectAuditor.Editor.UI
                         {
                             GUILayout.Space(k_SpacingHeight);
                             UserPreferences.CodeAnalysisGUI();
-                            UserPreferences.OwnersGUI();
+                            UserPreferences.OwnersGUI(ProjectAreaFlags.Code);
                             GUILayout.Space(k_SpacingHeight);
                         }
                         GUILayout.FlexibleSpace();
@@ -981,6 +1006,8 @@ namespace Unity.ProjectAuditor.Editor.UI
 
                         // Keep the tree highlight in sync with the current page/view after a rebuild.
                         SyncTreeSelection();
+
+                        ProcessNavigationRequest();
                     }
 
                     var rect = EditorGUILayout.GetControlRect(GUILayout.Width(LayoutSize.kTreeViewWidth), GUILayout.Height(availableHeight));
@@ -1377,6 +1404,7 @@ namespace Unity.ProjectAuditor.Editor.UI
                     m_ViewManager.OnAnalysisStarted(report, moduleNames, categories);
                     m_ViewManager.ClearSearch();
                 },
+                OnIssuesRemoved = RefreshViewsAfterIssuesRemoved,
                 OnModuleCompleted = (moduleName, analysisResult, extraAnalysisTimeMs) =>
                 {
                     HandleModuleCompleted(moduleName);
@@ -1474,6 +1502,7 @@ namespace Unity.ProjectAuditor.Editor.UI
                 {
                     m_ViewManager.OnAnalysisStarted(report, moduleNames, categories);
                 },
+                OnIssuesRemoved = RefreshViewsAfterIssuesRemoved,
                 OnModuleCompleted = (moduleName, analysisResult, extraAnalysisTimeMs) =>
                 {
                     HandleModuleCompleted(moduleName);
@@ -1915,7 +1944,17 @@ namespace Unity.ProjectAuditor.Editor.UI
                 using (new GUILayout.HorizontalScope())
                 {
                     GUILayout.Space(4);
-                    GUILayout.Label(activeView.Description, GUILayout.MinWidth(360), GUILayout.ExpandWidth(true));
+
+                    if (m_ViewManager.HasPendingCategories())
+                    {
+                        var text = AnalysisView.SharedContents.AnalysisInProgressText;
+                        GUILayout.Label(L10n.TextContent($"{text}|{Utility.GetStatusWheelFrame()}", text, string.Empty, Utility.GetIcon(Utility.IconType.StatusWheel).image, null));
+                    }
+                    else
+                    {
+                        GUILayout.Label(activeView.Description, GUILayout.MinWidth(360), GUILayout.ExpandWidth(true));
+                    }
+
                     GUILayout.FlexibleSpace();
                 }
             }
@@ -2114,7 +2153,8 @@ namespace Unity.ProjectAuditor.Editor.UI
                     }
                 }
 
-                Utility.DrawHelpButton(Contents.HelpButton, Documentation.GetPageUrl("index"));
+                if (GUILayout.Button(Contents.HelpButton, EditorStyles.toolbarButton, GUILayout.MaxWidth(loadSaveButtonWidth)))
+                    Application.OpenURL(Utility.ManualUrl);
             }
         }
 
@@ -2290,6 +2330,53 @@ namespace Unity.ProjectAuditor.Editor.UI
             }
 
             return wnd;
+        }
+
+        internal static void OnRulesPackageChanged()
+        {
+            foreach (var wnd in Resources.FindObjectsOfTypeAll<ProjectAuditorWindow>())
+            {
+                wnd.m_ProjectAuditor = new ProjectAuditor();
+                wnd.Repaint();
+            }
+        }
+
+        void SubscribeToNavigator()
+        {
+            ProjectAuditorNavigator.OnNavigationRequested -= OnNavigationRequested;
+            ProjectAuditorNavigator.OnNavigationRequested += OnNavigationRequested;
+        }
+
+        void OnNavigationRequested()
+        {
+            ProcessNavigationRequest();
+        }
+
+        void ProcessNavigationRequest()
+        {
+            var requestedPage = ProjectAuditorNavigator.RequestedPage;
+            if (requestedPage == PageId.None)
+                return;
+
+            if (m_ViewSelectionTreeView == null)
+                return;
+
+            var requestedTab = ProjectAuditorNavigator.RequestedHomeTab;
+            ProjectAuditorNavigator.ClearRequest();
+
+            if (requestedPage == PageId.Home && requestedTab.HasValue)
+            {
+                m_HomePage.SetSelectedTab(requestedTab.Value);
+                GoToHomePage();
+                return;
+            }
+
+            var page = FindPage(requestedPage);
+            if (page != null)
+            {
+                OnSelectedPage(page);
+                m_ViewSelectionTreeView.SelectPage(page);
+            }
         }
 
         const string k_LoadFromFile = "Load from file";

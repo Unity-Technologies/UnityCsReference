@@ -35,11 +35,11 @@ namespace Unity.Scripting.AssemblyManagement
         public Assembly LoadFromStream(Stream assemblyStream, Stream? symbolsStream);
 
         /// <summary>
-        /// Checks if the assembly is in the Unity code ALC.
+        /// Checks if the assembly is in an ALC that a code reload is unloading or has unloaded, so its code must no longer run.
         /// </summary>
         /// <param name="assembly">Assembly to check</param>
-        /// <returns>Assembly is loaded in user code ALC</returns>
-        internal bool IsAssemblyInUserCodeALC(Assembly assembly);
+        /// <returns>Assembly is loaded in an unloading ALC</returns>
+        internal bool IsUnloading(Assembly assembly);
 
         /// <summary>
         /// Raised for an assembly no resolution covers, when the load originates from the current contextual

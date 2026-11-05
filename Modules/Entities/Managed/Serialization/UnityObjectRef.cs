@@ -68,7 +68,7 @@ namespace Unity.Entities
     internal static partial class UnityObjectRefUtility
     {
 
-        private static unsafe void AddInstanceIDRefsFromComponent(byte* componentData, TypeManager.EntityOffsetInfo* unityObjectRefOffsets, int unityObjectRefCount, UnsafeHashSet<EntityId>* entityIdRefs)
+        private static unsafe void AddEntityIdRefsFromComponent(byte* componentData, TypeManager.EntityOffsetInfo* unityObjectRefOffsets, int unityObjectRefCount, UnsafeHashSet<EntityId>* entityIdRefs)
         {
             for (int i = 0; i < unityObjectRefCount; ++i)
             {
@@ -78,7 +78,7 @@ namespace Unity.Entities
             }
         }
 
-        static unsafe void AddInstanceIDRefsFromChunk(Archetype* archetype, int entityCount, byte* chunkBuffer, UnsafeHashSet<EntityId>* entityIdRefs)
+        static unsafe void AddEntityIdRefsFromChunk(Archetype* archetype, int entityCount, byte* chunkBuffer, UnsafeHashSet<EntityId>* entityIdRefs)
         {
             var typeCount = archetype->TypesCount;
 
@@ -111,7 +111,7 @@ namespace Unity.Entities
                         var bufferEnd = bufferStart + header->Length * elementSize;
                         for (var componentData = bufferStart; componentData < bufferEnd; componentData += elementSize)
                         {
-                            AddInstanceIDRefsFromComponent(componentData, unityObjectRefOffsets,unityObjectRefCount, entityIdRefs);
+                            AddEntityIdRefsFromComponent(componentData, unityObjectRefOffsets,unityObjectRefCount, entityIdRefs);
                         }
 
                         header = (BufferHeader*)((byte*)header + strideSize);
@@ -123,13 +123,13 @@ namespace Unity.Entities
                     byte* end = componentArrayStart + size * entityCount;
                     for (var componentData = componentArrayStart; componentData < end; componentData += size)
                     {
-                        AddInstanceIDRefsFromComponent(componentData, unityObjectRefOffsets, unityObjectRefCount, entityIdRefs);
+                        AddEntityIdRefsFromComponent(componentData, unityObjectRefOffsets, unityObjectRefCount, entityIdRefs);
                     }
                 }
             }
         }
 
-        static unsafe void AddInstanceIDRefsFromAllChunks(Archetype* archetype, UnsafeHashSet<EntityId>* entityIdRefs)
+        static unsafe void AddEntityIdRefsFromAllChunks(Archetype* archetype, UnsafeHashSet<EntityId>* entityIdRefs)
         {
             for (var chunkIndex = 0; chunkIndex < archetype->Chunks.Count; chunkIndex++)
             {
@@ -137,11 +137,11 @@ namespace Unity.Entities
                 var chunkPtr = chunk.GetPtr();
                 var chunkBuffer = chunkPtr->Buffer;
 
-                AddInstanceIDRefsFromChunk(archetype, chunk.Count, chunkBuffer, entityIdRefs);
+                AddEntityIdRefsFromChunk(archetype, chunk.Count, chunkBuffer, entityIdRefs);
             }
         }
 
-        static unsafe void AddInstanceIDRefsFromUnmanagedSharedComponents(EntityDataAccess* access, Archetype* archetype, UnsafeHashSet<EntityId>* entityIdRefs)
+        static unsafe void AddEntityIdRefsFromUnmanagedSharedComponents(EntityDataAccess* access, Archetype* archetype, UnsafeHashSet<EntityId>* entityIdRefs)
         {
             int numSharedComponents = archetype->NumSharedComponents;
             for (int iType = 0; iType < numSharedComponents; iType++)
@@ -161,7 +161,7 @@ namespace Unity.Entities
 
                     var unityObjectRefOffsets = TypeManager.GetUnityObjectRefOffsets(typeInfo);
                     var dataPtr = (byte*)access->EntityComponentStore->GetSharedComponentDataAddr_Unmanaged(sharedComponentIndex, typeIndex);
-                    AddInstanceIDRefsFromComponent(dataPtr, unityObjectRefOffsets, unityObjectRefCount, entityIdRefs);
+                    AddEntityIdRefsFromComponent(dataPtr, unityObjectRefOffsets, unityObjectRefCount, entityIdRefs);
                 }
             }
         }
@@ -175,9 +175,9 @@ namespace Unity.Entities
         [AutoStaticsCleanupOnCodeReload]
         private static List<AdditionalRootsHandlerDelegate> s_AdditionalRootsHandlerDelegates = new List<AdditionalRootsHandlerDelegate>();
 
-        // CoreModule registers this with the asset garbage collector when its code loads.
+        // The asset garbage collector calls this through CoreModule to keep the objects that entities reference alive.
         [VisibleToOtherModules("UnityEngine.CoreModule")]
-        internal static unsafe void RootsHandlerDelegate(IntPtr state)
+        internal static unsafe void MarkAssetGarbageCollectionRoots(IntPtr state)
         {
             foreach (var additionalRootsHandlerDelegate in s_AdditionalRootsHandlerDelegates)
             {
@@ -197,10 +197,10 @@ namespace Unity.Entities
                         continue;
 
                     s_AddFromChunks.Begin();
-                    AddInstanceIDRefsFromAllChunks(archetype, &entityIdRefs);
+                    AddEntityIdRefsFromAllChunks(archetype, &entityIdRefs);
                     s_AddFromChunks.End();
                     s_AddFromUnmanagedSharedComponents.Begin();
-                    AddInstanceIDRefsFromUnmanagedSharedComponents(access, archetype, &entityIdRefs);
+                    AddEntityIdRefsFromUnmanagedSharedComponents(access, archetype, &entityIdRefs);
                     s_AddFromUnmanagedSharedComponents.End();
                 }
             }
@@ -208,13 +208,13 @@ namespace Unity.Entities
             if (entityIdRefs.Count == 0)
                 return;
 
-            using var instanceIDs = entityIdRefs.ToNativeArray(Allocator.Temp);
-            CoreModuleLightShim.Hooks.MarkInstanceIDsAsRoot((IntPtr)instanceIDs.GetUnsafePtr(), instanceIDs.Length, state);
+            using var entityIds = entityIdRefs.ToNativeArray(Allocator.Temp);
+            CoreModuleLightShim.Hooks.MarkEntityIdsAsRoot((IntPtr)entityIds.GetUnsafePtr(), entityIds.Length, state);
         }
 
         public static void MarkInstanceIDsAsRootForEntitiesAssetGC(IntPtr instanceIDs, int count, IntPtr state)
         {
-            CoreModuleLightShim.Hooks.MarkInstanceIDsAsRoot(instanceIDs, count, state);
+            CoreModuleLightShim.Hooks.MarkEntityIdsAsRoot(instanceIDs, count, state);
         }
 
         public static void RegisterAdditionalRootsHandlerForEntitiesAssetGC(AdditionalRootsHandlerDelegate additionalRootsHandlerDelegate)
@@ -223,9 +223,9 @@ namespace Unity.Entities
                 s_AdditionalRootsHandlerDelegates.Add(additionalRootsHandlerDelegate);
         }
 
-        internal static unsafe void MarkInstanceIDsAsRoot(NativeArray<EntityId> unityObjects, IntPtr state)
+        internal static unsafe void MarkEntityIdsAsRoot(NativeArray<EntityId> unityObjects, IntPtr state)
         {
-            CoreModuleLightShim.Hooks.MarkInstanceIDsAsRoot((IntPtr)unityObjects.GetUnsafePtr(), unityObjects.Length, state);
+            CoreModuleLightShim.Hooks.MarkEntityIdsAsRoot((IntPtr)unityObjects.GetUnsafePtr(), unityObjects.Length, state);
         }
     }
 

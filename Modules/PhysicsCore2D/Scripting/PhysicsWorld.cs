@@ -694,11 +694,17 @@ namespace Unity.U2D.Physics
         /// <summary>
         /// Get the current value of <see cref="PhysicsCoreSettings2D.contactFilterMode"/>.
         /// </summary>
+        /// <remarks>
+        /// This is the project-wide mode. A world uses it only while its <see cref="contactFilterModeOverride"/> is <see cref="PhysicsShape.ContactFilterModeOverride.Global"/>.
+        /// </remarks>
         public static PhysicsShape.ContactFilterMode contactFilterMode => PhysicsGlobal_GetContactFilterMode();
 
         /// <summary>
         /// Get the current value of <see cref="PhysicsCoreSettings2D.contactFilterGroupMode"/>.
         /// </summary>
+        /// <remarks>
+        /// This is the project-wide mode. A world uses it only while its <see cref="contactFilterGroupModeOverride"/> is <see cref="PhysicsShape.ContactFilterGroupModeOverride.Global"/>.
+        /// </remarks>
         public static PhysicsShape.ContactFilterGroupMode contactFilterGroupMode => PhysicsGlobal_GetContactFilterGroupMode();
 
         /// <summary>
@@ -722,9 +728,9 @@ namespace Unity.U2D.Physics
 
         /// <summary>
         /// Get the minimum length of an edge in a polygon built from arbitrary vertices. Two vertices closer together than this are welded into one when the polygon is built.
-        /// This value is 4.0f * <see cref="PhysicsWorld.linearSlop"/>.
+        /// This value is 0.5f * <see cref="PhysicsWorld.linearSlop"/>.
         /// </summary>
-        public static float minPolygonEdgeLength => 4.0f * linearSlop;
+        public static float minPolygonEdgeLength => 0.5f * linearSlop;
 
         /// <summary>
         /// Get the minimum perpendicular distance a vertex must be from the line through its neighbors in a polygon built from arbitrary vertices. A vertex closer than this is treated as collinear and removed when the polygon is built.
@@ -1323,12 +1329,11 @@ namespace Unity.U2D.Physics
         /// The number of bounce passes the world runs each simulation step, after contacts and joints have been solved.
         /// Each pass pushes apart the bodies of every contact that struck with a bounciness above zero, at the speed its bounciness allows, and never adds energy.
         /// More passes let a bounce settle more accurately, which reduces unwanted spinning of bouncing boxes, and each pass adds work for every bouncy contact in the world.
-        /// The value must be from zero up to the maximum bounce pass count.
-        /// With zero, contacts never bounce whatever their bounciness.
+        /// The value must be from the minimum up to the maximum bounce pass count.
         /// </summary>
         /// <remarks>
-        /// The maximum bounce pass count is <see cref="PhysicsConstants.MaxBounceIterations"/>.
-        /// Setting a value outside zero to that maximum logs a warning and leaves the current value unchanged.
+        /// The bounce pass count range is <see cref="PhysicsConstants.MinBounceIterations"/> to <see cref="PhysicsConstants.MaxBounceIterations"/>.
+        /// Setting a value outside that range logs a warning and leaves the current value unchanged.
         /// See <see cref="bouncePropagation"/> and <see cref="PhysicsShape.SurfaceMaterial.bounciness"/>.
         /// </remarks>
         public readonly int bounceIterations { get => PhysicsWorld_GetBounceIterations(this); set => PhysicsWorld_SetBounceIterations(this, value); }
@@ -1345,6 +1350,32 @@ namespace Unity.U2D.Physics
         /// See <see cref="bounceIterations"/>.
         /// </remarks>
         public readonly bool bouncePropagation { get => PhysicsWorld_GetBouncePropagation(this); set => PhysicsWorld_SetBouncePropagation(this, value); }
+
+        /// <summary>
+        /// Controls whether two shapes in this world need both of their contact filters to accept each other before they make contact, or only one.
+        /// Global makes the world use the contact filter mode from the project settings, and follow it if that setting changes.
+        /// </summary>
+        /// <remarks>
+        /// Changing the mode makes the world check every existing contact against the new mode.
+        /// Contacts the new mode rejects end, and pairs of shapes it now allows start making contact on the next simulation step.
+        /// This can be expensive in a world with many shapes, so set the mode before the world has contacts, typically with <see cref="PhysicsWorldDefinition.contactFilterModeOverride"/>, rather than changing it during gameplay.
+        /// The project-wide mode is reported by <see cref="contactFilterMode"/>.
+        /// See <see cref="PhysicsShape.ContactFilterModeOverride"/>.
+        /// </remarks>
+        public readonly PhysicsShape.ContactFilterModeOverride contactFilterModeOverride { get => PhysicsWorld_GetContactFilterModeOverride(this); set => PhysicsWorld_SetContactFilterModeOverride(this, value); }
+
+        /// <summary>
+        /// Controls how the group index of each shape's contact filter affects whether two shapes in this world make contact.
+        /// Global makes the world use the contact filter group mode from the project settings, and follow it if that setting changes.
+        /// </summary>
+        /// <remarks>
+        /// Changing the mode makes the world check every existing contact against the new mode.
+        /// Contacts the new mode rejects end, and pairs of shapes it now allows start making contact on the next simulation step.
+        /// This can be expensive in a world with many shapes, so set the mode before the world has contacts, typically with <see cref="PhysicsWorldDefinition.contactFilterGroupModeOverride"/>, rather than changing it during gameplay.
+        /// The project-wide mode is reported by <see cref="contactFilterGroupMode"/>.
+        /// See <see cref="PhysicsShape.ContactFilterGroupModeOverride"/>.
+        /// </remarks>
+        public readonly PhysicsShape.ContactFilterGroupModeOverride contactFilterGroupModeOverride { get => PhysicsWorld_GetContactFilterGroupModeOverride(this); set => PhysicsWorld_SetContactFilterGroupModeOverride(this, value); }
 
         /// <summary>
         /// The contact hit event threshold controls the collision speed needed to generate a contact hit event, usually in meters per second.
@@ -1761,16 +1792,7 @@ namespace Unity.U2D.Physics
         /// This will be called automatically if <see cref="PhysicsWorld.autoBodyUpdateCallbacks"/> is true.
         /// This must be called on the main thread.
         /// </summary>
-        public readonly void SendBodyUpdateCallbacks()
-        {
-            using var callbackTargets = PhysicsWorld_GetBodyUpdateCallbackTargets(this, Allocator.Temp);
-
-            // Send threshold callbacks.
-            foreach(var target in callbackTargets.bodyUpdateCallbackTargets)
-            {
-                target.bodyTarget?.OnBodyUpdate2D(target.bodyUpdateEvent);
-            }
-        }
+        public readonly void SendBodyUpdateCallbacks() => PhysicsWorld_SendBodyUpdateCallbacks(this);
 
         /// <summary>
         /// Send all current <see cref="PhysicsWorld.contactBeginEvents"/> and <see cref="PhysicsWorld.contactEndEvents"/> where either of the <see cref="PhysicsShape"/> involved are valid (see <see cref="PhysicsShape.isValid"/>) and have a callback target assigned (see <see cref="PhysicsShape.callbackTarget"/>).
@@ -1778,24 +1800,7 @@ namespace Unity.U2D.Physics
         /// This is called automatically every simulation step.
         /// This must be called on the main thread.
         /// </summary>
-        public readonly void SendContactCallbacks()
-        {
-            using var callbackTargets = PhysicsWorld_GetContactCallbackTargets(this, Allocator.Temp);
-
-            // Send begin callbacks.
-            foreach(var target in callbackTargets.BeginCallbackTargets)
-            {
-                target.shapeTargetA?.OnContactBegin2D(target.beginEvent);
-                target.shapeTargetB?.OnContactBegin2D(target.beginEvent);
-            }
-
-            // Send end callbacks.
-            foreach(var target in callbackTargets.EndCallbackTargets)
-            {
-                target.shapeTargetA?.OnContactEnd2D(target.endEvent);
-                target.shapeTargetB?.OnContactEnd2D(target.endEvent);
-            }
-        }
+        public readonly void SendContactCallbacks() => PhysicsWorld_SendContactCallbacks(this);
 
         /// <summary>
         /// Send all current <see cref="PhysicsWorld.triggerBeginEvents"/> and <see cref="PhysicsWorld.triggerEndEvents"/> where either of the <see cref="PhysicsShape"/> involved are valid (see <see cref="PhysicsShape.isValid"/>) and have a callback target assigned (see <see cref="PhysicsShape.callbackTarget"/>).
@@ -1804,24 +1809,7 @@ namespace Unity.U2D.Physics
         /// This is called automatically every simulation step.
         /// This must be called on the main thread.
         /// </summary>
-        public readonly void SendTriggerCallbacks()
-        {
-            using var callbackTargets = PhysicsWorld_GetTriggerCallbackTargets(this, Allocator.Temp);
-
-            // Send begin callbacks.
-            foreach(var target in callbackTargets.BeginCallbackTargets)
-            {
-                target.triggerShapeTarget?.OnTriggerBegin2D(target.beginEvent);
-                target.visitorShapeTarget?.OnTriggerBegin2D(target.beginEvent);
-            }
-
-            // Send end callbacks.
-            foreach(var target in callbackTargets.EndCallbackTargets)
-            {
-                target.triggerShapeTarget?.OnTriggerEnd2D(target.endEvent);
-                target.visitorShapeTarget?.OnTriggerEnd2D(target.endEvent);
-            }
-        }
+        public readonly void SendTriggerCallbacks() => PhysicsWorld_SendTriggerCallbacks(this);
 
         /// <summary>
         /// Send all current <see cref="PhysicsWorld.jointThresholdEvents"/> where the <see cref="PhysicsJoint"/> involved are valid (see <see cref="PhysicsJoint.isValid"/>) and have a callback target assigned (see <see cref="PhysicsJoint.callbackTarget"/>).
@@ -1830,16 +1818,7 @@ namespace Unity.U2D.Physics
         /// This will be called automatically if <see cref="PhysicsWorld.autoJointThresholdCallbacks"/> is true.
         /// This must be called on the main thread.
         /// </summary>
-        public readonly void SendJointThresholdCallbacks()
-        {
-            using var callbackTargets = PhysicsWorld_GetJointThresholdCallbackTargets(this, Allocator.Temp);
-
-            // Send threshold callbacks.
-            foreach(var target in callbackTargets.jointThresholdCallbackTargets)
-            {
-                target.jointTarget?.OnJointThreshold2D(target.jointThresholdEvent);
-            }
-        }
+        public readonly void SendJointThresholdCallbacks() => PhysicsWorld_SendJointThresholdCallbacks(this);
 
         /// <summary>
         /// Get all current <see cref="PhysicsWorld.bodyUpdateEvents"/> where either of the <see cref="PhysicsBody"/> involved are valid (see <see cref="PhysicsBody.isValid"/>) and have a callback target assigned (see <see cref="PhysicsBody.callbackTarget"/>).
@@ -3199,6 +3178,9 @@ namespace Unity.U2D.Physics
             [SerializeField] [Range(0, MaxCapacity)] int m_StaticBodyCount;
             [SerializeField] [Range(0, MaxCapacity)] int m_DynamicBodyCount;
             [SerializeField] [Range(0, MaxCapacity)] int m_ContactCount;
+
+            // Mirrors the native arena reserve so the layout matches; it is not exposed, so it stays zero and the engine uses its own minimum.
+            private int m_ArenaByteCount;
 
             #endregion
         }

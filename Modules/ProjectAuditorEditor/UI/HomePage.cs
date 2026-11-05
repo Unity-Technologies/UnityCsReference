@@ -4,7 +4,6 @@
 
 //#define PA_DRAW_LOGO
 
-using System.Linq;
 using Unity.ProjectAuditor.Editor.UI.Framework;
 using Unity.Scripting.LifecycleManagement;
 using UnityEditor;
@@ -22,7 +21,7 @@ namespace Unity.ProjectAuditor.Editor.UI
         [AutoStaticsCleanupOnCodeReload]
         static AddRequest RulesPackageInstallRequest;
 
-        enum Tab
+        internal enum Tab
         {
             Optimization,
             Upgrade,
@@ -44,6 +43,11 @@ namespace Unity.ProjectAuditor.Editor.UI
 
         public HomePage()
         {
+        }
+
+        internal void SetSelectedTab(Tab tab)
+        {
+            m_SelectedTab = tab;
         }
 
         public void OnGUI()
@@ -389,7 +393,6 @@ namespace Unity.ProjectAuditor.Editor.UI
                 if (RulesPackageInstallRequest.Status == StatusCode.Success)
                 {
                     Debug.Log("Installed: " + RulesPackageInstallRequest.Result.packageId);
-                    Events.registeredPackages += OnRulesPackageRegistered;
                 }
                 else if (RulesPackageInstallRequest.Status >= StatusCode.Failure)
                 {
@@ -398,22 +401,6 @@ namespace Unity.ProjectAuditor.Editor.UI
 
                 EditorApplication.update -= RulesPackageInstallProgressCallback;
                 RulesPackageInstallRequest = null;
-            }
-        }
-
-        static void OnRulesPackageRegistered(PackageRegistrationEventArgs args)
-        {
-#pragma warning disable UAC2001
-            foreach (var p in args.added.Concat(args.changedTo))
-#pragma warning restore UAC2001
-            {
-                if (p.name == ProjectAuditorRulesPackage.Name)
-                {
-                    Events.registeredPackages -= OnRulesPackageRegistered;
-                    ProjectAuditorRulesPackage.Initialize();
-                    ProjectAuditorWindow.Instance?.m_ProjectAuditor?.InitModules();
-                    return;
-                }
             }
         }
 

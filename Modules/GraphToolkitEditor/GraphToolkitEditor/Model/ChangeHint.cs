@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using System.Collections.Generic;
 using Unity.Scripting.LifecycleManagement;
 
 namespace Unity.GraphToolkit.Editor
@@ -31,6 +32,8 @@ namespace Unity.GraphToolkit.Editor
             Animation =  new ChangeHint(nameof(Animation));
             NeedsRedraw = new ChangeHint(nameof(NeedsRedraw));
             RecreateView = new ChangeHint(nameof(RecreateView));
+
+            NonDataHints = new[] { Layout, Style, Grouping, UIHints, Animation, NeedsRedraw };
         }
 
         /// <summary>
@@ -100,6 +103,13 @@ namespace Unity.GraphToolkit.Editor
         /// </summary>
         [NoAutoStaticsCleanup] // enum-like hint constant; value is a fixed identifier
         public static readonly ChangeHint RecreateView;
+
+        /// <summary>
+        /// The hints that do not affect the data of a model.
+        /// </summary>
+        /// <remarks>When declaring a new hint, add it to this list if it never affects model data.</remarks>
+        [NoAutoStaticsCleanup] // enum-like hint set; built once by static ctor from fixed identifiers
+        internal static readonly IReadOnlyList<ChangeHint> NonDataHints;
     }
 }
 #pragma warning restore UAL0010,UAL0011,UAL0012,UAL0013,UAL0014

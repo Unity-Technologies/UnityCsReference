@@ -11,15 +11,19 @@ namespace Unity.ProjectAuditor.Editor.UI
 {
     class MigrateToURPSummaryView : SummaryView
     {
-        bool m_ShowTopTenIssues = true;
+        bool m_ShowAutomaticFixes = true;
+        bool m_ShowManualFixes = true;
 
-        readonly TopTen m_TopTen = NewTopTen();
-        StatSeverities m_Severities;
+        readonly TopTen m_AutomaticFixesTopTen = NewTopTen();
+        readonly TopTen m_ManualFixesTopTen = NewTopTen();
+
+        Stats m_Stats;
 
         public int RenderPipelineConverterIssueCount { get; private set; }
         public int QualitySettings2DIssueCount { get; private set; }
         public int QualitySettings3DIssueCount { get; private set; }
-        public int TotalIssueCount => m_Severities.TotalExcludingIgnoredAndFixed;
+        public int ManualIssueCount => TotalIssueCount - RenderPipelineConverterIssueCount;
+        public int TotalIssueCount => m_Stats.TotalExcludingIgnoredAndFixed;
 
         public override string Description => "Resolve the following issues to migrate your project to the Universal Render Pipeline.";
 
@@ -28,17 +32,18 @@ namespace Unity.ProjectAuditor.Editor.UI
         }
 
         // The migration breakdown shows only migration issues.
-        protected override bool MatchesSummaryFilter(ReportItem issue) => HasAnyAreas(issue, Areas.MigrationToURP);
+        protected override bool MatchesSummaryFilter(ReportItem issue) => issue.HasAnyAreas(Areas.MigrationToURP);
 
         protected override void OnSummaryRefreshed()
         {
-            m_TopTen.Refresh = true;
+            m_AutomaticFixesTopTen.Refresh = true;
+            m_ManualFixesTopTen.Refresh = true;
         }
 
         protected override void ResetStats()
         {
             base.ResetStats();
-            m_Severities = new StatSeverities();
+            m_Stats = NewStats();
             RenderPipelineConverterIssueCount = 0;
             QualitySettings2DIssueCount = 0;
             QualitySettings3DIssueCount = 0;
@@ -57,19 +62,23 @@ namespace Unity.ProjectAuditor.Editor.UI
                 if (!MatchesSummaryFilter(issue))
                     continue;
 
-                // The workflow view shows these counts while analysis is still running
+                // Not while analyzing.
                 if (m_ViewManager.HasPendingCategory(issue.Category))
                     continue;
 
-                if (issue.Id == MigrationToURPModule.k_ConverterItemDescriptor.Id && !IsIgnoredOrHidden(issue))
-                    RenderPipelineConverterIssueCount++;
+                // Count Converter issues.
+                if (issue.Id == MigrationToURPModule.k_ConverterItemDescriptor.Id)
+                {
+                    if (!IsIgnoredOrHidden(issue))
+                        RenderPipelineConverterIssueCount++;
+                }
 
                 if (issue.Id == MigrationToURPModule.k_QualitySettings2DNotReadyDescriptor.Id)
                     QualitySettings2DIssueCount++;
                 else if (issue.Id == MigrationToURPModule.k_QualitySettings3DNotReadyDescriptor.Id)
                     QualitySettings3DIssueCount++;
                 else
-                    AddSeverityStats(issue, ref m_Severities);
+                    AccumulateStat(issue, ref m_Stats);
             }
         }
 
@@ -93,12 +102,26 @@ namespace Unity.ProjectAuditor.Editor.UI
             if (m_ViewManager.Report == null)
                 return;
 
-            EditorGUILayout.Space();
-            DrawSeverityBreakdown();
-            if (!m_ViewManager.HasPendingCategories() && m_Severities.TotalExcludingIgnoredAndFixed > 0)
+            bool reportIsCompatible = DrawWizardNotice();
+            if (reportIsCompatible)
             {
                 EditorGUILayout.Space();
-                DrawTopTenSection();
+                DrawCategoryBreakdown();
+
+                if (!m_ViewManager.HasPendingCategories())
+                {
+                    if (RenderPipelineConverterIssueCount > 0)
+                    {
+                        EditorGUILayout.Space();
+                        DrawAutomaticFixesSection();
+                    }
+
+                    if (ManualIssueCount > 0)
+                    {
+                        EditorGUILayout.Space();
+                        DrawManualFixesSection();
+                    }
+                }
             }
 
             EditorGUILayout.Space();
@@ -110,70 +133,146 @@ namespace Unity.ProjectAuditor.Editor.UI
             return base.IsIssueIgnoredOrFiltered(item) || !MatchesSummaryFilter(item);
         }
 
-        void DrawSeverityBreakdown()
+        bool IsAutomaticIssueIgnoredOrFiltered(ReportItem item)
+        {
+            if (IsIssueIgnoredOrFiltered(item))
+                return true;
+
+            return item.Id != MigrationToURPModule.k_ConverterItemDescriptor.Id;
+        }
+
+        bool IsManualIssueIgnoredOrFiltered(ReportItem item)
+        {
+            if (IsIssueIgnoredOrFiltered(item))
+                return true;
+
+            return item.Id == MigrationToURPModule.k_ConverterItemDescriptor.Id;
+        }
+
+        // Pointing back to the wizard takes priority over re-running the analysis.
+        static bool DrawWizardNotice()
+        {
+            var window = ProjectAuditorWindow.Instance;
+
+            // A report loaded straight to this page never went through the wizard, so adopt its target first.
+            MigrationWorkflowView.SyncTargetPipelineFromReport(window.m_Report);
+
+            if (MigrationWorkflowView.IsWizardBeforeAnalysisStep())
+            {
+                Utility.DrawHelpBoxWithButton(Contents.CompleteWizardFirst, Contents.GoToWizardButton, MessageType.Info, () => ProjectAuditorNavigator.RequestHomePage(HomePage.Tab.MigrateToURP));
+                return false;
+            }
+
+            if (!window.m_ViewManager.HasPendingCategories())
+            {
+                if (MigrationWorkflowView.TryGetInvalidReportMessage(window, out var message))
+                {
+                    Utility.DrawHelpBoxWithButton(message, MigrationWorkflowView.Contents.ReanalyzeButton, MessageType.Info, () =>
+                    {
+                        if (HomePage.ConfirmDiscardCurrentReport())
+                            MigrationWorkflowView.Reanalyze(window, PageId.MigrationToURP);
+                    });
+                    return false;
+                }
+            }
+
+            // Report is valid
+            return true;
+        }
+
+        void DrawCategoryBreakdown()
         {
             EditorGUILayout.BeginVertical(GUI.skin.box);
 
-            EditorGUILayout.LabelField(SharedContents.Summary, SharedStyles.BoldLabel);
+            EditorGUILayout.LabelField(Contents.IssuesByArea, SharedStyles.BoldLabel);
 
-            // In progress
-            if (m_ViewManager.HasPendingCategories())
+            var ignoredAndFixedInfo = BuildIgnoredFixedInfo(m_Stats.NumIgnoredAreaIssues, m_Stats.NumFixedAreaIssues);
+            DrawChartBar(() => BuildCategoryChartElements(m_Stats), ignoredAndFixedInfo);
+            EditorGUILayout.EndVertical();
+        }
+
+        void DrawConverterButtons()
+        {
+            var converterRunning = MigrationWorkflowView.ConverterRunning;
+            var disabled = RenderPipelineConverterIssueCount == 0 || converterRunning || m_ViewManager.HasPendingCategories();
+
+            using (new EditorGUI.DisabledScope(disabled))
             {
-                DrawAnalysisInProgress();
-                EditorGUILayout.EndVertical();
-                return;
+                var runContent = converterRunning
+                    ? MigrationWorkflowView.Contents.RunningConverterButton[Utility.GetStatusWheelFrame()]
+                    : MigrationWorkflowView.Contents.RunConverterButton;
+
+                if (GUILayout.Button(runContent, GUILayout.Width(HomePage.k_ButtonWidth)))
+                {
+                    MigrationWorkflowView.OnRunConverter();
+                    GUIUtility.ExitGUI();
+                }
+
+                if (GUILayout.Button(MigrationWorkflowView.Contents.OpenConverterButton, GUILayout.Width(HomePage.k_ButtonWidth)))
+                {
+                    MigrationToURPUtilities.OpenRenderPipelineConverter(null, null);
+                    GUIUtility.ExitGUI();
+                }
+            }
+        }
+
+        void DrawAutomaticFixesSection()
+        {
+            EditorGUILayout.BeginVertical(GUI.skin.box);
+
+            using (new EditorGUILayout.HorizontalScope())
+            {
+                m_ShowAutomaticFixes = Utility.BoldFoldout(m_ShowAutomaticFixes, Contents.TopTenAutomaticIssuesContent, $"({RenderPipelineConverterIssueCount})");
+                GUILayout.FlexibleSpace();
+                DrawConverterButtons();
             }
 
-            // No issues
-            if (m_Severities.Total == 0)
+            if (m_ShowAutomaticFixes)
             {
-                EditorGUILayout.LabelField(Contents.NoIssuesText, SharedStyles.Label);
-                EditorGUILayout.EndVertical();
-                return;
+                GUILayout.Space(6);
+                DrawTopTenIssues(m_AutomaticFixesTopTen, IsAutomaticIssueIgnoredOrFiltered);
             }
-
-            // Major issues count
-            if (m_Severities.MajorAndCritical == 0)
-                EditorGUILayout.LabelField(Contents.NoMajorIssuesText, SharedStyles.Label);
-            else
-                EditorGUILayout.LabelField(string.Format(m_Severities.MajorAndCritical == 1 ? Contents.SevereCountFormat : Contents.SevereCountPluralFormat, m_Severities.MajorAndCritical), SharedStyles.Label);
-
-            GUILayout.Space(6);
-
-            DrawSeverityBar(m_Severities, horizontalPadding: 2);
 
             EditorGUILayout.EndVertical();
         }
 
-        static void DrawAnalysisInProgress()
-        {
-            using (new EditorGUILayout.HorizontalScope())
-            {
-                GUILayout.Space(20);
-                DrawAnalysisInProgressLabel(Contents.Migration);
-            }
-        }
-
-        void DrawTopTenSection()
+        void DrawManualFixesSection()
         {
             EditorGUILayout.BeginVertical(GUI.skin.box);
 
-            m_ShowTopTenIssues = Utility.BoldFoldout(m_ShowTopTenIssues, Contents.TopTenIssuesContent);
-            if (m_ShowTopTenIssues)
-                DrawTopTenIssues(m_TopTen, IsIssueIgnoredOrFiltered);
+            using (new EditorGUILayout.HorizontalScope())
+            {
+                m_ShowManualFixes = Utility.BoldFoldout(m_ShowManualFixes, Contents.TopTenManualIssuesContent, $"({ManualIssueCount})");
+                GUILayout.FlexibleSpace();
+            }
+
+            if (m_ShowManualFixes)
+            {
+                GUILayout.Space(6);
+                DrawTopTenLabel(
+                    Contents.NoIssuesText, Contents.NoMajorIssuesText, Contents.SevereCountFormat, Contents.SevereCountPluralFormat,
+                    m_Stats.TotalExcludingIgnoredAndFixed, m_Stats.MajorAndCritical);
+
+                GUILayout.Space(6);
+                DrawTopTenIssues(m_ManualFixesTopTen, IsManualIssueIgnoredOrFiltered);
+            }
 
             EditorGUILayout.EndVertical();
         }
 
         static class Contents
         {
-            public static readonly GUIContent TopTenIssuesContent = L10n.TextContent("Top Ten Issues", null, null, null);
+            public static readonly GUIContent TopTenAutomaticIssuesContent = L10n.TextContent("Automatic Fixes", null, null, null);
+            public static readonly GUIContent TopTenManualIssuesContent = L10n.TextContent("Manual Fixes", null, null, null);
 
-            public static readonly string SevereCountFormat = L10n.Tr("{0} issue will prevent your project from functioning on URP.", null);
-            public static readonly string SevereCountPluralFormat = L10n.Tr("{0} issues will prevent your project from functioning on URP.", null);
+            public static readonly string CompleteWizardFirst = L10n.Tr("The migration to URP is not complete. Finish the remaining migration steps to see your migration issues.", null);
+            public static readonly GUIContent GoToWizardButton = L10n.TextContent("Continue Migration", null, null, null);
+
+            public static readonly string SevereCountFormat = L10n.Tr("{0} issue might prevent your project from functioning on URP.", null);
+            public static readonly string SevereCountPluralFormat = L10n.Tr("{0} issues might prevent your project from functioning on URP.", null);
             public static readonly string NoIssuesText = L10n.Tr("No URP migration issues found.", null);
             public static readonly string NoMajorIssuesText = L10n.Tr("No major URP migration issues found.", null);
-            public static readonly string Migration = L10n.Tr("Migration", null);
+            public static readonly string IssuesByArea = L10n.Tr("Issues by Area", null);
         }
     }
 }

@@ -159,7 +159,7 @@ namespace UnityEngine.SceneManagement
 
         [StaticAccessor("SceneManagerBindings", StaticAccessorType.DoubleColon)]
         [NativeMethod(ThrowsException = true)]
-        private extern static void MoveGameObjectsToSceneByInstanceId(IntPtr instanceIds, int instanceCount, Scene scene);
+        private extern static void MoveGameObjectsToSceneByEntityId(IntPtr entityIds, int instanceCount, Scene scene);
 
         [System.Obsolete("Please use MoveGameObjectsToScene(NativeArray<EntityId>, Scene scene) with the EntityId parameter type instead.", true)]
         public static unsafe void MoveGameObjectsToScene(NativeArray<int> instanceIDs, Scene scene) =>
@@ -173,7 +173,7 @@ namespace UnityEngine.SceneManagement
             if (entityIds.Length == 0)
                 return;
 
-            MoveGameObjectsToSceneByInstanceId((IntPtr)entityIds.GetUnsafeReadOnlyPtr(), entityIds.Length, scene);
+            MoveGameObjectsToSceneByEntityId((IntPtr)entityIds.GetUnsafeReadOnlyPtr(), entityIds.Length, scene);
         }
 
         [RequiredByNativeCode]

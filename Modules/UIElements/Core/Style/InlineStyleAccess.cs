@@ -173,6 +173,21 @@ namespace UnityEngine.UIElements
         private InlineRule m_InlineRule;
         public InlineRule inlineRule => m_InlineRule;
 
+        // True when any style value was set through VisualElement.style.
+        internal bool hasInlineValues =>
+            m_Values.Count > 0 ||
+            m_ValuesManaged is { Count: > 0 } ||
+            m_HasInlineCursor ||
+            m_HasInlineTextShadow ||
+            m_HasInlineTextAutoSize ||
+            m_HasInlineTransformOrigin ||
+            m_HasInlineTranslate ||
+            m_HasInlineRotate ||
+            m_HasInlineScale ||
+            m_HasInlineCurvature ||
+            m_HasInlineBoxShadow ||
+            m_HasInlineBackgroundSize;
+
         [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
         internal struct InlineRule
         {

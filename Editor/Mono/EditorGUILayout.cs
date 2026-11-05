@@ -2434,7 +2434,7 @@ public sealed partial class EditorGUILayout
 
     internal static string TextFieldDropDown(GUIContent label, string text, string[] dropDownElement)
     {
-        Rect rect = GUILayoutUtility.GetRect(GUIContent.none, EditorStyles.textField);
+        Rect rect = GUILayoutUtility.GetRect(GUIContent.none, EditorStyles.textFieldDropDownText);
         return EditorGUI.TextFieldDropDown(rect, label, text, dropDownElement);
     }
 

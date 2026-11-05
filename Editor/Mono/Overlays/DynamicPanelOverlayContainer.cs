@@ -39,6 +39,7 @@ namespace UnityEditor.Overlays
         const string k_NoVisibleElementElementClassName = k_ClassName + "--no-visible-element";
         public const string k_ClassNameLeft = k_ClassName + "--left";
         public const string k_ClassNameRight = k_ClassName + "--right";
+        public const string k_ClassNameEmpty = k_ClassName + "--empty";
         const string k_AdditionalClassNameToolbar = "overlay-layout--toolbar-vertical";
         const string k_BorderClassName = "overlay-dynamic-panel-container__border";
         public const string k_WidthDraggerClassName = "overlay-dynamic-panel-container__width-dragger"; // Used in tests.
@@ -952,7 +953,9 @@ namespace UnityEditor.Overlays
 
         void UpdateWidth()
         {
-            style.width = m_Section.GetFirstVisible() != null && m_ChunksEnabled ? new Length(m_Width, LengthUnit.Pixel) : StyleKeyword.Null;
+            bool hasVisible = m_Section.GetFirstVisible() != null;
+            style.width = hasVisible && m_ChunksEnabled ? new Length(m_Width, LengthUnit.Pixel) : StyleKeyword.Null;
+            EnableInClassList(k_ClassNameEmpty, !hasVisible);
         }
 
         void UpdateFirstLastElementStyle()

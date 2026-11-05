@@ -45,8 +45,8 @@ namespace UnityEditor.Scripting.ScriptCompilation.MsBuild
         }
 
         [VisibleToOtherModules("UnityEditor.ProjectAuditorModule")]
-        internal static Task<MsBuildCompilation.CompilationMessages> RequestAnalysisCompilationAsync(string analysisConfiguration, CancellationToken cancellationToken = default)
-            => Instance.RequestAnalysisCompilationAsync(analysisConfiguration, cancellationToken);
+        internal static Task<MsBuildCompilation.CompilationMessages> RequestAnalysisCompilationAsync(string analysisConfiguration, int parentProgressId, CancellationToken cancellationToken = default)
+            => Instance.RequestAnalysisCompilationAsync(analysisConfiguration, parentProgressId, cancellationToken);
 
         [RequiredByNativeCode]
         public static void InitializeMsBuild(bool createInitCsrpojs, MSBuildCompilationOptions compilationOptions)

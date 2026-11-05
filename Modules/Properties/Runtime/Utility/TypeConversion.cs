@@ -288,6 +288,13 @@ namespace Unity.Properties
                 return true;
             }
 
+            return TryConvertWithoutRegistry(ref source, out destination);
+        }
+
+        // The conversions applied when a registry has no converter for the types.
+        [VisibleToOtherModules("UnityEngine.UIElementsModule")]
+        internal static bool TryConvertWithoutRegistry<TSource, TDestination>(ref TSource source, out TDestination destination)
+        {
             if (typeof(TSource) == typeof(TDestination))
             {
                 destination = UnsafeUtility.As<TSource, TDestination>(ref source);
@@ -423,13 +430,89 @@ namespace Unity.Properties
 
                 if (IsNumericType(typeof(TSource)))
                 {
-                    destination = UnsafeUtility.As<TSource, TDestination>(ref source);
-                    return true;
+                    if (typeof(TSource).IsEnum)
+                        return TryConvertEnumToEnum(ref source, out destination);
+
+                    if (typeof(TSource) == typeof(decimal))
+                        return TryConvertDecimalToEnum(ref source, out destination);
+
+                    switch (Type.GetTypeCode(typeof(TDestination)))
+                    {
+                        case TypeCode.Byte:
+                            return TryConvertNumericToEnum<TSource, byte, TDestination>(ref source, out destination);
+                        case TypeCode.SByte:
+                            return TryConvertNumericToEnum<TSource, sbyte, TDestination>(ref source, out destination);
+                        case TypeCode.Int16:
+                            return TryConvertNumericToEnum<TSource, short, TDestination>(ref source, out destination);
+                        case TypeCode.UInt16:
+                            return TryConvertNumericToEnum<TSource, ushort, TDestination>(ref source, out destination);
+                        case TypeCode.Int32:
+                            return TryConvertNumericToEnum<TSource, int, TDestination>(ref source, out destination);
+                        case TypeCode.UInt32:
+                            return TryConvertNumericToEnum<TSource, uint, TDestination>(ref source, out destination);
+                        case TypeCode.Int64:
+                            return TryConvertNumericToEnum<TSource, long, TDestination>(ref source, out destination);
+                        case TypeCode.UInt64:
+                            return TryConvertNumericToEnum<TSource, ulong, TDestination>(ref source, out destination);
+                    }
                 }
             }
 
             destination = default;
             return false;
+        }
+
+        static bool TryConvertNumericToEnum<TSource, TUnderlying, TDestination>(ref TSource source, out TDestination destination)
+        {
+            if (PrimitivesConverters.TryConvertPrimitiveOrString<TSource, TUnderlying>(ref source, out var underlying))
+            {
+                destination = UnsafeUtility.As<TUnderlying, TDestination>(ref underlying);
+                return true;
+            }
+
+            destination = default;
+            return false;
+        }
+
+        static bool TryConvertEnumToEnum<TSource, TDestination>(ref TSource source, out TDestination destination)
+        {
+            switch (Type.GetTypeCode(typeof(TSource)))
+            {
+                case TypeCode.Byte:
+                    return TryConvertEnum(ref UnsafeUtility.As<TSource, byte>(ref source), out destination);
+                case TypeCode.SByte:
+                    return TryConvertEnum(ref UnsafeUtility.As<TSource, sbyte>(ref source), out destination);
+                case TypeCode.Int16:
+                    return TryConvertEnum(ref UnsafeUtility.As<TSource, short>(ref source), out destination);
+                case TypeCode.UInt16:
+                    return TryConvertEnum(ref UnsafeUtility.As<TSource, ushort>(ref source), out destination);
+                case TypeCode.Int32:
+                    return TryConvertEnum(ref UnsafeUtility.As<TSource, int>(ref source), out destination);
+                case TypeCode.UInt32:
+                    return TryConvertEnum(ref UnsafeUtility.As<TSource, uint>(ref source), out destination);
+                case TypeCode.Int64:
+                    return TryConvertEnum(ref UnsafeUtility.As<TSource, long>(ref source), out destination);
+                case TypeCode.UInt64:
+                    return TryConvertEnum(ref UnsafeUtility.As<TSource, ulong>(ref source), out destination);
+            }
+
+            destination = default;
+            return false;
+        }
+
+        static bool TryConvertDecimalToEnum<TSource, TDestination>(ref TSource source, out TDestination destination)
+        {
+            try
+            {
+                var value = System.Convert.ChangeType(decimal.Truncate((decimal)(object)source), Enum.GetUnderlyingType(typeof(TDestination)), CultureInfo.InvariantCulture);
+                destination = (TDestination)Enum.ToObject(typeof(TDestination), value);
+                return true;
+            }
+            catch (Exception)
+            {
+                destination = default;
+                return false;
+            }
         }
 
         static bool TryConvertToUnityEngineObject<TSource, TDestination>(TSource source, out TDestination destination)

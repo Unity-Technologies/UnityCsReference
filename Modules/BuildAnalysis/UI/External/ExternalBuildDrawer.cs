@@ -3,6 +3,8 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using System.Threading;
+using System.Threading.Tasks;
 using UnityEngine.UIElements;
 
 namespace UnityEditor.Build.Analysis
@@ -27,8 +29,35 @@ namespace UnityEditor.Build.Analysis
         {
         }
 
+        /// <summary>Loads a selected build's report without blocking the editor.</summary>
+        /// <param name="summary">The summary of the selected build.</param>
+        /// <param name="token">Cancelled when the window closes or scripts reload.</param>
+        /// <returns>The report, passed to <see cref="ApplyBuild"/>.</returns>
+        /// <remarks>Called on the main thread; do the slow work in `Task.Run`. Show a loading state here and hide
+        /// it in <see cref="ApplyBuild"/> and <see cref="OnBuildDeselected"/>.</remarks>
+        public virtual Task<object> LoadBuildAsync(BuildReportSummary summary, CancellationToken token)
+        {
+            return Task.FromResult<object>(null);
+        }
+
+        /// <summary>Shows a loaded report, while its build is still selected.</summary>
+        /// <param name="summary">The summary of the selected build.</param>
+        /// <param name="loaded">The result of <see cref="LoadBuildAsync"/>.</param>
+        /// <returns>Whether a report is shown. If not, selecting the build again retries, as for other builds in
+        /// the window that have no report.</returns>
+        public virtual bool ApplyBuild(BuildReportSummary summary, object loaded)
+        {
+            OnBuildSelected(summary);
+            return true;
+        }
+
         /// <summary>Called when the selection moves to a build this drawer doesn't draw.</summary>
         public virtual void OnBuildDeselected()
+        {
+        }
+
+        /// <summary>Called when the build history changes while one of this drawer's builds is selected.</summary>
+        public virtual void OnBuildListRefreshed()
         {
         }
     }

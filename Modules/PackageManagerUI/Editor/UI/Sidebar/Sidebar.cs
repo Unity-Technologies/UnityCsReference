@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UIElements;
@@ -107,10 +108,6 @@ internal partial class Sidebar : ScrollView
         var foldout = new Foldout {text = foldoutName};
         foldout.AddToClassList(k_FoldoutClassName);
         foldout.tooltip = foldoutName;
-        foldout.tabIndex = -1;
-        var toggle = foldout.Q<Toggle>();
-        if (toggle != null)
-            toggle.tabIndex = -1;
         Add(foldout);
         return foldout;
     }
@@ -166,17 +163,20 @@ internal partial class Sidebar : ScrollView
         if (!UIUtils.IsElementVisible(this))
             return;
 
+        if (evt.direction is not (NavigationMoveEvent.Direction.Up or NavigationMoveEvent.Direction.Down))
+            return;
+
+        var reverse = evt.direction == NavigationMoveEvent.Direction.Up;
+        SidebarRow next = null;
         if (evt.target is SidebarRow currentRow)
+            next = FindNextVisibleRow(currentRow, reverse);
+        else if (evt.target is VisualElement target && UIUtils.GetParentOfType<Foldout>(target) is { } foldout && foldout.parent == this)
+            next = FindNextVisibleRowFromFoldout(foldout, reverse);
+
+        if (next != null)
         {
-            if (evt.direction is NavigationMoveEvent.Direction.Up or NavigationMoveEvent.Direction.Down)
-            {
-                var next = FindNextVisibleRow(currentRow, evt.direction == NavigationMoveEvent.Direction.Up);
-                if (next != null)
-                {
-                    ActivateRow(next);
-                    evt.StopPropagation();
-                }
-            }
+            ActivateRow(next);
+            evt.StopPropagation();
         }
     }
 
@@ -283,6 +283,32 @@ internal partial class Sidebar : ScrollView
                 return result;
         }
         return result;
+    }
+
+    // Arrow keys from a foldout header move to the row that is visually adjacent on screen, which is more intuitive
+    // than treating the header as part of its own rows: down enters the foldout, up leaves it for the one above.
+    private SidebarRow FindNextVisibleRowFromFoldout(Foldout foldout, bool reverse)
+    {
+        var foldouts = Children().FilterByType<Foldout>().ToNewArray(childCount);
+        var index = Array.IndexOf(foldouts, foldout);
+        if (reverse)
+            index--;
+
+        while (index >= 0 && index < foldouts.Length)
+        {
+            var candidate = foldouts[index];
+            if (candidate.value)
+            {
+                var rows = candidate.Children().FilterByType<SidebarRow>().ToNewArray(candidate.childCount);
+                if (reverse)
+                    Array.Reverse(rows);
+                foreach (var row in rows)
+                    if (UIUtils.IsElementVisible(row))
+                        return row;
+            }
+            index += reverse ? -1 : 1;
+        }
+        return null;
     }
 
     private SidebarRow FindNextVisibleRow(SidebarRow current, bool reverse)

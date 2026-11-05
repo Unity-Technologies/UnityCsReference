@@ -102,7 +102,11 @@ namespace UnityEditor
         [StaticAccessor("SelectionBindings", StaticAccessorType.DoubleColon)]
         internal static extern void SetFullSelectionByID(ReadOnlySpan<EntityId> newSelection, EntityId activeObjectEntityId, EntityId contextEntityId, DataMode dataModeHint, bool notifyOnReselection);
         internal static void SetFullSelectionByID(EntityId[] newSelection, EntityId activeObjectEntityId, EntityId contextEntityId, DataMode dataModeHint)
-            => SetFullSelectionByID(newSelection, activeObjectEntityId, contextEntityId, dataModeHint, false);
+        {
+            if (newSelection == null)
+                throw new ArgumentNullException(nameof(newSelection), "Pass an empty array to clear the selection.");
+            SetFullSelectionByID(newSelection, activeObjectEntityId, contextEntityId, dataModeHint, false);
+        }
 
         [Obsolete("Use EntityId version of SetFullSelectionByID instead.", true)]
         internal static void SetFullSelectionByID(int[] newSelection, int activeObjectInstanceID, int contextInstanceID, DataMode dataModeHint)

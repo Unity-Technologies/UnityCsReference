@@ -185,7 +185,9 @@ namespace UnityEditor
             m_Material.SetInt(s_ColorspaceIsGamma, PlayerSettings.colorSpace == ColorSpace.Linear ? 0 : 1);
 
             m_PreviewUtility.DrawMesh(m_Mesh, Vector3.zero, rot, m_Material, 0);
+#pragma warning disable CS0618 // Type or member is obsolete
             m_PreviewUtility.Render(Unsupported.useScriptableRenderPipeline);
+#pragma warning restore CS0618
         }
     }
 }

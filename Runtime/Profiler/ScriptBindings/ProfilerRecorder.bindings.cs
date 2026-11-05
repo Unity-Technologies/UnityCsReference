@@ -340,7 +340,7 @@ namespace Unity.Profiling
         {
             CheckInitializedAndThrow();
 
-            var count = Count;
+            var count = WrappedAround ? Capacity : Count;
             var array = new ProfilerRecorderSample[count];
             fixed(ProfilerRecorderSample* p = array)
             {

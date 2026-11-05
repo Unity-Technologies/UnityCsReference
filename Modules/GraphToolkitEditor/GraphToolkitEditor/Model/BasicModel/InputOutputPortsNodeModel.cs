@@ -14,6 +14,21 @@ namespace Unity.GraphToolkit.Editor
     [UnityRestricted]
     internal abstract class InputOutputPortsNodeModel : PortNodeModel
     {
+        [NonSerialized]
+        List<PortModel> m_CachedPorts;
+
+        [NonSerialized]
+        OrderedPorts m_CachedPortsInputs;
+
+        [NonSerialized]
+        int m_CachedPortsInputsVersion;
+
+        [NonSerialized]
+        OrderedPorts m_CachedPortsOutputs;
+
+        [NonSerialized]
+        int m_CachedPortsOutputsVersion;
+
         /// <summary>
         /// Gets all the models of the input ports of this node, indexed by a string unique to the node.
         /// </summary>
@@ -57,6 +72,26 @@ namespace Unity.GraphToolkit.Editor
         /// <inheritdoc />
         public override IReadOnlyList<PortModel> GetPorts()
         {
+            if (InputsById is OrderedPorts inputs && OutputsById is OrderedPorts outputs)
+            {
+                if (m_CachedPorts != null
+                    && ReferenceEquals(inputs, m_CachedPortsInputs) && inputs.Version == m_CachedPortsInputsVersion
+                    && ReferenceEquals(outputs, m_CachedPortsOutputs) && outputs.Version == m_CachedPortsOutputsVersion)
+                {
+                    return m_CachedPorts;
+                }
+
+                m_CachedPorts ??= new List<PortModel>(inputs.Count + outputs.Count);
+                m_CachedPorts.Clear();
+                m_CachedPorts.AddRange(inputs.Values);
+                m_CachedPorts.AddRange(outputs.Values);
+                m_CachedPortsInputs = inputs;
+                m_CachedPortsInputsVersion = inputs.Version;
+                m_CachedPortsOutputs = outputs;
+                m_CachedPortsOutputsVersion = outputs.Version;
+                return m_CachedPorts;
+            }
+
             var listSize = InputPorts.Count + OutputPorts.Count;
             var ports = new List<PortModel>(listSize);
             ports.AddRange(InputsById.Values);

@@ -21,22 +21,16 @@ namespace Unity.Multiplayer.PlayMode.Editor
         {
             add
             {
+                // Kept after invoking so the handler also runs when MPPM is re-enabled from Preferences.
+                s_OnInitializedCallbacks += value;
                 if (IsInitialized)
                 {
                     value?.Invoke(IsMainEditor);
-                    return;
                 }
-
-                s_PendingOnInitializedCallbacks += value;
             }
             remove
             {
-                if (IsInitialized)
-                {
-                    return;
-                }
-
-                s_PendingOnInitializedCallbacks -= value;
+                s_OnInitializedCallbacks -= value;
             }
         }
 
@@ -73,11 +67,11 @@ namespace Unity.Multiplayer.PlayMode.Editor
 
 
 
-        [AutoStaticsCleanupOnCodeReload] // pending callbacks delegate; stale handlers after reload pin old ALC
-        // Queue of not-yet-invoked initialization callbacks. Initialize() runs on every code load and
-        // re-subscribes, so the drained queue refills for the new scope.
-        [IgnoreForUAL0015("Pending-callback queue refilled by Initialize() on the next code load")]
-        static Action<bool> s_PendingOnInitializedCallbacks;
+        [AutoStaticsCleanupOnCodeReload] // callbacks delegate; stale handlers after reload pin old ALC
+        // Initialization callbacks, invoked on every InitializeMPPMContexts (startup and each re-enable).
+        // Subscribers re-subscribe from their [OnCodeLoaded] hooks, so the list refills for the new scope.
+        [IgnoreForUAL0015("Callback list refilled by subscribers' [OnCodeLoaded] hooks on the next code load")]
+        static Action<bool> s_OnInitializedCallbacks;
 
         [AutoStaticsCleanupOnCodeReload] // workflow context; stale after reload
         // Recreated by InitializeMPPMContexts, which Initialize() drives on every code load.
@@ -321,8 +315,7 @@ namespace Unity.Multiplayer.PlayMode.Editor
 
             IsInitialized = true;
             IsMainEditor = s_WorkflowMainEditorContext != null;
-            s_PendingOnInitializedCallbacks?.Invoke(IsMainEditor);
-            s_PendingOnInitializedCallbacks = null;
+            s_OnInitializedCallbacks?.Invoke(IsMainEditor);
         }
 
         static void DisableMPPMContexts()

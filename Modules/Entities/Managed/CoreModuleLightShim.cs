@@ -29,7 +29,6 @@ namespace Unity.Entities
             Type ExecuteInEditModeType { get; }
             Type ExecuteAlwaysType { get; }
 
-            float FixedDeltaTime { get; }
             bool IsPlaying { get; }
             long ArchetypeAllocatorBudget { get; }
             long QueryAllocatorBudget { get; }
@@ -41,13 +40,19 @@ namespace Unity.Entities
             string GetObjectName(object unityObject);
             bool IsUnityComponentType(Type type);
             UnityEngine.EntityId GetEntityId(object unityObject);
-            void MarkInstanceIDsAsRoot(IntPtr instanceIDs, int count, IntPtr state);
+            void MarkEntityIdsAsRoot(IntPtr entityIds, int count, IntPtr state);
+            void AssignTransformHierarchyToGameObjectEntity(UnityEngine.EntityId gameObjectId);
 
             // AsyncReadManager: reads the commands and waits for them; true when every command completed
             unsafe bool ReadFile(string path, ReadCommand* commands, uint commandCount, AssetLoadingSubsystem subsystem);
 
             // Component type ids, minted natively by TypeManagerV2
             int GetComponentTypeId(Type type);
+
+            // Entities component types registered natively by the serialization source generator, as RuntimeTypeHandle
+            // values; returns the total count, which may exceed capacity
+            unsafe int CopyEntityComponentTypeHandles(IntPtr* handles, int capacity);
+            Type GetTypeFromHandle(IntPtr handle);
 
             // Companion GameObjects
             void ClearCompanionComponentTypes();

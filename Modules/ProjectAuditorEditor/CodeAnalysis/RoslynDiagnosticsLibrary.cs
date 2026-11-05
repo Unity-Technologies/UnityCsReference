@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Threading;
 using Unity.ProjectAuditor.Editor.Core;
+using Unity.ProjectAuditor.Editor.UI.Framework;
 using Unity.Scripting.LifecycleManagement;
 using UnityEditor;
 using UnityEditor.Scripting.ScriptCompilation.MsBuild;
@@ -23,14 +24,29 @@ namespace Unity.ProjectAuditor.Editor.CodeAnalysis
     /// </summary>
     static partial class RoslynDiagnosticsLibrary
     {
-        // Whitelist of codes to surface from Unity's analyzers.
+        // Codes to surface from Unity's analyzers, with optional metadata such as a recommendation.
         const string k_UnityFileName = "UnityDiagnostics.json";
+
+        // Older rules packages list bare codes instead of objects.
+        const string k_UnityDiagnosticsObjectFormatVersion = "3.2.0";
 
         sealed class LoadResult
         {
             public Dictionary<string, Descriptor> Diagnostics;
             public List<string> Warnings;
         }
+
+#pragma warning disable CS0649
+        [Serializable]
+        internal sealed class UnityDiagnostic
+        {
+            public string id;
+            public string recommendation;
+        }
+#pragma warning restore CS0649
+
+        [AutoStaticsCleanup]
+        internal static Dictionary<string, UnityDiagnostic> s_UnityDiagnostics;
 
         [NoAutoStaticsCleanup] // Lazy cache; survives code reload (the underlying analyzers don't change during one)
         static Dictionary<string, Descriptor> s_Diagnostics;
@@ -54,6 +70,9 @@ namespace Unity.ProjectAuditor.Editor.CodeAnalysis
 
         static void StartLoad(bool force)
         {
+            if (force || s_UnityDiagnostics == null)
+                s_UnityDiagnostics = ReadUnityDiagnostics();
+
             if (!MsBuildCompilationInterface.IsEnabled())
             {
                 s_ReloadRequested = false;
@@ -89,9 +108,9 @@ namespace Unity.ProjectAuditor.Editor.CodeAnalysis
             // Call all Unity APIs before starting the loading thread.
             var analyzerDlls = new List<string>(RoslynAnalyzerAssetWatcher.AnalyzerDllPaths);
             var unityAnalyzerPaths = RoslynAnalyzerDiagnosticsExtractor.ResolveUnityAnalyzerPaths();
-            var rulesDataPath = ProjectAuditor.s_RulesDataPath;
+            var unityDiagnostics = s_UnityDiagnostics;
 
-            var loadThread = new Thread(() => Load(analyzerDlls, unityAnalyzerPaths, rulesDataPath))
+            var loadThread = new Thread(() => Load(analyzerDlls, unityAnalyzerPaths, unityDiagnostics))
             {
                 Name = "Diagnostics Load",
                 Priority = ThreadPriority.BelowNormal,
@@ -101,12 +120,12 @@ namespace Unity.ProjectAuditor.Editor.CodeAnalysis
         }
 
         // Build the Diagnostic dictionary and publish it for the main thread to pick up in RegisterDiagnostics.
-        static void Load(IReadOnlyCollection<string> analyzerDllPaths, List<string> unityAnalyzerPaths, string rulesDataPath)
+        static void Load(IReadOnlyCollection<string> analyzerDllPaths, List<string> unityAnalyzerPaths, Dictionary<string, UnityDiagnostic> unityDiagnostics)
         {
             var result = new LoadResult { Warnings = new List<string>() };
             try
             {
-                result.Diagnostics = Build(analyzerDllPaths, unityAnalyzerPaths, rulesDataPath, result.Warnings);
+                result.Diagnostics = Build(analyzerDllPaths, unityAnalyzerPaths, unityDiagnostics, result.Warnings);
             }
             catch (Exception e)
             {
@@ -245,7 +264,7 @@ namespace Unity.ProjectAuditor.Editor.CodeAnalysis
         static Dictionary<string, Descriptor> Build(
             IReadOnlyCollection<string> analyzerDllPaths,
             List<string> unityAnalyzerPaths,
-            string rulesDataPath,
+            Dictionary<string, UnityDiagnostic> unityDiagnostics,
             List<string> warnings)
         {
             var diagnostics = new Dictionary<string, Descriptor>();
@@ -271,15 +290,18 @@ namespace Unity.ProjectAuditor.Editor.CodeAnalysis
             {
                 try
                 {
-                    var allowList = ReadUnityCodeAllowList(rulesDataPath);
-                    if (allowList.Count > 0)
+                    if (unityDiagnostics.Count > 0)
                     {
                         var result = RoslynAnalyzerDiagnosticsExtractor.Extract(unityAnalyzerPaths);
                         warnings.AddRange(result.Warnings);
                         foreach (var d in result.Diagnostics)
                         {
-                            if (allowList.Contains(d.id))
-                                diagnostics.Add(d.id, ToDescriptor(d));
+                            if (!unityDiagnostics.TryGetValue(d.id, out var unityDiagnostic))
+                                continue;
+
+                            var descriptor = ToDescriptor(d);
+                            ApplyMetadata(descriptor, unityDiagnostic);
+                            diagnostics.Add(d.id, descriptor);
                         }
                     }
                 }
@@ -292,18 +314,71 @@ namespace Unity.ProjectAuditor.Editor.CodeAnalysis
             return diagnostics;
         }
 
-        static HashSet<string> ReadUnityCodeAllowList(string rulesDataPath)
+        /// <summary>
+        /// Applies the metadata from the rules package, such as a recommendation, to a Unity analyzer descriptor. Main thread only.
+        /// </summary>
+        public static void ApplyUnityMetadata(Descriptor descriptor)
         {
-            var allowList = new HashSet<string>(StringComparer.Ordinal);
-            var path = Path.GetFullPath(Path.Combine(rulesDataPath, k_UnityFileName));
-            var json = File.ReadAllText(path);
-            foreach (var code in Json.DeserializeArray<string>(json))
+            if (s_UnityDiagnostics.TryGetValue(descriptor.Id, out var unityDiagnostic))
+                ApplyMetadata(descriptor, unityDiagnostic);
+        }
+
+        static void ApplyMetadata(Descriptor descriptor, UnityDiagnostic unityDiagnostic)
+        {
+            if (!string.IsNullOrEmpty(unityDiagnostic.recommendation))
+                descriptor.Recommendation = unityDiagnostic.recommendation;
+        }
+
+        static Dictionary<string, UnityDiagnostic> ReadUnityDiagnostics()
+        {
+            var path = Path.GetFullPath(Path.Combine(ProjectAuditor.s_RulesDataPath, k_UnityFileName));
+            return ReadUnityDiagnostics(path, ProjectAuditorRulesPackage.Version);
+        }
+
+        internal static Dictionary<string, UnityDiagnostic> ReadUnityDiagnostics(string path, string rulesPackageVersion)
+        {
+            // Older rules packages don't have the file.
+            if (!File.Exists(path))
+                return new Dictionary<string, UnityDiagnostic>();
+
+            try
             {
-                if (!string.IsNullOrEmpty(code))
-                    allowList.Add(code);
+                return ParseUnityDiagnostics(File.ReadAllText(path), UsesObjectFormat(rulesPackageVersion));
+            }
+            catch (Exception e)
+            {
+                Debug.LogWarning($"Project Auditor: Failed to read {path}: {e.Message}");
+                return new Dictionary<string, UnityDiagnostic>();
+            }
+        }
+
+        internal static bool UsesObjectFormat(string rulesPackageVersion)
+        {
+            return Utility.CompareVersions(rulesPackageVersion, k_UnityDiagnosticsObjectFormatVersion) >= 0;
+        }
+
+        internal static Dictionary<string, UnityDiagnostic> ParseUnityDiagnostics(string json, bool objectFormat)
+        {
+            var unityDiagnostics = new Dictionary<string, UnityDiagnostic>(StringComparer.Ordinal);
+
+            if (!objectFormat)
+            {
+                foreach (var code in Json.DeserializeArray<string>(json))
+                {
+                    if (!string.IsNullOrEmpty(code))
+                        unityDiagnostics[code] = new UnityDiagnostic { id = code };
+                }
+
+                return unityDiagnostics;
             }
 
-            return allowList;
+            foreach (var unityDiagnostic in Json.DeserializeArray<UnityDiagnostic>(json))
+            {
+                if (!string.IsNullOrEmpty(unityDiagnostic?.id))
+                    unityDiagnostics[unityDiagnostic.id] = unityDiagnostic;
+            }
+
+            return unityDiagnostics;
         }
 
         static void LogWarnings(List<string> warnings)

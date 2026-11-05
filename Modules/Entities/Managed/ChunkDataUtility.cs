@@ -1504,7 +1504,7 @@ namespace Unity.Entities
                 {
                     var offset = offsets[offsetIndex].Offset;
 
-                    if (entityComponentStore->Exists(*(Entity*)(elementPtr + offset)))
+                    if (entityComponentStore->ExistsInThisWorld(*(Entity*)(elementPtr + offset)))
                         continue;
 
                     *(Entity*)(elementPtr + offset) = Entity.Null;

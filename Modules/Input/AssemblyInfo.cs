@@ -7,6 +7,7 @@ using System.Runtime.CompilerServices;
 [assembly: InternalsVisibleTo("Unity.Modules.Input.Tests.Common")]
 [assembly: InternalsVisibleTo("Unity.Modules.Input.Tests.Playmode")]
 [assembly: InternalsVisibleTo("Unity.Modules.Input.Tests.Editor")]
+[assembly: InternalsVisibleTo("Unity.Modules.Input.Tests.Simulator")]
 [assembly: InternalsVisibleTo("Unity.InputSystem")]
 [assembly: InternalsVisibleTo("Unity.InputSystem.Tests")]
 [assembly: InternalsVisibleTo("Unity.InputSystem.TestFramework")]

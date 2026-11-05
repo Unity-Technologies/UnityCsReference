@@ -142,7 +142,7 @@ namespace UnityEngine.UIElements
             {
                 if (!EqualsCurrentValue(value) || showMixedValue)
                 {
-                    var previousValue = m_Value;
+                    var previousValue = GetValueBeforeChange();
                     SetValueWithoutNotify(value);
 
                     // We set showMixedValue after setting the value or it will revert the text back to the previous value. (UUUM-73855)
@@ -169,7 +169,8 @@ namespace UnityEngine.UIElements
             set => SetValueWithoutNotify(value);
         }
 
-        internal bool m_SkipValidation;
+        bool m_SkipValidation;
+        private protected bool isValidationIgnored => m_SkipValidation;
 
         // Sent whenever we overwrite the value from view data.
         internal event Action viewDataRestored;
@@ -191,6 +192,8 @@ namespace UnityEngine.UIElements
 
         [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
         internal virtual bool EqualsCurrentValue(TValueType v) => EqualityComparer<TValueType>.Default.Equals(m_Value, v);
+
+        internal virtual TValueType GetValueBeforeChange() => m_Value;
 
         internal TValueType ValidatedValue(TValueType value)
         {

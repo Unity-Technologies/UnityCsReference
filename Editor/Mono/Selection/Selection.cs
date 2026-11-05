@@ -165,5 +165,23 @@ namespace UnityEditor
         public static void SetCustomSelection(string key, string data, System.ReadOnlySpan<EntityId> selectedEntityIds) => SelectionHistory.instance.SetCustomSelection(key, data, selectedEntityIds, true);
         internal static void SetCustomSelection(string key, string data, System.ReadOnlySpan<EntityId> selectedEntityIds, EntityId activeContextEid, DataMode dataMode)
             => SelectionHistory.instance.SetCustomSelection(key, data, selectedEntityIds, true, activeContextEid, dataMode);
+
+        /// <summary>
+        /// The selected objects of type T that are in memory. Selected assets that are not loaded are skipped, not loaded:
+        /// unlike <see cref="objects"/>, this never loads the selection, which matters for a large Project window selection.
+        /// Scene objects and the active object are always in memory.
+        /// </summary>
+        [VisibleToOtherModules]
+        internal static List<T> GetLoadedObjects<T>() where T : Object
+        {
+            var ids = entityIds;
+            var result = new List<T>(ids.Length);
+            foreach (var id in ids)
+            {
+                if (UnityEditorInternal.InternalEditorUtility.GetLoadedObjectFromEntityId(id) is T loaded)
+                    result.Add(loaded);
+            }
+            return result;
+        }
     }
 }

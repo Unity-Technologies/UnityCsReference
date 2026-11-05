@@ -107,6 +107,14 @@ namespace UnityEditor.Search
 
         internal bool skipNestedQueries;
         internal bool validateSyntaxOnly;
+
+        // An unknown filter with any operator, such as "door:main" or "m_Depth=0", is searched as text using its whole token.
+        // With a default filter handler, it matches the default filter or the text.
+        // Takes precedence over skipUnknownFilters.
+        internal bool treatUnknownFiltersAsText;
+
+        // Takes precedence over skipIncompleteFilters
+        internal bool treatIncompleteFiltersAsText;
     }
 
     class QueryEngineParserData
@@ -838,7 +846,14 @@ namespace UnityEditor.Search
                 return false;
 
             node.token = new QueryToken(in svToken, startIndex);
-            userData.nodesToStringPosition.Add(node, new QueryToken(startIndex, match.Length));
+            var position = new QueryToken(startIndex, match.Length);
+            userData.nodesToStringPosition.Add(node, position);
+            if (node is CombinedNode combinedNode)
+            {
+                // A filter searched as text has its filter and search nodes under an OrNode
+                foreach (var child in combinedNode.children)
+                    userData.nodesToStringPosition.Add(child, position);
+            }
             userData.expressionNodes.Add(node);
             userData.tokens.Add(match.Value);
             return true;
@@ -1014,12 +1029,29 @@ namespace UnityEditor.Search
             }
 
             var args = new CreateFilterTokenArgs(in token, match, index, errors, in filterType, in filterParam, in filterOperator, in filterValue, in nestedQueryAggregator, filterTypeIndex, filterOperatorIndex, filterValueIndex);
-            if (filter == null && !GetFilter(in args, out var queryNode, out filter))
+            var searchAsText = false;
+            if (filter == null && !GetFilter(in args, out var queryNode, out filter, out searchAsText))
             {
                 return queryNode;
             }
 
-            return CreateFilterToken(filter, in args);
+            var filterNode = CreateFilterToken(filter, in args);
+            return searchAsText ? CreateFilterOrSearchNode(filterNode, in args) : filterNode;
+        }
+
+        IQueryNode CreateFilterOrSearchNode(IQueryNode filterNode, in CreateFilterTokenArgs args)
+        {
+            if (filterNode == null)
+                return null;
+
+            var token = new QueryToken(args.token, args.index);
+            var searchNode = CreateSearchNode(in args.token, in args.token, false);
+            filterNode.token = token;
+            searchNode.token = token;
+            var orNode = new OrNode();
+            orNode.AddNode(filterNode);
+            orNode.AddNode(searchNode);
+            return orNode;
         }
 
         IQueryNode CreateFilterToken(IFilter filter, in CreateFilterTokenArgs args)
@@ -1122,7 +1154,7 @@ namespace UnityEditor.Search
             }
 
             var args = new CreateFilterTokenArgs(in token, match, index, errors, in filterType, in filterParam, in StringView.empty, in StringView.empty, in StringView.empty, filterTypeIndex, 0, 0);
-            if (filter == null && !GetFilter(in args, out var queryNode, out filter))
+            if (filter == null && !GetFilter(in args, out var queryNode, out filter, out _))
             {
                 return queryNode;
             }
@@ -1173,13 +1205,16 @@ namespace UnityEditor.Search
                 filterParam = filterParam.Trim('(', ')');
             }
 
+            if (validationOptions.treatIncompleteFiltersAsText)
+                return CreateSearchNode(in token, in token, false);
+
             if (validationOptions.skipIncompleteFilters)
             {
                 return new FilterNode(in filterType, in filterOperator, in filterValue, in filterValue, in filterParam, in token) { skipped = true };
             }
 
             var args = new CreateFilterTokenArgs(in token, match, index, errors, in filterType, in filterParam, in filterOperator, in filterValue, in StringView.empty, filterTypeIndex, filterOperatorIndex, filterValueIndex);
-            if (filter == null && !GetFilter(in args, out var queryNode, out filter))
+            if (filter == null && !GetFilter(in args, out var queryNode, out filter, out _))
             {
                 return queryNode;
             }
@@ -1218,26 +1253,35 @@ namespace UnityEditor.Search
             return filterNode;
         }
 
-        bool GetFilter(in CreateFilterTokenArgs args, out IQueryNode queryNode, out IFilter filter)
+        bool GetFilter(in CreateFilterTokenArgs args, out IQueryNode queryNode, out IFilter filter, out bool searchAsText)
         {
             queryNode = null;
+            searchAsText = false;
             var filterTypeStr = args.filterType.ToString();
             if (!m_Filters.TryGetValue(filterTypeStr, out filter))
             {
+                var hasDefaultHandler = HasDefaultHandler(!args.filterParam.IsNullOrEmpty());
+                if (validationOptions.treatUnknownFiltersAsText && !hasDefaultHandler)
+                {
+                    queryNode = CreateSearchNode(in args.token, in args.token, false);
+                    return false;
+                }
+
                 // When skipping unknown filter, just return a noop. The graph will get simplified later.
-                if (validationOptions.skipUnknownFilters)
+                if (!validationOptions.treatUnknownFiltersAsText && validationOptions.skipUnknownFilters)
                 {
                     queryNode = new FilterNode(in args.filterType, in args.filterOperator, in args.filterValue, in args.filterValue, in args.filterParam, in args.token) { skipped = true };
                     return false;
                 }
 
-                if (!validationOptions.validateSyntaxOnly && !HasDefaultHandler(!args.filterParam.IsNullOrEmpty()) && validationOptions.validateFilters)
+                if (!validationOptions.validateSyntaxOnly && !hasDefaultHandler && validationOptions.validateFilters)
                 {
                     args.errors.Add(new QueryError(args.filterTypeIndex, args.filterType.length, $"Unknown filter \"{filterTypeStr}\"."));
                     queryNode = null;
                     return false;
                 }
                 filter = CreateDefaultFilter(filterTypeStr, args.filterParam);
+                searchAsText = validationOptions.treatUnknownFiltersAsText;
             }
 
             return true;
@@ -1385,14 +1429,15 @@ namespace UnityEditor.Search
                 localToken = localToken.Substring(1, token.length - 1);
             var rawToken = localToken;
             localToken = RemoveQuotes(localToken);
+            return CreateSearchNode(in localToken, in rawToken, isExact);
+        }
 
+        SearchNode CreateSearchNode(in StringView searchValue, in StringView rawToken, bool exact)
+        {
+            var value = searchValue;
             if (searchWordTransformerCallback != null)
-                localToken = new StringView(searchWordTransformerCallback(localToken.ToString()));
-
-            var searchNode = new SearchNode(in localToken, in rawToken, isExact);
-            if (localToken.IsNullOrEmpty())
-                searchNode.skipped = true;
-            return searchNode;
+                value = new StringView(searchWordTransformerCallback(value.ToString()));
+            return new SearchNode(in value, in rawToken, exact) { skipped = value.IsNullOrEmpty() };
         }
 
         static IQueryNode CreateCommentNode(string text, in StringView token, Match match, ICollection<QueryError> errors, QueryEngineParserData userData)
@@ -2319,6 +2364,28 @@ namespace UnityEditor.Search
             {
                 var options = m_Impl.validationOptions;
                 options.skipNestedQueries = value;
+                m_Impl.validationOptions = options;
+            }
+        }
+
+        internal bool treatUnknownFiltersAsText
+        {
+            get => m_Impl.validationOptions.treatUnknownFiltersAsText;
+            set
+            {
+                var options = m_Impl.validationOptions;
+                options.treatUnknownFiltersAsText = value;
+                m_Impl.validationOptions = options;
+            }
+        }
+
+        internal bool treatIncompleteFiltersAsText
+        {
+            get => m_Impl.validationOptions.treatIncompleteFiltersAsText;
+            set
+            {
+                var options = m_Impl.validationOptions;
+                options.treatIncompleteFiltersAsText = value;
                 m_Impl.validationOptions = options;
             }
         }

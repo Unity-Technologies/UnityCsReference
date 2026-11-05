@@ -38,7 +38,7 @@ namespace UnityEditor.Search
             m_SearchItemConverter = searchItemConverter;
         }
 
-#pragma warning disable UA5000 // The Avoid Finalizer Analyzer produces compile errors for any new finalizers. This pre-existing finalizer declaration has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA5000 // Stops async results and disposes the context; sessions not ended via EndSession rely on the finalizer.
         ~SearchApiSession()
         {
             Dispose(false);
@@ -95,7 +95,7 @@ namespace UnityEditor.Search
 
         public Dictionary<Guid, SearchApiSession> searchSessions = new Dictionary<Guid, SearchApiSession>();
 
-#pragma warning disable UA5000 // The Avoid Finalizer Analyzer produces compile errors for any new finalizers. This pre-existing finalizer declaration has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA5000 // Disposes the open sessions; engines are static registry singletons that are never disposed, so the finalizer is the fallback.
         ~QuickSearchEngine()
         {
             Dispose(false);
@@ -426,7 +426,6 @@ namespace UnityEditor.Search
             if (m_QueryEngine == null)
             {
                 m_QueryEngine = new SceneQueryEngine(Array.Empty<GameObject>());
-                m_QueryEngine.engine.skipUnknownFilters = true;
             }
             EditorApplication.hierarchyChanged += OnHierarchyChanged;
             EditorApplication.playModeStateChanged += OnPlayModeStateChanged;

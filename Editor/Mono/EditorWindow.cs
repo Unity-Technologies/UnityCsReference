@@ -778,7 +778,7 @@ namespace UnityEditor
             }
         }
 
-        static void AssignTitle(EditorWindow win, string title)
+        internal static void AssignTitle(EditorWindow win, string title)
         {
             if (title != null)
             {

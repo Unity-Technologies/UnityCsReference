@@ -154,7 +154,9 @@ namespace UnityEditorInternal
             r.xMin += EditorGUI.indent;
 
             Rect headerRect = new Rect(r.x, r.y, r.width, m_HeaderHeight);
-            Rect sizeRect = new Rect(headerRect.xMax - Constants.kArraySizeWidth - EditorGUI.indent * EditorGUI.indentLevel, headerRect.y,
+            Rect sizeRect = new Rect(headerRect.xMax - Constants.kArraySizeWidth -
+                                     EditorGUI.indent * EditorGUI.indentLevel - EditorStyles.foldoutHeader.padding.right,
+                headerRect.y + EditorStyles.foldoutHeader.padding.top,
                 Constants.kArraySizeWidth + EditorGUI.indent * EditorGUI.indentLevel, m_HeaderHeight);
 
             Event evt = Event.current;

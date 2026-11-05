@@ -748,7 +748,7 @@ namespace UnityEngine.UIElements.UIR
             {
                 foreach (var entry in missingGlyphsPerFontAsset)
                 {
-                    var textAsset = Object.FindObjectFromInstanceIDThreadSafe(entry.Key) as TextCore.Text.TextAsset;
+                    var textAsset = Object.FindObjectFromEntityIdThreadSafe(entry.Key) as TextCore.Text.TextAsset;
                     if (textAsset is not FontAsset fa || entry.Value.Count == 0)
                         continue;
 
@@ -844,7 +844,7 @@ namespace UnityEngine.UIElements.UIR
                 ATGMeshInfo nativeMeshInfo = meshInfosMarshalSpan[i];
                 int glyphAmount = nativeMeshInfo.textElementInfos.Length;
                 int remainingVertexCount = glyphAmount * 4;
-                var textAsset = Object.FindObjectFromInstanceIDThreadSafe(nativeMeshInfo.textAssetId) as TextCore.Text.TextAsset;
+                var textAsset = Object.FindObjectFromEntityIdThreadSafe(nativeMeshInfo.textAssetId) as TextCore.Text.TextAsset;
 
                 if (textAsset == null)
                     continue;
@@ -2182,36 +2182,51 @@ namespace UnityEngine.UIElements.UIR
                 node.DrawMesh(vertices, indices, spriteTexture, skipAtlas ? TextureOptions.SkipDynamicAtlas : TextureOptions.None, phase);
             }
 
+            const int k_MaxStackVectorVertices = 128;   // 8 KB of stack on the tessellation worker
+
             void DrawVectorImage(UnsafeMeshGenerationNode node, ref MeshBuilderNative.NativeRectParams rectParams, VectorImage vi, DrawPhase phase)
             {
                 bool isUsingGradients = (rectParams.meshFlags & (int)MeshGenerationContext.MeshFlags.IsUsingVectorImageGradients) != 0;
 
-                int vertexCount = vi.vertices.Length;
-                var svgVertices = new Vertex[vertexCount];
-                for (int i = 0; i < vertexCount; ++i)
-                {
-                    var v = vi.vertices[i];
-                    svgVertices[i] = new Vertex() {
-                        position = v.position,
-                        tint = v.tint,
-                        uv = v.uv,
-                        svgGradientIndex = (ushort)(v.settingIndex & 0xFFFFu),
-                        flags = v.vertexFlags,
-                        circle = v.circle
-                    };
-                }
+                var srcVertices = vi.vertices;
+                int vertexCount = srcVertices.Length;
                 MeshWriteDataInterface meshData;
-                if (rectParams.leftSlice <= UIRUtility.k_Epsilon &&
-                    rectParams.topSlice <= UIRUtility.k_Epsilon &&
-                    rectParams.rightSlice <= UIRUtility.k_Epsilon &&
-                    rectParams.bottomSlice <= UIRUtility.k_Epsilon)
+                var heapVertices = vertexCount > k_MaxStackVectorVertices
+                    ? new NativeArray<Vertex>(vertexCount, Allocator.Temp, NativeArrayOptions.UninitializedMemory)
+                    : default;
+                try
                 {
-                    meshData = MeshBuilderNative.MakeVectorGraphicsStretchBackground(svgVertices, vi.indices, vi.size.x, vi.size.y, rectParams.rect, rectParams.uv, rectParams.scaleMode, rectParams.color, rectParams.colorId);
+                    Span<Vertex> svgVertices = heapVertices.IsCreated ? heapVertices.AsSpan() : stackalloc Vertex[vertexCount];
+                    for (int i = 0; i < vertexCount; ++i)
+                    {
+                        ref readonly var v = ref srcVertices[i];
+                        svgVertices[i] = new Vertex() {
+                            position = v.position,
+                            tint = v.tint,
+                            uv = v.uv,
+                            svgGradientIndex = (ushort)(v.settingIndex & 0xFFFFu),
+                            flags = v.vertexFlags,
+                            circle = v.circle
+                        };
+                    }
+
+                    if (rectParams.leftSlice <= UIRUtility.k_Epsilon &&
+                        rectParams.topSlice <= UIRUtility.k_Epsilon &&
+                        rectParams.rightSlice <= UIRUtility.k_Epsilon &&
+                        rectParams.bottomSlice <= UIRUtility.k_Epsilon)
+                    {
+                        meshData = MeshBuilderNative.MakeVectorGraphicsStretchBackground(svgVertices, vi.indices, vi.size.x, vi.size.y, rectParams.rect, rectParams.uv, rectParams.scaleMode, rectParams.color, rectParams.colorId);
+                    }
+                    else
+                    {
+                        var sliceLTRB = new Vector4(rectParams.leftSlice, rectParams.topSlice, rectParams.rightSlice, rectParams.bottomSlice);
+                        meshData = MeshBuilderNative.MakeVectorGraphics9SliceBackground(svgVertices, vi.indices, vi.size.x, vi.size.y, rectParams.rect, sliceLTRB, rectParams.color, rectParams.colorId);
+                    }
                 }
-                else
+                finally
                 {
-                    var sliceLTRB = new Vector4(rectParams.leftSlice, rectParams.topSlice, rectParams.rightSlice, rectParams.bottomSlice);
-                    meshData = MeshBuilderNative.MakeVectorGraphics9SliceBackground(svgVertices, vi.indices, vi.size.x, vi.size.y, rectParams.rect, sliceLTRB, rectParams.color, rectParams.colorId);
+                    if (heapVertices.IsCreated)
+                        heapVertices.Dispose();
                 }
 
                 NativeSlice<Vertex> nativeVertices;

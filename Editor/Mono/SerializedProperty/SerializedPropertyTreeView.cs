@@ -12,7 +12,7 @@ using Unity.Scripting.LifecycleManagement;
 
 namespace UnityEditor
 {
-    internal class SerializedPropertyDataStore
+    internal class SerializedPropertyDataStore : System.IDisposable
     {
         internal class Data
         {
@@ -101,12 +101,11 @@ namespace UnityEditor
             Repopulate(out needsReload);
         }
 
-#pragma warning disable UA5000 // The Avoid Finalizer Analyzer produces compile errors for any new finalizers. This pre-existing finalizer declaration has been suppressed, but should be rewritten if possible.
-        ~SerializedPropertyDataStore()
+        public void Dispose()
         {
-            Clear();
+            if (m_Elements != null)
+                Clear();
         }
-#pragma warning restore UA5000
 
         public bool Repopulate(out bool needsReload)
         {

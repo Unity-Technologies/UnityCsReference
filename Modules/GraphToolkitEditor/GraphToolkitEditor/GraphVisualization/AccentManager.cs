@@ -15,7 +15,10 @@ namespace Unity.GraphToolkit.Editor.GraphVisualization;
 /// <see cref="Hash128"/> ID and silently no-op when the target element does not support animation.
 /// </remarks>
 /// <typeparam name="TView">The concrete view type this manager targets, for example <see cref="CollapsibleInOutNodeView"/> or <see cref="StateView"/>.</typeparam>
-class AccentManager<TView> where TView : ChildView, IAccentAnimatableView
+/// <typeparam name="TModel">The model type an element ID must resolve to, for example <see cref="NodeModel"/> or <see cref="StateModel"/>.</typeparam>
+class AccentManager<TView, TModel>
+    where TView : ChildView, IAccentAnimatableView
+    where TModel : GraphElementModel
 {
     bool m_Enabled = true;
 
@@ -102,6 +105,9 @@ class AccentManager<TView> where TView : ChildView, IAccentAnimatableView
                     case PlayLoopAnimationRequest playRequest:
                         ExecutePlayLoopAnimation(playRequest);
                         break;
+                    case PauseLoopAnimationRequest pauseRequest:
+                        ExecuteRestorePausedLoopAnimation(pauseRequest);
+                        break;
                     case StopLoopAnimationRequest stopRequest:
                         ExecuteStopLoopAnimation(stopRequest);
                         break;
@@ -124,8 +130,9 @@ class AccentManager<TView> where TView : ChildView, IAccentAnimatableView
             {
                 switch (requestPerGroup)
                 {
-                    case PlayLoopAnimationRequest playRequest:
-                        ExecuteStopLoopAnimation(new StopLoopAnimationRequest(playRequest.TargetID));
+                    case PlayLoopAnimationRequest:
+                    case PauseLoopAnimationRequest:
+                        ExecuteStopLoopAnimation(new StopLoopAnimationRequest(requestPerGroup.TargetID));
                         break;
                     case FillAmountRequest fillAmountRequest:
                         ExecuteClearFillAmount(fillAmountRequest.TargetID);
@@ -135,12 +142,25 @@ class AccentManager<TView> where TView : ChildView, IAccentAnimatableView
         }
     }
 
-    TView GetView(Hash128 id)
+    bool TryGetView(Hash128 id, out TView view)
     {
-        var view = id.GetView<TView>(m_Session.GraphView);
-        if (view == null)
-            throw new ArgumentException($"Invalid {typeof(TView).Name} id", nameof(id));
-        return view;
+        return TryGetView(id, out view, out _);
+    }
+
+    bool TryGetView(Hash128 id, out TView view, out GraphView graphView)
+    {
+        graphView = m_Session.GraphView;
+        view = graphView == null ? null : id.GetView<TView>(graphView);
+        return view != null;
+    }
+
+    void ValidateTarget(Hash128 id)
+    {
+        if (!m_Session.IsElementValid<TModel>(id, out var element))
+            throw new ArgumentException($"No element with ID {id} exists in graph \"{m_Session.GraphModel?.Name}\", its local subgraphs, or the graph the window currently displays.", nameof(id));
+
+        if (element is AbstractNodeModel { HasAccentBar: false })
+            throw new ArgumentException($"The element with ID {id} in graph \"{element.GraphModel?.Name}\" has no accent bar.", nameof(id));
     }
 
     bool HasView(Hash128 id) => id.GetView<TView>(m_Session.GraphView) != null;
@@ -150,16 +170,15 @@ class AccentManager<TView> where TView : ChildView, IAccentAnimatableView
     /// </summary>
     /// <param name="id">The ID of the target element.</param>
     /// <param name="percentage">Fill value in the range [-100, 100].</param>
-    /// <exception cref="ArgumentException">Thrown when <paramref name="id"/> does not correspond to an element in the current session.</exception>
+    /// <exception cref="ArgumentException">Thrown when <paramref name="id"/> does not correspond to an element in the session's graph, one of its local subgraphs, or the graph the window currently displays, or when the element has no accent bar.</exception>
     public void SetFillAmount(Hash128 id, float percentage)
     {
+        ValidateTarget(id);
+
         var request = new FillAmountRequest(id, percentage);
         m_Store.CacheRequest(request);
 
-        if (!Enabled)
-            return;
-
-        if (m_Session.GraphView != null)
+        if (Enabled)
             ExecuteFillAmountRequest(request);
     }
 
@@ -204,16 +223,15 @@ class AccentManager<TView> where TView : ChildView, IAccentAnimatableView
     /// </summary>
     /// <param name="id">The ID of the target element.</param>
     /// <param name="animationSpeed">Speed multiplier for the animation. Higher values move the animated segment faster.</param>
-    /// <exception cref="ArgumentException">Thrown when <paramref name="id"/> does not correspond to an element in the current session.</exception>
+    /// <exception cref="ArgumentException">Thrown when <paramref name="id"/> does not correspond to an element in the session's graph, one of its local subgraphs, or the graph the window currently displays, or when the element has no accent bar.</exception>
     public void PlayLoopAnimation(Hash128 id, float animationSpeed)
     {
+        ValidateTarget(id);
+
         var request = new PlayLoopAnimationRequest(id, animationSpeed);
         m_Store.CacheRequest(request);
 
-        if (!Enabled)
-            return;
-
-        if (m_Session.GraphView != null)
+        if (Enabled)
             ExecutePlayLoopAnimation(request);
     }
 
@@ -221,67 +239,110 @@ class AccentManager<TView> where TView : ChildView, IAccentAnimatableView
     /// Pauses the looping animation on an element's accent bar, preserving its current position.
     /// </summary>
     /// <param name="id">The ID of the target element.</param>
-    /// <exception cref="ArgumentException">Thrown when <paramref name="id"/> does not correspond to an element in the current session.</exception>
+    /// <remarks>
+    /// Does nothing when the element has no playing looping animation.
+    /// Resuming the animation always restarts it from the beginning.
+    /// Throws <see cref="ArgumentException"/> when <paramref name="id"/> does not correspond to an element in the session's graph, one of its local subgraphs, or the graph the window currently displays, or when the element has no accent bar.
+    /// </remarks>
+    /// <exception cref="ArgumentException">Thrown when <paramref name="id"/> does not correspond to an element in the session's graph, one of its local subgraphs, or the graph the window currently displays, or when the element has no accent bar.</exception>
     public void PauseLoopAnimation(Hash128 id)
     {
-        if (!Enabled)
+        ValidateTarget(id);
+
+        // Only a playing animation can be paused, matching GraphAnimator.Pause.
+        if (!TryGetAnimationRequest(id, out var animationRequest) || animationRequest is not PlayLoopAnimationRequest playRequest)
             return;
 
-        var graphView = m_Session.GraphView;
-        if (graphView != null)
-            graphView.Animator.Pause(GetView(id));
+        m_Store.CacheRequest(new PauseLoopAnimationRequest(id, playRequest.animationSpeed));
+
+        if (Enabled && TryGetView(id, out var view, out var graphView))
+            graphView.Animator.Pause(view);
+    }
+
+    bool TryGetAnimationRequest(Hash128 id, out AccentRequest request)
+    {
+        if (m_Store.Requests.TryGetValue(id, out var requests))
+        {
+            foreach (var cached in requests)
+            {
+                if (cached.requestGroup == AccentRequest.Group.Animation)
+                {
+                    request = cached;
+                    return true;
+                }
+            }
+        }
+
+        request = null;
+        return false;
     }
 
     /// <summary>
     /// Stops and hides the looping animation on an element's accent bar.
     /// </summary>
     /// <param name="id">The ID of the target element.</param>
-    /// <exception cref="ArgumentException">Thrown when <paramref name="id"/> does not correspond to an element in the current session.</exception>
+    /// <exception cref="ArgumentException">Thrown when <paramref name="id"/> does not correspond to an element in the session's graph, one of its local subgraphs, or the graph the window currently displays, or when the element has no accent bar.</exception>
     public void StopLoopAnimation(Hash128 id)
     {
+        ValidateTarget(id);
+
         var request = new StopLoopAnimationRequest(id);
         m_Store.CacheRequest(request);
 
         if (!Enabled)
             return;
 
-        if (m_Session.GraphView != null)
-        {
-            ExecuteStopLoopAnimation(request);
+        ExecuteStopLoopAnimation(request);
 
-            // Restore the fill amount.
-            // If an override was set through a reference, the restored value corresponds to the override value.
-            // Otherwise, the restored value corresponds to the model's fill amount.
-            if (TryGetFillAmountRequest(id, out var fillRequest))
-                ExecuteFillAmountRequest(fillRequest);
-        }
+        // Restore the fill amount.
+        // If an override was set through a reference, the restored value corresponds to the override value.
+        // Otherwise, the restored value corresponds to the model's fill amount.
+        if (TryGetFillAmountRequest(id, out var fillRequest))
+            ExecuteFillAmountRequest(fillRequest);
     }
 
     void ExecutePlayLoopAnimation(PlayLoopAnimationRequest request)
     {
-        m_Session.GraphView.Animator.Play(GetView(request.TargetID), request.animationSpeed);
+        if (TryGetView(request.TargetID, out var view, out var graphView))
+            graphView.Animator.Play(view, request.animationSpeed);
+    }
+
+    // The animation must be playing before the animator can pause it, so restoring a paused animation restarts it then pauses it.
+    // The animation position is not preserved and restarts from the beginning when resumed.
+    void ExecuteRestorePausedLoopAnimation(PauseLoopAnimationRequest request)
+    {
+        if (!TryGetView(request.TargetID, out var view, out var graphView))
+            return;
+
+        graphView.Animator.Play(view, request.animationSpeed);
+        graphView.Animator.Pause(view);
     }
 
     void ExecuteStopLoopAnimation(StopLoopAnimationRequest request)
     {
-        m_Session.GraphView.Animator.Stop(GetView(request.TargetID));
+        if (TryGetView(request.TargetID, out var view, out var graphView))
+            graphView.Animator.Stop(view);
     }
 
     void ExecuteFillAmountRequest(FillAmountRequest request)
     {
-        GetView(request.TargetID).OverrideFillAmount(request.amount);
+        if (TryGetView(request.TargetID, out var view))
+            view.OverrideFillAmount(request.amount);
     }
 
     void ExecuteClearFillAmount(Hash128 id)
     {
-        GetView(id).ClearFillAmountOverride();
+        if (TryGetView(id, out var view))
+            view.ClearFillAmountOverride();
     }
 
     /// <summary>
     /// Removes all cached visual requests for the specified element, restoring the fill amount defined on its model and stopping any looping animation.
     /// </summary>
     /// <param name="id">The ID of the target element.</param>
-    /// <exception cref="ArgumentException">Thrown when the element has cached requests but no corresponding view exists in the current session.</exception>
+    /// <remarks>
+    /// The cached requests are removed whether or not the element currently has a view in the graph canvas.
+    /// </remarks>
     public void ClearAccent(Hash128 id)
     {
         if (!m_Store.Requests.TryGetValue(id, out var requests))
@@ -294,6 +355,7 @@ class AccentManager<TView> where TView : ChildView, IAccentAnimatableView
                 switch (request)
                 {
                     case PlayLoopAnimationRequest:
+                    case PauseLoopAnimationRequest:
                         ExecuteStopLoopAnimation(new StopLoopAnimationRequest(id));
                         break;
                     case FillAmountRequest:

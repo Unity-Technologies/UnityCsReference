@@ -15,15 +15,33 @@ namespace UnityEngine.UIElements
     }
 
     /// <summary>
-    /// Storage for one instance of a component that carries a managed reference, held by the owning
-    /// element's <see cref="ComponentSlot"/>.
+    /// Storage for one instance of a component that carries a managed reference and declares no
+    /// <c>[ReleaseComponentResources]</c> method, held by the owning element's <see cref="ComponentSlot"/>.
     /// </summary>
     /// <remarks>
     /// The element is the box's only strong root, which is what makes a component that points back at its
     /// own element a self-cycle the GC collects, rather than a leak. <see cref="StrongBox{T}"/> rather than
     /// a plain box is what lets <c>GetComponent</c> hand back a real <c>ref T</c> into the stored value.
+    /// A type with a release method uses <see cref="TrackedManagedComponentBox{T}"/> instead.
     /// </remarks>
     sealed class ManagedComponentBox<T> : StrongBox<T>, IManagedComponentBox where T : struct, IVisualElementComponent
+    {
+        public void ReleaseResources()
+        {
+            Value = default;
+        }
+
+        public void Recycle()
+        {
+            ManagedComponentBoxPool<T>.Pool.Release(this);
+        }
+    }
+
+    /// <summary>
+    /// The box of a managed component whose type declares a <c>[ReleaseComponentResources]</c> method: it is
+    /// registered in the type's <see cref="ManagedComponentRegistry{T}"/> so the code-unload sweep can reach it.
+    /// </summary>
+    sealed class TrackedManagedComponentBox<T> : StrongBox<T>, IManagedComponentBox where T : struct, IVisualElementComponent
     {
         // The registry this box is registered in, and its slot there, or null and -1 while unregistered.
         // The registry is held rather than resolved per type so that a box outliving a code reload
@@ -56,7 +74,7 @@ namespace UnityEngine.UIElements
         public void Recycle()
         {
             registry?.Remove(this);
-            ManagedComponentBoxPool<T>.Pool.Release(this);
+            TrackedManagedComponentBoxPool<T>.Pool.Release(this);
         }
 
         // A pooled box must carry nothing from the instance that used it last.
@@ -69,14 +87,31 @@ namespace UnityEngine.UIElements
         }
     }
 
+    static class ManagedComponentBoxPools
+    {
+        // Pooled boxes are never released, so the cap bounds what one burst of removals keeps alive per type.
+        internal const int k_MaxSize = 32;
+    }
+
     // Not GenericPool (nor the UIElements ObjectPool): their new T() constraints construct through
-    // Activator.CreateInstance, while an explicit createFunc compiles to a direct ManagedComponentBox<T> ctor call.
+    // Activator.CreateInstance, while an explicit createFunc compiles to a direct box ctor call.
     static class ManagedComponentBoxPool<T> where T : struct, IVisualElementComponent
     {
         // Cleanup would null a readonly field the class initializer never re-runs to restore.
         [NoAutoStaticsCleanup]
         public static readonly UnityEngine.Pool.ObjectPool<ManagedComponentBox<T>> Pool = new(
             () => new ManagedComponentBox<T>(),
-            actionOnRelease: box => box.ResetForReuse());
+            actionOnRelease: box => box.Value = default,
+            maxSize: ManagedComponentBoxPools.k_MaxSize);
+    }
+
+    static class TrackedManagedComponentBoxPool<T> where T : struct, IVisualElementComponent
+    {
+        // Cleanup would null a readonly field the class initializer never re-runs to restore.
+        [NoAutoStaticsCleanup]
+        public static readonly UnityEngine.Pool.ObjectPool<TrackedManagedComponentBox<T>> Pool = new(
+            () => new TrackedManagedComponentBox<T>(),
+            actionOnRelease: box => box.ResetForReuse(),
+            maxSize: ManagedComponentBoxPools.k_MaxSize);
     }
 }

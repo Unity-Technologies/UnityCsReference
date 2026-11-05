@@ -65,7 +65,7 @@ namespace UnityEditor
         public static extern void CompressTexture([NotNull] Texture2D texture, TextureFormat format, int quality);
         public static extern void CompressCubemapTexture([NotNull] Cubemap texture, TextureFormat format, int quality);
 
-        private extern static EntityId[] RemapInstanceIds(UnityEngine.Object[] objects, EntityId[] srcIds, EntityId[] dstIds);
+        private extern static EntityId[] RemapEntityIds(UnityEngine.Object[] objects, EntityId[] srcIds, EntityId[] dstIds);
 
         private extern static void RemapAssetReferences(UnityEngine.Object[] objects, string[] sourceAssetPaths, string[] dstAssetPaths, EntityId[] srcIds, EntityId[] dstIds);
 
@@ -89,7 +89,12 @@ namespace UnityEditor
         public static extern void ClearDirty([NotNull] Object target);
 
         [FreeFunction("InvokeDiffTool")]
-        public static extern string InvokeDiffTool(string leftTitle, string leftFile, string rightTitle, string rightFile, string ancestorTitle, string ancestorFile);
+        internal static extern string InvokeDiffTool(string leftTitle, string leftFile, string rightTitle, string rightFile, string ancestorTitle, string ancestorFile, bool waitForExit);
+
+        public static string InvokeDiffTool(string leftTitle, string leftFile, string rightTitle, string rightFile, string ancestorTitle, string ancestorFile)
+        {
+            return InvokeDiffTool(leftTitle, leftFile, rightTitle, rightFile, ancestorTitle, ancestorFile, true);
+        }
 
         [FreeFunction("CopySerialized")]
         public static extern void CopySerialized([NotNull] Object source, [NotNull] Object dest);

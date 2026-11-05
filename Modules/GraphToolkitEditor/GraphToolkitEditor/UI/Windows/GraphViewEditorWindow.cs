@@ -876,6 +876,9 @@ Would you like to save these changes?
 
             m_GraphView = CreateGraphView(viewModel, viewSelection);
             m_GraphView?.Initialize();
+
+            if (m_GraphView != null)
+                m_GraphView.uiTreeRebuilt += OnGraphViewUITreeRebuilt;
         }
 
         /// <summary>
@@ -998,6 +1001,7 @@ Would you like to save these changes?
             }
 
             rootVisualElement.Remove(m_GraphContainer);
+            m_GraphView.uiTreeRebuilt -= OnGraphViewUITreeRebuilt;
             m_GraphView.Dispose();
 
             m_GraphContainer = null;
@@ -1635,16 +1639,18 @@ Would you like to save these changes?
             UpdateGraphViewFocus();
         }
 
-        internal Hash128 GetRootGraphModelGuid()
+        internal Hash128 GetRootGraphModelGuid() => GetRootGraphModel()?.Guid ?? default;
+
+        internal GraphModel GetRootGraphModel()
         {
             if (GraphTool?.ToolState?.SubgraphStack is { Count: > 0 })
             {
                 var subGraphModel = GraphTool.ToolState.GetSubGraphModel(0);
                 if (subGraphModel != null)
-                    return subGraphModel.Guid;
+                    return subGraphModel;
             }
 
-            return GraphTool?.ToolState?.GraphModel?.Guid ?? default;
+            return GraphTool?.ToolState?.GraphModel;
         }
 
         void ResolveAndAttachVisualizationContext(Hash128 visualizationContextId = default)
@@ -1685,6 +1691,21 @@ Would you like to save these changes?
             m_CurrentVisualizationContextId = session.VisualizationContextID;
             m_IsVisualizationContextAttached = true;
             session.AttachViews();
+        }
+
+        void OnGraphViewUITreeRebuilt()
+        {
+            // Navigating within the same root graph keeps the binding, but the rebuilt views lost the stored visuals.
+            if (m_IsVisualizationContextAttached &&
+                GetRootGraphModelGuid() == m_RootGraphModelGuid &&
+                GraphVisualization.Registry.TryGetVisualizationSession(m_CurrentVisualizationContextId, out var session))
+            {
+                session.AttachViews();
+            }
+            else
+            {
+                ResolveAndAttachVisualizationContext();
+            }
         }
 
         void OnVisualizationContextWillUnregister(Hash128 visualizationContextId)

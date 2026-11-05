@@ -170,6 +170,12 @@ namespace UnityEditor
             return null;
         }
 
+        internal static bool IsNotSupported(Editor editor)
+        {
+            return ObsoleteMessageHelper.TryGetObsoleteMessage(editor, out var messageContainer)
+                && messageContainer.isNotSupported;
+        }
+
         internal static bool TryCreateObsoleteHelpBox(Editor editor, out HelpBox helpBox)
         {
             helpBox = null;
@@ -178,23 +184,33 @@ namespace UnityEditor
                 return false;
 
             // If there is no replacement, just show the message and a dismiss button.
-            if (messageContainer.replacementType == null)
+            if (messageContainer.replacementType == null && !messageContainer.isNotSupported)
             {
                 helpBox = new DismissableDeprecationHelpBox(messageContainer.message, messageContainer.messageType);
                 return true;
             }
 
             helpBox = new HelpBox(messageContainer.message, messageContainer.messageType);
-            // If we have a replacement, show the message and a button to add the new component to the inspected objects.
-            helpBox.buttonText = messageContainer.buttonText;
-            helpBox.onButtonClicked += () =>
+
+            if (messageContainer.replacementType != null)
             {
-                foreach (var target in editor.targets)
+                // If we have a replacement, show the message and a button to add the new component to the inspected objects.
+                helpBox.buttonText = messageContainer.buttonText;
+                helpBox.onButtonClicked += () =>
                 {
-                    if (target is Component component)
-                        Undo.AddComponent(component.gameObject, messageContainer.replacementType);
-                }
-            };
+                    foreach (var target in editor.targets)
+                    {
+                        if (target is Component component)
+                            Undo.AddComponent(component.gameObject, messageContainer.replacementType);
+                    }
+                };
+            }
+
+            if (!string.IsNullOrEmpty(messageContainer.learnMoreUrl))
+            {
+                helpBox.linkText = L10n.Tr("Learn More...", null);
+                helpBox.linkHref = messageContainer.learnMoreUrl;
+            }
 
             // The HelpBox button defaults to nowrap and won't shrink, and its bottom container
             // is sized to its content (align-self: flex-end), so a long button label
@@ -213,6 +229,17 @@ namespace UnityEditor
                 actionButton.style.flexShrink = 1;
                 actionButton.style.maxWidth = Length.Percent(100);
             }
+
+            // HelpBox appends the link after the button; the link reads as context for the action, so it goes first.
+            // The default link margin assumes it follows the button, so move the spacing to the button side.
+            var link = helpBox.Q<Label>(className: HelpBox.linkUssClassName);
+            if (link != null && actionButton != null && bottomContainer != null)
+            {
+                bottomContainer.Insert(0, link);
+                link.style.marginLeft = 0;
+                link.style.marginRight = 8;
+            }
+
             return true;
         }
 

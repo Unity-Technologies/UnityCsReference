@@ -86,6 +86,7 @@ namespace UnityEngine.Rendering
 
         // Same effect as -enable-builtin-rp-fallback, for tests that cannot pass the argument to the
         // process that runs them.
+        [VisibleToOtherModules("UnityEditor.ProjectAuditorModule")]
         [StaticAccessor("RenderManager", StaticAccessorType.DoubleColon)]
         extern internal static bool GetBuiltInRenderPipelineFallbackEnabled();
 

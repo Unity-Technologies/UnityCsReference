@@ -243,20 +243,16 @@ namespace UnityEditor.Scripting.ScriptCompilation
             "com.unity.addressables", // UAC0023
             "com.unity.memoryprofiler", // UUM-156136: UAC0006
             "com.unity.purchasing", // UUM-156137: UAC0005
-            "com.unity.cinemachine", // UUM-156138: UAC0005
             "com.unity.learn.iet-framework", // UUM-156139: UAC0005
             "com.unity.polyspatial", // UUM-156140: UAC0005/7
             "com.unity.web.stripping-tool", // UUM-156141: UAC0005/7
             "com.unity.multiplayer.tools", // UUM-156143: UAC0005
-            "com.unity.formats.alembic", // UUM-156145: UAC0005
             "com.unity.mars", // to be deprecated
             "com.unity.barracuda", // to be deprecated
             "com.unity.xrtools.utils", // to be deprecated
             "com.unity.test-framework", // UUM-156148: UAC0007
             "com.unity.netcode", // UUM-156149: UAC0005
-            "com.unity.scriptablebuildpipeline", // UUM-156150: UAC0023
             "com.unity.package-validation-suite", // UUM-156151: UAC0005/7
-            "com.unity.searcher", // UUM-156153: CS0618: obsolete API usage
             "com.unity.xr.legacyinputhelpers", // UUM-156154: CS0618: obsolete FindObjectsOfType
             "com.unity.ads", // UUM-156156: CS0168: unused variable
         };

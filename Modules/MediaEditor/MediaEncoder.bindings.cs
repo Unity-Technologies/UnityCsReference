@@ -116,6 +116,12 @@ namespace UnityEditor.Media
         internal VideoAlphaLayout alphaLayout;
     }
 
+    public struct VP9EncoderAttributes
+    {
+        public uint keyframeDistance;
+        internal VideoAlphaLayout alphaLayout;
+    }
+
     [StructLayout(LayoutKind.Explicit)]
     public struct VideoTrackEncoderAttributes
     {
@@ -129,6 +135,9 @@ namespace UnityEditor.Media
         [FieldOffset(28)] private VideoCodec            codecType;
         [FieldOffset(32)] private H264EncoderAttributes h264;
         [FieldOffset(32)] private VP8EncoderAttributes  vp8;
+        [FieldOffset(32)] private VP9EncoderAttributes  vp9;
+        [FieldOffset(44)] private int                   bitDepth;
+        [FieldOffset(48)] private VideoChromaSubsampling chroma;
 
         public VideoTrackEncoderAttributes(H264EncoderAttributes h264Attrs) : this()
         {
@@ -154,6 +163,12 @@ namespace UnityEditor.Media
             codecType = VideoCodec.VP8;
         }
 
+        public VideoTrackEncoderAttributes(VP9EncoderAttributes vp9Attrs) : this()
+        {
+            vp9 = vp9Attrs;
+            codecType = VideoCodec.VP9;
+        }
+
         internal VideoTrackEncoderAttributes(VideoTrackAttributes videoAttrs) : this()
         {
             frameRate = videoAttrs.frameRate;
@@ -162,7 +177,18 @@ namespace UnityEditor.Media
             includeAlpha = videoAttrs.includeAlpha;
             bitRateMode = videoAttrs.bitRateMode;
             codecType = videoAttrs.codec;
-            vp8.alphaLayout = videoAttrs.alphaLayout;
+
+            if (videoAttrs.codec == VideoCodec.VP8)
+            {
+                vp8.alphaLayout = videoAttrs.alphaLayout;
+            }
+            else if (videoAttrs.codec == VideoCodec.VP9)
+            {
+                vp9.alphaLayout = videoAttrs.alphaLayout;
+            }
+
+            bitDepth = videoAttrs.bitDepth == 0 ? 8 : videoAttrs.bitDepth;
+            chroma = videoAttrs.chroma;
         }
     }
 
@@ -175,6 +201,8 @@ namespace UnityEditor.Media
         public VideoBitrateMode   bitRateMode;
         internal VideoCodec       codec;
         internal VideoAlphaLayout alphaLayout;
+        internal int              bitDepth;
+        internal VideoChromaSubsampling chroma;
     }
 
     public struct AudioTrackAttributes

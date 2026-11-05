@@ -56,13 +56,6 @@ namespace Unity.CSO
             LastObservedVersion = lastObservedVersion.Version;
         }
 
-#pragma warning disable UA5000 // The Avoid Finalizer Analyzer produces compile errors for any new finalizers. This pre-existing finalizer declaration has been suppressed, but should be rewritten if possible.
-        ~Observation()
-        {
-            Dispose(false);
-        }
-#pragma warning restore UA5000
-
         /// <inheritdoc/>
         public void Dispose()
         {

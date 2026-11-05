@@ -345,7 +345,7 @@ namespace UnityEngine.Tilemaps
                 var oldTileId = oldTilesIds[i];
                 var newTileId = newTilesIds[i];
                 var position = positions[i];
-                if (oldTileId != EntityId.None)
+                if (oldTileId != EntityId.None && oldTileId != newTileId)
                 {
                     if (lastEntityId != oldTileId)
                     {

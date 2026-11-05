@@ -141,6 +141,15 @@ namespace UnityEditor
         {
             if (m_TreeView != null)
                 m_TreeView.SerializeState(m_SerializationUID);
+
+            if (m_DataStore != null)
+            {
+                m_DataStore.Dispose();
+                m_DataStore = null;
+                m_TreeView = null;
+                m_MultiColumnHeaderState = null;
+                m_Initialized = false;
+            }
         }
     }
 }

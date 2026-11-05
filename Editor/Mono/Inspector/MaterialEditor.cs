@@ -41,9 +41,6 @@ namespace UnityEditor
             public static readonly string notSupported = L10n.Tr("\"Not supported/\"", null);
             public static readonly string failedToCompile = L10n.Tr("Failed to compile/", null);
 
-            public static readonly string infoBuiltInBuiltinDeprecated = L10n.Tr("Some built-in shaders are deprecated.\nMigrate your project to the Universal Render Pipeline instead.", null);
-            public static readonly string warningUsingSRPBuiltinDeprecated = L10n.Tr("A Scriptable Render Pipeline is active. Built-in shaders are deprecated.", null);
-
             public const int kNewShaderQueueValue = -1;
             public const int kCustomQueueIndex = 4;
             public static readonly GUIContent queueLabel = L10n.TextContent("Render Queue", null, null, null);
@@ -725,45 +722,19 @@ namespace UnityEditor
                     m_SearchableElements = new List<AdvancedDropdownItem>();
                     var root = new AdvancedDropdownItem("Shaders");
 
-                    bool usingSRP = GraphicsSettings.isScriptableRenderPipelineEnabled;
-                    if (usingSRP)
+                    foreach (var e in ShaderDropdownDataBuilder.EnumerateShaders(usingSRP: true))
                     {
-                        bool firstBuiltInProcessed = false;
-                        foreach (var e in ShaderDropdownDataBuilder.EnumerateShaders(usingSRP))
+                        // Built-in shaders are no longer supported, so they are not offered for selection.
+                        if (e.category == ShaderDropdownDataBuilder.Category.BuiltInDeprecated)
+                            continue;
+
+                        if (e.category == ShaderDropdownDataBuilder.Category.Separator)
                         {
-                            if (e.category == ShaderDropdownDataBuilder.Category.Separator)
-                            {
-                                root.AddSeparator();
-                                continue;
-                            }
-
-                            if (!firstBuiltInProcessed)
-                            {
-                                if (e.category == ShaderDropdownDataBuilder.Category.BuiltInDeprecated)
-                                {
-                                    firstBuiltInProcessed = true;
-                                    var builtInNode = FindOrCreateChild(root, Styles.builtInDeprecated);
-                                    builtInNode.AddHelpBox(Styles.warningUsingSRPBuiltinDeprecated, MessageType.Warning);
-                                }
-                            }
-
-                            AddShaderToMenu(e.prefix, root, e.fullShaderName, e.menuPath);
+                            root.AddSeparator();
+                            continue;
                         }
-                    }
-                    else
-                    {
-                        root.AddHelpBox(Styles.infoBuiltInBuiltinDeprecated, MessageType.Info);
 
-                        foreach (var e in ShaderDropdownDataBuilder.EnumerateShaders(usingSRP))
-                        {
-                            if (e.category == ShaderDropdownDataBuilder.Category.Separator)
-                            {
-                                root.AddSeparator();
-                                continue;
-                            }
-
-                            AddShaderToMenu(e.prefix, root, e.fullShaderName, e.menuPath);
-                        }
+                        AddShaderToMenu(e.prefix, root, e.fullShaderName, e.menuPath);
                     }
 
                     return root;
@@ -3068,7 +3039,7 @@ namespace UnityEditor
             previewRenderUtility.EndAndDrawPreview(r);
         }
 
-        [AutoStaticsCleanupOnCodeReload]
+        [NoAutoStaticsCleanup] // cleaned up by CleanUpPreviewRenderUtility() registered to AssemblyReloadEvents.beforeAssemblyReload
         private static PreviewRenderUtility s_PreviewRenderUtility;
         private static PreviewRenderUtility GetPreviewRendererUtility()
         {
@@ -3076,6 +3047,7 @@ namespace UnityEditor
             {
                 s_PreviewRenderUtility = new PreviewRenderUtility();
                 EditorUtility.SetCameraAnimateMaterials(s_PreviewRenderUtility.camera, true);
+                AssemblyReloadEvents.beforeAssemblyReload += CleanUpPreviewRenderUtility;
             }
             return s_PreviewRenderUtility;
         }
@@ -3085,6 +3057,7 @@ namespace UnityEditor
             if (s_PreviewRenderUtility == null)
                 return;
 
+            AssemblyReloadEvents.beforeAssemblyReload -= CleanUpPreviewRenderUtility;
             s_PreviewRenderUtility.Cleanup();
             s_PreviewRenderUtility = null;
         }
@@ -3092,10 +3065,21 @@ namespace UnityEditor
         [NoAutoStaticsCleanup] // editor instance counter; tracks open editors, safe to persist across reload
         private static int s_NumberOfEditors = 0;
 
-        public virtual void OnEnable()
+        // Counted in the native-called INTERNAL hooks, which overrides of OnEnable/OnDisable cannot skip
+        void OnEnableINTERNAL()
         {
             s_NumberOfEditors++;
+        }
 
+        internal override void OnDisableINTERNAL()
+        {
+            base.OnDisableINTERNAL();
+            if (--s_NumberOfEditors == 0)
+                CleanUpPreviewRenderUtility();
+        }
+
+        public virtual void OnEnable()
+        {
             if (!target)
                 return;
             m_Shader = serializedObject.FindProperty("m_Shader").objectReferenceValue as Shader;
@@ -3125,10 +3109,6 @@ namespace UnityEditor
 
         public virtual void OnDisable()
         {
-            s_NumberOfEditors--;
-            if (s_NumberOfEditors == 0)
-                CleanUpPreviewRenderUtility();
-
             m_ReflectionProbePicker.OnDisable();
             s_MaterialEditors.Remove(this);
             Undo.undoRedoEvent -= UndoRedoPerformed;

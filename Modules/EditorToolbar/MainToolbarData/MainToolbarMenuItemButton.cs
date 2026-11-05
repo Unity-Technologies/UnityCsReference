@@ -22,14 +22,27 @@ namespace UnityEditor.Toolbars
             content = new MainToolbarContent(segments[^1], k_TooltipStart + menuPath);
         }
 
+        bool isMenuItemEnabled => Menu.MenuItemExists(m_MenuPath) && Menu.GetEnabled(m_MenuPath);
+
         internal override VisualElement CreateElement()
         {
+            enabled = isMenuItemEnabled;
+
             var button = new EditorToolbarButton(content.text, content.image, () => EditorApplication.ExecuteMenuItem(m_MenuPath));
             button.AddToClassList(EditorToolbar.elementClassName);
             button.AddToClassList(k_MenuItemButtonClassName);
             button.text = content.text;
             button.icon = content.image;
             button.tooltip = content.tooltip;
+
+            // Schedule only updates if attached to a panel so it will stop updating when the element is recreated during a refresh
+            button.schedule.Execute(() =>
+            {
+                bool isEnabled = isMenuItemEnabled;
+                if (button.enabledSelf != isEnabled)
+                    button.SetEnabled(isEnabled);
+            }).Every(200);
+
             return button;
         }
 

@@ -841,6 +841,15 @@ namespace UnityEngine
         [FreeFunction("GraphicsScripting::RenderSpriteInstanced")]
         extern private static void Internal_RenderSpriteInstanced(RenderParams rparams, SpriteParams sparams, int submeshIndex, IntPtr instanceData, RenderSpriteInstancedDataLayout layout, uint instanceCount);
 
+        [FreeFunction("GraphicsScripting::RenderUnifiedRenderData")]
+        extern private static void Internal_RenderUnifiedData(RenderParams rparams, SpriteParams sparams, Matrix4x4 objectToWorld);
+
+        [FreeFunction("GraphicsScripting::RenderUnifiedRenderDataInstanced")]
+        extern private unsafe static int Internal_RenderUnifiedDataInstanced(RenderParams rparams, SpriteParams sparams, void* objectToWorldArray, void* instanceColorArray, int instanceCount, int rangeIndex);
+
+        [FreeFunction("GraphicsScripting::RenderUnifiedRenderDataInstancedBatch")]
+        extern private unsafe static int Internal_RenderUnifiedDataInstancedBatch(RenderParams rparams, SpriteParams sparams, void* draws, int drawCount);
+
         [FreeFunction("GraphicsScripting::DrawMesh")]
         extern private static void Internal_DrawMesh(Mesh mesh, int submeshIndex, Matrix4x4 matrix, Material material, int layer, Camera camera, MaterialPropertyBlock properties, ShadowCastingMode castShadows, bool receiveShadows, Transform probeAnchor, LightProbeUsage lightProbeUsage, LightProbeProxyVolume lightProbeProxyVolume);
 

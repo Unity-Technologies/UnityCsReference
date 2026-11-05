@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using System.Collections.Generic;
 using System.Reflection;
 using Unity.GraphToolkit.InternalBridge;
 using Unity.Scripting.LifecycleManagement;
@@ -293,27 +294,29 @@ namespace Unity.GraphToolkit.Editor
 
             menu.AppendSeparator();
 
-            var selectedTransitions = m_TransitionSupportEditor.GetSelectedTransitions();
+            var transitions = IsSelected
+                ? m_TransitionSupportEditor.GetSelectedTransitions()
+                : new List<TransitionPropertiesEditor> { this };
 
             menu.AppendAction(k_MoveUpMenuName, _ =>
             {
-                m_TransitionSupportEditor.ShiftTransitions(selectedTransitions, true);
-            }, m_TransitionSupportEditor.CanShiftTransitions(selectedTransitions, true) ? DropdownMenuAction.Status.Normal : DropdownMenuAction.Status.Disabled);
+                m_TransitionSupportEditor.ShiftTransitions(transitions, true);
+            }, m_TransitionSupportEditor.CanShiftTransitions(transitions, true) ? DropdownMenuAction.Status.Normal : DropdownMenuAction.Status.Disabled);
 
             menu.AppendAction(k_MoveDownMenuName, _ =>
             {
-                m_TransitionSupportEditor.ShiftTransitions(selectedTransitions, false);
-            }, m_TransitionSupportEditor.CanShiftTransitions(selectedTransitions, false) ? DropdownMenuAction.Status.Normal : DropdownMenuAction.Status.Disabled);
+                m_TransitionSupportEditor.ShiftTransitions(transitions, false);
+            }, m_TransitionSupportEditor.CanShiftTransitions(transitions, false) ? DropdownMenuAction.Status.Normal : DropdownMenuAction.Status.Disabled);
 
             menu.AppendAction(k_MoveTopOption, _ =>
             {
-                m_TransitionSupportEditor.MoveTransitions(selectedTransitions, true);
-            }, m_TransitionSupportEditor.CanMoveTransitions(selectedTransitions, true) ? DropdownMenuAction.Status.Normal : DropdownMenuAction.Status.Disabled);
+                m_TransitionSupportEditor.MoveTransitions(transitions, true);
+            }, m_TransitionSupportEditor.CanMoveTransitions(transitions, true) ? DropdownMenuAction.Status.Normal : DropdownMenuAction.Status.Disabled);
 
             menu.AppendAction(k_MoveBottomOption, _ =>
             {
-                m_TransitionSupportEditor.MoveTransitions(selectedTransitions, false);
-            }, m_TransitionSupportEditor.CanMoveTransitions(selectedTransitions, false) ? DropdownMenuAction.Status.Normal : DropdownMenuAction.Status.Disabled);
+                m_TransitionSupportEditor.MoveTransitions(transitions, false);
+            }, m_TransitionSupportEditor.CanMoveTransitions(transitions, false) ? DropdownMenuAction.Status.Normal : DropdownMenuAction.Status.Disabled);
         }
 
         /// <summary>
@@ -329,6 +332,13 @@ namespace Unity.GraphToolkit.Editor
         {
             base.RemoveFromRootView();
             ConditionEditor.RemoveFromRootView();
+        }
+
+        internal class TestAccess
+        {
+            TransitionPropertiesEditor m_Editor;
+            public TestAccess(TransitionPropertiesEditor editor) => m_Editor = editor;
+            public void MakeMenu(DropdownMenu menu, bool contextual) => m_Editor.MakeMenu(menu, contextual);
         }
     }
 }

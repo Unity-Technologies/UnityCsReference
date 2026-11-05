@@ -69,9 +69,9 @@ namespace UnityEditor.Build.Profile
         /// <param name="platformId">The GUID of the target platform. Must be a valid installed editor platform.</param>
         /// <param name="profileName">The name for the build profile. Used as the asset filename.</param>
         /// <param name="onProfileReady">Optional callback invoked when the profile has completed
-        /// initialization and is ready to use. For the callback to survive domain reloads, it must be
+        /// initialization and is ready to use. For the callback to survive code reloads, it must be
         /// a static method or a method on a serialized UnityEngine.Object.
-        /// Non-persistent callbacks will not be invoked if a domain reload occurs during initialization.</param>
+        /// Non-persistent callbacks will not be invoked if a code reload occurs during initialization.</param>
         /// <returns>
         /// The newly created <see cref="BuildProfile"/> instance. The profile may require initialization if
         /// platform packages need to be installed.
@@ -93,7 +93,7 @@ namespace UnityEditor.Build.Profile
         /// </remarks>
         /// <example>
         /// <code>
-        /// //Static method example - will continue after a domain reload
+        /// //Static method example - will continue after a code reload
         /// var buildProfile = BuildProfile.CreateBuildProfile(
         ///     androidGuid,
         ///     "My Profile",

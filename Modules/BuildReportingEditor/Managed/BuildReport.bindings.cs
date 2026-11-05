@@ -189,6 +189,11 @@ namespace UnityEditor.Build.Reporting
         [FreeFunction("BuildReporting::GetReport")]
         internal static extern BuildReport GetReport(GUID guid);
 
+        // The project GUID that new reports record as BuildSummary.projectGuid.
+        [FreeFunction("BuildReporting::GetCurrentProjectGUID")]
+        [VisibleToOtherModules("UnityEditor.BuildAnalysisModule", "Unity.Modules.BuildAnalysis.Tests.Editor")]
+        internal static extern GUID GetCurrentProjectGUID();
+
         /// <summary>Loads a BuildReport from the specified file path.</summary>
         /// <param name="buildReportPath">The absolute or project-relative path to a `.buildreport` file.</param>
         /// <returns>The loaded BuildReport, or `null` if the file doesn't exist or couldn't be loaded.</returns>

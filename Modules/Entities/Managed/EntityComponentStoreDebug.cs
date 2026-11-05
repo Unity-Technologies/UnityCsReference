@@ -144,6 +144,29 @@ namespace Unity.Entities
         }
 
         [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS"), Conditional("UNITY_DOTS_DEBUG")]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public void AssertEntityBelongsToThisWorld(Entity entity)
+        {
+            var owner = GetEntityDataAccess(entity);
+            if (Hint.Unlikely(owner != null && owner->EntityComponentStore != (EntityComponentStore*)UnsafeUtility.AddressOf(ref this)))
+                ThrowEntityBelongsToDifferentWorld(entity, owner);
+        }
+
+        [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS"), Conditional("UNITY_DOTS_DEBUG")]
+        public void AssertEntitiesBelongToThisWorld(Entity* entities, int count)
+        {
+            for (var i = 0; i < count; i++)
+                AssertEntityBelongsToThisWorld(entities[i]);
+        }
+
+        void ThrowEntityBelongsToDifferentWorld(Entity entity, EntityDataAccess* owner)
+        {
+            var thisWorldName = EntityDataAccess.FromEntityComponentStore((EntityComponentStore*)UnsafeUtility.AddressOf(ref this))->m_WorldUnmanaged.Name;
+            var entityWorldName = owner->m_WorldUnmanaged.Name;
+            throw new ArgumentException($"{entity} belongs to world '{entityWorldName}', but is used from world '{thisWorldName}'. Use EntityManager.MoveEntitiesFrom or CopyEntitiesFrom to transfer entities between worlds.");
+        }
+
+        [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS"), Conditional("UNITY_DOTS_DEBUG")]
         void AssertArchetypeComponents(ComponentTypeInArchetype* types, int count)
         {
             if (count < 1)
@@ -715,6 +738,21 @@ namespace Unity.Entities
                 if ((removePrefab ? archetype->InstantiateArchetype : archetype->CopyArchetype) == null)
                     throw new ArgumentException(
                         $"The srcEntity[{i}] references an entity that has already been destroyed. (Only cleanup components are left on the entity)");
+            }
+        }
+
+        [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS"), Conditional("UNITY_DOTS_DEBUG")]
+        public static void AssertCanInstantiateEntitiesFromAnyWorld(Entity* srcEntities, int entityCount, bool removePrefab)
+        {
+            for (int i = 0; i < entityCount; i++)
+            {
+                var owner = GetEntityDataAccess(srcEntities[i]);
+                if (owner == null)
+                    throw new ArgumentException($"The srcEntity[{i}] references an entity that is invalid.");
+                if (owner != GetEntityDataAccess(srcEntities[0]))
+                    throw new ArgumentException($"The srcEntity[{i}] belongs to a different world than srcEntity[0]. All entities to instantiate must belong to the same world.");
+
+                owner->EntityComponentStore->AssertCanInstantiateEntities(srcEntities + i, 1, removePrefab);
             }
         }
 

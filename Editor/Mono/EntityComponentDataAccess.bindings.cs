@@ -25,19 +25,42 @@ namespace UnityEditor
         [FreeFunction("EntityComponentDataAccessTestBridge::GetOrMintComponentTypeId")]
         static extern uint GetOrMintComponentTypeIdNative(IntPtr backendTypePtr);
 
-        [FreeFunction("EntityComponentDataAccessTestBridge::AddComponent")]
-        internal static extern bool AddComponent(EntityId parentId, uint componentTypeId);
-
         [FreeFunction("EntityComponentDataAccessTestBridge::RemoveComponent")]
         internal static extern bool RemoveComponent(EntityId componentEntityId);
 
+        [FreeFunction("EntityComponentDataAccessTestBridge::AddDataComponentToGameObject")]
+        internal static extern EntityId AddDataComponentToGameObject(GameObject gameObject, uint componentTypeId);
+
+        [FreeFunction("EntityComponentDataAccessTestBridge::WriteComponentBytes")]
+        internal static extern bool WriteComponentBytes(EntityId componentEntityId, IntPtr src, uint size);
+
+        [FreeFunction("EntityComponentDataAccessTestBridge::ReadComponentBytes")]
+        internal static extern bool ReadComponentBytes(EntityId componentEntityId, IntPtr dst, uint size);
+
         [FreeFunction("EntityComponentDataAccessTestBridge::HasComponent")]
         internal static extern bool HasComponent(EntityId componentEntityId);
+
+        [FreeFunction("EntityComponentDataAccessTestBridge::GetComponentCount")]
+        internal static extern uint GetComponentCount(EntityId ownerId);
+
+        [FreeFunction("EntityComponentDataAccessTestBridge::GetComponentAt")]
+        internal static extern EntityId GetComponentAt(EntityId ownerId, uint index);
 
         [FreeFunction("EntityComponentDataAccessTestBridge::ClearAllComponents")]
         internal static extern void ClearAllComponents();
 
         [FreeFunction("EntityComponentDataAccessTestBridge::RemapDataComponentTypeId")]
-        internal static extern bool RemapDataComponentTypeId(EntityId parent, uint oldTypeId, uint newTypeId);
+        internal static extern bool RemapDataComponentTypeId(EntityId owner, uint oldTypeId, uint newTypeId);
+
+        // EntityComponentDataAccess::EntityManager, for entities in a World.
+        [FreeFunction("EntityComponentDataAccessTestBridge::EntityManagerAddComponent")]
+        internal static extern bool EntityManagerAddComponent(EntityId entityId, uint componentTypeId);
+
+        // 1 enabled, 0 disabled, -1 if the entity does not have the component or its type is not enableable.
+        [FreeFunction("EntityComponentDataAccessTestBridge::EntityManagerTryGetComponentEnabled")]
+        internal static extern int EntityManagerTryGetComponentEnabled(EntityId entityId, uint componentTypeId);
+
+        [FreeFunction("EntityComponentDataAccessTestBridge::EntityManagerSetComponentEnabled")]
+        internal static extern bool EntityManagerSetComponentEnabled(EntityId entityId, uint componentTypeId, bool enabled);
     }
 }

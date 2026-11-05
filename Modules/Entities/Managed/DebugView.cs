@@ -664,20 +664,12 @@ namespace Unity.Entities
         {
             get
             {
-                var numSystems = m_componentSystemGroup.m_MasterUpdateList.Length;
+                var numSystems = m_componentSystemGroup.m_UpdateList.Length;
                 var systems = new SystemDebugView[numSystems];
 
                 for (int i = 0; i < numSystems; i++)
                 {
-                    var updateIndex = m_componentSystemGroup.m_MasterUpdateList[i];
-                    if (updateIndex.IsManaged)
-                    {
-                        systems[i] = new SystemDebugView(m_componentSystemGroup.m_managedSystemsToUpdate[updateIndex.Index]);
-                    }
-                    else
-                    {
-                        systems[i] = new SystemDebugView(m_componentSystemGroup.m_UnmanagedSystemsToUpdate[updateIndex.Index]);
-                    }
+                    systems[i] = new SystemDebugView(m_componentSystemGroup.m_UpdateList[i]);
                 }
 
                 return systems;

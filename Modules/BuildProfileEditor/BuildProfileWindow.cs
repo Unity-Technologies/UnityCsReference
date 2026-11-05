@@ -374,13 +374,18 @@ namespace UnityEditor.Build.Profile
             m_ProfileListViews.ClearProfileSelection();
             m_ProfileListViews.ClearPlatformSelection();
 
+            ClearBuildProfileInspector();
+
+            m_BuildProfileInspectorElement.Add(new BuildProfileWelcomeElement(OpenPlatformDiscoveryWindow));
+        }
+
+        void ClearBuildProfileInspector()
+        {
             DestroyImmediate(buildProfileEditor);
             m_BuildProfileInspectorElement.Clear();
             m_BuildProfileInspectorHeaderElement.Clear();
             m_SelectionHeader.Hide();
             m_SelectionFooter.Hide();
-
-            m_BuildProfileInspectorElement.Add(new BuildProfileWelcomeElement(OpenPlatformDiscoveryWindow));
         }
 
         /// <summary>
@@ -410,6 +415,8 @@ namespace UnityEditor.Build.Profile
         /// </summary>
         internal void RepaintAndClearSelection()
         {
+            // Must run before the selection is restored, which rebuilds the inspector synchronously.
+            ClearBuildProfileInspector();
             RebuildProfileListViews();
 
             // Clearing the selection forces the ListView.selectionChanged event to trigger.
@@ -487,7 +494,6 @@ namespace UnityEditor.Build.Profile
                 buildProfileEditor.buildProfile == null &&
                 m_BuildProfileSelection?.IsSingleSelection() == true)
             {
-                DestroyImmediate(buildProfileEditor);
                 m_BuildProfileDataSource?.DeleteNullProfiles();
                 RepaintAndClearSelection();
             }
@@ -495,7 +501,8 @@ namespace UnityEditor.Build.Profile
 
         void OnFocus()
         {
-            buildProfileEditor?.OnBuildProfileWindowFocus();
+            if (buildProfileEditor != null)
+                buildProfileEditor.OnBuildProfileWindowFocus();
         }
 
         /// <summary>

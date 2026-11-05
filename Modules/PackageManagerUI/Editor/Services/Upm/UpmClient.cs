@@ -131,7 +131,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         public void OnRegisteredPackages()
         {
-            m_RegisteredPackagesTimestamp = m_DateTimeProxy.now.Ticks;
+            m_RegisteredPackagesTimestamp = m_DateTimeProxy.utcNow.Ticks;
             TriggerReevaluation();
         }
 
@@ -156,12 +156,12 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         public void OnAfterDeserialize()
         {
-            m_SearchOperation?.ResolveDependencies(m_ClientProxy, m_Application);
-            m_SearchOfflineOperation?.ResolveDependencies(m_ClientProxy, m_Application);
-            m_ListOperation?.ResolveDependencies(m_ClientProxy, m_Application);
-            m_ListOfflineOperation?.ResolveDependencies(m_ClientProxy, m_Application);
-            m_AddAndRemoveOperation?.ResolveDependencies(m_ClientProxy, m_Application);
-            m_PackOperation?.ResolveDependencies(m_ClientProxy, m_Application);
+            m_SearchOperation?.ResolveDependencies(m_ClientProxy, m_Application, m_DateTimeProxy);
+            m_SearchOfflineOperation?.ResolveDependencies(m_ClientProxy, m_Application, m_DateTimeProxy);
+            m_ListOperation?.ResolveDependencies(m_ClientProxy, m_Application, m_DateTimeProxy);
+            m_ListOfflineOperation?.ResolveDependencies(m_ClientProxy, m_Application, m_DateTimeProxy);
+            m_AddAndRemoveOperation?.ResolveDependencies(m_ClientProxy, m_Application, m_DateTimeProxy);
+            m_PackOperation?.ResolveDependencies(m_ClientProxy, m_Application, m_DateTimeProxy);
         }
 
         public bool isAddOrRemoveInProgress => m_AddAndRemoveOperation?.isInProgress == true;
@@ -279,7 +279,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
             addAndRemoveOperation.SetDryRunFunction(FindTrustIssuePackagesAndShowPopUp);
 
-            addAndRemoveOperation.onProcessResult += OnProcessAddAndRemoveResult;
+            addAndRemoveOperation.onProcessResult += request => OnProcessAddAndRemoveResult(request.Result, addAndRemoveOperation.timestamp);
             addAndRemoveOperation.onOperationError += (_, error) =>
             {
                 // For now, we only handle addAndRemove operation error when there's a primary `packageName` for the operation
@@ -303,17 +303,20 @@ namespace UnityEditor.PackageManager.UI.Internal
             addAndRemoveOperation.logErrorInConsole = true;
         }
 
-       private bool FindTrustIssuePackagesAndShowPopUp(PackageCollection requestResult)
+       internal bool FindTrustIssuePackagesAndShowPopUp(PackageCollection requestResult)
        {
-            var viewData = TrustWindow.CreateViewData(m_UpmCache, requestResult, addAndRemoveOperation.operationType, m_Application.shortUnityVersion, m_SettingsProxy.trustPolicyLevel);
+            if (m_SettingsProxy.isSignatureValidationDisabled)
+                return true;
+
+            var viewData = TrustWindow.CreateActiveViewData(m_UpmCache, requestResult, addAndRemoveOperation.operationType, m_Application.shortUnityVersion, m_SettingsProxy.trustPolicyLevel, m_SettingsProxy.hasBypassPackageTrustEntitlement);
             if (viewData != null)
                 return TrustWindow.Show(viewData) == TrustWindowReturnValue.ProceedAnyway;
             return true;
        }
 
-        private void OnProcessAddAndRemoveResult(Request<PackageCollection> request)
+        internal void OnProcessAddAndRemoveResult(PackageCollection result, long operationTimestamp)
         {
-            var updatedInfos = m_UpmCache.SetInstalledPackageInfos(request.Result, changedSource: PackagesChangedSource.AddAndRemove);
+            var updatedInfos = m_UpmCache.SetInstalledPackageInfos(result, changedSource: PackagesChangedSource.AddAndRemove);
 
             foreach (var (_, newInfo) in updatedInfos)
             {
@@ -324,7 +327,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
             // In some occasions, package registration already happened before the addAndRemove results are processed. In this case a future registration event is not coming,
             // and we need to do the reevaluation right away. This does generate the packages twice, but a bigger rework of the current flow is needed to address that.
-            if (m_RegisteredPackagesTimestamp > addAndRemoveOperation.timestamp)
+            if (m_RegisteredPackagesTimestamp > operationTimestamp)
                 TriggerReevaluation();
 
             var mainPackageInfo = addAndRemoveOperation.FindMainPackageInfoFromResult();
@@ -439,7 +442,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             if (!m_SearchNonDiscoverableOperations.TryGetValue(packageName, out var operation))
             {
                 operation = new UpmSearchOperation();
-                operation.ResolveDependencies(m_ClientProxy, m_Application);
+                operation.ResolveDependencies(m_ClientProxy, m_Application, m_DateTimeProxy);
                 operation.Search(packageName);
                 operation.onProcessResult += request =>
                 {
@@ -461,7 +464,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             if (!m_ExtraFetchOperations.TryGetValue(packageId, out var operation))
             {
                 operation = new UpmSearchOperation();
-                operation.ResolveDependencies(m_ClientProxy, m_Application);
+                operation.ResolveDependencies(m_ClientProxy, m_Application, m_DateTimeProxy);
                 operation.Search(packageId);
                 operation.onProcessResult += request => m_UpmCache.AddExtraFetchResult(request.Result.Length > 0 ? request.Result[0] : null);
                 operation.onOperationFinalized += _ => m_ExtraFetchOperations.Remove(packageId);
@@ -548,7 +551,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         private T CreateOperation<T>(ref T operation) where T : UpmBaseOperation, new()
         {
             operation ??= new T();
-            operation.ResolveDependencies(m_ClientProxy, m_Application);
+            operation.ResolveDependencies(m_ClientProxy, m_Application, m_DateTimeProxy);
             return operation;
         }
     }

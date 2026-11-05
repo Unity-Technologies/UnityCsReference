@@ -113,6 +113,8 @@ namespace UnityEditor
             [FreeFunction("GetEditorResources().SetSkinIdx")] set;
         }
 
+        internal static extern string GetHyperlinkColorForSkin();
+
         public static extern void SetWantsMouseJumping(int wantz);
 
         // Iterates over cameras and counts the ones that would render to a specified screen (doesn't involve culling)

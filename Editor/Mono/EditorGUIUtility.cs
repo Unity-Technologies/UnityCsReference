@@ -177,6 +177,11 @@ namespace UnityEditor
         [NoAutoStaticsCleanup] // theme-defined style value; SVC is self-managing and safe to keep
         internal static readonly SVC<Color> kViewBackgroundColor = new SVC<Color>("view", StyleCatalogKeyword.backgroundColor, GetDefaultBackgroundColor);
 
+        [NoAutoStaticsCleanup] // theme-defined style value; SVC is self-managing and safe to keep
+        static readonly SVC<Color> k_HyperlinkColorDarkTheme = new SVC<Color>("--color-indigo-80", new Color(0.490f, 0.627f, 1.000f, 1f));
+        [NoAutoStaticsCleanup] // theme-defined style value; SVC is self-managing and safe to keep
+        static readonly SVC<Color> k_HyperlinkColorLightTheme = new SVC<Color>("--color-indigo-00", new Color(0.235f, 0.157f, 0.824f, 1f));
+
         /// The current UI scaling factor for high-DPI displays. For instance, 2.0 on a retina display
 
         public new static float pixelsPerPoint => GUIUtility.pixelsPerPoint;
@@ -1005,13 +1010,26 @@ namespace UnityEditor
             if (s_IconPathCache.TryGetValue(key, out string cachedPath))
                 return cachedPath;
 
-            // Use optimized generic GetCustomAttribute (single reflection call, no array allocation)
-            var attribute = type.GetCustomAttribute<IconAttribute>(inherit);
-            string path = attribute?.path;
+            string path = GetIconPathFromAttributeWithState(type, false, inherit);
 
             // Cache the result (including null to avoid repeated lookups for types without the attribute)
             s_IconPathCache[key] = path;
 
+            return path;
+        }
+
+        internal static string GetIconPathFromAttributeWithState(Type type, bool on, bool inherit = true)
+        {
+            // Use optimized generic GetCustomAttribute (single reflection call, no array allocation)
+            var attribute = type.GetCustomAttribute<IconAttribute>(inherit);
+            if (attribute == null)
+                return null;
+            var path = attribute.path;
+            if (on)
+            {
+                var file = Path.GetFileNameWithoutExtension(path);
+                path = path.Replace(file, file + " On", StringComparison.InvariantCulture);
+            }
             return path;
         }
 
@@ -1291,7 +1309,7 @@ namespace UnityEditor
             get
             {
                 if (s_InfoIcon == null)
-                    s_InfoIcon = new ScalableGUIContent("console.infoicon");
+                    s_InfoIcon = new ScalableGUIContent("console.infoicon.sml");
                 return s_InfoIcon.image as Texture2D;
             }
         }
@@ -1300,7 +1318,7 @@ namespace UnityEditor
             get
             {
                 if (s_WarningIcon == null)
-                    s_WarningIcon = new ScalableGUIContent("console.warnicon");
+                    s_WarningIcon = new ScalableGUIContent("console.warnicon.sml");
                 return s_WarningIcon.image as Texture2D;
             }
         }
@@ -1310,7 +1328,7 @@ namespace UnityEditor
             get
             {
                 if (s_ErrorIcon == null)
-                    s_ErrorIcon = new ScalableGUIContent("console.erroricon");
+                    s_ErrorIcon = new ScalableGUIContent("console.erroricon.sml");
                 return s_ErrorIcon.image as Texture2D;
             }
         }
@@ -2103,11 +2121,6 @@ namespace UnityEditor
             // To avoid creating an `ObjectSelector` instance just to get the control ID,
             // we return 0 directly if `ObjectSelector` is not visible.
             return !ObjectSelector.isVisible ? 0 : ObjectSelector.get.objectSelectorID;
-        }
-
-        internal static string GetHyperlinkColorForSkin()
-        {
-            return skinIndex == EditorResources.darkSkinIndex ? "#40a0ff" : "#0000FF";
         }
 
         // Enum for tracking what styles the editor uses

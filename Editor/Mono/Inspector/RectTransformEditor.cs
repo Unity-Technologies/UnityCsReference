@@ -134,6 +134,52 @@ namespace UnityEditor
         private bool m_ShowLayoutOptions = false;
         private bool m_RawEditMode = false;
         private int m_TargetCount = 0;
+        private int m_ParentRectsDrawnThisRepaint;
+
+        // The parent rects that share one fade during a single repaint, drawn as a shadow pass and a line pass.
+        // It holds only positions and colours, never scene objects, and is reused by later repaints of the same selection.
+        class ParentRectGroup
+        {
+            // Both colours carry the same fade: the line keeps the parent rect tint and the shadow keeps the default shadow colour.
+            public Color lineColor;
+            public Color shadowColor;
+            public readonly List<Vector3> linePoints = new List<Vector3>();
+            // Handles.DrawDottedLines draws a whole array, so these match linePoints in length.
+            // They are only reallocated when the group's targets change: on a selection change, or when two fades merge or one ends.
+            public Vector3[] lineSegments = Array.Empty<Vector3>();
+            public Vector3[] shadowSegments = Array.Empty<Vector3>();
+
+            public void Reset(Color color)
+            {
+                lineColor = color;
+                shadowColor = kShadowColor;
+                shadowColor.a *= color.a;
+                linePoints.Clear();
+            }
+
+            public void FillLineSegments()
+            {
+                lineSegments = GetBufferOfLength(lineSegments, linePoints.Count);
+                linePoints.CopyTo(lineSegments);
+            }
+
+            public void FillShadowSegments(Camera camera)
+            {
+                shadowSegments = GetBufferOfLength(shadowSegments, linePoints.Count);
+                for (int i = 0; i < linePoints.Count; i++)
+                    shadowSegments[i] = HandleUtility.WorldPointWithScreenOffset(camera, linePoints[i], kShadowOffset);
+            }
+
+            static Vector3[] GetBufferOfLength(Vector3[] buffer, int length)
+            {
+                return buffer.Length == length ? buffer : new Vector3[length];
+            }
+        }
+
+        // With several targets, their parent rects are grouped by fade and drawn together after the last target.
+        // The first m_ActiveParentRectGroupCount groups hold this repaint's rects; the rest wait to be reused.
+        private readonly List<ParentRectGroup> m_ParentRectGroups = new List<ParentRectGroup>();
+        private int m_ActiveParentRectGroupCount;
         ConstrainProportionsTransformScale m_ConstrainProportionsScale;
         private bool isScaleDirty;
 
@@ -200,6 +246,8 @@ namespace UnityEditor
 
         void OnDisable()
         {
+            ReleaseParentRectGroups();
+
             m_ChangingAnchors.valueChanged.RemoveListener(RepaintScene);
             m_ChangingPivot.valueChanged.RemoveListener(RepaintScene);
             m_ChangingWidth.valueChanged.RemoveListener(RepaintScene);
@@ -766,12 +814,17 @@ namespace UnityEditor
             return rect;
         }
 
+        static void GetRectCorners(Rect rect, Transform space, out Vector3 p0, out Vector3 p1, out Vector3 p2, out Vector3 p3)
+        {
+            p0 = space.TransformPoint(new Vector2(rect.x, rect.y));
+            p1 = space.TransformPoint(new Vector2(rect.x, rect.yMax));
+            p2 = space.TransformPoint(new Vector2(rect.xMax, rect.yMax));
+            p3 = space.TransformPoint(new Vector2(rect.xMax, rect.y));
+        }
+
         void DrawRect(Rect rect, Transform space, bool dotted)
         {
-            Vector3 p0 = space.TransformPoint(new Vector2(rect.x, rect.y));
-            Vector3 p1 = space.TransformPoint(new Vector2(rect.x, rect.yMax));
-            Vector3 p2 = space.TransformPoint(new Vector2(rect.xMax, rect.yMax));
-            Vector3 p3 = space.TransformPoint(new Vector2(rect.xMax, rect.y));
+            GetRectCorners(rect, space, out Vector3 p0, out Vector3 p1, out Vector3 p2, out Vector3 p3);
             if (!dotted)
             {
                 Handles.DrawLine(p0, p1);
@@ -788,7 +841,137 @@ namespace UnityEditor
             }
         }
 
+        // Parent rects drawn for this editor's targets during the most recent Scene view repaint.
+        internal int parentRectsDrawnInLastRepaint { get; private set; }
+
+        // The Scene view calls this once per target, so per-repaint work starts at the first target and ends at the last.
+        // m_TargetCount is the number of targets the Scene view iterates; it is set in OnEnable, which runs whenever the selection changes.
         void OnSceneGUI()
+        {
+            bool isRepaint = Event.current.type == EventType.Repaint;
+            if (isRepaint && referenceTargetIndex == 0)
+                BeginParentRectRepaint();
+
+            TargetSceneGUI();
+
+            if (isRepaint && referenceTargetIndex == m_TargetCount - 1)
+                EndParentRectRepaint();
+        }
+
+        void BeginParentRectRepaint()
+        {
+            m_ParentRectsDrawnThisRepaint = 0;
+            m_ActiveParentRectGroupCount = 0;
+        }
+
+        void EndParentRectRepaint()
+        {
+            DrawParentRectGroups();
+            m_ActiveParentRectGroupCount = 0;
+            parentRectsDrawnInLastRepaint = m_ParentRectsDrawnThisRepaint;
+        }
+
+        // The rect in parent space fades in while anchors or the pivot change, and while position or size change when anchors stretch.
+        float GetParentRectAlpha(RectTransform rectTransform)
+        {
+            float alpha = Mathf.Max(m_ChangingAnchors.faded, m_ChangingPivot.faded);
+            if (rectTransform.anchorMin != rectTransform.anchorMax)
+            {
+                // Two values at a time, because Mathf.Max with more allocates an array for every target on every repaint.
+                alpha = Mathf.Max(alpha, Mathf.Max(m_ChangingPosX.faded, m_ChangingPosY.faded));
+                alpha = Mathf.Max(alpha, Mathf.Max(m_ChangingLeft.faded, m_ChangingRight.faded));
+                alpha = Mathf.Max(alpha, Mathf.Max(m_ChangingTop.faded, m_ChangingBottom.faded));
+            }
+            return alpha;
+        }
+
+        // A single target draws its rect straight away; several targets group theirs for the last target to draw.
+        void DrawOrGroupParentRect(Rect rectInParentSpace, Transform parentSpace, Color color)
+        {
+            if (!(color.a > 0f))
+                return;
+
+            bool isRepaint = Event.current.type == EventType.Repaint;
+            if (m_TargetCount == 1)
+            {
+                DrawRect(rectInParentSpace, parentSpace, true);
+                if (isRepaint && Camera.current != null)
+                    m_ParentRectsDrawnThisRepaint++;
+            }
+            else if (isRepaint)
+            {
+                GetRectCorners(rectInParentSpace, parentSpace, out Vector3 p0, out Vector3 p1, out Vector3 p2, out Vector3 p3);
+                AppendRectEdges(FindOrAddParentRectGroup(color).linePoints, p0, p1, p2, p3);
+            }
+        }
+
+        // The fade changes the colour every repaint, so groups are reused by position rather than matched by colour.
+        ParentRectGroup FindOrAddParentRectGroup(Color color)
+        {
+            for (int i = 0; i < m_ActiveParentRectGroupCount; i++)
+            {
+                if (m_ParentRectGroups[i].lineColor == color)
+                    return m_ParentRectGroups[i];
+            }
+
+            if (m_ActiveParentRectGroupCount == m_ParentRectGroups.Count)
+                m_ParentRectGroups.Add(new ParentRectGroup());
+
+            var group = m_ParentRectGroups[m_ActiveParentRectGroupCount++];
+            group.Reset(color);
+            return group;
+        }
+
+        static void AppendRectEdges(List<Vector3> linePoints, Vector3 p0, Vector3 p1, Vector3 p2, Vector3 p3)
+        {
+            linePoints.Add(p0);
+            linePoints.Add(p1);
+            linePoints.Add(p1);
+            linePoints.Add(p2);
+            linePoints.Add(p2);
+            linePoints.Add(p3);
+            linePoints.Add(p3);
+            linePoints.Add(p0);
+        }
+
+        // Draws each group with one dotted line call for its shadows and one for its lines.
+        void DrawParentRectGroups()
+        {
+            Camera camera = Camera.current;
+            if (camera == null || m_ActiveParentRectGroupCount == 0)
+                return;
+
+            Color previousColor = Handles.color;
+
+            // Shadows go first so that no rect's line is covered by another rect's shadow.
+            for (int i = 0; i < m_ActiveParentRectGroupCount; i++)
+            {
+                var group = m_ParentRectGroups[i];
+                group.FillShadowSegments(camera);
+                Handles.color = group.shadowColor;
+                Handles.DrawDottedLines(group.shadowSegments, kDottedLineSize);
+            }
+
+            for (int i = 0; i < m_ActiveParentRectGroupCount; i++)
+            {
+                var group = m_ParentRectGroups[i];
+                group.FillLineSegments();
+                Handles.color = group.lineColor;
+                Handles.DrawDottedLines(group.lineSegments, kDottedLineSize);
+                m_ParentRectsDrawnThisRepaint += group.linePoints.Count / 8;
+            }
+
+            Handles.color = previousColor;
+        }
+
+        // Frees the groups and their buffers; called when the selection changes, after which their lengths no longer fit.
+        void ReleaseParentRectGroups()
+        {
+            m_ParentRectGroups.Clear();
+            m_ActiveParentRectGroupCount = 0;
+        }
+
+        void TargetSceneGUI()
         {
             if (!target)
                 return;
@@ -820,24 +1003,11 @@ namespace UnityEditor
                 rectInUserSpace = rectInParentSpace;
             }
 
-            // Show unrotated/unscaled rect if moving anchor/pivot
-            float alpha = Mathf.Max(m_ChangingAnchors.faded, m_ChangingPivot.faded);
-            // Also show when moving or resizing rect if anchors are scaling on either axis
-            if (rectTransform.anchorMin != rectTransform.anchorMax)
-            {
-                alpha = Mathf.Max(alpha,
-                    m_ChangingPosX.faded,
-                    m_ChangingPosY.faded,
-                    m_ChangingLeft.faded,
-                    m_ChangingRight.faded,
-                    m_ChangingTop.faded,
-                    m_ChangingBottom.faded);
-            }
-
+            // Show unrotated/unscaled rect if moving anchor/pivot, or moving or resizing with stretched anchors
             Color rectInParentSpaceColor = RectTransformEditorUtility.rectInParentSpaceColor;
-            rectInParentSpaceColor.a *= alpha;
+            rectInParentSpaceColor.a *= GetParentRectAlpha(rectTransform);
             Handles.color = rectInParentSpaceColor;
-            DrawRect(rectInParentSpace, parentSpace, true);
+            DrawOrGroupParentRect(rectInParentSpace, parentSpace, rectInParentSpaceColor);
 
             if (m_TargetCount == 1)
             {

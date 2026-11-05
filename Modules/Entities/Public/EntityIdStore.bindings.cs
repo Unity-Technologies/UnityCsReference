@@ -554,6 +554,15 @@ namespace UnityEngine
             cache = c;
         }
 
+        // Single-id allocation for editor and tooling callers, which take one id at a time
+        // and so have no use for the store's batched path.
+        internal static EntityId AllocateEntityId()
+        {
+            EntityId id;
+            EntityIdStoreBindings.AllocateForManaged(&id, 1);
+            return id;
+        }
+
         // Entry point: served from this thread's magazines, with the remainder
         // crossing into native. Chunk placement is stamped at hand-out time on
         // slots the allocation already owns, so every allocation takes the

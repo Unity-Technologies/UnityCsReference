@@ -91,7 +91,7 @@ namespace UnityEditor.UIElements
             }
         }
 
-        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
+        [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
         internal bool IsSupportedChild(Type type)
         {
             if (ReferenceEquals(m_UxmlSupportedChildTypes, s_DefaultSupportedChildren))

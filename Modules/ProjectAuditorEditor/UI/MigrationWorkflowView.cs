@@ -14,7 +14,7 @@ using UnityEngine;
 
 namespace Unity.ProjectAuditor.Editor.UI
 {
-    internal class MigrationWorkflowView
+    internal partial class MigrationWorkflowView
     {
         const ProjectAreaFlags k_ProjectAreaFlags =
             ProjectAreaFlags.ProjectSettings | ProjectAreaFlags.Code |
@@ -26,7 +26,11 @@ namespace Unity.ProjectAuditor.Editor.UI
         List<Step> m_Steps;
 
         UnityEditor.PackageManager.Requests.AddRequest m_UrpAddRequest;
-        bool m_ConverterRunning;
+
+        [AutoStaticsCleanupOnCodeReload]
+        static bool s_ConverterRunning;
+
+        internal static bool ConverterRunning => s_ConverterRunning;
 
         static MigrateToURPSummaryView GetSummaryView(ProjectAuditorWindow window)
         {
@@ -43,7 +47,16 @@ namespace Unity.ProjectAuditor.Editor.UI
             set => SessionState.SetBool(k_BackupAcknowledgedKey, value);
         }
 
-        internal const string k_TargetPipelineKey = "ProjectAuditor.MigrationWizard.TargetPipeline";
+        const string k_AnalysisCompletedKey = "ProjectAuditor.MigrationWizard.AnalysisCompleted";
+
+        // Keeps the Analyze step marked complete while a re-analysis is in progress, so the wizard stays on the Fix step.
+        static bool AnalysisCompleted
+        {
+            get => SessionState.GetBool(k_AnalysisCompletedKey, false);
+            set => SessionState.SetBool(k_AnalysisCompletedKey, value);
+        }
+
+        internal const string k_TargetPipelineKey ="ProjectAuditor.MigrationWizard.TargetPipeline";
 
         // The pending choice for the next analysis. Once a matching Report exists, SyncTargetPipelineFromReport
         // seeds this from the Report instead, so a reloaded Report is reflected rather than overridden.
@@ -53,7 +66,86 @@ namespace Unity.ProjectAuditor.Editor.UI
             set => SessionState.SetString(k_TargetPipelineKey, value);
         }
 
-        Report m_LastSyncedReport;
+        [AutoStaticsCleanupOnCodeReload]
+        static Report s_LastSyncedReport;
+
+        static class BirpDeprecationDialog
+        {
+            static class Styles
+            {
+                public static readonly string DialogTitle = L10n.Tr("The Built-In Render Pipeline is not supported", null);
+                public static readonly string DialogMessage = L10n.Tr("The Built-In Render Pipeline is no longer supported. Migrate to a Scriptable Render Pipeline in order to render.\n\nContinue Without Rendering turns off this prompt for everyone on the project. You can migrate later from Project Auditor.", null);
+                public static readonly string StartMigrationToURP = L10n.Tr("Start Migration to Universal Render Pipeline", null);
+                public static readonly string ContinueWithoutRendering = L10n.Tr("Continue Without Rendering", null);
+                public static readonly string RemindMeLater = L10n.Tr("Remind Me Later", null);
+            }
+
+            public static void Show()
+            {
+                int result = EditorUtility.DisplayDialogComplex(
+                    Styles.DialogTitle,
+                    Styles.DialogMessage,
+                    Styles.StartMigrationToURP,
+                    Styles.RemindMeLater,
+                    Styles.ContinueWithoutRendering);
+
+                switch (result)
+                {
+                    case 0: // Start Migration to URP
+                        StartMigrationToURP();
+                        break;
+                    case 1: // Remind Me Later
+                        break;
+                    case 2: // Continue Without Rendering
+                        UnityEditor.Rendering.EditorGraphicsSettings.builtInRenderPipelineUsage =
+                            UnityEditor.Rendering.BuiltInRenderPipelineUsage.NotInUse;
+                        break;
+                }
+            }
+        }
+
+        static void StartMigrationToURP()
+        {
+            ProjectAuditorNavigator.RequestHomePage(HomePage.Tab.MigrateToURP);
+            ProjectAuditorWindow.ShowWindow();
+        }
+
+        struct StartupPromptShownState
+        {
+            const string k_StartupPromptShownKey = "ProjectAuditor.RenderPipelineStartupPrompt.Shown";
+            public static bool Shown
+            {
+                get => SessionState.GetBool(k_StartupPromptShownKey, false);
+                set => SessionState.SetBool(k_StartupPromptShownKey, value);
+            }
+        }
+
+        [InitializeOnLoadMethod]
+        static void RegisterStartMigration()
+        {
+            UnityEditor.Rendering.EditorGraphicsSettings.startBuiltInRenderPipelineMigration = StartMigrationToURP;
+        }
+
+        [InitializeOnLoadMethod]
+        static void ShowStartupPromptIfNeeded()
+        {
+            if (StartupPromptShownState.Shown)
+                return;
+
+            EditorApplication.delayCall += OnDelayCall;
+        }
+
+        static void OnDelayCall()
+        {
+            EditorApplication.delayCall -= OnDelayCall;
+
+            StartupPromptShownState.Shown = true;
+
+            if (!UnityEditor.Rendering.EditorGraphicsSettings.ShouldDisplayBuiltInRenderPipelineMigrationDialog())
+                return;
+
+            BirpDeprecationDialog.Show();
+        }
 
         public MigrationWorkflowView()
         {
@@ -61,14 +153,22 @@ namespace Unity.ProjectAuditor.Editor.UI
 
         // Seeds SelectedTargetPipeline from a newly-seen Report, so opening the window on an existing Report
         // (rather than picking one via the dropdown) shows the pipeline it was actually scanned against.
-        void SyncTargetPipelineFromReport(Report report)
+        // A project already migrated to the selected pipeline keeps it, so the Report reads as stale rather than undoing the migration.
+        internal static void SyncTargetPipelineFromReport(Report report)
         {
-            if (ReferenceEquals(report, m_LastSyncedReport))
+            if (ReferenceEquals(report, s_LastSyncedReport))
                 return;
-            m_LastSyncedReport = report;
+            s_LastSyncedReport = report;
 
-            if (report != null && report.IsValid() && !string.IsNullOrEmpty(report.SessionInfo.MigrationTargetPipeline))
-                SelectedTargetPipeline = report.SessionInfo.MigrationTargetPipeline;
+            if (report == null || !report.IsValid() || string.IsNullOrEmpty(report.SessionInfo.MigrationTargetPipeline))
+                return;
+
+            var reportTargetPipeline = report.SessionInfo.MigrationTargetPipeline;
+            if (MigrationToURPUtilities.IsProjectFullyOnUrp(SelectedTargetPipeline) &&
+                !MigrationToURPUtilities.IsProjectFullyOnUrp(reportTargetPipeline))
+                return;
+
+            SelectedTargetPipeline = reportTargetPipeline;
         }
 
         internal sealed class Step
@@ -80,7 +180,7 @@ namespace Unity.ProjectAuditor.Editor.UI
 
             public Func<ProjectAuditorWindow, bool> IsComplete;
             public Func<bool> DrawUI;
-            public Action<ProjectAuditorWindow, Step, bool> DrawButtonUI;
+            public Action<ProjectAuditorWindow, Step, bool, bool> DrawButtonUI;
         }
 
         List<Step> Steps => m_Steps ??= new List<Step>
@@ -99,12 +199,13 @@ namespace Unity.ProjectAuditor.Editor.UI
                 IsComplete = (_) => MigrationToURPUtilities.IsUrpPackageInstalled(),
                 DrawUI = () =>
                 {
-                    GUILayout.FlexibleSpace();
+                    GUILayout.Space(EditorGUIUtility.singleLineHeight);
                     DrawRenderPipelineUI();
+                    GUILayout.FlexibleSpace();
                     return DrawBackupConfirmation() && (m_UrpAddRequest == null);
                 },
 
-                DrawButtonUI = (ProjectAuditorWindow window, Step step, bool enabled) =>
+                DrawButtonUI = (ProjectAuditorWindow window, Step step, bool enabled, bool converterRunning) =>
                 {
                     GUIContent content = enabled ? step.Contents[0] : step.Contents[1];
                     if (m_UrpAddRequest != null)
@@ -139,26 +240,67 @@ namespace Unity.ProjectAuditor.Editor.UI
                     return true;
                 },
 
-                DrawButtonUI = (ProjectAuditorWindow window, Step step, bool enabled) =>
+                DrawButtonUI = (ProjectAuditorWindow window, Step step, bool enabled, bool converterRunning) =>
                 {
+                    GUILayout.FlexibleSpace();
+
                     if (CenteredButton(enabled ? step.Contents[0] : step.Contents[1]) && ConfirmAssignUrpAsset())
                     {
                         MigrationToURPUtilities.ApplyTargetPipelineToQualitySettings(SelectedTargetPipeline);
                         GUIUtility.ExitGUI();
                     }
+                }
+            },
+            new Step
+            {
+                Title = L10n.Tr("Analyze", null),
+                Heading = L10n.TextContent("Analyze which issues can be converted automatically and which need manual conversion.", null, null, null),
 
-                    GUILayout.FlexibleSpace();
+                IsComplete = (ProjectAuditorWindow window) =>
+                {
+                    if (window.m_ViewManager.HasPendingCategories())
+                        return AnalysisCompleted;
+
+                    AnalysisCompleted = IsReportValidForMigration(out var _);
+                    return AnalysisCompleted;
+                },
+
+                DrawButtonUI = (ProjectAuditorWindow window, Step step, bool enabled, bool converterRunning) =>
+                {
+                    // Start Analysis
+                    using (new CenteredColumn())
+                    {
+                        GUILayout.FlexibleSpace();
+
+                        GUIContent buttonLabel;
+                        if (window.m_ViewManager.HasPendingCategories())
+                        {
+                            int frame = Utility.GetStatusWheelFrame();
+                            buttonLabel = HomePage.Contents.AnalyzeButtonInProgress[frame];
+                        }
+                        else
+                        {
+                            buttonLabel = enabled ? HomePage.Contents.AnalyzeButton : HomePage.Contents.AnalyzeButtonDisabled;
+                        }
+                        
+                        using (new EditorGUI.DisabledScope(window.m_ViewManager.HasPendingCategories()))
+                        {
+                            if (CenteredButton(buttonLabel) && HomePage.ConfirmDiscardCurrentReport())
+                            {
+                                Reanalyze(window, PageId.None);
+                                GUIUtility.ExitGUI();
+                            }
+                        }
+                    }
                 }
             },
             new Step
             {
                 Title = L10n.Tr("Fix Issues", null),
-                Heading = L10n.TextContent("Analyze which issues can be converted automatically and which need manual conversion.", null, null, null),
+                Heading = L10n.TextContent("Fix the migration issues. Some may be converted automatically, and others may need manual conversion.", null, null, null),
 
                 IsComplete = (ProjectAuditorWindow window) =>
                 {
-                    if (!IsReportValidForMigration(out var _))
-                        return false;
                     if (window.m_ViewManager.HasPendingCategories())
                         return false;
                     return GetSummaryView(window).TotalIssueCount == 0;
@@ -170,120 +312,82 @@ namespace Unity.ProjectAuditor.Editor.UI
                     L10n.TextContent("Run Converter", "There are no issues to convert.", null, null)
                 ],
 
-                DrawButtonUI = (ProjectAuditorWindow window, Step step, bool enabled) =>
+                DrawButtonUI = (ProjectAuditorWindow window, Step step, bool enabled, bool converterRunning) =>
                 {
-                    if (IsReportValidForMigration(out var _))
+                    var summaryView = GetSummaryView(window);
+                    bool analysisInProgress = window.m_ViewManager.HasPendingCategories();
+
+                    // Total issues
+                    var content = Utility.TempContent(string.Format(Contents.TotalIssues, summaryView.TotalIssueCount));
+                    GUILayout.Label(content, SharedStyles.LargeLabel);
+                    GUILayout.Space(10);
+
+                    // Render Pipeline Converter
+                    GUIContent pipelineConverterLabel = Utility.TempContent(string.Format(Contents.ConverterIssues, summaryView.RenderPipelineConverterIssueCount));
+                    GUILayout.Label(pipelineConverterLabel);
+                    using (new EditorGUI.DisabledScope((summaryView.RenderPipelineConverterIssueCount == 0) || converterRunning || analysisInProgress))
                     {
-                        var summaryView = GetSummaryView(window);
+                        EditorGUILayout.BeginHorizontal();
 
-                        // Total issues
-                        var content = Utility.TempContent(string.Format(Contents.TotalIssues, summaryView.TotalIssueCount));
-                        GUILayout.Label(content, SharedStyles.LargeLabel);
-                        GUILayout.Space(10);
-
-                        // Render Pipeline Converter
-                        GUIContent pipelineConverterLabel = Utility.TempContent(string.Format(Contents.ConverterIssues, summaryView.RenderPipelineConverterIssueCount));
-                        GUILayout.Label(pipelineConverterLabel);
-                        using (new EditorGUI.DisabledScope((summaryView.RenderPipelineConverterIssueCount == 0) || m_ConverterRunning))
+                        GUIContent runContent = Contents.RunConverterButton;
+                        if (converterRunning)
                         {
-                            EditorGUILayout.BeginHorizontal();
-
-                            GUIContent runContent = Contents.RunConverterButton;
-                            if (m_ConverterRunning)
-                            {
-                                int frame = Utility.GetStatusWheelFrame();
-                                runContent = Contents.RunningConverterButton[frame];
-                            }
-
-                            if (GUILayout.Button(runContent, GUILayout.Width(HomePage.k_ButtonWidth)))
-                            {
-                                OnRunConverter();
-                                GUIUtility.ExitGUI();
-                            }
-
-                            GUILayout.Space(8);
-
-                            if (GUILayout.Button(Contents.OpenConverterButton, GUILayout.Width(HomePage.k_ButtonWidth)))
-                            {
-                                MigrationToURPUtilities.OpenRenderPipelineConverter(null, null);
-                                GUIUtility.ExitGUI();
-                            }
-
-                            EditorGUILayout.EndHorizontal();
+                            int frame = Utility.GetStatusWheelFrame();
+                            runContent = Contents.RunningConverterButton[frame];
                         }
 
-                        GUILayout.Space(10);
-
-                        // Manual fixes (go to summary)
-                        GUIContent manualFixesLabel = Utility.TempContent(string.Format(Contents.ManualIssues, summaryView.TotalIssueCount - summaryView.RenderPipelineConverterIssueCount));
-                        GUILayout.Label(manualFixesLabel);
-                        if (GUILayout.Button(Contents.GoToManualFixesButton, GUILayout.Width(HomePage.k_ButtonWidth)))
+                        if (GUILayout.Button(runContent, GUILayout.Width(HomePage.k_ButtonWidth)))
                         {
-                            window.GotoCategory(IssueCategory.MigrateToURPSummary);
+                            OnRunConverter();
                             GUIUtility.ExitGUI();
                         }
 
-                        GUILayout.Space(24);
+                        GUILayout.Space(8);
+
+                        if (GUILayout.Button(Contents.OpenConverterButton, GUILayout.Width(HomePage.k_ButtonWidth)))
+                        {
+                            MigrationToURPUtilities.OpenRenderPipelineConverter(null, null);
+                            GUIUtility.ExitGUI();
+                        }
+
+                        EditorGUILayout.EndHorizontal();
                     }
 
-                    // Start Analysis
+                    GUILayout.Space(10);
+
+                    // Re-analyze
+                    GUIContent reanalyzeLabel;
+                    if (analysisInProgress)
+                    {
+                        int frame = Utility.GetStatusWheelFrame();
+                        reanalyzeLabel = HomePage.Contents.AnalyzeButtonInProgress[frame];
+                    }
+                    else
+                    {
+                        GUILayout.Label(Contents.RefreshReport);
+                        reanalyzeLabel = enabled ? Contents.ReanalyzeButton : HomePage.Contents.AnalyzeButtonDisabled;
+                    }
+                    using (new EditorGUI.DisabledScope(analysisInProgress || converterRunning))
+                    {
+                        if (GUILayout.Button(reanalyzeLabel, GUILayout.Width(HomePage.k_ButtonWidth)) && HomePage.ConfirmDiscardCurrentReport())
+                        {
+                            Reanalyze(window, PageId.None);
+                            GUIUtility.ExitGUI();
+                        }
+                    }
+
+                    GUILayout.FlexibleSpace();
+
+                    // Go to summary
                     using (new CenteredColumn())
                     {
-                        GUIContent buttonLabel;
-                        if (window.m_ViewManager.HasPendingCategories())
-                        {
-                            int frame = Utility.GetStatusWheelFrame();
-                            buttonLabel = HomePage.Contents.AnalyzeButtonInProgress[frame];
-                        }
-                        else if (window.m_Report == null || !window.m_Report.IsValid())
-                        {
-                            buttonLabel = enabled ? HomePage.Contents.AnalyzeButton : HomePage.Contents.AnalyzeButtonDisabled;
-                        }
-                        else if (!IsReportValidForMigration(out var reason))
-                        {
-                            using (new CenteredRow())
-                            {
-                                switch (reason)
-                                {
-                                    case InvalidReportReason.ReportIsNotForCurrentProject:
-                                        GUILayout.Label(Contents.InvalidReportProject, SharedStyles.TextAreaCentered);
-                                        GUILayout.Space(4);
-                                        break;
-                                    case InvalidReportReason.ReportDoesNotHaveCorrectAreas:
-                                        GUILayout.Label(Contents.InvalidReportAreas, SharedStyles.TextAreaCentered);
-                                        GUILayout.Space(4);
-                                        break;
-                                    case InvalidReportReason.ReportTargetsADifferentPipeline:
-                                        GUILayout.Label(Contents.InvalidReportTargetPipeline, SharedStyles.TextAreaCentered);
-                                        GUILayout.Space(4);
-                                        break;
-                                    case InvalidReportReason.ReportDoesNotHaveConverterScan:
-                                        GUILayout.Label(Contents.InvalidReportMigrationScan, SharedStyles.TextAreaCentered);
-                                        GUILayout.Space(4);
-                                        break;
-                                    case InvalidReportReason.ReportScannedBeforeQualitySettingsApplied:
-                                        GUILayout.Label(Contents.InvalidReportQualitySettings, SharedStyles.TextAreaCentered);
-                                        GUILayout.Space(4);
-                                        break;
-                                }
-                            }
+                        GUIContent manualFixesLabel = Utility.TempContent(string.Format(Contents.ManualIssues, summaryView.ManualIssueCount));
+                        GUILayout.Label(manualFixesLabel, SharedStyles.TextAreaCentered);
 
-                            buttonLabel = enabled ? Contents.ReanalyzeButton : HomePage.Contents.AnalyzeButtonDisabled;
-                        }
-                        else
+                        if (CenteredButton(Contents.GoToManualFixesButton))
                         {
-                            using (new CenteredRow())
-                                GUILayout.Label(Contents.RefreshReport, SharedStyles.TextAreaCentered);
-                            buttonLabel = enabled ? Contents.ReanalyzeButton : HomePage.Contents.AnalyzeButtonDisabled;
-                        }
-
-                        using (new EditorGUI.DisabledScope(window.m_ViewManager.HasPendingCategories() || m_ConverterRunning))
-                        {
-                            if (CenteredButton(buttonLabel) && HomePage.ConfirmDiscardCurrentReport())
-                            {
-                                window.Analyze(k_ProjectAreaFlags, k_CodeAnalysisFlags, PageId.None, SelectedTargetPipeline);
-                                GUIUtility.ExitGUI();
-                            }
+                            window.GotoCategory(IssueCategory.MigrateToURPSummary);
+                            GUIUtility.ExitGUI();
                         }
                     }
                 }
@@ -301,7 +405,60 @@ namespace Unity.ProjectAuditor.Editor.UI
             ReportScannedBeforeQualitySettingsApplied
         }
 
-        bool IsReportValidForMigration(out InvalidReportReason reason)
+        static GUIContent GetInvalidReportMessage(InvalidReportReason reason)
+        {
+            switch (reason)
+            {
+                case InvalidReportReason.ReportIsNotForCurrentProject:
+                    return Contents.InvalidReportProject;
+                case InvalidReportReason.ReportDoesNotHaveCorrectAreas:
+                    return Contents.InvalidReportAreas;
+                case InvalidReportReason.ReportTargetsADifferentPipeline:
+                    return Contents.InvalidReportTargetPipeline;
+                case InvalidReportReason.ReportDoesNotHaveConverterScan:
+                    return Contents.InvalidReportMigrationScan;
+                case InvalidReportReason.ReportScannedBeforeQualitySettingsApplied:
+                    return Contents.InvalidReportQualitySettings;
+                default:
+                    return null;
+            }
+        }
+
+        static void DrawInvalidReportReason(InvalidReportReason reason)
+        {
+            var message = GetInvalidReportMessage(reason);
+            if (message == null)
+                return;
+
+            using (new CenteredRow())
+                GUILayout.Label(message, SharedStyles.TextAreaCentered);
+            GUILayout.Space(4);
+        }
+
+        // The first two wizard steps (Install URP, Create URP asset) come before the analysis step.
+        internal static bool IsWizardBeforeAnalysisStep()
+        {
+            return !MigrationToURPUtilities.IsUrpPackageInstalled() ||
+                !MigrationToURPUtilities.IsProjectFullyOnUrp(SelectedTargetPipeline);
+        }
+
+        // False when there is no report to re-run, or the report is still valid for migration.
+        internal static bool TryGetInvalidReportMessage(ProjectAuditorWindow window, out string message)
+        {
+            message = null;
+            if (window.m_Report == null || !window.m_Report.IsValid() || IsReportValidForMigration(out var reason))
+                return false;
+
+            message = GetInvalidReportMessage(reason).text;
+            return true;
+        }
+
+        internal static void Reanalyze(ProjectAuditorWindow window, PageId targetSummaryPage)
+        {
+            window.Analyze(k_ProjectAreaFlags, k_CodeAnalysisFlags, targetSummaryPage, SelectedTargetPipeline);
+        }
+
+        static bool IsReportValidForMigration(out InvalidReportReason reason)
         {
             reason = InvalidReportReason.None;
 
@@ -425,7 +582,7 @@ namespace Unity.ProjectAuditor.Editor.UI
         }
 
         // Returns the first incomplete step, or -1 when every step is complete.
-        unsafe int DrawStepper()
+        int DrawStepper()
         {
             var window = ProjectAuditorWindow.Instance;
 
@@ -519,7 +676,7 @@ namespace Unity.ProjectAuditor.Editor.UI
 
                 var window = ProjectAuditorWindow.Instance;
                 using (new EditorGUI.DisabledScope(!enabled))
-                    m_Steps[next].DrawButtonUI(window, m_Steps[next], enabled);
+                    m_Steps[next].DrawButtonUI(window, m_Steps[next], enabled, s_ConverterRunning);
 
                 GUILayout.Space(16);
             }
@@ -577,7 +734,6 @@ namespace Unity.ProjectAuditor.Editor.UI
             DrawInfoRow(Contents.CurrentRenderPipeline, currentName);
             GUILayout.Space(4);
             DrawInfoRow(Contents.TargetRenderPipeline, MigrationToURPUtilities.Contents.URP);
-            GUILayout.Space(32);
         }
 
         void DrawTargetPipelineDropdown()
@@ -588,7 +744,7 @@ namespace Unity.ProjectAuditor.Editor.UI
                 GUILayout.Space(20);
 
                 var window = ProjectAuditorWindow.Instance;
-                using (new EditorGUI.DisabledScope(m_ConverterRunning || window.m_ViewManager.HasPendingCategories()))
+                using (new EditorGUI.DisabledScope(s_ConverterRunning || window.m_ViewManager.HasPendingCategories()))
                 {
                     var currentIndex = (SelectedTargetPipeline == MigrationToURPUtilities.Urp3DContainer) ? 0 : 1;
                     var newIndex = EditorGUILayout.Popup(currentIndex, Contents.TargetPipelineDisplayNames, k_InfoRowContentWidth);
@@ -624,9 +780,9 @@ namespace Unity.ProjectAuditor.Editor.UI
             ProjectAuditorWindow.Instance.Repaint();
         }
 
-        void OnRunConverter()
+        internal static void OnRunConverter()
         {
-            m_ConverterRunning = true;
+            s_ConverterRunning = true;
             EditorApplication.update += RepaintWhileConverterRunning;
 
             // Deferred so at least one repaint shows the running state, even if every converter turns out to
@@ -636,11 +792,11 @@ namespace Unity.ProjectAuditor.Editor.UI
                 MigrationToURPUtilities.RunRenderPipelineConverterInBatchMode(targetPipeline, OnConverterFinished);
         }
 
-        void OnConverterFinished(string output)
+        static void OnConverterFinished(string output)
         {
             if (!EditorWindow.HasOpenInstances<ProjectAuditorWindow>())
             {
-                m_ConverterRunning = false;
+                s_ConverterRunning = false;
                 EditorApplication.update -= RepaintWhileConverterRunning;
                 return;
             }
@@ -688,7 +844,7 @@ namespace Unity.ProjectAuditor.Editor.UI
             if (failedCount > 0)
                 Debug.Log($"{failedCount} item(s) failed to convert. Check the console for more information.");
 
-            m_ConverterRunning = false;
+            s_ConverterRunning = false;
             EditorApplication.update -= RepaintWhileConverterRunning;
             ProjectAuditorWindow.Instance?.Repaint();
         }
@@ -714,11 +870,11 @@ namespace Unity.ProjectAuditor.Editor.UI
             return fallback;
         }
 
-        void RepaintWhileConverterRunning()
+        static void RepaintWhileConverterRunning()
         {
             if (!EditorWindow.HasOpenInstances<ProjectAuditorWindow>())
             {
-                m_ConverterRunning = false;
+                s_ConverterRunning = false;
                 EditorApplication.update -= RepaintWhileConverterRunning;
                 return;
             }

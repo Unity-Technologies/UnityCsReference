@@ -173,7 +173,6 @@ namespace UnityEngine.UIElements.UIR
 
         readonly RenderTreeManager m_RenderTreeManager;
         DrawOperation m_RootOperation;
-        List<RenderTexture> m_AllocatedTextures = new();
         MaterialPropertyBlock m_Block = new();
         ObjectPool<DrawOperation> m_DrawOperationPool = new(() => new DrawOperation());
         int m_NextFilterGroupId;
@@ -337,7 +336,10 @@ namespace UnityEngine.UIElements.UIR
                     }
 
                     var owner = op.renderTree.rootRenderData.owner;
-                    Rect veBB = BoxShadowBounds.EncapsulateOuterShadow(owner, owner.boundingBox);
+                    // Only nested render trees are drawn into a texture sized from these bounds: the root tree doesn't walk the panel
+                    Rect veBB = op.parent != null
+                        ? op.renderTree.GetRenderedBounds()
+                        : BoxShadowBounds.EncapsulateOuterShadow(owner, owner.boundingBox);
                     if (UIRUtility.RectHasArea(veBB))
                         bounds = bounds == null ? veBB : UIRUtility.Encapsulate(bounds.Value, veBB);
                     else
@@ -666,7 +668,13 @@ namespace UnityEngine.UIElements.UIR
             // Clear the property block to avoid accidentally inheriting properties from previous context.
             m_Block.Clear();
 
-            ExecuteDrawOperation_PostOrder(m_RootOperation);
+            ExecuteDrawOperation_PostOrder(m_RootOperation, false);
+        }
+
+        // For panels that skip rendering: visits the nested trees RenderNestedPasses would render, without rendering them.
+        public void CallNestedImmediateModeElements()
+        {
+            ExecuteDrawOperation_PostOrder(m_RootOperation, true);
         }
 
 
@@ -674,12 +682,12 @@ namespace UnityEngine.UIElements.UIR
         static Vector4[] s_UVRects = new Vector4[1];
 
 
-        void ExecuteDrawOperation_PostOrder(DrawOperation op)
+        void ExecuteDrawOperation_PostOrder(DrawOperation op, bool callImmediateModeElementsOnly)
         {
             var child = op.firstChild;
             while (child != null)
             {
-                ExecuteDrawOperation_PostOrder(child);
+                ExecuteDrawOperation_PostOrder(child, callImmediateModeElementsOnly);
                 child = child.nextSibling;
             }
 
@@ -692,16 +700,24 @@ namespace UnityEngine.UIElements.UIR
 
             Debug.Assert(bounds.height > 0); // Otherwise, the width should have been set to 0 as well.
 
+            if (callImmediateModeElementsOnly)
+            {
+                if (op.type == DrawOperationType.RenderTree)
+                    UIRenderDevice.CallImmediateCommands(op.renderTree.firstCommand, PixelsToPoints(bounds, op.pixelsPerPoint));
+                return;
+            }
+
             bool forceGamma = m_RenderTreeManager.forceGammaRendering;
 
             // Under force-gamma: a filter's last pass outputs sRGB (parent samples linear + re-applies gamma); a plain
             // nested-tree quad stays UNorm so it blends in gamma like direct rendering (UI-5094).
             bool isLastFilterPass = op.type == DrawOperationType.Effect && op.parent?.type == DrawOperationType.RenderTree;
 
-            if (RenderTreeAtlas.CreateTextureForAtlasBlock(ref op.dstAtlasBlock, forceGamma && !isLastFilterPass, out bool allocatedNewTexture))
+            // Only render trees use the stencil (masking)
+            bool needsDepthStencil = op.type == DrawOperationType.RenderTree;
+
+            if (RenderTreeAtlas.CreateTextureForAtlasBlock(ref op.dstAtlasBlock, forceGamma && !isLastFilterPass, needsDepthStencil))
             {
-                if (allocatedNewTexture)
-                    m_AllocatedTextures.Add(op.dstAtlasBlock.texture);
                 if (op.dstTextureId.IsValid())
                     m_RenderTreeManager.textureRegistry.UpdateDynamic(op.dstTextureId, op.dstAtlasBlock.texture);
             }
@@ -800,6 +816,9 @@ namespace UnityEngine.UIElements.UIR
                         if (s_EffectDrawErrorLogged.Add(material != null ? material.GetEntityId() : EntityId.None))
                             Debug.LogException(e, material);
                     }
+
+                    if (op.parent.filterGroupId != op.filterGroupId)
+                        ReleaseFilterInputs(op);
                     break;
                 }
                 case DrawOperationType.RenderTree:
@@ -880,6 +899,30 @@ namespace UnityEngine.UIElements.UIR
             block.SetVector(ids.uvRectId, new Vector4(srcUV.xMin, srcUV.yMin, srcUV.xMax, srcUV.yMax));
         }
 
+        // Passes only read inputs from their own filter (see ResolveInputOp), so once the last pass has drawn, the
+        // intermediate passes and the filter input can return to the pool for the remaining operations of the frame.
+        static void ReleaseFilterInputs(DrawOperation lastPass)
+        {
+            int groupId = lastPass.filterGroupId;
+            var op = lastPass.firstChild;
+            while (op != null)
+            {
+                Debug.Assert(!op.dstTextureId.IsValid());
+                ReleaseTexture(op);
+                if (op.filterGroupId != groupId)
+                    break;
+                op = op.firstChild;
+            }
+        }
+
+        static void ReleaseTexture(DrawOperation op)
+        {
+            if (op.dstAtlasBlock.texture == null)
+                return;
+            RenderTexture.ReleaseTemporary(op.dstAtlasBlock.texture);
+            op.dstAtlasBlock.texture = null;
+        }
+
         void CleanupOperationTree()
         {
             if (m_RootOperation != null)
@@ -887,10 +930,6 @@ namespace UnityEngine.UIElements.UIR
                 CleanupOperation_PostOrder(m_RootOperation);
                 m_RootOperation = null;
             }
-
-            foreach (var rt in m_AllocatedTextures)
-                RenderTexture.ReleaseTemporary(rt);
-            m_AllocatedTextures.Clear();
         }
 
         void CleanupOperation_PostOrder(DrawOperation op)
@@ -909,6 +948,7 @@ namespace UnityEngine.UIElements.UIR
                 op.renderTree.quadTextureId = TextureId.invalid;
             }
 
+            ReleaseTexture(op);
             op.Reset();
             m_DrawOperationPool.Release(op);
         }

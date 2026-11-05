@@ -6,9 +6,11 @@ using System;
 using System.Reflection;
 using Unity.Collections;
 using Unity.Collections.LowLevel.Unsafe;
+using UnityEngine.Bindings;
 
 namespace Unity.Scripting.Reflection
 {
+    [VisibleToOtherModules("UnityEngine.EntitiesModule")]
     internal unsafe partial struct TypeHandle : IEquatable<TypeHandle>
     {
         IntPtr m_Ptr;

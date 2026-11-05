@@ -145,9 +145,14 @@ namespace Unity.VectorGraphics
         /// <returns>A Rect containing the axis-aligned bounding-box of the contour</returns>
         public static Rect Bounds(BezierPathSegment[] path)
         {
+            return Bounds(path, false);
+        }
+
+        internal static Rect Bounds(BezierPathSegment[] path, bool closed)
+        {
             var min = new Vector2(float.MaxValue, float.MaxValue);
             var max = new Vector2(-float.MaxValue, -float.MaxValue);
-            foreach (var s in VectorUtils.SegmentsInPath(path))
+            foreach (var s in VectorUtils.SegmentsInPath(path, closed))
             {
                 Vector2 segMin, segMax;
                 Bounds(s, out segMin, out segMax);
@@ -178,7 +183,7 @@ namespace Unity.VectorGraphics
             var max = new Vector2(-float.MaxValue, -float.MaxValue);
             foreach (var contour in contours)
             {
-                var bbox = Bounds(contour.Segments);
+                var bbox = Bounds(contour.Segments, contour.Closed);
                 min = Vector2.Min(min, bbox.min);
                 max = Vector2.Max(max, bbox.max);
             }
@@ -266,12 +271,17 @@ namespace Unity.VectorGraphics
             }
 
             sweepAngleRads = Mathf.Min(sweepAngleRads, Mathf.PI * 2);
+            if (sweepAngleRads <= Epsilon)
+                return Array.Empty<BezierPathSegment>();
+
+            // QuadrantAtAngle wraps a full turn back to the first quadrant
+            bool fullCircle = sweepAngleRads >= Mathf.PI * 2 - Epsilon;
 
             BezierSegment subSeg1;
             BezierSegment subSeg2;
 
             var segments = new List<BezierSegment>();
-            int endQuadrant = QuadrantAtAngle(sweepAngleRads);
+            int endQuadrant = fullCircle ? 3 : QuadrantAtAngle(sweepAngleRads);
 
             for (int quadrant = 0; quadrant <= endQuadrant; ++quadrant)
             {
@@ -288,7 +298,7 @@ namespace Unity.VectorGraphics
                 }
 
                 p1 = new Vector2(Mathf.Cos(sweepAngleRads), Mathf.Sin(sweepAngleRads)) * 2.0f;
-                intersects = FindBezierLineIntersections(seg, p0, p1);
+                intersects = fullCircle ? Array.Empty<float>() : FindBezierLineIntersections(seg, p0, p1);
                 if (intersects.Length > 0)
                 {
                     VectorUtils.SplitSegment(seg, intersects[0], out subSeg1, out subSeg2);
@@ -511,14 +521,22 @@ namespace Unity.VectorGraphics
         /// <returns>The combined length of the segment chain</returns>
         public static float SegmentsLength(IList<BezierPathSegment> segments, bool closed, float precision = 0.001f)
         {
-            if (segments.Count < 2)
+            if (segments.Count == 0)
                 return 0.0f;
 
+            // A single closed path segment is a loop back to its own start
+            if (segments.Count == 1)
+            {
+                if (!closed)
+                    return 0.0f;
+                var s = segments[0];
+                return SegmentLength(new BezierSegment() { P0 = s.P0, P1 = s.P1, P2 = s.P2, P3 = s.P0 }, precision);
+            }
+
+            // The closing segment is a curve too, so it is measured from its control points
             float length = 0.0f;
-            foreach (var segment in SegmentsInPath(segments))
+            foreach (var segment in SegmentsInPath(segments, closed))
                 length += SegmentLength(segment, precision);
-            if (closed)
-                length += (segments[segments.Count - 1].P0 - segments[0].P0).magnitude;
             return length;
         }
 
@@ -829,11 +847,11 @@ namespace Unity.VectorGraphics
         /// <param name="bounds">The bounds into which the vertices will be realigned</param>
         public static void FlipVerticesInBounds(IList<Vector2> vertices, Rect bounds)
         {
-            var h = bounds.height;
+            var yMinPlusMax = bounds.yMin + bounds.yMax;
             for (int i = 0; i < vertices.Count; ++i)
             {
                 var v = vertices[i];
-                v.y = h - v.y;
+                v.y = yMinPlusMax - v.y;
                 vertices[i] = v;
             }
         }
@@ -881,6 +899,14 @@ namespace Unity.VectorGraphics
 
         static void SolveQuadratic(float a, float b, float c, out float s1, out float s2)
         {
+            if (Mathf.Abs(a) <= float.Epsilon)
+            {
+                // Linear equation
+                s1 = (Mathf.Abs(b) > float.Epsilon) ? -c / b : float.NaN;
+                s2 = float.NaN;
+                return;
+            }
+
             float det = b * b - 4.0f * a * c;
             if (det < 0.0f)
             {
@@ -888,11 +914,10 @@ namespace Unity.VectorGraphics
                 return;
             }
 
-            float detSqrt = Mathf.Sqrt(det);
-            s1 = (-b + detSqrt) / (2.0f * a);
-            if (Mathf.Abs(a) > float.Epsilon)
-                s2 = (-b - detSqrt) / (2.0f * a);
-            else s2 = float.NaN;
+            // Stable form: stays accurate when "a" is tiny compared to "b"
+            float q = -0.5f * (b + Mathf.Sign(b) * Mathf.Sqrt(det));
+            s1 = q / a;
+            s2 = (q != 0.0f) ? c / q : float.NaN;
         }
 
         /// <summary>Finds the intersection between two infinite lines</summary>
@@ -1074,7 +1099,7 @@ namespace Unity.VectorGraphics
                     {
                         foreach (var contour in shape.Contours)
                         {
-                            var bbox = Bounds(TransformBezierPath(contour.Segments, tnode.WorldTransform));
+                            var bbox = Bounds(TransformBezierPath(contour.Segments, tnode.WorldTransform), contour.Closed);
                             shapeMin = Vector2.Min(shapeMin, bbox.min);
                             shapeMax = Vector2.Max(shapeMax, bbox.max);
                         }

@@ -91,7 +91,7 @@ namespace UnityEditor.UIElements
                 var resolvedAsset = AssetDatabase.LoadAssetAtPath<VisualTreeAsset>(path);
                 if (resolvedAsset)
                 {
-                    vta.RegisterTemplate(templateName, resolvedAsset);
+                    vta.RegisterTemplate(templateName, path, resolvedAsset);
                 }
                 else
                 {

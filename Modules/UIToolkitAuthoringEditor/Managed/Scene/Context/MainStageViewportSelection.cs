@@ -21,7 +21,7 @@ static class MainStageViewportSelection
     /// </summary>
     public static IPanelComponent ResolveFromSelection()
     {
-        foreach (var selected in Selection.objects)
+        foreach (var selected in Selection.entityIds.ResolveObjects(EntityIdExtensions.MayBeGameObjectOrComponent))
         {
             var panelComponent = Resolve(selected);
             if (panelComponent.IsAlive())

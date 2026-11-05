@@ -44,7 +44,7 @@ namespace Unity.Collections.LowLevel.Unsafe
     ///finalizer is invoked when there aren't any references to the NativeContainer that owns it, and checks if the referenced data has been disposed correctly. If the data 
     ///hasn't been disposed of correctly, <c>DisposeSentinel</c> logs an error containing the information about when the initial allocation happened.
     ///
-    ///<c>DisposeSentinel</c> creates garbage for the garbage collector to pick up, and any memory leaks are reported upon domain shutdown or reload.
+    ///<c>DisposeSentinel</c> creates garbage for the garbage collector to pick up, and any memory leaks are reported on shutdown or code reload.
     ///
     ///You can only use the <c>DisposeSentinel</c> class when ENABLE_UNITY_COLLECTIONS_CHECKS is defined.</remarks>
     ///<seealso cref="Unity.Collections.LowLevel.Unsafe.NativeContainerAttribute" />

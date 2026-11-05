@@ -4,6 +4,7 @@
 
 using System;
 using System.Collections.Generic;
+using Unity.Scripting.LifecycleManagement;
 using UnityEngine;
 
 namespace UnityEditor.IMGUI.Controls
@@ -16,7 +17,8 @@ namespace UnityEditor.IMGUI.Controls
             List<Rect> m_RowRects;                           // If m_RowRects is null fixed row height is used
             Rect[] m_CellRects;                              // Allocated once and reused
             const float k_BackgroundWidth = 100000f;         // The TreeView can have a horizontal scrollbar so ensure to fill out the entire width of the background
-            public float borderWidth = 1f;
+
+            public float borderPaddingVertical => Styles.border.padding.vertical;
 
             public TreeViewControlGUI(TreeViewController<TIdentifier> treeView, TreeView<TIdentifier> owner)
                 : base(treeView)
@@ -366,13 +368,14 @@ namespace UnityEditor.IMGUI.Controls
             // Returns the rect available within the borders
             public Rect DoBorder(Rect rect)
             {
-                EditorGUI.DrawOutline(rect, borderWidth, EditorGUI.kSplitLineSkinnedColor.color);
+                if (Event.current.type == EventType.Repaint)
+                    Styles.border.Draw(rect, GUIContent.none, false, false, false, false);
                 return GetRectWithinBorders(rect);
             }
 
             public Rect GetRectWithinBorders(Rect rect)
             {
-                return new Rect(rect.x + borderWidth, rect.y + borderWidth, rect.width - 2 * borderWidth, rect.height - 2 * borderWidth);
+                return Styles.border.padding.Remove(rect);
             }
         }
     }

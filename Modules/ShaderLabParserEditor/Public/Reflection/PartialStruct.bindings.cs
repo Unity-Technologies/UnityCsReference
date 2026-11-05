@@ -14,32 +14,31 @@ namespace UnityEditor.ShaderApiReflection
     {
         // Public API
 
-        public ShaderScope Scope { get; internal set; }
         public ReadOnlyCollection<string> EnclosingNamespace => m_EnclosingNamespace.AsReadOnly();
         public string Name { get; internal set; }
-        public ReadOnlyCollection<StructField> AggregateFields => m_AggregateFields.AsReadOnly();
+        public ReadOnlyCollection<StructPart> Parts => m_Parts.AsReadOnly();
 
         // Private API
 
         internal List<string> m_EnclosingNamespace;
-        internal List<StructField> m_AggregateFields;
+        internal List<StructPart> m_Parts;
 
         [NativeHeader("Modules/ShaderLabParserEditor/Public/Reflection/PartialStruct.h")]
         [NativeClass("ShaderApiReflection::PartialStruct")]
         internal struct MarshalledType
         {
-            public ShaderScope m_Scope;
             public string[] m_EnclosingNamespace;
             public string m_Name;
-            public StructField[] m_AggregateFields;
+            public StructPart.MarshalledType[] m_Parts;
         }
 
         internal PartialStruct(MarshalledType nativeData)
         {
-            Scope = nativeData.m_Scope;
             m_EnclosingNamespace = new(nativeData.m_EnclosingNamespace);
             Name = nativeData.m_Name;
-            m_AggregateFields = new(nativeData.m_AggregateFields);
+            m_Parts = new(nativeData.m_Parts.Length);
+            foreach (var part in nativeData.m_Parts)
+                m_Parts.Add(new(part));
         }
     }
 }

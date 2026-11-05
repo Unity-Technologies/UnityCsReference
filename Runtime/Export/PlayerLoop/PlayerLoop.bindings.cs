@@ -114,7 +114,7 @@ namespace UnityEngine.PlayerLoop
         public struct PhysicsResetInterpolatedTransformPosition {}
         [RequiredByNativeCode]
         public struct SpriteAtlasManagerUpdate {}
-        [Obsolete("ARCoreUpdate has been deprecated. Use the com.unity.xr.arcore package for ARCore functionality.", false)]
+        [Obsolete("ARCoreUpdate has been deprecated. Use the com.unity.xr.arcore package for ARCore functionality.", true)]
         public struct ARCoreUpdate {}
         [RequiredByNativeCode]
         public struct PerformanceAnalyticsUpdate {}

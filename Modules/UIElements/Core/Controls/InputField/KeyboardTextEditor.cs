@@ -143,7 +143,15 @@ namespace UnityEngine.UIElements
             if (textElement.panel != panel || textElement.edition.isReadOnly)
                 return;
 
-            panel.OnCursorPositonChanged_internal(textElement.LocalToWorld(textElement.selection.cursorPosition));
+            // cursorPosition sits on the line's descender, so the caret's top edge is a line height above it.
+            var selection = textElement.selection;
+            var bottom = textElement.LocalToWorld(selection.cursorPosition);
+            var top = textElement.LocalToWorld(selection.cursorPosition - new Vector2(0f, selection.lineHeightAtCursorPosition));
+
+            // The rect is anchored on the bottom point, so xMin/yMax stay exactly the point published before even
+            // when a mirrored or rotated element puts the top edge below it and the height clamps to zero.
+            var height = Mathf.Max(0f, bottom.y - top.y);
+            panel.OnCaretRectChanged_internal(new Rect(bottom.x, bottom.y - height, 0f, height));
         }
 
         void OnIMEInput(IMEEvent e)

@@ -16,6 +16,10 @@ class SerializedManagedEnumBinding : SerializedObjectBindingToBaseField<Enum, Ba
     private int lastEnumValue;
     private Type managedType;
 
+    int m_PushedPropertyValue;
+    Enum m_PushedFieldValue;
+    bool m_HasPushedValue;
+
     public static void CreateBind(BaseField<Enum> field,  SerializedObjectBindingContext context,
         SerializedProperty property)
     {
@@ -141,6 +145,23 @@ class SerializedManagedEnumBinding : SerializedObjectBindingToBaseField<Enum, Ba
             c.value = newValue;
 
         lastEnumValue = enumValueAsInt;
+        RecordPushedValue(p, c);
+    }
+
+    // An EnumField clamps an invalid value to a member; that clamp is still written, so only EnumFlagsField records.
+    void RecordPushedValue(SerializedProperty p, BaseField<Enum> c)
+    {
+        m_HasPushedValue = c is EnumFlagsField && !p.hasMultipleDifferentValues;
+        m_PushedPropertyValue = m_HasPushedValue ? p.intValue : 0;
+        m_PushedFieldValue = m_HasPushedValue ? c.value : null;
+    }
+
+    // EnumFlagsField turns "all flags" into ~0; that ChangeEvent is not an edit.
+    bool FieldStillHoldsPushedValue()
+    {
+        return m_HasPushedValue
+            && m_PushedPropertyValue == boundProperty.intValue
+            && EqualsValue(field.value, m_PushedFieldValue);
     }
 
     protected override void UpdateLastFieldValue()
@@ -172,7 +193,7 @@ class SerializedManagedEnumBinding : SerializedObjectBindingToBaseField<Enum, Ba
 
     protected override bool SyncFieldValueToProperty()
     {
-        if (!boundProperty.hasMultipleDifferentValues && lastEnumValue == boundProperty.intValue)
+        if (!boundProperty.hasMultipleDifferentValues && (lastEnumValue == boundProperty.intValue || FieldStillHoldsPushedValue()))
             return false;
 
         // When the value is a negative we need to convert it or it will be clamped.
@@ -205,6 +226,8 @@ class SerializedManagedEnumBinding : SerializedObjectBindingToBaseField<Enum, Ba
 
         field = null;
         managedType = null;
+        m_HasPushedValue = false;
+        m_PushedFieldValue = null;
         isReleased = true;
 
         ResetCachedValues();

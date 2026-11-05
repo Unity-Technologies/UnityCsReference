@@ -31,7 +31,8 @@ namespace Unity.VectorGraphics
                 int i = m_Selectors.FindIndex(x => x.Key == key);
                 if (i != -1)
                     m_Selectors[i] = v;
-                m_Selectors.Add(v);
+                else
+                    m_Selectors.Add(v);
             }
         }
 
@@ -94,6 +95,12 @@ namespace Unity.VectorGraphics
             if (tokens.Count == 0)
                 return false;
 
+            if (PeekToken(tokens).StartsWith("@"))
+            {
+                SkipAtRule(tokens);
+                return true;
+            }
+
             var newSheet = new SVGStyleSheet();
             while (true)
             {
@@ -133,6 +140,29 @@ namespace Unity.VectorGraphics
             }
             
             return true;
+        }
+
+        // At-rules (@import, @media, @font-face...) are not supported
+        private static void SkipAtRule(List<string> tokens)
+        {
+            int depth = 0;
+            int parenDepth = 0;
+            while (tokens.Count > 0)
+            {
+                var token = PopToken(tokens);
+                if (token == "(")
+                    ++parenDepth;
+                else if (token == ")")
+                    parenDepth = Math.Max(0, parenDepth - 1);
+                else if (parenDepth > 0)
+                    continue; // Semicolons and braces inside url(...) or quoted values don't end the rule
+                else if (token == ";" && depth == 0)
+                    return;
+                else if (token == "{")
+                    ++depth;
+                else if (token == "}" && --depth <= 0)
+                    return;
+            }
         }
 
         private static void CombineProperties(SVGPropertySheet first, SVGPropertySheet second)

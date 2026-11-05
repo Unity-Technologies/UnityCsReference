@@ -120,8 +120,9 @@ namespace UnityEngine
             if (list.Count == 0)
                 return;
 
-            // Updating an element causes the version to be updated
-            list[0] = list[0];
+            // Reversing no elements only increments the version. Writing an element would also invalidate enumerators,
+            // but pays an array covariance check and a GC write barrier.
+            list.Reverse(0, 0);
         }
 
         // This is a helper class to allow the binding code to manipulate the internal fields of

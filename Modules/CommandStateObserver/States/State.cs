@@ -33,7 +33,7 @@ namespace Unity.CSO
             m_StateComponents = new List<IStateComponent>();
         }
 
-#pragma warning disable UA5000 // The Avoid Finalizer Analyzer produces compile errors for any new finalizers. This pre-existing finalizer declaration has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA5000 // Dispose(false) only sets a flag, but protected virtual Dispose(bool) may be overridden by out-of-repo friend assemblies.
         ~State()
         {
             Dispose(false);

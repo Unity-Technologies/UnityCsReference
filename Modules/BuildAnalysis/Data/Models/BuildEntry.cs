@@ -20,6 +20,7 @@ namespace UnityEditor.Build.Analysis
         public long TotalSizeBytes;
         public long TotalTimeMs;
         public string FolderPath = string.Empty;  // Library/BuildHistory/{guid}
+        public GUID ProjectGUID;                  // Empty in summaries written before it was recorded
 
         public bool Equals(BuildEntry other)
         {

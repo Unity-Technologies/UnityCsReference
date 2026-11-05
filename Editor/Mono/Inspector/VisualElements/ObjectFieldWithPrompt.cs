@@ -148,6 +148,14 @@ namespace UnityEditor.UIElements
             m_ShouldDisplayDialog = shouldDisplayDialog;
         }
 
+        Func<string> m_GetRemovalMessage;
+
+        // Overrides removalMessage with a message resolved when the dialog is shown
+        internal void SetRemovalMessageProvider(Func<string> getRemovalMessage)
+        {
+            m_GetRemovalMessage = getRemovalMessage;
+        }
+
         private bool ChangeObject(Object newValue)
         {
             if (value != newValue)
@@ -159,13 +167,9 @@ namespace UnityEditor.UIElements
 
                     // Use removal message if clearing the field, otherwise use the standard message
                     bool isRemoving = newValue == null && value != null;
+                    string currentRemovalMessage = m_GetRemovalMessage != null ? m_GetRemovalMessage() : removalMessage;
 
-                    if (isRemoving && !string.IsNullOrEmpty(removalMessage))
-                    {
-                        s_MessageBuilder.AppendLine(removalMessage);
-                    }
-
-                    s_MessageBuilder.AppendLine(message);
+                    s_MessageBuilder.AppendLine(isRemoving && !string.IsNullOrEmpty(currentRemovalMessage) ? currentRemovalMessage : message);
                     s_MessageBuilder.AppendLine();
                     s_MessageBuilder.AppendLine($"Current Value: {(value ? value.name : "None")}.");
                     s_MessageBuilder.AppendLine($"New Value: {(newValue ? newValue.name : "None")}.");

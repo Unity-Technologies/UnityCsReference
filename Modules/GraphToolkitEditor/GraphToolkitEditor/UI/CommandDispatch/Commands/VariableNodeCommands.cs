@@ -166,7 +166,7 @@ namespace Unity.GraphToolkit.Editor
                         graphModel.DeleteWire(wireModel);
                     }
 
-                    graphModel.DeleteNode(variableModel, deleteConnections: false);
+                    graphModel.DeleteNode(variableModel, deleteConnections: true);
                 }
 
                 graphUpdater.MarkUpdated(changeScope.ChangeDescription);

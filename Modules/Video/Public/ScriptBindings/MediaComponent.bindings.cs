@@ -48,6 +48,16 @@ namespace UnityEngineInternal.Video
     }
 
     [UsedByNativeCode]
+    [VisibleToOtherModules("UnityEditor.MediaModule")]
+    internal enum VideoChromaSubsampling
+    {
+        S420 = 0,
+        S422,
+        S440,
+        S444
+    }
+
+    [UsedByNativeCode]
     [NativeHeader("Modules/Video/Public/Base/MediaComponent.h")]
     internal class VideoPlayback
     {

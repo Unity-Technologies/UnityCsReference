@@ -88,7 +88,7 @@ namespace UnityEditor.Networking.PlayerConnection
             Rect connectRect = GUILayoutUtility.GetRect(size.x, size.y, style);
 
             if(connectRect.width > size.x)
-                Styles.dropdownButton.text = ConnectionUIHelper.GetToolbarContent(state.connectionName, style, (int)connectRect.width);
+                Styles.dropdownButton.text = ConnectionUIHelper.GetToolbarContent(state.connectionName, style, Mathf.CeilToInt(connectRect.width));
 
             PlayerConnectionGUI.ConnectionTargetSelectionDropdown(connectRect, state, style);
         }

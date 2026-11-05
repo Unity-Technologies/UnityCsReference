@@ -24,4 +24,11 @@ class SubgraphStateModelImp : SubgraphStateModel, ISubgraphState
 
         return (graphModel as StateMachineImp)?.Graph as StateMachine;
     }
+
+    protected override void OnDefineOptions(StateDefinitionScope scope)
+    {
+        base.OnDefineOptions(scope);
+
+        GetSubgraphAsStateMachine()?.CallOnDefineSubgraphStateOptions(scope);
+    }
 }

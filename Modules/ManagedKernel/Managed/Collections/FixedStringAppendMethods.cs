@@ -21,6 +21,9 @@ namespace Unity.Collections
         public static FormatError Append<T>(ref this T fs, Unicode.Rune rune)
             where T : unmanaged, INativeList<byte>, IUTF8Bytes
         {
+            if (!Unicode.IsValidCodePoint(rune.value))
+                return FormatError.Overflow;
+
             var len = fs.Length;
             var runeLen = rune.LengthInUtf8Bytes();
             if (!fs.TryResize(len + runeLen, NativeArrayOptions.UninitializedMemory))
@@ -31,6 +34,9 @@ namespace Unity.Collections
         /// <summary>
         /// Appends a char to this string.
         /// </summary>
+        /// <remarks>
+        /// If <paramref name="ch"/> is a low surrogate and the string ends in a high surrogate, the two are replaced by one 4-byte UTF-8 sequence.
+        /// </remarks>
         /// <typeparam name="T">The type of FixedString*N*Bytes.</typeparam>
         /// <param name="fs">A FixedString*N*Bytes.</param>
         /// <param name="ch">A char to append.</param>
@@ -39,6 +45,21 @@ namespace Unity.Collections
         public static FormatError Append<T>(ref this T fs, char ch)
             where T : unmanaged, INativeList<byte>, IUTF8Bytes
         {
+            var len = fs.Length;
+            if (Unicode.IsTrailingSurrogate(ch) && len >= 3)
+            {
+                var index = len - 3;
+                if (Unicode.Utf8ToUcs(out var last, fs.GetUnsafePtr(), ref index, len) == ConversionError.None
+                    && Unicode.IsLeadingSurrogate((char)last.value))
+                {
+                    var pair = new Unicode.Rune(0x10000 + ((last.value - 0xD800) << 10) + (ch - 0xDC00));
+                    if (!fs.TryResize(len + 1, NativeArrayOptions.UninitializedMemory))
+                        return FormatError.Overflow;
+                    index = len - 3;
+                    return fs.Write(ref index, pair);
+                }
+            }
+
             return fs.Append((Unicode.Rune) ch);
         }
 
@@ -75,6 +96,9 @@ namespace Unity.Collections
         public static FormatError Append<T>(ref this T fs, Unicode.Rune rune, int count)
             where T : unmanaged, INativeList<byte>, IUTF8Bytes
         {
+            if (!Unicode.IsValidCodePoint(rune.value))
+                return FormatError.Overflow;
+
             var origLength = fs.Length;
 
             if (!fs.TryResize(origLength + rune.LengthInUtf8Bytes() * count, NativeArrayOptions.UninitializedMemory))

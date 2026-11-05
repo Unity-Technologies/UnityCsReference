@@ -432,7 +432,8 @@ namespace Unity.Entities
         /// components), or false if it would not.</returns>
         public bool MatchesIgnoreFilter(Entity entity)
         {
-            return EntityComponentStore->Exists(entity) && EntityComponentStore->GetArchetype(entity)->CompareMask(this);
+            var archetype = EntityComponentStore->GetArchetypeInThisWorldOrNull(entity, out _);
+            return archetype != null && archetype->CompareMask(this);
         }
         /// <summary> Obsolete. Use <see cref="MatchesIgnoreFilter(Unity.Entities.Entity)"/> instead.</summary>
         /// <param name="entity">The entity to check.</param>
@@ -509,7 +510,7 @@ namespace Unity.Entities
             _SeqNo = seqno;
             fixed(EntityQueryImpl* self = &this)
             {
-                access->AliveEntityQueries.Add((ulong)(IntPtr)self, default);
+                access->AliveEntityQueries.Add((ulong)self, default);
             }
         }
 
@@ -640,7 +641,7 @@ namespace Unity.Entities
             {
                 if (_DisallowDisposing != 0)
                     throw new InvalidOperationException("EntityQuery cannot be disposed. Note that queries created with GetEntityQuery() should not be manually disposed; they are owned by the system, and will be destroyed along with the system itself.");
-                _Access->AliveEntityQueries.Remove((ulong)(IntPtr)self);
+                _Access->AliveEntityQueries.Remove((ulong)self);
 
                 if (_CachedState.IsAllocated)
                 {
@@ -1007,23 +1008,6 @@ namespace Unity.Entities
 
             return ChunkIterationUtility.CreateEntityArray(
                     _QueryData->MatchingArchetypes, allocator, entityType, outer, entityCount);
-        }
-
-        [GenerateTestsForBurstCompatibility(RequiredUnityDefine = "ENABLE_UNITY_COLLECTIONS_CHECKS", CompileTarget = GenerateTestsForBurstCompatibilityAttribute.BurstCompatibleCompileTarget.Editor)]
-        internal void GatherEntitiesToArray(out Internal.InternalGatherEntitiesResult result, EntityQuery outer)
-        {
-            result = default;
-            result.EntityArray = outer.ToEntityArray(Allocator.TempJob);
-            result.EntityBuffer = (Entity*)result.EntityArray.GetUnsafeReadOnlyPtr();
-            result.EntityCount = result.EntityArray.Length;
-        }
-
-        internal void ReleaseGatheredEntities(ref Internal.InternalGatherEntitiesResult result)
-        {
-            if (result.EntityArray.IsCreated)
-            {
-                result.EntityArray.Dispose();
-            }
         }
 
         [GenerateTestsForBurstCompatibility(GenericTypeArguments = new[] { typeof(BurstCompatibleComponentData) },
@@ -1925,8 +1909,6 @@ First chunk: entityCount={matchingChunkCache.ChunkIndices[0].Count}, archetype={
     /// * To schedule an <see cref="IJobChunk"/> job
     /// * To control whether a system updates using [ComponentSystemBase.RequireForUpdate(query)]
     ///
-    /// [Entities.ForEach]: xref:Unity.Entities.SystemBase.Entities
-    /// [Entities.WithStoreEntityQueryInField]: xref:Unity.Entities.SystemBase.Entities
     /// [ComponentSystemBase.GetEntityQuery()]: xref:Unity.Entities.ComponentSystemBase.GetEntityQuery*
     /// [ComponentType.ReadOnly]: xref:Unity.Entities.ComponentType.ReadOnly``1
     /// [ComponentSystemBase.RequireForUpdate()]: xref:Unity.Entities.ComponentSystemBase.RequireForUpdate(Unity.Entities.EntityQuery)
@@ -2396,9 +2378,6 @@ First chunk: entityCount={matchingChunkCache.ChunkIndices[0].Count}, archetype={
         /// <param name="allocator">The type of memory to allocate.</param>
         /// <returns>An array containing all the entities selected by the EntityQuery.</returns>
         public NativeArray<Entity> ToEntityArray(AllocatorManager.AllocatorHandle allocator) => _GetImpl()->ToEntityArray(allocator, this);
-
-        internal void GatherEntitiesToArray(out Internal.InternalGatherEntitiesResult result) => _GetImpl()->GatherEntitiesToArray(out result, this);
-        internal void ReleaseGatheredEntities(ref Internal.InternalGatherEntitiesResult result) => _GetImpl()->ReleaseGatheredEntities(ref result);
 
         /// <summary>
         /// Obsolete. Use <see cref="ToComponentDataListAsync"/> instead.

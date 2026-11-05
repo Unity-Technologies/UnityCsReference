@@ -538,6 +538,8 @@ namespace UnityEditor.Build
                 Platform = buildInfo.Platform,
                 PlatformName = buildInfo.Platform.ToString(),
                 ProducerPackage = buildInfo.ProducerPackage ?? string.Empty,
+                ProjectGUID = BuildReport.GetCurrentProjectGUID(),
+                ProjectName = PlayerSettings.productName,
                 SubtargetName = string.Empty,
                 TotalErrors = buildInfo.TotalErrors,
                 TotalSizeBytes = buildInfo.TotalSizeBytes,

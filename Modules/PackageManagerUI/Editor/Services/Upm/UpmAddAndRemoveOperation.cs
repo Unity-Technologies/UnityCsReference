@@ -164,7 +164,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         protected new void Start()
         {
             m_DryRun ??= new UpmAddAndRemoveDryRun();
-            m_DryRun.ResolveDependencies(m_ClientProxy, m_Application);
+            m_DryRun.ResolveDependencies(m_ClientProxy, m_Application, m_DateTimeProxy);
             m_DryRun.onProcessResult += request =>
             {
                 if (m_ShouldProceedAfterDryRun?.Invoke(request.Result) == true)

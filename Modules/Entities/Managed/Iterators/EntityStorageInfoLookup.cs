@@ -99,7 +99,7 @@ namespace Unity.Entities
         public bool Exists(Entity entity)
         {
             AtomicSafetyHandle.CheckReadAndThrow(m_Safety);
-            return m_EntityDataAccess->EntityComponentStore->Exists(entity);
+            return m_EntityDataAccess->EntityComponentStore->ExistsInThisWorld(entity);
         }
 
         /// <summary>
@@ -113,6 +113,7 @@ namespace Unity.Entities
             {
                 AtomicSafetyHandle.CheckReadAndThrow(m_Safety);
                 m_EntityDataAccess->EntityComponentStore->AssertEntitiesExist(&entity, 1);
+                m_EntityDataAccess->EntityComponentStore->AssertEntityBelongsToThisWorld(entity);
 
                 var entityInChunk = m_EntityDataAccess->EntityComponentStore->GetEntityInChunk(entity);
 

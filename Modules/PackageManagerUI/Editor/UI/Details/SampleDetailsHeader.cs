@@ -41,6 +41,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             Add(root);
             cache = new VisualElementCache(root);
             InitializeActionButtons();
+            helpBoxContainer.Add(new SignatureValidationDisabledHelpBox(m_Application));
         }
 
         private void InitializeActionButtons()
@@ -70,6 +71,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             RefreshDisplayName();
             RefreshReleaseDate();
             RefreshActionButtons();
+            RefreshHelpBoxes();
         }
 
         private void RefreshDisplayName()
@@ -93,10 +95,17 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_GoToPackageButton.Refresh(m_Sample);
         }
 
+        private void RefreshHelpBoxes()
+        {
+            foreach (var helpBox in helpBoxContainer.Children().FilterByType<PackageBaseHelpBox>())
+                helpBox.Refresh(m_ParentVersion);
+        }
+
         private VisualElementCache cache { get; }
         private SelectableLabel sampleDisplayName => cache.Get<SelectableLabel>("sampleDisplayName");
         private SelectableLabel detailVersion => cache.Get<SelectableLabel>("detailVersion");
         private PackageAuthorLabel packageAuthorLabel => cache.Get<PackageAuthorLabel>("packageAuthorLabel");
         private VisualElement actionButtonsContainer => cache.Get<VisualElement>("actionButtonsContainer");
+        private VisualElement helpBoxContainer => cache.Get<VisualElement>("helpBoxContainer");
     }
 }

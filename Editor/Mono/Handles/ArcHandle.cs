@@ -2,7 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-using System.Collections.Generic;
 using Unity.Scripting.LifecycleManagement;
 using UnityEditor.Snap;
 using UnityEngine;
@@ -16,14 +15,10 @@ namespace UnityEditor.IMGUI.Controls
 
         static readonly float s_DefaultRadiusHandleSize = 0.03f;
 
-        [NoAutoStaticsCleanup] // finalizer prunes stale entries by hash code; no user-assembly refs
-        static readonly Dictionary<int, Quaternion> s_MostRecentValidAngleHandleOrientations =
-            new Dictionary<int, Quaternion>();
-
-        [NoAutoStaticsCleanup] // transient draw-call state; reset to 0 at end of each draw
-        // only used inside of DefaultAngleHandleDrawFunction to look up and store the most recent valid orientation per handle
+        [NoAutoStaticsCleanup] // transient draw-call state; copied from and back to the drawing handle's instance field around each draw
+        // only used inside of DefaultAngleHandleDrawFunction to look up and store the most recent valid orientation of the handle being drawn
         // done so that DefaultAngleHandleDrawFunction can be a static method, which makes angleHandleDrawFunction more usable by sub-classes
-        static int s_CurrentlyDrawingAngleHandleHash;
+        static Quaternion s_CurrentlyDrawingMostRecentValidAngleHandleOrientation = Quaternion.identity;
 
         public static void DefaultAngleHandleDrawFunction(
             int controlID, Vector3 position, Quaternion rotation, float size, EventType eventType
@@ -35,17 +30,13 @@ namespace UnityEditor.IMGUI.Controls
             Vector3 worldPosition = Handles.matrix.MultiplyPoint3x4(position);
             Vector3 normal = worldPosition - Handles.matrix.MultiplyPoint3x4(Vector3.zero);
             Vector3 tangent = Handles.matrix.MultiplyVector(Quaternion.AngleAxis(90f, Vector3.up) * position);
-            Quaternion mostRecentValidOrientation;
-            if (!s_MostRecentValidAngleHandleOrientations.TryGetValue(s_CurrentlyDrawingAngleHandleHash, out mostRecentValidOrientation))
-                mostRecentValidOrientation = Quaternion.identity;
             rotation = Mathf.Approximately(tangent.sqrMagnitude, 0f) ?
-                mostRecentValidOrientation : Quaternion.LookRotation(tangent, normal);
-            s_MostRecentValidAngleHandleOrientations[s_CurrentlyDrawingAngleHandleHash] = rotation;
+                s_CurrentlyDrawingMostRecentValidAngleHandleOrientation : Quaternion.LookRotation(tangent, normal);
+            s_CurrentlyDrawingMostRecentValidAngleHandleOrientation = rotation;
             Matrix4x4 matrix =
                 Matrix4x4.TRS(worldPosition, rotation, (Vector3.one + Vector3.forward * s_DefaultAngleHandleSizeRatio));
             using (new Handles.DrawingScope(matrix))
                 Handles.CylinderHandleCap(controlID, Vector3.zero, Quaternion.identity, size, eventType);
-            s_CurrentlyDrawingAngleHandleHash = 0;
         }
 
         public static float DefaultAngleHandleSizeFunction(Vector3 position)
@@ -61,6 +52,7 @@ namespace UnityEditor.IMGUI.Controls
         private bool m_ControlIDsReserved = false;
         private int m_AngleHandleControlID;
         private int[] m_RadiusHandleControlIDs = new int[4];
+        private Quaternion m_MostRecentValidAngleHandleOrientation = Quaternion.identity;
 
         public float angle { get; set; }
 
@@ -91,13 +83,6 @@ namespace UnityEditor.IMGUI.Controls
             radiusHandleDrawFunction = Handles.DotHandleCap;
             radiusHandleSizeFunction = DefaultRadiusHandleSizeFunction;
         }
-
-#pragma warning disable UA5000 // The Avoid Finalizer Analyzer produces compile errors for any new finalizers. This pre-existing finalizer declaration has been suppressed, but should be rewritten if possible.
-        ~ArcHandle()
-        {
-            s_MostRecentValidAngleHandleOrientations.Remove(GetHashCode());
-        }
-#pragma warning restore UA5000
 
         public void SetColorWithoutRadiusHandle(Color color, float fillColorAlpha)
         {
@@ -211,17 +196,26 @@ namespace UnityEditor.IMGUI.Controls
                     EditorGUI.BeginChangeCheck();
                     {
                         var size = angleHandleSizeFunction == null ? 0f : angleHandleSizeFunction(angleHandlePosition);
-                        s_CurrentlyDrawingAngleHandleHash = GetHashCode();
-                        angleHandlePosition = Handles.Slider2D(
-                            m_AngleHandleControlID,
-                            angleHandlePosition,
-                            Vector3.up,
-                            Vector3.forward,
-                            Vector3.right,
-                            size,
-                            angleHandleDrawFunction,
-                            Vector2.zero
-                        );
+                        var previousOrientation = s_CurrentlyDrawingMostRecentValidAngleHandleOrientation;
+                        s_CurrentlyDrawingMostRecentValidAngleHandleOrientation = m_MostRecentValidAngleHandleOrientation;
+                        try
+                        {
+                            angleHandlePosition = Handles.Slider2D(
+                                m_AngleHandleControlID,
+                                angleHandlePosition,
+                                Vector3.up,
+                                Vector3.forward,
+                                Vector3.right,
+                                size,
+                                angleHandleDrawFunction,
+                                Vector2.zero
+                            );
+                            m_MostRecentValidAngleHandleOrientation = s_CurrentlyDrawingMostRecentValidAngleHandleOrientation;
+                        }
+                        finally
+                        {
+                            s_CurrentlyDrawingMostRecentValidAngleHandleOrientation = previousOrientation;
+                        }
                     }
                     if (EditorGUI.EndChangeCheck())
                     {

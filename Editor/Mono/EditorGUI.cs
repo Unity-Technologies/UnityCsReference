@@ -124,6 +124,8 @@ namespace UnityEditor
         private static readonly int s_SliderHash = "EditorSlider".GetHashCode();
         private static readonly int s_SliderKnobHash = "EditorSliderKnob".GetHashCode();
         private static readonly int s_MinMaxSliderHash = "EditorMinMaxSlider".GetHashCode();
+        private static readonly int s_MinMaxSliderThumbMinHash = "EditorMinMaxThumbMinSlider".GetHashCode();
+        private static readonly int s_MinMaxSliderThumbMaxHash = "EditorMinMaxThumbMaxSlider".GetHashCode();
         private static readonly int s_TitlebarHash = "GenericTitlebar".GetHashCode();
         private static readonly int s_ProgressBarHash = "s_ProgressBarHash".GetHashCode();
         private static readonly int s_SelectableLabelHash = "s_SelectableLabel".GetHashCode();
@@ -154,13 +156,14 @@ namespace UnityEditor
         private static readonly GUIContent s_LargerChar = EditorGUIUtility.TextContent("W");
         // kMiniLabelW is used for all the PrefixLabelWidths irrsepective of the character,to fix the case 1297283
         internal static float kMiniLabelW => EditorGUI.CalcPrefixLabelWidth(s_LargerChar);
-        internal const float kPrefixPaddingRight = 2;
+        internal const float kCompositeLabelMinW = 9f;
+        internal const float kPrefixPaddingRight = 2f;
         internal const float kLabelW = 80;
         internal const float kSpacing = 5;
         internal const float kSpacingSubLabel = 4;
         internal const float kSliderMinW = 50;
         internal const float kSliderMaxW = 100;
-        internal const float kSingleLineHeight = 20f;
+        internal const float kSingleLineHeight = 18f;
         internal const float kSingleSmallLineHeight = 16f;
         internal const float kStructHeaderLineHeight = 18;
         internal const float kObjectFieldThumbnailHeight = 64;
@@ -178,7 +181,7 @@ namespace UnityEditor
         internal static string kIntFieldFormatString = UINumericFieldsUtils.k_IntFieldFormatString;
         [NoAutoStaticsCleanup] // transient indent level; value type
         internal static int ms_IndentLevel = 0;
-        internal const float kIndentPerLevel = 15;
+        internal const float kIndentPerLevel = 18;
         internal const int kControlVerticalSpacingLegacy = 2;
         internal const int kDefaultSpacing = 6;
         [VisibleToOtherModules("UnityEditor.AIModule")]
@@ -234,9 +237,9 @@ namespace UnityEditor
         [NoAutoStaticsCleanup] // transient control id; value type
         private static int s_CurveID;
         [NoAutoStaticsCleanup] // themed style constant (SVC), immutable, safe to persist
-        internal static readonly SVC<Color> kCurveColor = new SVC<Color>("--curve_field-curve-color", new Color(20f / 255f, 211f / 255f, 104f / 255f, 1f));
+        internal static readonly SVC<Color> kCurveColor = new SVC<Color>("--foreground-control-green", new Color(20f / 255f, 211f / 255f, 104f / 255f, 1f));
         [NoAutoStaticsCleanup] // themed style constant (SVC), immutable, safe to persist
-        internal static readonly SVC<Color> kCurveBGColor = new SVC<Color>("--curve_field-background-color", new Color(80f / 255f, 80f / 255f, 80f / 255f, 1f));
+        internal static readonly SVC<Color> kCurveBGColor = new SVC<Color>("--background-control-base", new Color(80f / 255f, 80f / 255f, 80f / 255f, 1f));
         [NoAutoStaticsCleanup] // immutable skinned color constant, safe to persist
         internal static readonly EditorGUIUtility.SkinnedColor kSplitLineSkinnedColor = new EditorGUIUtility.SkinnedColor(new Color(0.6f, 0.6f, 0.6f, 1.333f), new Color(0.12f, 0.12f, 0.12f, 1.333f));
 
@@ -298,6 +301,18 @@ namespace UnityEditor
 
         internal static readonly Regex s_ATagRegex = new Regex(@"(?<=\b="")[^""]*");
         internal static readonly Regex s_LinkTagRegex = new Regex(@"(?<=\b=')[^']*");
+        [NoAutoStaticsCleanup] // transient composite styling flag; false default is correct after reload
+        internal static bool useCompositeStyling { get; set; }
+
+        internal static GUIStyle defaultNumberFieldStyle => useCompositeStyling ? EditorStyles.compositeNumberField : EditorStyles.numberField;
+        internal static GUIStyle defaultLabelStyle => useCompositeStyling ? EditorStyles.compositeLabel : EditorStyles.label;
+
+        internal readonly struct CompositeStylingScope : System.IDisposable
+        {
+            readonly bool m_Previous;
+            internal CompositeStylingScope(bool enabled = true) { m_Previous = useCompositeStyling; useCompositeStyling = enabled; }
+            public void Dispose() => useCompositeStyling = m_Previous;
+        }
 
         static class Styles
         {
@@ -715,6 +730,7 @@ namespace UnityEditor
                 }
 
                 controlID = 0;
+                SelectNone();
                 s_ActuallyEditing = false;
                 s_EditingWasCompleted = false;
                 s_AllowContextCutOrPaste = true;
@@ -2439,12 +2455,40 @@ namespace UnityEditor
             return MathUtils.ClampToFloat(v.doubleVal);
         }
 
+        internal static void BeginCompositeContainerGroup(Rect position, int id)
+        {
+            if (useCompositeStyling)
+            {
+                var evt = Event.current;
+                var hovered = position.Contains(evt.mousePosition) && GUI.enabled;
+                var hasFocus = GUIUtility.HasKeyFocus(id);
+                var groupStyle = hasFocus ? EditorStyles.compositeContainerFocused : hovered ? EditorStyles.compositeContainerHovered : EditorStyles.compositeContainer;
+
+                GUI.BeginGroup(position, groupStyle);
+            }
+        }
+
+        internal static void EndCompositeContainerGroup()
+        {
+            if (useCompositeStyling)
+            {
+                GUI.EndGroup();
+            }
+        }
+
         internal static void FloatFieldInternal(Rect position, GUIContent label, ref NumberFieldValue value, GUIStyle style)
         {
             int id = GUIUtility.GetControlID(s_FloatFieldHash, FocusType.Keyboard, position);
-            Rect position2 = PrefixLabel(position, id, label);
-            position.xMax = position2.x;
-            DoNumberField(s_RecycledEditor, position2, position, id, ref value, kFloatFieldFormatString, style, true);
+
+            BeginCompositeContainerGroup(position, id);
+
+            var prefixLabelRect = useCompositeStyling ? new Rect(0, 0, position.width, position.height) : position;
+            var fieldPosition = PrefixLabel(prefixLabelRect, id, label);
+            prefixLabelRect.xMax = fieldPosition.x;
+
+            DoNumberField(s_RecycledEditor, fieldPosition, prefixLabelRect, id, ref value, kFloatFieldFormatString, style, true);
+
+            EndCompositeContainerGroup();
         }
 
         internal static double DoubleFieldInternal(Rect position, double value, GUIStyle style)
@@ -3253,9 +3297,19 @@ namespace UnityEditor
         internal static int IntFieldInternal(Rect position, GUIContent label, int value, GUIStyle style)
         {
             int id = GUIUtility.GetControlID(s_FloatFieldHash, FocusType.Keyboard, position);
-            Rect position2 = PrefixLabel(position, id, label);
-            position.xMax = position2.x;
-            return DoIntField(s_RecycledEditor, position2, position, id, value, kIntFieldFormatString, style, true, NumericFieldDraggerUtility.CalculateIntDragSensitivity(value));
+
+            BeginCompositeContainerGroup(position, id);
+
+            var prefixLabelRect = useCompositeStyling ? new Rect(0, 0, position.width, position.height) : position;
+            var fieldPosition = PrefixLabel(prefixLabelRect, id, label);
+            prefixLabelRect.xMax = fieldPosition.x;
+
+            var fieldValue = DoIntField(s_RecycledEditor, fieldPosition, prefixLabelRect, id, value, kIntFieldFormatString,
+                style, true, NumericFieldDraggerUtility.CalculateIntDragSensitivity(value));
+
+            EndCompositeContainerGroup();
+
+            return fieldValue;
         }
 
         internal static long LongFieldInternal(Rect position, long value, GUIStyle style)
@@ -3275,10 +3329,16 @@ namespace UnityEditor
         static void LongFieldInternal(Rect position, GUIContent label, ref NumberFieldValue value, GUIStyle style)
         {
             int id = GUIUtility.GetControlID(s_FloatFieldHash, FocusType.Keyboard, position);
-            Rect position2 = PrefixLabel(position, id, label);
-            position.xMax = position2.x;
+
+            BeginCompositeContainerGroup(position, id);
+
+            var prefixLabelRect = useCompositeStyling ? new Rect(0, 0, position.width, position.height) : position;
+            var fieldPosition = PrefixLabel(prefixLabelRect, id, label);
+            prefixLabelRect.xMax = fieldPosition.x;
             var dragSensitivity = NumericFieldDraggerUtility.CalculateIntDragSensitivity(value.longVal);
-            DoNumberField(s_RecycledEditor, position2, position, id, ref value, kIntFieldFormatString, style, true, dragSensitivity);
+            DoNumberField(s_RecycledEditor, fieldPosition, prefixLabelRect, id, ref value, kIntFieldFormatString, style, true, dragSensitivity);
+
+            EndCompositeContainerGroup();
         }
 
         public static float Slider(Rect position, float value, float leftValue, float rightValue)
@@ -4120,20 +4180,25 @@ namespace UnityEditor
         public static void MinMaxSlider(Rect position, GUIContent label, ref float minValue, ref float maxValue, float minLimit, float maxLimit)
         {
             int id = GUIUtility.GetControlID(s_MinMaxSliderHash, FocusType.Passive);
-            DoMinMaxSlider(PrefixLabel(position, id, label), id, ref minValue, ref maxValue, minLimit, maxLimit);
+            int minId = GUIUtility.GetControlID(s_MinMaxSliderThumbMinHash, FocusType.Passive);
+            int maxId = GUIUtility.GetControlID(s_MinMaxSliderThumbMaxHash, FocusType.Passive);
+            DoMinMaxSlider(PrefixLabel(position, id, label), id, minId, maxId, ref minValue, ref maxValue, minLimit, maxLimit);
         }
 
         // Make a special slider the user can use to specify a range between a min and a max.
         public static void MinMaxSlider(Rect position, ref float minValue, ref float maxValue, float minLimit, float maxLimit)
         {
-            DoMinMaxSlider(IndentedRect(position), GUIUtility.GetControlID(s_MinMaxSliderHash, FocusType.Passive), ref minValue, ref maxValue, minLimit, maxLimit);
+            DoMinMaxSlider(IndentedRect(position), GUIUtility.GetControlID(s_MinMaxSliderHash, FocusType.Passive),
+                GUIUtility.GetControlID(s_MinMaxSliderThumbMinHash, FocusType.Passive),
+                GUIUtility.GetControlID(s_MinMaxSliderThumbMaxHash, FocusType.Passive), ref minValue, ref maxValue, minLimit, maxLimit);
         }
 
-        private static void DoMinMaxSlider(Rect position, int id, ref float minValue, ref float maxValue, float minLimit, float maxLimit)
+        private static void DoMinMaxSlider(Rect position, int id, int minId, int maxId, ref float minValue, ref float maxValue, float minLimit, float maxLimit)
         {
             float size = maxValue - minValue;
             BeginChangeCheck();
-            EditorGUIExt.DoMinMaxSlider(position, id, ref minValue, ref size, minLimit, maxLimit, minLimit, maxLimit, GUI.skin.horizontalSlider, EditorStyles.minMaxHorizontalSliderThumb, true);
+            EditorGUIExt.DoMinMaxSlider(position, id, minId, maxId, ref minValue, ref size, minLimit, maxLimit, minLimit, maxLimit, GUI.skin.horizontalSlider,
+                EditorStyles.minMaxHorizontalSliderThumb, EditorStyles.minMaxHorizontalSliderThumbMin, EditorStyles.minMaxHorizontalSliderThumbMax, true);
             if (EndChangeCheck())
             {
                 maxValue = minValue + size;
@@ -4546,6 +4611,11 @@ namespace UnityEditor
             return tag;
         }
 
+        internal static GUIContent GetTagContent(string tag)
+        {
+            return showMixedValue ? s_MixedValueContent : EditorGUIUtility.TempContent(tag);
+        }
+
         // Make a tag selection field.
         internal static string TagFieldInternal(Rect position, GUIContent label, string tag, GUIStyle style)
         {
@@ -4591,6 +4661,11 @@ namespace UnityEditor
             }
 
             return tag;
+        }
+
+        internal static GUIContent GetLayerContent(int layer)
+        {
+            return showMixedValue ? s_MixedValueContent : EditorGUIUtility.TempContent(InternalEditorUtility.GetLayerName(layer));
         }
 
         // Make a layer selection field.
@@ -5196,7 +5271,11 @@ namespace UnityEditor
                 EditorGUIUtility.s_LastControlID = lastId;
             }
 
+            var previousCompositeStyling = useCompositeStyling;
+            useCompositeStyling = true;
+
             var newValue = LinkedVector3Field(position, value, proportionalScale, mixedValues, initialScale, ref axisModified, copiedProperty);
+            useCompositeStyling = previousCompositeStyling;
 
             return newValue;
         }
@@ -5230,23 +5309,33 @@ namespace UnityEditor
         // Make an X, Y field - not public (use PropertyField instead)
         private static void Vector2Field(Rect position, SerializedProperty property, GUIContent label)
         {
+            var previousCompositeStyling = useCompositeStyling;
+            useCompositeStyling = true;
+
             int id = GUIUtility.GetControlID(s_FoldoutHash, FocusType.Keyboard, position);
             position = MultiFieldPrefixLabel(position, id, label, 2);
             position.height = kSingleLineHeight;
             SerializedProperty cur = property.Copy();
             cur.Next(true);
+
             MultiPropertyFieldInternal(position, s_XYLabels, cur, PropertyVisibility.All);
+            useCompositeStyling = previousCompositeStyling;
         }
 
         // Make an X, Y and Z field - not public (use PropertyField instead)
         private static void Vector3Field(Rect position, SerializedProperty property, GUIContent label)
         {
+            var previousCompositeStyling = useCompositeStyling;
+            useCompositeStyling = true;
+
             int id = GUIUtility.GetControlID(s_FoldoutHash, FocusType.Keyboard, position);
             position = MultiFieldPrefixLabel(position, id, label, 3);
             position.height = kSingleLineHeight;
             SerializedProperty cur = property.Copy();
             cur.Next(true);
+
             MultiPropertyFieldInternal(position, s_XYZLabels, cur, PropertyVisibility.All);
+            useCompositeStyling = previousCompositeStyling;
         }
 
         // Make an X, Y and Z field for Quaternions - not public (use PropertyField instead)
@@ -5352,12 +5441,17 @@ namespace UnityEditor
         // Make an X, Y int field - not public (use PropertyField instead)
         private static void Vector2IntField(Rect position, SerializedProperty property, GUIContent label)
         {
+            var previousCompositeStyling = useCompositeStyling;
+            useCompositeStyling = true;
+
             int id = GUIUtility.GetControlID(s_FoldoutHash, FocusType.Keyboard, position);
             position = MultiFieldPrefixLabel(position, id, label, 2);
             position.height = kSingleLineHeight;
             SerializedProperty cur = property.Copy();
             cur.Next(true);
+
             MultiPropertyFieldInternal(position, s_XYLabels, cur, PropertyVisibility.All);
+            useCompositeStyling = previousCompositeStyling;
         }
 
         // Make an X, Y and Z int field for entering a [[Vector3Int]].
@@ -5396,12 +5490,17 @@ namespace UnityEditor
         // Make an X, Y and Z int field - not public (use PropertyField instead)
         private static void Vector3IntField(Rect position, SerializedProperty property, GUIContent label)
         {
+            var previousCompositeStyling = useCompositeStyling;
+            useCompositeStyling = true;
+
             int id = GUIUtility.GetControlID(s_FoldoutHash, FocusType.Keyboard, position);
             position = MultiFieldPrefixLabel(position, id, label, 3);
             position.height = kSingleLineHeight;
             SerializedProperty cur = property.Copy();
             cur.Next(true);
+
             MultiPropertyFieldInternal(position, s_XYZLabels, cur, PropertyVisibility.All);
+            useCompositeStyling = previousCompositeStyling;
         }
 
         public static Rect RectField(Rect position, Rect value)
@@ -5419,7 +5518,7 @@ namespace UnityEditor
             var oldAlignment = EditorStyles.label.alignment;
             EditorStyles.label.alignment = TextAnchor.MiddleLeft;
 
-            MultiFloatFieldInternal(position, s_XYLabels, s_Vector2Floats, kMiniLabelW);
+            MultiFloatFieldInternal(position, s_XYLabels, s_Vector2Floats);
             if (EndChangeCheck())
             {
                 value.x = s_Vector2Floats[0];
@@ -5429,7 +5528,7 @@ namespace UnityEditor
             s_Vector2Floats[0] = value.width;
             s_Vector2Floats[1] = value.height;
             BeginChangeCheck();
-            MultiFloatFieldInternal(position, s_WHLabels, s_Vector2Floats, kMiniLabelW);
+            MultiFloatFieldInternal(position, s_WHLabels, s_Vector2Floats);
             if (EndChangeCheck())
             {
                 value.width = s_Vector2Floats[0];
@@ -5455,6 +5554,9 @@ namespace UnityEditor
         // Make an X, Y, W & H for Rect using SerializedProperty (not public)
         private static void RectField(Rect position, SerializedProperty property, GUIContent label)
         {
+            var previousCompositeStyling = useCompositeStyling;
+            useCompositeStyling = true;
+
             int id = GUIUtility.GetControlID(s_FoldoutHash, FocusType.Keyboard, position);
             position = MultiFieldPrefixLabel(position, id, label, 2);
             position.height = kSingleLineHeight;
@@ -5465,11 +5567,12 @@ namespace UnityEditor
             // Right align the text
             var oldAlignment = EditorStyles.label.alignment;
             EditorStyles.label.alignment = TextAnchor.MiddleLeft;
-            MultiPropertyFieldInternal(position, s_XYLabels, cur, PropertyVisibility.All, null, kMiniLabelW);
+            MultiPropertyFieldInternal(position, s_XYLabels, cur, PropertyVisibility.All);
             position.y += kSingleLineHeight + kVerticalSpacingMultiField;
 
-            MultiPropertyFieldInternal(position, s_WHLabels, cur, PropertyVisibility.All, null, kMiniLabelW);
+            MultiPropertyFieldInternal(position, s_WHLabels, cur, PropertyVisibility.All);
             EditorStyles.label.alignment = oldAlignment;
+            useCompositeStyling = previousCompositeStyling;
         }
 
         public static RectInt RectIntField(Rect position, RectInt value)
@@ -5514,16 +5617,21 @@ namespace UnityEditor
         // Make an X, Y, W & H for RectInt using SerializedProperty (not public)
         private static void RectIntField(Rect position, SerializedProperty property, GUIContent label)
         {
+            var previousCompositeStyling = useCompositeStyling;
+            useCompositeStyling = true;
+
             int id = GUIUtility.GetControlID(s_FoldoutHash, FocusType.Keyboard, position);
             position = MultiFieldPrefixLabel(position, id, label, 2);
             position.height = kSingleLineHeight;
 
             SerializedProperty cur = property.Copy();
             cur.Next(true);
-            MultiPropertyFieldInternal(position, s_XYLabels, cur, PropertyVisibility.All, null, kMiniLabelW);
+
+            MultiPropertyFieldInternal(position, s_XYLabels, cur, PropertyVisibility.All);
             position.y += kSingleLineHeight + kVerticalSpacingMultiField;
 
-            MultiPropertyFieldInternal(position, s_WHLabels, cur, PropertyVisibility.All, null, kMiniLabelW);
+            MultiPropertyFieldInternal(position, s_WHLabels, cur, PropertyVisibility.All);
+            useCompositeStyling = previousCompositeStyling;
         }
 
         private static Rect DrawBoundsFieldLabelsAndAdjustPositionForValues(Rect position, bool drawOutside, GUIContent firstContent, GUIContent secondContent)
@@ -5595,10 +5703,14 @@ namespace UnityEditor
             SerializedProperty cur = property.Copy();
             cur.Next(true);
             cur.Next(true);
-            MultiPropertyFieldInternal(position, s_XYZLabels, cur, PropertyVisibility.All, null, kMiniLabelW);
+
+            var previousCompositeStyling = useCompositeStyling;
+            useCompositeStyling = true;
+            MultiPropertyFieldInternal(position, s_XYZLabels, cur, PropertyVisibility.All);
             cur.Next(true);
             position.y += kSingleLineHeight + kVerticalSpacingMultiField;
-            MultiPropertyFieldInternal(position, s_XYZLabels, cur, PropertyVisibility.All, null, kMiniLabelW);
+            MultiPropertyFieldInternal(position, s_XYZLabels, cur, PropertyVisibility.All);
+            useCompositeStyling = previousCompositeStyling;
         }
 
         public static BoundsInt BoundsIntField(Rect position, BoundsInt value)
@@ -5652,10 +5764,14 @@ namespace UnityEditor
             SerializedProperty cur = property.Copy();
             cur.Next(true);
             cur.Next(true);
+
+            var previousCompositeStyling = useCompositeStyling;
+            useCompositeStyling = true;
             MultiPropertyFieldInternal(position, s_XYZLabels, cur, PropertyVisibility.All);
             cur.Next(true);
             position.y += kSingleLineHeight + kVerticalSpacingMultiField;
             MultiPropertyFieldInternal(position, s_XYZLabels, cur, PropertyVisibility.All);
+            useCompositeStyling = previousCompositeStyling;
         }
 
         public static void MultiFloatField(Rect position, GUIContent label, GUIContent[] subLabels, float[] values)
@@ -5674,14 +5790,19 @@ namespace UnityEditor
         internal static float GetLabelWidth(GUIContent Label, float prefixLabelWidth = -1)
         {
             float LabelWidth = EditorGUI.CalcPrefixLabelWidth(Label);
-            if (LabelWidth > kMiniLabelW)
+            var minLabelWidth = useCompositeStyling ? kCompositeLabelMinW : kMiniLabelW;
+
+            if (LabelWidth > minLabelWidth)
                 return prefixLabelWidth > 0 ? prefixLabelWidth : LabelWidth;
             else
-                return prefixLabelWidth > 0 ? prefixLabelWidth : kMiniLabelW;
+                return prefixLabelWidth > 0 ? prefixLabelWidth : minLabelWidth;
         }
 
         internal static void MultiFloatFieldInternal(Rect position, GUIContent[] subLabels, float[] values, float prefixLabelWidth = -1)
         {
+            var previousCompositeStyling = useCompositeStyling;
+            useCompositeStyling = true;
+
             int eCount = values.Length;
             float w = (position.width - (eCount - 1) * kSpacingSubLabel) / eCount;
             Rect nr = new Rect(position) {width = w};
@@ -5696,6 +5817,8 @@ namespace UnityEditor
             }
             EditorGUIUtility.labelWidth = t;
             indentLevel = l;
+
+            useCompositeStyling = previousCompositeStyling;
         }
 
         static void LockingMultiFloatFieldInternal(Rect position, bool locked, GUIContent[] subLabels, float[] values, float prefixLabelWidth = -1)
@@ -5773,12 +5896,16 @@ namespace UnityEditor
 
         internal static void MultiIntFieldInternal(Rect position, GUIContent[] subLabels, int[] values)
         {
-            int eCount = values.Length;
-            float w = (position.width - (eCount - 1) * kSpacingSubLabel) / eCount;
-            Rect nr = new Rect(position) {width = w};
             float t = EditorGUIUtility.labelWidth;
             int l = indentLevel;
             indentLevel = 0;
+
+            var previousCompositeStyling = useCompositeStyling;
+            useCompositeStyling = true;
+
+            int eCount = values.Length;
+            float w = (position.width - (eCount - 1) * kSpacingSubLabel) / eCount;
+            Rect nr = new Rect(position) {width = w};
             for (int i = 0; i < values.Length; i++)
             {
                 EditorGUIUtility.labelWidth = GetLabelWidth(subLabels[i]);
@@ -5786,6 +5913,8 @@ namespace UnityEditor
                 values[i] = IntField(nr, subLabels[i], values[i]);
                 nr.x += w + kSpacingSubLabel;
             }
+
+            useCompositeStyling = previousCompositeStyling;
             EditorGUIUtility.labelWidth = t;
             indentLevel = l;
         }
@@ -5865,10 +5994,13 @@ namespace UnityEditor
 
             EditorGUIUtility.labelWidth = propertyLabelsWidth;
             indentLevel = 0;
-            for (int i = 0; i < properties.Length; i++)
+            using (new CompositeStylingScope())
             {
-                PropertyField(fieldPosition, properties[i], propertyLabels[i]);
-                fieldPosition.y += kSingleLineHeight + kVerticalSpacingMultiField;
+                for (int i = 0; i < properties.Length; i++)
+                {
+                    PropertyField(fieldPosition, properties[i], propertyLabels[i]);
+                    fieldPosition.y += kSingleLineHeight + kVerticalSpacingMultiField;
+                }
             }
 
             indentLevel = oldIndentLevel;
@@ -6473,16 +6605,19 @@ namespace UnityEditor
 
         static Rect GetTextRect(Rect position, Rect iconRect, Rect settingsRect, GUIStyle baseStyle, GUIStyle textStyle)
         {
-            return new Rect(iconRect.xMax + kInspTitlebarSpacing + kInspTitlebarSpacing + kInspTitlebarIconWidth,
+            return new Rect(iconRect.xMax + kInspTitlebarSpacing,
                 position.y + (baseStyle.fixedHeight - textStyle.fixedHeight) / 2 + baseStyle.padding.top, 100, textStyle.fixedHeight)
             { xMax = settingsRect.xMin - kInspTitlebarSpacing };
         }
 
-        static Rect GetSettingsRect(Rect position, GUIStyle baseStyle, GUIStyle iconButtonStyle)
+        static Rect GetToggleRect(Rect position, GUIStyle baseStyle, Vector2 settingsElementSize)
         {
-            Vector2 settingsElementSize = iconButtonStyle.CalcSize(GUIContents.titleSettingsIcon);
+            return new Rect(position.xMax - kInspTitlebarSpacing - kInspTitlebarIconWidth, position.y + (baseStyle.fixedHeight - settingsElementSize.y) / 2 + baseStyle.padding.top, kInspTitlebarIconWidth, settingsElementSize.y);
+        }
 
-            return new Rect(position.xMax - baseStyle.padding.right - kInspTitlebarSpacing - kInspTitlebarIconWidth
+        static Rect GetSettingsRect(Rect position, GUIStyle baseStyle, Vector2 settingsElementSize)
+        {
+            return new Rect(position.xMax - 2 * baseStyle.padding.right - kInspTitlebarSpacing - 2 * kInspTitlebarIconWidth
                 , position.y + (baseStyle.fixedHeight - settingsElementSize.y) / 2 + baseStyle.padding.top, settingsElementSize.x, settingsElementSize.y);
         }
 
@@ -6521,6 +6656,25 @@ namespace UnityEditor
                 menu.AddItem(removeContent, false, () => RemoveDataComponents(componentIds));
             else
                 menu.AddDisabledItem(removeContent);
+
+            // Same items and checks as the CONTEXT/Component menu of a regular component
+            menu.AddSeparator("");
+            GUIContent copyContent = L10n.TextContent("Copy Component", null, null, null);
+            if (ComponentUtility.CopyComponent(componentIds, true))
+                menu.AddItem(copyContent, false, () => ComponentUtility.CopyComponent(componentIds, false));
+            else
+                menu.AddDisabledItem(copyContent);
+            GUIContent pasteAsNewContent = L10n.TextContent("Paste Component As New", null, null, null);
+            if (ComponentUtility.PasteComponentAsNew_Internal(componentIds, true))
+                menu.AddItem(pasteAsNewContent, false, () => ComponentUtility.PasteComponentAsNew_Internal(componentIds, false));
+            else
+                menu.AddDisabledItem(pasteAsNewContent);
+            GUIContent pasteValuesContent = L10n.TextContent("Paste Component Values", null, null, null);
+            if (ComponentUtility.PasteComponentValues(componentIds, true))
+                menu.AddItem(pasteValuesContent, false, () => ComponentUtility.PasteComponentValues(componentIds, false));
+            else
+                menu.AddDisabledItem(pasteValuesContent);
+
             menu.DropDown(position);
         }
 
@@ -6570,8 +6724,10 @@ namespace UnityEditor
             bool hasFocus = GUIUtility.HasKeyFocus(id);
             bool hovered = position.Contains(evt.mousePosition);
 
+            Vector2 settingsElementSize = iconButtonStyle.CalcSize(GUIContents.titleSettingsIcon);
             Rect iconRect = GetIconRect(position, baseStyle);
-            Rect settingsRect = GetSettingsRect(position, baseStyle, iconButtonStyle);
+            Rect toggleRect = GetToggleRect(position, baseStyle, settingsElementSize);
+            Rect settingsRect = GetSettingsRect(position, baseStyle, settingsElementSize);
             Rect textRect = GetTextRect(position, iconRect, settingsRect, baseStyle, textStyle);
 
             if (evt.type == EventType.Repaint)
@@ -6588,13 +6744,16 @@ namespace UnityEditor
             }
 
             if (hasUnityObjectTargets)
-                DoInspectorEnabledToggle(position, targetObjs, comp, iconRect, enabledProperty);
+                DoInspectorEnabledToggle(position, targetObjs, comp, iconRect, enabledProperty, toggleRect, hovered, hasFocus);
 
             if (hasUnityObjectTargets)
             {
                 Rect headerItemRect = settingsRect;
                 headerItemRect.x -= kInspTitlebarIconWidth + kInspTitlebarSpacing;
-                headerItemRect = EditorGUIUtility.DrawEditorHeaderItems(headerItemRect, targetObjs, kInspTitlebarSpacing);
+                if (hovered || hasFocus)
+                {
+                    headerItemRect = EditorGUIUtility.DrawEditorHeaderItems(headerItemRect, targetObjs, kInspTitlebarSpacing);
+                }
                 textRect.xMax = headerItemRect.xMin - kInspTitlebarSpacing;
             }
             else
@@ -6637,7 +6796,7 @@ namespace UnityEditor
                     string title = editor?.GetInspectorTitle(targetObjs.Length > 1)
                         ?? ObjectNames.GetInspectorTitle(targetObjs[0], targetObjs.Length > 1);
                     textStyle.Draw(textRect, EditorGUIUtility.TempContent(title), hovered, pressed, foldout, hasFocus);
-                    if (hasOptionsMenu && EditorGUIUtility.comparisonViewMode == EditorGUIUtility.ComparisonViewMode.None)
+                    if (hasOptionsMenu && EditorGUIUtility.comparisonViewMode == EditorGUIUtility.ComparisonViewMode.None && (hovered || hasFocus))
                     {
                         EditorStyles.optionsButtonStyle.Draw(settingsRect, GUIContent.none, id, foldout, settingsRect.Contains(Event.current.mousePosition));
                     }
@@ -6650,7 +6809,7 @@ namespace UnityEditor
         // Draws the enabled-checkbox on an inspector titlebar and services the right-click
         // property context menu on the icon+toggle area. No-op when the targets have no
         // enabled state (e.g. a ScriptableObject that isn't a StateMachineBehaviour).
-        static void DoInspectorEnabledToggle(Rect position, Object[] targetObjs, Component comp, Rect iconRect, SerializedProperty enabledProperty)
+        static void DoInspectorEnabledToggle(Rect position, Object[] targetObjs, Component comp, Rect iconRect, SerializedProperty enabledProperty, Rect toggleRect, bool hovered, bool hasFocus)
         {
             int enabled = -1;
             foreach (Object targetObj in targetObjs)
@@ -6678,10 +6837,6 @@ namespace UnityEditor
 
             if (enabled == -1)
                 return;
-
-            Rect toggleRect = iconRect;
-            toggleRect.x = iconRect.xMax + kInspTitlebarSpacing;
-            Rect combinedIconAndToggleRect = new Rect(iconRect.x, iconRect.y, toggleRect.xMax - iconRect.xMin, iconRect.height);
 
             if (enabledProperty != null)
             {
@@ -6737,7 +6892,7 @@ namespace UnityEditor
             }
 
             Event evt = Event.current;
-            if (combinedIconAndToggleRect.Contains(evt.mousePosition))
+            if (iconRect.Contains(evt.mousePosition) || toggleRect.Contains(evt.mousePosition))
             {
                 // It's necessary to handle property context menu here in right mouse down because
                 // component contextual menu will override this otherwise.
@@ -6766,8 +6921,9 @@ namespace UnityEditor
             GUIStyle textStyle = EditorStyles.inspectorTitlebarText;
             GUIStyle iconButtonStyle = EditorStyles.iconButton;
 
+            Vector2 settingsElementSize = iconButtonStyle.CalcSize(GUIContents.titleSettingsIcon);
             Rect iconRect = GetIconRect(position, baseStyle);
-            Rect settingsRect = GetSettingsRect(position, baseStyle, iconButtonStyle);
+            Rect settingsRect = GetSettingsRect(position, baseStyle, settingsElementSize);
             Rect textRect = GetTextRect(position, iconRect, settingsRect, baseStyle, textStyle);
 
             textRect.xMax = settingsRect.xMin - kInspTitlebarSpacing;
@@ -7342,7 +7498,7 @@ namespace UnityEditor
 
         public static Rect PrefixLabel(Rect totalPosition, int id, GUIContent label)
         {
-            return PrefixLabel(totalPosition, id, label, EditorStyles.label);
+            return PrefixLabel(totalPosition, id, label, defaultLabelStyle);
         }
 
         public static Rect PrefixLabel(Rect totalPosition, int id, GUIContent label, GUIStyle style)
@@ -7352,9 +7508,11 @@ namespace UnityEditor
                 return IndentedRect(totalPosition);
             }
 
-            Rect labelPosition = new Rect(totalPosition.x + indent, totalPosition.y, EditorGUIUtility.labelWidth - indent, lineHeight);
-            Rect fieldPosition = new Rect(totalPosition.x + EditorGUIUtility.labelWidth + kPrefixPaddingRight, totalPosition.y, totalPosition.width - EditorGUIUtility.labelWidth - kPrefixPaddingRight, totalPosition.height);
+            var labelPosition = new Rect(totalPosition.x + indent, totalPosition.y, EditorGUIUtility.labelWidth - indent, lineHeight);
+            var fieldPosition = new Rect(totalPosition.x + EditorGUIUtility.labelWidth + kPrefixPaddingRight, totalPosition.y, totalPosition.width - EditorGUIUtility.labelWidth - kPrefixPaddingRight, totalPosition.height);
+
             HandlePrefixLabel(totalPosition, labelPosition, label, id, style);
+
             return fieldPosition;
         }
 
@@ -7387,7 +7545,7 @@ namespace UnityEditor
 
                 // If there are 2 columns we use the same column widths as if there had been 3 columns
                 // in order to make columns line up neatly.
-                if (columns == 2)
+                if (columns == 2 && !useCompositeStyling)
                 {
                     float columnWidth = (fieldPosition.width - (3 - 1) * kSpacingSubLabel) / 3f;
                     fieldPosition.xMax -= (columnWidth + kSpacingSubLabel);
@@ -9014,13 +9172,13 @@ namespace UnityEditor
 
         internal static void FloatField(Rect position, GUIContent label, ref NumberFieldValue value)
         {
-            FloatFieldInternal(position, label, ref value, EditorStyles.numberField);
+            FloatFieldInternal(position, label, ref value, defaultNumberFieldStyle);
         }
 
         [ExcludeFromDocs]
         public static float FloatField(Rect position, GUIContent label, float value)
         {
-            return FloatField(position, label, value, EditorStyles.numberField);
+            return FloatField(position, label, value, defaultNumberFieldStyle);
         }
 
         public static float FloatField(Rect position, GUIContent label, float value, [DefaultValue("EditorStyles.numberField")] GUIStyle style)
@@ -9168,7 +9326,7 @@ namespace UnityEditor
         [ExcludeFromDocs]
         public static int IntField(Rect position, GUIContent label, int value)
         {
-            return IntField(position, label, value, EditorStyles.numberField);
+            return IntField(position, label, value, defaultNumberFieldStyle);
         }
 
         public static int IntField(Rect position, GUIContent label, int value, [DefaultValue("EditorStyles.numberField")] GUIStyle style)
@@ -9223,7 +9381,7 @@ namespace UnityEditor
         [ExcludeFromDocs]
         public static long LongField(Rect position, long value)
         {
-            return LongField(position, value, EditorStyles.numberField);
+            return LongField(position, value, defaultNumberFieldStyle);
         }
 
         public static long LongField(Rect position, long value, [DefaultValue("EditorStyles.numberField")] GUIStyle style)
@@ -9234,7 +9392,7 @@ namespace UnityEditor
         [ExcludeFromDocs]
         public static long LongField(Rect position, string label, long value)
         {
-            return LongField(position, label, value, EditorStyles.numberField);
+            return LongField(position, label, value, defaultNumberFieldStyle);
         }
 
         public static long LongField(Rect position, string label, long value, [DefaultValue("EditorStyles.numberField")] GUIStyle style)
@@ -9245,12 +9403,12 @@ namespace UnityEditor
         [ExcludeFromDocs]
         public static long LongField(Rect position, GUIContent label, long value)
         {
-            return LongField(position, label, value, EditorStyles.numberField);
+            return LongField(position, label, value, defaultNumberFieldStyle);
         }
 
         static void LongField(Rect position, GUIContent label, ref NumberFieldValue value)
         {
-            LongFieldInternal(position, label, ref value, EditorStyles.numberField);
+            LongFieldInternal(position, label, ref value, defaultNumberFieldStyle);
         }
 
         public static long LongField(Rect position, GUIContent label, long value, [DefaultValue("EditorStyles.numberField")] GUIStyle style)
@@ -9588,7 +9746,7 @@ namespace UnityEditor
         internal static float CalcPrefixLabelWidth(GUIContent label, GUIStyle style = null)
         {
             if (style == null)
-                style = EditorStyles.label;
+                style = defaultLabelStyle;
             return style.CalcSize(label).x;
         }
 

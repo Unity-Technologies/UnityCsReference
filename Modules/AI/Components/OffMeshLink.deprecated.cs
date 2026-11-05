@@ -13,7 +13,7 @@ namespace UnityEngine.AI
         ///<summary>The <see cref="OffMeshLink" /> if the link type is a manually placed Offmeshlink (RO).</summary>
         ///<remarks>Automatically generated Jump and drop links will return null.</remarks>
         [Obsolete("offMeshLink has been deprecated. Use 'owner' instead.")]
-        public OffMeshLink offMeshLink => GetOffMeshLinkInternal(m_InstanceID);
+        public OffMeshLink offMeshLink => GetOffMeshLinkInternal(m_EntityId);
 
 #pragma warning disable CS0618 // The OffMeshLink class is obsolete
         [FreeFunction("OffMeshLinkScriptBindings::GetOffMeshLinkInternal")]

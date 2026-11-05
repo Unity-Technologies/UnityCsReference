@@ -16,6 +16,8 @@ namespace Unity.ProjectAuditor.Editor.UI
 
         TopTen m_TopTen = NewTopTen();
         StatSeverities m_Severities;
+        int m_IgnoredIssueCount;
+        int m_FixedIssueCount;
 
         public override string Description => "Resolve the following issues to migrate your project to the CoreCLR scripting backend.";
 
@@ -26,7 +28,7 @@ namespace Unity.ProjectAuditor.Editor.UI
         // The migration breakdown shows only migration issues.
         protected override bool MatchesSummaryFilter(ReportItem issue)
         {
-            if (!HasAnyAreas(issue, Areas.MigrationToCoreCLR))
+            if (!issue.HasAnyAreas(Areas.MigrationToCoreCLR))
                 return false;
 
             return true;
@@ -41,6 +43,8 @@ namespace Unity.ProjectAuditor.Editor.UI
         {
             base.ResetStats();
             m_Severities = new StatSeverities();
+            m_IgnoredIssueCount = 0;
+            m_FixedIssueCount = 0;
         }
 
         protected override void RefreshStats()
@@ -56,6 +60,11 @@ namespace Unity.ProjectAuditor.Editor.UI
                 if (!MatchesSummaryFilter(issue))
                     continue;
 
+                if (issue.WasFixed)
+                    m_FixedIssueCount++;
+                else
+                    m_IgnoredIssueCount++;
+
                 AddSeverityStats(issue, ref m_Severities);
             }
         }
@@ -68,10 +77,19 @@ namespace Unity.ProjectAuditor.Editor.UI
             if (m_ViewManager.Report == null)
                 return;
 
+            if (!m_ViewManager.HasPendingCategories() && !m_ViewManager.Report.HasCategory(IssueCategory.Code))
+            {
+                Utility.DrawHelpBoxWithButton(Contents.CodeNotAnalyzedText, SharedContents.Analyze, MessageType.Info, () =>
+                {
+                    ProjectAuditorNavigator.RequestHomePage(HomePage.Tab.MigrateToCoreCLR);
+                });
+                return;
+            }
+
             EditorGUILayout.Space();
             DrawRuntimeVersions();
             EditorGUILayout.Space();
-            DrawSeverityBreakdown();
+            DrawIssueBreakdownSection();
 
             if (!m_ViewManager.HasPendingCategories() && m_Severities.TotalExcludingIgnoredAndFixed > 0)
             {
@@ -87,7 +105,7 @@ namespace Unity.ProjectAuditor.Editor.UI
         {
             if (base.IsIssueIgnoredOrFiltered(item))
                 return true;
-            if (!HasAnyAreas(item, Areas.MigrationToCoreCLR))
+            if (!item.HasAnyAreas(Areas.MigrationToCoreCLR))
                 return true;
 
             return false;
@@ -125,39 +143,12 @@ namespace Unity.ProjectAuditor.Editor.UI
             }
         }
 
-        void DrawSeverityBreakdown()
+        void DrawIssueBreakdownSection()
         {
             EditorGUILayout.BeginVertical(GUI.skin.box);
 
-            EditorGUILayout.LabelField(SharedContents.Summary, SharedStyles.BoldLabel);
-
-            // In progress
-            if (m_ViewManager.HasPendingCategories())
-            {
-                DrawAnalysisInProgress();
-                EditorGUILayout.EndVertical();
-                return;
-            }
-
-            // No issues
-            if (m_Severities.Total == 0)
-            {
-                EditorGUILayout.LabelField(
-                    m_ViewManager.Report.HasCategory(IssueCategory.Code) ? Contents.NoIssuesText : Contents.CodeNotAnalyzedText,
-                    SharedStyles.Label);
-                EditorGUILayout.EndVertical();
-                return;
-            }
-
-            // Major issues count
-            if (m_Severities.MajorAndCritical == 0)
-                EditorGUILayout.LabelField(Contents.NoMajorIssuesText, SharedStyles.Label);
-            else
-                EditorGUILayout.LabelField(string.Format(m_Severities.MajorAndCritical == 1 ? Contents.SevereCountFormat : Contents.SevereCountPluralFormat, m_Severities.MajorAndCritical), SharedStyles.Label);
-
-            GUILayout.Space(6);
-
-            DrawSeverityBar(m_Severities, horizontalPadding: 2);
+            EditorGUILayout.LabelField(Contents.IssuesBySeverity, SharedStyles.BoldLabel);
+            DrawChartBar(() => BuildSeverityChartElements(m_Severities));
 
             EditorGUILayout.EndVertical();
         }
@@ -168,18 +159,15 @@ namespace Unity.ProjectAuditor.Editor.UI
 
             m_ShowTopTenIssues = Utility.BoldFoldout(m_ShowTopTenIssues, Contents.TopTenIssuesContent);
             if (m_ShowTopTenIssues)
+            {
+                DrawTopTenLabel(
+                    Contents.NoIssuesText, Contents.NoMajorIssuesText, Contents.SevereCountFormat, Contents.SevereCountPluralFormat,
+                    m_Severities.TotalExcludingIgnoredAndFixed, m_Severities.MajorAndCritical);
+
                 DrawTopTenIssues(m_TopTen, IsIssueIgnoredOrFiltered);
+            }
 
             EditorGUILayout.EndVertical();
-        }
-
-        static void DrawAnalysisInProgress()
-        {
-            using (new EditorGUILayout.HorizontalScope())
-            {
-                GUILayout.Space(20);
-                DrawAnalysisInProgressLabel(Contents.Migration);
-            }
         }
 
         static class Contents
@@ -189,13 +177,13 @@ namespace Unity.ProjectAuditor.Editor.UI
             public static readonly GUIContent TargetRuntime = L10n.TextContent("Target runtime:", null, null, null);
             public static readonly GUIContent MonoRuntimeValue = L10n.TextContent("Mono (.NET Standard 2.1)", null, null, null);
             public static readonly GUIContent CoreCLRRuntimeValue = L10n.TextContent("CoreCLR (.NET 10)", null, null, null);
+            public static readonly GUIContent IssuesBySeverity = L10n.TextContent("Issues by Severity", null, null, null);
 
-            public static readonly string SevereCountFormat = L10n.Tr("{0} issue will cause compilation failures or runtime exceptions on CoreCLR.", null);
-            public static readonly string SevereCountPluralFormat = L10n.Tr("{0} issues will cause compilation failures or runtime exceptions on CoreCLR.", null);
+            public static readonly string SevereCountFormat = L10n.Tr("{0} issue may cause compilation failures or runtime exceptions on CoreCLR.", null);
+            public static readonly string SevereCountPluralFormat = L10n.Tr("{0} issues may cause compilation failures or runtime exceptions on CoreCLR.", null);
             public static readonly string NoIssuesText = L10n.Tr("No CoreCLR migration issues found.", null);
             public static readonly string NoMajorIssuesText = L10n.Tr("No major CoreCLR migration issues found.", null);
             public static readonly string CodeNotAnalyzedText = L10n.Tr("Code analysis is not yet included in this report.", null);
-            public static readonly string Migration = L10n.Tr("Migration", null);
         }
     }
 }

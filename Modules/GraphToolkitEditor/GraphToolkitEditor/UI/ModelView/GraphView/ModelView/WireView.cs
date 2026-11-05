@@ -338,7 +338,12 @@ namespace Unity.GraphToolkit.Editor
             m_IsOverrideAnimationPlaying = appearance?.IsAnimating ?? false;
 
             if (m_IsOverrideAnimationPlaying)
+            {
+                // The animator can only pause a playing animation.
                 GraphView.Animator.Play(this, appearance.AnimationSpeed);
+                if (appearance.IsPaused)
+                    GraphView.Animator.Pause(this);
+            }
             else
                 TryStopAnimation();
 

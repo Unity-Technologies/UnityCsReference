@@ -22,6 +22,7 @@ namespace UnityEditor
         H264 = 1,
         H265 = 3,
         VP8 = 2,
+        VP9 = 4,
     }
 
     [NativeHeader("Modules/Video/Public/Base/VideoMediaTypes.h")]

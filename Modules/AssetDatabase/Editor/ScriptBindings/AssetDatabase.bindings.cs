@@ -166,6 +166,23 @@ namespace UnityEditor
         [PreventExecutionInState(AssetDatabasePreventExecution.kCodeReload, PreventExecutionSeverity.PreventExecution_ManagedException, kPreventExecutionDuringCodeReloadHowToFixMsg)]
         extern public static bool Contains(EntityId entityId);
 
+        /// <summary>
+        /// True when the id refers to an asset object that is still in the project, without loading it.
+        /// Unlike <see cref="Contains(EntityId)"/>, which is true for any id that maps to a serialized file, this is false
+        /// for a deleted asset and for an object that a reimport removed: both keep their id-to-GUID mapping, so the asset
+        /// path and the current import metadata are checked as well.
+        /// </summary>
+        [VisibleToOtherModules]
+        internal static bool IsAssetInProject(EntityId entityId)
+        {
+            if (!TryGetGUIDAndLocalFileIdentifier(entityId, out var guid, out long _))
+                return false;
+            var path = GUIDToAssetPath(guid);
+            if (string.IsNullOrEmpty(path) || !AssetPathExists(path))
+                return false;
+            return IsMainAsset(entityId) || IsSubAsset(entityId);
+        }
+
         [System.Obsolete(@"Please use Contains(EntityId) with the EntityId type instead.", true)]
         public static bool Contains(int instanceID) => Contains((EntityId)instanceID);
 
@@ -425,7 +442,7 @@ namespace UnityEditor
         [System.Obsolete(@"Please use GetMainAssetOrInProgressProxyEntityId instead.", true)]
         internal static int GetMainAssetOrInProgressProxyInstanceID(string assetPath) => GetMainAssetOrInProgressProxyEntityId(assetPath);
 
-        [VisibleToOtherModules("UnityEditor.ProjectAuditorModule")]
+        [VisibleToOtherModules("UnityEditor.ProjectAuditorModule", "Unity.ShaderGraph.Editor")]
         [PreventExecutionInState(AssetDatabasePreventExecution.kCodeReload, PreventExecutionSeverity.PreventExecution_ManagedException, kPreventExecutionDuringCodeReloadHowToFixMsg)]
         extern internal static EntityId GetMainAssetEntityId(string assetPath);
 

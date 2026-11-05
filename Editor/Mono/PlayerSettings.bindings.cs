@@ -218,6 +218,8 @@ namespace UnityEditor
     public enum ManagedStrippingLevel
     {
         Disabled = 0,
+        [Obsolete("ManagedStrippingLevel.Low is no longer supported. Use ManagedStrippingLevel.Minimal instead. (UnityUpgradable) -> Minimal")]
+        [EditorBrowsable(EditorBrowsableState.Never)]
         Low = 1,
         Medium = 2,
         High = 3,
@@ -919,6 +921,9 @@ namespace UnityEditor
         [FreeFunction("GetTargetPlatformUGKCapableGraphicsAPIs")]
         internal static extern UnityEngine.Rendering.GraphicsDeviceType[] GetUGKCapableGraphicsAPIs(BuildTarget platform);
 
+        [FreeFunction("IsUGKSelectedForBuildTarget")]
+        internal static extern bool IsUGKSelectedForBuild(BuildTarget platform);
+
         [NativeMethod("GetPlatformGraphicsAPIs")]
         public static extern UnityEngine.Rendering.GraphicsDeviceType[] GetGraphicsAPIs(BuildTarget platform);
 
@@ -1264,8 +1269,15 @@ namespace UnityEditor
         [StaticAccessor("GetPlayerSettings().GetEditorOnlyForUpdate()")]
         [NativeMethod("SetManagedStrippingLevel", ThrowsException = true)]
         private static extern void SetManagedStrippingLevelInternal(string buildTargetName, ManagedStrippingLevel level);
-        public static void SetManagedStrippingLevel(NamedBuildTarget buildTarget, ManagedStrippingLevel level) =>
+        public static void SetManagedStrippingLevel(NamedBuildTarget buildTarget, ManagedStrippingLevel level)
+        {
+#pragma warning disable CS0618 // Type or member is obsolete
+            if (level == ManagedStrippingLevel.Low)
+                throw new NotSupportedException("ManagedStrippingLevel.Low is no longer supported. Use ManagedStrippingLevel.Minimal instead.");
+#pragma warning restore CS0618
+
             SetManagedStrippingLevelInternal(buildTarget.TargetName, level);
+        }
 
         [StaticAccessor("GetPlayerSettings().GetEditorOnly()")]
         [NativeMethod("GetManagedStrippingLevel", ThrowsException = true)]

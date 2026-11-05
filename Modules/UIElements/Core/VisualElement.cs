@@ -101,6 +101,8 @@ namespace UnityEngine.UIElements
         HasPaintingComponent = 1L << 48,
         HasViewDataComponent = 1L << 49,
         HasStyleSheetsComponent = 1L << 50,
+        // Element has bindings tracked by the data binding manager of its panel
+        HasTrackedBindings = 1L << 51,
         // Every private component's presence bit, cleared together when an element releases its components
         PrivateComponentMask = HasDataBindingComponent | HasAnimationComponent | HasPaintingComponent |
             HasViewDataComponent | HasStyleSheetsComponent,
@@ -109,7 +111,7 @@ namespace UnityEngine.UIElements
             EligibleToReceiveFocusFromDisabledChild
     }
 
-    // Free bits: 15, 16, 17, 30, 31, and 51 upwards.
+    // Free bits: 15, 16, 17, 30, 31, and 52 upwards.
     internal static class VisualElementFlagsShift
     {
         public const int LanguageDirection = 26;
@@ -213,6 +215,26 @@ namespace UnityEngine.UIElements
         {
             elements.Clear();
             pool.Release(elements);
+        }
+    }
+
+    // Kept apart from VisualElementListPool so a parent's long-lived children list never takes a warm temporary list.
+    internal static partial class VisualElementChildListPool
+    {
+        internal const int k_MaxPooledCapacity = 256;
+
+        [AutoStaticsCleanupOnCodeReload]
+        static ObjectPool<List<VisualElement>> pool = new ObjectPool<List<VisualElement>>(() => new List<VisualElement>(), 20);
+
+        internal static int pooledCount => pool.Size();
+
+        public static List<VisualElement> Get() => pool.Get();
+
+        public static void Release(List<VisualElement> elements)
+        {
+            elements.Clear();
+            if (elements.Capacity <= k_MaxPooledCapacity)
+                pool.Release(elements);
         }
     }
 
@@ -466,6 +488,17 @@ namespace UnityEngine.UIElements
         internal Rect lastLayout;
         internal Rect lastPseudoPadding;
         internal RenderData renderData; // TODO: Search for every usage of this, should be minimal!!
+
+        // Whether the element shows anything of its own, as the renderer last drew it: it generated geometry for the
+        // element itself (a background, a border, text, an image, a backdrop filter, generated content...), and its
+        // opacity combined with its ancestors' is above the renderer's visibility threshold. False until it's rendered.
+        // The UI Viewport lets a pick through an element that ignores picking and shows nothing, like a clear layer
+        // over a dialog. A stencil mask (rounded corners with overflow: hidden) counts as geometry: good enough.
+        internal bool rendersVisibleGeometry
+        {
+            [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
+            get => renderData != null && renderData.headMesh != null && renderData.compositeOpacity > UIRUtility.k_Epsilon;
+        }
         internal RenderData nestedRenderData; // Non-null when rendering into a render texture
         internal int insertionIndex = -1;
 
@@ -778,11 +811,12 @@ namespace UnityEngine.UIElements
             }
         }
 
-        internal bool needs3DBounds
-        {
-            get => (transformFlags & VisualElementTransformFlags.Needs3DBounds) != 0;
-            set => transformFlags = value ? transformFlags | VisualElementTransformFlags.Needs3DBounds : transformFlags & ~VisualElementTransformFlags.Needs3DBounds;
-        }
+        internal const VisualElementTransformFlags k_Bounds3DFlags =
+            VisualElementTransformFlags.Needs3DBounds | VisualElementTransformFlags.InCurvedSubtree;
+
+        internal bool needs3DBounds => (transformFlags & k_Bounds3DFlags) != 0;
+
+        internal bool inCurvedSubtree => (transformFlags & VisualElementTransformFlags.InCurvedSubtree) != 0;
 
         internal bool isLocalBounds3DDirty
         {
@@ -1744,6 +1778,9 @@ namespace UnityEngine.UIElements
             }
         }
 
+        [NoAutoStaticsCleanup]
+        static readonly EventCallback<TooltipEvent> s_SetTooltipCallback = SetTooltip;
+
         //PropertyName to store in property bag.
         internal static readonly PropertyName tooltipPropertyKey = new PropertyName("--unity-tooltip");
 
@@ -1769,7 +1806,7 @@ namespace UnityEngine.UIElements
                         return;
                     }
 
-                    RegisterCallback<TooltipEvent>(SetTooltip);
+                    RegisterCallback(s_SetTooltipCallback);
                 }
 
                 var tooltipText = GetProperty(tooltipPropertyKey) as string;
@@ -2112,7 +2149,7 @@ namespace UnityEngine.UIElements
             UpdateClassSelectorData();
         }
 
-#pragma warning disable UA5000 // The Avoid Finalizer Analyzer produces compile errors for any new finalizers. This pre-existing finalizer declaration has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA5000 // Enqueues layout node and text buffers for main-thread release, since they cannot be freed on the finalizer thread.
         ~VisualElement()
         {
             try
@@ -2215,7 +2252,7 @@ namespace UnityEngine.UIElements
         /// </summary>
         private protected virtual void ReleaseNativeResources(bool fromFinalizer) { }
 
-        internal void SetTooltip(TooltipEvent e)
+        internal static void SetTooltip(TooltipEvent e)
         {
             if (e.currentTarget is VisualElement element && !string.IsNullOrEmpty(element.tooltip))
             {
@@ -3183,7 +3220,7 @@ namespace UnityEngine.UIElements
         /// <remarks>
         /// The order of the classes will always be the same between two elements that have the same classes.
         /// However, the ordering of the classes for a given element is not guaranteed to match between executions or
-        /// after a domain reload.
+        /// after a code reload.
         /// </remarks>
         public IEnumerable<string> GetClasses()
         {
@@ -3197,7 +3234,7 @@ namespace UnityEngine.UIElements
         /// <remarks>
         /// The order of the classes will always be the same between two elements that have the same classes.
         /// The returned classes are ordered by corresponding UniqueStyleString id. This implies that for a given
-        /// element the order is not guaranteed to match between executions or after a domain reload, depending on the
+        /// element the order is not guaranteed to match between executions or after a code reload, depending on the
         /// creation order of the UniqueStyleStrings involved.
         /// </remarks>
         public IEnumerable<UniqueStyleString> GetClassNames()

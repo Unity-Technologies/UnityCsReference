@@ -31,7 +31,7 @@ namespace UnityEditor.AdaptivePerformance.Editor.Metadata
         /// create instances of supported loaders for your package.
         ///
         /// When your package is first installed, the Adaptive Performance Provider Management system will
-        /// use this information to create instances of your loaders in Assets/Adaptive Performance/Loaders.
+        /// use this information to create instances of your loaders in Assets/Settings/AdaptivePerformance/Provider.
         /// </summary>
         string loaderType { get; }
 
@@ -75,7 +75,7 @@ namespace UnityEditor.AdaptivePerformance.Editor.Metadata
         /// The full type name for the settings type for your package.
         ///
         /// When your package is first installed, the Adaptive Performance Provider Management system will
-        /// use this information to create an instance of your settings in Assets/Adaptive Performance/Settings.
+        /// use this information to create an instance of your settings in Assets/Settings/AdaptivePerformance/Settings.
         /// </summary>
         string settingsType { get; }
 

@@ -65,7 +65,7 @@ public sealed partial class VisualElementAssetReferenceTable : IDisposable
         {
         }
 
-#pragma warning disable UA5000 // The Avoid Finalizer Analyzer produces compile errors for any new finalizers. This pre-existing finalizer declaration has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA5000 // Frees the weak GCHandle when the pooled node is dropped without Release; owners are not guaranteed to dispose.
         ~ElementNode() => Dispose(false);
 #pragma warning restore UA5000
 
@@ -159,7 +159,7 @@ public sealed partial class VisualElementAssetReferenceTable : IDisposable
     {
     }
 
-#pragma warning disable UA5000 // The Avoid Finalizer Analyzer produces compile errors for any new finalizers. This pre-existing finalizer declaration has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA5000 // Frees cached weak GCHandles when the table is dropped without Release; owners are not guaranteed to dispose.
     ~VisualElementAssetReferenceTable()
     {
         Dispose(false);

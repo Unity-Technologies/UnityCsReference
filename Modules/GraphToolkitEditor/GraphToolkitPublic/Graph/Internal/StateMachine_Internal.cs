@@ -5,12 +5,16 @@
 using System;
 using System.Collections.Generic;
 using Unity.GraphToolkit.Editor.Implementation;
+using Unity.Scripting.LifecycleManagement;
 
 namespace Unity.GraphToolkit.Editor
 {
     public partial class StateMachine : IGraphInternal
     {
         internal StateMachineImp m_Implementation;
+
+        [AutoStaticsCleanupOnCodeReload]
+        static Node.OptionDefinitionContext s_OptionDefinitionContext = new();
 
         void IGraphInternal.SetImplementation(GraphModelImp implementation)
         {
@@ -26,6 +30,19 @@ namespace Unity.GraphToolkit.Editor
             if (m_Implementation == null)
             {
                 throw new InvalidOperationException("Only StateMachine instances returned by either StateMachineDatabase.LoadStateMachine or StateMachineDatabase.CreateStateMachine are valid.");
+            }
+        }
+
+        internal void CallOnDefineSubgraphStateOptions(IOptionsDefinition context)
+        {
+            s_OptionDefinitionContext.OptionsDefinition = context;
+            try
+            {
+                OnDefineSubgraphStateOptions(s_OptionDefinitionContext);
+            }
+            finally
+            {
+                s_OptionDefinitionContext.Finish();
             }
         }
 

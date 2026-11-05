@@ -45,6 +45,6 @@ namespace Unity.Core
         /// </summary>
         /// <remarks>This member will be deprecated once a native fixed delta time is introduced in Unity.Entities.</remarks>
         [EditorBrowsable(EditorBrowsableState.Never)]
-        public float fixedDeltaTime => Entities.CoreModuleLightShim.Hooks.FixedDeltaTime;
+        public float fixedDeltaTime => TimeDataBindings.GetFixedDeltaTime();
     }
 }

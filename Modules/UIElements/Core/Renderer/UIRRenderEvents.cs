@@ -23,6 +23,9 @@ namespace UnityEngine.UIElements.UIR
 
         private static readonly float VisibilityTreshold = UIRUtility.k_Epsilon;
 
+        const VisualElementTransformFlags k_ZIndexPromotionFlags = VisualElementTransformFlags.ZIndexPromotedOutOfParent
+            | VisualElementTransformFlags.ZIndexPromotionRoot | VisualElementTransformFlags.ZIndexPromotionPath;
+
         internal static void ProcessOnClippingChanged(RenderTreeManager renderTreeManager, RenderData renderData, uint dirtyID, ref ChainBuilderStats stats)
         {
             bool hierarchical = (renderData.dirtiedValues & RenderDataDirtyTypes.ClippingHierarchy) != 0;
@@ -118,7 +121,7 @@ namespace UnityEngine.UIElements.UIR
             if (zIndex != int.MinValue && parent != null)
                 parent.transformFlags |= VisualElementTransformFlags.MayHaveZIndexedChildren;
             bool isReparentedAcrossDepth = false;
-            ve.transformFlags &= ~VisualElementTransformFlags.ZIndexPromotedOutOfParent;
+            ve.transformFlags &= ~k_ZIndexPromotionFlags;
 
             // Regular RenderData
             renderData = renderTreeManager.GetPooledRenderData();
@@ -149,7 +152,10 @@ namespace UnityEngine.UIElements.UIR
 
                 isReparentedAcrossDepth = parentRenderData != visualParentRenderData;
                 if (isReparentedAcrossDepth)
+                {
                     ve.transformFlags |= VisualElementTransformFlags.ZIndexPromotedOutOfParent;
+                    MarkPromotionForPicking(parent, parentRenderData.owner);
+                }
 
                 renderData.parent = parentRenderData;
                 renderData.renderTree = renderData.parent.renderTree;
@@ -321,6 +327,9 @@ namespace UnityEngine.UIElements.UIR
             while (childrenCount >= 0)
                 deepCount += DepthFirstOnElementRemoving(renderTreeManager, ve.hierarchy[childrenCount--]);
 
+            // Picking skips promoted children, so a stale flag would hide a moved element until its deferred re-insertion.
+            ve.transformFlags &= ~k_ZIndexPromotionFlags;
+
             var renderData = ve.renderData;
             var nestedRenderData = ve.nestedRenderData;
 
@@ -410,6 +419,26 @@ namespace UnityEngine.UIElements.UIR
                 renderData = renderData.parent;
             }
             return renderData;
+        }
+
+        static void MarkPromotionForPicking(VisualElement visualParent, VisualElement stackingContextRoot)
+        {
+            for (var ve = visualParent; ve != null && ve != stackingContextRoot; ve = ve.hierarchy.parent)
+                ve.transformFlags |= VisualElementTransformFlags.ZIndexPromotionPath;
+            stackingContextRoot.transformFlags |= VisualElementTransformFlags.ZIndexPromotionRoot;
+        }
+
+        // Promotion is resolved at insertion, so a flipped clip boundary leaves both the render parents and the picking flags stale.
+        internal static bool HasStaleClipBoundaryPromotion(RenderTreeManager renderTreeManager, RenderData renderData)
+        {
+            var flags = renderData.owner.transformFlags;
+            if ((flags & (VisualElementTransformFlags.ZIndexPromotionRoot | VisualElementTransformFlags.ZIndexPromotionPath)) == 0)
+                return false;
+
+            bool isClipBoundary = EstablishesStatefulClipBoundary(renderTreeManager, renderData);
+            if ((flags & VisualElementTransformFlags.ZIndexPromotionRoot) != 0 && !isClipBoundary)
+                return renderData.parent != null && renderData.zIndex == int.MinValue && !renderData.isGroupTransform && !renderData.cutsRenderChain;
+            return (flags & VisualElementTransformFlags.ZIndexPromotionPath) != 0 && isClipBoundary;
         }
 
         // Scissor/stencil clip is stateful (push/pop around the clipper's draw range); a z-index element reparented past it would draw outside that range and escape the clip.
@@ -1294,7 +1323,7 @@ namespace UnityEngine.UIElements.UIR
 
         static bool InitColorIDs(RenderTreeManager renderTreeManager, VisualElement ve)
         {
-            var style = ve.resolvedStyle;
+            ref readonly var style = ref ve.computedStyle;
             bool hasAllocated = false;
             if (!ve.renderData.colorID.IsValid() && ve is TextElement)
             {

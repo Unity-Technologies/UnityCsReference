@@ -10,7 +10,6 @@ namespace UnityEditor
     {
         CSharp_NewBehaviourScript = 0,
         CSharp_NewPlayableBehaviour,
-        Shader_NewSurfaceShader,
         CSharp_NewSceneTemplatePipelineScript,
         CSharp_NewPlayableAsset,
         CSharp_NewScriptableObjectScript,

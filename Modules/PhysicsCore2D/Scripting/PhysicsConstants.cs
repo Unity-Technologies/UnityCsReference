@@ -40,6 +40,15 @@ namespace Unity.U2D.Physics
         internal const int SolverGraphColorCount = 24;
 
         /// <summary>
+        /// The fewest bounce passes a physics world runs in one simulation step.
+        /// </summary>
+        /// <remarks>
+        /// To stop shapes bouncing, set their bounciness to zero instead.
+        /// See <see cref="PhysicsWorld.bounceIterations"/>, <see cref="PhysicsWorldDefinition.bounceIterations"/> and <see cref="PhysicsShape.SurfaceMaterial.bounciness"/>.
+        /// </remarks>
+        public const int MinBounceIterations = 1;
+
+        /// <summary>
         /// The maximum number of bounce passes a physics world can run in one simulation step.
         /// </summary>
         /// <remarks>

@@ -1079,15 +1079,15 @@ namespace Unity.Mathematics
         {
             float3x3 o;
 
-            float3 u = i.c0;
-            float3 v = i.c1 - i.c0 * math.dot(i.c1, i.c0);
+            float lenU = math.length(i.c0);
+            float3 u = i.c0 / lenU;
+            float3 v = i.c1 - u * math.dot(i.c1, u);
 
-            float lenU = math.length(u);
             float lenV = math.length(v);
 
             bool c = lenU > 1e-30f && lenV > 1e-30f;
 
-            o.c0 = math.select(float3(1, 0, 0), u / lenU, c);
+            o.c0 = math.select(float3(1, 0, 0), u, c);
             o.c1 = math.select(float3(0, 1, 0), v / lenV, c);
             o.c2 = math.cross(o.c0, o.c1);
 

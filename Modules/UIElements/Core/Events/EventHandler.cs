@@ -514,7 +514,15 @@ namespace UnityEngine.UIElements
         protected void NotifyPropertyChanged(in BindingId property)
         {
             var element = this as VisualElement;
-            if (null == element?.elementPanel || !element.HasSelfEventInterests(PropertyChangedEvent.EventCategory))
+            var elementPanel = element?.elementPanel;
+            if (null == elementPanel)
+                return;
+
+            // The data binding manager is notified directly instead of through an event.
+            if ((element.flags & VisualElementFlags.HasTrackedBindings) != 0)
+                elementPanel.dataBindingManager?.OnPropertyChanged(element, property);
+
+            if (!element.HasSelfEventInterests(PropertyChangedEvent.EventCategory))
                 return;
 
             using var evt = PropertyChangedEvent.GetPooled(property);

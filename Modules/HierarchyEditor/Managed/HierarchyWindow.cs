@@ -1444,18 +1444,21 @@ namespace Unity.Hierarchy.Editor
         // True when the global selection is non-empty and every selected object is a persistent asset -
         // something the hierarchy can't represent (e.g. a Project Browser selection). Used so an empty
         // hierarchy restore doesn't clear such a selection (UUM-146689), while still clearing stale
-        // scene selections.
-        static bool GlobalSelectionIsOnlyAssets()
+        // scene selections. Answers from ids so a large asset selection is not loaded just to be classified.
+        // An unloaded id that is not a project asset is skipped, as Selection.objects skipped ids that do not load,
+        // so a stale id of a deleted asset does not make the other selected assets look like a scene selection.
+        internal static bool GlobalSelectionIsOnlyAssets()
         {
-            var objects = Selection.objects;
-            if (objects.Length == 0)
-                return false;
-            foreach (var o in objects)
+            var anyAsset = false;
+            foreach (var entityId in Selection.entityIds)
             {
-                if (!EditorUtility.IsPersistent(o))
+                var loaded = InternalEditorUtility.GetLoadedObjectFromEntityId(entityId);
+                if (loaded != null && !EditorUtility.IsPersistent(loaded))
                     return false;
+                // Once one asset is found, unloaded ids no longer change the answer, so skip their lookups.
+                anyAsset = anyAsset || loaded != null || AssetDatabase.IsAssetInProject(entityId);
             }
-            return true;
+            return anyAsset;
         }
 
         internal void SaveStageViewState(Stage stage)

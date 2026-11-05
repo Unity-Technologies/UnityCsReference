@@ -33,7 +33,7 @@ namespace UnityEngine.AI
     {
         internal int m_Valid;
         internal int m_Activated;
-        internal EntityId m_InstanceID;
+        internal EntityId m_EntityId;
         internal OffMeshLinkType m_LinkType;
         internal Vector3 m_StartPos;
         internal Vector3 m_EndPos;
@@ -62,7 +62,7 @@ namespace UnityEngine.AI
         ///
         ///For automatically-generated Jump or Drop links, this property returns null.</remarks>
         ///<seealso cref="NavMesh.SetLinkOwner" />
-        public Object owner => GetLinkOwnerInternal(m_InstanceID);
+        public Object owner => GetLinkOwnerInternal(m_EntityId);
 
         [FreeFunction("OffMeshLinkScriptBindings::GetLinkOwnerInternal")]
         static extern Object GetLinkOwnerInternal(EntityId instanceID);

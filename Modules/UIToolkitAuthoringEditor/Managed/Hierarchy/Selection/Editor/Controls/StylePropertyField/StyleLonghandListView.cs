@@ -347,6 +347,8 @@ internal abstract class StyleLonghandListView<TData> : BindableElement, IPropert
         {
             if ((mask & d.flag) == 0)
                 continue;
+            if (d.backingList.Count < m_Data.Count)
+                Transfer(d.flag);
             d.backingList.Add(d.defaultValue);
             NotifyPropertyChanged(d.bindingId);
         }

@@ -46,6 +46,7 @@ namespace UnityEditor
         {
             m_ShowEdgeRadius.valueChanged.RemoveListener(Repaint);
             m_ShowManualGenerationButton.valueChanged.RemoveListener(Repaint);
+            base.OnDisable();
         }
 
         public override void OnInspectorGUI()

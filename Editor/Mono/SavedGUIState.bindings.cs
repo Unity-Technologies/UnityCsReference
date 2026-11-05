@@ -31,7 +31,7 @@ namespace UnityEditor
         // Save/restore only the managed IMGUI layout state (the native GUIState is handled separately).
         private void CaptureManaged()
         {
-            skin = GUI.skin;
+            skin = GUISkin.current;
             // The state's group stack aliases the live cache, which a re-entrant Layout pass clears in place; the backup must own a copy (UUM-148153).
             var live = GUILayoutUtility.current.State;
             var groups = live.layoutGroups.ToArray();

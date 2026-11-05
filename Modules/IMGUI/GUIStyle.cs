@@ -49,7 +49,7 @@ namespace UnityEngine
             return newState;
         }
 
-#pragma warning disable UA5000 // The Avoid Finalizer Analyzer produces compile errors for any new finalizers. This pre-existing finalizer declaration has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA5000 // Releases the native state when not owned by a GUIStyle; destroy is thread-safe, so the finalizer is the safety net.
         ~GUIStyleState()
         {
             if (m_SourceStyle == null)
@@ -71,7 +71,9 @@ namespace UnityEngine
         ///<summary>Only the image is displayed.</summary>
         ImageOnly = 2,
         ///<summary>Only the text is displayed.</summary>
-        TextOnly = 3
+        TextOnly = 3,
+        ///<summary>Image is to the upper left of the text.</summary>
+        ImageUpperLeft = 4
     }
 
     [StructLayout(LayoutKind.Sequential)]
@@ -95,7 +97,7 @@ namespace UnityEngine
             m_Ptr = Internal_Copy(this, other);
         }
 
-#pragma warning disable UA5000 // The Avoid Finalizer Analyzer produces compile errors for any new finalizers. This pre-existing finalizer declaration has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA5000 // Releases the native style; Internal_Destroy is thread-safe and there is no Dispose, so the finalizer is the only cleanup.
         ~GUIStyle()
         {
             if (m_Ptr != IntPtr.Zero)

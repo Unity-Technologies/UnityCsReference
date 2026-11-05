@@ -176,6 +176,14 @@ namespace Unity.GraphToolkit.Editor
         internal GraphAnimator Animator => m_GraphAnimator;
 
         /// <summary>
+        /// Raised after <see cref="Update"/> rebuilds the whole UI tree, which recreates every graph element view.
+        /// </summary>
+        /// <remarks>
+        /// This happens when the displayed graph changes, including when navigating into or out of a local subgraph.
+        /// </remarks>
+        internal event Action uiTreeRebuilt;
+
+        /// <summary>
         /// The display mode.
         /// </summary>
         public GraphViewDisplayMode DisplayMode { get; }
@@ -210,6 +218,11 @@ namespace Unity.GraphToolkit.Editor
         /// The current translation of the <see cref="GraphView"/>.
         /// </summary>
         public Vector2 Pan => m_Pan;
+
+        /// <summary>
+        /// The helper of the wire being dragged, if any. Port views attached during the drag use it to grey themselves out.
+        /// </summary>
+        internal WireDragHelper ActiveWireDragHelper { get; set; }
 
         /// <summary>
         /// Whether a wire is currently being dragged in the graph.
@@ -3208,6 +3221,9 @@ namespace Unity.GraphToolkit.Editor
             }
 
             DoUpdateProcessingErrorMarkers(updateType);
+
+            if (updateType == UpdateType.Complete)
+                uiTreeRebuilt?.Invoke();
         }
 
         /// <summary>
@@ -3656,6 +3672,7 @@ namespace Unity.GraphToolkit.Editor
         protected virtual void UpdateChangedModels(Dictionary<Hash128, ChangeHintList> changedModels, SimpleChangeset selectionChangeset, HashSet<Hash128> selectionAlreadyUpdatedModels, bool shouldUpdatePlacematContainer, List<GraphElement> placemats)
         {
             var sharedVisitor = new UpdateFromModelVisitor(null);
+            HashSet<WireView> updatedWires = null;
             foreach (var(guid, changeHints) in changedModels)
             {
                 guid.AppendAllViews(this, null, k_UpdateAllUIs);
@@ -3677,6 +3694,7 @@ namespace Unity.GraphToolkit.Editor
                 foreach (var ui in k_UpdateAllUIs)
                 {
                     ui.UpdateView(viewUpdater);
+                    AddUpdatedWire(ui);
                     if (inSelection)
                     {
                         UpdateSelectionVisitor.Visitor.Update(ui);
@@ -3696,6 +3714,17 @@ namespace Unity.GraphToolkit.Editor
                     if( changedModels.TryGetValue(ui.Model.Guid, out var doneChangeList) && doneChangeList.IsSupersetOf(changeHints))
                         continue;
                     ui.UpdateView(viewUpdater);
+                    AddUpdatedWire(ui);
+                }
+            }
+
+            // A wire view updated before its node view created the views of its ports must be updated again to be drawn to them.
+            if (updatedWires != null)
+            {
+                foreach (var wireView in updatedWires)
+                {
+                    if (wireView.HasBackwardsDependenciesChanged())
+                        wireView.UpdateView(UpdateFromModelVisitor.genericUpdateFromModelVisitor);
                 }
             }
 
@@ -3705,6 +3734,15 @@ namespace Unity.GraphToolkit.Editor
             foreach (var placemat in placemats)
             {
                 placemat.UpdateView(UpdateFromModelVisitor.genericUpdateFromModelVisitor);
+            }
+
+            void AddUpdatedWire(ChildView ui)
+            {
+                if (ui is WireView wireView)
+                {
+                    updatedWires ??= new HashSet<WireView>();
+                    updatedWires.Add(wireView);
+                }
             }
         }
 

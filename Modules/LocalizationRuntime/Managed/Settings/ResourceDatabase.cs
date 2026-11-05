@@ -231,7 +231,7 @@ public class ResourceDatabase
             try
             {
                 var formatter = LocalizationSettings.Instance != null ? LocalizationSettings.Instance.GetSmartFormatter() : Smart.Default;
-                value = Format(formatter, value, args ?? Array.Empty<object>(), localVariables);
+                value = Format(formatter, table.CultureInfo, value, args ?? Array.Empty<object>(), localVariables);
             }
             catch (Exception e)
             {
@@ -242,16 +242,16 @@ public class ResourceDatabase
     }
 
     [VisibleToOtherModules("UnityEditor.LocalizationRuntimeModule")]
-    internal static string Format(SmartFormatter formatter, string value, object[] args, IVariableGroup localVariables)
+    internal static string Format(SmartFormatter formatter, IFormatProvider provider, string value, object[] args, IVariableGroup localVariables)
     {
         if (localVariables == null)
-            return formatter.Format(value, args);
+            return formatter.Format(provider, value, args);
 
         var parsed = formatter.Parser.ParseFormat(value);
         try
         {
             parsed.AdditionalData = new AdditionalFormatData { LocalVariables = localVariables };
-            return formatter.Format(parsed, args);
+            return formatter.Format(provider, parsed, args);
         }
         finally
         {

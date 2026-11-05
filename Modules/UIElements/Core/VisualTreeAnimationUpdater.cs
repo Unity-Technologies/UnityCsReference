@@ -161,6 +161,8 @@ namespace UnityEngine.UIElements
                 m_AnimationBinders[i].ApplyAnimatedValues();
         }
 
+        internal override VersionChangeType versionChangeInterest => VersionChangeType.AnimationProperty;
+
         public override void OnVersionChanged(VisualElement ve, VersionChangeType versionChangeType)
         {
             if ((versionChangeType & VersionChangeType.AnimationProperty) == 0)

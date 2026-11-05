@@ -257,6 +257,8 @@ namespace UnityEngine
 
         public virtual bool supportsMultiview => UnityEngine.SystemInfo.supportsMultiview;
 
+        public virtual bool supportsDepthClamp => UnityEngine.SystemInfo.supportsDepthClamp;
+
         public virtual bool supportsStoreAndResolveAction => UnityEngine.SystemInfo.supportsStoreAndResolveAction;
 
         public virtual bool supportsMultisampleResolveDepth => UnityEngine.SystemInfo.supportsMultisampleResolveDepth;

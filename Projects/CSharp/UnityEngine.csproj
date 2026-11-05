@@ -40,6 +40,12 @@
     <Compile Include="..\..\External\CoreCLR\SourceCopiesToRemove\DynamicDependencyAttribute.cs">
       <Link>External\CoreCLR\SourceCopiesToRemove\DynamicDependencyAttribute.cs</Link>
     </Compile>
+    <Compile Include="..\..\External\CoreCLR\SourceCopiesToRemove\DynamicallyAccessedMemberTypes.cs">
+      <Link>External\CoreCLR\SourceCopiesToRemove\DynamicallyAccessedMemberTypes.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\CoreCLR\SourceCopiesToRemove\DynamicallyAccessedMembersAttribute.cs">
+      <Link>External\CoreCLR\SourceCopiesToRemove\DynamicallyAccessedMembersAttribute.cs</Link>
+    </Compile>
     <Compile Include="..\..\External\CoreCLR\SourceCopiesToRemove\UnmanagedCallersOnlyAttribute.cs">
       <Link>External\CoreCLR\SourceCopiesToRemove\UnmanagedCallersOnlyAttribute.cs</Link>
     </Compile>
@@ -103,8 +109,8 @@
     <Compile Include="..\..\External\ScriptingCore\Unity.Scripting\CoreAttributes\RequiredMemberAttribute.cs">
       <Link>External\ScriptingCore\Unity.Scripting\CoreAttributes\RequiredMemberAttribute.cs</Link>
     </Compile>
-    <Compile Include="..\..\External\ScriptingCore\Unity.Scripting\CoreAttributes\StubBodyIfTypeNotUsedAttribute.cs">
-      <Link>External\ScriptingCore\Unity.Scripting\CoreAttributes\StubBodyIfTypeNotUsedAttribute.cs</Link>
+    <Compile Include="..\..\External\ScriptingCore\Unity.Scripting\CoreAttributes\StubBodyIfTypeNotInstantiatedAttribute.cs">
+      <Link>External\ScriptingCore\Unity.Scripting\CoreAttributes\StubBodyIfTypeNotInstantiatedAttribute.cs</Link>
     </Compile>
     <Compile Include="..\..\External\ScriptingCore\Unity.Scripting\DelegateWithContext.cs">
       <Link>External\ScriptingCore\Unity.Scripting\DelegateWithContext.cs</Link>
@@ -792,6 +798,9 @@
     </Compile>
     <Compile Include="..\..\Modules\Animation\ScriptBindings\AvatarMask.bindings.cs">
       <Link>Modules\Animation\ScriptBindings\AvatarMask.bindings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Animation\ScriptBindings\AvatarMaskConstant.bindings.cs">
+      <Link>Modules\Animation\ScriptBindings\AvatarMaskConstant.bindings.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\Animation\ScriptBindings\BoundProperty.bindings.cs">
       <Link>Modules\Animation\ScriptBindings\BoundProperty.bindings.cs</Link>
@@ -1501,17 +1510,20 @@
     <Compile Include="..\..\Modules\Entities\Managed\ForeachQueryEnumerable.cs">
       <Link>Modules\Entities\Managed\ForeachQueryEnumerable.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\Entities\Managed\GameObjectComponentStoreBridge.cs">
+      <Link>Modules\Entities\Managed\GameObjectComponentStoreBridge.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\Entities\Managed\GenerateBurstMonoInteropAttribute.cs">
       <Link>Modules\Entities\Managed\GenerateBurstMonoInteropAttribute.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Entities\Managed\GlobalEntityManager.cs">
+      <Link>Modules\Entities\Managed\GlobalEntityManager.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\Entities\Managed\IComponentData.cs">
       <Link>Modules\Entities\Managed\IComponentData.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\Entities\Managed\IJobChunk.cs">
       <Link>Modules\Entities\Managed\IJobChunk.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\Entities\Managed\IJobEntity.cs">
-      <Link>Modules\Entities\Managed\IJobEntity.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\Entities\Managed\IRefCounted.cs">
       <Link>Modules\Entities\Managed\IRefCounted.cs</Link>
@@ -1527,9 +1539,6 @@
     </Compile>
     <Compile Include="..\..\Modules\Entities\Managed\Internal\InternalEntityQueryEnumerator.cs">
       <Link>Modules\Entities\Managed\Internal\InternalEntityQueryEnumerator.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\Entities\Managed\Internal\InternalGatherEntitiesResult.cs">
-      <Link>Modules\Entities\Managed\Internal\InternalGatherEntitiesResult.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\Entities\Managed\Iterators\ArchetypeChunkArray.cs">
       <Link>Modules\Entities\Managed\Iterators\ArchetypeChunkArray.cs</Link>
@@ -1615,9 +1624,6 @@
     <Compile Include="..\..\Modules\Entities\Managed\ProfilerModules\UnsafeStack.cs">
       <Link>Modules\Entities\Managed\ProfilerModules\UnsafeStack.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\Entities\Managed\QueryEnumerable\QueryEnumerable.gen.cs">
-      <Link>Modules\Entities\Managed\QueryEnumerable\QueryEnumerable.gen.cs</Link>
-    </Compile>
     <Compile Include="..\..\Modules\Entities\Managed\RateUtils.cs">
       <Link>Modules\Entities\Managed\RateUtils.cs</Link>
     </Compile>
@@ -1681,12 +1687,6 @@
     <Compile Include="..\..\Modules\Entities\Managed\Stubs\Unity\Entities\EntitiesProfilerMarker.cs">
       <Link>Modules\Entities\Managed\Stubs\Unity\Entities\EntitiesProfilerMarker.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\Entities\Managed\SystemAPI.cs">
-      <Link>Modules\Entities\Managed\SystemAPI.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\Entities\Managed\SystemAPIQueryBuilder.cs">
-      <Link>Modules\Entities\Managed\SystemAPIQueryBuilder.cs</Link>
-    </Compile>
     <Compile Include="..\..\Modules\Entities\Managed\SystemBase.cs">
       <Link>Modules\Entities\Managed\SystemBase.cs</Link>
     </Compile>
@@ -1702,8 +1702,20 @@
     <Compile Include="..\..\Modules\Entities\Managed\SystemState.cs">
       <Link>Modules\Entities\Managed\SystemState.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\Entities\Managed\TransformHierarchy\TransformHierarchy.cs">
+      <Link>Modules\Entities\Managed\TransformHierarchy\TransformHierarchy.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Entities\Managed\TransformHierarchy\TransformHierarchyTypes.cs">
+      <Link>Modules\Entities\Managed\TransformHierarchy\TransformHierarchyTypes.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Entities\Managed\TransformRef\EntitiesTransformDependency.bindings.cs">
+      <Link>Modules\Entities\Managed\TransformRef\EntitiesTransformDependency.bindings.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\Entities\Managed\TransformRef\HierarchyTransformAccess.bindings.cs">
       <Link>Modules\Entities\Managed\TransformRef\HierarchyTransformAccess.bindings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Entities\Managed\TransformRef\TransformDependencyBridge.cs">
+      <Link>Modules\Entities\Managed\TransformRef\TransformDependencyBridge.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\Entities\Managed\TransformRef\TransformRef.cs">
       <Link>Modules\Entities\Managed\TransformRef\TransformRef.cs</Link>
@@ -1792,8 +1804,14 @@
     <Compile Include="..\..\Modules\Entities\Managed\Unity.Core\Hashes\XXHash.cs">
       <Link>Modules\Entities\Managed\Unity.Core\Hashes\XXHash.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\Entities\Managed\Unity.Core\TimeData.bindings.cs">
+      <Link>Modules\Entities\Managed\Unity.Core\TimeData.bindings.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\Entities\Managed\Unity.Core\TimeData.cs">
       <Link>Modules\Entities\Managed\Unity.Core\TimeData.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Entities\Managed\World.bindings.cs">
+      <Link>Modules\Entities\Managed\World.bindings.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\Entities\Managed\World.cs">
       <Link>Modules\Entities\Managed\World.cs</Link>
@@ -1815,9 +1833,6 @@
     </Compile>
     <Compile Include="..\..\Modules\Entities\Managed\WorldUpdateAllocator.cs">
       <Link>Modules\Entities\Managed\WorldUpdateAllocator.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\Entities\Public\EntityId.bindings.cs">
-      <Link>Modules\Entities\Public\EntityId.bindings.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\Entities\Public\EntityIdStore.bindings.cs">
       <Link>Modules\Entities\Public\EntityIdStore.bindings.cs</Link>
@@ -2761,6 +2776,18 @@
     <Compile Include="..\..\Modules\Mathematics\Managed\Geometry\Plane.cs">
       <Link>Modules\Mathematics\Managed\Geometry\Plane.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\Mathematics\Managed\Internal\TransformType.cs">
+      <Link>Modules\Mathematics\Managed\Internal\TransformType.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Mathematics\Managed\Internal\affineX.cs">
+      <Link>Modules\Mathematics\Managed\Internal\affineX.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Mathematics\Managed\Internal\quat.cs">
+      <Link>Modules\Mathematics\Managed\Internal\quat.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Mathematics\Managed\Internal\trsX.cs">
+      <Link>Modules\Mathematics\Managed\Internal\trsX.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\Mathematics\Managed\Noise\cellular2D.cs">
       <Link>Modules\Mathematics\Managed\Noise\cellular2D.cs</Link>
     </Compile>
@@ -3688,12 +3715,6 @@
     <Compile Include="..\..\Modules\Scripting\Scripting\Marshalling\BindingsHelpers.bindings.cs">
       <Link>Modules\Scripting\Scripting\Marshalling\BindingsHelpers.bindings.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\Scripting\Scripting\Marshalling\BlittableArrayWrapper.cs">
-      <Link>Modules\Scripting\Scripting\Marshalling\BlittableArrayWrapper.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\Scripting\Scripting\Marshalling\BlittableListWrapper.cs">
-      <Link>Modules\Scripting\Scripting\Marshalling\BlittableListWrapper.cs</Link>
-    </Compile>
     <Compile Include="..\..\Modules\Scripting\Scripting\Marshalling\BlittableNestedCollectionMarshaller.cs">
       <Link>Modules\Scripting\Scripting\Marshalling\BlittableNestedCollectionMarshaller.cs</Link>
     </Compile>
@@ -3913,6 +3934,9 @@
     <Compile Include="..\..\Modules\SmartStrings\SmartFormat\Extensions\PersistentVariables\PersistentVariables.cs">
       <Link>Modules\SmartStrings\SmartFormat\Extensions\PersistentVariables\PersistentVariables.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\SmartStrings\SmartFormat\Extensions\PersistentVariables\VariableEditorHooks.cs">
+      <Link>Modules\SmartStrings\SmartFormat\Extensions\PersistentVariables\VariableEditorHooks.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\SmartStrings\SmartFormat\Extensions\PersistentVariables\VariableInterfaces.cs">
       <Link>Modules\SmartStrings\SmartFormat\Extensions\PersistentVariables\VariableInterfaces.cs</Link>
     </Compile>
@@ -3978,6 +4002,9 @@
     </Compile>
     <Compile Include="..\..\Modules\SpriteMask\Public\ScriptBindings\SpriteMask.bindings.cs">
       <Link>Modules\SpriteMask\Public\ScriptBindings\SpriteMask.bindings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\SpriteShape\AssemblyInfo.cs">
+      <Link>Modules\SpriteShape\AssemblyInfo.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\SpriteShape\Public\ScriptBindings\SpriteShapeRenderer.bindings.cs">
       <Link>Modules\SpriteShape\Public\ScriptBindings\SpriteShapeRenderer.bindings.cs</Link>
@@ -4362,6 +4389,9 @@
     </Compile>
     <Compile Include="..\..\Modules\Tilemap\Managed\TilemapUnsafe.cs">
       <Link>Modules\Tilemap\Managed\TilemapUnsafe.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Tilemap\ScriptBindings\TileGridData.bindings.cs">
+      <Link>Modules\Tilemap\ScriptBindings\TileGridData.bindings.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\Tilemap\ScriptBindings\Tilemap.bindings.cs">
       <Link>Modules\Tilemap\ScriptBindings\Tilemap.bindings.cs</Link>
@@ -4825,6 +4855,18 @@
     <Compile Include="..\..\Modules\TimelineFoundation\Runtime\ViewModel\WindowViewModel\WindowViewModel.cs">
       <Link>Modules\TimelineFoundation\Runtime\ViewModel\WindowViewModel\WindowViewModel.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\TypeRegistry\AssemblyInfo.cs">
+      <Link>Modules\TypeRegistry\AssemblyInfo.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\TypeRegistry\Managed\EntityId.bindings.cs">
+      <Link>Modules\TypeRegistry\Managed\EntityId.bindings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\TypeRegistry\Managed\SerializationFactoryHelpers.cs">
+      <Link>Modules\TypeRegistry\Managed\SerializationFactoryHelpers.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\TypeRegistry\Managed\TypeManagerV2.cs">
+      <Link>Modules\TypeRegistry\Managed\TypeManagerV2.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\U2DRuntime\Managed\Assembly.cs">
       <Link>Modules\U2DRuntime\Managed\Assembly.cs</Link>
     </Compile>
@@ -4950,6 +4992,9 @@
     </Compile>
     <Compile Include="..\..\Modules\UIElements\Core\Bindings\BindingTarget.cs">
       <Link>Modules\UIElements\Core\Bindings\BindingTarget.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Bindings\BindingUpdater.SourceReaders.cs">
+      <Link>Modules\UIElements\Core\Bindings\BindingUpdater.SourceReaders.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\UIElements\Core\Bindings\BindingUpdater.cs">
       <Link>Modules\UIElements\Core\Bindings\BindingUpdater.cs</Link>
@@ -6066,6 +6111,9 @@
     </Compile>
     <Compile Include="..\..\Modules\UIElements\Core\Renderer\UIRRenderTreeManager.cs">
       <Link>Modules\UIElements\Core\Renderer\UIRRenderTreeManager.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Renderer\UIRRenderedBounds.cs">
+      <Link>Modules\UIElements\Core\Renderer\UIRRenderedBounds.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\UIElements\Core\Renderer\UIRRepaintUpdater.cs">
       <Link>Modules\UIElements\Core\Renderer\UIRRepaintUpdater.cs</Link>
@@ -7234,6 +7282,12 @@
     <Compile Include="..\..\Runtime\2D\Common\ScriptBindings\Sprites.bindings.cs">
       <Link>Runtime\2D\Common\ScriptBindings\Sprites.bindings.cs</Link>
     </Compile>
+    <Compile Include="..\..\Runtime\2D\Common\ScriptBindings\UnifiedRenderData.bindings.cs">
+      <Link>Runtime\2D\Common\ScriptBindings\UnifiedRenderData.bindings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Runtime\2D\Common\ScriptBindings\UnifiedRenderDataAsset.bindings.cs">
+      <Link>Runtime\2D\Common\ScriptBindings\UnifiedRenderDataAsset.bindings.cs</Link>
+    </Compile>
     <Compile Include="..\..\Runtime\2D\Physics2D\ScriptBindings\PhysicsCommon2D.bindings.cs">
       <Link>Runtime\2D\Physics2D\ScriptBindings\PhysicsCommon2D.bindings.cs</Link>
     </Compile>
@@ -8317,9 +8371,6 @@
     <Compile Include="..\..\Runtime\Export\Scripting\TrackedReference.cs">
       <Link>Runtime\Export\Scripting\TrackedReference.cs</Link>
     </Compile>
-    <Compile Include="..\..\Runtime\Export\Scripting\TypeManagerV2.cs">
-      <Link>Runtime\Export\Scripting\TypeManagerV2.cs</Link>
-    </Compile>
     <Compile Include="..\..\Runtime\Export\Scripting\UnhandledExceptionHandler.bindings.cs">
       <Link>Runtime\Export\Scripting\UnhandledExceptionHandler.bindings.cs</Link>
     </Compile>
@@ -8379,9 +8430,6 @@
     </Compile>
     <Compile Include="..\..\Runtime\Export\Serialization\ManagedCommands\SerializationBackendManagedCommands.bindings.cs">
       <Link>Runtime\Export\Serialization\ManagedCommands\SerializationBackendManagedCommands.bindings.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Runtime\Export\Serialization\ManagedCommands\SerializationFactoryHelpers.cs">
-      <Link>Runtime\Export\Serialization\ManagedCommands\SerializationFactoryHelpers.cs</Link>
     </Compile>
     <Compile Include="..\..\Runtime\Export\Serialization\ManagedReferenceUtility.bindings.cs">
       <Link>Runtime\Export\Serialization\ManagedReferenceUtility.bindings.cs</Link>
@@ -8614,9 +8662,6 @@
     <Compile Include="..\..\Runtime\Export\iOS\OnDemandResources.bindings.cs">
       <Link>Runtime\Export\iOS\OnDemandResources.bindings.cs</Link>
     </Compile>
-    <Compile Include="..\..\Runtime\Export\iOS\iOS.deprecated.cs">
-      <Link>Runtime\Export\iOS\iOS.deprecated.cs</Link>
-    </Compile>
     <Compile Include="..\..\Runtime\Export\iOS\iOSDevice.bindings.cs">
       <Link>Runtime\Export\iOS\iOSDevice.bindings.cs</Link>
     </Compile>
@@ -8628,9 +8673,6 @@
     </Compile>
     <Compile Include="..\..\Runtime\Export\iOS\tvOS.bindings.cs">
       <Link>Runtime\Export\iOS\tvOS.bindings.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Runtime\Export\iOS\tvOS.bindings.deprecated.cs">
-      <Link>Runtime\Export\iOS\tvOS.bindings.deprecated.cs</Link>
     </Compile>
     <Compile Include="..\..\Runtime\Export\iOS\tvOSDevice.cs">
       <Link>Runtime\Export\iOS\tvOSDevice.cs</Link>
@@ -8856,7 +8898,7 @@
     </PropertyGroup>
   </Target>
   <ItemGroup>
-    <Analyzer Include="/tmp/uitoolkit_gen_tn9e38db/Unity.UIToolkit.SourceGenerator.dll" />
+    <Analyzer Include="/tmp/uitoolkit_gen_pm5lbiyz/Unity.UIToolkit.SourceGenerator.dll" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="10.0.8" />

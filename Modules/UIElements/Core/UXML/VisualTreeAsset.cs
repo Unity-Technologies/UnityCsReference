@@ -123,6 +123,13 @@ namespace UnityEngine.UIElements
                 this.asset = asset;
             }
 
+            public UsingEntry(string alias, string path, VisualTreeAsset asset)
+            {
+                this.alias = alias;
+                this.path = path;
+                this.asset = asset;
+            }
+
             public bool Equals(UsingEntry other)
             {
                 return alias == other.alias && path == other.path && asset == other.asset;
@@ -717,13 +724,7 @@ namespace UnityEngine.UIElements
                 if (childVe == null)
                     continue;
 
-                childVe.visualTreeAssetSource = this;
-
-                // Save reference to the visualElementAsset so elements can be reinitialized when
-                // we set their attributes in the editor
-                childVe.visualElementAsset = childVea;
-
-                var index = templateAsset?.slotUsages?.FindIndex(u => u.assetId == childVea.id) ?? -1;
+                var index = templateAsset != null ? FindSlotUsageIndex(templateAsset.slotUsages, childVea.id) : -1;
                 if (index != -1)
                 {
                     VisualElement parentSlot;
@@ -750,6 +751,20 @@ namespace UnityEngine.UIElements
                 context.slotInsertionPoints.Clear();
 
             return ve;
+        }
+
+        static int FindSlotUsageIndex(List<SlotUsageEntry> slotUsages, int assetId)
+        {
+            if (slotUsages == null)
+                return -1;
+
+            for (var i = 0; i < slotUsages.Count; ++i)
+            {
+                if (slotUsages[i].assetId == assetId)
+                    return i;
+            }
+
+            return -1;
         }
 
         internal bool SlotDefinitionExists(string slotName)
@@ -914,6 +929,9 @@ namespace UnityEngine.UIElements
                 return entry.asset;
 
             string path = entry.path;
+            if (string.IsNullOrEmpty(path))
+                return null;
+
             return Panel.LoadResource(path, typeof(VisualTreeAsset),1) as VisualTreeAsset;
         }
 
@@ -936,6 +954,12 @@ namespace UnityEngine.UIElements
         internal void RegisterTemplate(string templateName, VisualTreeAsset asset)
         {
             InsertUsingEntry(new UsingEntry(templateName, asset));
+        }
+
+        [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
+        internal void RegisterTemplate(string templateName, string path, VisualTreeAsset asset)
+        {
+            InsertUsingEntry(new UsingEntry(templateName, path, asset));
         }
 
         internal bool TryRegisterTemplate(string templateName, VisualTreeAsset asset)

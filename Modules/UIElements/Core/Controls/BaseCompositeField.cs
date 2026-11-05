@@ -37,15 +37,6 @@ namespace UnityEngine.UIElements
             }
         }
 
-        private VisualElement GetSpacer()
-        {
-            var spacer = new VisualElement();
-            spacer.AddToClassList(spacerUssClassNameUnique);
-            spacer.visible = false;
-            spacer.focusable = false;
-            return spacer;
-        }
-
         List<TField> m_Fields;
         internal List<TField> fields => m_Fields;
 
@@ -189,6 +180,9 @@ namespace UnityEngine.UIElements
 
                     field.onValidateValue += newValue =>
                     {
+                        if (isValidationIgnored)
+                            return newValue;
+
                         TValueType cur = value;
                         desc.write(ref cur, newValue);
                         var validatedValue = ValidatedValue(cur);
@@ -224,22 +218,6 @@ namespace UnityEngine.UIElements
                     else
                     {
                         visualInput.hierarchy.Add(field);
-                    }
-                }
-
-                if (fieldsByLine < 3)
-                {
-                    int fieldsToAdd = 3 - fieldsByLine;
-                    for (int countToAdd = 0; countToAdd < fieldsToAdd; countToAdd++)
-                    {
-                        if (isMultiLine)
-                        {
-                            newLineGroup.Add(GetSpacer());
-                        }
-                        else
-                        {
-                            visualInput.hierarchy.Add(GetSpacer());
-                        }
                     }
                 }
 

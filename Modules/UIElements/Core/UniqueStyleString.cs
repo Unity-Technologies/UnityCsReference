@@ -15,7 +15,7 @@ namespace UnityEngine.UIElements;
 /// and reduced memory footprint.
 /// </summary>
 /// <remarks>
-/// Ids may very between consecutive runs and may be regenerated on domain reload.
+/// Ids may very between consecutive runs and may be regenerated on code reload.
 /// </remarks>
 public readonly partial struct UniqueStyleString : IEquatable<UniqueStyleString>
 {
@@ -71,7 +71,7 @@ public readonly partial struct UniqueStyleString : IEquatable<UniqueStyleString>
     /// <remarks>
     /// Strings with different storage addresses but identical content will always be translated to the same id.
     ///
-    /// The id associated with a string may vary between consecutive runs and may be regenerated on domain reload.
+    /// The id associated with a string may vary between consecutive runs and may be regenerated on code reload.
     /// Use the <see cref="value"/> field for serialization instead.
     /// </remarks>
     public int id => m_Id;
@@ -131,6 +131,7 @@ public readonly partial struct UniqueStyleString : IEquatable<UniqueStyleString>
 
         if (!k_StringToIndex.TryGetValue(s, out m_Id))
         {
+            Debug.Assert(UIR.Utility.DebugIsMainThread(), "UniqueStyleString interning must happen on the main thread.");
             k_StringToIndex.Add(s, m_Id = k_IndexToString.Count);
             k_IndexToString.Add(s);
         }

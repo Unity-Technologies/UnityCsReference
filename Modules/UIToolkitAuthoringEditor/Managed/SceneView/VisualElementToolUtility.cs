@@ -136,12 +136,10 @@ namespace Unity.UIToolkit.Editor
 
         public static VisualElement[] GetSelectedElements()
         {
-            var objects = Selection.objects;
-            var result = new List<VisualElement>(objects.Length);
-            foreach (var obj in objects)
+            var selections = Selection.GetLoadedObjects<VisualElementSelection>();
+            var result = new List<VisualElement>(selections.Count);
+            foreach (var sel in selections)
             {
-                if (obj is not VisualElementSelection sel)
-                    continue;
                 if (!CanEditStyles(sel))
                     continue;
                 if (sel.Element == null)

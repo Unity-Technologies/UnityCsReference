@@ -186,6 +186,54 @@ namespace UnityEngine.Animations
             SetLayerMaskFromAvatarMaskInternal(ref m_Handle, layerIndex, mask);
         }
 
+        // Throws InvalidOperationException when the layer mask has more transforms than the AvatarMaskConstant format allows.
+        internal int GetLayerMaskByteCount(uint layerIndex)
+        {
+            ThrowIfLayerIndexOutOfRange(layerIndex);
+
+            return GetLayerMaskByteCountInternal(ref m_Handle, layerIndex);
+        }
+
+        // Writes the layer mask into destination; returns false when destination is smaller than GetLayerMaskByteCount.
+        internal bool TryGetLayerMask(uint layerIndex, Span<byte> destination, out AvatarMaskConstant mask)
+        {
+            ThrowIfLayerIndexOutOfRange(layerIndex);
+
+            int bytesWritten;
+            unsafe
+            {
+                fixed (byte* ptr = destination)
+                    bytesWritten = WriteLayerMaskInternal(ref m_Handle, layerIndex, ptr, destination.Length);
+            }
+
+            if (bytesWritten == 0)
+            {
+                mask = default;
+                return false;
+            }
+
+            mask = AvatarMaskConstant.FromValidatedBytes(destination.Slice(0, bytesWritten));
+            return true;
+        }
+
+        internal void SetLayerMask(uint layerIndex, in AvatarMaskConstant mask)
+        {
+            ThrowIfLayerIndexOutOfRange(layerIndex);
+
+            var bytes = mask.Bytes;
+            unsafe
+            {
+                fixed (byte* ptr = bytes)
+                    SetLayerMaskFromBytesInternal(ref m_Handle, layerIndex, ptr, bytes.Length);
+            }
+        }
+
+        void ThrowIfLayerIndexOutOfRange(uint layerIndex)
+        {
+            if (layerIndex >= m_Handle.GetInputCount())
+                throw new ArgumentOutOfRangeException(nameof(layerIndex), $"layerIndex {layerIndex} must be in the range of 0 to {m_Handle.GetInputCount() - 1}.");
+        }
+
         [NativeMethod(ThrowsException = true)]
         extern private static bool CreateHandleInternal(PlayableGraph graph, ref PlayableHandle handle);
 
@@ -200,5 +248,14 @@ namespace UnityEngine.Animations
 
         [NativeMethod(ThrowsException = true)]
         extern private static void SetLayerMaskFromAvatarMaskInternal(ref PlayableHandle handle, uint layerIndex, AvatarMask mask);
+
+        [NativeMethod(ThrowsException = true)]
+        extern private static int GetLayerMaskByteCountInternal(ref PlayableHandle handle, uint layerIndex);
+
+        [NativeMethod(ThrowsException = true)]
+        extern private static unsafe int WriteLayerMaskInternal(ref PlayableHandle handle, uint layerIndex, byte* destination, int capacity);
+
+        [NativeMethod(ThrowsException = true)]
+        extern private static unsafe void SetLayerMaskFromBytesInternal(ref PlayableHandle handle, uint layerIndex, byte* source, int size);
     }
 }

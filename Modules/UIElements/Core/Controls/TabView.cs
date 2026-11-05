@@ -301,13 +301,11 @@ namespace UnityEngine.UIElements
 
             contentViewport = new VisualElement();
             contentViewport.AddToClassList(viewportUssClassNameUnique);
-            contentViewport.RegisterCallback<GeometryChangedEvent>(OnGeometryChanged);
             contentViewport.pickingMode = PickingMode.Ignore;
 
             hierarchy.Add(contentViewport);
 
             m_HeaderContainer = new VisualElement() { name = headerContainerClassName }.WithClassList(headerContainerClassNameUnique);
-            header.RegisterCallback<GeometryChangedEvent>(OnGeometryChanged);
             contentViewport.Add(m_HeaderContainer);
 
             m_ContentContainer = new TabViewContentContainer() { name = contentContainerUssClassName }.WithClassList(contentContainerUssClassNameUnique);
@@ -319,6 +317,7 @@ namespace UnityEngine.UIElements
             contentViewport.Add(nextButton);
             contentViewport.Add(previousButton);
 
+            RegisterCallback<AttachToPanelEvent>(OnAttachToPanel);
             RegisterCallback<DetachFromPanelEvent>(OnDetachFromPanel);
         }
 
@@ -345,6 +344,12 @@ namespace UnityEngine.UIElements
             {
                 m_ApplyingViewState = false;
             }
+        }
+
+        void OnAttachToPanel(AttachToPanelEvent evt)
+        {
+            header.RegisterCallback<GeometryChangedEvent>(OnGeometryChanged);
+            contentViewport.RegisterCallback<GeometryChangedEvent>(OnGeometryChanged);
         }
 
         void OnDetachFromPanel(DetachFromPanelEvent evt)

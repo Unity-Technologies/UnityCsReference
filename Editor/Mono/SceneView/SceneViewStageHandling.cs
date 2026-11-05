@@ -4,6 +4,7 @@
 
 using System;
 using System.Collections.Generic;
+using UnityEditor.EditorTools;
 using UnityEditor.IMGUI.Controls;
 using UnityEditor.SceneManagement;
 using UnityEngine;
@@ -44,6 +45,7 @@ namespace UnityEditor
             // we have e.g the corrct sky box and other settings.
             currentStage.SyncSceneViewToStage(m_SceneView);
             LoadCameraState(m_SceneView, currentStage);
+            EditorToolManager.RefreshStageToolContexts();
         }
 
         public void OnDisable()
@@ -90,6 +92,7 @@ namespace UnityEditor
 
             m_BreadcrumbInitialized = false;
             m_SceneView.OnStageChanged(previousStage, newStage);
+            EditorToolManager.RefreshStageToolContexts();
         }
 
         // Unlike the camera state, the search is kept per stage and not per context stage

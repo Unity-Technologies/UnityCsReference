@@ -37,10 +37,18 @@ namespace UnityEditor
             internal const string builtInTabContent = "UXML/ProjectSettings/GraphicsSettingsEditor-BuiltInTab.uxml";
             internal static readonly string k_BuildProfileGraphicsSettingsOverrideWarning =
                 L10n.Tr("The current active build profile has overridden certain Graphics settings. To ensure that the correct settings are included in your build, see the Build Profiles...", null);
-            internal static readonly string k_GraphicsSettingsBuiltinInfo =
-                L10n.Tr("The Built-In Render Pipeline is deprecated. Migrate your project to the Universal Render Pipeline instead.", null);
-            internal static readonly string k_GraphicsSettingsBuiltinWarning =
-                L10n.Tr("If you don't assign a render pipeline asset in your project, Unity uses the Built-In Render Pipeline which is deprecated. Migrate your project to the Universal Render Pipeline instead.", null);
+            internal static readonly string k_BuiltInRenderPipelineNotSupported =
+                L10n.Tr("This project uses the Built-In Render Pipeline, which is no longer supported. Migrate to a Scriptable Render Pipeline to render.", null);
+            internal static readonly string k_DefaultRenderPipelineAssetMissing =
+                L10n.Tr("No Default Render Pipeline Asset is assigned. Assign one to provide a fallback for Quality Levels without a Render Pipeline Asset.", null);
+            internal static readonly string k_RenderPipelineAssetMissing =
+                L10n.Tr("No Default Render Pipeline Asset is assigned, and not all Quality Levels have a Render Pipeline Asset. Assign a Render Pipeline Asset in order to render.", null);
+            internal static readonly string k_RenderingDisabled =
+                L10n.Tr("No Render Pipeline Asset is assigned. Rendering is disabled. To render, install URP and assign a Render Pipeline Asset.", null);
+            internal static readonly string k_StartMigration = L10n.Tr("Start Migration", null);
+            internal static readonly string k_OpenPackageManager = L10n.Tr("Open Package Manager", null);
+            internal static readonly string k_LearnMore = L10n.Tr("Learn more...", null);
+            internal const string k_UniversalRenderPipelinePackageName = "com.unity.render-pipelines.universal";
         }
         internal IEnumerable<GraphicsSettingsInspectorUtility.GlobalSettingsContainer> globalSettings => m_GlobalSettings;
 
@@ -53,6 +61,7 @@ namespace UnityEditor
         ObjectFieldWithPrompt m_DefaultRenderPipelineField;
         EnumField m_DefaultMeshBufferTargetField;
         HelpBox m_BiRPDeprecationInfoBox;
+        string m_BiRPUpgradeDocumentationUrl;
         [AutoStaticsCleanupOnCodeReload]
         internal static Action OnActiveProfileGraphicsSettingsChanged;
 
@@ -154,6 +163,7 @@ namespace UnityEditor
             BindShaderPreload(m_CurrentRoot);
 
             m_ShaderBuildSettingsUI.Initialize(m_CurrentRoot, serializedObject, false);
+            SetupTransparencySortMode(m_CurrentRoot);
 
             if (globalSettingsExist)
             {
@@ -169,7 +179,6 @@ namespace UnityEditor
                             m_VisibilityController.RegisterVisualElement(e, null);
                     });
                 m_CurrentRoot.Query<BuiltInShaderElement>().ForEach(e => m_VisibilityController.RegisterVisualElement(e, null));
-                SetupTransparencySortMode(m_CurrentRoot);
             }
 
             GraphicsSettingsInspectorUtility.LocalizeVisualTree(m_CurrentRoot);
@@ -286,8 +295,6 @@ namespace UnityEditor
                 if (serializedProperty != null)
                     p.BindProperty(serializedProperty);
             });
-
-            SetupTransparencySortMode(builtInTemplate);
 
             var builtInSettingsContainer = builtInTemplate.MandatoryQ<VisualElement>($"{GraphicsSettingsData.builtIn}SettingsContainer");
             var builtInHelpBoxes = GraphicsSettingsInspectorUtility.CreateRPHelpBox(m_VisibilityController, null);
@@ -476,17 +483,21 @@ namespace UnityEditor
                 return;
 
 //          Workaround, as there is a bug in the documentation forwarder that causes links containing a / to be broken:
-            m_BiRPDeprecationInfoBox.linkHref = $"https://docs.unity3d.com/{Application.unityVersionVer}.{Application.unityVersionMaj}/Documentation/Manual/urp/upgrading-from-birp.html";
+            m_BiRPUpgradeDocumentationUrl = $"https://docs.unity3d.com/{Application.unityVersionVer}.{Application.unityVersionMaj}/Documentation/Manual/urp/upgrading-from-birp.html";
 
 //          Use this once the documentation forwarder has been fixed
 //          Slack thread: https://unity.slack.com/archives/CTD5B2N7J/p1765805896918059
 //          Ticket: https://jira.unity3d.com/browse/WEBDOCS-2894
-//            m_BiRPDeprecationInfoBox.linkHref = System.IO.Path.Combine(Help.baseDocumentationUrl, "urp", "upgrading-from-birp");
+//            m_BiRPUpgradeDocumentationUrl = System.IO.Path.Combine(Help.baseDocumentationUrl, "urp", "upgrading-from-birp");
 
             m_DefaultRenderPipelineField = root.Q<ObjectFieldWithPrompt>("DefaultRenderPipeline");
             m_DefaultRenderPipelineField?.RegisterValueChangedCallback(evt => UpdateBiRPDeprecationInfoBox());
             m_DefaultRenderPipelineField?.SetShouldDisplayDialog((current, newValue) =>
             {
+                // The default is not used when the active quality level has its own asset, so the render pipeline does not change
+                if (QualitySettings.renderPipeline != null)
+                    return false;
+
                 Type currentAssetType = current == null ? typeof(RenderPipelineAsset) : current.GetType();
                 Type newAssetType = newValue == null ? typeof(RenderPipelineAsset) : newValue.GetType();
                 return (currentAssetType != newAssetType);
@@ -500,34 +511,67 @@ namespace UnityEditor
             if (m_BiRPDeprecationInfoBox == null)
                 return;
 
-            bool srpInstalled = false;
-            foreach (var type in TypeCache.GetTypesDerivedFrom<RenderPipelineAsset>())
+            bool visible = true;
+            string buttonText = null;
+            Action buttonAction = null;
+            string linkHref = null;
+
+            if (m_DefaultRenderPipelineField?.value != null)
             {
-                if (!type.IsAbstract)
+                visible = false;
+            }
+            else if (EditorGraphicsSettings.UsesBuiltInRenderPipeline())
+            {
+                m_BiRPDeprecationInfoBox.messageType = HelpBoxMessageType.Error;
+                m_BiRPDeprecationInfoBox.text = GraphicsSettingsData.k_BuiltInRenderPipelineNotSupported;
+                linkHref = m_BiRPUpgradeDocumentationUrl;
+                if (EditorGraphicsSettings.startBuiltInRenderPipelineMigration != null)
                 {
-                    srpInstalled = true;
-                    break;
+                    buttonText = GraphicsSettingsData.k_StartMigration;
+                    buttonAction = EditorGraphicsSettings.startBuiltInRenderPipelineMigration;
                 }
             }
-
-            bool defaultSrpSelected = m_DefaultRenderPipelineField?.value != null;
-
-            if (!srpInstalled)
-            {
-                m_BiRPDeprecationInfoBox.messageType = HelpBoxMessageType.Info;
-                m_BiRPDeprecationInfoBox.text = GraphicsSettingsData.k_GraphicsSettingsBuiltinInfo;
-                m_BiRPDeprecationInfoBox.style.display = DisplayStyle.Flex;
-            }
-            else if (!defaultSrpSelected)
+            else if (AllQualityLevelsHaveRenderPipelineAsset())
             {
                 m_BiRPDeprecationInfoBox.messageType = HelpBoxMessageType.Warning;
-                m_BiRPDeprecationInfoBox.text = GraphicsSettingsData.k_GraphicsSettingsBuiltinWarning;
-                m_BiRPDeprecationInfoBox.style.display = DisplayStyle.Flex;
+                m_BiRPDeprecationInfoBox.text = GraphicsSettingsData.k_DefaultRenderPipelineAssetMissing;
+            }
+            else if (!EditorGraphicsSettings.IsAnyRenderPipelineAssetTypeAvailable())
+            {
+                m_BiRPDeprecationInfoBox.messageType = HelpBoxMessageType.Warning;
+                m_BiRPDeprecationInfoBox.text = GraphicsSettingsData.k_RenderingDisabled;
+                buttonText = GraphicsSettingsData.k_OpenPackageManager;
+                buttonAction = () => PackageManager.UI.Window.Open(GraphicsSettingsData.k_UniversalRenderPipelinePackageName);
             }
             else
             {
-                m_BiRPDeprecationInfoBox.style.display = DisplayStyle.None;
+                m_BiRPDeprecationInfoBox.messageType = HelpBoxMessageType.Error;
+                m_BiRPDeprecationInfoBox.text = GraphicsSettingsData.k_RenderPipelineAssetMissing;
             }
+
+            // Clearing the button text removes the button along with its click handlers
+            m_BiRPDeprecationInfoBox.buttonText = null;
+            if (buttonAction != null)
+            {
+                m_BiRPDeprecationInfoBox.buttonText = buttonText;
+                m_BiRPDeprecationInfoBox.onButtonClicked += buttonAction;
+            }
+
+            // The upgrade guide only applies to projects that use the Built-In Render Pipeline
+            m_BiRPDeprecationInfoBox.linkText = linkHref != null ? GraphicsSettingsData.k_LearnMore : null;
+            m_BiRPDeprecationInfoBox.linkHref = linkHref;
+
+            m_BiRPDeprecationInfoBox.style.display = visible ? DisplayStyle.Flex : DisplayStyle.None;
+        }
+
+        static bool AllQualityLevelsHaveRenderPipelineAsset()
+        {
+            for (int i = 0; i < QualitySettings.count; ++i)
+            {
+                if (QualitySettings.GetRenderPipelineAssetAt(i) == null)
+                    return false;
+            }
+            return true;
         }
 
         [Serializable]
@@ -779,6 +823,8 @@ namespace UnityEditor
             { "m_FogKeepExp2" , "Exponential Squared" },
             { "m_DefaultLightBaker" , "Default Light Baker" },
             { "m_DefaultMeshBufferTarget" , "Default Mesh Buffer Target" },
+            { "m_TransparencySortMode" , "Transparency Sort Mode" },
+            { "m_TransparencySortAxis" , "Transparency Sort Axis" },
             { "m_InstancingStripping" , "Instancing Variants" },
             { "m_BrgStripping" , "Batch Renderer Group Variants" },
             { "m_LogWhenShaderIsCompiled" , "Log Shader Compilation" },

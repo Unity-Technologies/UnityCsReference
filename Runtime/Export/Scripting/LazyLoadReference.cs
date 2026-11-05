@@ -47,7 +47,7 @@ namespace UnityEngine
         /// Convenience property that checks if the reference is broken: is set to something, but that something is not available/loadable at the moment for whatever reason.
         /// May trigger loading the referenced object into memory if the object is not already loaded.
         /// </summary>
-        public bool isBroken => m_EntityId != EntityId.None && !UnityEngine.Object.DoesObjectWithInstanceIDExist(m_EntityId);
+        public bool isBroken => m_EntityId != EntityId.None && !UnityEngine.Object.DoesObjectWithEntityIdExist(m_EntityId);
 
         /// <summary>
         /// Accessor to the referenced asset.
@@ -63,7 +63,7 @@ namespace UnityEngine
                 }
                 else
                 {
-                    return (T)Object.ForceLoadFromInstanceID(m_EntityId);
+                    return (T)Object.ForceLoadFromEntityId(m_EntityId);
                 }
             }
             set

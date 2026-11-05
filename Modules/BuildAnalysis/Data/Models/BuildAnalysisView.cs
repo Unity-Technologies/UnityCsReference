@@ -26,12 +26,16 @@ namespace UnityEditor.Build.Analysis
         // The listed builds this one ran nested in or contains, ancestors first. Never null.
         public IReadOnlyList<BuildEntry> RelatedBuilds { get; }
 
-        public BuildAnalysisView(BuildEntry entry, AnalyzedBuild analyzed, IReadOnlyList<BuildEntry> relatedBuilds = null)
+        // The build comes from another project: the tabs show the imported-build banner.
+        public bool IsImported { get; }
+
+        public BuildAnalysisView(BuildEntry entry, AnalyzedBuild analyzed, IReadOnlyList<BuildEntry> relatedBuilds = null, bool isImported = false)
         {
             Entry = entry;
             Analysis = analyzed.Analysis;
             Messages = analyzed.Messages;
             RelatedBuilds = relatedBuilds ?? Array.Empty<BuildEntry>();
+            IsImported = isImported;
         }
     }
 }

@@ -44,6 +44,10 @@ namespace UnityEditor.Build.Profile
         public static readonly string activatePlatform = L10n.Tr("Switch Platform", null);
         public static readonly string sceneList = L10n.Tr("Scene List", null);
         public static readonly string addOpenScenes = L10n.Tr("Add Open Scenes", null);
+        public static readonly string addScenes = L10n.Tr("Add Scenes...", null);
+        public static readonly string scenes = L10n.Tr("Scenes", null);
+        public static readonly string noScenesToAdd = L10n.Tr("Every scene in this project is already in the scene list.", null);
+        public static readonly string noScenesMatchSearch = L10n.Tr("No scenes match your search.", null);
         public static readonly string sceneListOverride = L10n.Tr("Override Global Scene List", null);
         public static readonly string openSceneList = L10n.Tr("Open Scene List", null);
         public static readonly string compilingMessage = L10n.Tr("Cannot build player while editor is importing assets or compiling scripts.", null);
@@ -56,8 +60,10 @@ namespace UnityEditor.Build.Profile
         public static readonly string apply = L10n.Tr("Apply", null);
         public static readonly string revert = L10n.Tr("Revert", null);
         public static readonly string cancelButtonText = L10n.Tr("Cancel", null);
+        public static readonly string close = L10n.Tr("Close", null);
         public static readonly string continueButtonText = L10n.Tr("Continue", null);
         public static readonly string addSettings = L10n.Tr("Add Settings", null);
+        public static readonly string add = L10n.Tr("Add", null);
         public static readonly string reset = L10n.Tr("Reset", null);
         public static readonly string remove = L10n.Tr("Remove", null);
         public static readonly string resetSettings = L10n.Tr("Reset Settings", null);

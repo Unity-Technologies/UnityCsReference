@@ -94,8 +94,32 @@ public class TemplateFormatter : FormatterBase, IInitializer, ISerializationCall
             throw new FormatException($"Formatter named '{formattingInfo.Placeholder?.FormatterName}' found no registered template named '{templateName}'");
         }
 
+        if (IsRecursive(formattingInfo, template))
+        {
+            throw new FormatException($"Template '{templateName}' calls itself recursively");
+        }
+
         formattingInfo.FormatAsChild(template, formattingInfo.CurrentValue);
         return true;
+    }
+
+    static bool IsRecursive(IFormattingInfo formattingInfo, Format template)
+    {
+        if (formattingInfo is not Core.Formatting.FormattingInfo info)
+            return false;
+
+        for (var ancestor = info.Parent; ancestor != null; ancestor = ancestor.Parent)
+        {
+            if (ReferenceEquals(ancestor.Format, template) && IsSameValue(ancestor.CurrentValue, info.CurrentValue))
+                return true;
+        }
+
+        return false;
+    }
+
+    static bool IsSameValue(object a, object b)
+    {
+        return a is ValueType ? Equals(a, b) : ReferenceEquals(a, b);
     }
 
     /// <summary>

@@ -87,7 +87,7 @@ class TimeTextInfo
     /// </summary>
     public string[] Ptxt_week { get; set;} = Array.Empty<string>();
 
-    static string GetValue(PluralRules.PluralRuleDelegate pluralRule, int value, IReadOnlyList<string> units)
+    static string GetValue(PluralRules.PluralRuleDelegate pluralRule, long value, IReadOnlyList<string> units)
     {
         // Get the plural index from the plural rule,
         // unless there's only 1 unit in the first place:
@@ -116,7 +116,7 @@ class TimeTextInfo
     /// The text for <see cref="TimeSpanFormatOptions"/> ranges,
     /// that correspond to a certain value.
     /// </returns>
-    public virtual string GetUnitText(TimeSpanFormatOptions unit, int value, bool abbr)
+    public virtual string GetUnitText(TimeSpanFormatOptions unit, long value, bool abbr)
     {
         if (PluralRule == null) throw new InvalidOperationException("Plural rule delegate must not be null");
 

@@ -51,10 +51,28 @@ namespace Unity.Entities
         JobHandle*             m_ReadJobFences;
 
         TypeIndex              EntityTypeIndex;
+        TypeIndex              m_TransformRefTypeIndex;
+        TypeIndex              m_EntityJobsOnGameObjectTransformsTypeIndex;
+        TypeIndex              m_NativeJobsOnGameObjectTransformsTypeIndex;
         const ushort           NullTypeIndex = 0xFFFF;
 
         JobHandle              m_ExclusiveTransactionDependency;
         byte                   _IsInTransaction;
+
+        // The m_JobHandle of the updating system if it can reach transforms, else null. Native transform code waits for it,
+        // since the system's jobs are only registered here once its update returns.
+        JobHandle*             m_RunningTransformSystemJobHandle;
+
+        // Native byte that lets main-thread transform access skip all dependency checks while it is 0, or null if this World
+        // is not registered with native transform code.
+        byte*                  m_NativeTransformPendingAccess;
+        // Mirror EntitiesTransformDependency's access kinds.
+        const byte             kNativeTransformAccessEntities = 1;
+        const byte             kNativeTransformAccessGameObjects = 2;
+        const byte             kNativeTransformAccessAll = kNativeTransformAccessEntities | kNativeTransformAccessGameObjects;
+
+        internal JobHandle* RunningTransformSystemJobHandle => m_RunningTransformSystemJobHandle;
+        internal byte* NativeTransformPendingAccess => m_NativeTransformPendingAccess;
 
         private ProfilerMarker m_Marker;
         private WorldUnmanaged m_World;
@@ -85,6 +103,62 @@ namespace Unity.Entities
             m_DependencyHandlesCount = 0;
         }
 
+        // Native transform code reads this struct's memory, so it checks that both sides agree on its layout.
+        internal static void CheckNativeTransformDependencyLayout()
+        {
+            DependencyHandle handle = default;
+            var start = (byte*)&handle;
+            EntitiesTransformDependencyBindings.CheckManagedLayout(sizeof(JobHandle), sizeof(DependencyHandle),
+                (int)((byte*)&handle.WriteFence - start), (int)((byte*)&handle.NumReadFences - start), (int)((byte*)&handle.TypeIndex - start),
+                kMaxReadJobHandles, NullTypeIndex);
+        }
+
+        internal static void RegisterWithNativeTransformDependencies(ComponentDependencyManager* manager, ulong owner)
+        {
+            manager->m_NativeTransformPendingAccess = EntitiesTransformDependencyBindings.RegisterWorld(owner, manager->m_TypeArrayIndices,
+                manager->m_DependencyHandles, &manager->m_DependencyHandlesCount, manager->m_ReadJobFences, &manager->_IsInTransaction,
+                &manager->m_ExclusiveTransactionDependency, &manager->m_RunningTransformSystemJobHandle);
+        }
+
+        // Call whenever a job, transaction or system update starts that native transform code may have to wait for.
+        // Native code clears the byte again once it finds nothing to wait for.
+        void MarkNativeTransformJobsPending()
+        {
+            if (m_NativeTransformPendingAccess != null)
+                *m_NativeTransformPendingAccess = kNativeTransformAccessAll;
+        }
+
+        void MarkNativeTransformJobsPending(TypeIndex* types, int typesCount)
+        {
+            if (m_NativeTransformPendingAccess == null)
+                return;
+            byte access = 0;
+            for (var i = 0; i != typesCount; i++)
+            {
+                if (types[i] == m_TransformRefTypeIndex)
+                    access |= kNativeTransformAccessEntities;
+                else if (types[i] == m_EntityJobsOnGameObjectTransformsTypeIndex)
+                    access |= kNativeTransformAccessGameObjects;
+            }
+            *m_NativeTransformPendingAccess |= access;
+        }
+
+        bool IsWrittenByNativeTransformJobs(TypeIndex typeIndex)
+        {
+            return typeIndex == m_TransformRefTypeIndex || typeIndex == m_NativeJobsOnGameObjectTransformsTypeIndex;
+        }
+
+        // Returns the previous handle, so that nested system updates can restore it. Only systems that can reach transforms
+        // pass their handle
+        internal JobHandle* SetRunningTransformSystemJobHandle(JobHandle* jobHandle)
+        {
+            var previous = m_RunningTransformSystemJobHandle;
+            m_RunningTransformSystemJobHandle = jobHandle;
+            if (jobHandle != null)
+                MarkNativeTransformJobsPending();
+            return previous;
+        }
+
         public void OnCreate(WorldUnmanaged world)
         {
             m_World = world;
@@ -96,12 +170,17 @@ namespace Unity.Entities
             UnsafeUtility.MemClear(m_ReadJobFences, sizeof(JobHandle) * kMaxReadJobHandles * kMaxTypes);
 
             EntityTypeIndex = TypeManager.GetTypeIndex<Entity>();
+            m_TransformRefTypeIndex = TypeManager.GetTypeIndex<TransformRef>();
+            m_EntityJobsOnGameObjectTransformsTypeIndex = TypeManager.GetTypeIndex<EntityJobsOnGameObjectTransforms>();
+            m_NativeJobsOnGameObjectTransformsTypeIndex = TypeManager.GetTypeIndex<NativeJobsOnGameObjectTransforms>();
 
             m_DependencyHandles = (DependencyHandle*)Memory.Unmanaged.Allocate(sizeof(DependencyHandle) * kMaxTypes, 16, memoryLabel);
             UnsafeUtility.MemClear(m_DependencyHandles, sizeof(DependencyHandle) * kMaxTypes);
 
             m_DependencyHandlesCount = 0;
             _IsInTransaction = 0;
+            m_RunningTransformSystemJobHandle = null;
+            m_NativeTransformPendingAccess = null;
             m_ExclusiveTransactionDependency = default;
 
             ForEachStructuralChange.Init();
@@ -251,6 +330,8 @@ namespace Unity.Entities
         {
             JobHandle* combinedDependencies = null;
             var combinedDependenciesCount = 0;
+            MarkNativeTransformJobsPending(readerTypes, readerTypesCount);
+            MarkNativeTransformJobsPending(writerTypes, writerTypesCount);
             if (readerTypesCount == 0 && writerTypesCount == 0)
             {
                 ushort entityTypeArrayIndex = GetTypeArrayIndex(EntityTypeIndex);
@@ -270,7 +351,14 @@ namespace Unity.Entities
 
             for (var i = 0; i != writerTypesCount; i++)
             {
-                m_DependencyHandles[GetTypeArrayIndex(writerTypes[i])].WriteFence = dependency;
+                ref var writeFence = ref m_DependencyHandles[GetTypeArrayIndex(writerTypes[i])].WriteFence;
+                // Native transform jobs register under these types at any time, including during a system's update, so the
+                // new writer may not depend on the current write fence. Replacing it would stop those jobs from being tracked.
+                // (KERNEL-1210) However, this doesn't solve the the case of a IJobParallelForTransform scheduled in the middle of 2 IJobChunks in the same system.
+                if (IsWrittenByNativeTransformJobs(writerTypes[i]) && !writeFence.Equals(default(JobHandle)))
+                    writeFence = JobHandle.CombineDependencies(dependency, writeFence);
+                else
+                    writeFence = dependency;
             }
 
 
@@ -348,6 +436,15 @@ namespace Unity.Entities
             if (TypeManager.GetTypeInfo(type).Category == TypeManager.TypeCategory.EntityData)
                 throw new InvalidOperationException($"Can't complete a write-dependency for type Unity.Entities.Entity");
             Safety.CompleteReadAndWriteDependency(type);
+        }
+
+        // Replaces a write fence that the caller has just completed with the default handle, so that later
+        // completions of the same type return without calling into the job system.
+        internal void ClearCompletedWriteFence(TypeIndex typeIndex)
+        {
+            var arrayIndex = m_TypeArrayIndices[typeIndex.Index];
+            if (arrayIndex != NullTypeIndex)
+                m_DependencyHandles[arrayIndex].WriteFence = default;
         }
 
         JobHandle CombineReadDependencies(ushort typeArrayIndex)
@@ -436,6 +533,7 @@ namespace Unity.Entities
             Safety.BeginExclusiveTransaction();
 
             _IsInTransaction = 1;
+            MarkNativeTransformJobsPending();
             m_ExclusiveTransactionDependency = GetCombinedDependencyForAllTypes();
             ClearDependencies();
         }

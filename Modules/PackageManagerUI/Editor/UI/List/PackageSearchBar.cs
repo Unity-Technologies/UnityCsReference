@@ -20,17 +20,20 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         private readonly IUnityConnectProxy m_UnityConnect;
         private readonly IPageManager m_PageManager;
+        private readonly IDateTimeProxy m_DateTimeProxy;
 
         public PackageSearchBar() : this(
             ServicesContainer.instance.Resolve<IUnityConnectProxy>(),
-            ServicesContainer.instance.Resolve<IPageManager>())
+            ServicesContainer.instance.Resolve<IPageManager>(),
+            ServicesContainer.instance.Resolve<IDateTimeProxy>())
         {
         }
 
-        public PackageSearchBar(IUnityConnectProxy unityConnect, IPageManager pageManager)
+        public PackageSearchBar(IUnityConnectProxy unityConnect, IPageManager pageManager, IDateTimeProxy dateTimeProxy)
         {
             m_UnityConnect = unityConnect;
             m_PageManager = pageManager;
+            m_DateTimeProxy = dateTimeProxy;
 
             m_SearchField = new ToolbarSearchField();
             m_SearchField.textInputField.maxLength = k_SearchFieldTextLimit;
@@ -113,7 +116,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         {
             m_SearchFieldDelayArgs = new SearchFieldDelayArgs()
             {
-                timestampInTicks = DateTime.Now.Ticks,
+                timestampInTicks = m_DateTimeProxy.utcNow.Ticks,
                 page = m_PageManager.activePage,
                 searchText = m_SearchField.value
             };
@@ -122,9 +125,9 @@ namespace UnityEditor.PackageManager.UI.Internal
             EditorApplication.update += SearchFieldDelayUpdate;
         }
 
-        private void SearchFieldDelayUpdate()
+        internal void SearchFieldDelayUpdate()
         {
-            if (DateTime.Now.Ticks - m_SearchFieldDelayArgs.timestampInTicks <= k_SearchFieldDelayTicks)
+            if (m_DateTimeProxy.utcNow.Ticks - m_SearchFieldDelayArgs.timestampInTicks <= k_SearchFieldDelayTicks)
                 return;
             SyncTextFromSearchFieldToPage();
         }

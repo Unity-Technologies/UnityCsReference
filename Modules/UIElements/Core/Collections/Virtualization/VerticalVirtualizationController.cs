@@ -180,7 +180,7 @@ namespace UnityEngine.UIElements
         {
             // We want to skip the item that is being reordered with the animated dragger.
             var wasGhostItem = recycledItem.isDragGhost;
-            if (GetDraggedIndex() == newIndex)
+            if (newIndex >= 0 && GetDraggedIndex() == newIndex)
             {
                 if (recycledItem.index != ReusableCollectionItem.UndefinedIndex)
                     m_CollectionView.viewController.InvokeUnbindItem(recycledItem, recycledItem.index);
@@ -199,7 +199,7 @@ namespace UnityEngine.UIElements
                 recycledItem.SetDragGhost(false);
             }
 
-            if (newIndex >= itemsCount)
+            if (newIndex < 0 || newIndex >= itemsCount)
             {
                 recycledItem.rootElement.style.display = DisplayStyle.None;
                 if (recycledItem.index >= 0 && recycledItem.index < itemsCount)

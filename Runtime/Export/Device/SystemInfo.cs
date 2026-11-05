@@ -238,6 +238,8 @@ namespace UnityEngine.Device
 
         public static bool supportsMultiview => ShimManager.systemInfoShim.supportsMultiview;
 
+        public static bool supportsDepthClamp => ShimManager.systemInfoShim.supportsDepthClamp;
+
         public static bool supportsStoreAndResolveAction => ShimManager.systemInfoShim.supportsStoreAndResolveAction;
 
         public static bool supportsMultisampleResolveDepth => ShimManager.systemInfoShim.supportsMultisampleResolveDepth;

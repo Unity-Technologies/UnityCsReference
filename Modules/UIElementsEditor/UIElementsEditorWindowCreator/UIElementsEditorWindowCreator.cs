@@ -443,17 +443,17 @@ namespace UnityEditor.UIElements
                 return false;
             }
 
-            if (!Validate(m_CSharpName, ".cs") || ClassExists())
+            if (!Validate(m_CSharpName, ".cs", isClassName: true) || ClassExists())
             {
                 return false;
             }
 
-            if (m_IsUssEnable && !Validate(m_UssName, ".uss"))
+            if (m_IsUssEnable && !Validate(m_UssName, ".uss", isClassName: false))
             {
                 return false;
             }
 
-            if (m_IsUxmlEnable && !Validate(m_UxmlName, ".uxml"))
+            if (m_IsUxmlEnable && !Validate(m_UxmlName, ".uxml", isClassName: false))
             {
                 return false;
             }
@@ -461,7 +461,8 @@ namespace UnityEditor.UIElements
             return true;
         }
 
-        bool Validate(string fileName, string extension)
+        // Only the C# name becomes a class, so only it is checked for keywords. USS and UXML names are just file names.
+        bool Validate(string fileName, string extension, bool isClassName)
         {
             bool isValid = true;
             if (fileName.Length <= 0)
@@ -469,7 +470,9 @@ namespace UnityEditor.UIElements
                 m_ErrorMessage = "Filename fields cannot be blank.";
                 isValid = false;
             }
-            else if (!System.CodeDom.Compiler.CodeGenerator.IsValidLanguageIndependentIdentifier(fileName))
+            else if (!(isClassName
+                ? UnityEditor.AddComponent.NewScriptDropdownItem.IsValidIdentifier(fileName)
+                : UnityEditor.AddComponent.NewScriptDropdownItem.HasValidIdentifierCharacters(fileName)))
             {
                 m_ErrorMessage = "Filename is invalid.";
                 isValid = false;

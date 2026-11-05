@@ -20,9 +20,12 @@ namespace UnityEditor.AdaptivePerformance.Editor
     [InitializeOnLoad]
     internal static partial class EditorUtilities
     {
-        internal static readonly string[] s_DefaultGeneralSettingsPath = {"Adaptive Performance"};
-        internal static readonly string[] s_DefaultLoaderPath = {"Adaptive Performance", "Provider"};
-        internal static readonly string[] s_DefaultSettingsPath = {"Adaptive Performance", "Settings"};
+        internal const string k_AdaptivePerformanceFolder = "AdaptivePerformance";
+
+        // "Assets/Settings" is where the Editor keeps generated project configuration, alongside Build Profiles.
+        internal static readonly string[] s_DefaultGeneralSettingsPath = {"Settings", k_AdaptivePerformanceFolder};
+        internal static readonly string[] s_DefaultLoaderPath = {"Settings", k_AdaptivePerformanceFolder, "Provider"};
+        internal static readonly string[] s_DefaultSettingsPath = {"Settings", k_AdaptivePerformanceFolder, "Settings"};
 
         // SessionState keys used to suppress repeated prompts within a single editor session.
         // SessionState survives domain reloads but resets when the editor is restarted, so the
@@ -60,6 +63,13 @@ namespace UnityEditor.AdaptivePerformance.Editor
             return null;
         }
 
+        // Composes the asset path the components describe without creating any of the folders,
+        // for callers that only want to look at, or clean up, the location.
+        internal static string GetAssetPathForComponentsNoCreate(string[] pathComponents, string root = "Assets")
+        {
+            return pathComponents.Length <= 0 ? root : $"{root}/{string.Join("/", pathComponents)}";
+        }
+
         internal static string GetAssetPathForComponents(string[] pathComponents, string root = "Assets")
         {
             if (pathComponents.Length <= 0)
@@ -68,7 +78,8 @@ namespace UnityEditor.AdaptivePerformance.Editor
             string path = root;
             foreach (var pc in pathComponents)
             {
-                string subFolder = Path.Combine(path, pc);
+                // Asset paths always use '/', unlike Path.Combine on Windows, so they read the same in messages on every platform.
+                string subFolder = $"{path}/{pc}";
                 bool shouldCreate = true;
                 foreach (var f in AssetDatabase.GetSubFolders(path))
                 {
@@ -292,9 +303,17 @@ namespace UnityEditor.AdaptivePerformance.Editor
 
         internal static IAdaptivePerformanceSettings CloneProviderSettingsFromProjectSettings(string settingType)
         {
-            string assetDir = "Assets/";
-            assetDir = Path.Combine(assetDir, Path.Combine(s_DefaultSettingsPath));
+            // Migration leaves settings it could not move in the legacy folder, so fall back to it rather
+            // than letting the caller create default settings that drop the existing configuration.
+            var copyObject = FindProviderSettings(GetAssetPathForComponentsNoCreate(s_DefaultSettingsPath), settingType);
+            if (copyObject == null)
+                copyObject = FindProviderSettings($"{AdaptivePerformanceSettingsMigration.k_LegacyRootPath}/Settings", settingType);
 
+            return copyObject == null? null : ScriptableObject.Instantiate(copyObject);
+        }
+
+        static IAdaptivePerformanceSettings FindProviderSettings(string assetDir, string settingType)
+        {
             if(!AssetDatabase.IsValidFolder(assetDir))
             {
                 return null;
@@ -302,18 +321,18 @@ namespace UnityEditor.AdaptivePerformance.Editor
 
             var assetsIDs = AssetDatabase.FindAssets("",new[] {assetDir});
 
-            IAdaptivePerformanceSettings copyObject = null;
+            IAdaptivePerformanceSettings settings = null;
             foreach (var guid in assetsIDs)
             {
                 string assetPath = AssetDatabase.GUIDToAssetPath(guid);
                 var obj = AssetDatabase.LoadAssetAtPath(assetPath, typeof(ScriptableObject)) as IAdaptivePerformanceSettings;
                 if (obj != null && obj.GetType().ToString() == settingType)
                 {
-                    copyObject = obj;
+                    settings = obj;
                 }
             }
 
-            return copyObject == null? null : ScriptableObject.Instantiate(copyObject);
+            return settings;
         }
 
         internal static List<AdaptivePerformanceScaler> CloneCustomScalersFromProjectSettings(IAdaptivePerformanceSettings settings)

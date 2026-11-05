@@ -20,6 +20,43 @@ using UnityEngine.Pool;
 
 namespace UnityEngine.UIElements
 {
+    // Same as PropertyPath equality, without copying the paths and their parts by value.
+    internal static class PropertyPathEquality
+    {
+        public static bool Equals(in PropertyPath lhs, in PropertyPath rhs)
+        {
+            var length = lhs.Length;
+            if (length != rhs.Length)
+                return false;
+
+            for (var i = 0; i < length; ++i)
+            {
+                var lhsPart = lhs[i];
+                var rhsPart = rhs[i];
+                if (lhsPart.Kind != rhsPart.Kind)
+                    return false;
+
+                switch (lhsPart.Kind)
+                {
+                    case PropertyPathPartKind.Name:
+                        if (lhsPart.Name != rhsPart.Name)
+                            return false;
+                        break;
+                    case PropertyPathPartKind.Index:
+                        if (lhsPart.Index != rhsPart.Index)
+                            return false;
+                        break;
+                    case PropertyPathPartKind.Key:
+                        if (!object.Equals(lhsPart.Key, rhsPart.Key))
+                            return false;
+                        break;
+                }
+            }
+
+            return true;
+        }
+    }
+
     internal class PathRef
     {
         private PropertyPath m_Path;
@@ -117,7 +154,7 @@ namespace UnityEngine.UIElements
         /// <returns><see langword="true"/> if obj and this instance are the same type and represent the same value; otherwise, <see langword="false"/>.</returns>
         public bool Equals(BindingId other)
         {
-            return m_PropertyPath == other.m_PropertyPath;
+            return this == other;
         }
 
         /// <inheritdoc/>
@@ -135,7 +172,7 @@ namespace UnityEngine.UIElements
         /// <undoc/>
         public static bool operator ==(in BindingId lhs, in BindingId rhs)
         {
-            return lhs.m_PropertyPath == rhs.m_PropertyPath;
+            return PropertyPathEquality.Equals(lhs.m_PropertyPath, rhs.m_PropertyPath);
         }
 
         /// <undoc/>

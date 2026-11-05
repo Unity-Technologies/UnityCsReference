@@ -28,6 +28,8 @@ namespace UnityEditor
         internal struct BuildPackageIds
         {
             public string[] package_ids;
+            // Only packages hooking into the build without shipping code in it, so never overlaps package_ids
+            public string[] build_hook_package_ids;
         }
 
         [AutoStaticsCleanupOnCodeReload] // build-gate flag: persisting true after reload would permanently skip the event
@@ -74,8 +76,21 @@ namespace UnityEditor
             #pragma warning disable UAC2001 // Avoid Linq
             var packageIds = matchingPackages.Select(SanitizePackageId).ToArray();
 #pragma warning restore UAC2001
-            if (packageIds.Length > 0)
-                EditorAnalytics.SendEventBuildPackageList(new BuildPackageIds() { package_ids = packageIds });
+            var buildHookPackageIds = GetIdsOfPackagesOnlyHookingIntoBuild(matchingPackages);
+            if (packageIds.Length > 0 || buildHookPackageIds.Length > 0)
+                EditorAnalytics.SendEventBuildPackageList(new BuildPackageIds() { package_ids = packageIds, build_hook_package_ids = buildHookPackageIds });
+        }
+
+        private string[] GetIdsOfPackagesOnlyHookingIntoBuild(List<UnityEditor.PackageManager.PackageInfo> packagesShippingCode)
+        {
+            var packagesHookingIntoBuild = UnityEditor.PackageManager.PackageInfo.GetForAssemblyFilePaths(BuildPipelineInterfaces.GetAssemblyPathsDeclaringBuildCallbacks());
+            var packageIds = new List<string>();
+            foreach (var package in packagesHookingIntoBuild)
+            {
+                if (!packagesShippingCode.Exists(packageShippingCode => packageShippingCode.name == package.name))
+                    packageIds.Add(SanitizePackageId(package));
+            }
+            return packageIds.ToArray();
         }
 
         private void ReportSceneViewInfo()

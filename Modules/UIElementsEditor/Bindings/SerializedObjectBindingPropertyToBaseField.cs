@@ -16,6 +16,10 @@ abstract class SerializedObjectBindingPropertyToBaseField<TProperty, TValue> : S
     //we need to keep a copy of the last value since some fields will allocate when getting the value
     protected TProperty lastFieldValue;
 
+    TProperty m_PushedPropertyValue;
+    TValue m_PushedFieldValue;
+    bool m_HasPushedValue;
+
     protected override void SyncPropertyToField(INotifyValueChanged<TValue> c, SerializedProperty p)
     {
         if (c == null)
@@ -30,11 +34,39 @@ abstract class SerializedObjectBindingPropertyToBaseField<TProperty, TValue> : S
             AssignValueToFieldWithoutNotify(lastFieldValue);
         else
             AssignValueToField(lastFieldValue);
+
+        if (p.hasMultipleDifferentValues)
+            ClearPushedValue();
+        else
+        {
+            m_HasPushedValue = true;
+            m_PushedPropertyValue = lastFieldValue;
+            m_PushedFieldValue = c.value;
+        }
+    }
+
+    void ClearPushedValue()
+    {
+        m_HasPushedValue = false;
+        m_PushedPropertyValue = default;
+        m_PushedFieldValue = default;
+    }
+
+    // A field can normalise what it is given (a MaskField turns "all choices" into ~0); its ChangeEvent is not an edit.
+    bool FieldStillHoldsPushedValue()
+    {
+        return m_HasPushedValue
+            && EqualsValue(field.value, m_PushedFieldValue)
+            && propCompareValues(m_PushedPropertyValue, boundProperty, propGetValue);
     }
 
     protected override bool SyncFieldValueToProperty()
     {
-        if (boundProperty.hasMultipleDifferentValues || !propCompareValues(lastFieldValue, boundProperty, propGetValue))
+        var hasMultipleDifferentValues = boundProperty.hasMultipleDifferentValues;
+        if (!hasMultipleDifferentValues && FieldStillHoldsPushedValue())
+            return false;
+
+        if (hasMultipleDifferentValues || !propCompareValues(lastFieldValue, boundProperty, propGetValue))
         {
             propSetValue(boundProperty, lastFieldValue);
             boundProperty.m_SerializedObject.ApplyModifiedProperties();
@@ -66,6 +98,7 @@ abstract class SerializedObjectBindingPropertyToBaseField<TProperty, TValue> : S
         propGetValue = null;
         propSetValue = null;
         propCompareValues = null;
+        ClearPushedValue();
         ResetCachedValues();
         isReleased = true;
     }

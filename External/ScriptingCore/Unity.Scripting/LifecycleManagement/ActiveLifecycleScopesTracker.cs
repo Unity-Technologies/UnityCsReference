@@ -698,6 +698,23 @@ namespace Unity.Scripting.LifecycleManagement
             }
         }
 
+        // Used for tests only
+        internal bool HasAutoCleanup(ClassAutoCleanup classAutoCleanup)
+        {
+            lock (_autoCleanupsLock)
+            {
+                foreach (var innerDict in _autoCleanups.Values)
+                {
+                    foreach (var autoCleanups in innerDict.Values)
+                    {
+                        if (autoCleanups.Contains(classAutoCleanup))
+                            return true;
+                    }
+                }
+                return false;
+            }
+        }
+
         /// <summary>
         /// Drops ClassAutoCleanup instances which were registered from assemblies which are now unloading.
         /// </summary>

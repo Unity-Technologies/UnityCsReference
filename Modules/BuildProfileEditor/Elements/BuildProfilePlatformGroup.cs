@@ -3,7 +3,6 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using UnityEngine.UIElements;
-using System.Collections.Generic;
 
 namespace UnityEditor.Build.Profile.Elements
 {
@@ -13,8 +12,6 @@ namespace UnityEditor.Build.Profile.Elements
         protected readonly Label m_Text;
         protected readonly VisualElement m_Container;
         readonly PlatformDiscoveryWindow m_Parent;
-        protected VisualElement m_selected;
-        protected List<BuildProfilePlatformElement> m_CardElements;
 
         internal BuildProfilePlatformGroup(PlatformDiscoveryWindow parent)
         {
@@ -31,35 +28,13 @@ namespace UnityEditor.Build.Profile.Elements
         internal void Set(string groupingName, BuildProfileCard[] cards)
         {
             m_Text.text = groupingName;
-            m_CardElements = new List<BuildProfilePlatformElement>();
 
             int i = 0;
             foreach (var card in cards)
             {
-                var platformElement = new BuildProfilePlatformElement(card, m_Parent.OnCardSelected);
+                var platformElement = new BuildProfilePlatformElement(card, element => m_Parent.OnCardSelected(element.GetBuildProfileCard(), element));
                 m_Container.Insert(i, platformElement);
                 i++;
-                m_CardElements.Add(platformElement);
-            }
-        }
-
-        internal void ClearSelection()
-        {
-            if (m_selected != null)
-                m_selected.RemoveFromClassList("build-profile-label-selected");
-        }
-
-        internal void SetCardSelected(BuildProfileCard card)
-        {
-            ClearSelection();
-            foreach (var el in m_CardElements)
-            {
-                if (el.GetBuildProfileCard().platformId == card.platformId)
-                {
-                    VisualElement elementIcon = el.Q<VisualElement>("platform-icon");
-                    m_selected = elementIcon;
-                    m_selected.AddToClassList("build-profile-label-selected");
-                }
             }
         }
     }

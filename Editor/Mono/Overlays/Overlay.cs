@@ -4,6 +4,7 @@
 
 using System;
 using System.ComponentModel;
+using System.IO;
 using UnityEditor.Toolbars;
 using UnityEngine;
 using UnityEngine.UIElements;
@@ -186,6 +187,7 @@ namespace UnityEditor.Overlays
         internal Rect collapsedButtonRect => collapsedContent.worldBound;
 
         Texture2D m_CollapsedIcon = null;
+        Texture2D m_CollapsedIconOn = null;
         public Texture2D collapsedIcon
         {
             set
@@ -833,9 +835,27 @@ namespace UnityEditor.Overlays
             }
         }
 
-        internal GUIContent GetCollapsedIconContent()
+        internal GUIContent GetCollapsedIconContent(bool onStyling = false)
         {
-            var icon = m_CollapsedIcon == null ? GetOverlayIconTexture() : m_CollapsedIcon;
+            Texture2D icon = null;
+            if (onStyling)
+            {
+                if (m_CollapsedIconOn != null)
+                    icon = m_CollapsedIconOn;
+
+                // If there's a collapsed icon defined by the user, we default to that instead of going by attribute
+                else if (m_CollapsedIcon != null)
+                    icon = m_CollapsedIcon;
+                else
+                    icon = EditorGUIUtility.LoadIcon(EditorGUIUtility.GetIconPathFromAttributeWithState(GetType(), true));
+            }
+
+            if (icon == null)
+            {
+                icon = m_CollapsedIcon == null
+                    ? EditorGUIUtility.LoadIcon(EditorGUIUtility.GetIconPathFromAttributeWithState(GetType(), false))
+                    : m_CollapsedIcon;
+            }
 
             if (icon != null)
                 return new GUIContent(icon);

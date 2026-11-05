@@ -10,9 +10,9 @@ using Unity.Scripting.LifecycleManagement;
 
 namespace UnityEngine.UIElements.UIR
 {
-    class ShaderInfoStorage : IDisposable
+    partial class ShaderInfoStorage : IDisposable
     {
-        [NoAutoStaticsCleanup] // monotonic counter for unique texture names; safe to persist
+        [AutoStaticsCleanupOnCodeReload]
         static int s_TextureCounter;
         internal static readonly ProfilerMarker s_MarkerCopyTexture = new ProfilerMarker(ProfilerCategory.UIToolkit, "UIR.ShaderInfoStorage.CopyTexture");
         internal static readonly ProfilerMarker s_MarkerGetTextureData = new ProfilerMarker(ProfilerCategory.UIToolkit, "UIR.ShaderInfoStorage.GetTextureData");

@@ -74,6 +74,8 @@ namespace UnityEditor.Presets
         // The HideFlags must be set to HideFlags.None before calling Destroy or DestroyImmediate on it.
         internal extern Object GetReferenceObject();
 
+        internal extern string[] GetTypeExcludedProperties();
+
         [FreeFunction("GetDefaultPresetsForObject")]
         public static extern Preset[] GetDefaultPresetsForObject([NotNull] Object target);
 

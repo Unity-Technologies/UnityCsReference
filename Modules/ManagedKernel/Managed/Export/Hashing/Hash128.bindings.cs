@@ -93,8 +93,8 @@ namespace UnityEngine
 
         public static Hash128 Compute<T>(T[] data) where T : struct
         {
-            if (!UnsafeUtility.IsArrayBlittable(data))
-                throw new ArgumentException($"Array passed to {nameof(Compute)} must be blittable.\n{UnsafeUtility.GetReasonForArrayNonBlittable(data)}");
+            if (!UnsafeUtility.IsArrayUnmanaged(data))
+                throw new ArgumentException($"Array passed to {nameof(Compute)} must be unmanaged.\n{UnsafeUtility.GetReasonForArrayNonUnmanaged(data)}");
             var h = new Hash128();
             ComputeFromSpan(MemoryMarshal.AsBytes(data.AsSpan()), 0, data.Length, UnsafeUtility.SizeOf<T>(), ref h);
             return h;
@@ -102,8 +102,8 @@ namespace UnityEngine
 
         public static Hash128 Compute<T>(T[] data, int start, int count) where T : struct
         {
-            if (!UnsafeUtility.IsArrayBlittable(data))
-                throw new ArgumentException($"Array passed to {nameof(Compute)} must be blittable.\n{UnsafeUtility.GetReasonForArrayNonBlittable(data)}");
+            if (!UnsafeUtility.IsArrayUnmanaged(data))
+                throw new ArgumentException($"Array passed to {nameof(Compute)} must be unmanaged.\n{UnsafeUtility.GetReasonForArrayNonUnmanaged(data)}");
             if (start < 0 || count < 0 || start + count > data.Length)
                 throw new ArgumentOutOfRangeException($"Bad start/count arguments (start:{start} count:{count})");
             var h = new Hash128();
@@ -113,8 +113,8 @@ namespace UnityEngine
 
         public static Hash128 Compute<T>(List<T> data) where T : struct
         {
-            if (!UnsafeUtility.IsGenericListBlittable<T>())
-                throw new ArgumentException($"List<{typeof(T)}> passed to {nameof(Compute)} must be blittable.\n{UnsafeUtility.GetReasonForGenericListNonBlittable<T>()}");
+            if (!UnsafeUtility.IsGenericListUnmanaged<T>())
+                throw new ArgumentException($"List<{typeof(T)}> passed to {nameof(Compute)} must be unmanaged.\n{UnsafeUtility.GetReasonForGenericListNonUnmanaged<T>()}");
             var h = new Hash128();
             ComputeFromSpan(MemoryMarshal.AsBytes(NoAllocHelpers.CreateSpan(data)), 0, data.Count, UnsafeUtility.SizeOf<T>(), ref h);
             return h;
@@ -122,8 +122,8 @@ namespace UnityEngine
 
         public static Hash128 Compute<T>(List<T> data, int start, int count) where T : struct
         {
-            if (!UnsafeUtility.IsGenericListBlittable<T>())
-                throw new ArgumentException($"List<{typeof(T)}> passed to {nameof(Compute)} must be blittable.\n{UnsafeUtility.GetReasonForGenericListNonBlittable<T>()}");
+            if (!UnsafeUtility.IsGenericListUnmanaged<T>())
+                throw new ArgumentException($"List<{typeof(T)}> passed to {nameof(Compute)} must be unmanaged.\n{UnsafeUtility.GetReasonForGenericListNonUnmanaged<T>()}");
             if (start < 0 || count < 0 || start + count > data.Count)
                 throw new ArgumentOutOfRangeException($"Bad start/count arguments (start:{start} count:{count})");
             var h = new Hash128();
@@ -181,15 +181,15 @@ namespace UnityEngine
 
         public void Append<T>(T[] data) where T : struct
         {
-            if (!UnsafeUtility.IsArrayBlittable(data))
-                throw new ArgumentException($"Array passed to {nameof(Append)} must be blittable.\n{UnsafeUtility.GetReasonForArrayNonBlittable(data)}");
+            if (!UnsafeUtility.IsArrayUnmanaged(data))
+                throw new ArgumentException($"Array passed to {nameof(Append)} must be unmanaged.\n{UnsafeUtility.GetReasonForArrayNonUnmanaged(data)}");
             ComputeFromSpan(MemoryMarshal.AsBytes(data.AsSpan()), 0, data.Length, UnsafeUtility.SizeOf<T>(), ref this);
         }
 
         public void Append<T>(T[] data, int start, int count) where T : struct
         {
-            if (!UnsafeUtility.IsArrayBlittable(data))
-                throw new ArgumentException($"Array passed to {nameof(Append)} must be blittable.\n{UnsafeUtility.GetReasonForArrayNonBlittable(data)}");
+            if (!UnsafeUtility.IsArrayUnmanaged(data))
+                throw new ArgumentException($"Array passed to {nameof(Append)} must be unmanaged.\n{UnsafeUtility.GetReasonForArrayNonUnmanaged(data)}");
             if (start < 0 || count < 0 || start + count > data.Length)
                 throw new ArgumentOutOfRangeException($"Bad start/count arguments (start:{start} count:{count})");
             ComputeFromSpan(MemoryMarshal.AsBytes(data.AsSpan()), start, count, UnsafeUtility.SizeOf<T>(), ref this);
@@ -197,15 +197,15 @@ namespace UnityEngine
 
         public void Append<T>(List<T> data) where T : struct
         {
-            if (!UnsafeUtility.IsGenericListBlittable<T>())
-                throw new ArgumentException($"List<{typeof(T)}> passed to {nameof(Append)} must be blittable.\n{UnsafeUtility.GetReasonForGenericListNonBlittable<T>()}");
+            if (!UnsafeUtility.IsGenericListUnmanaged<T>())
+                throw new ArgumentException($"List<{typeof(T)}> passed to {nameof(Append)} must be unmanaged.\n{UnsafeUtility.GetReasonForGenericListNonUnmanaged<T>()}");
             ComputeFromSpan(MemoryMarshal.AsBytes(NoAllocHelpers.CreateSpan(data)), 0, data.Count, UnsafeUtility.SizeOf<T>(), ref this);
         }
 
         public void Append<T>(List<T> data, int start, int count) where T : struct
         {
-            if (!UnsafeUtility.IsGenericListBlittable<T>())
-                throw new ArgumentException($"List<{typeof(T)}> passed to {nameof(Append)} must be blittable.\n{UnsafeUtility.GetReasonForGenericListNonBlittable<T>()}");
+            if (!UnsafeUtility.IsGenericListUnmanaged<T>())
+                throw new ArgumentException($"List<{typeof(T)}> passed to {nameof(Append)} must be unmanaged.\n{UnsafeUtility.GetReasonForGenericListNonUnmanaged<T>()}");
             if (start < 0 || count < 0 || start + count > data.Count)
                 throw new ArgumentOutOfRangeException($"Bad start/count arguments (start:{start} count:{count})");
             ComputeFromSpan(MemoryMarshal.AsBytes(NoAllocHelpers.CreateSpan(data)), start, count, UnsafeUtility.SizeOf<T>(), ref this);

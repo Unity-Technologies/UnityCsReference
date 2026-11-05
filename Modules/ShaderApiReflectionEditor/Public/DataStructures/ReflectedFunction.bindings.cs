@@ -12,32 +12,66 @@ using UnityEngine.Bindings;
 
 namespace UnityEditor.ShaderApiReflection
 {
+    ///<summary>Information about a shader function.</summary>
+    ///<remarks>This struct represents a function as reflected from shader source code. On top of information extracted directly from the syntax, such as <see cref="ReturnTypeName" />, <see cref="Parameters" />, and <see cref="Name" />, it also contains <see cref="Hints" />: metadata extracted from structured comments decorating the function.</remarks>
+    ///<example nocheck="true">
+    /// In the following example, <c>PrintFunction</c> fetches <see cref="ReflectedFunction"/>s from a
+    /// <see cref="ShaderIncludeReflection"/> and prints each one's signature to the console.
+    ///<code source="../../Tests/UTFTests/FunctionalTests/Editor/Documentation/ReflectedFunctionExample.cs"/>
+    ///</example>
+    ///<seealso cref="ShaderIncludeReflection.ReflectedFunctions" />
     public struct ReflectedFunction : IHasFunctionSignature, IHasHints
     {
         // Public API
 
+        ///<summary>The namespace in which the function was defined.</summary>
         public ReadOnlyCollection<string> EnclosingNamespace => m_EnclosingNamespace.AsReadOnly();
+        ///<summary>The name of the function's return type.</summary>
         public string ReturnTypeName { get; internal set; }
+        ///<summary>The function's name.</summary>
         public string Name { get; internal set; }
+        ///<summary>The function's parameters.</summary>
         public ReadOnlyCollection<ReflectedParameter> Parameters => m_Parameters.AsReadOnly();
+        ///<summary>The function's unprocessed body text.</summary>
+        ///<remarks>The string returned by this property represents all the text between the opening and closing braces, including whitespace. <see cref="GetNormalizedBodyText" /> returns a version of this text in a more readable format.</remarks>
         public string BodyText { get; internal set; }
+        ///<inheritdoc/>
         public ReadOnlyDictionary<string, string> Hints => new ReadOnlyDictionary<string, string>(m_Hints);
 
-        // Gets the function's name, including any namespaces
+        ///<summary>The function's fully qualified name, taking into account the enclosing namespace.</summary>
         public string FullyQualifiedName => EnclosingNamespace.Count > 0 ?
             (string.Join("::", EnclosingNamespace) + "::" + Name) : Name;
 
+        ///<summary>Gets the function's signature.</summary>
+        ///<remarks>Formats the function's return type, namespace, name, and parameters as one would write them in shader code.</remarks>
+        ///<returns>The function's signature.</returns>
+        ///<example nocheck="true">
+        ///  <code><![CDATA[{code Modules/ShaderApiReflectionEditor/Tests/UTFTests/FunctionalTests/Editor/Documentation/ReflectedFunctionExample.cs}]]></code>
+        ///</example>
         public string GetSignature()
         {
             return GetSignature(includeNamespace: true);
         }
 
+        ///<summary>Gets the function's signature.</summary>
+        ///<returns>The function's signature.</returns>
+        ///<seealso cref="GetSignature" />
         public override string ToString()
         {
             return GetSignature();
         }
 
-        // Gets the function's body text, but left-aligned and with consistent indentation characters
+        ///<summary>Gets the function's body text in an easy-to-read format.</summary>
+        ///<remarks>This method performs the following operations on the body text:
+        ///
+        ///* Tab characters are converted to spaces based on <c>tabWidth</c>.
+        ///* The text is left-aligned such that the least-indented line within the raw body text has zero indentation.</remarks>
+        ///<param name="tabWidth">The number of spaces to use when converting any tab characters within the body text.</param>
+        ///<returns>A readable version of the function's body text.</returns>
+        ///<example nocheck="true">
+        ///  <code><![CDATA[{code Modules/ShaderApiReflectionEditor/Tests/UTFTests/FunctionalTests/Editor/Documentation/ReflectedFunctionExample.cs}]]></code>
+        ///</example>
+        ///<seealso cref="BodyText" />
         public string GetNormalizedBodyText(UInt32 tabWidth = 4)
         {
             const char kSpace = ' ';

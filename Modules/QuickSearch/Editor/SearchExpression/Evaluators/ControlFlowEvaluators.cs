@@ -50,11 +50,14 @@ namespace UnityEditor.Search
         [SearchExpressionEvaluator(SearchExpressionType.AnyValue | SearchExpressionType.Variadic)]
         public static IEnumerable<SearchItem> Empty(SearchExpressionContext c)
         {
-#pragma warning disable UAC2001 // Avoid Linq
-#pragma warning disable UAC2002 // Avoid Linq
-            return c.args.Select(e => SearchExpression.CreateItem(!e.Execute(c).Any()));
-#pragma warning restore UAC2001
-#pragma warning restore UAC2002
+            return c.ForEachArgument().AggregateResults(true,
+                (context, item, isEmpty) =>
+                {
+                    // The first result is enough to know the argument is not empty
+                    context.Break();
+                    return false;
+                },
+                (context, isEmpty) => SearchExpression.CreateItem(isEmpty));
         }
 
         [Description("Return true if each elements evaluates has being true."), Category("Filters")]

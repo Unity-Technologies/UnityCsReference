@@ -22,11 +22,14 @@ namespace Unity.GraphToolkit.Editor
     {
         List<PortModel> m_AllPorts;
         List<PortModel> m_CompatiblePorts;
+        readonly HashSet<PortModel> m_CompatiblePortSet = new();
         WireModel m_GhostWireModel;
         AbstractWire m_GhostWire;
         GraphViewPanHelper m_PanHelper = new();
         AbstractWire m_WireCandidate;
         PortModel m_PreviousEndPortModel;
+        Predicate<PortModel> m_CompatiblePortsFilter;
+        WireDragPortExpander m_PortExpander;
 
         /// <summary>
         /// The graph view in which the wire is created.
@@ -56,8 +59,20 @@ namespace Unity.GraphToolkit.Editor
         public WireDragHelper(GraphView graphView)
         {
             GraphView = graphView;
-            Reset();
+            m_PortExpander = new WireDragPortExpander(this);
+
+            // Reset is not called here because it affects the whole graph view, and port views can be created while a wire is dragged.
         }
+
+        /// <summary>
+        /// The object that temporarily expands the ports hovered while the wire is dragged.
+        /// </summary>
+        internal WireDragPortExpander PortExpander => m_PortExpander;
+
+        /// <summary>
+        /// All the ports of the graph when the drag started or when the compatible ports were last refreshed.
+        /// </summary>
+        internal IReadOnlyList<PortModel> AllPorts => m_AllPorts;
 
         (AbstractWire, AbstractGhostWireModel) CreateGhostWire(GraphModel graphModel)
         {
@@ -88,6 +103,9 @@ namespace Unity.GraphToolkit.Editor
         /// </summary>
         public void Reset()
         {
+            m_PortExpander.Stop();
+            m_CompatiblePortsFilter = null;
+
             if (m_AllPorts != null)
             {
                 for (var i = 0; i < m_AllPorts.Count; i++)
@@ -96,11 +114,16 @@ namespace Unity.GraphToolkit.Editor
                     if (pv != null)
                     {
                         pv.SetEnabled(true);
+                        pv.RemoveFromClassList(Port.incompatibleExpandableUssClassName);
                     }
                 }
                 m_AllPorts = null;
             }
             m_CompatiblePorts = null;
+            m_CompatiblePortSet.Clear();
+
+            if (GraphView.ActiveWireDragHelper == this)
+                GraphView.ActiveWireDragHelper = null;
 
             if (m_GhostWire != null)
             {
@@ -137,7 +160,8 @@ namespace Unity.GraphToolkit.Editor
         /// </summary>
         /// <param name="evt">The mouse down event.</param>
         /// <param name="compatiblePortsFilter">The predicate that filters the compatible ports. Ports that don't match the predicate are discarded.</param>
-        public bool HandleMouseDown(MouseDownEvent evt, Predicate<PortModel> compatiblePortsFilter = null)
+        /// <param name="autoExpandPorts">Whether collapsed expandable ports are temporarily expanded when the wire hovers them.</param>
+        public bool HandleMouseDown(MouseDownEvent evt, Predicate<PortModel> compatiblePortsFilter = null, bool autoExpandPorts = true)
         {
             var mousePosition = evt.mousePosition;
 
@@ -171,10 +195,14 @@ namespace Unity.GraphToolkit.Editor
                 WireCandidateModel.ToPort = DraggedPort;
             }
 
+            m_CompatiblePortsFilter = compatiblePortsFilter;
             GetCompatiblePorts(compatiblePortsFilter);
 
             HighlightCompatiblePorts();
 
+            // When several wires are dragged, only the main helper greys out attached ports, even if the other helpers accept other ports.
+            if (autoExpandPorts)
+                GraphView.ActiveWireDragHelper = this;
             GraphView.IsWireDragging = true;
 
             m_WireCandidate.DoCompleteUpdate();
@@ -182,6 +210,9 @@ namespace Unity.GraphToolkit.Editor
             m_PanHelper.OnMouseDown(evt, GraphView, Pan);
 
             m_WireCandidate.Layer = Int32.MaxValue;
+
+            if (autoExpandPorts)
+                m_PortExpander.Start(mousePosition);
 
             return true;
         }
@@ -208,6 +239,26 @@ namespace Unity.GraphToolkit.Editor
 
             EditorGUIUtilityBridge.SetCursor(MouseCursor.Link);
 
+            m_PortExpander.SetMousePosition(mousePosition);
+            UpdateGhostWire(mousePosition);
+        }
+
+        /// <summary>
+        /// Updates the compatible ports and their highlight after the visible ports changed during the drag.
+        /// </summary>
+        /// <param name="mousePosition">The mouse position, in world coordinates.</param>
+        internal void RefreshCompatiblePorts(Vector2 mousePosition)
+        {
+            if (DraggedPort == null || WireCandidateModel == null || m_AllPorts == null)
+                return;
+
+            GetCompatiblePorts(m_CompatiblePortsFilter);
+            HighlightCompatiblePorts();
+            UpdateGhostWire(mousePosition);
+        }
+
+        void UpdateGhostWire(Vector2 mousePosition)
+        {
             // Draw ghost wire if possible port exists.
             var endPort = GetEndPort(mousePosition);
 
@@ -544,6 +595,20 @@ namespace Unity.GraphToolkit.Editor
             {
                 m_CompatiblePorts = m_CompatiblePorts.FindAll(compatiblePortsFilter);
             }
+
+            m_CompatiblePortSet.Clear();
+            m_CompatiblePortSet.UnionWith(m_CompatiblePorts);
+        }
+
+        /// <summary>
+        /// Whether the port is an expandable port whose sub ports could be connected to the dragged port.
+        /// </summary>
+        /// <param name="port">The port to check.</param>
+        internal bool CanHaveCompatibleSubPorts(PortModel port)
+        {
+            return port.IsExpandable
+                && port.Direction != DraggedPort.Direction
+                && (port.NodeModel != DraggedPort.NodeModel || DraggedPort.NodeModel.AllowSelfConnect);
         }
 
         internal void HighlightCompatiblePorts()
@@ -553,26 +618,29 @@ namespace Unity.GraphToolkit.Editor
             {
                 var pv = m_AllPorts[i].GetView<Port>(GraphView);
                 if (pv != null)
-                {
-                    pv.SetEnabled(false);
-                }
-            }
-
-            for (var i = 0; i < m_CompatiblePorts.Count; i++)
-            {
-                var pv = m_CompatiblePorts[i].GetView<Port>(GraphView);
-                if (pv != null)
-                {
-                    pv.SetEnabled(true);
-                }
+                    DoHighlightCompatiblePortOrSubport(pv);
             }
 
             var portUI = DraggedPort.GetView<Port>(GraphView);
             if (portUI != null)
-            {
                 portUI.WillConnect = true;
-                portUI.SetEnabled(true);
-            }
+        }
+
+        /// <summary>
+        /// Greys out the port if it is not compatible with the dragged port.
+        /// </summary>
+        /// <param name="portUI">The port view.</param>
+        /// <remarks>Also called when a port view is attached during the drag, so that it is never drawn with the wrong state.</remarks>
+        internal void DoHighlightCompatiblePortOrSubport(Port portUI)
+        {
+            var port = portUI.PortModel;
+            var isCompatible = port == DraggedPort || m_CompatiblePortSet.Contains(port);
+
+            // Collapsed ports stay enabled so that their sub ports can still be discovered. The sub ports of expanded ports are already visible.
+            var canHaveCompatibleSubPorts = !isCompatible && !port.IsShownExpanded && CanHaveCompatibleSubPorts(port);
+
+            portUI.SetEnabled(isCompatible || canHaveCompatibleSubPorts);
+            portUI.EnableInClassList(Port.incompatibleExpandableUssClassName, canHaveCompatibleSubPorts);
         }
 
         internal void StopHighlightingCompatiblePorts()
@@ -583,6 +651,7 @@ namespace Unity.GraphToolkit.Editor
                 if (pv != null)
                 {
                     pv.SetEnabled(true);
+                    pv.RemoveFromClassList(Port.incompatibleExpandableUssClassName);
                 }
             }
         }

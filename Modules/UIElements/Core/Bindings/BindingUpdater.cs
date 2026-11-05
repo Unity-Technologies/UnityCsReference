@@ -124,9 +124,21 @@ namespace UnityEngine.UIElements
 
         public BindingResult UpdateUI(in BindingContext context, Binding bindingObject)
         {
+            return UpdateUI(in context, bindingObject, null);
+        }
+
+        // The binding data keeps what an update can reuse in the next update of the same binding: the source reader and
+        // the message of the last failure.
+        public BindingResult UpdateUI(in BindingContext context, DataBindingManager.BindingData bindingData)
+        {
+            return UpdateUI(in context, bindingData.binding, bindingData);
+        }
+
+        BindingResult UpdateUI(in BindingContext context, Binding bindingObject, DataBindingManager.BindingData bindingData)
+        {
             return bindingObject switch
             {
-                DataBinding dataBinding => UpdateUI(in context, dataBinding),
+                DataBinding dataBinding => UpdateUI(in context, dataBinding, bindingData),
                 CustomBinding customBinding => UpdateUI(in context, customBinding),
                 _ => throw new InvalidOperationException($"Binding type `{TypeUtility.GetTypeDisplayName(bindingObject.GetType())}` is not supported. This is an internal bug. Please report using `Help > Report a Bug...` ")
             };
@@ -142,7 +154,7 @@ namespace UnityEngine.UIElements
             };
         }
 
-        private BindingResult UpdateUI(in BindingContext context, DataBinding dataBinding)
+        private BindingResult UpdateUI(in BindingContext context, DataBinding dataBinding, DataBindingManager.BindingData bindingData)
         {
             var target = context.targetElement;
             var resolvedDataSource = context.dataSource;
@@ -150,8 +162,14 @@ namespace UnityEngine.UIElements
             // We can't extra a value from a null data source, so we can do an early exit here.
             if (null == resolvedDataSource)
             {
-                var name = string.IsNullOrEmpty(target.name) ? TypeUtility.GetTypeDisplayName(target.GetType()) : target.name;
-                var message = $"[UI Toolkit] Could not bind '{name}' because there is no data source.";
+                var targetName = target.name;
+                if (!TryGetLastFailureMessage(bindingData, FailureKind.NoDataSource, default, null, targetName, default, out var message))
+                {
+                    var name = string.IsNullOrEmpty(targetName) ? TypeUtility.GetTypeDisplayName(target.GetType()) : targetName;
+                    message = $"[UI Toolkit] Could not bind '{name}' because there is no data source.";
+                    SetLastFailureMessage(bindingData, FailureKind.NoDataSource, default, null, targetName, default, message);
+                }
+
                 return new BindingResult(BindingStatus.Pending, message);
             }
 
@@ -167,29 +185,107 @@ namespace UnityEngine.UIElements
                 var visitRoot = VisitRoot(dataBinding, ref resolvedDataSource, in context);
 
                 if (!visitRoot.succeeded)
-                {
-                    var message = GetVisitationErrorString(visitRoot.visitationReturnCode, in context);
-                    return new BindingResult(BindingStatus.Failure, message);
-                }
+                    return GetVisitationFailure(visitRoot.visitationReturnCode, in context, bindingData);
 
                 return visitRoot.bindingResult;
             }
 
-            var visitAtPath = VisitAtPath(dataBinding, BindingUpdateStage.UpdateUI, ref resolvedDataSource, context.dataSourcePath, in context);
+            var dataSourcePath = context.dataSourcePath;
+            if (null != bindingData)
+            {
+                // A binding without a reader yet, such as a newly registered one, first tries the shared reader.
+                bindingData.sourceReader ??= GetSharedSourceReader(resolvedDataSource, dataSourcePath) ?? s_NoSharedSourceRead;
+                if (bindingData.sourceReader.TryUpdateUI(ref resolvedDataSource, dataSourcePath, 0, dataBinding, in context, out var readerResult))
+                    return readerResult;
+            }
+
+            var visitAtPath = VisitAtPath(dataBinding, BindingUpdateStage.UpdateUI, ref resolvedDataSource, dataSourcePath, in context);
 
             if (!visitAtPath.succeeded)
-            {
-                var message = GetVisitationErrorString(visitAtPath.visitationReturnCode, in context);
-                return new BindingResult(BindingStatus.Failure, message);
-            }
+                return GetVisitationFailure(visitAtPath.visitationReturnCode, in context, bindingData);
 
             if (visitAtPath.atPathReturnCode != VisitReturnCode.Ok)
             {
-                var message = GetExtractValueErrorString(visitAtPath.atPathReturnCode, context.dataSource, context.dataSourcePath);
+                var returnCode = visitAtPath.atPathReturnCode;
+                var sourceType = context.dataSource.GetType();
+                if (!TryGetLastFailureMessage(bindingData, FailureKind.ExtractValue, returnCode, sourceType, null, dataSourcePath, out var message))
+                {
+                    message = GetExtractValueErrorString(returnCode, context.dataSource, dataSourcePath);
+                    SetLastFailureMessage(bindingData, FailureKind.ExtractValue, returnCode, sourceType, null, dataSourcePath, message);
+                }
+
                 return new BindingResult(BindingStatus.Failure, message);
             }
 
+            if (null != bindingData)
+                bindingData.sourceReader = GetOrCreateSourceReader(context.dataSource, dataSourcePath, bindingData.sourceReader, in context);
+
             return visitAtPath.bindingResult;
+        }
+
+        static BindingResult GetVisitationFailure(VisitReturnCode returnCode, in BindingContext context, DataBindingManager.BindingData bindingData)
+        {
+            // The message also depends on the target element and the binding id, which don't change for a binding data.
+            if (!TryGetLastFailureMessage(bindingData, FailureKind.Visitation, returnCode, null, null, default, out var message))
+            {
+                message = GetVisitationErrorString(returnCode, in context);
+                SetLastFailureMessage(bindingData, FailureKind.Visitation, returnCode, null, null, default, message);
+            }
+
+            return new BindingResult(BindingStatus.Failure, message);
+        }
+
+        internal enum FailureKind
+        {
+            NoDataSource,
+            Visitation,
+            ExtractValue,
+        }
+
+        // The message of the last failure of a binding. A binding failing the same way on every update reuses it instead
+        // of formatting and allocating the same message again.
+        internal sealed class FailureMessage
+        {
+            public FailureKind kind;
+            public VisitReturnCode returnCode;
+            public Type sourceType;
+            public string targetName;
+            public PropertyPath dataSourcePath;
+            public string message;
+        }
+
+        static bool TryGetLastFailureMessage(DataBindingManager.BindingData bindingData, FailureKind kind, VisitReturnCode returnCode,
+            Type sourceType, string targetName, in PropertyPath dataSourcePath, out string message)
+        {
+            var failure = bindingData?.lastFailureMessage;
+            if (null != failure &&
+                failure.kind == kind &&
+                failure.returnCode == returnCode &&
+                failure.sourceType == sourceType &&
+                string.Equals(failure.targetName, targetName, StringComparison.Ordinal) &&
+                PropertyPathEquality.Equals(failure.dataSourcePath, dataSourcePath))
+            {
+                message = failure.message;
+                return true;
+            }
+
+            message = null;
+            return false;
+        }
+
+        static void SetLastFailureMessage(DataBindingManager.BindingData bindingData, FailureKind kind, VisitReturnCode returnCode,
+            Type sourceType, string targetName, in PropertyPath dataSourcePath, string message)
+        {
+            if (null == bindingData)
+                return;
+
+            var failure = bindingData.lastFailureMessage ??= new FailureMessage();
+            failure.kind = kind;
+            failure.returnCode = returnCode;
+            failure.sourceType = sourceType;
+            failure.targetName = targetName;
+            failure.dataSourcePath = dataSourcePath;
+            failure.message = message;
         }
 
         private BindingResult UpdateUI(in BindingContext context, CustomBinding customBinding)

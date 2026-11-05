@@ -161,7 +161,7 @@ namespace UnityEditor.Toolbars
             {
                 icon = icon,
                 text = text,
-                tooltip = EditorToolUtility.GetContextName(contextType, true),
+                tooltip = EditorToolUtility.GetContextName(contextType, toolsOwnerType, true),
                 userData = contextType
             };
 

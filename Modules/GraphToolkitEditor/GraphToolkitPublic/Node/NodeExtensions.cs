@@ -6,14 +6,22 @@ namespace Unity.GraphToolkit.Editor;
 
 static class NodeExtensions
 {
-    public static void CheckNodeErrors(this NodeModel model, ErrorsAndWarningsResult res)
+    // Returns res, or a new result if res is null and an error was found, so error-free nodes allocate nothing.
+    public static ErrorsAndWarningsResult CheckNodeErrors(this NodeModel model, ErrorsAndWarningsResult res = null)
     {
-        foreach (var port in model.InputsByDisplayOrder)
+        var graphModel = model.GraphModel;
+        var inputs = model.InputsByDisplayOrder;
+        for (var i = 0; i < inputs.Count; i++)
         {
+            var port = inputs[i];
+            var wires = port.GetConnectedWires();
             string errorMessage = null;
-            foreach (var source in port.GetConnectedPorts())
+            for (var j = 0; j < wires.Count; j++)
             {
-                if (source == null || model.GraphModel.CanAssignTo(port, source))
+                var wire = wires[j];
+                var fromPort = wire.FromPort;
+                var source = fromPort == port ? wire.ToPort : fromPort;
+                if (source == null || graphModel.CanAssignTo(port, source))
                     continue;
 
                 if (errorMessage == null)
@@ -26,8 +34,11 @@ static class NodeExtensions
 
             if (errorMessage != null)
             {
+                res ??= new ErrorsAndWarningsResult();
                 res.AddError(errorMessage, port);
             }
         }
+
+        return res;
     }
 }

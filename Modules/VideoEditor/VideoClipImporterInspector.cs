@@ -140,6 +140,8 @@ namespace UnityEditor
         {
             public bool overridePlatform;
             public BuildTargetGroup target;
+            // Build target this tab stands for. The Default tab uses the active build target.
+            public BuildTarget defaultTarget;
             public VideoImporterTargetSettings settings;
         }
 
@@ -240,6 +242,7 @@ namespace UnityEditor
 
                 var defaultSetting = new InspectorTargetSettings();
                 defaultSetting.target = BuildTargetGroup.Unknown;
+                defaultSetting.defaultTarget = EditorUserBuildSettings.activeBuildTarget;
                 defaultSetting.settings = currentTarget.defaultTargetSettings;
                 defaultSetting.overridePlatform = true;
                 targetSettings.allSettings.Add(defaultSetting);
@@ -249,6 +252,7 @@ namespace UnityEditor
                     var buildTargetGroup = validPlatform.targetGroup;
                     var setting = new InspectorTargetSettings();
                     setting.target = buildTargetGroup;
+                    setting.defaultTarget = validPlatform.defaultTarget;
                     setting.settings = currentTarget.Internal_GetTargetSettings(validPlatform.namedBuildTarget);
                     setting.overridePlatform = setting.settings != null;
                     if (!setting.overridePlatform)
@@ -446,23 +450,40 @@ namespace UnityEditor
             EditorGUILayout.EndFadeGroup();
         }
 
+        static readonly VideoCodec[] k_CodecChoiceOrder =
+        {
+            VideoCodec.Auto, VideoCodec.H264, VideoCodec.H265, VideoCodec.VP8, VideoCodec.VP9,
+        };
+
+        private static void CodecPopup(SerializedProperty codecProperty)
+        {
+            var names = new List<GUIContent>(k_CodecChoiceOrder.Length);
+            var values = new List<int>(k_CodecChoiceOrder.Length);
+            foreach (var codec in k_CodecChoiceOrder)
+            {
+                names.Add(new GUIContent(codec.ToString()));
+                values.Add((int)codec);
+            }
+
+            using (var changed = new EditorGUI.ChangeCheckScope())
+            {
+                EditorGUI.showMixedValue = codecProperty.hasMultipleDifferentValues;
+                int newValue = EditorGUILayout.IntPopup(
+                    Styles.codecContent, codecProperty.intValue, names.ToArray(), values.ToArray());
+                EditorGUI.showMixedValue = false;
+                if (changed.changed)
+                    codecProperty.intValue = newValue;
+            }
+        }
+
         private void EncodingSettingsGUI(SerializedProperty videoImporterTargetSettings)
         {
             using (var horizontal = new EditorGUILayout.HorizontalScope())
             {
                 var property = videoImporterTargetSettings.FindPropertyRelative("codec");
-                using (var propertyScope = new EditorGUI.PropertyScope(horizontal.rect, Styles.codecContent, property))
+                using (new EditorGUI.PropertyScope(horizontal.rect, Styles.codecContent, property))
                 {
-                    using (var changed = new EditorGUI.ChangeCheckScope())
-                    {
-                        EditorGUI.showMixedValue = property.hasMultipleDifferentValues;
-                        var newValue = (VideoCodec)EditorGUILayout.EnumPopup(propertyScope.content, (VideoCodec)property.intValue);
-                        EditorGUI.showMixedValue = false;
-                        if (changed.changed)
-                        {
-                            property.intValue = (int)newValue;
-                        }
-                    }
+                    CodecPopup(property);
                 }
             }
 

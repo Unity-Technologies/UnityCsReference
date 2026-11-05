@@ -693,6 +693,23 @@ namespace Unity.GraphToolkit.Editor
         /// </summary>
         public bool AreAncestorsExpanded => ParentPort == null || (ParentPort.IsExpandedSelf && ParentPort.AreAncestorsExpanded);
 
+        /// <summary>
+        /// Whether this port is shown expanded without being expanded in the model, for example while a wire is dragged over it.
+        /// </summary>
+        /// <remarks>This state is not serialized and not undoable.</remarks>
+        /// <seealso cref="NodeModel.SetPortTemporarilyExpanded"/>
+        internal bool IsTemporarilyExpanded { get; private set; }
+
+        /// <summary>
+        /// Whether this port is expanded or temporarily expanded.
+        /// </summary>
+        internal bool IsShownExpanded => IsExpandedSelf || IsTemporarilyExpanded;
+
+        /// <summary>
+        /// Whether all ancestors of this port are expanded or temporarily expanded.
+        /// </summary>
+        internal bool AreAncestorsShownExpanded => ParentPort == null || (ParentPort.IsShownExpanded && ParentPort.AreAncestorsShownExpanded);
+
         /// <inheritdoc />
         public override string ToString()
         {
@@ -758,6 +775,16 @@ namespace Unity.GraphToolkit.Editor
         }
 
         /// <summary>
+        /// Sets the temporarily expanded state of a port.
+        /// </summary>
+        /// <param name="expanded">Whether the port is temporarily expanded.</param>
+        /// <remarks>Users of the NodeModel class must rely on <see cref="NodeModel.SetPortTemporarilyExpanded"/> instead.</remarks>
+        internal void SetTemporarilyExpanded(bool expanded)
+        {
+            IsTemporarilyExpanded = expanded;
+        }
+
+        /// <summary>
         /// Checks if this port is a descendant of the given port.
         /// </summary>
         /// <param name="ancestor">The potential ancestor.</param>
@@ -791,7 +818,7 @@ namespace Unity.GraphToolkit.Editor
             PortModel higherCollapsedAncestor = null;
             while (current != null)
             {
-                if (!current.IsExpandedSelf || full)
+                if (!current.IsShownExpanded || full)
                     higherCollapsedAncestor = current;
                 current = current.ParentPort;
             }
@@ -838,7 +865,7 @@ namespace Unity.GraphToolkit.Editor
 
         PortDirection IPort.Direction => Direction;
 
-        string IPort.Name => PortId;
+        string IPort.Name => UniqueName;
 
         string IPort.DisplayName => Title;
 

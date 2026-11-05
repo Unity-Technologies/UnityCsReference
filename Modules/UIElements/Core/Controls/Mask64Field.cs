@@ -248,13 +248,18 @@ namespace UnityEngine.UIElements
                         var indexOfValue = 0;
                         if (m_UserChoicesMasks != null)
                         {
-                            // Find the actual index of the selected choice...
-                            foreach (UInt64 itemMask in m_UserChoicesMasks)
+                            // A choice for this exact bit wins over an earlier combined mask that contains it.
+                            indexOfValue = m_UserChoicesMasks.IndexOf(itemIndex);
+                            if (indexOfValue < 0)
                             {
-                                if (itemMask != ~(UInt64)0 && ((itemMask & itemIndex) == itemIndex))
+                                indexOfValue = 0;
+                                foreach (UInt64 itemMask in m_UserChoicesMasks)
                                 {
-                                    indexOfValue = m_UserChoicesMasks.IndexOf(itemMask);
-                                    break;
+                                    if (itemMask != ~(UInt64)0 && ((itemMask & itemIndex) == itemIndex))
+                                    {
+                                        indexOfValue = m_UserChoicesMasks.IndexOf(itemMask);
+                                        break;
+                                    }
                                 }
                             }
                         }
@@ -284,7 +289,10 @@ namespace UnityEngine.UIElements
                                 if (itemMask == itemIndex)
                                 {
                                     var index = i + s_TotalIndex;
-                                    newValueToShowUser = m_Choices[index];
+                                    if (index < m_Choices.Count)
+                                    {
+                                        newValueToShowUser = m_Choices[index];
+                                    }
                                     break;
                                 }
                             }
@@ -322,10 +330,10 @@ namespace UnityEngine.UIElements
             }
 
             var mixedString = sb.ToString();
-            var minSize = textElement.MeasureTextSize(mixedString, 0, MeasureMode.Undefined, 0, MeasureMode.Undefined);
 
-            // If text doesn't fit, we use "Mixed..."
-            if (float.IsNaN(textElement.resolvedStyle.width) || minSize.x > textElement.resolvedStyle.width)
+            // Off-panel elements must not be measured; fall back to the compact label until laid out.
+            if (textElement.panel == null || float.IsNaN(textElement.resolvedStyle.width)
+                || textElement.MeasureTextSize(mixedString, 0, MeasureMode.Undefined, 0, MeasureMode.Undefined).x > textElement.resolvedStyle.width)
             {
                 mixedString = s_MixedLabel;
             }

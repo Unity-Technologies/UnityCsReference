@@ -91,7 +91,7 @@ namespace Unity.Entities
     /// * <seealso cref="AlwaysSynchronizeSystemAttribute"/> -- force a [sync point](xref:concepts-structural-changes) before invoking
     ///   `OnUpdate`.
     ///
-    /// Migration note: `Entities.ForEach` and `Job.WithCode` are deprecated as of Entities 1.4. Use [IJobEntity], [IJobChunk] or
+    /// Migration note: `Entities.ForEach` and `Job.WithCode` have been removed. Use [IJobEntity], [IJobChunk] or
     /// <see cref="SystemAPI.Query{T}"/>. For more information, refer to the upgrade guide.
     ///
     /// [JobHandle]: xref:Unity.Jobs.JobHandle

@@ -51,7 +51,7 @@ namespace UnityEditor.Build.Profile
         /// </summary>
         /// <remarks>This method returns build profiles that are stored as assets as well as those created
         /// in memory during the editor session. In memory profiles have not been stored on disk and can be lost
-        /// during a domain reload; <see cref="AssetDatabase.GetAssetPath(UnityEngine.Object)"/> would return null.</remarks>
+        /// during a code reload; <see cref="AssetDatabase.GetAssetPath(UnityEngine.Object)"/> would return null.</remarks>
         /// <returns>A list of <see cref="BuildProfile"/> objects representing all build profiles found. The list may be empty if
         /// no profiles are available.</returns>
         public static IReadOnlyList<BuildProfile> GetAllBuildProfiles()

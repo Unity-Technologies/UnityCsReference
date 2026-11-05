@@ -125,6 +125,10 @@ namespace UnityEngine.Pool
                 }
             }
 
+            // No outstanding objects means this release is unmatched, so adopt it
+            if (CountActive <= 0)
+                CountAll++;
+
             m_ActionOnRelease?.Invoke(element);
             if(m_FreshlyReleased == null)
             {
@@ -143,9 +147,12 @@ namespace UnityEngine.Pool
 
         /// <summary>
         /// Releases all pooled objects so they can be garbage collected.
+        /// Objects still in use stay counted in <see cref="CountAll"/>.
         /// </summary>
         public void Clear()
         {
+            var activeCount = CountActive;
+
             if (m_ActionOnDestroy != null)
             {
                 foreach (var item in m_List)
@@ -160,7 +167,7 @@ namespace UnityEngine.Pool
 
             m_FreshlyReleased = null;
             m_List.Clear();
-            CountAll = 0;
+            CountAll = activeCount;
         }
 
         public void Dispose()

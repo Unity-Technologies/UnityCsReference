@@ -959,9 +959,12 @@ namespace UnityEngine.Rendering
         [FreeFunction("RenderingCommandBuffer_Bindings::EndSample", HasExplicitThis = true)]
         extern public void EndSample(string name);
 
+        [Obsolete("Use BeginSample(ProfilerMarker) instead.", false)]
         public void BeginSample(CustomSampler sampler) { BeginSample_CustomSampler(sampler); }
+        [Obsolete("Use EndSample(ProfilerMarker) instead.", false)]
         public void EndSample(CustomSampler sampler) { EndSample_CustomSampler(sampler); }
 
+#pragma warning disable CS0618
         [NativeConditional("ENABLE_PROFILER")]
         [FreeFunction("RenderingCommandBuffer_Bindings::BeginSample_CustomSampler", HasExplicitThis = true)]
         extern private void BeginSample_CustomSampler([NotNull] CustomSampler sampler);
@@ -969,6 +972,7 @@ namespace UnityEngine.Rendering
         [NativeConditional("ENABLE_PROFILER")]
         [FreeFunction("RenderingCommandBuffer_Bindings::EndSample_CustomSampler", HasExplicitThis = true)]
         extern private void EndSample_CustomSampler([NotNull] CustomSampler sampler);
+#pragma warning restore CS0618
 
         [Pure]
         [MethodImpl(MethodImplOptions.AggressiveInlining | (MethodImplOptions)512)]
@@ -1247,11 +1251,11 @@ namespace UnityEngine.Rendering
             if (data == null)
                 throw new ArgumentNullException("data");
 
-            if (!UnsafeUtility.IsArrayBlittable(data))
+            if (!UnsafeUtility.IsArrayUnmanaged(data))
             {
                 throw new ArgumentException(
-                    string.Format("Array passed to RenderingCommandBuffer.SetBufferData(array) must be blittable.\n{0}",
-                        UnsafeUtility.GetReasonForArrayNonBlittable(data)));
+                    string.Format("Array passed to RenderingCommandBuffer.SetBufferData(array) must be unmanaged.\n{0}",
+                        UnsafeUtility.GetReasonForArrayNonUnmanaged(data)));
             }
             var elemSize = UnsafeUtility.SizeOf(data.GetType().GetElementType());
             int dataLen = data.Length;
@@ -1265,11 +1269,11 @@ namespace UnityEngine.Rendering
             if (data == null)
                 throw new ArgumentNullException("data");
 
-            if (!UnsafeUtility.IsGenericListBlittable<T>())
+            if (!UnsafeUtility.IsGenericListUnmanaged<T>())
             {
                 throw new ArgumentException(
-                    string.Format("List<{0}> passed to RenderingCommandBuffer.SetBufferData(List<>) must be blittable.\n{1}",
-                        typeof(T), UnsafeUtility.GetReasonForGenericListNonBlittable<T>()));
+                    string.Format("List<{0}> passed to RenderingCommandBuffer.SetBufferData(List<>) must be unmanaged.\n{1}",
+                        typeof(T), UnsafeUtility.GetReasonForGenericListNonUnmanaged<T>()));
             }
             InternalSetComputeBufferData(buffer, UnsafeUtility.GetByteSpanFromList(data), 0, 0, NoAllocHelpers.SafeLength(data), UnsafeUtility.SizeOf<T>());
         }
@@ -1288,17 +1292,17 @@ namespace UnityEngine.Rendering
             if (data == null)
                 throw new ArgumentNullException("data");
 
-            if (!UnsafeUtility.IsArrayBlittable(data))
+            if (!UnsafeUtility.IsArrayUnmanaged(data))
             {
                 throw new ArgumentException(
-                    string.Format("Array passed to RenderingCommandBuffer.SetBufferData(array) must be blittable.\n{0}",
-                        UnsafeUtility.GetReasonForArrayNonBlittable(data)));
+                    string.Format("Array passed to RenderingCommandBuffer.SetBufferData(array) must be unmanaged.\n{0}",
+                        UnsafeUtility.GetReasonForArrayNonUnmanaged(data)));
             }
 
             if (managedBufferStartIndex < 0 || graphicsBufferStartIndex < 0 || count < 0 || managedBufferStartIndex + count > data.Length)
                 throw new ArgumentOutOfRangeException(string.Format("Bad indices/count arguments (managedBufferStartIndex:{0} graphicsBufferStartIndex:{1} count:{2})", managedBufferStartIndex, graphicsBufferStartIndex, count));
 
-            var elemSize = Marshal.SizeOf(data.GetType().GetElementType());
+            var elemSize = UnsafeUtility.SizeOf(data.GetType().GetElementType());
             int dataLen = data.Length;
             InternalSetComputeBufferData(buffer, UnsafeUtility.GetByteSpanFromArray(data, dataLen, elemSize), managedBufferStartIndex, graphicsBufferStartIndex, count, elemSize);
         }
@@ -1310,11 +1314,11 @@ namespace UnityEngine.Rendering
             if (data == null)
                 throw new ArgumentNullException("data");
 
-            if (!UnsafeUtility.IsGenericListBlittable<T>())
+            if (!UnsafeUtility.IsGenericListUnmanaged<T>())
             {
                 throw new ArgumentException(
-                    string.Format("List<{0}> passed to RenderingCommandBuffer.SetBufferData(List<>) must be blittable.\n{1}",
-                        typeof(T), UnsafeUtility.GetReasonForGenericListNonBlittable<T>()));
+                    string.Format("List<{0}> passed to RenderingCommandBuffer.SetBufferData(List<>) must be unmanaged.\n{1}",
+                        typeof(T), UnsafeUtility.GetReasonForGenericListNonUnmanaged<T>()));
             }
 
             if (managedBufferStartIndex < 0 || graphicsBufferStartIndex < 0 || count < 0 || managedBufferStartIndex + count > data.Count)
@@ -1354,11 +1358,11 @@ namespace UnityEngine.Rendering
             if (data == null)
                 throw new ArgumentNullException("data");
 
-            if (!UnsafeUtility.IsArrayBlittable(data))
+            if (!UnsafeUtility.IsArrayUnmanaged(data))
             {
                 throw new ArgumentException(
-                    string.Format("Array passed to RenderingCommandBuffer.SetBufferData(array) must be blittable.\n{0}",
-                        UnsafeUtility.GetReasonForArrayNonBlittable(data)));
+                    string.Format("Array passed to RenderingCommandBuffer.SetBufferData(array) must be unmanaged.\n{0}",
+                        UnsafeUtility.GetReasonForArrayNonUnmanaged(data)));
             }
             var elemSize = UnsafeUtility.SizeOf(data.GetType().GetElementType());
             int dataLen = data.Length;
@@ -1372,11 +1376,11 @@ namespace UnityEngine.Rendering
             if (data == null)
                 throw new ArgumentNullException("data");
 
-            if (!UnsafeUtility.IsGenericListBlittable<T>())
+            if (!UnsafeUtility.IsGenericListUnmanaged<T>())
             {
                 throw new ArgumentException(
-                    string.Format("List<{0}> passed to RenderingCommandBuffer.SetBufferData(List<>) must be blittable.\n{1}",
-                        typeof(T), UnsafeUtility.GetReasonForGenericListNonBlittable<T>()));
+                    string.Format("List<{0}> passed to RenderingCommandBuffer.SetBufferData(List<>) must be unmanaged.\n{1}",
+                        typeof(T), UnsafeUtility.GetReasonForGenericListNonUnmanaged<T>()));
             }
             InternalSetGraphicsBufferData(buffer, UnsafeUtility.GetByteSpanFromList(data), 0, 0, NoAllocHelpers.SafeLength(data), UnsafeUtility.SizeOf<T>());
         }
@@ -1395,17 +1399,17 @@ namespace UnityEngine.Rendering
             if (data == null)
                 throw new ArgumentNullException("data");
 
-            if (!UnsafeUtility.IsArrayBlittable(data))
+            if (!UnsafeUtility.IsArrayUnmanaged(data))
             {
                 throw new ArgumentException(
-                    string.Format("Array passed to RenderingCommandBuffer.SetBufferData(array) must be blittable.\n{0}",
-                        UnsafeUtility.GetReasonForArrayNonBlittable(data)));
+                    string.Format("Array passed to RenderingCommandBuffer.SetBufferData(array) must be unmanaged.\n{0}",
+                        UnsafeUtility.GetReasonForArrayNonUnmanaged(data)));
             }
 
             if (managedBufferStartIndex < 0 || graphicsBufferStartIndex < 0 || count < 0 || managedBufferStartIndex + count > data.Length)
                 throw new ArgumentOutOfRangeException(string.Format("Bad indices/count arguments (managedBufferStartIndex:{0} graphicsBufferStartIndex:{1} count:{2})", managedBufferStartIndex, graphicsBufferStartIndex, count));
 
-            var elemSize = Marshal.SizeOf(data.GetType().GetElementType());
+            var elemSize = UnsafeUtility.SizeOf(data.GetType().GetElementType());
             int dataLen = data.Length;
             InternalSetGraphicsBufferData(buffer, UnsafeUtility.GetByteSpanFromArray(data, dataLen, elemSize), managedBufferStartIndex, graphicsBufferStartIndex, count, elemSize);
         }
@@ -1417,11 +1421,11 @@ namespace UnityEngine.Rendering
             if (data == null)
                 throw new ArgumentNullException("data");
 
-            if (!UnsafeUtility.IsGenericListBlittable<T>())
+            if (!UnsafeUtility.IsGenericListUnmanaged<T>())
             {
                 throw new ArgumentException(
-                    string.Format("List<{0}> passed to RenderingCommandBuffer.SetBufferData(List<>) must be blittable.\n{1}",
-                        typeof(T), UnsafeUtility.GetReasonForGenericListNonBlittable<T>()));
+                    string.Format("List<{0}> passed to RenderingCommandBuffer.SetBufferData(List<>) must be unmanaged.\n{1}",
+                        typeof(T), UnsafeUtility.GetReasonForGenericListNonUnmanaged<T>()));
             }
 
             if (managedBufferStartIndex < 0 || graphicsBufferStartIndex < 0 || count < 0 || managedBufferStartIndex + count > data.Count)

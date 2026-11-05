@@ -173,7 +173,7 @@ namespace Unity.Hierarchy
             Settings = Content.Columns,
 
             /// <summary>
-            /// Content to persist before a domain reload and restore after a domain reload.
+            /// Content to persist before a code reload and restore after a code reload.
             /// </summary>
             DomainReload = Content.Columns | Content.ViewModelState | Content.SearchText | Content.ScrollPosition,
 

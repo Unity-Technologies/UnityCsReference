@@ -48,8 +48,8 @@ namespace UnityEngine.LightTransport
         public BufferSlice<U> SafeReinterpret<U>()
             where U : struct
         {
-            if (!UnsafeUtility.IsBlittable<U>())
-                throw new ArgumentException($"Type {typeof(U)} must be blittable. {UnsafeUtility.GetReasonForTypeNonBlittable(typeof(U))}.");
+            if (!UnsafeUtility.IsUnmanaged(typeof(U)))
+                throw new ArgumentException($"Type {typeof(U)} must be unmanaged. {UnsafeUtility.GetReasonForTypeNonUnmanaged(typeof(U))}.");
 
             int oldSize = UnsafeUtility.SizeOf<T>();
             int newSize = UnsafeUtility.SizeOf<U>();

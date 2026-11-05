@@ -1683,6 +1683,7 @@ namespace UnityEngine
         [NativeMethod(ThrowsException = true)]
         public static extern void ParameterNonBlittableCustomStruct(NonBlittableCustomStruct param, string expectedString, int expectedInt);
         public static extern NonBlittableCustomStruct ReturnNonBlittableCustomStruct(string expectedString, int expectedInt);
+        public static extern NonBlittableCustomStruct[] ReturnNonBlittableCustomStructArray(int count);
 
         [NativeMethod(ThrowsException = true)]
         public static extern void ParameterNonBlittableCustomClassNativeAsStruct(NonBlittableCustomClassNativeAsStruct param, string expectedString, int expectedInt);
@@ -1791,11 +1792,9 @@ namespace UnityEngine
         public static extern void PPtrOutMarshalledBufferReuse([Out] MarshallingTestObject[] param);
         public static extern void PPtrInOutMarshalledBufferReuse([In, Out] MarshallingTestObject[] param);
 
-        // The non-GC safe bindings don't support by-ref arrays
         public static extern void PPtrOutRefMarshalledBufferReuse(out MarshallingTestObject[] param, int size);
 
-        // The non-GC safe bindings don't support custom marshalled types as array elements
-        // Note: that the blittable and non-blittable types call the same native method - their custom marshallers map to the same native type
+        // The blittable and non-blittable types call the same native method - their custom marshallers map to the same native type
 
         [NativeType(CodegenOptions = CodegenOptions.Custom, IntermediateScriptingStructName = "NonBlittableCustomMarshalledToSmallerSizeManaged")]
         public struct NonBlittableCustomMarshalledToSmallerSize
@@ -1810,7 +1809,6 @@ namespace UnityEngine
             public long Value { get; set; }
         }
 
-        //  Marshalling of arrays of custom marshalled types does not work correclty on the pre-GC safe bindings
         [NativeMethod("OutMarshalledBufferReuse")]
         public static extern void NonBlittableOutMarshalledBufferReuse([Out] NonBlittableCustomMarshalledToSmallerSize[] param);
         [NativeMethod("OutRefMarshalledBufferReuse")]

@@ -5,6 +5,7 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 using System.Reflection;
 using UnityEngine;
@@ -85,17 +86,7 @@ namespace UnityEditor.UIElements.Experimental.Debugger
             TotalTime
         }
 
-        // Event playback speed, divide by 10f before using
-        public readonly List<string> m_PlaybackSpeeds = new List<string>
-        {
-            "0.1x", // 0.1x (slowest)
-            "0.2x",
-            "0.5x",
-            "1x", // 1x (normal)
-            "2x",
-            "5x",
-            "10x" // 10x (fastest)
-        };
+        static readonly float[] k_PlaybackSpeeds = { 0.1f, 0.2f, 0.5f, 1f, 2f, 5f, 10f };
 
         Label m_EventPropagationPaths;
         Label m_EventBaseInfo;
@@ -529,10 +520,15 @@ namespace UnityEditor.UIElements.Experimental.Debugger
             });
 
             m_PlaybackSpeedDropdown = eventReplayToolbar.MandatoryQ<DropdownField>("playback-speed-dropdown");
-            m_PlaybackSpeedDropdown.choices = m_PlaybackSpeeds;
-            m_PlaybackSpeedDropdown.RegisterValueChangedCallback(e =>
+            var playbackSpeedChoices = new List<string>(k_PlaybackSpeeds.Length);
+            foreach (var playbackSpeed in k_PlaybackSpeeds)
             {
-                m_PlaybackSpeed = float.Parse(e.newValue.Trim('x'));
+                playbackSpeedChoices.Add(FormatPlaybackSpeed(playbackSpeed));
+            }
+            m_PlaybackSpeedDropdown.choices = playbackSpeedChoices;
+            m_PlaybackSpeedDropdown.RegisterValueChangedCallback(_ =>
+            {
+                m_PlaybackSpeed = k_PlaybackSpeeds[m_PlaybackSpeedDropdown.index];
                 UpdatePlaybackSpeed();
             });
 
@@ -679,10 +675,9 @@ namespace UnityEditor.UIElements.Experimental.Debugger
 
         void DecreasePlaybackSpeed()
         {
-            var i = m_PlaybackSpeeds.Count - 1;
-            for (; i >= 0; i--)
+            for (var i = k_PlaybackSpeeds.Length - 1; i >= 0; i--)
             {
-                var playbackSpeed = float.Parse(m_PlaybackSpeeds[i].Trim('x'));
+                var playbackSpeed = k_PlaybackSpeeds[i];
                 if (playbackSpeed < m_Debugger.playbackSpeed)
                 {
                     UpdatePlaybackSpeed(playbackSpeed);
@@ -693,10 +688,8 @@ namespace UnityEditor.UIElements.Experimental.Debugger
 
         void IncreasePlaybackSpeed()
         {
-            var i = 0;
-            for (; i < m_PlaybackSpeeds.Count; i++)
+            foreach (var playbackSpeed in k_PlaybackSpeeds)
             {
-                var playbackSpeed = float.Parse(m_PlaybackSpeeds[i].Trim('x'));
                 if (playbackSpeed > m_Debugger.playbackSpeed)
                 {
                     UpdatePlaybackSpeed(playbackSpeed);
@@ -768,13 +761,15 @@ namespace UnityEditor.UIElements.Experimental.Debugger
 
         void UpdatePlaybackSpeed(float playbackSpeed)
         {
-            var slowest = float.Parse(m_PlaybackSpeeds[0].Trim('x'));
-            var fastest = float.Parse(m_PlaybackSpeeds[m_PlaybackSpeeds.Count - 1].Trim('x'));
-
             m_Debugger.playbackSpeed = playbackSpeed;
-            m_PlaybackSpeedDropdown.SetValueWithoutNotify(m_Debugger.playbackSpeed + "x");
-            m_DecreasePlaybackSpeedButton.SetEnabled(playbackSpeed > slowest);
-            m_IncreasePlaybackSpeedButton.SetEnabled(playbackSpeed < fastest);
+            m_PlaybackSpeedDropdown.SetValueWithoutNotify(FormatPlaybackSpeed(playbackSpeed));
+            m_DecreasePlaybackSpeedButton.SetEnabled(playbackSpeed > k_PlaybackSpeeds[0]);
+            m_IncreasePlaybackSpeedButton.SetEnabled(playbackSpeed < k_PlaybackSpeeds[k_PlaybackSpeeds.Length - 1]);
+        }
+
+        static string FormatPlaybackSpeed(float playbackSpeed)
+        {
+            return playbackSpeed.ToString(CultureInfo.InvariantCulture) + "x";
         }
 
         void SaveReplaySessionFromSelection()

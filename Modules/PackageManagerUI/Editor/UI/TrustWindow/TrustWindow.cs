@@ -39,14 +39,15 @@ namespace UnityEditor.PackageManager.UI.Internal
             // In batchmode without an Asset Store origin (productId == 0), the import is automated,
             // not a user action. Skip the gate so nothing gets logged. Even Debug.Log would break tests
             // like PackageImportExport.BatchModeExportAndImport, since Log.Expect ignores severity.
-            if (productId <= 0 && Application.isBatchMode)
+            var settingsProxy = ServicesContainer.instance.Resolve<IProjectSettingsProxy>();
+            if ((productId <= 0 && Application.isBatchMode) || settingsProxy.isSignatureValidationDisabled)
                 return TrustCheckResult.Proceed;
 
             var assetPackageInfo = PackageImport.GetAssetPackageInfo(nativeAssetPackageInfo);
 
             var applicationProxy = ServicesContainer.instance.Resolve<IApplicationProxy>();
             var origin = new AssetOrigin(productId, packageName, packageVersion, uploadId);
-            var viewData = CreateViewData(packagePath, origin, assetPackageInfo, isReimport, applicationProxy.shortUnityVersion);
+            var viewData = CreateAssetPackageActiveViewData(packagePath, origin, assetPackageInfo, isReimport, applicationProxy.shortUnityVersion, settingsProxy.hasBypassPackageTrustEntitlement);
             if (viewData == null)
                 return TrustCheckResult.Proceed;
 
@@ -155,7 +156,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             return ModalWindowContainer.ShowModal(content) ? content.returnValue : TrustWindowReturnValue.Error;
         }
 
-        public static ViewData CreateViewData(IUpmCache upmCache, IEnumerable<PackageInfo> packages, OperationType operationType, string shortUnityVersion, TrustPolicyLevel trustPolicyLevel)
+        public static ViewData CreateActiveViewData(IUpmCache upmCache, IEnumerable<PackageInfo> packages, OperationType operationType, string shortUnityVersion, TrustPolicyLevel trustPolicyLevel, bool hasBypassPackageTrustEntitlement)
         {
             var invalidSignatureRows = new List<RowData>();
             var missingSignatureRows = new List<RowData>();
@@ -165,9 +166,9 @@ namespace UnityEditor.PackageManager.UI.Internal
                 if (info == null)
                     continue;
 
-                var trustAndSignature = TrustAndSignatureHelper.GetTrustAndSignature(info, true);
+                var trustAndSignature = TrustAndSignatureHelper.GetTrustAndSignature(info, isInstalled: true, isSignatureValidationDisabled: false);
                 var currentlyInstalled = upmCache.GetInstalledPackageInfo(info.name);
-                if (currentlyInstalled?.packageId == info.packageId && TrustAndSignatureHelper.GetTrustAndSignature(currentlyInstalled, true) == trustAndSignature)
+                if (currentlyInstalled?.packageId == info.packageId && TrustAndSignatureHelper.GetTrustAndSignature(currentlyInstalled, isInstalled: true, isSignatureValidationDisabled: false) == trustAndSignature)
                     continue;
                 switch (trustAndSignature)
                 {
@@ -286,7 +287,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             {
                 windowType = TrustWindowType.Active,
                 windowTitle = windowTitle,
-                helpBoxText = helpBoxText,
+                helpBoxText = AppendManageSignatureValidationHintIfEntitled(helpBoxText, hasBypassPackageTrustEntitlement),
                 helpBoxMessageType = messageType,
                 actionLabel = actionLabel,
                 docUrl = docUrl,
@@ -304,7 +305,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             };
         }
 
-        public static ViewData CreateViewData(IUpmCache upmCache, IEnumerable<IPackage> changedPackages, TrustPolicyLevel trustPolicyLevel, string shortUnityVersion)
+        public static ViewData CreatePassiveViewData(IUpmCache upmCache, IEnumerable<IPackage> changedPackages, TrustPolicyLevel trustPolicyLevel, string shortUnityVersion, bool hasBypassPackageTrustEntitlement)
         {
             var invalidSignatureRows = new List<RowData>();
             var missingSignatureRows = new List<RowData>();
@@ -427,7 +428,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             {
                 windowType = TrustWindowType.Passive,
                 windowTitle = windowTitle,
-                helpBoxText = helpBoxText,
+                helpBoxText = AppendManageSignatureValidationHintIfEntitled(helpBoxText, hasBypassPackageTrustEntitlement),
                 helpBoxMessageType = messageType,
                 actionLabel = null,
                 docUrl = docUrl,
@@ -449,9 +450,14 @@ namespace UnityEditor.PackageManager.UI.Internal
             return count == 1 ? singular : string.Format(plural, count);
         }
 
-        public static ViewData CreateViewData(string packagePath, AssetOrigin origin, AssetPackageInfo assetPackageInfo, bool isReimport, string shortUnityVersion)
+        private static string AppendManageSignatureValidationHintIfEntitled(string helpBoxText, bool hasBypassPackageTrustEntitlement)
         {
-            var trustAndSignature = assetPackageInfo != null ? TrustAndSignatureHelper.GetTrustAndSignature(assetPackageInfo) : TrustAndSignature.NotApplicable;
+            return hasBypassPackageTrustEntitlement ? string.Format("{0} {1}", helpBoxText, L10n.Tr("Manage signature validation in Project Settings.", null)) : helpBoxText;
+        }
+
+        public static ViewData CreateAssetPackageActiveViewData(string packagePath, AssetOrigin origin, AssetPackageInfo assetPackageInfo, bool isReimport, string shortUnityVersion, bool hasBypassPackageTrustEntitlement)
+        {
+            var trustAndSignature = assetPackageInfo != null ? TrustAndSignatureHelper.GetTrustAndSignature(assetPackageInfo, isSignatureValidationDisabled: false) : TrustAndSignature.NotApplicable;
 
             string windowTitle, helpBoxText, docUrl, sectionHeader;
             HelpBoxMessageType messageType;
@@ -489,6 +495,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                 case TrustAndSignature.FullTrustValidSignature:
                 case TrustAndSignature.FullTrustNoSignature:
                 case TrustAndSignature.FullTrustBuiltInPackage:
+                case TrustAndSignature.SignatureValidationDisabled:
                 default:
                     return null;
             }
@@ -510,7 +517,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             {
                 windowType = TrustWindowType.Active,
                 windowTitle = windowTitle,
-                helpBoxText = helpBoxText,
+                helpBoxText = AppendManageSignatureValidationHintIfEntitled(helpBoxText, hasBypassPackageTrustEntitlement),
                 helpBoxMessageType = messageType,
                 actionLabel = actionLabel,
                 docUrl = docUrl,

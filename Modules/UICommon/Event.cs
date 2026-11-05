@@ -33,7 +33,7 @@ namespace UnityEngine
             m_Ptr = Internal_Copy(other.m_Ptr);
         }
 
-#pragma warning disable UA5000 // The Avoid Finalizer Analyzer produces compile errors for any new finalizers. This pre-existing finalizer declaration has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA5000 // Frees the native event; Internal_Destroy is thread-safe and users create Event with new, with no Dispose API.
         ~Event()
         {
             if (m_Ptr != IntPtr.Zero)

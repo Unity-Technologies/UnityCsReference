@@ -142,7 +142,7 @@ namespace Unity.Entities
         internal struct SystemElement 
         {
             public SystemTypeIndex SystemTypeIndex;
-            public UpdateIndex Index;
+            public SystemHandle Handle;
             public int OrderingBucket; // 0 = OrderFirst, 1 = none, 2 = OrderLast
             public NativeList<int> updateBefore;
             public int nAfter;
@@ -222,7 +222,7 @@ namespace Unity.Entities
                 sortedElements[nextOutIndex++] = new SystemElement
                 {
                     SystemTypeIndex = elem.SystemTypeIndex,
-                    Index = elem.Index, 
+                    Handle = elem.Handle,
                     nAfter = elem.nAfter, 
                     updateBefore = elem.updateBefore, 
                     OrderingBucket = elem.OrderingBucket

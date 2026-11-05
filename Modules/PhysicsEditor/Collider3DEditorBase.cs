@@ -63,6 +63,7 @@ namespace UnityEditor
         public override void OnDisable()
         {
             m_ShowLayerOverrides.valueChanged.RemoveListener(Repaint);
+            base.OnDisable();
         }
 
         protected void ShowLayerOverridesProperties()

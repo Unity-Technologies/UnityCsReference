@@ -73,9 +73,9 @@ namespace UnityEngine
         public Vector3 impulse { get { return m_Impulse; } }
 
         ///<summary>The first collider in contact at the point.</summary>
-        public Collider thisCollider { get { return Physics.GetColliderByInstanceID(m_ThisColliderEntityId); } }
+        public Collider thisCollider { get { return Physics.GetColliderByEntityId(m_ThisColliderEntityId); } }
         ///<summary>The other collider in contact at the point.</summary>
-        public Collider otherCollider { get { return Physics.GetColliderByInstanceID(m_OtherColliderEntityId); } }
+        public Collider otherCollider { get { return Physics.GetColliderByEntityId(m_OtherColliderEntityId); } }
         ///<summary>The distance between the colliders at the contact point.</summary>
         ///<remarks>This value represents how far apart or interpenetrated the two colliders are at the time the contact was registered:
         ///                    •    A positive separation means the colliders are close but not touching, and the contact was generated in anticipation of a possible collision (due to contact offset thresholds).

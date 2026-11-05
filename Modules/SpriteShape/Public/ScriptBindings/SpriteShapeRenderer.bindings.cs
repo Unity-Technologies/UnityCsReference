@@ -133,6 +133,11 @@ namespace UnityEngine.U2D
         ///<param name="sprites">Input list of Sprites.</param>
         extern public void Prepare(JobHandle handle, SpriteShapeParameters shapeParams, Sprite[] sprites);
 
+        // The Fill Area's texture for profiles authored before SpriteShape.fillSprite,
+        // whose fill has no Sprite to carry one. Set independently of Prepare(), which
+        // the UnifiedRenderData path does not call; entry 0 falls back to this.
+        extern internal void SetFillTexture(Texture2D texture);
+
         extern private void RefreshSafetyHandle(SpriteShapeDataType arrayType);
         extern private AtomicSafetyHandle GetSafetyHandle(SpriteShapeDataType arrayType);
         unsafe private NativeArray<T> GetNativeDataArray<T>(SpriteShapeDataType dataType) where T : struct
@@ -288,6 +293,68 @@ namespace UnityEngine.U2D
             colors = GetChannelDataArray<Color32>(SpriteShapeDataType.ChannelColor, VertexAttribute.Color);
             tangents = GetChannelDataArray<Vector4>(SpriteShapeDataType.ChannelTangent, VertexAttribute.Tangent);
             normals = GetChannelDataArray<Vector3>(SpriteShapeDataType.ChannelNormal, VertexAttribute.Normal);
+        }
+
+        [NativeHeader("Runtime/2D/Common/ScriptBindings/UnifiedRenderData.bindings.h")]
+        [FreeFunction(Name = "UnifiedRenderData_Bindings::ExtractFromSpriteShapeRenderer", HasExplicitThis = true)]
+        extern private IntPtr Internal_GetUnifiedRenderData();
+
+        // Internal for now. Since the tests needs this API and until the package lands,
+        // this is the only way to test Render API with URD, this stays. Remove when package lands.
+        internal UnifiedRenderData GetUnifiedRenderData()
+        {
+            IntPtr renderData = Internal_GetUnifiedRenderData();
+            return IntPtr.Zero == renderData ? null : new UnifiedRenderData(renderData);
+        }
+
+        [NativeHeader("Runtime/2D/Common/ScriptBindings/UnifiedRenderData.bindings.h")]
+        [FreeFunction(Name = "UnifiedRenderData_Bindings::ApplyToSpriteShapeRenderer", HasExplicitThis = true)]
+        extern private void Internal_SetUnifiedRenderData(UnifiedRenderData renderData);
+
+        // Draws geometry BUILT ELSEWHERE instead of tessellating it. 
+        // SHARED OWNERSHIP. The renderer takes its own reference, so Dispose()ing this
+        // handle does not stop it drawing; keep the handle and mutate through it to
+        // change the geometry.
+        // The aggregate bounds are the producer's: set UnifiedRenderData.bounds, or
+        // leave it at zero and the renderer derives the union of the entry bounds.
+        // MAIN THREAD ONLY.
+        internal void SetUnifiedRenderData(UnifiedRenderData renderData)
+        {
+            // Not nullable: the parameter is marshalled through
+            // UnifiedRenderData.BindingsMarshaller. Set an empty instance to draw nothing.
+            if (null == renderData)
+                throw new ArgumentNullException(nameof(renderData));
+            if (!renderData.isValid)
+                throw new ObjectDisposedException(nameof(UnifiedRenderData));
+
+            Internal_SetUnifiedRenderData(renderData);
+        }
+
+        [NativeHeader("Runtime/2D/Common/ScriptBindings/UnifiedRenderData.bindings.h")]
+        [FreeFunction(Name = "UnifiedRenderData_Bindings::ApplyToSpriteShapeRendererWithFence", HasExplicitThis = true)]
+        extern private void Internal_SetUnifiedRenderDataWithFence(UnifiedRenderData renderData, JobHandle fence);
+
+        // As SetUnifiedRenderData(renderData), for geometry a job opened with
+        // UnifiedRenderData.BeginWrite() is STILL WRITING.
+        //
+        // NOTHING IS SYNCED HERE. The renderer completes `fence` and calls EndWrite() at
+        // prepare time instead, which is what keeps a jobified rebuild off the main
+        // thread entirely -- do not Complete() the handle yourself first.
+        //
+        // `fence` must cover every job scheduled against the writer. After this call the
+        // writer is the renderer's to close: do not write through it again.
+        //
+        // MAIN THREAD ONLY.
+        internal void SetUnifiedRenderData(UnifiedRenderData renderData, JobHandle fence)
+        {
+            // Not nullable, as above: the parameter is marshalled through
+            // UnifiedRenderData.BindingsMarshaller.
+            if (null == renderData)
+                throw new ArgumentNullException(nameof(renderData));
+            if (!renderData.isValid)
+                throw new ObjectDisposedException(nameof(UnifiedRenderData));
+
+            Internal_SetUnifiedRenderDataWithFence(renderData, fence);
         }
 
         [FreeFunction(Name = "SpriteShapeUtility::SetShaderUserValue", HasExplicitThis = true)] extern internal void Internal_SetShaderUserValueUInt(UInt32 v);

@@ -259,7 +259,9 @@ namespace UnityEditor.Search
         // 2- Fix Search Areas for sub assets and sub objects
         // 3- Add metadata to document hash.
         // 4- Keywords per document.
-        internal const int version = 4;
+        // 5- Index material references of all Renderer types.
+        // 6- Index properties inside SerializeReference fields.
+        internal const int version = 6;
 
         /// <summary>
         /// Name of the index. Generally this name is given by a user from a <see cref="SearchDatabase.Settings"/>
@@ -335,8 +337,10 @@ namespace UnityEditor.Search
         internal ISearchIndexerStorage storage => m_Storage;
 
         // Guards the native storage against being freed while external readers (e.g. background search
-        // threads) are still using it. See SearchIndexAccessGuard.
-        readonly SearchIndexAccessGuard m_AccessGuard = new SearchIndexAccessGuard();
+        // threads) are still using it. See SearchIndexAccessGuard. Created on first read access so that indexes
+        // that are never read (e.g. the per-asset indexes built during artifact import) don't allocate one.
+        // Replaced by SearchIndexAccessGuard.k_Closed if the index is disposed before any read access.
+        SearchIndexAccessGuard m_AccessGuard;
 
         static readonly ProfilerMarker k_MapPropertyMarker = new($"{nameof(SearchIndexer)}.{nameof(MapProperty)}");
         static readonly ProfilerMarker k_AddWordMarker = new($"{nameof(SearchIndexer)}.{nameof(AddWord)}");
@@ -375,7 +379,7 @@ namespace UnityEditor.Search
             m_Storage = storage;
         }
 
-#pragma warning disable UA5000 // The Avoid Finalizer Analyzer produces compile errors for any new finalizers. This pre-existing finalizer declaration has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA5000 // Frees the native LMDB storage; Destroy is thread-safe, so the finalizer is the sole safety net when Dispose is missed.
         ~SearchIndexer()
         {
             Dispose(false);
@@ -397,7 +401,8 @@ namespace UnityEditor.Search
                 // native storage out from under a running search. Skipped in the finalizer path
                 // (disposing == false): we must never block the finalizer thread, and any active reader
                 // keeps this indexer reachable, so finalization only runs once no leases remain.
-                m_AccessGuard.CloseAndWait();
+                var accessGuard = Interlocked.CompareExchange(ref m_AccessGuard, SearchIndexAccessGuard.k_Closed, null);
+                accessGuard?.CloseAndWait();
             }
 
             m_Storage.Dispose(disposing);
@@ -419,7 +424,15 @@ namespace UnityEditor.Search
         /// </summary>
         internal IDisposable TryAcquireReadAccess(out CancellationToken disposalToken)
         {
-            return m_AccessGuard.TryAcquire(out disposalToken);
+            var accessGuard = Volatile.Read(ref m_AccessGuard);
+            if (accessGuard == null)
+            {
+                // Lose the race gracefully: either another reader installed its guard first, or Dispose installed the
+                // closed guard, in which case TryAcquire refuses the lease.
+                var newAccessGuard = new SearchIndexAccessGuard();
+                accessGuard = Interlocked.CompareExchange(ref m_AccessGuard, newAccessGuard, null) ?? newAccessGuard;
+            }
+            return accessGuard.TryAcquire(out disposalToken);
         }
 
         private ParsedQuery<SearchResult, object> BuildQuery(string searchQuery)

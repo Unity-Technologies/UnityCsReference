@@ -144,6 +144,7 @@ namespace Unity.Entities
             }
         }
 
+        // Must stay the first field, so a store's address is its EntityDataAccess's address (FromEntityComponentStore).
         [NativeDisableUnsafePtrRestriction] private EntityComponentStore m_EntityComponentStore;
         [NativeDisableUnsafePtrRestriction] private EntityQueryManager m_EntityQueryManager;
         [NativeDisableUnsafePtrRestriction] private ComponentDependencyManager m_DependencyManager;
@@ -175,6 +176,7 @@ namespace Unity.Entities
         private int m_ManagedAccessHandle;
 
         EntityArchetype m_EntityAndSimulateOnlyArchetype;
+        EntityArchetype m_GameObjectOnlyArchetype;
         private UntypedUnsafeParallelHashMap m_AliveEntityQueries;
 
         internal ref UnsafeParallelHashMap<ulong, byte> AliveEntityQueries
@@ -192,13 +194,18 @@ namespace Unity.Entities
 
         internal ref StructuralChangesProfiler.Recorder StructuralChangesRecorder => ref m_EntityComponentStore.StructuralChangesRecorder;
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static EntityDataAccess* FromEntityComponentStore(EntityComponentStore* store) => (EntityDataAccess*)store;
+
         [ExcludeFromBurstCompatTesting("Takes managed World")]
         public static void Initialize(EntityDataAccess* self, World world)
         {
+            Assert.IsTrue(FromEntityComponentStore(&self->m_EntityComponentStore) == self);
 
             self->m_SharedComponentReferenceIndexList = new UnsafeList<int>(SHARED_COMPONENT_REFERENCES_DEFAULT, Allocator.Persistent);
 
             self->m_EntityAndSimulateOnlyArchetype = default;
+            self->m_GameObjectOnlyArchetype = default;
             self->m_ManagedAccessHandle = -1;
 
             self->AliveEntityQueries = new UnsafeParallelHashMap<ulong, byte>(32, Allocator.Persistent);
@@ -208,28 +215,28 @@ namespace Unity.Entities
             Unity.Entities.EntityQueryManager.Create(&self->m_EntityQueryManager, &self->m_DependencyManager);
 
             self->m_WorldUnmanaged = world.Unmanaged;
+            TransformDependencyBridge.RegisterWorld(self);
 
             var managedGuts = new ManagedEntityDataAccess(world, new CompanionComponentStore(self->EntityComponentStore));
             self->m_ManagedAccessHandle = ManagedEntityDataAccess.AllocHandle(managedGuts);
             self->m_EntityComponentStore.m_DebugOnlyManagedAccess = self->m_ManagedAccessHandle;
 
-            var includeGameObjects = EntityQueryOptions.Default;
             var builder = new EntityQueryBuilder(Allocator.Temp)
-                .WithOptions(EntityQueryOptions.IncludePrefab | EntityQueryOptions.IncludeDisabledEntities | EntityQueryOptions.IncludeSystems | includeGameObjects);
+                .WithOptions(EntityQueryOptions.IncludePrefab | EntityQueryOptions.IncludeDisabledEntities | EntityQueryOptions.IncludeSystems);
             self->m_UniversalQueryWithSystems = self->m_EntityQueryManager.CreateEntityQuery(self, builder);
 
             builder.Reset();
-            builder.WithOptions(EntityQueryOptions.IncludeDisabledEntities | EntityQueryOptions.IncludePrefab | includeGameObjects);
+            builder.WithOptions(EntityQueryOptions.IncludeDisabledEntities | EntityQueryOptions.IncludePrefab);
             self->m_UniversalQuery = self->m_EntityQueryManager.CreateEntityQuery(self, builder);
 
             builder.Reset();
             builder.WithOptions(EntityQueryOptions.IncludeDisabledEntities | EntityQueryOptions.IncludePrefab |
-                                EntityQueryOptions.IncludeMetaChunks | includeGameObjects);
+                                EntityQueryOptions.IncludeMetaChunks);
             self->m_UniversalQueryWithChunks = self->m_EntityQueryManager.CreateEntityQuery(self, builder);
 
             builder.Reset();
             builder.WithOptions(EntityQueryOptions.IncludeDisabledEntities | EntityQueryOptions.IncludePrefab |
-                                EntityQueryOptions.IncludeMetaChunks | EntityQueryOptions.IncludeSystems | includeGameObjects);
+                                EntityQueryOptions.IncludeMetaChunks | EntityQueryOptions.IncludeSystems);
             self->m_UniversalQueryWithChunksAndSystems = self->m_EntityQueryManager.CreateEntityQuery(self, builder);
 
             builder.Reset();
@@ -245,8 +252,11 @@ namespace Unity.Entities
             self->m_UniversalQueryWithChunks._GetImpl()->_DisallowDisposing = 1;
             self->m_EntityGuidQuery._GetImpl()->_DisallowDisposing = 1;
 
+            var gameObjectArchetypeChanges = self->EntityComponentStore->BeginArchetypeChangeTracking();
+            self->GetGameObjectEntityArchetype();
+            self->EntityComponentStore->EndArchetypeChangeTracking(gameObjectArchetypeChanges, self->EntityQueryManager);
 
-            if (s_DelegateGCPrevention == null)
+            if (s_ManagedPlaybackTrampoline.Data == IntPtr.Zero)
             {
                 var trampoline = new PlaybackManagedDelegate(PlaybackManagedDelegateInMonoWithWrappedExceptions);
                 s_DelegateGCPrevention = trampoline; // Need to hold on to this
@@ -271,6 +281,7 @@ namespace Unity.Entities
         [ExcludeFromBurstCompatTesting("Disposes managed lists")]
         public void Dispose()
         {
+            TransformDependencyBridge.UnregisterWorld(EntityComponentStore);
             m_SharedComponentReferenceIndexList.Dispose();
 
             m_UniversalQueryWithSystems._GetImpl()->_DisallowDisposing = 0;
@@ -364,7 +375,7 @@ namespace Unity.Entities
 
         public bool IsQueryValid(EntityQuery query)
         {
-            if (!AliveEntityQueries.ContainsKey((ulong) (IntPtr) query.__impl))
+            if (!AliveEntityQueries.ContainsKey((ulong)query.__impl))
                 return false;
 
             // Also check that the sequence number matches in case the same pointer was given back by malloc.
@@ -475,8 +486,17 @@ namespace Unity.Entities
             if (EntityComponentStore->m_ChunkListChangesTracker.ArchetypeTrackingHead != null)
                 EntityComponentStore->InvalidateChunkListCacheForChangedArchetypes();
 
+            // Process deferred GameObject create/destroy callbacks that fired during this structural change 
+            // (e.g. companion GameObjects in the managed playback above) were deferred;
+            ProcessPendingGameObjectEntityChanges();
         }
 
+        // Discard in Burst context (only happens during managed playback)
+        [BurstDiscard]
+        static void ProcessPendingGameObjectEntityChanges()
+        {
+            GameObjectComponentStoreBridge.ProcessPendingAfterStructuralChange();
+        }
 
         internal void ResetSharedComponentReferences()
         {
@@ -552,6 +572,21 @@ namespace Unity.Entities
                 StructuralChangesRecorder.End();
         }
 
+        public EntityArchetype GetGameObjectEntityArchetype()
+        {
+            if (!m_GameObjectOnlyArchetype.Valid)
+            {
+                var types = stackalloc ComponentType[3]
+                {
+                    ComponentType.FromTypeIndex(TypeManager.GetTypeIndex<GameObjectComponentStoreBridge.IsGameObject>()),
+                    ComponentType.FromTypeIndex(TypeManager.GetTypeIndex<TransformRef>()),
+                    ComponentType.FromTypeIndex(TypeManager.GetTypeIndex<HasHierarchy>())
+                };
+                m_GameObjectOnlyArchetype = CreateArchetype(types, 3, true);
+            }
+
+            return m_GameObjectOnlyArchetype;
+        }
 
         internal EntityArchetype CreateArchetype(ComponentType* types, int count, bool addSimulateComponentIfMissing)
         {
@@ -1383,13 +1418,19 @@ namespace Unity.Entities
                 ).Reinterpret<Entity>()
                 .ToNativeArray(m_WorldUnmanaged.UpdateAllocator.ToAllocator);
 
-            // Filter the linked entities based on the mask
+            Unity.Entities.EntityComponentStore.AssertComponentSizeMatches(typeIndex, componentSize);
+            var globalSystemVersion = EntityComponentStore->GlobalSystemVersion;
+            var lookupCache = default(LookupCache);
             foreach (var e in linkedEntities)
             {
-                if (EntityComponentStore->HasComponent(e, typeIndex, out _))
-                {
-                    SetComponentDataRaw(e, typeIndex, data, componentSize);
-                }
+                EntityComponentStore->ValidateEntity(e);
+                var archetype = Unity.Entities.EntityComponentStore.GetArchetypeOrNull(e, out var entityInChunk);
+                if (archetype == null)
+                    continue;
+
+                var ptr = ChunkDataUtility.GetOptionalComponentDataWithTypeRW(entityInChunk.Chunk, archetype, entityInChunk.IndexInChunk, typeIndex, globalSystemVersion, ref lookupCache);
+                if (ptr != null)
+                    UnsafeUtility.MemCpy(ptr, data, componentSize);
             }
         }
 
@@ -1536,7 +1577,7 @@ namespace Unity.Entities
 
 
         [BurstCompile]
-        private static void SetSharedComponentDataIndexWithBurst(EntityComponentStore* ecs, in Entity entity,
+        internal static void SetSharedComponentDataIndexWithBurst(EntityComponentStore* ecs, in Entity entity,
             in ComponentType componentType, int newSharedComponentDataIndex)
         {
             ecs->SetSharedComponentDataIndex(entity, componentType, newSharedComponentDataIndex);
@@ -1657,7 +1698,7 @@ namespace Unity.Entities
         }
 
         [BurstCompile]
-        static void BuildSharedComponentMapForMoving(ref NativeHashMap<int, int> hashmap, ref NativeArray<ArchetypeChunk> chunks)
+        internal static void BuildSharedComponentMapForMoving(ref NativeHashMap<int, int> hashmap, ref NativeArray<ArchetypeChunk> chunks)
         {
             var map = hashmap;
             // Build a map of all shared component values that will be moved with the appropriate refcount
@@ -2023,6 +2064,22 @@ namespace Unity.Entities
                 {
                     DependencyManager->CompleteReadAndWriteDependency(typeIndex);
                 }
+                // Native jobs on GameObject transforms are only registered under NativeJobsOnGameObjectTransforms.
+                if (EntityComponentStore->GetArchetype(entity)->HasGameObjectEntities)
+                {
+                    var entityJobsOnGameObjectTransforms = TypeManager.GetTypeIndex<EntityJobsOnGameObjectTransforms>();
+                    var nativeJobsOnGameObjectTransforms = TypeManager.GetTypeIndex<NativeJobsOnGameObjectTransforms>();
+                    if (isReadOnly)
+                    {
+                        DependencyManager->CompleteWriteDependency(entityJobsOnGameObjectTransforms);
+                        DependencyManager->CompleteWriteDependency(nativeJobsOnGameObjectTransforms);
+                    }
+                    else
+                    {
+                        DependencyManager->CompleteReadAndWriteDependency(entityJobsOnGameObjectTransforms);
+                        DependencyManager->CompleteReadAndWriteDependency(nativeJobsOnGameObjectTransforms);
+                    }
+                }
             }
 
             TransformUnion* header;
@@ -2048,6 +2105,34 @@ namespace Unity.Entities
             EntityComponentStore->AssertEntityHasComponent(entity, componentTypeIndex);
 
             EntityComponentStore->SetBufferRaw(entity, componentTypeIndex, tempBuffer, sizeInChunk);
+        }
+
+        /// <summary>
+        /// Completes the jobs writing to any component that instantiating srcEntity reads: its own, and those of the
+        /// rest of its LinkedEntityGroup.
+        /// </summary>
+        internal void CompleteWriteDependenciesToInstantiate(Entity srcEntity)
+        {
+            if (IsInExclusiveTransaction)
+                return;
+
+            var archetype = EntityComponentStore->GetArchetype(srcEntity);
+            CompleteWriteDependencies(archetype);
+
+            var linkedGroupType = TypeManager.GetTypeIndex<LinkedEntityGroup>();
+            if (ChunkDataUtility.GetIndexInTypeArray(archetype, linkedGroupType) == -1)
+                return;
+
+            var header = (BufferHeader*)EntityComponentStore->GetComponentDataWithTypeRO(srcEntity, linkedGroupType);
+            var linkedEntities = (Entity*)BufferHeader.GetElementPointer(header);
+            for (var i = 1; i < header->Length; i++)
+                CompleteWriteDependencies(EntityComponentStore->GetArchetype(linkedEntities[i]));
+        }
+
+        void CompleteWriteDependencies(Archetype* archetype)
+        {
+            for (var i = 0; i < archetype->TypesCount; i++)
+                DependencyManager->CompleteWriteDependency(archetype->Types[i].TypeIndex);
         }
 
         public EntityArchetype GetEntityAndSimulateArchetype()
@@ -2110,30 +2195,12 @@ namespace Unity.Entities
             if (count < 0)
                 throw new ArgumentOutOfRangeException("count must be non-negative");
             AssertCountsMatch(count, outputCount);
-            EntityComponentStore->AssertEntitiesExist(srcEntities, count);
-            EntityComponentStore->AssertCanInstantiateEntities(srcEntities, count, removePrefab);
+            Entities.EntityComponentStore.AssertCanInstantiateEntitiesFromAnyWorld(srcEntities, count, removePrefab);
 
             if (StructuralChangesProfiler.Enabled)
                 StructuralChangesRecorder.Begin(StructuralChangesProfiler.StructuralChangeType.CreateEntity, in m_WorldUnmanaged);
 
             StructuralChange.InstantiateEntities(EntityComponentStore, srcEntities, outputEntities, count, removePrefab);
-
-            if (StructuralChangesProfiler.Enabled)
-                StructuralChangesRecorder.End();
-        }
-
-        internal void AllocateAndAssignChunksToExistingEntitiesInstantiate(Entity srcEntity, Entity* existingEntities, int count,
-            in SystemHandle originSystem = default)
-        {
-            if (count < 0)
-                throw new ArgumentOutOfRangeException("count must be non-negative");
-            EntityComponentStore->AssertEntitiesExist(&srcEntity, 1);
-            EntityComponentStore->AssertCanInstantiateEntities(srcEntity);
-
-            if (StructuralChangesProfiler.Enabled)
-                StructuralChangesRecorder.Begin(StructuralChangesProfiler.StructuralChangeType.CreateEntity, in m_WorldUnmanaged);
-
-            StructuralChange.InstantiateExistingEntities(EntityComponentStore, &srcEntity, existingEntities, count);
 
             if (StructuralChangesProfiler.Enabled)
                 StructuralChangesRecorder.End();
@@ -2169,13 +2236,13 @@ namespace Unity.Entities
         }
 
         [GenerateTestsForBurstCompatibility]
-        public unsafe TransformTypeHandle GetTransformTypeHandle(bool isReadOnly)
+        public unsafe TransformTypeHandle GetTransformTypeHandle(bool isReadOnly, bool excludeGameObjects)
         {
             TypeIndex typeIndex = TypeManager.GetTypeIndex<TransformRef>();
             AtomicSafetyHandle safetyHandleForComponentTypeHandle = DependencyManager->Safety.GetSafetyHandleForComponentTypeHandle(typeIndex, isReadOnly);
             // TODO DOTS-10269: This should be a safety handle for the TransformHierarchies referenced by the TransformUnions in this chunk?
             AtomicSafetyHandle hierarchySafety = DependencyManager->Safety.GetBufferHandleForBufferTypeHandle(typeIndex);
-            return new TransformTypeHandle(safetyHandleForComponentTypeHandle, hierarchySafety, isReadOnly, EntityComponentStore->GlobalSystemVersion);
+            return new TransformTypeHandle(safetyHandleForComponentTypeHandle, hierarchySafety, isReadOnly, excludeGameObjects, EntityComponentStore->GlobalSystemVersion);
         }
 
         public bool HasBlobReferences(int sharedComponentIndex)

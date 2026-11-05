@@ -81,6 +81,7 @@ internal partial class VisualElementNodeHandler :
     public const string HierarchyItemDocumentExtensionClassName = HierarchyItemClassName + "__document-extension";
     public const string HierarchyItemDisabledClassName = HierarchyItemClassName + "__disabled";
     public const string HierarchyItemAttributeOverrideBarClassName = HierarchyItemClassName + "__attribute-override-bar";
+    internal const string MissingTemplateLabel = "(missing)";
 
     private const string k_StyleSheetPath = "UIToolkitAuthoring/Hierarchy/VisualElementNodeTypeHandler.uss";
 
@@ -1156,6 +1157,15 @@ internal partial class VisualElementNodeHandler :
             var nameElement = item.Q(className: "hierarchy-item__name");
             var index = nameElement.parent.IndexOf(nameElement);
             var template = subDocument.ResolveTemplate();
+            if (template == null)
+            {
+                var missingLabel = new Label(MissingTemplateLabel) { tooltip = subDocument.templateAlias };
+                missingLabel.AddToClassList(HierarchyItemTemplatePath);
+                nameElement.parent.Insert(index + 1, missingLabel);
+                UnsetStageNodeNavigation(item);
+                return;
+            }
+
             var path = AssetDatabase.GetAssetPath(template);
             var filename = Path.GetFileName(path);
 

@@ -114,13 +114,22 @@ namespace UnityEngine
 
         [FreeFunction("CameraScripting::GetLayerCullDistances", HasExplicitThis = true)] extern private float[] GetLayerCullDistances();
         [FreeFunction("CameraScripting::SetLayerCullDistances", HasExplicitThis = true)] extern private void SetLayerCullDistances([NotNull] float[] d);
+        [FreeFunction("CameraScripting::CopyLayerCullDistances", HasExplicitThis = true)] extern private void CopyLayerCullDistances(Span<float> destination);
+        const int k_LayerCount = 32;
+        internal void GetLayerCullDistances(Span<float> destination)
+        {
+            if (destination.Length != k_LayerCount)
+                throw new ArgumentException("Span needs to contain exactly " + k_LayerCount + " floats for layerCullDistances.", nameof(destination));
+            CopyLayerCullDistances(destination);
+        }
+
         public float[] layerCullDistances
         {
             get { return GetLayerCullDistances(); }
             set
             {
-                if (value.Length != 32)
-                    throw new UnityException("Array needs to contain exactly 32 floats for layerCullDistances.");
+                if (value.Length != k_LayerCount)
+                    throw new UnityException("Array needs to contain exactly " + k_LayerCount + " floats for layerCullDistances.");
                 SetLayerCullDistances(value);
             }
         }

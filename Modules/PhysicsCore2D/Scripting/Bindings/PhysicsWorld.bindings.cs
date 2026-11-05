@@ -49,6 +49,10 @@ namespace Unity.U2D.Physics
         [NativeMethod(Name = "PhysicsWorld::GetBounceThreshold", IsThreadSafe = true)] extern internal static float PhysicsWorld_GetBounceThreshold(PhysicsWorld world);
         [NativeMethod(Name = "PhysicsWorld::SetBounceIterations", IsThreadSafe = true)] extern internal static void PhysicsWorld_SetBounceIterations(PhysicsWorld world, int value);
         [NativeMethod(Name = "PhysicsWorld::GetBounceIterations", IsThreadSafe = true)] extern internal static int PhysicsWorld_GetBounceIterations(PhysicsWorld world);
+        [NativeMethod(Name = "PhysicsWorld::SetContactFilterModeOverride", IsThreadSafe = true)] extern internal static void PhysicsWorld_SetContactFilterModeOverride(PhysicsWorld world, PhysicsShape.ContactFilterModeOverride value);
+        [NativeMethod(Name = "PhysicsWorld::GetContactFilterModeOverride", IsThreadSafe = true)] extern internal static PhysicsShape.ContactFilterModeOverride PhysicsWorld_GetContactFilterModeOverride(PhysicsWorld world);
+        [NativeMethod(Name = "PhysicsWorld::SetContactFilterGroupModeOverride", IsThreadSafe = true)] extern internal static void PhysicsWorld_SetContactFilterGroupModeOverride(PhysicsWorld world, PhysicsShape.ContactFilterGroupModeOverride value);
+        [NativeMethod(Name = "PhysicsWorld::GetContactFilterGroupModeOverride", IsThreadSafe = true)] extern internal static PhysicsShape.ContactFilterGroupModeOverride PhysicsWorld_GetContactFilterGroupModeOverride(PhysicsWorld world);
         [NativeMethod(Name = "PhysicsWorld::SetBouncePropagation", IsThreadSafe = true)] extern internal static void PhysicsWorld_SetBouncePropagation(PhysicsWorld world, bool value);
         [NativeMethod(Name = "PhysicsWorld::GetBouncePropagation", IsThreadSafe = true)] extern internal static bool PhysicsWorld_GetBouncePropagation(PhysicsWorld world);
         [NativeMethod(Name = "PhysicsWorld::SetContactHitEventThreshold", IsThreadSafe = true)] extern internal static void PhysicsWorld_SetContactHitEventThreshold(PhysicsWorld world, float value);
@@ -104,6 +108,10 @@ namespace Unity.U2D.Physics
         [NativeMethod(Name = "PhysicsWorld::GetTriggerCallbackTargets", IsThreadSafe = true)] extern internal static PhysicsCallbacks.TriggerCallbackTargets PhysicsWorld_GetTriggerCallbackTargets(PhysicsWorld world, Allocator allocator);
         [NativeMethod(Name = "PhysicsWorld::GetContactCallbackTargets", IsThreadSafe = true)] extern internal static PhysicsCallbacks.ContactCallbackTargets PhysicsWorld_GetContactCallbackTargets(PhysicsWorld world, Allocator allocator);
         [NativeMethod(Name = "PhysicsWorld::GetJointThresholdCallbackTargets", IsThreadSafe = true)] extern internal static PhysicsCallbacks.JointThresholdCallbackTargets PhysicsWorld_GetJointThresholdCallbackTargets(PhysicsWorld world, Allocator allocator);
+        [NativeMethod(Name = "PhysicsWorld::SendBodyUpdateCallbacks")] extern internal static void PhysicsWorld_SendBodyUpdateCallbacks(PhysicsWorld world);
+        [NativeMethod(Name = "PhysicsWorld::SendTriggerCallbacks")] extern internal static void PhysicsWorld_SendTriggerCallbacks(PhysicsWorld world);
+        [NativeMethod(Name = "PhysicsWorld::SendContactCallbacks")] extern internal static void PhysicsWorld_SendContactCallbacks(PhysicsWorld world);
+        [NativeMethod(Name = "PhysicsWorld::SendJointThresholdCallbacks")] extern internal static void PhysicsWorld_SendJointThresholdCallbacks(PhysicsWorld world);
         [NativeMethod(Name = "PhysicsWorld::TestOverlapAABB", IsThreadSafe = true)] extern internal static bool PhysicsWorld_TestOverlapAABB(PhysicsWorld world, ReadOnlySpan<PhysicsAABB> span, PhysicsQuery.QueryFilter filter);
         [NativeMethod(Name = "PhysicsWorld::TestOverlapShapeProxy", IsThreadSafe = true)] extern internal static bool PhysicsWorld_TestOverlapShapeProxy(PhysicsWorld world, ReadOnlySpan<PhysicsShape.ShapeProxy> span, Vector2 origin, PhysicsQuery.QueryFilter filter, PhysicsShape ignoreShape);
         [NativeMethod(Name = "PhysicsWorld::TestOverlapPoint", IsThreadSafe = true)] extern internal static bool PhysicsWorld_TestOverlapPoint(PhysicsWorld world, ReadOnlySpan<Vector2> span, PhysicsQuery.QueryFilter filter);

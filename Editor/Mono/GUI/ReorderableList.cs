@@ -175,12 +175,13 @@ namespace UnityEditorInternal
             public readonly GUIStyle emptyHeaderBackground = "RL Empty Header";
             public readonly GUIStyle footerBackground = "RL Footer";
             public readonly GUIStyle boxBackground = "RL Background";
+            public readonly GUIStyle boxBackgroundWithFooter = "RL BackgroundWithFooter";
             public readonly GUIStyle preButton = "RL FooterButton";
             public readonly GUIStyle elementBackground = "RL Element";
             internal readonly GUIStyle defaultLabel = new GUIStyle(EditorStyles.label);
-            public const int padding = 6;
-            public const int dragHandleWidth = 20;
-            internal const int propertyDrawerPadding = 8;
+            public const int padding = 3;
+            public const int dragHandleWidth = 22;
+            internal const int propertyDrawerPadding = 3;
             internal const int minHeaderHeight = 2;
             const float elementPadding = 2;
             private int ArrayCountInPropertyPath(SerializedProperty prop) => Regex.Matches(prop.propertyPath, ".Array.data").Count;
@@ -203,15 +204,16 @@ namespace UnityEditorInternal
             // draw the default footer
             public void DrawFooter(Rect rect, ReorderableList list)
             {
-                float rightEdge = rect.xMax - 10f;
-                float leftEdge = rightEdge - 8f;
+                float rightEdge = rect.xMax - footerBackground.padding.right;
+                float leftEdge = rightEdge;
+
                 if (list.displayAdd)
-                    leftEdge -= 25;
+                    leftEdge -= preButton.fixedWidth + preButton.margin.horizontal;
                 if (list.displayRemove)
-                    leftEdge -= 25;
-                rect = new Rect(leftEdge, rect.y, rightEdge - leftEdge, rect.height);
-                Rect addRect = new Rect(leftEdge + 4, rect.y, 25, 16);
-                Rect removeRect = new Rect(rightEdge - 29, rect.y, 25, 16);
+                    leftEdge -= preButton.fixedWidth + preButton.margin.horizontal;
+
+                var addRect = new Rect(leftEdge + preButton.margin.left, rect.y, preButton.fixedWidth, preButton.fixedHeight);
+                var removeRect = new Rect(rightEdge - (preButton.fixedWidth + preButton.margin.right), rect.y, preButton.fixedWidth, preButton.fixedHeight);
                 if (Event.current.type == EventType.Repaint)
                 {
                     footerBackground.Draw(rect, false, false, false, false);
@@ -380,7 +382,7 @@ namespace UnityEditorInternal
             {
                 if (Event.current.type == EventType.Repaint)
                 {
-                    elementBackground.Draw(rect, false, selected, selected, focused);
+                    elementBackground.Draw(rect, rect.Contains(Event.current.mousePosition), selected, selected, focused);
                 }
             }
 
@@ -389,7 +391,7 @@ namespace UnityEditorInternal
                 if (Event.current.type == EventType.Repaint)
                 {
                     if (draggable)
-                        draggingHandle.Draw(new Rect(rect.x + 5, rect.y + 8, 10, 6), false, false, false, false);
+                        draggingHandle.Draw(new Rect(rect.x + draggingHandle.margin.left, rect.y + draggingHandle.margin.top, draggingHandle.fixedWidth, draggingHandle.fixedHeight), false, false, false, false);
                 }
             }
 
@@ -446,6 +448,8 @@ namespace UnityEditorInternal
                 return s_Defaults;
             }
         }
+
+        GUIStyle defaultBoxBackgroundStyle => (displayAdd || displayRemove) ? defaultBehaviours.boxBackgroundWithFooter : defaultBehaviours.boxBackground;
 
         [AutoStaticsCleanupOnCodeReload]
         // Live-instance registry: every ReorderableList adds a weak reference to itself while initializing
@@ -549,7 +553,7 @@ namespace UnityEditorInternal
         // header height accessor
         public float headerHeight = 20;
         // footer height accessor
-        public float footerHeight = 20;
+        public float footerHeight = 24;
         // show default background
         public bool showDefaultBackground = true;
 
@@ -867,7 +871,7 @@ namespace UnityEditorInternal
 
             // draw the background in repaint
             if (showDefaultBackground && Event.current.type == EventType.Repaint)
-                defaultBehaviours.boxBackground.Draw(listRect, false, false, false, false);
+                defaultBoxBackgroundStyle.Draw(listRect, false, false, false, false);
 
             // resize to the area that we want to draw our elements into
             listRect.yMin += listElementTopPadding; listRect.yMax -= kListElementBottomPadding;

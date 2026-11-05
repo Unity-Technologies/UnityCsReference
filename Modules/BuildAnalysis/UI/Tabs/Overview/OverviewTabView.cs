@@ -22,6 +22,7 @@ namespace UnityEditor.Build.Analysis
         private readonly VisualElement m_Root = new VisualElement();
         private VisualElement m_NoSelection;
         private ScrollView m_ScrollView;
+        private ImportedBuildBanner m_ImportedBuildBanner;
 
         private BuildHeader m_Header;
         private StatCard m_TotalSizeCard;
@@ -74,6 +75,7 @@ namespace UnityEditor.Build.Analysis
             m_ScrollView.horizontalScrollerVisibility = ScrollerVisibility.Hidden;
             KeyboardNavigation.ScrollFocusedIntoView(m_ScrollView);
 
+            m_ImportedBuildBanner = m_Root.Q<ImportedBuildBanner>("imported-build-banner");
             m_Header = m_Root.Q<BuildHeader>("build-header");
             m_TotalSizeCard = m_Root.Q<StatCard>("stat-card-total-size");
             m_BuildDurationCard = m_Root.Q<StatCard>("stat-card-build-duration");
@@ -108,6 +110,7 @@ namespace UnityEditor.Build.Analysis
             m_NoSelection.style.display = hasSelection ? DisplayStyle.None : DisplayStyle.Flex;
             m_ScrollView.style.display = hasSelection ? DisplayStyle.Flex : DisplayStyle.None;
             m_ShownBuild = hasSelection ? view.Entry.BuildSessionGUID : default;
+            m_ImportedBuildBanner.SetVisible(hasSelection && view.IsImported);
 
             if (!hasSelection)
                 return;
@@ -208,15 +211,19 @@ namespace UnityEditor.Build.Analysis
         }
 
         // Leave an already-missing path unchanged so the existence check below still reports it.
+        // A macOS player is an .app bundle: a directory, but opening it launches the player, so treat it as a file.
         private static string NormalizeToDirectory(string path)
         {
             if (string.IsNullOrEmpty(path))
                 return string.Empty;
-            if (Directory.Exists(path))
-                return path;
-            if (File.Exists(path))
+            if (File.Exists(path) || (IsAppBundle(path) && Directory.Exists(path)))
                 return Path.GetDirectoryName(path) ?? string.Empty;
             return path;
+        }
+
+        private static bool IsAppBundle(string path)
+        {
+            return string.Equals(Path.GetExtension(path), ".app", StringComparison.OrdinalIgnoreCase);
         }
     }
 }

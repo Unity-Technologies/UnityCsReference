@@ -13,7 +13,7 @@ using UnityEngine.Bindings;
 
 namespace UnityEditor
 {
-    // Temporary until native code can access ECS chunks directly. Reads and writes the components of entities for EntityComponentDataAccess.
+    // Temporary until native code can access ECS chunks directly. Reads, writes and adds the components of entities, and their enabled state, for EntityComponentDataAccess.
     // An exception must not cross back into native code, so each callback logs it and returns 0.
     [NativeHeader("Runtime/Mono/SerializationBackend_DirectMemoryAccess/EntityComponentDataAccess.h")]
     static unsafe partial class EntityComponentDataAccessCallbacks
@@ -33,15 +33,28 @@ namespace UnityEditor
         [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
         delegate int WriteComponentDelegate(ulong entityId, uint componentTypeId, IntPtr src, uint size);
 
+        [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+        delegate int AddComponentDelegate(ulong entityId, uint componentTypeId);
+
+        [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+        delegate int TryGetComponentEnabledDelegate(ulong entityId, uint componentTypeId);
+
+        [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+        delegate int SetComponentEnabledDelegate(ulong entityId, uint componentTypeId, int enabled);
+
         // Native code holds pointers to these, so they must outlive the registration.
         [NoAutoStaticsCleanup] static readonly HasComponentDelegate k_HasComponent = HasComponent;
         [NoAutoStaticsCleanup] static readonly GetComponentCountDelegate k_GetComponentCount = GetComponentCount;
         [NoAutoStaticsCleanup] static readonly GetComponentTypeIdAtDelegate k_GetComponentTypeIdAt = GetComponentTypeIdAt;
         [NoAutoStaticsCleanup] static readonly ReadComponentDelegate k_ReadComponent = ReadComponent;
         [NoAutoStaticsCleanup] static readonly WriteComponentDelegate k_WriteComponent = WriteComponent;
+        [NoAutoStaticsCleanup] static readonly AddComponentDelegate k_AddComponent = AddComponent;
+        [NoAutoStaticsCleanup] static readonly TryGetComponentEnabledDelegate k_TryGetComponentEnabled = TryGetComponentEnabled;
+        [NoAutoStaticsCleanup] static readonly SetComponentEnabledDelegate k_SetComponentEnabled = SetComponentEnabled;
 
         [FreeFunction("EntityComponentDataAccess::SetEntityCallbacks")]
-        static extern void SetEntityCallbacks(IntPtr hasComponent, IntPtr getComponentCount, IntPtr getComponentTypeIdAt, IntPtr readComponent, IntPtr writeComponent);
+        static extern void SetEntityCallbacks(IntPtr hasComponent, IntPtr getComponentCount, IntPtr getComponentTypeIdAt, IntPtr readComponent, IntPtr writeComponent,
+            IntPtr addComponent, IntPtr tryGetComponentEnabled, IntPtr setComponentEnabled);
 
         [OnCodeLoaded]
         static void Register()
@@ -51,13 +64,16 @@ namespace UnityEditor
                 Marshal.GetFunctionPointerForDelegate(k_GetComponentCount),
                 Marshal.GetFunctionPointerForDelegate(k_GetComponentTypeIdAt),
                 Marshal.GetFunctionPointerForDelegate(k_ReadComponent),
-                Marshal.GetFunctionPointerForDelegate(k_WriteComponent));
+                Marshal.GetFunctionPointerForDelegate(k_WriteComponent),
+                Marshal.GetFunctionPointerForDelegate(k_AddComponent),
+                Marshal.GetFunctionPointerForDelegate(k_TryGetComponentEnabled),
+                Marshal.GetFunctionPointerForDelegate(k_SetComponentEnabled));
         }
 
         [OnCodeUnloading]
         static void Unregister()
         {
-            SetEntityCallbacks(IntPtr.Zero, IntPtr.Zero, IntPtr.Zero, IntPtr.Zero, IntPtr.Zero);
+            SetEntityCallbacks(IntPtr.Zero, IntPtr.Zero, IntPtr.Zero, IntPtr.Zero, IntPtr.Zero, IntPtr.Zero, IntPtr.Zero, IntPtr.Zero);
         }
 
         static bool TryFindEntityManager(Entity entity, out EntityManager entityManager)
@@ -237,6 +253,63 @@ namespace UnityEditor
                 if (components.Length == 0)
                     return 0;
                 UnsafeUtility.MemCpy((byte*)components.GetUnsafePtr() + (long)storageInfo.IndexInChunk * size, (void*)src, size);
+                return 1;
+            }
+            catch (Exception ex)
+            {
+                Debug.LogException(ex);
+                return 0;
+            }
+        }
+
+        static int AddComponent(ulong entityId, uint componentTypeId)
+        {
+            try
+            {
+                var entity = UnsafeUtility.As<ulong, Entity>(ref entityId);
+                if (!TryFindEntityManager(entity, out var entityManager) || !TryGetTypeIndex(componentTypeId, out var typeIndex))
+                    return 0;
+                // Returns false if the entity already has the component.
+                return entityManager.AddComponent(entity, ComponentType.ReadWrite(typeIndex)) ? 1 : 0;
+            }
+            catch (Exception ex)
+            {
+                Debug.LogException(ex);
+                return 0;
+            }
+        }
+
+        // 1 enabled, 0 disabled, -1 if the entity does not have the component or its type is not enableable.
+        static int TryGetComponentEnabled(ulong entityId, uint componentTypeId)
+        {
+            try
+            {
+                var entity = UnsafeUtility.As<ulong, Entity>(ref entityId);
+                if (!TryFindEntityManager(entity, out var entityManager) || !TryGetTypeIndex(componentTypeId, out var typeIndex) || !typeIndex.IsEnableable)
+                    return -1;
+                var componentType = ComponentType.ReadOnly(typeIndex);
+                if (!entityManager.HasComponent(entity, componentType))
+                    return -1;
+                return entityManager.IsComponentEnabled(entity, componentType) ? 1 : 0;
+            }
+            catch (Exception ex)
+            {
+                Debug.LogException(ex);
+                return -1;
+            }
+        }
+
+        static int SetComponentEnabled(ulong entityId, uint componentTypeId, int enabled)
+        {
+            try
+            {
+                var entity = UnsafeUtility.As<ulong, Entity>(ref entityId);
+                if (!TryFindEntityManager(entity, out var entityManager) || !TryGetTypeIndex(componentTypeId, out var typeIndex) || !typeIndex.IsEnableable)
+                    return 0;
+                var componentType = ComponentType.ReadWrite(typeIndex);
+                if (!entityManager.HasComponent(entity, componentType))
+                    return 0;
+                entityManager.SetComponentEnabled(entity, componentType, enabled != 0);
                 return 1;
             }
             catch (Exception ex)

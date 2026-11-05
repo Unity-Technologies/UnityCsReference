@@ -182,6 +182,10 @@ namespace Unity.Multiplayer.PlayMode.Editor
                 var (removeDirectoryCommand, filename, arguments) = WindowsBuildRemoveDirectoryCommand(path);
                 if (!ProcessSystem.TryRunProcessWaitForExit(filename, arguments, out _, out var error))
                 {
+                    // rmdir reports failure when the directory is already gone, which satisfies the post-condition
+                    if (IsDirectoryGone(path))
+                        return;
+
                     var errorMessage = $"Failed to delete directory: {path}{Environment.NewLine}Command: {removeDirectoryCommand}{Environment.NewLine}Error: {error}";
                     Debug.LogError(errorMessage);
 
@@ -203,7 +207,36 @@ namespace Unity.Multiplayer.PlayMode.Editor
             }
             else
             {
-                Directory.Delete(path, true);
+                try
+                {
+                    Directory.Delete(path, true);
+                }
+                catch (DirectoryNotFoundException)
+                {
+                    // Another process removed the directory first, which satisfies the post-condition
+                }
+            }
+        }
+
+        // Directory.Exists reports a directory that cannot be queried the same as a missing one, and only the latter satisfies a delete
+        static bool IsDirectoryGone(string path)
+        {
+            try
+            {
+                File.GetAttributes(path);
+                return false;
+            }
+            catch (DirectoryNotFoundException)
+            {
+                return true;
+            }
+            catch (FileNotFoundException)
+            {
+                return true;
+            }
+            catch (Exception)
+            {
+                return false;
             }
         }
 

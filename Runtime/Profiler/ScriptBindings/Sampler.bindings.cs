@@ -16,6 +16,7 @@ namespace UnityEngine.Profiling
 {
     [UsedByNativeCode]
     [NativeHeader("Runtime/Profiler/ScriptBindings/Sampler.bindings.h")]
+    [Obsolete("Use Unity.Profiling.ProfilerMarker or ProfilerRecorder instead.", false)]
     public class Sampler
     {
         internal IntPtr m_Ptr;
@@ -81,6 +82,7 @@ namespace UnityEngine.Profiling
     [UsedByNativeCode]
     [NativeHeader("Runtime/Profiler/ScriptBindings/Sampler.bindings.h")]
     [NativeHeader("Runtime/Profiler/Marker.h")]
+    [Obsolete("Use Unity.Profiling.ProfilerMarker or ProfilerRecorder instead.", false)]
     public sealed class CustomSampler : Sampler
     {
         [NoAutoStaticsCleanup] // s_InvalidCustomSampler is a marker value for invalid samplers. It can be reused across domain reloads, and does not reference user code

@@ -9,9 +9,18 @@ using UnityEngine.UIElements.UIR;
 
 namespace UnityEngine.UIElements
 {
+    internal enum RayIntersection
+    {
+        Inside,
+        // Hits the element's plane outside its rect; the local point is still valid
+        Outside,
+        // Misses a curved element's surface; there is no local point
+        NoSurfacePoint,
+    }
+
     public partial class VisualElement
     {
-        Vector3 positionWithLayout
+        internal Vector3 positionWithLayout
         {
             get { return ResolveTranslate() + (Vector3)layoutPosition; }
         }
@@ -76,7 +85,7 @@ namespace UnityEngine.UIElements
         // Returns the same result as TransformAlignedRect(pivotedMatrixWithLayout, rec), but will try to use
         // simplified calculations for elements with no scale or rotation.
         [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
-        void TransformAlignedRectToParentSpace(ref Rect rect)
+        internal void TransformAlignedRectToParentSpace(ref Rect rect)
         {
             if (hasDefaultRotationAndScale)
             {
@@ -533,7 +542,7 @@ namespace UnityEngine.UIElements
             return dest.WorldToLocal(src.LocalToWorld(ray));
         }
 
-        internal static bool IntersectWorldRay([NotNull] this VisualElement ve, Ray worldRay, out float distance, out Vector3 localPoint)
+        internal static RayIntersection IntersectWorldRay([NotNull] this VisualElement ve, Ray worldRay, out float distance, out Vector3 localPoint)
         {
             ref var wti = ref ve.worldTransformInverse;
             var localRay = new Ray(wti.MultiplyPoint3x4(worldRay.origin), wti.MultiplyVector(worldRay.direction));
@@ -546,7 +555,7 @@ namespace UnityEngine.UIElements
             return intersects;
         }
 
-        internal static bool IntersectLocalRay([NotNull] this VisualElement ve, Ray localRay, out Vector3 localPoint)
+        internal static RayIntersection IntersectLocalRay([NotNull] this VisualElement ve, Ray localRay, out Vector3 localPoint)
         {
             return IntersectLocalRay(ve, localRay, out localPoint, out _);
         }
@@ -557,17 +566,17 @@ namespace UnityEngine.UIElements
         // the element is bent onto a curved surface, so the ray is intersected with that surface via the
         // shared render bend math (UIRCurvatureGeometry) and the flat (u,v) is recovered — that is the value
         // rect.Contains / ContainsPoint / event coordinates expect, so downstream input handling is unchanged.
-        internal static bool IntersectLocalRay([NotNull] this VisualElement ve, Ray localRay, out Vector3 localPoint, out Vector3 surfaceLocalPoint)
+        internal static RayIntersection IntersectLocalRay([NotNull] this VisualElement ve, Ray localRay, out Vector3 localPoint, out Vector3 surfaceLocalPoint)
         {
             // A bent element is NOT flat in its own local space, so it must never fall back to the Z=0 plane test.
             if (ve.isInCurvedChain)
             {
                 if (UIRCurvatureGeometry.TryIntersect(ve, localRay, UIRCurvatureGeometry.PickZScale(ve),
                         out localPoint, out surfaceLocalPoint))
-                    return true; // TryIntersect's grid spans exactly [0,w]x[0,h], so localPoint is within rect
+                    return ve.rect.Contains(localPoint) ? RayIntersection.Inside : RayIntersection.Outside;
 
                 localPoint = surfaceLocalPoint = Vector3.zero;
-                return false;
+                return RayIntersection.NoSurfacePoint;
             }
 
             // Flat fast path: intersect local ray with the Z=0 plane.
@@ -577,12 +586,12 @@ namespace UnityEngine.UIElements
 
             // If the ray is going away from the Z=0 plane (or is NaN), we need to reject the point.
             if (!(distance > 0))
-                return false;
+                return RayIntersection.Outside;
 
             // Otherwise, accept the ray if the projected point falls within the element rect.
             // Note that we accept the ray even if it hits the back side of the element, since the element is rendered
             // from behind too. That result may be rejected later but the raycast process should at least be stopped.
-            return ve.rect.Contains(localPoint);
+            return ve.rect.Contains(localPoint) ? RayIntersection.Inside : RayIntersection.Outside;
         }
 
         internal static Ray TransformRay(this Matrix4x4 m, Ray ray)

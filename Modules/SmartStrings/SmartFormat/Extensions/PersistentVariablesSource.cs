@@ -277,7 +277,7 @@ public partial class PersistentVariablesSource : ISource, IDictionary<string, Va
         if (selectorInfo.SelectorOperator == "" && EvaluateLocalGroup(selectorInfo, selectorInfo.FormatDetails.OriginalFormat.AdditionalData?.LocalVariables))
             return true;
 
-        if (TryGetValue(selector, out var group))
+        if (selectorInfo.SelectorIndex == 0 && TryGetValue(selector, out var group))
         {
             selectorInfo.Result = group;
             return true;

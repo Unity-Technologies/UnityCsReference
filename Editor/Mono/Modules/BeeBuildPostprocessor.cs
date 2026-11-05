@@ -243,7 +243,7 @@ namespace UnityEditor.Modules
             var strippingLevel = PlayerSettings.GetManagedStrippingLevel(namedBuildTarget);
 
             // IL2CPP does not support a managed stripping level of disabled. If the player settings
-            // do try this (which should not be possible from the editor), use Low instead.
+            // do try this (which should not be possible from the editor), use Minimal instead.
             var scriptingBackend = GetScriptingBackend(args);
             if (scriptingBackend == ScriptingBackend.IL2CPP && strippingLevel == ManagedStrippingLevel.Disabled)
                 strippingLevel = ManagedStrippingLevel.Minimal;
@@ -282,7 +282,9 @@ namespace UnityEditor.Modules
                 {
                     ManagedStrippingLevel.Disabled => "Copy",
                     ManagedStrippingLevel.Minimal => "Minimal",
-                    ManagedStrippingLevel.Low => "Conservative",
+#pragma warning disable CS0618 // Type or member is obsolete
+                    ManagedStrippingLevel.Low => throw new NotSupportedException("ManagedStrippingLevel.Low is no longer supported. Use ManagedStrippingLevel.Minimal instead."),
+#pragma warning restore CS0618
                     ManagedStrippingLevel.Medium => "Aggressive",
                     ManagedStrippingLevel.High => "Experimental",
                     _ => throw new ArgumentException($"Unhandled {nameof(ManagedStrippingLevel)} value")
@@ -547,6 +549,7 @@ namespace UnityEditor.Modules
                 .Select(e => new StreamingAssetsFile { File = e.src.ToString(), RelativePath = e.dst.ToString() })
                 .ToArray(),
             UseNewInputSystem = IsNewInputSystemEnabled(),
+            LinkUGK = Application.HasARGV("forceLinkUGK") || PlayerSettings.IsUGKSelectedForBuild(args.target),
 #pragma warning disable UAC2001 // Avoid Linq
             ManagedAssemblies = GetFilesWithRoleFromBuildReport(args.report, "ManagedLibrary", "DependentManagedLibrary", "ManagedEngineAPI")
 #pragma warning restore UAC2001

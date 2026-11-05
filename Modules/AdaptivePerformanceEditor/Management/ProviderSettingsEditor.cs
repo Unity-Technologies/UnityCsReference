@@ -92,6 +92,8 @@ namespace UnityEditor.AdaptivePerformance.Editor
         [NoAutoStaticsCleanup]
         static GUIStyle s_TabLastStyle;
         const int k_TabButtonHeight = 22;
+        // Height of the scaler list's add/remove footer drawn below the frame (ReorderableList default).
+        const float k_ScalerListFooterHeight = 20f;
         // Width of the foldout arrow on a custom-scaler row. 
         const int k_FoldoutArrowWidth = 15;
         // Fixed x-offset (from the row's left edge) for the per-scaler Enabled checkbox
@@ -233,6 +235,10 @@ namespace UnityEditor.AdaptivePerformance.Editor
             // (drawn in DisplayScalerSettings) is the single visual border, matching the
             // BeginPlatformGrouping look — tabs cut into the frame's top border on selection.
             newReorderableListDefaultSettings.showDefaultBackground = false;
+            // The add/remove footer is drawn by DisplayScalerSettings below the frame, hanging
+            // off its bottom edge, so keep the list itself from drawing or reserving space for it.
+            newReorderableListDefaultSettings.footerHeight = 0;
+            newReorderableListDefaultSettings.drawFooterCallback = _ => {};
             newReorderableListDefaultSettings.onAddDropdownCallback += OnNewCustomScalerCallback;
             newReorderableListDefaultSettings.onRemoveCallback += OnRemoveCustomScalerCallback;
 
@@ -664,6 +670,16 @@ namespace UnityEditor.AdaptivePerformance.Editor
 
                             EditorGUILayout.EndVertical();
                             EditorGUILayout.EndHorizontal();
+
+                            // Draw the add/remove footer attached under the frame's bottom-right
+                            // edge instead of inside it, where it overlapped the scaler rows.
+                            GUILayoutUtility.GetRect(10, k_ScalerListFooterHeight);
+                            var footerStyles = ReorderableList.defaultBehaviours;
+                            int footerButtonCount = (reorderableListDefaultSettings.displayAdd ? 1 : 0) + (reorderableListDefaultSettings.displayRemove ? 1 : 0);
+                            float footerWidth = footerStyles.footerBackground.padding.horizontal +
+                                footerButtonCount * (footerStyles.preButton.fixedWidth + footerStyles.preButton.margin.horizontal);
+                            Rect footerRect = new Rect(frameRect.xMax - footerWidth, frameRect.yMax, footerWidth, k_ScalerListFooterHeight);
+                            footerStyles.DrawFooter(footerRect, reorderableListDefaultSettings);
                         }
                         EditorGUI.indentLevel--;
                     }

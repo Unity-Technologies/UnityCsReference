@@ -10,6 +10,7 @@ namespace UnityEngine
     [Obsolete("The Flare Layer component is deprecated now that the Built-In Render Pipeline is deprecated. To use an alternative, refer to the documentation in the component help icon. #from(6000.5)", false)]
     [global::UnityEngine.NativeClass("FlareLayer", PersistentTypeId = 124)]
     [HelpURL("create-lens-flare")]
+    [SRPReplacementComponentAttribute("UnityEngine.Rendering.LensFlareComponentSRP", "Lens Flare SRP")]
     public class FlareLayer : Behaviour
     {
         internal FlareLayer() {}

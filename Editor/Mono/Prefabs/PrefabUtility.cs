@@ -719,12 +719,15 @@ namespace UnityEditor
                 }
             }
 
+            string managedReferenceFieldPath = property.isReferencingAManagedReferenceField ? property.managedReferencePropertyPath : string.Empty;
+            long[] managedReferenceIds = GetManagedReferenceIdsInProperty(property);
+
             // Call native implementation
             bool success;
             if (action == InteractionMode.UserAction)
-                success = ApplyPropertyOverride(prefabInstanceObject, propertyPath, assetPath);
+                success = ApplyPropertyOverride(prefabInstanceObject, propertyPath, managedReferenceFieldPath, managedReferenceIds, assetPath);
             else
-                success = ApplyPropertyOverrideWithoutUndo(prefabInstanceObject, propertyPath, assetPath);
+                success = ApplyPropertyOverrideWithoutUndo(prefabInstanceObject, propertyPath, managedReferenceFieldPath, managedReferenceIds, assetPath);
 
             if (success)
             {
@@ -984,6 +987,57 @@ namespace UnityEditor
                 if (outermostRoot != null)
                     Internal_CallPrefabInstanceReverted(outermostRoot);
             }
+        }
+
+        // Ids of the managed references held by the property or its children, including nested managed references
+        static long[] GetManagedReferenceIdsInProperty(SerializedProperty property)
+        {
+            var targetObject = property.serializedObject.targetObject;
+            if (!(targetObject is MonoBehaviour) || ManagedReferenceUtility.GetManagedReferenceIds(targetObject).Length == 0)
+                return Array.Empty<long>();
+
+            // Managed references holding the property are not part of it, even when the property refers back to them
+            var visited = new HashSet<long>();
+            var path = property.propertyPath;
+            for (int separator = path.IndexOf('.'); separator != -1; separator = path.IndexOf('.', separator + 1))
+            {
+                var holder = property.serializedObject.FindProperty(path.Substring(0, separator));
+                if (holder != null && holder.propertyType == SerializedPropertyType.ManagedReference)
+                    visited.Add(holder.managedReferenceId);
+            }
+
+            var ids = new List<long>();
+            var iterator = property.Copy();
+            var endProperty = iterator.GetEndProperty(true);
+            do
+            {
+                // Hidden fields are serialized too and can hold managed references
+                bool enterChildren = iterator.hasChildren && CanHoldManagedReferences(iterator);
+                if (iterator.propertyType == SerializedPropertyType.ManagedReference)
+                {
+                    long id = iterator.managedReferenceId;
+                    if (id == ManagedReferenceUtility.RefIdNull || id == ManagedReferenceUtility.RefIdUnknown || !visited.Add(id))
+                        enterChildren = false;
+                    else
+                        ids.Add(id);
+                }
+
+                if (!iterator.Next(enterChildren))
+                    break;
+            }
+            while (!SerializedProperty.EqualContents(iterator, endProperty));
+
+            var result = new long[ids.Count];
+            ids.CopyTo(result);
+            return result;
+        }
+
+        static bool CanHoldManagedReferences(SerializedProperty property)
+        {
+            if (property.isArray)
+                return property.arraySize > 0 && CanHoldManagedReferences(property.GetArrayElementAtIndex(0));
+
+            return property.propertyType == SerializedPropertyType.Generic || property.propertyType == SerializedPropertyType.ManagedReference;
         }
 
         static bool WarnIfApplyingManagedReferenceFieldIsNotPossible(SerializedProperty instanceProperty, SerializedProperty sourceProperty, InteractionMode action)

@@ -101,12 +101,19 @@ namespace Unity.VectorGraphics
             Dictionary<string, SceneNode> nodeIDs;
 
             SVGDocument doc;
-            using (var reader = XmlReader.Create(textReader, settings))
+            // <style> elements apply to the whole document, so they are gathered in a first pass
+            var svgText = textReader.ReadToEnd();
+            List<string> styleSheets;
+            using (var reader = XmlReader.Create(new StringReader(svgText), settings))
+                styleSheets = SVGDocument.ReadStyleSheets(reader);
+
+            using (var reader = XmlReader.Create(new StringReader(svgText), settings))
             {
                 bool applyRootViewBox =
                     (viewportOptions == ViewportOptions.PreserveViewport) ||
                     (viewportOptions == ViewportOptions.OnlyApplyRootViewBox);
                 doc = new SVGDocument(reader, dpi, scene, windowWidth, windowHeight, applyRootViewBox);
+                doc.SetStyleSheets(styleSheets);
                 doc.Import();
                 nodeOpacities = doc.NodeOpacities;
                 nodeIDs = doc.NodeIDs;
@@ -267,6 +274,8 @@ namespace Unity.VectorGraphics
             currentContainerSize.Push(new Vector2(windowWidth, windowHeight));
 
             svg();
+            ResolveDeferredUses();
+            ScaleBoundingBoxClippers();
 
             currentContainerSize.Pop();
             if (currentContainerSize.Count > 0)
@@ -275,6 +284,49 @@ namespace Unity.VectorGraphics
             PostProcess(scene.Root);
             RemoveInvisibleNodes();
             ApplyNestedViewportClips();
+        }
+
+        internal static List<string> ReadStyleSheets(XmlReader reader)
+        {
+            var styleSheets = new List<string>();
+            reader.MoveToContent();
+            while (!reader.EOF)
+            {
+                if (reader.NodeType != XmlNodeType.Element)
+                {
+                    reader.Read();
+                    continue;
+                }
+
+                if (reader.Name == "style")
+                {
+                    var text = "";
+                    if (!reader.IsEmptyElement)
+                    {
+                        while (reader.Read() && reader.NodeType != XmlNodeType.EndElement)
+                            text += reader.Value;
+                    }
+                    if (text.Length > 0)
+                        styleSheets.Add(text);
+                    reader.Read();
+                }
+                else if (k_StyleSheetContainers.Contains(reader.Name))
+                {
+                    reader.Read();
+                }
+                else
+                {
+                    // The import skips the content of other elements, including any <style> inside them
+                    reader.Skip();
+                }
+            }
+            return styleSheets;
+        }
+
+        internal void SetStyleSheets(List<string> styleSheets)
+        {
+            foreach (var text in styleSheets)
+                styles.SetGlobalStyleSheet(SVGStyleSheetUtils.Parse(text));
         }
 
         public Dictionary<SceneNode, float> NodeOpacities { get { return nodeOpacity; } }
@@ -479,18 +531,6 @@ namespace Unity.VectorGraphics
                 }
             }
 
-            // Resolve any previous node that was referencing this image
-            string id = node["id"];
-            if (!string.IsNullOrEmpty(id))
-            {
-                List<NodeReferenceData> refList;
-                if (postponedSymbolData.TryGetValue(id, out refList))
-                {
-                    foreach (var refData in refList)
-                        ResolveReferencedNode(sceneNode, refData, true);
-                }
-            }
-
             AddToSVGDictionaryIfPossible(node, sceneNode);
             if (ShouldDeclareSupportedChildren(node))
                 SupportElems(node);  // No children supported
@@ -672,7 +712,7 @@ namespace Unity.VectorGraphics
             var stroke = ParseStrokeAttributeSet(node, out strokeCorner, out strokeEnding);
 
             var pointsAttribVal = node["points"];
-            var pointsString = (pointsAttribVal != null) ? pointsAttribVal.Split(whiteSpaceNumberChars, StringSplitOptions.RemoveEmptyEntries) : null;
+            var pointsString = (pointsAttribVal != null) ? SplitNumberList(pointsAttribVal) : null;
             if (pointsString != null)
             {
                 if ((pointsString.Length & 1) == 1)
@@ -732,7 +772,7 @@ namespace Unity.VectorGraphics
             var stroke = ParseStrokeAttributeSet(node, out strokeCorner, out strokeEnding);
 
             var pointsAttribVal = node["points"];
-            var pointsString = (pointsAttribVal != null) ? pointsAttribVal.Split(whiteSpaceNumberChars, StringSplitOptions.RemoveEmptyEntries) : null;
+            var pointsString = (pointsAttribVal != null) ? SplitNumberList(pointsAttribVal) : null;
             if (pointsString != null)
             {
                 if ((pointsString.Length & 1) == 1)
@@ -915,14 +955,15 @@ namespace Unity.VectorGraphics
                 throw SVGFormatException.StackError;
             
             // Resolve any previous node that was referencing this clipping path
-            if (!string.IsNullOrEmpty(id))
+            List<SceneNode> clippedNodes;
+            if (!string.IsNullOrEmpty(id) && postponedClip.TryGetValue(id, out clippedNodes))
             {
-                List<PostponedClip> clips;
-                if (postponedClip.TryGetValue(id, out clips))
+                foreach (var clippedNode in clippedNodes)
                 {
-                    foreach (var clip in clips)
-                        ApplyClipper(clipRoot, clip.node, relativeToWorld);
+                    ApplyClipper(clipRoot, clippedNode, relativeToWorld);
+                    RemovePendingReference(clippedNode);
                 }
+                postponedClip.Remove(id);
             }
 
         }
@@ -1042,6 +1083,7 @@ namespace Unity.VectorGraphics
                 ContentWorldRelative = contentRelativeToWorld,
             };
 
+            string id = node["id"];
             AddToSVGDictionaryIfPossible(node, maskRoot);
             if (ShouldDeclareSupportedChildren(node))
                 SupportElems(node, allElems);
@@ -1050,6 +1092,18 @@ namespace Unity.VectorGraphics
             ParseChildren(node, node.Name);
             if (currentSceneNode.Pop() != maskRoot)
                 throw SVGFormatException.StackError;
+
+            // Resolve any previous node that was referencing this mask
+            List<SceneNode> maskedNodes;
+            if (!string.IsNullOrEmpty(id) && postponedMask.TryGetValue(id, out maskedNodes))
+            {
+                foreach (var maskedNode in maskedNodes)
+                {
+                    ApplyMask(maskRoot, maskedNode);
+                    RemovePendingReference(maskedNode);
+                }
+                postponedMask.Remove(id);
+            }
         }
 
         void rect()
@@ -1169,9 +1223,6 @@ namespace Unity.VectorGraphics
             // attributes translate the content, and it must not touch the root sceneViewport.
             bool isNested = scene.Root != null;
 
-            // The reader moves past this element during ParseChildren, so grab the id now
-            string id = node["id"];
-
             SceneNode sceneNode;
             SceneNode contentNode;
             Rect viewport;
@@ -1230,7 +1281,6 @@ namespace Unity.VectorGraphics
             {
                 PostponeNestedViewportClip(contentNode, viewport.size);
                 ParseClipAndMask(node, sceneNode);
-                ResolvePostponedUseReferences(id, sceneNode);
             }
 
             if (!viewBoxInfo.IsEmpty)
@@ -1305,7 +1355,7 @@ namespace Unity.VectorGraphics
 
                     foreach (var contour in shape.Contours)
                     {
-                        var bbox = VectorUtils.Bounds(VectorUtils.TransformBezierPath(contour.Segments, tnode.WorldTransform));
+                        var bbox = VectorUtils.Bounds(VectorUtils.TransformBezierPath(contour.Segments, tnode.WorldTransform), contour.Closed);
                         min = Vector2.Min(min, bbox.min - padding);
                         max = Vector2.Max(max, bbox.max + padding);
                     }
@@ -1318,7 +1368,6 @@ namespace Unity.VectorGraphics
         {
             var node = docReader.VisitCurrent();
             var sceneNode = new SceneNode(); // A new scene node instead of one precreated for us
-            string id = node["id"];
 
             ParseID(node, sceneNode);
             ParseOpacity(sceneNode);
@@ -1344,22 +1393,6 @@ namespace Unity.VectorGraphics
                 currentViewBoxSize.Pop();
 
             ParseClipAndMask(node, sceneNode);
-
-            ResolvePostponedUseReferences(id, sceneNode);
-        }
-
-        void ResolvePostponedUseReferences(string id, SceneNode sceneNode)
-        {
-            // Resolve any previous <use> that was forward-referencing this element
-            if (string.IsNullOrEmpty(id))
-                return;
-
-            List<NodeReferenceData> refList;
-            if (postponedSymbolData.TryGetValue(id, out refList))
-            {
-                foreach (var refData in refList)
-                    ResolveReferencedNode(sceneNode, refData, true);
-            }
         }
 
         void use()
@@ -1378,24 +1411,27 @@ namespace Unity.VectorGraphics
 
             var iri = node["xlink:href"];
             var referencedNode = SVGAttribParser.ParseRelativeRef(iri, svgObjects) as SceneNode;
-            if (referencedNode == null && !string.IsNullOrEmpty(iri) && iri.StartsWith("#"))
-            {
-                // The referenced node may be defined later in the file, save it for later
-                iri = iri.Substring(1);
-                List<NodeReferenceData> refList;
-                if (!postponedSymbolData.TryGetValue(iri, out refList))
-                {
-                    refList = new List<NodeReferenceData>();
-                    postponedSymbolData[iri] = refList;
-                }
-                refList.Add(refData);
-            }
 
             sceneNode.Transform = SVGAttribParser.ParseTransform(node);
             sceneNode.Transform = sceneNode.Transform * Matrix2D.Translate(sceneViewport.position);
 
-            if (referencedNode != null)
-                ResolveReferencedNode(referencedNode, refData, false);
+            if (referencedNode != null && !HasPendingReferences(referencedNode))
+            {
+                ResolveReferencedNode(referencedNode, refData);
+            }
+            else if (referencedNode != null || (iri != null && iri.Length > 1))
+            {
+                // The referenced node may be defined later in the file, or may still miss some of its content
+                deferredUses.Add(new DeferredUse() {
+                    target = referencedNode,
+                    targetId = iri.Substring(1),
+                    refData = refData,
+                    styleLayers = styles.CopyLayers(),
+                    containerSize = currentContainerSize.Peek(),
+                    viewBoxSize = currentViewBoxSize.Count > 0 ? currentViewBoxSize.Peek() : (Vector2?)null
+                });
+                AddPendingReference(sceneNode);
+            }
 
             ParseClipAndMask(node, sceneNode);
 
@@ -1407,10 +1443,9 @@ namespace Unity.VectorGraphics
         void style()
         {
             var node = docReader.VisitCurrent();
-            var text = docReader.ReadTextWithinElement();
 
-            if (text.Length > 0)
-                styles.SetGlobalStyleSheet(SVGStyleSheetUtils.Parse(text));
+            // The style sheets were already applied by SetStyleSheets before the import
+            docReader.ReadTextWithinElement();
 
             if (ShouldDeclareSupportedChildren(node))
                 SupportElems(node);  // No children supported
@@ -1418,7 +1453,107 @@ namespace Unity.VectorGraphics
         #endregion
 
         #region Symbol Reference Processing
-        private void ResolveReferencedNode(SceneNode referencedNode, NodeReferenceData refData, bool isDeferred)
+        void ResolveDeferredUses()
+        {
+            // Clips and masks that are still postponed refer to elements that don't exist
+            foreach (var nodes in postponedClip.Values)
+            {
+                foreach (var n in nodes)
+                    RemovePendingReference(n);
+            }
+            foreach (var nodes in postponedMask.Values)
+            {
+                foreach (var n in nodes)
+                    RemovePendingReference(n);
+            }
+
+            while (deferredUses.Count > 0)
+            {
+                // Uses of complete targets go first, so that chained uses clone their whole content
+                int index = deferredUses.FindIndex(u => !HasPendingReferences(DeferredUseTarget(u)));
+                if (index < 0)
+                    index = 0; // Circular references
+
+                var deferredUse = deferredUses[index];
+                deferredUses.RemoveAt(index);
+                RemovePendingReference(deferredUse.refData.node);
+
+                var target = DeferredUseTarget(deferredUse);
+                if (target == null)
+                    continue;
+
+                // Restore the parsing context of the <use> element
+                styles.PushLayers(deferredUse.styleLayers);
+                currentContainerSize.Push(deferredUse.containerSize);
+                if (deferredUse.viewBoxSize.HasValue)
+                    currentViewBoxSize.Push(deferredUse.viewBoxSize.Value);
+
+                ResolveReferencedNode(target, deferredUse.refData);
+
+                if (deferredUse.viewBoxSize.HasValue)
+                    currentViewBoxSize.Pop();
+                currentContainerSize.Pop();
+                styles.PopLayers(deferredUse.styleLayers.Count);
+            }
+        }
+
+        // Bounding-box relative clippers need the final content of their target, including deferred <use> clones
+        void ScaleBoundingBoxClippers()
+        {
+            foreach (var clipper in boundingBoxClippers)
+            {
+                // A mask may have replaced the clip path of the same element
+                if (clipper.Key.Clipper != clipper.Value)
+                    continue;
+
+                var rect = VectorUtils.SceneNodeBounds(clipper.Key);
+                clipper.Value.Transform = Matrix2D.Translate(rect.position) * Matrix2D.Scale(rect.size);
+            }
+        }
+
+        SceneNode DeferredUseTarget(DeferredUse deferredUse)
+        {
+            if (deferredUse.target != null)
+                return deferredUse.target;
+
+            object target;
+            svgObjects.TryGetValue(deferredUse.targetId, out target);
+            return target as SceneNode;
+        }
+
+        void AddPendingReference(SceneNode node)
+        {
+            int count;
+            pendingReferenceCounts.TryGetValue(node, out count);
+            pendingReferenceCounts[node] = count + 1;
+        }
+
+        void RemovePendingReference(SceneNode node)
+        {
+            int count;
+            if (!pendingReferenceCounts.TryGetValue(node, out count))
+                return;
+            if (count > 1)
+                pendingReferenceCounts[node] = count - 1;
+            else
+                pendingReferenceCounts.Remove(node);
+        }
+
+        // Whether a node of this hierarchy still waits for a <use>, clip path or mask defined later in the file
+        bool HasPendingReferences(SceneNode root)
+        {
+            if (root == null || pendingReferenceCounts.Count == 0)
+                return false;
+
+            foreach (var node in VectorUtils.SceneNodes(root))
+            {
+                if (pendingReferenceCounts.ContainsKey(node))
+                    return true;
+            }
+            return false;
+        }
+
+        private void ResolveReferencedNode(SceneNode referencedNode, NodeReferenceData refData)
         {
             // Note we don't use the viewport size because the <use> element doesn't establish a viewport for its referenced elements
             ViewBoxInfo viewBoxInfo;
@@ -1428,46 +1563,39 @@ namespace Unity.VectorGraphics
             if (refData.node.Children == null)
                 refData.node.Children = new List<SceneNode>();
 
-            SVGStyleResolver.StyleLayer rootLayer = null;
-            if (isDeferred)
+            var node = CloneSceneNode(referencedNode);
+            RestyleClonedNode(node, referencedNode);
+
+            // We process the node ID here to refer to the proper scene node
+            if (!string.IsNullOrEmpty(refData.id))
+                nodeIDs[refData.id] = node;
+
+            refData.node.Children.Add(node);
+        }
+
+        // Evaluates the paints of the clone in the style environment of the <use> element
+        void RestyleClonedNode(SceneNode clone, SceneNode original)
+        {
+            var layer = styles.GetLayerForScenNode(original);
+            if (layer == null)
+                nodeStyleLayers.TryGetValue(original, out layer);
+
+            if (layer != null)
             {
-                // If deferred, push back the original <use> tag style layer to be in the same "style environment"
-                rootLayer = styles.GetLayerForScenNode(refData.node);
-                if (rootLayer != null)
-                    styles.PushLayer(rootLayer);
+                // Lets a <use> that refers to this clone retrieve the original styles
+                styles.SetLayerForSceneNode(clone, layer);
+                styles.PushLayer(layer);
             }
 
-            // Activate the styles of the referenced node
-            var styleLayer = nodeStyleLayers[referencedNode];
-            if (styleLayer != null)
-                styles.PushLayer(styleLayer);
-
-            // Build a map to be able to retrieve the original node's style layer
-            var originalNodes = new List<SceneNode>(10);
-            foreach (var child in VectorUtils.SceneNodes(referencedNode))
-                originalNodes.Add(child);
-
-            var node = CloneSceneNode(referencedNode);
-
-            int originalIndex = 0;
-            foreach (var child in VectorUtils.SceneNodes(node))
+            if (clone.Shapes != null)
             {
-                var nodeIndex = originalIndex++;
-                if (child.Shapes == null)
-                    continue;
-
-                var originalNode = originalNodes[nodeIndex];
-                var layer = styles.GetLayerForScenNode(originalNode);
-                if (layer != null)
-                    styles.PushLayer(layer);
-
                 bool isDefaultFill;
                 var fill = SVGAttribParser.ParseFill(null, svgObjects, postponedFills, styles, Inheritance.Inherited, out isDefaultFill);
                 PathCorner strokeCorner;
                 PathEnding strokeEnding;
                 var stroke = ParseStrokeAttributeSet(null, out strokeCorner, out strokeEnding);
 
-                foreach (var shape in child.Shapes)
+                foreach (var shape in clone.Shapes)
                 {
                     var pathProps = shape.PathProps;
                     pathProps.Stroke = stroke;
@@ -1476,22 +1604,16 @@ namespace Unity.VectorGraphics
                     shape.PathProps = pathProps;
                     shape.Fill = isDefaultFill ? shape.Fill : fill;
                 }
-
-                if (layer != null)
-                    styles.PopLayer();
             }
 
-            if (styleLayer != null)
+            if (clone.Children != null)
+            {
+                for (int i = 0; i < clone.Children.Count; ++i)
+                    RestyleClonedNode(clone.Children[i], original.Children[i]);
+            }
+
+            if (layer != null)
                 styles.PopLayer();
-
-            if (rootLayer != null)
-                styles.PopLayer();
-
-            // We process the node ID here to refer to the proper scene node
-            if (!string.IsNullOrEmpty(refData.id))
-                nodeIDs[refData.id] = node;
-
-            refData.node.Children.Add(node);
         }
         #endregion
 
@@ -1534,6 +1656,11 @@ namespace Unity.VectorGraphics
             Vector2 viewportSize;
             if (postponedViewportClips.TryGetValue(node, out viewportSize))
                 postponedViewportClips[n] = viewportSize;
+
+            // The cloned clipper is scaled to the bounds of the clone
+            SceneNode boundingBoxClipper;
+            if (boundingBoxClippers.TryGetValue(node, out boundingBoxClipper) && boundingBoxClipper == node.Clipper)
+                boundingBoxClippers[n] = n.Clipper;
 
             return n;
         }
@@ -1889,7 +2016,7 @@ namespace Unity.VectorGraphics
 
         Stroke ParseStrokeAttributeSet(XmlReaderIterator.Node node, out PathCorner strokeCorner, out PathEnding strokeEnding, Inheritance inheritance = Inheritance.Inherited)
         {
-            var stroke = SVGAttribParser.ParseStrokeAndOpacity(node, svgObjects, styles, inheritance);
+            var stroke = SVGAttribParser.ParseStrokeAndOpacity(node, svgObjects, postponedFills, styles, inheritance);
             strokeCorner = PathCorner.Tipped;
             strokeEnding = PathEnding.Chop;
             if (stroke != null)
@@ -1975,17 +2102,16 @@ namespace Unity.VectorGraphics
                 return;
 
             var clipper = SVGAttribParser.ParseRelativeRef(reference, svgObjects) as SceneNode;
-            if (clipper == null && reference.Length > 1 && reference.StartsWith("#"))
+            if (clipper == null)
             {
                 // Clipper may be defined later in the file
-                List<PostponedClip> clips;
-                if (!postponedClip.TryGetValue(reference, out clips))
-                    clips = new List<PostponedClip>(1);
-                clips.Add(new PostponedClip() { node = sceneNode });
-                postponedClip[reference.Substring(1)] = clips;
+                if (reference.Length > 1)
+                {
+                    AddPostponedReference(postponedClip, reference.Substring(1), sceneNode);
+                    AddPendingReference(sceneNode);
+                }
                 return;
             }
-            var clipperRoot = clipper;
 
             bool worldRelative = true;
             ClipData data;
@@ -1995,6 +2121,17 @@ namespace Unity.VectorGraphics
             ApplyClipper(clipper, sceneNode, worldRelative);
         }
 
+        static void AddPostponedReference(Dictionary<string, List<SceneNode>> postponed, string id, SceneNode sceneNode)
+        {
+            List<SceneNode> nodes;
+            if (!postponed.TryGetValue(id, out nodes))
+            {
+                nodes = new List<SceneNode>(1);
+                postponed[id] = nodes;
+            }
+            nodes.Add(sceneNode);
+        }
+
         void ApplyClipper(SceneNode clipper, SceneNode target, bool worldRelative)
         {
             SceneNode clipperRoot = clipper;
@@ -2002,13 +2139,8 @@ namespace Unity.VectorGraphics
             {
                 // If the referenced clip path units is in bounding-box space, we add an intermediate
                 // node to scale the content to the correct size.
-                var rect = VectorUtils.SceneNodeBounds(target);
-                var transform = Matrix2D.Translate(rect.position) * Matrix2D.Scale(rect.size);
-
-                clipperRoot = new SceneNode() {
-                    Children = new List<SceneNode> { clipper },
-                    Transform = transform
-                };
+                clipperRoot = new SceneNode() { Children = new List<SceneNode> { clipper } };
+                boundingBoxClippers[target] = clipperRoot;
             }
             target.Clipper = clipperRoot;
         }
@@ -2026,6 +2158,22 @@ namespace Unity.VectorGraphics
                 return;
 
             var maskPath = SVGAttribParser.ParseRelativeRef(reference, svgObjects) as SceneNode;
+            if (maskPath == null)
+            {
+                // Mask may be defined later in the file
+                if (reference.Length > 1)
+                {
+                    AddPostponedReference(postponedMask, reference.Substring(1), sceneNode);
+                    AddPendingReference(sceneNode);
+                }
+                return;
+            }
+
+            ApplyMask(maskPath, sceneNode);
+        }
+
+        void ApplyMask(SceneNode maskPath, SceneNode sceneNode)
+        {
             var maskRoot = maskPath;
 
             MaskData data;
@@ -2033,13 +2181,8 @@ namespace Unity.VectorGraphics
             {
                 // If the referenced mask units is in bounding-box space, we add an intermediate
                 // node to scale the content to the correct size.
-                var rect = VectorUtils.SceneNodeBounds(sceneNode);
-                var transform = Matrix2D.Translate(rect.position) * Matrix2D.Scale(rect.size);
-
-                maskRoot = new SceneNode() {
-                    Children = new List<SceneNode> { maskPath },
-                    Transform = transform
-                };
+                maskRoot = new SceneNode() { Children = new List<SceneNode> { maskPath } };
+                boundingBoxClippers[sceneNode] = maskRoot;
             }
 
             sceneNode.Clipper = maskRoot;
@@ -2104,31 +2247,45 @@ namespace Unity.VectorGraphics
                     continue;
                 foreach (var shape in nodeInfo.Node.Shapes)
                 {
-                    if (shape.Fill != null)
+                    shape.Fill = ResolvePostponedFill(shape.Fill);
+
+                    var stroke = shape.PathProps.Stroke;
+                    if (stroke != null)
                     {
-                        // This fill may be a placeholder for postponed reference, try to resolve it here.
-                        string reference;
-                        if (postponedFills.TryGetValue(shape.Fill, out reference))
+                        stroke.Fill = ResolvePostponedFill(stroke.Fill);
+                        if (postponedFills.ContainsKey(stroke.Fill))
                         {
-                            var fill = SVGAttribParser.ParseRelativeRef(reference, svgObjects) as IFill;
-                            if (fill != null)
-                                shape.Fill = fill;
+                            // The referenced paint server doesn't exist
+                            var pathProps = shape.PathProps;
+                            pathProps.Stroke = null;
+                            shape.PathProps = pathProps;
+                            stroke = null;
                         }
                     }
 
-                    var stroke = shape.PathProps.Stroke;
                     if (stroke != null && stroke.Fill is GradientFill)
                     {
                         var fillTransform = Matrix2D.identity;
-                        AdjustGradientFill(nodeInfo.Node, nodeInfo.WorldTransform, stroke.Fill, shape.Contours, ref fillTransform);
-                        stroke.FillTransform = fillTransform;
+                        if (AdjustGradientFill(nodeInfo.Node, nodeInfo.WorldTransform, stroke.Fill, shape.Contours, ref fillTransform))
+                            stroke.FillTransform = fillTransform;
+                        else
+                            stroke.Fill = MakeLastStopFill((GradientFill)stroke.Fill);
+
+                        if (stroke.Fill == null)
+                        {
+                            var pathProps = shape.PathProps;
+                            pathProps.Stroke = null;
+                            shape.PathProps = pathProps;
+                        }
                     }
 
                     if (shape.Fill is GradientFill)
                     {
                         var fillTransform = Matrix2D.identity;
-                        AdjustGradientFill(nodeInfo.Node, nodeInfo.WorldTransform, shape.Fill, shape.Contours, ref fillTransform);
-                        shape.FillTransform = fillTransform;
+                        if (AdjustGradientFill(nodeInfo.Node, nodeInfo.WorldTransform, shape.Fill, shape.Contours, ref fillTransform))
+                            shape.FillTransform = fillTransform;
+                        else
+                            shape.Fill = MakeLastStopFill((GradientFill)shape.Fill);
                     }
                     else if (shape.Fill is PatternFill)
                     {
@@ -2154,11 +2311,41 @@ namespace Unity.VectorGraphics
             }
         }
 
-        void AdjustGradientFill(SceneNode node, Matrix2D worldTransform, IFill fill, BezierContour[] contours, ref Matrix2D computedTransform)
+        IFill ResolvePostponedFill(IFill fill)
+        {
+            // This fill may be a placeholder for a postponed reference
+            string reference;
+            if (fill == null || !postponedFills.TryGetValue(fill, out reference))
+                return fill;
+
+            var resolvedFill = SVGAttribParser.ParseRelativeRef(reference, svgObjects) as IFill;
+            if (resolvedFill == null)
+                return fill;
+
+            // The placeholder holds the opacity requested by the shape, don't apply it to the shared gradient
+            if (resolvedFill is GradientFill)
+                resolvedFill = CloneFill(resolvedFill);
+            resolvedFill.Opacity = fill.Opacity;
+            return resolvedFill;
+        }
+
+        static IFill MakeLastStopFill(GradientFill gradientFill)
+        {
+            // Per SVG spec, a gradient without stops paints nothing
+            if (gradientFill.Stops == null || gradientFill.Stops.Length == 0)
+                return null;
+
+            var color = gradientFill.Stops[gradientFill.Stops.Length - 1].Color;
+            color.a *= gradientFill.Opacity;
+            return new SolidFill() { Color = color, Mode = gradientFill.Mode };
+        }
+
+        // Returns false when the gradient should be painted with the color of its last stop instead
+        bool AdjustGradientFill(SceneNode node, Matrix2D worldTransform, IFill fill, BezierContour[] contours, ref Matrix2D computedTransform)
         {
             var gradientFill = fill as GradientFill;
             if (fill == null || contours == null || contours.Length == 0)
-                return;
+                return true;
 
             var bounds = VectorUtils.Bounds(contours);
 
@@ -2218,6 +2405,12 @@ namespace Unity.VectorGraphics
                         AttribLengthVal(radGradEx.Fx, null, null, center.x, DimType.Width),
                         AttribLengthVal(radGradEx.Fy, null, null, center.y, DimType.Height));
                 float radius = AttribLengthVal(radGradEx.R, null, null, halfCurrentContainerSize.magnitude / SVGLengthFactor, DimType.Length);
+                if (radius <= VectorUtils.Epsilon)
+                {
+                    // Per SVG spec, a zero radius paints with the color of the last stop
+                    currentContainerSize.Pop();
+                    return false;
+                }
 
                 // This block below tells that radial focus cannot change per object, but is realized correctly for the first object
                 // that requests this gradient. If the gradient is using object-relative coordinates to specify the focus location,
@@ -2252,6 +2445,7 @@ namespace Unity.VectorGraphics
                 bounds.width > VectorUtils.Epsilon ? 1.0f / bounds.width : 1.0f,
                 bounds.height > VectorUtils.Epsilon ? 1.0f / bounds.height : 1.0f);
             computedTransform = Matrix2D.Scale(boundsInv) * gradTransform * extInfo.FillTransform.Inverse() * uvToWorld;
+            return true;
         }
 
         SceneNode AdjustPatternFill(SceneNode node, Matrix2D worldTransform, Shape shape)
@@ -2386,6 +2580,48 @@ namespace Unity.VectorGraphics
             subTags[node.Name] = elems;
         }
 
+        // Also splits numbers that are not separated, when a sign or a second period starts the next one (e.g. "-10-10")
+        static string[] SplitNumberList(string list)
+        {
+            var numbers = new List<string>();
+            int pos = 0;
+            while (pos < list.Length)
+            {
+                if (Array.IndexOf(whiteSpaceNumberChars, list[pos]) >= 0)
+                {
+                    ++pos;
+                    continue;
+                }
+
+                int startPos = pos;
+                if (list[pos] == '-' || list[pos] == '+')
+                    ++pos;
+
+                bool gotPeriod = false;
+                while (pos < list.Length)
+                {
+                    char c = list[pos];
+                    if (c == '-' || c == '+' || Array.IndexOf(whiteSpaceNumberChars, c) >= 0)
+                        break;
+                    if (c == '.')
+                    {
+                        if (gotPeriod)
+                            break;
+                        gotPeriod = true;
+                    }
+                    else if ((c == 'e' || c == 'E') && pos + 1 < list.Length && (list[pos + 1] == '-' || list[pos + 1] == '+'))
+                        ++pos; // Skip over the exponent sign
+                    ++pos;
+                }
+
+                numbers.Add(list.Substring(startPos, pos - startPos));
+            }
+            return numbers.ToArray();
+        }
+
+        [NoAutoStaticsCleanup]
+        static readonly HashSet<string> k_StyleSheetContainers = new HashSet<string>(new[] { "svg", "g", "defs", "symbol", "clipPath", "mask", "pattern" });
+
         [NoAutoStaticsCleanup]
         static char[] whiteSpaceNumberChars = " \r\n\t,".ToCharArray();
         enum DimType { Width, Height, Length };
@@ -2405,9 +2641,12 @@ namespace Unity.VectorGraphics
         Dictionary<SceneNode, ClipData> clipData = new Dictionary<SceneNode, ClipData>();
         Dictionary<SceneNode, PatternData> patternData = new Dictionary<SceneNode, PatternData>();
         Dictionary<SceneNode, MaskData> maskData = new Dictionary<SceneNode, MaskData>();
-        Dictionary<string, List<NodeReferenceData>> postponedSymbolData = new Dictionary<string, List<NodeReferenceData>>();
+        List<DeferredUse> deferredUses = new List<DeferredUse>();
+        Dictionary<SceneNode, int> pendingReferenceCounts = new Dictionary<SceneNode, int>();
+        Dictionary<SceneNode, SceneNode> boundingBoxClippers = new Dictionary<SceneNode, SceneNode>();
         Dictionary<string, List<PostponedStopData>> postponedStopData = new Dictionary<string, List<PostponedStopData>>();
-        Dictionary<string, List<PostponedClip>> postponedClip = new Dictionary<string, List<PostponedClip>>();
+        Dictionary<string, List<SceneNode>> postponedClip = new Dictionary<string, List<SceneNode>>();
+        Dictionary<string, List<SceneNode>> postponedMask = new Dictionary<string, List<SceneNode>>();
         Dictionary<SceneNode, Vector2> postponedViewportClips = new Dictionary<SceneNode, Vector2>();
         SVGPostponedFills postponedFills = new SVGPostponedFills();
         List<NodeWithParent> invisibleNodes = new List<NodeWithParent>();
@@ -2477,6 +2716,16 @@ namespace Unity.VectorGraphics
             public string id;
         }
 
+        struct DeferredUse
+        {
+            public SceneNode target; // Null when the target is defined later in the file
+            public string targetId;
+            public NodeReferenceData refData;
+            public List<SVGStyleResolver.StyleLayer> styleLayers;
+            public Vector2 containerSize;
+            public Vector2? viewBoxSize;
+        }
+
         struct PostponedStopData : IEquatable<PostponedStopData>
         {
             public GradientFill fill;
@@ -2485,11 +2734,6 @@ namespace Unity.VectorGraphics
             {
                 return fill == other.fill;
             }
-        }
-
-        struct PostponedClip
-        {
-            public SceneNode node;
         }
     }
 
@@ -2563,6 +2807,24 @@ namespace Unity.VectorGraphics
             layers.RemoveAt(layers.Count - 1);
         }
 
+        public List<StyleLayer> CopyLayers()
+        {
+            return new List<StyleLayer>(layers);
+        }
+
+        public void PushLayers(List<StyleLayer> layersToPush)
+        {
+            layers.AddRange(layersToPush);
+        }
+
+        public void PopLayers(int count)
+        {
+            if (layers.Count < count)
+                throw SVGFormatException.StackError;
+
+            layers.RemoveRange(layers.Count - count, count);
+        }
+
         public StyleLayer PeekLayer()
         {
             if (layers.Count == 0)
@@ -2575,6 +2837,11 @@ namespace Unity.VectorGraphics
             nodeLayers[node] = PeekLayer();
         }
 
+        public void SetLayerForSceneNode(SceneNode node, StyleLayer layer)
+        {
+            nodeLayers[node] = layer;
+        }
+
         public StyleLayer GetLayerForScenNode(SceneNode node)
         {
             if (!nodeLayers.ContainsKey(node))
@@ -2585,7 +2852,17 @@ namespace Unity.VectorGraphics
         public void SetGlobalStyleSheet(SVGStyleSheet sheet)
         {
             foreach (var sel in sheet.selectors)
-                globalStyleSheet[sel] = sheet[sel];
+            {
+                var existingProps = globalStyleSheet[sel];
+                if (existingProps == null)
+                {
+                    globalStyleSheet[sel] = sheet[sel];
+                    continue;
+                }
+
+                foreach (var prop in sheet[sel])
+                    existingProps[prop.Key] = prop.Value;
+            }
         }
 
         public string Evaluate(string attribName, Inheritance inheritance = Inheritance.None)
@@ -2594,8 +2871,13 @@ namespace Unity.VectorGraphics
             {
                 string attrib = null;
                 if (LookupStyleOrAttribute(layers[i], attribName, inheritance, out attrib))
-                    return attrib;
-                
+                {
+                    // "inherit" takes the parent value, even for properties that are not inherited by default
+                    if (attrib.Trim() != "inherit")
+                        return attrib;
+                    continue;
+                }
+
                 if (inheritance == Inheritance.None)
                     break;
             }
@@ -2853,7 +3135,7 @@ namespace Unity.VectorGraphics
             }
         }
 
-        public static Stroke ParseStrokeAndOpacity(XmlReaderIterator.Node node, SVGDictionary dict, SVGStyleResolver styles, Inheritance inheritance = Inheritance.Inherited)
+        public static Stroke ParseStrokeAndOpacity(XmlReaderIterator.Node node, SVGDictionary dict, SVGPostponedFills postponedFills, SVGStyleResolver styles, Inheritance inheritance = Inheritance.Inherited)
         {
             string strokeAttrib = styles.Evaluate("stroke", inheritance);
             if (string.IsNullOrEmpty(strokeAttrib))
@@ -2865,7 +3147,7 @@ namespace Unity.VectorGraphics
             IFill strokeFill = null;
             try
             {
-                strokeFill = (new SVGAttribParser(strokeAttrib, "stroke", opacity, FillMode.NonZero, dict, null)).fill;
+                strokeFill = (new SVGAttribParser(strokeAttrib, "stroke", opacity, FillMode.NonZero, dict, postponedFills)).fill;
             }
             catch (Exception e)
             {
@@ -3132,7 +3414,8 @@ namespace Unity.VectorGraphics
                     bool sweepFlag = NextBool();
                     Vector2 to = NextVector2(relative);
 
-                    if (radii.magnitude <= VectorUtils.Epsilon)
+                    // Per SVG spec, an arc with any zero radius is a straight line
+                    if (Mathf.Abs(radii.x) <= VectorUtils.Epsilon || Mathf.Abs(radii.y) <= VectorUtils.Epsilon)
                     {
                         if ((to - penPos).magnitude > VectorUtils.Epsilon)
                             currentContour.AddLast(VectorUtils.MakeLine(penPos, to));

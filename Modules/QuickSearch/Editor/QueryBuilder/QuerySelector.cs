@@ -322,9 +322,8 @@ namespace UnityEditor.Search
             }
 
             var formatNames = m_BlockSource.formatNames;
-            var hasData = m_PropositionEnumerator.MoveNext();
-            while ((m_PropositionsIterationTimeInSeconds == TimeSpan.Zero || TimeSpan.FromSeconds(EditorApplication.timeSinceStartup - startIteration) < m_PropositionsIterationTimeInSeconds)
-                   && hasData)
+            var hasData = false;
+            while (m_PropositionEnumerator.MoveNext())
             {
                 var p = m_PropositionEnumerator.Current;
                 var newItem = CreateItem(p, formatNames, out var path, out var name, out var prefix);
@@ -347,8 +346,14 @@ namespace UnityEditor.Search
                     else if (p.icon)
                         itemAlreadyInTree.icon = p.icon;
                 }
-                hasData = m_PropositionEnumerator.MoveNext();
                 m_PropositionsCount++;
+
+                // Check the time after adding the fetched proposition, so that it is never lost and every slice makes progress
+                if (m_PropositionsIterationTimeInSeconds != TimeSpan.Zero && TimeSpan.FromSeconds(EditorApplication.timeSinceStartup - startIteration) >= m_PropositionsIterationTimeInSeconds)
+                {
+                    hasData = true;
+                    break;
+                }
             }
 
             if (hasData)

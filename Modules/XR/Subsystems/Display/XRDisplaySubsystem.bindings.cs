@@ -420,6 +420,9 @@ namespace UnityEngine.XR
             ///<remarks>This pointer can be passed to <see cref="CommandBuffer.ConfigureFoveatedRendering"/> by the scriptable rendering pipeline implementation.</remarks>
             public IntPtr foveatedRenderingInfo;
 
+            ///<summary>Stable logical render target identity assigned by the XR provider. Passes sharing the same non-zero value belong to one logical target.</summary>
+            public ulong renderTargetId;
+
             ///<summary>Reference stencil value used by Temporal Pixel Synthesis to exclude pixels from temporal reuse.</summary>
             ///<remarks>Pixels where <c>(stencil &amp; motionVectorStencilMask) == motionVectorStencilValue</c> are excluded. Only meaningful when <see cref="isTemporalPixelSynthesisActive"/> is <c>true</c>.</remarks>
             public int motionVectorStencilValue;
@@ -462,6 +465,7 @@ namespace UnityEngine.XR
         ///<remarks>The XR plugin uses the display refresh rate as the target frame rate. This can be useful information for synchronizing fixed updates.
         ///
         ///                    Statistics are only available for SDKs that support this method, and they can vary based on hardware, the SDK, and the frame. You should always check the return value of this method before you use the statistic value from the out parameter.</remarks>
+        ///<param name="displayRefreshRate">When this method returns true, contains the refresh rate of the display.</param>
         ///<returns>Returns true if the display refresh rate is available. Returns false if that rate is unavailable.</returns>
         [NativeMethod("TryGetDisplayRefreshRate")]
         extern public bool TryGetDisplayRefreshRate(out float displayRefreshRate);

@@ -6,7 +6,7 @@ using UnityEngine.Bindings;
 
 namespace UnityEngine
 {
-    [NativeHeader("Runtime/Geometry/AABBUtility.h")]
+    [NativeHeader("Runtime/Graphics/AABBUtility.h")]
     internal class AABBUtility
     {
         [StaticAccessor("", StaticAccessorType.DoubleColon)]

@@ -12,6 +12,14 @@ using Object = UnityEngine.Object;
 
 namespace UnityEditor.ShaderApiReflection
 {
+    ///<summary>The container for reflection data extracted from a shader include.</summary>
+    ///<remarks>This class exposes information on any functions or structs declared in a shader include which were exposed using <c>UNITY_EXPORT_REFLECTION</c>.</remarks>
+    ///<example nocheck="true">
+    /// In the following example, information from <see cref="ReflectedStruct"/>s and <see cref="ReflectedFunction"/>s
+    /// is printed to the console.
+    ///<code source="../Tests/UTFTests/FunctionalTests/Editor/Documentation/ReflectedFunctionExample.cs"/>
+    ///</example>
+    ///<seealso cref="ShaderInclude.Reflection" />
     [NativeHeader("Modules/ShaderApiReflectionEditor/Public/ShaderIncludeReflection.h")]
     [NativeClass("ShaderApiReflection::ShaderIncludeReflection", PersistentTypeId = 0x0C78A93D)]
     public sealed class ShaderIncludeReflection : Object
@@ -19,8 +27,12 @@ namespace UnityEditor.ShaderApiReflection
         internal ShaderIncludeReflection(global::UnityEngine.EntityId id) : base(id) {}
         // Public API
 
+        ///<summary>The errors or warnings generated while reflecting the shader include.</summary>
         public ReadOnlyCollection<LogMessage> LogMessages => GetOrLoadLogMessages().AsReadOnly();
+        ///<summary>The shader include's exposed functions.</summary>
         public ReadOnlyCollection<ReflectedFunction> ReflectedFunctions => GetOrLoadFunctions().AsReadOnly();
+        /// <summary>The shader include's exposed structs.</summary>
+        public ReadOnlyCollection<ReflectedStruct> ReflectedStructs => GetOrLoadStructs().AsReadOnly();
 
         // Private API
 
@@ -58,7 +70,25 @@ namespace UnityEditor.ShaderApiReflection
             return m_Functions;
         }
 
+        [NativeName("GetStructs")]
+        extern ReflectedStruct.MarshalledType[] GetStructsFromNative();
+
+        List<ReflectedStruct> m_Structs;
+
+        List<ReflectedStruct> GetOrLoadStructs()
+        {
+            if (m_Structs == null)
+            {
+                ReflectedStruct.MarshalledType[] nativeStructs = GetStructsFromNative();
+                m_Structs = new List<ReflectedStruct>(nativeStructs.Length);
+                foreach (ReflectedStruct.MarshalledType nativeStruct in nativeStructs)
+                    m_Structs.Add(new ReflectedStruct(nativeStruct));
+            }
+            return m_Structs;
+        }
+
         // This class is read-only and should not be constructed by users.
+        ///<exclude />
         internal ShaderIncludeReflection()
         {
         }

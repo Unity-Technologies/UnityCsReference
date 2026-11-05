@@ -321,7 +321,7 @@ namespace UnityEngine
             //EntityIdStore lookup above already resolves it; here we additionally treat an object that is not
             //loaded but still available in the persistent manager as alive (accessing it loads it). Only the
             //editor does this last step: it is an icall, and only the editor moves assets around.
-            return DoesObjectWithInstanceIDExist(o.GetEntityId());
+            return DoesObjectWithEntityIdExist(o.GetEntityId());
         }
 
         [RequiredByNativeCode]
@@ -982,12 +982,6 @@ namespace UnityEngine
         [NativeMethod(Name = "Object::GetOffsetOfTypeIndexWord", IsFreeFunction = true, IsThreadSafe = true)]
         extern static int GetOffsetOfTypeIndexWordInCPlusPlusObject();
 
-        [NativeMethod(Name = "Object::RegisterCreatedCallback", IsFreeFunction = true, IsThreadSafe = true)]
-        internal extern static void RegisterEntityCreatedCallback(IntPtr callback);
-
-        [NativeMethod(Name = "Object::RegisterEntityDestroyedCallback", IsFreeFunction = true, IsThreadSafe = true)]
-        internal extern static void RegisterEntityDestroyedCallback(IntPtr callback);
-
         // Editor fake-null (MonoObjectNULL) side channel; see Scripting::SetPendingFakeNullWrapper.
         [NativeMethod(Name = "Scripting::TakePendingFakeNullWrapper", IsFreeFunction = true, IsThreadSafe = true)]
         extern static IntPtr TakePendingFakeNullWrapper();
@@ -1030,29 +1024,29 @@ namespace UnityEngine
         [FreeFunction("UnityEngineObjectBindings::SetName", HasExplicitThis = true)]
         extern void SetName(string name);
 
-        [NativeMethod(Name = "UnityEngineObjectBindings::DoesObjectWithInstanceIDExist", IsFreeFunction = true, IsThreadSafe = true)]
-        internal extern static bool DoesObjectWithInstanceIDExist(EntityId instanceID);
+        [NativeMethod(Name = "UnityEngineObjectBindings::DoesObjectWithEntityIdExist", IsFreeFunction = true, IsThreadSafe = true)]
+        internal extern static bool DoesObjectWithEntityIdExist(EntityId entityId);
 
         [VisibleToOtherModules]
-        [FreeFunction("UnityEngineObjectBindings::FindObjectFromInstanceID")]
-        internal extern static Object FindObjectFromInstanceID(EntityId instanceID);
+        [FreeFunction("UnityEngineObjectBindings::FindObjectFromEntityId")]
+        internal extern static Object FindObjectFromInstanceID(EntityId entityId);
 
         [VisibleToOtherModules]
-        [FreeFunction("UnityEngineObjectBindings::FindObjectFromInstanceIDThreadSafe", IsThreadSafe = true)]
+        [FreeFunction("UnityEngineObjectBindings::FindObjectFromEntityIdThreadSafe", IsThreadSafe = true)]
         [return: UnityMarshalAs(NativeType.ScriptingObjectPtr)]
-        internal extern static Object FindObjectFromInstanceIDThreadSafe(EntityId instanceID);
+        internal extern static Object FindObjectFromEntityIdThreadSafe(EntityId entityId);
 
-        [FreeFunction("UnityEngineObjectBindings::GetPtrFromInstanceID")]
-        private extern static IntPtr GetPtrFromInstanceID(EntityId instanceID, Type objectType);
+        [FreeFunction("UnityEngineObjectBindings::GetPtrFromEntityId")]
+        private extern static IntPtr GetPtrFromEntityId(EntityId entityId, Type objectType);
 
         [VisibleToOtherModules]
-        [FreeFunction("UnityEngineObjectBindings::ForceLoadFromInstanceID")]
-        internal extern static Object ForceLoadFromInstanceID(EntityId instanceID);
+        [FreeFunction("UnityEngineObjectBindings::ForceLoadFromEntityId")]
+        internal extern static Object ForceLoadFromEntityId(EntityId entityId);
         [VisibleToOtherModules("UnityEngine.UIElementsModule")]
-        internal static Object CreateMissingReferenceObject(EntityId instanceID)
+        internal static Object CreateMissingReferenceObject(EntityId entityId)
         {
             // Never bound, so it carries the id tagged as released
-            return new Object { m_EntityId = TagReleasedWrapperId(instanceID) };
+            return new Object { m_EntityId = TagReleasedWrapperId(entityId) };
         }
 
         [FreeFunction("UnityEngineObjectBindings::MarkObjectDirty", HasExplicitThis = true)]
@@ -1165,15 +1159,15 @@ namespace UnityEngine
                 return !(o is MonoBehaviour || o is ScriptableObject);
             }
 
-            // Marshalling for standards-compliant backends (CoreCLR). A UnityEngine.Object parameter, return value,
-            // struct field or array element crosses the boundary as its EntityId; native resolves the id when it
-            // needs the pointer (Marshalling::ReadOnlyUnityObjectMarshaller). Marshalling in is a field read, plus one
-            // EntityIdStore lookup for [NotNull] parameters so the exception is raised before the call.
+            // A UnityEngine.Object parameter, return value, struct field or array element crosses the bindings boundary as
+            // its EntityId; native resolves the id when it needs the pointer (Marshalling::ReadOnlyUnityObjectMarshaller).
+            // Marshalling in is a field read. A [NotNull] object that does not resolve is reported by native (see
+            // ThrowPendingOrUnresolved); in the editor, script-derived objects are also checked here.
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public static unsafe EntityId MarshalId<T>(T obj) where T : Object
             {
-                // Do not do an == null or .Equals(null) check here or anything that would make an icall; see Marshal<T>.
+                // Only a reference check: == null or Equals(null) on a UnityEngine.Object calls into native code.
                 if (ReferenceEquals(obj, null))
                     return EntityId.None;
 
@@ -1199,57 +1193,114 @@ namespace UnityEngine
                     return IsScriptDerivedClass(obj) ? EntityId.None : entityId;
 
                 // Still loading or being destroyed: the PersistentManager waits for a load in flight
-                return MarshalFromInstanceId(obj) != IntPtr.Zero ? entityId : EntityId.None;
+                return MarshalFromEntityId(obj) != IntPtr.Zero ? entityId : EntityId.None;
             }
 
-            // [NotNull] parameter: obj itself has already been null-checked by the generated code. Throws
-            // ArgumentNullException (with the "destroyed but still trying to access it" diagnostics) unless obj
-            // resolves to a live native object.
+            // [NotNull] parameter: obj itself has already been null-checked by the generated code. The stored id goes to
+            // native unchecked (it may carry the released-wrapper tag); native resolves it, in the editor loading an asset
+            // that is not in memory, and reports an id that does not resolve (see ThrowPendingOrUnresolved).
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public static EntityId MarshalIdNotNull<T>(T obj, string parameterName) where T : Object
+            public static EntityId MarshalIdNotNull<T>(T obj) where T : Object
             {
-                if (!ResolvesToLiveNativeObject(obj))
-                    ThrowArgumentNullException(obj, parameterName);
-                return obj.GetEntityId();
+                // A script-derived instance that is not the object's own must not cause a load.
+                if (IsScriptDerivedClass(obj))
+                    return MarshalIdNotNullScriptDerived(obj);
+                return obj.m_EntityId;
             }
 
-            // [NotNull] 'this' or struct field: same, throwing NullReferenceException; see MarshalNotNullThis.
+            [MethodImpl(MethodImplOptions.NoInlining)]
+            static unsafe EntityId MarshalIdNotNullScriptDerived(Object obj)
+            {
+                return GetNativeObjectForWrapper(obj.m_EntityId) != null && CanResolveDirectly(obj) ? obj.m_EntityId : EntityId.None;
+            }
+
+            // [NotNull] 'this': same as MarshalIdNotNull, except for a script-derived 'this' in the editor.
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public static EntityId MarshalIdNotNullThis<T>(T obj) where T : Object
             {
-                if (MarshalNotNullThis(obj) == IntPtr.Zero)
-                    ThrowNullReferenceException(obj);
-                return obj.GetEntityId();
+                // Native cannot tell from the id whether a script-derived 'this' is the instance the object holds.
+                if (IsScriptDerivedClass(obj))
+                {
+                    if (MarshalNotNullThis(obj) == IntPtr.Zero)
+                        ThrowNullReferenceException(obj);
+                    return obj.GetEntityId();
+                }
+                return obj.m_EntityId;
             }
 
-            // Whether native will be able to resolve obj's EntityId to an object of type T. Fast path: the id is in
-            // the EntityIdStore and obj is not an editor fake-null wrapper. Editor slow path: the object may be an
-            // unloaded asset (loaded through the PersistentManager) or a fake-null wrapper whose id now names a live
-            // object (type-checked), both handled by MarshalFromInstanceId; native applies the same rules again when
-            // it resolves the id (Scripting::ResolveNativeObject).
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            private static unsafe bool ResolvesToLiveNativeObject<T>(T obj) where T : Object
+            // Called when a binding with [NotNull] UnityEngine.Object arguments returns with hasPendingException set
+            // (parameter name null for 'this'). Native reports the index-th object it could not resolve as
+            // NotNullObjectUnresolved + index (Marshalling::NotNullObjectUnresolved); a lower value is a pending exception.
+            // Not inlined: the call sits on the cold path of every such binding, and inlining it slows the hot path.
+            [System.Diagnostics.CodeAnalysis.DoesNotReturn]
+            [MethodImpl(MethodImplOptions.NoInlining)]
+            public static void ThrowPendingOrUnresolved(byte hasPendingException, Object firstObject, string firstParameterName)
             {
-                if (GetNativeObjectForWrapper(obj.m_EntityId) != null && CanResolveDirectly(obj))
-                    return true;
-                return MarshalFromInstanceId(obj) != IntPtr.Zero;
+                ThrowIfPending(hasPendingException);
+                ThrowUnresolved(firstObject, firstParameterName);
             }
 
-            // Marshalling for Mono and IL2CPP. A UnityEngine.Object parameter crosses as the native Object*, resolved here
-            // through the EntityIdStore.
-
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public static IntPtr Marshal<T>(T obj) where T : Object
+            [System.Diagnostics.CodeAnalysis.DoesNotReturn]
+            [MethodImpl(MethodImplOptions.NoInlining)]
+            public static void ThrowPendingOrUnresolved(byte hasPendingException, Object firstObject, string firstParameterName,
+                Object secondObject, string secondParameterName)
             {
-                // Do not to an == null or .Equals(null) check in here or anything that would make an icall
-                // This may be called during AppDomain shutdown and there is code called during shutdown
-                // that relies on the SCRIPTINGAPI_THREAD_AND_SERIALIZATION_CHECK throwing on shutdown
-                // So this code can't call any icalls marked as ThreadSafe (e.g. DoesObjectWithInstanceIDExist)
-                if (ReferenceEquals(obj, null))
-                    return IntPtr.Zero;
-                return MarshalNotNull(obj);
+                ThrowIfPending(hasPendingException);
+                if (hasPendingException == k_NotNullObjectUnresolved)
+                    ThrowUnresolved(firstObject, firstParameterName);
+                ThrowUnresolved(secondObject, secondParameterName);
             }
 
+            [System.Diagnostics.CodeAnalysis.DoesNotReturn]
+            [MethodImpl(MethodImplOptions.NoInlining)]
+            public static void ThrowPendingOrUnresolved(byte hasPendingException, Object firstObject, string firstParameterName,
+                Object secondObject, string secondParameterName, Object thirdObject, string thirdParameterName)
+            {
+                ThrowIfPending(hasPendingException);
+                if (hasPendingException == k_NotNullObjectUnresolved)
+                    ThrowUnresolved(firstObject, firstParameterName);
+                if (hasPendingException == k_NotNullObjectUnresolved + 1)
+                    ThrowUnresolved(secondObject, secondParameterName);
+                ThrowUnresolved(thirdObject, thirdParameterName);
+            }
+
+            // Must match Naming.NotNullObjectUnresolved in the bindings generator.
+            const byte k_NotNullObjectUnresolved = 2;
+
+            static void ThrowIfPending(byte hasPendingException)
+            {
+                if (hasPendingException < k_NotNullObjectUnresolved)
+                    ExceptionMarshaller.ThrowPendingException();
+            }
+
+            // An object that does not resolve here either gets the usual destroyed-object exception.
+            [System.Diagnostics.CodeAnalysis.DoesNotReturn]
+            static unsafe void ThrowUnresolved(Object obj, string parameterName)
+            {
+                var resolves = GetNativeObjectForWrapper(obj.m_EntityId) != null && CanResolveDirectly(obj);
+                if (!resolves)
+                {
+                    if (parameterName == null)
+                        ThrowNullReferenceException(obj);
+                    ThrowArgumentNullException(obj, parameterName);
+                }
+                ThrowNotNullObjectUnresolved(obj, parameterName);
+            }
+
+            // Native could not use the [NotNull] object obj (parameterName null for 'this') although it resolves here: its
+            // native object is not of the type the binding expects.
+            [System.Diagnostics.CodeAnalysis.DoesNotReturn]
+            public static void ThrowNotNullObjectUnresolved(Object obj, string parameterName)
+            {
+                var message = $"Native code could not use the {obj.GetType().FullName} passed as {parameterName ?? "this"}: " +
+                    "its native object does not exist or is not of the type the method expects.";
+                if (parameterName == null)
+                    throw new NullReferenceException(message);
+                throw new ArgumentNullException(parameterName, message);
+            }
+
+            // The native Object* for obj, resolved through the EntityIdStore (editor: through native for unloaded assets
+            // and fake-null wrappers). For code that hands a native pointer to native code itself; bindings pass the EntityId.
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public static unsafe IntPtr MarshalNotNull<T>(T obj) where T : Object
             {
@@ -1257,7 +1308,7 @@ namespace UnityEngine
                 void* nativeObject = GetNativeObjectForWrapper(obj.m_EntityId);
                 if (nativeObject != null && CanResolveDirectly(obj))
                     return (IntPtr)nativeObject;
-                return MarshalFromInstanceId(obj);
+                return MarshalFromEntityId(obj);
             }
 
             // 'this' of an instance icall: an instance of a script-derived class must be the one the native object holds,
@@ -1268,7 +1319,7 @@ namespace UnityEngine
                 void* nativeObject = GetNativeObjectForWrapper(obj.m_EntityId);
                 if (nativeObject != null && (IsInstanceOf(nativeObject, obj) || !IsScriptDerivedClass(obj)) && CanResolveDirectly(obj))
                     return (IntPtr)nativeObject;
-                return MarshalFromInstanceId(obj);
+                return MarshalFromEntityId(obj);
             }
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -1289,7 +1340,7 @@ namespace UnityEngine
             // Editor slow path: the object is not loaded, or obj is a fake-null wrapper. Resolves through
             // native, which loads the object from the PersistentManager if needed and checks that it is
             // assignable to the declared parameter type T.
-            private static IntPtr MarshalFromInstanceId<T>(T obj) where T : Object
+            private static IntPtr MarshalFromEntityId<T>(T obj) where T : Object
             {
                 if (obj.m_EntityId == EntityId.None)
                     return IntPtr.Zero;
@@ -1298,7 +1349,7 @@ namespace UnityEngine
                 if (IsScriptDerivedClass(obj))
                     return IntPtr.Zero;
 
-                return GetPtrFromInstanceID(obj.GetEntityId(), typeof(T));
+                return GetPtrFromEntityId(obj.GetEntityId(), typeof(T));
             }
 
             public static void TryThrowEditorNullExceptionObject(Object unityObj) => TryThrowEditorNullExceptionObject(unityObj, null);

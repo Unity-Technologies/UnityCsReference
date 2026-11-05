@@ -215,7 +215,7 @@ namespace UnityEditor
             var wizard = PackageImportWizard.instance;
             var assetPackageInfo = wizard.assetPackageInfo;
             var trustAndSignature =  assetPackageInfo != null
-                    ? TrustAndSignatureHelper.GetTrustAndSignature(assetPackageInfo)
+                    ? TrustAndSignatureHelper.GetTrustAndSignature(assetPackageInfo, ServicesContainer.instance.Resolve<IProjectSettingsProxy>().isSignatureValidationDisabled)
                     : TrustAndSignature.NotApplicable;
 
             if (trustAndSignature == TrustAndSignature.UntrustedNoSignature && wizard.isAssetStorePackage)
@@ -257,6 +257,7 @@ namespace UnityEditor
                 case TrustAndSignature.FullTrustBuiltInPackage:
                 case TrustAndSignature.FullTrustNoSignature:
                 case TrustAndSignature.NotApplicable:
+                case TrustAndSignature.SignatureValidationDisabled:
                 default:
                     return;
             }
@@ -284,6 +285,10 @@ namespace UnityEditor
                 case TrustAndSignature.UntrustedNoSignature:
                     icon    = ms_Constants.warnIcon;
                     message = L10n.Tr("Unity can't verify this package because it doesn't have a signature. Use signed packages to reduce risk to your project.", null);
+                    break;
+                case TrustAndSignature.SignatureValidationDisabled:
+                    icon    = ms_Constants.infoIcon;
+                    message = L10n.Tr("Signature validation is off because Closed network environment is enabled in Project Settings.", null);
                     break;
                 default:
                     return;
@@ -322,7 +327,12 @@ namespace UnityEditor
 
             var hasPackageIcon = s_PackageIcon is not null;
             var trustAndSignature = GetEffectiveTrustAndSignature();
-            var showTrustBadge = trustAndSignature != TrustAndSignature.NotApplicable && trustAndSignature != TrustAndSignature.FullTrustNoSignature;
+            var showTrustBadge = trustAndSignature is TrustAndSignature.FullTrustUnitySignature or
+                                                      TrustAndSignature.FullTrustValidSignature or
+                                                      TrustAndSignature.LimitedTrust or
+                                                      TrustAndSignature.UntrustedInvalidSignature or
+                                                      TrustAndSignature.UntrustedNoSignature;
+
             var packageImportWizard = PackageImportWizard.instance;
 
             var textAreaHeight = rowHeight;

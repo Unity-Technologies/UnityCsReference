@@ -188,7 +188,8 @@ namespace UnityEngine
         ///]]></code>
         ///</example>
         [NativeProperty("m_ContentOffset", false, TargetType.Field)] public extern Vector2 contentOffset { get; set; }
-        [NativeProperty("m_ContentSpacing", false, TargetType.Field)] internal extern float contentSpacing { get; set; }
+        ///<summary>Space in pixels between the image and the label when both are present.</summary>
+        [NativeProperty("m_ContentSpacing", false, TargetType.Field)] public extern float contentSpacing { get; set; }
         ///<summary>If non-0, any GUI elements rendered with this style will have the width specified here.</summary>
         ///<example>
         ///  <code><![CDATA[

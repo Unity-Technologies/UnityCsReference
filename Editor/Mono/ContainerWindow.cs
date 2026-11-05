@@ -192,7 +192,7 @@ namespace UnityEditor
             }
         }
 
-        private static readonly Color lightSkinColor = new Color(0.941f, 0.941f, 0.941f, 1.0f);
+        private static readonly Color lightSkinColor = new Color(0.922f, 0.922f, 0.922f, 1.0f);
         private static readonly Color darkSkinColor = new Color(0.078f, 0.0784f, 0.0784f, 1.0f);
         static Color skinBackgroundColor => EditorGUIUtility.isProSkin ? darkSkinColor : lightSkinColor;
 

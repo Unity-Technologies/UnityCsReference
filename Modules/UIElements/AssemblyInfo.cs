@@ -39,6 +39,7 @@ using System.Runtime.CompilerServices;
 [assembly: InternalsVisibleTo("Unity.CrossModule.UIElementsUGUI.Tests.Editor")]
 [assembly: InternalsVisibleTo("Unity.UIElements.TestComponents.Editor")]
 [assembly: InternalsVisibleTo("Assembly-CSharp-Editor-testable")]
+[assembly: InternalsVisibleTo("Unity.Modules.Audio.Tests.Editor")]
 [assembly: InternalsVisibleTo("Unity.UIElements.EditorResources.Authoring")]
 [assembly: InternalsVisibleTo("Unity.UIElements.EditorResources.EditorTests")]
 [assembly: InternalsVisibleTo("Unity.UI.Builder.EditorTests")]

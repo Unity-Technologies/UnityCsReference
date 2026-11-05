@@ -43,12 +43,14 @@ namespace UnityEditor
 
         void UpdateActiveToolIcon()
         {
-            if(Tools.viewToolActive)
+            if (Tools.viewToolActive)
                 UpdateViewToolIcon();
             else
+            {
                 collapsedIcon = EditorToolUtility.IsManipulationTool(Tools.current) ?
                                 EditorToolUtility.GetToolbarIcon(EditorToolManager.activeTool)?.image as Texture2D :
                                 null;
+            }
         }
 
         void UpdateViewToolIcon()
@@ -164,7 +166,7 @@ namespace UnityEditor
     }
 
     [Overlay(typeof(SceneView), k_Id, "Draw Modes", true, priority = (int)OverlayPriority.DrawModes, defaultDockIndex = 1, defaultDockPosition = DockPosition.Bottom, defaultDockZone = DockZone.TopToolbar, group = OverlayAttribute.unityGroup)]
-    [Icon("Icons/Overlays/ViewOptions.png")]
+    [Icon("Icons/Toolbars/ShadedWireframe.png")]
     class SceneViewCameraModeToolbar : ToolbarOverlay
     {
         const string k_Id = "unity-scene-view-camera-mode-toolbar";

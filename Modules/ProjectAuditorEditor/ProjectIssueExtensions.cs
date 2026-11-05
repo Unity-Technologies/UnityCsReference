@@ -15,7 +15,7 @@ namespace Unity.ProjectAuditor.Editor
     // Extension methods for ProjectIssues which don't form part of the API: Used in UI, Tests, and HTML/CSV exporters
     internal static partial class ProjectIssueExtensions
     {
-        internal const string k_NotAvailable = "N/A";
+        const string k_NotAvailable = "N/A";
 
         // Map of category+format to custom comparison functions. See usage of AddCustomComparer in eg. AudioClipModule
         [AutoStaticsCleanupOnCodeReload]
@@ -60,7 +60,7 @@ namespace Unity.ProjectAuditor.Editor
                     return issue.Id.GetDescriptor().GetAreasSummary();
                 case PropertyType.FileType:
                     if (issue.Location == null)
-                        return k_NotAvailable;
+                        return string.Empty;
                     return issue.Location.Extension;
                 case PropertyType.Description:
                     return issue.Description;
@@ -68,15 +68,15 @@ namespace Unity.ProjectAuditor.Editor
                     return issue.Id.GetDescriptor().Title;
                 case PropertyType.Filename:
                     if (string.IsNullOrEmpty(issue.Filename))
-                        return k_NotAvailable;
+                        return string.Empty;
                     return issue.Location.FormattedFilename;
                 case PropertyType.Path:
                     if (string.IsNullOrEmpty(issue.RelativePath))
-                        return k_NotAvailable;
+                        return string.Empty;
                     return issue.Location.FormattedPath;
                 case PropertyType.Directory:
                     if (string.IsNullOrEmpty(issue.RelativePath))
-                        return k_NotAvailable;
+                        return string.Empty;
                     return PathUtils.GetDirectoryName(issue.Location.Path);
                 case PropertyType.Platform:
                     return issue.Id.GetDescriptor().GetPlatformsSummary();
@@ -95,13 +95,9 @@ namespace Unity.ProjectAuditor.Editor
             switch (propertyDefinition.Type)
             {
                 case PropertyType.Filename:
-                    if (string.IsNullOrEmpty(issue.Filename))
-                        return k_NotAvailable;
-                    return issue.Location.Filename;
+                    return issue.Filename;
                 case PropertyType.Path:
-                    if (string.IsNullOrEmpty(issue.RelativePath))
-                        return k_NotAvailable;
-                    return issue.Location.Path;
+                    return issue.RelativePath;
                 default:
                     if (propertyDefinition.Format != PropertyFormat.String)
                         return string.Format("{0}: {1}", propertyDefinition.Name, issue.GetProperty(propertyDefinition.Type));

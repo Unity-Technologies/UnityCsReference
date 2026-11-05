@@ -126,7 +126,7 @@ namespace UnityEditor.Search
             }
 
             var uri = new Uri(url);
-            Process.Start(uri.AbsoluteUri);
+            Application.OpenURL(uri.AbsoluteUri);
         }
 
         internal static SettingsProvider[] FetchSettingsProviders()

@@ -94,6 +94,9 @@ namespace UnityEditor.PackageManager.UI
         private void OnEnable()
         {
             s_EnabledInstances.Add(this);
+            // Package Manager services support a single window root; extra instances (e.g. a deserialized maximize layout copy) stay empty
+            if (instance != this)
+                return;
 
             this.SetAntiAliasing(4);
             titleContent = GetLocalizedTitleContent();

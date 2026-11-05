@@ -286,7 +286,7 @@ namespace UnityEngine.Windows.WebCam
         private extern void Dispose_Internal();
 
         //-----------------------------------------------------------------
-#pragma warning disable UA5000 // The Avoid Finalizer Analyzer produces compile errors for any new finalizers. This pre-existing finalizer declaration has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA5000 // Frees the native capture; DisposeThreaded is thread-safe, and the type is legacy and WSA-only.
         ~PhotoCapture()
         {
             if (m_NativePtr != IntPtr.Zero)
@@ -486,7 +486,7 @@ namespace UnityEngine.Windows.WebCam
         }
 
         //-----------------------------------------------------------------
-#pragma warning disable UA5000 // The Avoid Finalizer Analyzer produces compile errors for any new finalizers. This pre-existing finalizer declaration has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA5000 // Frees the native frame and removes memory pressure; Dispose_Internal is thread-safe.
         ~PhotoCaptureFrame()
         {
             Cleanup();

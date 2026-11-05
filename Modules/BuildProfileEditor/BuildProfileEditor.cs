@@ -28,6 +28,7 @@ namespace UnityEditor.Build.Profile
         const string k_SceneListFoldout = "scene-list-foldout";
         const string k_SceneListFoldoutRoot = "scene-list-foldout-root";
         const string k_SceneListFoldoutAddOpenSection = "scene-list-foldout-add-open-section";
+        const string k_SceneListFoldoutAddButton = "scene-list-foldout-add-button";
         const string k_SceneListFoldoutAddOpenButton = "scene-list-foldout-add-open-button";
         const string k_SceneListFoldoutClassicSection = "scene-list-foldout-classic-section";
         const string k_SceneListFoldoutClassicButton = "scene-list-foldout-classic-button";
@@ -429,8 +430,12 @@ namespace UnityEditor.Build.Profile
 
             if (isEnable)
             {
-                // Bind Add Open Scenes List button
+                // Bind Add Scenes and Add Open Scenes List buttons
                 root.Q<VisualElement>(k_SceneListFoldoutAddOpenSection).Show();
+                var addSceneListButton = root.Q<Button>(k_SceneListFoldoutAddButton);
+                addSceneListButton.text = TrText.addScenes;
+                addSceneListButton.clicked += () => m_SceneList.AddScenes(addSceneListButton);
+
                 var addOpenSceneListButton = root.Q<Button>(k_SceneListFoldoutAddOpenButton);
                 addOpenSceneListButton.text = TrText.addOpenScenes;
                 addOpenSceneListButton.clicked += () => m_SceneList.AddOpenScenes();

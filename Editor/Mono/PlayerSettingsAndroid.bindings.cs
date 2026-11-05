@@ -782,7 +782,7 @@ namespace UnityEditor
                 }
             }
 
-            [Obsolete("ARCoreEnabled has been deprecated. Use the com.unity.xr.arcore package for ARCore functionality.", false)]
+            [Obsolete("ARCoreEnabled has been deprecated. Use the com.unity.xr.arcore package for ARCore functionality.", true)]
             public static bool ARCoreEnabled { get => false; set { } }
 
             // Whether Android banner is added to the APK

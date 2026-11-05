@@ -43,7 +43,7 @@ namespace UnityEditor
                         var eid = selectedEids[i];
                         m_SelectedEids[i] = eid;
 
-                        if (SceneIdFromObject(EditorUtility.EntityIdToObject(eid), out var sceneId))
+                        if (SceneIdFromObject(UnityEditorInternal.InternalEditorUtility.GetLoadedObjectFromEntityId(eid), out var sceneId))
                             scenes.Add(sceneId);
                     }
 
@@ -389,10 +389,25 @@ namespace UnityEditor
                 updateObjectSelection = e.m_CustomUpdateObjectSelection;
             }
 
-            if (updateObjectSelection) SetSelection(FilterLiveEids(e.m_SelectedEids), e.m_CustomActiveContextEid, e.m_CustomDataMode);
+            if (updateObjectSelection) SetSelection(FilterRestorableEids(e.m_SelectedEids), e.m_CustomActiveContextEid, e.m_CustomDataMode);
 
             // After first going back in history, see if 0th object is a deselect and remove it from history to avoid button clicks that lead to nothing
             if (index == 1 && !m_History[0].IsSelectionEntryValid()) RemoveEntry(0);
+        }
+
+        /// <summary>
+        /// True when the id can go back into the selection: a loaded object, an asset in the project or a loaded scene.
+        /// It never loads the asset; an entry can reference thousands of unloaded assets (UUM-148632).
+        /// </summary>
+        internal static bool CanRestore(EntityId entityId)
+        {
+            if (entityId == EntityId.None)
+                return false;
+            if (UnityEditorInternal.InternalEditorUtility.GetLoadedObjectFromEntityId(entityId) != null)
+                return true;
+            if (AssetDatabase.IsAssetInProject(entityId))
+                return true;
+            return UnityEditor.SceneManagement.EditorSceneManager.GetSceneByHandle(UnityEngine.SceneManagement.SceneHandle.From(entityId)).IsValid();
         }
 
         // A history entry can reference an EntityId whose object no longer exists - e.g. a child
@@ -401,29 +416,28 @@ namespace UnityEditor
         // never reports individually. IsSelectionEntryValid() only requires one referenced id to
         // still be alive, so such an entry can still be restored; filter out the dead ids here so
         // a stale EntityId never reaches the live selection (UUM-145779).
-        static EntityId[] FilterLiveEids(EntityId[] eids)
+        static EntityId[] FilterRestorableEids(EntityId[] eids)
         {
             if (eids == null || eids.Length == 0)
                 return eids;
 
-            var liveCount = 0;
-            for (var i = 0; i < eids.Length; i++)
-            {
-                if (EditorUtility.IsEidValid(eids[i]))
-                    liveCount++;
-            }
+            var firstDropped = 0;
+            while (firstDropped < eids.Length && CanRestore(eids[firstDropped]))
+                firstDropped++;
 
-            if (liveCount == eids.Length)
+            if (firstDropped == eids.Length)
                 return eids;
 
-            var live = new EntityId[liveCount];
-            var j = 0;
-            for (var i = 0; i < eids.Length; i++)
+            var restorable = new EntityId[eids.Length - 1];
+            Array.Copy(eids, restorable, firstDropped);
+            var count = firstDropped;
+            for (var i = firstDropped + 1; i < eids.Length; i++)
             {
-                if (EditorUtility.IsEidValid(eids[i]))
-                    live[j++] = eids[i];
+                if (CanRestore(eids[i]))
+                    restorable[count++] = eids[i];
             }
-            return live;
+            Array.Resize(ref restorable, count);
+            return restorable;
         }
 
         void RemoveSubsequentDuplicateEntries(SelectionEntry e, ref int index)

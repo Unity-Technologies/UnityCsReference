@@ -5,6 +5,7 @@
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Runtime.CompilerServices;
 
 namespace UnityEditor.Search
 {
@@ -303,7 +304,15 @@ namespace UnityEditor.Search
         {
             if (callback == null)
                 return 0;
-            return callback.GetHashCode();
+
+            // Delegate.GetHashCode ignores the method on CoreCLR, and Method and Target only describe the last handler of a multicast delegate
+            var hashCode = new HashCode();
+            foreach (var handler in callback.GetInvocationList())
+            {
+                hashCode.Add(handler.Method);
+                hashCode.Add(RuntimeHelpers.GetHashCode(handler.Target));
+            }
+            return hashCode.ToHashCode();
         }
     }
 }

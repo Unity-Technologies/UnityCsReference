@@ -6,3 +6,4 @@ using System.Runtime.CompilerServices;
 
 [assembly: InternalsVisibleTo("Unity.Modules.ScriptingReflection.Tests.Playmode")]
 [assembly: InternalsVisibleTo("Unity.Modules.ScriptingReflection.Tests.Performance")]
+[assembly: InternalsVisibleTo("UnityEngine.EntitiesModule")]

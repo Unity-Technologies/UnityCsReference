@@ -28,6 +28,7 @@ namespace UnityEditor.UIElements
         static readonly GradientAlphaKey k_AlphaKeyEnd = new GradientAlphaKey(1, 1);
 
         private bool m_ValueNull;
+        private Gradient m_ValueBeforeChange;
         // The GradientPicker will change the values in the arrays directly and will send commands to keep everything
         // in sync. Here, we're using this flag to force the value to be set when it is technically the same.
         private bool m_ForceSendEvent = false;
@@ -350,6 +351,22 @@ namespace UnityEditor.UIElements
                 UpdateGradientTexture();
                 mixedValueLabel.RemoveFromHierarchy();
             }
+        }
+
+        internal override Gradient GetValueBeforeChange()
+        {
+            if (m_ValueNull)
+                return null;
+
+            m_ValueBeforeChange ??= new Gradient();
+            Span<GradientColorKey> colorKeys = stackalloc GradientColorKey[rawValue.colorKeyCount];
+            Span<GradientAlphaKey> alphaKeys = stackalloc GradientAlphaKey[rawValue.alphaKeyCount];
+            rawValue.GetColorKeys(colorKeys);
+            rawValue.GetAlphaKeys(alphaKeys);
+            m_ValueBeforeChange.SetKeys(colorKeys, alphaKeys);
+            m_ValueBeforeChange.mode = rawValue.mode;
+            m_ValueBeforeChange.colorSpace = rawValue.colorSpace;
+            return m_ValueBeforeChange;
         }
 
         internal override bool EqualsCurrentValue(Gradient v)

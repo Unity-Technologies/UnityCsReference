@@ -5,6 +5,7 @@
 using Unity.Scripting.LifecycleManagement;
 using System;
 using System.Collections.Generic;
+using System.Runtime.CompilerServices;
 using UnityEngine.Bindings;
 using UnityEngine.UIElements.StyleSheets;
 using UnityEngine.UIElements.Unmanaged;
@@ -18,8 +19,16 @@ internal static class WorldSpaceInput
     private struct ChildPickEntry
     {
         public VisualElement child;
+        public int parentPath;   // index in s_PickPath
         public int zIndex;
         public int seq;
+    }
+
+    private struct PickPathNode
+    {
+        public VisualElement element;
+        public Ray ray;
+        public int parent;   // -1 for the pick root
     }
 
     [ThreadStatic]
@@ -29,6 +38,18 @@ internal static class WorldSpaceInput
     [ThreadStatic]
     [NoAutoStaticsCleanup] // reset to the frame base by the end of every pick
     private static int s_PickScratchCount;
+
+    [ThreadStatic]
+    [NoAutoStaticsCleanup] // reset to the frame base by the end of every pick
+    private static List<PickPathNode> s_PickPath;
+
+    [ThreadStatic]
+    [NoAutoStaticsCleanup] // reset to the frame base by the end of every pick
+    private static List<VisualElement> s_PickChildSnapshot;
+
+    // A child equal to ZIndexPromotionPath under this mask stays in its parent's stacking context and holds promoted descendants.
+    private const VisualElementTransformFlags k_PromotionDescentFlags = VisualElementTransformFlags.ZIndexPromotedOutOfParent
+        | VisualElementTransformFlags.ZIndexPromotionPath | VisualElementTransformFlags.ZIndexPromotionRoot;
 
     [NoAutoStaticsCleanup] // static method reference; safe to persist
     private static readonly RefComparison<ChildPickEntry> s_CompareEntries = CompareEntries;
@@ -159,7 +180,9 @@ internal static class WorldSpaceInput
             throw new ArgumentException("Element must be part of a UI Document.");
 
         var documentRay = panelComponent.gameObject.transform.worldToLocalMatrix.TransformRay(worldRay);
-        if (!element.IntersectWorldRay(documentRay, out var distance, out _) && (!acceptOutside || !(distance > 0)))
+        var intersection = element.IntersectWorldRay(documentRay, out var distance, out _);
+        if (intersection != RayIntersection.Inside &&
+            (!acceptOutside || intersection == RayIntersection.NoSurfacePoint || !(distance > 0)))
         {
             pickResult = PickResult.Empty;
             return false;
@@ -361,28 +384,36 @@ internal static class WorldSpaceInput
     [VisibleToOtherModules("Assembly-CSharp-testable")]
     internal static VisualElement PerformPick(VisualElement root, Ray ray, List<VisualElement> outResults)
     {
-        return root.needs3DBounds
-            ? PerformPick3D(root, ray, outResults)
-            : PerformPick2D(root, ray, outResults);
+        return PerformPick(root, ray, outResults, true);
     }
 
-    private static VisualElement PerformPick2D(VisualElement root, Ray ray, List<VisualElement> outResults)
+    // rootCollectsPromoted: also pick z-index descendants promoted past the root, ordered as if the root were their stacking context.
+    private static VisualElement PerformPick(VisualElement root, Ray ray, List<VisualElement> outResults, bool rootCollectsPromoted)
+    {
+        return root.needs3DBounds
+            ? PerformPick3D(root, ray, outResults, rootCollectsPromoted)
+            : PerformPick2D(root, ray, outResults, rootCollectsPromoted);
+    }
+
+    private static VisualElement PerformPick2D(VisualElement root, Ray ray, List<VisualElement> outResults, bool rootCollectsPromoted)
     {
         if (root.elementPanel == null)
             return null;
 
         // Flat path keeps its historical behavior: IntersectLocalRay returns the Z=0-plane point (in or out of
         // rect) and the native pick filters by layout.
-        root.IntersectLocalRay(ray, out var point);
-        return PerformPickByPoint(root, point, outResults);
+        if (root.IntersectLocalRay(ray, out var point) == RayIntersection.NoSurfacePoint)
+            return null;
+
+        return PerformPickByPoint(root, point, outResults, rootCollectsPromoted);
     }
 
-    private static unsafe VisualElement PerformPickByPoint(VisualElement root, Vector3 point, List<VisualElement> outResults)
+    private static unsafe VisualElement PerformPickByPoint(VisualElement root, Vector3 point, List<VisualElement> outResults, bool rootCollectsPromoted)
     {
         using var buffer = outResults != null ? UnmanagedHandleBuffer.CreateTemporary() : UnmanagedHandleBuffer.None();
 
         // Native implementation is 2-3 times faster, so we use it if we can.
-        var handle = NativeTransformUtils.PerformPick(root.layoutNode.Handle, point, false, &buffer);
+        var handle = NativeTransformUtils.PerformPick(root.layoutNode.Handle, point, false, rootCollectsPromoted, &buffer);
         if (handle.IsUndefined)
             return null;
 
@@ -400,10 +431,10 @@ internal static class WorldSpaceInput
         return result;
     }
 
-    private static VisualElement PerformPick3D(VisualElement root, Ray ray, List<VisualElement> outResults)
+    private static VisualElement PerformPick3D(VisualElement root, Ray ray, List<VisualElement> outResults, bool collectsPromoted)
     {
         // Skip picking for elements with display: none
-        if (root.resolvedStyle.display == DisplayStyle.None)
+        if (root.computedStyle.display == DisplayStyle.None)
             return default;
 
         if (root.pickingMode == PickingMode.Ignore && root.hierarchy.childCount == 0)
@@ -417,7 +448,7 @@ internal static class WorldSpaceInput
         // single-surface delegation mis-projects - measured as whole-tile mispicks where the inner bend's sag is
         // largest. Per-element testing is exact for any chain depth (and measured identical on single chains).
         var bb = GetPicking3DLocalBounds(root);
-        if (!bb.IntersectRay(ray))
+        if (!IntersectRayAABB(ray, bb))
         {
             return default;
         }
@@ -443,12 +474,15 @@ internal static class WorldSpaceInput
         bool rootPicked = false;
 
         var cCount = root.hierarchy.childCount;
-        bool needsZIndexSort = cCount > 0 &&
-            (root.transformFlags & VisualElementTransformFlags.MayHaveZIndexedChildren) != 0;
+        bool collectsPromotedHere = cCount > 0 &&
+            ((collectsPromoted && HasFlag(root, VisualElementTransformFlags.ZIndexPromotionPath)) ||
+                HasFlag(root, VisualElementTransformFlags.ZIndexPromotionRoot));
+        bool needsZIndexSort = collectsPromotedHere ||
+            (cCount > 0 && HasFlag(root, VisualElementTransformFlags.MayHaveZIndexedChildren));
 
         if (needsZIndexSort)
         {
-            if (PickChildrenInZIndexOrder(root, ray, ref containsPoint, outResults, ref returnedChild, ref rootPicked))
+            if (PickChildrenInZIndexOrder(root, ray, collectsPromotedHere, ref containsPoint, outResults, ref returnedChild, ref rootPicked))
                 return returnedChild;
         }
         else
@@ -469,59 +503,81 @@ internal static class WorldSpaceInput
 
     private static bool ContainsLocalRay(VisualElement ve, Ray ray)
     {
-        return ve.IntersectLocalRay(ray, out var point) && ve.ContainsPoint(point);
+        // The default ContainsPoint is the rect test IntersectLocalRay already performed.
+        return ve.IntersectLocalRay(ray, out var point) == RayIntersection.Inside && (!ve.usesContainsPoint || ve.ContainsPoint(point));
     }
 
     // Returns true when the pick is resolved and the root no longer needs to be tested.
-    private static bool PickChildrenInZIndexOrder(VisualElement root, Ray ray, ref bool? containsPoint,
+    private static bool PickChildrenInZIndexOrder(VisualElement root, Ray ray, bool collectsPromoted, ref bool? containsPoint,
         List<VisualElement> outResults, ref VisualElement returnedChild, ref bool rootPicked)
     {
         s_PickScratch ??= new ChildPickEntry[16];
+        s_PickPath ??= new List<PickPathNode>();
+        s_PickChildSnapshot ??= new List<VisualElement>();
         int frameBase = s_PickScratchCount;
+        int pathBase = s_PickPath.Count;
+        int snapshotBase = s_PickChildSnapshot.Count;
         try
         {
-            int minZIndex = int.MaxValue;
-            int maxZIndex = int.MinValue;
+            s_PickPath.Add(new PickPathNode { element = root, ray = ray, parent = -1 });
 
-            // Reverse order so equal z-index falls back to reverse paint order.
-            int seq = 0;
-            for (int i = root.hierarchy.childCount - 1; i >= 0; i--)
+            bool needsSort = true;
+            if (collectsPromoted)
             {
-                var child = root.hierarchy[i];
-                int z = child.computedStyle.zIndex;
-                if (z == int.MinValue)
-                    z = 0;
-                AddScratchEntry(new ChildPickEntry { child = child, zIndex = z, seq = seq++ });
-                if (z < minZIndex)
-                    minZIndex = z;
-                if (z > maxZIndex)
-                    maxZIndex = z;
+                // Paint draws a stacking context's children and the descendants promoted into it as one list,
+                // sorted by z-index, ties in tree order.
+                int seq = 0;
+                AddPromotedPickEntries(pathBase, true, ref seq);
+            }
+            else
+            {
+                int minZIndex = int.MaxValue;
+                int maxZIndex = int.MinValue;
+
+                // Reverse order so equal z-index falls back to reverse paint order.
+                int seq = 0;
+                for (int i = root.hierarchy.childCount - 1; i >= 0; i--)
+                {
+                    var child = root.hierarchy[i];
+                    // A promoted child is picked by the stacking context root it paints in.
+                    if (IsPromotedOutOfParent(child))
+                        continue;
+                    int z = PickZIndex(child);
+                    AddScratchEntry(new ChildPickEntry { child = child, parentPath = pathBase, zIndex = z, seq = seq++ });
+                    if (z < minZIndex)
+                        minZIndex = z;
+                    if (z > maxZIndex)
+                        maxZIndex = z;
+                }
+
+                // MayHaveZIndexedChildren is never cleared, so it outlives the z-indexed children that set it.
+                needsSort = minZIndex != maxZIndex;
             }
             int frameEnd = s_PickScratchCount;
 
-            // MayHaveZIndexedChildren is never cleared, so it outlives the z-indexed children that set it.
-            if (minZIndex != maxZIndex)
+            if (needsSort)
                 SpanSort.Sort(s_PickScratch.AsSpan(frameBase, frameEnd - frameBase), s_CompareEntries);
 
+            bool isPromotionRoot = HasFlag(root, VisualElementTransformFlags.ZIndexPromotionRoot);
             for (int i = frameBase; i < frameEnd; i++)
             {
                 var entry = s_PickScratch[i];
                 var child = entry.child;
+                var parentNode = s_PickPath[entry.parentPath];
 
-                // Skip children reparented mid-pick by a ContainsPoint override; the ray transform below assumes the old parent.
-                if (child.hierarchy.parent != root)
+                // Skip children reparented mid-pick by a ContainsPoint override; the ray transform below assumes the old path.
+                if (child.hierarchy.parent != parentNode.element || !IsPickPathUnchanged(entry.parentPath))
                     continue;
 
-                // A negative z-index child promoted to an ancestor stacking context paints behind this element;
-                // one that stayed under it paints on top of it, like any other child.
-                if (!rootPicked && entry.zIndex < 0 && IsPromotedOutOfParent(child))
+                // Collected at a pick root that is not their stacking context: negative ones paint behind it.
+                if (!rootPicked && !isPromotionRoot && entry.zIndex < 0 && IsPromotedOutOfParent(child))
                 {
                     rootPicked = true;
                     if (PickRoot(root, ray, ref containsPoint, outResults, ref returnedChild))
                         return true;
                 }
 
-                if (PickChild(root, child, ray, outResults, ref returnedChild))
+                if (PickChild(parentNode.element, child, parentNode.ray, outResults, ref returnedChild))
                     return true;
             }
 
@@ -532,7 +588,82 @@ internal static class WorldSpaceInput
             for (int i = frameBase; i < s_PickScratchCount; i++)
                 s_PickScratch[i].child = null;
             s_PickScratchCount = frameBase;
+            s_PickPath.RemoveRange(pathBase, s_PickPath.Count - pathBase);
+            s_PickChildSnapshot.RemoveRange(snapshotBase, s_PickChildSnapshot.Count - snapshotBase);
         }
+    }
+
+    // Adds, in tree order, the children of the path node (all of them, or only the promoted ones) and the elements promoted
+    // out of the subtrees below, each with the path node to pick it from. Seq decreases, so a later entry picks first.
+    private static void AddPromotedPickEntries(int parentPath, bool addAllChildren, ref int seq)
+    {
+        var parentNode = s_PickPath[parentPath];
+        var parent = parentNode.element;
+
+        // Snapshot: a ContainsPoint override below can remove children.
+        int snapshotBase = s_PickChildSnapshot.Count;
+        int childCount = parent.hierarchy.childCount;
+        for (int i = 0; i < childCount; i++)
+            s_PickChildSnapshot.Add(parent.hierarchy[i]);
+
+        for (int i = snapshotBase; i < snapshotBase + childCount; i++)
+        {
+            var child = s_PickChildSnapshot[i];
+            if (child.hierarchy.parent != parent)
+                continue;
+
+            bool isPromoted = IsPromotedOutOfParent(child);
+            if (isPromoted || addAllChildren)
+                AddScratchEntry(new ChildPickEntry { child = child, parentPath = parentPath, zIndex = PickZIndex(child), seq = seq-- });
+
+            if ((child.transformFlags & k_PromotionDescentFlags) == VisualElementTransformFlags.ZIndexPromotionPath)
+            {
+                var childRay = ToChildRay(parent, child, parentNode.ray);
+                if (PromotedPickCanPassThrough(child, childRay))
+                {
+                    s_PickPath.Add(new PickPathNode { element = child, ray = childRay, parent = parentPath });
+                    AddPromotedPickEntries(s_PickPath.Count - 1, false, ref seq);
+                }
+            }
+        }
+
+        s_PickChildSnapshot.RemoveRange(snapshotBase, s_PickChildSnapshot.Count - snapshotBase);
+    }
+
+    private static bool IsPickPathUnchanged(int path)
+    {
+        for (var node = s_PickPath[path]; node.parent >= 0; node = s_PickPath[node.parent])
+        {
+            if (node.element.hierarchy.parent != s_PickPath[node.parent].element)
+                return false;
+        }
+        return true;
+    }
+
+    private static bool PromotedPickCanPassThrough(VisualElement ve, Ray ray)
+    {
+        if (ve.computedStyle.display == DisplayStyle.None)
+            return false;
+
+        if (!IntersectRayAABB(ray, GetPicking3DLocalBounds(ve)))
+            return false;
+
+        return !ve.ShouldClip() || ContainsLocalRay(ve, ray);
+    }
+
+    private static int PickZIndex(VisualElement ve)
+    {
+        int z = ve.computedStyle.zIndex;
+        return z == int.MinValue ? 0 : z;
+    }
+
+    private static bool HasFlag(VisualElement ve, VisualElementTransformFlags flag) => (ve.transformFlags & flag) != 0;
+
+    private static Ray ToChildRay(VisualElement parent, VisualElement child, Ray ray)
+    {
+        return child.hasDefaultRotationAndScale
+            ? new Ray(ray.origin - child.positionWithLayout, ray.direction)
+            : parent.ChangeCoordinatesTo(child, ray);
     }
 
     // Negative when a comes first: descending z-index, then ascending sequence.
@@ -554,16 +685,13 @@ internal static class WorldSpaceInput
         scratch[s_PickScratchCount++] = entry;
     }
 
-    private static bool IsPromotedOutOfParent(VisualElement child)
-    {
-        return (child.transformFlags & VisualElementTransformFlags.ZIndexPromotedOutOfParent) != 0;
-    }
+    private static bool IsPromotedOutOfParent(VisualElement child) => HasFlag(child, VisualElementTransformFlags.ZIndexPromotedOutOfParent);
 
     // Returns true when the pick is resolved and the remaining children can be skipped.
     private static bool PickRoot(VisualElement root, Ray ray, ref bool? containsPoint, List<VisualElement> outResults,
         ref VisualElement returnedChild)
     {
-        if (!root.visible || root.pickingMode != PickingMode.Position)
+        if (root.computedStyle.visibility != Visibility.Visible || root.pickingMode != PickingMode.Position)
             return false;
 
         containsPoint ??= ContainsLocalRay(root, ray);
@@ -584,8 +712,7 @@ internal static class WorldSpaceInput
     private static bool PickChild(VisualElement root, VisualElement child, Ray ray, List<VisualElement> outResults,
         ref VisualElement returnedChild)
     {
-        var childRay = root.ChangeCoordinatesTo(child, ray);
-        var result = PerformPick(child, childRay, outResults);
+        var result = PerformPick(child, ToChildRay(root, child, ray), outResults, false);
         if (returnedChild == null && result != null)
         {
             returnedChild = result;
@@ -593,6 +720,45 @@ internal static class WorldSpaceInput
         }
 
         return false;
+    }
+
+    // Same semantics as Bounds.IntersectRay (native IntersectRayAABB), without the icall.
+    internal static bool IntersectRayAABB(Ray ray, Bounds bounds)
+    {
+        var center = bounds.center;
+        var extents = bounds.extents;
+        var origin = ray.origin;
+        var direction = ray.direction;
+
+        float tmin = float.NegativeInfinity;
+        float tmax = float.PositiveInfinity;
+        return IntersectSlab(center.x - origin.x, extents.x, direction.x, ref tmin, ref tmax)
+            && IntersectSlab(center.y - origin.y, extents.y, direction.y, ref tmin, ref tmax)
+            && IntersectSlab(center.z - origin.z, extents.z, direction.z, ref tmin, ref tmax);
+    }
+
+    [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
+    static bool IntersectSlab(float p, float extent, float direction, ref float tmin, ref float tmax)
+    {
+        float f = 1.0f / direction;
+        float t0 = (p + extent) * f;
+        float t1 = (p - extent) * f;
+        if (t0 < t1)
+        {
+            if (t0 > tmin)
+                tmin = t0;
+            if (t1 < tmax)
+                tmax = t1;
+        }
+        else
+        {
+            if (t1 > tmin)
+                tmin = t1;
+            if (t0 < tmax)
+                tmax = t0;
+        }
+
+        return !(tmin > tmax) && !(tmax < 0.0f);
     }
 
     [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]

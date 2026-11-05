@@ -11,7 +11,7 @@ namespace UnityEngine.UIElements.UIR
     /// <summary>
     /// This class manages a vertical atlas of horizontal GradientSettings.
     /// </summary>
-    class GradientSettingsAtlas : IDisposable
+    partial class GradientSettingsAtlas : IDisposable
     {
         static readonly ProfilerMarker s_MarkerWrite = new ProfilerMarker(ProfilerCategory.UIToolkit, "UIR.GradientSettingsAtlas.Write");
         static readonly ProfilerMarker s_MarkerCommit = new ProfilerMarker(ProfilerCategory.UIToolkit, "UIR.GradientSettingsAtlas.Commit");
@@ -24,7 +24,7 @@ namespace UnityEngine.UIElements.UIR
         BestFitAllocator m_Allocator;
         Texture2D m_Atlas; // Should be accessed through the property
         RawTexture m_RawAtlas;
-        [NoAutoStaticsCleanup] // monotonic counter for unique texture names; safe to persist
+        [AutoStaticsCleanupOnCodeReload]
         static int s_TextureCounter;
 
         #region Dispose Pattern

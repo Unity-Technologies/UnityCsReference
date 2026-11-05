@@ -460,7 +460,10 @@ namespace UnityEditor.UIElements
             var nextId = 1;
             foreach (var panelEntityId in m_PanelOrder)
             {
-                var panelName = UIToolkitProfilerToolbarHelpers.GetPanelDisplayName(rawFrameData, panelEntityId);
+                // Panel Renderer markers process all Panel Renderer components at once, so their samples have no panel.
+                var panelName = panelEntityId == EntityId.None
+                    ? L10n.Tr("(All panels)", null)
+                    : UIToolkitProfilerToolbarHelpers.GetPanelDisplayName(rawFrameData, panelEntityId);
                 var times = new float[m_Counters.Length];
                 var total = 0f;
                 for (var i = 0; i < m_Counters.Length; i++)

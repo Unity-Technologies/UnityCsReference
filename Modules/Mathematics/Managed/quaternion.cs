@@ -723,11 +723,7 @@ namespace Unity.Mathematics
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static quaternion rotation(float3x3 m)
         {
-            float det = math.determinant(m);
-            if (math.abs(1f - det) < svd.k_EpsilonDeterminant)
-                return math.quaternion(m);
-
-            if (math.abs(det) > svd.k_EpsilonDeterminant)
+            if (math.abs(math.determinant(m)) > svd.k_EpsilonDeterminant)
             {
                 float3x3 tmp = mulScale(m, math.rsqrt(math.float3(math.lengthsq(m.c0), math.lengthsq(m.c1), math.lengthsq(m.c2))));
                 if (math.abs(1f - math.determinant(tmp)) < svd.k_EpsilonDeterminant)

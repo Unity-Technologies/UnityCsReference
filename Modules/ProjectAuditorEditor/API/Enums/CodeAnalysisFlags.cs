@@ -74,6 +74,6 @@ namespace Unity.ProjectAuditor.Editor
     // Keep combination enums out of the main enum, otherwise EditorGUILayout.EnumFlagsField shows them in the dropdown UI in the preferences.
     internal static class CodeAnalysisFlagsExtensions
     {
-        internal static CodeAnalysisFlags Default => CodeAnalysisFlags.Player | CodeAnalysisFlags.Editor;
+        internal static CodeAnalysisFlags Default => CodeAnalysisFlags.Player;
     }
 }

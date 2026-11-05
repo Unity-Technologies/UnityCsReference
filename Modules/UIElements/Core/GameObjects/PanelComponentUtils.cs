@@ -17,12 +17,17 @@ namespace UnityEngine.UIElements
         public static IPanelComponent AliveOrNull(this IPanelComponent panelComponent)
             => panelComponent.IsAlive() ? panelComponent : null;
 
+        public static bool IsWorldSpace(PanelSettings panelSettings)
+            => panelSettings != null && panelSettings.renderMode == PanelRenderMode.WorldSpace;
+
+        public static bool IsTransformControlledByGameObject(bool isWorldSpace, bool hasParent, Position position)
+            => isWorldSpace && (!hasParent || position == Position.Absolute);
+
         public static bool IsTransformControlledByGameObject(IPanelComponent panelComponent)
         {
-            var panelSettings = panelComponent.panelSettings;
-            bool isWorldSpace = panelSettings != null && panelSettings.renderMode == PanelRenderMode.WorldSpace;
+            bool isWorldSpace = IsWorldSpace(panelComponent.panelSettings);
             var parentUI = panelComponent.parentUI;
-            return isWorldSpace && (parentUI == null || panelComponent.position == Position.Absolute);
+            return IsTransformControlledByGameObject(isWorldSpace, parentUI != null, panelComponent.position);
         }
 
 
@@ -47,6 +52,17 @@ namespace UnityEngine.UIElements
             MathUtils.PreApply2DOffset(ref matrix, -parentPivotOffset);
 
             // Apply the nested pivot
+            MathUtils.PostApply2DOffset(ref matrix, pivotOffset);
+        }
+
+        public static void ComputeNestedTransform(Matrix4x4 parentGoToChildGo, Vector2 pivotOffset, Vector2 parentPivotOffset, float pixelsPerUnit, out Matrix4x4 matrix)
+        {
+            var ui2Go = ScaleAndFlipMatrix(pixelsPerUnit);
+            var go2Ui = ui2Go.inverse;
+
+            matrix = go2Ui * parentGoToChildGo * ui2Go;
+
+            MathUtils.PreApply2DOffset(ref matrix, -parentPivotOffset);
             MathUtils.PostApply2DOffset(ref matrix, pivotOffset);
         }
 

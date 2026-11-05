@@ -76,7 +76,7 @@ internal class DisableIfVersionDeprecated : IDisableCondition<IPackageVersion>
     {
         tooltip = k_Tooltip;
         var version = GetVersionToCheck(item);
-        return version is { availableRegistry: not RegistryType.MyRegistries } && version.HasTag(PackageTag.Deprecated);
+        return version is { availableRegistry: RegistryType.UnityRegistry } && version.HasTag(PackageTag.Deprecated);
     }
 
     // Allows derived conditions (e.g. update actions) to check a version other than the item itself.

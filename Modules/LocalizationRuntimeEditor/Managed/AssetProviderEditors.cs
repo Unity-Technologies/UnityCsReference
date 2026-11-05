@@ -21,7 +21,7 @@ namespace Unity.Localization.Editor;
 /// </remarks>
 internal static partial class AssetProviderEditors
 {
-    [AutoStaticsCleanup] // keyed by Type and holds editor instances; both go stale on reload
+    [AutoStaticsCleanupOnCodeReload] // keyed by Type and holds editor instances; both go stale on reload
     // Lazily built provider-editor registry: every entry point does s_Editors ??= BuildEditors(), so it
     // is rebuilt by reflection on the next use.
     [IgnoreForUAL0015("Provider-editor registry rebuilt by BuildEditors() when null")]

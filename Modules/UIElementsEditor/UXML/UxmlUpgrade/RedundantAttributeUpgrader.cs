@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System.Collections.Generic;
+using UnityEngine.Bindings;
 using UnityEngine.Pool;
 using UnityEngine.UIElements;
 using Unity.Scripting.LifecycleManagement;
@@ -12,6 +13,7 @@ namespace UnityEditor.UIElements
     /// <summary>
     /// Removes UXML attributes that the element type doesn't recognize.
     /// </summary>
+    [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
     internal class RedundantAttributeUpgrader : IUxmlUpgrader
     {
         internal const string k_Name = "Remove Unrecognized Attributes";
@@ -52,7 +54,8 @@ namespace UnityEditor.UIElements
             return countAssetsModified > 0;
         }
 
-        bool UpgradeElement(VisualElementAsset element, UxmlSerializedDataDescription description)
+        [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
+        internal static bool UpgradeElement(VisualElementAsset element, UxmlSerializedDataDescription description)
         {
             if (element.properties == null || element.properties.Count == 0)
                 return false;
@@ -82,6 +85,6 @@ namespace UnityEditor.UIElements
             return false;
         }
 
-        bool IsSpecialAttribute(string name) => s_SpecialAttributes.Contains(name);
+        static bool IsSpecialAttribute(string name) => s_SpecialAttributes.Contains(name);
     }
 }

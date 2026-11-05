@@ -80,7 +80,7 @@ namespace UnityEditor.Build.Profile
         Label m_AddtionalInfoLabel;
 
         TextField m_BuildProfileNameTextField;
-        List<BuildProfilePlatformGroup> m_PlatformGroups;
+        BuildProfilePlatformElement m_SelectedElement;
 
         /// <summary>
         /// Warning message displayed when the selected card's platform
@@ -558,12 +558,12 @@ namespace UnityEditor.Build.Profile
         /// Verify editor can create build profiles for the currently selected card. Otherwise
         /// display relevant documentation to the user.
         /// </summary>
-        internal void OnCardSelected(BuildProfileCard card)
+        internal void OnCardSelected(BuildProfileCard card, BuildProfilePlatformElement element = null)
         {
             ClearWindowData();
             m_BuildProfileNameTextField.value = BuildProfileDataSource.SanitizeFileName(card.displayName);
             m_SelectedCard = card;
-            SetCardSelected(card);
+            SetElementSelected(element ?? FindFirstElement(card.platformId));
             m_SelectedDisplayNameLabel.text = card.displayName;
 
             m_SelectedCardImage.image = BuildProfileModuleUtil.GetPlatformHeroImage(card.platformId);
@@ -852,7 +852,6 @@ namespace UnityEditor.Build.Profile
         {
             var allGroups = BuildProfileModuleUtil.GetAllPlatformGroups();
             var platformContainer = rootVisualElement.Q<VisualElement>("platforms-list-container");
-            m_PlatformGroups = new List<BuildProfilePlatformGroup>();
 
             int i = 0;
             foreach (var platformGroup in allGroups)
@@ -865,15 +864,24 @@ namespace UnityEditor.Build.Profile
                     item.Set(platformGroup.groupName, cards);
                     item.AddToClassList("platform-group");
                     platformContainer.Insert(i, item);
-                    m_PlatformGroups.Add(item);
                     i++;
                 }
             }
         }
 
-        void SetCardSelected(BuildProfileCard card)
+        void SetElementSelected(BuildProfilePlatformElement element)
         {
-            m_PlatformGroups.ForEach(group => group.SetCardSelected(card));
+            m_SelectedElement?.SetSelected(false);
+            m_SelectedElement = element;
+            m_SelectedElement?.SetSelected(true);
+        }
+
+        BuildProfilePlatformElement FindFirstElement(GUID platformId)
+        {
+            return rootVisualElement.Q<VisualElement>("platforms-list-container")
+                .Query<BuildProfilePlatformElement>()
+                .Where(e => e.GetBuildProfileCard().platformId == platformId)
+                .First();
         }
 
         void UpdateAddBuildProfileButton()

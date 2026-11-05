@@ -34,6 +34,7 @@ class UxmlAttributesEditingController : IDisposable, IVisualElementChangeProcess
     Panel m_ProcessorPanel;
 
     bool m_HasPendingSync;
+    bool m_IsListening;
 
     /// <summary>
     /// Responsible for syncing live properties to the serialized data.
@@ -70,21 +71,32 @@ class UxmlAttributesEditingController : IDisposable, IVisualElementChangeProcess
     /// </summary>
     public UxmlAttributesEditingController()
     {
-        RegisterCommandHandlers();
+        StartListening();
     }
 
-    internal void RegisterCommandHandlers()
+    bool CanTrackChanges => context?.element != null && context.uxmlSerializedData != null && !context.isReadOnly;
+
+    internal void StartListening()
     {
+        if (m_IsListening)
+            return;
+        m_IsListening = true;
         UICommandQueue.RegisterHandler<SetAttributeOverrideCommand>(OnAttributeOverrideSet);
         UICommandQueue.RegisterHandlerForCategory(CommandCategory.Hierarchy, OnHierarchyCommandExecuted);
+        if (CanTrackChanges)
+            attributeChangeHandler.StartTrackingChanges();
     }
 
-    // The command queue is a static in the Unity ALC, so a registered handler keeps this controller and the
-    // edited elements alive for the rest of the session.
-    internal void UnregisterCommandHandlers()
+    // The command queue and Undo.postprocessModifications are statics in the Unity ALC, so while listening this
+    // controller and the edited elements stay alive for the rest of the session.
+    internal void StopListening()
     {
+        if (!m_IsListening)
+            return;
+        m_IsListening = false;
         UICommandQueue.UnregisterHandler<SetAttributeOverrideCommand>(OnAttributeOverrideSet);
         UICommandQueue.UnregisterHandlerForCategory(CommandCategory.Hierarchy, OnHierarchyCommandExecuted);
+        attributeChangeHandler.StopTrackingChanges();
     }
 
     /// <summary>
@@ -114,7 +126,8 @@ class UxmlAttributesEditingController : IDisposable, IVisualElementChangeProcess
                 // Deserialize the element to ensure it has the latest data
                 DeserializeElement();
 
-                attributeChangeHandler.StartTrackingChanges();
+                if (m_IsListening)
+                    attributeChangeHandler.StartTrackingChanges();
             }
 
             // Ensure the serialized object is up to date
@@ -173,8 +186,7 @@ class UxmlAttributesEditingController : IDisposable, IVisualElementChangeProcess
             EditorApplication.delayCall -= Sync;
         UnregisterChangeProcessor();
         liveAttributePropertyController.RemoveLiveProperties();
-        attributeChangeHandler.StopTrackingChanges();
-        UnregisterCommandHandlers();
+        StopListening();
     }
 
     // Called when a property has changed

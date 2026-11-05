@@ -1844,7 +1844,9 @@ namespace UnityEditor
                     0, m_BillboardPreviewProperties);
             }
 
+#pragma warning disable CS0618 // Type or member is obsolete
             m_PreviewUtility.Render(Unsupported.useScriptableRenderPipeline);
+#pragma warning restore CS0618
         }
 
         override public string GetInfoString()

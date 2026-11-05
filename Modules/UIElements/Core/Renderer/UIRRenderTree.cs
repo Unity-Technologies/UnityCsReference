@@ -105,6 +105,11 @@ namespace UnityEngine.UIElements.UIR
 
         public GCHandlePool m_GCHandlePool = new();
 
+        // Cache of RenderedBounds.ComputeNestedRenderTree for the root of a nested render tree. Set dirty by
+        // RenderTreeManager when an element of this tree changes in a way that can move what it renders, or is removed.
+        Rect m_RenderedBounds;
+        bool m_RenderedBoundsDirty;
+
         internal RenderTreeManager renderTreeManager => m_RenderTreeManager;
         internal RenderData rootRenderData => m_RootRenderData;
 
@@ -113,6 +118,24 @@ namespace UnityEngine.UIElements.UIR
         internal RenderTree nextSibling;
 
         internal ref RenderTreeDirtyTracker dirtyTracker { get { return ref m_DirtyTracker; } }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public void MarkRenderedBoundsDirty()
+        {
+            m_RenderedBoundsDirty = true;
+        }
+
+        public Rect GetRenderedBounds()
+        {
+            if (m_RenderedBoundsDirty)
+            {
+                m_RenderedBounds = RenderedBounds.ComputeNestedRenderTree(m_RootRenderData.owner);
+                m_RenderedBoundsDirty = false;
+            }
+
+            return m_RenderedBounds;
+        }
+
         internal RenderChainCommand firstCommand { get { return m_FirstCommand; } }
 
         internal bool isRootRenderTree
@@ -180,6 +203,7 @@ namespace UnityEngine.UIElements.UIR
             quadTextureId = TextureId.invalid;
             rasterPixelsPerPoint = Vector2.zero;
             quadIsGammaEncoded = false;
+            m_RenderedBoundsDirty = true;
 
             parent = null;
             firstChild = null;

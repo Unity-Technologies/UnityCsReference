@@ -225,6 +225,7 @@ namespace UnityEditor
         List<string> m_PinnedModulesOrder;
         ScrollView m_PinnedModulesScroll;
         PinnedModulesAreaResizer m_PinnedModulesAreaResizer;
+        internal readonly HashSet<ProfilerModule> m_ModulesWithStaleCharts = new HashSet<ProfilerModule>();
         VisualElement m_DetailsViewContainer;
         MatchWidthLock m_Charts2BottlenecksWidthLock;
         MatchWidthLock m_Charts2PinnedModulesWidthLock;
@@ -557,6 +558,8 @@ namespace UnityEditor
 
             m_ScreenshotIndexCatalogue?.Dispose();
             m_ScreenshotIndexCatalogue = null;
+            m_BottlenecksDetailsViewController?.Dispose();
+            m_BottlenecksDetailsViewController = null;
             m_BottlenecksChartViewController.Dispose();
             m_BottlenecksChartViewController = null;
             m_CapturesListViewController.Dispose();
@@ -775,6 +778,8 @@ namespace UnityEditor
                 m_PinnedModulesScroll);
             m_PinnedModulesContainer.RegisterCallback<GeometryChangedEvent>(_ => UpdatePinnedModulesScrollFloor());
             UpdatePinnedModulesScrollFloor();
+            UpdateStaleChartsWhenViewportChanges(m_ChartsContainer.GetFirstAncestorOfType<ScrollView>());
+            UpdateStaleChartsWhenViewportChanges(m_PinnedModulesScroll);
 
             MainSplitView = rootVisualElement.Q<TwoPaneSplitView>(k_UxmlIdentifier_SplitView);
             // TwoPaneSplitView.viewDataKey is not currently supported so we need to manually persist its state.
@@ -1358,8 +1363,7 @@ namespace UnityEditor
                         window.m_LastFrameFromTick = ProfilerDriver.lastFrameIndex;
                         if (window.m_BottlenecksViewContainer?.style.display != DisplayStyle.None)
                             window.m_BottlenecksChartViewController.ReloadData();
-                        foreach (var module in window.m_AllModules)
-                            module.Update();
+                        window.UpdateModulesOnTick();
                         window.InvokeSelectedFrameIndexChangedEventIfNecessary(window.m_LastFrameFromTick);
                     }
                 }
@@ -1509,6 +1513,64 @@ namespace UnityEditor
                 DisposeFrameDataView();
             m_FrameDataView = new HierarchyFrameDataView(frameIndex, threadIndex, viewMode, profilerSortColumn, sortAscending);
             return m_FrameDataView;
+        }
+
+        internal void UpdateModulesOnTick()
+        {
+            foreach (var module in m_AllModules)
+            {
+                if (!module.active || IsChartOnScreen(module))
+                {
+                    m_ModulesWithStaleCharts.Remove(module);
+                    module.Update();
+                }
+                else
+                    m_ModulesWithStaleCharts.Add(module);
+            }
+        }
+
+        void UpdateStaleChartsOnScreen()
+        {
+            foreach (var module in m_AllModules)
+            {
+                if (m_ModulesWithStaleCharts.Contains(module) && IsChartOnScreen(module))
+                    UpdateStaleChart(module);
+            }
+        }
+
+        internal void OnBecameVisible()
+        {
+            foreach (var module in m_AllModules)
+            {
+                if (m_ModulesWithStaleCharts.Contains(module))
+                    UpdateStaleChart(module);
+            }
+        }
+
+        void UpdateStaleChart(ProfilerModule module)
+        {
+            m_ModulesWithStaleCharts.Remove(module);
+            module.ChartModelBuilder?.ResetChartState();
+            module.Update();
+        }
+
+        void UpdateStaleChartsWhenViewportChanges(ScrollView scrollView)
+        {
+            scrollView.verticalScroller.valueChanged += _ => UpdateStaleChartsOnScreen();
+            scrollView.contentViewport.RegisterCallback<GeometryChangedEvent>(_ => UpdateStaleChartsOnScreen());
+            scrollView.contentContainer.RegisterCallback<GeometryChangedEvent>(_ => UpdateStaleChartsOnScreen());
+        }
+
+        static bool IsChartOnScreen(ProfilerModule module)
+        {
+            var chartView = module.ChartViewController?.View;
+            if (chartView == null)
+                return true;
+            if (chartView.panel == null)
+                return false;
+
+            var scrollView = chartView.GetFirstAncestorOfType<ScrollView>();
+            return scrollView.contentViewport.worldBound.Overlaps(chartView.worldBound);
         }
 
         void UpdateModules()
@@ -2286,6 +2348,7 @@ namespace UnityEditor
             moduleToDelete.DeleteAllPreferences();
             // Clears the reference as well as disposing, so nothing can reach the dead controller.
             moduleToDelete.DisposeChartViewController();
+            m_ModulesWithStaleCharts.Remove(moduleToDelete);
             m_AllModules.RemoveAt(index);
 
             // m_SelectedModuleIndex is a position in m_AllModules, so removing an earlier

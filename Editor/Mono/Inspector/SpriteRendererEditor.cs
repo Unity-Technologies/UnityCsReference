@@ -218,9 +218,9 @@ namespace UnityEditor
                 EditorGUI.indentLevel--;
             }
 
-            if (PlayerSettings.meshDeformation == MeshDeformation.CPU && renderer.IsSkinned())
+            if (PlayerSettings.meshDeformation == MeshDeformation.CPU)
             {
-                EditorGUILayout.HelpBox("BlendShapes with SpriteSkin require GPU skinning. Please enable it in the Player tab in Project Settings.", MessageType.Warning);
+                EditorGUILayout.HelpBox("Blend shapes have no effect while GPU Skinning is set to CPU. To use them, set GPU Skinning to GPU or GPU (Batched) in Project Settings > Player > Other Settings.", MessageType.Warning);
             }
             if (renderer.drawMode != SpriteDrawMode.Simple)
             {

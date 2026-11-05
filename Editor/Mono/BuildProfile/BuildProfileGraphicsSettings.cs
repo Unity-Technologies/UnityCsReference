@@ -451,7 +451,7 @@ namespace UnityEditor.Build.Profile
                 else
                 {
                     profileSerializedProperty.boxedValue = profileSerializedProperty.type == k_ShaderBuildSettingsTypeName
-                        ? EditorGraphicsSettings.GetShaderBuildSettings()
+                        ? EditorGraphicsSettings.GetProjectShaderBuildSettings()
                         : globalSerializedProperty.boxedValue;
                 }
             }

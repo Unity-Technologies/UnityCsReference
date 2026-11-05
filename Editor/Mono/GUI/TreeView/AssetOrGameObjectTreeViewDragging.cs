@@ -23,6 +23,25 @@ namespace UnityEditor
         {
         }
 
+        public AssetsTreeViewDragging(TreeViewController<EntityId> treeView, EntityId previewOwnerId)
+            : base(treeView)
+        {
+            this.previewOwnerId = previewOwnerId;
+        }
+
+        // When EntityId.None, native preview is not available and falls back to text-only label.
+        internal EntityId previewOwnerId { get; }
+
+        internal DragAndDrop.PreviewData GetPreviewData(TreeViewItem<EntityId> draggedItem)
+        {
+            return new DragAndDrop.PreviewData
+            {
+                ownerId = previewOwnerId,
+                itemSize = m_TreeView.gui.GetRowRect(m_TreeView.data.GetRow(draggedItem.id), 1f).height,
+                listMode = true
+            };
+        }
+
         public override bool CanStartDrag(TreeViewItem<EntityId> targetItem, List<EntityId> draggedItemIDs, Vector2 mouseDownPosition)
         {
             // Prevent dragging of immutable root folder
@@ -39,6 +58,10 @@ namespace UnityEditor
         public override void StartDrag(TreeViewItem<EntityId> draggedItem, List<EntityId> draggedItemIDs)
         {
             DragAndDrop.PrepareStartDrag();
+            var previewData = GetPreviewData(draggedItem);
+            DragAndDrop.SetDragPreviewOwnerId(previewData.ownerId);
+            DragAndDrop.SetDragPreviewLabelStyle(previewData.labelStyle);
+            DragAndDrop.SetDragPreviewLayout(Array.Empty<float>(), previewData.itemSize, previewData.listMode, default);
 
             DragAndDrop.objectReferences = ProjectWindowUtil.GetDragAndDropObjects(draggedItem.id, draggedItemIDs);
 

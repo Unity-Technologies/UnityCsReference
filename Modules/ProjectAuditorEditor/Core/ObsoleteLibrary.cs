@@ -105,7 +105,7 @@ namespace Unity.ProjectAuditor.Editor.Core
         static void ReadFromDisk()
         {
             if (!ProjectAuditorRulesPackage.IsInstalled)
-                throw new InvalidOperationException("Install the Project Auditor Rules package before using Project Auditor");
+                throw new InvalidOperationException(ProjectAuditorRulesPackage.NotInstalledMessage);
 
             var path = Path.Combine(ProjectAuditor.s_RulesDataPath, "ObsoleteDatabase.gen.json");
 

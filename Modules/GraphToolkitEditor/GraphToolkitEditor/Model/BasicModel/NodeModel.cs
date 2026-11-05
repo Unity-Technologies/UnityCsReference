@@ -332,7 +332,8 @@ namespace Unity.GraphToolkit.Editor
 
             internal void RefreshMustSpecifySubPorts()
             {
-                m_MustSpecifySubPorts = ParentPort.IsExpandedSelf && ParentPort.AreAncestorsExpanded || RecurseHasWire(ParentPort);
+                // Matches BuildVisiblePorts: a connected port stays visible under a collapsed ancestor, so its sub ports are shown when it is expanded.
+                m_MustSpecifySubPorts = ParentPort.IsShownExpanded && (ParentPort.AreAncestorsShownExpanded || ParentPort.IsConnected()) || RecurseHasWire(ParentPort);
                 bool RecurseHasWire(PortModel portModel)
                 {
                     return portModel.SubPorts.Exists(sp => sp.IsConnected() || RecurseHasWire(sp));
@@ -397,6 +398,9 @@ namespace Unity.GraphToolkit.Editor
         protected ElementColor m_ElementColor;
 
         SubPortDefinition m_SubPortDefinition;
+
+        // Stops infinitely nested expandable ports from expanding forever. Same as the serialization depth limit.
+        const int k_MaxRecursiveExpandDepth = 10;
 
         // indicates whether we have migrated node option constants to have the correct id (with the NodeOption.k_OptionIdPrefix prefix).
         [NonSerialized]
@@ -826,6 +830,7 @@ namespace Unity.GraphToolkit.Editor
                     else
                     {
                         port.SetExpandable(false);
+                        port.SetTemporarilyExpanded(false);
                         port.ClearSubPorts();
                         portInfos.expandedPortsById.Remove(port.UniqueName);
                     }
@@ -1403,6 +1408,64 @@ namespace Unity.GraphToolkit.Editor
         }
 
         /// <summary>
+        /// Sets the expanded state of a port and of all its expandable descendant ports.
+        /// </summary>
+        /// <param name="portModel">The port whose expanded state must be changed.</param>
+        /// <param name="expanded">Whether to expand or collapse the ports.</param>
+        /// <remarks>Expanding stops after <see cref="k_MaxRecursiveExpandDepth"/> levels, because ports whose sub ports are defined on expand can nest indefinitely.</remarks>
+        internal void SetPortExpandedRecursively(PortModel portModel, bool expanded)
+        {
+            SetPortExpandedRecursively(portModel, expanded, 0);
+        }
+
+        void SetPortExpandedRecursively(PortModel portModel, bool expanded, int depth)
+        {
+            if (!portModel.IsExpandable)
+                return;
+
+            // A collapsed port can still have expanded descendants, so the recursion continues even when the port is already in the requested state.
+            if (portModel.IsExpandedSelf != expanded)
+                SetPortExpanded(portModel, expanded);
+
+            if (expanded && depth >= k_MaxRecursiveExpandDepth)
+                return;
+
+            // The sub ports are read after SetPortExpanded, because expanding a port can define them.
+            foreach (var subPort in portModel.SubPorts)
+                SetPortExpandedRecursively(subPort, expanded, depth + 1);
+        }
+
+        /// <summary>
+        /// Shows or hides the sub ports of a port without changing its expanded state.
+        /// </summary>
+        /// <param name="portModel">The port to temporarily expand or collapse.</param>
+        /// <param name="expanded">Whether to temporarily expand the port.</param>
+        /// <remarks>The temporary state is not serialized and not undoable. It is used to expand ports while a wire is dragged over them.</remarks>
+        internal void SetPortTemporarilyExpanded(PortModel portModel, bool expanded)
+        {
+            if (portModel.NodeModel != this || !portModel.IsExpandable || portModel.IsTemporarilyExpanded == expanded)
+                return;
+
+            // The port may have been replaced if the node was redefined while it was temporarily expanded.
+            ref var portInfos = ref GetPortInfos(portModel.Direction);
+            if (!portInfos.portsById.TryGetValue(portModel.UniqueName, out var currentPort) || currentPort != portModel)
+                return;
+
+            // The temporary state is not saved, so it must not make the asset dirty.
+            using var assetDirtyScope = GraphModel?.BlockAssetDirtyScope();
+
+            portModel.SetTemporarilyExpanded(expanded);
+
+            if (portModel.SubPorts.Count > 0)
+                portInfos.orderedVisiblePorts.Clear();
+            else
+                RedefinePort(portModel);
+
+            GraphModel?.CurrentGraphChangeDescription.AddChangedModel(this, ChangeHint.Data);
+            GraphModel?.CurrentGraphChangeDescription.AddChangedModel(portModel, ChangeHint.Data);
+        }
+
+        /// <summary>
         /// Checks whether this node can be itemized.
         /// </summary>
         /// <returns>True if the node can be itemized, false if not.</returns>
@@ -1538,7 +1601,7 @@ namespace Unity.GraphToolkit.Editor
             {
                 foreach (var port in portInfos.portsById.Values)
                 {
-                    if (port.ParentPort == null || port.AreAncestorsExpanded || port.IsConnected() || port.ParentPort.IsConnected() && port.ParentPort.IsExpandedSelf)
+                    if (port.ParentPort == null || port.AreAncestorsShownExpanded || port.IsConnected() || port.ParentPort.IsConnected() && port.ParentPort.IsShownExpanded)
                         portInfos.orderedVisiblePorts.Add(port);
                 }
             }

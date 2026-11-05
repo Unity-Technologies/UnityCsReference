@@ -45,10 +45,12 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         private readonly IClientProxy m_ClientProxy;
         private readonly IApplicationProxy m_Application;
-        public UpmCacheRootClient(IClientProxy clientProxy, IApplicationProxy applicationProxy)
+        private readonly IDateTimeProxy m_DateTimeProxy;
+        public UpmCacheRootClient(IClientProxy clientProxy, IApplicationProxy applicationProxy, IDateTimeProxy dateTimeProxy)
         {
             m_ClientProxy = RegisterDependency(clientProxy);
             m_Application = RegisterDependency(applicationProxy);
+            m_DateTimeProxy = RegisterDependency(dateTimeProxy);
         }
 
         public void GetCacheRoot()
@@ -87,7 +89,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                 return operation;
 
             operation = new T();
-            operation.ResolveDependencies(m_ClientProxy, m_Application);
+            operation.ResolveDependencies(m_ClientProxy, m_Application, m_DateTimeProxy);
             return operation;
         }
 
@@ -97,9 +99,9 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         public void OnAfterDeserialize()
         {
-            m_GetCacheRootOperation?.ResolveDependencies(m_ClientProxy, m_Application);
-            m_SetCacheRootOperation?.ResolveDependencies(m_ClientProxy, m_Application);
-            m_ClearCacheRootOperation?.ResolveDependencies(m_ClientProxy, m_Application);
+            m_GetCacheRootOperation?.ResolveDependencies(m_ClientProxy, m_Application, m_DateTimeProxy);
+            m_SetCacheRootOperation?.ResolveDependencies(m_ClientProxy, m_Application, m_DateTimeProxy);
+            m_ClearCacheRootOperation?.ResolveDependencies(m_ClientProxy, m_Application, m_DateTimeProxy);
         }
     }
 }

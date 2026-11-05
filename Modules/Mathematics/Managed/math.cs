@@ -4129,6 +4129,73 @@ namespace Unity.Mathematics
         /// <param name="test">Bool value to choose between falseValue and trueValue.</param>
         /// <returns>The selection between falseValue and trueValue according to bool test.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static bool select(bool falseValue, bool trueValue, bool test) { return test ? trueValue : falseValue; }
+
+        /// <summary>Returns trueValue if test is true, falseValue otherwise.</summary>
+        /// <param name="falseValue">Value to use if test is false.</param>
+        /// <param name="trueValue">Value to use if test is true.</param>
+        /// <param name="test">Bool value to choose between falseValue and trueValue.</param>
+        /// <returns>The selection between falseValue and trueValue according to bool test.</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static bool2 select(bool2 falseValue, bool2 trueValue, bool test) { return test ? trueValue : falseValue; }
+
+        /// <summary>Returns trueValue if test is true, falseValue otherwise.</summary>
+        /// <param name="falseValue">Value to use if test is false.</param>
+        /// <param name="trueValue">Value to use if test is true.</param>
+        /// <param name="test">Bool value to choose between falseValue and trueValue.</param>
+        /// <returns>The selection between falseValue and trueValue according to bool test.</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static bool3 select(bool3 falseValue, bool3 trueValue, bool test) { return test ? trueValue : falseValue; }
+
+        /// <summary>Returns trueValue if test is true, falseValue otherwise.</summary>
+        /// <param name="falseValue">Value to use if test is false.</param>
+        /// <param name="trueValue">Value to use if test is true.</param>
+        /// <param name="test">Bool value to choose between falseValue and trueValue.</param>
+        /// <returns>The selection between falseValue and trueValue according to bool test.</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static bool4 select(bool4 falseValue, bool4 trueValue, bool test) { return test ? trueValue : falseValue; }
+
+
+        /// <summary>
+        /// Returns a componentwise selection between two bool2 vectors falseValue and trueValue based on a bool2 selection mask test.
+        /// Per component, the component from trueValue is selected when test is true, otherwise the component from falseValue is selected.
+        /// </summary>
+        /// <param name="falseValue">Values to use if test is false.</param>
+        /// <param name="trueValue">Values to use if test is true.</param>
+        /// <param name="test">Selection mask to choose between falseValue and trueValue.</param>
+        /// <returns>The componentwise selection between falseValue and trueValue according to selection mask test.</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static bool2 select(bool2 falseValue, bool2 trueValue, bool2 test) { return new bool2(test.x ? trueValue.x : falseValue.x, test.y ? trueValue.y : falseValue.y); }
+
+        /// <summary>
+        /// Returns a componentwise selection between two bool3 vectors falseValue and trueValue based on a bool3 selection mask test.
+        /// Per component, the component from trueValue is selected when test is true, otherwise the component from falseValue is selected.
+        /// </summary>
+        /// <param name="falseValue">Values to use if test is false.</param>
+        /// <param name="trueValue">Values to use if test is true.</param>
+        /// <param name="test">Selection mask to choose between falseValue and trueValue.</param>
+        /// <returns>The componentwise selection between falseValue and trueValue according to selection mask test.</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static bool3 select(bool3 falseValue, bool3 trueValue, bool3 test) { return new bool3(test.x ? trueValue.x : falseValue.x, test.y ? trueValue.y : falseValue.y, test.z ? trueValue.z : falseValue.z); }
+
+        /// <summary>
+        /// Returns a componentwise selection between two bool4 vectors falseValue and trueValue based on a bool4 selection mask test.
+        /// Per component, the component from trueValue is selected when test is true, otherwise the component from falseValue is selected.
+        /// </summary>
+        /// <param name="falseValue">Values to use if test is false.</param>
+        /// <param name="trueValue">Values to use if test is true.</param>
+        /// <param name="test">Selection mask to choose between falseValue and trueValue.</param>
+        /// <returns>The componentwise selection between falseValue and trueValue according to selection mask test.</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static bool4 select(bool4 falseValue, bool4 trueValue, bool4 test) { return new bool4(test.x ? trueValue.x : falseValue.x, test.y ? trueValue.y : falseValue.y, test.z ? trueValue.z : falseValue.z, test.w ? trueValue.w : falseValue.w); }
+
+
+        /// <summary>Returns trueValue if test is true, falseValue otherwise.</summary>
+        /// <param name="falseValue">Value to use if test is false.</param>
+        /// <param name="trueValue">Value to use if test is true.</param>
+        /// <param name="test">Bool value to choose between falseValue and trueValue.</param>
+        /// <returns>The selection between falseValue and trueValue according to bool test.</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static int select(int falseValue, int trueValue, bool test) { return test ? trueValue : falseValue; }
 
         /// <summary>Returns trueValue if test is true, falseValue otherwise.</summary>
@@ -4157,7 +4224,7 @@ namespace Unity.Mathematics
 
 
         /// <summary>
-        /// Returns a componentwise selection between two double4 vectors falseValue and trueValue based on a bool4 selection mask test.
+        /// Returns a componentwise selection between two int2 vectors falseValue and trueValue based on a bool2 selection mask test.
         /// Per component, the component from trueValue is selected when test is true, otherwise the component from falseValue is selected.
         /// </summary>
         /// <param name="falseValue">Values to use if test is false.</param>
@@ -4168,7 +4235,7 @@ namespace Unity.Mathematics
         public static int2 select(int2 falseValue, int2 trueValue, bool2 test) { return new int2(test.x ? trueValue.x : falseValue.x, test.y ? trueValue.y : falseValue.y); }
 
         /// <summary>
-        /// Returns a componentwise selection between two double4 vectors falseValue and trueValue based on a bool4 selection mask test.
+        /// Returns a componentwise selection between two int3 vectors falseValue and trueValue based on a bool3 selection mask test.
         /// Per component, the component from trueValue is selected when test is true, otherwise the component from falseValue is selected.
         /// </summary>
         /// <param name="falseValue">Values to use if test is false.</param>
@@ -4179,7 +4246,7 @@ namespace Unity.Mathematics
         public static int3 select(int3 falseValue, int3 trueValue, bool3 test) { return new int3(test.x ? trueValue.x : falseValue.x, test.y ? trueValue.y : falseValue.y, test.z ? trueValue.z : falseValue.z); }
 
         /// <summary>
-        /// Returns a componentwise selection between two double4 vectors falseValue and trueValue based on a bool4 selection mask test.
+        /// Returns a componentwise selection between two int4 vectors falseValue and trueValue based on a bool4 selection mask test.
         /// Per component, the component from trueValue is selected when test is true, otherwise the component from falseValue is selected.
         /// </summary>
         /// <param name="falseValue">Values to use if test is false.</param>
@@ -4224,7 +4291,7 @@ namespace Unity.Mathematics
 
 
         /// <summary>
-        /// Returns a componentwise selection between two double4 vectors falseValue and trueValue based on a bool4 selection mask test.
+        /// Returns a componentwise selection between two uint2 vectors falseValue and trueValue based on a bool2 selection mask test.
         /// Per component, the component from trueValue is selected when test is true, otherwise the component from falseValue is selected.
         /// </summary>
         /// <param name="falseValue">Values to use if test is false.</param>
@@ -4235,7 +4302,7 @@ namespace Unity.Mathematics
         public static uint2 select(uint2 falseValue, uint2 trueValue, bool2 test) { return new uint2(test.x ? trueValue.x : falseValue.x, test.y ? trueValue.y : falseValue.y); }
 
         /// <summary>
-        /// Returns a componentwise selection between two double4 vectors falseValue and trueValue based on a bool4 selection mask test.
+        /// Returns a componentwise selection between two uint3 vectors falseValue and trueValue based on a bool3 selection mask test.
         /// Per component, the component from trueValue is selected when test is true, otherwise the component from falseValue is selected.
         /// </summary>
         /// <param name="falseValue">Values to use if test is false.</param>
@@ -4246,7 +4313,7 @@ namespace Unity.Mathematics
         public static uint3 select(uint3 falseValue, uint3 trueValue, bool3 test) { return new uint3(test.x ? trueValue.x : falseValue.x, test.y ? trueValue.y : falseValue.y, test.z ? trueValue.z : falseValue.z); }
 
         /// <summary>
-        /// Returns a componentwise selection between two double4 vectors falseValue and trueValue based on a bool4 selection mask test.
+        /// Returns a componentwise selection between two uint4 vectors falseValue and trueValue based on a bool4 selection mask test.
         /// Per component, the component from trueValue is selected when test is true, otherwise the component from falseValue is selected.
         /// </summary>
         /// <param name="falseValue">Values to use if test is false.</param>
@@ -4308,7 +4375,7 @@ namespace Unity.Mathematics
 
 
         /// <summary>
-        /// Returns a componentwise selection between two double4 vectors falseValue and trueValue based on a bool4 selection mask test.
+        /// Returns a componentwise selection between two float2 vectors falseValue and trueValue based on a bool2 selection mask test.
         /// Per component, the component from trueValue is selected when test is true, otherwise the component from falseValue is selected.
         /// </summary>
         /// <param name="falseValue">Values to use if test is false.</param>
@@ -4319,7 +4386,7 @@ namespace Unity.Mathematics
         public static float2 select(float2 falseValue, float2 trueValue, bool2 test) { return new float2(test.x ? trueValue.x : falseValue.x, test.y ? trueValue.y : falseValue.y); }
 
         /// <summary>
-        /// Returns a componentwise selection between two double4 vectors falseValue and trueValue based on a bool4 selection mask test.
+        /// Returns a componentwise selection between two float3 vectors falseValue and trueValue based on a bool3 selection mask test.
         /// Per component, the component from trueValue is selected when test is true, otherwise the component from falseValue is selected.
         /// </summary>
         /// <param name="falseValue">Values to use if test is false.</param>
@@ -4330,7 +4397,7 @@ namespace Unity.Mathematics
         public static float3 select(float3 falseValue, float3 trueValue, bool3 test) { return new float3(test.x ? trueValue.x : falseValue.x, test.y ? trueValue.y : falseValue.y, test.z ? trueValue.z : falseValue.z); }
 
         /// <summary>
-        /// Returns a componentwise selection between two double4 vectors falseValue and trueValue based on a bool4 selection mask test.
+        /// Returns a componentwise selection between two float4 vectors falseValue and trueValue based on a bool4 selection mask test.
         /// Per component, the component from trueValue is selected when test is true, otherwise the component from falseValue is selected.
         /// </summary>
         /// <param name="falseValue">Values to use if test is false.</param>
@@ -4374,7 +4441,7 @@ namespace Unity.Mathematics
         public static double4 select(double4 falseValue, double4 trueValue, bool test) { return test ? trueValue : falseValue; }
 
         /// <summary>
-        /// Returns a componentwise selection between two double4 vectors falseValue and trueValue based on a bool4 selection mask test.
+        /// Returns a componentwise selection between two double2 vectors falseValue and trueValue based on a bool2 selection mask test.
         /// Per component, the component from trueValue is selected when test is true, otherwise the component from falseValue is selected.
         /// </summary>
         /// <param name="falseValue">Values to use if test is false.</param>
@@ -4385,7 +4452,7 @@ namespace Unity.Mathematics
         public static double2 select(double2 falseValue, double2 trueValue, bool2 test) { return new double2(test.x ? trueValue.x : falseValue.x, test.y ? trueValue.y : falseValue.y); }
 
         /// <summary>
-        /// Returns a componentwise selection between two double4 vectors falseValue and trueValue based on a bool4 selection mask test.
+        /// Returns a componentwise selection between two double3 vectors falseValue and trueValue based on a bool3 selection mask test.
         /// Per component, the component from trueValue is selected when test is true, otherwise the component from falseValue is selected.
         /// </summary>
         /// <param name="falseValue">Values to use if test is false.</param>

@@ -21,6 +21,8 @@ namespace UnityEditor
 {
     internal static partial class SpriteUtility
     {
+        internal const float k_DefaultAnimationFrameRate = 12;
+
         static class SpriteUtilityStrings
         {
             public static readonly GUIContent saveAnimDialogMessage = L10n.TextContent("Create a new animation for the game object '{0}':", null, null, null);
@@ -325,7 +327,7 @@ namespace UnityEditor
         internal static void AddSpriteAnimationCurveToClip(AnimationClip newClip, Object[] frames, System.Type spriteComponentType)
         {
             // TODO Default framerate be exposed to user?
-            newClip.frameRate = 12;
+            newClip.frameRate = k_DefaultAnimationFrameRate;
 
             // Add keyframes
             ObjectReferenceKeyframe[] keyframes = new ObjectReferenceKeyframe[frames.Length];

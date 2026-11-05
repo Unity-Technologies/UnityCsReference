@@ -16,10 +16,13 @@ namespace UnityEditor.Presets
         const string k_PresetTypeSearch = "PresetTypeSearchString";
         const int k_MaxWindowHeight = 395 - 80;
 
-        [NoAutoStaticsCleanup] // persists dropdown selection/expansion state across reloads by design
+        [NoAutoStaticsCleanup] // exempt from automatic statics cleanup so selection and scroll offsets survive Play Mode
         static AdvancedDropdownState s_State = new AdvancedDropdownState();
 
         protected override bool setInitialSelectionPosition { get; } = false;
+
+        // Show() restores a saved search, which would otherwise keep the retained levels behind the results
+        protected override bool restoreNavigationOnOpen { get; } = false;
 
         internal static bool Show(Rect rect, Action<PresetType> onSelection, string search = null)
         {

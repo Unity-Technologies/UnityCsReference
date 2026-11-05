@@ -38,6 +38,12 @@ namespace UnityEditor
         {
             height = -1;
 
+            if (!CanBeExpandedViaAFoldout())
+            {
+                height = EditorGUIUtility.singleLineHeight;
+                return true;
+            }
+
             // Don't use optimizedGUI for audio filters
             var behaviour = target as MonoBehaviour;
             if (behaviour != null && AudioUtil.HasAudioCallback(behaviour) && AudioUtil.GetCustomFilterChannelCount(behaviour) > 0)
@@ -285,14 +291,10 @@ namespace UnityEditor
             m_OptimizedBlockState = resetState;
         }
 
-        internal void OnDisableINTERNAL()
+        internal override void OnDisableINTERNAL()
         {
             ResetOptimizedBlock();
-            CleanupPropertyEditor();
-            propertyHandlerCache.Dispose();
-
-            if (m_DummyPreview != null && m_DummyPreview is not Editor)
-                m_DummyPreview.Cleanup();
+            base.OnDisableINTERNAL();
         }
 
         internal static bool ObjectIsMonoBehaviourOrScriptableObjectWithoutScript(Object obj)
@@ -330,6 +332,13 @@ namespace UnityEditor
             if (MissingSerializeReference(target))
             {
                 root.Add(new HelpBox(GetMissingSerializeRefererenceMessageContainer(), HelpBoxMessageType.Warning));
+            }
+
+            if (!CanBeExpandedViaAFoldout())
+            {
+                var cont = new Label(L10n.Tr("No configurable settings available.", null)) { style = { paddingBottom = 8 } };
+                cont.AddToClassList("unity-inspector-element editor-element-inspector");
+                root.Add(cont);
             }
 
             UIElements.InspectorElement.FillDefaultInspector(root, serializedObject, this);

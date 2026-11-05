@@ -158,6 +158,7 @@ namespace UnityEditor.DeviceSimulation
         public bool supportsGraphicsFence;
         public bool supportsAsyncGPUReadback;
         public bool supportsParallelPSOCreation;
+        public bool supportsDepthClamp;
         public bool supportsRayTracing;
         public bool supportsRayTracingShaders;
         public bool supportsInlineRayTracing;

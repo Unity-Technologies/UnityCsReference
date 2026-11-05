@@ -25,6 +25,7 @@ using UnityEngine.Bindings;
 using UnityEngine.Scripting;
 using Object = UnityEngine.Object;
 using UnityEngine.Pool;
+using UnityEngine.Rendering;
 
 namespace UnityEditor
 {
@@ -767,6 +768,12 @@ namespace UnityEditor
                     break;
                 case ".asmref":
                     icon = EditorGUIUtility.IconContent<AssemblyDefinitionReferenceAsset>().image as Texture2D;
+                    break;
+                case ".compute":
+                    icon = EditorGUIUtility.IconContent<ComputeShader>().image as Texture2D;
+                    break;
+                case ".raytrace":
+                    icon = EditorGUIUtility.IconContent<RayTracingShader>().image as Texture2D;
                     break;
                 default:
                     icon = EditorGUIUtility.IconContent<TextAsset>().image as Texture2D;

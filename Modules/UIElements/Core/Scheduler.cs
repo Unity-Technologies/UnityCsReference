@@ -101,6 +101,9 @@ namespace UnityEngine.UIElements
 
         public long endTimeMs { get; private set; }
 
+        // A scheduler rather than a flag: an item pending removal from one panel's scheduler can already be on another.
+        internal TimerEventScheduler containingScheduler;
+
         public ScheduledItem(long startMs)
         {
             ResetStartTime(startMs);
@@ -199,8 +202,9 @@ namespace UnityEngine.UIElements
                 if (m_UnscheduleTransactions.Remove(scheduledItem))
                 {
                     // The item was unscheduled then rescheduled in the same transaction.
+                    scheduledItem.containingScheduler = this;   // another scheduler may have taken and released it meanwhile
                 }
-                else if (m_ScheduledItems.Contains(scheduledItem) || m_ScheduleTransactions.Contains(scheduledItem))
+                else if (IsInScheduledItems(scheduledItem) || m_ScheduleTransactions.Contains(scheduledItem))
                 {
                     throw new ArgumentException(string.Concat("Cannot schedule function ", scheduledItem, " more than once"));
                 }
@@ -211,13 +215,14 @@ namespace UnityEngine.UIElements
             }
             else
             {
-                if (m_ScheduledItems.Contains(scheduledItem))
+                if (IsInScheduledItems(scheduledItem))
                 {
                     throw new ArgumentException(string.Concat("Cannot schedule function ", scheduledItem, " more than once"));
                 }
                 else
                 {
                     m_ScheduledItems.Add(scheduledItem);
+                    scheduledItem.containingScheduler = this;
                 }
             }
         }
@@ -264,11 +269,23 @@ namespace UnityEngine.UIElements
             return scheduleItem;
         }
 
+        private bool IsInScheduledItems(ScheduledItem item)
+        {
+            return item.containingScheduler == this;
+        }
+
+        private void ReleaseItem(ScheduledItem item)
+        {
+            if (item.containingScheduler == this)
+                item.containingScheduler = null;
+        }
+
         private bool RemovedScheduledItemAt(int index)
         {
             if (index >= 0)
             {
                 if (index <= m_LastUpdatedIndex) --m_LastUpdatedIndex;
+                ReleaseItem(m_ScheduledItems[index]);
                 m_ScheduledItems.RemoveAt(index);
 
                 return true;
@@ -291,7 +308,7 @@ namespace UnityEngine.UIElements
                     {
                         // A item has been scheduled then unscheduled in the same transaction. which is valid.
                     }
-                    else if (m_ScheduledItems.Contains(sItem))
+                    else if (IsInScheduledItems(sItem))
                     {
                         // Only add it to m_UnscheduleTransactions if it is in m_ScheduledItems.
                         // if it was successfully removed from m_ScheduleTransaction we are fine.
@@ -334,6 +351,27 @@ namespace UnityEngine.UIElements
             return m_ScheduleTransactions.Remove(sItem) || RemovedScheduledItemAt(m_ScheduledItems.IndexOf(sItem));
         }
 
+        private void RemoveUnscheduledTransactionsFromScheduledItems()
+        {
+            int lastUpdatedIndex = m_LastUpdatedIndex;
+            int write = 0;
+            for (int read = 0; read < m_ScheduledItems.Count; ++read)
+            {
+                var item = m_ScheduledItems[read];
+                if (m_UnscheduleTransactions.Contains(item))
+                {
+                    ReleaseItem(item);
+                    if (read <= lastUpdatedIndex)
+                        --m_LastUpdatedIndex;
+                    continue;
+                }
+
+                m_ScheduledItems[write++] = item;
+            }
+
+            m_ScheduledItems.RemoveRange(write, m_ScheduledItems.Count - write);
+        }
+
         // For UI Test Framework.
         public long FrameCount
         {
@@ -363,14 +401,6 @@ namespace UnityEngine.UIElements
 
                 for (int i = 0; i < itemsCount; i++)
                 {
-                    currentTime = panel.TimeSinceStartupMs();
-
-                    if (!disableThrottling && currentTime >= maxTime)
-                    {
-                        //We spent too much time on this frame updating items, we break for now, we'll resume next frame
-                        incrementFrame = false;
-                        break;
-                    }
                     int index = startIndex + i;
                     if (index >= itemsCount)
                     {
@@ -381,11 +411,13 @@ namespace UnityEngine.UIElements
 
                     bool unscheduleItem = false;
 
-                    if (currentTime - scheduledItem.delayMs >= scheduledItem.startMs)
+                    bool isDue = currentTime - scheduledItem.delayMs >= scheduledItem.startMs;
+
+                    if (isDue)
                     {
                         TimerState timerState = new TimerState { start = scheduledItem.startMs, now = currentTime };
 
-                        if (!m_UnscheduleTransactions.Contains(scheduledItem)) // Don't execute items that have been marked for future removal
+                        if (m_UnscheduleTransactions.Count == 0 || !m_UnscheduleTransactions.Contains(scheduledItem)) // Don't execute items that have been marked for future removal
                         {
                             try
                             {
@@ -410,17 +442,31 @@ namespace UnityEngine.UIElements
                         }
                     }
 
-                    if (unscheduleItem || (scheduledItem.endTimeMs > 0 && currentTime > scheduledItem.endTimeMs))
+                    bool isExpired = scheduledItem.endTimeMs > 0 && currentTime > scheduledItem.endTimeMs;
+
+                    if (unscheduleItem || isExpired)
                     {
                         // if the scheduledItem has been unscheduled explicitly in PerformTimerUpdate then
                         // it will be in m_UnscheduleTransactions and we shouldn't unschedule it again
-                        if (!m_UnscheduleTransactions.Contains(scheduledItem))
+                        if (m_UnscheduleTransactions.Count == 0 || !m_UnscheduleTransactions.Contains(scheduledItem))
                         {
                             Unschedule(scheduledItem);
                         }
                     }
 
                     m_LastUpdatedIndex = index;
+
+                    if ((isDue || isExpired) && i + 1 < itemsCount)   // time only moves meaningfully after a callback or an unschedule
+                    {
+                        currentTime = panel.TimeSinceStartupMs();
+
+                        if (!disableThrottling && currentTime >= maxTime)
+                        {
+                            //We spent too much time on this frame updating items, we break for now, we'll resume next frame
+                            incrementFrame = false;
+                            break;
+                        }
+                    }
                 }
             }
             finally
@@ -428,9 +474,16 @@ namespace UnityEngine.UIElements
                 m_TransactionMode = false;
 
                 // Rule: remove unscheduled transactions first
-                foreach (var item in m_UnscheduleTransactions)
+                if (m_UnscheduleTransactions.Count > 1)
                 {
-                    PrivateUnSchedule(item);
+                    RemoveUnscheduledTransactionsFromScheduledItems();
+                }
+                else
+                {
+                    foreach (var item in m_UnscheduleTransactions)
+                    {
+                        PrivateUnSchedule(item);
+                    }
                 }
                 m_UnscheduleTransactions.Clear();
 
