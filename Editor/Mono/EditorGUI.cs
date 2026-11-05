@@ -708,6 +708,7 @@ namespace UnityEditor
                 }
 
                 controlID = 0;
+                SelectNone();
                 s_ActuallyEditing = false;
                 s_EditingWasCompleted = false;
                 s_AllowContextCutOrPaste = true;

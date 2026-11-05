@@ -32,6 +32,7 @@ namespace UnityEngine.UIElements.UIR
         public void DrawRectangle(MeshGenerator.RectangleParams rectParams, DrawPhase phase = DrawPhase.Content);
         public void DrawGradientRectangle(MeshGenerator.RectangleParams rectParams, VectorImage gradientVI, BackgroundGradient gradient, Rect gradientRect, DrawPhase phase = DrawPhase.Content);
         public void DrawBorder(MeshGenerator.BorderParams borderParams, DrawPhase phase = DrawPhase.Content);
+        public void DrawBoxShadow(MeshBuilderNative.NativeBoxShadowParams boxShadowParams, Texture profile, DrawPhase phase = DrawPhase.Content);
         public void DrawVectorImage(VectorImage vectorImage, Vector2 offset, Angle rotationAngle, Vector2 scale, int userData = 0);
         public void DrawRectangleRepeat(MeshGenerator.RectangleParams rectParams, Rect totalRect, float scaledPixelsPerPoint, DrawPhase phase = DrawPhase.Content);
 
@@ -1131,6 +1132,20 @@ namespace UnityEngine.UIElements.UIR
             }
         }
 
+        public void DrawBoxShadow(MeshBuilderNative.NativeBoxShadowParams boxShadowParams, Texture profile, DrawPhase phase = DrawPhase.Content)
+        {
+            var jobParams = new TessellationJobParameters()
+            {
+                isBoxShadowJob = true,
+                boxShadowParams = boxShadowParams,
+                boxShadowProfile = m_GCHandlePool.GetIntPtr(profile),
+                phase = phase
+            };
+            m_MeshGenerationContext.InsertUnsafeMeshGenerationNode(out var unsafeNode);
+            jobParams.node = unsafeNode;
+            m_TesselationJobParameters.Add(jobParams);
+        }
+
         public void DrawVectorImage(VectorImage vectorImage, Vector2 offset, Angle rotationAngle, Vector2 scale, int userData = 0)
         {
             if (vectorImage == null || vectorImage.vertices.Length == 0 || vectorImage.indices.Length == 0)
@@ -1850,9 +1865,12 @@ namespace UnityEngine.UIElements.UIR
         internal struct TessellationJobParameters
         {
             public bool isBorderJob;
+            public bool isBoxShadowJob;
             public DrawPhase phase;
             public MeshBuilderNative.NativeRectParams rectParams;
             public MeshGenerator.BorderParams borderParams;
+            public MeshBuilderNative.NativeBoxShadowParams boxShadowParams;
+            public IntPtr boxShadowProfile;
             public UnsafeMeshGenerationNode node;
             // Non-zero when the rect should be rendered as a gradient. Post-tessellation,
             // per-vertex UVs are rewritten from element-fraction to gradient-parameter space
@@ -1875,6 +1893,11 @@ namespace UnityEngine.UIElements.UIR
                 if (jobParams.isBorderJob)
                 {
                     DrawBorder(jobParams.node, ref jobParams.borderParams, jobParams.phase);
+                }
+                else if (jobParams.isBoxShadowJob)
+                {
+                    DrawMeshData(jobParams.node, MeshBuilderNative.MakeBoxShadow(ref jobParams.boxShadowParams),
+                        ExtractHandle<Texture>(jobParams.boxShadowProfile), TextureOptions.SkipDynamicAtlas, jobParams.phase);
                 }
                 else
                 {
@@ -1900,8 +1923,11 @@ namespace UnityEngine.UIElements.UIR
             void DrawBorder(UnsafeMeshGenerationNode node, ref BorderParams borderParams, DrawPhase phase)
             {
                 borderParams.ToNativeParams(out MeshBuilderNative.NativeBorderParams nativeBorderParams);
-                var meshData = MeshBuilderNative.MakeBorder(ref nativeBorderParams);
+                DrawMeshData(node, MeshBuilderNative.MakeBorder(ref nativeBorderParams), null, TextureOptions.None, phase);
+            }
 
+            void DrawMeshData(UnsafeMeshGenerationNode node, MeshWriteDataInterface meshData, Texture texture, TextureOptions textureOptions, DrawPhase phase)
+            {
                 if (meshData.vertexCount == 0 || meshData.indexCount == 0)
                     return;
 
@@ -1922,7 +1948,7 @@ namespace UnityEngine.UIElements.UIR
                 vertices.CopyFrom(nativeVertices);
                 indices.CopyFrom(nativeIndices);
 
-                node.DrawMesh(vertices, indices, null, TextureOptions.None, phase);
+                node.DrawMesh(vertices, indices, texture, textureOptions, phase);
             }
 
             void DrawRectangle(UnsafeMeshGenerationNode node, ref MeshBuilderNative.NativeRectParams rectParams, Texture tex, DrawPhase phase)

@@ -461,14 +461,22 @@ namespace UnityEditor.UIElements
         static readonly Color k_DefaultColor = Color.clear;
         public override Color FromString(string value)
         {
+            TryFromString(value, out var color);
+            return color;
+        }
+
+        // False when the value isn't a color, in which case color is transparent
+        public static bool TryFromString(string value, out Color color)
+        {
+            color = k_DefaultColor;
             if (string.IsNullOrEmpty(value))
-                return k_DefaultColor;
+                return false;
 
-            if (ColorUtility.TryParseHtmlString(value, out var res))
-                return res;
+            if (ColorUtility.TryParseHtmlString(value, out color))
+                return true;
 
-            if (StyleSheetColor.TryGetColor(value, out res))
-                return res;
+            if (StyleSheetColor.TryGetColor(value, out color))
+                return true;
 
             // Use AsSpan and slice directly without allocating a new string
             var spanValue = value.AsSpan();
@@ -478,7 +486,10 @@ namespace UnityEditor.UIElements
             var endIndex = spanValue.IndexOf(')');
 
             if (startIndex <= 0 || endIndex <= 0 || endIndex <= startIndex)
-                return k_DefaultColor;
+            {
+                color = k_DefaultColor;
+                return false;
+            }
 
             // Slice the span directly between the parentheses and trim
             var spanStr = spanValue.Slice(startIndex, endIndex - startIndex).Trim();
@@ -489,18 +500,22 @@ namespace UnityEditor.UIElements
             // Using rgb with 4 values is invalid and using rgba with 3 values is invalid
             if ((spanValue.IndexOf("rgba(", StringComparison.OrdinalIgnoreCase) >= 0 && valueCount != 4) ||
                 (spanValue.IndexOf("rgb(", StringComparison.OrdinalIgnoreCase) >= 0 && valueCount != 3))
-                return k_DefaultColor;
+            {
+                color = k_DefaultColor;
+                return false;
+            }
 
             // If alpha is outside of the range [0, 1], clamp it
             if (valueCount == 4)
                 floatValues[3] = Mathf.Clamp(floatValues[3], 0, 1);
 
-            return new Color(
+            color = new Color(
                 floatValues[0]/255f,
                 floatValues[1]/255f,
                 floatValues[2]/255f,
                 valueCount == 3 ? 1 : floatValues[3]
             );
+            return true;
         }
 
         public override string ToString(Color value)
@@ -967,31 +982,35 @@ namespace UnityEditor.UIElements
             if (value == null)
                 throw new ArgumentOutOfRangeException(nameof(value), "Cannot parse a null string to a Gradient.");
 
-            var index = value.IndexOf(":");
+            var index = value.IndexOf(":", StringComparison.Ordinal);
             if (index == -1)
                 throw new ArgumentOutOfRangeException(nameof(value), "Gradient mode does not have the correct format.");
 
-            var mode = value[..index];
+            var mode = value[..index].Trim();
             var keys = value.Remove(0, index + 1);
             var parsedMode = Enum.TryParse<GradientMode>(mode, out var gradientMode);
             if (!parsedMode)
                 throw new ArgumentOutOfRangeException(nameof(value), "Gradient mode cannot be parsed correctly.");
 
-            var gradientItems = keys.Split('+');
-            if (gradientItems.Length <= 0)
+            // Only alpha values can contain a '+' (exponent): times are normalized and colors are hex.
+            var alphaKeysSeparator = keys.IndexOf("+", StringComparison.Ordinal);
+            if (alphaKeysSeparator < 0)
                 throw new ArgumentOutOfRangeException(nameof(value), "Gradient's keys do not have the correct format.");
 
             using var poolColor = ListPool<GradientColorKey>.Get(out var gradientColorKeys);
-            var colorKeyItems = gradientItems[0].Split(';');
-            foreach (var item in colorKeyItems)
+            var colorKeyItems = keys[..alphaKeysSeparator].Split(';');
+            foreach (var untrimmedItem in colorKeyItems)
             {
-                var valueList = item.Trim().Substring(1, item.Length - 2); // Remove brackets
-                var colorKeys = valueList.Split(',');
-                if (colorKeys.Length <= 0)
-                    throw new ArgumentOutOfRangeException(nameof(value), "Gradient's color key does not have enough values.");
+                var item = untrimmedItem.Trim();
+                if (item.Length < 2 || item[0] != '{' || item[^1] != '}')
+                    throw new ArgumentOutOfRangeException(nameof(value), "Gradient's color key does not have the correct format.");
+
+                var colorKeys = item[1..^1].Split(',');
+                if (colorKeys.Length != 2)
+                    throw new ArgumentOutOfRangeException(nameof(value), "Gradient's color key does not have the expected number of values.");
 
                 var success = UxmlUtility.TryParseFloat(colorKeys[0], out var time);
-                success &= ColorUtility.TryParseHtmlString(colorKeys[1], out var color);
+                success &= ColorUtility.TryParseHtmlString(colorKeys[1].Trim(), out var color);
 
                 if (!success)
                     throw new ArgumentOutOfRangeException(nameof(value), "Gradient's color key could not be parsed correctly.");
@@ -1000,13 +1019,16 @@ namespace UnityEditor.UIElements
             }
 
             using var poolAlpha = ListPool<GradientAlphaKey>.Get(out var gradientAlphaKeys);
-            var alphaKeyItems = gradientItems[1].Split(';');
-            foreach (var item in alphaKeyItems)
+            var alphaKeyItems = keys[(alphaKeysSeparator + 1)..].Split(';');
+            foreach (var untrimmedItem in alphaKeyItems)
             {
-                var valueList = item.Trim().Substring(1, item.Length - 2); // Remove brackets
-                var alphaKeys = valueList.Split(',');
-                if (alphaKeys.Length <= 0)
-                    throw new ArgumentOutOfRangeException(nameof(value), "Gradient's alpha key does not have enough values.");
+                var item = untrimmedItem.Trim();
+                if (item.Length < 2 || item[0] != '{' || item[^1] != '}')
+                    throw new ArgumentOutOfRangeException(nameof(value), "Gradient's alpha key does not have the correct format.");
+
+                var alphaKeys = item[1..^1].Split(',');
+                if (alphaKeys.Length != 2)
+                    throw new ArgumentOutOfRangeException(nameof(value), "Gradient's alpha key does not have the expected number of values.");
 
                 var success = UxmlUtility.TryParseFloat(alphaKeys[0], out var time);
                 success &= UxmlUtility.TryParseFloat(alphaKeys[1], out var alpha);
@@ -1874,6 +1896,79 @@ namespace UnityEditor.UIElements
             return value.offset.x == value.offset.y
                 ? $"{value.offset.x}px {value.blurRadius}px {k_ColorConverter.ToString(value.color)}"
                 : $"{value.offset.x}px {value.offset.y}px {value.blurRadius}px {k_ColorConverter.ToString(value.color)}";
+        }
+    }
+
+    internal class BoxShadowAttributeConverter : UxmlAttributeConverter<BoxShadow>
+    {
+        const string k_None = "none";
+        const string k_Inset = "inset";
+        const string k_Pixel = "px";
+        readonly ColorAttributeConverter k_ColorConverter = new();
+
+        // Accepts the same declarations as USS: "none | [ inset? && <length>{2,4} && <color>? ]"
+        public override BoxShadow FromString(string value)
+        {
+            if (string.IsNullOrWhiteSpace(value) || value.Trim() == k_None)
+                return BoxShadow.None();
+
+            var parser = new BoxShadow.Parser();
+            foreach (var token in SplitTokens(value))
+            {
+                if (token == k_Inset)
+                    parser.AddInset();
+                else if (TryParseLength(token, out var length))
+                    parser.AddLength(length);
+                else if (ColorAttributeConverter.TryFromString(token, out var color))
+                    parser.AddColor(color);
+                else
+                    parser.AddInvalid();
+            }
+
+            parser.TryGetValue(out var boxShadow);
+            return boxShadow;
+        }
+
+        public override string ToString(BoxShadow value)
+        {
+            if (value.IsNone())
+                return k_None;
+
+            var lengths = FormattableString.Invariant($"{value.offset.x}px {value.offset.y}px {value.blurRadius}px {value.spreadRadius}px") + " " + k_ColorConverter.ToString(value.color);
+            return value.inset ? $"{k_Inset} {lengths}" : lengths;
+        }
+
+        // A number in pixels, or unitless
+        static bool TryParseLength(string token, out float length)
+        {
+            var number = token.EndsWith(k_Pixel, StringComparison.Ordinal) ? token.Substring(0, token.Length - k_Pixel.Length) : token;
+            return float.TryParse(number, NumberStyles.Float, CultureInfo.InvariantCulture, out length);
+        }
+
+        // Splits on spaces, except inside parentheses so that rgba(...) stays a single token
+        static List<string> SplitTokens(string value)
+        {
+            var tokens = new List<string>();
+            var depth = 0;
+            var start = -1;
+            for (var i = 0; i <= value.Length; ++i)
+            {
+                var c = i < value.Length ? value[i] : ' ';
+                if (c == '(')
+                    depth++;
+                else if (c == ')')
+                    depth = Math.Max(0, depth - 1);
+
+                if (char.IsWhiteSpace(c) && depth == 0)
+                {
+                    if (start >= 0)
+                        tokens.Add(value.Substring(start, i - start));
+                    start = -1;
+                }
+                else if (start < 0)
+                    start = i;
+            }
+            return tokens;
         }
     }
 

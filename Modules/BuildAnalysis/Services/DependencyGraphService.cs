@@ -240,7 +240,7 @@ namespace UnityEditor.Build.Analysis
             if (graph == null)
                 return Cache(guid, DependencyGraphResult.Unreadable);
 
-            if (graph.ContentLayoutVersion != BuildAnalysisConstants.k_SupportedContentLayoutVersion)
+            if (!BuildAnalysisConstants.IsSupportedContentLayoutVersion(graph.ContentLayoutVersion))
                 return Cache(guid, DependencyGraphResult.UnsupportedLayoutVersion);
 
             // The transpose is not thread-safe, so it runs here, before the graph is published.

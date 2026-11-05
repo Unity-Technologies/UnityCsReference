@@ -166,6 +166,9 @@ namespace UnityEngine.UIElements
 
             if (disableRenderingChanged && !repaintChanged) // The disable rendering will be taken care of by the repaint (it clear all commands)
                 renderTreeManager.UIEOnDisableRenderingChanged(ve);
+
+            if (disableRenderingChanged)
+                renderTreeManager.UIEOnPromotedDescendantsDisableRenderingChanged(ve);
         }
 
         public override void Update()

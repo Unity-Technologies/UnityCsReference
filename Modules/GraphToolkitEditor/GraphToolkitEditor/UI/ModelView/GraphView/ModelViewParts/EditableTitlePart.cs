@@ -442,7 +442,9 @@ namespace Unity.GraphToolkit.Editor
 
             if (!string.IsNullOrEmpty(te.text))
             {
-                var expectedWidth = m_TitleMinWidthPadding + Mathf.Ceil(GetTextWidthWithFontSize(te, WantedTextSize));
+                // A zero wanted text size disables LOD text scaling (e.g. capsule nodes), so measure at the label's own font size.
+                var fontSize = WantedTextSize > 0 ? WantedTextSize : te.resolvedStyle.fontSize;
+                var expectedWidth = m_TitleMinWidthPadding + Mathf.Ceil(GetTextWidthWithFontSize(te, fontSize));
                 m_ExpectedMinWidth = Math.Max(expectedWidth, m_DefaultMinWidth);
                 TitleLabel.parent.style.minWidth = m_ExpectedMinWidth;
             }

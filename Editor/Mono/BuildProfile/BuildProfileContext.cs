@@ -581,6 +581,7 @@ namespace UnityEditor.Build.Profile
                 EditorGraphicsSettings.activeProfileHasGraphicsSettings = ActiveProfileHasGraphicsSettings();
 
                 SyncClassicPlatformToEditorUserBuildSettings();
+                EngineDiagnosticsSettings.NotifyActiveBuildProfileChanged();
             }
             finally
             {
@@ -768,7 +769,7 @@ namespace UnityEditor.Build.Profile
             return buildProfile;
         }
 
-        static void SaveBuildProfileInProject(BuildProfile profile)
+        internal static void SaveBuildProfileInProject(BuildProfile profile)
         {
             if (!Directory.Exists(k_BuildProfilePath))
             {
@@ -868,6 +869,7 @@ namespace UnityEditor.Build.Profile
                 return false;
 
             activeProfile.graphicsSettings.SetGraphicsSetting(settingName, value);
+            EditorUtility.SetDirty(activeProfile.graphicsSettings);
             return true;
         }
 
@@ -887,6 +889,7 @@ namespace UnityEditor.Build.Profile
                 return false;
 
             activeProfile.graphicsSettings.alwaysIncludedShaders = shaders;
+            EditorUtility.SetDirty(activeProfile.graphicsSettings);
             return true;
         }
 
@@ -951,6 +954,7 @@ namespace UnityEditor.Build.Profile
                 return false;
 
             activeProfile.graphicsSettings.preloadedShaders = collection;
+            EditorUtility.SetDirty(activeProfile.graphicsSettings);
             return true;
         }
 
@@ -981,14 +985,15 @@ namespace UnityEditor.Build.Profile
             if (!ActiveProfileHasGraphicsSettings())
                 return false;
 
-            activeProfile.graphicsSettings.shaderBuildSettings = new ShaderBuildSettings
+            activeProfile.graphicsSettings.SetShaderBuildSettings_Internal(new ShaderBuildSettings
             {
                 keywordDeclarationOverrides = keywordDeclarationOverrides,
                 defines = defines,
                 numInternalDefines = (uint)numInternalDefines,
                 compilerSettings = compilerSettings,
                 fastBuildMode = (ShaderBuildSettings.FastBuildMode)fastBuildMode
-            };
+            });
+            EditorUtility.SetDirty(activeProfile.graphicsSettings);
             return true;
         }
 
@@ -1064,13 +1069,6 @@ namespace UnityEditor.Build.Profile
         }
 
 
-        [RequiredByNativeCode]
-        [VisibleToOtherModules]
-        internal static BuildProfileEngineDiagnosticsState GetActiveBuildProfileEngineDiagnosticsState()
-        {
-            var profile = activeProfile ?? instance.GetForClassicPlatform(EditorUserBuildSettings.activePlatformGuid);
-            return profile?.platformBuildProfile?.insightsSettingsContainer.buildProfileEngineDiagnosticsState ?? BuildProfileEngineDiagnosticsState.ProjectSettings;
-        }
 
         static bool ShouldReturnActiveProfile(GUID platformGuid, string sharedSetting = null)
         {

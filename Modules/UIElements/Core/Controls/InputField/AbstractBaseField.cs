@@ -16,9 +16,10 @@ namespace UnityEngine.UIElements
         Label labelElement { get; }
     }
 
+    [VisibleToOtherModules("UnityEditor.UIElementsModule")]
     internal interface IDelayedField
     {
-        bool isDelayed { get; }
+        bool isDelayed { get; set; }
     }
 
     /// <summary>

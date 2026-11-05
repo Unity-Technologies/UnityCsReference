@@ -53,6 +53,8 @@ namespace UnityEngine.UIElements.StyleSheets
 
         public StyleProperty currentProperty => m_CurrentProperty;
 
+        public int valueCount => m_CurrentValues.Count;
+
         public StyleRule BeginRule(int ruleLine)
         {
             Log("Beginning rule");
@@ -156,6 +158,11 @@ namespace UnityEngine.UIElements.StyleSheets
         public void AddCommaSeparator()
         {
             m_CurrentValues.Add(new StyleValueHandle(0, StyleValueType.CommaSeparator));
+        }
+
+        public void RemoveValuesFrom(int index)
+        {
+            m_CurrentValues.RemoveRange(index, m_CurrentValues.Count - index);
         }
 
         public void AddValue(string value, StyleValueType type)

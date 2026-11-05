@@ -6,6 +6,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
+using UnityEngine.Pool;
 using UnityEngine.UIElements;
 
 namespace UnityEditor.UIElements.Debugger
@@ -24,6 +25,8 @@ namespace UnityEditor.UIElements.Debugger
         internal const string debuggerHighlightUssClassName = "unity-debugger-highlight";
 
         public bool hierarchyHasChanged { get; set; }
+
+        public event Action treeRefreshed;
 
         public IList<TreeViewItemData<VisualElement>> treeRootItems => m_TreeRootItems;
 
@@ -199,24 +202,49 @@ namespace UnityEditor.UIElements.Debugger
             if (!hierarchyHasChanged && m_CurrentPanelDebug == panelDebug)
                 return;
 
-            m_CurrentPanelDebug = panelDebug;
-            m_Container.Clear();
-
-            int nextId = 1;
-
             m_TreeRootItems.Clear();
 
             var visualTree = panelDebug?.visualTree;
             if (visualTree != null)
             {
-                var rootItem = new TreeViewItemData<VisualElement>(nextId++, visualTree);
+                var rootItem = new TreeViewItemData<VisualElement>((int)visualTree.controlid, visualTree);
                 m_TreeRootItems.Add(rootItem);
 
                 var childItems = new List<TreeViewItemData<VisualElement>>();
-                AddTreeItemsForElement(childItems, visualTree, ref nextId);
+                AddTreeItemsForElement(childItems, visualTree);
 
                 rootItem.AddChildren(childItems);
             }
+
+            if (m_TreeView != null && m_CurrentPanelDebug == panelDebug)
+                UpdateTreeView();
+            else
+                CreateTreeView();
+
+            m_CurrentPanelDebug = panelDebug;
+            hierarchyHasChanged = false;
+        }
+
+        private void UpdateTreeView()
+        {
+            using (ListPool<int>.Get(out var expandedIds))
+            {
+                m_TreeViewController.GetExpandedItemIds(expandedIds);
+
+                m_TreeView.SetRootItems(m_TreeRootItems);
+
+                foreach (var id in expandedIds)
+                    m_TreeView.ExpandItem(id, false, false);
+            }
+
+            m_TreeView.RefreshItems();
+            m_SearchBar.RefreshResults();
+            treeRefreshed?.Invoke();
+        }
+
+        private void CreateTreeView()
+        {
+            m_Container.Clear();
 
             Func<VisualElement> makeItem = () =>
             {
@@ -264,7 +292,6 @@ namespace UnityEditor.UIElements.Debugger
             m_TreeViewController = m_TreeView.viewController as DefaultTreeViewController<VisualElement>;
             m_Container.Add(m_TreeView);
 
-            hierarchyHasChanged = false;
             m_SearchBar.ClearSearch();
         }
 
@@ -319,6 +346,17 @@ namespace UnityEditor.UIElements.Debugger
             if (string.IsNullOrEmpty(query))
                 return;
 
+            ApplySearchHighlight(query, searchHighlight);
+        }
+
+        internal void ReapplySearchHighlight(VisualElement element, string query, SearchHighlight searchHighlight)
+        {
+            if (m_DebuggerSelection?.element == element)
+                ApplySearchHighlight(query, searchHighlight);
+        }
+
+        private void ApplySearchHighlight(string query, SearchHighlight searchHighlight)
+        {
             schedule.Execute(() =>
             {
                 var selected = m_TreeView.Q(className: BaseVerticalCollectionView.itemSelectedVariantUssClassName);
@@ -358,7 +396,7 @@ namespace UnityEditor.UIElements.Debugger
             });
         }
 
-        private void AddTreeItemsForElement(IList<TreeViewItemData<VisualElement>> items, VisualElement ve, ref int nextId)
+        private void AddTreeItemsForElement(IList<TreeViewItemData<VisualElement>> items, VisualElement ve)
         {
             if (ve == null)
                 return;
@@ -371,12 +409,11 @@ namespace UnityEditor.UIElements.Debugger
             {
                 var child = ve.hierarchy[i];
 
-                var treeItem = new TreeViewItemData<VisualElement>(nextId, child);
+                var treeItem = new TreeViewItemData<VisualElement>((int)child.controlid, child);
                 items.Add(treeItem);
-                nextId++;
 
                 var childItems = new List<TreeViewItemData<VisualElement>>();
-                AddTreeItemsForElement(childItems, child, ref nextId);
+                AddTreeItemsForElement(childItems, child);
                 if (childItems.Count == 0)
                     continue;
 

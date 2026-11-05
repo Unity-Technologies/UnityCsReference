@@ -159,6 +159,59 @@ namespace Unity.U2D.Physics
         }.Validate();
 
         /// <summary>
+        /// Creates a regular polygon, one with every side the same length and every angle the same, from a number of sides and the distance from its center to each vertex.
+        /// Before the transform is applied, the polygon is centered on the origin with one edge lying flat along the bottom, so a triangle points up and a four-sided polygon is an axis-aligned square.
+        /// Use it for an equilateral triangle, a hexagon or any other evenly shaped polygon, rather than calculating each vertex yourself and creating the polygon from them.
+        /// </summary>
+        /// <remarks>
+        /// The size and the transform position are in the same local space and length units as the vertices of any other polygon.
+        /// The size is the same in every direction, so for a rectangle with a different width and height, use <see cref="PolygonGeometry.CreateBox(Vector2, float, PhysicsTransform, bool)"/> instead.
+        ///
+        /// A polygon keeps a vertex only when it lies further than <see cref="PhysicsWorld.minPolygonCollinearDistance"/> from the line between its two neighbors.
+        /// The more sides the polygon has, the closer each vertex lies to that line, so the smallest size allowed grows with the number of sides.
+        /// A size at or below that smallest size throws, rather than returning a polygon with fewer vertices than requested.
+        /// </remarks>
+        /// <param name="sides">The number of sides, which is also the number of vertices, from 3 to <see cref="PhysicsConstants.MaxPolygonVertices"/>.</param>
+        /// <param name="size">The distance from the center of the polygon to each vertex. Must be finite and large enough to keep every vertex.</param>
+        /// <param name="radius">The radius that rounds the corners of the polygon. Zero gives sharp corners. Must be finite and zero or greater.</param>
+        /// <param name="transform">The position and rotation applied to the polygon, which moves its center away from the origin and turns it.</param>
+        /// <returns>The created polygon, with the requested number of vertices.</returns>
+        /// <exception cref="System.ArgumentOutOfRangeException">Thrown when the number of sides is outside the range 3 to <see cref="PhysicsConstants.MaxPolygonVertices"/>, when the size is not finite or is too small to keep every vertex, or when the radius is not finite or is less than zero.</exception>
+        /// <exception cref="System.ArgumentException">Thrown when the transform is not valid. See <see cref="PhysicsTransform.isValid"/>.</exception>
+        public static PolygonGeometry CreateRegularPolygon(int sides, float size, float radius, PhysicsTransform transform)
+        {
+            if (sides < 3 || sides > PhysicsConstants.MaxPolygonVertices)
+                throw new ArgumentOutOfRangeException(nameof(sides), sides, $"The number of sides must be from 3 to {PhysicsConstants.MaxPolygonVertices}.");
+
+            if (!float.IsFinite(size))
+                throw new ArgumentOutOfRangeException(nameof(size), size, "The size must be finite.");
+
+            if (!float.IsFinite(radius) || radius < 0.0f)
+                throw new ArgumentOutOfRangeException(nameof(radius), radius, "The radius must be finite and zero or greater.");
+
+            if (!transform.isValid)
+                throw new ArgumentException("The transform is not valid.", nameof(transform));
+
+            // The first vertex starts half a step past straight down, so the edge between the last and first vertices lies flat along the bottom.
+            var pi = PhysicsMath.PI;
+            var startAngle = -0.5f * pi + pi / sides;
+            var stepAngle = PhysicsMath.TAU / sides;
+
+            // A vertex lies size * (1 - cos(stepAngle)) from the line between its neighbors, and creating the polygon drops any vertex no further away than the collinear distance.
+            // Rejecting that size here throws a clear error, rather than returning a polygon with fewer vertices than requested.
+            var minimumSize = PhysicsWorld.minPolygonCollinearDistance / (1.0f - PhysicsMath.CosSin(stepAngle).x);
+            if (size <= minimumSize)
+                throw new ArgumentOutOfRangeException(nameof(size), size, $"The size must be greater than {minimumSize} to keep all {sides} vertices.");
+
+            Span<Vector2> polygonVertices = stackalloc Vector2[sides];
+
+            for (var i = 0; i < sides; ++i)
+                polygonVertices[i] = PhysicsMath.CosSin(startAngle + stepAngle * i) * size;
+
+            return Create(polygonVertices, radius, transform);
+        }
+
+        /// <summary>
         /// Create a shape proxy from the geometry.
         /// </summary>
         /// <exception cref="System.ArgumentException">Thrown if the geometry is not valid.</exception>

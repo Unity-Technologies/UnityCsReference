@@ -13,6 +13,11 @@ namespace UnityEditor.Scripting.ScriptCompilation.MsBuild;
 
 class UnityMSBuildLogger
 {
+    // Must match the summary Unity.BuildService.ProjectCache.ProjectPluginCache.EndBuildAsync logs. That
+    // message carries no log code, and this file cannot reference the plugin assembly, so its text is the
+    // only handle the Editor has on it; change both together.
+    const string k_ProjectCacheSummaryMarker = "bypassed for the analysis configuration";
+
     public static void LogBuildFailedWithoutResult(Exception exception, TimeSpan elapsed, string lastProgressText, string configuration, bool generateBinLog)
     {
         var binLog = generateBinLog
@@ -46,6 +51,20 @@ class UnityMSBuildLogger
             Console.WriteLine("[PBM]: " + message);
         }
     }
+
+    // stdout, so it reaches Editor.log without a Console entry on every compile.
+    public static void LogProjectCacheSummary(BuildResultMessage buildResultMessage)
+    {
+        foreach (var logMessage in buildResultMessage.GetLogMessages())
+        {
+            if (logMessage.MessageType == LogMessageType.Message
+                && logMessage.Message.Contains(k_ProjectCacheSummaryMarker, StringComparison.Ordinal))
+            {
+                Console.WriteLine(logMessage.Message);
+            }
+        }
+    }
+
     public static void LogCompilerMessages(BuildResultMessage buildResultMessage, bool buildingForEditor)
     {
         const int kLogIdentifierFor_EditorMessages = 1234;
@@ -69,6 +88,8 @@ class UnityMSBuildLogger
                                        buildingForEditor, logMessage.MessageType == LogMessageType.Error, logIdentifier, instanceId);
             }
         }
+
+        LogProjectCacheSummary(buildResultMessage);
 
         foreach (var logMessage in buildResultMessage.GetLogMessages())
         {

@@ -33,6 +33,7 @@ namespace Unity.ProjectAuditor.Editor.Modules
     {
         ReadOnly = 0,
         CodeLocation,
+        Status,
         Num
     }
 
@@ -79,6 +80,7 @@ namespace Unity.ProjectAuditor.Editor.Modules
             {
                 new PropertyDefinition { Type = PropertyType.LogLevel, Name = "Log Level"},
                 new PropertyDefinition { Type = PropertyType.Description, Name = "Name", MaxAutoWidth = 800},
+                new PropertyDefinition { Type = PropertyTypeUtil.FromCustom(AssemblyProperty.Status), Format = PropertyFormat.String, Name = "Status"},
                 new PropertyDefinition { Type = PropertyTypeUtil.FromCustom(AssemblyProperty.ReadOnly), Format = PropertyFormat.Bool, Name = "Read Only", IsDefaultGroup = true},
                 new PropertyDefinition { Type = PropertyType.Path, Name = "Asmdef Path"},
                 new PropertyDefinition { Type = PropertyTypeUtil.FromCustom(AssemblyProperty.CodeLocation), Format = PropertyFormat.String, Name = "Location", LongName = "Code Location" },
@@ -149,6 +151,7 @@ namespace Unity.ProjectAuditor.Editor.Modules
 
         Thread m_AssemblyAnalysisThread;
 
+        const string k_FailedToCompileStatus = "Failed to compile";
         const string kUnknownTargetFramework = "Unknown";
         const string kEditorReferenceAssemblyTargetFramework = "Editor Reference Assembly";
 
@@ -482,17 +485,20 @@ namespace Unity.ProjectAuditor.Editor.Modules
             if ((analysisParams.CodeAnalysisFlags & CodeAnalysisFlags.Player) != 0)
                 configurations.Add(($"{analysisParams.Platform}+Analysis", false));
 
-            AsyncProgressState progressState = progress?.Start("Analyzing Code", configurations.Count);
-
             WriteGlobalConfig();
             WriteAnalyzerProps(roslynAnalyzerAssets);
+
+            // Code and assemblies shared by the editor and player builds are reported by both, so their
+            // issues are merged and only reported once all builds are done.
+            var issuesByKey = new Dictionary<string, ReportItem>();
+            var mergedIssues = new List<ReportItem>();
 
             using (var cancellationSource = new CancellationTokenSource())
             {
                 foreach (var (configuration, editorAssemblies) in configurations)
                 {
-                    if (AdvanceAsyncProgress(progress, progressState, configuration) == false)
-                        break;
+                    var analyzingText = configuration == "Analysis" ? "Editor" : "Player";
+                    AsyncProgressState progressState = progress?.Start($"Analyzing {analyzingText} Code", 1);
 
                     var compilationTask = RequestCompilationAsync(configuration, cancellationSource.Token);
                     while (!compilationTask.IsCompleted)
@@ -505,6 +511,8 @@ namespace Unity.ProjectAuditor.Editor.Modules
 
                     if (compilationTask.IsCanceled || (progress?.IsCancelled ?? false))
                     {
+                        if (mergedIssues.Count > 0)
+                            analysisParams.OnIncomingIssues(mergedIssues);
                         analysisParams.OnModuleCompleted?.Invoke(Name, AnalysisResult.Cancelled, threadExecutionTimeMs);
                         yield break;
                     }
@@ -512,21 +520,109 @@ namespace Unity.ProjectAuditor.Editor.Modules
                     if (compilationTask.IsFaulted)
                     {
                         Debug.LogError($"Project Auditor: '{configuration}' compilation failed: {compilationTask.Exception?.GetBaseException().Message}");
+                        if (mergedIssues.Count > 0)
+                            analysisParams.OnIncomingIssues(mergedIssues);
                         analysisParams.OnModuleCompleted?.Invoke(Name, AnalysisResult.Failure, threadExecutionTimeMs);
                         yield break;
                     }
 
+                    var errorCount = 0;
+                    foreach (var compilationMessage in compilationTask.Result.Messages)
+                    {
+                        if (compilationMessage.Msg.MessageType == LogMessageType.Error)
+                            ++errorCount;
+                    }
+
+                    if (errorCount > 0)
+                        Debug.LogError($"Project Auditor: '{configuration}' compilation had {errorCount} error(s). See the Project Auditor report for details.");
+
                     var issues = new List<ReportItem>(compilationTask.Result.Assemblies.Length);
                     yield return AnalyzeCompilerMessages(context, compilationTask.Result, editorAssemblies, issues.Add);
-                    if (issues.Count > 0)
-                        analysisParams.OnIncomingIssues(issues);
 
+                    foreach (var issue in issues)
+                    {
+                        var key = GetDeduplicationKey(issue);
+                        if (issuesByKey.TryGetValue(key, out var existingIssue))
+                        {
+                            MergeIssues(existingIssue, issue);
+                        }
+                        else
+                        {
+                            issuesByKey.Add(key, issue);
+                            mergedIssues.Add(issue);
+                        }
+                    }
+
+                    progress?.Clear(progressState);
                     yield return null;
                 }
             }
 
-            progress?.Clear(progressState);
+            if (mergedIssues.Count > 0)
+                analysisParams.OnIncomingIssues(mergedIssues);
+
             analysisParams.OnModuleCompleted?.Invoke(Name, analysisSucceeded ? AnalysisResult.Success : AnalysisResult.Failure, threadExecutionTimeMs);
+        }
+
+        static void MergeIssues(ReportItem existingIssue, ReportItem otherIssue)
+        {
+            switch (existingIssue.Category)
+            {
+                case IssueCategory.Assembly:
+                    MergeCodeLocation(existingIssue, otherIssue, AssemblyProperty.CodeLocation);
+                    MergeAssemblyIssues(existingIssue, otherIssue);
+                    break;
+                case IssueCategory.CodeCompilerMessage:
+                    MergeCodeLocation(existingIssue, otherIssue, CompilerMessageProperty.CodeLocation);
+                    break;
+                default:
+                    MergeCodeLocation(existingIssue, otherIssue, CodeProperty.CodeLocation);
+                    break;
+            }
+        }
+
+        static void MergeCodeLocation<T>(ReportItem existingIssue, ReportItem otherIssue, T property) where T : struct
+        {
+            var existingLocation = existingIssue.GetCustomProperty(property);
+            var otherLocation = otherIssue.GetCustomProperty(property);
+            if (string.IsNullOrEmpty(otherLocation) || existingLocation == otherLocation)
+                return;
+
+            var mergedLocations = new HashSet<string>(existingLocation.Split(", ", StringSplitOptions.RemoveEmptyEntries));
+            mergedLocations.UnionWith(otherLocation.Split(", ", StringSplitOptions.RemoveEmptyEntries));
+            existingIssue.SetCustomProperty(property, string.Join(", ", mergedLocations));
+        }
+
+        // Keeps the worst status and the union of dependencies, so a failure in either build is preserved
+        static void MergeAssemblyIssues(ReportItem existingIssue, ReportItem otherIssue)
+        {
+            if (SeverityRank(otherIssue.Severity) < SeverityRank(existingIssue.Severity))
+            {
+                existingIssue.Severity = otherIssue.Severity;
+                existingIssue.SetCustomProperty(AssemblyProperty.Status, otherIssue.GetCustomProperty(AssemblyProperty.Status));
+            }
+
+            var dependencyNames = new List<string>();
+            foreach (var dependencies in new[] { existingIssue.Dependencies, otherIssue.Dependencies })
+            {
+                for (var i = 0; dependencies != null && i < dependencies.NumChildren; ++i)
+                {
+                    var dependencyName = dependencies.GetChild(i).Name;
+                    if (!dependencyNames.Contains(dependencyName))
+                        dependencyNames.Add(dependencyName);
+                }
+            }
+
+            existingIssue.Dependencies = new AssemblyDependencyNode(existingIssue.Description, dependencyNames);
+        }
+
+        // Lower is more severe. Default is treated as Moderate, as the descriptors do
+        static int SeverityRank(Severity severity) => (int)(severity == Severity.Default ? Severity.Moderate : severity);
+
+        // Needed if we analyze both Editor and Player, because some code will be shared between both
+        static string GetDeduplicationKey(ReportItem issue)
+        {
+            return $"{issue.Category}|{issue.Id}|{issue.Description}|{issue.RelativePath}|{issue.Line}";
         }
 
         static void WriteGlobalConfig()
@@ -660,10 +756,46 @@ namespace Unity.ProjectAuditor.Editor.Modules
             var includeTests = (context.Params.CodeAnalysisFlags & CodeAnalysisFlags.Tests) != 0;
 
             // Assemblies
+            var failedAssemblyNames = new HashSet<string>();
+            foreach (var compilationMessage in compilationMessages.Messages)
+            {
+                if (compilationMessage.Msg.MessageType == LogMessageType.Error && !string.IsNullOrEmpty(compilationMessage.AssemblyName))
+                    failedAssemblyNames.Add(compilationMessage.AssemblyName);
+            }
+
+            // Maps each assembly that wasn't built to the failed assembly it depends on.
+            var notBuiltAssemblies = new Dictionary<string, string>();
+            foreach (var assemblyName in failedAssemblyNames)
+                notBuiltAssemblies.Add(assemblyName, assemblyName);
+
+            var notBuiltCount = -1;
+            while (notBuiltCount != notBuiltAssemblies.Count)
+            {
+                notBuiltCount = notBuiltAssemblies.Count;
+                foreach (var assembly in compilationMessages.Assemblies)
+                {
+                    if (notBuiltAssemblies.ContainsKey(assembly.Name))
+                        continue;
+
+                    var notBuiltReference = assembly.ReferencedAssemblyNames.Find(notBuiltAssemblies.ContainsKey);
+                    if (notBuiltReference != null)
+                        notBuiltAssemblies.Add(assembly.Name, notBuiltAssemblies[notBuiltReference]);
+                }
+            }
+
+            (Severity, string) GetAssemblyStatus(string assemblyName)
+            {
+                if (failedAssemblyNames.Contains(assemblyName))
+                    return (Severity.Error, k_FailedToCompileStatus);
+                if (notBuiltAssemblies.TryGetValue(assemblyName, out var failedAssemblyName))
+                    return (Severity.Warning, $"Not compiled: depends on {failedAssemblyName}, which failed to compile");
+                return (Severity.None, string.Empty);
+            }
+
             var assemblyInfos = new Dictionary<string, AssemblyInfo>(compilationMessages.Assemblies.Length);
             foreach (var assembly in compilationMessages.Assemblies)
             {
-                ProcessAssembly(context, assembly.Name, assembly.ReferencedAssemblyNames, editorAssemblies, assemblyInfos, onAddIssue, includeTests);
+                ProcessAssembly(context, assembly.Name, assembly.ReferencedAssemblyNames, GetAssemblyStatus(assembly.Name), editorAssemblies, assemblyInfos, onAddIssue, includeTests);
                 if (count++ % 100 == 0)
                     yield return null;
             }
@@ -697,7 +829,7 @@ namespace Unity.ProjectAuditor.Editor.Modules
 
                 // Get/register assembly info
                 if (!assemblyInfos.TryGetValue(assemblyName, out var assemblyInfo))
-                    assemblyInfo = ProcessAssembly(context, assemblyName, null, editorAssemblies, assemblyInfos, onAddIssue, includeTests);
+                    assemblyInfo = ProcessAssembly(context, assemblyName, null, GetAssemblyStatus(assemblyName), editorAssemblies, assemblyInfos, onAddIssue, includeTests);
 
                 if (isAssemblyLevelMessage && !PathPackageFilter(assemblyInfo.PackageResolvedPath ?? assemblyInfo.AsmDefPath ?? string.Empty, context.Params.CodeAnalysisFlags, context.Params.OwnerFlags))
                     continue;
@@ -760,7 +892,7 @@ namespace Unity.ProjectAuditor.Editor.Modules
             return AssemblyInfoProvider.ResolveAssetPath(assemblyInfo, file);
         }
 
-        static AssemblyInfo ProcessAssembly(AnalysisContext context, string assemblyName, List<string> referencedAssemblyNames, bool editorAssemblies, Dictionary<string, AssemblyInfo> assemblyInfos, Action<ReportItem> onAddIssue, bool includeTests)
+        static AssemblyInfo ProcessAssembly(AnalysisContext context, string assemblyName, List<string> referencedAssemblyNames, (Severity Severity, string Status) assemblyStatus, bool editorAssemblies, Dictionary<string, AssemblyInfo> assemblyInfos, Action<ReportItem> onAddIssue, bool includeTests)
         {
             var assemblyInfo = assemblyName.Length == 0
                 ? new AssemblyInfo { Name = string.Empty, RelativePath = "Assets", IsEditorAssembly = editorAssemblies }
@@ -771,22 +903,23 @@ namespace Unity.ProjectAuditor.Editor.Modules
             if (!includeTests && assemblyInfo.IsTestAssembly)
                 return assemblyInfo;
 
-            var severity = Severity.None;
-            // TODO: MSBuild doesn't tell us this, but the old AssemblyBuilder path did. Can MSBuild tell us?
-            //if (compilationResult.Status == CompilationStatus.MissingDependency)
-            //    severity = Severity.Warning;
-            //else if (!compilationMessages.Assembly[name].Success)
-            //    severity = Severity.Error;
+            // The MSBuild entry point project references every assembly, so it isn't one the user can act on.
+            if (assemblyName == "Main.EntryPoint")
+                return assemblyInfo;
+
+            if (!PathPackageFilter(assemblyInfo.PackageResolvedPath ?? assemblyInfo.AsmDefPath ?? string.Empty, context.Params.CodeAnalysisFlags, context.Params.OwnerFlags))
+                return assemblyInfo;
 
             onAddIssue(context.CreateInsight(IssueCategory.Assembly, assemblyInfo.Name)
                 .WithCustomProperties(
                 [
                     assemblyInfo.IsReadOnly,
                     assemblyInfo.GetTypeString(),
+                    assemblyStatus.Status,
                 ])
                 .WithDependencies(new AssemblyDependencyNode(assemblyInfo.Name, referencedAssemblyNames))
                 .WithLocation(assemblyInfo.AsmDefPath)
-                .WithSeverity(severity));
+                .WithSeverity(assemblyStatus.Severity));
 
             return assemblyInfo;
         }
@@ -844,6 +977,17 @@ namespace Unity.ProjectAuditor.Editor.Modules
             }
 
             return true;
+        }
+
+        internal static bool IsGeneratedCodePath(string path)
+        {
+            if (path.IndexOf("Unity.SourceGenerator", StringComparison.OrdinalIgnoreCase) >= 0)
+                return true;
+
+            // Source generators run during compilation emit their output under the Bee build artifacts
+            var normalizedPath = PathUtils.ReplaceSeparators(path);
+            return normalizedPath.Contains("Library/Bee/artifacts/", StringComparison.OrdinalIgnoreCase) ||
+                normalizedPath.Contains("Library/BeeAssemblyBuilder/artifacts/", StringComparison.OrdinalIgnoreCase);
         }
 
         void AnalyzePrecompiledAssemblies(AnalysisParams analysisParams, List<string> precompiledAssemblyPaths, Action<ReportItem> onIssueFound, IProgress progress, AsyncProgressState progressState)
@@ -935,7 +1079,7 @@ namespace Unity.ProjectAuditor.Editor.Modules
 
                             // skip generated code (we could add a CodeAnalysisFlag for these if we wanted to include them)
                             var path = methodDefinition.DebugInformation.SequencePoints[0].Document.Url;
-                            if (path.IndexOf("Unity.SourceGenerator", StringComparison.OrdinalIgnoreCase) >= 0)
+                            if (IsGeneratedCodePath(path))
                                 continue;
 
                             // Unity forwards some package types to the default assemblies during compilation. Filter those separately from AssemblyPackageFilter.
@@ -991,6 +1135,8 @@ namespace Unity.ProjectAuditor.Editor.Modules
             }
 
             var lastSequencePointIndex = 0;
+            Document lastDocument = null;
+            var isGeneratedDocument = false;
             var instructions = caller.Body.Instructions;
             for (var i = 0; i < instructions.Count; i++)
             {
@@ -1043,8 +1189,15 @@ namespace Unity.ProjectAuditor.Editor.Modules
                     );
                 }
 
+                // a method can span several documents, e.g. a static constructor combining field initializers from user and generated partial classes
+                if (s != null && s.Document != lastDocument)
+                {
+                    lastDocument = s.Document;
+                    isGeneratedDocument = IsGeneratedCodePath(lastDocument.Url);
+                }
+
                 // skip analyzers if we are not interested in reporting issues, or have no analyzers
-                if (onIssueFound == null || analyzers == null)
+                if (onIssueFound == null || analyzers == null || isGeneratedDocument)
                     continue;
 
                 var context = new InstructionAnalysisContext
@@ -1072,10 +1225,17 @@ namespace Unity.ProjectAuditor.Editor.Modules
         {
             var compilerMessages = compilationResult.Messages;
             var severity = Severity.None;
+            var status = string.Empty;
             if (compilationResult.Status == CompilationStatus.MissingDependency)
+            {
                 severity = Severity.Warning;
+                status = "Not compiled: a dependency failed to compile";
+            }
             else if (Array.Exists(compilerMessages, m => m.Type == CompilerMessageType.Error))
+            {
                 severity = Severity.Error;
+                status = k_FailedToCompileStatus;
+            }
 
             var assemblyInfo = AssemblyInfoProvider.GetAssemblyInfoFromAssemblyPath(compilationResult.AssemblyPath, compilationResult.EditorAssembly);
             yield return context.CreateInsight(IssueCategory.Assembly, assemblyInfo.Name)
@@ -1083,6 +1243,7 @@ namespace Unity.ProjectAuditor.Editor.Modules
                 [
                     assemblyInfo.IsReadOnly,
                     assemblyInfo.GetTypeString(),
+                    status,
                 ])
                 .WithDependencies(new AssemblyDependencyNode(assemblyInfo.Name, compilationResult.DependentAssemblyNames))
                 .WithLocation(assemblyInfo.AsmDefPath)
@@ -1165,6 +1326,7 @@ namespace Unity.ProjectAuditor.Editor.Modules
                     Areas.IterationTime | Areas.MigrationToCoreCLR,
                     description,
                     string.Empty);
+                RoslynDiagnosticsLibrary.ApplyUnityMetadata(descriptor);
 
                 DescriptorLibrary.RegisterDescriptor(descriptor.Id, descriptor);
 

@@ -921,7 +921,7 @@ namespace UnityEditor
         }
 
         [RequiredByNativeCode]
-        static string GetSinglePassBuildSceneProcessorsHashString()
+        internal static string GetSinglePassBuildSceneProcessorsHashString()
         {
             GetProcessorHashString("OnProcessScene", ref m_SinglePassBuildSceneProcessorsHashString);
             return m_SinglePassBuildSceneProcessorsHashString;

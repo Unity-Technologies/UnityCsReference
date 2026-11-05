@@ -28,6 +28,7 @@ namespace UnityEngine.UIElements
         DynamicColorEnabled      = 1 << 4,
         DynamicColorEnabledText  = 2 << 4,
         DynamicColorMask         = DynamicColorEnabled | DynamicColorEnabledText,
+        IsMask                   = 1 << 6,
     }
 
     /// <summary>

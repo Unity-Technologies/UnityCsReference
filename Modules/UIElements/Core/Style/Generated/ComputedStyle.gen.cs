@@ -62,6 +62,7 @@ namespace UnityEngine.UIElements
         public Length borderTopRightRadius => visualData.Read().borderTopRightRadius;
         public float borderTopWidth => layoutData.Read().borderTopWidth;
         public Length bottom => layoutData.Read().bottom;
+        public BoxShadow boxShadow => rareData.Read().boxShadow;
         public Color color => inheritedData.Read().color;
         public Length columnGap => layoutData.Read().columnGap;
         public Cursor cursor => rareData.Read().cursor;
@@ -351,6 +352,9 @@ namespace UnityEngine.UIElements
                         break;
                     case StylePropertyId.Bottom:
                         layoutData.Write().bottom = reader.ReadLength(0);
+                        break;
+                    case StylePropertyId.BoxShadow:
+                        rareData.Write().boxShadow = reader.ReadBoxShadow(0);
                         break;
                     case StylePropertyId.Color:
                         inheritedData.Write().color = reader.ReadColor(0);
@@ -1131,6 +1135,9 @@ namespace UnityEngine.UIElements
                     break;
                 case StylePropertyId.Bottom:
                     layoutData.Write().bottom = other.layoutData.Read().bottom;
+                    break;
+                case StylePropertyId.BoxShadow:
+                    rareData.Write().boxShadow = other.rareData.Read().boxShadow;
                     break;
                 case StylePropertyId.Color:
                     inheritedData.Write().color = other.inheritedData.Read().color;
@@ -1988,6 +1995,19 @@ namespace UnityEngine.UIElements
             }
         }
 
+        public void ApplyPropertyAnimation(VisualElement ve, StylePropertyId id, BoxShadow newValue)
+        {
+            switch (id)
+            {
+                case StylePropertyId.BoxShadow:
+                    rareData.Write().boxShadow = newValue;
+                    ve.IncrementVersion(VersionChangeType.Repaint);
+                    break;
+                default:
+                    throw new ArgumentException("Invalid animation property id. Can't apply value of type 'BoxShadow' to property '" + id + "'. Please make sure that this property is animatable.", nameof(id));
+            }
+        }
+
         public void ApplyPropertyAnimation(VisualElement ve, StylePropertyId id, MaterialDefinition newValue)
         {
             switch (id)
@@ -2332,6 +2352,17 @@ namespace UnityEngine.UIElements
             }
         }
 
+        public BoxShadow ReadPropertyAnimationBoxShadow(StylePropertyId id)
+        {
+            switch (id)
+            {
+                case StylePropertyId.BoxShadow:
+                    return rareData.Read().boxShadow;
+                default:
+                    throw new ArgumentException("Invalid animation property id. Can't apply value of type 'BoxShadow' to property '" + id + "'. Please make sure that this property is animatable.", nameof(id));
+            }
+        }
+
         public Ratio ReadPropertyAnimationRatio(StylePropertyId id)
         {
             switch (id)
@@ -2563,6 +2594,11 @@ namespace UnityEngine.UIElements
                 case StylePropertyId.Bottom:
                 {
                     return element.styleAnimation.Start(StylePropertyId.Bottom, oldStyle.layoutData.Read().bottom, newStyle.layoutData.Read().bottom, durationMs, delayMs, easingCurve);
+                }
+
+                case StylePropertyId.BoxShadow:
+                {
+                    return element.styleAnimation.Start(StylePropertyId.BoxShadow, oldStyle.rareData.Read().boxShadow, newStyle.rareData.Read().boxShadow, durationMs, delayMs, easingCurve);
                 }
 
                 case StylePropertyId.Color:
@@ -3380,6 +3416,12 @@ namespace UnityEngine.UIElements
                     oldData.backdropFilter.CopyTo(ref from);
                     newData.backdropFilter.CopyTo(ref to);
                     result |= element.styleAnimation.Start(StylePropertyId.BackdropFilter, from, to, durationMs, delayMs, easingCurve);
+                }
+
+                if (hasRunningAnimation ||
+                    oldData.boxShadow != newData.boxShadow)
+                {
+                    result |= element.styleAnimation.Start(StylePropertyId.BoxShadow, oldData.boxShadow, newData.boxShadow, durationMs, delayMs, easingCurve);
                 }
 
                 if (hasRunningAnimation ||
@@ -4394,6 +4436,9 @@ namespace UnityEngine.UIElements
                 case StylePropertyId.Bottom:
                     layoutData.Write().bottom = InitialStyle.Get().layoutData.Read().bottom;
                     break;
+                case StylePropertyId.BoxShadow:
+                    rareData.Write().boxShadow = InitialStyle.Get().rareData.Read().boxShadow;
+                    break;
                 case StylePropertyId.Color:
                     inheritedData.Write().color = InitialStyle.Get().inheritedData.Read().color;
                     break;
@@ -4936,6 +4981,7 @@ namespace UnityEngine.UIElements
             if (!x.rareData.ReferenceEquals(y.rareData))
             {
                 if ((changes & VersionChangeType.Repaint) == 0 && (x.backdropFilter != y.backdropFilter ||
+                    x.boxShadow != y.boxShadow ||
                     x.filter != y.filter ||
                     x.zIndex != y.zIndex ||
                     x.unityOverflowClipBox != y.unityOverflowClipBox ||

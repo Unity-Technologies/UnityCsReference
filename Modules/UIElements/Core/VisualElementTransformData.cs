@@ -44,6 +44,8 @@ internal enum VisualElementTransformFlags
     ZIndexPromotedOutOfParent = 1 << 15,
     // World transform could not be inverted; current whenever WorldTransformInverseDirty is clear
     WorldTransformSingular = 1 << 16,
+    // Element is curved or below a curved element; only ever set on whole subtrees
+    InCurvedSubtree = 1 << 17,
 
     Init = WorldTransformDirty | WorldTransformInverseDirty | BoundingBoxDirty | WorldBoundingBoxDirty | BoundingBoxWithoutNestedDirty | LocalBounds3DDirty | LocalBoundsWithoutNested3DDirty
 }

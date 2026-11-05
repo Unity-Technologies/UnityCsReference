@@ -77,6 +77,10 @@ namespace UnityEngine.UIElements
         {
         }
 
+        abstract class InlineStyleBoxShadowProperty : InlineStyleProperty<StyleBoxShadow>
+        {
+        }
+
         abstract class InlineStyleScaleProperty : InlineStyleProperty<StyleScale>
         {
         }

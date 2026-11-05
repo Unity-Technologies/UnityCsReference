@@ -16,9 +16,6 @@ namespace Unity.U2D.Physics.Editor
             public const string rotation = "A rotation is always stored in the range of +/- 180 degrees (or PI radians) as rotation is stored as a unit vector direction.";
         }
 
-        private FloatField m_RotationField;
-        private Vector2Field m_DirectionField;
-
         #region UITK
 
         public override VisualElement CreatePropertyGUI(SerializedProperty property)
@@ -28,43 +25,49 @@ namespace Unity.U2D.Physics.Editor
             var directionProperty = property.FindPropertyRelative(nameof(PhysicsRotate.direction));
             var rotation = LimitPrecision(new PhysicsRotate { direction = directionProperty.vector2Value }.degrees);
 
-            m_RotationField = new FloatField(property.displayName) { tooltip = Tooltips.rotation, value = rotation };
-            m_RotationField.AddToClassList(FloatField.alignedFieldUssClassName);
+            // The fields are locals captured by the callbacks below, never drawer fields.
+            // One drawer instance creates the UI for every property of this type in a list, so drawer fields would only refer to the last one created.
+            var rotationField = new FloatField(property.displayName) { tooltip = Tooltips.rotation, value = rotation };
+            rotationField.AddToClassList(FloatField.alignedFieldUssClassName);
 
-            m_DirectionField = new Vector2Field { bindingPath = directionProperty.propertyPath };
-            m_DirectionField.style.display = DisplayStyle.None;
+            var directionField = new Vector2Field { bindingPath = directionProperty.propertyPath };
+            directionField.style.display = DisplayStyle.None;
 
-            root.Add(m_RotationField);
-            root.Add(m_DirectionField);
+            root.Add(rotationField);
+            root.Add(directionField);
 
-            m_RotationField.RegisterValueChangedCallback(UserRotationChanges);
-            m_DirectionField.RegisterValueChangedCallback(DirectionChanged);
+            rotationField.RegisterValueChangedCallback(UserRotationChanges);
+            directionField.RegisterValueChangedCallback(DirectionChanged);
 
             return root;
-        }
 
-        void UserRotationChanges(ChangeEvent<float> evt)
-        {
-            // We need to support the direction property changing due to undo/redo.
-            // In this case we need to stop the callback but without a way to suppress it, we need to unregister/register.
-            if (m_DirectionField.UnregisterValueChangedCallback(DirectionChanged))
+            #region Locals
+
+            void UserRotationChanges(ChangeEvent<float> evt)
             {
-                m_DirectionField.value = PhysicsRotate.FromDegrees(evt.newValue).direction;
-                m_DirectionField.RegisterValueChangedCallback(DirectionChanged);
+                // We need to support the direction property changing due to undo/redo.
+                // In this case we need to stop the callback but without a way to suppress it, we need to unregister/register.
+                if (directionField.UnregisterValueChangedCallback(DirectionChanged))
+                {
+                    directionField.value = PhysicsRotate.FromDegrees(evt.newValue).direction;
+                    directionField.RegisterValueChangedCallback(DirectionChanged);
+                }
             }
-        }
 
-        void DirectionChanged(ChangeEvent<Vector2> evt)
-        {
-            // Fetch the rotation and ensure it's valid.
-            var rotation = new PhysicsRotate { direction = evt.newValue };
-            if (!rotation.isValid)
-                rotation = new PhysicsRotate();
+            void DirectionChanged(ChangeEvent<Vector2> evt)
+            {
+                // Fetch the rotation and ensure it's valid.
+                var directionRotation = new PhysicsRotate { direction = evt.newValue };
+                if (!directionRotation.isValid)
+                    directionRotation = new PhysicsRotate();
 
-            // Only update the rotation field if the direction rotation isn't equivalent.
-            // NOTE: This stops the immediately update within the range of +/- PI radians.
-            if (!Mathf.Approximately(PhysicsRotate.UnwindAngle(PhysicsMath.ToRadians(m_RotationField.value)), PhysicsRotate.UnwindAngle(rotation.radians)))
-                m_RotationField.value = LimitPrecision(rotation.degrees);
+                // Only update the rotation field if the direction rotation isn't equivalent.
+                // NOTE: This stops the immediately update within the range of +/- PI radians.
+                if (!Mathf.Approximately(PhysicsRotate.UnwindAngle(PhysicsMath.ToRadians(rotationField.value)), PhysicsRotate.UnwindAngle(directionRotation.radians)))
+                    rotationField.value = LimitPrecision(directionRotation.degrees);
+            }
+
+            #endregion
         }
 
         #endregion

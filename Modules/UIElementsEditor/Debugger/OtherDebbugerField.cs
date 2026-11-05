@@ -391,6 +391,81 @@ namespace UnityEditor.UIElements.Debugger
         }
     }
 
+    internal class BoxShadowField : BaseField<BoxShadow>
+    {
+        ColorField m_ColorField = new("Color");
+        Vector2Field m_OffsetField = new("Offset");
+        FloatField m_BlurRadiusField = new("Blur Radius");
+        FloatField m_SpreadRadiusField = new("Spread Radius");
+        Toggle m_InsetField = new("Inset");
+
+        public BoxShadowField() : this(null) { }
+        public BoxShadowField(string label) : this(label, default) { }
+
+        public BoxShadowField(string label, BoxShadow boxShadow) : base(label)
+        {
+            style.flexBasis = StyleKeyword.Auto;
+            style.flexShrink = 0;
+
+            VisualElement content = new() { style = { flexShrink = 0 } };
+            content.Add(m_ColorField);
+            content.Add(m_OffsetField);
+            content.Add(m_BlurRadiusField);
+            content.Add(m_SpreadRadiusField);
+            content.Add(m_InsetField);
+            visualInput = content;
+
+            m_ColorField.RegisterValueChangedCallback(e =>
+            {
+                var newValue = value;
+                newValue.color = e.newValue;
+                value = newValue;
+            });
+
+            m_OffsetField.RegisterValueChangedCallback(e =>
+            {
+                var newValue = value;
+                newValue.offset = e.newValue;
+                value = newValue;
+            });
+
+            m_BlurRadiusField.RegisterValueChangedCallback(e =>
+            {
+                var newValue = value;
+                newValue.blurRadius = Mathf.Max(0, e.newValue);
+                if (newValue.blurRadius != e.newValue)
+                    m_BlurRadiusField.SetValueWithoutNotify(newValue.blurRadius);
+                value = newValue;
+            });
+
+            m_SpreadRadiusField.RegisterValueChangedCallback(e =>
+            {
+                var newValue = value;
+                newValue.spreadRadius = e.newValue;
+                value = newValue;
+            });
+
+            m_InsetField.RegisterValueChangedCallback(e =>
+            {
+                var newValue = value;
+                newValue.inset = e.newValue;
+                value = newValue;
+            });
+
+            SetValueWithoutNotify(boxShadow);
+        }
+
+        public override void SetValueWithoutNotify(BoxShadow boxShadow)
+        {
+            base.SetValueWithoutNotify(boxShadow);
+            m_ColorField.SetValueWithoutNotify(value.color);
+            m_OffsetField.SetValueWithoutNotify(value.offset);
+            m_BlurRadiusField.SetValueWithoutNotify(value.blurRadius);
+            m_SpreadRadiusField.SetValueWithoutNotify(value.spreadRadius);
+            m_InsetField.SetValueWithoutNotify(value.inset);
+        }
+    }
+
     internal class TextAutoSizeField : BaseField<TextAutoSize>
     {
         EnumField mode = new EnumField("Mode");

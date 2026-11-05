@@ -97,6 +97,19 @@ namespace Unity.GraphToolkit.Editor
             AddError(description, model, LogType.Log, logAction, userData: userData);
         }
 
+        /// <summary>
+        /// Adds errors that were produced by another result.
+        /// </summary>
+        /// <param name="errors">The errors to add.</param>
+        internal void AddErrors(IReadOnlyList<GraphProcessingError> errors)
+        {
+            for (var i = 0; i < errors.Count; i++)
+            {
+                if (!m_Errors.Contains(errors[i]))
+                    m_Errors.Add(errors[i]);
+            }
+        }
+
         void AddError(string desc, Model model, LogType errorType, ILogAction logAction, IReadOnlyList<GraphElementModel> context = null, object userData = null)
         {
             var error = new GraphProcessingError(

@@ -548,7 +548,7 @@ namespace UnityEditor.Modules
             {
                 EnableAnalytics = UnityEngine.Analytics.Analytics.enabled,
                 EnableCrashReporting = UnityEditor.CrashReporting.CrashReportingSettings.canUploadReports,
-                EnableInsights = EngineDiagnostics.EngineDiagnosticsSettings.enabled,
+                EnableInsights = EngineDiagnostics.EngineDiagnosticsSettings.IsEnabled(),
                 EnablePerformanceReporting = UnityEngine.Analytics.PerformanceReporting.enabled,
                 EnableUnityConnect = UnityEngine.Connect.UnityConnectSettings.enabled,
             },

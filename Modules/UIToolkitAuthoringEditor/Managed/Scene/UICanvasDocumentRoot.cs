@@ -594,7 +594,7 @@ sealed partial class UICanvasDocumentRoot : VisualElement, IVisualElementChangeP
             return;
         using (ListPool<VisualElement>.Get(out var pickedElements))
         {
-            m_PanelElement.SubPanel.PickAll(m_LastPointerPickPosition, pickedElements);
+            UIAuthoringPicking.PickAll(m_PanelElement.SubPanel, m_LastPointerPickPosition, pickedElements);
             HoveredElement = pickedElements.Count > 0 ? pickedElements[0] : null;
         }
     }
@@ -673,7 +673,7 @@ sealed partial class UICanvasDocumentRoot : VisualElement, IVisualElementChangeP
     void PickSelectableElements(Vector2 canvasPosition, List<VisualElement> result)
     {
         using var _ = ListPool<VisualElement>.Get(out var rawPicks);
-        m_PanelElement.SubPanel.PickAll(canvasPosition, rawPicks);
+        UIAuthoringPicking.PickAll(m_PanelElement.SubPanel, canvasPosition, rawPicks);
 
         using var __ = HashSetPool<VisualElement>.Get(out var seen);
         foreach (var candidate in rawPicks)
@@ -887,7 +887,7 @@ sealed partial class UICanvasDocumentRoot : VisualElement, IVisualElementChangeP
         {
             if (element.visualElementAsset == null)
                 return;
-            if (element.pickingMode == PickingMode.Ignore || !element.visible)
+            if (!UIAuthoringPicking.IsRectangleSelectable(element))
                 return;
             // Tested before the selection object is resolved: resolving walks the live tree looking for the
             // counterpart, and this runs over the whole document on every pointer move of the drag.

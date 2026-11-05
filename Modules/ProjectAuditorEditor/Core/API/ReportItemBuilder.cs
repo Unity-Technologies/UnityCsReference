@@ -17,6 +17,8 @@ namespace Unity.ProjectAuditor.Editor.Core
         /// <returns>A ReportItem</returns>
         public static implicit operator ReportItem(ReportItemBuilder builder) => builder.m_Issue;
 
+        internal Location Location => m_Issue.Location;
+
         /// <summary>
         /// Constructor for an object to build ReportItems representing Issues.
         /// </summary>

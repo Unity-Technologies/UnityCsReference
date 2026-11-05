@@ -147,14 +147,23 @@ namespace Unity.ProjectAuditor.Editor.Core
         }
     }
 
-    internal static class SerializableEnumExtensions
+    /// <summary>
+    /// Conversion helpers between enum values and <see cref="SerializableEnum{T}"/> arrays.
+    /// </summary>
+    public static class SerializableEnumExtensions
     {
+        /// <summary>
+        /// Converts an array of SerializableEnum to an array of enum values.
+        /// </summary>
         public static T[] ToValuesArray<T>(this SerializableEnum<T>[] array)
             where T : struct, Enum
         {
             return Array.ConvertAll(array, v => v.Value);
         }
 
+        /// <summary>
+        /// Converts an array of SerializableEnum to a list of enum values.
+        /// </summary>
         public static List<T> ToValuesList<T>(this SerializableEnum<T>[] array)
             where T : struct, Enum
         {
@@ -163,6 +172,9 @@ namespace Unity.ProjectAuditor.Editor.Core
 #pragma warning restore UAC2001
         }
 
+        /// <summary>
+        /// Converts a sequence of enum values to an array of SerializableEnum, for example to assign <see cref="AnalysisParams.Categories"/>.
+        /// </summary>
         public static SerializableEnum<T>[] ToSerializableArray<T>(this IEnumerable<T> enumerable)
             where T : struct, Enum
         {

@@ -142,6 +142,10 @@ namespace UnityEngine.UIElements
         /// </summary>
         StyleLength bottom { get => default; set => _ = value ; }
         /// <summary>
+        /// Shadow cast by the element's box. Accepts horizontal and vertical offsets, an optional blur radius, an optional spread radius, an optional color, and the optional inset keyword to draw the shadow inside the border.
+        /// </summary>
+        StyleBoxShadow boxShadow { get => default; set => _ = value ; }
+        /// <summary>
         /// Color to use when drawing the text of an element.
         /// </summary>
         /// <remarks>

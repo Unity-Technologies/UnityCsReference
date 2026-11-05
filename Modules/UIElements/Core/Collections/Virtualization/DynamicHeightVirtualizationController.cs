@@ -34,6 +34,7 @@ namespace UnityEngine.UIElements
         int m_ForcedFirstVisibleItem = -1;
         int m_ForcedLastVisibleItem = -1;
         bool m_StickToBottom;
+        bool m_ScrollOffsetOverrunsLayout;
         VirtualizationChange m_LastChange;
         ScrollDirection m_ScrollDirection;
         Vector2 m_DelayedScrollOffset = Vector2.negativeInfinity;
@@ -279,7 +280,7 @@ namespace UnityEngine.UIElements
             var scrollableHeight = Mathf.Max(0, contentHeight - viewportHeight);
             var scrollOffset = Mathf.Min(serializedData.scrollOffset.y, scrollableHeight);
             m_ScrollView.verticalScroller.slider.SetHighValueWithoutNotify(scrollableHeight);
-            m_ScrollView.verticalScroller.slider.SetValueWithoutNotify(scrollOffset);
+            m_ScrollView.SetScrollOffsetWithoutNotify(new Vector2(m_ScrollView.scrollOffset.x, scrollOffset));
             serializedData.scrollOffset.y = m_ScrollView.verticalScroller.value;
 
             // We virtualize a number of items based on the smallest expected item height.
@@ -364,12 +365,25 @@ namespace UnityEngine.UIElements
             // in an idle state where we receive true user input.
             if (m_LastChange is VirtualizationChange.Resize or VirtualizationChange.ForcedScroll)
             {
-                var viewportHeight = m_ScrollView.contentViewport.layout.height;
-                var scrollableHeight = Mathf.Max(0, contentHeight - viewportHeight);
-                var offset = Mathf.Min(m_ScrollView.scrollOffset.y, scrollableHeight);
-                m_ScrollView.verticalScroller.slider.SetHighValueWithoutNotify(scrollableHeight);
-                m_ScrollView.verticalScroller.slider.SetValueWithoutNotify(offset);
-                return;
+                if (m_ScrollOffsetOverrunsLayout && m_LastChange == VirtualizationChange.ForcedScroll &&
+                    !Mathf.Approximately(scrollOffset.y, Mathf.Max(0, m_ScrollView.scrollableHeight)))
+                {
+                    // Not the stale-layout clamp of the overrunning offset: a real scroll takes over.
+                    m_ScrollOffsetOverrunsLayout = false;
+                    m_LastChange = VirtualizationChange.None;
+                }
+                else
+                {
+                    var viewportHeight = m_ScrollView.contentViewport.layout.height;
+                    var scrollableHeight = Mathf.Max(0, contentHeight - viewportHeight);
+                    var cachedOffset = m_ScrollOffsetOverrunsLayout ? serializedData.scrollOffset.y : m_ScrollView.scrollOffset.y;
+                    var offset = Mathf.Min(cachedOffset, scrollableHeight);
+                    m_ScrollView.verticalScroller.slider.SetHighValueWithoutNotify(scrollableHeight);
+                    m_ScrollView.SetScrollOffsetWithoutNotify(new Vector2(m_ScrollView.scrollOffset.x, offset));
+                    m_DelayedScrollOffset = Vector2.negativeInfinity;
+                    ScheduleScrollDirectionReset();
+                    return;
+                }
             }
 
             // Schedule later to allow receiving multiple scroll events in one frame and potentially avoid a few expensive rebind.
@@ -718,11 +732,14 @@ namespace UnityEngine.UIElements
 
             // Don't notify to avoid coming back in the scroll update for no reason.
             m_ScrollView.verticalScroller.slider.SetHighValueWithoutNotify(scrollableHeight);
-            m_ScrollView.verticalScroller.slider.SetValueWithoutNotify(scrollOffset);
+            m_ScrollView.SetScrollOffsetWithoutNotify(new Vector2(m_ScrollView.scrollOffset.x, scrollOffset));
             serializedData.scrollOffset.y = m_ScrollView.verticalScroller.slider.value;
+
+            var offsetMoved = !Mathf.Approximately(previousScrollOffset, m_ScrollView.scrollOffset.y);
 
             if (dimensionsOnly || m_LastChange == VirtualizationChange.Resize)
             {
+                GuardMovedScrollOffset(offsetMoved);
                 ScheduleScrollDirectionReset();
                 return;
             }
@@ -785,7 +802,24 @@ namespace UnityEngine.UIElements
                 m_CollectionView.SaveViewData();
             }
 
+            GuardMovedScrollOffset(offsetMoved);
             ScheduleDeferredScrollToItem();
+        }
+
+        // An offset past what the current layout allows gets clamped back with a notification when the ScrollView
+        // refreshes its scrollers from the content layout, which lags behind the expected content height. Until the
+        // scheduled ResetScroll, OnScroll restores the intended offset instead of accepting the clamped one. (UUM-140392)
+        void GuardMovedScrollOffset(bool offsetMoved)
+        {
+            if (!offsetMoved || m_LastChange == VirtualizationChange.Resize)
+                return;
+
+            if (m_ScrollView.scrollOffset.y <= Mathf.Max(0, m_ScrollView.scrollableHeight))
+                return;
+
+            m_ScrollOffsetOverrunsLayout = true;
+            m_LastChange = VirtualizationChange.ForcedScroll;
+            ScheduleScrollDirectionReset();
         }
 
         void UpdateAnchor()
@@ -822,6 +856,7 @@ namespace UnityEngine.UIElements
         {
             m_ScrollDirection = ScrollDirection.Idle;
             m_LastChange = VirtualizationChange.None;
+            m_ScrollOffsetOverrunsLayout = false;
             m_ScrollView.UpdateContentViewTransform();
             UpdateAnchor();
             m_CollectionView.SaveViewData();

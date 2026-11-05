@@ -78,10 +78,7 @@ namespace UnityEngine.UIElements.UIR
             else
                 UIRUtility.ComputeMatrixRelativeToRenderTree(renderData, out transform);
 
-            if (renderData.owner.elementPanel is { isFlat: true })
-                UIRUtility.NeutralizeZ(ref transform);
-            else
-                transform.m22 = 1.0f;
+            transform.m22 = 1.0f;
         }
 
         static Vector4 GetClipRectIDClipInfo(RenderData renderData)
@@ -127,9 +124,6 @@ namespace UnityEngine.UIElements.UIR
             renderData = renderTreeManager.GetPooledRenderData();
             renderData.owner = ve;
             ve.renderData = renderData;
-
-            // Unset the WorldClipDirty VisualElement flag. See VisualElements.flags for more details.
-            ve.flags &= ~VisualElementFlags.WorldClipDirty;
 
             if (ve.useRenderTexture)
                 renderData.flags |= RenderDataFlags.IsSubTreeQuad;
@@ -1026,8 +1020,6 @@ namespace UnityEngine.UIElements.UIR
                 return;
 
             stats.recursiveTransformUpdatesExpanded++;
-
-            renderData.flags |= RenderDataFlags.IsClippingRectDirty;
 
             transformChanged |= (renderData.dirtiedValues & RenderDataDirtyTypes.Transform) != 0;
             bool promotedToBone = false;

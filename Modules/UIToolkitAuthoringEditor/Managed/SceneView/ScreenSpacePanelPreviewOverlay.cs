@@ -603,11 +603,11 @@ namespace Unity.UIToolkit.Editor
 
         // Selectable clones under the point, topmost-first: asset-less children resolve to their
         // authored ancestor, only selectable ones kept, deduped by element so overlapping repeated
-        // instances stay distinct.
+        // instances stay distinct. Picks like the UI Viewport (elements that ignore picking too).
         void PickSelectableElements(Vector2 panelPosition, VisualElement authoritativeRoot, List<VisualElement> result)
         {
             using var _ = ListPool<VisualElement>.Get(out var rawPicks);
-            m_PanelElement.SubPanel.PickAll(panelPosition, rawPicks);
+            UIAuthoringPicking.PickAll(m_PanelElement.SubPanel, panelPosition, rawPicks);
 
             using var __ = HashSetPool<VisualElement>.Get(out var seen);
             foreach (var candidate in rawPicks)

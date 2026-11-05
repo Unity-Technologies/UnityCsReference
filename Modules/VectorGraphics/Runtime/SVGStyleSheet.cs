@@ -31,7 +31,8 @@ namespace Unity.VectorGraphics
                 int i = m_Selectors.FindIndex(x => x.Key == key);
                 if (i != -1)
                     m_Selectors[i] = v;
-                m_Selectors.Add(v);
+                else
+                    m_Selectors.Add(v);
             }
         }
 
@@ -57,6 +58,8 @@ namespace Unity.VectorGraphics
 
     internal static class SVGStyleSheetUtils
     {
+        static readonly Regex k_ImportantFlag = new Regex(@"\s*!\s*important\s*$", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
+
         public static SVGStyleSheet Parse(string cssText)
         {
             var result = new SVGStyleSheet();
@@ -91,6 +94,12 @@ namespace Unity.VectorGraphics
         {
             if (tokens.Count == 0)
                 return false;
+
+            if (PeekToken(tokens).StartsWith("@"))
+            {
+                SkipAtRule(tokens);
+                return true;
+            }
 
             var newSheet = new SVGStyleSheet();
             while (true)
@@ -133,6 +142,29 @@ namespace Unity.VectorGraphics
             return true;
         }
 
+        // At-rules (@import, @media, @font-face...) are not supported
+        private static void SkipAtRule(List<string> tokens)
+        {
+            int depth = 0;
+            int parenDepth = 0;
+            while (tokens.Count > 0)
+            {
+                var token = PopToken(tokens);
+                if (token == "(")
+                    ++parenDepth;
+                else if (token == ")")
+                    parenDepth = Math.Max(0, parenDepth - 1);
+                else if (parenDepth > 0)
+                    continue; // Semicolons and braces inside url(...) or quoted values don't end the rule
+                else if (token == ";" && depth == 0)
+                    return;
+                else if (token == "{")
+                    ++depth;
+                else if (token == "}" && --depth <= 0)
+                    return;
+            }
+        }
+
         private static void CombineProperties(SVGPropertySheet first, SVGPropertySheet second)
         {
             foreach (var key in second.Keys)
@@ -153,7 +185,8 @@ namespace Unity.VectorGraphics
             string value;
             while (ParseProperty(tokens, out name, out value))
             {
-                props[name] = value;
+                if (value.Length > 0)
+                    props[name] = value;
                 while (PeekToken(tokens) == ";")
                     PopToken(tokens);
             }
@@ -185,6 +218,7 @@ namespace Unity.VectorGraphics
                     value += ParseParenValue(tokens);
             }
 
+            value = k_ImportantFlag.Replace(value, "");
             return true;
         }
 

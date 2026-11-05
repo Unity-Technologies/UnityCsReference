@@ -5,6 +5,7 @@
 #pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: UnityConnectHub not yet converted
 using System.Collections.Generic;
 using UnityEngine.UIElements;
+using UnityEditor.InsightsEditor;
 using Button = UnityEngine.UIElements.Button;
 
 namespace UnityEditor.Connect
@@ -26,6 +27,7 @@ namespace UnityEditor.Connect
         const string k_KeywordMembers = "members";
         const string k_KeywordDashboard = "dashboard";
         const string k_KeywordId = "id";
+        const string k_KeywordDiagnostics = "diagnostics";
         const string k_GeneralLabel = "General";
 
         const string k_ProjectNameBlockName = "ProjectName";
@@ -60,7 +62,8 @@ namespace UnityEditor.Connect
                 L10n.Tr(k_KeywordUnlink, null),
                 L10n.Tr(k_KeywordMembers, null),
                 L10n.Tr(k_KeywordDashboard, null),
-                L10n.Tr(k_KeywordId, null)
+                L10n.Tr(k_KeywordId, null),
+                L10n.Tr(k_KeywordDiagnostics, null),
             });
         }
 
@@ -117,6 +120,7 @@ namespace UnityEditor.Connect
             scrollContainer.Clear();
             scrollContainer.Add(generalTemplate.CloneTree().contentContainer);
             SetupCoppaManager(scrollContainer);
+            ServicesDiagnosticsSection.AddTo(scrollContainer);
 
             //Collect Field Blocks entry points and initialize them
             var projectNameFieldBlock = rootVisualElement.Q(k_ProjectNameBlockName);

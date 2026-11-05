@@ -11,6 +11,7 @@ using Unity.ProjectAuditor.Editor.UI.Framework;
 using Unity.ProjectAuditor.Editor.Utils;
 using Unity.Scripting.LifecycleManagement;
 using UnityEditor;
+using UnityEditor.Scripting.ScriptCompilation.MsBuild;
 using UnityEngine;
 
 namespace Unity.ProjectAuditor.Editor
@@ -53,6 +54,8 @@ namespace Unity.ProjectAuditor.Editor
             public static readonly GUIContent SuppressedDiagnostics = L10n.TextContent("Suppressed Issues", "A comma-, semicolon- or space-delimited list of issue IDs to exclude from analysis. Use the search button to add/browse IDs from the list of known issues.", null, null);
             public static readonly GUIContent Manage = L10n.TextContent("Manage", "Open in Search", null, null);
             public static readonly GUIContent ManageDisabled = L10n.TextContent("Manage", "Open the Project Auditor window to enable browsing.", null, null);
+
+            public static readonly string CodeAnalysisEditorAndPlayerWarning = L10n.Tr("Setting Code Analysis Areas to include both Editor and Player code compiles the project twice, so analysis will take longer.", null);
         }
 
         const bool k_LogTimingsInfoDefault = false;
@@ -313,7 +316,7 @@ namespace Unity.ProjectAuditor.Editor
                 CodeAnalysisGUI();
             }
 
-            OwnersGUI();
+            OwnersGUI(projectAreasToAnalyze);
         }
 
         internal static void CodeAnalysisGUI()
@@ -321,10 +324,14 @@ namespace Unity.ProjectAuditor.Editor
             CodeAnalysisFlags.Set((CodeAnalysisFlags)EditorGUILayout.EnumFlagsField(Styles.CodeAnalysisFlagsSelection, CodeAnalysisFlags, GUILayout.ExpandWidth(true)));
         }
 
-        internal static void OwnersGUI()
+        internal static void OwnersGUI(ProjectAreaFlags projectAreasToAnalyze)
         {
             if (Unsupported.IsDeveloperMode())
                 OwnerFlags.Set((OwnerFlags)EditorGUILayout.EnumFlagsField(Styles.OwnersSelection, OwnerFlags, GUILayout.ExpandWidth(true)));
+
+            const CodeAnalysisFlags editorAndPlayer = Editor.CodeAnalysisFlags.Editor | Editor.CodeAnalysisFlags.Player;
+            if (MsBuildCompilationInterface.IsEnabled() && (CodeAnalysisFlags & editorAndPlayer) == editorAndPlayer && (projectAreasToAnalyze & ProjectAreaFlags.Code) != 0)
+                EditorGUILayout.HelpBox(Styles.CodeAnalysisEditorAndPlayerWarning, MessageType.Warning);
         }
 
         /// <summary>

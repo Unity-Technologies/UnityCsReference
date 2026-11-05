@@ -276,6 +276,7 @@ namespace UnityEngine.UIElements.UIR
             atlas = panel.atlas;
             vectorImageManager = new VectorImageManager(atlas);
             backgroundGradientBaker = new BackgroundGradientBaker();
+            boxShadowProfile = new BoxShadowProfile();
 
             // TODO: Share across all panels
             m_Compositor = new RenderTreeCompositor(this);
@@ -345,6 +346,9 @@ namespace UnityEngine.UIElements.UIR
 
                 backgroundGradientBaker?.Dispose();
                 backgroundGradientBaker = null;
+
+                boxShadowProfile?.Dispose();
+                boxShadowProfile = null;
 
                 shaderInfoAllocator.Dispose();
                 shaderInfoAllocator = null;
@@ -848,6 +852,55 @@ namespace UnityEngine.UIElements.UIR
             }
         }
 
+        // Promoted z-index descendants draw outside the element's command range, so its Begin/EndDisable does not cover them.
+        public void UIEOnPromotedDescendantsDisableRenderingChanged(VisualElement ve)
+        {
+            if (!hasZIndex || !MayHavePromotedDescendants(ve))
+                return;
+
+            if (m_BlockDirtyRegistration)
+                throw new InvalidOperationException("VisualElements cannot change their display style during generateVisualContent callback execution nor during visual tree rendering");
+
+            SyncPromotedDescendantsDisableRendering(ve, IsDisplayedFromStyles(ve));
+        }
+
+        // Called while display state propagates, so areAncestorsAndSelfDisplayed may still be stale.
+        static bool IsDisplayedFromStyles(VisualElement ve)
+        {
+            for (var current = ve; current != null; current = current.hierarchy.parent)
+            {
+                if (current.computedStyle.display == DisplayStyle.None)
+                    return false;
+            }
+
+            return true;
+        }
+
+        // A z-index or nested render tree element is a stacking context root, so its descendants stay in its command range.
+        static bool MayHavePromotedDescendants(VisualElement ve)
+        {
+            return ve.renderData != null && ve.renderData.zIndex == int.MinValue && ve.nestedRenderData == null;
+        }
+
+        void SyncPromotedDescendantsDisableRendering(VisualElement ve, bool isDisplayed)
+        {
+            int childCount = ve.hierarchy.childCount;
+            for (int i = 0; i < childCount; i++)
+            {
+                var child = ve.hierarchy[i];
+                if (child.renderData == null)
+                    continue;
+
+                bool isChildDisplayed = isDisplayed && child.computedStyle.display != DisplayStyle.None;
+
+                if ((child.transformFlags & VisualElementTransformFlags.ZIndexPromotedOutOfParent) != 0)
+                    CommandManipulator.DisableElementRendering(this, child, child.disableRendering || !isChildDisplayed);
+
+                if (MayHavePromotedDescendants(child))
+                    SyncPromotedDescendantsDisableRendering(child, isChildDisplayed);
+            }
+        }
+
         #endregion
 
         internal BaseVisualElementPanel panel { get; private set; }
@@ -856,6 +909,7 @@ namespace UnityEngine.UIElements.UIR
         internal AtlasBase atlas { get; private set; }
         internal VectorImageManager vectorImageManager { get; private set; }
         internal BackgroundGradientBaker backgroundGradientBaker { get; private set; }
+        internal BoxShadowProfile boxShadowProfile { get; private set; }
         internal TempMeshAllocatorImpl tempMeshAllocator { get; private set; }
         internal MeshWriteDataPool meshWriteDataPool { get; } = new();
         public EntryRecorder entryRecorder;

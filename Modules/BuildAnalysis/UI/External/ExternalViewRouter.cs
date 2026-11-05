@@ -108,6 +108,12 @@ namespace UnityEditor.Build.Analysis
             m_BuiltInContent.style.display = StyleKeyword.Null;
         }
 
+        /// <summary>Tells the claimed drawer the build history changed.</summary>
+        public void OnBuildListRefreshed()
+        {
+            m_Claimed?.RefreshSelection();
+        }
+
         private void RemoveMissingDrawerPane()
         {
             m_MissingDrawerPane?.RemoveFromHierarchy();

@@ -62,6 +62,19 @@ unsafe struct LayoutComputedData
         set => m_LastParentDirection = (sbyte)value;
     }
 
+    [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
+    public Rect GetRect()
+        => new(Position[(int)LayoutLayoutEdge.Left], Position[(int)LayoutLayoutEdge.Top],
+            Dimensions[(int)LayoutDimension.Width], Dimensions[(int)LayoutDimension.Height]);
+
+    [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
+    public Vector2 GetSize()
+        => new(Dimensions[(int)LayoutDimension.Width], Dimensions[(int)LayoutDimension.Height]);
+
+    [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
+    public Vector2 GetPosition()
+        => new(Position[(int)LayoutLayoutEdge.Left], Position[(int)LayoutLayoutEdge.Top]);
+
     public float* MarginBuffer
     {
         [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]

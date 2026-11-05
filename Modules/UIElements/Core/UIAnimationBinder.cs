@@ -195,7 +195,7 @@ namespace UnityEngine.UIElements
                     break;
 
                 case PropertyType.Int or PropertyType.Enum:
-                    e.computedStyle.ApplyPropertyAnimation(e, id, BitConverter.SingleToInt32Bits(value));
+                    e.computedStyle.ApplyPropertyAnimation(e, id, DecodeIntChannel(id, channel, value));
                     break;
 
                 case PropertyType.Length:
@@ -264,6 +264,26 @@ namespace UnityEngine.UIElements
                         case 6: ts.blurRadius = value; break;
                     }
                     e.computedStyle.ApplyPropertyAnimation(e, id, ts);
+                    break;
+                }
+
+                case PropertyType.BoxShadow:
+                {
+                    // Layout: 0..3 = color.r/g/b/a, 4..5 = offset.x/y, 6 = blurRadius, 7 = spreadRadius, 8 = inset (Int).
+                    var bs = e.computedStyle.ReadPropertyAnimationBoxShadow(id);
+                    switch (channel)
+                    {
+                        case 0: bs.color.r = value; break;
+                        case 1: bs.color.g = value; break;
+                        case 2: bs.color.b = value; break;
+                        case 3: bs.color.a = value; break;
+                        case 4: bs.offset.x = value; break;
+                        case 5: bs.offset.y = value; break;
+                        case 6: bs.blurRadius = Mathf.Max(0, value); break;
+                        case 7: bs.spreadRadius = value; break;
+                        case 8: bs.inset = BitConverter.SingleToInt32Bits(value) != 0; break;
+                    }
+                    e.computedStyle.ApplyPropertyAnimation(e, id, bs);
                     break;
                 }
 
@@ -347,8 +367,7 @@ namespace UnityEngine.UIElements
                 PropertyType.Length => AnimationLengthChannel.ReadFloat(
                     element.computedStyle.ReadPropertyAnimationLength(id), channel),
                 PropertyType.Float => element.computedStyle.ReadPropertyAnimationFloat(id),
-                PropertyType.Int => BitConverter.Int32BitsToSingle(element.computedStyle.ReadPropertyAnimationInt(id)),
-                PropertyType.Enum => BitConverter.Int32BitsToSingle(element.computedStyle.ReadPropertyAnimationInt(id)),
+                PropertyType.Int or PropertyType.Enum => EncodeIntChannel(id, channel, element.computedStyle.ReadPropertyAnimationInt(id)),
                 PropertyType.Color => element.computedStyle.ReadPropertyAnimationColor(id)[channel],
                 PropertyType.Translate => channel <= 1
                     ? AnimationLengthChannel.ReadFloat(element.computedStyle.ReadPropertyAnimationTranslate(id).x, channel)
@@ -384,6 +403,20 @@ namespace UnityEngine.UIElements
                     6 => element.computedStyle.ReadPropertyAnimationTextShadow(id).blurRadius,
                     _ => throw new NotImplementedException(),
                 },
+                PropertyType.BoxShadow => channel switch
+                {
+                    // Layout: 0..3 = color.r/g/b/a, 4..5 = offset.x/y, 6 = blurRadius, 7 = spreadRadius, 8 = inset (Int).
+                    0 => element.computedStyle.ReadPropertyAnimationBoxShadow(id).color.r,
+                    1 => element.computedStyle.ReadPropertyAnimationBoxShadow(id).color.g,
+                    2 => element.computedStyle.ReadPropertyAnimationBoxShadow(id).color.b,
+                    3 => element.computedStyle.ReadPropertyAnimationBoxShadow(id).color.a,
+                    4 => element.computedStyle.ReadPropertyAnimationBoxShadow(id).offset.x,
+                    5 => element.computedStyle.ReadPropertyAnimationBoxShadow(id).offset.y,
+                    6 => element.computedStyle.ReadPropertyAnimationBoxShadow(id).blurRadius,
+                    7 => element.computedStyle.ReadPropertyAnimationBoxShadow(id).spreadRadius,
+                    8 => BitConverter.Int32BitsToSingle(element.computedStyle.ReadPropertyAnimationBoxShadow(id).inset ? 1 : 0),
+                    _ => throw new NotImplementedException(),
+                },
 
                 PropertyType.TransformOrigin => channel <= 1
                     ? AnimationLengthChannel.ReadFloat(element.computedStyle.ReadPropertyAnimationTransformOrigin(id).x, channel)
@@ -415,6 +448,24 @@ namespace UnityEngine.UIElements
 
 
         }
+
+        private static int RoundToAnimatedInt(float value)
+        {
+            if (float.IsNaN(value))
+                return 0;
+
+            // Clamp in double: (float)int.MaxValue rounds up to 2^31, and int.MinValue is the z-index auto sentinel.
+            return (int)Math.Clamp(Math.Round(value), int.MinValue + 1, int.MaxValue);
+        }
+
+        private static float AnimatedIntToFloat(int value) => value == int.MinValue ? 0f : value;
+
+        // Discrete curves reach the binder as the int's bit pattern in the float slot (native AnimationDiscreteIntToFloat).
+        private static int DecodeIntChannel(StylePropertyId id, int channel, float value) =>
+            GetChannelKind(id, channel) == AnimationChannelKind.Int ? BitConverter.SingleToInt32Bits(value) : RoundToAnimatedInt(value);
+
+        private static float EncodeIntChannel(StylePropertyId id, int channel, int value) =>
+            GetChannelKind(id, channel) == AnimationChannelKind.Int ? BitConverter.Int32BitsToSingle(value) : AnimatedIntToFloat(value);
 
         [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
         internal void SetObjectValue(int elementIndex, int propertyId, int channel, EntityId value)
@@ -528,6 +579,7 @@ namespace UnityEngine.UIElements
                 PropertyType.BackgroundRepeat => throw new InvalidOperationException(),
                 PropertyType.BackgroundSize => throw new InvalidOperationException(),
                 PropertyType.TextShadow => throw new InvalidOperationException(),
+                PropertyType.BoxShadow => throw new InvalidOperationException(),
                 PropertyType.TextAutoSize => throw new InvalidOperationException(),
 
                 // `.p<n>` and `.type` go through GetFloatValue; only `.customDefinition` arrives here.

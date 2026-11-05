@@ -957,13 +957,18 @@ namespace UnityEngine.UIElements
 
         // Elements attached under the previous flatness were never versioned for it. Roots get a version bump
         // (repaint + Needs3DBounds propagation); descendants get their 3D bounds flags set directly, because the
-        // downward pass drops a flag at the first node already carrying it. Barriers are over-dirtied on purpose.
+        // downward pass drops a flag at the first node already carrying it: InCurvedSubtree when going curved,
+        // Needs3DBounds when going flat. Barriers are over-dirtied on purpose.
         void RefreshCurvedElements(bool markPanelCurved)
         {
-            const VisualElementTransformFlags k_Subtree3DBoundsFlags =
-                VisualElementTransformFlags.Needs3DBounds |
+            const VisualElementTransformFlags k_Bounds3DDirtyFlags =
                 VisualElementTransformFlags.LocalBounds3DDirty |
                 VisualElementTransformFlags.LocalBoundsWithoutNested3DDirty;
+
+            // Nothing bends on a flat panel, and removal there keeps the flags, so InCurvedSubtree must not survive.
+            var subtreeFlags = k_Bounds3DDirtyFlags | (markPanelCurved
+                ? VisualElementTransformFlags.InCurvedSubtree
+                : VisualElementTransformFlags.Needs3DBounds);
 
             var root = visualTree;
             if (root == null)
@@ -991,8 +996,10 @@ namespace UnityEngine.UIElements
                         underCurvedRoot = true;
                     }
 
+                    if (!markPanelCurved)
+                        ve.transformFlags &= ~VisualElementTransformFlags.InCurvedSubtree;
                     if (underCurvedRoot)
-                        ve.transformFlags |= k_Subtree3DBoundsFlags;
+                        ve.transformFlags |= subtreeFlags;
 
                     var hierarchy = ve.hierarchy;
                     for (int i = 0, count = hierarchy.childCount; i < count; ++i)
@@ -1233,6 +1240,8 @@ namespace UnityEngine.UIElements
         // across multiple swaps within a frame and are flushed by EmitProfilerPanelUpdateMetrics in Render.
         private uint m_PendingHierarchyVersionChanges = 0;
         private uint m_PendingRepaintVersionChanges = 0;
+
+        internal bool isRepainting { get; private set; }
 
         ProfilerMarker m_MarkerPrepareRepaint;
         ProfilerMarker m_MarkerRender;
@@ -1690,7 +1699,9 @@ namespace UnityEngine.UIElements
             return PickAll(root, point);
         }
 
-        // For tests only.
+        // For tests, and for the UI Viewport and the Scene view's UI Preview overlay, which pick elements that ignore picking
+        // too, as UI Builder does (UUM-157821).
+        [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
         internal static VisualElement PickAll(VisualElement root, Vector2 point, List<VisualElement> picked = null, bool includeIgnoredElement = false)
         {
             using var _ = s_MarkerPickAll.Auto(((BaseVisualElementPanel)root.panel)?.ownerObject);
@@ -1936,7 +1947,15 @@ namespace UnityEngine.UIElements
 
             using (m_MarkerPrepareRepaint.Auto())
             {
-                UpdateForRepaint();
+                isRepainting = true;
+                try
+                {
+                    UpdateForRepaint();
+                }
+                finally
+                {
+                    isRepainting = false;
+                }
             }
 
             panelDebug?.Refresh();

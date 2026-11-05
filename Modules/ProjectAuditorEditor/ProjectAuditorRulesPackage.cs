@@ -65,6 +65,8 @@ namespace Unity.ProjectAuditor.Editor
 
         public const string Name = "com.unity.project-auditor-rules";
 
+        public const string NotInstalledMessage = "Install the Project Auditor Rules package (" + Name + ") before using Project Auditor.";
+
         [NoAutoStaticsCleanup] // same as IsInstalled
         public static string Path { get; private set; }
 

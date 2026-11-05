@@ -124,6 +124,14 @@ namespace Unity.ProjectAuditor.Editor
             public AnalysisResult result;
         }
 
+        [Serializable]
+        internal class IssueOverride
+        {
+            public string descriptorId;
+            public Location location;
+            public string moduleName;
+        }
+
         /// <summary>
         /// Contains information about the session in which this Report was created.
         /// </summary>
@@ -149,7 +157,12 @@ namespace Unity.ProjectAuditor.Editor
         [SerializeField]
         List<ReportItem> m_Issues = new List<ReportItem>();
 
+        [SerializeField]
+        List<IssueOverride> m_IssueOverrides = new List<IssueOverride>();
+
         static readonly Mutex s_Mutex = new Mutex();
+
+        internal IReadOnlyList<IssueOverride> IssueOverrides => m_IssueOverrides;
 
         internal ReportItem[] Insights
         {
@@ -523,6 +536,29 @@ namespace Unity.ProjectAuditor.Editor
             s_Mutex.WaitOne();
             m_Issues.AddRange(issues);
             s_Mutex.ReleaseMutex();
+        }
+
+        internal void SetIssueOverrides(List<IssueOverride> issueOverrides)
+        {
+            s_Mutex.WaitOne();
+            m_IssueOverrides = issueOverrides;
+            s_Mutex.ReleaseMutex();
+        }
+
+        internal List<ReportItem> RemoveOverriddenIssues(IssueOverrides issueOverrides)
+        {
+            var removedIssues = new List<ReportItem>();
+            s_Mutex.WaitOne();
+            m_Issues.RemoveAll(issue =>
+            {
+                if (!issueOverrides.IsOverridden(issue.DescriptorIdAsString, issue.Location))
+                    return false;
+
+                removedIssues.Add(issue);
+                return true;
+            });
+            s_Mutex.ReleaseMutex();
+            return removedIssues;
         }
     }
 }

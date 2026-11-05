@@ -35,6 +35,13 @@ namespace UnityEngine.UIElements
             rareData.Write().unityCurvature = value;
         }
 
+        internal void ApplyStyleBoxShadow(BoxShadow value)
+        {
+            // Rendered like 0, so the resolved style shows 0
+            value.blurRadius = Mathf.Max(0, value.blurRadius);
+            rareData.Write().boxShadow = value;
+        }
+
         private bool ApplyGlobalKeyword(StylePropertyReader reader, ref ComputedStyle parentStyle)
         {
             if (reader.valueCount == 0)
@@ -102,6 +109,12 @@ namespace UnityEngine.UIElements
         private void ApplyAllPropertyInitial()
         {
             CopyFrom(ref InitialStyle.Get());
+        }
+
+        public static bool StartAnimationInlineBoxShadow(VisualElement element, ref ComputedStyle computedStyle, StyleBoxShadow boxShadow, int durationMs, int delayMs, Func<float, float> easingCurve)
+        {
+            var to = boxShadow.keyword == StyleKeyword.Initial ? InitialStyle.boxShadow : boxShadow.value;
+            return element.styleAnimation.Start(StylePropertyId.BoxShadow, computedStyle.rareData.Read().boxShadow, to, durationMs, delayMs, easingCurve);
         }
 
         public static bool StartAnimationInlineTextShadow(VisualElement element, ref ComputedStyle computedStyle, StyleTextShadow textShadow, int durationMs, int delayMs, Func<float, float> easingCurve)

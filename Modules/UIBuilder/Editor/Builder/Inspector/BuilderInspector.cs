@@ -822,9 +822,9 @@ namespace Unity.UI.Builder
                 return;
             }
 
-            if (field is TextShadowStyleField || field is BackgroundRepeatStyleField)
+            if (field is TextShadowStyleField || field is BoxShadowStyleField || field is BackgroundRepeatStyleField)
             {
-                // Special case for TextShadowStyleField and BackgroundRepeatStyleField
+                // Special case for TextShadowStyleField, BoxShadowStyleField and BackgroundRepeatStyleField
                 // We need to disabled the fields inside so the foldout is still functional
                 var foldout = field.Q<Foldout>();
                 foldout.contentContainer.SetEnabled(enabled);

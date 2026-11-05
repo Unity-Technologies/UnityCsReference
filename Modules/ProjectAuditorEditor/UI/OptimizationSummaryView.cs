@@ -42,7 +42,7 @@ namespace Unity.ProjectAuditor.Editor.UI
         }
 
         // The Optimization breakdown excludes Upgrade and migration issues.
-        protected override bool MatchesSummaryFilter(ReportItem issue) => !issue.IsIssue() || IssueHasAnyAreas(issue, ~AreasExtensions.AllUpgradeAreas);
+        protected override bool MatchesSummaryFilter(ReportItem issue) => !issue.IsIssue() || issue.Id.GetDescriptor().HasAnyAreas(~AreasExtensions.AllUpgradeAreas);
 
         protected override void OnSummaryRefreshed()
         {
@@ -70,7 +70,7 @@ namespace Unity.ProjectAuditor.Editor.UI
                 if (!MatchesSummaryFilter(issue))
                     continue;
 
-                AccumulateStat(issue, ref m_Stats);
+                AccumulateStat(issue, ref m_Stats, true);
 
                 // The Top Ten list leaves out categories that are still being analysed
                 if (!IsIssueIgnoredOrFiltered(issue) && !m_ViewManager.HasPendingCategory(issue.Category))
@@ -284,7 +284,7 @@ namespace Unity.ProjectAuditor.Editor.UI
 
                 EditorGUILayout.EndHorizontal();
 
-                DrawSeverityBar(m_Stats.SeveritiesByCategory[(int)category], horizontalPadding: 20, time);
+                DrawChartBar(horizontalPadding: 20, () => BuildSeverityChartElements(m_Stats.SeveritiesByCategory[(int)category]), time);
 
                 EditorGUILayout.BeginHorizontal();
 

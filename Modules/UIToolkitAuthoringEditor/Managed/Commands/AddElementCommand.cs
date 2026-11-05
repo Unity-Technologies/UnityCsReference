@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using Unity.UIToolkit.Editor.Utilities;
 using UnityEditor.UIElements;
 using UnityEngine.Pool;
 using UnityEngine.UIElements;
@@ -23,10 +24,10 @@ sealed class AddElementCommand : Command<AddElementCommand>
         return cmd;
     }
 
-    public static void Execute(object source, Type elementType, VisualTreeAsset visualTreeAsset, VisualElementAsset parentVea, int index = -1, string variantName = null)
+    public static CommandExecutionStatus Execute(object source, Type elementType, VisualTreeAsset visualTreeAsset, VisualElementAsset parentVea, int index = -1, string variantName = null)
     {
         using var command = GetPooled(source, elementType, visualTreeAsset, parentVea, index, variantName);
-        UICommandQueue.Execute(command);
+        return UICommandQueue.Execute(command).Status;
     }
 
     Type m_ElementType;
@@ -59,7 +60,8 @@ sealed class AddElementCommand : Command<AddElementCommand>
         context.RecordUndo(m_VisualTreeAsset);
     }
 
-    public override bool Validate() => m_ElementType != null && m_VisualTreeAsset != null;
+    public override bool Validate()
+        => m_ElementType != null && m_VisualTreeAsset != null && VisualElementUtility.CanAddChildren(m_ParentVea, 1);
 
     public override CommandExecutionStatus Execute()
     {

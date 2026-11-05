@@ -103,38 +103,36 @@ public class SubStringFormatter : FormatterBase
     {
         var(startPos, length) = GetStartAndLength(currentValue, parameters);
 
+        if (startPos >= 0 && length >= 0 && startPos + length <= currentValue.Length)
+            return currentValue.Slice((int)startPos, (int)length);
+
         switch (OutOfRangeBehavior)
         {
             case SubStringOutOfRangeBehavior.ReturnEmptyString:
-                if (startPos + length > currentValue.Length)
-                    length = 0;
-                break;
+                return ReadOnlySpan<char>.Empty;
             case SubStringOutOfRangeBehavior.ReturnStartIndexToEndOfString:
-                if (startPos + length > currentValue.Length)
-                    length = currentValue.Length - startPos;
-                break;
+                return currentValue.Slice((int)Math.Max(startPos, 0));
+            default:
+                throw new ArgumentOutOfRangeException(nameof(parameters), $"Start index {startPos} and length {length} are outside the string of length {currentValue.Length}.");
         }
-
-        // SubStringOutOfRangeBehavior.ThrowException:
-        // Without prior adjustments, this may throw
-        return parameters.Length > 1
-            ? currentValue.Slice(startPos, length)
-            : currentValue.Slice(startPos);
     }
 
-    static (int startPos, int length) GetStartAndLength(ReadOnlySpan<char> currentValue, string[] parameters)
+    static (long startPos, long length) GetStartAndLength(ReadOnlySpan<char> currentValue, string[] parameters)
     {
-        var startPos = int.Parse(parameters[0]);
-        var length = parameters.Length > 1 ? int.Parse(parameters[1]) : 0;
+        long startPos = ParseIndex(parameters[0]);
         if (startPos < 0)
             startPos = currentValue.Length + startPos;
         if (startPos > currentValue.Length)
             startPos = currentValue.Length;
+
+        long length = parameters.Length > 1 ? ParseIndex(parameters[1]) : currentValue.Length - startPos;
         if (length < 0)
             length = currentValue.Length - startPos + length;
 
         return (startPos, length);
     }
+
+    static int ParseIndex(string value) => (int)Math.Clamp(long.Parse(value), int.MinValue, int.MaxValue);
 
     /// <summary>
     /// Specifies behavior when start index and/or length is out of range.

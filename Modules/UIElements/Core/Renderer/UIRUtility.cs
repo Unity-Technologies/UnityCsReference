@@ -91,6 +91,26 @@ namespace UnityEngine.UIElements
             return new Rect(r.xMin - i, r.yMin - i, r.width + i + i, r.height + i + i);
         }
 
+        public static Rect InflateByMargins(Rect r, PostProcessingMargins margins, Vector2 scale)
+        {
+            return new Rect(
+                r.xMin - margins.left * scale.x,
+                r.yMin - margins.top * scale.y,
+                r.width + (margins.left + margins.right) * scale.x,
+                r.height + (margins.top + margins.bottom) * scale.y);
+        }
+
+        public static Rect? Intersect(Rect a, Rect b)
+        {
+            float xMin = Mathf.Max(a.xMin, b.xMin);
+            float yMin = Mathf.Max(a.yMin, b.yMin);
+            float xMax = Mathf.Min(a.xMax, b.xMax);
+            float yMax = Mathf.Min(a.yMax, b.yMax);
+            if (xMax <= xMin || yMax <= yMin)
+                return null;
+            return Rect.MinMaxRect(xMin, yMin, xMax, yMax);
+        }
+
         public static void ComputeMatrixRelativeToAncestor(RenderData renderData, RenderData ancestor, out Matrix4x4 transform)
         {
             ref var ancestorInverse = ref ancestor.owner.GetWorldTransformInverse(out bool isSingular);
@@ -126,10 +146,6 @@ namespace UnityEngine.UIElements
                 transform.m22 = 1.0f; // Scaling in z means nothing for 2d ui, and break masking
         }
 
-        // On a flat panel Z is a two-valued masking channel, not geometry: UIREntryProcessor pins it to
-        // k_MeshPosZ or k_MaskPosZ and UIRRenderTreeManager projects it with only 0.001 of slack past each.
-        // A GPU-applied transform must decouple from it both ways - the row displaces geometry out of that
-        // range, the column shifts the mask off the shape it clips - leaving the 2D affine part.
         public static void NeutralizeZ(ref Matrix4x4 transform)
         {
             transform.m02 = 0.0f;
@@ -138,14 +154,6 @@ namespace UnityEngine.UIElements
             transform.m21 = 0.0f;
             transform.m22 = 1.0f;
             transform.m23 = 0.0f;
-        }
-
-        // The matrix installed as GL.modelview, by PushView or by Immediate; both must decouple from Z.
-        public static void GetViewMatrix(RenderData renderData, out Matrix4x4 transform)
-        {
-            ComputeMatrixRelativeToRenderTree(renderData, out transform);
-            if (renderData.owner.elementPanel is { isFlat: true })
-                NeutralizeZ(ref transform);
         }
 
         // Fallback for ComputeMatrixRelativeToAncestor when the ancestor's world matrix is singular

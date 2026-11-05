@@ -15,6 +15,12 @@ namespace Unity.GraphToolkit.Editor
     {
         Dictionary<string, PortModel> m_Dictionary;
         List<PortModel> m_PortModels;
+        int m_Version;
+
+        /// <summary>
+        /// A number that changes every time a port is added to or removed from the container.
+        /// </summary>
+        public int Version => m_Version;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="OrderedPorts"/> class.
@@ -34,6 +40,7 @@ namespace Unity.GraphToolkit.Editor
         {
             m_Dictionary.Add(portModel.UniqueName, portModel);
             m_PortModels.Add(portModel);
+            m_Version++;
 
             var graphModel = portModel.NodeModel?.GraphModel;
             graphModel?.PortWireIndex.MarkDirty();
@@ -49,6 +56,8 @@ namespace Unity.GraphToolkit.Editor
                 m_Dictionary.Add(portModels[i].UniqueName, portModels[i]);
                 m_PortModels.Insert(index + i, portModels[i]);
             }
+
+            m_Version++;
         }
 
         /// <summary>
@@ -102,6 +111,7 @@ namespace Unity.GraphToolkit.Editor
                 m_Dictionary.Remove(uniqueName);
                 found = true;
                 m_PortModels.Remove(portModel);
+                m_Version++;
 
                 var graphModel = portModel.NodeModel?.GraphModel;
                 graphModel?.PortWireIndex.MarkDirty();

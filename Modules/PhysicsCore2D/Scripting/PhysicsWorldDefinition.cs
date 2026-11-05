@@ -190,15 +190,14 @@ namespace Unity.U2D.Physics
         /// The number of bounce passes the world runs each simulation step, after contacts and joints have been solved.
         /// Each pass pushes apart the bodies of every contact that struck with a bounciness above zero, at the speed its bounciness allows, and never adds energy.
         /// More passes let a bounce settle more accurately, which reduces unwanted spinning of bouncing boxes, and each pass adds work for every bouncy contact in the world.
-        /// The value must be from zero up to the maximum bounce pass count.
-        /// With zero, contacts never bounce whatever their bounciness.
+        /// The value must be from the minimum up to the maximum bounce pass count.
         /// </summary>
         /// <remarks>
-        /// The maximum bounce pass count is <see cref="PhysicsConstants.MaxBounceIterations"/>.
-        /// Setting a value outside zero to that maximum clamps it into that range.
+        /// The bounce pass count range is <see cref="PhysicsConstants.MinBounceIterations"/> to <see cref="PhysicsConstants.MaxBounceIterations"/>.
+        /// Setting a value outside that range clamps it into the range.
         /// See <see cref="PhysicsWorld.bounceIterations"/>.
         /// </remarks>
-        public int bounceIterations { readonly get => m_BounceIterations; set => m_BounceIterations = Mathf.Clamp(value, 0, PhysicsConstants.MaxBounceIterations); }
+        public int bounceIterations { readonly get => m_BounceIterations; set => m_BounceIterations = Mathf.Clamp(value, PhysicsConstants.MinBounceIterations, PhysicsConstants.MaxBounceIterations); }
 
         /// <summary>
         /// Controls whether the bounce passes also solve contacts that have no bounciness.
@@ -381,7 +380,7 @@ namespace Unity.U2D.Physics
         [SerializeField] bool m_AutoJointThresholdCallbacks;
         [SerializeField] bool m_BouncePropagation;
         [SerializeField] [Min(0.0f)] float m_BounceThreshold;
-        [SerializeField] [Range(0, PhysicsConstants.MaxBounceIterations)] int m_BounceIterations;
+        [SerializeField] [Range(PhysicsConstants.MinBounceIterations, PhysicsConstants.MaxBounceIterations)] int m_BounceIterations;
         [SerializeField] [Min(0.0f)] float m_ContactHitEventThreshold;
         [SerializeField] [Min(0.0f)] float m_ContactFrequency;
         [SerializeField] [Min(0.0f)] float m_ContactDamping;

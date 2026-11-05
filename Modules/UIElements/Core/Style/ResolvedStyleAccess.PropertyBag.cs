@@ -79,6 +79,10 @@ namespace UnityEngine.UIElements
         {
         }
 
+        abstract class ResolvedBoxShadowProperty : ResolvedStyleProperty<BoxShadow>
+        {
+        }
+
         abstract class ResolvedScaleProperty : ResolvedStyleProperty<Scale>
         {
         }

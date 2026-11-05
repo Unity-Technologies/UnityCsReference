@@ -494,11 +494,17 @@ namespace UnityEditor
             buildParameters.metadataPath = BuildHistory.ReserveBuildReportDirectory(
                 buildSessionGuid.ToString(), buildParameters.buildStartTimeTicks);
 
-            var report = BuildContentDirectoryInternal(buildParameters, buildSessionGuid);
-
-            BuildHistory.FinalizeBuild(report);
-
-            return report;
+            try
+            {
+                var report = BuildContentDirectoryInternal(buildParameters, buildSessionGuid);
+                BuildHistory.FinalizeBuild(report);
+                return report;
+            }
+            finally
+            {
+                // BuildHistory.ReserveBuildReportDirectory registered this as the running build.
+                BuildHistory.EndActiveBuild(buildSessionGuid);
+            }
         }
 
         [NativeMethod(ThrowsException = true)]

@@ -31,6 +31,11 @@ namespace UnityEditor.Build.Analysis
         public virtual void OnBuildDeselected()
         {
         }
+
+        /// <summary>Called when the build history changes while one of this drawer's builds is selected.</summary>
+        public virtual void OnBuildListRefreshed()
+        {
+        }
     }
 
     /// <summary>Declares the package whose builds an <see cref="ExternalBuildDrawer"/> draws.</summary>

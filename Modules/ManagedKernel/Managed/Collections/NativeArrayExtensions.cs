@@ -153,6 +153,7 @@ namespace Unity.Collections
         /// <param name="value">The value to locate.</param>
         /// <returns>True if the value is present in this container.</returns>
         [GenerateTestsForBurstCompatibility(GenericTypeArguments = new[] { typeof(int), typeof(int) })]
+        [Obsolete("'Contains(ReadOnlySpan<T>, U)' has been deprecated; use 'System.MemoryExtensions.Contains' or 'IndexOf' instead.", false)]
         public static bool Contains<T, U>(this ReadOnlySpan<T> roSpan, U value) where T : unmanaged, IEquatable<U> => IndexOf(roSpan, value) != -1;
 
         /// <summary>

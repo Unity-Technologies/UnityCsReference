@@ -43,14 +43,14 @@ namespace Unity.ProjectAuditor.Editor.AssemblyUtils
             if (PackageResolvedPath != null)
             {
                 if (result.Length > 0)
-                    result += " ";
+                    result += ", ";
                 result += "Package";
             }
 
             if (IsTestAssembly)
             {
                 if (result.Length > 0)
-                    result += " ";
+                    result += ", ";
                 result += "Tests";
             }
 

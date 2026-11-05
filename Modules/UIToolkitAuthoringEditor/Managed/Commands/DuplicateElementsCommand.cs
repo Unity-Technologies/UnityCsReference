@@ -4,6 +4,7 @@
 
 using System;
 using Unity.UIToolkit.Editor.Importers;
+using Unity.UIToolkit.Editor.Utilities;
 using UnityEditor.UIElements;
 using UnityEngine;
 using UnityEngine.Pool;
@@ -39,9 +40,24 @@ internal sealed class DuplicateElementsCommand : Command<DuplicateElementsComman
     {
         if (elements.IsEmpty)
             return false;
+
+        // Copies are inserted next to their originals
+        using var _ = DictionaryPool<UxmlAsset, int>.Get(out var addedCountsByParent);
         foreach (var element in elements)
         {
             if (element == null || element.visualTreeAsset == null)
+                return false;
+
+            var parent = element.parentAsset;
+            if (parent == null)
+                return false;
+            addedCountsByParent.TryGetValue(parent, out var addedCount);
+            addedCountsByParent[parent] = addedCount + 1;
+        }
+
+        foreach (var pair in addedCountsByParent)
+        {
+            if (!VisualElementUtility.CanAddChildren(pair.Key as VisualElementAsset, pair.Value))
                 return false;
         }
         return true;

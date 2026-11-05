@@ -46,6 +46,7 @@ namespace UnityEngine.UIElements
             internal static readonly BindingId borderTopRightRadiusProperty = "style." + nameof(IStyle.borderTopRightRadius);
             internal static readonly BindingId borderTopWidthProperty = "style." + nameof(IStyle.borderTopWidth);
             internal static readonly BindingId bottomProperty = "style." + nameof(IStyle.bottom);
+            internal static readonly BindingId boxShadowProperty = "style." + nameof(IStyle.boxShadow);
             internal static readonly BindingId colorProperty = "style." + nameof(IStyle.color);
             internal static readonly BindingId columnGapProperty = "style." + nameof(IStyle.columnGap);
             internal static readonly BindingId cursorProperty = "style." + nameof(IStyle.cursor);

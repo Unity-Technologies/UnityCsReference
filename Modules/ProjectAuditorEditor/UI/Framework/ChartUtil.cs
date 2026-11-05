@@ -34,7 +34,7 @@ namespace Unity.ProjectAuditor.Editor.UI.Framework
 
         const int k_NumberLabelWidth = 60;
         const int k_RowSize = 22;
-        const int k_LabelWidth = 80;
+        const int k_LabelWidth = 100;
 
         static readonly GUIStyle s_Row = new GUIStyle(GUIStyle.none)
         {
@@ -174,7 +174,21 @@ namespace Unity.ProjectAuditor.Editor.UI.Framework
                 DrawLine(draw2D);
 
             EditorGUILayout.BeginHorizontal(s_Row, GUILayout.Height(10), GUILayout.Width(120));
-            EditorGUILayout.LabelField(element.IconContent, GUILayout.Width(28), GUILayout.Height(20));
+
+            if (element.IconContent != null)
+            {
+                EditorGUILayout.LabelField(element.IconContent, GUILayout.Width(28), GUILayout.Height(20));
+            }
+            else
+            {
+                var rect = EditorGUILayout.GetControlRect(GUILayout.Width(12), GUILayout.Height(20));
+                if (draw2D.DrawStart(rect))
+                {
+                    draw2D.DrawFilledBox(1, 5, 10, 10, element.Color);
+                    draw2D.DrawEnd();
+                }
+            }
+
             EditorGUILayout.LabelField(new GUIContent(element.Label, element.Tooltip), SharedStyles.Label, GUILayout.Width(k_LabelWidth));
             EditorGUILayout.LabelField(new GUIContent(string.Format(labelFormat, element.Value.ToString(numberFormat)), element.Tooltip), SharedStyles.BoldLabel, GUILayout.Width(k_NumberLabelWidth));
 

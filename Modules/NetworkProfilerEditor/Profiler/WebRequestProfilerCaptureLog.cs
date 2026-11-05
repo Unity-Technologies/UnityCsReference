@@ -142,6 +142,8 @@ namespace UnityEditor.Networking
         readonly List<WebRequestProfilerRecord> m_Records = new List<WebRequestProfilerRecord>();
 
         long m_IngestedThrough = -1;
+        long m_NewestFrame = -1;
+        bool m_InFlightInNewestFrame;
         int m_NextCaptureIndex;
         ulong m_EvictedThroughId;
         WebRequestProfilerEvictedTotals m_Evicted;
@@ -160,11 +162,18 @@ namespace UnityEditor.Networking
             : m_AnyFrameWithoutCounter ? WebRequestProfilerDropCoverage.Partial
             : WebRequestProfilerDropCoverage.Complete;
 
+        // Native drops a request still in flight when capture stops, so it never appears in a later frame.
+        public bool StoppedMidRequest(WebRequestProfilerRecord record, bool recording) =>
+            record.state == WebRequestProfilerState.InFlight
+            && (!recording || record.lastSeenFrame < m_NewestFrame);
+
         public void Clear()
         {
             m_ById.Clear();
             m_Records.Clear();
             m_IngestedThrough = -1;
+            m_NewestFrame = -1;
+            m_InFlightInNewestFrame = false;
             m_NextCaptureIndex = 0;
             m_EvictedThroughId = 0;
             m_Evicted = default;
@@ -236,8 +245,18 @@ namespace UnityEditor.Networking
             List<WebRequestProfilerHeaderRow> headers, List<WebRequestProfilerTimingRow> timings,
             List<WebRequestProfilerBodyRow> bodies, byte[] bodyBytes)
         {
+            // Before the empty check: the frames after capture stops carry no rows at all, and the
+            // first of them is what turns an in-flight record into StoppedMidRequest.
+            var stoppedMidRequest = false;
+            if (frameIndex > m_NewestFrame)
+            {
+                stoppedMidRequest = m_InFlightInNewestFrame;
+                m_NewestFrame = frameIndex;
+                m_InFlightInNewestFrame = false;
+            }
+
             if (rows == null || rows.Count == 0)
-                return false;
+                return stoppedMidRequest;
 
             foreach (var row in rows)
             {
@@ -261,6 +280,8 @@ namespace UnityEditor.Networking
                     continue;
 
                 record.lastSeenFrame = frameIndex;
+                if (frameIndex == m_NewestFrame && row.state == (byte)WebRequestProfilerState.InFlight)
+                    m_InFlightInNewestFrame = true;
                 record.url = WebRequestProfilerFrameReader.Slice(strings, row.urlOffset, row.urlLength);
                 record.method = WebRequestProfilerFrameReader.Slice(strings, row.methodOffset, row.methodLength);
                 record.bytesDownloaded = row.bytesDownloaded;

@@ -159,7 +159,9 @@ internal static class WorldSpaceInput
             throw new ArgumentException("Element must be part of a UI Document.");
 
         var documentRay = panelComponent.gameObject.transform.worldToLocalMatrix.TransformRay(worldRay);
-        if (!element.IntersectWorldRay(documentRay, out var distance, out _) && (!acceptOutside || !(distance > 0)))
+        var intersection = element.IntersectWorldRay(documentRay, out var distance, out _);
+        if (intersection != RayIntersection.Inside &&
+            (!acceptOutside || intersection == RayIntersection.NoSurfacePoint || !(distance > 0)))
         {
             pickResult = PickResult.Empty;
             return false;
@@ -373,7 +375,9 @@ internal static class WorldSpaceInput
 
         // Flat path keeps its historical behavior: IntersectLocalRay returns the Z=0-plane point (in or out of
         // rect) and the native pick filters by layout.
-        root.IntersectLocalRay(ray, out var point);
+        if (root.IntersectLocalRay(ray, out var point) == RayIntersection.NoSurfacePoint)
+            return null;
+
         return PerformPickByPoint(root, point, outResults);
     }
 
@@ -428,7 +432,7 @@ internal static class WorldSpaceInput
         // Now since this is a virtual, we can't just start to call it with global pos... we could break client code.
         // EdgeControl and port connectors in GraphView overload this.
 
-        bool intersects = root.IntersectLocalRay(ray, out var point);
+        bool intersects = root.IntersectLocalRay(ray, out var point) == RayIntersection.Inside;
         bool containsPoint = intersects && root.ContainsPoint(point);
         // we only skip children in the case we visually clip them
         if (!containsPoint && root.ShouldClip())

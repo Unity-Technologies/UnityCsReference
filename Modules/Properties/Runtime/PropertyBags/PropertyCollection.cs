@@ -91,15 +91,15 @@ namespace Unity.Properties
                         return false;
                     case EnumeratorType.Enumerable:
                         result = m_Enumerator.MoveNext();
-                        Current = m_Enumerator.Current;
+                        Current = result ? m_Enumerator.Current : default;
                         break;
                     case EnumeratorType.List:
                         result = m_Properties.MoveNext();
-                        Current = m_Properties.Current;
+                        Current = result ? m_Properties.Current : default;
                         break;
                     case EnumeratorType.IndexedCollectionPropertyBag:
                         result = m_IndexedCollectionPropertyBag.MoveNext();
-                        Current = m_IndexedCollectionPropertyBag.Current;
+                        Current = result ? m_IndexedCollectionPropertyBag.Current : default;
                         break;
                     default:
                         throw new ArgumentOutOfRangeException();
@@ -121,14 +121,20 @@ namespace Unity.Properties
                         m_Enumerator.Reset();
                         break;
                     case EnumeratorType.List:
-                        ((IEnumerator) m_Properties).Reset();
+                    {
+                        IEnumerator enumerator = m_Properties;
+                        enumerator.Reset();
+                        m_Properties = (List<IProperty<TContainer>>.Enumerator) enumerator;
                         break;
+                    }
                     case EnumeratorType.IndexedCollectionPropertyBag:
                         m_IndexedCollectionPropertyBag.Reset();
                         break;
                     default:
                         throw new ArgumentOutOfRangeException();
                 }
+
+                Current = default;
             }
 
             /// <summary>

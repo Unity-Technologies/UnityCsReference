@@ -1137,6 +1137,11 @@ namespace UnityEngine
         {
             if (sizes == null)
                 throw new ArgumentException("sizes array can not be null");
+            for (int i = 0; i < sizes.Length; ++i)
+            {
+                if (!float.IsFinite(sizes[i].x) || !float.IsFinite(sizes[i].y))
+                    throw new ArgumentException($"sizes must be finite, but sizes[{i}] was {sizes[i]}");
+            }
             if (results == null)
                 throw new ArgumentException("results list cannot be null");
             if (padding < 0)

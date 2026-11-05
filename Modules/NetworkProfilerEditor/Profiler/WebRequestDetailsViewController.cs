@@ -54,6 +54,12 @@ namespace UnityEditor.Networking
 
         const string k_InsecureTooltip = "Sent over plain HTTP, so the request and response were not encrypted.";
 
+        const string k_RecordingStoppedClass = "web-request-details-view__recording-stopped";
+
+        const string k_RecordingStoppedMessage = "This request was still in progress when capture stopped, so some of its details were not captured. To see the whole request, keep recording with the Web Requests module enabled until it finishes.";
+
+        const string k_StoppedMidRequestText = "Not captured: capture stopped before the request finished.";
+
         const string k_CredentialTooltip = "This value is a credential and is stored in plain text in the profiler captures. Be careful when sharing a saved capture (.raw file).";
 
         internal const string k_InspectorVisiblePrefKey = "ProfilerWindow.WebRequests.DetailsPanel.Visible";
@@ -90,6 +96,7 @@ namespace UnityEditor.Networking
         ToolbarButton m_InspectorToggle;
         VisualElement m_Inspector;
         Label m_InspectorEmpty;
+        List<HelpBox> m_RecordingStoppedBoxes;
         TabView m_Tabs;
         Tab m_PayloadTab;
         Tab m_HeadersTab;
@@ -157,6 +164,9 @@ namespace UnityEditor.Networking
 
             m_Inspector = view.Q<VisualElement>("web-request-details-view__inspector");
             m_InspectorEmpty = view.Q<Label>("web-request-details-view__inspector-empty");
+            m_RecordingStoppedBoxes = view.Query<HelpBox>(className: k_RecordingStoppedClass).ToList();
+            foreach (var box in m_RecordingStoppedBoxes)
+                box.text = k_RecordingStoppedMessage;
             m_Tabs = view.Q<TabView>("web-request-details-view__tabs");
             m_HeadersTab = view.Q<Tab>("web-request-details-view__headers-tab");
             m_PayloadTab = view.Q<Tab>("web-request-details-view__payload-tab");
@@ -216,6 +226,7 @@ namespace UnityEditor.Networking
             m_Module.SyncCaptureLog();
             ReloadData();
             m_Module.captureLogChanged += ReloadData;
+            ProfilerWindow.recordingStateChanged += OnRecordingStateChanged;
 
             return view;
         }
@@ -226,6 +237,7 @@ namespace UnityEditor.Networking
                 return;
 
             m_Module.captureLogChanged -= ReloadData;
+            ProfilerWindow.recordingStateChanged -= OnRecordingStateChanged;
             if (m_ListView != null)
             {
                 m_ListView.selectionChanged -= OnSelectionChanged;
@@ -784,6 +796,12 @@ namespace UnityEditor.Networking
             return values[index];
         }
 
+        // Stopping adds no frame, so nothing else would refresh the selected request.
+        void OnRecordingStateChanged(bool _)
+        {
+            UpdateInspector(m_ListView.selectedIndex);
+        }
+
         void OnSelectionChanged(IEnumerable<object> _)
         {
             var index = m_ListView.selectedIndex;
@@ -818,6 +836,10 @@ namespace UnityEditor.Networking
             // The TabView owns each tab's content, so this one toggle covers all of them.
             SetDisplayed(m_Tabs, hasSelection);
 
+            var stopped = hasSelection && m_Log.StoppedMidRequest(m_Rows[index], ProfilerWindow.IsSetToRecord());
+            foreach (var box in m_RecordingStoppedBoxes)
+                SetDisplayed(box, stopped);
+
             if (!hasSelection)
                 return;
 
@@ -835,10 +857,11 @@ namespace UnityEditor.Networking
                 : WebRequestProfilerFormatting.NotMeasuredTooltip;
             m_FieldDuration.text = WebRequestProfilerFormatting.FormatDuration(record.durationNs);
 
-            PopulateHeaders(m_ResponseHeaders, record, WebRequestProfilerHeaderKind.Response);
-            PopulateHeaders(m_RequestHeaders, record, WebRequestProfilerHeaderKind.Request);
+            var stoppedText = stopped ? k_StoppedMidRequestText : null;
+            PopulateHeaders(m_ResponseHeaders, record, WebRequestProfilerHeaderKind.Response, stoppedText);
+            PopulateHeaders(m_RequestHeaders, record, WebRequestProfilerHeaderKind.Request, stoppedText);
             PopulateHeaders(m_RequestWireHeaders, record, WebRequestProfilerHeaderKind.RequestWire,
-                "Not captured. The headers sent are only recorded on supported platforms, and are "
+                stoppedText ?? "Not captured. The headers sent are only recorded on supported platforms, and are "
                 + "unavailable if the request failed before anything went out.");
 
             m_SelectedUrl = record.url;
@@ -853,12 +876,14 @@ namespace UnityEditor.Networking
                 PopulateQueryParameters(record);
 
             PopulateBody(m_RequestPayloadStatus, m_RequestPayloadText, m_RequestPayloadTree,
-                m_RequestPayloadSource, m_RequestPayloadCopy, record, record.requestBody, m_RequestPayloadShowSource);
+                m_RequestPayloadSource, m_RequestPayloadCopy, record, record.requestBody, m_RequestPayloadShowSource,
+                stopped);
 
             PopulateBody(m_ResponseBodyStatus, m_ResponseBodyText, m_ResponseBodyTree,
-                m_ResponseBodySource, m_ResponseBodyCopy, record, record.responseBody, m_ResponseBodyShowSource);
+                m_ResponseBodySource, m_ResponseBodyCopy, record, record.responseBody, m_ResponseBodyShowSource,
+                stopped);
 
-            PopulateTiming(record);
+            PopulateTiming(record, stopped);
         }
 
         static TreeView SetUpBodyTree(VisualElement view, string treeName)
@@ -1009,8 +1034,10 @@ namespace UnityEditor.Networking
             readonly WebRequestProfilerBodyFlags m_Flags;
             readonly bool m_Captured;
             readonly bool m_ShowSource;
+            readonly bool m_StoppedMidRequest;
 
-            public BodyViewKey(WebRequestProfilerRecord record, in WebRequestProfilerBody body, bool showSource)
+            public BodyViewKey(WebRequestProfilerRecord record, in WebRequestProfilerBody body, bool showSource,
+                bool stoppedMidRequest)
             {
                 m_RequestId = record.requestId;
                 m_State = record.state;
@@ -1022,6 +1049,7 @@ namespace UnityEditor.Networking
                 m_Flags = body.flags;
                 m_Captured = body.captured;
                 m_ShowSource = showSource;
+                m_StoppedMidRequest = stoppedMidRequest;
             }
 
             public bool Equals(BodyViewKey other) =>
@@ -1029,7 +1057,8 @@ namespace UnityEditor.Networking
                 && m_BodyCapture == other.m_BodyCapture && ReferenceEquals(m_Text, other.m_Text)
                 && m_ContentType == other.m_ContentType && m_TotalLength == other.m_TotalLength
                 && m_CapturedLength == other.m_CapturedLength && m_Flags == other.m_Flags
-                && m_Captured == other.m_Captured && m_ShowSource == other.m_ShowSource;
+                && m_Captured == other.m_Captured && m_ShowSource == other.m_ShowSource
+                && m_StoppedMidRequest == other.m_StoppedMidRequest;
 
             public override bool Equals(object obj) => obj is BodyViewKey other && Equals(other);
             public override int GetHashCode() => (int)m_RequestId;
@@ -1041,12 +1070,14 @@ namespace UnityEditor.Networking
             Binary,
             Empty,
             InFlight,
+            StoppedMidRequest,
             TransportCannotReport,
             NothingSent,
             CaptureOff,
         }
 
-        internal static BodyState ClassifyBody(WebRequestProfilerRecord record, in WebRequestProfilerBody body)
+        internal static BodyState ClassifyBody(WebRequestProfilerRecord record, in WebRequestProfilerBody body,
+            bool stoppedMidRequest = false)
         {
             if (!body.captured)
             {
@@ -1056,7 +1087,7 @@ namespace UnityEditor.Networking
                 if (known && !supported)
                     return BodyState.TransportCannotReport;
                 if (record.state == WebRequestProfilerState.InFlight)
-                    return BodyState.InFlight;
+                    return stoppedMidRequest ? BodyState.StoppedMidRequest : BodyState.InFlight;
                 return known ? BodyState.CaptureOff : BodyState.NothingSent;
             }
 
@@ -1074,6 +1105,8 @@ namespace UnityEditor.Networking
                     return "Not captured: the transport that ran this request cannot report bodies.";
                 case BodyState.InFlight:
                     return "Bodies are recorded when a request finishes.";
+                case BodyState.StoppedMidRequest:
+                    return k_StoppedMidRequestText;
                 case BodyState.NothingSent:
                     return "Not captured: nothing was sent for this request, so there is no body to record.";
                 case BodyState.CaptureOff:
@@ -1100,9 +1133,9 @@ namespace UnityEditor.Networking
         // fields only ever hold a body.
         static void PopulateBody(Label status, TextField text, TreeView tree,
             UnityEngine.UIElements.Button source, UnityEngine.UIElements.Button copy,
-            WebRequestProfilerRecord record, in WebRequestProfilerBody body, bool showSource)
+            WebRequestProfilerRecord record, in WebRequestProfilerBody body, bool showSource, bool stoppedMidRequest)
         {
-            var key = new BodyViewKey(record, body, showSource);
+            var key = new BodyViewKey(record, body, showSource, stoppedMidRequest);
             if (tree.userData is BodyViewKey shown && shown.Equals(key))
                 return;
 
@@ -1115,7 +1148,7 @@ namespace UnityEditor.Networking
             tree.SetRootItems(new List<TreeViewItemData<WebRequestProfilerJsonNode>>());
             tree.Rebuild();
 
-            var state = ClassifyBody(record, body);
+            var state = ClassifyBody(record, body, stoppedMidRequest);
             copy.SetEnabled(CanCopyBody(state, body.text));
             if (state != BodyState.Text)
             {
@@ -1249,16 +1282,19 @@ namespace UnityEditor.Networking
         // The transport reports cumulative marks; what matters is how long each phase took, so show the
         // gaps between them. A mark of zero means the phase never happened - no TLS, or a reused
         // connection - which reads as "skipped" rather than as having taken no time.
-        void PopulateTiming(WebRequestProfilerRecord record)
+        void PopulateTiming(WebRequestProfilerRecord record, bool stoppedMidRequest)
         {
             m_TimingPhases.Clear();
 
             if (!record.hasTimings)
             {
                 SetDisplayed(m_TimingEmpty, true);
-                m_TimingEmpty.text = record.state == WebRequestProfilerState.InFlight
-                    ? "Timings are measured when the request finishes."
-                    : "This request's transport does not measure per-phase timings.";
+                if (stoppedMidRequest)
+                    m_TimingEmpty.text = "Not measured: capture stopped before the request finished.";
+                else if (record.state == WebRequestProfilerState.InFlight)
+                    m_TimingEmpty.text = "Timings are measured when the request finishes.";
+                else
+                    m_TimingEmpty.text = "This request's transport does not measure per-phase timings.";
                 return;
             }
 

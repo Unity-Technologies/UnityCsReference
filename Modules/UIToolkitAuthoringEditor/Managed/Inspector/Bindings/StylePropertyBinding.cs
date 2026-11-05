@@ -1181,6 +1181,12 @@ sealed partial class StylePropertyBinding : CustomBinding, ITrackablePropertyPro
             case TextShadowField textShadowField:
                 textShadowField.colorField.setAlphaIfTransparentWhenPicked = setAlphaIfTransparent;
                 break;
+            case StyleBoxShadowField styleBoxShadowField:
+                styleBoxShadowField.valueField.colorField.setAlphaIfTransparentWhenPicked = setAlphaIfTransparent;
+                break;
+            case BoxShadowField boxShadowField:
+                boxShadowField.colorField.setAlphaIfTransparentWhenPicked = setAlphaIfTransparent;
+                break;
         }
     }
 

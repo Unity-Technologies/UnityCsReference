@@ -169,6 +169,11 @@ namespace UnityEngine.UIElements
         float bottom => default;
 
         /// <summary>
+        /// Shadow cast by the element's box. Accepts horizontal and vertical offsets, an optional blur radius, an optional spread radius, an optional color, and the optional inset keyword to draw the shadow inside the border.
+        /// </summary>
+        BoxShadow boxShadow => default;
+
+        /// <summary>
         /// Color to use when drawing the text of an element.
         /// </summary>
         /// <remarks>

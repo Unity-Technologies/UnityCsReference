@@ -52,12 +52,39 @@ namespace UnityEditor
                         continue;
                     }
 
+                    if (property.propertyPath == "m_ConnectedOrientation")
+                    {
+                        DrawConnectedOrientation(editor, serializedObject, property);
+                        continue;
+                    }
+
                     EditorGUILayout.PropertyField(property, true);
                 }
 
                 serializedObject.ApplyModifiedProperties();
 
                 EditorGUI.EndChangeCheck();
+            }
+        }
+
+        static void DrawConnectedOrientation(Editor editor, SerializedObject serializedObject, SerializedProperty property)
+        {
+            var isAutoConf = serializedObject.FindProperty("m_AutoConfigureConnectedOrientation").boolValue;
+
+            using (new EditorGUI.DisabledScope(isAutoConf))
+            {
+                if (isAutoConf)
+                {
+                    var joint = editor.target as Joint;
+
+                    // PropertyField would show the serialized value, which is stale while Unity is recomputing it.
+                    EditorGUILayout.Vector3Field(EditorGUIUtility.TempContent(property.localizedDisplayName, property.tooltip), joint.connectedOrientation.eulerAngles);
+                    editor.Repaint();
+                }
+                else
+                {
+                    EditorGUILayout.PropertyField(property, true);
+                }
             }
         }
     }

@@ -5,6 +5,7 @@
 using System;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
+using Unity.Properties;
 using Unity.Scripting.LifecycleManagement;
 using Unity.UIToolkit.Editor.Utilities;
 using UnityEditor;
@@ -44,6 +45,7 @@ internal sealed partial class VisualElementSelectionRegistry : IVisualElementCha
         public object Scope;
         public AuthoringIdPath Path;
         public bool IsStable;
+        public string NamedFrom;
     }
 
     // Identity scope: the owning panel component for scene documents (so multiple documents hosted in
@@ -252,6 +254,14 @@ internal sealed partial class VisualElementSelectionRegistry : IVisualElementCha
 
         foreach (var element in changes.removedFromPanel)
             Remove(element);
+
+        // An element rename raises a styling context change. A document row is named after its file, and renaming
+        // the file reimports and re-clones the document, which refreshes the row's selection object.
+        foreach (var element in changes.stylingContextChanged)
+        {
+            if (element is not IPanelComponentRootElement && m_ElementToEntry.TryGetValue(element, out var entry))
+                UpdateSelectionObjectName(entry, element);
+        }
     }
 
     void IVisualElementChangeProcessor.EndProcessing(BaseVisualElementPanel panel)
@@ -427,6 +437,7 @@ internal sealed partial class VisualElementSelectionRegistry : IVisualElementCha
                     Path = key.Path,
                     IsStable = true,
                 };
+                UpdateSelectionObjectName(entry, element, force: true);
                 m_StableIndex[key] = entry;
                 m_ElementToEntry[element] = entry;
                 element.SetSelectionObject(selectionObject);
@@ -450,6 +461,7 @@ internal sealed partial class VisualElementSelectionRegistry : IVisualElementCha
             Panel = panel,
             IsStable = false,
         };
+        UpdateSelectionObjectName(entry, element, force: true);
         m_ElementToEntry[element] = entry;
         element.SetSelectionObject(selectionObject);
     }
@@ -567,6 +579,26 @@ internal sealed partial class VisualElementSelectionRegistry : IVisualElementCha
         return selectionObject;
     }
 
+    // The selection undo and other editor UI name the selection by its object name. The name is only rebuilt
+    // when what it is derived from changed: the file name of a document row, the name of any other element.
+    static void UpdateSelectionObjectName(Entry entry, VisualElement element, bool force = false)
+    {
+        var isDocument = element is IPanelComponentRootElement;
+        var namedFrom = isDocument ? VisualElementNodeHandler.GetSearchName(element) : element.name;
+        if (!force && namedFrom == entry.NamedFrom)
+            return;
+
+        entry.NamedFrom = namedFrom;
+        if (isDocument)
+        {
+            entry.SelectionObject.name = namedFrom;
+            return;
+        }
+
+        var typeName = TypeUtility.GetTypeDisplayName(element.GetType());
+        entry.SelectionObject.name = string.IsNullOrEmpty(namedFrom) ? typeName : $"{typeName} #{namedFrom}";
+    }
+
     void RefreshSelectionObject(Entry entry, VisualElement element, Panel panel)
     {
         var editFlags = GetEditFlags(element, panel);
@@ -584,6 +616,7 @@ internal sealed partial class VisualElementSelectionRegistry : IVisualElementCha
         }
 
         entry.SelectionObject.IsReadOnly = editFlags == VisualElementEditFlags.None;
+        UpdateSelectionObjectName(entry, element);
     }
 
     void DestroyEntriesForPanel(Panel panel)

@@ -288,6 +288,7 @@ using UnityEngine;
 [assembly: InternalsVisibleTo("Unity.Modules.GI.BakedGI.ColorSpace.Tests.Editor")]
 [assembly: InternalsVisibleTo("Unity.Modules.GI.LightingInspectorMeshRenderer.Tests.Editor")]
 [assembly: InternalsVisibleTo("Unity.Modules.GI.TextureEncoding.Tests.Editor")]
+[assembly: InternalsVisibleTo("Unity.Modules.GI.LightingDataAsset.Tests.Editor")]
 [assembly: InternalsVisibleTo("Unity.Modules.Physics2D.Tests.Editor")]
 [assembly: InternalsVisibleTo("Unity.Modules.U2D.NineSlice.Tests.Editor")]
 [assembly: InternalsVisibleTo("Unity.Modules.GI.Prefabs.Tests.Editor")]

@@ -470,6 +470,7 @@ partial class MsBuildCompilation
             useNugetRestore: false);
 
         var buildResult = await buildTask;
+        UnityMSBuildLogger.LogProjectCacheSummary(buildResult);
         return BuildScriptCompilationMessages(buildResult);
     }
 

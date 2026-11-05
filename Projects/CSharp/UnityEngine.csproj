@@ -5215,6 +5215,15 @@
     <Compile Include="..\..\Modules\UIElements\Core\Renderer\UIRAtlasManager.cs">
       <Link>Modules\UIElements\Core\Renderer\UIRAtlasManager.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Renderer\UIRBackdropReadRegions.cs">
+      <Link>Modules\UIElements\Core\Renderer\UIRBackdropReadRegions.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Renderer\UIRBoxShadowBounds.cs">
+      <Link>Modules\UIElements\Core\Renderer\UIRBoxShadowBounds.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Renderer\UIRBoxShadowProfile.cs">
+      <Link>Modules\UIElements\Core\Renderer\UIRBoxShadowProfile.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\UIElements\Core\Renderer\UIRCommandList.cs">
       <Link>Modules\UIElements\Core\Renderer\UIRCommandList.cs</Link>
     </Compile>
@@ -5602,6 +5611,15 @@
     <Compile Include="..\..\Modules\UIElements\Core\Style\BackgroundGradient.cs">
       <Link>Modules\UIElements\Core\Style\BackgroundGradient.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Style\BoxShadow.Parser.cs">
+      <Link>Modules\UIElements\Core\Style\BoxShadow.Parser.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Style\BoxShadow.PropertyBag.cs">
+      <Link>Modules\UIElements\Core\Style\BoxShadow.PropertyBag.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Style\BoxShadow.cs">
+      <Link>Modules\UIElements\Core\Style\BoxShadow.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\UIElements\Core\Style\ComputedStyle.cs">
       <Link>Modules\UIElements\Core\Style\ComputedStyle.cs</Link>
     </Compile>
@@ -5781,6 +5799,9 @@
     </Compile>
     <Compile Include="..\..\Modules\UIElements\Core\Style\StyleBackgroundSize.cs">
       <Link>Modules\UIElements\Core\Style\StyleBackgroundSize.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Style\StyleBoxShadow.cs">
+      <Link>Modules\UIElements\Core\Style\StyleBoxShadow.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\UIElements\Core\Style\StyleColor.cs">
       <Link>Modules\UIElements\Core\Style\StyleColor.cs</Link>
@@ -8106,7 +8127,7 @@
     </PropertyGroup>
   </Target>
   <ItemGroup>
-    <Analyzer Include="/tmp/uitoolkit_gen_zua5apap/Unity.UIToolkit.SourceGenerator.dll" />
+    <Analyzer Include="/tmp/uitoolkit_gen_2zvzs4os/Unity.UIToolkit.SourceGenerator.dll" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="10.0.8" />

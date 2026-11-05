@@ -127,7 +127,7 @@ namespace Unity.ProjectAuditor.Editor
         public void AuditAsync(AnalysisParams analysisParams, IProgress progress = null)
         {
             if (!ProjectAuditorRulesPackage.IsInstalled)
-                throw new InvalidOperationException("Install the Project Auditor Rules package before using Project Auditor");
+                throw new InvalidOperationException(ProjectAuditorRulesPackage.NotInstalledMessage);
 
             var summaryIndex = analysisParams.Categories == null ? -1 : Array.FindIndex(analysisParams.Categories, c => c.Value.IsSummary());
             if (summaryIndex >= 0)
@@ -200,6 +200,14 @@ namespace Unity.ProjectAuditor.Editor
             }
 
             analysisParams.DependencyCrawler = new DependencyCrawler();
+
+            var analyzedModuleNames = new HashSet<string>(supportedModules.Length);
+            foreach (var module in supportedModules)
+            {
+                analyzedModuleNames.Add(module.Name);
+            }
+
+            analysisParams.IssueOverrides = new IssueOverrides(report.IssueOverrides, analyzedModuleNames);
 
             Action<Report> onCompletedInternal = null;
             onCompletedInternal = (report) =>
@@ -306,6 +314,14 @@ namespace Unity.ProjectAuditor.Editor
                             if (logTimingsInfo)
                                 Debug.Log($"[{DisplayName}] Analysis took: " + stopwatch.ElapsedMilliseconds / 1000.0f +
                                     " seconds.");
+
+                            if (!isCancelled)
+                            {
+                                report.SetIssueOverrides(analysisParams.IssueOverrides.ToList());
+                                var removedIssues = report.RemoveOverriddenIssues(analysisParams.IssueOverrides);
+                                if (removedIssues.Count > 0)
+                                    analysisParams.OnIssuesRemoved?.Invoke(report, removedIssues);
+                            }
 
                             // finally, call the user's OnCompleted callback
                             analysisParams.OnCompleted?.Invoke(report);

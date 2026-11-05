@@ -333,7 +333,7 @@ namespace Unity.Collections
         /// Removes a key-value pair.
         /// </summary>
         /// <param name="key">The key to remove.</param>
-        /// <returns>True if a key-value pair was removed.</returns>
+        /// <returns>True if the key was present and the key-value pair successfully  removed, false if the key was not found.</returns>
         public bool Remove(TKey key)
         {
             CheckWrite();

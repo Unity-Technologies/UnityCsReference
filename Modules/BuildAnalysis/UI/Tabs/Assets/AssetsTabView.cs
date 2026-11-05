@@ -19,14 +19,13 @@ namespace UnityEditor.Build.Analysis
         private VisualElement m_Body;
         private TwoPaneSplitView m_InspectorSplit;
         private VisualElement m_InspectorHost;
-        private BuildHeaderController m_Header;
+        private BuildHeader m_Header;
         private AssetTable m_AssetTable;
         private RootAssetTable m_RootAssetTable;
         private AssetInspector m_AssetInspector;
-        private Label m_ScenesValue;
-        private Label m_AssetsValue;
-        private VisualElement m_RootAssetsCard;
-        private Label m_RootAssetsValue;
+        private StatCard m_ScenesCard;
+        private StatCard m_AssetsCard;
+        private StatCard m_RootAssetsCard;
         private VisualElement m_ContentMain;
         private HelpBox m_AssetSourceBanner;
         private HelpBox m_AssetsEmptyState;
@@ -46,6 +45,7 @@ namespace UnityEditor.Build.Analysis
         // a load continuation that comes back under an older seq drops itself.
         private int m_GraphSeq;
         private DependencyGraphResult m_GraphResult;
+        private ReferencedByWalker m_Walker;
         private int m_InspectedAssetId = -1;
         private bool m_IsContentDirectory;
         private GUID m_AppliedBuildGuid;
@@ -70,11 +70,10 @@ namespace UnityEditor.Build.Analysis
             KeyboardNavigation.ScrollFocusedIntoView(m_Root.Q<ScrollView>("assets-content"));
             m_InspectorSplit = m_Root.Q<TwoPaneSplitView>("assets-inspector-split");
             m_InspectorHost = m_Root.Q<VisualElement>("asset-inspector-host");
-            m_Header = new BuildHeaderController(m_Root.Q<VisualElement>("build-header"));
-            m_ScenesValue = m_Root.Q<VisualElement>("stat-card-scenes").Q<Label>("value");
-            m_AssetsValue = m_Root.Q<VisualElement>("stat-card-assets").Q<Label>("value");
-            m_RootAssetsCard = m_Root.Q<VisualElement>("stat-card-root-assets");
-            m_RootAssetsValue = m_RootAssetsCard.Q<Label>("value");
+            m_Header = m_Root.Q<BuildHeader>("build-header");
+            m_ScenesCard = m_Root.Q<StatCard>("stat-card-scenes");
+            m_RootAssetsCard = m_Root.Q<StatCard>("stat-card-root-assets");
+            m_AssetsCard = m_Root.Q<StatCard>("stat-card-assets");
             m_ContentMain = m_Root.Q<VisualElement>("assets-content-main");
             m_AssetSourceBanner = m_Root.Q<HelpBox>("asset-source-banner");
             m_AssetsEmptyState = m_Root.Q<HelpBox>("assets-empty-state");
@@ -90,6 +89,7 @@ namespace UnityEditor.Build.Analysis
 
             m_AssetTable.SelectionChanged += OnAssetSelectionChanged;
             m_RootAssetTable.SelectionChanged += OnRootAssetSelectionChanged;
+            m_AssetInspector.References.SelectInTableRequested += OnSelectInTableRequested;
 
             // Defer first CollapseChild call until after first layout — TwoPaneSplitView
             // throws if collapsed before its initial geometry is computed.
@@ -119,6 +119,15 @@ namespace UnityEditor.Build.Analysis
             if (m_SuppressSelectionClear || m_AssetInspector.CurrentMode != AssetInspector.Mode.Asset)
                 return;
             m_AssetInspector.ShowEmpty();
+        }
+
+        // Clearing the table's filters raises a null selection before the real one lands; the
+        // inspector must not empty itself on the way.
+        private void OnSelectInTableRequested(int assetId)
+        {
+            m_SuppressSelectionClear = true;
+            m_AssetTable.SelectAsset(assetId);
+            m_SuppressSelectionClear = false;
         }
 
         private void OnRootAssetSelectionChanged(BuildAnalysisRootAsset? root)
@@ -166,6 +175,7 @@ namespace UnityEditor.Build.Analysis
             // Whatever graph load is in flight is for the previous selection now.
             m_GraphSeq++;
             m_GraphResult = null;
+            m_Walker = null;
 
             var hasSelection = view?.Entry != null && view.Analysis != null;
             m_NoSelection.style.display = hasSelection ? DisplayStyle.None : DisplayStyle.Flex;
@@ -186,24 +196,51 @@ namespace UnityEditor.Build.Analysis
                 return;
             }
 
-            // The active reference tab is interactive state, kept across re-applies of the same
-            // build (a regenerate) and reset only on a genuinely new selection.
-            if (view.Entry.BuildSessionGUID != m_AppliedBuildGuid)
+            // The inspected asset, its tree and the active reference tab are interactive state,
+            // kept across re-applies of the same build (a regenerate) and reset only on a
+            // genuinely new selection.
+            var sameBuild = view.Entry.BuildSessionGUID == m_AppliedBuildGuid;
+            if (!sameBuild)
                 m_AssetInspector.References.ResetActiveTab();
             m_AppliedBuildGuid = view.Entry.BuildSessionGUID;
 
             // Set before the tables rebind so any selection event they raise sees the new value.
             m_IsContentDirectory = view.Entry.BuildType == BuildType.ContentDirectory;
 
-            // A new selection discards the inspector's contents: it was showing an asset from the old build.
-            ResetInspector();
+            var keepAsset = sameBuild && m_AssetInspector.CurrentMode == AssetInspector.Mode.Asset && m_InspectedAssetId >= 0;
+            if (!keepAsset)
+                ResetInspector();
+
+            // The tables clear their selection on rebind; that is not the user deselecting.
+            m_SuppressSelectionClear = true;
             BindRootAssets(view.Entry, view.Analysis);
             BindAssets(view.Entry, view.Analysis);
+            m_SuppressSelectionClear = false;
 
             // Prefetch the dependency graph so asset clicks usually bind synchronously. Skipped
             // for build types that never record one (the section is hidden for those anyway).
             if (m_IsContentDirectory)
                 LoadGraphAsync(view);
+
+            if (keepAsset)
+                RestoreInspectedAsset();
+        }
+
+        // The table was rebound, so re-select the asset without raising the event: the inspector
+        // never left it, and a closed inspector pane stays closed.
+        private void RestoreInspectedAsset()
+        {
+            var asset = ResolveAsset(m_InspectedAssetId);
+            if (asset == null || !m_AssetTable.SelectAssetWithoutNotify(m_InspectedAssetId))
+            {
+                ResetInspector();
+                return;
+            }
+
+            m_AssetInspector.ShowAsset(asset.Value, ResolveImporterType(asset.Value.ImporterTypeId),
+                showReferences: m_IsContentDirectory);
+            if (m_IsContentDirectory && m_GraphResult == null)
+                BindReferenceSection(m_InspectedAssetId);
         }
 
         // Awaiting an already-completed task continues synchronously, so a cached graph is bound
@@ -216,6 +253,11 @@ namespace UnityEditor.Build.Analysis
                 return;
 
             m_GraphResult = result;
+            // The root set is per build like the graph, so the walker the tree climbs with is
+            // built once here rather than on every asset click.
+            m_Walker = result.Status == DependencyGraphStatus.Loaded
+                ? new ReferencedByWalker(result.References, view.Analysis.Tables.RootAssets)
+                : null;
             if (m_AssetInspector.CurrentMode == AssetInspector.Mode.Asset && m_InspectedAssetId >= 0)
                 BindReferenceSection(m_InspectedAssetId);
         }
@@ -224,9 +266,9 @@ namespace UnityEditor.Build.Analysis
         {
             var section = m_AssetInspector.References;
             if (m_GraphResult == null)
-                section.SetLoading();
+                section.SetLoading(assetId);
             else if (m_GraphResult.Status == DependencyGraphStatus.Loaded)
-                section.Bind(m_GraphResult.References, assetId, m_CachedAssets);
+                section.Bind(m_GraphResult.References, m_Walker, assetId, m_CachedAssets);
             else
                 section.SetUnavailable(m_GraphResult.Status);
         }
@@ -239,7 +281,7 @@ namespace UnityEditor.Build.Analysis
             if (!isContentDirectory)
                 return;
 
-            m_RootAssetsValue.text = analysis.Computed.Counts.RootAssetCount.ToString();
+            m_RootAssetsCard.value = analysis.Computed.Counts.RootAssetCount.ToString();
             m_RootAssetTable.Bind(analysis);
         }
 
@@ -250,8 +292,8 @@ namespace UnityEditor.Build.Analysis
 
             m_Header.Bind(selection);
             var counts = analysis.Computed.Counts;
-            m_ScenesValue.text = counts.SceneCount.ToString();
-            m_AssetsValue.text = counts.AssetCount.ToString();
+            m_ScenesCard.value = counts.SceneCount.ToString();
+            m_AssetsCard.value = counts.AssetCount.ToString();
 
             m_AssetTable.Bind(analysis);
 

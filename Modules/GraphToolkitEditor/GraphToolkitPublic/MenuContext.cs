@@ -41,6 +41,10 @@ namespace Unity.GraphToolkit.Editor
         /// <see cref="ISubgraphState"/>, which derives from <see cref="IState"/>.
         /// <br/>
         /// <br/>
+        /// If the script of a node, state or condition is missing, the value is still an <see cref="INode"/>,
+        /// <see cref="IState"/> or <see cref="ICondition"/>, but not your own subclass.
+        /// <br/>
+        /// <br/>
         /// Elements with no public representation, such as placemats and sticky notes, also report
         /// <c>null</c>, so a <c>null</c> value does not guarantee the click landed on nothing.
         /// </remarks>

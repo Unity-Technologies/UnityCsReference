@@ -274,8 +274,22 @@ namespace Unity.UI.Builder
                     && BuilderConstants.InspectorStylePropertiesValuesTooltipsDictionary.TryGetValue(
                         string.Format(BuilderConstants.InputFieldStyleValueTooltipDictionaryKeyFormat, styleName, "blur-radius"), out var blurRadiusTooltip)
                     && BuilderConstants.InspectorStylePropertiesValuesTooltipsDictionary.TryGetValue(
-                        string.Format(BuilderConstants.InputFieldStyleValueTooltipDictionaryKeyFormat, styleName, "color"), out var colorTooltip))
-                    textShadowStyleField.UpdateSubFieldVisualInputTooltips(offsetXTooltip, offsetYTooltip, blurRadiusTooltip, colorTooltip);
+                        string.Format(BuilderConstants.InputFieldStyleValueTooltipDictionaryKeyFormat, styleName, "color"), out var colorTooltip)
+                    && BuilderConstants.InspectorStylePropertiesValuesTooltipsDictionary.TryGetValue(
+                        string.Format(BuilderConstants.InputFieldStyleValueTooltipDictionaryKeyFormat, styleName, "offset"), out var offsetTooltip))
+                    textShadowStyleField.UpdateSubFieldVisualInputTooltips(offsetTooltip, offsetXTooltip, offsetYTooltip, blurRadiusTooltip, colorTooltip);
+            }
+            else if (IsComputedStyleBoxShadow(val) && fieldElement is BoxShadowStyleField boxShadowStyleField)
+            {
+                boxShadowStyleField.RegisterValueChangedCallback(e => OnFieldValueChangeBoxShadow(e, styleName));
+                string GetSubFieldTooltip(string subField)
+                {
+                    BuilderConstants.InspectorStylePropertiesValuesTooltipsDictionary.TryGetValue(
+                        string.Format(BuilderConstants.InputFieldStyleValueTooltipDictionaryKeyFormat, styleName, subField), out var tooltip);
+                    return tooltip;
+                }
+                boxShadowStyleField.UpdateSubFieldVisualInputTooltips(GetSubFieldTooltip("color"), GetSubFieldTooltip("offset"), GetSubFieldTooltip("offset-x"),
+                    GetSubFieldTooltip("offset-y"), GetSubFieldTooltip("blur-radius"), GetSubFieldTooltip("spread-radius"), GetSubFieldTooltip("inset"));
             }
             else if (IsComputedStyleTextAutoSize(val) && fieldElement is TextAutoSizeStyleField textAutoSizeStyleField)
             {
@@ -821,6 +835,17 @@ namespace Unity.UI.Builder
 
                 uiField.SetValueWithoutNotify(value);
                 uiField.colorField.setAlphaIfTransparentWhenPicked = !useStyleProperty;
+                return true;
+            }
+
+            if (IsComputedStyleBoxShadow(val) && fieldElement is BoxShadowStyleField boxShadowField)
+            {
+                var value = GetComputedStyleBoxShadowValue(val);
+                if (useStyleProperty && styleProperty.TryGetBoxShadow(styleSheet, out var propertyValue))
+                    value = propertyValue;
+
+                boxShadowField.SetValueWithoutNotify(value);
+                boxShadowField.colorField.setAlphaIfTransparentWhenPicked = !useStyleProperty;
                 return true;
             }
 
@@ -1543,6 +1568,10 @@ namespace Unity.UI.Builder
                      fieldElement is TextShadowStyleField textShadowStyleField)
             {
                 DispatchChangeEvent(textShadowStyleField);
+            }
+            else if (IsComputedStyleBoxShadow(val) && fieldElement is BoxShadowStyleField boxShadowStyleField)
+            {
+                DispatchChangeEvent(boxShadowStyleField);
             }
             else if (IsComputedStyleTextAutoSize(val) && fieldElement is TextAutoSizeStyleField textAutoSizeStyleField)
             {
@@ -2999,6 +3028,15 @@ namespace Unity.UI.Builder
             PostStyleFieldSteps(e.elementTarget, styleProperty, styleName, isNewValue);
         }
 
+        void OnFieldValueChangeBoxShadow(ChangeEvent<BoxShadow> e, string styleName)
+        {
+            var styleProperty = GetOrCreateStylePropertyByStyleName(styleName);
+            var isNewValue = !styleProperty.HasValue();
+            Undo.RegisterCompleteObjectUndo(styleSheet, BuilderConstants.ChangeUIStyleValueUndoMessage);
+            styleProperty.SetBoxShadow(styleSheet, e.newValue);
+            PostStyleFieldSteps(e.elementTarget, styleProperty, styleName, isNewValue);
+        }
+
         void OnFieldValueChangeTextAutoSize(ChangeEvent<TextAutoSize> e, string styleName)
         {
             var field = e.target as TextAutoSizeStyleField;
@@ -3219,6 +3257,11 @@ namespace Unity.UI.Builder
             return val is StyleTextShadow || val is TextShadow;
         }
 
+        static public bool IsComputedStyleBoxShadow(object val)
+        {
+            return val is StyleBoxShadow || val is BoxShadow;
+        }
+
         static public bool IsComputedStyleTextAutoSize(object val)
         {
             return val is StyleTextAutoSize || val is TextAutoSize;
@@ -3338,6 +3381,15 @@ namespace Unity.UI.Builder
                 return textShadow;
 
             var style = (StyleTextShadow)val;
+            return style.value;
+        }
+
+        static public BoxShadow GetComputedStyleBoxShadowValue(object val)
+        {
+            if (val is BoxShadow boxShadow)
+                return boxShadow;
+
+            var style = (StyleBoxShadow)val;
             return style.value;
         }
 

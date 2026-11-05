@@ -107,6 +107,7 @@ namespace Unity.ProjectAuditor.Editor.Modules
         };
 
         readonly HashSet<EntityId> m_VisitedAssets = new HashSet<EntityId>(512);
+        readonly HashSet<EntityId> m_OverriddenMeshes = new HashSet<EntityId>(512);
 
         public override void Initialize(Action<Descriptor> registerDescriptor)
         {
@@ -120,6 +121,7 @@ namespace Unity.ProjectAuditor.Editor.Modules
         public override void OnAnalysisStarted()
         {
             m_VisitedAssets.Clear();
+            m_OverriddenMeshes.Clear();
         }
 
         public override IEnumerable<ReportItemBuilder> Analyze(GameObjectAnalysisContext context)
@@ -138,7 +140,12 @@ namespace Unity.ProjectAuditor.Editor.Modules
             // Scale baking requires Read/Write
             if (meshCollider.IsScaleBakingRequired())
             {
-                if (!mesh.isReadable)
+                if (mesh.isReadable)
+                {
+                    if (m_OverriddenMeshes.Add(mesh.GetEntityId()))
+                        context.CreateOverride(AssetDatabase.GetAssetPath(mesh), GameObjectModuleReadWriteAnalyzer.k_ReadWriteEnabledDescriptorIds);
+                }
+                else
                     descriptor = k_MeshColliderReadWriteDescriptor;
             }
             // Convex collider needs BakeConvex
@@ -164,7 +171,7 @@ namespace Unity.ProjectAuditor.Editor.Modules
             if (!isBuiltIn && !m_VisitedAssets.Add(mesh.GetEntityId()))
                 yield break;
 
-            yield return context.CreateIssue
+            var issue = context.CreateIssue
             (
                 IssueCategory.GameObject,
                 descriptor.Id,
@@ -173,6 +180,11 @@ namespace Unity.ProjectAuditor.Editor.Modules
             )
             .WithLocation(AssetDatabase.GetAssetPath(mesh))
             .WithUpgradeProperties("6000.5", null, null);
+
+            if (descriptor == k_MeshColliderReadWriteDescriptor)
+                context.CreateOverride(issue, GameObjectModuleReadWriteAnalyzer.k_ReadWriteEnabledDescriptorIds);
+
+            yield return issue;
         }
     }
 }

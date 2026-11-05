@@ -16,6 +16,8 @@ namespace Unity.ProjectAuditor.Editor.UI
 
         TopTen m_TopTen = NewTopTen();
         StatSeverities m_Severities;
+        int m_IgnoredIssueCount;
+        int m_FixedIssueCount;
 
         public override string Description => "Resolve the following issues to migrate your project to the CoreCLR scripting backend.";
 
@@ -26,7 +28,7 @@ namespace Unity.ProjectAuditor.Editor.UI
         // The migration breakdown shows only migration issues.
         protected override bool MatchesSummaryFilter(ReportItem issue)
         {
-            if (!HasAnyAreas(issue, Areas.MigrationToCoreCLR))
+            if (!issue.HasAnyAreas(Areas.MigrationToCoreCLR))
                 return false;
 
             return true;
@@ -41,6 +43,8 @@ namespace Unity.ProjectAuditor.Editor.UI
         {
             base.ResetStats();
             m_Severities = new StatSeverities();
+            m_IgnoredIssueCount = 0;
+            m_FixedIssueCount = 0;
         }
 
         protected override void RefreshStats()
@@ -55,6 +59,11 @@ namespace Unity.ProjectAuditor.Editor.UI
             {
                 if (!MatchesSummaryFilter(issue))
                     continue;
+
+                if (issue.WasFixed)
+                    m_FixedIssueCount++;
+                else
+                    m_IgnoredIssueCount++;
 
                 AddSeverityStats(issue, ref m_Severities);
             }
@@ -87,7 +96,7 @@ namespace Unity.ProjectAuditor.Editor.UI
         {
             if (base.IsIssueIgnoredOrFiltered(item))
                 return true;
-            if (!HasAnyAreas(item, Areas.MigrationToCoreCLR))
+            if (!item.HasAnyAreas(Areas.MigrationToCoreCLR))
                 return true;
 
             return false;
@@ -141,25 +150,35 @@ namespace Unity.ProjectAuditor.Editor.UI
                 return;
             }
 
-            // No issues
-            if (m_Severities.Total == 0)
+            var ignoredAndFixedInfo = BuildIgnoredFixedInfo(m_IgnoredIssueCount, m_FixedIssueCount);
+
+            if (m_Severities.TotalExcludingIgnoredAndFixed == 0)
             {
-                EditorGUILayout.LabelField(
-                    m_ViewManager.Report.HasCategory(IssueCategory.Code) ? Contents.NoIssuesText : Contents.CodeNotAnalyzedText,
-                    SharedStyles.Label);
-                EditorGUILayout.EndVertical();
-                return;
+                using (new EditorGUILayout.HorizontalScope())
+                {
+                    EditorGUILayout.LabelField(
+                        m_ViewManager.Report.HasCategory(IssueCategory.Code) ? Contents.NoIssuesText : Contents.CodeNotAnalyzedText,
+                        SharedStyles.Label);
+
+                    if (!string.IsNullOrEmpty(ignoredAndFixedInfo))
+                    {
+                        GUILayout.Label(ignoredAndFixedInfo, SharedStyles.LabelRichTextGrey);
+                        GUILayout.FlexibleSpace();
+                    }
+                }
             }
-
-            // Major issues count
-            if (m_Severities.MajorAndCritical == 0)
-                EditorGUILayout.LabelField(Contents.NoMajorIssuesText, SharedStyles.Label);
             else
-                EditorGUILayout.LabelField(string.Format(m_Severities.MajorAndCritical == 1 ? Contents.SevereCountFormat : Contents.SevereCountPluralFormat, m_Severities.MajorAndCritical), SharedStyles.Label);
+            {
+                var majorAndCritical = m_Severities.MajorAndCritical;
+                if (majorAndCritical == 0)
+                    EditorGUILayout.LabelField(Contents.NoMajorIssuesText, SharedStyles.Label);
+                else
+                    EditorGUILayout.LabelField(string.Format(majorAndCritical == 1 ? Contents.SevereCountFormat : Contents.SevereCountPluralFormat, majorAndCritical), SharedStyles.Label);
 
-            GUILayout.Space(6);
+                GUILayout.Space(6);
 
-            DrawSeverityBar(m_Severities, horizontalPadding: 2);
+                DrawChartBar(horizontalPadding: 2, () => BuildSeverityChartElements(m_Severities));
+            }
 
             EditorGUILayout.EndVertical();
         }

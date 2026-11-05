@@ -1429,6 +1429,7 @@ namespace UnityEngine.UIElements
         }
 
         float m_HorizontalOffsetMinWidth;
+        Length m_BaseContentMinWidth;
         bool m_HorizontalOffsetIsStale;
 
         private protected virtual bool hasUniformItemWidth => false;
@@ -1456,6 +1457,9 @@ namespace UnityEngine.UIElements
                     minWidth = Mathf.Max(minWidth, m_HorizontalOffsetMinWidth);
             }
 
+            if (minWidth > 0f && minWidth <= GetBaseContentMinWidth())
+                minWidth = 0f;
+
             if (Mathf.Approximately(minWidth, m_HorizontalOffsetMinWidth))
                 return;
 
@@ -1464,6 +1468,23 @@ namespace UnityEngine.UIElements
                 m_ScrollView.contentContainer.style.minWidth = minWidth;
             else
                 m_ScrollView.contentContainer.style.minWidth = StyleKeyword.Null;
+        }
+
+        float GetBaseContentMinWidth()
+        {
+            var contentContainer = m_ScrollView.contentContainer;
+            ref var computedStyle = ref contentContainer.computedStyle;
+
+            // Our inline value hides the style sheet one, so read it from the matched rules while we hold it
+            if (m_HorizontalOffsetMinWidth <= 0f)
+                m_BaseContentMinWidth = computedStyle.minWidth;
+            else if (computedStyle.matchingRulesHash == 0)
+                m_BaseContentMinWidth = StyleSheets.InitialStyle.minWidth;
+            else if (StyleCache.TryGetValue(computedStyle.matchingRulesHash, out var baseStyle))
+                m_BaseContentMinWidth = baseStyle.minWidth;
+
+            var resolved = contentContainer.ResolveLengthValue(m_BaseContentMinWidth, true);
+            return resolved.keyword == StyleKeyword.Undefined ? resolved.value : 0f;
         }
 
         private void Resize(Vector2 size)

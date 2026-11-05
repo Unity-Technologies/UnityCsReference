@@ -298,6 +298,10 @@ namespace UnityEngine.UIElements.UIR
             get => (flags & RenderDataFlags.IsClippingRectDirty) == RenderDataFlags.IsClippingRectDirty;
         }
 
+        // Only for VisualTreeHierarchyFlagsUpdater, which marks whole subtrees: a dirty RenderData must have dirty children
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public void MarkClippingRectDirty() => flags |= RenderDataFlags.IsClippingRectDirty;
+
         public bool isStickyBone
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]

@@ -178,6 +178,7 @@ static class MenuUtility
     {
         var document = target.ParentAsset.visualTreeAsset;
 
+        CommandExecutionStatus status;
         if (request.IsTemplate)
         {
             if (VisualElementEditingUtility.WillCauseCircularDependency(document, target.ParentElement, request.Template))
@@ -186,12 +187,15 @@ static class MenuUtility
                 return;
             }
 
-            AddTemplatesToElementCommand.Execute(CommandSources.Menus, target.ParentAsset, -1, new[] { request.Template });
+            status = AddTemplatesToElementCommand.Execute(CommandSources.Menus, target.ParentAsset, -1, new[] { request.Template });
         }
         else
         {
-            AddElementCommand.Execute(CommandSources.Menus, request.ElementType, document, target.ParentAsset, -1, request.VariantName);
+            status = AddElementCommand.Execute(CommandSources.Menus, request.ElementType, document, target.ParentAsset, -1, request.VariantName);
         }
+
+        if (status != CommandExecutionStatus.Success)
+            return;
 
         // Both commands filed their selection request by asset alone; narrow it to the instance the selection
         // is in.
@@ -430,6 +434,7 @@ static class MenuUtility
     static void ExecuteAdd(VisualElementEditingStage stage, AddRequest request, VisualElementAsset parentVea,
         VisualElement parentElement)
     {
+        CommandExecutionStatus status;
         if (request.IsTemplate)
         {
             if (stage.Context.WillCauseCircularDependency(request.Template))
@@ -439,12 +444,15 @@ static class MenuUtility
             }
 
             var parentAsset = parentVea ?? stage.EditedVisualTreeAsset.visualTree;
-            AddTemplatesToElementCommand.Execute(CommandSources.Menus, parentAsset, -1, new[] { request.Template });
+            status = AddTemplatesToElementCommand.Execute(CommandSources.Menus, parentAsset, -1, new[] { request.Template });
         }
         else
         {
-            AddElementCommand.Execute(CommandSources.Menus, request.ElementType, stage.EditedVisualTreeAsset, parentVea, -1, request.VariantName);
+            status = AddElementCommand.Execute(CommandSources.Menus, request.ElementType, stage.EditedVisualTreeAsset, parentVea, -1, request.VariantName);
         }
+
+        if (status != CommandExecutionStatus.Success)
+            return;
 
         // Both commands asked for what they created by asset alone. A staged document can instantiate the same
         // template twice as well, so point the request at the instance the selection is in.

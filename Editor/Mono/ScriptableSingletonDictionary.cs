@@ -38,7 +38,7 @@ namespace UnityEditor
         where TDerived : ScriptableObject
         where TValue : ScriptableObject
     {
-        [AutoStaticsCleanupOnCodeReload]
+        [NoAutoStaticsCleanup] // re-linked in the constructor on reload
         private static TDerived s_Instance;
         static readonly string k_Extension = ".pref";
 
@@ -55,6 +55,12 @@ namespace UnityEditor
                 }
                 return s_Instance;
             }
+        }
+
+        protected ScriptableSingletonDictionary()
+        {
+            if (s_Instance == null)
+                s_Instance = this as TDerived;
         }
 
         public TValue this[string preferencesFileName]

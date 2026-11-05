@@ -83,6 +83,22 @@ namespace UnityEditor.Build.Analysis
             }
         }
 
+        /// <summary>Tells the drawer the build history changed.</summary>
+        public void RefreshSelection()
+        {
+            if (!m_Selected || m_Broken)
+                return;
+
+            try
+            {
+                m_Drawer.OnBuildListRefreshed();
+            }
+            catch (Exception e)
+            {
+                DrawErrorHelpBox($"{nameof(ExternalBuildDrawer.OnBuildListRefreshed)} failed: {e.Message}");
+            }
+        }
+
         private bool TryCreateContent()
         {
             try

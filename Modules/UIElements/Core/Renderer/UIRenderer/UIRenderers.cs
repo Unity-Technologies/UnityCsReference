@@ -200,7 +200,7 @@ namespace UnityEngine.UIElements.UIR
                         oldCamera = Camera.current;
                         oldRT = RenderTexture.active;
 
-                        UIRUtility.GetViewMatrix(owner, out var matrix);
+                        UIRUtility.ComputeMatrixRelativeToRenderTree(owner, out var matrix);
                         GL.modelview = matrix;
 
                         PushScissor(drawParams, owner.clippingRect);
@@ -230,7 +230,7 @@ namespace UnityEngine.UIElements.UIR
                     // TODO: Offset the clipping rect by the offset within the RT and the post-effect margin
 
                     // Transform
-                    UIRUtility.GetViewMatrix(owner, out var matrix);
+                    UIRUtility.ComputeMatrixRelativeToRenderTree(owner, out var matrix);
                     drawParams.view.Push(matrix);
                     GL.modelview = matrix;
                     // Scissors

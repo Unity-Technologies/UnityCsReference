@@ -1547,6 +1547,58 @@ namespace UnityEngine.UIElements
         }
 
         /// <summary>
+        /// Sets a <see cref="BoxShadow"/> as the current value.
+        /// </summary>
+        /// <param name="styleSheet">The data store.</param>
+        /// <param name="value">The value to store.</param>
+        public void SetBoxShadow(StyleSheet styleSheet, BoxShadow value)
+        {
+            requireVariableResolve = false;
+
+            if (value.IsNone())
+            {
+                SetSize(ref m_Values, 1);
+                styleSheet.WriteKeyword(ref values[0], StyleValueKeyword.None);
+                return;
+            }
+
+            var index = 0;
+            SetSize(ref m_Values, value.inset ? 6 : 5);
+            if (value.inset)
+                styleSheet.WriteEnumAsString(ref values[index++], "inset");
+            styleSheet.WriteDimension(ref values[index++], new Dimension(value.offset.x, Dimension.Unit.Pixel));
+            styleSheet.WriteDimension(ref values[index++], new Dimension(value.offset.y, Dimension.Unit.Pixel));
+            styleSheet.WriteDimension(ref values[index++], new Dimension(value.blurRadius, Dimension.Unit.Pixel));
+            styleSheet.WriteDimension(ref values[index++], new Dimension(value.spreadRadius, Dimension.Unit.Pixel));
+            styleSheet.WriteColor(ref values[index], value.color);
+        }
+
+        /// <summary>
+        /// Tries to read a <see cref="BoxShadow"/> from the <see cref="StyleProperty"/>'s value.
+        /// </summary>
+        /// <param name="styleSheet">The data store.</param>
+        /// <param name="value">The read value.</param>
+        /// <returns><see langword="true"/> if the value could be read; <see langword="false"/> otherwise.</returns>
+        public bool TryGetBoxShadow(StyleSheet styleSheet, out BoxShadow value)
+        {
+            if (handleCount is <= 0 or > 6)
+            {
+                value = default;
+                return false;
+            }
+
+            var valCount = handleCount;
+            var val1 = new StylePropertyValue() { handle = values[0], sheet = styleSheet };
+            var val2 = valCount > 1 ? new StylePropertyValue { handle = values[1], sheet = styleSheet } : default;
+            var val3 = valCount > 2 ? new StylePropertyValue { handle = values[2], sheet = styleSheet } : default;
+            var val4 = valCount > 3 ? new StylePropertyValue { handle = values[3], sheet = styleSheet } : default;
+            var val5 = valCount > 4 ? new StylePropertyValue { handle = values[4], sheet = styleSheet } : default;
+            var val6 = valCount > 5 ? new StylePropertyValue { handle = values[5], sheet = styleSheet } : default;
+
+            return StylePropertyReader.TryReadBoxShadow(valCount, val1, val2, val3, val4, val5, val6, out value);
+        }
+
+        /// <summary>
         /// Sets a <see cref="Scale"/> as the current value.
         /// </summary>
         /// <param name="styleSheet">The data store.</param>

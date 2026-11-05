@@ -3,15 +3,18 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System.Collections.Generic;
+using UnityEngine;
 
 namespace Unity.GraphToolkit.Editor
 {
     /// <summary>
     /// Processor that checks that at most one node refers to a writable data <see cref="VariableDeclarationModelBase"/>.
     /// </summary>
-    class VariableNodeGraphProcessor : GraphProcessor
+    partial class VariableNodeGraphProcessor : GraphProcessor
     {
         readonly GraphModel m_GraphModel;
+        readonly Dictionary<Hash128, ErrorsAndWarningsResult> m_PortErrorsByNode = new();
+        bool m_PortErrorsInitialized;
 
         public VariableNodeGraphProcessor(GraphModel graphModel)
         {
@@ -21,6 +24,8 @@ namespace Unity.GraphToolkit.Editor
         /// <inheritdoc />
         public override BaseGraphProcessingResult ProcessGraph(GraphChangeDescription changes)
         {
+            UpdatePortErrors(changes);
+
             var res = new ErrorsAndWarningsResult();
             var uniqueGraphs = new HashSet<GraphModel>();
             var graphsToCheck = new Queue<GraphModel>();
@@ -51,10 +56,17 @@ namespace Unity.GraphToolkit.Editor
             return res;
         }
 
-        static void CheckNodeForErrors(GraphModel graphModel, AbstractNodeModel abstractNodeModel, ErrorsAndWarningsResult res)
+        void CheckNodeForErrors(GraphModel graphModel, AbstractNodeModel abstractNodeModel, ErrorsAndWarningsResult res)
         {
-            if (abstractNodeModel is NodeModel nodeModel)
+            if (graphModel == m_GraphModel)
+            {
+                if (m_PortErrorsByNode.TryGetValue(abstractNodeModel.Guid, out var portErrors))
+                    res.AddErrors(portErrors.Errors);
+            }
+            else if (abstractNodeModel is NodeModel nodeModel)
+            {
                 nodeModel.CheckNodeErrors(res);
+            }
 
             if (abstractNodeModel is VariableNodeModel variableNodeModel && ShouldAddError(variableNodeModel.VariableDeclarationModel, graphModel))
                 res.AddError("Only one instance of an output variable is allowed in the graph.", variableNodeModel);

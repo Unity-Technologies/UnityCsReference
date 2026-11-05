@@ -4,7 +4,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.Reflection;
 
 using UnityEditor.UIElements;
 using UnityEditor;
@@ -44,7 +43,7 @@ namespace Unity.U2D.Physics.Editor
             var bitMaskBindingPath = bitMaskTypeName;
 
             // Find if we need to show as a basic 64-bit mask.
-            var showAsPhysicsMask = ShowAsPhysicsMask<PhysicsMask>(bitMaskProperty);
+            var showAsPhysicsMask = ShowAsPhysicsMask(property);
 
             // 64-bit mask.
             if (showAsPhysicsMask || PhysicsWorld.usePhysicsLayers)
@@ -77,8 +76,7 @@ namespace Unity.U2D.Physics.Editor
 
             // 32-bit mask.
             {
-                var categories = new LayerMaskField(property.displayName) { bindingPath = bitMaskBindingPath };
-                categories.AddToClassList(LayerMaskField.alignedFieldUssClassName);
+                var categories = new LayerMaskField32(property.displayName) { bindingPath = bitMaskBindingPath };
                 root.Add(categories);
 
                 return root;
@@ -97,7 +95,7 @@ namespace Unity.U2D.Physics.Editor
             label = EditorGUI.BeginProperty(position, label, property);
 
             var bitMaskProperty = property.FindPropertyRelative(nameof(PhysicsMask.bitMask));
-            var showAsPhysicsMask = ShowAsPhysicsMask<PhysicsMask>(bitMaskProperty);
+            var showAsPhysicsMask = ShowAsPhysicsMask(property);
 
             DrawMaskField(position, label, bitMaskProperty, showAsPhysicsMask);
 
@@ -106,32 +104,12 @@ namespace Unity.U2D.Physics.Editor
 
         #endregion
 
-        internal static bool ShowAsPhysicsMask<T>(SerializedProperty property)
+        // Resolves the field the same way Unity does when it picks a drawer, so a field nested in a struct is found on that struct.
+        // For an array or List element the field is the collection itself, which is where the attribute sits.
+        internal static bool ShowAsPhysicsMask(SerializedProperty property)
         {
-            var targetObjectType = property.serializedObject.targetObject.GetType();
-            var type = typeof(T);
-            var showAsPhysicsMaskAttributeType = typeof(PhysicsMask.ShowAsPhysicsMaskAttribute);
-
-            // Search for the property type.
-            foreach (var propertyPath in property.propertyPath.Split('.'))
-            {
-                // Find fields with the attribute.
-                var fieldInfo = targetObjectType.GetField(propertyPath, (BindingFlags)~0);
-                if (fieldInfo != null &&
-                    fieldInfo.FieldType == type
-                    && fieldInfo.IsDefined(showAsPhysicsMaskAttributeType))
-                        return true;
-
-                // Find properties with the attribute.
-                var propertyInfo = targetObjectType.GetProperty(propertyPath, (BindingFlags)~0);
-                if (propertyInfo != null &&
-                    propertyInfo.PropertyType == type &&
-                    propertyInfo.IsDefined(showAsPhysicsMaskAttributeType))
-                        return true;
-            }
-
-            // Not found.
-            return false;
+            var field = ScriptAttributeUtility.GetFieldInfoFromProperty(property, out _);
+            return field != null && field.IsDefined(typeof(PhysicsMask.ShowAsPhysicsMaskAttribute), true);
         }
     }
 }

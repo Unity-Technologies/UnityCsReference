@@ -56,7 +56,7 @@ namespace UnityEngine.UIElements
             // precision is lost during the conversion process.
             // So if the text is "112.0384" then we know nothing changed and we can avoid replacing 112.038414 with 112.0484.
             var currentValueAsString = ValueToString(rawValue);
-            if (currentValueAsString != text)
+            if (showMixedValue || currentValueAsString != text)
             {
                 base.UpdateValueFromText();
             }

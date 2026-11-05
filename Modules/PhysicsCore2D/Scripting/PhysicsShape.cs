@@ -1728,12 +1728,12 @@ namespace Unity.U2D.Physics
         public readonly PhysicsBody body => PhysicsShape_GetBody(this);
 
         /// <summary>
-        /// Get/Set if the shape is a trigger.
-        /// Changing the state here is relatively expensive and should be avoided.
-        /// See <see cref="PhysicsShapeDefinition.isTrigger"/>.
+        /// Whether the shape is a trigger.
         /// </summary>
         /// <remarks>
         /// A trigger shape doesn't collide with other shapes. Other shapes pass through it instead, and Unity reports the overlap to an <see cref="PhysicsCallbacks.ITriggerCallback"/> when <see cref="PhysicsShape.triggerEvents"/> is `true`.
+        /// Changing the state here is relatively expensive and should be avoided.
+        /// See <see cref="PhysicsShapeDefinition.isTrigger"/>.
         /// </remarks>
         public readonly bool isTrigger { get => PhysicsShape_GetIsTrigger(this); set => PhysicsShape_SetIsTrigger(this, value); }
 
@@ -1848,10 +1848,13 @@ namespace Unity.U2D.Physics
         public readonly MoverData moverData { get => PhysicsShape_GetMoverData(this); set => PhysicsShape_SetMoverData(this, value); }
 
         /// <summary>
-        /// Controls whether this shape produces triggers events which can be retrieved after the simulation has completed.
-        /// A trigger event is only produced if both shapes involved have their triggerEvents enabled.
-        /// A trigger event will produce a <see cref="PhysicsCallbacks.ITriggerCallback"/> to the <see cref="PhysicsShape.callbackTarget"/> for both shapes involved.
+        /// Controls whether this shape produces trigger events which can be retrieved after the simulation has completed.
         /// </summary>
+        /// <remarks>
+        /// A trigger event is only produced if both shapes involved have their triggerEvents enabled.
+        /// Turning this off on a shape that is not a trigger hides it from every trigger.
+        /// A trigger event will produce a <see cref="PhysicsCallbacks.ITriggerCallback"/> to the <see cref="PhysicsShape.callbackTarget"/> for both shapes involved.
+        /// </remarks>
         public readonly bool triggerEvents { get => PhysicsShape_GetTriggerEvents(this); set => PhysicsShape_SetTriggerEvents(this, value); }
 
         /// <summary>

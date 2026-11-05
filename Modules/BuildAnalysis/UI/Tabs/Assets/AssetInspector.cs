@@ -68,7 +68,13 @@ namespace UnityEditor.Build.Analysis
             SetMode(Mode.Root);
         }
 
-        public void ShowEmpty() => SetMode(Mode.Empty);
+        // Empty is a genuine reset, so the section forgets what it was bound to: a later asset
+        // with the same positional id in another build must not inherit its tree.
+        public void ShowEmpty()
+        {
+            m_AssetBody.References.Unbind();
+            SetMode(Mode.Empty);
+        }
 
         private void SetMode(Mode mode)
         {
@@ -229,9 +235,6 @@ namespace UnityEditor.Build.Analysis
     /// </summary>
     internal sealed class ReferencesView : VisualElement
     {
-        private const string k_AllExtensions = "All";
-        private const int k_NoExtensionId = -1;
-
         private struct Row
         {
             public string Name;
@@ -239,12 +242,11 @@ namespace UnityEditor.Build.Analysis
             public string Size;
             public ulong SizeBytes;
             public Texture Icon;
-            public int ExtensionId;
         }
 
         private readonly Label m_Header;
-        private readonly DropdownField m_ViewDropdown;
         private readonly ToolbarSearchField m_SearchField;
+        private readonly ToolbarMenu m_ViewMenu;
         private readonly ListView m_List;
         private readonly ZebraEmptyBody m_EmptyBody;
         private readonly Label m_FooterCount;
@@ -252,11 +254,9 @@ namespace UnityEditor.Build.Analysis
         private readonly List<Row> m_Rows = new List<Row>();
         // Indices into m_Rows (kept in m_Rows' size-sorted order) that pass the active filters.
         private readonly List<int> m_FilteredIndices = new List<int>();
-        private string[] m_ExtensionPool = Array.Empty<string>();
+        private readonly ReferenceFilter m_Filter = new ReferenceFilter();
 
         private IVisualElementScheduledItem m_SearchDebounce;
-        private int m_ViewFilterId = k_NoExtensionId;
-        private string m_SearchText = string.Empty;
 
         public ReferencesView()
         {
@@ -266,24 +266,8 @@ namespace UnityEditor.Build.Analysis
             m_Header.AddToClassList("inspector__references-header");
             Add(m_Header);
 
-            var toolbar = new VisualElement();
-            toolbar.AddToClassList("data-list__toolbar");
+            var toolbar = ReferenceListToolbar.Make(out m_SearchField, out m_ViewMenu);
             toolbar.AddToClassList("inspector__references-toolbar");
-
-            m_ViewDropdown = new DropdownField { label = "View:", tooltip = "Filter by file extension", name = "view-dropdown" };
-            m_ViewDropdown.AddToClassList("data-list__toolbar-control");
-            m_ViewDropdown.AddToClassList("data-list__toolbar-popup");
-            m_ViewDropdown.choices = new List<string> { k_AllExtensions };
-            m_ViewDropdown.SetValueWithoutNotify(k_AllExtensions);
-            toolbar.Add(m_ViewDropdown);
-
-            var spacer = new VisualElement();
-            spacer.AddToClassList("data-list__toolbar-spacer");
-            toolbar.Add(spacer);
-
-            m_SearchField = new ToolbarSearchField { name = "search-field", tooltip = "Search asset name" };
-            m_SearchField.AddToClassList("data-list__toolbar-search");
-            toolbar.Add(m_SearchField);
             Add(toolbar);
 
             m_List = new ListView
@@ -310,12 +294,11 @@ namespace UnityEditor.Build.Analysis
             m_EmptyBody = new ZebraEmptyBody(m_List);
             Add(m_EmptyBody);
 
-            m_ViewDropdown.RegisterValueChangedCallback(evt => SetViewFilter(evt.newValue));
             m_SearchField.RegisterValueChangedCallback(evt =>
             {
                 var newText = evt.newValue ?? string.Empty;
                 m_SearchDebounce?.Pause();
-                m_SearchDebounce = schedule.Execute(() => SetSearchText(newText)).StartingIn(200);
+                m_SearchDebounce = schedule.Execute(() => SetSearchText(newText)).StartingIn(ReferenceListToolbar.k_SearchDebounceMs);
             });
         }
 
@@ -326,7 +309,10 @@ namespace UnityEditor.Build.Analysis
         public void Bind(int[] referencedAssetIds, BuildAnalysisAsset[] assets)
         {
             BuildRows(referencedAssetIds, assets);
-            BuildViewDropdownChoices();
+            var paths = new List<string>(m_Rows.Count);
+            foreach (var row in m_Rows)
+                paths.Add(row.Path);
+            m_Filter.SetItems(paths);
             ResetFilterState();
             ApplyFilters();
         }
@@ -334,12 +320,6 @@ namespace UnityEditor.Build.Analysis
         private void BuildRows(int[] referencedAssetIds, BuildAnalysisAsset[] assets)
         {
             m_Rows.Clear();
-
-            // Build a deduplicated extension pool while creating rows (insertion order first), then
-            // sort the pool alphabetically and remap each row's id to its sorted position.
-            var insertionMap = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
-            var insertionPool = new List<string>();
-
             if (referencedAssetIds != null && assets != null)
             {
                 foreach (var id in referencedAssetIds)
@@ -348,21 +328,6 @@ namespace UnityEditor.Build.Analysis
                         continue;
                     var a = assets[id];
                     var p = a.Path ?? string.Empty;
-
-                    var ext = Path.GetExtension(p);
-                    int extId;
-                    if (string.IsNullOrEmpty(ext))
-                    {
-                        extId = k_NoExtensionId;
-                    }
-                    else if (!insertionMap.TryGetValue(ext, out extId))
-                    {
-                        extId = insertionPool.Count;
-                        var lowerExt = ext.ToLowerInvariant();
-                        insertionPool.Add(lowerExt);
-                        insertionMap[lowerExt] = extId;
-                    }
-
                     m_Rows.Add(new Row
                     {
                         Name = string.IsNullOrEmpty(p) ? string.Empty : Path.GetFileName(p),
@@ -370,29 +335,9 @@ namespace UnityEditor.Build.Analysis
                         Size = FormatUtility.FormatSize(a.OutputSizeBytes),
                         SizeBytes = a.OutputSizeBytes,
                         Icon = IconUtility.GetAssetIcon(p),
-                        ExtensionId = extId,
                     });
                 }
             }
-
-            var sortedPool = new List<string>(insertionPool);
-            sortedPool.Sort(StringComparer.Ordinal);
-            if (insertionPool.Count > 0)
-            {
-                var remap = new int[insertionPool.Count];
-                for (int sortedId = 0; sortedId < sortedPool.Count; sortedId++)
-                    remap[insertionMap[sortedPool[sortedId]]] = sortedId;
-                for (int i = 0; i < m_Rows.Count; i++)
-                {
-                    var row = m_Rows[i];
-                    if (row.ExtensionId != k_NoExtensionId)
-                    {
-                        row.ExtensionId = remap[row.ExtensionId];
-                        m_Rows[i] = row;
-                    }
-                }
-            }
-            m_ExtensionPool = sortedPool.ToArray();
 
             // Largest contributors first — the reason a user opens this list. Name then path break
             // ties so equal-size rows keep a deterministic order (List.Sort is unstable).
@@ -406,63 +351,38 @@ namespace UnityEditor.Build.Analysis
             });
         }
 
-        private void BuildViewDropdownChoices()
-        {
-            var choices = new List<string>(m_ExtensionPool.Length + 1) { k_AllExtensions };
-            choices.AddRange(m_ExtensionPool);
-            m_ViewDropdown.choices = choices;
-            m_ViewDropdown.SetValueWithoutNotify(k_AllExtensions);
-        }
-
         private void SetViewFilter(string value)
         {
-            var newId = string.IsNullOrEmpty(value) || string.Equals(value, k_AllExtensions, StringComparison.Ordinal)
-                ? k_NoExtensionId
-                : Array.IndexOf(m_ExtensionPool, value.ToLowerInvariant());
-
-            if (newId == m_ViewFilterId)
+            if (!m_Filter.SetView(value))
                 return;
-
-            m_ViewFilterId = newId;
-            m_ViewDropdown.SetValueWithoutNotify(newId == k_NoExtensionId ? k_AllExtensions : m_ExtensionPool[newId]);
+            ReferenceListToolbar.ShowFilterState(m_ViewMenu, m_Filter);
             ApplyFilters();
         }
 
         private void SetSearchText(string value)
         {
-            var newText = value ?? string.Empty;
-            if (string.Equals(newText, m_SearchText, StringComparison.Ordinal))
-                return;
-            m_SearchText = newText;
-            ApplyFilters();
+            if (m_Filter.SetSearchText(value))
+                ApplyFilters();
         }
 
         private void ResetFilterState()
         {
             m_SearchDebounce?.Pause();
-            m_ViewFilterId = k_NoExtensionId;
-            m_SearchText = string.Empty;
             m_SearchField.SetValueWithoutNotify(string.Empty);
-            m_ViewDropdown.SetValueWithoutNotify(k_AllExtensions);
+            SyncFilterMenu();
         }
+
+        private void SyncFilterMenu() => ReferenceListToolbar.SyncFilter(m_ViewMenu, m_Filter, SetViewFilter);
 
         private void ApplyFilters()
         {
             m_FilteredIndices.Clear();
             if (m_FilteredIndices.Capacity < m_Rows.Count)
                 m_FilteredIndices.Capacity = m_Rows.Count;
-
-            var hasViewFilter = m_ViewFilterId != k_NoExtensionId;
-            var hasSearch = !string.IsNullOrEmpty(m_SearchText);
-
             for (int i = 0; i < m_Rows.Count; i++)
             {
-                var row = m_Rows[i];
-                if (hasViewFilter && row.ExtensionId != m_ViewFilterId)
-                    continue;
-                if (hasSearch && row.Name.IndexOf(m_SearchText, StringComparison.OrdinalIgnoreCase) < 0)
-                    continue;
-                m_FilteredIndices.Add(i);
+                if (m_Filter.Matches(i, m_Rows[i].Name))
+                    m_FilteredIndices.Add(i);
             }
 
             m_List.RefreshItems();
@@ -475,7 +395,7 @@ namespace UnityEditor.Build.Analysis
         private void BindItem(VisualElement ve, int index)
         {
             var row = m_Rows[m_FilteredIndices[index]];
-            AssetReferenceRow.Bind(ve, row.Icon, row.Name, row.Path, row.Size);
+            AssetReferenceRow.Bind(ve, row.Icon, row.Name, row.Path, row.Size, row.Path);
         }
     }
 }

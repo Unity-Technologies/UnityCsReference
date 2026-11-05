@@ -789,6 +789,61 @@ namespace Unity.U2D.Physics
 
         #endregion
 
+        #region Target Callbacks
+
+        // The callbacks the engine sends from PhysicsWorld.SendContactCallbacks and the others, once for each target of each event, having already found the target and checked its object is valid.
+        // Each calls the target only if it implements the matching callback interface.
+
+        /// <undoc/>
+        [RequiredByNativeCode]
+        static void SendBodyUpdateCallback(Object callbackTarget, in BodyUpdateEvent bodyUpdateEvent)
+        {
+            if (callbackTarget is PhysicsCallbacks.IBodyUpdateCallback target)
+                target.OnBodyUpdate2D(bodyUpdateEvent);
+        }
+
+        /// <undoc/>
+        [RequiredByNativeCode]
+        static void SendContactBeginCallback(Object callbackTarget, in ContactBeginEvent beginEvent)
+        {
+            if (callbackTarget is PhysicsCallbacks.IContactCallback target)
+                target.OnContactBegin2D(beginEvent);
+        }
+
+        /// <undoc/>
+        [RequiredByNativeCode]
+        static void SendContactEndCallback(Object callbackTarget, in ContactEndEvent endEvent)
+        {
+            if (callbackTarget is PhysicsCallbacks.IContactCallback target)
+                target.OnContactEnd2D(endEvent);
+        }
+
+        /// <undoc/>
+        [RequiredByNativeCode]
+        static void SendTriggerBeginCallback(Object callbackTarget, in TriggerBeginEvent beginEvent)
+        {
+            if (callbackTarget is PhysicsCallbacks.ITriggerCallback target)
+                target.OnTriggerBegin2D(beginEvent);
+        }
+
+        /// <undoc/>
+        [RequiredByNativeCode]
+        static void SendTriggerEndCallback(Object callbackTarget, in TriggerEndEvent endEvent)
+        {
+            if (callbackTarget is PhysicsCallbacks.ITriggerCallback target)
+                target.OnTriggerEnd2D(endEvent);
+        }
+
+        /// <undoc/>
+        [RequiredByNativeCode]
+        static void SendJointThresholdCallback(Object callbackTarget, in JointThresholdEvent jointThresholdEvent)
+        {
+            if (callbackTarget is PhysicsCallbacks.IJointThresholdCallback target)
+                target.OnJointThreshold2D(jointThresholdEvent);
+        }
+
+        #endregion
+
         #region World Render Event
 
         /// <summary>

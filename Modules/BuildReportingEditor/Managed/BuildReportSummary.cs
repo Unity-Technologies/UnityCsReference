@@ -94,6 +94,12 @@ namespace UnityEditor.Build
         /// <remarks>This value corresponds to <see cref="Build.Reporting.BuildSummary.outputPath"/>.</remarks>
         public string OutputPath;
 
+        /// <summary>The <see cref="BuildSessionGUID"/> of the build that this build ran inside, or a default-valued
+        /// <see cref="GUID"/> if none.</summary>
+        /// <remarks>Recorded for builds started during a Player build or an Addressables build.
+        /// Use <see cref="BuildHistory.TryGetParentBuild"/> to read it.</remarks>
+        public GUID ParentBuildSessionGUID;
+
         /// <summary>The platform the build was created for.</summary>
         /// <remarks>This value corresponds to <see cref="Build.Reporting.BuildSummary.platform"/>.</remarks>
         public BuildTarget Platform;
@@ -197,6 +203,7 @@ namespace UnityEditor.Build
                 BuildTypeName = summary.buildType.ToString(),
                 ContentSourceBuildSessionGUID = summary.contentSourceBuildSessionGuid,
                 OutputPath = summary.outputPath,
+                ParentBuildSessionGUID = BuildHistory.GetRecordedParent(summary.buildSessionGuid),
                 Platform = summary.platform,
                 PlatformName = summary.platform.ToString(),
                 ProducerPackage = string.Empty, // only external builds have one

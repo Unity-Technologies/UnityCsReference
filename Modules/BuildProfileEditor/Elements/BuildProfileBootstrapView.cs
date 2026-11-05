@@ -54,6 +54,12 @@ internal class BuildProfileBootstrapView : VisualElement
             m_PackageAddProgressLabel.text = TrText.buildProfileLoadingExtension;
         }
 
+        if (initializationInfo.state == BuildProfileInitialization.State.AwaitingPackageRegistration)
+        {
+            StartSpinner();
+            m_PackageAddProgressLabel.text = TrText.buildProfileConfiguration;
+        }
+
         // Prevent inspector editor from overwriting repaint
         // callback of an editor in the build profile window.
         if (onRepaintRequired != null)

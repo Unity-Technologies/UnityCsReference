@@ -15,7 +15,7 @@ namespace UnityEditor.EngineDiagnostics;
 internal struct BuildProfileInsightsSettingsContainer
 {
     [SerializeField] BuildProfileEngineDiagnosticsState m_BuildProfileEngineDiagnosticsState =
-        BuildProfileEngineDiagnosticsState.ProjectSettings;
+        BuildProfileEngineDiagnosticsState.Default;
 
     internal BuildProfileEngineDiagnosticsState buildProfileEngineDiagnosticsState
     {
@@ -25,6 +25,6 @@ internal struct BuildProfileInsightsSettingsContainer
 
     public BuildProfileInsightsSettingsContainer()
     {
-        m_BuildProfileEngineDiagnosticsState = BuildProfileEngineDiagnosticsState.ProjectSettings;
+        m_BuildProfileEngineDiagnosticsState = BuildProfileEngineDiagnosticsState.Default;
     }
 }

@@ -68,18 +68,23 @@ namespace Unity.U2D.Physics
         public float density { readonly get => m_Density; set => m_Density = Mathf.Max(0f, value); }
 
         /// <summary>
-        /// Enable/Disable being a trigger shape. A trigger shape generates overlap events but never generates a collision response.
+        /// Whether the shape is a trigger, which generates overlap events but never generates a collision response.
+        /// </summary>
+        /// <remarks>
+        /// A trigger only detects other shapes while its triggerEvents is enabled.
         /// Triggers do not collide with other triggers and do not have continuous collision, instead, use a ray or shape cast for those scenarios.
         /// Triggers still contribute to the body mass if they have non-zero density.
-        /// The default is false.
-        /// </summary>
+        /// </remarks>
         public bool isTrigger { readonly get => m_IsTrigger; set => m_IsTrigger = value; }
 
         /// <summary>
         /// Controls whether this shape produces trigger events which can be retrieved after the simulation has completed.
+        /// </summary>
+        /// <remarks>
         /// A trigger event is only produced if both shapes involved have their triggerEvents enabled.
         /// This applies to triggers and non-triggers alike.
-        /// </summary>
+        /// Turning this off on a shape that is not a trigger hides it from every trigger.
+        /// </remarks>
 	    public bool triggerEvents { readonly get => m_TriggerEvents; set => m_TriggerEvents = value; }
 
         /// <summary>

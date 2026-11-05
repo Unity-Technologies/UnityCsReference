@@ -89,8 +89,37 @@ namespace UnityEngine.UIElements.StyleSheets
                         break;
                 }
             }
+            else if (name == k_BoxShadowPropertyName && TryGetNegativeBoxShadowBlur(value, out var blur))
+            {
+                // The syntax can't express it, and the reader ignores the declaration: users likely mixed up blur and spread
+                result.status = StyleValidationStatus.Warning;
+                result.errorValue = blur;
+                result.message = $"box-shadow blur radius can't be negative (found {blur}). This declaration is ignored. " +
+                    "To make the shadow smaller than the element, use a negative spread radius instead.";
+            }
 
             return result;
+        }
+
+        const string k_BoxShadowPropertyName = "box-shadow";
+
+        // The blur radius is the third length of a box-shadow, the inset keyword and the color can be anywhere around them
+        static bool TryGetNegativeBoxShadowBlur(string value, out string blur)
+        {
+            blur = null;
+            int lengthIndex = 0;
+            foreach (var token in value.Split((char[])null, StringSplitOptions.RemoveEmptyEntries))
+            {
+                if (token[0] != '-' && token[0] != '+' && token[0] != '.' && !char.IsDigit(token[0]))
+                    continue;
+
+                if (lengthIndex++ == 2)
+                {
+                    blur = token;
+                    return token[0] == '-';
+                }
+            }
+            return false;
         }
 
         // A simple check to give a better error message when a unit is missing

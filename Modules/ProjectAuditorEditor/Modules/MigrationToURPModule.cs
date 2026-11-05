@@ -37,7 +37,7 @@ namespace Unity.ProjectAuditor.Editor.Modules
             )
         {
             MessageFormat = "{0}: '{1}' requires conversion to URP",
-            FixerLabel = "Migrate to URP",
+            FixerLabel = "Review in Converter",
             Fixer = MigrationToURPUtilities.OpenRenderPipelineConverter,
             DocumentationUrl = MigrationToURPUtilities.DocumentationUrl
         };

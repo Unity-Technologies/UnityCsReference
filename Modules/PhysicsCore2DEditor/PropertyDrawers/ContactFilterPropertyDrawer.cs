@@ -40,7 +40,7 @@ namespace Unity.U2D.Physics.Editor
             var contactsBindingPath = $"{contactsTypeName}.{nameof(PhysicsShape.ContactFilter.contacts.bitMask)}";
 
             // Find if we need to show as a basic 64-bit mask.
-            var showAsPhysicsMask = PhysicsMaskPropertyDrawer.ShowAsPhysicsMask<PhysicsShape.ContactFilter>(property);
+            var showAsPhysicsMask = PhysicsMaskPropertyDrawer.ShowAsPhysicsMask(property);
 
             // 64-bit mask.
             if (showAsPhysicsMask || PhysicsWorld.usePhysicsLayers)
@@ -79,11 +79,8 @@ namespace Unity.U2D.Physics.Editor
             else
             {
                 // 32-bit mask.
-                var categories = new LayerMaskField(categoriesProperty.displayName) { bindingPath = categoriesBindingPath };
-                var contacts = new LayerMaskField(contactsProperty.displayName) { bindingPath = contactsBindingPath };
-
-                categories.AddToClassList(LayerMaskField.alignedFieldUssClassName);
-                contacts.AddToClassList(LayerMaskField.alignedFieldUssClassName);
+                var categories = new LayerMaskField32(categoriesProperty.displayName) { bindingPath = categoriesBindingPath };
+                var contacts = new LayerMaskField32(contactsProperty.displayName) { bindingPath = contactsBindingPath };
 
                 body.Add(categories);
                 body.Add(contacts);
@@ -125,7 +122,7 @@ namespace Unity.U2D.Physics.Editor
         {
             label = EditorGUI.BeginProperty(position, label, property);
 
-            var showAsPhysicsMask = PhysicsMaskPropertyDrawer.ShowAsPhysicsMask<PhysicsShape.ContactFilter>(property);
+            var showAsPhysicsMask = PhysicsMaskPropertyDrawer.ShowAsPhysicsMask(property);
 
             var foldoutRect = new Rect(position.x, position.y, position.width, EditorGUIUtility.singleLineHeight);
             property.isExpanded = EditorGUI.Foldout(foldoutRect, property.isExpanded, label, true);

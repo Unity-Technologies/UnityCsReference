@@ -189,6 +189,9 @@ namespace UnityEngine.UIElements
 
                     field.onValidateValue += newValue =>
                     {
+                        if (isValidationIgnored)
+                            return newValue;
+
                         TValueType cur = value;
                         desc.write(ref cur, newValue);
                         var validatedValue = ValidatedValue(cur);

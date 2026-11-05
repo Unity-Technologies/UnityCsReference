@@ -182,9 +182,11 @@ namespace UnityEditor.UIElements.Debugger
         {
             private const string k_NewClassName = "newStyle";
 
-            // The element's [UxmlAttribute] set, rendered generically (name, tooltip, picking-mode, …) and
-            // rebuilt per selection since the attribute set depends on the element type.
+            // The element's [UxmlAttribute] set, rendered generically (name, tooltip, picking-mode, …). The
+            // view is kept across refreshes and rebuilt only when the element it was built for changes.
             readonly VisualElement m_ElementAttributes;
+            UxmlAttributesDebugView m_AttributesView;
+            VisualElement m_BuiltElement;
             readonly IntegerField m_IdField;
             readonly ObjectField m_VisualTreeAsset;
             readonly TextField m_dataSource;
@@ -287,7 +289,7 @@ namespace UnityEditor.UIElements.Debugger
                 if (m_SelectedElement == null)
                     return;
 
-                RebuildElementAttributes();
+                RefreshElementAttributes();
 
                 if (selectedElement.visualElementAsset?.hasAuthoringId == true)
                     m_IdField.value = selectedElement.visualElementAsset.id;
@@ -305,21 +307,35 @@ namespace UnityEditor.UIElements.Debugger
                 m_ClassList.RefreshItems();
             }
 
-            // Rebuilds the generic [UxmlAttribute] editor for the selected element. Rebuilt rather than
-            // value-updated because the attribute set depends on the element type, which changes per selection.
-            void RebuildElementAttributes()
+            // Value-refreshes the generic [UxmlAttribute] editor, rebuilding only when the selection changes.
+            // This runs off the inspected panel's repaint, which is every frame for a runtime panel in play
+            // mode, and a rebuild there drops focus and discards a half-typed value. The view is built for one
+            // element and its callbacks capture it, so a value still pending on a delayed field commits to the
+            // element it was typed for rather than to whatever is selected by the time it lands.
+            void RefreshElementAttributes()
             {
+                var element = m_SelectedElement;
+                if (ReferenceEquals(element, m_BuiltElement))
+                {
+                    m_AttributesView?.Refresh();
+                    return;
+                }
+
+                m_BuiltElement = element;
+                m_AttributesView = null;
                 m_ElementAttributes.Clear();
-                var description = GetDescriptionForType(m_SelectedElement.GetType());
+
+                var description = GetDescriptionForType(element.GetType());
                 if (description == null)
                     return;
 
-                m_ElementAttributes.Add(new UxmlAttributesDebugView(
+                m_AttributesView = new UxmlAttributesDebugView(
                     description,
-                    () => m_SelectedElement,
-                    (attribute, value) => { if (m_SelectedElement.IsLive()) attribute.SetValueToObject(m_SelectedElement, value); },
+                    () => element,
+                    (attribute, value) => { if (element.IsLive()) attribute.SetValueToObject(element, value); },
                     readOnly: false,
-                    excludedAttributeNames: m_ExcludedElementAttributes));
+                    excludedAttributeNames: m_ExcludedElementAttributes);
+                m_ElementAttributes.Add(m_AttributesView);
             }
 
             // The exact type may not be UXML-registered (a code-only custom element); fall back to the nearest

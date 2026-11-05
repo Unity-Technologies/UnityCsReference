@@ -286,15 +286,19 @@ namespace UnityEngine.UIElements.UIR
             m_DirtyTracker.RegisterDirty(renderData, RenderDataDirtyTypes.Visuals | (hierarchical ? RenderDataDirtyTypes.VisualsHierarchy : 0), RenderDataDirtyTypeClasses.Visuals);
         }
 
-        public bool hasBackdropFilters => m_BackdropFilterRenderDatas != null && m_BackdropFilterRenderDatas.Count > 0;
-
-        // Includes the backdrop-filters that will register when this frame's visual changes are processed
-        public bool HasBackdropFiltersIncludingPending()
+        // In this tree's points; includes the backdrop-filters that will register when this frame's visual changes are processed
+        public Rect ExtendByBackdropReads(Rect visible)
         {
-            if (hasBackdropFilters)
-                return true;
             if (m_RootRenderData == null)
-                return false;
+                return visible;
+
+            if (m_BackdropFilterRenderDatas != null)
+            {
+                foreach (RenderData renderData in m_BackdropFilterRenderDatas)
+                {
+                    BackdropReadRegions.Add(renderData);
+                }
+            }
 
             // Older than the IDs that ProcessChanges takes next, so processing never mistakes these marks for its own
             uint searchID = ++m_DirtyTracker.dirtyID;
@@ -303,42 +307,50 @@ namespace UnityEngine.UIElements.UIR
             if (m_DirtyTracker.unlistedCounts[visualsIndex] > 0)
             {
                 // Some elements dirtied while the labels were stale are not listed: only a walk of the tree finds them.
-                return HasPendingBackdropFilter(m_RootRenderData, false, true, searchID);
+                AddPendingBackdropFilters(m_RootRenderData, false, true, searchID);
+            }
+            else
+            {
+                List<RenderData> dirtyList = m_DirtyTracker.dirtyLists[visualsIndex];
+                RenderData[] items = NoAllocHelpers.ExtractArrayFromList(dirtyList);
+                for (int i = 0; i < dirtyList.Count; ++i)
+                {
+                    RenderData renderData = items[i];
+                    if (renderData.renderTree == this)
+                        AddPendingBackdropFilters(renderData, false, false, searchID);
+                }
             }
 
-            List<RenderData> dirtyList = m_DirtyTracker.dirtyLists[visualsIndex];
-            RenderData[] items = NoAllocHelpers.ExtractArrayFromList(dirtyList);
-            for (int i = 0; i < dirtyList.Count; ++i)
-            {
-                RenderData renderData = items[i];
-                if (renderData.renderTree == this && HasPendingBackdropFilter(renderData, false, false, searchID))
-                    return true;
-            }
-            return false;
+            // Runs before any class is processed this frame, so this is the relabel the first sorted class would do
+            if (m_DirtyTracker.labelsStale && BackdropReadRegions.addedCount > 1)
+                RelabelPreOrderAndRebuildDirtyLists(RenderDataDirtyTypeClasses.Clipping);
+
+            return BackdropReadRegions.Extend(visible);
         }
 
-        static bool HasPendingBackdropFilter(RenderData renderData, bool inDirtyHierarchy, bool wholeSubtree, uint searchID)
+        void AddPendingBackdropFilters(RenderData renderData, bool inDirtyHierarchy, bool wholeSubtree, uint searchID)
         {
             if (renderData.dirtyID == searchID)
-                return false;
+                return;
 
             inDirtyHierarchy |= (renderData.dirtiedValues & RenderDataDirtyTypes.VisualsHierarchy) != 0;
             if (inDirtyHierarchy)
                 renderData.dirtyID = searchID; // only a node whose whole subtree is searched may be skipped later
 
             bool visualsDirty = inDirtyHierarchy || (renderData.dirtiedValues & RenderDataDirtyTypes.AllVisuals) != 0;
-            if (visualsDirty && !renderData.isNestedRenderTreeRoot && renderData.owner.hasBackdropFilter)
-                return true;
+            if (visualsDirty && !renderData.isNestedRenderTreeRoot && renderData.owner.hasBackdropFilter &&
+                m_BackdropFilterRenderDatas?.Contains(renderData) != true && !BackdropReadRegions.IsAdded(renderData))
+            {
+                BackdropReadRegions.Add(renderData);
+            }
 
             if (!inDirtyHierarchy && !wholeSubtree)
-                return false;
+                return;
 
             for (RenderData child = renderData.firstChild; child != null; child = child.nextSibling)
             {
-                if (HasPendingBackdropFilter(child, inDirtyHierarchy, wholeSubtree, searchID))
-                    return true;
+                AddPendingBackdropFilters(child, inDirtyHierarchy, wholeSubtree, searchID);
             }
-            return false;
         }
 
         public void RegisterBackdropFilter(RenderData renderData)

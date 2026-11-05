@@ -287,7 +287,7 @@ namespace UnityEngine
                             outputQueue.Enqueue(operatorStack.Pop());
                         if (operatorStack.Count > 0)
                             operatorStack.Pop();
-                        if (operatorStack.Count > 0 && IsDelayedFunction(operatorStack.Peek()))
+                        if (operatorStack.Count > 0 && IsFunction(operatorStack.Peek()))
                             outputQueue.Enqueue(operatorStack.Pop());
                     }
                     else if (command == ',') // Function argument separator
@@ -299,7 +299,8 @@ namespace UnityEngine
                     {
                         Operator o = TokenToOperator(token);
 
-                        while (NeedToPop(operatorStack, o))
+                        var isPrefix = o.op == Op.Neg || IsFunction(token);
+                        while (!isPrefix && NeedToPop(operatorStack, o))
                             outputQueue.Enqueue(operatorStack.Pop());
 
                         operatorStack.Push(token);
@@ -407,6 +408,11 @@ namespace UnityEngine
                     return true;
             }
             return false;
+        }
+
+        static bool IsFunction(string token)
+        {
+            return IsOperator(token) && char.IsLetter(token[0]);
         }
 
         static bool IsOperator(string token)

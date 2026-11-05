@@ -189,6 +189,22 @@ namespace Unity.GraphToolkit.Editor.Implementation
             return destination.PortDataType.IsAssignableFrom(source.PortDataType);
         }
 
+        internal override bool HasLocalConnectionRules
+        {
+            get
+            {
+                // The graph is only known after initialization, so don't cache before then.
+                if (m_Graph is not Graph graphInstance)
+                    return true;
+
+                m_HasLocalConnectionRules ??= graphInstance.GetType().GetMethod(nameof(GraphToolkit.Editor.Graph.IsConnectionAllowed), new[] { typeof(IPort), typeof(IPort) })?.DeclaringType == typeof(GraphToolkit.Editor.Graph);
+                return m_HasLocalConnectionRules.Value;
+            }
+        }
+
+        [NonSerialized]
+        bool? m_HasLocalConnectionRules;
+
         public NodeModel CreateNodeModel(Node node, Vector2 position)
         {
             if (node is ContextNode contextNode)
@@ -1388,13 +1404,6 @@ namespace Unity.GraphToolkit.Editor.Implementation
             try
             {
                 Graph.OnGraphChanged(logger);
-                for (var i = 0; i < NodeModels.Count; i++)
-                {
-                    if (NodeModels[i] is NodeModel nodeModel)
-                    {
-                        nodeModel.CheckNodeErrors(result);
-                    }
-                }
             }
             finally
             {

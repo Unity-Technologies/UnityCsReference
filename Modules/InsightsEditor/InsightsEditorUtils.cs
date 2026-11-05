@@ -2,9 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-using System;
 using System.IO;
-using Unity.Scripting.LifecycleManagement;
 using UnityEngine;
 using UnityEngine.Bindings;
 using UnityEngine.UIElements;
@@ -15,20 +13,11 @@ namespace UnityEditor.InsightsEditor;
 [VisibleToOtherModules]
 internal partial class InsightsEditorUtils
 {
-    public const string k_ProjectSettingsInfoBoxNodeName = "insights-project-settings-info";
-
-    public const string k_InsightsInfoBoxDismissedFlagKey = "InsightsInfoBoxDismissed";
+    // EditorPrefs are shared with older editors, whose "InsightsInfoBoxDismissed" key must not hide this banner
+    public const string k_InsightsInfoBoxDismissedFlagKey = "DiagnosticsDataCollectionInfoBoxDismissed";
     public const string k_InsightsStyleSheetPath = "Insights/StyleSheets/ServicesWindow/InsightsSettings.uss";
 
     public const string k_UssClass_LinkCursor = "link-cursor";
-
-    [AutoStaticsCleanupOnCodeReload]
-    public static event Action<bool> OnEngineDiagnosticsEnabledChanged;
-
-    public static void NotifyEngineDiagnosticsSettingsChanged(bool enabled)
-    {
-        OnEngineDiagnosticsEnabledChanged?.Invoke(enabled);
-    }
 
     public static bool IsInsightsInfoBoxDismissed() =>
         EditorPrefs.GetBool(k_InsightsInfoBoxDismissedFlagKey, false);
@@ -36,7 +25,7 @@ internal partial class InsightsEditorUtils
     public static void SetInsightsInfoBoxDismissed(bool dismissed) =>
         EditorPrefs.SetBool(k_InsightsInfoBoxDismissedFlagKey, dismissed);
 
-    public static void DrawInsightsInfoBox(VisualElement root)
+    public static void DrawInsightsInfoBox(VisualElement root, BuildProfileInsightsSettingsVisualElement settings)
     {
         var styleSheet = EditorGUIUtility.LoadRequired(k_InsightsStyleSheetPath) as StyleSheet;
         if (styleSheet == null)
@@ -45,14 +34,13 @@ internal partial class InsightsEditorUtils
         }
 
         var infoBox = root.Q<HelpBox>("insights-info-box");
-        infoBox.RemoveFromClassList("display-none");
         infoBox.styleSheets.Add(styleSheet);
 
         infoBox.buttonText = TrText.k_InsightsInfoBoxButtonText;
         infoBox.onButtonClicked += () =>
         {
-            infoBox.AddToClassList("display-none");
             SetInsightsInfoBoxDismissed(true);
+            UpdateVisibility();
         };
 
         infoBox.RegisterCallback<PointerDownLinkTagEvent>(OnInfoBoxLinkClicked);
@@ -60,15 +48,23 @@ internal partial class InsightsEditorUtils
         infoBox.RegisterCallback<PointerOutLinkTagEvent>(OnLabelLinkPointerOut);
         infoBox.text = TrText.k_InsightsInfoBoxRichText;
 
+        UpdateVisibility();
+        settings.dataCollectionChanged += UpdateVisibility;
+
         return;
+
+        void UpdateVisibility()
+        {
+            infoBox.EnableInClassList("display-none", IsInsightsInfoBoxDismissed() || !settings.isDataCollectionEnabled);
+        }
 
         void OnInfoBoxLinkClicked(PointerDownLinkTagEvent evt)
         {
             var linkId = int.Parse(evt.linkID);
             switch (linkId)
             {
-                case TrText.k_InsightsLinkTagInfoBoxProjectSettingsLinkId:
-                    SettingsService.OpenProjectSettings("Project/Services/Diagnostics");
+                case TrText.k_InsightsLinkTagInfoBoxDiagnosticsDocsLinkId:
+                    Application.OpenURL(TrText.k_InsightsInfoBoxDiagnosticsDocsUrl);
                     return;
                 case TrText.k_InsightsLinkTagInfoBoxLearnMoreLinkId:
                     Application.OpenURL(TrText.k_InsightsInfoBoxLearnMoreUrl);

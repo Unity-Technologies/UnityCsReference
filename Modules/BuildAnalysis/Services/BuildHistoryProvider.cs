@@ -15,6 +15,7 @@ namespace UnityEditor.Build.Analysis
         bool TryLoadBuildReport(GUID buildSessionGuid, out BuildReport buildReport);
         bool TryGetFilePath(GUID buildSessionGuid, string filename, out string filePath);
         bool TryGetBuildReportDirectory(GUID buildSessionGuid, out string directory);
+        bool TryGetParentBuild(GUID buildSessionGuid, out GUID parentBuildSessionGuid);
         void Refresh();
         int GetRevision();
         int GetBuildHistoryLimit();
@@ -54,6 +55,11 @@ namespace UnityEditor.Build.Analysis
         public bool TryGetBuildReportDirectory(GUID buildSessionGuid, out string directory)
         {
             return BuildHistory.TryGetBuildReportDirectory(buildSessionGuid, out directory);
+        }
+
+        public bool TryGetParentBuild(GUID buildSessionGuid, out GUID parentBuildSessionGuid)
+        {
+            return BuildHistory.TryGetParentBuild(buildSessionGuid, out parentBuildSessionGuid);
         }
 
         public void Refresh()

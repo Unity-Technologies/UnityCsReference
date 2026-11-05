@@ -49,6 +49,27 @@ namespace UnityEngine.UIElements
             internal NativeColorId bottomColorId;
         }
 
+        public struct NativeBoxShadowParams
+        {
+            public Rect rect;
+            public Color color;
+            public Vector2 offset;
+            public float blurRadius;
+            public float spreadRadius;
+
+            public Vector2 topLeftRadius;
+            public Vector2 topRightRadius;
+            public Vector2 bottomRightRadius;
+            public Vector2 bottomLeftRadius;
+
+            public float leftWidth;
+            public float topWidth;
+            public float rightWidth;
+            public float bottomWidth;
+
+            public int inset;
+        }
+
         public struct NativeRectParams
         {
             public Rect rect;
@@ -107,6 +128,7 @@ namespace UnityEngine.UIElements
         [NativeMethod(IsThreadSafe = true)] public static extern MeshWriteDataInterface MakeBorder(ref NativeBorderParams borderParams);
         [NativeMethod(IsThreadSafe = true)] public static extern MeshWriteDataInterface MakeSolidRect(ref NativeRectParams rectParams);
         [NativeMethod(IsThreadSafe = true)] public static extern MeshWriteDataInterface MakeTexturedRect(ref NativeRectParams rectParams);
+        [NativeMethod(IsThreadSafe = true)] public static extern MeshWriteDataInterface MakeBoxShadow(ref NativeBoxShadowParams boxShadowParams);
         [NativeMethod(IsThreadSafe = true)] public static extern MeshWriteDataInterface MakeVectorGraphicsStretchBackground(Vertex[] svgVertices, UInt16[] svgIndices, float svgWidth, float svgHeight, Rect targetRect, Rect sourceUV, ScaleMode scaleMode, Color tint, NativeColorId colorId);
         [NativeMethod(IsThreadSafe = true)] public static extern MeshWriteDataInterface MakeVectorGraphics9SliceBackground(Vertex[] svgVertices, UInt16[] svgIndices, float svgWidth, float svgHeight, Rect targetRect, Vector4 sliceLTRB, Color tint, NativeColorId colorId);
     }

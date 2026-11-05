@@ -22,6 +22,7 @@ namespace UnityEngine.UIElements
         bool StartTransition(VisualElement owner, StylePropertyId prop, EntityId startValue, EntityId endValue, int durationMs, int delayMs, [NotNull] Func<float, float> easingCurve);
         bool StartTransition(VisualElement owner, StylePropertyId prop, UnityEngine.UIElements.Cursor startValue, UnityEngine.UIElements.Cursor endValue, int durationMs, int delayMs, [NotNull] Func<float, float> easingCurve);
         bool StartTransition(VisualElement owner, StylePropertyId prop, TextShadow startValue, TextShadow endValue, int durationMs, int delayMs, [NotNull] Func<float, float> easingCurve);
+        bool StartTransition(VisualElement owner, StylePropertyId prop, BoxShadow startValue, BoxShadow endValue, int durationMs, int delayMs, [NotNull] Func<float, float> easingCurve);
         bool StartTransition(VisualElement owner, StylePropertyId prop, Scale startValue, Scale endValue, int durationMs, int delayMs, [NotNull] Func<float, float> easingCurve);
         bool StartTransition(VisualElement owner, StylePropertyId prop, TransformOrigin startValue, TransformOrigin endValue, int durationMs, int delayMs, [NotNull] Func<float, float> easingCurve);
         bool StartTransition(VisualElement owner, StylePropertyId prop, Translate startValue, Translate endValue, int durationMs, int delayMs, [NotNull] Func<float, float> easingCurve);
@@ -918,13 +919,15 @@ namespace UnityEngine.UIElements
                     ref var style = ref running.style[i];
                     var from = style.startValue;
                     var to = style.endValue;
-                    if (running.properties[i] == StylePropertyId.ZIndex)
+                    if (running.properties[i] == StylePropertyId.ZIndex && (from == int.MinValue || to == int.MinValue))
                     {
-                        // z-index: auto is stored as int.MinValue; interpolate it as 0 for a numeric sweep, but leave the stored endValue untouched so completion settles back on the auto sentinel.
-                        if (from == int.MinValue) from = 0;
-                        if (to == int.MinValue) to = 0;
+                        // z-index: auto (stored as int.MinValue) is not interpolable; per CSS, discrete values flip at 50% of the eased progress.
+                        style.currentValue = timing.easedProgress < 0.5f ? from : to;
                     }
-                    style.currentValue = Lerp(from, to, timing.easedProgress);
+                    else
+                    {
+                        style.currentValue = Lerp(from, to, timing.easedProgress);
+                    }
                 }
             }
 
@@ -1113,6 +1116,40 @@ namespace UnityEngine.UIElements
             public override Func<TextShadow, TextShadow, bool> SameFunc { get; } = IsSame;
             private static bool IsSame(TextShadow a, TextShadow b) => a == b;
             private static TextShadow Lerp(TextShadow a, TextShadow b, float t) => TextShadow.LerpUnclamped(a, b, t);
+
+            protected sealed override void UpdateValues()
+            {
+                int n = running.count;
+                for (int i = 0; i < n; i++)
+                {
+                    ref var timing = ref running.timing[i];
+                    ref var style = ref running.style[i];
+                    style.currentValue = Lerp(style.startValue, style.endValue, timing.easedProgress);
+                }
+            }
+
+            protected sealed override void UpdateComputedStyle()
+            {
+                int n = running.count;
+                for (int i = 0; i < n; i++)
+                {
+                    running.elements[i].computedStyle.ApplyPropertyAnimation(running.elements[i],
+                        running.properties[i], running.style[i].currentValue);
+                }
+            }
+
+            protected sealed override void UpdateComputedStyle(int i)
+            {
+                running.elements[i].computedStyle.ApplyPropertyAnimation(running.elements[i],
+                    running.properties[i], running.style[i].currentValue);
+            }
+        }
+
+        class ValuesBoxShadow : Values<BoxShadow>
+        {
+            public override Func<BoxShadow, BoxShadow, bool> SameFunc { get; } = IsSame;
+            private static bool IsSame(BoxShadow a, BoxShadow b) => a == b;
+            private static BoxShadow Lerp(BoxShadow a, BoxShadow b, float t) => BoxShadow.LerpUnclamped(a, b, t);
 
             protected sealed override void UpdateValues()
             {
@@ -1824,6 +1861,7 @@ namespace UnityEngine.UIElements
         private ValuesEntityId m_EntityIds;
         private ValuesCursor m_Cursors;
         private ValuesTextShadow m_TextShadows;
+        private ValuesBoxShadow m_BoxShadows;
         private ValuesScale m_Scale;
         private ValuesRotate m_Rotate;
         private ValuesRatio m_Ratio;
@@ -2012,6 +2050,11 @@ namespace UnityEngine.UIElements
         public bool StartTransition(VisualElement owner, StylePropertyId prop, TextShadow startValue, TextShadow endValue, int durationMs, int delayMs, [NotNull] Func<float, float> easingCurve)
         {
             return StartTransition(owner, prop, startValue, endValue, durationMs, delayMs, easingCurve, GetOrCreate(ref m_TextShadows));
+        }
+
+        public bool StartTransition(VisualElement owner, StylePropertyId prop, BoxShadow startValue, BoxShadow endValue, int durationMs, int delayMs, [NotNull] Func<float, float> easingCurve)
+        {
+            return StartTransition(owner, prop, startValue, endValue, durationMs, delayMs, easingCurve, GetOrCreate(ref m_BoxShadows));
         }
 
         public bool StartTransition(VisualElement owner, StylePropertyId prop, Scale startValue, Scale endValue, int durationMs, int delayMs, [NotNull] Func<float, float> easingCurve)
@@ -2417,6 +2460,11 @@ namespace UnityEngine.UIElements
         }
 
         public bool StartTransition(VisualElement owner, StylePropertyId prop, TextShadow startValue, TextShadow endValue, int durationMs, int delayMs, Func<float, float> easingCurve)
+        {
+            return false;
+        }
+
+        public bool StartTransition(VisualElement owner, StylePropertyId prop, BoxShadow startValue, BoxShadow endValue, int durationMs, int delayMs, Func<float, float> easingCurve)
         {
             return false;
         }

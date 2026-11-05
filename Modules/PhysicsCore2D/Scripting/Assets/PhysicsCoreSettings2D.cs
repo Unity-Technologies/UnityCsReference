@@ -247,10 +247,6 @@ namespace Unity.U2D.Physics
 
         /// <undoc/>
         [RequiredByNativeCode]
-        void GetPhysicsLayerNames(out PhysicsLayers.LayerNames layerNames) => layerNames = m_PhysicsLayerNames;
-
-        /// <undoc/>
-        [RequiredByNativeCode]
         void GetPhysicsWorldDefinition(out PhysicsWorldDefinition definition) => definition = m_PhysicsWorldDefinition;
 
         /// <undoc/>

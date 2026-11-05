@@ -365,13 +365,14 @@ namespace UnityEngine.UIElements
         }
     }
 
-    [StructLayout(LayoutKind.Sequential, Size = 120)]
+    [StructLayout(LayoutKind.Sequential, Size = 152)]
     internal struct RareData : IStyleDataGroup<RareData>, IEquatable<RareData>
     {
         public Color unityBackgroundImageTintColor;
         public UnmanagedRefCountedList<UnmanagedFilterFunction> backdropFilter;
         public Cursor cursor;
         public UnmanagedRefCountedList<UnmanagedFilterFunction> filter;
+        public BoxShadow boxShadow;
         public TextOverflow textOverflow;
         public Curvature unityCurvature;
         public OverflowClipBox unityOverflowClipBox;
@@ -393,6 +394,7 @@ namespace UnityEngine.UIElements
         {
             var data = new RareData();
             data.backdropFilter.CopyFrom(backdropFilter);
+            data.boxShadow = boxShadow;
             data.cursor = cursor;
             data.filter.CopyFrom(filter);
             data.textOverflow = textOverflow;
@@ -413,6 +415,7 @@ namespace UnityEngine.UIElements
         public void CopyFrom(ref RareData other)
         {
             backdropFilter.CopyFrom(other.backdropFilter);
+            boxShadow = other.boxShadow;
             cursor = other.cursor;
             filter.CopyFrom(other.filter);
             textOverflow = other.textOverflow;
@@ -438,6 +441,7 @@ namespace UnityEngine.UIElements
         public static bool operator ==(RareData lhs, RareData rhs)
         {
             return lhs.backdropFilter == rhs.backdropFilter &&
+                lhs.boxShadow == rhs.boxShadow &&
                 lhs.cursor == rhs.cursor &&
                 lhs.filter == rhs.filter &&
                 lhs.textOverflow == rhs.textOverflow &&
@@ -477,6 +481,7 @@ namespace UnityEngine.UIElements
             unchecked
             {
                 var hashCode = backdropFilter.GetHashCode();
+                hashCode = (hashCode * 397) ^ boxShadow.GetHashCode();
                 hashCode = (hashCode * 397) ^ cursor.GetHashCode();
                 hashCode = (hashCode * 397) ^ filter.GetHashCode();
                 hashCode = (hashCode * 397) ^ (int)textOverflow;

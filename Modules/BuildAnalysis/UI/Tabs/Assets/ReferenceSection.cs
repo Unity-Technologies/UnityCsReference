@@ -5,6 +5,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using UnityEditor.UIElements;
 using UnityEngine;
 using UnityEngine.UIElements;
 
@@ -18,7 +19,7 @@ namespace UnityEditor.Build.Analysis
 
     /// <summary>
     /// The dependency half of the Asset-mode inspector: a two-tab bar under the metadata block,
-    /// with a flat list per direction. Owns the loading and unavailable states, so the tab bodies
+    /// a flat list for References To and a tree for Referenced By. Owns the loading and unavailable states, so the tab bodies
     /// and the tab-label parentheticals always agree:
     ///   (N)  a measured direct-edge count
     ///   (-)  the graph is still loading
@@ -55,9 +56,12 @@ namespace UnityEditor.Build.Analysis
 
         private enum State { None, Loading, Unavailable, Bound }
 
+        /// <summary>A row's "Select in Asset Table" was chosen, with that row's asset id.</summary>
+        internal event Action<int> SelectInTableRequested;
+
         private readonly ReferenceTabBar m_TabBar = new ReferenceTabBar();
         private readonly Label m_Message = new Label();
-        private readonly FlatReferenceList m_ReferencedByList = new FlatReferenceList(withSize: false);
+        private readonly ReferencedByTree m_ReferencedByTree = new ReferencedByTree();
         private readonly FlatReferenceList m_ReferencesToList = new FlatReferenceList(withSize: true);
         private readonly LoadingOverlay m_LoadingOverlay = new LoadingOverlay();
 
@@ -65,6 +69,11 @@ namespace UnityEditor.Build.Analysis
         private DependencyGraphStatus m_UnavailableStatus;
         private bool m_ReferrersRecorded;
         private bool m_IsScript;
+        private int m_BoundAssetId = -1;
+        private int m_BoundNodeCount = -1;
+
+        // Loading the asset already on screen: the bodies stay, only the spinner shows.
+        private bool m_RefreshingBound;
 
         public ReferenceSection()
         {
@@ -77,14 +86,16 @@ namespace UnityEditor.Build.Analysis
             m_Message.name = "ref-message";
             m_Message.AddToClassList("inspector__ref-message");
             bodyHost.Add(m_Message);
-            m_ReferencedByList.name = "referenced-by-list";
-            bodyHost.Add(m_ReferencedByList);
+            m_ReferencedByTree.name = "referenced-by-tree";
+            bodyHost.Add(m_ReferencedByTree);
             m_ReferencesToList.name = "references-to-list";
             bodyHost.Add(m_ReferencesToList);
             m_LoadingOverlay.AddToClassList("loading-overlay--inline");
             bodyHost.Add(m_LoadingOverlay);
             Add(bodyHost);
 
+            m_ReferencedByTree.SelectInTable = id => SelectInTableRequested?.Invoke(id);
+            m_ReferencesToList.SelectInTable = id => SelectInTableRequested?.Invoke(id);
             m_TabBar.ActiveTabChanged += _ => RefreshBody();
 
             // Inert until a caller pushes a state - no spinner schedule ticking behind an
@@ -108,11 +119,20 @@ namespace UnityEditor.Build.Analysis
                 m_LoadingOverlay.Hide();
         }
 
-        public void SetLoading()
+        /// <summary>
+        /// The graph for <paramref name="assetId"/> is on its way. When that is the asset already
+        /// bound, what is on screen stays valid and only the spinner is added; anything else is
+        /// hidden until it arrives.
+        /// </summary>
+        public void SetLoading(int assetId)
         {
             m_State = State.Loading;
-            m_TabBar.SetLabel(ReferenceTab.ReferencedBy, $"{k_ReferencedByLabel} {k_PendingCount}");
-            m_TabBar.SetLabel(ReferenceTab.ReferencesTo, $"{k_ReferencesToLabel} {k_PendingCount}");
+            m_RefreshingBound = assetId >= 0 && assetId == m_BoundAssetId;
+            if (!m_RefreshingBound)
+            {
+                m_TabBar.SetLabel(ReferenceTab.ReferencedBy, $"{k_ReferencedByLabel} {k_PendingCount}");
+                m_TabBar.SetLabel(ReferenceTab.ReferencesTo, $"{k_ReferencesToLabel} {k_PendingCount}");
+            }
             RefreshBody();
         }
 
@@ -120,38 +140,65 @@ namespace UnityEditor.Build.Analysis
         {
             m_State = State.Unavailable;
             m_UnavailableStatus = status;
+            m_BoundAssetId = -1;
+            m_ReferencedByTree.ClearRows();
+            m_ReferencesToList.ClearRows();
             m_TabBar.SetLabel(ReferenceTab.ReferencedBy, k_ReferencedByLabel);
             m_TabBar.SetLabel(ReferenceTab.ReferencesTo, k_ReferencesToLabel);
             RefreshBody();
         }
 
-        /// <summary>Bind both directions for one asset. Rows are precomputed here so bindItem stays allocation-free.</summary>
-        public void Bind(IAssetReferenceProvider references, int assetId, BuildAnalysisAsset[] assets)
+        /// <summary>Back to the inert state, with both bodies emptied. A genuine reset, not a reload.</summary>
+        public void Unbind()
+        {
+            m_State = State.None;
+            m_BoundAssetId = -1;
+            m_RefreshingBound = false;
+            m_ReferencedByTree.ClearRows();
+            m_ReferencesToList.ClearRows();
+            m_TabBar.SetLabel(ReferenceTab.ReferencedBy, k_ReferencedByLabel);
+            m_TabBar.SetLabel(ReferenceTab.ReferencesTo, k_ReferencesToLabel);
+            RefreshBody();
+        }
+
+        /// <summary>
+        /// Bind both directions for one asset. Rows are precomputed here so bindItem stays
+        /// allocation-free; the walker carries the build's root set for the Referenced By tree.
+        /// </summary>
+        public void Bind(IAssetReferenceProvider references, ReferencedByWalker walker, int assetId, BuildAnalysisAsset[] assets)
         {
             if (references == null)
                 throw new ArgumentNullException(nameof(references));
+            if (walker == null)
+                throw new ArgumentNullException(nameof(walker));
             if (assets == null)
                 throw new ArgumentNullException(nameof(assets));
 
+            // The same asset from a regenerated graph of the same shape: the lists keep their
+            // filters, as the tree keeps everything.
+            var sameAsset = assetId == m_BoundAssetId && references.NodeCount == m_BoundNodeCount;
             m_State = State.Bound;
+            m_BoundAssetId = assetId;
+            m_BoundNodeCount = references.NodeCount;
+            m_RefreshingBound = false;
 
             var path = (uint)assetId < (uint)assets.Length ? assets[assetId].Path ?? string.Empty : string.Empty;
             m_IsScript = path.EndsWith(".cs", StringComparison.OrdinalIgnoreCase);
             m_ReferrersRecorded = references.IsAttributed(assetId);
 
-            m_ReferencesToList.SetRows(BuildReferencesToRows(references, assetId, assets));
+            m_ReferencesToList.SetRows(BuildReferencesToRows(references, assetId, assets), keepFilter: sameAsset);
             m_TabBar.SetLabel(ReferenceTab.ReferencesTo,
                 $"{k_ReferencesToLabel} ({references.GetReferencesToCount(assetId)})");
 
             if (m_ReferrersRecorded)
             {
-                m_ReferencedByList.SetRows(BuildReferencedByRows(references, assetId, assets));
+                m_ReferencedByTree.Bind(walker, references, assetId, assets);
                 m_TabBar.SetLabel(ReferenceTab.ReferencedBy,
                     $"{k_ReferencedByLabel} ({references.GetReferencedByCount(assetId)})");
             }
             else
             {
-                m_ReferencedByList.ClearRows();
+                m_ReferencedByTree.ClearRows();
                 m_TabBar.SetLabel(ReferenceTab.ReferencedBy, k_ReferencedByLabel);
             }
 
@@ -171,13 +218,13 @@ namespace UnityEditor.Build.Analysis
 
             if (m_State == State.Unavailable)
             {
-                ShowBody(list: null, message: UnavailableMessage(m_UnavailableStatus));
+                ShowBody(body: null, message: UnavailableMessage(m_UnavailableStatus));
                 return;
             }
 
-            if (m_State != State.Bound)
+            if (m_State != State.Bound && !(loading && m_RefreshingBound))
             {
-                ShowBody(list: null, message: null);
+                ShowBody(body: null, message: null);
                 return;
             }
 
@@ -190,24 +237,27 @@ namespace UnityEditor.Build.Analysis
             }
             else if (m_ReferrersRecorded)
             {
-                ShowBody(m_ReferencedByList, message: null);
+                ShowBody(m_ReferencedByTree, message: null);
             }
             else
             {
-                // The message alone, no list: an asset with genuinely no referrers renders an
-                // empty list (we looked, nothing points here), and an unrecorded one must not
-                // render the same way.
-                ShowBody(list: null, message: k_ReferrersNotRecordedMessage);
+                // The message alone, no tree: an asset with genuinely no referrers renders the
+                // tree with only its root row (we looked, nothing points here), and an unrecorded
+                // one must not render the same way.
+                ShowBody(body: null, message: k_ReferrersNotRecordedMessage);
             }
         }
 
-        private void ShowBody(FlatReferenceList list, string message)
+        private void ShowBody(VisualElement body, string message)
         {
-            m_ReferencedByList.style.display = list == m_ReferencedByList ? DisplayStyle.Flex : DisplayStyle.None;
-            m_ReferencesToList.style.display = list == m_ReferencesToList ? DisplayStyle.Flex : DisplayStyle.None;
+            m_ReferencedByTree.style.display = body == m_ReferencedByTree ? DisplayStyle.Flex : DisplayStyle.None;
+            m_ReferencesToList.style.display = body == m_ReferencesToList ? DisplayStyle.Flex : DisplayStyle.None;
             m_Message.style.display = message != null ? DisplayStyle.Flex : DisplayStyle.None;
             m_Message.text = message ?? string.Empty;
-            list?.RefreshZebra();
+            if (body == m_ReferencedByTree)
+                m_ReferencedByTree.RefreshZebra();
+            else if (body == m_ReferencesToList)
+                m_ReferencesToList.RefreshZebra();
         }
 
         private static string UnavailableMessage(DependencyGraphStatus status)
@@ -247,6 +297,7 @@ namespace UnityEditor.Build.Analysis
 
                 rows.Add(new ReferenceRowData
                 {
+                    AssetId = id,
                     Name = string.IsNullOrEmpty(path) ? string.Empty : Path.GetFileName(path),
                     Path = path,
                     Size = size,
@@ -262,33 +313,6 @@ namespace UnityEditor.Build.Analysis
                 var bySize = y.SortSize.CompareTo(x.SortSize);
                 if (bySize != 0)
                     return bySize;
-                var byName = string.Compare(x.Name, y.Name, StringComparison.OrdinalIgnoreCase);
-                return byName != 0 ? byName : string.Compare(x.Path, y.Path, StringComparison.Ordinal);
-            });
-            return rows;
-        }
-
-        private static List<ReferenceRowData> BuildReferencedByRows(
-            IAssetReferenceProvider references, int assetId, BuildAnalysisAsset[] assets)
-        {
-            var sources = references.GetReferencedBy(assetId);
-            var rows = new List<ReferenceRowData>(sources.Length);
-            for (var i = 0; i < sources.Length; i++)
-            {
-                var id = sources[i];
-                if ((uint)id >= (uint)assets.Length)
-                    continue;
-                var path = assets[id].Path ?? string.Empty;
-                rows.Add(new ReferenceRowData
-                {
-                    Name = string.IsNullOrEmpty(path) ? string.Empty : Path.GetFileName(path),
-                    Path = path,
-                    Icon = IconUtility.GetAssetIcon(path),
-                });
-            }
-
-            rows.Sort((x, y) =>
-            {
                 var byName = string.Compare(x.Name, y.Name, StringComparison.OrdinalIgnoreCase);
                 return byName != 0 ? byName : string.Compare(x.Path, y.Path, StringComparison.Ordinal);
             });
@@ -350,6 +374,7 @@ namespace UnityEditor.Build.Analysis
     /// <summary>One precomputed reference row: everything bindItem needs, nothing it must derive.</summary>
     internal struct ReferenceRowData
     {
+        public int AssetId;
         public string Name;
         public string Path;
         public string Size;
@@ -358,27 +383,42 @@ namespace UnityEditor.Build.Analysis
     }
 
     /// <summary>
-    /// A bare reference list: no toolbar, no footer, zebra continuing past the last row.
+    /// A reference list with the inspector's toolbar (search and the extension filter), no footer,
+    /// zebra continuing past the last row.
     /// </summary>
     internal sealed class FlatReferenceList : VisualElement
     {
         private readonly List<ReferenceRowData> m_Rows = new List<ReferenceRowData>();
+        // Indices into m_Rows, in its order, that pass the filter.
+        private readonly List<int> m_FilteredIndices = new List<int>();
+        private readonly ReferenceFilter m_Filter = new ReferenceFilter();
+        private readonly ToolbarSearchField m_SearchField;
+        private readonly ToolbarMenu m_ViewMenu;
         private readonly ListView m_List;
         private readonly ZebraEmptyBody m_EmptyBody;
         private readonly bool m_WithSize;
+        private IVisualElementScheduledItem m_SearchDebounce;
 
         public FlatReferenceList(bool withSize)
         {
             AddToClassList("inspector__ref-list");
             m_WithSize = withSize;
 
+            Add(ReferenceListToolbar.Make(out m_SearchField, out m_ViewMenu));
+            m_SearchField.RegisterValueChangedCallback(evt =>
+            {
+                var newText = evt.newValue ?? string.Empty;
+                m_SearchDebounce?.Pause();
+                m_SearchDebounce = schedule.Execute(() => SetSearchText(newText)).StartingIn(ReferenceListToolbar.k_SearchDebounceMs);
+            });
+
             m_List = new ListView
             {
-                itemsSource = m_Rows,
+                itemsSource = m_FilteredIndices,
                 fixedItemHeight = 20,
                 selectionType = SelectionType.None,
                 showAlternatingRowBackgrounds = AlternatingRowBackground.ContentOnly,
-                makeItem = () => AssetReferenceRow.Make(m_WithSize),
+                makeItem = () => AssetReferenceRow.Make(m_WithSize, id => SelectInTable?.Invoke(id)),
                 bindItem = BindItem,
             };
             m_List.AddToClassList("inspector__references-list");
@@ -388,47 +428,119 @@ namespace UnityEditor.Build.Analysis
             Add(m_EmptyBody);
         }
 
+        /// <summary>Where a row's "Select in Asset Table" goes; the section wires it to its owner.</summary>
+        internal Action<int> SelectInTable { get; set; }
+
+        /// <summary>All rows, before the filter.</summary>
         internal int Count => m_Rows.Count;
+        internal int VisibleCount => m_FilteredIndices.Count;
         internal IReadOnlyList<ReferenceRowData> Rows => m_Rows;
 
-        public void SetRows(List<ReferenceRowData> rows)
+        /// <summary>
+        /// Replaces the rows. With <paramref name="keepFilter"/> the search and view carry over
+        /// (a view the new rows lack falls back to All); the field is left alone, so a keystroke
+        /// still waiting on its debounce applies on top.
+        /// </summary>
+        public void SetRows(List<ReferenceRowData> rows, bool keepFilter = false)
         {
+            var search = m_Filter.SearchText;
+            var view = m_Filter.ViewValue;
             m_Rows.Clear();
             m_Rows.AddRange(rows);
-            m_List.RefreshItems();
-            m_EmptyBody.Refresh();
+            var paths = new List<string>(rows.Count);
+            foreach (var row in rows)
+                paths.Add(row.Path);
+            m_Filter.SetItems(paths);
+            if (keepFilter)
+            {
+                m_Filter.SetSearchText(search);
+                m_Filter.SetView(view);
+                SyncFilterMenu();
+            }
+            else
+            {
+                ResetControls();
+            }
+            ApplyFilter();
         }
 
         public void ClearRows()
         {
             m_Rows.Clear();
-            m_List.RefreshItems();
-            m_EmptyBody.Refresh();
+            m_Filter.SetItems(Array.Empty<string>());
+            ResetControls();
+            ApplyFilter();
         }
 
         // The zebra reads live geometry, so it needs a nudge when this list is display-toggled
         // back on without its rows changing.
         public void RefreshZebra() => m_EmptyBody.Refresh();
 
+        internal void SetSearchText(string value)
+        {
+            if (m_Filter.SetSearchText(value))
+                ApplyFilter();
+        }
+
+        internal void SetView(string value)
+        {
+            if (!m_Filter.SetView(value))
+                return;
+            ReferenceListToolbar.ShowFilterState(m_ViewMenu, m_Filter);
+            ApplyFilter();
+        }
+
+        private void ResetControls()
+        {
+            m_SearchDebounce?.Pause();
+            m_SearchField.SetValueWithoutNotify(string.Empty);
+            SyncFilterMenu();
+        }
+
+        private void SyncFilterMenu() => ReferenceListToolbar.SyncFilter(m_ViewMenu, m_Filter, SetView);
+
+        private void ApplyFilter()
+        {
+            m_FilteredIndices.Clear();
+            for (var i = 0; i < m_Rows.Count; i++)
+            {
+                if (m_Filter.Matches(i, m_Rows[i].Name))
+                    m_FilteredIndices.Add(i);
+            }
+            m_List.RefreshItems();
+            m_EmptyBody.Refresh();
+        }
+
         private void BindItem(VisualElement element, int index)
         {
-            var row = m_Rows[index];
-            AssetReferenceRow.Bind(element, row.Icon, row.Name, row.Path, m_WithSize ? row.Size : null);
+            var row = m_Rows[m_FilteredIndices[index]];
+            AssetReferenceRow.Bind(element, row.Icon, row.Name, row.Path, m_WithSize ? row.Size : null, row.Path, row.AssetId);
         }
     }
 
     /// <summary>
     /// The one reference-row implementation: icon + name (path tooltip) + optional right-aligned
-    /// size. Shared by the root-asset ReferencesView and the flat lists (and, later, the tree),
+    /// size. Shared by the root-asset ReferencesView, the flat list and the Referenced By tree,
     /// so every styling fix lands once. The size arrives preformatted — edge cost, output size or
-    /// nothing is the caller's business.
+    /// nothing is the caller's business — and so does the name, which the tree hands over with
+    /// its suffix already styled in.
     /// </summary>
     internal static class AssetReferenceRow
     {
-        public static VisualElement Make(bool withSize)
+        // One per row, rewritten on every bind: what the row's menu acts on. Rows are recycled,
+        // so a bind without an asset must clear it, or the row would keep its last asset's menu.
+        private sealed class Target
+        {
+            public string Path;
+            public int AssetId = -1;
+        }
+
+        public static VisualElement Make(bool withSize, Action<int> selectInTable = null)
         {
             var row = new VisualElement();
             row.AddToClassList("inspector__references-item");
+            row.userData = new Target();
+            row.AddManipulator(new ContextualMenuManipulator(evt => Populate(row, evt.menu, selectInTable)));
             var icon = new Image { scaleMode = ScaleMode.ScaleToFit };
             icon.AddToClassList("inspector__references-item-icon");
             row.Add(icon);
@@ -444,7 +556,8 @@ namespace UnityEditor.Build.Analysis
             return row;
         }
 
-        public static void Bind(VisualElement row, Texture icon, string name, string tooltip, string size)
+        public static void Bind(VisualElement row, Texture icon, string name, string tooltip, string size,
+            string path = null, int assetId = -1)
         {
             ((Image)row.ElementAt(0)).image = icon;
             var nameLabel = (Label)row.ElementAt(1);
@@ -452,6 +565,20 @@ namespace UnityEditor.Build.Analysis
             nameLabel.tooltip = tooltip;
             if (size != null)
                 ((Label)row.ElementAt(2)).text = size;
+            var target = (Target)row.userData;
+            target.Path = path;
+            target.AssetId = assetId;
+        }
+
+        // Pure helper exposed for unit tests so they can assert against a fresh DropdownMenu
+        // without dispatching events through the panel.
+        internal static void Populate(VisualElement row, DropdownMenu menu, Action<int> selectInTable)
+        {
+            if (!(row.userData is Target target))
+                return;
+            var assetId = target.AssetId;
+            Action select = selectInTable != null && assetId >= 0 ? () => selectInTable(assetId) : null;
+            AssetRowContextMenu.Populate(menu, target.Path, select);
         }
     }
 }

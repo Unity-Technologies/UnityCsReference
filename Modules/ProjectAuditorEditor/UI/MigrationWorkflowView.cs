@@ -14,7 +14,7 @@ using UnityEngine;
 
 namespace Unity.ProjectAuditor.Editor.UI
 {
-    internal class MigrationWorkflowView
+    internal partial class MigrationWorkflowView
     {
         const ProjectAreaFlags k_ProjectAreaFlags =
             ProjectAreaFlags.ProjectSettings | ProjectAreaFlags.Code |
@@ -26,7 +26,11 @@ namespace Unity.ProjectAuditor.Editor.UI
         List<Step> m_Steps;
 
         UnityEditor.PackageManager.Requests.AddRequest m_UrpAddRequest;
-        bool m_ConverterRunning;
+
+        [AutoStaticsCleanupOnCodeReload]
+        static bool s_ConverterRunning;
+
+        internal static bool ConverterRunning => s_ConverterRunning;
 
         static MigrateToURPSummaryView GetSummaryView(ProjectAuditorWindow window)
         {
@@ -53,7 +57,8 @@ namespace Unity.ProjectAuditor.Editor.UI
             set => SessionState.SetString(k_TargetPipelineKey, value);
         }
 
-        Report m_LastSyncedReport;
+        [AutoStaticsCleanupOnCodeReload]
+        static Report s_LastSyncedReport;
 
         public MigrationWorkflowView()
         {
@@ -61,14 +66,22 @@ namespace Unity.ProjectAuditor.Editor.UI
 
         // Seeds SelectedTargetPipeline from a newly-seen Report, so opening the window on an existing Report
         // (rather than picking one via the dropdown) shows the pipeline it was actually scanned against.
-        void SyncTargetPipelineFromReport(Report report)
+        // A project already migrated to the selected pipeline keeps it, so the Report reads as stale rather than undoing the migration.
+        internal static void SyncTargetPipelineFromReport(Report report)
         {
-            if (ReferenceEquals(report, m_LastSyncedReport))
+            if (ReferenceEquals(report, s_LastSyncedReport))
                 return;
-            m_LastSyncedReport = report;
+            s_LastSyncedReport = report;
 
-            if (report != null && report.IsValid() && !string.IsNullOrEmpty(report.SessionInfo.MigrationTargetPipeline))
-                SelectedTargetPipeline = report.SessionInfo.MigrationTargetPipeline;
+            if (report == null || !report.IsValid() || string.IsNullOrEmpty(report.SessionInfo.MigrationTargetPipeline))
+                return;
+
+            var reportTargetPipeline = report.SessionInfo.MigrationTargetPipeline;
+            if (MigrationToURPUtilities.IsProjectFullyOnUrp(SelectedTargetPipeline) &&
+                !MigrationToURPUtilities.IsProjectFullyOnUrp(reportTargetPipeline))
+                return;
+
+            SelectedTargetPipeline = reportTargetPipeline;
         }
 
         internal sealed class Step
@@ -80,7 +93,7 @@ namespace Unity.ProjectAuditor.Editor.UI
 
             public Func<ProjectAuditorWindow, bool> IsComplete;
             public Func<bool> DrawUI;
-            public Action<ProjectAuditorWindow, Step, bool> DrawButtonUI;
+            public Action<ProjectAuditorWindow, Step, bool, bool> DrawButtonUI;
         }
 
         List<Step> Steps => m_Steps ??= new List<Step>
@@ -104,7 +117,7 @@ namespace Unity.ProjectAuditor.Editor.UI
                     return DrawBackupConfirmation() && (m_UrpAddRequest == null);
                 },
 
-                DrawButtonUI = (ProjectAuditorWindow window, Step step, bool enabled) =>
+                DrawButtonUI = (ProjectAuditorWindow window, Step step, bool enabled, bool converterRunning) =>
                 {
                     GUIContent content = enabled ? step.Contents[0] : step.Contents[1];
                     if (m_UrpAddRequest != null)
@@ -139,7 +152,7 @@ namespace Unity.ProjectAuditor.Editor.UI
                     return true;
                 },
 
-                DrawButtonUI = (ProjectAuditorWindow window, Step step, bool enabled) =>
+                DrawButtonUI = (ProjectAuditorWindow window, Step step, bool enabled, bool converterRunning) =>
                 {
                     if (CenteredButton(enabled ? step.Contents[0] : step.Contents[1]) && ConfirmAssignUrpAsset())
                     {
@@ -170,7 +183,7 @@ namespace Unity.ProjectAuditor.Editor.UI
                     L10n.TextContent("Run Converter", "There are no issues to convert.", null, null)
                 ],
 
-                DrawButtonUI = (ProjectAuditorWindow window, Step step, bool enabled) =>
+                DrawButtonUI = (ProjectAuditorWindow window, Step step, bool enabled, bool converterRunning) =>
                 {
                     if (IsReportValidForMigration(out var _))
                     {
@@ -184,12 +197,12 @@ namespace Unity.ProjectAuditor.Editor.UI
                         // Render Pipeline Converter
                         GUIContent pipelineConverterLabel = Utility.TempContent(string.Format(Contents.ConverterIssues, summaryView.RenderPipelineConverterIssueCount));
                         GUILayout.Label(pipelineConverterLabel);
-                        using (new EditorGUI.DisabledScope((summaryView.RenderPipelineConverterIssueCount == 0) || m_ConverterRunning))
+                        using (new EditorGUI.DisabledScope((summaryView.RenderPipelineConverterIssueCount == 0) || converterRunning))
                         {
                             EditorGUILayout.BeginHorizontal();
 
                             GUIContent runContent = Contents.RunConverterButton;
-                            if (m_ConverterRunning)
+                            if (converterRunning)
                             {
                                 int frame = Utility.GetStatusWheelFrame();
                                 runContent = Contents.RunningConverterButton[frame];
@@ -215,7 +228,7 @@ namespace Unity.ProjectAuditor.Editor.UI
                         GUILayout.Space(10);
 
                         // Manual fixes (go to summary)
-                        GUIContent manualFixesLabel = Utility.TempContent(string.Format(Contents.ManualIssues, summaryView.TotalIssueCount - summaryView.RenderPipelineConverterIssueCount));
+                        GUIContent manualFixesLabel = Utility.TempContent(string.Format(Contents.ManualIssues, summaryView.ManualIssueCount));
                         GUILayout.Label(manualFixesLabel);
                         if (GUILayout.Button(Contents.GoToManualFixesButton, GUILayout.Width(HomePage.k_ButtonWidth)))
                         {
@@ -241,32 +254,7 @@ namespace Unity.ProjectAuditor.Editor.UI
                         }
                         else if (!IsReportValidForMigration(out var reason))
                         {
-                            using (new CenteredRow())
-                            {
-                                switch (reason)
-                                {
-                                    case InvalidReportReason.ReportIsNotForCurrentProject:
-                                        GUILayout.Label(Contents.InvalidReportProject, SharedStyles.TextAreaCentered);
-                                        GUILayout.Space(4);
-                                        break;
-                                    case InvalidReportReason.ReportDoesNotHaveCorrectAreas:
-                                        GUILayout.Label(Contents.InvalidReportAreas, SharedStyles.TextAreaCentered);
-                                        GUILayout.Space(4);
-                                        break;
-                                    case InvalidReportReason.ReportTargetsADifferentPipeline:
-                                        GUILayout.Label(Contents.InvalidReportTargetPipeline, SharedStyles.TextAreaCentered);
-                                        GUILayout.Space(4);
-                                        break;
-                                    case InvalidReportReason.ReportDoesNotHaveConverterScan:
-                                        GUILayout.Label(Contents.InvalidReportMigrationScan, SharedStyles.TextAreaCentered);
-                                        GUILayout.Space(4);
-                                        break;
-                                    case InvalidReportReason.ReportScannedBeforeQualitySettingsApplied:
-                                        GUILayout.Label(Contents.InvalidReportQualitySettings, SharedStyles.TextAreaCentered);
-                                        GUILayout.Space(4);
-                                        break;
-                                }
-                            }
+                            DrawInvalidReportReason(reason);
 
                             buttonLabel = enabled ? Contents.ReanalyzeButton : HomePage.Contents.AnalyzeButtonDisabled;
                         }
@@ -277,11 +265,11 @@ namespace Unity.ProjectAuditor.Editor.UI
                             buttonLabel = enabled ? Contents.ReanalyzeButton : HomePage.Contents.AnalyzeButtonDisabled;
                         }
 
-                        using (new EditorGUI.DisabledScope(window.m_ViewManager.HasPendingCategories() || m_ConverterRunning))
+                        using (new EditorGUI.DisabledScope(window.m_ViewManager.HasPendingCategories() || converterRunning))
                         {
                             if (CenteredButton(buttonLabel) && HomePage.ConfirmDiscardCurrentReport())
                             {
-                                window.Analyze(k_ProjectAreaFlags, k_CodeAnalysisFlags, PageId.None, SelectedTargetPipeline);
+                                Reanalyze(window, PageId.None);
                                 GUIUtility.ExitGUI();
                             }
                         }
@@ -301,7 +289,60 @@ namespace Unity.ProjectAuditor.Editor.UI
             ReportScannedBeforeQualitySettingsApplied
         }
 
-        bool IsReportValidForMigration(out InvalidReportReason reason)
+        static GUIContent GetInvalidReportMessage(InvalidReportReason reason)
+        {
+            switch (reason)
+            {
+                case InvalidReportReason.ReportIsNotForCurrentProject:
+                    return Contents.InvalidReportProject;
+                case InvalidReportReason.ReportDoesNotHaveCorrectAreas:
+                    return Contents.InvalidReportAreas;
+                case InvalidReportReason.ReportTargetsADifferentPipeline:
+                    return Contents.InvalidReportTargetPipeline;
+                case InvalidReportReason.ReportDoesNotHaveConverterScan:
+                    return Contents.InvalidReportMigrationScan;
+                case InvalidReportReason.ReportScannedBeforeQualitySettingsApplied:
+                    return Contents.InvalidReportQualitySettings;
+                default:
+                    return null;
+            }
+        }
+
+        static void DrawInvalidReportReason(InvalidReportReason reason)
+        {
+            var message = GetInvalidReportMessage(reason);
+            if (message == null)
+                return;
+
+            using (new CenteredRow())
+                GUILayout.Label(message, SharedStyles.TextAreaCentered);
+            GUILayout.Space(4);
+        }
+
+        // The first two wizard steps (Install URP, Create URP asset) come before the analysis step.
+        internal static bool IsWizardBeforeAnalysisStep()
+        {
+            return !MigrationToURPUtilities.IsUrpPackageInstalled() ||
+                !MigrationToURPUtilities.IsProjectFullyOnUrp(SelectedTargetPipeline);
+        }
+
+        // False when there is no report to re-run, or the report is still valid for migration.
+        internal static bool TryGetInvalidReportMessage(ProjectAuditorWindow window, out string message)
+        {
+            message = null;
+            if (window.m_Report == null || !window.m_Report.IsValid() || IsReportValidForMigration(out var reason))
+                return false;
+
+            message = GetInvalidReportMessage(reason).text;
+            return true;
+        }
+
+        internal static void Reanalyze(ProjectAuditorWindow window, PageId targetSummaryPage)
+        {
+            window.Analyze(k_ProjectAreaFlags, k_CodeAnalysisFlags, targetSummaryPage, SelectedTargetPipeline);
+        }
+
+        static bool IsReportValidForMigration(out InvalidReportReason reason)
         {
             reason = InvalidReportReason.None;
 
@@ -425,7 +466,7 @@ namespace Unity.ProjectAuditor.Editor.UI
         }
 
         // Returns the first incomplete step, or -1 when every step is complete.
-        unsafe int DrawStepper()
+        int DrawStepper()
         {
             var window = ProjectAuditorWindow.Instance;
 
@@ -519,7 +560,7 @@ namespace Unity.ProjectAuditor.Editor.UI
 
                 var window = ProjectAuditorWindow.Instance;
                 using (new EditorGUI.DisabledScope(!enabled))
-                    m_Steps[next].DrawButtonUI(window, m_Steps[next], enabled);
+                    m_Steps[next].DrawButtonUI(window, m_Steps[next], enabled, s_ConverterRunning);
 
                 GUILayout.Space(16);
             }
@@ -588,7 +629,7 @@ namespace Unity.ProjectAuditor.Editor.UI
                 GUILayout.Space(20);
 
                 var window = ProjectAuditorWindow.Instance;
-                using (new EditorGUI.DisabledScope(m_ConverterRunning || window.m_ViewManager.HasPendingCategories()))
+                using (new EditorGUI.DisabledScope(s_ConverterRunning || window.m_ViewManager.HasPendingCategories()))
                 {
                     var currentIndex = (SelectedTargetPipeline == MigrationToURPUtilities.Urp3DContainer) ? 0 : 1;
                     var newIndex = EditorGUILayout.Popup(currentIndex, Contents.TargetPipelineDisplayNames, k_InfoRowContentWidth);
@@ -624,9 +665,9 @@ namespace Unity.ProjectAuditor.Editor.UI
             ProjectAuditorWindow.Instance.Repaint();
         }
 
-        void OnRunConverter()
+        internal static void OnRunConverter()
         {
-            m_ConverterRunning = true;
+            s_ConverterRunning = true;
             EditorApplication.update += RepaintWhileConverterRunning;
 
             // Deferred so at least one repaint shows the running state, even if every converter turns out to
@@ -636,11 +677,11 @@ namespace Unity.ProjectAuditor.Editor.UI
                 MigrationToURPUtilities.RunRenderPipelineConverterInBatchMode(targetPipeline, OnConverterFinished);
         }
 
-        void OnConverterFinished(string output)
+        static void OnConverterFinished(string output)
         {
             if (!EditorWindow.HasOpenInstances<ProjectAuditorWindow>())
             {
-                m_ConverterRunning = false;
+                s_ConverterRunning = false;
                 EditorApplication.update -= RepaintWhileConverterRunning;
                 return;
             }
@@ -688,7 +729,7 @@ namespace Unity.ProjectAuditor.Editor.UI
             if (failedCount > 0)
                 Debug.Log($"{failedCount} item(s) failed to convert. Check the console for more information.");
 
-            m_ConverterRunning = false;
+            s_ConverterRunning = false;
             EditorApplication.update -= RepaintWhileConverterRunning;
             ProjectAuditorWindow.Instance?.Repaint();
         }
@@ -714,11 +755,11 @@ namespace Unity.ProjectAuditor.Editor.UI
             return fallback;
         }
 
-        void RepaintWhileConverterRunning()
+        static void RepaintWhileConverterRunning()
         {
             if (!EditorWindow.HasOpenInstances<ProjectAuditorWindow>())
             {
-                m_ConverterRunning = false;
+                s_ConverterRunning = false;
                 EditorApplication.update -= RepaintWhileConverterRunning;
                 return;
             }

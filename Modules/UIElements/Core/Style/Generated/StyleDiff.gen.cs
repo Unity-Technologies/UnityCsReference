@@ -50,6 +50,7 @@ namespace UnityEngine.UIElements
         private StylePropertyData<StyleLength, Length> m_BorderTopRightRadius = new(StylePropertyId.BorderTopRightRadius);
         private StylePropertyData<StyleFloat, float> m_BorderTopWidth = new(StylePropertyId.BorderTopWidth);
         private StylePropertyData<StyleLength, Length> m_Bottom = new(StylePropertyId.Bottom);
+        private StylePropertyData<StyleBoxShadow, BoxShadow> m_BoxShadow = new(StylePropertyId.BoxShadow);
         private StylePropertyData<StyleColor, Color> m_Color = new(StylePropertyId.Color);
         private StylePropertyData<StyleLength, Length> m_ColumnGap = new(StylePropertyId.ColumnGap);
         private StylePropertyData<StyleCursor, Cursor> m_Cursor = new(StylePropertyId.Cursor);
@@ -235,6 +236,9 @@ namespace UnityEngine.UIElements
 
         [CreateProperty]
         public StylePropertyData<StyleLength, Length> bottom => m_Bottom;
+
+        [CreateProperty]
+        public StylePropertyData<StyleBoxShadow, BoxShadow> boxShadow => m_BoxShadow;
 
         [CreateProperty]
         public StylePropertyData<StyleColor, Color> color => m_Color;
@@ -896,6 +900,13 @@ namespace UnityEngine.UIElements
             notify |= ApplyContext(ref m_Bottom, in context);
             if (notify)
                 Notify(nameof(bottom));
+
+            notify = false;
+            notify |= SetInlineValue(ref m_BoxShadow, element.style.boxShadow);
+            notify |= SetComputedValue(ref m_BoxShadow, element.computedStyle.boxShadow);
+            notify |= ApplyContext(ref m_BoxShadow, in context);
+            if (notify)
+                Notify(nameof(boxShadow));
 
             notify = false;
             notify |= SetInlineValue(ref m_Color, element.style.color);

@@ -47,6 +47,19 @@ namespace Unity.GraphToolkit.Editor
             parent.Add(Root);
         }
 
+        /// <inheritdoc />
+        protected override void PartOwnerRemovedFromView()
+        {
+            if (m_BlocksContainer == null)
+                return;
+
+            using (m_BlocksContainer.Children().OfTypeToPooledList(out List<ModelView> blocks))
+            {
+                foreach (var block in blocks)
+                    block.RemoveFromRootView();
+            }
+        }
+
         ModelView m_PreviousFirstBlockNode;
         ModelView m_PreviousLastBlockNode;
 

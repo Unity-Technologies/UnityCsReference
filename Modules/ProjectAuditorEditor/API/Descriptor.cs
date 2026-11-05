@@ -145,6 +145,16 @@ namespace Unity.ProjectAuditor.Editor
             DefaultSeverity = Severity.Moderate;
         }
 
+        /// <summary>
+        /// Checks whether this descriptor is flagged with any of the specified areas.
+        /// </summary>
+        /// <param name="areas">The area(s) to test against.</param>
+        /// <returns>True if at least one of the specified areas is set on this descriptor. Otherwise, returns false.</returns>
+        public bool HasAnyAreas(Areas areas)
+        {
+            return (Areas.Value & areas) != 0;
+        }
+
         /// <summary>Returns true if the Descriptor is equal to a given Descriptor, false otherwise.</summary>
         /// <param name="other">The Descriptor to compare equality with.</param>
         /// <returns>The result of the equality comparison.</returns>

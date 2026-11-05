@@ -628,7 +628,16 @@ namespace Unity.GraphToolkit.Editor
             if (element is Toggle tog) { tog.SetValueWithoutNotify((bool)value); return; }
             
             // TextField handles 'string' AND 'char'
-            if (element is TextField textF) { textF.SetValueWithoutNotify(value.ToString()); return; }
+            if (element is TextField textF)
+            {
+                // Overwriting the text being edited desyncs it from the IME composition, which then gets committed twice.
+                if (!textF.hasFocus || textF.isDelayed || m_ForceUpdate)
+                {
+                    textF.SetValueWithoutNotify(value.ToString());
+                    m_ForceUpdate = false;
+                }
+                return;
+            }
 
             // Unity Structs
             if (element is Vector2Field v2F) { v2F.SetValueWithoutNotify((Vector2)value); return; }

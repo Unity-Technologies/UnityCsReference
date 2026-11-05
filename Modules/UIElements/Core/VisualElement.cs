@@ -48,8 +48,6 @@ namespace UnityEngine.UIElements
         IsIMGUIContainer = 1L << 0,
         // Element can potentially receive focus
         IsFocusable = 1L << 1,
-        // Need to compute world clip
-        WorldClipDirty = 1L << 2,
         // Element delegates the focus to its children
         DelegatesFocus = 1L << 3,
         // Children of a composite appear at its tabIndex position in the focus ring, but the root itself doesn't
@@ -107,7 +105,7 @@ namespace UnityEngine.UIElements
         PrivateComponentMask = HasDataBindingComponent | HasAnimationComponent | HasPaintingComponent |
             HasViewDataComponent | HasStyleSheetsComponent,
         // Element initial flags
-        Init = WorldClipDirty | EventInterestParentCategoriesDirty | DetachedDataSource |
+        Init = EventInterestParentCategoriesDirty | DetachedDataSource |
             EligibleToReceiveFocusFromDisabledChild
     }
 
@@ -308,42 +306,8 @@ namespace UnityEngine.UIElements
 
         internal VisualElementFlags flags
         {
-            get {
-                // The WorldClipDirty flag is managed by the RenderData, so we combine it with m_Flags when set on
-                // either renderData or nestedRenderData. See the setter below for more information.
-                if (((renderData?.flags & RenderDataFlags.IsClippingRectDirty) == RenderDataFlags.IsClippingRectDirty) ||
-                    ((nestedRenderData?.flags & RenderDataFlags.IsClippingRectDirty) == RenderDataFlags.IsClippingRectDirty))
-                    return m_Flags | VisualElementFlags.WorldClipDirty;
-
-                return m_Flags;
-            }
-            set
-            {
-                m_Flags = value;
-
-                // UUM-91413: We avoid setting the WorldClipDirty flag on the VisualElement as the RenderData is responsible
-                // to clear it once computed, otherwise the flag will stick between updates.
-                if ((m_Flags & VisualElementFlags.WorldClipDirty) == VisualElementFlags.WorldClipDirty)
-                {
-                    // The RenderData (nested or not) is responsible for dealing with the dirty clipping rect.
-                    if (renderData != null)
-                    {
-                        renderData.flags |= RenderDataFlags.IsClippingRectDirty;
-                        m_Flags &= ~VisualElementFlags.WorldClipDirty;
-                    }
-                    if (nestedRenderData != null)
-                    {
-                        nestedRenderData.flags |= RenderDataFlags.IsClippingRectDirty;
-
-                        // No need to remove the flag from m_Flags as renderData is guaranteed to not be null here
-                        Debug.Assert(renderData != null, "renderData should not be null when nestedRenderData is not null");
-                    }
-
-                    // If the RenderData is not created yet, we temporarily allow the flag to be set on the VisualElement.
-                    // It will be reset once the RenderData is created (in UIRRenderEvents.DepthFirstOnChildAdded).
-                    // Doing so avoid useless recursions to set the flags in the HierarchyFlagsUpdater.
-                }
-            }
+            get => m_Flags;
+            set => m_Flags = value;
         }
 
         internal ref VisualElementTransformFlags transformFlags => ref transformData.Flags;
@@ -502,6 +466,17 @@ namespace UnityEngine.UIElements
         internal Rect lastLayout;
         internal Rect lastPseudoPadding;
         internal RenderData renderData; // TODO: Search for every usage of this, should be minimal!!
+
+        // Whether the element shows anything of its own, as the renderer last drew it: it generated geometry for the
+        // element itself (a background, a border, text, an image, a backdrop filter, generated content...), and its
+        // opacity combined with its ancestors' is above the renderer's visibility threshold. False until it's rendered.
+        // The UI Viewport lets a pick through an element that ignores picking and shows nothing, like a clear layer
+        // over a dialog. A stencil mask (rounded corners with overflow: hidden) counts as geometry: good enough.
+        internal bool rendersVisibleGeometry
+        {
+            [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
+            get => renderData != null && renderData.headMesh != null && renderData.compositeOpacity > UIRUtility.k_Epsilon;
+        }
         internal RenderData nestedRenderData; // Non-null when rendering into a render texture
         internal int insertionIndex = -1;
 
@@ -701,12 +676,14 @@ namespace UnityEngine.UIElements
                 if (isLayoutManual)
                     return manualLayout;
 
-                if (!layoutNode.IsUndefined)
+                unsafe
                 {
-                    return layoutNode.GetLayoutRect();
-                }
+                    var computed = m_ComputedLayoutPtr;
+                    if (computed == null)
+                        return new(float.NaN, float.NaN, float.NaN, float.NaN);
 
-                return new(float.NaN, float.NaN, float.NaN, float.NaN);
+                    return computed->GetRect();
+                }
             }
 
             internal set
@@ -812,11 +789,12 @@ namespace UnityEngine.UIElements
             }
         }
 
-        internal bool needs3DBounds
-        {
-            get => (transformFlags & VisualElementTransformFlags.Needs3DBounds) != 0;
-            set => transformFlags = value ? transformFlags | VisualElementTransformFlags.Needs3DBounds : transformFlags & ~VisualElementTransformFlags.Needs3DBounds;
-        }
+        internal const VisualElementTransformFlags k_Bounds3DFlags =
+            VisualElementTransformFlags.Needs3DBounds | VisualElementTransformFlags.InCurvedSubtree;
+
+        internal bool needs3DBounds => (transformFlags & k_Bounds3DFlags) != 0;
+
+        internal bool inCurvedSubtree => (transformFlags & VisualElementTransformFlags.InCurvedSubtree) != 0;
 
         internal bool isLocalBounds3DDirty
         {
@@ -1149,7 +1127,14 @@ namespace UnityEngine.UIElements
                 if (isLayoutManual)
                     return manualLayout.size;
 
-                return layoutNode.GetLayoutSize();
+                unsafe
+                {
+                    var computed = m_ComputedLayoutPtr;
+                    if (computed == null)
+                        return new(float.NaN, float.NaN);
+
+                    return computed->GetSize();
+                }
             }
         }
 
@@ -1162,10 +1147,16 @@ namespace UnityEngine.UIElements
                 if (isLayoutManual)
                     return manualLayout.min;
 
-                return layoutNode.GetLayoutPosition();
+                unsafe
+                {
+                    var computed = m_ComputedLayoutPtr;
+                    if (computed == null)
+                        return new(float.NaN, float.NaN);
+
+                    return computed->GetPosition();
+                }
             }
         }
-
 
         internal bool isWorldSpaceRootPanelComponent
         {
@@ -1326,10 +1317,7 @@ namespace UnityEngine.UIElements
         }
 
         // Only used in tests
-        internal bool isWorldClipDirty
-        {
-            get => (flags & VisualElementFlags.WorldClipDirty) == VisualElementFlags.WorldClipDirty;
-        }
+        internal bool isWorldClipDirty => renderData == null || renderData.isClippingRectDirty;
 
         internal Rect worldClip
         {
@@ -2000,6 +1988,8 @@ namespace UnityEngine.UIElements
         }
 
         private readonly unsafe VisualElementTransformData* m_TransformDataPTr;
+        // Read instead of the node, so rect is one 8-byte load from the element; null once released.
+        unsafe LayoutComputedData* m_ComputedLayoutPtr;
         private unsafe ref VisualElementTransformData transformData => ref *m_TransformDataPTr;
 
         // Fast-tracked access to the selector data component; mirrors the m_TransformDataPTr pattern so
@@ -2100,6 +2090,7 @@ namespace UnityEngine.UIElements
                 // Fast-tracked access to the transform matrices and flags, as their access is quite frequent.
                 // Removing this direct access makes Picking ~25% slower. See UIElementsEvents.OptimizePick tests.
                 m_TransformDataPTr = layoutNode.VisualElementTransformDataPtr;
+                m_ComputedLayoutPtr = layoutNode.ComputedDataPtr;
                 m_SelectorDataPtr = layoutNode.VisualElementSelectorDataPtr;
             }
 
@@ -2216,6 +2207,8 @@ namespace UnityEngine.UIElements
 
             flags |= VisualElementFlags.Released;
             LayoutManager.SharedManager.EnqueueNodeForRecycling(ref m_LayoutNode);
+            unsafe { m_ComputedLayoutPtr = null; }
+
             ReleaseComponentStorage();
 
             // Put back some of the lists we own to their pools

@@ -336,8 +336,10 @@ namespace UnityEditor.Search
         internal ISearchIndexerStorage storage => m_Storage;
 
         // Guards the native storage against being freed while external readers (e.g. background search
-        // threads) are still using it. See SearchIndexAccessGuard.
-        readonly SearchIndexAccessGuard m_AccessGuard = new SearchIndexAccessGuard();
+        // threads) are still using it. See SearchIndexAccessGuard. Created on first read access so that indexes
+        // that are never read (e.g. the per-asset indexes built during artifact import) don't allocate one.
+        // Replaced by SearchIndexAccessGuard.k_Closed if the index is disposed before any read access.
+        SearchIndexAccessGuard m_AccessGuard;
 
         static readonly ProfilerMarker k_MapPropertyMarker = new($"{nameof(SearchIndexer)}.{nameof(MapProperty)}");
         static readonly ProfilerMarker k_AddWordMarker = new($"{nameof(SearchIndexer)}.{nameof(AddWord)}");
@@ -398,7 +400,8 @@ namespace UnityEditor.Search
                 // native storage out from under a running search. Skipped in the finalizer path
                 // (disposing == false): we must never block the finalizer thread, and any active reader
                 // keeps this indexer reachable, so finalization only runs once no leases remain.
-                m_AccessGuard.CloseAndWait();
+                var accessGuard = Interlocked.CompareExchange(ref m_AccessGuard, SearchIndexAccessGuard.k_Closed, null);
+                accessGuard?.CloseAndWait();
             }
 
             m_Storage.Dispose(disposing);
@@ -420,7 +423,15 @@ namespace UnityEditor.Search
         /// </summary>
         internal IDisposable TryAcquireReadAccess(out CancellationToken disposalToken)
         {
-            return m_AccessGuard.TryAcquire(out disposalToken);
+            var accessGuard = Volatile.Read(ref m_AccessGuard);
+            if (accessGuard == null)
+            {
+                // Lose the race gracefully: either another reader installed its guard first, or Dispose installed the
+                // closed guard, in which case TryAcquire refuses the lease.
+                var newAccessGuard = new SearchIndexAccessGuard();
+                accessGuard = Interlocked.CompareExchange(ref m_AccessGuard, newAccessGuard, null) ?? newAccessGuard;
+            }
+            return accessGuard.TryAcquire(out disposalToken);
         }
 
         private ParsedQuery<SearchResult, object> BuildQuery(string searchQuery)

@@ -117,6 +117,8 @@ namespace UnityEngine.UIElements
                     return computedStyle.borderTopWidth;
                 case StylePropertyId.Bottom:
                     return computedStyle.bottom;
+                case StylePropertyId.BoxShadow:
+                    return computedStyle.boxShadow;
                 case StylePropertyId.Color:
                     return computedStyle.color;
                 case StylePropertyId.ColumnGap:
@@ -394,6 +396,8 @@ namespace UnityEngine.UIElements
                     return typeof(float);
                 case StylePropertyId.Bottom:
                     return typeof(Length);
+                case StylePropertyId.BoxShadow:
+                    return typeof(BoxShadow);
                 case StylePropertyId.Color:
                     return typeof(Color);
                 case StylePropertyId.ColumnGap:
@@ -658,6 +662,8 @@ namespace UnityEngine.UIElements
                     return style.borderTopWidth;
                 case StylePropertyId.Bottom:
                     return style.bottom;
+                case StylePropertyId.BoxShadow:
+                    return style.boxShadow;
                 case StylePropertyId.Color:
                     return style.color;
                 case StylePropertyId.ColumnGap:
@@ -919,6 +925,9 @@ namespace UnityEngine.UIElements
                     break;
                 case StylePropertyId.Bottom:
                     style.bottom = (StyleLength)value;
+                    break;
+                case StylePropertyId.BoxShadow:
+                    style.boxShadow = (StyleBoxShadow)value;
                     break;
                 case StylePropertyId.Color:
                     style.color = (StyleColor)value;
@@ -1259,6 +1268,9 @@ namespace UnityEngine.UIElements
                     break;
                 case StylePropertyId.Bottom:
                     style.bottom = keyword;
+                    break;
+                case StylePropertyId.BoxShadow:
+                    style.boxShadow = keyword;
                     break;
                 case StylePropertyId.Color:
                     style.color = keyword;
@@ -1638,6 +1650,11 @@ namespace UnityEngine.UIElements
                     return new()
                     {
                         StyleKeyword.Auto
+                    };
+                case StylePropertyId.BoxShadow:
+                    return new()
+                    {
+                        StyleKeyword.None
                     };
                 case StylePropertyId.Color:
                     return new()
@@ -2061,6 +2078,8 @@ namespace UnityEngine.UIElements
                     return (StyleFloat)(float)value;
                 case StylePropertyId.Bottom:
                     return (StyleLength)(Length)value;
+                case StylePropertyId.BoxShadow:
+                    return (StyleBoxShadow)(BoxShadow)value;
                 case StylePropertyId.Color:
                     return (StyleColor)(Color)value;
                 case StylePropertyId.ColumnGap:
@@ -2293,6 +2312,8 @@ namespace UnityEngine.UIElements
                     return typeof(StyleFloat);
                 case StylePropertyId.Bottom:
                     return typeof(StyleLength);
+                case StylePropertyId.BoxShadow:
+                    return typeof(StyleBoxShadow);
                 case StylePropertyId.Color:
                     return typeof(StyleColor);
                 case StylePropertyId.ColumnGap:

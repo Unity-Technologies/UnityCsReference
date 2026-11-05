@@ -2078,7 +2078,7 @@ namespace Unity.GraphToolkit.Editor
 
                 if (reuseExistingWire)
                 {
-                    var existing = GetAnyWireConnectedToPorts(inputPortModel, outputPortModel);
+                    var existing = FindReusableWire(sourceWire, inputPortModel, outputPortModel);
                     if (existing != null)
                         return existing;
                 }
@@ -2091,6 +2091,24 @@ namespace Unity.GraphToolkit.Editor
                 ApplyReorderToGraph(outputPortModel);
 
                 return newWire;
+            }
+
+            return null;
+        }
+
+        WireModel FindReusableWire(WireModel sourceWire, PortModel toPort, PortModel fromPort)
+        {
+            // Self transitions of different types on a state share the same ports.
+            var sourceTransitionSupportType = (sourceWire as TransitionSupportModel)?.TransitionSupportType;
+            foreach (var wire in GetWiresForPort(toPort))
+            {
+                if (wire.ToPort != toPort || wire.FromPort != fromPort)
+                    continue;
+
+                if (sourceTransitionSupportType == null ||
+                    (wire is TransitionSupportModel transitionSupport &&
+                        transitionSupport.TransitionSupportType == sourceTransitionSupportType))
+                    return wire;
             }
 
             return null;
@@ -3038,6 +3056,16 @@ namespace Unity.GraphToolkit.Editor
         {
             return destination.CanConnectPort(source);
         }
+
+        /// <summary>
+        /// Whether <see cref="CanAssignTo"/> only depends on the two ports it is given.
+        /// </summary>
+        /// <remarks>When false, a change anywhere in the graph can change whether a connection is allowed.</remarks>
+        internal virtual bool HasLocalConnectionRules =>
+            m_HasLocalConnectionRules ??= GetType().GetMethod(nameof(CanAssignTo), new[] { typeof(PortModel), typeof(PortModel) })?.DeclaringType == typeof(GraphModel);
+
+        [NonSerialized]
+        bool? m_HasLocalConnectionRules;
 
         /// <summary>
         /// Instantiates a group model.

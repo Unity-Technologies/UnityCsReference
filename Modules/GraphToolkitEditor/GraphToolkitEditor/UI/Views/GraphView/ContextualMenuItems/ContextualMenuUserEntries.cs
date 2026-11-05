@@ -49,11 +49,11 @@ namespace Unity.GraphToolkit.Editor.ContextualMenuItems
             switch (model)
             {
                 case IUserNodeModelImp userNode:
-                    return userNode.Node;
+                    return userNode.Node ?? (INode)userNode;
                 // A user state model is itself an IState, so it has to be matched before the IState
                 // case, otherwise the model would be returned instead of the user's own State.
                 case UserStateModelImp userState:
-                    return userState.Node;
+                    return userState.Node ?? (IState)userState;
                 case IState state:
                     return state;
                 case INode node:
@@ -82,7 +82,7 @@ namespace Unity.GraphToolkit.Editor.ContextualMenuItems
                 return null;
 
             if (model is UserConditionModelImp userCondition)
-                return userCondition.Condition;
+                return userCondition.Condition ?? (ICondition)userCondition;
 
             return model;
         }

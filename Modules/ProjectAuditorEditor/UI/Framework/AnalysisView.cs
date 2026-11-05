@@ -72,10 +72,6 @@ namespace Unity.ProjectAuditor.Editor.UI.Framework
         public virtual bool OnlyPerfCriticalIssues() { return false; }
         public virtual bool OnlyFixableIssues() { return false; }
 
-        #pragma warning disable UAC2001 // Avoid Linq
-        public string DocumentationUrl => Documentation.GetPageUrl(new string(m_Desc.DisplayName.Where(char.IsLetterOrDigit).ToArray()));
-#pragma warning restore UAC2001
-
         public int NumIssues => m_Issues.Count;
 
         public int NumFilteredIssues => m_Table.GetNumMatchingIssues();

@@ -16,7 +16,7 @@ namespace Unity.ProjectAuditor.Editor.UI
         private bool m_ShowBeforeUpgrade = true;
         private bool m_ShowAfterUpgrade = true;
 
-        StatSeverities m_CombinedSeverities;
+        Stats m_CombinedStats;
         StatSeverities m_BeforeUpgradeSeverities;
         StatSeverities m_AfterUpgradeSeverities;
 
@@ -34,7 +34,7 @@ namespace Unity.ProjectAuditor.Editor.UI
         // The Upgrade breakdown shows only Upgrade-area issues relevant to the selected target version.
         protected override bool MatchesSummaryFilter(ReportItem issue)
         {
-            if (!HasAnyAreas(issue, Areas.Upgrade))
+            if (!issue.HasAnyAreas(Areas.Upgrade))
                 return false;
 
             if (!ObsoleteLibrary.MatchesTargetVersion(issue, m_ViewStates.upgradeTargetVersion))
@@ -53,7 +53,7 @@ namespace Unity.ProjectAuditor.Editor.UI
         {
             base.ResetStats();
 
-            m_CombinedSeverities = new StatSeverities();
+            m_CombinedStats = NewStats();
             m_BeforeUpgradeSeverities = new StatSeverities();
             m_AfterUpgradeSeverities = new StatSeverities();
         }
@@ -71,7 +71,7 @@ namespace Unity.ProjectAuditor.Editor.UI
                 if (!MatchesSummaryFilter(issue))
                     continue;
 
-                AddSeverityStats(issue, ref m_CombinedSeverities);
+                AccumulateStat(issue, ref m_CombinedStats, false);
 
                 if (CanFixBeforeUpgrade(issue))
                     AddSeverityStats(issue, ref m_BeforeUpgradeSeverities);
@@ -106,7 +106,7 @@ namespace Unity.ProjectAuditor.Editor.UI
             EditorGUILayout.Space();
             DrawSeverityBreakdown();
 
-            if (!m_ViewManager.HasPendingCategories() && m_CombinedSeverities.TotalExcludingIgnoredAndFixed > 0)
+            if (!m_ViewManager.HasPendingCategories() && m_CombinedStats.TotalExcludingIgnoredAndFixed > 0)
             {
                 EditorGUILayout.Space();
                 DrawBeforeUpgradeSection();
@@ -207,23 +207,33 @@ namespace Unity.ProjectAuditor.Editor.UI
                 return;
             }
 
-            // No issues
-            if (m_CombinedSeverities.Total == 0)
+            var ignoredAndFixedInfo = BuildIgnoredFixedInfo(m_CombinedStats.NumIgnoredAreaIssues, m_CombinedStats.NumFixedAreaIssues);
+
+            if (m_CombinedStats.TotalExcludingIgnoredAndFixed == 0)
             {
-                EditorGUILayout.LabelField(Contents.NoIssuesText, SharedStyles.Label);
-                EditorGUILayout.EndVertical();
-                return;
+                using (new EditorGUILayout.HorizontalScope())
+                {
+                    GUILayout.Label(Contents.NoIssuesText, SharedStyles.Label);
+
+                    if (!string.IsNullOrEmpty(ignoredAndFixedInfo))
+                    {
+                        GUILayout.Label(ignoredAndFixedInfo, SharedStyles.LabelRichTextGrey);
+                        GUILayout.FlexibleSpace();
+                    }
+                }
             }
-
-            // Major issue count
-            if (m_CombinedSeverities.MajorAndCritical == 0)
-                EditorGUILayout.LabelField(Contents.NoMajorIssuesText, SharedStyles.Label);
             else
-                EditorGUILayout.LabelField(string.Format(m_CombinedSeverities.MajorAndCritical == 1 ? Contents.SevereCountFormat : Contents.SevereCountPluralFormat, m_CombinedSeverities.MajorAndCritical), SharedStyles.Label);
+            {
+                var majorAndCritical = m_CombinedStats.MajorAndCritical;
+                if (majorAndCritical == 0)
+                    EditorGUILayout.LabelField(Contents.NoMajorIssuesText, SharedStyles.Label);
+                else
+                    EditorGUILayout.LabelField(string.Format(majorAndCritical == 1 ? Contents.SevereCountFormat : Contents.SevereCountPluralFormat, majorAndCritical), SharedStyles.Label);
 
-            GUILayout.Space(6);
+                GUILayout.Space(6);
 
-            DrawSeverityBar(m_CombinedSeverities, horizontalPadding: 2);
+                DrawChartBar(horizontalPadding: 2, () => BuildCategoryChartElements(m_CombinedStats), ignoredAndFixedInfo);
+            }
 
             EditorGUILayout.EndVertical();
         }

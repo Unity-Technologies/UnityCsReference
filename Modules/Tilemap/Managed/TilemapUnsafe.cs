@@ -58,7 +58,7 @@ namespace UnityEngine.Tilemaps
             }
         }
 
-        internal static void GetTileEntityIdsFromOffsetsAndHandle(IntPtr tilemapHandle, Vector3Int position, NativeArray<Vector3Int> offsets, NativeArray<EntityId> tileEntityIds)
+        internal static void GetTileEntityIdsFromOffsetsAndHandle(EntityId tilemapEntityId, Vector3Int position, NativeArray<Vector3Int> offsets, NativeArray<EntityId> tileEntityIds)
         {
             if (!offsets.IsCreated || !tileEntityIds.IsCreated)
                 return;
@@ -68,7 +68,7 @@ namespace UnityEngine.Tilemaps
 
             unsafe
             {
-                GetTileEntityIdsFromOffsetsAndHandle(tilemapHandle, position, (IntPtr)offsets.m_Buffer, (IntPtr)tileEntityIds.m_Buffer, tileEntityIds.Length);
+                GetTileEntityIdsFromOffsetsAndHandle(tilemapEntityId, position, (IntPtr)offsets.m_Buffer, (IntPtr)tileEntityIds.m_Buffer, tileEntityIds.Length);
             }
         }
 
@@ -117,14 +117,14 @@ namespace UnityEngine.Tilemaps
             }
         }
 
-        internal static void GetTileEntityIdsFromBlockOffsetAndHandle(IntPtr tilemapHandle, Vector3Int position, BoundsInt blockOffset, NativeArray<EntityId> tileEntityIds)
+        internal static void GetTileEntityIdsFromBlockOffsetAndHandle(EntityId tilemapEntityId, Vector3Int position, BoundsInt blockOffset, NativeArray<EntityId> tileEntityIds)
         {
             if (!tileEntityIds.IsCreated)
                 return;
 
             unsafe
             {
-                GetTileEntityIdsFromBlockOffsetAndHandle(tilemapHandle, position, blockOffset, (IntPtr) tileEntityIds.m_Buffer, tileEntityIds.Length);
+                GetTileEntityIdsFromBlockOffsetAndHandle(tilemapEntityId, position, blockOffset, (IntPtr) tileEntityIds.m_Buffer, tileEntityIds.Length);
             }
         }
 
@@ -142,7 +142,7 @@ namespace UnityEngine.Tilemaps
             }
         }
 
-        internal static void GetAnyTileEntityIdsFromOffsetsAndHandle(IntPtr tilemapHandle, Vector3Int position, NativeArray<Vector3Int> offsets, NativeArray<EntityId> tileEntityIds)
+        internal static void GetAnyTileEntityIdsFromOffsetsAndHandle(EntityId tilemapEntityId, Vector3Int position, NativeArray<Vector3Int> offsets, NativeArray<EntityId> tileEntityIds)
         {
             if (!offsets.IsCreated || !tileEntityIds.IsCreated)
                 return;
@@ -152,7 +152,7 @@ namespace UnityEngine.Tilemaps
 
             unsafe
             {
-                GetAnyTileEntityIdsFromOffsetsAndHandle(tilemapHandle, position, (IntPtr)offsets.m_Buffer, (IntPtr)tileEntityIds.m_Buffer, tileEntityIds.Length);
+                GetAnyTileEntityIdsFromOffsetsAndHandle(tilemapEntityId, position, (IntPtr)offsets.m_Buffer, (IntPtr)tileEntityIds.m_Buffer, tileEntityIds.Length);
             }
         }
 
@@ -167,14 +167,14 @@ namespace UnityEngine.Tilemaps
             }
         }
 
-        internal static void GetAnyTileEntityIdsFromBlockOffsetAndHandle(IntPtr tilemapHandle, Vector3Int position, BoundsInt blockOffset, NativeArray<EntityId> tileEntityIds)
+        internal static void GetAnyTileEntityIdsFromBlockOffsetAndHandle(EntityId tilemapEntityId, Vector3Int position, BoundsInt blockOffset, NativeArray<EntityId> tileEntityIds)
         {
             if (!tileEntityIds.IsCreated)
                 return;
 
             unsafe
             {
-                GetAnyTileEntityIdsFromBlockOffsetAndHandle(tilemapHandle, position, blockOffset, (IntPtr)tileEntityIds.m_Buffer, tileEntityIds.Length);
+                GetAnyTileEntityIdsFromBlockOffsetAndHandle(tilemapEntityId, position, blockOffset, (IntPtr)tileEntityIds.m_Buffer, tileEntityIds.Length);
             }
         }
     }

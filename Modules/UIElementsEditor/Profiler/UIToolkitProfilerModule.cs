@@ -11,7 +11,7 @@ using Unity.Scripting.LifecycleManagement;
 namespace UnityEditor.UIElements
 {
     [Serializable]
-    [ProfilerModuleMetadata("UI Toolkit", IconPath = "Profiler.UIToolkit", Tooltip = "Shows how much time UI Toolkit spends on picking, runtime bindings, style resolution, layout, animation, preparing render data, and drawing panels.")]
+    [ProfilerModuleMetadata("UI Toolkit", IconPath = "Profiler.UIToolkit", Tooltip = "Shows how much time UI Toolkit spends on picking, runtime bindings, style resolution, layout, animation, preparing render data, drawing panels, and updating Panel Renderer components.")]
     internal class UIToolkitProfilerModule : ProfilerModule
     {
         const int k_DefaultOrderIndex = 9; // before UI (Canvas)
@@ -23,7 +23,7 @@ namespace UnityEditor.UIElements
             ProfilerCategory.Render.Name,
         };
 
-        // Core UI Toolkit markers (manual: UI Toolkit profiler markers — Core markers), excluding ImmediateRepaint
+        // Core UI Toolkit markers (manual: UI Toolkit profiler markers — Core markers), excluding ImmediateRepaint, followed by the Panel Renderer markers
         [NoAutoStaticsCleanup]
         static readonly ProfilerCounterDescriptor[] k_ChartCounters = new ProfilerCounterDescriptor[]
         {
@@ -34,6 +34,8 @@ namespace UnityEditor.UIElements
             new ProfilerCounterDescriptor("Update Animation", "Update the animations.", ProfilerCategory.UIToolkit),
             new ProfilerCounterDescriptor("Prepare Render", "Prepare graphics data for rendering the panel.", ProfilerCategory.UIToolkit),
             new ProfilerCounterDescriptor("Render Panels", "Render the panel.", ProfilerCategory.UIToolkit),
+            new ProfilerCounterDescriptor("Prepare Panel Renderers", "Load the source assets of Panel Renderer components, invoke their UI reload callbacks, and apply changes to their enabled state, sorting order, and hierarchy.", ProfilerCategory.UIToolkit),
+            new ProfilerCounterDescriptor("Update Panel Renderers", "Update Panel Renderer components after the panels update, including the transform, bounds, and collider of world space panels.", ProfilerCategory.UIToolkit),
         };
 
         /// <summary>
@@ -48,6 +50,8 @@ namespace UnityEditor.UIElements
             "UIElements.UpdateAnimation",
             "UIElements.UpdateRenderData",
             "UIR.DrawChain",
+            "UIElements.PreUpdatePanelRenderers",
+            "UIElements.UpdatePanelRenderers",
         };
 
         /// <summary>
@@ -62,6 +66,8 @@ namespace UnityEditor.UIElements
             L10n.Tr("Update Animation", null),
             L10n.Tr("Prepare Render", null),
             L10n.Tr("Render Panels", null),
+            L10n.Tr("Prepare Panel Renderers", null),
+            L10n.Tr("Update Panel Renderers", null),
         };
 
         public UIToolkitProfilerModule() : base(k_ChartCounters, ProfilerModuleChartType.StackedTimeArea, autoEnabledCategoryNames: k_AutoEnabledCategoryNames) { }

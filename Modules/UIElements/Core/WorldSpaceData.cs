@@ -48,7 +48,7 @@ namespace UnityEngine.UIElements
         public static void ClearWorldSpaceData(VisualElement ve)
         {
             ve.isLocalBounds3DDirty = true;
-            ve.needs3DBounds = false;
+            ve.transformFlags &= ~VisualElement.k_Bounds3DFlags;
 
             m_WorldSpaceData.Remove(ve.controlid);
 

@@ -68,6 +68,8 @@ namespace Unity.UIToolkit.Editor
                     return StylePropertyRecordingChannel.Float1;
                 case StylePropertyId.Bottom:
                     return StylePropertyRecordingChannel.Length1;
+                case StylePropertyId.BoxShadow:
+                    return StylePropertyRecordingChannel.BoxShadow9;
                 case StylePropertyId.Color:
                     return StylePropertyRecordingChannel.Color4;
                 case StylePropertyId.ColumnGap:
@@ -158,8 +160,16 @@ namespace Unity.UIToolkit.Editor
                     return StylePropertyRecordingChannel.EnumInt;
                 case StylePropertyId.UnityParagraphSpacing:
                     return StylePropertyRecordingChannel.Length1;
+                case StylePropertyId.UnitySliceBottom:
+                    return StylePropertyRecordingChannel.Int1;
+                case StylePropertyId.UnitySliceLeft:
+                    return StylePropertyRecordingChannel.Int1;
+                case StylePropertyId.UnitySliceRight:
+                    return StylePropertyRecordingChannel.Int1;
                 case StylePropertyId.UnitySliceScale:
                     return StylePropertyRecordingChannel.Float1;
+                case StylePropertyId.UnitySliceTop:
+                    return StylePropertyRecordingChannel.Int1;
                 case StylePropertyId.UnitySliceType:
                     return StylePropertyRecordingChannel.EnumInt;
                 case StylePropertyId.UnityTextAlign:

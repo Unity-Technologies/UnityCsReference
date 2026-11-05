@@ -838,7 +838,7 @@ namespace Unity.GraphToolkit.Editor
 
         PortDirection IPort.Direction => Direction;
 
-        string IPort.Name => PortId;
+        string IPort.Name => UniqueName;
 
         string IPort.DisplayName => Title;
 

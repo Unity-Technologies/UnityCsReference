@@ -22,7 +22,7 @@ namespace Unity.ProjectAuditor.Editor.UI
         [AutoStaticsCleanupOnCodeReload]
         static AddRequest RulesPackageInstallRequest;
 
-        enum Tab
+        internal enum Tab
         {
             Optimization,
             Upgrade,
@@ -44,6 +44,11 @@ namespace Unity.ProjectAuditor.Editor.UI
 
         public HomePage()
         {
+        }
+
+        internal void SetSelectedTab(Tab tab)
+        {
+            m_SelectedTab = tab;
         }
 
         public void OnGUI()

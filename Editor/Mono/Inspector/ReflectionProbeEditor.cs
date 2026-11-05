@@ -353,7 +353,7 @@ namespace UnityEditor
                 EditorGUILayout.HelpBox("Realtime reflection probes are not baked. They update at runtime according to their Refresh Mode.", MessageType.Info);
 
                 if (!QualitySettings.realtimeReflectionProbes)
-                    EditorGUILayout.HelpBox("Realtime reflection probes are disabled in Quality Settings", MessageType.Warning);
+                    EditorGUILayout.HelpBox("Realtime reflection probes are disabled for the current Quality level. This probe provides no reflections at that level.", MessageType.Warning);
                 return;
             }
 

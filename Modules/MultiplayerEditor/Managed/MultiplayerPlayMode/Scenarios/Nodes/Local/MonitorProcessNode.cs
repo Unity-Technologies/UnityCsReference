@@ -58,14 +58,12 @@ namespace Unity.Multiplayer.PlayMode.Editor
             while (Time.realtimeSinceStartup < timeoutTime)
             {
                 cancellationToken.ThrowIfCancellationRequested();
-                try
-                {
-                    return Process.GetProcessById(processId);
-                }
-                catch (ArgumentException)
-                {
-                    await Task.Delay(k_ProcessCheckIntervalMS, cancellationToken);
-                }
+
+                var process = ProcessSystem.GetProcessById(processId);
+                if (process != null)
+                    return process;
+
+                await Task.Delay(k_ProcessCheckIntervalMS, cancellationToken);
             }
             
             throw new TimeoutException($"The process ({processId}) was not found within the timeout period of {k_ProcessFindTimeoutSeconds} seconds.");

@@ -98,7 +98,12 @@ namespace Unity.Multiplayer.PlayMode.Editor
         {
             if (string.IsNullOrWhiteSpace(CurrentMode))
             {
-                MppmLog.Warning("No Current Mode set, no window to save.");
+                // UUM-147944: on Linux, a Virtual Player gets a spurious focus-loss event at startup,
+                // before a mode is set. Harmless (SwitchLayoutToMode saves once the mode is set), so don't warn there.
+                if (Application.platform == RuntimePlatform.LinuxEditor)
+                    MppmLog.Debug("No Current Mode set, no window to save.");
+                else
+                    MppmLog.Warning("No Current Mode set, no window to save.");
                 return;
             }
 

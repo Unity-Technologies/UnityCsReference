@@ -4,9 +4,7 @@
 
 using System;
 using System.Collections.Generic;
-using System.Collections.ObjectModel;
 using System.IO;
-using Unity.Scripting.LifecycleManagement;
 using UnityEditor.Build.Profile;
 using UnityEditor.Connect;
 using UnityEditor.EngineDiagnostics;
@@ -28,21 +26,21 @@ namespace UnityEditor.InsightsEditor
         const string k_InsightsNoCloudVisualElementNodeName = "insights-analytics-no-cloud-visualelement";
         internal const string k_DataReportingLevelDropdownName = "DataReportingDropdown";
         const string k_HideElementClassName = "display-none";
-        const string k_InsightsProjectSettingsHeaderNodeName = "insights-project-settings-header";
         const string k_InsightsNoCloudInfoLabelTextNodeName = "insights-analytics-no-cloud-text";
 
-        VisualElement m_Root;
+        const int k_EnabledIndex = 0;
+        const int k_DisabledIndex = 1;
+
         DropdownField m_DataReportingLevelDropdown;
         VisualElement m_InsightsNoCloudVisualElement;
-
-        bool m_ProjectSettingsEngineDiagnosticsEnabled;
-
-        int m_PreviousIndexValue;
-        bool m_DropdownInitialConfigDone;
 
         BuildProfile m_buildProfile;
 
         event Action m_saveAction;
+
+        bool m_IsCloudProjectLinked;
+
+        internal event Action dataCollectionChanged;
 
         internal BuildProfileEngineDiagnosticsState buildProfileEngineDiagnosticsState
         {
@@ -54,8 +52,14 @@ namespace UnityEditor.InsightsEditor
                 insightsSettingsContainer.buildProfileEngineDiagnosticsState = value;
                 m_buildProfile.platformBuildProfile.insightsSettingsContainer = insightsSettingsContainer;
                 m_saveAction?.Invoke();
+                EngineDiagnosticsSettings.InvalidatePlayerDataCache(m_buildProfile.buildTarget);
+                ActiveBuildProfileChangeNotifier.Notify();
+                dataCollectionChanged?.Invoke();
             }
         }
+
+        internal bool isDataCollectionEnabled =>
+            m_IsCloudProjectLinked && buildProfileEngineDiagnosticsState != BuildProfileEngineDiagnosticsState.Disabled;
 
         internal BuildProfile buildProfile
         {
@@ -82,32 +86,12 @@ namespace UnityEditor.InsightsEditor
             set;
         }
 
-        // Change to ordering in UI warrants mapping
-        [VisibleToOtherModules]
-        [NoAutoStaticsCleanup] // immutable index<->state lookup table of value types; safe to persist across code reload
-        internal static readonly ReadOnlyDictionary<int, BuildProfileEngineDiagnosticsState> k_IndexToBuildProfileEngineDiagnosticsState =
-            new(new Dictionary<int, BuildProfileEngineDiagnosticsState>
-        {
-            { 0, BuildProfileEngineDiagnosticsState.ProjectSettings },
-            { 1, BuildProfileEngineDiagnosticsState.Disabled },
-            { 2, BuildProfileEngineDiagnosticsState.Enabled }
-        });
-        [VisibleToOtherModules]
-        [NoAutoStaticsCleanup] // immutable state<->index lookup table of value types; safe to persist across code reload
-        internal static readonly ReadOnlyDictionary<BuildProfileEngineDiagnosticsState, int> k_BuildProfileEngineDiagnosticsStateToIndex = new(
-            new Dictionary<BuildProfileEngineDiagnosticsState, int>
-        {
-            { BuildProfileEngineDiagnosticsState.ProjectSettings, 0 },
-            { BuildProfileEngineDiagnosticsState.Disabled, 1 },
-            { BuildProfileEngineDiagnosticsState.Enabled, 2 }
-        });
-        [NoAutoStaticsCleanup] // immutable bool->label lookup table of value types/strings; safe to persist across code reload
-        static readonly ReadOnlyDictionary<bool, string> k_EngineDiagnosticsEnabledToStringMap = new(
-            new Dictionary<bool, string>
-        {
-            { false, TrText.k_EngineDiagnosticsStateDropdownDisabled },
-            { true, TrText.k_EngineDiagnosticsDropdownEnabled }
-        });
+        // Default is shown as Enabled and is kept until the user picks Disabled
+        internal static int StateToIndex(BuildProfileEngineDiagnosticsState state) =>
+            state == BuildProfileEngineDiagnosticsState.Disabled ? k_DisabledIndex : k_EnabledIndex;
+
+        internal static BuildProfileEngineDiagnosticsState IndexToState(int index) =>
+            index == k_DisabledIndex ? BuildProfileEngineDiagnosticsState.Disabled : BuildProfileEngineDiagnosticsState.Enabled;
 
         public void InitializeGUI()
         {
@@ -128,8 +112,6 @@ namespace UnityEditor.InsightsEditor
             visualTree.CloneTree(root);
             root.styleSheets.Add(styleSheet);
 
-            m_Root = root;
-
             SetupInsightsSection(root);
         }
 
@@ -140,50 +122,20 @@ namespace UnityEditor.InsightsEditor
 
             m_DataReportingLevelDropdown = root.Q<DropdownField>(k_DataReportingLevelDropdownName);
             m_DataReportingLevelDropdown.label = TrText.k_DataReportingLevelDropdownLabel;
-
-            var projectSettingsHeader = root.Q<VisualElement>(k_InsightsProjectSettingsHeaderNodeName);
-            projectSettingsHeader?.RemoveFromHierarchy();
-            var projectSettingsInfoBox = root.Q<VisualElement>(InsightsEditorUtils.k_ProjectSettingsInfoBoxNodeName);
-            projectSettingsInfoBox?.RemoveFromHierarchy();
+            m_DataReportingLevelDropdown.labelElement.tooltip = TrText.k_DataReportingLevelDropdownTooltip;
 
             var noCloudInfoLabelText = root.Q<Label>(k_InsightsNoCloudInfoLabelTextNodeName);
             noCloudInfoLabelText.text = TrText.k_BuildProfileNoCloudLabel;
             InsightsEditorUtils.RegisterLinkTagEventCallbacks(
                 noCloudInfoLabelText, OnLinkClicked, InsightsEditorUtils.OnLabelLinkPointerOver, InsightsEditorUtils.OnLabelLinkPointerOut);
 
-            UpdateDropdownChoiceLabels();
-
-            m_DataReportingLevelDropdown.index = k_BuildProfileEngineDiagnosticsStateToIndex[buildProfileEngineDiagnosticsState];
-            UpdateSelectedDropdownValueForProjectSettingsSync();
-
-            m_PreviousIndexValue = m_DataReportingLevelDropdown.index;
-            m_DataReportingLevelDropdown.RegisterValueChangedCallback(_ =>
+            m_DataReportingLevelDropdown.choices = new List<string>
             {
-                var previousIndex = m_PreviousIndexValue;
-                var selectedIndex = m_DataReportingLevelDropdown.index;
-                if(selectedIndex == previousIndex)
-                {
-                    return;
-                }
-
-                m_PreviousIndexValue = selectedIndex;
-                buildProfileEngineDiagnosticsState = k_IndexToBuildProfileEngineDiagnosticsState[selectedIndex];
-
-                var previousBuildProfileDataReportingLevel = k_IndexToBuildProfileEngineDiagnosticsState[previousIndex];
-                var revertSelectionAndShowDisablementPopup = ShouldShowPopup(
-                    previousBuildProfileDataReportingLevel,
-                    k_IndexToBuildProfileEngineDiagnosticsState[selectedIndex]);
-                if (revertSelectionAndShowDisablementPopup)
-                {
-                    SetDropdownValueAndUnderlyingStateWithoutNotify(previousIndex);
-                    ShowDisabledConfirmationDialog(k_IndexToBuildProfileEngineDiagnosticsState[selectedIndex]);
-                    return;
-                }
-
-                SendOnDataReportingLevelChangedEditorAnalytics(
-                    k_IndexToBuildProfileEngineDiagnosticsState[previousIndex],
-                    k_IndexToBuildProfileEngineDiagnosticsState[selectedIndex]);
-            });
+                TrText.k_EngineDiagnosticsDropdownEnabled,
+                TrText.k_EngineDiagnosticsStateDropdownDisabled,
+            };
+            m_DataReportingLevelDropdown.SetIndexWithoutNotify(StateToIndex(buildProfileEngineDiagnosticsState));
+            m_DataReportingLevelDropdown.RegisterValueChangedCallback(_ => OnDropdownIndexChanged(m_DataReportingLevelDropdown.index));
 
             ToggleSectionVisibility(!string.IsNullOrEmpty(CloudProjectSettings.projectId));
 
@@ -191,11 +143,15 @@ namespace UnityEditor.InsightsEditor
             UnityConnect.instance.ProjectStateChanged += OnCloudProjectStateChanged;
         }
 
-        internal void SetDropdownValueAndUnderlyingStateWithoutNotify(int previousIndex)
+        void OnDropdownIndexChanged(int index)
         {
-            buildProfileEngineDiagnosticsState = k_IndexToBuildProfileEngineDiagnosticsState[previousIndex];
-            m_DataReportingLevelDropdown.SetIndexWithoutNotify(previousIndex);
-            m_PreviousIndexValue = previousIndex;
+            var previousState = buildProfileEngineDiagnosticsState;
+            if (StateToIndex(previousState) == index)
+                return;
+
+            var newState = IndexToState(index);
+            buildProfileEngineDiagnosticsState = newState;
+            SendOnDataReportingLevelChangedEditorAnalytics(previousState, newState);
         }
 
         private void OnLinkClicked(PointerDownLinkTagEvent evt)
@@ -207,38 +163,6 @@ namespace UnityEditor.InsightsEditor
             }
 
             SettingsService.OpenProjectSettings("Project/Services");
-        }
-
-        bool ShouldShowPopup(BuildProfileEngineDiagnosticsState previousState, BuildProfileEngineDiagnosticsState newState)
-        {
-            var enabledToDisabledFlag =
-                    previousState == BuildProfileEngineDiagnosticsState.Enabled &&
-                    newState == BuildProfileEngineDiagnosticsState.Disabled;
-            if (enabledToDisabledFlag)
-            {
-                return true;
-            }
-
-            var enabledToProjectSettingsDisabledFlag =
-                    previousState == BuildProfileEngineDiagnosticsState.Enabled &&
-                    newState == BuildProfileEngineDiagnosticsState.ProjectSettings &&
-                    !m_ProjectSettingsEngineDiagnosticsEnabled;
-            if (enabledToProjectSettingsDisabledFlag)
-            {
-                return true;
-            }
-
-            var projectSettingsEnabledToDisabledFlag =
-                    previousState == BuildProfileEngineDiagnosticsState.ProjectSettings &&
-                    newState == BuildProfileEngineDiagnosticsState.Disabled &&
-                    m_ProjectSettingsEngineDiagnosticsEnabled;
-            return projectSettingsEnabledToDisabledFlag;
-        }
-
-        void ShowDisabledConfirmationDialog(BuildProfileEngineDiagnosticsState targetState)
-        {
-            DisablementPopup.ShowDisabledConfirmationDialog(
-                () => OnAcceptDisabledConfirmationDialog(targetState), OnCancelDisabledConfirmationDialog);
         }
 
         void OnCloudProjectStateChanged(ProjectInfo _)
@@ -276,102 +200,10 @@ namespace UnityEditor.InsightsEditor
 
         public void ToggleSectionVisibility(bool isVisible)
         {
-            if (isVisible)
-            {
-                m_InsightsNoCloudVisualElement.AddToClassList(k_HideElementClassName);
-                m_DataReportingLevelDropdown.RemoveFromClassList(k_HideElementClassName);
-                return;
-            }
-
-            m_InsightsNoCloudVisualElement.RemoveFromClassList(k_HideElementClassName);
-            m_DataReportingLevelDropdown.AddToClassList(k_HideElementClassName);
-
-        }
-
-        public void UpdateSavedProjectSettingsEngineDiagnosticsEnabledValue(bool projectSettingsValue)
-        {
-            m_ProjectSettingsEngineDiagnosticsEnabled = projectSettingsValue;
-        }
-
-        public void OnProjectSettingsEngineDiagnosticsEnabledChanged(bool projectSettingsValue)
-        {
-            UpdateSavedProjectSettingsEngineDiagnosticsEnabledValue(projectSettingsValue);
-            UpdateDropdownChoiceLabels();
-            UpdateSelectedDropdownValueForProjectSettingsSync();
-
-            m_DataReportingLevelDropdown.MarkDirtyRepaint();
-            m_Root.MarkDirtyRepaint();
-        }
-
-        void UpdateDropdownChoiceLabels()
-        {
-            if(m_DataReportingLevelDropdown == null)
-            {
-                return;
-            }
-
-            var choices = m_DataReportingLevelDropdown.choices;
-
-            if (!m_DropdownInitialConfigDone)
-            {
-                choices[k_BuildProfileEngineDiagnosticsStateToIndex[BuildProfileEngineDiagnosticsState.Disabled]] =
-                    TrText.k_EngineDiagnosticsStateDropdownDisabled;
-                choices[k_BuildProfileEngineDiagnosticsStateToIndex[BuildProfileEngineDiagnosticsState.Enabled]] =
-                    TrText.k_EngineDiagnosticsDropdownEnabled;
-                m_DropdownInitialConfigDone = true;
-            }
-
-            var useProjectSettingsIndex = k_BuildProfileEngineDiagnosticsStateToIndex[BuildProfileEngineDiagnosticsState.ProjectSettings];
-            choices[useProjectSettingsIndex] = $"{k_EngineDiagnosticsEnabledToStringMap[m_ProjectSettingsEngineDiagnosticsEnabled]} {TrText.k_DataReportingLevelDropdownUseProjectSettingsGeneric}";
-            m_DataReportingLevelDropdown.choices = choices;
-        }
-
-        void UpdateSelectedDropdownValueForProjectSettingsSync()
-        {
-            if (buildProfileEngineDiagnosticsState != BuildProfileEngineDiagnosticsState.ProjectSettings)
-            {
-                return;
-            }
-
-            var useProjectSettingsIndex = k_BuildProfileEngineDiagnosticsStateToIndex[BuildProfileEngineDiagnosticsState.ProjectSettings];
-            m_DataReportingLevelDropdown.value = m_DataReportingLevelDropdown.choices[useProjectSettingsIndex];
-            m_DataReportingLevelDropdown.SetValueWithoutNotify(m_DataReportingLevelDropdown.choices[useProjectSettingsIndex]);
-        }
-
-        void LogDisablementDialogInteraction(InsightsEditorAnalytic.PopupInteraction interaction)
-        {
-            InsightsEditorAnalytic.LogAppInsights(new InsightsEditorAnalytic.InsightsEditorAnalyticsEvent
-            {
-                ActionType = InsightsEditorAnalytic.ActionType.DisablementPopupInteraction,
-                disablementPopupInteraction = new InsightsEditorAnalytic.DisablementPopupInteraction
-                {
-                    PopupInteraction = interaction
-                },
-                interactionContext = new InsightsEditorAnalytic.InteractionContext
-                {
-                    platformGuid = platformGuid,
-                    profileName = buildProfileName
-                }
-            });
-        }
-
-        void OnCancelDisabledConfirmationDialog() =>
-            LogDisablementDialogInteraction(InsightsEditorAnalytic.PopupInteraction.Cancel);
-
-        void OnAcceptDisabledConfirmationDialog(BuildProfileEngineDiagnosticsState targetState)
-        {
-            ChangeBuildProfileEngineDiagnosticsState(targetState);
-            LogDisablementDialogInteraction(InsightsEditorAnalytic.PopupInteraction.Accept);
-        }
-
-        void ChangeBuildProfileEngineDiagnosticsState(BuildProfileEngineDiagnosticsState newState)
-        {
-            var oldLevel = buildProfileEngineDiagnosticsState;
-            buildProfileEngineDiagnosticsState = newState;
-            m_DataReportingLevelDropdown.SetIndexWithoutNotify(k_BuildProfileEngineDiagnosticsStateToIndex[newState]);
-            m_PreviousIndexValue = k_BuildProfileEngineDiagnosticsStateToIndex[newState];
-
-            SendOnDataReportingLevelChangedEditorAnalytics(oldLevel, newState);
+            m_IsCloudProjectLinked = isVisible;
+            m_InsightsNoCloudVisualElement.EnableInClassList(k_HideElementClassName, isVisible);
+            m_DataReportingLevelDropdown.EnableInClassList(k_HideElementClassName, !isVisible);
+            dataCollectionChanged?.Invoke();
         }
     }
 }

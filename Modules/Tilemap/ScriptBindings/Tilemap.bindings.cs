@@ -255,22 +255,20 @@ namespace UnityEngine.Tilemaps
         [NativeMethod(Name = "GetTileAssetEntityId", IsThreadSafe = true)]
         public extern EntityId GetTileEntityId(Vector3Int position);
 
-        internal extern IntPtr GetTilemapHandle();
-
         [NativeMethod(Name = "GetTileEntityIdFromHandle", IsThreadSafe = true)]
-        internal static extern EntityId GetTileEntityIdFromHandle(IntPtr tilemapHandle, Vector3Int position);
+        internal static extern EntityId GetTileEntityIdFromHandle(EntityId tilemapEntityId, Vector3Int position);
 
         [NativeMethod(Name = "GetTileEntityIdsFromOffsets", IsThreadSafe = true)]
         private extern void GetTileEntityIdsFromOffsets(Vector3Int position, IntPtr offsetsIntrPtr, IntPtr tilesIntPtr, int count);
 
         [NativeMethod(Name = "GetTileEntityIdsFromOffsetsAndHandle", IsThreadSafe = true)]
-        private static extern void GetTileEntityIdsFromOffsetsAndHandle(IntPtr tilemapHandle, Vector3Int position, IntPtr offsetsIntrPtr, IntPtr tilesIntPtr, int count);
+        private static extern void GetTileEntityIdsFromOffsetsAndHandle(EntityId tilemapEntityId, Vector3Int position, IntPtr offsetsIntrPtr, IntPtr tilesIntPtr, int count);
 
         [NativeMethod(Name = "GetTileEntityIdsFromBlockOffset", IsThreadSafe = true)]
         private extern void GetTileEntityIdsFromBlockOffset(Vector3Int position, BoundsInt blockOffset, IntPtr tilesIntPtr, int count);
 
         [NativeMethod(Name = "GetTileEntityIdsFromBlockOffsetAndHandle", IsThreadSafe = true)]
-        private static extern void GetTileEntityIdsFromBlockOffsetAndHandle(IntPtr tilemapHandle, Vector3Int position, BoundsInt blockOffset, IntPtr tilesIntPtr, int count);
+        private static extern void GetTileEntityIdsFromBlockOffsetAndHandle(EntityId tilemapEntityId, Vector3Int position, BoundsInt blockOffset, IntPtr tilesIntPtr, int count);
 
         internal extern Object[] GetTileAssetsBlock(Vector3Int position, Vector3Int blockDimensions);
 
@@ -775,6 +773,9 @@ namespace UnityEngine.Tilemaps
         [FreeFunction(Name = "TilemapBindings::RefreshTileAssetsNative", HasExplicitThis = true)]
         internal extern unsafe void RefreshTilesNative(void* positions, int count, bool needSortRemoveDup);
 
+        [FreeFunction(Name = "TilemapBindings::SetHasAnySyncTileCallback")]
+        internal static extern void SetHasAnySyncTileCallback(bool hasAnySyncTileCallback);
+
         ///<summary>Refreshes all <see cref="Tile" />s in the <see cref="Tilemap" />. The Tilemap will retrieve the rendering data, animation data and other data for all tiles and update all relevant components.</summary>
         ///<remarks>Refer to [Scriptable Tiles](xref:Tilemap-ScriptableTiles-TileBase) and [Tilemap](xref:class-Tilemap) for more information.</remarks>
         [NativeMethod(Name = "RefreshAllTileAssets")]
@@ -1096,19 +1097,19 @@ namespace UnityEngine.Tilemaps
         internal extern EntityId GetAnyTileEntityId(Vector3Int position);
 
         [NativeMethod(Name = "GetAnyTileEntityIdFromHandle", IsThreadSafe = true)]
-        internal static extern EntityId GetAnyTileEntityIdFromHandle(IntPtr tilemapHandle, Vector3Int position);
+        internal static extern EntityId GetAnyTileEntityIdFromHandle(EntityId tilemapEntityId, Vector3Int position);
 
         [NativeMethod(Name = "GetAnyTileEntityIdsFromOffsets", IsThreadSafe = true)]
         private extern void GetAnyTileEntityIdsFromOffsets(Vector3Int position, IntPtr offsetsIntrPtr, IntPtr tilesIntPtr, int count);
 
         [NativeMethod(Name = "GetAnyTileEntityIdsFromOffsetsAndHandle", IsThreadSafe = true)]
-        private static extern void GetAnyTileEntityIdsFromOffsetsAndHandle(IntPtr tilemapHandle, Vector3Int position, IntPtr offsetsIntrPtr, IntPtr tilesIntPtr, int count);
+        private static extern void GetAnyTileEntityIdsFromOffsetsAndHandle(EntityId tilemapEntityId, Vector3Int position, IntPtr offsetsIntrPtr, IntPtr tilesIntPtr, int count);
 
         [NativeMethod(Name = "GetAnyTileEntityIdsFromBlockOffset", IsThreadSafe = true)]
         private extern void GetAnyTileEntityIdsFromBlockOffset(Vector3Int position, BoundsInt blockOffset, IntPtr tilesIntPtr, int count);
 
         [NativeMethod(Name = "GetAnyTileEntityIdsFromBlockOffsetAndHandle", IsThreadSafe = true)]
-        private static extern void GetAnyTileEntityIdsFromBlockOffsetAndHandle(IntPtr tilemapHandle, Vector3Int position, BoundsInt blockOffset, IntPtr tilesIntPtr, int count);
+        private static extern void GetAnyTileEntityIdsFromBlockOffsetAndHandle(EntityId tilemapEntityId, Vector3Int position, BoundsInt blockOffset, IntPtr tilesIntPtr, int count);
 
         internal extern Object GetEditorPreviewTileAsset(Vector3Int position);
         ///<summary>Gets the editor preview <see cref="Tile" /> at the given XYZ coordinates of a cell in the <see cref="Tilemap" />.</summary>

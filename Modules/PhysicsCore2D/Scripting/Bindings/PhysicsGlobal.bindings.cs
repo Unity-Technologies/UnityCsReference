@@ -12,7 +12,6 @@ namespace Unity.U2D.Physics
     static partial class Scripting2D
     {
         [NativeMethod(Name = "PhysicsCore2D::Global_ReadProjectSettings")] extern internal static void PhysicsGlobal_ReadProjectSettings();
-        [NativeMethod(Name = "PhysicsCore2D::Global_GetPhysicsCoreSettings")] extern internal static UnityEngine.Object PhysicsGlobal_GetPhysicsCoreSettings();
         [NativeMethod(Name = "PhysicsCore2D::Global_SetDrawOverrides")] extern internal static void PhysicsGlobal_SetDrawOverrides(bool enabled, PhysicsWorld.DrawOverrides drawOverrides);
 
         [NativeMethod(Name = "PhysicsCore2D::Global_GetObject", IsThreadSafe = true)] extern internal static UnityEngine.Object PhysicsGlobal_GetObject(EntityId entityId);
@@ -24,7 +23,7 @@ namespace Unity.U2D.Physics
         [NativeMethod(Name = "PhysicsCore2D::Global_GetAlwaysDrawWorlds")] extern internal static bool PhysicsGlobal_GetAlwaysDrawWorlds();
         [NativeMethod(Name = "PhysicsCore2D::Global_GetConcurrentSimulations")] extern internal static int PhysicsGlobal_GetConcurrentSimulations();
         [NativeMethod(Name = "PhysicsCore2D::Global_GetUsePhysicsLayers")] extern internal static bool PhysicsGlobal_GetUsePhysicsLayers();
-        [NativeMethod(Name = "PhysicsCore2D::Global_GetPhysicsLayerNames")] extern internal static object PhysicsGlobal_GetPhysicsLayers();
+        [NativeMethod(Name = "PhysicsCore2D::Global_GetPhysicsCoreSettings")] extern internal static UnityEngine.Object PhysicsGlobal_GetPhysicsCoreSettings();
         [NativeMethod(Name = "PhysicsCore2D::Global_GetLengthUnitsPerMeter")] extern internal static float PhysicsGlobal_GetLengthUnitsPerMeter();
         [NativeMethod(Name = "PhysicsCore2D::Global_GetTransformChangeMode")] extern internal static PhysicsWorld.TransformChangeMode PhysicsGlobal_GetTransformChangeMode();
         [NativeMethod(Name = "PhysicsCore2D::Global_GetRenderingMode")] extern internal static PhysicsWorld.RenderingMode PhysicsGlobal_GetRenderingMode();

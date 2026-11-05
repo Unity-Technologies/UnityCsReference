@@ -158,6 +158,19 @@ namespace UnityEngine.UIElements
         }
     }
 
+    // Limits the number of children authoring tools let an element have
+    [AttributeUsage(AttributeTargets.Class)]
+    [VisibleToOtherModules]
+    internal sealed class UxmlMaxChildCountAttribute : Attribute
+    {
+        public int maxChildCount { get; }
+
+        public UxmlMaxChildCountAttribute(int maxChildCount)
+        {
+            this.maxChildCount = maxChildCount;
+        }
+    }
+
     /// <summary>
     /// Marks the generated <see cref="UxmlSerializedData"/> class as a partial class, allowing you to extend it such as when using <see cref="IUxmlSerializedDataCustomAttributeHandler"/>.
     /// </summary>

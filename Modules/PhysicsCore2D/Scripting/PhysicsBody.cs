@@ -870,7 +870,7 @@ namespace Unity.U2D.Physics
             public void ApplyAngularImpulse(float impulse, bool wake = true)
             {
                 m_AngularImpulse = impulse;
-                m_WakeBody = true;
+                m_WakeBody = wake;
 
                 m_UseAngularImpulse = true;
             }

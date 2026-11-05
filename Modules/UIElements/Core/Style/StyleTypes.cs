@@ -123,6 +123,18 @@ namespace UnityEngine.UIElements
             }
         }
 
+        internal static BoxShadow ToBoxShadow(this StyleKeyword keyword)
+        {
+            switch (keyword)
+            {
+                case StyleKeyword.None:
+                    return BoxShadow.None();
+                default:
+                    Debug.LogAssertion($"Unexpected StyleKeyword '{keyword.ToString()}'");
+                    return new BoxShadow();
+            }
+        }
+
         internal static TextAutoSize ToTextAutoSize(this StyleKeyword keyword)
         {
             switch (keyword)

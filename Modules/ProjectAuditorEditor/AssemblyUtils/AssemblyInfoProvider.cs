@@ -42,13 +42,14 @@ namespace Unity.ProjectAuditor.Editor.AssemblyUtils
         const string k_VirtualPackagesRoot = "Packages";
 
         [Serializable]
-        private class AsmdefData
+        internal class AsmdefData
         {
 #pragma warning disable 0649
             public string name;
             public string[] optionalUnityReferences;
             public string[] includePlatforms;
             public string[] excludePlatforms;
+            public string[] defineConstraints;
 #pragma warning restore 0649
         }
 
@@ -138,11 +139,7 @@ namespace Unity.ProjectAuditor.Editor.AssemblyUtils
                     string fileContent = File.ReadAllText(asmDefPath);
                     var data = JsonUtility.FromJson<AsmdefData>(fileContent);
 
-                    if (data.optionalUnityReferences != null)
-                    {
-                        if (Array.IndexOf(data.optionalUnityReferences, "TestAssemblies") != -1)
-                            assemblyInfo.IsTestAssembly = true;
-                    }
+                    assemblyInfo.IsTestAssembly = IsTestAssembly(data);
 
                     if (editorAssembly == null)
                     {
@@ -180,6 +177,12 @@ namespace Unity.ProjectAuditor.Editor.AssemblyUtils
             }
 
             return assemblyInfo;
+        }
+
+        internal static bool IsTestAssembly(AsmdefData data)
+        {
+            return (data.optionalUnityReferences != null && Array.IndexOf(data.optionalUnityReferences, "TestAssemblies") != -1)
+                || (data.defineConstraints != null && Array.IndexOf(data.defineConstraints, "UNITY_INCLUDE_TESTS") != -1);
         }
 
         internal static AssemblyInfo GetAssemblyInfoFromUnityAssemblyPath(string assemblyPath, bool editorAssembly)

@@ -320,6 +320,16 @@ namespace Unity.ProjectAuditor.Editor
         }
 
         /// <summary>
+        /// Checks whether this ReportItem is an issue whose descriptor is flagged with any of the specified areas.
+        /// </summary>
+        /// <param name="areas">The area(s) to test against.</param>
+        /// <returns>True if this ReportItem is an issue and its descriptor has at least one of the specified areas. Otherwise, returns false.</returns>
+        public bool HasAnyAreas(Areas areas)
+        {
+            return IsIssue() && Id.GetDescriptor().HasAnyAreas(areas);
+        }
+
+        /// <summary>
         /// Checks whether this issue is major or critical.
         /// </summary>
         /// <returns>True if the issue's Severity is Major or Critical. Otherwise, returns false.</returns>

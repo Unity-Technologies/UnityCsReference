@@ -807,21 +807,25 @@ namespace Unity.UIToolkit.Editor
                     continue;
                 }
 
-                if (!float.TryParse(prop.value, NumberStyles.Float, CultureInfo.InvariantCulture, out var floatValue))
-                    continue;
-
-                // Int channels store the ordinal as a bit-encoded float (decoded by
-                // UIAnimationBinder.SetFloatValue's Int/Enum branches via SingleToInt32Bits).
+                // Int channels store the int as a bit-encoded float (decoded by
+                // UIAnimationBinder.DecodeIntChannel via SingleToInt32Bits).
                 EditorCurveBinding floatBinding;
-                float storedValue = floatValue;
+                float storedValue;
                 if (hasChannelKind && channelKind == UIAnimationBinder.AnimationChannelKind.Int)
                 {
+                    if (!TryParseDiscreteValue(prop.value, out var intValue))
+                        continue;
+
                     floatBinding = EditorCurveBinding.DiscreteCurve(string.Empty, typeof(UIAnimationClip), prop.propertyPath);
-                    storedValue = BitConverter.Int32BitsToSingle((int)floatValue);
+                    storedValue = BitConverter.Int32BitsToSingle(intValue);
                 }
                 else
                 {
+                    if (!float.TryParse(prop.value, NumberStyles.Float, CultureInfo.InvariantCulture, out var floatValue))
+                        continue;
+
                     floatBinding = EditorCurveBinding.FloatCurve(string.Empty, typeof(UIAnimationClip), prop.propertyPath);
+                    storedValue = floatValue;
                 }
 
                 if (isRecording)
@@ -840,6 +844,18 @@ namespace Unity.UIToolkit.Editor
                 ResampleAnimation();
             else
                 InspectorWindow.RepaintAllInspectors();
+        }
+
+        static bool TryParseDiscreteValue(string value, out int result)
+        {
+            if (int.TryParse(value, NumberStyles.Integer, CultureInfo.InvariantCulture, out result))
+                return true;
+
+            if (!float.TryParse(value, NumberStyles.Float, CultureInfo.InvariantCulture, out var floatValue))
+                return false;
+
+            result = (int)floatValue;
+            return true;
         }
 
         void CapturePrePreviewSnapshot(UIAnimationClip uiClip, UIAnimationBinder binder)

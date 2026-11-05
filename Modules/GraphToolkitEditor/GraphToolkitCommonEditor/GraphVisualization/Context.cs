@@ -12,6 +12,7 @@ namespace Unity.GraphToolkit.Editor.GraphVisualization;
 /// </summary>
 /// <remarks>
 /// Create a <see cref="Context"/> through <see cref="Registry.CreateVisualizationContext"/>. The context remains valid until you call <see cref="Dispose"/>.
+/// Contexts and their visualization data aren't serialized, so they don't survive a domain reload. After a domain reload, create a new context and apply the visualization data again.
 /// While the context is alive, you can apply visualization changes to graph elements (retrieved as references) in the associated graph.
 /// Each context has a unique <see cref="VisualizationContextID"/> assigned at creation, which lets you distinguish ownership when multiple consumers operate on the same graph.
 /// Disposing the context unregisters it from the <see cref="Registry"/> and clears any visualization data added through it.

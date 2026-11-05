@@ -17,7 +17,7 @@ namespace UnityEngine.UIElements.StyleSheets
     internal static partial class StylePropertyUtil
     {
         public const int k_GroupOffset = 16;
-        internal const int k_SerializationLayoutHash = -1402510785;
+        internal const int k_SerializationLayoutHash = -739436303;
 
         [Unity.Scripting.LifecycleManagement.NoAutoStaticsCleanup]
         internal static readonly Dictionary<string, StylePropertyId> s_NameToId = new Dictionary<string, StylePropertyId>()
@@ -166,6 +166,10 @@ namespace UnityEngine.UIElements.StyleSheets
                         {
                 "bottom",
                 StylePropertyId.Bottom
+            },
+                        {
+                "box-shadow",
+                StylePropertyId.BoxShadow
             },
                         {
                 "color",
@@ -678,6 +682,10 @@ namespace UnityEngine.UIElements.StyleSheets
                 "bottom"
             },
                         {
+                StylePropertyId.BoxShadow,
+                "box-shadow"
+            },
+                        {
                 StylePropertyId.Color,
                 "color"
             },
@@ -1186,6 +1194,10 @@ namespace UnityEngine.UIElements.StyleSheets
                         {
                 "bottom",
                 "bottom"
+            },
+                        {
+                "box-shadow",
+                "boxShadow"
             },
                         {
                 "color",
@@ -1698,6 +1710,10 @@ namespace UnityEngine.UIElements.StyleSheets
                 "bottom"
             },
                         {
+                "boxShadow",
+                "box-shadow"
+            },
+                        {
                 "color",
                 "color"
             },
@@ -2060,7 +2076,7 @@ namespace UnityEngine.UIElements.StyleSheets
                 };
 
         [Unity.Scripting.LifecycleManagement.NoAutoStaticsCleanup]
-        internal static readonly HashSet<StylePropertyId> s_AnimatableProperties = new HashSet<StylePropertyId>(new[] { StylePropertyId.AlignContent, StylePropertyId.AlignItems, StylePropertyId.AlignSelf, StylePropertyId.All, StylePropertyId.AspectRatio, StylePropertyId.BackdropFilter, StylePropertyId.BackgroundColor, StylePropertyId.BackgroundImage, StylePropertyId.BackgroundPosition, StylePropertyId.BackgroundPositionX, StylePropertyId.BackgroundPositionY, StylePropertyId.BackgroundRepeat, StylePropertyId.BackgroundSize, StylePropertyId.BorderBottomColor, StylePropertyId.BorderBottomLeftRadius, StylePropertyId.BorderBottomRightRadius, StylePropertyId.BorderBottomWidth, StylePropertyId.BorderColor, StylePropertyId.BorderLeftColor, StylePropertyId.BorderLeftWidth, StylePropertyId.BorderRadius, StylePropertyId.BorderRightColor, StylePropertyId.BorderRightWidth, StylePropertyId.BorderTopColor, StylePropertyId.BorderTopLeftRadius, StylePropertyId.BorderTopRightRadius, StylePropertyId.BorderTopWidth, StylePropertyId.BorderWidth, StylePropertyId.Bottom, StylePropertyId.Color, StylePropertyId.ColumnGap, StylePropertyId.Cursor, StylePropertyId.Filter, StylePropertyId.Flex, StylePropertyId.FlexBasis, StylePropertyId.FlexDirection, StylePropertyId.FlexGrow, StylePropertyId.FlexShrink, StylePropertyId.FlexWrap, StylePropertyId.FontSize, StylePropertyId.Gap, StylePropertyId.GridColumn, StylePropertyId.GridColumnEnd, StylePropertyId.GridColumnStart, StylePropertyId.GridRow, StylePropertyId.GridRowEnd, StylePropertyId.GridRowStart, StylePropertyId.Height, StylePropertyId.JustifyContent, StylePropertyId.Left, StylePropertyId.LetterSpacing, StylePropertyId.Margin, StylePropertyId.MarginBottom, StylePropertyId.MarginLeft, StylePropertyId.MarginRight, StylePropertyId.MarginTop, StylePropertyId.MaxHeight, StylePropertyId.MaxWidth, StylePropertyId.MinHeight, StylePropertyId.MinWidth, StylePropertyId.Opacity, StylePropertyId.Overflow, StylePropertyId.Padding, StylePropertyId.PaddingBottom, StylePropertyId.PaddingLeft, StylePropertyId.PaddingRight, StylePropertyId.PaddingTop, StylePropertyId.Position, StylePropertyId.Right, StylePropertyId.Rotate, StylePropertyId.RowGap, StylePropertyId.Scale, StylePropertyId.TextOverflow, StylePropertyId.TextShadow, StylePropertyId.Top, StylePropertyId.TransformOrigin, StylePropertyId.Translate, StylePropertyId.UnityBackgroundImageTintColor, StylePropertyId.UnityBackgroundScaleMode, StylePropertyId.UnityFont, StylePropertyId.UnityFontDefinition, StylePropertyId.UnityFontStyleAndWeight, StylePropertyId.UnityMaterial, StylePropertyId.UnityOverflowClipBox, StylePropertyId.UnityParagraphSpacing, StylePropertyId.UnitySliceBottom, StylePropertyId.UnitySliceLeft, StylePropertyId.UnitySliceRight, StylePropertyId.UnitySliceScale, StylePropertyId.UnitySliceTop, StylePropertyId.UnitySliceType, StylePropertyId.UnityTextAlign, StylePropertyId.UnityTextOutline, StylePropertyId.UnityTextOutlineColor, StylePropertyId.UnityTextOutlineWidth, StylePropertyId.UnityTextOverflowPosition, StylePropertyId.Visibility, StylePropertyId.WhiteSpace, StylePropertyId.Width, StylePropertyId.WordSpacing, StylePropertyId.ZIndex });
+        internal static readonly HashSet<StylePropertyId> s_AnimatableProperties = new HashSet<StylePropertyId>(new[] { StylePropertyId.AlignContent, StylePropertyId.AlignItems, StylePropertyId.AlignSelf, StylePropertyId.All, StylePropertyId.AspectRatio, StylePropertyId.BackdropFilter, StylePropertyId.BackgroundColor, StylePropertyId.BackgroundImage, StylePropertyId.BackgroundPosition, StylePropertyId.BackgroundPositionX, StylePropertyId.BackgroundPositionY, StylePropertyId.BackgroundRepeat, StylePropertyId.BackgroundSize, StylePropertyId.BorderBottomColor, StylePropertyId.BorderBottomLeftRadius, StylePropertyId.BorderBottomRightRadius, StylePropertyId.BorderBottomWidth, StylePropertyId.BorderColor, StylePropertyId.BorderLeftColor, StylePropertyId.BorderLeftWidth, StylePropertyId.BorderRadius, StylePropertyId.BorderRightColor, StylePropertyId.BorderRightWidth, StylePropertyId.BorderTopColor, StylePropertyId.BorderTopLeftRadius, StylePropertyId.BorderTopRightRadius, StylePropertyId.BorderTopWidth, StylePropertyId.BorderWidth, StylePropertyId.Bottom, StylePropertyId.BoxShadow, StylePropertyId.Color, StylePropertyId.ColumnGap, StylePropertyId.Cursor, StylePropertyId.Filter, StylePropertyId.Flex, StylePropertyId.FlexBasis, StylePropertyId.FlexDirection, StylePropertyId.FlexGrow, StylePropertyId.FlexShrink, StylePropertyId.FlexWrap, StylePropertyId.FontSize, StylePropertyId.Gap, StylePropertyId.GridColumn, StylePropertyId.GridColumnEnd, StylePropertyId.GridColumnStart, StylePropertyId.GridRow, StylePropertyId.GridRowEnd, StylePropertyId.GridRowStart, StylePropertyId.Height, StylePropertyId.JustifyContent, StylePropertyId.Left, StylePropertyId.LetterSpacing, StylePropertyId.Margin, StylePropertyId.MarginBottom, StylePropertyId.MarginLeft, StylePropertyId.MarginRight, StylePropertyId.MarginTop, StylePropertyId.MaxHeight, StylePropertyId.MaxWidth, StylePropertyId.MinHeight, StylePropertyId.MinWidth, StylePropertyId.Opacity, StylePropertyId.Overflow, StylePropertyId.Padding, StylePropertyId.PaddingBottom, StylePropertyId.PaddingLeft, StylePropertyId.PaddingRight, StylePropertyId.PaddingTop, StylePropertyId.Position, StylePropertyId.Right, StylePropertyId.Rotate, StylePropertyId.RowGap, StylePropertyId.Scale, StylePropertyId.TextOverflow, StylePropertyId.TextShadow, StylePropertyId.Top, StylePropertyId.TransformOrigin, StylePropertyId.Translate, StylePropertyId.UnityBackgroundImageTintColor, StylePropertyId.UnityBackgroundScaleMode, StylePropertyId.UnityFont, StylePropertyId.UnityFontDefinition, StylePropertyId.UnityFontStyleAndWeight, StylePropertyId.UnityMaterial, StylePropertyId.UnityOverflowClipBox, StylePropertyId.UnityParagraphSpacing, StylePropertyId.UnitySliceBottom, StylePropertyId.UnitySliceLeft, StylePropertyId.UnitySliceRight, StylePropertyId.UnitySliceScale, StylePropertyId.UnitySliceTop, StylePropertyId.UnitySliceType, StylePropertyId.UnityTextAlign, StylePropertyId.UnityTextOutline, StylePropertyId.UnityTextOutlineColor, StylePropertyId.UnityTextOutlineWidth, StylePropertyId.UnityTextOverflowPosition, StylePropertyId.Visibility, StylePropertyId.WhiteSpace, StylePropertyId.Width, StylePropertyId.WordSpacing, StylePropertyId.ZIndex });
 
         [Unity.Scripting.LifecycleManagement.NoAutoStaticsCleanup]
         internal static readonly Dictionary<StylePropertyId, UsageHints> s_AnimatableWithUsageHintProperties = new Dictionary<StylePropertyId, UsageHints>()
@@ -2192,6 +2208,8 @@ namespace UnityEngine.UIElements.StyleSheets
             VersionChangeType.Styles,
             /*StylePropertyId.Bottom*/
             VersionChangeType.Styles | VersionChangeType.Layout,
+            /*StylePropertyId.BoxShadow*/
+            VersionChangeType.Styles | VersionChangeType.Repaint,
             /*StylePropertyId.Color*/
             VersionChangeType.Styles | VersionChangeType.StyleSheet | VersionChangeType.Color,
             /*StylePropertyId.ColumnGap*/
@@ -3302,6 +3320,8 @@ namespace UnityEngine.UIElements.StyleSheets
                     return (int)&visualData.borderTopLeftRadius - (int)&visualData;
                 case StylePropertyId.BorderTopRightRadius:
                     return (int)&visualData.borderTopRightRadius - (int)&visualData;
+                case StylePropertyId.BoxShadow:
+                    return (int)&rareData.boxShadow - (int)&rareData;
                 case StylePropertyId.Color:
                     return (int)&inheritedData.color - (int)&inheritedData;
                 case StylePropertyId.Cursor:
@@ -3465,6 +3485,8 @@ namespace UnityEngine.UIElements.StyleSheets
                     return (int)(&visualData.borderTopLeftRadius + 1) - (int)&visualData.borderTopLeftRadius;
                 case StylePropertyId.BorderTopRightRadius:
                     return (int)(&visualData.borderTopRightRadius + 1) - (int)&visualData.borderTopRightRadius;
+                case StylePropertyId.BoxShadow:
+                    return (int)(&rareData.boxShadow + 1) - (int)&rareData.boxShadow;
                 case StylePropertyId.Color:
                     return (int)(&inheritedData.color + 1) - (int)&inheritedData.color;
                 case StylePropertyId.Cursor:

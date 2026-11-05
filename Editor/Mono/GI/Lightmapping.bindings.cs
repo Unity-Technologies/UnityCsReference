@@ -518,6 +518,37 @@ namespace UnityEditor
         [StaticAccessor("GetLightmapSettings()")]
         public static extern LightingDataAsset lightingDataAsset { get; set; }
 
+        const string k_ChangeLightingDataAssetUndoName = "Change Lighting Data Asset";
+
+        internal static void SetLightingDataAssetWithUndo(LightingDataAsset asset)
+        {
+            Undo.RecordObject(LightmapEditorSettings.GetLightmapSettings(), k_ChangeLightingDataAssetUndoName);
+            lightingDataAsset = asset;
+        }
+
+        [FreeFunction]
+        [NativeHeader("Editor/Src/GI/LightingDataAssetManager.h")]
+        static extern void ReloadBakedLightingData();
+
+        [OnCodeLoaded]
+        static void RegisterLightingDataAssetUndoHandler()
+        {
+            Undo.undoRedoEvent += OnLightingDataAssetUndoRedo;
+        }
+
+        [OnCodeUnloading]
+        static void UnregisterLightingDataAssetUndoHandler()
+        {
+            Undo.undoRedoEvent -= OnLightingDataAssetUndoRedo;
+        }
+
+        static void OnLightingDataAssetUndoRedo(in UndoRedoInfo info)
+        {
+            // Undo restores only the reference, not the baked data it loaded
+            if (info.undoName == k_ChangeLightingDataAssetUndoName)
+                ReloadBakedLightingData();
+        }
+
         [StaticAccessor("GetLightmapSettings().GetReadOnlySharedData()")]
         public static extern bool HasDynamicGILightmapTextures();
 

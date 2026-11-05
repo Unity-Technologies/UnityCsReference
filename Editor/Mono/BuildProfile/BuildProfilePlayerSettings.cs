@@ -176,6 +176,47 @@ namespace UnityEditor.Build.Profile
             }
         }
 
+        BuildProfilePlayerSettings CreatePlayerSettingsComponent()
+        {
+            if (BuildProfileContext.IsClassicPlatformProfile(this))
+                throw new InvalidOperationException($"The classic platform profile {name} can't have a {nameof(BuildProfilePlayerSettings)} component.");
+
+            CreatePlayerSettingsFromGlobal();
+            return buildProfilePlayerSettings;
+        }
+
+        void RemovePlayerSettingsComponent()
+        {
+            if (buildProfilePlayerSettings == null)
+            {
+                Debug.LogWarning($"The component {nameof(BuildProfilePlayerSettings)} does not exist in the build profile {name}. ");
+                return;
+            }
+
+            if (BuildProfileContext.activeProfile != this)
+            {
+                RemoveBuildProfilePlayerSettings();
+                EditorUtility.SetDirty(this);
+                return;
+            }
+
+            // Compare against the profile's values before the removal destroys them.
+            var namedBuildTarget = NamedBuildTarget.FromTargetAndSubtarget(buildTarget, (int)subtarget);
+            var profileDefineSymbols = PlayerSettings.GetScriptingDefineSymbols(namedBuildTarget);
+            var profileCompilerArguments = PlayerSettings.GetAdditionalCompilerArguments(namedBuildTarget);
+            BuildProfileModuleUtil.HandlePlayerSettingsChangedWithoutPrompt(this, null);
+
+            RemoveBuildProfilePlayerSettings();
+            EditorUtility.SetDirty(this);
+
+            if (profileDefineSymbols != PlayerSettings.GetScriptingDefineSymbols(namedBuildTarget) ||
+                !ArrayUtility.ArrayEquals(profileCompilerArguments, PlayerSettings.GetAdditionalCompilerArguments(namedBuildTarget)))
+            {
+                scriptingDefines = BuildProfileModuleUtil.RemoveInvalidScriptingDefines(scriptingDefines);
+                BuildProfileModuleUtil.RequestScriptCompilation(this);
+            }
+        }
+
         internal static void CleanUpPlayerSettingsForDeletedBuildProfiles(IList<BuildProfile> currentBuildProfiles)
         {
             TrySetProjectSettingsAssetAsGlobalManagerPlayerSettings();

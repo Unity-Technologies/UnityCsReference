@@ -247,6 +247,15 @@ namespace Unity.GraphToolkit.Editor
             UpdateSelectionVisuals(IsSelected());
         }
 
+        /// <inheritdoc />
+        public override void RemoveFromRootView()
+        {
+            if (this is IAnimatableView animatableView)
+                GraphView?.Animator.Stop(animatableView);
+
+            base.RemoveFromRootView();
+        }
+
         /// <summary>
         /// Updates the element so that it looks selected if <paramref name="selected"/> is true, or unselected otherwise.
         /// This will be called by UpdateElementSelection, but might also be called for displaying a selection state without changing the selection.

@@ -54,6 +54,7 @@ internal static partial class UIToolkitAuthoringSettings
     private const AutoOpenMode DefaultAutoOpenMode = AutoOpenMode.FromMainStage;
     private const string k_RectangleSelectionMode = "UIAuthoring.RectangleSelectionMode";
     private const RectangleSelectionMode DefaultRectangleSelectionMode = RectangleSelectionMode.AnyOverlap;
+    private const string k_SelectPickingModeIgnore = "UIAuthoring.SelectPickingModeIgnore";
 
     [AutoStaticsCleanupOnCodeReload] // subscribers re-subscribe per instance after a reload
     internal static event Action<UIHierarchyDisplayOptions> DisplayOptionsChanged;
@@ -158,6 +159,20 @@ internal static partial class UIToolkitAuthoringSettings
                 return;
             EditorUserSettings.SetConfigValue(k_RectangleSelectionMode, value.ToString());
             RectangleSelectionModeChanged?.Invoke(value);
+        }
+    }
+
+    // On by default: clicks, hover and rectangle selection in the UI Viewport, and clicks in the Scene view's UI Preview
+    // overlay, pick elements with picking-mode Ignore where they draw something, as UI Builder does (UUM-157821). Off,
+    // they skip them, as runtime picking does.
+    public static bool SelectPickingModeIgnore
+    {
+        get => !bool.TryParse(EditorUserSettings.GetConfigValue(k_SelectPickingModeIgnore), out var select) || select;
+        set
+        {
+            if (SelectPickingModeIgnore == value)
+                return;
+            EditorUserSettings.SetConfigValue(k_SelectPickingModeIgnore, value.ToString());
         }
     }
 }

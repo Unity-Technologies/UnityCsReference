@@ -186,12 +186,14 @@ namespace UnityEngine.Networking
             // below, whichever runs first; UnityWebRequest.Dispose() frees the native object and is not
             // safe to run twice.
             bool requestDisposed = false;
+            CancellationTokenRegistration abortRegistration = default;
             void DisposeRequest()
             {
                 if (requestDisposed)
                     return;
                 requestDisposed = true;
 
+                abortRegistration.Dispose();
                 downloadHandler?.Close();
                 unityWebRequest?.Dispose();
             }
@@ -207,7 +209,7 @@ namespace UnityEngine.Networking
                     unityWebRequest.certificateHandler = CertificateHandler;
                     unityWebRequest.disposeCertificateHandlerOnDispose = false; // The HttpMessageHandler is used for multiple requests
                 }
-                cancellationToken.Register(() =>
+                abortRegistration = cancellationToken.Register(() =>
                 {
                     unityWebRequest.Abort(); // Completed event will Dispose
                 });

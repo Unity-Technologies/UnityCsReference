@@ -63,6 +63,7 @@ namespace UnityEngine.UIElements.StyleSheets
             s_InitialStyle.visualData.Write().borderTopRightRadius = 0f;
             s_InitialStyle.layoutData.Write().borderTopWidth = 0f;
             s_InitialStyle.layoutData.Write().bottom = StyleKeyword.Auto.ToLength();
+            s_InitialStyle.rareData.Write().boxShadow = StyleKeyword.None.ToBoxShadow();
             s_InitialStyle.inheritedData.Write().color = Color.black;
             s_InitialStyle.layoutData.Write().columnGap = 0f;
             s_InitialStyle.rareData.Write().cursor = default;
@@ -180,6 +181,7 @@ namespace UnityEngine.UIElements.StyleSheets
         public static Length borderTopRightRadius => s_InitialStyle.visualData.Read().borderTopRightRadius;
         public static float borderTopWidth => s_InitialStyle.layoutData.Read().borderTopWidth;
         public static Length bottom => s_InitialStyle.layoutData.Read().bottom;
+        public static BoxShadow boxShadow => s_InitialStyle.rareData.Read().boxShadow;
         public static Color color => s_InitialStyle.inheritedData.Read().color;
         public static Length columnGap => s_InitialStyle.layoutData.Read().columnGap;
         public static Cursor cursor => s_InitialStyle.rareData.Read().cursor;

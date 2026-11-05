@@ -118,7 +118,7 @@ namespace UnityEditor
                 EditorGUI.BeginChangeCheck();
                 var lda = (LightingDataAsset)EditorGUILayout.ObjectField(Styles.LightingDataAsset, Lightmapping.lightingDataAsset, typeof(LightingDataAsset), true);
                 if (EditorGUI.EndChangeCheck())
-                    Lightmapping.lightingDataAsset = lda;
+                    Lightmapping.SetLightingDataAssetWithUndo(lda);
                 GUILayout.Space(10);
             }
             else
