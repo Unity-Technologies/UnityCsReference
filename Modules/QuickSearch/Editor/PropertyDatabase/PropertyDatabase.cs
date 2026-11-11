@@ -154,7 +154,7 @@ namespace UnityEditor.Search
         PropertyStringTable m_StringTable;
         PropertyDatabaseLock m_PropertyDatabaseLock;
 
-        internal static readonly int version = ((0x50 << 24) | (0x44 << 16) | 0x0007) ^ PropertyStringTable.version ^ ((GetUnityVersionMajorMinor().major & 0xffff) << 16 | GetUnityVersionMajorMinor().minor);
+        internal static readonly int version = ((0x50 << 24) | (0x44 << 16) | 0x0008) ^ PropertyStringTable.version ^ ((GetUnityVersionMajorMinor().major & 0xffff) << 16 | GetUnityVersionMajorMinor().minor);
 
         // This is used from the "version" field initializer above, which can run on a background thread the first
         // time PropertyDatabase is touched off the main thread (see TriggerBackgroundUpdate). Unlike

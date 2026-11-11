@@ -140,9 +140,9 @@ namespace UnityEditor.PackageManager.UI.Internal
             return packageVersion;
         }
 
-        public static UpmPackageVersion CreateWithCompleteInfo(IUpmPackageData packageData, PackageInfo packageInfo, bool isInstalled, IIOProxy ioProxy, IApplicationProxy applicationProxy, bool processLoadingError, TrustPolicyLevel trustPolicyLevel)
+        public static UpmPackageVersion CreateWithCompleteInfo(IUpmPackageData packageData, PackageInfo packageInfo, bool isInstalled, IIOProxy ioProxy, IApplicationProxy applicationProxy, bool processLoadingError, TrustPolicyLevel trustPolicyLevel, bool isSignatureValidationDisabled)
         {
-            var trustAndSignature = TrustAndSignatureHelper.GetTrustAndSignature(packageInfo, isInstalled);
+            var trustAndSignature = TrustAndSignatureHelper.GetTrustAndSignature(packageInfo, isInstalled, isSignatureValidationDisabled);
             var packageVersion = new UpmPackageVersion(packageInfo.name, packageInfo.version, packageData.availableRegistryType)
             {
                 m_IsFullyFetched = true,

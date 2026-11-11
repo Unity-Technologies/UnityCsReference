@@ -694,11 +694,17 @@ namespace Unity.U2D.Physics
         /// <summary>
         /// Get the current value of <see cref="PhysicsCoreSettings2D.contactFilterMode"/>.
         /// </summary>
+        /// <remarks>
+        /// This is the project-wide mode. A world uses it only while its <see cref="contactFilterModeOverride"/> is <see cref="PhysicsShape.ContactFilterModeOverride.Global"/>.
+        /// </remarks>
         public static PhysicsShape.ContactFilterMode contactFilterMode => PhysicsGlobal_GetContactFilterMode();
 
         /// <summary>
         /// Get the current value of <see cref="PhysicsCoreSettings2D.contactFilterGroupMode"/>.
         /// </summary>
+        /// <remarks>
+        /// This is the project-wide mode. A world uses it only while its <see cref="contactFilterGroupModeOverride"/> is <see cref="PhysicsShape.ContactFilterGroupModeOverride.Global"/>.
+        /// </remarks>
         public static PhysicsShape.ContactFilterGroupMode contactFilterGroupMode => PhysicsGlobal_GetContactFilterGroupMode();
 
         /// <summary>
@@ -1344,6 +1350,32 @@ namespace Unity.U2D.Physics
         /// See <see cref="bounceIterations"/>.
         /// </remarks>
         public readonly bool bouncePropagation { get => PhysicsWorld_GetBouncePropagation(this); set => PhysicsWorld_SetBouncePropagation(this, value); }
+
+        /// <summary>
+        /// Controls whether two shapes in this world need both of their contact filters to accept each other before they make contact, or only one.
+        /// Global makes the world use the contact filter mode from the project settings, and follow it if that setting changes.
+        /// </summary>
+        /// <remarks>
+        /// Changing the mode makes the world check every existing contact against the new mode.
+        /// Contacts the new mode rejects end, and pairs of shapes it now allows start making contact on the next simulation step.
+        /// This can be expensive in a world with many shapes, so set the mode before the world has contacts, typically with <see cref="PhysicsWorldDefinition.contactFilterModeOverride"/>, rather than changing it during gameplay.
+        /// The project-wide mode is reported by <see cref="contactFilterMode"/>.
+        /// See <see cref="PhysicsShape.ContactFilterModeOverride"/>.
+        /// </remarks>
+        public readonly PhysicsShape.ContactFilterModeOverride contactFilterModeOverride { get => PhysicsWorld_GetContactFilterModeOverride(this); set => PhysicsWorld_SetContactFilterModeOverride(this, value); }
+
+        /// <summary>
+        /// Controls how the group index of each shape's contact filter affects whether two shapes in this world make contact.
+        /// Global makes the world use the contact filter group mode from the project settings, and follow it if that setting changes.
+        /// </summary>
+        /// <remarks>
+        /// Changing the mode makes the world check every existing contact against the new mode.
+        /// Contacts the new mode rejects end, and pairs of shapes it now allows start making contact on the next simulation step.
+        /// This can be expensive in a world with many shapes, so set the mode before the world has contacts, typically with <see cref="PhysicsWorldDefinition.contactFilterGroupModeOverride"/>, rather than changing it during gameplay.
+        /// The project-wide mode is reported by <see cref="contactFilterGroupMode"/>.
+        /// See <see cref="PhysicsShape.ContactFilterGroupModeOverride"/>.
+        /// </remarks>
+        public readonly PhysicsShape.ContactFilterGroupModeOverride contactFilterGroupModeOverride { get => PhysicsWorld_GetContactFilterGroupModeOverride(this); set => PhysicsWorld_SetContactFilterGroupModeOverride(this, value); }
 
         /// <summary>
         /// The contact hit event threshold controls the collision speed needed to generate a contact hit event, usually in meters per second.

@@ -125,6 +125,35 @@ namespace UnityEditor.Build.Analysis
         }
 
         /// <summary>
+        /// Format a build step name for display, splitting a name that is a bare identifier
+        /// (e.g. "ProducePlayerScriptAssemblies") into words.
+        /// </summary>
+        public static string FormatStepName(string name)
+        {
+            return IsBareIdentifier(name) ? ObjectNames.NicifyVariableName(name) : name;
+        }
+
+        private static bool IsBareIdentifier(string name)
+        {
+            if (string.IsNullOrEmpty(name))
+                return false;
+
+            var hasWordBoundary = false;
+            for (var i = 0; i < name.Length; i++)
+            {
+                // Step names also carry prose, asset paths and object names, whose spacing and
+                // casing have to survive verbatim so they still match what is in the project.
+                if (!char.IsLetterOrDigit(name[i]))
+                    return false;
+
+                if (i > 0 && char.IsLower(name[i - 1]) && char.IsUpper(name[i]))
+                    hasWordBoundary = true;
+            }
+
+            return hasWordBoundary;
+        }
+
+        /// <summary>
         /// Format a percentage value
         /// </summary>
         public static string FormatPercentage(double value, int decimals = 1)

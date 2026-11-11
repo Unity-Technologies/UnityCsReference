@@ -340,15 +340,6 @@ namespace Unity.Profiling.Editor
             using (Markers.updateModule.Auto())
             {
                 m_ChartModelBuilder.Update(ProfilerWindow.selectedFrameIndex);
-
-                int frameCount = ProfilerUserSettings.frameCount;
-                int firstEmptyFrame = firstFrameIndexWithHistoryOffset;
-                int firstFrame = Mathf.Max(ProfilerDriver.firstFrameIndex, firstEmptyFrame);
-                m_ChartModelBuilder.UpdateData(firstEmptyFrame, firstFrame, frameCount);
-                m_ChartModelBuilder.UpdateOverlayData(firstEmptyFrame);
-                m_ChartModelBuilder.UpdateScaleValuesIfNecessary(firstEmptyFrame, firstFrame, frameCount);
-                m_ChartModelBuilder.UpdateSelectedData(ProfilerWindow.selectedFrameIndex);
-
                 m_ChartViewController.Update();
 
                 m_LastUpdatedFrameIndex = ProfilerDriver.lastFrameIndex;

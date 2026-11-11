@@ -3454,6 +3454,9 @@
     <Compile Include="..\..\Editor\Mono\SceneView\SceneViewPiercingMenu.cs">
       <Link>Editor\Mono\SceneView\SceneViewPiercingMenu.cs</Link>
     </Compile>
+    <Compile Include="..\..\Editor\Mono\SceneView\SceneViewSearchFilter.cs">
+      <Link>Editor\Mono\SceneView\SceneViewSearchFilter.cs</Link>
+    </Compile>
     <Compile Include="..\..\Editor\Mono\SceneView\SceneViewStageHandling.cs">
       <Link>Editor\Mono\SceneView\SceneViewStageHandling.cs</Link>
     </Compile>
@@ -11299,6 +11302,9 @@
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\UI\HelpBoxes\PackageSignatureHelpBox.cs">
       <Link>Modules\PackageManagerUI\Editor\UI\HelpBoxes\PackageSignatureHelpBox.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\PackageManagerUI\Editor\UI\HelpBoxes\SignatureValidationDisabledHelpBox.cs">
+      <Link>Modules\PackageManagerUI\Editor\UI\HelpBoxes\SignatureValidationDisabledHelpBox.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\UI\InformationCards\InformationCard.cs">
       <Link>Modules\PackageManagerUI\Editor\UI\InformationCards\InformationCard.cs</Link>
     </Compile>
@@ -11535,6 +11541,9 @@
     </Compile>
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\UI\ScopedRegistries\ScopedRegistryAddedPopup.cs">
       <Link>Modules\PackageManagerUI\Editor\UI\ScopedRegistries\ScopedRegistryAddedPopup.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\PackageManagerUI\Editor\UI\SecuritySettings\ClosedNetworkSettings.cs">
+      <Link>Modules\PackageManagerUI\Editor\UI\SecuritySettings\ClosedNetworkSettings.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\UI\SecuritySettings\SecuritySettings.cs">
       <Link>Modules\PackageManagerUI\Editor\UI\SecuritySettings\SecuritySettings.cs</Link>
@@ -18139,7 +18148,7 @@
     </PropertyGroup>
   </Target>
   <ItemGroup>
-    <Analyzer Include="/tmp/uitoolkit_gen_2zvzs4os/Unity.UIToolkit.SourceGenerator.dll" />
+    <Analyzer Include="/tmp/uitoolkit_gen_nh3jbtdi/Unity.UIToolkit.SourceGenerator.dll" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="10.0.8" />

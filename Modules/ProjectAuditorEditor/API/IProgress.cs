@@ -66,7 +66,7 @@ namespace Unity.ProjectAuditor.Editor
     /// </summary>
     public class AsyncProgressState
     {
-        internal int Id;
+        internal int Id = -1;
         internal int Current;
         internal int Total;
     }

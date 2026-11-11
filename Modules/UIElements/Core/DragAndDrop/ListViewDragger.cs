@@ -579,7 +579,7 @@ namespace UnityEngine.UIElements
                 parentId = dragPosition.parentId,
                 childIndex = dragPosition.childIndex,
                 dragAndDropPosition = dragPosition.dropPosition,
-                dragAndDropData = DragAndDropUtility.GetDragAndDrop(m_Target.panel).data,
+                dragAndDropData = dragAndDrop.data,
                 modifiers = modifiers
             };
         }

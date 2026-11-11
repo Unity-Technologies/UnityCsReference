@@ -14,6 +14,7 @@ using UnityEditor;
 using UnityEditor.UIElements;
 using UnityEngine;
 using UnityEngine.UIElements;
+using Label = UnityEngine.UIElements.Label;
 using Object = UnityEngine.Object;
 using SerializedObject = UnityEditor.SerializedObject;
 
@@ -112,11 +113,13 @@ namespace Unity.GraphToolkit.Editor
 
         List<FieldWrapper> m_Wrappers;
         SerializedProperty m_Property;
+        bool m_PropertyHasVisibleChildren;
 
         CustomPropertyDrawerAdapter(List<FieldWrapper> wrappers, SerializedProperty property)
         {
             m_Wrappers = wrappers;
             m_Property = property;
+            m_PropertyHasVisibleChildren = property.hasVisibleChildren;
         }
 
         /// <summary>
@@ -209,7 +212,7 @@ namespace Unity.GraphToolkit.Editor
         /// <see cref="PropertyField"/> handles <see cref="SerializedObject.Update"/> and <see cref="SerializedObject.ApplyModifiedProperties"/> internally to effectively update the <see cref="SerializedObject"/>.
         /// It also calls <see cref="PropertyDrawer.CreatePropertyGUI"/>, we do not need to call it manually.
         /// </remarks>
-        internal VisualElement Build(string labelText)
+        internal PropertyField Build(string labelText)
         {
             // We force the use of a PropertyField: we cannot control what users use to draw their property, but we need to make sure the SerializeObject is updated properly.
             // PropertyField handles SerializedObject.Update() and ApplyModifiedProperties() internally. It also calls PropertyDrawer.CreatePropertyGUI, we do not need to call it manually.
@@ -218,6 +221,110 @@ namespace Unity.GraphToolkit.Editor
             // Handle the case where the property is a DictionaryView.
             AdjustDictionaryViewWidth(propertyField);
             return propertyField;
+        }
+
+        /// <summary>
+        /// Checks whether the property drawer displays a label for the property.
+        /// </summary>
+        /// <param name="propertyField">The field returned by <see cref="Build"/>.</param>
+        /// <param name="labelText">The label passed to <see cref="Build"/>.</param>
+        /// <returns>True if the drawer displays a label, false otherwise.</returns>
+        /// <remarks>The result is only reliable once the <see cref="PropertyField"/> is bound and has built its content.</remarks>
+        internal bool DrawerDisplaysLabel(PropertyField propertyField, string labelText)
+        {
+            if (IsDrawnWithIMGUI(propertyField))
+                return !ShouldRemoveIMGUIDrawerLabel();
+
+            // IMGUI content wrapped by a UI Toolkit drawer cannot be inspected, assume it draws the label it receives.
+            // IMGUI content inside a nested PropertyField draws the label of that PropertyField, so it is ignored unless that label is the same.
+            foreach (var imguiContainer in propertyField.Query<IMGUIContainer>().Build())
+            {
+                if (!IsInsideNestedPropertyFieldWithOtherLabel(imguiContainer, propertyField, labelText) && IsDisplayedInside(imguiContainer, propertyField))
+                    return true;
+            }
+
+            foreach (var label in propertyField.Query<Label>().Build())
+            {
+                if (IsLabelForProperty(label, labelText) && IsDisplayedInside(label, propertyField))
+                    return true;
+            }
+
+            return false;
+        }
+
+        // Field and foldout labels can add an annotation in brackets to the label, such as units in "Speed (m/s)".
+        // Any other text must match exactly, so a child field such as "SpeedLimit" or "Speed Limit" is not mistaken for the label.
+        static bool IsLabelForProperty(Label label, string labelText)
+        {
+            var text = label.text;
+            if (text == labelText)
+                return true;
+
+            var isFieldOrFoldoutLabel = label.ClassListContains(BaseField<object>.labelUssClassName) || label.ClassListContains(Foldout.textUssClassName);
+            if (!isFieldOrFoldoutLabel || text == null || !text.StartsWith(labelText, StringComparison.Ordinal))
+                return false;
+
+            var suffixStart = labelText.Length;
+            while (suffixStart < text.Length && char.IsWhiteSpace(text[suffixStart]))
+                suffixStart++;
+
+            return suffixStart < text.Length && (text[suffixStart] == '(' || text[suffixStart] == '[');
+        }
+
+        /// <summary>
+        /// Removes the label passed to the drawer if the <see cref="PropertyField"/> draws it with IMGUI and the property has no children.
+        /// </summary>
+        /// <param name="propertyField">The field returned by <see cref="Build"/>.</param>
+        /// <remarks>
+        /// Changing the label rebinds the <see cref="PropertyField"/>, which builds the drawer content again.
+        /// </remarks>
+        internal void RemoveIMGUIDrawerLabel(PropertyField propertyField)
+        {
+            if (IsDrawnWithIMGUI(propertyField) && ShouldRemoveIMGUIDrawerLabel() && propertyField.label != string.Empty)
+                propertyField.label = string.Empty;
+        }
+
+        // IMGUI content cannot be inspected, so there is no way to know whether an IMGUI drawer drew the label it received.
+        // A drawer for a property without children draws a single value, and it may ignore its label: it is given no label and the field displays its own.
+        // A drawer for a property with children usually draws a foldout: removing its label would leave the foldout arrow without text, so it keeps its label.
+        // The property height cannot be used instead, because a collapsed foldout is as high as a single value.
+        bool ShouldRemoveIMGUIDrawerLabel()
+        {
+            return !m_PropertyHasVisibleChildren;
+        }
+
+        // When the drawer does not create UI Toolkit content, the PropertyField draws it in its own IMGUIContainer.
+        static bool IsDrawnWithIMGUI(PropertyField propertyField)
+        {
+            foreach (var child in propertyField.Children())
+            {
+                if (child is IMGUIContainer)
+                    return true;
+            }
+
+            return false;
+        }
+
+        static bool IsInsideNestedPropertyFieldWithOtherLabel(VisualElement element, VisualElement root, string labelText)
+        {
+            for (var current = element.hierarchy.parent; current != null && current != root; current = current.hierarchy.parent)
+            {
+                if (current is PropertyField nestedPropertyField)
+                    return nestedPropertyField.label != labelText;
+            }
+
+            return false;
+        }
+
+        static bool IsDisplayedInside(VisualElement element, VisualElement root)
+        {
+            for (var current = element; current != null && current != root; current = current.hierarchy.parent)
+            {
+                if (current.resolvedStyle.display == DisplayStyle.None || current.resolvedStyle.visibility == Visibility.Hidden)
+                    return false;
+            }
+
+            return true;
         }
 
         static void AdjustDictionaryViewWidth(PropertyField propertyField)

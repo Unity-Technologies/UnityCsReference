@@ -36,6 +36,16 @@ namespace Unity.GraphToolkit.Editor
         /// </summary>
         public static readonly string multilineUssClassName = ussClassName.WithUssModifier(GraphElementHelper.multilineUssModifier);
 
+        /// <summary>
+        /// The USS class added to <see cref="CustomizableModelPropertyField"/> when it displays its own label next to a field drawn by a custom property drawer.
+        /// </summary>
+        public static readonly string customDrawerUssClassName = ussClassName.WithUssModifier("custom-drawer");
+
+        /// <summary>
+        /// Raised when the label displayed next to a field drawn by a custom property drawer is shown or hidden.
+        /// </summary>
+        internal event Action customDrawerLabelVisibilityChanged;
+
         [AutoStaticsCleanupOnCodeReload]
         // Rebuilt by the custom-builder reflection scan the next time a field is created, since that path
         // rescans whenever this is null.
@@ -135,6 +145,57 @@ namespace Unity.GraphToolkit.Editor
         protected object ValueToDisplay(object value)
         {
             return m_ValueToDisplay != null ? m_ValueToDisplay(value) : value;
+        }
+
+        /// <summary>
+        /// Builds the field using a custom property drawer and sets it up with a label if the drawer does not display one.
+        /// </summary>
+        /// <param name="adapter">The adapter used to build the field.</param>
+        /// <param name="fieldTooltip">The tooltip of the field.</param>
+        internal void SetupCustomPropertyDrawerField(CustomPropertyDrawerAdapter adapter, string fieldTooltip)
+        {
+            var propertyField = adapter.Build(Label);
+            Label labelElement = null;
+            if (!string.IsNullOrEmpty(Label))
+            {
+                labelElement = new Label(Label);
+                hierarchy.Add(labelElement);
+
+                // The drawer content is only built once the PropertyField is bound, which happens after it is added to a panel.
+                propertyField.RegisterCallback<GeometryChangedEvent>(_ => UpdateCustomPropertyDrawerLabel(adapter, propertyField, labelElement));
+            }
+
+            Setup(labelElement, propertyField, fieldTooltip);
+
+            // Hidden until the drawer content shows whether the drawer displays its own label.
+            if (labelElement != null)
+                SetCustomDrawerLabelDisplayed(labelElement, false);
+        }
+
+        void UpdateCustomPropertyDrawerLabel(CustomPropertyDrawerAdapter adapter, PropertyField propertyField, Label labelElement)
+        {
+            adapter.RemoveIMGUIDrawerLabel(propertyField);
+
+            // Derived classes can replace the label with their own.
+            var showLabel = labelElement == LabelElement && !adapter.DrawerDisplaysLabel(propertyField, Label);
+            var visibilityChanged = showLabel != labelElement.ClassListContains(labelUssClassName);
+
+            SetCustomDrawerLabelDisplayed(labelElement, showLabel);
+
+            if (visibilityChanged)
+                customDrawerLabelVisibilityChanged?.Invoke();
+        }
+
+        void SetCustomDrawerLabelDisplayed(Label labelElement, bool displayed)
+        {
+            labelElement.style.display = displayed ? StyleKeyword.Null : DisplayStyle.None;
+
+            // FieldsInspector aligns the width of all labels with this class, a hidden label must not take part.
+            labelElement.EnableInClassList(labelUssClassName, displayed);
+            labelElement.EnableInClassList(PropertyField.labelUssClassName, displayed);
+            labelElement.EnableInClassList(BaseField<object>.labelUssClassName, displayed);
+            EnableInClassList(customDrawerUssClassName, displayed);
+            EnableInClassList(PropertyField.ussClassName, displayed);
         }
 
         /// <summary>

@@ -393,6 +393,10 @@ namespace UnityEditor.Search
 
         static void PrepareSearchSession(SearchContext context, SearchSession session, Hash128 sessionGuid, SearchFlags options, IAsyncIEnumerableHandlerUpdateMechanism<SearchItem> searchSessionUpdateMechanism)
         {
+            // A context can be disposed on another thread before the session it requested is prepared
+            if (session.isClosed)
+                return;
+
             // Stop the search session every time we prepare a new search.
             session.Stop();
             context.searchFinishTime = context.searchStartTime = DateTime.UtcNow.Ticks;
@@ -432,22 +436,9 @@ namespace UnityEditor.Search
 
             // Start the session since we are about to fetch items.
             session.Start();
-            var enumerationEnded = false;
-            var searchItemEnumerator = session.ItemsEnumerator;
-            if (searchItemEnumerator != null && context.options.HasAny(SearchFlags.Synchronous))
-            {
-                while (searchItemEnumerator.MoveNext())
-                {
-                    if (searchItemEnumerator.Current != null)
-                        firstSessionBatch.Add(searchItemEnumerator.Current);
-                }
-
-                enumerationEnded = true;
-            }
-            else
-            {
-                enumerationEnded = !session.FetchSome(firstSessionBatch, k_MaxFetchTime);
-            }
+            // A synchronous search fetches everything right away
+            var maxFetchTime = context.options.HasAny(SearchFlags.Synchronous) ? TimeSpan.MaxValue : k_MaxFetchTime;
+            var enumerationEnded = !session.FetchSome(firstSessionBatch, maxFetchTime);
 
             if (firstSessionBatch.Count > 0)
                 session.SendItems(firstSessionBatch);

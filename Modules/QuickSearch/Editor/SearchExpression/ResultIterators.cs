@@ -270,7 +270,19 @@ namespace UnityEditor.Search
                     }
 
                     OnAggregateResult(argContext, searchItem);
+                    if (context.IsBreaking())
+                    {
+                        context.ResetIterationControl();
+                        break;
+                    }
                     yield return null;
+                }
+
+                // An argument without results must not keep the aggregation of the previous argument
+                if (!started)
+                {
+                    argContext = context;
+                    OnAggregateStart(argContext);
                 }
 
                 if (m_OnAggregateToSearchItem != null)

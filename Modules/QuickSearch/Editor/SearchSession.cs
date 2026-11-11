@@ -34,7 +34,9 @@ namespace UnityEditor.Search
         IAsyncIEnumerableHandlerUpdateMechanism<T> m_UpdateMechanism;
         protected IEnumerator<T> m_ItemsEnumerator = null;
 
-        public IEnumerator<T> ItemsEnumerator => m_ItemsEnumerator;
+        // The handler can be stopped from any thread, so the enumeration is serialized with Start, Stop and Reset
+        protected readonly object m_SyncRoot = new object();
+
         public IAsyncIEnumerableHandlerUpdateMechanism<T> UpdateMechanism => m_UpdateMechanism;
 
         public virtual void Update(List<T> newItems, TimeSpan maxFetchTime)
@@ -54,15 +56,15 @@ namespace UnityEditor.Search
 
         public virtual void Start()
         {
-            m_UpdateMechanism?.Start();
+            lock (m_SyncRoot)
+                m_UpdateMechanism?.Start();
         }
 
         public virtual void Stop()
         {
-            m_UpdateMechanism?.Stop();
-
-            lock (this)
+            lock (m_SyncRoot)
             {
+                m_UpdateMechanism?.Stop();
                 m_ItemsEnumerator?.Dispose();
                 m_ItemsEnumerator = null;
             }
@@ -70,14 +72,14 @@ namespace UnityEditor.Search
 
         public virtual void Reset(IEnumerator<T> itemEnumerator, IAsyncIEnumerableHandlerUpdateMechanism<T> updateMechanism)
         {
-            // Remove and add the event handler in case it was already removed.
-            Stop();
-            m_UpdateMechanism?.DetachFromHandler(this);
-            m_UpdateMechanism = updateMechanism;
-            m_UpdateMechanism.AttachToHandler(this);
-            if (itemEnumerator != null)
+            lock (m_SyncRoot)
             {
-                lock (this)
+                // Remove and add the event handler in case it was already removed.
+                Stop();
+                m_UpdateMechanism?.DetachFromHandler(this);
+                m_UpdateMechanism = updateMechanism;
+                m_UpdateMechanism.AttachToHandler(this);
+                if (itemEnumerator != null)
                     m_ItemsEnumerator = itemEnumerator;
             }
         }
@@ -91,24 +93,27 @@ namespace UnityEditor.Search
         /// <returns>Returns true if there is still some results to fetch later or false if we've fetched everything remaining.</returns>
         public bool FetchSome(List<T> items, int quantity, bool doNotCountNull)
         {
-            if (m_ItemsEnumerator == null)
-                return false;
-
-            var atEnd = false;
-            for (var i = 0; i < quantity && !atEnd; ++i)
+            lock (m_SyncRoot)
             {
-                atEnd = !m_ItemsEnumerator.MoveNext();
-                var item = atEnd ? default : m_ItemsEnumerator.Current;
-                if (item == null)
-                {
-                    if (doNotCountNull)
-                        --i;
-                    continue;
-                }
-                items.Add(item);
-            }
+                if (m_ItemsEnumerator == null)
+                    return false;
 
-            return !atEnd;
+                var atEnd = false;
+                for (var i = 0; i < quantity && !atEnd; ++i)
+                {
+                    atEnd = !m_ItemsEnumerator.MoveNext();
+                    var item = atEnd ? default : m_ItemsEnumerator.Current;
+                    if (item == null)
+                    {
+                        if (doNotCountNull)
+                            --i;
+                        continue;
+                    }
+                    items.Add(item);
+                }
+
+                return !atEnd;
+            }
         }
 
         /// <summary>
@@ -121,25 +126,28 @@ namespace UnityEditor.Search
         /// <returns>Returns true if there is still some results to fetch later or false if we've fetched everything remaining.</returns>
         public bool FetchSome(List<T> items, int quantity, bool doNotCountNull, TimeSpan maxFetchTime)
         {
-            if (m_ItemsEnumerator == null)
-                return false;
-
-            var atEnd = false;
-            var timeToFetch = Stopwatch.StartNew();
-            for (var i = 0; i < quantity && !atEnd && timeToFetch.Elapsed < maxFetchTime; ++i)
+            lock (m_SyncRoot)
             {
-                atEnd = !m_ItemsEnumerator.MoveNext();
-                var item = atEnd ? default : m_ItemsEnumerator.Current;
-                if (item == null)
-                {
-                    if (doNotCountNull)
-                        --i;
-                    continue;
-                }
-                items.Add(item);
-            }
+                if (m_ItemsEnumerator == null)
+                    return false;
 
-            return !atEnd;
+                var atEnd = false;
+                var timeToFetch = Stopwatch.StartNew();
+                for (var i = 0; i < quantity && !atEnd && timeToFetch.Elapsed < maxFetchTime; ++i)
+                {
+                    atEnd = !m_ItemsEnumerator.MoveNext();
+                    var item = atEnd ? default : m_ItemsEnumerator.Current;
+                    if (item == null)
+                    {
+                        if (doNotCountNull)
+                            --i;
+                        continue;
+                    }
+                    items.Add(item);
+                }
+
+                return !atEnd;
+            }
         }
 
         /// <summary>
@@ -150,20 +158,23 @@ namespace UnityEditor.Search
         /// <returns>Returns true if there is still some results to fetch later or false if we've fetched everything remaining.</returns>
         public bool FetchSome(List<T> items, TimeSpan maxFetchTime)
         {
-            if (m_ItemsEnumerator == null)
-                return false;
-
-            var atEnd = false;
-            var timeToFetch = Stopwatch.StartNew();
-            while (!atEnd && timeToFetch.Elapsed < maxFetchTime)
+            lock (m_SyncRoot)
             {
-                atEnd = !m_ItemsEnumerator.MoveNext();
-                var item = atEnd ? default : m_ItemsEnumerator.Current;
-                if (!atEnd && item != null)
-                    items.Add(item);
-            }
+                if (m_ItemsEnumerator == null)
+                    return false;
 
-            return !atEnd;
+                var atEnd = false;
+                var timeToFetch = Stopwatch.StartNew();
+                while (!atEnd && timeToFetch.Elapsed < maxFetchTime)
+                {
+                    atEnd = !m_ItemsEnumerator.MoveNext();
+                    var item = atEnd ? default : m_ItemsEnumerator.Current;
+                    if (!atEnd && item != null)
+                        items.Add(item);
+                }
+
+                return !atEnd;
+            }
         }
 
         /// <summary>
@@ -173,12 +184,15 @@ namespace UnityEditor.Search
         /// <returns>True if we successfully retrieved an item, false otherwise.</returns>
         public bool FetchOne(out T item)
         {
-            item = default;
-            if (m_ItemsEnumerator == null)
-                return false;
-            var atEnd = !m_ItemsEnumerator.MoveNext();
-            item = atEnd ? default : m_ItemsEnumerator.Current;
-            return !atEnd;
+            lock (m_SyncRoot)
+            {
+                item = default;
+                if (m_ItemsEnumerator == null)
+                    return false;
+                var atEnd = !m_ItemsEnumerator.MoveNext();
+                item = atEnd ? default : m_ItemsEnumerator.Current;
+                return !atEnd;
+            }
         }
     }
 
@@ -204,6 +218,7 @@ namespace UnityEditor.Search
 
         SearchSessionContext m_Context;
         CancellationTokenSource m_CancelSource;
+        bool m_Closed;
 
         /// <summary>
         /// Checks if this async search session is active.
@@ -215,7 +230,24 @@ namespace UnityEditor.Search
 
         public SearchAggregateEnumerator<SearchItem> aggregateEnumerator => m_ItemsEnumerator as SearchAggregateEnumerator<SearchItem>;
 
-        internal CancellationToken cancelToken => m_CancelSource?.Token ?? CancellationToken.None;
+        internal CancellationToken cancelToken
+        {
+            get
+            {
+                // The token source can be disposed by another thread stopping the session
+                lock (m_SyncRoot)
+                    return m_CancelSource?.Token ?? CancellationToken.None;
+            }
+        }
+
+        internal bool isClosed
+        {
+            get
+            {
+                lock (m_SyncRoot)
+                    return m_Closed;
+            }
+        }
 
         /// <summary>
         /// Resolved a batch of items asynchronously.
@@ -233,22 +265,36 @@ namespace UnityEditor.Search
         /// <param name="updateMechanism">The update mechanism for this session. This dictates how the Update method is called.</param>
         public void Reset(SearchSessionContext sessionContext, IAsyncIEnumerableHandlerUpdateMechanism<SearchItem> updateMechanism)
         {
-            base.Reset(new SearchAggregateEnumerator<SearchItem>(SearchAggregateEnumerationStyle.RoundRobin), updateMechanism);
-            m_Context = sessionContext;
+            lock (m_SyncRoot)
+            {
+                if (m_Closed)
+                    return;
 
-            // Reset calls Stop, so no need to redo the same thing here.
-            // Just create a new cancellation token source.
-            m_CancelSource = new CancellationTokenSource();
+                base.Reset(new SearchAggregateEnumerator<SearchItem>(SearchAggregateEnumerationStyle.RoundRobin), updateMechanism);
+                m_Context = sessionContext;
+
+                // Reset calls Stop, so no need to redo the same thing here.
+                // Just create a new cancellation token source.
+                m_CancelSource = new CancellationTokenSource();
+            }
         }
 
         public override void Start()
         {
-            // In case Reset was not called.
-            m_CancelSource ??= new CancellationTokenSource();
+            lock (m_SyncRoot)
+            {
+                if (m_Closed)
+                    return;
 
-            searchInProgress = true;
-            sessionStarted?.Invoke(m_Context.searchContext);
-            base.Start();
+                // In case Reset was not called.
+                m_CancelSource ??= new CancellationTokenSource();
+
+                searchInProgress = true;
+                base.Start();
+
+                // Raised inside the lock, so that sessionEnded cannot be raised before it by another thread
+                sessionStarted?.Invoke(m_Context.searchContext);
+            }
         }
 
         /// <summary>
@@ -256,23 +302,51 @@ namespace UnityEditor.Search
         /// </summary>
         public override void Stop()
         {
-            m_CancelSource?.Cancel();
-            m_CancelSource?.Dispose();
-            m_CancelSource = null;
+            bool wasInProgress;
+            SearchContext endedContext;
+            lock (m_SyncRoot)
+            {
+                m_CancelSource?.Cancel();
+                m_CancelSource?.Dispose();
+                m_CancelSource = null;
 
-            if (searchInProgress)
-                sessionEnded?.Invoke(m_Context.searchContext);
+                wasInProgress = searchInProgress;
+                endedContext = m_Context.searchContext;
+                searchInProgress = false;
+                base.Stop();
+            }
 
-            searchInProgress = false;
-            base.Stop();
+            // Raised after releasing the lock, so that a handler does not run while holding it, except when called from Reset
+            if (wasInProgress)
+                sessionEnded?.Invoke(endedContext);
+        }
+
+        /// <summary>
+        /// Prevent the session from being reset or started again. It does not stop a session in progress.
+        /// </summary>
+        /// <remarks>This prevents a session requested from another thread from starting after its context was disposed.</remarks>
+        internal void Close()
+        {
+            lock (m_SyncRoot)
+                m_Closed = true;
         }
 
         public void AddProviderEnumerator(SearchProviderFetchEnumerator providerEnumerator)
         {
-            if (aggregateEnumerator == null)
-                throw new InvalidOperationException("Cannot add a provider enumerator to a non-aggregate enumerator.");
+            lock (m_SyncRoot)
+            {
+                // The session was closed by another thread while it was being prepared
+                if (m_Closed)
+                {
+                    providerEnumerator.Dispose();
+                    return;
+                }
 
-            aggregateEnumerator.AddEnumerator(providerEnumerator);
+                if (aggregateEnumerator == null)
+                    throw new InvalidOperationException("Cannot add a provider enumerator to a non-aggregate enumerator.");
+
+                aggregateEnumerator.AddEnumerator(providerEnumerator);
+            }
         }
 
         public int GetProviderCount()

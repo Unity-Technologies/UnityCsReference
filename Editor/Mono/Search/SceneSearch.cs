@@ -119,6 +119,11 @@ namespace UnityEditor.SearchService
             return engineImp.GetActiveSearchEngine();
         }
 
+        internal static ISceneSearchEngineV2 GetSearchEngine(string searchEngineName)
+        {
+            return engineImp.GetEngine(searchEngineName);
+        }
+
         internal static void SetActiveSearchEngine(string searchEngineName)
         {
             engineImp.SetActiveSearchEngine(searchEngineName);

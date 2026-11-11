@@ -4,7 +4,6 @@
 
 using System.Collections.Generic;
 using System.ComponentModel;
-using System.Linq;
 using Object = UnityEngine.Object;
 
 namespace UnityEditor.Search
@@ -35,9 +34,15 @@ namespace UnityEditor.Search
 
             var defaultValueArg = c.args[1];
             var defaultValueItems = defaultValueArg.Execute(c);
-            #pragma warning disable UAC2011 // Avoid Linq
-            var firstItem = defaultValueItems.FirstOrDefault();
-#pragma warning restore UAC2011
+            SearchItem firstItem = null;
+            foreach (var defaultValueItem in defaultValueItems)
+            {
+                if (defaultValueItem != null)
+                {
+                    firstItem = defaultValueItem;
+                    break;
+                }
+            }
             if (firstItem == null)
                 yield break;
             item.value = firstItem.value;

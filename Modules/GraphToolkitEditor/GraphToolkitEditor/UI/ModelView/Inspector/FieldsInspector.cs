@@ -143,20 +143,29 @@ namespace Unity.GraphToolkit.Editor
                         m_LabelFontSize = field.LabelElement.resolvedStyle.fontSize;
                  });
 
+                 // The label of a custom property drawer field is hidden once the drawer content is built, which can happen after the layout pass.
+                 if (field is CustomizableModelPropertyField customizableField)
+                     customizableField.customDrawerLabelVisibilityChanged += ScheduleUpdateLayout;
+
                  m_Fields.Add(field);
 
                  m_Root.Add(field);
             }
 
-            if (!m_RelayoutScheduled)
-            {
-                m_RelayoutScheduled = true;
-                m_Root.schedule.Execute(UpdateLayout).ExecuteLater(0);
-            }
+            ScheduleUpdateLayout();
 
             m_Root.EnableInClassList(emptyUssClassName, m_Fields.Count == 0);
 
             EnsurePropertyViewIsHiddenIfNeeded();
+        }
+
+        void ScheduleUpdateLayout()
+        {
+            if (m_RelayoutScheduled)
+                return;
+
+            m_RelayoutScheduled = true;
+            m_Root.schedule.Execute(UpdateLayout).ExecuteLater(0);
         }
 
         void EnsurePropertyViewIsHiddenIfNeeded()
@@ -179,10 +188,10 @@ namespace Unity.GraphToolkit.Editor
         /// </summary>
         public void UpdateLayout()
         {
+            m_RelayoutScheduled = false;
             if (m_Root?.panel == null || !m_AreFieldsAttached)
                 return;
 
-            m_RelayoutScheduled = false;
             if (SetupLabelWidth)
             {
                 float minLabelWidth = 0;

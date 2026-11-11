@@ -21,6 +21,9 @@ namespace Unity.Collections
         public static FormatError Append<T>(ref this T fs, Unicode.Rune rune)
             where T : unmanaged, INativeList<byte>, IUTF8Bytes
         {
+            if (!Unicode.IsValidCodePoint(rune.value))
+                return FormatError.Overflow;
+
             var len = fs.Length;
             var runeLen = rune.LengthInUtf8Bytes();
             if (!fs.TryResize(len + runeLen, NativeArrayOptions.UninitializedMemory))
@@ -75,6 +78,9 @@ namespace Unity.Collections
         public static FormatError Append<T>(ref this T fs, Unicode.Rune rune, int count)
             where T : unmanaged, INativeList<byte>, IUTF8Bytes
         {
+            if (!Unicode.IsValidCodePoint(rune.value))
+                return FormatError.Overflow;
+
             var origLength = fs.Length;
 
             if (!fs.TryResize(origLength + rune.LengthInUtf8Bytes() * count, NativeArrayOptions.UninitializedMemory))

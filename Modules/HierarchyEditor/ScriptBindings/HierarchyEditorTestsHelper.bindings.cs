@@ -38,6 +38,15 @@ namespace Unity.Hierarchy.Editor
 
         internal static string GetSearchableWindowQuery(SearchableEditorWindow window) => window.m_SearchFilter;
 
+        internal static void SetSearchableWindowQuery(SearchableEditorWindow window, string query,
+            SearchableEditorWindow.SearchMode mode = SearchableEditorWindow.SearchMode.All)
+            => window.SetSearchFilter(query, mode, true, false);
+
+        internal static string GetSceneViewSearchFilterQuery() => SceneViewSearchFilter.query;
+
+        internal static string BuildSceneViewSearchFilterQuery(string searchFilter, SearchableEditorWindow.SearchMode mode)
+            => SceneView.BuildSearchFilterQuery(searchFilter, mode);
+
         internal static string[] GetNodeNames(Hierarchy hierarchy, HierarchyNode[] nodes)
         {
             if (nodes.Length == 0)

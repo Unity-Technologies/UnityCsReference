@@ -108,7 +108,7 @@ internal class InProjectPackagesMonitor : BaseService<IInProjectPackagesMonitor>
 
     private void CheckForUntrustedPackages(PackagesChangeArgs args)
     {
-        if (Unsupported.IsPackageTrustValidationDisabled)
+        if (Unsupported.IsPackageTrustValidationDisabled || m_SettingsProxy.isSignatureValidationDisabled)
             return;
 
         IEnumerable<IPackage> PackagesToCheck()
@@ -126,7 +126,7 @@ internal class InProjectPackagesMonitor : BaseService<IInProjectPackagesMonitor>
             }
         }
 
-        var viewData = TrustWindow.CreateViewData(m_UpmCache, PackagesToCheck(), m_SettingsProxy.trustPolicyLevel, m_Application.shortUnityVersion);
+        var viewData = TrustWindow.CreatePassiveViewData(m_UpmCache, PackagesToCheck(), m_SettingsProxy.trustPolicyLevel, m_Application.shortUnityVersion, m_SettingsProxy.hasBypassPackageTrustEntitlement);
         if (viewData == null)
             return;
 

@@ -38,7 +38,7 @@ namespace UnityEditor
 
         internal static IEnumerable<ViewpointProxyTypeCache> GetSupportedCameraComponents()
         {
-            foreach (var entry in s_Cache)
+            foreach (var entry in caches)
             {
                 bool found = false;
                 foreach (Type interfaceType in entry.translatorType.GetInterfaces())

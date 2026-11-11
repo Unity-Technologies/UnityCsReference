@@ -186,77 +186,13 @@ namespace UnityEditor.Search.Providers
             Refresh();
         }
 
-        private void InvalidateObject(EntityId entityId)
-        {
-            if (UnityEngine.Object.FindObjectFromInstanceID(entityId) is Component c)
-                queryEngine.InvalidateObject(c.gameObject.GetEntityId());
-            else
-                queryEngine.InvalidateObject(entityId);
-        }
-
-        private void InvalidateObjectAndRefs(EntityId entityId)
-        {
-            if (UnityEngine.Object.FindObjectFromInstanceID(entityId) is Component c)
-                queryEngine.InvalidateObjectAndRefs(c.gameObject.GetEntityId());
-            else
-                queryEngine.InvalidateObjectAndRefs(entityId);
-        }
-
         private void OnObjectChanged(ref ObjectChangeEventStream stream)
         {
             if (m_SceneQueryEngine == null)
                 return;
 
-            for (int i = 0; i < stream.length; ++i)
-            {
-                var eventType = stream.GetEventType(i);
-                switch (eventType)
-                {
-                    case ObjectChangeKind.None:
-                    case ObjectChangeKind.CreateAssetObject:
-                    case ObjectChangeKind.DestroyAssetObject:
-                    case ObjectChangeKind.ChangeAssetObjectProperties:
-                        break;
-
-                    case ObjectChangeKind.ChangeScene:
-                    case ObjectChangeKind.CreateGameObjectHierarchy:
-                    case ObjectChangeKind.DestroyGameObjectHierarchy:
-                        InvalidateScene();
-                        break;
-
-                    case ObjectChangeKind.ChangeGameObjectStructureHierarchy:
-                    {
-                        stream.GetChangeGameObjectStructureHierarchyEvent(i, out var e);
-                        InvalidateObjectAndRefs(e.entityId);
-                    }
-                    break;
-                    case ObjectChangeKind.ChangeGameObjectStructure:
-                    {
-                        stream.GetChangeGameObjectStructureEvent(i, out var e);
-                        InvalidateObjectAndRefs(e.entityId);
-                    }
-                    break;
-                    case ObjectChangeKind.ChangeGameObjectParent:
-                    {
-                        stream.GetChangeGameObjectParentEvent(i, out var e);
-                        InvalidateObjectAndRefs(e.entityId);
-                    }
-                    break;
-                    case ObjectChangeKind.ChangeGameObjectOrComponentProperties:
-                    {
-                        stream.GetChangeGameObjectOrComponentPropertiesEvent(i, out var e);
-                        InvalidateObject(e.entityId);
-                    }
-                    break;
-                    case ObjectChangeKind.UpdatePrefabInstances:
-                    {
-                        stream.GetUpdatePrefabInstancesEvent(i, out var e);
-                        for (int idIndex = 0; idIndex < e.entityIds.Length; ++idIndex)
-                            InvalidateObject(e.entityIds[idIndex]);
-                    }
-                    break;
-                }
-            }
+            if (m_SceneQueryEngine.InvalidateChanges(ref stream))
+                InvalidateScene();
         }
 
         public static IEnumerable<SearchAction> CreateActionHandlers(string providerId)

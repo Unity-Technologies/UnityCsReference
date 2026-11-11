@@ -26,8 +26,10 @@ public static partial class LocalizationEditorSettings
     /// windows other than the one making it need to see, such as renaming a key or changing its metadata. Editor UI
     /// listens to this to refresh itself.
     /// </remarks>
-    // Re-subscribed on every code load by AssetProviderEditors.Initialize().
-    [AutoStaticsCleanup] // holds subscriber delegates
+    // Re-subscribed on every code load by AssetProviderEditors.Initialize(). Cleared only on code reload, not on
+    // play mode transitions: otherwise entering or exiting play mode without a domain reload drops that subscription
+    // (and those of open windows) without anything re-subscribing, leaving the collection scan cache stale.
+    [AutoStaticsCleanupOnCodeReload] // holds subscriber delegates
     [IgnoreForUAL0015("Event re-subscribed on every code load by AssetProviderEditors.Initialize()")]
     public static event Action CollectionsChanged;
 

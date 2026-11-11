@@ -200,6 +200,26 @@ namespace Unity.U2D.Physics
         public int bounceIterations { readonly get => m_BounceIterations; set => m_BounceIterations = Mathf.Clamp(value, PhysicsConstants.MinBounceIterations, PhysicsConstants.MaxBounceIterations); }
 
         /// <summary>
+        /// Controls whether two shapes in the world need both of their contact filters to accept each other before they make contact, or only one.
+        /// Set this to Global for the world to use the contact filter mode from the project settings.
+        /// </summary>
+        /// <remarks>
+        /// Set this before you create the world. Changing it on a world that already has contacts makes the world check every existing contact, which can be expensive.
+        /// See <see cref="PhysicsShape.ContactFilterModeOverride"/> and <see cref="PhysicsWorld.contactFilterModeOverride"/>.
+        /// </remarks>
+        public PhysicsShape.ContactFilterModeOverride contactFilterModeOverride { readonly get => m_ContactFilterModeOverride; set => m_ContactFilterModeOverride = value; }
+
+        /// <summary>
+        /// Controls how the group index of each shape's contact filter affects whether two shapes in the world make contact.
+        /// Set this to Global for the world to use the contact filter group mode from the project settings.
+        /// </summary>
+        /// <remarks>
+        /// Set this before you create the world. Changing it on a world that already has contacts makes the world check every existing contact, which can be expensive.
+        /// See <see cref="PhysicsShape.ContactFilterGroupModeOverride"/> and <see cref="PhysicsWorld.contactFilterGroupModeOverride"/>.
+        /// </remarks>
+        public PhysicsShape.ContactFilterGroupModeOverride contactFilterGroupModeOverride { readonly get => m_ContactFilterGroupModeOverride; set => m_ContactFilterGroupModeOverride = value; }
+
+        /// <summary>
         /// Controls whether the bounce passes also solve contacts that have no bounciness.
         /// With this disabled, only contacts with a bounciness above zero take part in the bounce passes.
         /// A bounce then does not carry through neighboring bodies in the same pass, so a stack of boxes on a bouncy surface bounces from the bottom box up rather than together.
@@ -381,6 +401,8 @@ namespace Unity.U2D.Physics
         [SerializeField] bool m_BouncePropagation;
         [SerializeField] [Min(0.0f)] float m_BounceThreshold;
         [SerializeField] [Range(PhysicsConstants.MinBounceIterations, PhysicsConstants.MaxBounceIterations)] int m_BounceIterations;
+        [SerializeField] PhysicsShape.ContactFilterModeOverride m_ContactFilterModeOverride;
+        [SerializeField] PhysicsShape.ContactFilterGroupModeOverride m_ContactFilterGroupModeOverride;
         [SerializeField] [Min(0.0f)] float m_ContactHitEventThreshold;
         [SerializeField] [Min(0.0f)] float m_ContactFrequency;
         [SerializeField] [Min(0.0f)] float m_ContactDamping;

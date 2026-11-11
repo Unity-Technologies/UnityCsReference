@@ -21,20 +21,27 @@ internal enum TrustAndSignature
     LimitedTrust,
     UntrustedNoSignature,
     UntrustedInvalidSignature,
+    SignatureValidationDisabled,
 }
 
 internal static class TrustAndSignatureHelper
 {
-    public static TrustAndSignature GetTrustAndSignature(PackageInfo packageInfo, bool isInstalled)
+    public static TrustAndSignature GetTrustAndSignature(PackageInfo packageInfo, bool isInstalled, bool isSignatureValidationDisabled)
     {
         if (!isInstalled)
             return TrustAndSignature.NotApplicable;
 
+        if (isSignatureValidationDisabled)
+            return TrustAndSignature.SignatureValidationDisabled;
+
         return GetTrustAndSignature(packageInfo.trustLevel, packageInfo.signature, packageInfo.source == PackageSource.BuiltIn);
     }
 
-    public static TrustAndSignature GetTrustAndSignature(AssetPackageInfo assetPackageInfo)
+    public static TrustAndSignature GetTrustAndSignature(AssetPackageInfo assetPackageInfo, bool isSignatureValidationDisabled)
     {
+        if (isSignatureValidationDisabled)
+            return TrustAndSignature.SignatureValidationDisabled;
+
         return GetTrustAndSignature(assetPackageInfo.trustLevel, assetPackageInfo.signature, isBuiltIn: false);
     }
 
@@ -57,6 +64,7 @@ internal static class TrustAndSignatureHelper
             case TrustAndSignature.FullTrustValidSignature:
             case TrustAndSignature.FullTrustNoSignature:
             case TrustAndSignature.FullTrustBuiltInPackage:
+            case TrustAndSignature.SignatureValidationDisabled:
             default:
                 return false;
         }

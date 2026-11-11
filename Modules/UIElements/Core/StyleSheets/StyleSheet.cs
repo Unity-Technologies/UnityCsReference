@@ -1032,7 +1032,26 @@ namespace UnityEngine.UIElements
                 handle.valueIndex = valueIndex;
             }
 
+            // The resolver reads var() names by the id cached for their string, which only SetupReferences fills
+            // (on a rebuild or an import): without this, a new var() name resolved to nothing and a renamed one
+            // kept resolving the old name until the style sheet was imported again.
+            CacheVariableNameId(handle.valueIndex, variableName);
             MarkAsChanged();
+        }
+
+        // Caches the UniqueStyleString id of the var() name at this index of strings[], growing the cache with
+        // strings[] as needed (new slots are -1, "not referenced by a var()").
+        void CacheVariableNameId(int stringIndex, string variableName)
+        {
+            if (variableNameIds.Length < strings.Length)
+            {
+                var oldLength = variableNameIds.Length;
+                Array.Resize(ref variableNameIds, strings.Length);
+                for (int i = oldLength; i < variableNameIds.Length; i++)
+                    variableNameIds[i] = -1;
+            }
+
+            variableNameIds[stringIndex] = new UniqueStyleString(variableName).id;
         }
 
         [VisibleToOtherModules("UnityEditor.UIBuilderModule")]

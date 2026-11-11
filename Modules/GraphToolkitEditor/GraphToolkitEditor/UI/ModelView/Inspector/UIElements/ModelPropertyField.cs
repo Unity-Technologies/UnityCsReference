@@ -471,8 +471,7 @@ namespace Unity.GraphToolkit.Editor
 
             if (m_CustomPropertyDrawerAdapter != null)
             {
-                var field = m_CustomPropertyDrawerAdapter.Build(Label);
-                Setup(null, field, fieldTooltip);
+                SetupCustomPropertyDrawerField(m_CustomPropertyDrawerAdapter, fieldTooltip);
             }
 
             if (Field == null)

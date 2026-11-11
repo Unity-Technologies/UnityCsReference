@@ -320,6 +320,11 @@ namespace UnityEditor.SearchService
             return GetDefaultEngine();
         }
 
+        public TEngine GetEngine(string searchEngineName)
+        {
+            return engines.Find(engine => engine.name == searchEngineName);
+        }
+
         public void SetActiveSearchEngine(string searchEngineName, bool notify = true)
         {
             if (string.Equals(activeSearchEngineName, searchEngineName, StringComparison.Ordinal))

@@ -131,6 +131,14 @@ namespace Unity.Profiling.Editor.UI
             {
                 // Expected when cancelling. Don't report error.
             }
+            catch (Exception) when (cancellationToken.IsCancellationRequested)
+            {
+                // Profiler data can be cleared before the builder observes cancellation.
+            }
+            catch (Exception) when (IsRangeOutsideLoadedData(range))
+            {
+                // Profiler data was cleared or trimmed while the builder was reading frames.
+            }
             catch (Exception e)
             {
                 Debug.LogException(e);
@@ -162,6 +170,13 @@ namespace Unity.Profiling.Editor.UI
                         DeferIfNotCancelled(() => onDetailsProviderReady(detailsProvider), cancellationToken);
                 }
             }
+        }
+
+        bool IsRangeOutsideLoadedData(Range range)
+        {
+            int firstFrameIndex = m_DataService.FirstFrameIndex;
+            int frameCount = m_DataService.FrameCount;
+            return frameCount == 0 || range.Start.Value < firstFrameIndex || range.End.Value > firstFrameIndex + frameCount;
         }
 
         private void ShowContentViewsAndHideNoDataView()

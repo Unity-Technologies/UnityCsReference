@@ -56,7 +56,7 @@ namespace UnityEditor.Search
 
         public PropertyStringHashAndLength(string str)
         {
-            hash = (uint)str.GetHashCode();
+            hash = (uint)HashingUtils.GetHashCode(str);
             var strByteCount = PropertyStringTable.encoding.GetByteCount(str);
             length = GetSevenBitEncodedIntByteSize(strByteCount) + strByteCount;
         }
@@ -80,7 +80,7 @@ namespace UnityEditor.Search
         public const int stringTableFullSymbol = -1;
         public const int emptyStringSymbol = 0;
 
-        internal const int version = 0x50535400 | 0x02;
+        internal const int version = 0x50535400 | 0x03;
         internal const int hashFactor = 2; // Number of slots for symbols with same hash
         internal const int stringLengthByteSize = sizeof(int);
         internal const int symbolByteSize = sizeof(int);

@@ -303,9 +303,12 @@ namespace UnityEditor.PackageManager.UI.Internal
             addAndRemoveOperation.logErrorInConsole = true;
         }
 
-       private bool FindTrustIssuePackagesAndShowPopUp(PackageCollection requestResult)
+       internal bool FindTrustIssuePackagesAndShowPopUp(PackageCollection requestResult)
        {
-            var viewData = TrustWindow.CreateViewData(m_UpmCache, requestResult, addAndRemoveOperation.operationType, m_Application.shortUnityVersion, m_SettingsProxy.trustPolicyLevel);
+            if (m_SettingsProxy.isSignatureValidationDisabled)
+                return true;
+
+            var viewData = TrustWindow.CreateActiveViewData(m_UpmCache, requestResult, addAndRemoveOperation.operationType, m_Application.shortUnityVersion, m_SettingsProxy.trustPolicyLevel, m_SettingsProxy.hasBypassPackageTrustEntitlement);
             if (viewData != null)
                 return TrustWindow.Show(viewData) == TrustWindowReturnValue.ProceedAnyway;
             return true;

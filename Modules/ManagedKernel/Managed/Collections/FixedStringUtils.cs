@@ -106,8 +106,13 @@ namespace Unity.Collections
                 exponent10 = 0;
                 return;
             }
-            var mantissa2 = (ufu.uintValue & ((1 << 23) - 1)) | (1 << 23);
-            var exponent2 = (int)(ufu.uintValue >> 23) - 127 - 23;
+            var mantissa2 = ufu.uintValue & ((1 << 23) - 1);
+            var biasedExponent = (int)(ufu.uintValue >> 23);
+            if (biasedExponent == 0)
+                biasedExponent = 1;
+            else
+                mantissa2 |= 1 << 23;
+            var exponent2 = biasedExponent - 127 - 23;
             mantissa10 = mantissa2;
             exponent10 = exponent2;
             if (exponent2 > 0)

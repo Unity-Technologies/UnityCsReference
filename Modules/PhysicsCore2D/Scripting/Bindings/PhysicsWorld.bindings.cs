@@ -49,6 +49,10 @@ namespace Unity.U2D.Physics
         [NativeMethod(Name = "PhysicsWorld::GetBounceThreshold", IsThreadSafe = true)] extern internal static float PhysicsWorld_GetBounceThreshold(PhysicsWorld world);
         [NativeMethod(Name = "PhysicsWorld::SetBounceIterations", IsThreadSafe = true)] extern internal static void PhysicsWorld_SetBounceIterations(PhysicsWorld world, int value);
         [NativeMethod(Name = "PhysicsWorld::GetBounceIterations", IsThreadSafe = true)] extern internal static int PhysicsWorld_GetBounceIterations(PhysicsWorld world);
+        [NativeMethod(Name = "PhysicsWorld::SetContactFilterModeOverride", IsThreadSafe = true)] extern internal static void PhysicsWorld_SetContactFilterModeOverride(PhysicsWorld world, PhysicsShape.ContactFilterModeOverride value);
+        [NativeMethod(Name = "PhysicsWorld::GetContactFilterModeOverride", IsThreadSafe = true)] extern internal static PhysicsShape.ContactFilterModeOverride PhysicsWorld_GetContactFilterModeOverride(PhysicsWorld world);
+        [NativeMethod(Name = "PhysicsWorld::SetContactFilterGroupModeOverride", IsThreadSafe = true)] extern internal static void PhysicsWorld_SetContactFilterGroupModeOverride(PhysicsWorld world, PhysicsShape.ContactFilterGroupModeOverride value);
+        [NativeMethod(Name = "PhysicsWorld::GetContactFilterGroupModeOverride", IsThreadSafe = true)] extern internal static PhysicsShape.ContactFilterGroupModeOverride PhysicsWorld_GetContactFilterGroupModeOverride(PhysicsWorld world);
         [NativeMethod(Name = "PhysicsWorld::SetBouncePropagation", IsThreadSafe = true)] extern internal static void PhysicsWorld_SetBouncePropagation(PhysicsWorld world, bool value);
         [NativeMethod(Name = "PhysicsWorld::GetBouncePropagation", IsThreadSafe = true)] extern internal static bool PhysicsWorld_GetBouncePropagation(PhysicsWorld world);
         [NativeMethod(Name = "PhysicsWorld::SetContactHitEventThreshold", IsThreadSafe = true)] extern internal static void PhysicsWorld_SetContactHitEventThreshold(PhysicsWorld world, float value);

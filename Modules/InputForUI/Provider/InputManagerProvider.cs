@@ -41,7 +41,6 @@ namespace UnityEngine.InputForUI
         private PenData _lastPenData;
 
         private Dictionary<int, int> _touchFingerIdToFingerIndex = new();
-        private int _touchNextFingerIndex;
         private PointerState _touchState;
 
         private const float kSmallestReportedMovementSqrDist = 0.01f;
@@ -71,7 +70,6 @@ namespace UnityEngine.InputForUI
             _lastPenData = default;
 
             _touchFingerIdToFingerIndex.Clear();
-            _touchNextFingerIndex = 0;
             _touchState.Reset();
         }
 
@@ -127,6 +125,14 @@ namespace UnityEngine.InputForUI
             NextPreviousNavigation(currentTime);
         }
 
+        private int LowestFreeFingerIndex()
+        {
+            var index = 0;
+            while (_touchFingerIdToFingerIndex.ContainsValue(index))
+                ++index;
+            return index;
+        }
+
         private bool CheckTouchEvents(DiscreteTime currentTime)
         {
             var allAreReleased = true;
@@ -135,14 +141,25 @@ namespace UnityEngine.InputForUI
             {
                 var touch = _input.GetTouch(i);
 
+                // A held-still finger must keep its finger index: resetting the map while fingers
+                // are down gives the next finger that moves an index (and pointer id) already owned
+                // by another finger.
+                if (touch.phase != TouchPhase.Ended && touch.phase != TouchPhase.Canceled)
+                    allAreReleased = false;
+
                 if (touch.type == TouchType.Indirect || touch.phase == TouchPhase.Stationary)
                     continue;
 
                 if (!_touchFingerIdToFingerIndex.TryGetValue(touch.fingerId, out var fingerIndex))
                 {
-                    fingerIndex = _touchNextFingerIndex++;
+                    fingerIndex = LowestFreeFingerIndex();
                     _touchFingerIdToFingerIndex.Add(touch.fingerId, fingerIndex);
                 }
+
+                // Free the index when its finger lifts, so new taps while other fingers are held
+                // reuse freed indices instead of exhausting the pointer range.
+                if (touch.phase == TouchPhase.Ended || touch.phase == TouchPhase.Canceled)
+                    _touchFingerIdToFingerIndex.Remove(touch.fingerId);
 
                     // Flip Y Coordinates.
                 var position = MultiDisplayBottomLeftToPanelPosition(touch.position, out var targetDisplay);
@@ -157,7 +174,6 @@ namespace UnityEngine.InputForUI
                     {
                         type = PointerEvent.Type.ButtonPressed;
                         button = PointerEvent.Button.FingerInTouch;
-                        allAreReleased = false;
                         _touchState.OnButtonDown(currentTime, button);
                         break;
                     }
@@ -176,10 +192,7 @@ namespace UnityEngine.InputForUI
                         break;
                     }
                     case TouchPhase.Moved:
-                    {
-                        allAreReleased = false;
                         break;
-                    }
                 }
 
                 EventProvider.Dispatch(Event.From(new PointerEvent()
@@ -210,10 +223,7 @@ namespace UnityEngine.InputForUI
             }
 
             if (allAreReleased)
-            {
-                _touchNextFingerIndex = 0;
                 _touchFingerIdToFingerIndex.Clear();
-            }
 
             return touchWasReported;
         }

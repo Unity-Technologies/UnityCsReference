@@ -87,20 +87,20 @@ namespace UnityEditor.PackageManager.UI.Internal
             sortedVersions.Add(versionToAdd);
         }
 
-        public UpmVersionList(IUpmPackageData packageData, PackageTag tagsToExclude, IIOProxy ioProxy, IApplicationProxy applicationProxy, bool processLoadingError, TrustPolicyLevel trustPolicyLevel)
+        public UpmVersionList(IUpmPackageData packageData, PackageTag tagsToExclude, IIOProxy ioProxy, IApplicationProxy applicationProxy, bool processLoadingError, TrustPolicyLevel trustPolicyLevel, bool isSignatureValidationDisabled)
         {
             var allSortedVersions = new List<UpmPackageVersion>(packageData.availableVersions.compatible.Length + 1);
             foreach (var versionString in packageData.availableVersions.compatible)
             {
                 var packageInfo = packageData.GetSearchInfo(versionString);
-                var version = packageInfo != null ? UpmPackageVersion.CreateWithCompleteInfo(packageData, packageInfo, false, ioProxy, applicationProxy, processLoadingError, trustPolicyLevel) : UpmPackageVersion.CreateWithIncompleteInfo(packageData, versionString);
+                var version = packageInfo != null ? UpmPackageVersion.CreateWithCompleteInfo(packageData, packageInfo, false, ioProxy, applicationProxy, processLoadingError, trustPolicyLevel, isSignatureValidationDisabled) : UpmPackageVersion.CreateWithIncompleteInfo(packageData, versionString);
                 allSortedVersions.Add(version);
             }
 
             UpmPackageVersion installedVersion = null;
             if (packageData.installedInfo != null)
             {
-                installedVersion = UpmPackageVersion.CreateWithCompleteInfo(packageData, packageData.installedInfo, true, ioProxy, applicationProxy, processLoadingError, trustPolicyLevel);
+                installedVersion = UpmPackageVersion.CreateWithCompleteInfo(packageData, packageData.installedInfo, true, ioProxy, applicationProxy, processLoadingError, trustPolicyLevel, isSignatureValidationDisabled);
                 AddToSortedVersions(allSortedVersions, installedVersion);
                 if (installedVersion.HasTag(PackageTag.Experimental))
                     tagsToExclude &= ~(PackageTag.Experimental | PackageTag.PreRelease);

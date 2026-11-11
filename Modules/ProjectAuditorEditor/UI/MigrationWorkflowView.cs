@@ -47,7 +47,16 @@ namespace Unity.ProjectAuditor.Editor.UI
             set => SessionState.SetBool(k_BackupAcknowledgedKey, value);
         }
 
-        internal const string k_TargetPipelineKey = "ProjectAuditor.MigrationWizard.TargetPipeline";
+        const string k_AnalysisCompletedKey = "ProjectAuditor.MigrationWizard.AnalysisCompleted";
+
+        // Keeps the Analyze step marked complete while a re-analysis is in progress, so the wizard stays on the Fix step.
+        static bool AnalysisCompleted
+        {
+            get => SessionState.GetBool(k_AnalysisCompletedKey, false);
+            set => SessionState.SetBool(k_AnalysisCompletedKey, value);
+        }
+
+        internal const string k_TargetPipelineKey ="ProjectAuditor.MigrationWizard.TargetPipeline";
 
         // The pending choice for the next analysis. Once a matching Report exists, SyncTargetPipelineFromReport
         // seeds this from the Report instead, so a reloaded Report is reflected rather than overridden.
@@ -112,8 +121,9 @@ namespace Unity.ProjectAuditor.Editor.UI
                 IsComplete = (_) => MigrationToURPUtilities.IsUrpPackageInstalled(),
                 DrawUI = () =>
                 {
-                    GUILayout.FlexibleSpace();
+                    GUILayout.Space(EditorGUIUtility.singleLineHeight);
                     DrawRenderPipelineUI();
+                    GUILayout.FlexibleSpace();
                     return DrawBackupConfirmation() && (m_UrpAddRequest == null);
                 },
 
@@ -154,24 +164,65 @@ namespace Unity.ProjectAuditor.Editor.UI
 
                 DrawButtonUI = (ProjectAuditorWindow window, Step step, bool enabled, bool converterRunning) =>
                 {
+                    GUILayout.FlexibleSpace();
+
                     if (CenteredButton(enabled ? step.Contents[0] : step.Contents[1]) && ConfirmAssignUrpAsset())
                     {
                         MigrationToURPUtilities.ApplyTargetPipelineToQualitySettings(SelectedTargetPipeline);
                         GUIUtility.ExitGUI();
                     }
+                }
+            },
+            new Step
+            {
+                Title = L10n.Tr("Analyze", null),
+                Heading = L10n.TextContent("Analyze which issues can be converted automatically and which need manual conversion.", null, null, null),
 
-                    GUILayout.FlexibleSpace();
+                IsComplete = (ProjectAuditorWindow window) =>
+                {
+                    if (window.m_ViewManager.HasPendingCategories())
+                        return AnalysisCompleted;
+
+                    AnalysisCompleted = IsReportValidForMigration(out var _);
+                    return AnalysisCompleted;
+                },
+
+                DrawButtonUI = (ProjectAuditorWindow window, Step step, bool enabled, bool converterRunning) =>
+                {
+                    // Start Analysis
+                    using (new CenteredColumn())
+                    {
+                        GUILayout.FlexibleSpace();
+
+                        GUIContent buttonLabel;
+                        if (window.m_ViewManager.HasPendingCategories())
+                        {
+                            int frame = Utility.GetStatusWheelFrame();
+                            buttonLabel = HomePage.Contents.AnalyzeButtonInProgress[frame];
+                        }
+                        else
+                        {
+                            buttonLabel = enabled ? HomePage.Contents.AnalyzeButton : HomePage.Contents.AnalyzeButtonDisabled;
+                        }
+                        
+                        using (new EditorGUI.DisabledScope(window.m_ViewManager.HasPendingCategories()))
+                        {
+                            if (CenteredButton(buttonLabel) && HomePage.ConfirmDiscardCurrentReport())
+                            {
+                                Reanalyze(window, PageId.None);
+                                GUIUtility.ExitGUI();
+                            }
+                        }
+                    }
                 }
             },
             new Step
             {
                 Title = L10n.Tr("Fix Issues", null),
-                Heading = L10n.TextContent("Analyze which issues can be converted automatically and which need manual conversion.", null, null, null),
+                Heading = L10n.TextContent("Fix the migration issues. Some may be converted automatically, and others may need manual conversion.", null, null, null),
 
                 IsComplete = (ProjectAuditorWindow window) =>
                 {
-                    if (!IsReportValidForMigration(out var _))
-                        return false;
                     if (window.m_ViewManager.HasPendingCategories())
                         return false;
                     return GetSummaryView(window).TotalIssueCount == 0;
@@ -185,93 +236,80 @@ namespace Unity.ProjectAuditor.Editor.UI
 
                 DrawButtonUI = (ProjectAuditorWindow window, Step step, bool enabled, bool converterRunning) =>
                 {
-                    if (IsReportValidForMigration(out var _))
+                    var summaryView = GetSummaryView(window);
+                    bool analysisInProgress = window.m_ViewManager.HasPendingCategories();
+
+                    // Total issues
+                    var content = Utility.TempContent(string.Format(Contents.TotalIssues, summaryView.TotalIssueCount));
+                    GUILayout.Label(content, SharedStyles.LargeLabel);
+                    GUILayout.Space(10);
+
+                    // Render Pipeline Converter
+                    GUIContent pipelineConverterLabel = Utility.TempContent(string.Format(Contents.ConverterIssues, summaryView.RenderPipelineConverterIssueCount));
+                    GUILayout.Label(pipelineConverterLabel);
+                    using (new EditorGUI.DisabledScope((summaryView.RenderPipelineConverterIssueCount == 0) || converterRunning || analysisInProgress))
                     {
-                        var summaryView = GetSummaryView(window);
+                        EditorGUILayout.BeginHorizontal();
 
-                        // Total issues
-                        var content = Utility.TempContent(string.Format(Contents.TotalIssues, summaryView.TotalIssueCount));
-                        GUILayout.Label(content, SharedStyles.LargeLabel);
-                        GUILayout.Space(10);
-
-                        // Render Pipeline Converter
-                        GUIContent pipelineConverterLabel = Utility.TempContent(string.Format(Contents.ConverterIssues, summaryView.RenderPipelineConverterIssueCount));
-                        GUILayout.Label(pipelineConverterLabel);
-                        using (new EditorGUI.DisabledScope((summaryView.RenderPipelineConverterIssueCount == 0) || converterRunning))
+                        GUIContent runContent = Contents.RunConverterButton;
+                        if (converterRunning)
                         {
-                            EditorGUILayout.BeginHorizontal();
-
-                            GUIContent runContent = Contents.RunConverterButton;
-                            if (converterRunning)
-                            {
-                                int frame = Utility.GetStatusWheelFrame();
-                                runContent = Contents.RunningConverterButton[frame];
-                            }
-
-                            if (GUILayout.Button(runContent, GUILayout.Width(HomePage.k_ButtonWidth)))
-                            {
-                                OnRunConverter();
-                                GUIUtility.ExitGUI();
-                            }
-
-                            GUILayout.Space(8);
-
-                            if (GUILayout.Button(Contents.OpenConverterButton, GUILayout.Width(HomePage.k_ButtonWidth)))
-                            {
-                                MigrationToURPUtilities.OpenRenderPipelineConverter(null, null);
-                                GUIUtility.ExitGUI();
-                            }
-
-                            EditorGUILayout.EndHorizontal();
+                            int frame = Utility.GetStatusWheelFrame();
+                            runContent = Contents.RunningConverterButton[frame];
                         }
 
-                        GUILayout.Space(10);
-
-                        // Manual fixes (go to summary)
-                        GUIContent manualFixesLabel = Utility.TempContent(string.Format(Contents.ManualIssues, summaryView.ManualIssueCount));
-                        GUILayout.Label(manualFixesLabel);
-                        if (GUILayout.Button(Contents.GoToManualFixesButton, GUILayout.Width(HomePage.k_ButtonWidth)))
+                        if (GUILayout.Button(runContent, GUILayout.Width(HomePage.k_ButtonWidth)))
                         {
-                            window.GotoCategory(IssueCategory.MigrateToURPSummary);
+                            OnRunConverter();
                             GUIUtility.ExitGUI();
                         }
 
-                        GUILayout.Space(24);
+                        GUILayout.Space(8);
+
+                        if (GUILayout.Button(Contents.OpenConverterButton, GUILayout.Width(HomePage.k_ButtonWidth)))
+                        {
+                            MigrationToURPUtilities.OpenRenderPipelineConverter(null, null);
+                            GUIUtility.ExitGUI();
+                        }
+
+                        EditorGUILayout.EndHorizontal();
                     }
 
-                    // Start Analysis
+                    GUILayout.Space(10);
+
+                    // Re-analyze
+                    GUIContent reanalyzeLabel;
+                    if (analysisInProgress)
+                    {
+                        int frame = Utility.GetStatusWheelFrame();
+                        reanalyzeLabel = HomePage.Contents.AnalyzeButtonInProgress[frame];
+                    }
+                    else
+                    {
+                        GUILayout.Label(Contents.RefreshReport);
+                        reanalyzeLabel = enabled ? Contents.ReanalyzeButton : HomePage.Contents.AnalyzeButtonDisabled;
+                    }
+                    using (new EditorGUI.DisabledScope(analysisInProgress || converterRunning))
+                    {
+                        if (GUILayout.Button(reanalyzeLabel, GUILayout.Width(HomePage.k_ButtonWidth)) && HomePage.ConfirmDiscardCurrentReport())
+                        {
+                            Reanalyze(window, PageId.None);
+                            GUIUtility.ExitGUI();
+                        }
+                    }
+
+                    GUILayout.FlexibleSpace();
+
+                    // Go to summary
                     using (new CenteredColumn())
                     {
-                        GUIContent buttonLabel;
-                        if (window.m_ViewManager.HasPendingCategories())
-                        {
-                            int frame = Utility.GetStatusWheelFrame();
-                            buttonLabel = HomePage.Contents.AnalyzeButtonInProgress[frame];
-                        }
-                        else if (window.m_Report == null || !window.m_Report.IsValid())
-                        {
-                            buttonLabel = enabled ? HomePage.Contents.AnalyzeButton : HomePage.Contents.AnalyzeButtonDisabled;
-                        }
-                        else if (!IsReportValidForMigration(out var reason))
-                        {
-                            DrawInvalidReportReason(reason);
+                        GUIContent manualFixesLabel = Utility.TempContent(string.Format(Contents.ManualIssues, summaryView.ManualIssueCount));
+                        GUILayout.Label(manualFixesLabel, SharedStyles.TextAreaCentered);
 
-                            buttonLabel = enabled ? Contents.ReanalyzeButton : HomePage.Contents.AnalyzeButtonDisabled;
-                        }
-                        else
+                        if (CenteredButton(Contents.GoToManualFixesButton))
                         {
-                            using (new CenteredRow())
-                                GUILayout.Label(Contents.RefreshReport, SharedStyles.TextAreaCentered);
-                            buttonLabel = enabled ? Contents.ReanalyzeButton : HomePage.Contents.AnalyzeButtonDisabled;
-                        }
-
-                        using (new EditorGUI.DisabledScope(window.m_ViewManager.HasPendingCategories() || converterRunning))
-                        {
-                            if (CenteredButton(buttonLabel) && HomePage.ConfirmDiscardCurrentReport())
-                            {
-                                Reanalyze(window, PageId.None);
-                                GUIUtility.ExitGUI();
-                            }
+                            window.GotoCategory(IssueCategory.MigrateToURPSummary);
+                            GUIUtility.ExitGUI();
                         }
                     }
                 }
@@ -618,7 +656,6 @@ namespace Unity.ProjectAuditor.Editor.UI
             DrawInfoRow(Contents.CurrentRenderPipeline, currentName);
             GUILayout.Space(4);
             DrawInfoRow(Contents.TargetRenderPipeline, MigrationToURPUtilities.Contents.URP);
-            GUILayout.Space(32);
         }
 
         void DrawTargetPipelineDropdown()

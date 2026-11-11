@@ -102,6 +102,11 @@ namespace UnityEngine.UIElements
         public event Action layoutRequested;
 
         /// <summary>
+        /// Called after the layout has been performed.
+        /// </summary>
+        public event Action layoutPerformed;
+
+        /// <summary>
         /// Constructs with a collection of columns.
         /// </summary>
         /// <param name="columns">The collection of columns managed by the layout.</param>
@@ -449,6 +454,7 @@ namespace UnityEngine.UIElements
             }
             m_PreviousWidth = width;
             m_IsDirty = false;
+            layoutPerformed?.Invoke();
         }
 
         /// <summary>

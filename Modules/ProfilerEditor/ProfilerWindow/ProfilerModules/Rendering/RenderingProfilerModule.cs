@@ -85,7 +85,11 @@ namespace UnityEditorInternal.Profiling
             new ProfilerCounterData() { m_Name = GRDCounterNames.k_SingleInstanceBatches, m_Category = GRDCounterNames.k_CategoryName },
         };
 
-        [SerializeField] ChartMode m_ChartMode = ChartMode.Default;
+        const string k_ChartModePreferenceKey = "Profiler.RenderingProfilerModule.ChartMode";
+
+        // Persisted in EditorPrefs rather than serialized: the Profiler window creates new module
+        // instances when it is reopened, so a serialized value only survives domain reloads.
+        ChartMode m_ChartMode = ChartMode.Default;
         // Null = "no counters applied yet". Distinguishes a fresh module load from a no-op switch.
         ChartMode? m_AppliedChartMode;
 
@@ -106,8 +110,10 @@ namespace UnityEditorInternal.Profiling
         internal override void LegacyModuleInitialize()
         {
             base.LegacyModuleInitialize();
-            // Honor the serialized chart mode on module load. Without this, a non-Default mode
-            // saved across sessions would render with Default counters until the user re-picked it.
+            // Restore the persisted chart mode before the chart is first built, so a non-Default
+            // mode doesn't render with Default counters until the user re-picks it.
+            var savedMode = (ChartMode)EditorPrefs.GetInt(k_ChartModePreferenceKey, (int)ChartMode.Default);
+            m_ChartMode = Enum.IsDefined(typeof(ChartMode), savedMode) ? savedMode : ChartMode.Default;
             ApplyChartMode(m_ChartMode);
         }
 
@@ -144,8 +150,11 @@ namespace UnityEditorInternal.Profiling
             if (m_AppliedChartMode == mode)
                 return;
             m_ChartMode = mode;
+            EditorPrefs.SetInt(k_ChartModePreferenceKey, (int)mode);
             ApplyChartMode(mode);
         }
+
+        internal ChartMode chartMode => m_ChartMode;
 
         void ApplyChartMode(ChartMode mode)
         {

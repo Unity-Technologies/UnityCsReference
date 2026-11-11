@@ -165,6 +165,8 @@ namespace Unity.ProjectAuditor.Editor.Modules
         // Only IDs of this shape can be written to the globalconfig without corrupting it
         static readonly Regex s_DiagnosticIdRegEx = new Regex(@"^[A-Za-z]+\d+\z");
 
+        static readonly char[] k_LineSeparators = { '\r', '\n' };
+
         public override IReadOnlyCollection<IssueLayout> SupportedLayouts => new IssueLayout[]
         {
             k_IssueLayout,
@@ -188,7 +190,7 @@ namespace Unity.ProjectAuditor.Editor.Modules
 
         // Compiles all scripts using an MSBuild analysis configuration ("Analysis" for the editor target, or
         // "<Target>+Analysis" for a player target) and returns a report of the compiler messages produced.
-        static Task<MsBuildCompilation.CompilationMessages> RequestCompilationAsync(string analysisConfiguration, CancellationToken cancellationToken)
+        static Task<MsBuildCompilation.CompilationMessages> RequestCompilationAsync(string analysisConfiguration, int parentProgressId, CancellationToken cancellationToken)
         {
             if (!MsBuildCompilationInterface.IsEnabled())
                 throw new InvalidOperationException($"{nameof(RequestCompilationAsync)} is only supported when the MSBuild compilation pipeline is enabled.");
@@ -203,7 +205,7 @@ namespace Unity.ProjectAuditor.Editor.Modules
                     "use RequestScriptCompilation() for a normal Editor compilation.", nameof(analysisConfiguration));
             }
 
-            return MsBuildCompilationInterface.RequestAnalysisCompilationAsync(analysisConfiguration, cancellationToken);
+            return MsBuildCompilationInterface.RequestAnalysisCompilationAsync(analysisConfiguration, parentProgressId, cancellationToken);
         }
 
         public override IEnumerator Audit(AnalysisParams analysisParams, IProgress progress)
@@ -500,7 +502,7 @@ namespace Unity.ProjectAuditor.Editor.Modules
                     var analyzingText = configuration == "Analysis" ? "Editor" : "Player";
                     AsyncProgressState progressState = progress?.Start($"Analyzing {analyzingText} Code", 1);
 
-                    var compilationTask = RequestCompilationAsync(configuration, cancellationSource.Token);
+                    var compilationTask = RequestCompilationAsync(configuration, progressState?.Id ?? -1, cancellationSource.Token);
                     while (!compilationTask.IsCompleted)
                     {
                         if ((progress?.IsCancelled ?? false) && !cancellationSource.IsCancellationRequested)
@@ -811,10 +813,10 @@ namespace Unity.ProjectAuditor.Editor.Modules
                     yield return null;
 
                 // Messages emitted by the build itself rather than by the compiler (e.g. a project failed to
-                // load) have no source location, so there's nothing to resolve an assembly or a path against.
-                if (string.IsNullOrEmpty(logMessage.File))
+                // load) have no assembly or source location, so there's nothing to resolve a path against.
+                if (IsBuildLevelMessage(logMessage.File, assemblyName))
                 {
-                    onAddIssue(context.CreateInsight(IssueCategory.CodeCompilerMessage, logMessage.Message)
+                    onAddIssue(context.CreateInsight(IssueCategory.CodeCompilerMessage, FormatBuildLevelMessage(logMessage.Message))
                         .WithCustomProperties([logMessage.Code ?? string.Empty, assemblyName, string.Empty])
                         .WithLogLevel(CompilerMessageTypeToLogLevel(messageType)));
                     continue;
@@ -876,6 +878,23 @@ namespace Unity.ProjectAuditor.Editor.Modules
                         .WithLogLevel(CompilerMessageTypeToLogLevel(message.Type)));
                 }
             }
+        }
+
+        // The MSBuild host reports a build exception against its source assembly (e.g. "Microsoft.Build"), so File alone can't identify these.
+        internal static bool IsBuildLevelMessage(string file, string assemblyName) => string.IsNullOrEmpty(file) || string.IsNullOrEmpty(assemblyName);
+
+        // Build-level messages can span several lines (e.g. one line per project in a dependency cycle), but the table draws one line per row.
+        internal static string FormatBuildLevelMessage(string message)
+        {
+            var lines = new List<string>();
+            foreach (var line in (message ?? string.Empty).Split(k_LineSeparators, StringSplitOptions.RemoveEmptyEntries))
+            {
+                var trimmedLine = line.Trim();
+                if (trimmedLine.Length > 0)
+                    lines.Add(trimmedLine);
+            }
+
+            return string.Join(" ", lines);
         }
 
         // MSBuild reports diagnostics that have no source location, such as assembly-level ones, against the compiler task name.

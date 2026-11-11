@@ -27,6 +27,11 @@ namespace Unity.ProjectAuditor.Editor
         /// <summary>
         /// Analysis was cancelled by the user
         /// </summary>
-        Cancelled
+        Cancelled,
+
+        /// <summary>
+        /// Analysis was skipped because it could not run in the current context
+        /// </summary>
+        Skipped
     }
 }

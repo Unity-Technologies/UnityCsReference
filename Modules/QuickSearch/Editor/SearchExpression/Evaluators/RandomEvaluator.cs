@@ -39,6 +39,9 @@ namespace UnityEditor.Search
             }
 
             var randomItem = Random(set);
+            if (randomItem == null)
+                yield break;
+
             // Rename random item label if an alias is defined.
             if (c.ResolveAlias(e) is string alias)
                 randomItem.label = alias;

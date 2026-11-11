@@ -5,6 +5,7 @@
 using System;
 using System.Linq;
 using System.Collections.Generic;
+using System.Diagnostics;
 
 namespace UnityEditor.Search
 {
@@ -19,6 +20,11 @@ namespace UnityEditor.Search
     class ExecutionState
     {
         public IterationJumps iterationJumps = IterationJumps.None;
+
+        // Shared by all the frames of an evaluation, so that progress in any frame keeps the whole evaluation alive
+        readonly Stopwatch m_TickWatch = Stopwatch.StartNew();
+
+        public TimeSpan timeSinceLastTick => m_TickWatch.Elapsed;
 
         public void Break()
         {
@@ -43,6 +49,11 @@ namespace UnityEditor.Search
         public void ResetIterationControl()
         {
             iterationJumps = IterationJumps.None;
+        }
+
+        public void Tick()
+        {
+            m_TickWatch.Restart();
         }
     }
 

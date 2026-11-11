@@ -41,6 +41,8 @@ namespace Unity.ProjectAuditor.Editor
 
         internal const string DisplayName = "Project Auditor";
 
+        const string k_PendingPostBuildAuditKey = "ProjectAuditor.PendingPostBuildAudit";
+
         const string k_PreferencesRoot = "Edit > Preferences";
         internal const string k_PreferencesPath = k_PreferencesRoot + " > Analysis > " + DisplayName;
 
@@ -369,14 +371,31 @@ namespace Unity.ProjectAuditor.Editor
             if (UserPreferences.AnalyzeAfterBuild)
             {
                 // Library/LastBuild.buildreport is only created AFTER OnPostprocessBuild so we need to defer analysis until the file is copied.
+                SessionState.SetBool(k_PendingPostBuildAuditKey, true);
                 EditorApplication.update += DelayedPostBuildAudit;
             }
         }
 
+        // A build that changes scripting defines ends in a domain reload, which drops the update subscription.
+        [InitializeOnLoadMethod]
+        static void ResumePendingPostBuildAudit()
+        {
+            if (SessionState.GetBool(k_PendingPostBuildAuditKey, false))
+                EditorApplication.delayCall += () => EditorApplication.update += new ProjectAuditor().DelayedPostBuildAudit;
+        }
+
         internal void DelayedPostBuildAudit()
         {
+            // The synchronous audit blocks the main thread, which assembly compilation needs to finish.
+            if (EditorApplication.isCompiling)
+                return;
+
             // Unsubscribe before auditing in case an exception is thrown.
             EditorApplication.update -= DelayedPostBuildAudit;
+
+            if (!SessionState.GetBool(k_PendingPostBuildAuditKey, false))
+                return;
+            SessionState.EraseBool(k_PendingPostBuildAuditKey);
 
             if (!ProjectAuditorRulesPackage.IsInstalled)
                 return;

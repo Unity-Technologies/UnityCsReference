@@ -35,11 +35,18 @@ namespace UnityEditor.PackageManager.UI.Internal
         {
             private static OrganizationInfo[] Parse()
             {
-                var foreignKeys = UnityConnect.instance.userInfo.organizationForeignKeys.Split(',');
+                var userInfo = UnityConnect.instance.userInfo;
+                if (string.IsNullOrEmpty(userInfo.organizationForeignKeys) || userInfo.organizationNames == null)
+                    return Array.Empty<OrganizationInfo>();
+
+                var foreignKeys = userInfo.organizationForeignKeys.Split(',');
+                if (foreignKeys.Length != userInfo.organizationNames.Length)
+                    return Array.Empty<OrganizationInfo>();
+
                 var parsedOrganizationInfos = new OrganizationInfo[foreignKeys.Length];
                 for (var i = 0; i < foreignKeys.Length; i++)
                 {
-                    var name = UnityConnect.instance.userInfo.organizationNames[i];
+                    var name = userInfo.organizationNames[i];
                     var orgInfo = new OrganizationInfo
                     {
                         name = name,

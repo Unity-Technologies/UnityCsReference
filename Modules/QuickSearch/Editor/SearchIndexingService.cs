@@ -8,6 +8,7 @@ using Unity.Scripting.LifecycleManagement;
 
 namespace UnityEditor.Search
 {
+    [UnityEngine.Bindings.VisibleToOtherModules("UnityEditor.ProjectAuditorModule")]
     static class SearchIndexingService
     {
         [NoAutoStaticsCleanup] // Test-only bool override flag with no user references; safe to persist across reload.

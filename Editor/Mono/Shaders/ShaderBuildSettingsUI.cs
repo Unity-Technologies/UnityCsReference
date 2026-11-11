@@ -56,7 +56,7 @@ namespace UnityEditor.Shaders
         private bool m_FastBuildEnabled;
         // Shown in place of the settings data while Fast Build is on. Never saved; see BuildFastBuildDisplayedOverrides.
         private readonly List<ShaderBuildSettings.KeywordDeclarationOverride> m_FastBuildDisplayedOverrides = new();
-
+        private int m_RecentlyAddedConstantDefineIndex = -1;
         private static string CompilerDisplayName(ShaderBuildSettings.ShaderCompilerToolchain compiler)
         {
             switch (compiler)
@@ -130,9 +130,10 @@ namespace UnityEditor.Shaders
             m_ConstantDefinesListView.makeItem = MakeConstantDefineItem;
             m_ConstantDefinesListView.bindItem = BindConstantDefineItem;
             m_ConstantDefinesListView.unbindItem = UnbindConstantDefineItem;
-            m_ConstantDefinesListView.itemsAdded += OnItemsAdded;
-            m_ConstantDefinesListView.itemsRemoved += OnItemsRemoved;
-            m_ConstantDefinesListView.itemIndexChanged += OnItemIndexChanged;
+            m_ConstantDefinesListView.itemsAdded += OnConstantDefinesAdded;
+            m_ConstantDefinesListView.onRemove = RemoveConstantDefines;
+            m_ConstantDefinesListView.itemIndexChanged += OnConstantDefinesIndexChanged;
+            m_ConstantDefinesListView.RegisterCallback<FocusOutEvent>(OnConstantDefinesListFocusOut);
 
             var compilerBackendFoldout = shaderBuildSettingsUI.Q<Foldout>("CompilerBackendFoldout");
             if (m_IsTargetingBuildProfile)
@@ -222,25 +223,30 @@ namespace UnityEditor.Shaders
             return m_ConstantDefineUXML.Instantiate();
         }
 
-        private void ValidateConstantDefineAndUpdateErrorBox(VisualElement element, string define)
+        private void ValidateConstantDefineAndUpdateErrorBox(VisualElement element, string define, int defineIndex)
         {
-            string identifier, value, validationMsg = "";
-            bool isValid = true;
+            // A row added with "+" starts empty, so its error waits until focus leaves the list.
+            bool isHiddenEmptyDefine = defineIndex == m_RecentlyAddedConstantDefineIndex && string.IsNullOrWhiteSpace(define);
+            string validationMsg = "";
+            bool isValid = true, isDuplicate = false;
 
-            // Do in-place validation only after user has typed at least one character after a whitespace.
-            // This is so that the start of the typing would not show the validation errors. Apply-time validation
-            // will catch any invalid input that this does not.
-            if (define != null)
+            if (!isHiddenEmptyDefine)
             {
-                int spaceIndex = define.IndexOf(' ');
-                if (spaceIndex >= 0 && spaceIndex < (define.Length - 1))
-                    isValid = ShaderBuildSettings.SplitAndValidateDefine(define, out identifier, out value, out validationMsg);
+                isValid = ShaderBuildSettings.SplitAndValidateDefine(define, out var identifier, out _, out validationMsg);
+                if (isValid)
+                {
+                    int internalDefineCount = m_InternalConstantDefines.Count;
+                    m_InternalConstantDefines.InsertRange(m_InternalConstantDefines.Count, m_ConstantDefines);
+                    isDuplicate = ShaderBuildSettings.IsConstantDefineDuplicate(m_InternalConstantDefines.ToArray(),
+                        (uint)internalDefineCount, identifier, defineIndex, out validationMsg);
+                    m_InternalConstantDefines.RemoveRange(internalDefineCount, m_InternalConstantDefines.Count - internalDefineCount);
+                }
             }
 
             var errorBox = element.Q<HelpBox>("DefineError");
             if (errorBox != null)
             {
-                if (!isValid)
+                if (!isValid || isDuplicate)
                 {
                     errorBox.text = validationMsg;
                     errorBox.style.display = DisplayStyle.Flex;
@@ -262,7 +268,7 @@ namespace UnityEditor.Shaders
             {
                 textField.value = m_ConstantDefines[index];
                 textField.userData = index;
-                ValidateConstantDefineAndUpdateErrorBox(element, m_ConstantDefines[index]);
+                ValidateConstantDefineAndUpdateErrorBox(element, m_ConstantDefines[index], index);
             }
 
             textField.RegisterValueChangedCallback(OnConstantDefineValueChanged);
@@ -273,6 +279,7 @@ namespace UnityEditor.Shaders
             var textField = element.Q<TextField>("DefineField");
             if (textField != null)
             {
+                textField.userData = null;
                 textField.UnregisterValueChangedCallback(OnConstantDefineValueChanged);
             }
         }
@@ -285,10 +292,51 @@ namespace UnityEditor.Shaders
                 if (index >= 0 && index < m_ConstantDefines.Count)
                 {
                     m_ConstantDefines[index] = evt.newValue;
-                    ValidateConstantDefineAndUpdateErrorBox(textField.parent, evt.newValue);
                     SettingsChanged();
                 }
             }
+        }
+
+        private void OnConstantDefinesAdded(IEnumerable<int> items)
+        {
+            // LINQ helpers like .Last() should be avoided
+            foreach (var index in items)
+            {
+                m_RecentlyAddedConstantDefineIndex = index;
+            }
+
+            SettingsChanged();
+        }
+
+        private void OnConstantDefinesListFocusOut(FocusOutEvent evt)
+        {
+            if (!(evt.relatedTarget is VisualElement next && m_ConstantDefinesListView.Contains(next)))
+                m_RecentlyAddedConstantDefineIndex = -1;
+
+            m_ConstantDefinesListView.RefreshItems();
+        }
+
+        private void RemoveConstantDefines(BaseListView listView)
+        {
+            var indices = new List<int>(listView.selectedIndices);
+            if (indices.Count == 0 && m_ConstantDefines.Count > 0)
+                indices.Add(m_ConstantDefines.Count - 1);
+            if (indices.Count == 0)
+                return;
+
+            listView.viewController.RemoveItems(indices);
+            listView.ClearSelection();
+
+            m_RecentlyAddedConstantDefineIndex = -1;
+            listView.RefreshItems();
+
+            SettingsChanged();
+        }
+
+        private void OnConstantDefinesIndexChanged(int oldIndex, int newIndex)
+        {
+            m_RecentlyAddedConstantDefineIndex = -1;
+            m_ConstantDefinesListView.RefreshItems();
         }
 
         public void SettingsChanged()
@@ -381,7 +429,11 @@ namespace UnityEditor.Shaders
                     Debug.LogError(kdoValidationErrorMsg);
 
                 if (defineValidationErrorMsg.Length > 0)
+                {
                     Debug.LogError(defineValidationErrorMsg);
+                    m_RecentlyAddedConstantDefineIndex = -1;
+                    m_ConstantDefinesListView.RefreshItems();
+                }
 
                 if (compilerValidationErrorMsg.Length > 0)
                     Debug.LogError(compilerValidationErrorMsg);

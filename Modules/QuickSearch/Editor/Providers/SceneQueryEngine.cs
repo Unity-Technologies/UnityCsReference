@@ -85,6 +85,9 @@ namespace UnityEditor.Search.Providers
         public SceneQueryEngine(IEnumerable<GameObject> gameObjects)
             : base(gameObjects)
         {
+            // Unknown and incomplete filters such as "door:main" or "t:" can also be names
+            m_QueryEngine.treatUnknownFiltersAsText = true;
+            m_QueryEngine.treatIncompleteFiltersAsText = true;
             m_QueryEngine.AddFilter("active", IsActive);
             m_QueryEngine.AddFilter("size", GetSize);
             m_QueryEngine.AddFilter("components", GetComponentCount);
@@ -158,6 +161,79 @@ namespace UnityEditor.Search.Providers
                     moveCursor: proposition.moveCursor,
                     generationOptions: proposition.generationOptions);
             });
+        }
+
+        // Returns true when a change affects the whole scene, which the caller must handle
+        public bool InvalidateChanges(ref ObjectChangeEventStream stream)
+        {
+            var sceneChanged = false;
+            for (int i = 0; i < stream.length; ++i)
+            {
+                switch (stream.GetEventType(i))
+                {
+                    case ObjectChangeKind.ChangeScene:
+                    case ObjectChangeKind.CreateGameObjectHierarchy:
+                    case ObjectChangeKind.DestroyGameObjectHierarchy:
+                        sceneChanged = true;
+                        break;
+
+                    case ObjectChangeKind.ChangeGameObjectStructureHierarchy:
+                    {
+                        stream.GetChangeGameObjectStructureHierarchyEvent(i, out var e);
+                        InvalidateGameObjectAndRefs(e.entityId);
+                        break;
+                    }
+
+                    case ObjectChangeKind.ChangeGameObjectStructure:
+                    {
+                        stream.GetChangeGameObjectStructureEvent(i, out var e);
+                        InvalidateGameObjectAndRefs(e.entityId);
+                        break;
+                    }
+
+                    case ObjectChangeKind.ChangeGameObjectParent:
+                    {
+                        stream.GetChangeGameObjectParentEvent(i, out var e);
+                        InvalidateGameObjectAndRefs(e.entityId);
+                        break;
+                    }
+
+                    case ObjectChangeKind.ChangeGameObjectOrComponentProperties:
+                    {
+                        stream.GetChangeGameObjectOrComponentPropertiesEvent(i, out var e);
+                        InvalidateGameObject(e.entityId);
+                        break;
+                    }
+
+                    case ObjectChangeKind.UpdatePrefabInstances:
+                    {
+                        stream.GetUpdatePrefabInstancesEvent(i, out var e);
+                        for (int idIndex = 0; idIndex < e.entityIds.Length; ++idIndex)
+                        {
+                            InvalidateGameObject(e.entityIds[idIndex]);
+                        }
+                        break;
+                    }
+                }
+            }
+
+            return sceneChanged;
+        }
+
+        void InvalidateGameObject(EntityId entityId)
+        {
+            if (UnityEngine.Object.FindObjectFromInstanceID(entityId) is Component c)
+                InvalidateObject(c.gameObject.GetEntityId());
+            else
+                InvalidateObject(entityId);
+        }
+
+        void InvalidateGameObjectAndRefs(EntityId entityId)
+        {
+            if (UnityEngine.Object.FindObjectFromInstanceID(entityId) is Component c)
+                InvalidateObjectAndRefs(c.gameObject.GetEntityId());
+            else
+                InvalidateObjectAndRefs(entityId);
         }
 
         private bool IsActive(GameObject go)

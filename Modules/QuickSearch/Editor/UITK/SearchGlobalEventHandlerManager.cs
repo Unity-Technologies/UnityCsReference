@@ -31,27 +31,25 @@ namespace UnityEditor.Search
     {
         public readonly int priority;
         public readonly Type type;
-        public readonly object handler;
-        public readonly int handlerHashCode;
+        public readonly Delegate handler;
 
-        SearchGlobalEventHandlerContainer(object handler, Type type, int priority, int handlerHashCode)
+        SearchGlobalEventHandlerContainer(Delegate handler, Type type, int priority)
         {
             this.priority = priority;
             this.type = type;
             this.handler = handler;
-            this.handlerHashCode = handlerHashCode;
         }
 
         public static SearchGlobalEventHandlerContainer Make<T>(SearchGlobalEventHandler<T> handler, int priority)
             where T : EventBase
         {
-            return new SearchGlobalEventHandlerContainer(handler, typeof(T), priority, handler.GetHashCode());
+            return new SearchGlobalEventHandlerContainer(handler, typeof(T), priority);
         }
 
         public static SearchGlobalEventHandlerContainer Make<T>(SearchGlobalEventHandlerWithResult<T> handler, int priority)
             where T : EventBase
         {
-            return new SearchGlobalEventHandlerContainer(handler, typeof(T), priority, handler.GetHashCode());
+            return new SearchGlobalEventHandlerContainer(handler, typeof(T), priority);
         }
 
         public bool IsType<T>()
@@ -87,8 +85,7 @@ namespace UnityEditor.Search
                 m_GlobalEventHandlers.Add(eventType, new List<SearchGlobalEventHandlerContainer>());
 
             var handlerList = m_GlobalEventHandlers[eventType];
-            var eventHandlerHashCode = eventHandler.GetHashCode();
-            RemoveHandlerWithHashCode(eventHandlerHashCode, handlerList);
+            RemoveHandler(eventHandler, handlerList);
 
             handlerList.Add(SearchGlobalEventHandlerContainer.Make(eventHandler, priority));
 
@@ -103,8 +100,7 @@ namespace UnityEditor.Search
                 m_GlobalEventHandlers.Add(eventType, new List<SearchGlobalEventHandlerContainer>());
 
             var handlerList = m_GlobalEventHandlers[eventType];
-            var eventHandlerHashCode = eventHandler.GetHashCode();
-            RemoveHandlerWithHashCode(eventHandlerHashCode, handlerList);
+            RemoveHandler(eventHandler, handlerList);
 
             handlerList.Add(SearchGlobalEventHandlerContainer.Make(eventHandler, priority));
 
@@ -118,8 +114,7 @@ namespace UnityEditor.Search
             if (!m_GlobalEventHandlers.TryGetValue(eventType, out var handlerList))
                 return;
 
-            var eventHandlerHashCode = eventHandler.GetHashCode();
-            RemoveHandlerWithHashCode(eventHandlerHashCode, handlerList);
+            RemoveHandler(eventHandler, handlerList);
         }
 
         public void UnregisterGlobalEventHandler<T>(SearchGlobalEventHandlerWithResult<T> eventHandler)
@@ -129,8 +124,7 @@ namespace UnityEditor.Search
             if (!m_GlobalEventHandlers.TryGetValue(eventType, out var handlerList))
                 return;
 
-            var eventHandlerHashCode = eventHandler.GetHashCode();
-            RemoveHandlerWithHashCode(eventHandlerHashCode, handlerList);
+            RemoveHandler(eventHandler, handlerList);
         }
 
         public IEnumerable<SearchGlobalEventHandlerContainer> GetOrderedGlobalEventHandlers<T>()
@@ -145,9 +139,10 @@ namespace UnityEditor.Search
                 .OrderBy(container => container.priority);
         }
 
-        static void RemoveHandlerWithHashCode(int handlerHashCode, List<SearchGlobalEventHandlerContainer> handlerList)
+        static void RemoveHandler(Delegate handler, List<SearchGlobalEventHandlerContainer> handlerList)
         {
-            var existingHandlerIndex = handlerList.FindIndex(container => container.handlerHashCode == handlerHashCode);
+            // Delegate.GetHashCode ignores the method on CoreCLR, so compare the delegates instead
+            var existingHandlerIndex = handlerList.FindIndex(container => handler.Equals(container.handler));
             if (existingHandlerIndex >= 0)
                 handlerList.RemoveAt(existingHandlerIndex);
         }

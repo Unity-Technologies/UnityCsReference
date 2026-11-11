@@ -658,7 +658,13 @@ namespace UnityEditor.Search
         {
             if (!m_Disposed)
             {
-                EndSession();
+                // EndSession() does main-thread-only managed work; never run it on the finalizer thread.
+                if (disposing)
+                {
+                    // A session requested from another thread is started later on the main thread, so it must not start once disposed
+                    session.Close();
+                    EndSession();
+                }
                 m_Disposed = true;
             }
         }

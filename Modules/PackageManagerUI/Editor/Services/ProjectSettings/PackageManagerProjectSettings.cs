@@ -128,6 +128,16 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         public void ClearTrustPolicyLevelDraft() => SessionState.EraseInt(k_TrustPolicyLevelDraftKey);
 
+        private const string k_ClosedNetworkEnabledDraftKey = "PackageManager.ClosedNetworkEnabledDraft";
+
+        public bool closedNetworkEnabledDraft
+        {
+            get => SessionState.GetBool(k_ClosedNetworkEnabledDraftKey, TrustPolicySettings.trustDisabled);
+            set => SessionState.SetBool(k_ClosedNetworkEnabledDraftKey, value);
+        }
+
+        public void ClearClosedNetworkEnabledDraft() => SessionState.EraseBool(k_ClosedNetworkEnabledDraftKey);
+
         public void SelectRegistry(string name)
         {
             var registry = string.IsNullOrEmpty(name) ? null : scopedRegistries.FirstMatch(r => r.name == name);
