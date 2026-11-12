@@ -68,7 +68,7 @@ namespace UnityEngine.UIElements
                     showPlaceholderText = string.IsNullOrEmpty(touchKeyboard.text) && !string.IsNullOrEmpty(edition.placeholder);
                     if (!showPlaceholderText && !edition.isDelayed)
                     {
-                        edition.UpdateTextFromValue?.Invoke();
+                        UpdateTextFromValueKeepingKeyboardText();
                     }
 
                     textElement.Blur();
@@ -132,7 +132,7 @@ namespace UnityEngine.UIElements
                 showPlaceholderText = string.IsNullOrEmpty(touchKeyboard.text) && !string.IsNullOrEmpty(edition.placeholder);
                 if (!showPlaceholderText && !edition.isDelayed)
                 {
-                    edition.UpdateTextFromValue?.Invoke();
+                    UpdateTextFromValueKeepingKeyboardText();
                 }
                 textElement.edition.UpdateScrollOffset?.Invoke(false);
             }
@@ -140,6 +140,20 @@ namespace UnityEngine.UIElements
             {
                 // TouchScreenKeyboard should no longer be used, presumably because a hardware keyboard is now available.
                 CloseTouchScreenKeyboard();
+            }
+        }
+
+        // Fields like FloatField reformat their text from the value; the keyboard keeps what the user is typing.
+        void UpdateTextFromValueKeepingKeyboardText()
+        {
+            textElement.m_SkipTouchScreenKeyboardSync = true;
+            try
+            {
+                textElement.edition.UpdateTextFromValue?.Invoke();
+            }
+            finally
+            {
+                textElement.m_SkipTouchScreenKeyboardSync = false;
             }
         }
 

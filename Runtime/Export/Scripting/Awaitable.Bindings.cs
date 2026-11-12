@@ -32,6 +32,29 @@ namespace UnityEngine
         }
 
 
+        // Message methods like Awake or Start can return an Awaitable that nothing awaits, so log its exception here.
+        [RequiredByNativeCode(GenerateProxy = true)]
+        private static void LogExceptionsFromMessage(object returnValue, object context)
+        {
+            if (returnValue is not Awaitable awaitable)
+                return;
+
+            awaitable.SetContinuation(() =>
+            {
+                try
+                {
+                    awaitable.GetAwaiter().GetResult();
+                }
+                catch (OperationCanceledException)
+                {
+                }
+                catch (Exception e)
+                {
+                    Debug.LogException(e, context as Object);
+                }
+            });
+        }
+
         [RequiredByNativeCode(GenerateProxy = true)]
         private void RunContinuation()
         {

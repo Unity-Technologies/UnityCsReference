@@ -4337,6 +4337,9 @@
     <Compile Include="..\..\Modules\UIElements\Core\Renderer\UIRAtlasManager.cs">
       <Link>Modules\UIElements\Core\Renderer\UIRAtlasManager.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Renderer\UIRBackdropReadRegions.cs">
+      <Link>Modules\UIElements\Core\Renderer\UIRBackdropReadRegions.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\UIElements\Core\Renderer\UIRCommandList.cs">
       <Link>Modules\UIElements\Core\Renderer\UIRCommandList.cs</Link>
     </Compile>
@@ -7141,7 +7144,7 @@
     </PropertyGroup>
   </Target>
   <ItemGroup>
-    <Analyzer Include="/tmp/uitoolkit_gen_n89s1t9e/Unity.UIToolkit.SourceGenerator.dll" />
+    <Analyzer Include="/tmp/uitoolkit_gen_97fk1zbn/Unity.UIToolkit.SourceGenerator.dll" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="8.0.2" />

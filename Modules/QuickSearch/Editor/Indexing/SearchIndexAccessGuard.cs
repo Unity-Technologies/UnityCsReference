@@ -4,6 +4,7 @@
 
 using System;
 using System.Threading;
+using Unity.Scripting.LifecycleManagement;
 
 namespace UnityEditor.Search
 {
@@ -22,6 +23,14 @@ namespace UnityEditor.Search
     /// </summary>
     sealed class SearchIndexAccessGuard
     {
+        /// <summary>
+        /// Shared guard that is already closed. Indexes that are disposed before any reader ever acquired a lease
+        /// install it instead of allocating their own guard, so every later <see cref="TryAcquire"/> is refused.
+        /// </summary>
+        // Immutable once closed and holds no index-specific state, so it is safe to keep across reloads.
+        [NoAutoStaticsCleanup]
+        internal static readonly SearchIndexAccessGuard k_Closed = CreateClosed();
+
         readonly object m_SyncRoot = new object();
         // Never disposed on purpose: leases hand out copies of this token and external callers may link
         // it into their own token sources that can outlive the wait. The source holds no OS handle
@@ -88,6 +97,13 @@ namespace UnityEditor.Search
                 while (m_ActiveLeases > 0)
                     Monitor.Wait(m_SyncRoot);
             }
+        }
+
+        static SearchIndexAccessGuard CreateClosed()
+        {
+            var guard = new SearchIndexAccessGuard();
+            guard.CloseAndWait();
+            return guard;
         }
 
         sealed class Lease : IDisposable

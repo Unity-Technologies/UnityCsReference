@@ -251,43 +251,55 @@ namespace UnityEngine.UIElements.UIR
             m_DirtyTracker.RegisterDirty(renderData, RenderDataDirtyTypes.Visuals | (hierarchical ? RenderDataDirtyTypes.VisualsHierarchy : 0), RenderDataDirtyTypeClasses.Visuals);
         }
 
-        public bool hasBackdropFilters => m_BackdropFilterRenderDatas != null && m_BackdropFilterRenderDatas.Count > 0;
-
-        // Includes the backdrop-filters that will register when this frame's visual changes are processed
-        public bool HasBackdropFiltersIncludingPending()
+        // In this tree's points; includes the backdrop-filters that will register when this frame's visual changes are processed
+        public Rect ExtendByBackdropReads(Rect visible)
         {
-            if (hasBackdropFilters)
-                return true;
+            if (m_BackdropFilterRenderDatas != null)
+            {
+                foreach (RenderData renderData in m_BackdropFilterRenderDatas)
+                {
+                    BackdropReadRegions.Add(renderData);
+                }
+            }
+
+            // Older than the IDs that ProcessChanges takes next, so processing never mistakes these marks for its own
+            uint searchID = ++m_DirtyTracker.dirtyID;
 
             int dirtyClass = (int)RenderDataDirtyTypeClasses.Visuals;
             for (int depth = m_DirtyTracker.minDepths[dirtyClass]; depth <= m_DirtyTracker.maxDepths[dirtyClass]; depth++)
             {
                 for (RenderData renderData = m_DirtyTracker.heads[depth]; renderData != null; renderData = renderData.nextDirty)
                 {
-                    if ((renderData.dirtiedValues & RenderDataDirtyTypes.AllVisuals) == 0)
-                        continue;
-                    if (IsBackdropFilter(renderData))
-                        return true;
-                    if ((renderData.dirtiedValues & RenderDataDirtyTypes.VisualsHierarchy) != 0 && HasBackdropFilterBelow(renderData))
-                        return true;
+                    AddPendingBackdropFilters(renderData, false, searchID);
                 }
             }
-            return false;
+
+            return BackdropReadRegions.Extend(visible);
         }
 
-        static bool IsBackdropFilter(RenderData renderData)
+        void AddPendingBackdropFilters(RenderData renderData, bool inDirtyHierarchy, uint searchID)
         {
-            return !renderData.isNestedRenderTreeRoot && renderData.owner.hasBackdropFilter;
-        }
+            if (renderData.dirtyID == searchID)
+                return;
 
-        static bool HasBackdropFilterBelow(RenderData renderData)
-        {
+            inDirtyHierarchy |= (renderData.dirtiedValues & RenderDataDirtyTypes.VisualsHierarchy) != 0;
+            if (inDirtyHierarchy)
+                renderData.dirtyID = searchID; // only a node whose whole subtree is searched may be skipped later
+
+            bool visualsDirty = inDirtyHierarchy || (renderData.dirtiedValues & RenderDataDirtyTypes.AllVisuals) != 0;
+            if (visualsDirty && !renderData.isNestedRenderTreeRoot && renderData.owner.hasBackdropFilter &&
+                m_BackdropFilterRenderDatas?.Contains(renderData) != true && !BackdropReadRegions.IsAdded(renderData))
+            {
+                BackdropReadRegions.Add(renderData);
+            }
+
+            if (!inDirtyHierarchy)
+                return;
+
             for (RenderData child = renderData.firstChild; child != null; child = child.nextSibling)
             {
-                if (IsBackdropFilter(child) || HasBackdropFilterBelow(child))
-                    return true;
+                AddPendingBackdropFilters(child, inDirtyHierarchy, searchID);
             }
-            return false;
         }
 
         public void RegisterBackdropFilter(RenderData renderData)

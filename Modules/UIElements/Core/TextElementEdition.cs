@@ -182,6 +182,7 @@ namespace UnityEngine.UIElements
         }
 
         internal TouchScreenKeyboard m_TouchScreenKeyboard;
+        internal bool m_SkipTouchScreenKeyboardSync;
         internal Action<bool> onIsReadOnlyChanged;
         TouchScreenKeyboard ITextEdition.touchScreenKeyboard
         {

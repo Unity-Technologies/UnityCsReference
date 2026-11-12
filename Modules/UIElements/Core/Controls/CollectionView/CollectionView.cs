@@ -81,6 +81,9 @@ namespace UnityEngine.UIElements.HierarchyV2
         internal VisualElement backgroundFill => m_BackgroundFill;
         internal RecycledItem currentStickyRow => m_StickyRow;
         internal bool hasActiveStickyRow => m_StickyRow != null && m_StickyRow.index != -1;
+
+        // Includes the sticky row; m_Container only reflects a new sticky height after layout
+        float viewportHeight => m_ContainerClip.resolvedStyle.height;
         internal CollectionViewDragger dragger => m_Dragger;
         internal event Action reorderModeChanged;
         // Holds the item position along with the item. It is currently purposed to retain a collection of visible items
@@ -798,16 +801,14 @@ namespace UnityEngine.UIElements.HierarchyV2
             }
 
             var rangeEstimate = (double)fixedItemHeight * itemsSource.Count;
-            var containerHeight = m_Container.layout.height;
-            var maxScrollRange = rangeEstimate > containerHeight ? Math.Abs(rangeEstimate - containerHeight) : 0;
+            var fullHeight = viewportHeight;
+            var maxScrollRange = rangeEstimate > fullHeight ? Math.Abs(rangeEstimate - fullHeight) : 0;
 
             // Update the high value and scroll value of the vertical scroller
             SetScrollingParameters(m_ScrollValue, maxScrollRange);
-            // We need to reset the offset that is added by the horizontal scrollbar's appearance
+            // We need to reset the offset that is added by the horizontal scrollbar's appearance, but keep the sticky row's
             if (evt.newRect.size == new Vector2())
-            {
-                m_ScrollView.containerOffset = new Vector2(0, 0);
-            }
+                UpdateContainerOffset();
             // Update the visibility and factor of the vertical scroller when the horizontal one appears
             UpdateVerticalScrollRange();
         }
@@ -904,13 +905,13 @@ namespace UnityEngine.UIElements.HierarchyV2
 
         void ContainerSizeChanged(float height, float width)
         {
-            var containerHeight = m_Container.resolvedStyle.height;
-            if (float.IsNaN(containerHeight))
-                containerHeight = height;
+            var fullHeight = viewportHeight;
+            if (float.IsNaN(fullHeight))
+                fullHeight = height + m_StickyHeight;
 
-            if (!Mathf.Approximately(m_LastHeight, containerHeight))
+            if (!Mathf.Approximately(m_LastHeight, fullHeight))
             {
-                m_LastHeight = containerHeight;
+                m_LastHeight = fullHeight;
                 RefreshItems(forceBindItem: false);
             }
         }
@@ -1152,19 +1153,20 @@ namespace UnityEngine.UIElements.HierarchyV2
                 return;
             }
 
-            var height = m_Container.resolvedStyle.height;
-            if (float.IsNaN(height))
+            var fullHeight = viewportHeight;
+            if (float.IsNaN(fullHeight))
                 return;
 
-            m_LastHeight = height + m_StickyHeight;
+            m_LastHeight = fullHeight;
+            var itemsHeight = fullHeight - m_StickyHeight;
 
-            var numberOfVisibleItems = (int)(m_Container.layoutSize.y / fixedItemHeight);
+            var numberOfVisibleItems = (int)(itemsHeight / fixedItemHeight);
             if (itemsSource.Count - 1 < numberOfVisibleItems)
                 m_ScrollValue = 0;
 
             var rangeEstimate = (double)fixedItemHeight * itemsSource.Count;
             var maxScrollRange = rangeEstimate > m_LastHeight ? Math.Abs(rangeEstimate - m_LastHeight) : 0;
-            m_VerticalScroller.style.display = rangeEstimate > height - m_HorizontalScroller.worldBound.height ? DisplayStyle.Flex : DisplayStyle.None;
+            m_VerticalScroller.style.display = rangeEstimate > itemsHeight - m_HorizontalScroller.worldBound.height ? DisplayStyle.Flex : DisplayStyle.None;
             SetScrollingParameters(m_ScrollValue, maxScrollRange);
             BindVisibleItems(forceBindItem);
             UpdateBackgroundFill();
@@ -1215,7 +1217,7 @@ namespace UnityEngine.UIElements.HierarchyV2
         {
             var itemHeight = fixedItemHeight;
             var count = itemsSource?.Count ?? 0;
-            var availableHeight = m_ContainerClip.resolvedStyle.height;
+            var availableHeight = viewportHeight;
             var contentBottom = m_StickyHeight + count * itemHeight;
             var fillHeight = availableHeight - contentBottom;
 
@@ -1374,7 +1376,7 @@ namespace UnityEngine.UIElements.HierarchyV2
 
             var ratio = (double)visibleRange / itemsSource.Count;
             var rangeEstimate = (double)fixedItemHeight * itemsSource.Count;
-            m_VerticalScroller.style.display = rangeEstimate > m_Container.worldBound.height ? DisplayStyle.Flex : DisplayStyle.None;
+            m_VerticalScroller.style.display = rangeEstimate > viewportHeight - m_StickyHeight ? DisplayStyle.Flex : DisplayStyle.None;
             m_VerticalScroller.factor = (float)(Math.Abs(ratio - 1) < UIRUtility.k_Epsilon ? m_ScrollView.viewport.layout.height / m_Container.boundingBox.height : ratio);
         }
 
@@ -1735,7 +1737,7 @@ namespace UnityEngine.UIElements.HierarchyV2
                 return;
             }
 
-            var containerHeight = m_Container.layoutSize.y + m_StickyHeight;
+            var containerHeight = viewportHeight;
             var numberOfVisibleItems = (int)(containerHeight / fixedItemHeight);
             if (index < m_FirstVisibleItemIndex + numberOfVisibleItems)
                 return;
@@ -2381,28 +2383,8 @@ namespace UnityEngine.UIElements.HierarchyV2
                     HandleSelectionAndScroll(0);
                     return true;
                 case KeyboardNavigationOperation.End:
-                {
-                    var lastIndex = itemsSource.Count - 1;
-                    if (lastIndex < 0)
-                        return true;
-
-                    // Sync selection (listeners read it immediately); defer scroll so the sticky row can settle.
-                    if (selectionType == SelectionType.Multiple && shiftKey && m_Selection.indexCount != 0)
-                        DoRangeSelection(lastIndex);
-                    else
-                    {
-                        m_RangeSelectionDirection = RangeSelectionDirection.None;
-                        SetLastSelectedIndex(lastIndex);
-                        m_Selection.selectedIndex = lastIndex;
-                    }
-
-                    if (m_StickyRowController != null)
-                        schedule.Execute(() => ScrollToItem(lastIndex));
-                    else
-                        ScrollToItem(lastIndex);
-
+                    HandleSelectionAndScroll(itemsSource.Count - 1);
                     return true;
-                }
                 case KeyboardNavigationOperation.PageDown:
                 {
                     if (m_DisplayedList.Count == 0)
@@ -2413,7 +2395,7 @@ namespace UnityEngine.UIElements.HierarchyV2
 
                     var selectionDown = m_RangeSelectionDirection == RangeSelectionDirection.Up ? m_Selection.minIndex : m_Selection.maxIndex;
                     var itemHeight = fixedItemHeight;
-                    var containerHeight = m_Container.layoutSize.y + m_StickyHeight;
+                    var containerHeight = viewportHeight;
                     var containerBottom = m_VerticalScroller.value + containerHeight;
                     var maxIndex = itemsSource.Count - 1;
                     var lastVisibleIndex = (int)(containerBottom / itemHeight);
@@ -2425,10 +2407,6 @@ namespace UnityEngine.UIElements.HierarchyV2
                     var targetIndex = (m_Selection.indexCount == 0 || selectionDown < lastVisibleIndex - 1) ? lastVisibleIndex : (selectionDown + pageSize > maxIndex ? maxIndex : selectionDown + pageSize);
 
                     HandleSelectionAndScroll(targetIndex);
-
-                    if (m_StickyRowController != null)
-                        schedule.Execute(() => ScrollToItem(targetIndex));
-
                     return true;
                 }
                 case KeyboardNavigationOperation.PageUp:
@@ -2442,7 +2420,7 @@ namespace UnityEngine.UIElements.HierarchyV2
                     var selectionUp = m_RangeSelectionDirection == RangeSelectionDirection.Up ? m_Selection.minIndex : m_Selection.maxIndex;
                     var scrollOffset = m_VerticalScroller.value;
                     var itemHeight = fixedItemHeight;
-                    var containerHeight = m_Container.layoutSize.y + m_StickyHeight;
+                    var containerHeight = viewportHeight;
                     var firstVisibleIndex = (int)(scrollOffset / itemHeight);
                     var pageSize = (int)(containerHeight / itemHeight);
 

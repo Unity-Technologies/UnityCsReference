@@ -758,6 +758,24 @@
     <Compile Include="..\..\Editor\Mono\BuildProfile\Internal\IAddSettingsDataProvider.cs">
       <Link>Editor\Mono\BuildProfile\Internal\IAddSettingsDataProvider.cs</Link>
     </Compile>
+    <Compile Include="..\..\Editor\Mono\BuildProfile\MarketplaceEditorApi\IMarketplaceWebRequestSender.cs">
+      <Link>Editor\Mono\BuildProfile\MarketplaceEditorApi\IMarketplaceWebRequestSender.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Mono\BuildProfile\MarketplaceEditorApi\IServiceTokenProvider.cs">
+      <Link>Editor\Mono\BuildProfile\MarketplaceEditorApi\IServiceTokenProvider.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Mono\BuildProfile\MarketplaceEditorApi\MarketplaceApiError.cs">
+      <Link>Editor\Mono\BuildProfile\MarketplaceEditorApi\MarketplaceApiError.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Mono\BuildProfile\MarketplaceEditorApi\MarketplaceEditorApiClient.cs">
+      <Link>Editor\Mono\BuildProfile\MarketplaceEditorApi\MarketplaceEditorApiClient.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Mono\BuildProfile\MarketplaceEditorApi\MarketplaceEditorApiModels.cs">
+      <Link>Editor\Mono\BuildProfile\MarketplaceEditorApi\MarketplaceEditorApiModels.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Mono\BuildProfile\MarketplaceEditorApi\MarketplaceJson.cs">
+      <Link>Editor\Mono\BuildProfile\MarketplaceEditorApi\MarketplaceJson.cs</Link>
+    </Compile>
     <Compile Include="..\..\Editor\Mono\BuildProfile\PlatformPackageServiceInfoProvider.cs">
       <Link>Editor\Mono\BuildProfile\PlatformPackageServiceInfoProvider.cs</Link>
     </Compile>
@@ -17173,7 +17191,7 @@
     </PropertyGroup>
   </Target>
   <ItemGroup>
-    <Analyzer Include="/tmp/uitoolkit_gen_n89s1t9e/Unity.UIToolkit.SourceGenerator.dll" />
+    <Analyzer Include="/tmp/uitoolkit_gen_97fk1zbn/Unity.UIToolkit.SourceGenerator.dll" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="8.0.2" />

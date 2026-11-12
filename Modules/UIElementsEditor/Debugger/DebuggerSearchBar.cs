@@ -105,6 +105,8 @@ namespace UnityEditor.UIElements.Debugger
             Add(nextButton);
         }
 
+        internal Label countLabel => m_CountLabel;
+
         public void ClearSearch()
         {
             m_SearchTextField.value = string.Empty;
@@ -117,8 +119,7 @@ namespace UnityEditor.UIElements.Debugger
 
             m_SelectedIndex = (m_SelectedIndex + 1) % m_FoundItems.Count;
             m_ParentTreeView.SelectElement(m_FoundItems[m_SelectedIndex].item.data, m_CurrentQuery, m_FoundItems[m_SelectedIndex].highlight);
-            m_CountLabel.text =
-                string.Format("{0} of {1}", m_SelectedIndex + 1, m_FoundItems.Count);
+            UpdateCountLabel();
         }
 
         private void SelectPrev()
@@ -131,8 +132,7 @@ namespace UnityEditor.UIElements.Debugger
             m_SelectedIndex = (m_SelectedIndex % count + count) % count;
 
             m_ParentTreeView.SelectElement(m_FoundItems[m_SelectedIndex].item.data, m_CurrentQuery, m_FoundItems[m_SelectedIndex].highlight);
-            m_CountLabel.text =
-                string.Format("{0} of {1}", m_SelectedIndex + 1, m_FoundItems.Count);
+            UpdateCountLabel();
         }
 
         private void PerformSearch(ChangeEvent<string> evt)
@@ -140,8 +140,7 @@ namespace UnityEditor.UIElements.Debugger
             m_FoundItems.Clear();
             m_SelectedIndex = 0;
 
-            m_CountLabel.text = string.Empty;
-            m_CountLabel.AddToClassList(searchBarHiddenUssClassName);
+            UpdateCountLabel();
 
             m_ParentTreeView.ClearSearchResults();
 
@@ -154,10 +153,71 @@ namespace UnityEditor.UIElements.Debugger
                 return;
             }
 
-            var items = m_ParentTreeView.treeItems;
-            if (items == null)
+            FindMatches(query);
+            UpdateCountLabel();
+
+            if (m_FoundItems.Count == 0)
                 return;
 
+            var firstItem = m_FoundItems[0];
+            m_ParentTreeView.SelectElement(firstItem.item.data, m_CurrentQuery, firstItem.highlight);
+        }
+
+        public void RefreshResults()
+        {
+            var text = m_SearchTextField.value;
+            if (string.IsNullOrEmpty(text))
+                return;
+
+            var previous = m_SelectedIndex < m_FoundItems.Count ? m_FoundItems[m_SelectedIndex] : null;
+
+            FindMatches(text);
+
+            m_ParentTreeView.ClearSearchResults();
+
+            if (m_FoundItems.Count == 0)
+            {
+                m_SelectedIndex = 0;
+                UpdateCountLabel();
+                return;
+            }
+
+            m_SelectedIndex = Mathf.Min(m_SelectedIndex, m_FoundItems.Count - 1);
+            if (previous != null)
+            {
+                for (var i = 0; i < m_FoundItems.Count; i++)
+                {
+                    if (m_FoundItems[i].item.data == previous.item.data && m_FoundItems[i].highlight == previous.highlight)
+                    {
+                        m_SelectedIndex = i;
+                        break;
+                    }
+                }
+            }
+
+            UpdateCountLabel();
+
+            var current = m_FoundItems[m_SelectedIndex];
+            m_ParentTreeView.ReapplySearchHighlight(current.item.data, m_CurrentQuery, current.highlight);
+        }
+
+        private void UpdateCountLabel()
+        {
+            if (m_FoundItems.Count == 0)
+            {
+                m_CountLabel.text = string.Empty;
+                m_CountLabel.AddToClassList(searchBarHiddenUssClassName);
+                return;
+            }
+
+            m_CountLabel.RemoveFromClassList(searchBarHiddenUssClassName);
+            m_CountLabel.text =
+                string.Format("{0} of {1}", m_SelectedIndex + 1, m_FoundItems.Count);
+        }
+
+        private void FindMatches(string query)
+        {
+            m_FoundItems.Clear();
             m_CurrentFilter = DebuggerSearchBarFilter.All;
 
             if (query.StartsWith("#"))
@@ -169,7 +229,7 @@ namespace UnityEditor.UIElements.Debugger
                 query = query.Remove(0, 1);
 
             m_CurrentQuery = query;
-            foreach (var item in items)
+            foreach (var item in m_ParentTreeView.treeItems)
             {
                 var treeItem = item;
                 var element = treeItem.data;
@@ -198,16 +258,6 @@ namespace UnityEditor.UIElements.Debugger
                     }
                 }
             }
-
-            if (m_FoundItems.Count == 0)
-                return;
-
-            m_CountLabel.RemoveFromClassList(searchBarHiddenUssClassName);
-            m_CountLabel.text =
-                string.Format("{0} of {1}", m_SelectedIndex + 1, m_FoundItems.Count);
-
-            var firstItem = m_FoundItems[0];
-            m_ParentTreeView.SelectElement(firstItem.item.data, query, firstItem.highlight);
         }
     }
 }

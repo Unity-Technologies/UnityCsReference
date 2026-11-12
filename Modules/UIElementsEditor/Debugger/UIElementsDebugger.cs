@@ -447,6 +447,7 @@ namespace UnityEditor.UIElements.Debugger
             m_Root.Add(splitter);
 
             m_TreeViewContainer = new DebuggerTreeView(m_Context.selection, SelectElement);
+            m_TreeViewContainer.treeRefreshed += OnTreeRefreshed;
             splitter.Add(m_TreeViewContainer);
 
 
@@ -1201,6 +1202,12 @@ namespace UnityEditor.UIElements.Debugger
             }
 
             panelDebug?.MarkDebugContainerDirtyRepaint();
+        }
+
+        void OnTreeRefreshed()
+        {
+            if (m_Context.selectedElement != null)
+                m_Context.selectedElementIndex = panel.FindVisualElementIndex(m_Context.selectedElement);
         }
 
         void OnContextChange()

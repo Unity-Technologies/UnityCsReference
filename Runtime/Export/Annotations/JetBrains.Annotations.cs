@@ -627,8 +627,32 @@ namespace JetBrains.Annotations
     /// </code>
     /// </example>
     [AttributeUsage(AttributeTargets.Method)]
-    public sealed class SourceTemplateAttribute : Attribute {}
+    public sealed class SourceTemplateAttribute : Attribute
+    {
+        /// <summary>
+        /// Allows specifying the expression to capture for template execution if more than one expression
+        /// is available at the expansion point.
+        /// If not specified, <see cref="SourceTemplateTargetExpression.Inner"/> is assumed.
+        /// </summary>
+        public SourceTemplateTargetExpression Target { get; set; }
+    }
 
+    /// <summary>
+    /// Provides a value for the <see cref="SourceTemplateAttribute"/> to define how to capture
+    /// the expression at the point of expansion
+    /// </summary>
+    public enum SourceTemplateTargetExpression
+    {
+        /// <summary>Selects inner expression</summary>
+        /// <example><c>value > 42.{caret}</c> captures <c>42</c></example>
+        /// <example><c>_args = args.{caret}</c> captures <c>args</c></example>
+        Inner = 0,
+
+        /// <summary>Selects outer expression</summary>
+        /// <example><c>value > 42.{caret}</c> captures <c>value > 42</c></example>
+        /// <example><c>_args = args.{caret}</c> captures whole assignment</example>
+        Outer = 1
+    }
     /// <summary>
     /// Allows specifying a macro for a parameter of a <see cref="SourceTemplateAttribute">source template</see>.
     /// </summary>

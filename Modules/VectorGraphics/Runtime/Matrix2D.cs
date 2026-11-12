@@ -111,10 +111,7 @@ namespace Unity.VectorGraphics
         {
             if (!(other is Matrix2D)) return false;
 
-            Matrix2D rhs = (Matrix2D)other;
-            return GetColumn(0).Equals(rhs.GetColumn(0))
-                && GetColumn(1).Equals(rhs.GetColumn(1))
-                && GetColumn(2).Equals(rhs.GetColumn(2));
+            return Equals((Matrix2D)other);
         }
 
         /// <summary>Multiplies two matrices.</summary>
@@ -378,7 +375,10 @@ namespace Unity.VectorGraphics
         /// <returns>True if the matrices are equal, false otherwise.</returns>
         public bool Equals(Matrix2D other)
         {
-            return this == other;
+            // Exact comparison, unlike the == operator, to stay consistent with GetHashCode
+            return GetColumn(0).Equals(other.GetColumn(0))
+                && GetColumn(1).Equals(other.GetColumn(1))
+                && GetColumn(2).Equals(other.GetColumn(2));
         }
     }
 } //namespace

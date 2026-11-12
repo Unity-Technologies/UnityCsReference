@@ -138,6 +138,11 @@ namespace UnityEditor
             if (platform.namedBuildTarget == NamedBuildTarget.Standalone)
                 buildTarget = DesktopStandaloneBuildWindowExtension.GetBestStandaloneTarget(buildTarget);
 
+            return BuildTargetSupportsRenderer(buildTarget, type);
+        }
+
+        public static bool BuildTargetSupportsRenderer(BuildTarget buildTarget, GraphicsDeviceType type)
+        {
             foreach (int var in GetRenderList(buildTarget))
             {
                 if ((GraphicsDeviceType)var == type)
@@ -754,6 +759,7 @@ namespace UnityEditor
                 new PlatformInfo
                 {
                     displayName = "Unity Render Service for Android™",
+                    downloadLinkName = "Android",
                     buildTarget = BuildTarget.Android,
                     iconName = "BuildSettings.Android",
                     internalPackages = new PlatformPackageList

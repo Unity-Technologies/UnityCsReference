@@ -178,6 +178,7 @@ using System.Runtime.CompilerServices;
 [assembly: InternalsVisibleTo("Unity.WindowsMRAutomation")]
 [assembly: InternalsVisibleTo("UnityEngine.InputLegacyModule")]
 [assembly: InternalsVisibleTo("UnityEngine.SpriteShapeModule")]
+[assembly: InternalsVisibleTo("Unity.RenderPipelines.Core.Runtime")]
 [assembly: InternalsVisibleTo("Unity.RenderPipelines.Universal.2D.Runtime")]
 [assembly: InternalsVisibleTo("Unity.RenderPipelines.Universal.2D.Editor.Overrides")]
 [assembly: InternalsVisibleTo("Unity.RenderPipelines.Universal.Editor")]

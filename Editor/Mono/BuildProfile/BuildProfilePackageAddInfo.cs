@@ -35,6 +35,13 @@ namespace UnityEditor.Build.Profile
         [field: SerializeField]
         public string[] packagesToAdd { get; set; } = Array.Empty<string>();
 
+        /// <summary>
+        /// True when the installed packages were not registered yet as the request completed.
+        /// <see cref="packagesToAdd"/> is then kept to tell when they are.
+        /// </summary>
+        [SerializeField]
+        public bool isRegistrationPending;
+
         public Action OnPackageAddProgress;
         public Action OnPackageAddComplete;
 
@@ -105,10 +112,14 @@ namespace UnityEditor.Build.Profile
 
             EditorApplication.update -= CheckCompletion;
 
-            if (m_PackageAddRequest.Status >= PackageManager.StatusCode.Failure)
+            var succeeded = m_PackageAddRequest.Status < PackageManager.StatusCode.Failure;
+            if (!succeeded)
                 Debug.LogError(m_PackageAddRequest.Error.message);
 
-            packagesToAdd = Array.Empty<string>();
+            // The request reports done before the editor resolves and registers the packages.
+            isRegistrationPending = succeeded && !IsPackageRequestDone();
+            if (!isRegistrationPending)
+                packagesToAdd = Array.Empty<string>();
             OnPackageAddComplete?.Invoke();
         }
 
