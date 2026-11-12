@@ -79,8 +79,6 @@ namespace UnityEditor.PackageManager.UI.Internal
         [SerializeField]
         private BackgroundFetchHandler m_SerializedBackgroundFetchHandler;
         [SerializeField]
-        private AssetStoreOAuth m_SerializedAssetStoreOAuth;
-        [SerializeField]
         private AssetStoreDownloadManager m_SerializedAssetStoreDownloadManager;
         [SerializeField]
         private AssetStoreCachePathProxy m_SerializedAssetStoreCachePathProxy;
@@ -120,7 +118,6 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_ReverseDependencies.Clear();
 
             var httpClientFactory = Register(new HttpClientFactory());
-            var unityOAuthProxy = Register(new UnityOAuthProxy());
             var selectionProxy = Register(new SelectionProxy());
             var assetDatabaseProxy = Register(new AssetDatabaseProxy());
             var ioProxy = Register(new IOProxy());
@@ -139,8 +136,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             var resourceLoader = Register(new ResourceLoader());
 
             var assetSelectionHandler = Register(new AssetSelectionHandler(selectionWindowProxy));
-            var assetStoreOAuth = Register(new AssetStoreOAuth(dateTimeProxy, unityConnectProxy, unityOAuthProxy, httpClientFactory));
-            var assetStoreRestAPI = Register(new AssetStoreRestAPI(unityConnectProxy, assetStoreOAuth, jsonParser, httpClientFactory));
+            var assetStoreRestAPI = Register(new AssetStoreRestAPI(unityConnectProxy, jsonParser, httpClientFactory));
             var localInfoHandler = Register(new LocalInfoHandler(assetStoreUtils, ioProxy));
             var assetStoreCache = Register(new AssetStoreCache(applicationProxy, httpClientFactory, ioProxy));
             var operationFactory = Register(new OperationFactory(unityConnectProxy, assetStoreRestAPI, assetStoreCache));
@@ -178,7 +174,6 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_SerializedAssetStoreCache = assetStoreCache;
             m_SerializedAssetStoreClient = assetStoreClient;
             m_SerializedBackgroundFetchHandler = backgroundFetchHandler;
-            m_SerializedAssetStoreOAuth = assetStoreOAuth;
             m_SerializedAssetStoreDownloadManager = assetStoreDownloadManager;
             m_SerializedAssetStoreCachePathProxy = assetStoreCachePathProxy;
             m_SerializedUpmCache = upmCache;

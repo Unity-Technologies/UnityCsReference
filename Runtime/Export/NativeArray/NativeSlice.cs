@@ -69,8 +69,8 @@ namespace Unity.Collections
                 throw new ArgumentOutOfRangeException(nameof(start), $"Slice start {start} < 0.");
             if (length < 0)
                 throw new ArgumentOutOfRangeException(nameof(length), $"Slice length {length} < 0.");
-            if (start + length > slice.Length)
-                throw new ArgumentException($"Slice start + length ({start + length}) range must be <= slice.Length ({slice.Length})");
+            if (((long)start + length) > slice.Length)
+                throw new ArgumentException($"Slice start + length ({(long)start + length}) range must be <= slice.Length ({slice.Length})");
             if ((slice.m_MinIndex != 0 || slice.m_MaxIndex != slice.m_Length - 1) && (start < slice.m_MinIndex || slice.m_MaxIndex < start || slice.m_MaxIndex < start + length - 1))
                 throw new ArgumentException("Slice may not be used on a restricted range slice", nameof(slice));
 
@@ -79,7 +79,7 @@ namespace Unity.Collections
             m_Safety = slice.m_Safety;
 
             m_Stride = slice.m_Stride;
-            m_Buffer = slice.m_Buffer + m_Stride * start;
+            m_Buffer = slice.m_Buffer + (long)m_Stride * start;
             m_Length = length;
         }
 
@@ -109,7 +109,7 @@ namespace Unity.Collections
             m_Safety = array.m_Safety;
 
             m_Stride = UnsafeUtility.SizeOf<T>();
-            var ptr = (byte*)array.m_Buffer + m_Stride * start;
+            var ptr = (byte*)array.m_Buffer + (long)m_Stride * start;
             m_Buffer = ptr;
             m_Length = length;
         }
@@ -118,18 +118,21 @@ namespace Unity.Collections
         public NativeSlice<U> SliceConvert<U>() where U : struct
         {
             var sizeofU = UnsafeUtility.SizeOf<U>();
+            var byteLength = (long)m_Length * m_Stride;
 
             NativeSlice<U> outputSlice;
             outputSlice.m_Buffer = m_Buffer;
             outputSlice.m_Stride = sizeofU;
-            outputSlice.m_Length = (m_Length * m_Stride) / sizeofU;
+            outputSlice.m_Length = (int)(byteLength / sizeofU);
 
             if (m_Stride != UnsafeUtility.SizeOf<T>())
                 throw new InvalidOperationException("SliceConvert requires that stride matches the size of the source type");
             if (m_MinIndex != 0 || m_MaxIndex != m_Length - 1)
                 throw new InvalidOperationException("SliceConvert may not be used on a restricted range array");
-            if (m_Stride * m_Length % sizeofU != 0)
+            if (byteLength % sizeofU != 0)
                 throw new InvalidOperationException("SliceConvert requires that Length * sizeof(T) is a multiple of sizeof(U).");
+            if (byteLength / sizeofU > int.MaxValue)
+                throw new InvalidOperationException("SliceConvert requires that Length * sizeof(T) / sizeof(U) is <= int.MaxValue.");
 
             outputSlice.m_MinIndex = 0;
             outputSlice.m_MaxIndex = outputSlice.m_Length - 1;
@@ -147,7 +150,7 @@ namespace Unity.Collections
 
             if (offset < 0)
                 throw new ArgumentOutOfRangeException(nameof(offset), "SliceWithStride offset must be >= 0");
-            if (offset + UnsafeUtility.SizeOf<U>() > UnsafeUtility.SizeOf<T>())
+            if (((long)offset + UnsafeUtility.SizeOf<U>()) > UnsafeUtility.SizeOf<T>())
                 throw new ArgumentException("SliceWithStride sizeof(U) + offset must be <= sizeof(T)", nameof(offset));
 
             outputSlice.m_MinIndex = m_MinIndex;

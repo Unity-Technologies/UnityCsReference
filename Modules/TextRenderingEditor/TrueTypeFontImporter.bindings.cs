@@ -36,6 +36,7 @@ namespace UnityEditor
         FaceBoundingBox = 2
     }
 
+    [HelpURL("UIE-font-asset-landing")]
     [NativeHeader("Modules/TextRenderingEditor/TrueTypeFontImporter.h")]
     public sealed class TrueTypeFontImporter : AssetImporter
     {

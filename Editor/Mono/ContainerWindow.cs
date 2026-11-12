@@ -343,7 +343,9 @@ namespace UnityEditor
 
         private static bool AskToClose(List<EditorWindow> allUnsaved)
         {
-            Debug.Assert(Application.isHumanControllingUs && allUnsaved.Count > 0);
+            // An installed interaction context answers dialogs programmatically, so it stands in for a human here.
+            Debug.Assert((Application.isHumanControllingUs || GlobalInteractionContext.TestAccess.isInstalled)
+                && allUnsaved.Count > 0);
 
             const int kSave = 0;
             const int kCancel = 1;

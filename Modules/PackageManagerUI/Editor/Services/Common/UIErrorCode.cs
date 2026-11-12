@@ -25,12 +25,11 @@ namespace UnityEditor.PackageManager.UI.Internal
         UpmError_NotSignedIn,
         UpmError_NotAcquired,
 
-        AssetStoreAuthorizationError = 500,
-        AssetStoreClientError,
-        AssetStoreRestApiError,
+        AssetStoreRestApiError = 500,
         AssetStoreOperationError,
         AssetStorePackageError,
 
-        UserNotSignedIn = 600
+        UnityConnectUserStatusError = 600,
+        UserNotSignedIn
     }
 }

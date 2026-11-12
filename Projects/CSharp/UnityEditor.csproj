@@ -5322,9 +5322,6 @@
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\AssetStore\AssetStoreLocalInfo.cs">
       <Link>Modules\PackageManagerUI\Editor\Services\AssetStore\AssetStoreLocalInfo.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\AssetStore\AssetStoreOAuth.cs">
-      <Link>Modules\PackageManagerUI\Editor\Services\AssetStore\AssetStoreOAuth.cs</Link>
-    </Compile>
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\AssetStore\AssetStorePackageFactory.cs">
       <Link>Modules\PackageManagerUI\Editor\Services\AssetStore\AssetStorePackageFactory.cs</Link>
     </Compile>
@@ -5690,9 +5687,6 @@
     </Compile>
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\Proxies\UnityConnectProxy.cs">
       <Link>Modules\PackageManagerUI\Editor\Services\Proxies\UnityConnectProxy.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\Proxies\UnityOAuthProxy.cs">
-      <Link>Modules\PackageManagerUI\Editor\Services\Proxies\UnityOAuthProxy.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\ServicesContainer.cs">
       <Link>Modules\PackageManagerUI\Editor\Services\ServicesContainer.cs</Link>

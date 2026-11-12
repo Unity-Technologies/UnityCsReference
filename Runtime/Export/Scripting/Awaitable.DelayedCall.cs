@@ -104,11 +104,13 @@ namespace UnityEngine
         {
             public Awaitable Awaitable { get; }
             public int FrameIndex { get; }
+            public int PoolGeneration { get; }
 
             public AwaitableAndFrameIndex(Awaitable awaitable, int frameIndex)
             {
                 Awaitable = awaitable;
                 FrameIndex = frameIndex;
+                PoolGeneration = awaitable._poolGeneration;
             }
         }
 
@@ -126,6 +128,11 @@ namespace UnityEngine
                 {
                     foreach (var item in toIterate)
                     {
+                        // A continuation earlier in this pass may have cancelled and released this entry's awaitable back to the pool
+                        if (item.Awaitable._poolGeneration != item.PoolGeneration)
+                        {
+                            continue;
+                        }
                         if (!item.Awaitable.IsDettachedOrCompleted)
                         {
                             if (Time.frameCount >= item.FrameIndex || item.FrameIndex == -1)
